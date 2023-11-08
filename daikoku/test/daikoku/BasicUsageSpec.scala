@@ -1,17 +1,10 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.login.AuthProvider
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
-import fr.maif.otoroshi.daikoku.utils.IdGenerator
-import org.mindrot.jbcrypt.BCrypt
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.Json
-import reactivemongo.bson.BSONObjectID
 
 class BasicUsageSpec()
     extends PlaySpec
@@ -24,7 +17,7 @@ class BasicUsageSpec()
 //    "deny unlogged connections" in {
 //
 //      val user = User(
-//        id = UserId(BSONObjectID.generate().stringify),
+//        id = UserId(IdGenerator.token(32)),
 //        tenants = Set(tenant.id),
 //        origins = Set(AuthProvider.Local),
 //        name = "Bobby",
@@ -48,7 +41,7 @@ class BasicUsageSpec()
 //
 //    "show your profile" in {
 //      val user = User(
-//        id = UserId(BSONObjectID.generate().stringify),
+//        id = UserId(IdGenerator.token(32)),
 //        tenants = Set(tenant.id),
 //        origins = Set(AuthProvider.Local),
 //        name = "Bobby",

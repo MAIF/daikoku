@@ -21,7 +21,6 @@ import org.joda.time.DateTime
 import play.api.i18n._
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents, Result, Results}
-import reactivemongo.bson.BSONObjectID
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -101,7 +100,7 @@ class TenantController(DaikokuAction: DaikokuAction,
     PublicUserAccess(AuditTrailEvent(
       s"@{user.name} has accessed tenant redirection to @{dest.name} - ${id}"))(
       ctx) {
-      val newTeamId = TeamId(BSONObjectID.generate().stringify)
+      val newTeamId = TeamId(IdGenerator.token(32))
       env.dataStore.tenantRepo.findByIdNotDeleted(id).flatMap {
         case Some(tenant) => {
           ctx.setCtxValue("dest.name", tenant.name)
@@ -230,7 +229,7 @@ class TenantController(DaikokuAction: DaikokuAction,
             state = ApiState.Published,
             visibility = ApiVisibility.AdminOnly,
             documentation = ApiDocumentation(
-              id = ApiDocumentationId(BSONObjectID.generate().stringify),
+              id = ApiDocumentationId(IdGenerator.token(32)),
               tenant = tenant.id,
               pages = Seq.empty[ApiDocumentationDetailPage],
               lastModificationAt = DateTime.now()

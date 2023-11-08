@@ -1,9 +1,5 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import java.io.File
-import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, StandardCopyOption}
-import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.scaladsl.{Keep, Sink, Source}
 import cats.implicits.catsSyntaxOptionId
@@ -12,7 +8,6 @@ import com.themillhousegroup.scoup.Scoup
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
@@ -25,8 +20,11 @@ import org.scalatestplus.play.components.OneServerPerSuiteWithComponents
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.libs.ws.{DefaultWSCookie, WSResponse}
 import play.api.{Application, BuiltInComponents, Logger}
-import reactivemongo.bson.BSONObjectID
 
+import java.io.File
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, StandardCopyOption}
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future, Promise}
 import scala.sys.process.ProcessLogger
@@ -384,7 +382,7 @@ object utils {
               .map {
                 case None =>
                   Team(
-                    id = TeamId(BSONObjectID.generate().stringify),
+                    id = TeamId(IdGenerator.token(32)),
                     tenant = on.id,
                     `type` = TeamType.Personal,
                     name = user.name,
@@ -402,7 +400,7 @@ object utils {
                     .map(_ => t))
               .flatMap { team =>
                 val session = UserSession(
-                  id = DatastoreId(BSONObjectID.generate().stringify),
+                  id = DatastoreId(IdGenerator.token(32)),
                   userId = user.id,
                   userName = user.name,
                   userEmail = user.email,
@@ -772,7 +770,7 @@ object utils {
       currentVersion = Version("1.0.0"),
       state = ApiState.Published,
       documentation = ApiDocumentation(
-        id = ApiDocumentationId(BSONObjectID.generate().stringify),
+        id = ApiDocumentationId(IdGenerator.token(32)),
         tenant = Tenant.Default,
         pages = Seq.empty[ApiDocumentationDetailPage],
         lastModificationAt = DateTime.now()
@@ -802,7 +800,7 @@ object utils {
       currentVersion = Version("1.0.0"),
       state = ApiState.Published,
       documentation = ApiDocumentation(
-        id = ApiDocumentationId(BSONObjectID.generate().stringify),
+        id = ApiDocumentationId(IdGenerator.token(32)),
         tenant = Tenant.Default,
         pages = Seq.empty[ApiDocumentationDetailPage],
         lastModificationAt = DateTime.now()
@@ -1038,7 +1036,7 @@ object utils {
         state = ApiState.Published,
         visibility = ApiVisibility.Public,
         documentation = ApiDocumentation(
-          id = ApiDocumentationId(BSONObjectID.generate().stringify),
+          id = ApiDocumentationId(IdGenerator.token(32)),
           tenant = tenant,
           pages = docIds,
           lastModificationAt = DateTime.now(),
@@ -1054,7 +1052,7 @@ object utils {
     }
 
     val defaultCmsPage: CmsPage = CmsPage(
-      id = CmsPageId(BSONObjectID.generate().stringify),
+      id = CmsPageId(IdGenerator.token(32)),
       tenant = tenant.id,
       visible = true,
       authenticated = false,
@@ -1065,7 +1063,7 @@ object utils {
       draft = "<h1>draft content</h1>",
       contentType = "text/html",
       body = "<h1>production content</h1>",
-      path = Some("/" + BSONObjectID.generate().stringify)
+      path = Some("/" + IdGenerator.token(32))
     )
 
     val defaultApi: ApiWithPlans =

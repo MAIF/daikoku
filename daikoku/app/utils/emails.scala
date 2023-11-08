@@ -165,8 +165,8 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
 
 class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
 
-  import javax.mail._
-  import javax.mail.internet._
+  import jakarta.mail._
+  import jakarta.mail.internet._
   import java.util.Date
   import java.util.Properties
 

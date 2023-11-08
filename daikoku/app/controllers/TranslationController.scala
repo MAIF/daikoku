@@ -3,23 +3,17 @@ package fr.maif.otoroshi.daikoku.ctrls
 import akka.http.scaladsl.util.FastFuture
 import controllers.AppError
 import controllers.AppError.TranslationNotFound
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
+import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.domain.{DatastoreId, Translation}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, Translator}
+import org.joda.time.DateTime
+import play.api.i18n.I18nSupport
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents}
-import fr.maif.otoroshi.daikoku.domain.json._
-import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.Translator
-import org.joda.time.DateTime
-import play.api.i18n.{I18nSupport, Lang}
-import reactivemongo.bson.BSONObjectID
 
 class TranslationController(
     DaikokuAction: DaikokuAction,
@@ -68,7 +62,7 @@ class TranslationController(
                 .map {
                   case (key, value) =>
                     Translation(
-                      id = DatastoreId(BSONObjectID.generate().stringify),
+                      id = DatastoreId(IdGenerator.token(32)),
                       tenant = ctx.tenant.id,
                       language = v._1,
                       key = key,

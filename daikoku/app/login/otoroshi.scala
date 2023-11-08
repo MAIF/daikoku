@@ -1,7 +1,5 @@
 package fr.maif.otoroshi.daikoku.login
 
-import java.util.concurrent.TimeUnit
-
 import akka.http.scaladsl.util.FastFuture
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
@@ -13,8 +11,8 @@ import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator}
 import org.joda.time.DateTime
 import play.api.libs.json.Json
 import play.api.mvc._
-import reactivemongo.bson.BSONObjectID
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -101,7 +99,7 @@ object OtoroshiIdentityFilter {
                     .findOne(Json.obj("_deleted" -> false, "email" -> email))
                     .flatMap {
                       case None =>
-                        val userId = UserId(BSONObjectID.generate().stringify)
+                        val userId = UserId(IdGenerator.token(32))
                         val defaultUser = User(
                           id = userId,
                           tenants = Set(tenant.id),
@@ -115,7 +113,7 @@ object OtoroshiIdentityFilter {
                           defaultLanguage = None
                         )
                         val newTeam = Team(
-                          id = TeamId(BSONObjectID.generate().stringify),
+                          id = TeamId(IdGenerator.token(32)),
                           tenant = tenant.id,
                           `type` = TeamType.Personal,
                           name = s"$name",
@@ -125,7 +123,7 @@ object OtoroshiIdentityFilter {
                         )
                         val session = maybeSession.getOrElse(
                           UserSession(
-                            id = DatastoreId(BSONObjectID.generate().stringify),
+                            id = DatastoreId(IdGenerator.token(32)),
                             userId = defaultUser.id,
                             userName = defaultUser.name,
                             userEmail = defaultUser.email,
@@ -167,7 +165,7 @@ object OtoroshiIdentityFilter {
                         }
                       case Some(u) =>
                         val updatedTeam = Team(
-                          id = TeamId(BSONObjectID.generate().stringify),
+                          id = TeamId(IdGenerator.token(32)),
                           tenant = tenant.id,
                           `type` = TeamType.Personal,
                           name = s"$name",
@@ -177,7 +175,7 @@ object OtoroshiIdentityFilter {
                         )
                         val session = maybeSession.getOrElse(
                           UserSession(
-                            id = DatastoreId(BSONObjectID.generate().stringify),
+                            id = DatastoreId(IdGenerator.token(32)),
                             userId = u.id,
                             userName = u.name,
                             userEmail = u.email,
@@ -236,7 +234,7 @@ object OtoroshiIdentityFilter {
                     }
                 case Some(user) =>
                   val updatedTeam = Team(
-                    id = TeamId(BSONObjectID.generate().stringify),
+                    id = TeamId(IdGenerator.token(32)),
                     tenant = tenant.id,
                     `type` = TeamType.Personal,
                     name = s"$name",
@@ -246,7 +244,7 @@ object OtoroshiIdentityFilter {
                   )
                   val session = maybeSession.getOrElse(
                     UserSession(
-                      id = DatastoreId(BSONObjectID.generate().stringify),
+                      id = DatastoreId(IdGenerator.token(32)),
                       userId = user.id,
                       userName = user.name,
                       userEmail = user.email,

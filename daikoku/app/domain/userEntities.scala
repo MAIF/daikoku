@@ -7,7 +7,6 @@ import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import org.joda.time.DateTime
 import play.api.libs.json._
-import reactivemongo.bson.BSONObjectID
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
@@ -97,7 +96,7 @@ object GuestUserSession {
     val sessionMaxAge =
       tenant.authProviderSettings.\("sessionMaxAge").asOpt[Int].getOrElse(86400)
     UserSession(
-      id = DatastoreId(BSONObjectID.generate().stringify),
+      id = DatastoreId(IdGenerator.token(32)),
       userId = user.id,
       userName = user.name,
       userEmail = user.email,

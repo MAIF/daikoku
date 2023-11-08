@@ -6,31 +6,20 @@ import akka.stream.scaladsl.{Sink, Source}
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.TeamFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.{LdapConfig, LdapSupport}
+import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.otoroshi.daikoku.utils.{DeletionService, IdGenerator, Translator}
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.i18n.{I18nSupport, Lang}
 import play.api.libs.json._
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  ControllerComponents,
-  Result
-}
-import reactivemongo.bson.BSONObjectID
+import play.api.mvc._
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -144,7 +133,7 @@ class TeamController(DaikokuAction: DaikokuAction,
               AppError.TeamNameAlreadyExists
             )
             emailVerif = EmailVerification(
-              id = DatastoreId(BSONObjectID.generate().stringify),
+              id = DatastoreId(IdGenerator.token(32)),
               randomId = IdGenerator.token,
               tenant = ctx.tenant.id,
               team = teamToSave.id,
@@ -261,7 +250,7 @@ class TeamController(DaikokuAction: DaikokuAction,
               Future(Left(AppError.TeamAlreadyVerified))
             case Some(team) =>
               val emailVerif = EmailVerification(
-                id = DatastoreId(BSONObjectID.generate().stringify),
+                id = DatastoreId(IdGenerator.token(32)),
                 randomId = IdGenerator.token,
                 tenant = ctx.tenant.id,
                 team = team.id,
@@ -340,7 +329,7 @@ class TeamController(DaikokuAction: DaikokuAction,
                           "mail.create.team.token.title",
                           ctx.tenant)
                         emailVerif = EmailVerification(
-                          id = DatastoreId(BSONObjectID.generate().stringify),
+                          id = DatastoreId(IdGenerator.token(32)),
                           randomId = IdGenerator.token,
                           tenant = ctx.tenant.id,
                           team = teamToSave.id,
@@ -429,7 +418,7 @@ class TeamController(DaikokuAction: DaikokuAction,
             Json.obj("error" -> "Team type doesn't accept to be join")))
         case Some(team) =>
           val notification = Notification(
-            id = NotificationId(BSONObjectID.generate().stringify),
+            id = NotificationId(IdGenerator.token(32)),
             tenant = ctx.tenant.id,
             team = Some(team.id),
             sender = ctx.user.asNotificationSender,
@@ -574,7 +563,7 @@ class TeamController(DaikokuAction: DaikokuAction,
     val userId = UserId(member)
 
     val notification = Notification(
-      id = NotificationId(BSONObjectID.generate().stringify),
+      id = NotificationId(IdGenerator.token(32)),
       tenant = ctx.tenant.id,
       team = None,
       sender = ctx.user.asNotificationSender,
@@ -635,7 +624,7 @@ class TeamController(DaikokuAction: DaikokuAction,
     import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 
     def createInvitedUser(team: String, notificationId: String) = User(
-      id = UserId(BSONObjectID.generate().stringify),
+      id = UserId(IdGenerator.token(32)),
       tenants = Set(ctx.tenant.id),
       origins = Set(ctx.tenant.authProvider),
       name = "invited user",
@@ -660,7 +649,7 @@ class TeamController(DaikokuAction: DaikokuAction,
             FastFuture.successful(Ok(Json.obj("done" -> true)))
           }
         case None =>
-          val notificationId = NotificationId(BSONObjectID.generate().stringify)
+          val notificationId = NotificationId(IdGenerator.token(32))
           val invitedUser = createInvitedUser(team.name, notificationId.value)
           env.dataStore.userRepo
             .save(invitedUser)

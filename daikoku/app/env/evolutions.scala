@@ -6,13 +6,12 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
 import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, NotificationFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, UserFormat}
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, UserFormat}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.joda.time.DateTime
 import play.api.libs.json._
-import reactivemongo.bson.BSONObjectID
 import storage.DataStore
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -171,7 +170,7 @@ object evolution_151 extends EvolutionScript {
                     .map {
                       case Some(_) => FastFuture.successful(())
                       case None =>
-                        val homeId = BSONObjectID.generate().stringify
+                        val homeId = IdGenerator.token(32)
                         dataStore.cmsRepo
                           .forTenant(tenant)
                           .save(
@@ -970,7 +969,7 @@ object evolutions {
                 dataStore.evolutionRepo
                   .save(
                     Evolution(
-                      id = DatastoreId(BSONObjectID.generate().stringify),
+                      id = DatastoreId(IdGenerator.token(32)),
                       version = evolution.version,
                       applied = true
                     )

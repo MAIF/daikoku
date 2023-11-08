@@ -1,40 +1,31 @@
 package fr.maif.otoroshi.daikoku.utils
 
-import akka.{Done, NotUsed}
-import akka.http.scaladsl.model.headers.Language
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
 import akka.stream.scaladsl.{Flow, Sink, Source}
+import akka.{Done, NotUsed}
 import cats.Monad
 import cats.data.{EitherT, OptionT}
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
-import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.PaymentClient
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.PublicUserAccess
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
-import fr.maif.otoroshi.daikoku.domain.{DatastoreId, _}
+import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
+import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
-import play.api.i18n.{Lang, MessagesApi}
-import play.api.libs.json.{JsArray, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, Json}
-import play.api.libs.ws.ahc.AhcWSResponse
-import play.api.mvc.{AnyContent, Result}
-import play.api.mvc.Results.{Created, Ok}
-import reactivemongo.bson.BSONObjectID
+import play.api.i18n.MessagesApi
+import play.api.libs.json._
+import play.api.mvc.Result
+import play.api.mvc.Results.Ok
 
-import javax.crypto.Cipher
-import javax.crypto.spec.SecretKeySpec
 import scala.concurrent.Future
-import scala.concurrent.impl.Promise
 import scala.util.Try
 
 class ApiService(env: Env,
@@ -215,7 +206,7 @@ class ApiService(env: Env,
               .keys
 
             val apiSubscription = ApiSubscription(
-              id = ApiSubscriptionId(BSONObjectID.generate().stringify),
+              id = ApiSubscriptionId(IdGenerator.token(32)),
               tenant = tenant.id,
               apiKey = tunedApiKey.asOtoroshiApiKey,
               plan = plan.id,
@@ -291,7 +282,7 @@ class ApiService(env: Env,
             .urlPathSegmentSanitized
         }-${team.humanReadableId}-${System.currentTimeMillis()}"
       val apiSubscription = ApiSubscription(
-        id = ApiSubscriptionId(BSONObjectID.generate().stringify),
+        id = ApiSubscriptionId(IdGenerator.token(32)),
         tenant = tenant.id,
         apiKey = OtoroshiApiKey(clientName, clientId, clientSecret),
         plan = plan.id,
@@ -525,9 +516,7 @@ class ApiService(env: Env,
           _ <- EitherT.liftF(env.dataStore.notificationRepo
             .forTenant(tenant.id)
             .save(Notification(
-              id = NotificationId(BSONObjectID
-                .generate()
-                .stringify),
+              id = NotificationId(IdGenerator.token(32)),
               tenant = tenant.id,
               team = Some(subscription.team),
               sender = user.asNotificationSender,
@@ -717,7 +706,7 @@ class ApiService(env: Env,
     .map { case (plan, subscriptions) =>
       subscriptions.map(subscription => {
         (plan, subscription, Notification(
-          id = NotificationId(BSONObjectID.generate().stringify),
+          id = NotificationId(IdGenerator.token(32)),
           tenant = tenant.id,
           team = Some(subscription.team),
           sender = user.asNotificationSender,
@@ -857,7 +846,7 @@ class ApiService(env: Env,
           motivation.replace(s"[[$key]]", replacement)
         })
       notification = Notification(
-        id = NotificationId(BSONObjectID.generate().stringify),
+        id = NotificationId(IdGenerator.token(32)),
         tenant = tenant.id,
         team = Some(api.team),
         sender = user.asNotificationSender,
@@ -993,7 +982,7 @@ class ApiService(env: Env,
             team <- EitherT.fromOptionF(env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(demand.team), AppError.TeamNotFound)
             _ <- EitherT.liftF(Future.sequence(emails.map(email => {
               val stepValidator = StepValidator(
-                id = DatastoreId(BSONObjectID.generate().stringify),
+                id = DatastoreId(IdGenerator.token(32)),
                 tenant = tenant.id,
                 token = IdGenerator.token,
                 step = step.id,
@@ -1058,7 +1047,7 @@ class ApiService(env: Env,
               for {
                 _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.notificationRepo.forTenant(tenant).save(
                   Notification(
-                    id = NotificationId(BSONObjectID.generate().stringify),
+                    id = NotificationId(IdGenerator.token(32)),
                     tenant = tenant.id,
                     team = demand.team.some,
                     sender = currentUser.asNotificationSender,
@@ -1131,7 +1120,7 @@ class ApiService(env: Env,
           )
           _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(tenant).save(demand.copy(state = SubscriptionDemandState.Accepted)))
           newNotification = Notification(
-            id = NotificationId(BSONObjectID.generate().stringify),
+            id = NotificationId(IdGenerator.token(32)),
             tenant = tenant.id,
             team = Some(team.id),
             sender = currentUser.asNotificationSender,
@@ -1298,7 +1287,7 @@ class ApiService(env: Env,
           case Nil => EitherT(subscribeToApi(tenant, user, api, plan, team, apiKeyId, thirdPartySubscriptionInformations = None))
             .map(s => Ok(Json.obj("creation" -> "done", "subscription" -> s.asSafeJson)))
           case steps =>
-            val demanId = SubscriptionDemandId(BSONObjectID.generate().stringify)
+            val demanId = SubscriptionDemandId(IdGenerator.token(32))
             for {
               _ <- EitherT.liftF(env.dataStore.subscriptionDemandRepo.forTenant(tenant)
                 .save(SubscriptionDemand(
@@ -1340,7 +1329,7 @@ class ApiService(env: Env,
       )))
 
       newNotification = Notification(
-        id = NotificationId(BSONObjectID.generate().stringify),
+        id = NotificationId(IdGenerator.token(32)),
         tenant = tenant.id,
         team = demand.team.some,
         sender = sender,

@@ -1,26 +1,20 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import akka.http.scaladsl.util.FastFuture
+import com.github.blemale.scaffeine.{Cache, Scaffeine}
 import com.nimbusds.jose.util.StandardCharset
 import daikoku.BuildInfo
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuActionMaybeWithoutUserContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
-import fr.maif.otoroshi.daikoku.domain.json.CmsPageFormat
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.domain.json.CmsPageFormat
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.{Errors, diff_match_patch}
+import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator, diff_match_patch}
 import org.joda.time.DateTime
 import play.api.i18n.I18nSupport
 import play.api.libs.json._
 import play.api.mvc._
-import reactivemongo.bson.BSONObjectID
-import com.github.blemale.scaffeine.{Cache, Scaffeine}
 
 import java.io.{ByteArrayOutputStream, File, FileInputStream, FileOutputStream}
 import java.util
@@ -435,7 +429,7 @@ class HomeController(
       ctx) { (tenant, _) =>
       {
         val page = CmsPage(
-          id = CmsPageId(BSONObjectID.generate().stringify),
+          id = CmsPageId(IdGenerator.token(32)),
           tenant = tenant.id,
           visible = true,
           authenticated = false,
@@ -446,7 +440,7 @@ class HomeController(
           draft = "",
           contentType = "text/html",
           body = "",
-          path = Some("/" + BSONObjectID.generate().stringify)
+          path = Some("/" + IdGenerator.token(32))
         )
         env.dataStore.cmsRepo
           .forTenant(tenant)
@@ -464,7 +458,7 @@ class HomeController(
     val patchMatch = new diff_match_patch()
     val diff = patchMatch.patch_toText(patchMatch.patch_make(a, b))
     CmsHistory(
-      id = BSONObjectID.generate().stringify,
+      id = IdGenerator.token(32),
       date = DateTime.now(),
       diff = diff,
       user = userId
@@ -507,7 +501,7 @@ class HomeController(
                 .asOpt[String]
                 .getOrElse((body \ "_id")
                   .asOpt[String]
-                  .getOrElse(BSONObjectID.generate().stringify)))) ++
+                  .getOrElse(IdGenerator.token(32))))) ++
           Json.obj("_tenant" -> tenant.id.value)
 
         json.CmsPageFormat.reads(cmsPage) match {

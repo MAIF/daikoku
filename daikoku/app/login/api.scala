@@ -1,20 +1,19 @@
 package fr.maif.otoroshi.daikoku.login
 
-import java.util.concurrent.TimeUnit
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
+import cats.syntax.option._
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.{Env, TenantProvider}
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator}
 import org.joda.time.DateTime
 import play.api.libs.json.{JsString, JsValue, Json}
 import play.api.libs.typedmap._
 import play.api.mvc._
-import cats.syntax.option._
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
-import fr.maif.otoroshi.daikoku.logger.AppLogger
-import reactivemongo.bson.BSONObjectID
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -214,7 +213,6 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
   )
 
   def findUserTeam(tenantId: TenantId, user: User): Future[Option[Team]] = {
-    import reactivemongo.bson.BSONObjectID
     for {
       teamRepo <- env.dataStore.teamRepo.forTenantF(tenantId)
       maybePersonnalTeam: Option[Team] <- teamRepo.findOne(
@@ -222,7 +220,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                  "users.userId" -> user.id.value,
                  "_deleted" -> false))
       backupTeam = Team(
-        id = TeamId(BSONObjectID.generate().stringify),
+        id = TeamId(IdGenerator.token(32)),
         tenant = tenantId,
         `type` = TeamType.Personal,
         name = s"${user.name}",
@@ -345,7 +343,7 @@ class LoginFilter(env: Env)(implicit val mat: Materializer,
                                 _user.copy(tenants = _user.tenants + tenant.id)
                               val session = UserSession(
                                 id = DatastoreId(
-                                  BSONObjectID.generate().stringify),
+                                  IdGenerator.token(32)),
                                 userId = user.id,
                                 userName = user.name,
                                 userEmail = user.email,

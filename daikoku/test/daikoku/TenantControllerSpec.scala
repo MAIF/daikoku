@@ -1,31 +1,12 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import fr.maif.otoroshi.daikoku.domain.json.SeqCmsHistoryFormat
-import fr.maif.otoroshi.daikoku.domain.{
-  ApiId,
-  ApiVisibility,
-  CmsPageId,
-  ConsoleMailerSettings,
-  DaikokuStyle,
-  OtoroshiSettings,
-  OtoroshiSettingsId,
-  TeamId,
-  TeamPermission,
-  TeamType,
-  Tenant,
-  TenantId,
-  UserId,
-  UserWithPermission
-}
+import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.login.AuthProvider
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json._
-import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
@@ -48,7 +29,7 @@ class TenantControllerSpec()
       val session = loginWithBlocking(daikokuAdmin, tenant)
 
       val testTenant = Tenant(
-        id = TenantId(BSONObjectID.generate().stringify),
+        id = TenantId(IdGenerator.token(32)),
         name = "test",
         domain = "test.foo.bar",
         defaultLanguage = None,
@@ -154,7 +135,7 @@ class TenantControllerSpec()
       val session = loginWithBlocking(daikokuAdmin, tenant)
 
       val testTenant = Tenant(
-        id = TenantId(BSONObjectID.generate().stringify),
+        id = TenantId(IdGenerator.token(32)),
         name = "test",
         domain = "test.foo.bar",
         defaultLanguage = None,
@@ -290,7 +271,7 @@ class TenantControllerSpec()
       val session = loginWithBlocking(daikokuAdmin, tenant)
 
       val testTenant = Tenant(
-        id = TenantId(BSONObjectID.generate().stringify),
+        id = TenantId(IdGenerator.token(32)),
         name = "test",
         domain = "test.foo.bar",
         defaultLanguage = None,
@@ -603,7 +584,7 @@ class TenantControllerSpec()
       val session = loginWithBlocking(tenantAdmin, tenant)
 
       val testTenant = Tenant(
-        id = TenantId(BSONObjectID.generate().stringify),
+        id = TenantId(IdGenerator.token(32)),
         name = "test",
         domain = "test.foo.bar",
         defaultLanguage = None,
@@ -1658,7 +1639,7 @@ class TenantControllerSpec()
       val session = loginWithBlocking(user, tenant)
 
       val testTenant = Tenant(
-        id = TenantId(BSONObjectID.generate().stringify),
+        id = TenantId(IdGenerator.token(32)),
         name = "test",
         domain = "test.foo.bar",
         defaultLanguage = None,

@@ -9,10 +9,9 @@ import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import play.api.Logger
 import play.api.libs.json._
-import reactivemongo.bson.BSONObjectID
 
 import javax.naming.ldap.{Control, InitialLdapContext}
-import scala.concurrent.duration.{Duration}
+import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.{Failure, Success, Try}
@@ -130,7 +129,6 @@ case class LdapConfig(
 object LdapSupport {
 
   import java.util
-
   import javax.naming._
   import javax.naming.directory._
 
@@ -202,7 +200,7 @@ object LdapSupport {
                               name: String,
                               userId: UserId) =
     Team(
-      id = TeamId(BSONObjectID.generate().stringify),
+      id = TeamId(IdGenerator.token(32)),
       tenant = tenantId,
       `type` = TeamType.Personal,
       name = s"$name",
@@ -339,7 +337,7 @@ object LdapSupport {
                           newUser
                         }
                       case None =>
-                        val userId = UserId(BSONObjectID.generate().stringify)
+                        val userId = UserId(IdGenerator.token(32))
                         val team = getPersonalTeam(tenant.id, name, userId)
                         val user = getUser(userId,
                                            tenant.id,
@@ -388,7 +386,7 @@ object LdapSupport {
                           newUser
                         }
                       case None =>
-                        val userId = UserId(BSONObjectID.generate().stringify)
+                        val userId = UserId(IdGenerator.token(32))
                         val team = getPersonalTeam(tenant.id, name, userId)
                         val user = getUser(userId,
                                            tenant.id,
@@ -601,7 +599,7 @@ object LdapSupport {
             }
           })
 
-          val userId = UserId(BSONObjectID.generate().stringify)
+          val userId = UserId(IdGenerator.token(32))
           val user = getUser(userId,
                              tenantId,
                              name,

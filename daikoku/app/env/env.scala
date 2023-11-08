@@ -1,6 +1,5 @@
 package fr.maif.otoroshi.daikoku.env
 
-import java.nio.file.Paths
 import akka.actor.{ActorRef, ActorSystem, PoisonPill}
 import akka.http.scaladsl.util.FastFuture
 import akka.stream.Materializer
@@ -9,14 +8,9 @@ import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.{JWT, JWTVerifier}
 import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
-import fr.maif.otoroshi.daikoku.domain.{
-  DatastoreId,
-  Evolution,
-  TeamApiKeyVisibility,
-  Tenant
-}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
+import fr.maif.otoroshi.daikoku.domain.{TeamApiKeyVisibility, Tenant}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._
@@ -24,14 +18,13 @@ import io.vertx.pgclient.PgPool
 import org.joda.time.DateTime
 import play.api.ApplicationLoader.Context
 import play.api.i18n.MessagesApi
-import play.api.libs.json._
 import play.api.libs.ws.WSClient
 import play.api.mvc.EssentialFilter
 import play.api.{Configuration, Environment}
-import storage.drivers.mongo.MongoDataStore
-import storage.drivers.postgres.PostgresDataStore
 import storage.DataStore
+import storage.drivers.postgres.PostgresDataStore
 
+import java.nio.file.Paths
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -308,11 +301,8 @@ class DaikokuEnv(ws: WSClient,
 
   private var _dataStore: DataStore =
     configuration.getOptional[String]("daikoku.storage") match {
-      case Some("mongo") => new MongoDataStore(context, this)
-      case Some("postgres") =>
-        new PostgresDataStore(configuration, this, pgPool)
-      case Some(e) =>
-        throw new RuntimeException(s"Bad storage value from conf: $e")
+      case Some("postgres") => new PostgresDataStore(configuration, this, pgPool)
+      case Some(e) => throw new RuntimeException(s"Bad storage value from conf: $e")
       case None => throw new RuntimeException("No storage found from conf")
     }
 
@@ -392,14 +382,13 @@ class DaikokuEnv(ws: WSClient,
                 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
                 import org.mindrot.jbcrypt.BCrypt
                 import play.api.libs.json._
-                import reactivemongo.bson.BSONObjectID
 
                 import scala.concurrent._
 
                 AppLogger.warn("")
                 AppLogger.warn(
                   "Main dataStore seems to be empty, generating initial data ...")
-                val userId = UserId(BSONObjectID.generate().stringify)
+                val userId = UserId(IdGenerator.token(32))
                 val administrationTeamId = TeamId("administration")
                 val adminApiDefaultTenantId =
                   ApiId(s"admin-api-tenant-${Tenant.Default.value}")
@@ -438,7 +427,7 @@ class DaikokuEnv(ws: WSClient,
                   description = "admin api",
                   currentVersion = Version("1.0.0"),
                   documentation = ApiDocumentation(
-                    id = ApiDocumentationId(BSONObjectID.generate().stringify),
+                    id = ApiDocumentationId(IdGenerator.token(32)),
                     tenant = Tenant.Default,
                     pages = Seq.empty[ApiDocumentationDetailPage],
                     lastModificationAt = DateTime.now()
@@ -471,7 +460,7 @@ class DaikokuEnv(ws: WSClient,
                   adminApi = adminApiDefaultTenantId
                 )
                 val team = Team(
-                  id = TeamId(BSONObjectID.generate().stringify),
+                  id = TeamId(IdGenerator.token(32)),
                   tenant = tenant.id,
                   `type` = TeamType.Personal,
                   name = s"${config.init.admin.name}",

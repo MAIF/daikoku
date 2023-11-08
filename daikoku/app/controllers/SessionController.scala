@@ -1,20 +1,12 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import java.util.concurrent.TimeUnit
-
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.DaikokuAdminOnly
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.PublicUserAccess
-import fr.maif.otoroshi.daikoku.domain.{DatastoreId, UserSession, UserSessionId}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{DaikokuAdminOnly, PublicUserAccess}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc._
-import reactivemongo.bson.BSONObjectID
-
-import scala.concurrent.duration.FiniteDuration
 
 class SessionController(DaikokuAction: DaikokuAction,
                         env: Env,

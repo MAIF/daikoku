@@ -19,7 +19,6 @@ import play.api.i18n.MessagesApi
 import play.api.libs.json._
 import play.api.mvc.Request
 import play.twirl.api.Html
-import reactivemongo.bson.BSONObjectID
 import storage.TenantCapableRepo
 
 import java.util.concurrent.Executors
@@ -757,7 +756,7 @@ case class CmsPage(
                            fields: Map[String, Any],
                            jsonToCombine: Map[String, JsValue])
                           (implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi) = Await.result(CmsPage(
-    id = CmsPageId(BSONObjectID.generate().stringify),
+    id = CmsPageId(IdGenerator.token(32)),
     tenant = ctx.tenant.id,
     visible = true,
     authenticated = false,
@@ -797,7 +796,7 @@ case class CmsPage(
         val tmpFields = getAttrs(ctx, parentId, options, fields, jsonToCombine)
         val outFields = getAttrs(ctx, parentId, options, tmpFields ++ Map(
           "children" -> Await.result(CmsPage(
-            id = CmsPageId(BSONObjectID.generate().stringify),
+            id = CmsPageId(IdGenerator.token(32)),
             tenant = ctx.tenant.id,
             visible = true,
             authenticated = false,

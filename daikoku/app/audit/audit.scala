@@ -1,37 +1,34 @@
 package fr.maif.otoroshi.daikoku.audit
 
-import java.util.Base64
-import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
+import akka.Done
 import akka.actor.{Actor, ActorSystem, PoisonPill, Props, Terminated}
 import akka.http.scaladsl.util.FastFuture
 import akka.http.scaladsl.util.FastFuture._
 import akka.kafka.ProducerSettings
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.scaladsl.{Keep, Sink, Source}
 import akka.stream.{OverflowStrategy, QueueOfferResult}
-import akka.{Done, NotUsed}
 import cats.data.EitherT
 import controllers.AppError
-import diffson.DiffOps
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
-import fr.maif.otoroshi.daikoku.utils.Translator
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, Translator}
 import org.apache.kafka.clients.CommonClientConfigs
-import org.apache.kafka.clients.producer.{Callback, KafkaProducer, Producer, ProducerRecord, RecordMetadata}
+import org.apache.kafka.clients.producer.{Callback, Producer, ProducerRecord, RecordMetadata}
 import org.apache.kafka.common.config.SslConfigs
 import org.apache.kafka.common.config.internals.BrokerSecurityConfigs
 import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSerializer}
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import play.api.Logger
-import play.api.i18n.{I18nSupport, Lang, MessagesApi}
+import play.api.i18n.MessagesApi
 import play.api.libs.json._
 import play.api.libs.ws.WSRequest
 import play.api.mvc.RequestHeader
-import reactivemongo.bson.BSONObjectID
 
+import java.util.Base64
+import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
@@ -188,7 +185,7 @@ case class TenantAuditEvent(evt: AuditEvent,
   }
 
   def toJson(implicit env: Env): JsObject = Json.obj(
-    "_id" -> BSONObjectID.generate().stringify,
+    "_id" -> IdGenerator.token(32),
     "@type" -> theType,
     "@id" -> env.snowflakeGenerator.nextIdStr(),
     "@timestamp" -> play.api.libs.json.JodaWrites.JodaDateTimeNumberWrites

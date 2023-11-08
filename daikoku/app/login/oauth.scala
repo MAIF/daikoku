@@ -6,14 +6,12 @@ import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
-import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import fr.maif.otoroshi.daikoku.utils.jwt.{AlgoSettings, InputMode}
 import org.apache.commons.codec.binary.{Base64 => ApacheBase64}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws.DefaultBodyWritables.writeableOf_urlEncodedSimpleForm
 import play.api.mvc.RequestHeader
-import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
@@ -241,9 +239,9 @@ object OAuth2Support {
                   .findOne(Json.obj("_deleted" -> false, "email" -> email))
                   .flatMap {
                     case None =>
-                      val userId = UserId(BSONObjectID.generate().stringify)
+                      val userId = UserId(IdGenerator.token(32))
                       val team = Team(
-                        id = TeamId(BSONObjectID.generate().stringify),
+                        id = TeamId(IdGenerator.token(32)),
                         tenant = tenant.id,
                         `type` = TeamType.Personal,
                         name = s"$name",

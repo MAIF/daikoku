@@ -9,8 +9,12 @@ Universal / packageName := "daikoku"
 
 scalaVersion := "2.13.1"
 
+Global / onChangedBuildSource := ReloadOnSourceChanges
+
 val reactiveMongoVersion = "0.20.10"
-val wiremockVersion = "2.26.3"
+val wiremockVersion = "3.0.1"
+val playJsonVersion = "2.10.3"
+val awsJavaSdkVersion = "1.12.582"
 
 lazy val root = (project in file("."))
   .enablePlugins(PlayScala, DockerPlugin, BuildInfoPlugin, PlayAkkaHttp2Support)
@@ -46,55 +50,53 @@ libraryDependencies ++= Seq(
   jdbc,
   ws,
   filters,
-  "org.scalatestplus.play" %% "scalatestplus-play" % "5.0.0" % Test,
-  "com.themillhousegroup" %% "scoup" % "0.5.0" % Test,
+  "org.scalatestplus.play" %% "scalatestplus-play" % "7.0.0" % Test,
+  "com.themillhousegroup" %% "scoup" % "1.0.0" % Test,
   "com.github.tomakehurst" % "wiremock" % wiremockVersion % Test,
   "com.github.tomakehurst" % "wiremock-jre8" % wiremockVersion % Test,
 //  "org.testcontainers" % "testcontainers" % "1.17.5" % Test,
   "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.14" % Test,
   "com.dimafeng" %% "testcontainers-scala-postgresql" % "0.40.14" % Test,
-  "org.apache.commons" % "commons-lang3" % "3.10",
-  "org.bouncycastle" % "bcprov-jdk15on" % "1.65",
-  "com.typesafe.play" %% "play-json" % "2.8.1",
-  "com.typesafe.play" %% "play-json-joda" % "2.8.1",
-  "com.auth0" % "java-jwt" % "3.10.3",
-  "com.auth0" % "jwks-rsa" % "0.11.0", // https://github.com/auth0/jwks-rsa-java
-  "com.nimbusds" % "nimbus-jose-jwt" % "8.16",
-  "com.softwaremill.macwire" %% "macros" % "2.3.4" % "provided",
+  "org.apache.commons" % "commons-lang3" % "3.13.0",
+  "org.bouncycastle" % "bcprov-jdk18on" % "1.76",
+  "com.typesafe.play" %% "play-json" % playJsonVersion,
+  "com.typesafe.play" %% "play-json-joda" % playJsonVersion,
+  "com.auth0" % "java-jwt" % "4.4.0",
+  "com.auth0" % "jwks-rsa" % "0.22.1", // https://github.com/auth0/jwks-rsa-java
+  "com.nimbusds" % "nimbus-jose-jwt" % "9.37",
+  "com.softwaremill.macwire" %% "macros" % "2.5.9" % "provided",
   "javax.xml.bind" % "jaxb-api" % "2.3.1",
-  "com.sun.xml.bind" % "jaxb-core" % "2.3.0.1",
-  "com.sun.xml.bind" % "jaxb-impl" % "2.3.0.1",
-  "io.vertx" % "vertx-pg-client" % "4.3.4",
+  "com.sun.xml.bind" % "jaxb-core" % "4.0.4",
+  "com.sun.xml.bind" % "jaxb-impl" % "4.0.4",
+  "io.vertx" % "vertx-pg-client" % "4.4.6",
   "com.ongres.scram" % "common" % "2.1",
   "com.ongres.scram" % "client" % "2.1",
   "io.nayuki" % "qrcodegen" % "1.6.0",
-  "com.eatthepath" % "java-otp" % "0.2.0",
-  "com.sun.mail" % "javax.mail" % "1.6.2",
-  "org.gnieh" %% "diffson-play-json" % "4.1.1" excludeAll ExclusionRule(
-    organization = "com.typesafe.akka"),
-  "org.reactivemongo" %% "play2-reactivemongo" % s"$reactiveMongoVersion-play28",
-  "org.reactivemongo" %% "reactivemongo-play-json" % s"$reactiveMongoVersion-play28",
-  "org.reactivemongo" %% "reactivemongo-akkastream" % s"$reactiveMongoVersion",
+  "com.eatthepath" % "java-otp" % "0.4.0",
+  "com.sun.mail" % "jakarta.mail" % "2.0.1",
+  "org.gnieh" %% "diffson-play-json" % "4.4.0" excludeAll ExclusionRule(
+    organization = "com.typesafe.akka"
+  ),
   "com.typesafe.akka" %% "akka-stream-kafka" % "2.0.2",
   "com.typesafe.akka" %% "akka-http-xml" % "10.1.15",
-  "org.typelevel" %% "cats-core" % "2.1.1",
-  "de.svenkubiak" % "jBCrypt" % "0.4.1",
+  "org.typelevel" %% "cats-core" % "2.10.0",
+  "de.svenkubiak" % "jBCrypt" % "0.4.3",
   "com.lightbend.akka" %% "akka-stream-alpakka-s3" % "2.0.0",
-  "com.amazonaws" % "aws-java-sdk-core" % "1.11.779",
-  "com.googlecode.owasp-java-html-sanitizer" % "owasp-java-html-sanitizer" % "20191001.1",
-  "com.amazonaws" % "aws-java-sdk-s3" % "1.11.893",
-  "commons-logging" % "commons-logging" % "1.1.1",
-  "com.github.jknack" % "handlebars" % "4.3.0",
-  "org.sangria-graphql" % "sangria_2.13" % "3.4.1",
-  "org.sangria-graphql" % "sangria-play-json_2.13" % "2.0.2" excludeAll ExclusionRule(
+  "com.amazonaws" % "aws-java-sdk-core" % awsJavaSdkVersion,
+  "com.amazonaws" % "aws-java-sdk-s3" % awsJavaSdkVersion,
+  "com.googlecode.owasp-java-html-sanitizer" % "owasp-java-html-sanitizer" % "20220608.1",
+  "commons-logging" % "commons-logging" % "1.2",
+  "com.github.jknack" % "handlebars" % "4.3.1",
+  "org.sangria-graphql" %% "sangria" % "4.0.2",
+  "org.sangria-graphql" %% "sangria-play-json" % "2.0.2" excludeAll ExclusionRule(
     organization = "com.typesafe.play"
   ),
-  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.12.2",
-  "org.apache.logging.log4j" % "log4j-api" % "2.16.0",
-  "com.github.blemale" %% "scaffeine" % "5.1.2"
+  "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.15.3",
+  "org.apache.logging.log4j" % "log4j-api" % "2.19.0",
+  "com.github.blemale" %% "scaffeine" % "5.2.1"
 )
 
-dependencyOverrides += "io.netty" % "netty-handler" % "4.1.58.Final"
+dependencyOverrides += "io.netty" % "netty-handler" % "4.1.100.Final"
 
 Test / fork := true
 
@@ -109,7 +111,6 @@ scalacOptions ++= Seq(
 )
 
 resolvers += "bintray" at "https://jcenter.bintray.com"
-
 resolvers += "Millhouse Bintray" at "https://dl.bintray.com/themillhousegroup/maven"
 
 PlayKeys.devSettings := Seq("play.server.http.port" -> "9000")

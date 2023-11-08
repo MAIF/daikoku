@@ -1,6 +1,5 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import java.util.UUID.randomUUID
 import akka.actor.{ActorRef, PoisonPill, Props}
 import akka.http.scaladsl.util.FastFuture
 import akka.pattern.ask
@@ -9,29 +8,21 @@ import akka.stream.{CompletionStrategy, OverflowStrategy}
 import akka.util.Timeout
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  PublicUserAccess,
-  TenantAdminOnly
-}
-import fr.maif.otoroshi.daikoku.domain.{
-  DatastoreId,
-  Message,
-  MessageType,
-  UserId
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{PublicUserAccess, TenantAdminOnly}
+import fr.maif.otoroshi.daikoku.domain.{DatastoreId, Message, MessageType, UserId}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.messages._
-import fr.maif.otoroshi.daikoku.utils.Translator
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, Translator}
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import play.api.Logger
 import play.api.http.ContentTypes
 import play.api.i18n.I18nSupport
 import play.api.libs.EventSource
-import play.api.libs.json.{JsArray, JsNull, JsNumber, JsObject, JsValue, Json}
+import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents}
-import reactivemongo.bson.BSONObjectID
 
+import java.util.UUID.randomUUID
 import scala.concurrent.duration._
 
 class MessageController(DaikokuAction: DaikokuAction,
@@ -67,7 +58,7 @@ class MessageController(DaikokuAction: DaikokuAction,
         (body \ "chat").asOpt[String].map(UserId).getOrElse(ctx.user.id)
 
       val message = Message(
-        id = DatastoreId(BSONObjectID.generate().stringify),
+        id = DatastoreId(IdGenerator.token(32)),
         tenant = ctx.tenant.id,
         messageType = MessageType.Tenant(ctx.tenant.id), //todo: update it when user can send messages to team admins
         sender = ctx.user.id,
