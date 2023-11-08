@@ -5,7 +5,7 @@ import com.typesafe.sbt.packager.docker.DockerPermissionStrategy
 name := """daikoku"""
 organization := "fr.maif.otoroshi"
 maintainer := "oss@maif.fr"
-packageName in Universal := "daikoku"
+Universal / packageName := "daikoku"
 
 scalaVersion := "2.13.1"
 
@@ -20,9 +20,9 @@ lazy val root = (project in file("."))
     buildInfoPackage := "daikoku"
   )
 
-javaOptions in Test += "-Dconfig.file=conf/application.test.conf"
+Test / javaOptions += "-Dconfig.file=conf/application.test.conf"
 
-assemblyMergeStrategy in assembly := {
+assembly / assemblyMergeStrategy := {
   case PathList("org", "apache", "commons", "logging", xs @ _*) =>
     MergeStrategy.first
   case PathList(ps @ _*) if ps.contains("module-info.class") =>
@@ -38,7 +38,7 @@ assemblyMergeStrategy in assembly := {
   case "META-INF/mailcap.default"   => MergeStrategy.last
   case "META-INF/mimetypes.default" => MergeStrategy.last
   case x =>
-    val oldStrategy = (assemblyMergeStrategy in assembly).value
+    val oldStrategy = (assembly / assemblyMergeStrategy).value
     oldStrategy(x)
 }
 
@@ -120,11 +120,11 @@ PlayKeys.devSettings := Seq("play.server.http.port" -> "9000")
 
 /// ASSEMBLY CONFIG
 
-mainClass in assembly := Some("play.core.server.ProdServerStart")
-test in assembly := {}
-assemblyJarName in assembly := "daikoku.jar"
-fullClasspath in assembly += Attributed.blank(PlayKeys.playPackageAssets.value)
-assemblyMergeStrategy in assembly := {
+assembly / mainClass := Some("play.core.server.ProdServerStart")
+assembly / test := {}
+assembly / assemblyJarName := "daikoku.jar"
+assembly / fullClasspath += Attributed.blank(PlayKeys.playPackageAssets.value)
+assembly / assemblyMergeStrategy := {
   //case PathList("META-INF", xs @ _*) => MergeStrategy.discard
   case PathList("javax", xs @ _*) =>
     MergeStrategy.first
@@ -142,14 +142,14 @@ assemblyMergeStrategy in assembly := {
   case PathList(ps @ _*) if ps.contains("buildinfo") =>
     MergeStrategy.discard
   case o =>
-    val oldStrategy = (assemblyMergeStrategy in assembly).value
+    val oldStrategy = (assembly / assemblyMergeStrategy).value
     oldStrategy(o)
 }
 
 lazy val packageAll = taskKey[Unit]("PackageAll")
 packageAll := {
-  (dist in Compile).value
-  (assembly in Compile).value
+  (Compile / dist).value
+  (Compile / assembly).value
 }
 
 /// DOCKER CONFIG
@@ -157,8 +157,8 @@ packageAll := {
 dockerExposedPorts := Seq(
   8080
 )
-packageName in Docker := "daikoku"
-maintainer in Docker := "MAIF OSS Team <oss@maif.fr>"
+Docker / packageName := "daikoku"
+Docker / maintainer := "MAIF OSS Team <oss@maif.fr>"
 dockerBaseImage := "eclipse-temurin:11.0.13_8-jre-focal"
 dockerUsername := Some("maif")
 dockerUpdateLatest := true
@@ -166,7 +166,7 @@ dockerCommands := dockerCommands.value.filterNot {
   case ExecCmd("CMD", args @ _*) => true
   case cmd                       => false
 }
-dockerPackageMappings in Docker += (baseDirectory.value / "docker" / "start.sh") -> "/opt/docker/bin/start.sh"
+Docker / dockerPackageMappings += (baseDirectory.value / "docker" / "start.sh") -> "/opt/docker/bin/start.sh"
 dockerEntrypoint := Seq("/opt/docker/bin/start.sh")
 dockerUpdateLatest := true
 
