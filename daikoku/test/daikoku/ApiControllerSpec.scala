@@ -3510,7 +3510,7 @@ class ApiControllerSpec()
       adminPlan.otoroshiTarget.get.otoroshiSettings mustBe OtoroshiSettingsId(
         "wiremock"
       )
-      adminPlan.otoroshiTarget.get.authorizedEntities.value.groups should contain(
+      adminPlan.otoroshiTarget.get.authorizedEntities.value.groups must contain(
         OtoroshiServiceGroupId("daikoku-admin-api-group-id")
       )
     }
@@ -4487,7 +4487,7 @@ class ApiControllerSpec()
         .findById((resp.json \ "subscription" \ "_id").as[String])
         .map {
           case Some(sub) => sub.apiKey.clientId mustBe parentApiKeyClientId
-          case None      => fail
+          case None      => fail()
         }
     }
     "be transformed in unique api key when the subscription hasn't parent" in {

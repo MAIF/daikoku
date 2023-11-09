@@ -11,6 +11,8 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.Materializer
 import org.joda.time.DateTime
 import org.jsoup.nodes.Document
 import org.mindrot.jbcrypt.BCrypt
@@ -26,7 +28,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, StandardCopyOption}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.sys.process.ProcessLogger
 import scala.util.{Failure, Success, Try}
 
@@ -36,7 +38,7 @@ class DaikokuSuites extends Suite with BeforeAndAfterAll { thisSuite =>
 
   override protected def afterAll(): Unit = {}
 
-  override def toString: String = thisSuite.toString
+//  override def toString: String = thisSuite.toString
 }
 
 case class ApiWithPlans(api: Api, plans: Seq[UsagePlan])
@@ -63,14 +65,14 @@ object utils {
 
   trait DaikokuSpecHelper { suite: OneServerPerSuiteWithMyComponents =>
 
-    implicit val ec = daikokuComponents.env.defaultExecutionContext
-    implicit val as = daikokuComponents.env.defaultActorSystem
-    implicit val mat = daikokuComponents.env.defaultMaterializer
+    implicit val ec: ExecutionContext = daikokuComponents.env.defaultExecutionContext
+    implicit val as: ActorSystem = daikokuComponents.env.defaultActorSystem
+    implicit val mat: Materializer = daikokuComponents.env.defaultMaterializer
 
-    val logger = Logger.apply("daikoku-spec-helper")
+    val logger: Logger = Logger.apply("daikoku-spec-helper")
 
     def await(duration: FiniteDuration): Unit = {
-      val p = Promise[Unit]
+      val p = Promise[Unit]()
       daikokuComponents.env.defaultActorSystem.scheduler
         .scheduleOnce(duration) {
           p.trySuccess(())
@@ -79,7 +81,7 @@ object utils {
     }
 
     def awaitF(duration: FiniteDuration): Future[Unit] = {
-      val p = Promise[Unit]
+      val p = Promise[Unit]()
       daikokuComponents.actorSystem.scheduler.scheduleOnce(duration) {
         p.trySuccess(())
       }
@@ -598,7 +600,7 @@ object utils {
         "/Applications/Google Chrome Dev.app/Contents/MacOS/Google Chrome",
         "/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome"
       )
-      val promise = Promise[String]
+      val promise = Promise[String]()
       execs.find { exec =>
         var stdout = Seq.empty[String]
         val log = ProcessLogger { str =>
