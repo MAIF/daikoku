@@ -1,7 +1,7 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.http.scaladsl.util.FastFuture
-import akka.stream.Materializer
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
 import controllers.AppError
 import controllers.AppError.TranslationNotFound
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}

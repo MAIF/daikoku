@@ -1,12 +1,11 @@
 package fr.maif.otoroshi.daikoku.audit
 
-import akka.Done
-import akka.actor.{Actor, ActorSystem, PoisonPill, Props, Terminated}
-import akka.http.scaladsl.util.FastFuture
-import akka.http.scaladsl.util.FastFuture._
-import akka.kafka.ProducerSettings
-import akka.stream.scaladsl.{Keep, Sink, Source}
-import akka.stream.{Materializer, OverflowStrategy, QueueOfferResult}
+import org.apache.pekko.Done
+import org.apache.pekko.actor.{Actor, ActorSystem, PoisonPill, Props, Terminated}
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture._
+import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
+import org.apache.pekko.stream.{Materializer, OverflowStrategy, QueueOfferResult}
 import cats.data.EitherT
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
@@ -19,6 +18,7 @@ import org.apache.kafka.clients.producer.{Callback, Producer, ProducerRecord, Re
 import org.apache.kafka.common.config.SslConfigs
 import org.apache.kafka.common.config.internals.BrokerSecurityConfigs
 import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSerializer}
+import org.apache.pekko.kafka.ProducerSettings
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import play.api.Logger
@@ -188,7 +188,7 @@ case class TenantAuditEvent(evt: AuditEvent,
     "_id" -> IdGenerator.token(32),
     "@type" -> theType,
     "@id" -> env.snowflakeGenerator.nextIdStr(),
-    "@timestamp" -> play.api.libs.json.JodaWrites.JodaDateTimeNumberWrites
+    "@timestamp" -> json.DateTimeFormat
       .writes(DateTime.now()),
     "@tenantId" -> tenant.id.value,
     "@userId" -> user.id.value,

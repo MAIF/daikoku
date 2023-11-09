@@ -1,7 +1,7 @@
 package fr.maif.otoroshi.daikoku.utils
 
 import java.util.concurrent.ConcurrentHashMap
-import akka.http.scaladsl.model.Uri
+import org.apache.pekko.http.scaladsl.model.Uri
 import fr.maif.otoroshi.daikoku.domain.Tenant
 import play.api.libs.json.{JsObject, JsValue, Reads}
 import play.api.mvc.RequestHeader

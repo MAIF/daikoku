@@ -1,7 +1,7 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import akka.http.scaladsl.util.FastFuture
-import akka.stream.scaladsl.{Keep, Sink, Source}
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
 import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.algorithms.Algorithm
 import com.themillhousegroup.scoup.Scoup

@@ -1,6 +1,6 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import controllers.AppError
 import controllers.AppError.{ForbiddenAction, TeamForbidden, TeamNotFound, Unauthorized}
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext

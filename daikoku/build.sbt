@@ -13,12 +13,11 @@ Global / onChangedBuildSource := ReloadOnSourceChanges
 
 lazy val reactiveMongoVersion = "0.20.10"
 lazy val wiremockVersion = "3.0.1"
-lazy val playJsonVersion = "2.10.3"
 lazy val awsJavaSdkVersion = "1.12.582"
-lazy val akkaHttp2Version        = "10.2.10"
+lazy val akkaHttp2Version = "10.2.10"
 
 lazy val root = (project in file("."))
-  .enablePlugins(PlayScala, DockerPlugin, BuildInfoPlugin, PlayAkkaHttp2Support)
+  .enablePlugins(PlayScala, DockerPlugin, BuildInfoPlugin, PlayPekkoHttp2Support)
   .disablePlugins(PlayFilters)
   .settings(
     buildInfoKeys := Seq[BuildInfoKey](name, version, scalaVersion, sbtVersion),
@@ -65,8 +64,14 @@ libraryDependencies ++= Seq(
   "com.dimafeng" %% "testcontainers-scala-postgresql" % "0.40.14" % Test,
   "org.apache.commons" % "commons-lang3" % "3.13.0",
   "org.bouncycastle" % "bcprov-jdk18on" % "1.76",
-  "com.typesafe.play" %% "play-json" % playJsonVersion,
-  "com.typesafe.play" %% "play-json-joda" % playJsonVersion,
+  //play framework
+  "org.playframework" %% "play-json" % "3.0.1",
+  "org.playframework" %% "play-pekko-http2-support" % "3.0.0",
+  //pekko
+  "org.apache.pekko" %% "pekko-connectors-kafka" % "1.0.0",
+  "org.apache.pekko" %% "pekko-connectors-s3" % "1.0.1",
+
+
   "com.auth0" % "java-jwt" % "4.4.0",
   "com.auth0" % "jwks-rsa" % "0.22.1", // https://github.com/auth0/jwks-rsa-java
   "com.nimbusds" % "nimbus-jose-jwt" % "9.37",
@@ -83,10 +88,6 @@ libraryDependencies ++= Seq(
   "org.gnieh" %% "diffson-play-json" % "4.4.0" excludeAll ExclusionRule(
     organization = "com.typesafe.akka"
   ),
-  "com.typesafe.akka" %% "akka-stream-kafka" % "2.0.7",
-  "com.lightbend.akka" %% "akka-stream-alpakka-s3" % "2.0.2",
-  "com.typesafe.akka" %% "akka-http2-support" % akkaHttp2Version,
-  "com.typesafe.akka" %% "akka-http-xml" % akkaHttp2Version,
   "org.typelevel" %% "cats-core" % "2.10.0",
   "de.svenkubiak" % "jBCrypt" % "0.4.3",
   "com.amazonaws" % "aws-java-sdk-core" % awsJavaSdkVersion,

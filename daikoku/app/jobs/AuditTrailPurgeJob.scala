@@ -1,6 +1,6 @@
 package jobs
 
-import akka.actor.Cancellable
+import org.apache.pekko.actor.Cancellable
 import fr.maif.otoroshi.daikoku.env.Env
 import org.joda.time.DateTime
 import play.api.Logger

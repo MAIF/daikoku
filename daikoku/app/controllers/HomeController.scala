@@ -1,6 +1,6 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.github.blemale.scaffeine.{Cache, Scaffeine}
 import com.nimbusds.jose.util.StandardCharset
 import daikoku.BuildInfo

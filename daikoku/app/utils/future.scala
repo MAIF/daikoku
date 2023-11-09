@@ -1,6 +1,6 @@
 package fr.maif.otoroshi.daikoku.utils
 
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
 
 import scala.concurrent.Future
 

@@ -1,7 +1,7 @@
 package fr.maif.otoroshi.daikoku.utils
 
-import akka.http.scaladsl.util.FastFuture
-import akka.http.scaladsl.util.FastFuture.EnhancedFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture.EnhancedFuture
 import fr.maif.otoroshi.daikoku.domain._
 import org.owasp.html.HtmlPolicyBuilder
 import play.api.Logger

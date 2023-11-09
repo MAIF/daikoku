@@ -1,7 +1,7 @@
 package jobs
 
-import akka.actor.{ActorSystem, Cancellable}
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.actor.{ActorSystem, Cancellable}
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.data.{EitherT, OptionT}
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.ctrls.PaymentClient

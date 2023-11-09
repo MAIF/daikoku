@@ -1,10 +1,10 @@
 package storage.drivers.postgres
 
-import akka.NotUsed
-import akka.http.scaladsl.util.FastFuture
-import akka.stream.Materializer
-import akka.stream.scaladsl.{Framing, Keep, Sink, Source}
-import akka.util.ByteString
+import org.apache.pekko.NotUsed
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.{Framing, Keep, Sink, Source}
+import org.apache.pekko.util.ByteString
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._

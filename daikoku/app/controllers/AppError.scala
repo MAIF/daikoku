@@ -1,6 +1,6 @@
 package controllers
 
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import controllers.AppError.toJson
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc

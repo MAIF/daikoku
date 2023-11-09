@@ -1,8 +1,8 @@
 package fr.maif.otoroshi.daikoku.messages
 
-import akka.actor.{Actor, ActorLogging}
-import akka.pattern._
-import akka.stream.scaladsl.{Sink, Source}
+import org.apache.pekko.actor.{Actor, ActorLogging}
+import org.apache.pekko.pattern._
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.domain.{Message, Tenant, User}
 import fr.maif.otoroshi.daikoku.env.Env

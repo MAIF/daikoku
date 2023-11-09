@@ -1,8 +1,8 @@
 package jobs
 
-import akka.Done
-import akka.actor.Cancellable
-import akka.stream.scaladsl.{Sink, Source}
+import org.apache.pekko.Done
+import org.apache.pekko.actor.Cancellable
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import cats.data.EitherT
 import cats.syntax.option._
 import controllers.AppError

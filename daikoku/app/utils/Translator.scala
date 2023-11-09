@@ -1,6 +1,6 @@
 package fr.maif.otoroshi.daikoku.utils
 
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.domain.Tenant
 import fr.maif.otoroshi.daikoku.env.Env
 import play.api.i18n.{Lang, MessagesApi}

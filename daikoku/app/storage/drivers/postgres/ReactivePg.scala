@@ -1,6 +1,6 @@
 package storage.drivers.postgres
 
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import io.vertx.sqlclient.{Pool, Row, RowSet}
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.{Configuration, Logger}

@@ -1,17 +1,13 @@
 package fr.maif.otoroshi.daikoku.utils.admin
 
 import java.util.Base64
-import akka.http.scaladsl.util.FastFuture
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import com.auth0.jwt.JWT
 import com.google.common.base.Charsets
-import fr.maif.otoroshi.daikoku.domain.{Tenant, ValueType}
-import fr.maif.otoroshi.daikoku.env.{
-  Env,
-  LocalAdminApiConfig,
-  OtoroshiAdminApiConfig
-}
+import fr.maif.otoroshi.daikoku.domain.{Tenant, ValueType, json}
+import fr.maif.otoroshi.daikoku.env.{Env, LocalAdminApiConfig, OtoroshiAdminApiConfig}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.TenantHelper
 import fr.maif.otoroshi.daikoku.utils.Errors
@@ -296,9 +292,9 @@ abstract class AdminApiController[Of, Id <: ValueType](
   def patchEntity(id: String) = DaikokuApiAction.async(parse.json) { ctx =>
     object JsonImplicits {
       implicit val jodaDateTimeWrites: Writes[DateTime] =
-        play.api.libs.json.JodaWrites.JodaDateTimeNumberWrites
+        json.DateTimeFormat.writes
       implicit val jodaDateTimeReads: Reads[DateTime] =
-        play.api.libs.json.JodaReads.DefaultJodaDateTimeReads
+        json.DateTimeFormat.reads
     }
 
     object JsonPatchHelpers {

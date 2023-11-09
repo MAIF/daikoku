@@ -1,11 +1,11 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.actor.{ActorRef, PoisonPill, Props}
-import akka.http.scaladsl.util.FastFuture
-import akka.pattern.ask
-import akka.stream.scaladsl.Source
-import akka.stream.{CompletionStrategy, OverflowStrategy}
-import akka.util.Timeout
+import org.apache.pekko.actor.{ActorRef, PoisonPill, Props}
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.pattern.ask
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.stream.{CompletionStrategy, OverflowStrategy}
+import org.apache.pekko.util.Timeout
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{PublicUserAccess, TenantAdminOnly}
@@ -172,12 +172,12 @@ class MessageController(DaikokuAction: DaikokuAction,
     PublicUserAccess(AuditTrailEvent("@{user.name} has received his messages"))(
       ctx) {
       val completionMatcher: PartialFunction[Any, CompletionStrategy] = {
-        case akka.actor.Status.Success(s: CompletionStrategy) => s
-        case akka.actor.Status.Success(_)                     => CompletionStrategy.draining
-        case akka.actor.Status.Success                        => CompletionStrategy.draining
+        case org.apache.pekko.actor.Status.Success(s: CompletionStrategy) => s
+        case org.apache.pekko.actor.Status.Success(_)                     => CompletionStrategy.draining
+        case org.apache.pekko.actor.Status.Success                        => CompletionStrategy.draining
       }
       val failureMatcher: PartialFunction[Any, Throwable] = {
-        case akka.actor.Status.Failure(cause) => cause
+        case org.apache.pekko.actor.Status.Failure(cause) => cause
       }
 
       val source: Source[JsValue, ActorRef] = Source

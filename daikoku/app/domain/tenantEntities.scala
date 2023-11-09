@@ -1,6 +1,6 @@
 package fr.maif.otoroshi.daikoku.domain
 
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.implicits.catsSyntaxOptionId
 import com.github.jknack.handlebars.{Context, Handlebars, Options}
 import controllers.AppError
