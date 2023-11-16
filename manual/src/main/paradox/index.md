@@ -7,7 +7,7 @@ Since the v1.5, Daikoku & Otoroshi share the same Major & Minor version, so, ple
 > *In Japan, <a href="https://en.wikipedia.org/wiki/File:Daikoku.jpg" target="blank">Daikokuten</a> (大黒天), the god of great darkness or blackness, or the god of five cereals, is one of the Seven Lucky Gods (Fukujin). Daikokuten evolved from the Buddhist form of the Indian deity Shiva intertwined with the Shinto god Ōkuninushi. The name is the Japanese equivalent of Mahākāla, the Hindu name for Shiva.*
 
 @@@ div { .centered-img }
-[![Build](https://github.com/MAIF/daikoku/workflows/Build/badge.svg)](https://travis-ci.org/MAIF/daikoku) [![Join the chat at https://gitter.im/MAIF/daikoku](https://badges.gitter.im/MAIF/daikoku.svg)](https://gitter.im/MAIF/daikoku?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [ ![Download](https://img.shields.io/github/release/MAIF/daikoku.svg) ](https://github.com/MAIF/daikoku/releases/download/v16.3.4/daikoku.jar)
+[![Build](https://github.com/MAIF/daikoku/workflows/Build/badge.svg)](https://travis-ci.org/MAIF/daikoku) [![Join the chat at https://gitter.im/MAIF/daikoku](https://badges.gitter.im/MAIF/daikoku.svg)](https://gitter.im/MAIF/daikoku?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [ ![Download](https://img.shields.io/github/release/MAIF/daikoku.svg) ](https://github.com/MAIF/daikoku/releases/download/v16.3.5/daikoku.jar)
 @@@
 
 @@@ div { .centered-img }
@@ -20,12 +20,12 @@ You are not sure of what is **Otoroshi**, you should probably have a look at [th
 
 ## Installation
 
-You can download the latest build of Daikoku as a [fat jar](https://github.com/MAIF/daikoku/releases/download/v16.3.4/daikoku.jar) or as a [zip package](https://github.com/MAIF/daikoku/releases/download/v16.3.4/daikoku-16.3.4.zip).
+You can download the latest build of Daikoku as a [fat jar](https://github.com/MAIF/daikoku/releases/download/v16.3.5/daikoku.jar) or as a [zip package](https://github.com/MAIF/daikoku/releases/download/v16.3.5/daikoku-16.3.5.zip).
 
 You can install and run Otoroshi with this little bash snippet :
 
 ```sh
-curl -L -o daikoku.jar 'https://github.com/MAIF/daikoku/releases/download/v16.3.4/daikoku.jar'
+curl -L -o daikoku.jar 'https://github.com/MAIF/daikoku/releases/download/v16.3.5/daikoku.jar'
 java -jar daikoku.jar
 ```
 
