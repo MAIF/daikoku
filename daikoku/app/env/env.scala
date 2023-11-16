@@ -299,9 +299,13 @@ class DaikokuEnv(ws: WSClient,
 
   private val daikokuConfig = new Config(configuration)
 
+  lazy val mongoErrorMessage =
+    s"""mongodb is no longer supported,
+       |please run Daikoku in v13 to run database migration and then run the actual version""".stripMargin
   private var _dataStore: DataStore =
     configuration.getOptional[String]("daikoku.storage") match {
       case Some("postgres") => new PostgresDataStore(configuration, this, pgPool)
+      case Some("mongo") => throw new RuntimeException(mongoErrorMessage)
       case Some(e) => throw new RuntimeException(s"Bad storage value from conf: $e")
       case None => throw new RuntimeException("No storage found from conf")
     }

@@ -37,8 +37,6 @@ class DaikokuSuites extends Suite with BeforeAndAfterAll { thisSuite =>
   override protected def beforeAll(): Unit = {}
 
   override protected def afterAll(): Unit = {}
-
-//  override def toString: String = thisSuite.toString
 }
 
 case class ApiWithPlans(api: Api, plans: Seq[UsagePlan])
