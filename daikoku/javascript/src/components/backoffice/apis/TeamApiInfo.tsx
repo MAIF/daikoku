@@ -3,6 +3,7 @@ import { type, constraints, format, Schema } from '@maif/react-forms';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../core';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
+import { ITeamSimple } from '../../../types';
 
 const Image = ({
   value,
@@ -37,6 +38,17 @@ const Image = ({
     </div>
   );
 };
+
+const getTeams = (): Promise<Array<ITeamSimple>> => new Promise((resolve, reject) => {
+  setTimeout(() => {
+    const teams = [
+      {_id: '1', name: 'foo'},
+      {_id: '2', name: 'bar'},
+      {_id: '3', name: 'avengers'},
+    ]//@ts-ignore
+    resolve(teams);
+  }, 300);
+});
 
 const reservedVersionCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
