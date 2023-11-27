@@ -310,6 +310,10 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
         .forAllTenant()
         .findNotDeleted(query)
       //Get just parent sub (childs will be processed after)
+      //FIXME: Rewrite the following 2 request in 1 with a proper sql request
+      adminApis <- env.dataStore.apiRepo.forAllTenant().find(Json.obj(
+        "visibility"-> ApiVisibility.AdminOnly.name
+      ))
       subscriptions <- env.dataStore.apiSubscriptionRepo
         .forAllTenant()
         .findNotDeleted(
@@ -318,6 +322,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
               .from(allSubscriptions.map(s =>
                 s.parent.map(_.asJson).getOrElse(s.id.asJson)))
               .toSeq))))
+        .map(_.filterNot(sub => adminApis.flatMap(_.possibleUsagePlans).contains(sub.plan)))
     } yield {
       subscriptions.map(subscription => {
         for {
