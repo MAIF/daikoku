@@ -139,7 +139,6 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
         } else {
           const value = (apiApiSubscriptions ?? [])
             .map(s => ({ ...s, lastUsage: lastUsages.find(u => u.subscription === s._id)?.date } as IApiSubscriptionGqlWithUsage))
-          console.debug({ value })
           return value;
         }
       }))
