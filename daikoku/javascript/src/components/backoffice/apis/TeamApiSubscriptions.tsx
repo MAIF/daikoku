@@ -20,6 +20,7 @@ import {
   formatDate,
   formatPlanType,
   manage,
+  queryClient,
 } from '../../utils';
 import { useQuery } from "@tanstack/react-query";
 
@@ -95,14 +96,15 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
 
   const plansQuery = useQuery(['plans'], () => Services.getAllPlanOfApi(api.team, api._id, api.currentVersion))
   const subscriptionsQuery = useQuery(['subscriptions'], () => client!.query<{ apiApiSubscriptions: Array<IApiSubscriptionGql>; }>({
-      query: Services.graphql.getApiSubscriptions,
-      fetchPolicy: "no-cache",
-      variables: {
-        apiId: api._id,
-        teamId: currentTeam._id,
-        version: api.currentVersion
-      }
-    }).then(({ data: { apiApiSubscriptions } }) => {
+    query: Services.graphql.getApiSubscriptions,
+    fetchPolicy: "no-cache",
+    variables: {
+      apiId: api._id,
+      teamId: currentTeam._id,
+      version: api.currentVersion
+    }
+  })
+    .then(({ data: { apiApiSubscriptions } }) => {
       if (!filters || (!filters.tags.length && !Object.keys(filters.metadata).length && !filters.clientIds.length)) {
         return apiApiSubscriptions
       } else {
@@ -123,34 +125,35 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
           return filters.clientIds.includes(subscription.apiKey.clientId)
         }
 
+
         return apiApiSubscriptions
           .filter(filterByMetadata)
           .filter(filterByTags)
           .filter(filterByClientIds)
       }
     })
-  )
-  const lastUsagesQuery = useQuery({
-    queryKey: ['usages'],
-    queryFn: () => Services.getSubscriptionsLastUsages(api.team, subscriptionsQuery.data?.map(s => s._id) || [])
+    .then((apiApiSubscriptions) => Services.getSubscriptionsLastUsages(api.team, subscriptionsQuery.data?.map(s => s._id) || [])
       .then(lastUsages => {
         if (isError(lastUsages)) {
           return subscriptionsQuery.data as IApiSubscriptionGqlWithUsage[]
         } else {
-          return (subscriptionsQuery.data ?? []).map(s => ({...s, lastUsage: lastUsages.find(u => u.subscription === s._id)?.date} as IApiSubscriptionGqlWithUsage))
-        }}),
-    enabled: !!subscriptionsQuery.data && !isError(subscriptionsQuery.data)
-  })
+          const value = (apiApiSubscriptions ?? [])
+            .map(s => ({ ...s, lastUsage: lastUsages.find(u => u.subscription === s._id)?.date } as IApiSubscriptionGqlWithUsage))
+          console.debug({ value })
+          return value;
+        }
+      }))
+  )
 
   useEffect(() => {
     document.title = `${currentTeam.name} - ${translate('Subscriptions')}`;
   }, []);
 
   useEffect(() => {
-    if (api && lastUsagesQuery.data) {
+    if (api && subscriptionsQuery.data) {
       tableRef.current?.update()
     }
-  }, [api, lastUsagesQuery.data])
+  }, [api, subscriptionsQuery.data])
 
   useEffect(() => {
     tableRef.current?.update()
@@ -182,7 +185,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
           </div>`
           return (
             <div className="d-flex flex-row justify-content-between">
-              <span>{info.getValue()}</span> 
+              <span>{info.getValue()}</span>
               <BeautifulTitle title={title} html>
 
                 <div className="badge iconized">A</div>
@@ -240,7 +243,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
         if (!!date) {
           return formatDate(date, language)
         }
-        return translate('N/A')  
+        return translate('N/A')
       },
     }),
     columnHelper.accessor('lastUsage', {
@@ -284,7 +287,9 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const updateMeta = (sub: IApiSubscriptionGql) => openSubMetadataModal({
     save: (updates: CustomSubscriptionData) => {
       Services.updateSubscription(currentTeam, { ...sub, ...updates })
-        .then(() => tableRef.current?.update());
+        .then(() => {
+          queryClient.invalidateQueries(['subscriptions'])
+        });
     },
     api: sub.api._id,
     plan: sub.plan._id,
@@ -402,10 +407,10 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
               defaultSort="name"
               columns={columns(usagePlans)}
               fetchItems={() => {
-                if (lastUsagesQuery.isLoading || lastUsagesQuery.error) {
+                if (subscriptionsQuery.isLoading || subscriptionsQuery.error) {
                   return []
                 } else {
-                  return lastUsagesQuery.data ?? []
+                  return subscriptionsQuery.data ?? []
                 }
               }}
               ref={tableRef}
