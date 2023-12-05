@@ -12,11 +12,15 @@ jobs:
     name: Build developer documentation
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2.0.0
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+          cache: 'npm'
       - name: Generate dev documentation website
         id: doc
         run: |
-          sh ./scripts/build.sh devdoc
+          sh ./scripts/build.sh manual
           echo "::set-output name=diff::$(git diff --numstat | wc -l)"
       - name: Commit files
         run: |

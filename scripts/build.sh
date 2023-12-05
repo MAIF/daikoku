@@ -10,24 +10,11 @@ clean () {
 
 build_manual () {
   rm -rf $LOCATION/docs/manual
-  rm -rf $LOCATION/daikoku/public/manual
   cd $LOCATION/manual
-  node indexer.js
-  sbt ';clean;paradox'
-  cp -r $LOCATION/manual/target/paradox/site/main $LOCATION/docs
+  npm install
+  npm run build
+  cp -r $LOCATION/manual/build $LOCATION/docs
   mv $LOCATION/docs/main $LOCATION/docs/manual
-  cp -r $LOCATION/docs/manual $LOCATION/daikoku/public/manual
-}
-
-build_dev_manual () {
-  rm -rf $LOCATION/docs/devmanual
-  rm -rf $LOCATION/daikoku/public/devmanual
-  cd $LOCATION/manual
-  node indexer.js
-  sbt ';clean;paradox'
-  cp -r $LOCATION/manual/target/paradox/site/main $LOCATION/docs
-  mv $LOCATION/docs/main $LOCATION/docs/devmanual
-  cp -r $LOCATION/docs/devmanual $LOCATION/daikoku/public/devmanual
 }
 
 build_ui () {

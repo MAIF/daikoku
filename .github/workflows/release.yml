@@ -54,8 +54,7 @@ jobs:
     - name: update version number
       id: version
       run: |
-        find ./manual/src/main/paradox -type f -name '*.md' | xargs node ./scripts/version.js ${{ github.event.inputs.lastVersion }} ${{ github.event.inputs.releaseversion }}
-        find ./docs -type f -name '*.html' -d 1 | xargs node ./scripts/version.js ${{ github.event.inputs.lastVersion }} ${{ github.event.inputs.releaseversion }}
+        find ./manual -type f -name '*.md' | xargs node ./scripts/version.js ${{ github.event.inputs.lastVersion }} ${{ github.event.inputs.releaseversion }}
         find ./daikoku/public/swaggers -type f -name 'admin-api-openapi.*' -d 1 | xargs node ./scripts/version.js ${{ github.event.inputs.lastVersion }} ${{ github.event.inputs.releaseversion }}
         echo "diff=$(git diff --numstat | wc -l)" >> $GITHUB_OUTPUT
     - name: Commit formatted sources

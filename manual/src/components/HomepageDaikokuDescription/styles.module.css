@@ -1,0 +1,19 @@
+.features {
+  display: flex;
+  align-items: center;
+  padding: 2rem 0;
+  width: 100%; 
+}
+
+.description__main {
+  font-size: 19px;
+}
+
+.description__trivia {
+  color: var(--ifm-color-info);
+  border-left: 4px solid var(--ifm-color-info);
+  margin: 1.5em 0;
+  padding: 1em 20px;
+  line-height: 1.4em;
+  font-style: italic;
+}
