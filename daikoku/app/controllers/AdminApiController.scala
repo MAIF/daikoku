@@ -23,6 +23,7 @@ import storage.drivers.postgres.PostgresDataStore
 import storage.{DataStore, Repo}
 
 import scala.concurrent.ExecutionContext
+import scala.io.Source
 import scala.util.{Failure, Success, Using}
 
 class StateController(DaikokuAction: DaikokuAction,
@@ -616,7 +617,7 @@ class AdminApiSwaggerController(
       ctrl1.pathForIntegrationApi()
 
   def swagger() = Action {
-    Using(scala.io.Source.fromFile("./public/swaggers/admin-api-openapi.json")) {
+    Using(Source.fromResource("public/swaggers/admin-api-openapi.json")) {
       source =>
         source.mkString
     } match {

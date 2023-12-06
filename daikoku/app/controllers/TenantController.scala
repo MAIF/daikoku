@@ -201,7 +201,8 @@ class TenantController(DaikokuAction: DaikokuAction,
             avatar = tenant.style.map(_.logo),
             users = Set.empty,
             authorizedOtoroshiGroups = Set.empty,
-            contact = tenant.contact
+            contact = tenant.contact,
+            apisCreationPermission = true.some
           )
           val adminApiPlan = FreeWithoutQuotas(
             id = UsagePlanId(IdGenerator.token),

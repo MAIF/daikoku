@@ -314,7 +314,7 @@ object CommonServices {
   def allTeams(research: String, limit: Int, offset: Int)(implicit ctx: DaikokuActionContext[JsValue], env: Env, ec: ExecutionContext) = {
     _TenantAdminAccessTenant(AuditTrailEvent("@{user.name} has accessed to all teams list"))(ctx) {
       for {
-        teams <- env.dataStore.teamRepo.forTenant(ctx.tenant).findWithPagination(Json.obj("name" -> Json.obj("$regex" -> research)), offset, limit, Some(Json.obj("_humanReadableId" -> 1)))
+        teams <- env.dataStore.teamRepo.forTenant(ctx.tenant).findWithPagination(Json.obj("_deleted" -> false, "name" -> Json.obj("$regex" -> research)), offset, limit, Some(Json.obj("_humanReadableId" -> 1)))
       } yield {
         TeamWithCount(teams._1, teams._2)
       }
