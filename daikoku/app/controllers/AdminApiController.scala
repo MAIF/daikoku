@@ -2,7 +2,6 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
 import cats.implicits._
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext}
@@ -15,6 +14,7 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import fr.maif.otoroshi.daikoku.utils.admin._
 import io.vertx.pgclient.PgPool
+import org.apache.pekko.stream.scaladsl.Source
 import play.api.http.HttpEntity
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.libs.streams.Accumulator
@@ -23,7 +23,6 @@ import storage.drivers.postgres.PostgresDataStore
 import storage.{DataStore, Repo}
 
 import scala.concurrent.ExecutionContext
-import scala.io.Source
 import scala.util.{Failure, Success, Using}
 
 class StateController(DaikokuAction: DaikokuAction,
@@ -617,7 +616,7 @@ class AdminApiSwaggerController(
       ctrl1.pathForIntegrationApi()
 
   def swagger() = Action {
-    Using(Source.fromResource("public/swaggers/admin-api-openapi.json")) {
+    Using(scala.io.Source.fromResource("public/swaggers/admin-api-openapi.json")) {
       source =>
         source.mkString
     } match {
