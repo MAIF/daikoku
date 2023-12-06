@@ -12,7 +12,7 @@ scalaVersion := "2.13.12"
 Global / onChangedBuildSource := ReloadOnSourceChanges
 
 lazy val reactiveMongoVersion = "0.20.10"
-lazy val wiremockVersion = "3.0.1"
+lazy val wiremockVersion = "3.3.1"
 lazy val awsJavaSdkVersion = "1.12.582"
 lazy val akkaHttp2Version = "10.2.10"
 
@@ -57,8 +57,8 @@ libraryDependencies ++= Seq(
   filters,
   "org.scalatestplus.play" %% "scalatestplus-play" % "7.0.0" % Test,
   "com.themillhousegroup" %% "scoup" % "1.0.0" % Test,
-  "com.github.tomakehurst" % "wiremock" % wiremockVersion % Test,
-  "com.github.tomakehurst" % "wiremock-jre8" % wiremockVersion % Test,
+  "org.wiremock" % "wiremock" % wiremockVersion % Test,
+//  "org.wiremock" % "wiremock-jre8" % wiremockVersion % Test,
 //  "org.testcontainers" % "testcontainers" % "1.17.5" % Test,
   "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.14" % Test,
   "com.dimafeng" %% "testcontainers-scala-postgresql" % "0.40.14" % Test,
