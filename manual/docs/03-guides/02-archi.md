@@ -1,3 +1,5 @@
+import ArchiImageUrl from '@site/static/img/daikoku-architecture.png';
+
 # Architecture
 
 To make Daikoku works, you'll need a [Postgres](https://www.postgresql.org/) datastore and an emailing provider ([Mailgun](https://www.mailgun.com/) and [Mailjet](https://www.mailjet.com/) are supported). Tou can also export the audit trail of Daikoku using many techniques with webhooks, a [Kafka](https://kafka.apache.org/) topic or an [elastic cluster](https://www.elastic.co/fr/products/elasticsearch).
@@ -6,7 +8,7 @@ As you can see, Daikoku is capable of working with many [Otoroshi](https://maif.
 
 <div style={{textAlign: 'center'}}>
   <img
-    src={require("../img/daikoku-architecture.png").default}
+    src={ArchiImageUrl}
     alt="schema d'architecture"
   />
 </div>

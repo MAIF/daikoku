@@ -308,6 +308,7 @@ GET     /fakeotoroshi/api/services                   fr.maif.otoroshi.daikoku.ct
 GET     /fakeotoroshi/api/routes                     fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiRoutes()
 
 GET     /admin-api/swagger.json                      fr.maif.otoroshi.daikoku.ctrls.AdminApiSwaggerController.swagger()
+GET     /admin-api/openapi.json                      fr.maif.otoroshi.daikoku.ctrls.AdminApiSwaggerController.swagger()
 
 
 ###

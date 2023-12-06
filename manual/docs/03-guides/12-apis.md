@@ -5,7 +5,7 @@ Daikoku provides a fully featured REST admin API to perform almost every operati
 
 The Daikoku admin API is described using OpenAPI format and is available at :
 
-https://maif.github.io/daikoku/manual/code/swagger.json
+https://maif.github.io/daikoku/manual/static/openapi/admin-api-openapi.json
 
 ## OpenAPI definition as UI
 
@@ -13,15 +13,8 @@ You can read the OpenAPI definition in a more human friendly fashion using `Swag
 
 https://maif.github.io/daikoku/swagger-ui/index.html
 
-Every Daikoku instance provides its own embedded OpenAPI descriptor at :
+Every Daikoku instance provides its own OpenAPI descriptor at :
 
-http://daikoku.oto.tools:8080/api/swagger/ui
+http://daikoku.oto.tools:8080/admin-api/openapi.json 
 
 Admin API OpenAPI descriptor is also accessible in admin API page in UI, in the `Api Reference` tab.
-
-<!-- You can also read the swagger UI documentation of the Daikoku admin API below : -->
-<!-- 
-@@@ div { .swagger-frame }
-
-
-@@@ -->

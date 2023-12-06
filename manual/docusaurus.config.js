@@ -81,8 +81,8 @@ const config = {
         title: 'Daikoku',
         logo: {
           alt: 'Daikoku logo',
-          className: 'header-github-link',
-          srcDark: 'img/daikoku-mini.svg',
+          className: 'header-logo',
+          // srcDark: 'img/daikoku-mini.svg',
           src: 'img/daikoku-mini-dark.svg',
         },
         items: [
