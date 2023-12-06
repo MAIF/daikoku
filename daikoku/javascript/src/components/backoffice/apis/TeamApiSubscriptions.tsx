@@ -290,7 +290,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     save: (updates: CustomSubscriptionData) => {
       Services.updateSubscription(currentTeam, { ...sub, ...updates })
         .then(() => {
-          queryClient.invalidateQueries(['subscriptions'])
+          queryClient.invalidateQueries({ queryKey: ['subscriptions'] })
         });
     },
     api: sub.api._id,
