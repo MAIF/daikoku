@@ -3,7 +3,7 @@ package fr.maif.otoroshi.daikoku.tests
 import fr.maif.otoroshi.daikoku.domain.json.SeqCmsHistoryFormat
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.login.AuthProvider
-import fr.maif.otoroshi.daikoku.tests.utils.{DaikokuSpecHelper, OneServerPerSuiteWithMyComponents}
+import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
@@ -14,7 +14,7 @@ import scala.concurrent.duration.DurationInt
 
 class TenantControllerSpec()
     extends PlaySpec
-    with OneServerPerSuiteWithMyComponents
+//    with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
     with IntegrationPatience {
 

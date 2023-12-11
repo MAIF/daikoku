@@ -1,23 +1,24 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
 import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.algorithms.Algorithm
 import com.themillhousegroup.scoup.Scoup
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
 import org.joda.time.DateTime
 import org.jsoup.nodes.Document
 import org.mindrot.jbcrypt.BCrypt
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Suite, TestSuite}
+import org.scalatest.{Args, BeforeAndAfterAll, FailedStatus, Status, Suite, TestSuite, TestSuiteMixin}
 import org.scalatestplus.play.components.OneServerPerSuiteWithComponents
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.libs.ws.{DefaultWSCookie, WSResponse}
@@ -28,24 +29,34 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, StandardCopyOption}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
+import scala.concurrent.impl.Promise
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.sys.process.ProcessLogger
 import scala.util.{Failure, Success, Try}
 
-class DaikokuSuites extends Suite with BeforeAndAfterAll { thisSuite =>
-
-  override protected def beforeAll(): Unit = {}
-
-  override protected def afterAll(): Unit = {}
-}
-
 case class ApiWithPlans(api: Api, plans: Seq[UsagePlan])
 
 object utils {
-  trait OneServerPerSuiteWithMyComponents
-      extends OneServerPerSuiteWithComponents
-      with ScalaFutures {
-    this: TestSuite =>
+//  trait OneServerPerSuiteWithMyComponents
+//      extends OneServerPerSuiteWithComponents
+//      with ScalaFutures {
+//    this: TestSuite =>
+//
+//    lazy val daikokuComponents = {
+//      val components =
+//        new DaikokuComponentsInstances(context)
+//      println(s"Using env ${components.env}") // WARNING: important to keep, needed to switch env between suites
+//      components
+//    }
+//
+//    override def components: BuiltInComponents = daikokuComponents
+//
+//    override def fakeApplication(): Application = {
+//      daikokuComponents.application
+//    }
+//  }
+
+  trait DaikokuSpecHelper extends TestSuiteMixin with OneServerPerSuiteWithComponents with ScalaFutures { suite: TestSuite =>
 
     lazy val daikokuComponents = {
       val components =
@@ -59,9 +70,31 @@ object utils {
     override def fakeApplication(): Application = {
       daikokuComponents.application
     }
-  }
 
-  trait DaikokuSpecHelper { suite: OneServerPerSuiteWithMyComponents =>
+    abstract override def run(testName: Option[String], args: Args): Status = {
+      lazy val run = super.run(testName, args)
+
+      def runIfDatabaseAvailable(timeout: FiniteDuration): Status = {
+
+        val triedLong = Try(Await.result(daikokuComponents.env.dataStore.tenantRepo.count(Json.obj()), 1.second))
+
+        logger.info(s"database is avalaible ? ${triedLong.isSuccess}")
+
+        if (triedLong.isSuccess) {
+          run
+        } else if (timeout < 1.minute) {
+          logger.info(s"database is no longer avalaible, wainting $timeout before retry")
+          await(timeout)
+          val newDuration = timeout * 2
+          runIfDatabaseAvailable(newDuration)
+        } else {
+          FailedStatus
+        }
+      }
+
+      runIfDatabaseAvailable(1.second)
+    }
+
 
     implicit val ec: ExecutionContext = daikokuComponents.env.defaultExecutionContext
     implicit val as: ActorSystem = daikokuComponents.env.defaultActorSystem

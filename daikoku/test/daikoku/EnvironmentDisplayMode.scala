@@ -12,10 +12,7 @@ import fr.maif.otoroshi.daikoku.domain.{
   UsagePlan,
   UsagePlanId
 }
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
@@ -23,7 +20,6 @@ import play.api.libs.json.{JsArray, Json}
 
 class EnvironmentDisplayMode()
     extends PlaySpec
-    with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
     with IntegrationPatience {
 
