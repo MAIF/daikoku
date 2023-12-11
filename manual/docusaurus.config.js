@@ -6,6 +6,18 @@
 
 import { themes as prismThemes } from 'prism-react-renderer';
 
+const redocusaurus = [
+  'redocusaurus',
+  {
+    specs: [
+      {
+        spec: 'static/openapi/admin-api-openapi.json',
+        route: '/openapi',
+      },
+    ],
+  },
+];
+
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Daikoku',
@@ -38,26 +50,19 @@ const config = {
     [
       'classic',
       /** @type {import('@docusaurus/preset-classic').Options} */
-      ({
+      {
         docs: {
           sidebarPath: './sidebars.js',
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
         },
         blog: {
-          showReadingTime: true,
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+          showReadingTime: true
         },
         theme: {
           customCss: './src/css/custom.css',
         },
-      }),
+      },
     ],
+    redocusaurus
   ],
   themes: [
     [
@@ -92,7 +97,8 @@ const config = {
             position: 'left',
             label: 'Documentation',
           },
-          { to: '/blog', label: 'Blog', position: 'left' },
+          // { to: '/blog', label: 'Blog', position: 'left' },
+          { to: '/openapi', label: 'OpenAPI', position: 'left' },
           {
             href: 'https://github.com/maif/daikoku',
             position: 'right',

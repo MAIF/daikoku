@@ -83,7 +83,7 @@ object utils {
         if (triedLong.isSuccess) {
           run
         } else if (timeout < 1.minute) {
-          logger.info(s"database is no longer avalaible, wainting $timeout before retry")
+          logger.info(s"database is no longer avalaible, waiting $timeout before retry")
           await(timeout)
           val newDuration = timeout * 2
           runIfDatabaseAvailable(newDuration)
