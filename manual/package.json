@@ -1,6 +1,6 @@
 {
-  "name": "dockoku",
-  "version": "0.0.0",
+  "name": "daikoku-documentation",
+  "version": "17.0.0",
   "private": true,
   "scripts": {
     "docusaurus": "docusaurus",
