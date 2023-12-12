@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'manual/**'
+      - '.github/workflows/update-dev-manual.yml'
     branches:
       - master
 
@@ -18,7 +19,7 @@ jobs:
           node-version: '18.x'
       - name: copy openapi
         id: openapi
-        run: cp ./public/swaggers/admin-api-openapi.yaml ./manual/static/admin-api-openapi.yaml
+        run: cp ./daikoku/public/swaggers/admin-api-openapi.yaml ./manual/static/admin-api-openapi.yaml
       - name: Generate dev documentation website
         id: doc
         run: |
