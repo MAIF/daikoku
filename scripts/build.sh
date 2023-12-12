@@ -9,7 +9,7 @@ clean () {
 }
 
 build_manual () {
-  rm -rf $LOCATION/docs/manual
+  rm -rf $LOCATION/docs/devmanual
   cd $LOCATION/manual
   npm install
   npm run build
