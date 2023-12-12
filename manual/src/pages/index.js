@@ -10,6 +10,7 @@ import styles from './index.module.css';
 
 
 function HeroBanner() {
+  const { siteConfig } = useDocusaurusContext();
   return (
     <div className={styles.hero} data-theme="dark">
       <div className={styles.heroInner}>
@@ -25,7 +26,7 @@ function HeroBanner() {
           <img
             alt='daikoku as hand drawn character'
             className={styles.heroLogo}
-            src={'/img/daikoku.png'}
+            src={`${siteConfig.baseUrl}/img/daikoku.png`}
             width="400"
             height="400"
           />
