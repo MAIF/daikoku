@@ -14,6 +14,7 @@ build_manual () {
   npm install
   npm run build
   cp -r $LOCATION/manual/build $LOCATION/docs
+  mv $LOCATION/docs/build $LOCATION/docs/devmanual
 }
 
 build_ui () {
