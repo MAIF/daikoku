@@ -28,7 +28,7 @@ const config = {
   url: 'https://maif.github.io',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
-  baseUrl: '/daikoku/devmanual/',
+  baseUrl: '/daikoku/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
@@ -111,11 +111,11 @@ const config = {
         style: 'dark',
         links: [
           {
-            title: 'Docs',
+            title: 'MAIF',
             items: [
               {
-                label: 'Tutorial',
-                to: '/docs/getstarted',
+                label: 'OSS by MAIF',
+                to: 'https://maif.github.io/',
               },
             ],
           },
@@ -137,12 +137,15 @@ const config = {
             items: [
               {
                 label: 'GitHub',
-                href: 'https://github.com/maif/daikoku'
+                href: 'https://github.com/MAIF/daikoku'
               },
+              {
+                label: 'Download',
+                href: 'https://github.com/MAIF/daikoku/releases/latest'
+              }
             ],
           },
-        ],
-        copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+        ]
       },
       prism: {
         theme: prismThemes.github,
