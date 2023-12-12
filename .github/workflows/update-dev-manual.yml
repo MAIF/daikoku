@@ -16,7 +16,6 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '18.x'
-          cache: 'npm'
       - name: copy openapi
         id: openapi
         run: cp ./public/swaggers/admin-api-openapi.yaml ./manual/static/admin-api-openapi.yaml
