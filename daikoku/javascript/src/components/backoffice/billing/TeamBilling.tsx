@@ -34,19 +34,22 @@ export const TeamBilling = () => {
   const [date, setDate] = useState(dayjs());
 
   const queryClient = useQueryClient();
-  const queryBillings = useQuery(['billings', date], () => Services.getTeamBillings(
-    currentTeam._id,
-    date.startOf('month').valueOf(),
-    date.endOf('month').valueOf()
-  ));
-  const queryApis = useQuery(['apis'], () => Services.subscribedApis(currentTeam._id))
+  const queryBillings = useQuery({
+    queryKey: ['billings', date],
+    queryFn: () => Services.getTeamBillings(
+      currentTeam._id,
+      date.startOf('month').valueOf(),
+      date.endOf('month').valueOf()
+    )
+  });
+  const queryApis = useQuery({ queryKey: ['apis'], queryFn: () => Services.subscribedApis(currentTeam._id) })
 
   useEffect(() => {
     document.title = `${currentTeam.name} - ${translate('Billing')}`;
   }, []);
 
   useEffect(() => {
-    queryClient.invalidateQueries(['billings'])
+    queryClient.invalidateQueries({ queryKey: ['billings'] })
   }, [date])
 
   const getConsumptionsByApi = (consumptions: Array<IConsumption>) => consumptions.reduce((acc: Array<IConsumptionByApi>, consumption) => {
@@ -64,7 +67,7 @@ export const TeamBilling = () => {
 
   const sync = () => {
     Services.syncTeamBilling(currentTeam._id)
-      .then(() => queryClient.invalidateQueries(['billings']))
+      .then(() => queryClient.invalidateQueries({ queryKey: ['billings'] }))
   };
 
 
@@ -160,7 +163,7 @@ export const TeamBilling = () => {
   }
 
   const BillingCartridge = (props: { api: IApi, planId: string, total: number }) => {
-    const planQuery = useQuery(['plan'], () => Services.planOfApi(props.api.team, props.api._id, props.api.currentVersion, props.planId))
+    const planQuery = useQuery({ queryKey: ['plan'], queryFn: () => Services.planOfApi(props.api.team, props.api._id, props.api.currentVersion, props.planId) })
 
     if (planQuery.isLoading) {
       return <Spinner />

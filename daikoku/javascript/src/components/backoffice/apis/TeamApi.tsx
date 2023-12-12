@@ -202,7 +202,7 @@ export const TeamApi = (props: { creation: boolean }) => {
           if (res._humanReadableId !== editedApi._humanReadableId) {
             navigate(`/${currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`);
           } else {
-            queryClient.invalidateQueries(['api'])
+            queryClient.invalidateQueries({ queryKey: ['api'] })
           }
         }
       });
@@ -221,7 +221,7 @@ export const TeamApi = (props: { creation: boolean }) => {
         if (isError(response)) {
           toastr.error(translate('Error'), translate(response.error));
         } else {
-          queryClient.invalidateQueries(['api'])
+          queryClient.invalidateQueries({ queryKey: ['api'] })
         }
       })
     }
@@ -312,24 +312,24 @@ export const TeamApi = (props: { creation: boolean }) => {
                   team={currentTeam}
                   api={api}
                   onSave={documentation => save({ ...api, documentation })}
-                  reloadState={() => queryClient.invalidateQueries(['api'])}
-                  documentation={api.documentation} 
+                  reloadState={() => queryClient.invalidateQueries({ queryKey: ['api'] })}
+                  documentation={api.documentation}
                   importPage={() => openApiDocumentationSelectModal({
                     api: api,
                     teamId: currentTeam._id,
                     onClose: () => {
                       toastr.success(translate('Success'), translate('doc.page.import.successfull'));
-                      queryClient.invalidateQueries(['details']);
-                      queryClient.invalidateQueries(['api']);
+                      queryClient.invalidateQueries({ queryKey: ['details'] });
+                      queryClient.invalidateQueries({ queryKey: ['api'] });
                     },
                     getDocumentationPages: () => Services.getAllApiDocumentation(currentTeam._id, api._id, api.currentVersion),
                     importPages: (pages: Array<string>, linked?: boolean) => Services.importApiPages(currentTeam._id, api._id, pages, api.currentVersion, linked)
-                  })} 
+                  })}
                   importAuthorized={!!versionsRequest.data && !!versionsRequest.data.length} />)}
               {tab === 'plans' && (
                 <TeamApiPricings
                   api={api}
-                  reload={() => queryClient.invalidateQueries(['api'])}
+                  reload={() => queryClient.invalidateQueries({ queryKey: ['api'] })}
                   setDefaultPlan={plan => setDefaultPlan(api, plan)}
                   team={currentTeam}
                   tenant={tenant}

@@ -1,7 +1,7 @@
 package fr.maif.otoroshi.daikoku.utils
 
-import akka.http.scaladsl.util.FastFuture
-import akka.http.scaladsl.util.FastFuture.EnhancedFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture.EnhancedFuture
 import fr.maif.otoroshi.daikoku.domain._
 import org.owasp.html.HtmlPolicyBuilder
 import play.api.Logger
@@ -165,8 +165,8 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
 
 class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
 
-  import javax.mail._
-  import javax.mail.internet._
+  import jakarta.mail._
+  import jakarta.mail.internet._
   import java.util.Date
   import java.util.Properties
 

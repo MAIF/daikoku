@@ -1,6 +1,6 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import com.nimbusds.jose.jwk.KeyType
@@ -21,10 +21,9 @@ import org.joda.time.DateTime
 import play.api.i18n._
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents, Result, Results}
-import reactivemongo.bson.BSONObjectID
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 class TenantController(DaikokuAction: DaikokuAction,
@@ -36,9 +35,9 @@ class TenantController(DaikokuAction: DaikokuAction,
     extends AbstractController(cc)
     with I18nSupport {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
-  implicit val tr = translator
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
+  implicit val tr: Translator = translator
 
   def namesOfTenants() = DaikokuAction.async(parse.json) { ctx =>
     val tenantIdsJs: JsArray = ctx.request.body.as[JsArray]
@@ -101,7 +100,7 @@ class TenantController(DaikokuAction: DaikokuAction,
     PublicUserAccess(AuditTrailEvent(
       s"@{user.name} has accessed tenant redirection to @{dest.name} - ${id}"))(
       ctx) {
-      val newTeamId = TeamId(BSONObjectID.generate().stringify)
+      val newTeamId = TeamId(IdGenerator.token(32))
       env.dataStore.tenantRepo.findByIdNotDeleted(id).flatMap {
         case Some(tenant) => {
           ctx.setCtxValue("dest.name", tenant.name)
@@ -231,7 +230,7 @@ class TenantController(DaikokuAction: DaikokuAction,
             state = ApiState.Published,
             visibility = ApiVisibility.AdminOnly,
             documentation = ApiDocumentation(
-              id = ApiDocumentationId(BSONObjectID.generate().stringify),
+              id = ApiDocumentationId(IdGenerator.token(32)),
               tenant = tenant.id,
               pages = Seq.empty[ApiDocumentationDetailPage],
               lastModificationAt = DateTime.now()

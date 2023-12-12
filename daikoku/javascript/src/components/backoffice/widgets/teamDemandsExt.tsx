@@ -53,10 +53,13 @@ export const LastDemandsExt = (props: LastDemandsProps) => {
     }
   `
 
-  const { isLoading, isError, data } = useQuery(["widget", "widget_last_demands_ext"], () => client?.query({
-    query: GET_LAST_DEMANDS,
-    variables: { teamId: props.team._id, offset: 0, limit: 5 }
-  }))
+  const { isLoading, isError, data } = useQuery({
+    queryKey: ["widget", "widget_last_demands_ext"],
+    queryFn: () => client?.query({
+      query: GET_LAST_DEMANDS,
+      variables: { teamId: props.team._id, offset: 0, limit: 5 }
+    })
+  })
 
   const runProcess = (demandId: string) => {
     return Services.rerunProcess(props.team._id, demandId)
@@ -69,14 +72,14 @@ export const LastDemandsExt = (props: LastDemandsProps) => {
         {data?.data && data.data.subscriptionDemandsForAdmin.total === 0 && <span className='widget-list-default-item'>{translate('widget.demands.no.demands')}</span>}
         {data?.data && data.data.subscriptionDemandsForAdmin.total > 0 && data.data.subscriptionDemandsForAdmin.subscriptionDemands
           .map((d: any) => {
-            
+
             const actualStep = d.steps.find(s => ['inProgress', 'waiting'].includes(s.state))
             const reRunable = actualStep && actualStep.step.name !== 'payment'
 
             return (
               <div className='d-flex flex-row justify-content-between align-items-center widget-list-item'>
                 <div className='d-flex flex-column justify-content-between'>
-                  <div className='item-title'><i className="fas fa-users me-2"/>{d.team.name}</div>
+                  <div className='item-title'><i className="fas fa-users me-2" />{d.team.name}</div>
                   <div className='ms-1'>{d.api.name} / {d.plan.customName || formatPlanType(d.plan.type, translate)}</div>
                   {actualStep && <i>{actualStep.step.name} - {actualStep.step.title}</i>}
                 </div>

@@ -8,10 +8,7 @@ import fr.maif.otoroshi.daikoku.domain.{
   json
 }
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
@@ -20,7 +17,6 @@ import play.api.libs.json.{JsArray, Json}
 
 class MessagesControllerSpec()
     extends PlaySpec
-    with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
     with IntegrationPatience {
 

@@ -1,19 +1,17 @@
 package fr.maif.otoroshi.daikoku.login
 
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.auth0.jwt.JWT
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
-import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import fr.maif.otoroshi.daikoku.utils.jwt.{AlgoSettings, InputMode}
 import org.apache.commons.codec.binary.{Base64 => ApacheBase64}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws.DefaultBodyWritables.writeableOf_urlEncodedSimpleForm
 import play.api.mvc.RequestHeader
-import reactivemongo.bson.BSONObjectID
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
@@ -241,9 +239,9 @@ object OAuth2Support {
                   .findOne(Json.obj("_deleted" -> false, "email" -> email))
                   .flatMap {
                     case None =>
-                      val userId = UserId(BSONObjectID.generate().stringify)
+                      val userId = UserId(IdGenerator.token(32))
                       val team = Team(
-                        id = TeamId(BSONObjectID.generate().stringify),
+                        id = TeamId(IdGenerator.token(32)),
                         tenant = tenant.id,
                         `type` = TeamType.Personal,
                         name = s"$name",
@@ -287,7 +285,7 @@ object OAuth2Support {
                                   if picture.isDefined && u.pictureFromProvider =>
                                 picture.get
                               case true if picture.isEmpty => User.DEFAULT_IMAGE
-                              case false                   => u.picture
+                              case _                   => u.picture
                             },
                         isDaikokuAdmin =
                           if (u.isDaikokuAdmin) true else isDaikokuAdmin

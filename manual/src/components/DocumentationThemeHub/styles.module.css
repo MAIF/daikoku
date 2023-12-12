@@ -1,0 +1,35 @@
+.sections {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 20px;
+  flex-wrap: wrap;
+  padding: 2rem 0;
+  width: 100%; 
+}
+
+.section {
+  text-decoration: none;
+
+  border: 1px solid var(--ifm-color-emphasis-300);
+  border-radius: var(--ifm-global-radius);
+  display: block;
+  margin-bottom: 1rem;
+  padding: .75rem;
+}
+
+.section h3 {
+  font-size: .9rem;
+  font-weight: 600;
+}
+
+.section p {
+  color: var(--ifm-font-color-secondary);
+  font-size: .8rem;
+}
+
+.section:hover {
+  text-decoration: none;
+  border-color: var(--ifm-color-primary-light);
+  color: var(--ifm-color-primary-light);
+}

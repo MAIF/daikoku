@@ -1,9 +1,9 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.http.scaladsl.model.Uri
-import akka.http.scaladsl.util.FastFuture
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import org.apache.pekko.http.scaladsl.model.Uri
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import com.google.common.base.Charsets
@@ -11,22 +11,8 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  AuthorizedEntitiesFormat,
-  OtoroshiSettingsFormat,
-  OtoroshiSettingsIdFormat,
-  TestingConfigFormat
-}
-import fr.maif.otoroshi.daikoku.domain.{
-  ActualOtoroshiApiKey,
-  Api,
-  ApiKeyRestrictions,
-  AuthorizedEntities,
-  OtoroshiSettings,
-  Testing,
-  TestingAuth,
-  UsagePlan
-}
+import fr.maif.otoroshi.daikoku.domain.json.{AuthorizedEntitiesFormat, OtoroshiSettingsFormat, OtoroshiSettingsIdFormat, TestingConfigFormat}
+import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, Api, ApiKeyRestrictions, AuthorizedEntities, OtoroshiSettings, Testing, TestingAuth, UsagePlan}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
@@ -35,15 +21,9 @@ import org.joda.time.DateTime
 import play.api.http.HttpEntity
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{
-  AbstractController,
-  BodyParser,
-  ControllerComponents,
-  Request,
-  Result
-}
+import play.api.mvc.{AbstractController, BodyParser, ControllerComponents, Request, Result}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                                  env: Env,
@@ -51,8 +31,8 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                                  cc: ControllerComponents)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   def otoroshisSettings(tenantId: String) = DaikokuAction.async { ctx =>
     TenantAdminOnly(
@@ -576,9 +556,6 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
               .forTenant(ctx.tenant)
               .findByIdOrHrId(apiId)
               .flatMap {
-                case None =>
-                  FastFuture.successful(
-                    NotFound(Json.obj("error" -> "Api not found")))
                 case Some(api) if !api.testing.enabled => ???
                 case Some(api) if api.testing.enabled => {
                   val url = (ctx.request.body \ "url").as[String]
@@ -664,6 +641,10 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                         InternalServerError(Json.obj("error" -> e.getMessage))
                     }
                 }
+                case _ =>
+                  FastFuture.successful(
+                    NotFound(Json.obj("error" -> "Api not found")))
+
               }
           }
         }

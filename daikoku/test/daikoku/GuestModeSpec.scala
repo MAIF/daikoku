@@ -3,10 +3,7 @@ package fr.maif.otoroshi.daikoku.tests
 import com.typesafe.config.ConfigFactory
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
@@ -15,7 +12,6 @@ import play.api.libs.json.{JsArray, JsObject, Json}
 
 class GuestModeSpec()
     extends PlaySpec
-    with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
     with IntegrationPatience
     with BeforeAndAfterEach {

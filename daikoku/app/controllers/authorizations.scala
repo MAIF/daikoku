@@ -1,13 +1,8 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import controllers.AppError
-import controllers.AppError.{
-  ForbiddenAction,
-  TeamForbidden,
-  TeamNotFound,
-  Unauthorized
-}
+import controllers.AppError.{ForbiddenAction, TeamForbidden, TeamNotFound, Unauthorized}
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.{AuditEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
@@ -17,7 +12,6 @@ import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import play.api.libs.json.Json
 import play.api.mvc.{Result, Results}
-import reactivemongo.bson.BSONObjectID
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
@@ -264,7 +258,7 @@ object authorizations {
         env: Env): Future[Either[AppError, B]] = {
       val tenant = ctx.tenant
       val session = UserSession(
-        id = DatastoreId(BSONObjectID.generate().stringify),
+        id = DatastoreId(IdGenerator.token(32)),
         userId = ctx.user.id,
         userName = ctx.user.name,
         userEmail = ctx.user.email,

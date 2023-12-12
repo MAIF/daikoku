@@ -4,7 +4,6 @@ import cats.syntax.option._
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.sync.PublicUserAccess
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithQuotas
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Private
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -15,15 +14,16 @@ import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json.Json
 import play.api.mvc._
-import reactivemongo.bson.BSONObjectID
+
+import scala.concurrent.ExecutionContext
 
 class EntitiesController(DaikokuAction: DaikokuAction,
                          env: Env,
                          cc: ControllerComponents)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   def newTenant() = DaikokuAction.async { ctx =>
     PublicUserAccess(
@@ -31,7 +31,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
         s"@{user.name} has asked for a template entity of type Tenant"))(ctx) {
       Ok(
         Tenant(
-          id = TenantId(BSONObjectID.generate().stringify),
+          id = TenantId(IdGenerator.token(32)),
           name = "New organization",
           domain = "organization.foo.bar",
           contact = "contact@foo.bar",
@@ -55,7 +55,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
         s"@{user.name} has asked for a template entity of type Team"))(ctx) {
       Ok(
         Team(
-          id = TeamId(BSONObjectID.generate().stringify),
+          id = TeamId(IdGenerator.token(32)),
           tenant = ctx.tenant.id,
           `type` = TeamType.Organization,
           name = "New Team",
@@ -71,7 +71,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
       ctx) {
       Ok(
         OtoroshiSettings(
-          id = OtoroshiSettingsId(BSONObjectID.generate().stringify),
+          id = OtoroshiSettingsId(IdGenerator.token(32)),
           url = s"https://otoroshi-api.foo.bar",
           host = "otoroshi-api.foo.bar",
           clientId = "admin-api-apikey-id",
@@ -86,7 +86,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
         s"@{user.name} has asked for a template entity of type Api"))(ctx) {
       Ok(
         Api(
-          id = ApiId(BSONObjectID.generate().stringify),
+          id = ApiId(IdGenerator.token(32)),
           tenant = ctx.tenant.id,
           team = TeamId("none"),
           name = "New API",
@@ -94,7 +94,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
           description = "A new API",
           lastUpdate = DateTime.now(),
           documentation = ApiDocumentation(
-            id = ApiDocumentationId(BSONObjectID.generate().stringify),
+            id = ApiDocumentationId(IdGenerator.token(32)),
             tenant = ctx.tenant.id,
             lastModificationAt = DateTime.now(),
             pages = Seq.empty
@@ -112,7 +112,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
       ctx) {
       Ok(
         ApiDocumentation(
-          id = ApiDocumentationId(BSONObjectID.generate().stringify),
+          id = ApiDocumentationId(IdGenerator.token(32)),
           tenant = ctx.tenant.id,
           lastModificationAt = DateTime.now(),
           pages = Seq.empty
@@ -125,7 +125,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
       s"@{user.name} has asked for a template entity of type ApiGroup"))(ctx) {
       Ok(
         Api(
-          id = ApiId(BSONObjectID.generate().stringify),
+          id = ApiId(IdGenerator.token(32)),
           tenant = ctx.tenant.id,
           team = TeamId("none"),
           name = "New API",
@@ -134,7 +134,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
           description = "A new API group",
           lastUpdate = DateTime.now(),
           documentation = ApiDocumentation(
-            id = ApiDocumentationId(BSONObjectID.generate().stringify),
+            id = ApiDocumentationId(IdGenerator.token(32)),
             tenant = ctx.tenant.id,
             lastModificationAt = DateTime.now(),
             pages = Seq.empty
@@ -152,7 +152,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
         s"@{user.name} has asked for a template entity of type User"))(ctx) {
       Ok(
         User(
-          id = UserId(BSONObjectID.generate().stringify),
+          id = UserId(IdGenerator.token(32)),
           deleted = false,
           tenants = Set(ctx.tenant.id),
           origins = Set(AuthProvider.Local),
@@ -175,7 +175,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
         s"@{user.name} has asked for a template entity of type Issue"))(ctx) {
       Ok(
         ApiIssue(
-          id = ApiIssueId(BSONObjectID.generate().stringify),
+          id = ApiIssueId(IdGenerator.token(32)),
           tenant = ctx.tenant.id,
           title = "",
           tags = Set.empty,
@@ -205,7 +205,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
           case "Admin" =>
             Ok(
               UsagePlan
-                .Admin(id = UsagePlanId(BSONObjectID.generate().stringify),
+                .Admin(id = UsagePlanId(IdGenerator.token(32)),
                        tenant = ctx.tenant.id,
                        otoroshiTarget = None)
                 .asJson)
@@ -213,7 +213,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
             Ok(
               UsagePlan
                 .PayPerUse(
-                  id = UsagePlanId(BSONObjectID.generate().stringify),
+                  id = UsagePlanId(IdGenerator.token(32)),
                   tenant = ctx.tenant.id,
                   costPerRequest = BigDecimal(0),
                   costPerMonth = BigDecimal(0),
@@ -234,7 +234,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
             Ok(
               UsagePlan
                 .FreeWithQuotas(
-                  id = UsagePlanId(BSONObjectID.generate().stringify),
+                  id = UsagePlanId(IdGenerator.token(32)),
                   tenant = ctx.tenant.id,
                   maxPerSecond = 0,
                   maxPerDay = 0,
@@ -254,7 +254,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
             Ok(
               UsagePlan
                 .FreeWithoutQuotas(
-                  id = UsagePlanId(BSONObjectID.generate().stringify),
+                  id = UsagePlanId(IdGenerator.token(32)),
                   tenant = ctx.tenant.id,
                   billingDuration = BillingDuration(1, BillingTimeUnit.Month),
                   currency = Currency("EUR"),
@@ -271,7 +271,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
             Ok(
               UsagePlan
                 .QuotasWithLimits(
-                  id = UsagePlanId(BSONObjectID.generate().stringify),
+                  id = UsagePlanId(IdGenerator.token(32)),
                   tenant = ctx.tenant.id,
                   maxPerSecond = 0,
                   maxPerDay = 0,
@@ -293,7 +293,7 @@ class EntitiesController(DaikokuAction: DaikokuAction,
             Ok(
               UsagePlan
                 .QuotasWithoutLimits(
-                  id = UsagePlanId(BSONObjectID.generate().stringify),
+                  id = UsagePlanId(IdGenerator.token(32)),
                   tenant = ctx.tenant.id,
                   maxPerSecond = 0,
                   maxPerDay = 0,

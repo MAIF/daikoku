@@ -1,22 +1,20 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
-import { toastr } from 'react-redux-toastr';
-import { useSelector } from 'react-redux';
-import { Link, useParams } from 'react-router-dom';
-import { nanoid } from 'nanoid';
-import { constraints, Form, format, type } from '@maif/react-forms';
+import { Form, constraints, format, type } from '@maif/react-forms';
 import { createColumnHelper } from '@tanstack/react-table';
+import { nanoid } from 'nanoid';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { toastr } from 'react-redux-toastr';
+import { Link, useParams } from 'react-router-dom';
 
-import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
-import { Can, manage, Spinner, tenant as TENANT, Option } from '../../utils';
-import * as Services from '../../../services';
-import { I18nContext } from '../../../contexts/i18n-context';
-import { EditFrontOfficeTranslations } from './EditFrontOfficeTranslations';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
-import { BeautifulTitle } from '../../utils/BeautifulTitle';
-import { useDispatch } from 'react-redux';
+import { I18nContext } from '../../../contexts/i18n-context';
+import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
+import * as Services from '../../../services';
+import { IMailingTranslation, ITenantFull, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
-import { IMailingTranslation, isError, ITenantFull } from '../../../types';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { Can, Option, Spinner, tenant as TENANT, manage } from '../../utils';
+import { BeautifulTitle } from '../../utils/BeautifulTitle';
+import { EditFrontOfficeTranslations } from './EditFrontOfficeTranslations';
 
 const EditMailtemplate = ({
   tenantId
@@ -26,7 +24,7 @@ const EditMailtemplate = ({
 
   const KEY_MAIL_TEMPLATE = 'tenant.mail.template';
 
-  // const tenantRequest = useQuery(['tenant'], () => Services.oneTenant(tenantId))
+  // const tenantRequest = useQuery({ queryKey: ['tenant'], queryFn: () => Services.oneTenant(tenantId) })
   // const translationsRequests = useQueries({
   //   queries: [
   //     {queryKey: [], queryFn: () => Services.getTranslationLanguages() },

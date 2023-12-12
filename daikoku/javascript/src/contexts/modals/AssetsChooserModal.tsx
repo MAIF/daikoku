@@ -110,7 +110,7 @@ export const AssetChooserByModal = (props: AssetChooserProps) => {
   const { Translation } = useContext(I18nContext);
   const { openAssetSelectorModal } = useContext(ModalContext);
 
-  const assetsRequest = useQuery(['assets'], () => getAssets(props.team))
+  const assetsRequest = useQuery({ queryKey: ['assets'], queryFn: () => getAssets(props.team) })
 
 
   const getTenantAssets = () => Services.listTenantAssets(props.team?._id)
@@ -195,7 +195,7 @@ export const AssetChooserByModal = (props: AssetChooserProps) => {
       </button>
     );
   } else {
-    return (<BeautifulTitle title={assetsRequest.error as string}>
+    return (<BeautifulTitle title={(assetsRequest.error ?? '') as string}>
       <button type="button" className="btn btn-outline-primary ms-1 cursor-help" disabled>
         <i className={classNames('fas', {
           'fa-user-circle me-1': !!props.onlyPreview,

@@ -1,7 +1,7 @@
 package fr.maif.otoroshi.daikoku
 
-import akka.http.scaladsl.util.FastFuture
-import akka.stream.Materializer
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
 import com.softwaremill.macwire._
 import controllers.{Assets, AssetsComponents}
 import fr.maif.otoroshi.daikoku.actions.{
@@ -248,7 +248,7 @@ package object modules {
 
   private class ErrorHandler(env: Env) extends HttpErrorHandler {
 
-    implicit val ec = env.defaultExecutionContext
+    implicit val ec: ExecutionContext = env.defaultExecutionContext
 
     lazy val logger = Logger("daikoku-error-handler")
 

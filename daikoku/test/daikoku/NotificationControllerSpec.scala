@@ -9,38 +9,19 @@ import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.QuotasWithLimits
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.{
-  Format,
-  JsArray,
-  JsBoolean,
-  JsError,
-  JsNull,
-  JsNumber,
-  JsObject,
-  JsResult,
-  JsString,
-  JsSuccess,
-  JsValue,
-  Json,
-  Reads,
-  Writes
-}
-import reactivemongo.bson.BSONObjectID
+import play.api.libs.json._
 
 import scala.util.Try
 
 class NotificationControllerSpec()
     extends PlaySpec
-    with OneServerPerSuiteWithMyComponents
+//    with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
     with IntegrationPatience
     with BeforeAndAfterEach {
@@ -250,7 +231,7 @@ class NotificationControllerSpec()
         method = "POST",
         body = Some(
           ApiIssue(
-            id = ApiIssueId(BSONObjectID.generate().stringify),
+            id = ApiIssueId(IdGenerator.token(32)),
             seqId = 0,
             tenant = tenant.id,
             title = "",
@@ -313,7 +294,7 @@ class NotificationControllerSpec()
         method = "POST",
         body = Some(
           ApiPost(
-            id = ApiPostId(BSONObjectID.generate().stringify),
+            id = ApiPostId(IdGenerator.token(32)),
             tenant = tenant.id,
             title = "",
             lastModificationAt = DateTime.now(),
@@ -975,7 +956,7 @@ class NotificationControllerSpec()
     "create issue that notify subscribers of api" in {
       val issues = Seq(
         ApiIssue(
-          id = ApiIssueId(BSONObjectID.generate().stringify),
+          id = ApiIssueId(IdGenerator.token(32)),
           seqId = 0,
           tenant = tenant.id,
           title = "Daikoku Init on postgres can be broken",

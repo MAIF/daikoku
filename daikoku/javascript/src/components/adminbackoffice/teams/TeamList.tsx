@@ -46,7 +46,7 @@ export const TeamList = () => {
       })
     },
     enabled: !!client,
-    cacheTime: 0
+    gcTime: 0
   })
 
 
@@ -64,7 +64,7 @@ export const TeamList = () => {
               if (r.error) {
                 toastr.error(translate('Error'), r.error)
               } else {
-                queryClient.invalidateQueries(['teams']);
+                queryClient.invalidateQueries({ queryKey: ['teams'] });
                 toastr.info(
                   translate("mailValidation.sent.title"),
                   translate("mailValidation.sent.body"))
@@ -83,7 +83,7 @@ export const TeamList = () => {
         if (ok) {
           Services.deleteTeam(teamId)
             .then(() => {
-              queryClient.invalidateQueries(['teams']);
+              queryClient.invalidateQueries({ queryKey: ['teams'] });
             });
         }
       });
@@ -141,7 +141,7 @@ export const TeamList = () => {
             const teamToUpdate: ITeamFull = {
               ...data,
               '_tenant': data.tenant.id,
-              users: data.users.map(({user, teamPermission}) => ({userId: user.userId, teamPermission}))
+              users: data.users.map(({ user, teamPermission }) => ({ userId: user.userId, teamPermission }))
             }
             return Services.updateTeam(teamToUpdate)
               .then(r => {
@@ -149,7 +149,7 @@ export const TeamList = () => {
                   toastr.error(translate('Error'), r.error)
                 } else {
                   toastr.success(translate('Success'), translate({ key: "team.updated.success", replacements: [data.name] }))
-                  queryClient.invalidateQueries(['teams']);
+                  queryClient.invalidateQueries({ queryKey: ['teams'] });
                 }
               })
           },

@@ -1,5 +1,5 @@
 import { constraints, Form, format, type } from '@maif/react-forms';
-import md5 from 'js-md5';
+import { md5 } from 'js-md5';
 import queryString from 'query-string';
 import { useContext, useEffect, useState } from 'react';
 import { toastr } from 'react-redux-toastr';
@@ -415,8 +415,8 @@ export const DaikokuHomeApp = (props: any) => {
           <Route
             path="*"
             element={
-              <> 
-                <UnauthenticatedTopBar /> 
+              <>
+                <UnauthenticatedTopBar />
               </>
             }
           />

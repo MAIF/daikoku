@@ -39,7 +39,6 @@ import {
   IApiKey,
   IOtoroshiApiKey,
 } from '../types/api';
-import { base64 } from 'js-md5';
 
 const HEADERS = {
   Accept: 'application/json',

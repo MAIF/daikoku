@@ -1,6 +1,6 @@
 package fr.maif.otoroshi.daikoku.utils
 
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.login._

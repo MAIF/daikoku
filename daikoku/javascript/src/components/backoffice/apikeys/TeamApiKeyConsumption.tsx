@@ -19,7 +19,10 @@ type QuotasProps = {
 }
 const Quotas = (props: QuotasProps) => {
   const params = useParams()
-  const queryQuotas = useQuery(['quotas'], () => Services.getConsummedQuotasWithSubscriptionId(props.currentTeam._id, params.subscription!))
+  const queryQuotas = useQuery({
+    queryKey: ['quotas'],
+    queryFn: () => Services.getConsummedQuotasWithSubscriptionId(props.currentTeam._id, params.subscription!)
+  })
 
   const { translate } = useContext(I18nContext);
 
@@ -87,7 +90,10 @@ export const TeamApiKeyConsumption = () => {
   const getInformations = () => {
     return Services.getSubscriptionInformations(params.subscription!, currentTeam._id);
   };
-  const subInf = useQuery(['subInf'], () => getInformations())
+  const subInf = useQuery({
+    queryKey: ['subInf'],
+    queryFn: () => getInformations()
+  });
   let mappers = [
     {
       type: 'LineChart',
@@ -119,7 +125,7 @@ export const TeamApiKeyConsumption = () => {
         },
       ];
   }
-  
+
   useEffect(() => {
     document.title = `${currentTeam.name} - ${translate('API key consumption')}`;
 

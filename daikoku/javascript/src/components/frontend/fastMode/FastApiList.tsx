@@ -62,7 +62,7 @@ export const FastApiList = (props: FastApiListProps) => {
       )
     },
     enabled: !!props.team && !!client,
-    cacheTime: 0
+    gcTime: 0
 
   })
 

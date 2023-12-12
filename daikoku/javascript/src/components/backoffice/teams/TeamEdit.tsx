@@ -1,15 +1,15 @@
 import { constraints, Form, format, type } from '@maif/react-forms';
-import md5 from 'js-md5';
-import {useContext, useEffect, useState} from 'react';
-import { toastr } from 'react-redux-toastr';
-import {useLocation, useNavigate} from 'react-router-dom';
-
+import { md5 } from 'js-md5';
+import { useContext, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { toastr } from 'react-redux-toastr';
+import { useLocation, useNavigate } from 'react-router-dom';
+
 import { ModalContext, useTeamBackOffice } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import { I18nContext, TranslateParams, updateTeam } from '../../../core';
 import * as Services from '../../../services';
-import {isError, IState, ITeamSimple, ITeamVisibility} from '../../../types';
+import { isError, IState, ITeamSimple, ITeamVisibility } from '../../../types';
 
 
 type AvatarProps = {
@@ -215,7 +215,7 @@ export const TeamEdit = () => {
         if (data._humanReadableId !== updatedTeam._humanReadableId) {
           navigate(`/${updatedTeam._humanReadableId}/settings/edition`);
         }
-        if(contact !== updatedTeam.contact) {
+        if (contact !== updatedTeam.contact) {
           setContact(updatedTeam.contact)
           toastr.info(
             translate("mailValidation.sent.title"),
@@ -234,26 +234,27 @@ export const TeamEdit = () => {
   return (
     <div>
       {!currentTeam.verified && !alreadyClicked &&
-          <div className="alert alert-warning" role="alert">
-            {translate('team.email.notVerified.info')}
-            <button className="btn btn-outline-warning d-flex align-items-end" onClick={() => {
-              Services.sendEmailVerification(currentTeam._id)
-                .then((r) => {
-                  if (isError(r)) {
-                    toastr.success(translate("Error"), r.error)
-                  } else {
-                    setAlreadyClicked(true)
-                    toastr.success(
-                      translate("Success"),
-                      translate({ key: 'team.email.verification.send', replacements: [currentTeam.contact] })
-                    )
-                  }
-                })}}>{translate('team.email.notVerified')}</button>
-          </div>}
+        <div className="alert alert-warning" role="alert">
+          {translate('team.email.notVerified.info')}
+          <button className="btn btn-outline-warning d-flex align-items-end" onClick={() => {
+            Services.sendEmailVerification(currentTeam._id)
+              .then((r) => {
+                if (isError(r)) {
+                  toastr.success(translate("Error"), r.error)
+                } else {
+                  setAlreadyClicked(true)
+                  toastr.success(
+                    translate("Success"),
+                    translate({ key: 'team.email.verification.send', replacements: [currentTeam.contact] })
+                  )
+                }
+              })
+          }}>{translate('team.email.notVerified')}</button>
+        </div>}
       {!currentTeam.verified && alreadyClicked &&
-          <div className="alert alert-success" role="alert">
-            {translate('mail.sent')}
-          </div> }
+        <div className="alert alert-success" role="alert">
+          {translate('mail.sent')}
+        </div>}
       <TeamEditForm team={currentTeam} updateTeam={(team) => save(team, contact)} />
     </div>
   );

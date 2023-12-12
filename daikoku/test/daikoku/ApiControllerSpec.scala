@@ -1,72 +1,33 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
-import com.dimafeng.testcontainers.{
-  Container,
-  ForAllTestContainer,
-  GenericContainer,
-  MultipleContainers,
-  PostgreSQLContainer
-}
 import cats.implicits.catsSyntaxOptionId
 import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
-import controllers.AppError.{
-  SubscriptionAggregationDisabled,
-  SubscriptionParentExisted
-}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.Pending
+import controllers.AppError.SubscriptionAggregationDisabled
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, TeamUser}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiFormat,
-  ApiSubscriptionFormat,
-  IssueIdFormat,
-  OtoroshiApiKeyFormat,
-  SeqApiSubscriptionFormat,
-  TeamIdFormat,
-  UsagePlanIdFormat,
-  UserIdFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, SeqApiSubscriptionFormat}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
 import org.scalatest.concurrent.IntegrationPatience
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
 import org.scalatestplus.play.PlaySpec
-import org.testcontainers.containers.wait.strategy.Wait
-import org.testcontainers.utility.DockerImageName
-import play.api.Logger
 import play.api.http.Status
 import play.api.libs.json._
-import reactivemongo.bson.BSONObjectID
 
-import java.util
-import scala.jdk.CollectionConverters.SeqHasAsJava
 import scala.util.Random
-import org.scalatest.FlatSpec
-import org.testcontainers.containers.{BindMode, Network}
-
-import scala.concurrent.Future
-import scala.concurrent.impl.Promise
 
 class ApiControllerSpec()
     extends PlaySpec
-    with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
     with IntegrationPatience
     with BeforeAndAfterEach
@@ -2114,7 +2075,7 @@ class ApiControllerSpec()
     "transfer API ownership to another team (with all versions)" in {
       val defaultApiV2 =
         defaultApi.api.copy(
-          id = ApiId(BSONObjectID.generate().stringify),
+          id = ApiId(IdGenerator.token(32)),
           currentVersion = Version("2.0.0")
         )
       setupEnvBlocking(
@@ -3484,7 +3445,6 @@ class ApiControllerSpec()
     }
 
     "cannot be updated except otoroshi target of admin plan" in {
-      import org.scalatest.Matchers.convertToAnyShouldWrapper
 
       val updatedAdminPlan = adminApiPlan
         .copy(
@@ -3549,7 +3509,7 @@ class ApiControllerSpec()
       adminPlan.otoroshiTarget.get.otoroshiSettings mustBe OtoroshiSettingsId(
         "wiremock"
       )
-      adminPlan.otoroshiTarget.get.authorizedEntities.value.groups should contain(
+      adminPlan.otoroshiTarget.get.authorizedEntities.value.groups must contain(
         OtoroshiServiceGroupId("daikoku-admin-api-group-id")
       )
     }
@@ -3655,7 +3615,7 @@ class ApiControllerSpec()
         method = "POST",
         body = Some(
           ApiIssue(
-            id = ApiIssueId(BSONObjectID.generate().stringify),
+            id = ApiIssueId(IdGenerator.token(32)),
             seqId = 0,
             tenant = tenant.id,
             title = "",
@@ -4526,7 +4486,7 @@ class ApiControllerSpec()
         .findById((resp.json \ "subscription" \ "_id").as[String])
         .map {
           case Some(sub) => sub.apiKey.clientId mustBe parentApiKeyClientId
-          case None      => fail
+          case None      => fail()
         }
     }
     "be transformed in unique api key when the subscription hasn't parent" in {

@@ -1,28 +1,28 @@
-import { getApolloContext } from "@apollo/client";
-import { format, type } from "@maif/react-forms";
-import { createColumnHelper } from '@tanstack/react-table';
-import { useContext, useEffect, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import {getApolloContext} from "@apollo/client";
+import {format, type} from "@maif/react-forms";
+import {createColumnHelper} from '@tanstack/react-table';
+import {useContext, useEffect, useRef, useState} from 'react';
+import {useSelector} from 'react-redux';
+import {toastr} from 'react-redux-toastr';
 
-import { ModalContext } from '../../../contexts';
-import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
-import { I18nContext } from '../../../core';
+import {ModalContext} from '../../../contexts';
+import {CustomSubscriptionData} from '../../../contexts/modals/SubscriptionMetadataModal';
+import {I18nContext} from '../../../core';
 import * as Services from '../../../services';
-import { IApi, IState, ISubscriptionWithApiInfo, ITeamSimple, IUsagePlan, isError } from "../../../types";
-import { SwitchButton, Table, TableRef } from '../../inputs';
+import {IApi, isError, IState, ITeamSimple, IUsagePlan} from "../../../types";
+import {SwitchButton, Table, TableRef} from '../../inputs';
 import {
   api as API,
   BeautifulTitle,
   Can,
-  Option,
-  Spinner,
   formatDate,
   formatPlanType,
   manage,
+  Option,
   queryClient,
+  Spinner,
 } from '../../utils';
-import { useQuery } from "@tanstack/react-query";
+import {useQuery} from "@tanstack/react-query";
 
 type TeamApiSubscriptionsProps = {
   api: IApi,
@@ -94,17 +94,18 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
   const { translate, language, Translation } = useContext(I18nContext);
   const { confirm, openFormModal, openSubMetadataModal, } = useContext(ModalContext);
 
-  const plansQuery = useQuery(['plans'], () => Services.getAllPlanOfApi(api.team, api._id, api.currentVersion))
-  const subscriptionsQuery = useQuery(['subscriptions'], () => client!.query<{ apiApiSubscriptions: Array<IApiSubscriptionGql>; }>({
-    query: Services.graphql.getApiSubscriptions,
-    fetchPolicy: "no-cache",
-    variables: {
-      apiId: api._id,
-      teamId: currentTeam._id,
-      version: api.currentVersion
-    }
-  })
-    .then(({ data: { apiApiSubscriptions } }) => {
+  const plansQuery = useQuery({ queryKey: ['plans'], queryFn: () => Services.getAllPlanOfApi(api.team, api._id, api.currentVersion) })
+  const subscriptionsQuery = useQuery({
+    queryKey: ['subscriptions'],
+    queryFn: () => client!.query<{ apiApiSubscriptions: Array<IApiSubscriptionGql>; }>({
+      query: Services.graphql.getApiSubscriptions,
+      fetchPolicy: "no-cache",
+      variables: {
+        apiId: api._id,
+        teamId: currentTeam._id,
+        version: api.currentVersion
+      }
+    }).then(({ data: { apiApiSubscriptions } }) => {
       if (!filters || (!filters.tags.length && !Object.keys(filters.metadata).length && !filters.clientIds.length)) {
         return apiApiSubscriptions
       } else {
@@ -133,16 +134,18 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
       }
     })
     .then((apiApiSubscriptions) => Services.getSubscriptionsLastUsages(api.team, subscriptionsQuery.data?.map(s => s._id) || [])
-      .then(lastUsages => {
-        if (isError(lastUsages)) {
-          return subscriptionsQuery.data as IApiSubscriptionGqlWithUsage[]
-        } else {
-          const value = (apiApiSubscriptions ?? [])
-            .map(s => ({ ...s, lastUsage: lastUsages.find(u => u.subscription === s._id)?.date } as IApiSubscriptionGqlWithUsage))
-          return value;
-        }
-      }))
-  )
+        .then(lastUsages => {
+          if (isError(lastUsages)) {
+            return subscriptionsQuery.data as IApiSubscriptionGqlWithUsage[]
+          } else {
+            return (apiApiSubscriptions ?? [])
+              .map(s => ({
+                ...s,
+                lastUsage: lastUsages.find(u => u.subscription === s._id)?.date
+              } as IApiSubscriptionGqlWithUsage));
+          }
+        }))
+  })
 
   useEffect(() => {
     document.title = `${currentTeam.name} - ${translate('Subscriptions')}`;
@@ -287,7 +290,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
     save: (updates: CustomSubscriptionData) => {
       Services.updateSubscription(currentTeam, { ...sub, ...updates })
         .then(() => {
-          queryClient.invalidateQueries(['subscriptions'])
+          queryClient.invalidateQueries({ queryKey: ['subscriptions'] })
         });
     },
     api: sub.api._id,

@@ -1,17 +1,13 @@
 package fr.maif.otoroshi.daikoku.utils.admin
 
 import java.util.Base64
-import akka.http.scaladsl.util.FastFuture
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import com.auth0.jwt.JWT
 import com.google.common.base.Charsets
-import fr.maif.otoroshi.daikoku.domain.{Tenant, ValueType}
-import fr.maif.otoroshi.daikoku.env.{
-  Env,
-  LocalAdminApiConfig,
-  OtoroshiAdminApiConfig
-}
+import fr.maif.otoroshi.daikoku.domain.{Tenant, ValueType, json}
+import fr.maif.otoroshi.daikoku.env.{Env, LocalAdminApiConfig, OtoroshiAdminApiConfig}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.TenantHelper
 import fr.maif.otoroshi.daikoku.utils.Errors
@@ -32,7 +28,7 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
     extends ActionBuilder[DaikokuApiActionContext, AnyContent]
     with ActionFunction[Request, DaikokuApiActionContext] {
 
-  implicit lazy val ec = env.defaultExecutionContext
+  implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
 
   def decodeBase64(encoded: String): String =
     new String(Base64.getUrlDecoder.decode(encoded), Charsets.UTF_8)
@@ -74,12 +70,6 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
           }
         case LocalAdminApiConfig(_) =>
           request.headers.get("Authorization") match {
-            case None =>
-              Errors.craftResponseResult("No api key provided",
-                                         Results.Unauthorized,
-                                         request,
-                                         None,
-                                         env)
             case Some(auth) if auth.startsWith("Basic ") =>
               extractUsernamePassword(auth) match {
                 case None =>
@@ -106,6 +96,12 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
                                                    env)
                     })
               }
+            case _ =>
+              Errors.craftResponseResult("No api key provided",
+                Results.Unauthorized,
+                request,
+                None,
+                env)
           }
       }
     }
@@ -119,7 +115,7 @@ class DaikokuApiActionWithoutTenant(val parser: BodyParser[AnyContent],
     extends ActionBuilder[Request, AnyContent]
     with ActionFunction[Request, Request] {
 
-  implicit lazy val ec = env.defaultExecutionContext
+  implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
 
   override def invokeBlock[A](
       request: Request[A],
@@ -171,10 +167,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
     cc: ControllerComponents)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
-  val logger = Logger(s"admin-controller-$entityName")
+  val logger: Logger = Logger(s"admin-controller-$entityName")
 
   def description: String = entityClass.getName
   def pathRoot: String
@@ -296,9 +292,9 @@ abstract class AdminApiController[Of, Id <: ValueType](
   def patchEntity(id: String) = DaikokuApiAction.async(parse.json) { ctx =>
     object JsonImplicits {
       implicit val jodaDateTimeWrites: Writes[DateTime] =
-        play.api.libs.json.JodaWrites.JodaDateTimeNumberWrites
+        json.DateTimeFormat.writes
       implicit val jodaDateTimeReads: Reads[DateTime] =
-        play.api.libs.json.JodaReads.DefaultJodaDateTimeReads
+        json.DateTimeFormat.reads
     }
 
     object JsonPatchHelpers {

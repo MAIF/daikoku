@@ -1,37 +1,29 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import java.util.UUID.randomUUID
-import akka.actor.{ActorRef, PoisonPill, Props}
-import akka.http.scaladsl.util.FastFuture
-import akka.pattern.ask
-import akka.stream.scaladsl.Source
-import akka.stream.{CompletionStrategy, OverflowStrategy}
-import akka.util.Timeout
+import org.apache.pekko.actor.{ActorRef, PoisonPill, Props}
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.pattern.ask
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.stream.{CompletionStrategy, OverflowStrategy}
+import org.apache.pekko.util.Timeout
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  PublicUserAccess,
-  TenantAdminOnly
-}
-import fr.maif.otoroshi.daikoku.domain.{
-  DatastoreId,
-  Message,
-  MessageType,
-  UserId
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{PublicUserAccess, TenantAdminOnly}
+import fr.maif.otoroshi.daikoku.domain.{DatastoreId, Message, MessageType, UserId}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.messages._
-import fr.maif.otoroshi.daikoku.utils.Translator
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, Translator}
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import play.api.Logger
 import play.api.http.ContentTypes
 import play.api.i18n.I18nSupport
 import play.api.libs.EventSource
-import play.api.libs.json.{JsArray, JsNull, JsNumber, JsObject, JsValue, Json}
+import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents}
-import reactivemongo.bson.BSONObjectID
 
+import java.util.UUID.randomUUID
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 
 class MessageController(DaikokuAction: DaikokuAction,
@@ -41,10 +33,10 @@ class MessageController(DaikokuAction: DaikokuAction,
     extends AbstractController(cc)
     with I18nSupport {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
   implicit val timeout: Timeout = Timeout(5.seconds)
-  implicit val tr = translator
+  implicit val tr: Translator = translator
 
   val messageActor: ActorRef =
     env.defaultActorSystem.actorOf(Props(new MessageActor()), "messages")
@@ -67,7 +59,7 @@ class MessageController(DaikokuAction: DaikokuAction,
         (body \ "chat").asOpt[String].map(UserId).getOrElse(ctx.user.id)
 
       val message = Message(
-        id = DatastoreId(BSONObjectID.generate().stringify),
+        id = DatastoreId(IdGenerator.token(32)),
         tenant = ctx.tenant.id,
         messageType = MessageType.Tenant(ctx.tenant.id), //todo: update it when user can send messages to team admins
         sender = ctx.user.id,
@@ -180,12 +172,12 @@ class MessageController(DaikokuAction: DaikokuAction,
     PublicUserAccess(AuditTrailEvent("@{user.name} has received his messages"))(
       ctx) {
       val completionMatcher: PartialFunction[Any, CompletionStrategy] = {
-        case akka.actor.Status.Success(s: CompletionStrategy) => s
-        case akka.actor.Status.Success(_)                     => CompletionStrategy.draining
-        case akka.actor.Status.Success                        => CompletionStrategy.draining
+        case org.apache.pekko.actor.Status.Success(s: CompletionStrategy) => s
+        case org.apache.pekko.actor.Status.Success(_)                     => CompletionStrategy.draining
+        case org.apache.pekko.actor.Status.Success                        => CompletionStrategy.draining
       }
       val failureMatcher: PartialFunction[Any, Throwable] = {
-        case akka.actor.Status.Failure(cause) => cause
+        case org.apache.pekko.actor.Status.Failure(cause) => cause
       }
 
       val source: Source[JsValue, ActorRef] = Source

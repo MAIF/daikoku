@@ -1,6 +1,6 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.data.{EitherT, OptionT}
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
@@ -12,11 +12,11 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
-import play.api.libs.ws.{WSAuthScheme, WSRequest}
+import play.api.libs.ws.{WSAuthScheme, WSClient, WSRequest}
 import play.api.mvc.Result
 import play.api.mvc.Results.Ok
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class PaymentClient(
     env: Env
@@ -26,10 +26,10 @@ class PaymentClient(
   type PriceId = String
   type CustomerId = String
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
   val STRIPE_URL = "https://api.stripe.com";
-  val ws = env.wsClient
+  val ws: WSClient = env.wsClient
 
   def getStripeProductName(api: Api, plan: UsagePlan) =
     s"${api.name}::${api.currentVersion.value}/${plan.customName.getOrElse(plan.typeName)}"

@@ -1,6 +1,6 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
@@ -15,18 +15,17 @@ import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json._
 import play.api.mvc._
-import reactivemongo.bson.BSONObjectID
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class MockController(DaikokuAction: DaikokuAction,
                      env: Env,
                      cc: ControllerComponents)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
 
-  val scalaCode =
+  val scalaCode: String =
     """```scala
       |import zio.App
       |import zio.console._
@@ -48,11 +47,11 @@ class MockController(DaikokuAction: DaikokuAction,
 
   def saveApiDocPages(
       tenant: TenantId): Future[Seq[ApiDocumentationDetailPage]] = {
-    val id1 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
-    val id2 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
-    val id21 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
-    val id3 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
-    val id4 = ApiDocumentationPageId(BSONObjectID.generate().stringify)
+    val id1 = ApiDocumentationPageId(IdGenerator.token(32))
+    val id2 = ApiDocumentationPageId(IdGenerator.token(32))
+    val id21 = ApiDocumentationPageId(IdGenerator.token(32))
+    val id3 = ApiDocumentationPageId(IdGenerator.token(32))
+    val id4 = ApiDocumentationPageId(IdGenerator.token(32))
     for {
       apiDocRepos <- env.dataStore.apiDocumentationPageRepo.forTenantF(tenant)
       _ <- apiDocRepos.save(
@@ -266,7 +265,7 @@ class MockController(DaikokuAction: DaikokuAction,
                 visibility: ApiVisibility = ApiVisibility.Public) = {
     val plans = samplePlans(tenant)
     val api = Api(
-      id = ApiId(BSONObjectID.generate().stringify),
+      id = ApiId(IdGenerator.token(32)),
       tenant = tenant,
       team = team,
       deleted = false,
@@ -308,7 +307,7 @@ class MockController(DaikokuAction: DaikokuAction,
       state = ApiState.Published,
       visibility = visibility,
       documentation = ApiDocumentation(
-        id = ApiDocumentationId(BSONObjectID.generate().stringify),
+        id = ApiDocumentationId(IdGenerator.token(32)),
         tenant = tenant,
         pages = docPages,
         lastModificationAt = DateTime.now()
@@ -370,7 +369,7 @@ class MockController(DaikokuAction: DaikokuAction,
       state = ApiState.Published,
       visibility = ApiVisibility.Public,
       documentation = ApiDocumentation(
-        id = ApiDocumentationId(BSONObjectID.generate().stringify),
+        id = ApiDocumentationId(IdGenerator.token(32)),
         tenant = tenant,
         pages = docPages,
         lastModificationAt = DateTime.now(),
@@ -433,10 +432,10 @@ class MockController(DaikokuAction: DaikokuAction,
   }
 
   def resetDataStore() = {
-    val team1Id = BSONObjectID.generate().stringify
-    val team2Id = BSONObjectID.generate().stringify
-    val team3Id = BSONObjectID.generate().stringify
-    val teamJohnnyId = BSONObjectID.generate().stringify
+    val team1Id = IdGenerator.token(32)
+    val team2Id = IdGenerator.token(32)
+    val team3Id = IdGenerator.token(32)
+    val teamJohnnyId = IdGenerator.token(32)
     val tenantId = Tenant.Default
     val tenant2Id = TenantId("tenant-2")
 
@@ -454,22 +453,22 @@ class MockController(DaikokuAction: DaikokuAction,
       createUserAndTeam("Etienne", "etienne@foo.bar", tenantId, false)
 
     val issuesTags = Seq(
-      ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify),
+      ApiIssueTag(ApiIssueTagId(IdGenerator.token(32)),
                   "bug",
                   "#2980b9"),
-      ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify),
+      ApiIssueTag(ApiIssueTagId(IdGenerator.token(32)),
                   "backoffice",
                   "#c0392b"),
-      ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify),
+      ApiIssueTag(ApiIssueTagId(IdGenerator.token(32)),
                   "security",
                   "#8e44ad"),
-      ApiIssueTag(ApiIssueTagId(BSONObjectID.generate().stringify),
+      ApiIssueTag(ApiIssueTagId(IdGenerator.token(32)),
                   "subscription",
                   "#16a085"),
     )
     val issues: Seq[ApiIssue] = Seq(
       ApiIssue(
-        id = ApiIssueId(BSONObjectID.generate().stringify),
+        id = ApiIssueId(IdGenerator.token(32)),
         seqId = 0,
         tenant = tenantId,
         title = "Daikoku Init on postgres can be broken",
@@ -490,7 +489,7 @@ class MockController(DaikokuAction: DaikokuAction,
         )
       ),
       ApiIssue(
-        id = ApiIssueId(BSONObjectID.generate().stringify),
+        id = ApiIssueId(IdGenerator.token(32)),
         seqId = 1,
         tenant = tenantId,
         title = "2FA compatibility",
@@ -557,7 +556,7 @@ class MockController(DaikokuAction: DaikokuAction,
       currentVersion = Version("1.0.0"),
       state = ApiState.Published,
       documentation = ApiDocumentation(
-        id = ApiDocumentationId(BSONObjectID.generate().stringify),
+        id = ApiDocumentationId(IdGenerator.token(32)),
         tenant = Tenant.Default,
         pages = Seq.empty[ApiDocumentationDetailPage],
         lastModificationAt = DateTime.now()
@@ -580,7 +579,7 @@ class MockController(DaikokuAction: DaikokuAction,
       tags = Set("Administration"),
       swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
       documentation = ApiDocumentation(
-        id = ApiDocumentationId(BSONObjectID.generate().stringify),
+        id = ApiDocumentationId(IdGenerator.token(32)),
         tenant = tenant2Id,
         pages = Seq.empty[ApiDocumentationDetailPage],
         lastModificationAt = DateTime.now()

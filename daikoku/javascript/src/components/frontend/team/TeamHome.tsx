@@ -1,6 +1,6 @@
 import { getApolloContext } from '@apollo/client';
 import { useQuery } from '@tanstack/react-query';
-import {useContext} from 'react';
+import { useContext } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 
@@ -18,16 +18,19 @@ export const TeamHome = () => {
   const { client } = useContext(getApolloContext());
 
 
-  const queryTeam = useQuery(['team'], () => Services.team(params.teamId!));
-  const queryMyTeams = useQuery(['my-team'], () => client!.query<{myTeams: Array<ITeamSimple>}>({
-    query: Services.graphql.myTeams,
-  }));
+  const queryTeam = useQuery({ queryKey: ['team'], queryFn: () => Services.team(params.teamId!) });
+  const queryMyTeams = useQuery({
+    queryKey: ['my-team'],
+    queryFn: () => client!.query<{ myTeams: Array<ITeamSimple> }>({
+      query: Services.graphql.myTeams,
+    })
+  });
   const redirectToApiPage = (apiWithAutho: IApiWithAuthorization) => {
     const api = apiWithAutho.api
-      if (api.visibility === 'Public' || apiWithAutho.authorizations.some(a => a.authorized)) {
-        const route = (version: string) => `/${api.team._humanReadableId}/${api._humanReadableId}/${version}/description`;
-        navigate(route(api.currentVersion));
-      }
+    if (api.visibility === 'Public' || apiWithAutho.authorizations.some(a => a.authorized)) {
+      const route = (version: string) => `/${api.team._humanReadableId}/${api._humanReadableId}/${version}/description`;
+      navigate(route(api.currentVersion));
+    }
 
 
   };
@@ -35,7 +38,7 @@ export const TeamHome = () => {
 
 
   const redirectToEditPage = (apiWithAutho: IApiWithAuthorization) => {
-    const api =apiWithAutho.api
+    const api = apiWithAutho.api
     navigate(`/${params.teamId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`);
   };
 
@@ -43,9 +46,9 @@ export const TeamHome = () => {
     navigate(`/${team._humanReadableId}/settings`);
   };
 
-  if ( queryMyTeams.isLoading || queryTeam.isLoading) {
+  if (queryMyTeams.isLoading || queryTeam.isLoading) {
     return <Spinner />;
-  } else if ( queryMyTeams.data && queryTeam.data ) {
+  } else if (queryMyTeams.data && queryTeam.data) {
     if (isError(queryTeam.data)) {
       return <></> //FIXME
     }

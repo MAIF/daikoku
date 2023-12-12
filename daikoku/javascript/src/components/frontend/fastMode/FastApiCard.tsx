@@ -68,7 +68,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
                         team.name
                       ]
                     }))
-                queryClient.invalidateQueries(['data'])
+                queryClient.invalidateQueries({ queryKey: ['data'] })
               }
             }
             )
@@ -78,26 +78,26 @@ export const FastApiCard = (props: FastApiCardProps) => {
       })
     } else {
       apiKeyDemand()
-      .then((response) => {
-        if (isError(response)) {
-          toastr.error(
-            translate('Error'),
-            response.error
-          )
-        } else {
-          toastr.success(
-            translate('Done'),
-            translate(
-              {
-                key: 'subscription.plan.accepted',
-                replacements: [
-                  plan.customName!,
-                  team.name
-                ]
-              }))
-          queryClient.invalidateQueries(['data'])
-        }
-      })
+        .then((response) => {
+          if (isError(response)) {
+            toastr.error(
+              translate('Error'),
+              response.error
+            )
+          } else {
+            toastr.success(
+              translate('Done'),
+              translate(
+                {
+                  key: 'subscription.plan.accepted',
+                  replacements: [
+                    plan.customName!,
+                    team.name
+                  ]
+                }))
+            queryClient.invalidateQueries({ queryKey: ['data'] })
+          }
+        })
     }
   }
 

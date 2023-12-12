@@ -1,16 +1,13 @@
 package jobs
 
-import akka.Done
-import akka.actor.Cancellable
-import akka.stream.scaladsl.{Sink, Source}
+import org.apache.pekko.Done
+import org.apache.pekko.actor.Cancellable
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import cats.data.EitherT
 import cats.syntax.option._
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.audit.{ApiKeyRotationEvent, JobEvent}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  OtoroshiSyncApiError,
-  OtoroshiSyncSubscriptionError
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{OtoroshiSyncApiError, OtoroshiSyncSubscriptionError}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.ApiSubscriptionyRotationFormat
 import fr.maif.otoroshi.daikoku.env.Env
@@ -20,7 +17,6 @@ import org.joda.time.DateTime
 import play.api.Logger
 import play.api.i18n.MessagesApi
 import play.api.libs.json._
-import reactivemongo.bson.BSONObjectID
 
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
@@ -72,8 +68,8 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
-  implicit val me = messagesApi
-  implicit val tr = translator
+  implicit val me: MessagesApi = messagesApi
+  implicit val tr: Translator = translator
 
   private val jobUser = User(
     id = UserId("otoroshi-verifier-job"),
@@ -112,7 +108,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
     env.dataStore.notificationRepo
       .forTenant(tenantId)
       .save(Notification(
-        id = NotificationId(BSONObjectID.generate().stringify),
+        id = NotificationId(IdGenerator.token(32)),
         tenant = tenantId,
         team = Some(teamId),
         sender = jobUser.asNotificationSender,
@@ -617,7 +613,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                       env.dataStore.notificationRepo
                         .forTenant(subscription.tenant)
                         .save(Notification(
-                          id = NotificationId(BSONObjectID.generate().stringify),
+                          id = NotificationId(IdGenerator.token(32)),
                           tenant = subscription.tenant,
                           team = Some(subscription.team),
                           sender = jobUser.asNotificationSender,
@@ -789,7 +785,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                         clientSecret = otoroshiNextSecret.get))
                 .some
               notification = Notification(
-                id = NotificationId(BSONObjectID.generate().stringify),
+                id = NotificationId(IdGenerator.token(32)),
                 tenant = tenant.id,
                 team = Some(subscription.team),
                 sender = jobUser.asNotificationSender,
@@ -809,7 +805,7 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
               logger.info(
                 s"rotation state updated to Ended for ${apk.clientName}")
               notification = Notification(
-                id = NotificationId(BSONObjectID.generate().stringify),
+                id = NotificationId(IdGenerator.token(32)),
                 tenant = tenant.id,
                 team = Some(subscription.team),
                 sender = jobUser.asNotificationSender,

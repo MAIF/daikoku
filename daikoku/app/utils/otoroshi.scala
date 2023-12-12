@@ -1,7 +1,7 @@
 package fr.maif.otoroshi.daikoku.utils
 
-import akka.http.scaladsl.util.FastFuture
-import akka.stream.Materializer
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
@@ -47,7 +47,7 @@ class OtoroshiExpositionFilter(stateHeaderName: String,
 
 class OtoroshiClient(env: Env) {
 
-  implicit val ec = env.defaultExecutionContext
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
   val ws = env.wsClient
 
   def client(path: String)(

@@ -176,7 +176,7 @@ const OtoroshiEntitiesSelector = ({
       onChange(value);
     }
   };
-  
+
   const groupedOptions = [
     { label: 'Service groups', options: groups },
     { label: 'Services', options: services },
@@ -200,10 +200,10 @@ const OtoroshiEntitiesSelector = ({
       placeholder={translate('Authorized.entities.placeholder')} //@ts-ignore //FIXME
       components={(props: any) => <components.Group {...props} />}
       formatGroupLabel={formatGroupLabel}
-      options={groupedOptions} 
-      value={value} 
-      onChange={onValueChange} 
-      classNamePrefix="reactSelect" 
+      options={groupedOptions}
+      value={value}
+      onChange={onValueChange}
+      classNamePrefix="reactSelect"
       className="reactSelect" />
     <div className="col-12 d-flex flex-row mt-3">
       <div className="d-flex flex-column flex-grow-1">
@@ -524,8 +524,8 @@ export const TeamApiPricings = (props: Props) => {
   const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
 
   const queryClient = useQueryClient()
-  const queryFullTenant = useQuery(['full-tenant'], () => Services.oneTenant(props.tenant._id))
-  const queryPlans = useQuery(['plans'], () => Services.getAllPlanOfApi(props.api.team, props.api._id, props.api.currentVersion))
+  const queryFullTenant = useQuery({ queryKey: ['full-tenant'], queryFn: () => Services.oneTenant(props.tenant._id) })
+  const queryPlans = useQuery({ queryKey: ['plans'], queryFn: () => Services.getAllPlanOfApi(props.api.team, props.api._id, props.api.currentVersion) })
 
   useEffect(() => {
     return () => {
@@ -715,7 +715,7 @@ export const TeamApiPricings = (props: Props) => {
     Services.deletePlan(props.team._id, props.api._id, props.api.currentVersion, plan)
       .then(() => props.reload())
       .then(() => {
-        queryClient.invalidateQueries(['plans'])
+        queryClient.invalidateQueries({ queryKey: ['plans'] })
         toastr.success(translate('Success'), translate('plan.deletion.successful'))
       })
   };
@@ -760,7 +760,7 @@ export const TeamApiPricings = (props: Props) => {
           setPlanForEdition(response)
           setCreation(false)
           props.reload()
-          queryClient.invalidateQueries(['plans'])
+          queryClient.invalidateQueries({ queryKey: ['plans'] })
         }
       })
   };
@@ -1390,7 +1390,7 @@ export const TeamApiPricings = (props: Props) => {
                 team={props.team}
                 planForEdition={planForEdition}
                 onSave={documentation => savePlan({ ...planForEdition, documentation })}
-                reloadState={() => queryClient.invalidateQueries(['plans'])}
+                reloadState={() => queryClient.invalidateQueries({ queryKey: ['plans'] })}
                 plans={queryPlans.data as Array<IUsagePlan>}
               />
             )}

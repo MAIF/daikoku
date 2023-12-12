@@ -1,30 +1,28 @@
 package fr.maif.otoroshi.daikoku.utils
 
-import java.net.URL
-import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
-
-import akka.actor.ActorSystem
-import akka.http.scaladsl.model.{ContentType, ContentTypes, HttpHeader}
-import akka.stream.Materializer
-import akka.stream.alpakka.s3._
-import akka.stream.alpakka.s3.headers.CannedAcl
-import akka.stream.alpakka.s3.scaladsl.S3
-import akka.stream.scaladsl.{Keep, Sink, Source}
-import akka.util.ByteString
-import akka.{Done, NotUsed}
-import com.amazonaws.{ClientConfiguration, HttpMethod, SdkClientException}
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
+import com.amazonaws.{ClientConfiguration, HttpMethod, SdkClientException}
 import fr.maif.otoroshi.daikoku.domain._
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.model.{ContentType, ContentTypes, HttpHeader}
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.connectors.s3.headers.CannedAcl
+import org.apache.pekko.stream.connectors.s3.scaladsl.S3
+import org.apache.pekko.stream.connectors.s3._
+import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
+import org.apache.pekko.util.ByteString
+import org.apache.pekko.{Done, NotUsed}
 import org.joda.time.DateTime
 import play.api.libs.json._
 import software.amazon.awssdk.auth.credentials._
-import software.amazon.awssdk.core.exception.SdkException
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.regions.providers.AwsRegionProvider
 
-import scala.concurrent.{ExecutionContext, Future, duration}
+import java.net.URL
+import java.util.concurrent.atomic.{AtomicBoolean, AtomicReference}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 class BadFileContentFromContentType()
@@ -163,7 +161,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
                 byteString
               case Some(v) if !v =>
                 throw new BadFileContentFromContentType()
-              case None =>
+              case _ =>
                 validated.set(true)
                 byteString
             }
@@ -212,14 +210,14 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
       implicit conf: S3Configuration)
     : Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
     val none: Option[(Source[ByteString, NotUsed], ObjectMetadata)] = None
-    S3.download(conf.bucket,
+    S3.getObject(conf.bucket,
                 s"/${tenant.value}/teams/${team.value}/assets/${asset.value}")
       .withAttributes(s3ClientSettingsAttrs)
-      .runFold(none)((_, opt) => opt)
+      .runFold(none)((opt, _) => opt)
   }
 
   def checkBucket()(implicit conf: S3Configuration): Future[BucketAccess] = {
-    S3.checkIfBucketExists(conf.bucket)(mat, s3ClientSettingsAttrs)
+    S3.checkIfBucketExists(conf.bucket)(actorSystem, s3ClientSettingsAttrs)
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -311,9 +309,9 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
       implicit conf: S3Configuration)
     : Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
     val none: Option[(Source[ByteString, NotUsed], ObjectMetadata)] = None
-    S3.download(conf.bucket, s"/${tenant.value}/tenant-assets/${asset.value}")
+    S3.getObject(conf.bucket, s"/${tenant.value}/tenant-assets/${asset.value}")
       .withAttributes(s3ClientSettingsAttrs)
-      .runFold(none)((_, opt) => opt)
+      .runFold(none)((opt, _) => opt)
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -353,18 +351,18 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit ec: ExecutionContext,
       implicit conf: S3Configuration)
     : Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
     val none: Option[(Source[ByteString, NotUsed], ObjectMetadata)] = None
-    S3.download(conf.bucket, s"/users/${asset.value}")
+    S3.getObject(conf.bucket, s"/users/${asset.value}")
       .withAttributes(s3ClientSettingsAttrs)
-      .runFold(none)((_, opt) => opt)
+      .runFold(none)((opt, _) => opt)
   }
 
   def getThumbnail(tenant: TenantId, asset: AssetId)(
       implicit conf: S3Configuration)
     : Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
     val none: Option[(Source[ByteString, NotUsed], ObjectMetadata)] = None
-    S3.download(conf.bucket, s"/${tenant.value}/thumbnails/${asset.value}")
+    S3.getObject(conf.bucket, s"/${tenant.value}/thumbnails/${asset.value}")
       .withAttributes(s3ClientSettingsAttrs)
-      .runFold(none)((_, opt) => opt)
+      .runFold(none)((opt, _) => opt)
   }
 
   def storeThumbnail(tenant: TenantId,

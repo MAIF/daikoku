@@ -1,16 +1,8 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import java.net.URLEncoder
-import java.util.concurrent.TimeUnit
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuTenantAction,
-  DaikokuTenantActionContext
-}
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.UberPublicUserAccess
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuTenantAction, DaikokuTenantActionContext}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
@@ -25,15 +17,16 @@ import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.mvc._
-import reactivemongo.bson.BSONObjectID
 
+import java.net.URLEncoder
 import java.time.Instant
 import java.util.Base64
+import java.util.concurrent.TimeUnit
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
 import scala.collection.concurrent.TrieMap
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future}
 
 class LoginController(DaikokuAction: DaikokuAction,
                       DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
@@ -44,7 +37,7 @@ class LoginController(DaikokuAction: DaikokuAction,
     extends AbstractController(cc) {
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
-  implicit val tr = translator
+  implicit val tr: Translator = translator
 
   def loginPage(provider: String) = DaikokuTenantAction.async { ctx =>
     AuthProvider(provider) match {
@@ -132,7 +125,7 @@ class LoginController(DaikokuAction: DaikokuAction,
           session.copy(expires = DateTime.now().plusSeconds(sessionMaxAge))
         case None =>
           UserSession(
-            id = DatastoreId(BSONObjectID.generate().stringify),
+            id = DatastoreId(IdGenerator.token(32)),
             userId = user.id,
             userName = user.name,
             userEmail = user.email,
@@ -408,7 +401,7 @@ class LoginController(DaikokuAction: DaikokuAction,
             val randomId = IdGenerator.token(128)
             env.dataStore.accountCreationRepo
               .save(AccountCreation(
-                id = DatastoreId(BSONObjectID.generate().stringify),
+                id = DatastoreId(IdGenerator.token(32)),
                 randomId = randomId,
                 email = email,
                 name = name,
@@ -483,9 +476,9 @@ class LoginController(DaikokuAction: DaikokuAction,
                   case optUser =>
                     val userId = optUser
                       .map(_.id)
-                      .getOrElse(UserId(BSONObjectID.generate().stringify))
+                      .getOrElse(UserId(IdGenerator.token(32)))
                     val team = Team(
-                      id = TeamId(BSONObjectID.generate().stringify),
+                      id = TeamId(IdGenerator.token(32)),
                       tenant = ctx.tenant.id,
                       `type` = TeamType.Personal,
                       name = s"${accountCreation.name}",
@@ -554,7 +547,7 @@ class LoginController(DaikokuAction: DaikokuAction,
           case Right(_) => {
             val randomId = IdGenerator.token(128)
             env.dataStore.passwordResetRepo.save(PasswordReset(
-              id = DatastoreId(BSONObjectID.generate().stringify),
+              id = DatastoreId(IdGenerator.token(32)),
               randomId = randomId,
               email = email,
               password = BCrypt.hashpw(password, BCrypt.gensalt()),
@@ -713,7 +706,7 @@ class LoginController(DaikokuAction: DaikokuAction,
                 else
                   FastFuture.successful(
                     BadRequest(Json.obj("error" -> "Invalid code")))
-              case None =>
+              case _ =>
                 FastFuture.successful(
                   BadRequest(Json.obj("error" -> "Invalid token")))
             }

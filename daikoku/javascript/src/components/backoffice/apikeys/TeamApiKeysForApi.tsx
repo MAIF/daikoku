@@ -39,8 +39,8 @@ export const TeamApiKeysForApi = () => {
   const { translate, Translation } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
 
-  const apiQuery = useQuery(['data', 'visibleApi'], () => Services.getTeamVisibleApi(currentTeam._id, params.apiId!, params.versionId!)) //FIXME: not real IAPI (betterApis with plans & pendingPlans)
-  const subsQuery = useQuery(['data', 'subscriptions'], () => Services.getTeamSubscriptions(params.apiId!, currentTeam._id, params.versionId!))
+  const apiQuery = useQuery({ queryKey: ['data', 'visibleApi'], queryFn: () => Services.getTeamVisibleApi(currentTeam._id, params.apiId!, params.versionId!) }) //FIXME: not real IAPI (betterApis with plans & pendingPlans)
+  const subsQuery = useQuery({ queryKey: ['data', 'subscriptions'], queryFn: () => Services.getTeamSubscriptions(params.apiId!, currentTeam._id, params.versionId!) })
 
   const teamQuery = useQuery({
     queryKey: ['data', 'team'],
@@ -51,7 +51,7 @@ export const TeamApiKeysForApi = () => {
   const subApisQuery = useQuery({
     queryKey: ['data', 'subscriptions', "apis"],
     queryFn: () => {
-      return client?.query<{apis: IApi[]}>({
+      return client?.query<{ apis: IApi[] }>({
         query: Services.graphql.apisByIds,
         variables: { ids: [...new Set((subsQuery.data as Array<ISubscription>).map((s) => s.api))] },
       })
@@ -60,7 +60,7 @@ export const TeamApiKeysForApi = () => {
   })
 
   useEffect(() => {
-    queryClient.invalidateQueries(['data'])
+    queryClient.invalidateQueries({queryKey: ['data']})
   }, [location]);
 
   useEffect(() => {
@@ -73,7 +73,7 @@ export const TeamApiKeysForApi = () => {
 
   const archiveApiKey = (subscription: ISubscription) => {
     return Services.archiveApiKey(currentTeam._id, subscription._id, !subscription.enabled)
-      .then(() => queryClient.invalidateQueries(['subscriptions']))
+      .then(() => queryClient.invalidateQueries({queryKey: ['subscriptions']}))
   };
 
   const makeUniqueApiKey = (subscription: ISubscription) => {
@@ -82,7 +82,7 @@ export const TeamApiKeysForApi = () => {
         if (ok)
           Services.makeUniqueApiKey(currentTeam._id, subscription._id)
             .then(() => {
-              queryClient.invalidateQueries(['subscriptions'])
+              queryClient.invalidateQueries({queryKey: ['subscriptions']})
               toastr.success(translate('Success'), translate('team_apikey_for_api.ask_for_make_unique.success_message'));
             });
       });
@@ -103,7 +103,7 @@ export const TeamApiKeysForApi = () => {
       rotationEvery,
       gracePeriod
     )
-      .then(() => queryClient.invalidateQueries(['subscriptions']))
+      .then(() => queryClient.invalidateQueries({queryKey: ['subscriptions']}))
   };
 
   const regenerateApiKeySecret = (subscription: ISubscription) => {
@@ -112,7 +112,7 @@ export const TeamApiKeysForApi = () => {
         if (ok) {
           Services.regenerateApiKeySecret(currentTeam._id, subscription._id)
             .then(() => {
-              queryClient.invalidateQueries(['subscriptions'])
+              queryClient.invalidateQueries({queryKey: ['subscriptions']})
               toastr.success(translate('Success'), translate('secret reseted successfully'))
             })
         }
@@ -237,7 +237,7 @@ const ApiKeyCard = ({
 
   const { translate, Translation } = useContext(I18nContext);
 
-  const planQuery = useQuery(['plan'], () => Services.getVisiblePlan(api._id, api.currentVersion, subscription.plan))
+  const planQuery = useQuery({ queryKey: ['plan'], queryFn: () => Services.getVisiblePlan(api._id, api.currentVersion, subscription.plan) })
 
 
   useEffect(() => {
@@ -328,7 +328,7 @@ const ApiKeyCard = ({
 
     const disableRotation = api.visibility === 'AdminOnly' || !!plan.autoRotation;
 
-    console.debug({subscription})
+    console.debug({ subscription })
 
     return (
       <div className="col-12 col-sm-6 col-md-4 mb-2">

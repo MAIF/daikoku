@@ -9,14 +9,16 @@ import org.joda.time.DateTime
 import play.api.libs.json.{JsArray, Json}
 import play.api.mvc.{AbstractController, ControllerComponents}
 
+import scala.concurrent.ExecutionContext
+
 class AuditTrailController(DaikokuAction: DaikokuAction,
                            env: Env,
                            otoroshiClient: OtoroshiClient,
                            cc: ControllerComponents)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   def auditTrail() = DaikokuAction.async { ctx =>
     val from = ctx.request

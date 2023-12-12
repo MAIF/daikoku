@@ -4,7 +4,6 @@ import com.github.jknack.handlebars.ValueResolver;
 import play.api.libs.json.*;
 import scala.Tuple2;
 import scala.collection.Seq;
-import scala.xml.pull.ExceptionEvent;
 
 import java.util.*;
 import java.util.Map.Entry;

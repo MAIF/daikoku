@@ -1,13 +1,12 @@
-import React, { useContext, useEffect, useState } from 'react';
-import * as Services from '../../../services';
-import md5 from 'js-md5';
+import { Form, constraints, format, type } from '@maif/react-forms';
+import { md5 } from 'js-md5';
+import { useContext, useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
-import { Form, type, format, constraints } from '@maif/react-forms';
-import { useSelector, useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
 
-import { I18nContext, logout, updateUser } from '../../../core';
 import { ModalContext, useUserBackOffice } from '../../../contexts';
+import { I18nContext, updateUser } from '../../../core';
+import * as Services from '../../../services';
 import { IState, ITenant } from '../../../types';
 
 const TwoFactorAuthentication = ({
@@ -394,7 +393,7 @@ export const MyProfile = () => {
   };
 
   const removeUser = () => {
-    confirm({message: translate('delete account'), okLabel: translate('Yes')})
+    confirm({ message: translate('delete account'), okLabel: translate('Yes') })
       .then((ok) => {
         if (ok) {
           Services.deleteSelfUserById()

@@ -1,24 +1,22 @@
 package storage.drivers.postgres
 
-import akka.NotUsed
-import akka.http.scaladsl.util.FastFuture
-import akka.stream.Materializer
-import akka.stream.scaladsl.{Framing, Keep, Sink, Source}
-import akka.util.ByteString
+import org.apache.pekko.NotUsed
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.{Framing, Keep, Sink, Source}
+import org.apache.pekko.util.ByteString
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
 import io.vertx.core.json.JsonObject
 import io.vertx.core.net.{PemKeyCertOptions, PemTrustOptions}
 import io.vertx.pgclient.{PgConnectOptions, PgPool, SslMode}
-import io.vertx.sqlclient.{PoolOptions, Row, RowSet}
-import play.api.{Configuration, Logger}
+import io.vertx.sqlclient.PoolOptions
 import play.api.libs.json._
-import reactivemongo.play.json.collection.JSONCollection
+import play.api.{Configuration, Logger}
 import storage._
 import storage.drivers.postgres.Helper._
 import storage.drivers.postgres.pgimplicits.EnhancedRow
@@ -26,20 +24,6 @@ import storage.drivers.postgres.pgimplicits.EnhancedRow
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsJava}
-
-trait RepositoryPostgres[Of, Id <: ValueType] extends Repo[Of, Id] {
-  override def collectionName: String = "ignored"
-
-  override def ensureIndices(implicit ec: ExecutionContext): Future[Unit] = {
-    // TODO - voir si on vérifie la présence des tables dans la base comme pour les collections Postgres
-    Future.successful(Seq.empty[Boolean])
-  }
-
-  // collection is never call in postgres implementation
-  override def collection(
-      implicit ec: ExecutionContext): Future[JSONCollection] =
-    Future.successful(null)
-}
 
 trait PostgresTenantCapableRepo[A, Id <: ValueType]
     extends TenantCapableRepo[A, Id] {
@@ -268,9 +252,6 @@ case class PostgresTenantCapableConsumptionRepo(
     reactivePg: ReactivePg
 ) extends PostgresTenantCapableRepo[ApiKeyConsumption, DatastoreId]
     with ConsumptionRepo {
-
-  private implicit val logger = Logger(
-    "daikoku-reactive-pg-PostgresTenantCapableConsumptionRepo")
 
   implicit val jsObjectFormat: OFormat[JsObject] = new OFormat[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
@@ -1644,9 +1625,9 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 }
 
 abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
-    extends RepositoryPostgres[Of, Id] {
+    extends Repo[Of, Id] {
 
-  private implicit val logger = Logger("CommonPostgresRepo")
+  private implicit val logger: Logger = Logger("CommonPostgresRepo")
 
   val jsObjectWrites: OWrites[JsObject] = (o: JsObject) => o
 

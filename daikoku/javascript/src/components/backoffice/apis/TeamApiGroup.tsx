@@ -53,7 +53,7 @@ export const TeamApiGroup = () => {
       if (!isError(apiGroupRequest.data)) {
         const apiGroup = apiGroupRequest.data
 
-        
+
 
         document.title = `${currentTeam.name} - ${apiGroup ? apiGroup.name : translate('API group')}`;
       }
@@ -89,7 +89,7 @@ export const TeamApiGroup = () => {
           return res;
         } else {
           toastr.success(translate('Success'), translate('Group saved'));
-          queryClient.invalidateQueries(['apiGroup'])
+          queryClient.invalidateQueries({ queryKey: ['apiGroup'] })
 
           if (res._humanReadableId !== group._humanReadableId) {
             navigate(`/${currentTeam._humanReadableId}/settings/apigrouups/${res._humanReadableId}/infos`);
@@ -111,7 +111,7 @@ export const TeamApiGroup = () => {
         if (isError(response)) {
           toastr.error(translate('Error'), translate(response.error));
         } else {
-          queryClient.invalidateQueries(['apiGroup'])
+          queryClient.invalidateQueries({ queryKey: ['apiGroup'] })
         }
       })
     }
@@ -120,7 +120,7 @@ export const TeamApiGroup = () => {
   const { translate } = useContext(I18nContext);
   const { alert } = useContext(ModalContext);
 
-  const schema = (apiGroup: IApi): ({ [key: string]: any }) =>  ({
+  const schema = (apiGroup: IApi): ({ [key: string]: any }) => ({
     name: {
       type: type.string,
       label: translate('Name'),
@@ -145,10 +145,10 @@ export const TeamApiGroup = () => {
       format: format.buttonsSelect,
       label: translate('State'),
       options: [
-        {label: translate('Created'), value: 'created'}, 
-        {label: translate('Published'), value: 'published'}, 
-        {label: translate('Deprecated'), value: 'deprecated'}, 
-        {label: translate('Blocked'), value: 'blocked'}],
+        { label: translate('Created'), value: 'created' },
+        { label: translate('Published'), value: 'published' },
+        { label: translate('Deprecated'), value: 'deprecated' },
+        { label: translate('Blocked'), value: 'blocked' }],
       defaultValue: 'created',
     },
     tags: {
@@ -255,55 +255,55 @@ export const TeamApiGroup = () => {
     const apiGroup = creation || apiGroupRequest.data as IApi
     return (
       <Can I={manage} a={API} team={currentTeam} dispatchError>
-          <div className="d-flex flex-row justify-content-between align-items-center">
-            {creation ? (<h2>{apiGroup.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
-              <h2 className="me-2">{apiGroup.name}{additionalHeader ? ` - ${additionalHeader}` : ''}</h2>
-            </div>)}
-            <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
-              {expertMode && translate('Standard mode')}
-              {!expertMode && translate('Expert mode')}
-            </button>
-          </div>
-          <div className="row">
-            <div className="section col container-api">
-              <div className="mt-2">
-                {params.tab === 'infos' && (<div>
-                  <Form
-                    schema={schema(apiGroup)}
-                    flow={flow}
-                    onSubmit={save}
-                    value={apiGroup} />
-                </div>)}
-                {params.tab === 'plans' && (<div>
-                  <TeamApiPricings
-                    api={apiGroup}
-                    reload={() => queryClient.invalidateQueries(["apigroup"])}
-                    team={currentTeam}
-                    tenant={tenant}
-                    setDefaultPlan={plan => setDefaultPlan(apiGroup, plan)}
-                    creation={!!creation}
-                    expertMode={expertMode}
-                    injectSubMenu={(component) => methods.addMenu({
-                      blocks: {
-                        links: { links: { plans: { childs: { menu: { component } } } } },
-                      },
-                    })}
-                    openApiSelectModal={() => alert({ message: 'oops' })}
-                    setHeader={(planName) => setAdditionalHeader(planName)} />
-                    
-                </div>)}
-                {tab === 'settings' && <TeamApiSettings api={apiGroup} apiGroup />}
-                {tab === 'stats' && !match && <TeamApiConsumption api={apiGroup} apiGroup />}
-                {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption apiGroup />)}
-                {tab === 'subscriptions' && <TeamApiSubscriptions api={apiGroup} />} {/* FIXME: a props APIGROUP has been removed...maybe add it in team api sub component */}
-              </div>
+        <div className="d-flex flex-row justify-content-between align-items-center">
+          {creation ? (<h2>{apiGroup.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
+            <h2 className="me-2">{apiGroup.name}{additionalHeader ? ` - ${additionalHeader}` : ''}</h2>
+          </div>)}
+          <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
+            {expertMode && translate('Standard mode')}
+            {!expertMode && translate('Expert mode')}
+          </button>
+        </div>
+        <div className="row">
+          <div className="section col container-api">
+            <div className="mt-2">
+              {params.tab === 'infos' && (<div>
+                <Form
+                  schema={schema(apiGroup)}
+                  flow={flow}
+                  onSubmit={save}
+                  value={apiGroup} />
+              </div>)}
+              {params.tab === 'plans' && (<div>
+                <TeamApiPricings
+                  api={apiGroup}
+                  reload={() => queryClient.invalidateQueries({ queryKey: ["apigroup"] })}
+                  team={currentTeam}
+                  tenant={tenant}
+                  setDefaultPlan={plan => setDefaultPlan(apiGroup, plan)}
+                  creation={!!creation}
+                  expertMode={expertMode}
+                  injectSubMenu={(component) => methods.addMenu({
+                    blocks: {
+                      links: { links: { plans: { childs: { menu: { component } } } } },
+                    },
+                  })}
+                  openApiSelectModal={() => alert({ message: 'oops' })}
+                  setHeader={(planName) => setAdditionalHeader(planName)} />
+
+              </div>)}
+              {tab === 'settings' && <TeamApiSettings api={apiGroup} apiGroup />}
+              {tab === 'stats' && !match && <TeamApiConsumption api={apiGroup} apiGroup />}
+              {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption apiGroup />)}
+              {tab === 'subscriptions' && <TeamApiSubscriptions api={apiGroup} />} {/* FIXME: a props APIGROUP has been removed...maybe add it in team api sub component */}
             </div>
           </div>
+        </div>
       </Can>
     );
   } else {
     return <div>Error while fetching api group details</div>
   }
 
-  
+
 };

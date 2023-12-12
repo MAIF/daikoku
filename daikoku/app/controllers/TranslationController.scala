@@ -1,29 +1,25 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
 import controllers.AppError
 import controllers.AppError.TranslationNotFound
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
+import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.domain.{DatastoreId, Translation}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, Translator}
+import org.joda.time.DateTime
+import play.api.i18n.I18nSupport
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents}
-import fr.maif.otoroshi.daikoku.domain.json._
-import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.Translator
-import org.joda.time.DateTime
-import play.api.i18n.{I18nSupport, Lang}
-import reactivemongo.bson.BSONObjectID
+
+import scala.concurrent.ExecutionContext
 
 class TranslationController(
     DaikokuAction: DaikokuAction,
-    DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
     DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
     env: Env,
     cc: ControllerComponents,
@@ -31,11 +27,11 @@ class TranslationController(
     extends AbstractController(cc)
     with I18nSupport {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
-  implicit val mat = env.defaultMaterializer
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
+  implicit val mat: Materializer = env.defaultMaterializer
 
-  val languages = supportedLangs.availables.map(_.language)
+  val languages: Seq[String] = supportedLangs.availables.map(_.language)
 
   def getLanguages() = DaikokuAction.async { ctx =>
     TenantAdminOnly(
@@ -68,7 +64,7 @@ class TranslationController(
                 .map {
                   case (key, value) =>
                     Translation(
-                      id = DatastoreId(BSONObjectID.generate().stringify),
+                      id = DatastoreId(IdGenerator.token(32)),
                       tenant = ctx.tenant.id,
                       language = v._1,
                       key = key,

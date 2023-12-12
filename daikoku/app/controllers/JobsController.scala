@@ -1,11 +1,13 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import jobs.{ApiKeyStatsJob, AuditTrailPurgeJob, OtoroshiVerifierJob}
 import play.api.libs.json.Json
 import play.api.mvc.{AbstractController, ControllerComponents}
+
+import scala.concurrent.ExecutionContext
 
 class JobsController(otoroshiVerifierJob: OtoroshiVerifierJob,
                      apiKeyStatsJob: ApiKeyStatsJob,
@@ -15,8 +17,8 @@ class JobsController(otoroshiVerifierJob: OtoroshiVerifierJob,
                      otoroshiClient: OtoroshiClient)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   def otoroshiSyncJob() = Action.async { req =>
     if (env.config.otoroshiSyncByCron) {

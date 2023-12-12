@@ -1,13 +1,8 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.http.scaladsl.util.FastFuture
-import cats.data.EitherT
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
-import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -19,21 +14,14 @@ import org.apache.commons.codec.binary.Base32
 import org.joda.time.{DateTime, Hours}
 import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  ControllerComponents,
-  Result
-}
-import reactivemongo.bson.BSONObjectID
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
 
 import java.time.Instant
 import java.util.Base64
 import java.util.concurrent.TimeUnit
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
-import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.FiniteDuration
 
 class UsersController(DaikokuAction: DaikokuAction,
@@ -43,8 +31,8 @@ class UsersController(DaikokuAction: DaikokuAction,
                       deletionService: DeletionService)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   def allTenantUsers() = DaikokuAction.async { ctx =>
     TenantAdminOnly(
@@ -144,7 +132,7 @@ class UsersController(DaikokuAction: DaikokuAction,
                                 avatar = Some(userToSave.picture),
                                 contact = userToSave.email))
                           .getOrElse(Team(
-                            id = TeamId(BSONObjectID.generate().stringify),
+                            id = TeamId(IdGenerator.token(32)),
                             tenant = ctx.tenant.id,
                             `type` = TeamType.Personal,
                             name = s"${userToSave.name}",
@@ -235,7 +223,7 @@ class UsersController(DaikokuAction: DaikokuAction,
       env.dataStore.userRepo.findByIdNotDeleted(userId).flatMap {
         case Some(user) =>
           val session = UserSession(
-            id = DatastoreId(BSONObjectID.generate().stringify),
+            id = DatastoreId(IdGenerator.token(32)),
             userId = user.id,
             userName = user.name,
             userEmail = user.email,
@@ -338,7 +326,7 @@ class UsersController(DaikokuAction: DaikokuAction,
                 FastFuture.successful(
                   BadRequest(Json.obj("error" -> "Can't updated user")))
             }
-        case Some(_) =>
+        case _ =>
           FastFuture.successful(BadRequest(Json.obj(
             "error" -> "Unable to retrieve generated qrcode when 2fa enabled")))
       }
@@ -440,7 +428,7 @@ class UsersController(DaikokuAction: DaikokuAction,
                       BadRequest(
                         Json.obj("error" -> "Missing invitation information"))
                     )
-                case None =>
+                case _ =>
                   BadRequest(Json.obj(
                     "error" -> "You're token is invalid, expired or you are already in the team"))
               }

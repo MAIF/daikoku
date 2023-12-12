@@ -13,10 +13,7 @@ import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
   TeamUser
 }
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.tests.utils.{
-  DaikokuSpecHelper,
-  OneServerPerSuiteWithMyComponents
-}
+import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
@@ -26,7 +23,7 @@ import scala.util.Random
 
 class TeamControllerSpec()
     extends PlaySpec
-    with OneServerPerSuiteWithMyComponents
+//    with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
     with IntegrationPatience {
 

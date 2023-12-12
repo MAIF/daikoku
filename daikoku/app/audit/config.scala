@@ -17,7 +17,7 @@ case class ElasticAnalyticsConfig(
 }
 
 object ElasticAnalyticsConfig {
-  val format = new Format[ElasticAnalyticsConfig] {
+  val format: Format[ElasticAnalyticsConfig] = new Format[ElasticAnalyticsConfig] {
     override def writes(o: ElasticAnalyticsConfig) = {
       Json.obj(
         "clusterUri" -> o.clusterUri,
@@ -57,5 +57,5 @@ case class Webhook(url: String,
 }
 
 object Webhook {
-  implicit val format = Json.format[Webhook]
+  implicit val format: OFormat[Webhook] = Json.format[Webhook]
 }

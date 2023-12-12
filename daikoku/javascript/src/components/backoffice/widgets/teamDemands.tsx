@@ -53,10 +53,13 @@ export const LastDemands = (props: LastDemandsProps) => {
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
-  const { isLoading, isError, data } = useQuery(["widget", "widget_team_last_demands"], () => client?.query({
-    query: GET_TEAM_LAST_DEMANDS,
-    variables: { teamId: props.team._id, offset: 0, limit: 5 }
-  }))
+  const { isLoading, isError, data } = useQuery({
+    queryKey: ["widget", "widget_team_last_demands"],
+    queryFn: () => client?.query({
+      query: GET_TEAM_LAST_DEMANDS,
+      variables: { teamId: props.team._id, offset: 0, limit: 5 }
+    })
+  })
   const isAdmin = !!props.team.users.find(u => u.userId === connectedUser._id && u.teamPermission === 'Administrator')
 
   const handleCheckout = (demandId: string) => {
@@ -76,33 +79,33 @@ export const LastDemands = (props: LastDemandsProps) => {
 
   return (
     <>
-    <Widget isLoading={isLoading} isError={isError} size="small" title={translate("widget.demands.title")}>
-      <div className='d-flex flex-column gap-1'>
-        {data?.data && data.data.teamSubscriptionDemands.total === 0 && <span className='widget-list-default-item'>{translate('widget.demands.no.demands')}</span>}
-        {data?.data && data.data.teamSubscriptionDemands.total > 0 && data.data.teamSubscriptionDemands.subscriptionDemands.map((d) => {
-          const checkout = d.state === 'inProgress' && d.steps.find(s => s.state === 'inProgress').step.name === 'payment'
+      <Widget isLoading={isLoading} isError={isError} size="small" title={translate("widget.demands.title")}>
+        <div className='d-flex flex-column gap-1'>
+          {data?.data && data.data.teamSubscriptionDemands.total === 0 && <span className='widget-list-default-item'>{translate('widget.demands.no.demands')}</span>}
+          {data?.data && data.data.teamSubscriptionDemands.total > 0 && data.data.teamSubscriptionDemands.subscriptionDemands.map((d) => {
+            const checkout = d.state === 'inProgress' && d.steps.find(s => s.state === 'inProgress').step.name === 'payment'
 
-          return (
-            <div className='d-flex flex-column justify-content-between align-items-center widget-list-item'>
-              <div className='item-title'>{`${d.api.name} / ${d.plan.customName || formatPlanType(d.plan.type, translate)}`}</div>
-              <div className='d-flex justify-content-between w-100 my-2'>
-                {checkout && <FeedbackButton
-                  type="primary"
-                  className="ms-1 btn-sm"
-                  onPress={() => handleCheckout(d.id)}
-                  onSuccess={() => console.debug("success")}
-                  feedbackTimeout={100}
-                  disabled={false}
-                >Checkout</FeedbackButton>
-                }
-                {!checkout && <span className='badge bg-secondary my-2'>{translate({key: 'widget.demands.state', replacements: [translate(d.state)]})}</span>}
-                {isAdmin && <button className='btn btn-sm btn-outline-danger ms-1' onClick={() => cancelDemand(d.id)}>{translate('Cancel')}</button>}
+            return (
+              <div className='d-flex flex-column justify-content-between align-items-center widget-list-item'>
+                <div className='item-title'>{`${d.api.name} / ${d.plan.customName || formatPlanType(d.plan.type, translate)}`}</div>
+                <div className='d-flex justify-content-between w-100 my-2'>
+                  {checkout && <FeedbackButton
+                    type="primary"
+                    className="ms-1 btn-sm"
+                    onPress={() => handleCheckout(d.id)}
+                    onSuccess={() => console.debug("success")}
+                    feedbackTimeout={100}
+                    disabled={false}
+                  >Checkout</FeedbackButton>
+                  }
+                  {!checkout && <span className='badge bg-secondary my-2'>{translate({ key: 'widget.demands.state', replacements: [translate(d.state)] })}</span>}
+                  {isAdmin && <button className='btn btn-sm btn-outline-danger ms-1' onClick={() => cancelDemand(d.id)}>{translate('Cancel')}</button>}
+                </div>
               </div>
-            </div>
-          )
-        })}
-      </div>
-    </Widget>
+            )
+          })}
+        </div>
+      </Widget>
     </>
   )
 }

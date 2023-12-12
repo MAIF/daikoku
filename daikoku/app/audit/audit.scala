@@ -1,37 +1,34 @@
 package fr.maif.otoroshi.daikoku.audit
 
-import java.util.Base64
-import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
-import akka.actor.{Actor, ActorSystem, PoisonPill, Props, Terminated}
-import akka.http.scaladsl.util.FastFuture
-import akka.http.scaladsl.util.FastFuture._
-import akka.kafka.ProducerSettings
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
-import akka.stream.{OverflowStrategy, QueueOfferResult}
-import akka.{Done, NotUsed}
+import org.apache.pekko.Done
+import org.apache.pekko.actor.{Actor, ActorSystem, PoisonPill, Props, Terminated}
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture._
+import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
+import org.apache.pekko.stream.{Materializer, OverflowStrategy, QueueOfferResult}
 import cats.data.EitherT
 import controllers.AppError
-import diffson.DiffOps
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
-import fr.maif.otoroshi.daikoku.utils.Translator
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, Translator}
 import org.apache.kafka.clients.CommonClientConfigs
-import org.apache.kafka.clients.producer.{Callback, KafkaProducer, Producer, ProducerRecord, RecordMetadata}
+import org.apache.kafka.clients.producer.{Callback, Producer, ProducerRecord, RecordMetadata}
 import org.apache.kafka.common.config.SslConfigs
 import org.apache.kafka.common.config.internals.BrokerSecurityConfigs
 import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSerializer}
+import org.apache.pekko.kafka.ProducerSettings
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
 import play.api.Logger
-import play.api.i18n.{I18nSupport, Lang, MessagesApi}
+import play.api.i18n.MessagesApi
 import play.api.libs.json._
 import play.api.libs.ws.WSRequest
 import play.api.mvc.RequestHeader
-import reactivemongo.bson.BSONObjectID
 
+import java.util.Base64
+import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
@@ -188,10 +185,10 @@ case class TenantAuditEvent(evt: AuditEvent,
   }
 
   def toJson(implicit env: Env): JsObject = Json.obj(
-    "_id" -> BSONObjectID.generate().stringify,
+    "_id" -> IdGenerator.token(32),
     "@type" -> theType,
     "@id" -> env.snowflakeGenerator.nextIdStr(),
-    "@timestamp" -> play.api.libs.json.JodaWrites.JodaDateTimeNumberWrites
+    "@timestamp" -> json.DateTimeFormat
       .writes(DateTime.now()),
     "@tenantId" -> tenant.id.value,
     "@userId" -> user.id.value,
@@ -234,10 +231,10 @@ object AuditActor {
 
 class AuditActor(implicit env: Env, messagesApi: MessagesApi, translator: Translator) extends Actor {
 
-  implicit lazy val ec = env.defaultExecutionContext
+  implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
 
-  lazy val logger = Logger("audit-actor")
-  lazy val console = Logger("audit-console")
+  lazy val logger: Logger = Logger("audit-actor")
+  lazy val console: Logger = Logger("audit-console")
 
   lazy val kafkaWrapperAudit =
     new KafkaWrapper(env.defaultActorSystem, env, _.auditTopic)
@@ -437,7 +434,7 @@ case class KafkaConfig(servers: Seq[String],
                       )
 
 object KafkaConfig {
-  implicit val format = Json.format[KafkaConfig]
+  implicit val format: OFormat[KafkaConfig] = Json.format[KafkaConfig]
 }
 
 object KafkaSettings {
@@ -500,12 +497,12 @@ class KafkaWrapper(actorSystem: ActorSystem,
 class KafkaWrapperActor(env: Env, topicFunction: KafkaConfig => String)
     extends Actor {
 
-  implicit val ec = env.defaultExecutionContext
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
 
   var config: Option[KafkaConfig] = None
   var eventProducer: Option[KafkaEventProducer] = None
 
-  lazy val logger = play.api.Logger("kafka-wrapper")
+  lazy val logger: Logger = play.api.Logger("kafka-wrapper")
 
   override def receive: Receive = {
     case event: KafkaWrapperEvent
@@ -549,9 +546,9 @@ class KafkaEventProducer(_env: Env,
                          config: KafkaConfig,
                          topicFunction: KafkaConfig => String) {
 
-  implicit val ec = _env.defaultExecutionContext
+  implicit val ec: ExecutionContext = _env.defaultExecutionContext
 
-  lazy val logger = play.api.Logger("kafka-connector")
+  lazy val logger: Logger = play.api.Logger("kafka-connector")
 
   lazy val topic = topicFunction(config)
 
@@ -560,10 +557,10 @@ class KafkaEventProducer(_env: Env,
   private lazy val producerSettings =
     KafkaSettings.producerSettings(_env, config)
   private lazy val producer: Producer[Array[Byte], String] =
-    producerSettings.createKafkaProducer
+    producerSettings.createKafkaProducer()
 
   def publish(event: JsValue): Future[Done] = {
-    val promise = Promise[RecordMetadata]
+    val promise = Promise[RecordMetadata]()
     try {
       val message = Json.stringify(event)
       producer.send(new ProducerRecord[Array[Byte], String](topic, message),
@@ -667,7 +664,7 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
   private val index: String = config.index.getOrElse("otoroshi-events")
   private val `type`: String = config.`type`.getOrElse("event")
   private val searchUri = urlFromPath(s"/$index*/_search")
-  private implicit val mat = env.defaultMaterializer
+  private implicit val mat: Materializer = env.defaultMaterializer
 
   private def url(url: String): WSRequest = {
     val builder = env.wsClient.url(url)
@@ -818,7 +815,7 @@ class ElasticReadsAnalytics(config: ElasticAnalyticsConfig, env: Env) {
   private val index: String = config.index.getOrElse("otoroshi-events")
   private val `type`: String = config.`type`.getOrElse("event")
   private val searchUri = urlFromPath(s"/$index*/_search")
-  private implicit val mat = env.defaultMaterializer
+  private implicit val mat: Materializer = env.defaultMaterializer
 
   private def url(url: String): WSRequest = {
     val builder = env.wsClient.url(url)

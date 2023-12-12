@@ -1,16 +1,14 @@
 package storage
 
-import akka.NotUsed
-import akka.http.scaladsl.util.FastFuture
-import akka.stream.Materializer
-import akka.stream.scaladsl.Source
-import akka.util.ByteString
+import org.apache.pekko.NotUsed
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import cats.data.OptionT
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import play.api.libs.json._
-import reactivemongo.api.indexes.Index
-import reactivemongo.play.json.collection.JSONCollection
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -34,13 +32,6 @@ trait Repo[Of, Id <: ValueType] {
   def format: Format[Of]
 
   def extractId(value: Of): String
-  def collectionName: String
-
-  def indices: Seq[Index.Default] = Seq.empty
-
-  def ensureIndices(implicit ec: ExecutionContext): Future[Unit]
-
-  def collection(implicit ec: ExecutionContext): Future[JSONCollection]
 
   def count()(implicit ec: ExecutionContext): Future[Long]
 

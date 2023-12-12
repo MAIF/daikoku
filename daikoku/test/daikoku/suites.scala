@@ -1,11 +1,5 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import java.io.File
-import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, StandardCopyOption}
-import java.util.concurrent.TimeUnit
-import akka.http.scaladsl.util.FastFuture
-import akka.stream.scaladsl.{Keep, Sink, Source}
 import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.algorithms.Algorithm
 import com.themillhousegroup.scoup.Scoup
@@ -16,38 +10,53 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
 import org.joda.time.DateTime
 import org.jsoup.nodes.Document
 import org.mindrot.jbcrypt.BCrypt
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{BeforeAndAfterAll, Suite, TestSuite}
+import org.scalatest.{Args, BeforeAndAfterAll, FailedStatus, Status, Suite, TestSuite, TestSuiteMixin}
 import org.scalatestplus.play.components.OneServerPerSuiteWithComponents
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.libs.ws.{DefaultWSCookie, WSResponse}
 import play.api.{Application, BuiltInComponents, Logger}
-import reactivemongo.bson.BSONObjectID
 
+import java.io.File
+import java.nio.charset.StandardCharsets
+import java.nio.file.{Files, StandardCopyOption}
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future, Promise}
+import scala.concurrent.impl.Promise
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.sys.process.ProcessLogger
 import scala.util.{Failure, Success, Try}
-
-class DaikokuSuites extends Suite with BeforeAndAfterAll { thisSuite =>
-
-  override protected def beforeAll(): Unit = {}
-
-  override protected def afterAll(): Unit = {}
-
-  override def toString: String = thisSuite.toString
-}
 
 case class ApiWithPlans(api: Api, plans: Seq[UsagePlan])
 
 object utils {
-  trait OneServerPerSuiteWithMyComponents
-      extends OneServerPerSuiteWithComponents
-      with ScalaFutures {
-    this: TestSuite =>
+//  trait OneServerPerSuiteWithMyComponents
+//      extends OneServerPerSuiteWithComponents
+//      with ScalaFutures {
+//    this: TestSuite =>
+//
+//    lazy val daikokuComponents = {
+//      val components =
+//        new DaikokuComponentsInstances(context)
+//      println(s"Using env ${components.env}") // WARNING: important to keep, needed to switch env between suites
+//      components
+//    }
+//
+//    override def components: BuiltInComponents = daikokuComponents
+//
+//    override def fakeApplication(): Application = {
+//      daikokuComponents.application
+//    }
+//  }
+
+  trait DaikokuSpecHelper extends TestSuiteMixin with OneServerPerSuiteWithComponents with ScalaFutures { suite: TestSuite =>
 
     lazy val daikokuComponents = {
       val components =
@@ -61,18 +70,40 @@ object utils {
     override def fakeApplication(): Application = {
       daikokuComponents.application
     }
-  }
 
-  trait DaikokuSpecHelper { suite: OneServerPerSuiteWithMyComponents =>
+    abstract override def run(testName: Option[String], args: Args): Status = {
+      lazy val run = super.run(testName, args)
 
-    implicit val ec = daikokuComponents.env.defaultExecutionContext
-    implicit val as = daikokuComponents.env.defaultActorSystem
-    implicit val mat = daikokuComponents.env.defaultMaterializer
+      def runIfDatabaseAvailable(timeout: FiniteDuration): Status = {
 
-    val logger = Logger.apply("daikoku-spec-helper")
+        val triedLong = Try(Await.result(daikokuComponents.env.dataStore.tenantRepo.count(Json.obj()), 1.second))
+
+        logger.info(s"database is avalaible ? ${triedLong.isSuccess}")
+
+        if (triedLong.isSuccess) {
+          run
+        } else if (timeout < 1.minute) {
+          logger.info(s"database is no longer avalaible, waiting $timeout before retry")
+          await(timeout)
+          val newDuration = timeout * 2
+          runIfDatabaseAvailable(newDuration)
+        } else {
+          FailedStatus
+        }
+      }
+
+      runIfDatabaseAvailable(1.second)
+    }
+
+
+    implicit val ec: ExecutionContext = daikokuComponents.env.defaultExecutionContext
+    implicit val as: ActorSystem = daikokuComponents.env.defaultActorSystem
+    implicit val mat: Materializer = daikokuComponents.env.defaultMaterializer
+
+    val logger: Logger = Logger.apply("daikoku-spec-helper")
 
     def await(duration: FiniteDuration): Unit = {
-      val p = Promise[Unit]
+      val p = Promise[Unit]()
       daikokuComponents.env.defaultActorSystem.scheduler
         .scheduleOnce(duration) {
           p.trySuccess(())
@@ -81,7 +112,7 @@ object utils {
     }
 
     def awaitF(duration: FiniteDuration): Future[Unit] = {
-      val p = Promise[Unit]
+      val p = Promise[Unit]()
       daikokuComponents.actorSystem.scheduler.scheduleOnce(duration) {
         p.trySuccess(())
       }
@@ -384,7 +415,7 @@ object utils {
               .map {
                 case None =>
                   Team(
-                    id = TeamId(BSONObjectID.generate().stringify),
+                    id = TeamId(IdGenerator.token(32)),
                     tenant = on.id,
                     `type` = TeamType.Personal,
                     name = user.name,
@@ -402,7 +433,7 @@ object utils {
                     .map(_ => t))
               .flatMap { team =>
                 val session = UserSession(
-                  id = DatastoreId(BSONObjectID.generate().stringify),
+                  id = DatastoreId(IdGenerator.token(32)),
                   userId = user.id,
                   userName = user.name,
                   userEmail = user.email,
@@ -600,7 +631,7 @@ object utils {
         "/Applications/Google Chrome Dev.app/Contents/MacOS/Google Chrome",
         "/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome"
       )
-      val promise = Promise[String]
+      val promise = Promise[String]()
       execs.find { exec =>
         var stdout = Seq.empty[String]
         val log = ProcessLogger { str =>
@@ -772,7 +803,7 @@ object utils {
       currentVersion = Version("1.0.0"),
       state = ApiState.Published,
       documentation = ApiDocumentation(
-        id = ApiDocumentationId(BSONObjectID.generate().stringify),
+        id = ApiDocumentationId(IdGenerator.token(32)),
         tenant = Tenant.Default,
         pages = Seq.empty[ApiDocumentationDetailPage],
         lastModificationAt = DateTime.now()
@@ -802,7 +833,7 @@ object utils {
       currentVersion = Version("1.0.0"),
       state = ApiState.Published,
       documentation = ApiDocumentation(
-        id = ApiDocumentationId(BSONObjectID.generate().stringify),
+        id = ApiDocumentationId(IdGenerator.token(32)),
         tenant = Tenant.Default,
         pages = Seq.empty[ApiDocumentationDetailPage],
         lastModificationAt = DateTime.now()
@@ -1038,7 +1069,7 @@ object utils {
         state = ApiState.Published,
         visibility = ApiVisibility.Public,
         documentation = ApiDocumentation(
-          id = ApiDocumentationId(BSONObjectID.generate().stringify),
+          id = ApiDocumentationId(IdGenerator.token(32)),
           tenant = tenant,
           pages = docIds,
           lastModificationAt = DateTime.now(),
@@ -1054,7 +1085,7 @@ object utils {
     }
 
     val defaultCmsPage: CmsPage = CmsPage(
-      id = CmsPageId(BSONObjectID.generate().stringify),
+      id = CmsPageId(IdGenerator.token(32)),
       tenant = tenant.id,
       visible = true,
       authenticated = false,
@@ -1065,7 +1096,7 @@ object utils {
       draft = "<h1>draft content</h1>",
       contentType = "text/html",
       body = "<h1>production content</h1>",
-      path = Some("/" + BSONObjectID.generate().stringify)
+      path = Some("/" + IdGenerator.token(32))
     )
 
     val defaultApi: ApiWithPlans =

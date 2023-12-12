@@ -1,7 +1,8 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.http.scaladsl.util.FastFuture
-import akka.util.ByteString
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.util.ByteString
 import cats.implicits._
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
@@ -13,6 +14,7 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import fr.maif.otoroshi.daikoku.utils.admin._
 import io.vertx.pgclient.PgPool
+import org.apache.pekko.stream.scaladsl.Source
 import play.api.http.HttpEntity
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
 import play.api.libs.streams.Accumulator
@@ -20,7 +22,7 @@ import play.api.mvc._
 import storage.drivers.postgres.PostgresDataStore
 import storage.{DataStore, Repo}
 
-import scala.io.Source
+import scala.concurrent.ExecutionContext
 import scala.util.{Failure, Success, Using}
 
 class StateController(DaikokuAction: DaikokuAction,
@@ -30,11 +32,11 @@ class StateController(DaikokuAction: DaikokuAction,
                       pgPool: PgPool)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val mat = env.defaultMaterializer
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val mat: Materializer = env.defaultMaterializer
+  implicit val ev: Env = env
 
-  val bodyParser = BodyParser("Import parser") { _ =>
+  val bodyParser: BodyParser[Source[ByteString, _]] = BodyParser("Import parser") { _ =>
     Accumulator.source[ByteString].map(Right.apply)
   }
 
@@ -185,11 +187,11 @@ class StateAdminApiController(
     cc: ControllerComponents)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val mat = env.defaultMaterializer
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val mat: Materializer = env.defaultMaterializer
+  implicit val ev: Env = env
 
-  val bodyParser = BodyParser("Import parser") { _ =>
+  val bodyParser: BodyParser[Source[ByteString, _]] = BodyParser("Import parser") { _ =>
     Accumulator.source[ByteString].map(Right.apply)
   }
 
@@ -406,8 +408,8 @@ class CredentialsAdminApiController(DaikokuApiAction: DaikokuApiAction,
                                     env: Env,
                                     cc: ControllerComponents)
     extends AbstractController(cc) {
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   def getCredentials(token: String) = DaikokuApiAction.async { ctx =>
     env.dataStore.apiSubscriptionRepo
@@ -614,7 +616,7 @@ class AdminApiSwaggerController(
       ctrl1.pathForIntegrationApi()
 
   def swagger() = Action {
-    Using(Source.fromResource("public/swaggers/admin-api-openapi.json")) {
+    Using(scala.io.Source.fromResource("public/swaggers/admin-api-openapi.json")) {
       source =>
         source.mkString
     } match {

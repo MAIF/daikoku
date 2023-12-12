@@ -1,28 +1,14 @@
 package jobs
 
-import akka.actor.Cancellable
-import fr.maif.otoroshi.daikoku.audit.{ApiKeyRotationEvent, JobEvent}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  OtoroshiSyncApiError,
-  OtoroshiSyncSubscriptionError
-}
-import fr.maif.otoroshi.daikoku.domain._
+import org.apache.pekko.actor.Cancellable
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.{
-  ConsoleMailer,
-  IdGenerator,
-  Mailer,
-  OtoroshiClient
-}
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
-import reactivemongo.bson.BSONObjectID
 
 import java.util.concurrent.atomic.AtomicReference
+import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
-import scala.util.{Failure, Success}
 
 class AuditTrailPurgeJob(env: Env) {
 

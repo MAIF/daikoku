@@ -1,33 +1,26 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import cats.implicits.catsSyntaxOptionId
-
-import java.util.concurrent.TimeUnit
 import com.auth0.jwt.JWT
-import controllers.AppError
 import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
-  Accepted,
-  Pending,
-  Rejected
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.otoroshi.daikoku.domain.ThirdPartySubscriptionInformations.StripeSubscriptionInformations
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
-import fr.maif.otoroshi.daikoku.utils._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
+import fr.maif.otoroshi.daikoku.utils._
 import org.joda.time.DateTime
 import play.api.libs.json._
-import reactivemongo.bson.BSONObjectID
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 
@@ -85,14 +78,12 @@ object json {
   val DateTimeFormat = new Format[DateTime] {
     override def reads(json: JsValue) =
       Try {
-        val longDate: Long =
-          ((json \ "$long").asOpt[Long]).getOrElse(json.as[Long])
-        JsSuccess(new DateTime(longDate))
+        JsSuccess(new DateTime(json.as[Long]))
       } recover {
         case e => JsError(e.getMessage)
       } get
 
-    override def writes(o: DateTime) = JsNumber(o.toDate.getTime)
+    override def writes(o: DateTime) = JsNumber(o.getMillis)
   }
 
   val OtoroshiSettingsFormat = new Format[OtoroshiSettings] {
@@ -362,7 +353,7 @@ object json {
           ApiIssueTag(
             id = (json \ "id")
               .asOpt[ApiIssueTagId](ApiIssueTagIdFormat.reads)
-              .getOrElse(ApiIssueTagId(BSONObjectID.generate().stringify)),
+              .getOrElse(ApiIssueTagId(IdGenerator.token(32))),
             name = (json \ "name").as[String],
             color = (json \ "color").as[String]
           ))
@@ -1677,7 +1668,7 @@ object json {
         )
       } recover {
         case e =>
-          //AppLogger.error(e.getMessage, e)
+//          AppLogger.error(e.getMessage, e)
           JsError(e.getMessage)
       } get
     }
@@ -1791,7 +1782,7 @@ object json {
           ApiPost(
             id = (json \ "_id")
               .asOpt[ApiPostId](ApiPostIdFormat.reads)
-              .getOrElse(ApiPostId(BSONObjectID.generate().stringify)),
+              .getOrElse(ApiPostId(IdGenerator.token(32))),
             tenant = (json \ "_tenant").as(TenantIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             title = (json \ "title").as[String],
@@ -1821,7 +1812,7 @@ object json {
           ApiIssue(
             id = (json \ "_id")
               .asOpt(ApiIssueIdFormat)
-              .getOrElse(ApiIssueId(BSONObjectID.generate().stringify)),
+              .getOrElse(ApiIssueId(IdGenerator.token(32))),
             seqId = (json \ "seqId").asOpt[Int].getOrElse(0),
             tenant = (json \ "_tenant").as(TenantIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),

@@ -15,7 +15,7 @@ export const SearchPanel = () => {
   const { translate } = useContext(I18nContext);
   const { tenant, connectedUser } = useSelector<IState, IStateContext>((state) => state.context);
 
-  const myTeamsRequest = useQuery(['myTeams'], () => Services.myTeams())
+  const myTeamsRequest = useQuery({ queryKey: ['myTeams'], queryFn: () => Services.myTeams() })
 
   useEffect(() => {
     debouncedSearch('');

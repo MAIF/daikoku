@@ -8,7 +8,7 @@ import java.security.interfaces.{
 }
 import java.util.concurrent.TimeUnit
 
-import akka.http.scaladsl.util.FastFuture
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.auth0.jwt.algorithms.Algorithm
 import com.nimbusds.jose.jwk.{ECKey, JWK, KeyType, RSAKey}
 import fr.maif.otoroshi.daikoku.env.Env

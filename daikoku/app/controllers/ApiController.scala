@@ -1,10 +1,10 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import akka.NotUsed
-import akka.http.scaladsl.util.FastFuture
-import akka.stream.Materializer
-import akka.stream.scaladsl.{Flow, JsonFraming, Sink, Source}
-import akka.util.ByteString
+import org.apache.pekko.NotUsed
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.{Flow, JsonFraming, Sink, Source}
+import org.apache.pekko.util.ByteString
 import cats.Id
 import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
@@ -32,9 +32,8 @@ import play.api.i18n.I18nSupport
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
 import play.api.mvc._
-import reactivemongo.bson.BSONObjectID
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 class ApiController(
@@ -52,11 +51,11 @@ class ApiController(
 ) extends AbstractController(cc)
     with I18nSupport {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
-  implicit val tr = translator
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
+  implicit val tr: Translator = translator
 
-  val logger = Logger("ApiController")
+  val logger: Logger = Logger("ApiController")
 
   def me() =
     DaikokuAction.async { ctx =>
@@ -211,7 +210,7 @@ class ApiController(
         ctx.setCtxValue("team.name", team.name)
         ctx.setCtxValue("team.id", team.id)
 
-        FastFuture.successful(Right(Ok(team.toUiPayload)))
+        FastFuture.successful(Right(Ok(team.toUiPayload())))
       }
     }
 
@@ -833,7 +832,7 @@ class ApiController(
           .map(
             data =>
               ApiSubscription(
-                id = ApiSubscriptionId(BSONObjectID.generate().stringify),
+                id = ApiSubscriptionId(IdGenerator.token(32)),
                 tenant = tenant.id,
                 apiKey = data.apiKey,
                 plan = data.plan,
@@ -1755,7 +1754,7 @@ class ApiController(
             for {
               _ <- apiKeyStatsJob.syncForSubscription(subscription, ctx.tenant)
               notif = Notification(
-                id = NotificationId(BSONObjectID.generate().stringify),
+                id = NotificationId(IdGenerator.token(32)),
                 tenant = ctx.tenant.id,
                 team = Some(subscription.team),
                 sender = ctx.user.asNotificationSender,
@@ -2042,7 +2041,7 @@ class ApiController(
               linked match {
                 case Some(true) => FastFuture.successful(documentationPages.map(page => ApiDocumentationDetailPage(page.id, page.title, Seq.empty)))
                 case _ => Future.sequence(documentationPages.map(page => {
-                  val generatedId = ApiDocumentationPageId(BSONObjectID.generate().stringify)
+                  val generatedId = ApiDocumentationPageId(IdGenerator.token(32))
                   env.dataStore.apiDocumentationPageRepo
                     .forTenant(ctx.tenant.id)
                     .save(page.copy(id = generatedId))
@@ -2093,7 +2092,7 @@ class ApiController(
               linked match {
                 case Some(true) => FastFuture.successful(fromPages.map(page => ApiDocumentationDetailPage(page.id, page.title, Seq.empty)))
                 case _ => Future.sequence(fromPages.map(page => {
-                  val generatedId = ApiDocumentationPageId(BSONObjectID.generate().stringify)
+                  val generatedId = ApiDocumentationPageId(IdGenerator.token(32))
                   env.dataStore.apiDocumentationPageRepo
                     .forTenant(ctx.tenant.id)
                     .save(page.copy(id = generatedId))
@@ -2160,7 +2159,7 @@ class ApiController(
     import cats.implicits._
 
     val notification = Notification(
-      id = NotificationId(BSONObjectID.generate().stringify),
+      id = NotificationId(IdGenerator.token(32)),
       tenant = ctx.tenant.id,
       team = Some(api.team),
       sender = ctx.user.asNotificationSender,
@@ -2273,7 +2272,7 @@ class ApiController(
       val finalBody = (body \ "_id").asOpt[String] match {
         case Some(_) => body
         case None =>
-          body ++ Json.obj("_id" -> BSONObjectID.generate().stringify)
+          body ++ Json.obj("_id" -> IdGenerator.token(32))
       }
 
       val name = (finalBody \ "name").as[String].toLowerCase.trim
@@ -2809,7 +2808,7 @@ class ApiController(
       TeamApiEditorOnly(
         AuditTrailEvent(s"@{user.name} has created posts for @{api.id}")
       )(teamId, ctx) { _ =>
-        val postId = ApiPostId(BSONObjectID.generate().stringify)
+        val postId = ApiPostId(IdGenerator.token(32))
 
         val body = ApiPost(
           id = postId,
@@ -2853,7 +2852,7 @@ class ApiController(
                                       .save(
                                         Notification(
                                           id = NotificationId(
-                                            BSONObjectID.generate().stringify
+                                            IdGenerator.token(32)
                                           ),
                                           tenant = ctx.tenant.id,
                                           sender = ctx.user.asNotificationSender,
@@ -3269,11 +3268,7 @@ class ApiController(
                                                   .forTenant(ctx.tenant.id)
                                                   .save(
                                                     Notification(
-                                                      id = NotificationId(
-                                                        BSONObjectID
-                                                          .generate()
-                                                          .stringify
-                                                      ),
+                                                      id = NotificationId(IdGenerator.token(32)),
                                                       tenant = ctx.tenant.id,
                                                       sender = ctx.user.asNotificationSender,
                                                       action =
@@ -3348,11 +3343,7 @@ class ApiController(
                                         .forTenant(ctx.tenant.id)
                                         .save(
                                           Notification(
-                                            id = NotificationId(
-                                              BSONObjectID
-                                                .generate()
-                                                .stringify
-                                            ),
+                                            id = NotificationId(IdGenerator.token(32)),
                                             tenant = ctx.tenant.id,
                                             sender = ctx.user.asNotificationSender,
                                             action =
@@ -3414,7 +3405,7 @@ class ApiController(
             .forTenant(ctx.tenant.id)
             .save(
               Notification(
-                id = NotificationId(BSONObjectID.generate().stringify),
+                id = NotificationId(IdGenerator.token(32)),
                 tenant = ctx.tenant.id,
                 sender = ctx.user.asNotificationSender,
                 action =
@@ -3617,7 +3608,7 @@ class ApiController(
             )
           case Some(newVersion) =>
             val apiRepo = env.dataStore.apiRepo.forTenant(ctx.tenant.id)
-            val generatedApiId = ApiId(BSONObjectID.generate().stringify)
+            val generatedApiId = ApiId(IdGenerator.token(32))
             apiRepo
               .findOne(
                 Json.obj(
@@ -3656,7 +3647,7 @@ class ApiController(
                               testing = Testing(),
                               documentation = ApiDocumentation(
                                 id = ApiDocumentationId(
-                                  BSONObjectID.generate().stringify
+                                  IdGenerator.token(32)
                                 ),
                                 tenant = ctx.tenant.id,
                                 lastModificationAt = DateTime.now(),
@@ -3828,7 +3819,7 @@ class ApiController(
           fromApi <- EitherT.fromOptionF(apiRepo.findById(fromApiId), AppError.ApiNotFound)
           api <- EitherT.fromOptionF(apiRepo.findById(apiId), AppError.ApiNotFound)
           plan <- EitherT.fromOptionF(env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findById(planId), AppError.PlanNotFound)
-          copyPlanId = UsagePlanId(BSONObjectID.generate().stringify)
+          copyPlanId = UsagePlanId(IdGenerator.token(32))
           customName = Some(
             s"Imported plan from ${fromApi.currentVersion} - ${plan.typeName}"
           )
@@ -3940,7 +3931,7 @@ class ApiController(
             AppError.render(ApiNotFound)
           )
           notification = Notification(
-            id = NotificationId(BSONObjectID.generate().stringify),
+            id = NotificationId(IdGenerator.token(32)),
             tenant = ctx.tenant.id,
             team = Some(newTeam.id),
             sender = ctx.user.asNotificationSender,

@@ -1,10 +1,6 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.ctrls.playJson._
 import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.NotAuthorizedError
 import fr.maif.otoroshi.daikoku.domain._
@@ -16,14 +12,13 @@ import play.api.Logger
 import play.api.i18n.I18nSupport
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
-import reactivemongo.bson.BSONObjectID
 import sangria.execution._
 import sangria.parser.{QueryParser, SyntaxError}
-import storage.DataStore
 import sangria.renderer.SchemaRenderer
+import storage.DataStore
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success}
 
@@ -36,12 +31,12 @@ class GraphQLController(
     extends AbstractController(cc)
     with I18nSupport {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   lazy val (schema, resolver) = SchemaDefinition.getSchema(env)
 
-  val logger = Logger("GraphQLController")
+  val logger: Logger = Logger("GraphQLController")
 
   def adminApiSearch() = DaikokuApiAction.async(parse.json) { ctx =>
     val query = (ctx.request.body \ "query").as[String]
@@ -49,7 +44,7 @@ class GraphQLController(
     val operation = (ctx.request.body \ "operation").asOpt[String]
 
     val user = User(
-      id = UserId(BSONObjectID.generate().stringify),
+      id = UserId(IdGenerator.token(32)),
       tenants = Set(ctx.tenant.id),
       origins = Set(ctx.tenant.authProvider),
       name = "generated-user",
@@ -65,7 +60,7 @@ class GraphQLController(
       user,
       tenant = ctx.tenant,
       session = UserSession(
-        id = DatastoreId(BSONObjectID.generate().stringify),
+        id = DatastoreId(IdGenerator.token(32)),
         userId = user.id,
         userName = user.name,
         userEmail = user.email,

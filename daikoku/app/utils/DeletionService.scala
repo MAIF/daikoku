@@ -1,24 +1,23 @@
 package fr.maif.otoroshi.daikoku.utils
 
-import akka.http.scaladsl.util.FastFuture
-import akka.stream.Materializer
-import akka.stream.scaladsl.{Sink, Source}
-import cats.data.{EitherT, OptionT}
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
+import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import jobs.ApiKeyStatsJob
-import play.api.libs.json.{JsArray, JsNull, JsObject, JsValue, Json}
-import reactivemongo.bson.BSONObjectID
+import play.api.libs.json.{JsArray, JsNull, JsValue, Json}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeyStatsJob, otoroshiClient: OtoroshiClient) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   /**
     * Delete logically a team
@@ -27,7 +26,7 @@ class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeySt
   private def deleteUser(user: User,
                          tenant: Tenant): EitherT[Future, AppError, Unit] = {
     val operation = Operation(
-      DatastoreId(BSONObjectID.generate().stringify),
+      DatastoreId(IdGenerator.token(32)),
       tenant = tenant.id,
       itemId = user.id.value,
       itemType = ItemType.User,
@@ -49,7 +48,7 @@ class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeySt
   private def deleteTeam(team: Team,
                          tenant: Tenant): EitherT[Future, AppError, Unit] = {
     val operation = Operation(
-      DatastoreId(BSONObjectID.generate().stringify),
+      DatastoreId(IdGenerator.token(32)),
       tenant = tenant.id,
       itemId = team.id.value,
       itemType = ItemType.Team,
@@ -85,7 +84,7 @@ class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeySt
       api <- EitherT.fromOptionF(env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api), AppError.ApiNotFound)
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(tenant).findById(subscription.plan), AppError.PlanNotFound)
       notif = Notification(
-        id = NotificationId(BSONObjectID.generate().stringify),
+        id = NotificationId(IdGenerator.token(32)),
         tenant = tenant.id,
         team = Some(subscription.team),
         sender = user.asNotificationSender,
@@ -148,7 +147,7 @@ class DeletionService(env: Env, apiService: ApiService, apiKeyStatsJob: ApiKeySt
       .map(
         s =>
           Operation(
-            DatastoreId(BSONObjectID.generate().stringify),
+            DatastoreId(IdGenerator.token(32)),
             tenant = tenant.id,
             itemId = s.id.value,
             itemType = ItemType.Api,

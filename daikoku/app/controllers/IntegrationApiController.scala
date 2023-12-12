@@ -5,29 +5,22 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions._
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminAccessTenant
-import fr.maif.otoroshi.daikoku.domain.{
-  Api,
-  ApiState,
-  ApiVisibility,
-  Team,
-  UsagePlan,
-  json
-}
+import fr.maif.otoroshi.daikoku.domain.{Api, ApiState, ApiVisibility, Team, UsagePlan, json}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import fr.maif.otoroshi.daikoku.utils.future._
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.mvc.{AbstractController, ControllerComponents, Result}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 class IntegrationApiController(DaikokuAction: DaikokuAction,
                                env: Env,
                                cc: ControllerComponents)
     extends AbstractController(cc) {
 
-  implicit val ec = env.defaultExecutionContext
-  implicit val ev = env
+  implicit val ec: ExecutionContext = env.defaultExecutionContext
+  implicit val ev: Env = env
 
   def findById(ctx: DaikokuActionContext[_],
                teamId: String,
