@@ -1,0 +1,83 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+
+# Get Daikoku
+
+There are several ways to get Daikoku to run it on your system.
+
+
+<Tabs>
+  <TabItem value="binaries" label="From binaries" default>
+    If you want to download the last version of Daikoku, you can grab them from the release page of the Daikoku github page :
+
+    Go to https://github.com/MAIF/daikoku/releases and get the last version of the `daikoku-x.x.x.zip` file or the `daikoku.jar` file.
+  </TabItem>
+  <TabItem value="docker" label="From Docker">
+    If you're a Docker aficionado, Daikoku is provided as a Docker image that your can pull directly from Official repos.
+
+    Fetch the last Docker image of Daikoku :
+
+    ```sh
+    docker pull maif/daikoku:17.x.x
+    # or 
+    docker pull maif/daikoku:latest
+    ```
+  </TabItem>
+  <TabItem value="sources" label="From sources">
+    To build Daikoku from sources, old fashion style, you need the following tools :
+
+    * git
+    * JDK 21
+    * sbt
+    * node
+    * npm
+
+    Once you've installed all those tools, go to the [Daikoku github page](https://github.com/MAIF/daikoku) and clone the sources :
+
+    ```sh
+    git clone https://github.com/MAIF/daikoku.git --depth=1
+    ```
+
+    then you need to run the `build.sh` script to build the documentation, the React UI and the server :
+
+    ```sh
+    sh ./scripts/build.sh
+    ```
+
+    and that's all, you can grab your Daikoku package at `daikoku/target/scala-2.13/daikoku` or `daikoku/target/universal/`.
+
+    For those who want to build only parts of Daikoku, read the following.
+
+    ## Build the documentation only
+
+    Go to the `manual` folder and run :
+
+    ```sh
+    npm run build
+    ```
+
+    The documentation is located at `manual/build`
+
+    ## Build the React UI
+
+    Go to the `daikoku/javascript` folder and run :
+
+    ```sh
+    npm install
+    npm run build
+    ```
+
+    You will find the JS bundle at `daikoku/public/react-app/daikoku.js`.
+
+    ## Build the Daikoku server
+
+    Go to the `daikoku` folder and run :
+
+    ```sh
+    sbt ';clean;compile;dist;assembly'
+    ```
+
+    You will find your Daikoku package at `daikoku/target/scala-2.13/daikoku` or `daikoku/target/universal/`.
+  </TabItem>
+</Tabs>

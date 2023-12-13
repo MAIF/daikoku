@@ -5,14 +5,14 @@ Now you are ready to run Daikoku. You can run the following command with some tw
 ## From .zip file
 
 ```sh
-unzip daikoku-dist.zip
-cd daikoku-vx.x.x
+unzip daikoku-x.x.x.zip
+cd daikoku
 ./bin/daikoku
 ```
 
 ## From .jar file
 
-For Java 11
+For Java 21
 
 ```sh
 java -jar daikoku.jar
