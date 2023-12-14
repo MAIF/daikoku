@@ -168,7 +168,7 @@ dockerExposedPorts := Seq(
 )
 Docker / packageName := "daikoku"
 Docker / maintainer := "MAIF OSS Team <oss@maif.fr>"
-dockerBaseImage := "eclipse-temurin:11.0.13_8-jre-focal"
+dockerBaseImage := "eclipse-temurin:21-jre-ubi9-minimal"
 dockerUsername := Some("maif")
 dockerUpdateLatest := true
 dockerCommands := dockerCommands.value.filterNot {
@@ -178,10 +178,6 @@ dockerCommands := dockerCommands.value.filterNot {
 Docker / dockerPackageMappings += (baseDirectory.value / "docker" / "start.sh") -> "/opt/docker/bin/start.sh"
 dockerEntrypoint := Seq("/opt/docker/bin/start.sh")
 dockerUpdateLatest := true
-
-// swaggerDomainNameSpaces := Seq("fr.maif.otoroshi.daikoku.domain")
-// swaggerV3 := true
-// swaggerPrettyJson := true
 
 import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 
