@@ -815,6 +815,24 @@ object utils {
       visibility = ApiVisibility.AdminOnly,
       authorizedTeams = Seq(defaultAdminTeam.id)
     )
+    val adminApiSubscription = ApiSubscription(
+        id = ApiSubscriptionId(IdGenerator.token(32)),
+        tenant = Tenant.Default,
+        apiKey = OtoroshiApiKey(
+          clientName = "admin-apikey-test",
+          clientId = IdGenerator.token(10),
+          clientSecret = IdGenerator.token(10)
+        ),
+        plan = adminApiPlan.id,
+        createdAt = DateTime.now(),
+        team = defaultAdminTeam.id,
+        api = adminApi.id,
+        by = tenantAdmin.id,
+        customName = Some("admin key for test"),
+        rotation = None,
+        integrationToken = IdGenerator.token(64)
+    )
+
     val adminApi2plan = Admin(
       id = UsagePlanId("admin"),
       tenant = TenantId("tenant2"),
@@ -876,7 +894,8 @@ object utils {
       defaultLanguage = Some("En"),
       adminApi = adminApi.id,
       adminSubscriptions = Seq.empty,
-      contact = "contact@test-corp.foo.bar"
+      contact = "contact@test-corp.foo.bar",
+      tenantMode = TenantMode.Default.some
     )
     val tenant2 = Tenant(
       id = TenantId("tenant2"),

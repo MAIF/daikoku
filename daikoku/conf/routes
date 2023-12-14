@@ -349,7 +349,6 @@ POST    /admin-api/state/import                         fr.maif.otoroshi.daikoku
 DELETE  /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.deleteEntity(id)
 PATCH   /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.patchEntity(id)
 PUT     /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.updateEntity(id)
-
 GET     /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.findById(id)
 POST    /admin-api/tenants                              fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.createEntity()
 GET     /admin-api/tenants                              fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.findAll()

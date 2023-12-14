@@ -8835,10 +8835,10 @@
         ]
       }
     },
-    "/integration-api/apis": {
+    "integration-api/apis": {
       "get": {
         "summary": "get all public apis for integration",
-        "operationId": "/integration-api.findallapis",
+        "operationId": "integration-api.findallapis",
         "responses": {
           "200": {
             "description": "List of public APIs",
@@ -8885,14 +8885,14 @@
           }
         ],
         "tags": [
-          "/integration-apis"
+          "integration-apis"
         ]
       }
     },
-    "/integration-api/{teamId}": {
+    "integration-api/{teamId}": {
       "get": {
         "summary": "get all teams for integration",
-        "operationId": "/integration-api.findallateams",
+        "operationId": "integration-api.findallateams",
         "responses": {
           "200": {
             "description": "List of teams",
@@ -8947,14 +8947,14 @@
           }
         ],
         "tags": [
-          "/integration-apis"
+          "integration-apis"
         ]
       }
     },
-    "/integration-api/{teamId}/{apiId}/complete": {
+    "integration-api/{teamId}/{apiId}/complete": {
       "get": {
         "summary": "get complete API for integration",
-        "operationId": "/integration-api.findcompleteapi",
+        "operationId": "integration-api.findcompleteapi",
         "responses": {
           "200": {
             "description": "Complete API",
@@ -9014,14 +9014,14 @@
           }
         ],
         "tags": [
-          "/integration-apis"
+          "integration-apis"
         ]
       }
     },
-    "/integration-api/{teamId}/{apiId}/description": {
+    "integration-api/{teamId}/{apiId}/description": {
       "get": {
         "summary": "get API description",
-        "operationId": "/integration-api.findapidescription",
+        "operationId": "integration-api.findapidescription",
         "responses": {
           "200": {
             "description": "API description",
@@ -9081,14 +9081,14 @@
           }
         ],
         "tags": [
-          "/integration-apis"
+          "integration-apis"
         ]
       }
     },
-    "/integration-api/{teamId}/{apiId}/plans": {
+    "integration-api/{teamId}/{apiId}/plans": {
       "get": {
         "summary": "get API plans",
-        "operationId": "/integration-api.findapiplans",
+        "operationId": "integration-api.findapiplans",
         "responses": {
           "200": {
             "description": "API plans",
@@ -9148,14 +9148,14 @@
           }
         ],
         "tags": [
-          "/integration-apis"
+          "integration-apis"
         ]
       }
     },
-    "/integration-api/{teamId}/{apiId}/documentation": {
+    "integration-api/{teamId}/{apiId}/documentation": {
       "get": {
         "summary": "get API documentation",
-        "operationId": "/integration-api.findapidocumentation",
+        "operationId": "integration-api.findapidocumentation",
         "responses": {
           "200": {
             "description": "API documentation",
@@ -9215,14 +9215,14 @@
           }
         ],
         "tags": [
-          "/integration-apis"
+          "integration-apis"
         ]
       }
     },
-    "/integration-api/{teamId}/{apiId}/apidoc": {
+    "integration-api/{teamId}/{apiId}/apidoc": {
       "get": {
         "summary": "get API description",
-        "operationId": "/integration-api.findapidoc",
+        "operationId": "integration-api.findapidoc",
         "responses": {
           "200": {
             "description": "API doc (swagger)",
@@ -9282,14 +9282,14 @@
           }
         ],
         "tags": [
-          "/integration-apis"
+          "integration-apis"
         ]
       }
     },
-    "/integration-api/{teamId}/{apiId}": {
+    "integration-api/{teamId}/{apiId}": {
       "get": {
         "summary": "get API",
-        "operationId": "/integration-api.findapi",
+        "operationId": "integration-api.findapi",
         "responses": {
           "200": {
             "description": "API",
@@ -9349,7 +9349,7 @@
           }
         ],
         "tags": [
-          "/integration-apis"
+          "integration-apis"
         ]
       }
     }
