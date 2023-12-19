@@ -1,6 +1,7 @@
 package fr.maif.otoroshi.daikoku.utils.admin
 
 import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.JWT
 import com.google.common.base.Charsets
 import controllers.AppError
@@ -172,6 +173,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
   def fromJson(entity: JsValue): Either[String, Of]
   def entityClass: Class[Of]
   def validate(entity: Of): EitherT[Future, AppError, Of]
+  def getId(entity: Of): Id
 
   def findAll(): Action[AnyContent] = DaikokuApiAction.async { ctx =>
     val paginationPage: Int = ctx.request.queryString
@@ -246,12 +248,16 @@ abstract class AdminApiController[Of, Id <: ValueType](
                                    None,
                                    env)
       case Right(newEntity) =>
-        validate(newEntity)
-          .map(entity => entityStore(ctx.tenant, env.dataStore)
-            .save(entity)
-            .map(_ => Created(toJson(entity))))
-        .leftMap(_.renderF())
-        .merge.flatten
+
+        entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(getId(newEntity).value).flatMap {
+          case Some(_) => AppError.EntityConflict("entity with same id already exists").renderF()
+          case None => validate(newEntity)
+            .map(entity => entityStore(ctx.tenant, env.dataStore)
+              .save(entity)
+              .map(_ => Created(toJson(entity))))
+            .leftMap(_.renderF())
+            .merge.flatten
+        }
 
     }
   }
@@ -289,11 +295,14 @@ abstract class AdminApiController[Of, Id <: ValueType](
       import diffson.playJson.DiffsonProtocol._
       import play.api.libs.json._
 
-      def patchJson(patchOps: JsValue, document: JsValue): JsValue = {
-        logger.warn(Json.stringify(patchOps))
+      def patchJson(patchOps: JsValue, document: JsValue): Option[JsValue] = {
         val patch = diffson.playJson.DiffsonProtocol.JsonPatchFormat.reads(patchOps).get
-        logger.warn(s"$patch")
-        patch.apply(document).get
+        patch.apply(document) match {
+          case JsSuccess(value, path) => value.some
+          case JsError(errors) =>
+            logger.error(s"error during patch entity : $errors")
+            None
+        }
       }
     }
 
@@ -337,9 +346,11 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
         ctx.request.body match {
           case JsArray(_) =>
-            val newJson =
-              JsonPatchHelpers.patchJson(ctx.request.body, currentJson)
-            finalizePatch(newJson)
+            JsonPatchHelpers.patchJson(ctx.request.body, currentJson) match {
+              case Some(newJson) => finalizePatch(newJson)
+              case None => AppError.InternalServerError("parsing error").renderF()
+            }
+
           case JsObject(_) =>
             val newJson =
               currentJson.as[JsObject].deepMerge(ctx.request.body.as[JsObject])
