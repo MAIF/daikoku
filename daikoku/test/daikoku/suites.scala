@@ -167,6 +167,9 @@ object utils {
         _ <- daikokuComponents.env.dataStore.usagePlanRepo
           .forAllTenant()
           .deleteAll()
+        _ <- daikokuComponents.env.dataStore.translationRepo
+          .forAllTenant()
+          .deleteAll()
       } yield ()
     }
 
@@ -188,7 +191,8 @@ object utils {
         cmsPages: Seq[CmsPage] = Seq.empty,
         operations: Seq[Operation] = Seq.empty,
         subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
-        usagePlans: Seq[UsagePlan] = Seq.empty
+        usagePlans: Seq[UsagePlan] = Seq.empty,
+        translations: Seq[Translation] = Seq.empty
     ) = {
       Await.result(
         setupEnv(
@@ -209,7 +213,8 @@ object utils {
           cmsPages,
           operations,
           subscriptionDemands,
-          usagePlans
+          usagePlans,
+          translations
         ),
         5.second
       )
@@ -233,7 +238,8 @@ object utils {
         cmsPages: Seq[CmsPage] = Seq.empty,
         operations: Seq[Operation] = Seq.empty,
         subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
-        usagePlans: Seq[UsagePlan] = Seq.empty
+        usagePlans: Seq[UsagePlan] = Seq.empty,
+        translations: Seq[Translation] = Seq.empty
     ): Future[Unit] = {
       for {
         _ <- flush()
@@ -368,6 +374,14 @@ object utils {
           .mapAsync(1)(
             i =>
               daikokuComponents.env.dataStore.subscriptionDemandRepo
+                .forAllTenant()
+                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .toMat(Sink.ignore)(Keep.right)
+          .run()
+        _ <- Source(translations.toList)
+          .mapAsync(1)(
+            i =>
+              daikokuComponents.env.dataStore.translationRepo
                 .forAllTenant()
                 .save(i)(daikokuComponents.env.defaultExecutionContext))
           .toMat(Sink.ignore)(Keep.right)

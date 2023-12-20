@@ -416,12 +416,12 @@ GET     /admin-api/audit-events/:id                     fr.maif.otoroshi.daikoku
 POST    /admin-api/audit-events                         fr.maif.otoroshi.daikoku.ctrls.AuditEventAdminApiController.createEntity()
 GET     /admin-api/audit-events                         fr.maif.otoroshi.daikoku.ctrls.AuditEventAdminApiController.findAll()
 
-DELETE  /admin-api/message/:id                          fr.maif.otoroshi.daikoku.ctrls.MessagesAdminApiController.deleteEntity(id)
-PATCH   /admin-api/message/:id                          fr.maif.otoroshi.daikoku.ctrls.MessagesAdminApiController.patchEntity(id)
-PUT     /admin-api/message/:id                          fr.maif.otoroshi.daikoku.ctrls.MessagesAdminApiController.updateEntity(id)
-GET     /admin-api/message/:id                          fr.maif.otoroshi.daikoku.ctrls.MessagesAdminApiController.findById(id)
-POST    /admin-api/message                              fr.maif.otoroshi.daikoku.ctrls.MessagesAdminApiController.createEntity()
-GET     /admin-api/message                              fr.maif.otoroshi.daikoku.ctrls.MessagesAdminApiController.findAll()
+DELETE  /admin-api/messages/:id                          fr.maif.otoroshi.daikoku.ctrls.MessagesAdminApiController.deleteEntity(id)
+PATCH   /admin-api/messages/:id                          fr.maif.otoroshi.daikoku.ctrls.MessagesAdminApiController.patchEntity(id)
+PUT     /admin-api/messages/:id                          fr.maif.otoroshi.daikoku.ctrls.MessagesAdminApiController.updateEntity(id)
+GET     /admin-api/messages/:id                          fr.maif.otoroshi.daikoku.ctrls.MessagesAdminApiController.findById(id)
+POST    /admin-api/messages                              fr.maif.otoroshi.daikoku.ctrls.MessagesAdminApiController.createEntity()
+GET     /admin-api/messages                              fr.maif.otoroshi.daikoku.ctrls.MessagesAdminApiController.findAll()
 
 DELETE  /admin-api/posts/:id                            fr.maif.otoroshi.daikoku.ctrls.PostsAdminApiController.deleteEntity(id)
 PATCH   /admin-api/posts/:id                            fr.maif.otoroshi.daikoku.ctrls.PostsAdminApiController.patchEntity(id)

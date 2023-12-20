@@ -2531,14 +2531,8 @@ paths:
                 - $ref: '#/components/schemas/patch'
                 - $ref: '#/components/schemas/Tenant'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/Tenant'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -2571,14 +2565,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Tenant'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/Tenant'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:

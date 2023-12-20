@@ -1,7 +1,8 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.otoroshi.daikoku.domain.{ApiDocumentationPage, ApiDocumentationPageId, ApiId, ApiKeyBilling, ApiKeyConsumption, ApiKeyConsumptionState, ApiKeyGlobalConsumptionInformations, ApiKeyQuotas, ApiSubscription, ApiSubscriptionId, DatastoreId, Notification, NotificationAction, NotificationId, OtoroshiApiKey, TeamId, TeamPermission, TenantId, UsagePlanId, UserId, UserSession, UserSessionId, UserWithPermission, json}
+import fr.maif.otoroshi.daikoku.domain.UsagePlan.{FreeWithoutQuotas, PayPerUse}
+import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
@@ -590,7 +591,6 @@ class AdminApiControllerSpec
           body = Json.arr(Json.obj("op" -> "replace", "path" -> "/users", "value" -> newUsers)).some
         )(tenant)
 
-        logger.warn(Json.stringify(resp.json))
         resp.status mustBe 400
 
       }
@@ -727,9 +727,283 @@ class AdminApiControllerSpec
       }
     }
 
-    "a call to api admin API" must {
+    "A call to Api admin API" must {
 
+      "POST :: Conflict :: API already exists" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = defaultApi.plans,
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = defaultApi.api.asJson.some
+        )(tenant)
+
+        resp.status mustBe 409
+      }
+
+      "POST :: BadRequest" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api.copy(id = ApiId(IdGenerator.token(10)), name = "foo")),
+          teams = Seq(teamOwner),
+          usagePlans = defaultApi.plans,
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = defaultApi.api.copy(tenant = TenantId("unkown")).asJson.some
+        )(tenant)
+
+        resp.status mustBe 400
+        getMsg(resp) mustBe "Tenant not found"
+
+        val respPlan = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = defaultApi.api.copy(possibleUsagePlans = Seq(UsagePlanId("unknown"))).asJson.some
+        )(tenant)
+
+        respPlan.status mustBe 400
+        getMsg(respPlan) mustBe "Usage Plan (unknown) not found"
+
+        val respDoc = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = defaultApi.api.copy(documentation = ApiDocumentation(
+            id = ApiDocumentationId(IdGenerator.token(32)),
+            tenant = tenant.id,
+            pages = Seq(ApiDocumentationDetailPage(
+              id = ApiDocumentationPageId("unknown"), title = "test", children = Seq.empty
+            )),
+            lastModificationAt = DateTime.now(),
+          )).asJson.some
+        )(tenant)
+
+        respDoc.status mustBe 400
+        getMsg(respDoc) mustBe "Documentation page (unknown) not found"
+
+        val respTeam = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = defaultApi.api.copy(team = TeamId("unknown")).asJson.some
+        )(tenant)
+
+        respTeam.status mustBe 400
+        getMsg(respTeam) mustBe "Team not found"
+
+        val respName = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = defaultApi.api.copy(name = "foo").asJson.some
+        )(tenant)
+
+        respName.status mustBe 400
+        getMsg(respName) mustBe "Api name already exists"
+
+        val respDefaultPlan = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = defaultApi.api.copy(defaultUsagePlan = UsagePlanId("unknown")).asJson.some
+        )(tenant)
+
+        respDefaultPlan.status mustBe 400
+        getMsg(respDefaultPlan) mustBe "Default Usage Plan (unknown) not found"
+
+        val respParent = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = defaultApi.api.copy(parent = ApiId("unknown").some).asJson.some
+        )(tenant)
+
+        respParent.status mustBe 400
+        getMsg(respParent) mustBe "Parent API not found"
+
+        val respChildren = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = defaultApi.api.copy(apis = Set(ApiId("unknown")).some).asJson.some
+        )(tenant)
+
+        respChildren.status mustBe 400
+        getMsg(respChildren) mustBe "Children API (unknown) not found"
+
+
+      }
+
+      "PUT :: Not Found" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(),
+          teams = Seq(teamConsumer),
+          usagePlans = defaultApi.plans,
+        )
+
+        val respNotFound = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/unknown",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = defaultApi.api.asJson.some
+        )(tenant)
+
+        respNotFound.status mustBe 404
+      }
+
+      "GET :: Not Found" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(),
+          usagePlans = defaultApi.plans,
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/unknown",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 404
+      }
+
+      "GET :: Ok" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = defaultApi.plans
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${defaultApi.api.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 200
+        resp.json mustBe defaultApi.api.asJson
+      }
+
+      "POST :: Created" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(),
+          usagePlans = defaultApi.plans,
+          teams = Seq(teamConsumer, teamOwner),
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = defaultApi.api.asJson.some
+        )(tenant)
+
+        logger.info(Json.stringify(resp.json))
+        resp.status mustBe 201
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${defaultApi.api.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json mustBe defaultApi.api.asJson
+      }
+      "PUT :: No Content" in {
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = defaultApi.plans,
+          teams = Seq(teamOwner),
+          users = Seq(user)
+        )
+
+        val updated = defaultApi.api.copy(name = "foo")
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${defaultApi.api.id.value}",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = updated.asJson.some
+        )(tenant)
+
+        resp.status mustBe 204
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${defaultApi.api.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json mustBe updated.asJson
+      }
+      "PATCH :: No Content" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = defaultApi.plans,
+          teams = Seq(teamOwner),
+          users = Seq(user)
+        )
+        val updated = defaultApi.api.copy(name = "foo")
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${defaultApi.api.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json.arr(Json.obj("op" -> "replace", "path" -> "/name", "value" -> "foo")).some)(tenant)
+
+        resp.status mustBe 204
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${defaultApi.api.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json mustBe updated.asJson
+      }
+      "DELETE :: Ok" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = defaultApi.plans,
+        )
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${defaultApi.api.id.value}",
+          method = "DELETE",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 200
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${defaultApi.api.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 404
+      }
     }
+
 
     "A call to ApiSubscription admin API" must {
       "POST :: Conflict :: Id already exists" in {
@@ -2041,7 +2315,6 @@ class AdminApiControllerSpec
       }
     }
 
-
     "A call to ApiKey Consumption admin API" must {
       "POST :: Conflict :: Id already exists" in {
         val payPerUsePlanId = UsagePlanId("5")
@@ -2540,7 +2813,6 @@ class AdminApiControllerSpec
           body = consumption.asJson.some
         )(tenant)
 
-        logger.warn(Json.stringify(resp.json))
         resp.status mustBe 201
         resp.json mustBe consumption.asJson
       }
@@ -2757,28 +3029,2401 @@ class AdminApiControllerSpec
     }
 
     "a call to audit event admin API" must {
-
+      //todo: nothing validated
     }
-    "a call to message admin API" must {
+    "A call to Message admin API" must {
+// todo: message do not have deleted property...findNotDeleted does not work properly
 
+//      "POST :: Conflict :: Message already exists" in {
+//        val message = Message(
+//          id = DatastoreId("toto"),
+//          tenant = tenant.id,
+//          messageType = MessageType.Tenant(tenant.id),
+//          participants = Set(user.id, userAdmin.id),
+//          readBy = Set.empty,
+//          chat = user.id,
+//          date = DateTime.now(),
+//          sender = user.id,
+//          message = "hello",
+//          closed = None,
+//          send = true
+//        )
+//        setupEnvBlocking(
+//          tenants = Seq(tenant),
+//          users = Seq(user, userAdmin),
+//          teams = Seq(teamOwner),
+//          subscriptions = Seq(adminApiSubscription),
+//          messages = Seq(message)
+//        )
+//
+//        val resp = httpJsonCallWithoutSessionBlocking(
+//          path = s"/admin-api/messages",
+//          method = "POST",
+//          headers = getAdminApiHeader(adminApiSubscription),
+//          body = message.asJson.some
+//        )(tenant)
+//
+//        resp.status mustBe 409
+//      }
+
+      "POST :: BadRequest" in {
+        val message = Message(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          messageType = MessageType.Tenant(tenant.id),
+          participants = Set(user.id, userAdmin.id),
+          readBy = Set.empty,
+          chat = user.id,
+          date = DateTime.now(),
+          sender = user.id,
+          message = "hello",
+          closed = None,
+          send = true
+        )
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin, userApiEditor),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          messages = Seq()
+        )
+
+        //tenant not found
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = message.copy(tenant = TenantId("unknown")).asJson.some
+        )(tenant)
+
+        resp.status mustBe 400
+        getMsg(resp) mustBe "Tenant not found"
+
+        //user not found
+        val respUser = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = message.copy(sender = UserId("unknown")).asJson.some
+        )(tenant)
+
+        respUser.status mustBe 400
+        getMsg(respUser) mustBe "Sender (unknown) not found"
+
+        //participant not found
+        val respParticipant = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = message.copy(participants = Set(user.id, UserId("unknown"))).asJson.some
+        )(tenant)
+
+        respParticipant.status mustBe 400
+        getMsg(respParticipant) mustBe "Participant (unknown) not found"
+
+        //sender not in participant
+        val respNotIn = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = message.copy(sender = userApiEditor.id).asJson.some
+        )(tenant)
+
+        respNotIn.status mustBe 400
+        getMsg(respNotIn) mustBe "Sender must included in participants"
+      }
+
+      "PUT :: BadRequest" in {
+        val message = Message(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          messageType = MessageType.Tenant(tenant.id),
+          participants = Set(user.id, userAdmin.id),
+          readBy = Set.empty,
+          chat = user.id,
+          date = DateTime.now(),
+          sender = user.id,
+          message = "hello",
+          closed = None,
+          send = true
+        )
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin, userApiEditor),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          messages = Seq(message)
+        )
+
+        //tenant not found
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/${message.id.value}",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = message.copy(tenant = TenantId("unknown")).asJson.some
+        )(tenant)
+
+        resp.status mustBe 400
+        getMsg(resp) mustBe "Tenant not found"
+
+        //user not found
+        val respUser = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/${message.id.value}",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = message.copy(sender = UserId("unknown")).asJson.some
+        )(tenant)
+
+        respUser.status mustBe 400
+        getMsg(respUser) mustBe "Sender (unknown) not found"
+
+        //tenant not found
+        val respParticipant = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/${message.id.value}",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = message.copy(participants = message.participants.union(Set(UserId("unknown")))).asJson.some
+        )(tenant)
+
+        respParticipant.status mustBe 400
+        getMsg(respParticipant) mustBe "Participant (unknown) not found"
+
+        //sender not in participant
+        val respNotIn = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/${message.id.value}",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = message.copy(sender = userApiEditor.id).asJson.some
+        )(tenant)
+
+        respNotIn.status mustBe 400
+        getMsg(respNotIn) mustBe "Sender must included in participants"
+      }
+
+      "PUT :: Not Found" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user),
+          teams = Seq(defaultAdminTeam),
+          subscriptions = Seq(adminApiSubscription)
+        )
+
+        val respNotFound = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/unknown",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = teamOwner.copy(name = "test").asJson.some
+        )(tenant)
+
+        respNotFound.status mustBe 404
+      }
+
+      "PATCH :: BadRequest" in {
+        val message = Message(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          messageType = MessageType.Tenant(tenant.id),
+          participants = Set(user.id, userAdmin.id),
+          readBy = Set.empty,
+          chat = user.id,
+          date = DateTime.now(),
+          sender = user.id,
+          message = "hello",
+          closed = None,
+          send = true
+        )
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          messages = Seq(message)
+        )
+
+        //tenant not found
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/${message.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json.arr(Json.obj("op" -> "replace", "path" -> "/_tenant", "value" -> TenantId("unknown").asJson)).some
+        )(tenant)
+
+        resp.status mustBe 400
+        getMsg(resp) mustBe "Tenant not found"
+
+        //user not found
+        val respUser = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/${message.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json.arr(Json.obj("op" -> "replace", "path" -> "/sender", "value" -> UserId("unknown").asJson)).some
+        )(tenant)
+
+        respUser.status mustBe 400
+        getMsg(respUser) mustBe "Sender (unknown) not found"
+
+        //tenant not found
+        val respParticipant = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/${message.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json.arr(Json.obj("op" -> "replace", "path" -> "/participants", "value" -> json.SetUserIdFormat.writes(message.participants.union(Set(UserId("unknown")))))).some
+        )(tenant)
+
+        respParticipant.status mustBe 400
+        getMsg(respParticipant) mustBe "Participant (unknown) not found"
+      }
+
+      "GET :: Not Found" in {
+        val message = Message(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          messageType = MessageType.Tenant(tenant.id),
+          participants = Set(user.id, userAdmin.id),
+          readBy = Set.empty,
+          chat = user.id,
+          date = DateTime.now(),
+          sender = user.id,
+          message = "hello",
+          closed = None,
+          send = true
+        )
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          messages = Seq(message)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/unknown",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 404
+      }
+
+      "GET :: Ok" in {
+        val message = Message(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          messageType = MessageType.Tenant(tenant.id),
+          participants = Set(user.id, userAdmin.id),
+          readBy = Set.empty,
+          chat = user.id,
+          date = DateTime.now(),
+          sender = user.id,
+          message = "hello",
+          closed = None,
+          send = true
+        )
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          messages = Seq(message)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/${message.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 200
+        resp.json mustBe message.asJson
+      }
+
+      "POST :: Created" in {
+        val message = Message(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          messageType = MessageType.Tenant(tenant.id),
+          participants = Set(user.id, userAdmin.id),
+          readBy = Set.empty,
+          chat = user.id,
+          date = DateTime.now(),
+          sender = user.id,
+          message = "hello",
+          closed = None,
+          send = true
+        )
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          messages = Seq()
+        )
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = message.asJson.some
+        )(tenant)
+
+        resp.status mustBe 201
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/${message.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json mustBe message.asJson
+      }
+      "PUT :: No Content" in {
+        val message = Message(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          messageType = MessageType.Tenant(tenant.id),
+          participants = Set(user.id, userAdmin.id),
+          readBy = Set.empty,
+          chat = user.id,
+          date = DateTime.now(),
+          sender = user.id,
+          message = "hello",
+          closed = None,
+          send = true
+        )
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin, userApiEditor),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          messages = Seq(message)
+        )
+        val updated = message.copy(sender = userAdmin.id, participants = message.participants.union(Set(userApiEditor.id)))
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/${message.id.value}",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = updated.asJson.some
+        )(tenant)
+
+        resp.status mustBe 204
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/${message.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json.as(json.MessageFormat) mustBe updated
+      }
+      "PATCH :: No Content" in {
+        val message = Message(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          messageType = MessageType.Tenant(tenant.id),
+          participants = Set(user.id, userAdmin.id),
+          readBy = Set.empty,
+          chat = user.id,
+          date = DateTime.now(),
+          sender = user.id,
+          message = "hello",
+          closed = None,
+          send = true
+        )
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin, userApiEditor),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          messages = Seq(message)
+        )
+        val updated = message.copy(sender = userAdmin.id, participants = message.participants.union(Set(userApiEditor.id)))
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/${message.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json.arr(
+            Json.obj("op" -> "replace", "path" -> "/sender", "value" -> userAdmin.id.asJson),
+            Json.obj("op" -> "replace", "path" -> "/participants", "value" -> json.SetUserIdFormat.writes(message.participants.union(Set(userApiEditor.id))))).some,
+        )(tenant)
+
+        resp.status mustBe 204
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/${message.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json.as(json.MessageFormat) mustBe updated
+      }
+      "DELETE :: Ok" in {
+        val message = Message(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          messageType = MessageType.Tenant(tenant.id),
+          participants = Set(user.id, userAdmin.id),
+          readBy = Set.empty,
+          chat = user.id,
+          date = DateTime.now(),
+          sender = user.id,
+          message = "hello",
+          closed = None,
+          send = true
+        )
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin, userApiEditor),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          messages = Seq(message)
+        )
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/${message.id.value}",
+          method = "DELETE",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 200
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/${message.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 404
+      }
     }
-    "a call to issue admin API" must {
 
+    "A call to Issue admin API" must {
+      "POST :: Conflict :: Issue already exists" in {
+        val issue = ApiIssue(
+          id = ApiIssueId(IdGenerator.token(10)),
+          seqId = 1,
+          tenant = tenant.id,
+          title = "test",
+          tags = Set(ApiIssueTagId("1")),
+          open = true,
+          createdAt = DateTime.now(),
+          closedAt = None,
+          by = user.id,
+          comments = Seq(
+            ApiIssueComment(
+              by = user.id, createdAt = DateTime.now(), lastModificationAt = DateTime.now(), content = "..."
+            )
+          ),
+          lastModificationAt = DateTime.now(),
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          issues = Seq(issue)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/issues",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = issue.asJson.some
+        )(tenant)
+
+        resp.status mustBe 409
+      }
+
+      "POST :: BadRequest" in {
+        val issue = ApiIssue(
+          id = ApiIssueId(IdGenerator.token(10)),
+          seqId = 1,
+          tenant = tenant.id,
+          title = "test",
+          tags = Set(ApiIssueTagId("1")),
+          open = true,
+          createdAt = DateTime.now(),
+          closedAt = None,
+          by = user.id,
+          comments = Seq(
+            ApiIssueComment(
+              by = user.id, createdAt = DateTime.now(), lastModificationAt = DateTime.now(), content = "..."
+            )
+          ),
+          lastModificationAt = DateTime.now(),
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          issues = Seq()
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/issues",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = issue.copy(tenant = TenantId("unkown")).asJson.some
+        )(tenant)
+
+        logger.info(Json.stringify(resp.json))
+        resp.status mustBe 400
+        getMsg(resp) mustBe "Tenant not found"
+
+        val respBy = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/issues",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = issue.copy(by = UserId("unkown")).asJson.some
+        )(tenant)
+
+        respBy.status mustBe 400
+        getMsg(respBy) mustBe "By not found"
+      }
+
+      "PUT :: Not Found" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          issues = Seq()
+        )
+
+        val respNotFound = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/issues/unknown",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = teamOwner.copy(name = "test").asJson.some
+        )(tenant)
+
+        respNotFound.status mustBe 404
+      }
+
+      "GET :: Not Found" in {
+        val message = Message(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          messageType = MessageType.Tenant(tenant.id),
+          participants = Set(user.id, userAdmin.id),
+          readBy = Set.empty,
+          chat = user.id,
+          date = DateTime.now(),
+          sender = user.id,
+          message = "hello",
+          closed = None,
+          send = true
+        )
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          messages = Seq(message)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/messages/unknown",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 404
+      }
+
+      "GET :: Ok" in {
+        val issue = ApiIssue(
+          id = ApiIssueId(IdGenerator.token(10)),
+          seqId = 1,
+          tenant = tenant.id,
+          title = "test",
+          tags = Set(ApiIssueTagId("1")),
+          open = true,
+          createdAt = DateTime.now(),
+          closedAt = None,
+          by = user.id,
+          comments = Seq(
+            ApiIssueComment(
+              by = user.id, createdAt = DateTime.now(), lastModificationAt = DateTime.now(), content = "..."
+            )
+          ),
+          lastModificationAt = DateTime.now(),
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          issues = Seq(issue)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/issues/${issue.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 200
+        resp.json mustBe issue.asJson
+      }
+
+      "POST :: Created" in {
+        val issue = ApiIssue(
+          id = ApiIssueId(IdGenerator.token(10)),
+          seqId = 1,
+          tenant = tenant.id,
+          title = "test",
+          tags = Set(ApiIssueTagId("1")),
+          open = true,
+          createdAt = DateTime.now(),
+          closedAt = None,
+          by = user.id,
+          comments = Seq(
+            ApiIssueComment(
+              by = user.id, createdAt = DateTime.now(), lastModificationAt = DateTime.now(), content = "..."
+            )
+          ),
+          lastModificationAt = DateTime.now(),
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          issues = Seq()
+        )
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/issues",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = issue.asJson.some
+        )(tenant)
+
+        resp.status mustBe 201
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/issues/${issue.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json mustBe issue.asJson
+      }
+      "PUT :: No Content" in {
+        val issue = ApiIssue(
+          id = ApiIssueId(IdGenerator.token(10)),
+          seqId = 1,
+          tenant = tenant.id,
+          title = "test",
+          tags = Set(ApiIssueTagId("1")),
+          open = true,
+          createdAt = DateTime.now(),
+          closedAt = None,
+          by = user.id,
+          comments = Seq(
+            ApiIssueComment(
+              by = user.id, createdAt = DateTime.now(), lastModificationAt = DateTime.now(), content = "..."
+            )
+          ),
+          lastModificationAt = DateTime.now(),
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          issues = Seq(issue)
+        )
+        val updated = issue.copy(title = "foo")
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/issues/${updated.id.value}",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = updated.asJson.some
+        )(tenant)
+
+        resp.status mustBe 204
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/issues/${issue.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        logger.info(Json.prettyPrint(verif.json))
+        verif.status mustBe 200
+        verif.json.as(json.ApiIssueFormat) mustBe updated
+      }
+      "PATCH :: No Content" in {
+        val issue = ApiIssue(
+          id = ApiIssueId(IdGenerator.token(10)),
+          seqId = 1,
+          tenant = tenant.id,
+          title = "test",
+          tags = Set(ApiIssueTagId("1")),
+          open = true,
+          createdAt = DateTime.now(),
+          closedAt = None,
+          by = user.id,
+          comments = Seq(
+            ApiIssueComment(
+              by = user.id, createdAt = DateTime.now(), lastModificationAt = DateTime.now(), content = "..."
+            )
+          ),
+          lastModificationAt = DateTime.now(),
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          issues = Seq(issue)
+        )
+        val updated = issue.copy(title = "foo")
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/issues/${issue.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json.arr(Json.obj("op" -> "replace", "path" -> "/title", "value" -> "foo")).some)(tenant)
+
+        resp.status mustBe 204
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/issues/${issue.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json.as(json.ApiIssueFormat) mustBe updated
+      }
+      "DELETE :: Ok" in {
+        val issue = ApiIssue(
+          id = ApiIssueId(IdGenerator.token(10)),
+          seqId = 1,
+          tenant = tenant.id,
+          title = "test",
+          tags = Set(ApiIssueTagId("1")),
+          open = true,
+          createdAt = DateTime.now(),
+          closedAt = None,
+          by = user.id,
+          comments = Seq(
+            ApiIssueComment(
+              by = user.id, createdAt = DateTime.now(), lastModificationAt = DateTime.now(), content = "..."
+            )
+          ),
+          lastModificationAt = DateTime.now(),
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          issues = Seq(issue)
+        )
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/issues/${issue.id.value}",
+          method = "DELETE",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 200
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/issues/${issue.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 404
+      }
     }
-    "a call to post admin API" must {
 
+    "A call to Post admin API" must {
+      "POST :: Conflict :: Post already exists" in {
+        val post = ApiPost(
+          id = ApiPostId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          title = "title",
+          lastModificationAt = DateTime.now(),
+          content = "..."
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          posts = Seq(post)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/posts",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = post.asJson.some
+        )(tenant)
+
+        resp.status mustBe 409
+      }
+
+      "POST :: BadRequest" in {
+        val post = ApiPost(
+          id = ApiPostId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          title = "title",
+          lastModificationAt = DateTime.now(),
+          content = "..."
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          posts = Seq()
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/posts",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = post.copy(tenant = TenantId("unkown")).asJson.some
+        )(tenant)
+
+        resp.status mustBe 400
+        getMsg(resp) mustBe "Tenant not found"
+      }
+
+      "PUT :: Not Found" in {
+        val post = ApiPost(
+          id = ApiPostId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          title = "title",
+          lastModificationAt = DateTime.now(),
+          content = "..."
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          posts = Seq()
+        )
+
+        val respNotFound = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/posts/unknown",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = teamOwner.copy(name = "test").asJson.some
+        )(tenant)
+
+        respNotFound.status mustBe 404
+      }
+
+      "GET :: Not Found" in {
+        val post = ApiPost(
+          id = ApiPostId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          title = "title",
+          lastModificationAt = DateTime.now(),
+          content = "..."
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          posts = Seq(post)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/posts/unknown",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 404
+      }
+
+      "GET :: Ok" in {
+        val post = ApiPost(
+          id = ApiPostId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          title = "title",
+          lastModificationAt = DateTime.now(),
+          content = "..."
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          posts = Seq(post)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/posts/${post.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 200
+        resp.json mustBe post.asJson
+      }
+
+      "POST :: Created" in {
+        val post = ApiPost(
+          id = ApiPostId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          title = "title",
+          lastModificationAt = DateTime.now(),
+          content = "..."
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          posts = Seq()
+        )
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/posts",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = post.asJson.some
+        )(tenant)
+
+        resp.status mustBe 201
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/posts/${post.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json mustBe post.asJson
+      }
+      "PUT :: No Content" in {
+        val post = ApiPost(
+          id = ApiPostId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          title = "title",
+          lastModificationAt = DateTime.now(),
+          content = "..."
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          posts = Seq(post)
+        )
+        val updated = post.copy(title = "foo")
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/posts/${post.id.value}",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = updated.asJson.some
+        )(tenant)
+
+        resp.status mustBe 204
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/posts/${post.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json.as(json.ApiPostFormat) mustBe updated
+      }
+      "PATCH :: No Content" in {
+        val post = ApiPost(
+          id = ApiPostId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          title = "title",
+          lastModificationAt = DateTime.now(),
+          content = "..."
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          posts = Seq(post)
+        )
+        val updated = post.copy(title = "foo")
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/posts/${post.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json.arr(Json.obj("op" -> "replace", "path" -> "/title", "value" -> "foo")).some)(tenant)
+
+        resp.status mustBe 204
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/posts/${post.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json.as(json.ApiPostFormat) mustBe updated
+      }
+      "DELETE :: Ok" in {
+        val post = ApiPost(
+          id = ApiPostId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          title = "title",
+          lastModificationAt = DateTime.now(),
+          content = "..."
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(teamOwner),
+          subscriptions = Seq(adminApiSubscription),
+          posts = Seq(post)
+        )
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/posts/${post.id.value}",
+          method = "DELETE",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 200
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/posts/${post.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 404
+      }
     }
-    "a call to CMS pages admin API" must {
 
+    "A call to CMS pages admin API" must {
+      "POST :: Conflict :: page already exists" in {
+        val page = CmsPage(
+          id = CmsPageId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          visible = true,
+          authenticated = true,
+          name = "foo",
+          forwardRef = None,
+          tags = List.empty,
+          metadata = Map.empty,
+          contentType = "text/html",
+          body = "<div>hello world</div>",
+          draft = "<div>hello world</div>",
+          path = None,
+          lastPublishedDate = DateTime.now().some,
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          cmsPages = Seq(page)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/cms-pages",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = page.asJson.some
+        )(tenant)
+
+        resp.status mustBe 409
+      }
+
+      "POST :: BadRequest" in {
+        val page = CmsPage(
+          id = CmsPageId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          visible = true,
+          authenticated = true,
+          name = "foo",
+          forwardRef = None,
+          tags = List.empty,
+          metadata = Map.empty,
+          contentType = "text/html",
+          body = "<div>hello world</div>",
+          draft = "<div>hello world</div>",
+          path = None,
+          lastPublishedDate = DateTime.now().some,
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          cmsPages = Seq()
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/cms-pages",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = page.copy(tenant = TenantId("unkown")).asJson.some
+        )(tenant)
+
+        logger.info(Json.stringify(resp.json))
+        resp.status mustBe 400
+        getMsg(resp) mustBe "Tenant not found"
+      }
+
+      "PUT :: Not Found" in {
+        val page = CmsPage(
+          id = CmsPageId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          visible = true,
+          authenticated = true,
+          name = "foo",
+          forwardRef = None,
+          tags = List.empty,
+          metadata = Map.empty,
+          contentType = "text/html",
+          body = "<div>hello world</div>",
+          draft = "<div>hello world</div>",
+          path = None,
+          lastPublishedDate = DateTime.now().some,
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          cmsPages = Seq()
+        )
+
+        val respNotFound = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/cms-pages/unknown",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = page.copy(name = "test").asJson.some
+        )(tenant)
+
+        respNotFound.status mustBe 404
+      }
+
+      "GET :: Not Found" in {
+        val page = CmsPage(
+          id = CmsPageId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          visible = true,
+          authenticated = true,
+          name = "foo",
+          forwardRef = None,
+          tags = List.empty,
+          metadata = Map.empty,
+          contentType = "text/html",
+          body = "<div>hello world</div>",
+          draft = "<div>hello world</div>",
+          path = None,
+          lastPublishedDate = DateTime.now().some,
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          cmsPages = Seq(page)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/cms-pages/unknown",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 404
+      }
+
+      "GET :: Ok" in {
+        val page = CmsPage(
+          id = CmsPageId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          visible = true,
+          authenticated = true,
+          name = "foo",
+          forwardRef = None,
+          tags = List.empty,
+          metadata = Map.empty,
+          contentType = "text/html",
+          body = "<div>hello world</div>",
+          draft = "<div>hello world</div>",
+          path = None,
+          lastPublishedDate = DateTime.now().some,
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          cmsPages = Seq(page)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/cms-pages/${page.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 200
+        resp.json mustBe page.asJson
+      }
+
+      "POST :: Created" in {
+        val page = CmsPage(
+          id = CmsPageId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          visible = true,
+          authenticated = true,
+          name = "foo",
+          forwardRef = None,
+          tags = List.empty,
+          metadata = Map.empty,
+          contentType = "text/html",
+          body = "<div>hello world</div>",
+          draft = "<div>hello world</div>",
+          path = None,
+          lastPublishedDate = DateTime.now().some,
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          cmsPages = Seq()
+        )
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/cms-pages",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = page.asJson.some
+        )(tenant)
+
+        resp.status mustBe 201
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/cms-pages/${page.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json mustBe page.asJson
+      }
+      "PUT :: No Content" in {
+        val page = CmsPage(
+          id = CmsPageId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          visible = true,
+          authenticated = true,
+          name = "foo",
+          forwardRef = None,
+          tags = List.empty,
+          metadata = Map.empty,
+          contentType = "text/html",
+          body = "<div>hello world</div>",
+          draft = "<div>hello world</div>",
+          path = None,
+          lastPublishedDate = DateTime.now().some,
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          cmsPages = Seq(page)
+        )
+        val updated = page.copy(name = "foo")
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/cms-pages/${page.id.value}",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = updated.asJson.some
+        )(tenant)
+
+        resp.status mustBe 204
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/cms-pages/${page.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json.as(json.CmsPageFormat) mustBe updated
+      }
+      "PATCH :: No Content" in {
+        val page = CmsPage(
+          id = CmsPageId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          visible = true,
+          authenticated = true,
+          name = "foo",
+          forwardRef = None,
+          tags = List.empty,
+          metadata = Map.empty,
+          contentType = "text/html",
+          body = "<div>hello world</div>",
+          draft = "<div>hello world</div>",
+          path = None,
+          lastPublishedDate = DateTime.now().some,
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          cmsPages = Seq(page)
+        )
+        val updated = page.copy(name = "foo")
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/cms-pages/${page.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json.arr(Json.obj("op" -> "replace", "path" -> "/name", "value" -> "foo")).some)(tenant)
+
+        resp.status mustBe 204
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/cms-pages/${page.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json.as(json.CmsPageFormat) mustBe updated
+      }
+      "DELETE :: Ok" in {
+        val page = CmsPage(
+          id = CmsPageId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          visible = true,
+          authenticated = true,
+          name = "foo",
+          forwardRef = None,
+          tags = List.empty,
+          metadata = Map.empty,
+          contentType = "text/html",
+          body = "<div>hello world</div>",
+          draft = "<div>hello world</div>",
+          path = None,
+          lastPublishedDate = DateTime.now().some,
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          cmsPages = Seq(page)
+        )
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/cms-pages/${page.id.value}",
+          method = "DELETE",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 200
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/cms-pages/${page.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 404
+      }
     }
-    "a call to translation admin API" must {
 
+    "A call to translation admin API" must {
+      //todo: no deleted => no conflict
+
+//      "POST :: Conflict :: translation already exists" in {
+//        val translation = Translation(
+//          id = DatastoreId(IdGenerator.token(10)),
+//          tenant = tenant.id, language = "fr", key = "foo", value = "bar", lastModificationAt = DateTime.now().some
+//        )
+//
+//        setupEnvBlocking(
+//          tenants = Seq(tenant),
+//          subscriptions = Seq(adminApiSubscription),
+//          translations = Seq(translation)
+//        )
+//
+//        val resp = httpJsonCallWithoutSessionBlocking(
+//          path = s"/admin-api/translations",
+//          method = "POST",
+//          headers = getAdminApiHeader(adminApiSubscription),
+//          body = translation.asJson.some
+//        )(tenant)
+//
+//        resp.status mustBe 409
+//      }
+
+      "POST :: BadRequest" in {
+        val translation = Translation(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id, language = "fr", key = "foo", value = "bar", lastModificationAt = DateTime.now().some
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          translations = Seq()
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/translations",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = translation.copy(tenant = TenantId("unkown")).asJson.some
+        )(tenant)
+
+        logger.info(Json.stringify(resp.json))
+        resp.status mustBe 400
+        getMsg(resp) mustBe "Tenant not found"
+      }
+
+      "PUT :: Not Found" in {
+        val translation = Translation(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id, language = "fr", key = "foo", value = "bar", lastModificationAt = DateTime.now().some
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          translations = Seq()
+        )
+
+        val respNotFound = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/translations/unknown",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = translation.asJson.some
+        )(tenant)
+
+        respNotFound.status mustBe 404
+      }
+
+      "GET :: Not Found" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          translations = Seq()
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/translations/unknown",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 404
+      }
+
+      "GET :: Ok" in {
+        val translation = Translation(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id, language = "fr", key = "foo", value = "bar", lastModificationAt = DateTime.now().some
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          translations = Seq(translation)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/translations/${translation.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 200
+        resp.json mustBe translation.asJson
+      }
+
+      "POST :: Created" in {
+        val translation = Translation(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id, language = "fr", key = "foo", value = "bar", lastModificationAt = DateTime.now().some
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          translations = Seq()
+        )
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/translations",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = translation.asJson.some
+        )(tenant)
+
+        resp.status mustBe 201
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/translations/${translation.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json mustBe translation.asJson
+      }
+      "PUT :: No Content" in {
+        val translation = Translation(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id, language = "fr", key = "foo", value = "bar", lastModificationAt = DateTime.now().some
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          translations = Seq(translation)
+        )
+        val updated = translation.copy(value = "foo")
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/translations/${translation.id.value}",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = updated.asJson.some
+        )(tenant)
+
+        resp.status mustBe 204
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/translations/${translation.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json.as(json.TranslationFormat) mustBe updated
+      }
+      "PATCH :: No Content" in {
+        val translation = Translation(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id, language = "fr", key = "foo", value = "bar", lastModificationAt = DateTime.now().some
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          translations = Seq(translation)
+        )
+        val updated = translation.copy(value = "foo")
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/translations/${translation.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json.arr(Json.obj("op" -> "replace", "path" -> "/value", "value" -> "foo")).some)(tenant)
+
+        resp.status mustBe 204
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/translations/${translation.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json.as(json.TranslationFormat) mustBe updated
+      }
+      "DELETE :: Ok" in {
+        val translation = Translation(
+          id = DatastoreId(IdGenerator.token(10)),
+          tenant = tenant.id, language = "fr", key = "foo", value = "bar", lastModificationAt = DateTime.now().some
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          translations = Seq(translation)
+        )
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/translations/${translation.id.value}",
+          method = "DELETE",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 200
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/translations/${translation.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 404
+      }
     }
-    "a call to usage plan admin API" must {
 
+    "A call to Usage plan admin API" must {
+
+      "POST :: Conflict :: UsagePlan already exists" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = defaultApi.plans
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = defaultApi.plans.head.asJson.some
+        )(tenant)
+
+        resp.status mustBe 409
+      }
+
+      "POST :: BadRequest" in {
+        val plan = PayPerUse(
+          id = UsagePlanId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          costPerRequest = BigDecimal(10.0),
+          costPerMonth = BigDecimal(0.02),
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          trialPeriod = None,
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345")))))
+          ),
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = Seq.empty,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = Seq()
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = plan.copy(tenant = TenantId("unkown")).asJson.some
+        )(tenant)
+
+        logger.info(Json.stringify(resp.json))
+        resp.status mustBe 400
+        getMsg(resp) mustBe "Tenant not found"
+
+        val respOto = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = plan.copy(otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("unknown"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345")))))
+          )).asJson.some
+        )(tenant)
+
+        respOto.status mustBe 400
+        getMsg(respOto) mustBe "Otoroshi setting not found"
+
+        val respPayment = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = plan.copy(paymentSettings = PaymentSettings.Stripe(
+            thirdPartyPaymentSettingsId = ThirdPartyPaymentSettingsId("unknown"),
+            productId = "1234",
+            priceIds = StripePriceIds(basePriceId = "1234", additionalPriceId = None)
+          ).some).asJson.some
+        )(tenant)
+
+        respPayment.status mustBe 400
+        getMsg(respPayment) mustBe "Payment setting not found"
+      }
+
+      "PUT :: Not Found" in {
+        val plan = PayPerUse(
+          id = UsagePlanId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          costPerRequest = BigDecimal(10.0),
+          costPerMonth = BigDecimal(0.02),
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          trialPeriod = None,
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345")))))
+          ),
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = Seq.empty,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = Seq()
+        )
+
+        val respNotFound = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans/unknown",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = plan.asJson.some
+        )(tenant)
+
+        respNotFound.status mustBe 404
+      }
+
+      "GET :: Not Found" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = Seq()
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans/unknown",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 404
+      }
+
+      "GET :: Ok" in {
+        val plan = PayPerUse(
+          id = UsagePlanId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          costPerRequest = BigDecimal(10.0),
+          costPerMonth = BigDecimal(0.02),
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          trialPeriod = None,
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345")))))
+          ),
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = Seq.empty,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = Seq(plan)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans/${plan.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        logger.info(Json.prettyPrint(resp.json))
+        logger.info(Json.prettyPrint(plan.asJson))
+        resp.status mustBe 200
+        resp.json.as[JsObject] - "testing" - "swagger" mustBe plan.asJson.as[JsObject] - "testing" - "swagger"
+      }
+
+      "POST :: Created" in {
+        val plan = PayPerUse(
+          id = UsagePlanId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          costPerRequest = BigDecimal(10.0),
+          costPerMonth = BigDecimal(0.02),
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          trialPeriod = None,
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345")))))
+          ),
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = Seq.empty,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = Seq()
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = plan.asJson.some
+        )(tenant)
+
+        resp.status mustBe 201
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans/${plan.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json.as[JsObject] - "testing" - "swagger" mustBe plan.asJson.as[JsObject] - "testing" - "swagger"
+      }
+      "PUT :: No Content" in {
+        val plan = PayPerUse(
+          id = UsagePlanId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          costPerRequest = BigDecimal(10.0),
+          costPerMonth = BigDecimal(0.02),
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          trialPeriod = None,
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345")))))
+          ),
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = Seq.empty,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = Seq(plan)
+        )
+        val updated = plan.copy(costPerMonth = BigDecimal(13))
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans/${plan.id.value}",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = updated.asJson.some
+        )(tenant)
+
+        resp.status mustBe 204
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans/${plan.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json.as[JsObject] - "testing" - "swagger" mustBe updated.asJson.as[JsObject] - "testing" - "swagger"
+      }
+      "PATCH :: No Content" in {
+        val plan = PayPerUse(
+          id = UsagePlanId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          costPerRequest = BigDecimal(10.0),
+          costPerMonth = BigDecimal(0.02),
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          trialPeriod = None,
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345")))))
+          ),
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = Seq.empty,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = Seq(plan)
+        )
+        val updated = plan.copy(costPerMonth = BigDecimal(13))
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans/${plan.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json.arr(Json.obj("op" -> "replace", "path" -> "/costPerMonth", "value" -> 13)).some)(tenant)
+
+        resp.status mustBe 204
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans/${plan.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json.as[JsObject] - "testing" - "swagger" mustBe updated.asJson.as[JsObject] - "testing" - "swagger"
+      }
+      "DELETE :: Ok" in {
+        val plan = PayPerUse(
+          id = UsagePlanId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          costPerRequest = BigDecimal(10.0),
+          costPerMonth = BigDecimal(0.02),
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          trialPeriod = None,
+          currency = Currency("EUR"),
+          customName = None,
+          customDescription = None,
+          otoroshiTarget = Some(
+            OtoroshiTarget(OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345")))))
+          ),
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = Seq.empty,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false)
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = Seq(plan)
+        )
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans/${plan.id.value}",
+          method = "DELETE",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 200
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans/${plan.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 404
+      }
     }
-    "a call to subscription demand admin API" must {
 
+    "A call to Subscription admin API" must {
+
+      "POST :: Conflict :: UsagePlan already exists" in {
+        val demand = SubscriptionDemand(
+          id = SubscriptionDemandId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          api = defaultApi.api.id,
+          plan = UsagePlanId("5"),
+          steps = Seq(
+            SubscriptionDemandStep(
+              id = SubscriptionDemandStepId(IdGenerator.token(10)),
+              state = SubscriptionDemandState.Waiting,
+              step = ValidationStep.TeamAdmin(
+                id = IdGenerator.token(10), team = teamOwner.id
+              )
+            )
+          ),
+          state = SubscriptionDemandState.Waiting,
+          team = teamConsumerId,
+          from = user.id,
+          date = DateTime.now(),
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = defaultApi.plans,
+          subscriptionDemands = Seq(demand)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/subscription-demands",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = demand.asJson.some
+        )(tenant)
+
+        resp.status mustBe 409
+      }
+
+      "POST :: BadRequest" in {
+        val demand = SubscriptionDemand(
+          id = SubscriptionDemandId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          api = defaultApi.api.id,
+          plan = UsagePlanId("5"),
+          steps = Seq(
+            SubscriptionDemandStep(
+              id = SubscriptionDemandStepId(IdGenerator.token(10)),
+              state = SubscriptionDemandState.Waiting,
+              step = ValidationStep.TeamAdmin(
+                id = IdGenerator.token(10), team = teamOwner.id
+              )
+            )
+          ),
+          state = SubscriptionDemandState.Waiting,
+          team = teamConsumerId,
+          from = user.id,
+          date = DateTime.now(),
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          teams = Seq(teamConsumer),
+          usagePlans = defaultApi.plans,
+          subscriptionDemands = Seq()
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/subscription-demands",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = demand.copy(tenant = TenantId("unkown")).asJson.some
+        )(tenant)
+
+        resp.status mustBe 400
+        getMsg(resp) mustBe "Tenant not found"
+
+        val respApi = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/subscription-demands",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = demand.copy(api = ApiId("unkown")).asJson.some
+        )(tenant)
+
+        respApi.status mustBe 400
+        getMsg(respApi) mustBe "Api not found"
+
+        val respPlan = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/subscription-demands",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = demand.copy(plan = UsagePlanId("unkown")).asJson.some
+        )(tenant)
+
+        respPlan.status mustBe 400
+        getMsg(respPlan) mustBe "Plan not found"
+
+        val respTeam = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/subscription-demands",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = demand.copy(team = TeamId("unkown")).asJson.some
+        )(tenant)
+
+        respTeam.status mustBe 400
+        getMsg(respTeam) mustBe "Team not found"
+
+        val respFrom = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/subscription-demands",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = demand.copy(from = UserId("unkown")).asJson.some
+        )(tenant)
+
+        respFrom.status mustBe 400
+        getMsg(respFrom) mustBe "From not found"
+      }
+
+      "PUT :: Not Found" in {
+        val demand = SubscriptionDemand(
+          id = SubscriptionDemandId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          api = defaultApi.api.id,
+          plan = UsagePlanId("5"),
+          steps = Seq(
+            SubscriptionDemandStep(
+              id = SubscriptionDemandStepId(IdGenerator.token(10)),
+              state = SubscriptionDemandState.Waiting,
+              step = ValidationStep.TeamAdmin(
+                id = IdGenerator.token(10), team = teamOwner.id
+              )
+            )
+          ),
+          state = SubscriptionDemandState.Waiting,
+          team = teamConsumerId,
+          from = user.id,
+          date = DateTime.now(),
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = defaultApi.plans,
+          subscriptionDemands = Seq(demand)
+        )
+
+        val respNotFound = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/subscriptions-demands/unknown",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = demand.asJson.some
+        )(tenant)
+
+        respNotFound.status mustBe 404
+      }
+
+      "GET :: Not Found" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = defaultApi.plans,
+          subscriptionDemands = Seq()
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/usage-plans/unknown",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 404
+      }
+
+      "GET :: Ok" in {
+        val demand = SubscriptionDemand(
+          id = SubscriptionDemandId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          api = defaultApi.api.id,
+          plan = UsagePlanId("5"),
+          steps = Seq(
+            SubscriptionDemandStep(
+              id = SubscriptionDemandStepId(IdGenerator.token(10)),
+              state = SubscriptionDemandState.Waiting,
+              step = ValidationStep.TeamAdmin(
+                id = IdGenerator.token(10), team = teamOwner.id
+              )
+            )
+          ),
+          state = SubscriptionDemandState.Waiting,
+          team = teamConsumerId,
+          from = user.id,
+          date = DateTime.now(),
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = defaultApi.plans,
+          subscriptionDemands = Seq(demand)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/subscription-demands/${demand.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 200
+        resp.json mustBe demand.asJson
+      }
+
+      "POST :: Created" in {
+        val demand = SubscriptionDemand(
+          id = SubscriptionDemandId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          api = defaultApi.api.id,
+          plan = UsagePlanId("5"),
+          steps = Seq(
+            SubscriptionDemandStep(
+              id = SubscriptionDemandStepId(IdGenerator.token(10)),
+              state = SubscriptionDemandState.Waiting,
+              step = ValidationStep.TeamAdmin(
+                id = IdGenerator.token(10), team = teamOwner.id
+              )
+            )
+          ),
+          state = SubscriptionDemandState.Waiting,
+          team = teamConsumerId,
+          from = user.id,
+          date = DateTime.now(),
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = defaultApi.plans,
+          teams = Seq(teamConsumer),
+          subscriptionDemands = Seq(),
+          users = Seq(user)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/subscription-demands",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = demand.asJson.some
+        )(tenant)
+
+        logger.info(Json.stringify(resp.json))
+        resp.status mustBe 201
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/subscription-demands/${demand.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json mustBe demand.asJson
+      }
+      "PUT :: No Content" in {
+        val demand = SubscriptionDemand(
+          id = SubscriptionDemandId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          api = defaultApi.api.id,
+          plan = UsagePlanId("5"),
+          steps = Seq(
+            SubscriptionDemandStep(
+              id = SubscriptionDemandStepId(IdGenerator.token(10)),
+              state = SubscriptionDemandState.Waiting,
+              step = ValidationStep.TeamAdmin(
+                id = IdGenerator.token(10), team = teamOwner.id
+              )
+            )
+          ),
+          state = SubscriptionDemandState.Waiting,
+          team = teamConsumerId,
+          from = user.id,
+          date = DateTime.now(),
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = defaultApi.plans,
+          teams = Seq(teamConsumer),
+          subscriptionDemands = Seq(demand),
+          users = Seq(user)
+        )
+
+        val updated = demand.copy(state = SubscriptionDemandState.InProgress)
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/subscription-demands/${demand.id.value}",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = updated.asJson.some
+        )(tenant)
+
+        resp.status mustBe 204
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/subscription-demands/${demand.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json mustBe updated.asJson
+      }
+      "PATCH :: No Content" in {
+        val demand = SubscriptionDemand(
+          id = SubscriptionDemandId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          api = defaultApi.api.id,
+          plan = UsagePlanId("5"),
+          steps = Seq(
+            SubscriptionDemandStep(
+              id = SubscriptionDemandStepId(IdGenerator.token(10)),
+              state = SubscriptionDemandState.Waiting,
+              step = ValidationStep.TeamAdmin(
+                id = IdGenerator.token(10), team = teamOwner.id
+              )
+            )
+          ),
+          state = SubscriptionDemandState.Waiting,
+          team = teamConsumerId,
+          from = user.id,
+          date = DateTime.now(),
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = defaultApi.plans,
+          teams = Seq(teamConsumer),
+          subscriptionDemands = Seq(demand),
+          users = Seq(user)
+        )
+        val updated = demand.copy(state = SubscriptionDemandState.InProgress)
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/subscription-demands/${demand.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json.arr(Json.obj("op" -> "replace", "path" -> "/state", "value" -> SubscriptionDemandState.InProgress.name)).some)(tenant)
+
+        resp.status mustBe 204
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/subscription-demands/${demand.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 200
+        verif.json mustBe updated.asJson
+      }
+      "DELETE :: Ok" in {
+        val demand = SubscriptionDemand(
+          id = SubscriptionDemandId(IdGenerator.token(10)),
+          tenant = tenant.id,
+          api = defaultApi.api.id,
+          plan = UsagePlanId("5"),
+          steps = Seq(
+            SubscriptionDemandStep(
+              id = SubscriptionDemandStepId(IdGenerator.token(10)),
+              state = SubscriptionDemandState.Waiting,
+              step = ValidationStep.TeamAdmin(
+                id = IdGenerator.token(10), team = teamOwner.id
+              )
+            )
+          ),
+          state = SubscriptionDemandState.Waiting,
+          team = teamConsumerId,
+          from = user.id,
+          date = DateTime.now(),
+        )
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(defaultApi.api),
+          usagePlans = defaultApi.plans,
+          subscriptionDemands = Seq(demand)
+        )
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/subscription-demands/${demand.id.value}",
+          method = "DELETE",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        resp.status mustBe 200
+
+        val verif = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/subscription-demands/${demand.id.value}",
+          headers = getAdminApiHeader(adminApiSubscription),
+        )(tenant)
+
+        verif.status mustBe 404
+      }
     }
   }
 }

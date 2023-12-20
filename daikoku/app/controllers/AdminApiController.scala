@@ -327,23 +327,25 @@ class ApiAdminApiController(daa: DaikokuApiAction,
   override def validate(entity: Api): EitherT[Future, AppError, Api] = {
     import cats.implicits._
     for {
-      _ <- EitherT.fromOptionF[Future, AppError, Tenant](env.dataStore.tenantRepo.findById(entity.tenant), AppError.TenantNotFound)
-      _ <- entity.possibleUsagePlans.map(planId => EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(entity.tenant).findById(planId), AppError.EntityNotFound(s"Usage Plan (${planId.value})")))
+      _ <- EitherT.fromOptionF[Future, AppError, Tenant](env.dataStore.tenantRepo.findById(entity.tenant), AppError.ParsingPayloadError("Tenant not found"))
+      _ <- entity.possibleUsagePlans.map(planId => EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(entity.tenant).findById(planId), AppError.ParsingPayloadError(s"Usage Plan (${planId.value}) not found")))
         .toList
         .sequence
-      _ <- EitherT.cond[Future][AppError, Unit](entity.possibleUsagePlans.contains(entity.defaultUsagePlan), (), AppError.EntityNotFound(s"Default Usage Plan (${entity.defaultUsagePlan.value})"))
-      _ <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(entity.tenant).findById(entity.team), AppError.TeamNotFound)
-      _ <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(entity.tenant).findById(entity.team), AppError.TeamNotFound)
-      _ <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(entity.tenant).findOne(Json.obj("_id" -> Json.obj("$ne" -> entity.id.asJson), "name" -> entity.name)), AppError.EntityConflict("Team name already exists"))
-      _ <- entity.documentation.pages.map(_.id).map(pageId => EitherT.fromOptionF[Future, AppError, ApiDocumentationPage](env.dataStore.apiDocumentationPageRepo.forTenant(entity.tenant).findById(pageId), AppError.EntityNotFound(s"Documentation page (${pageId.value})")))
+      _ <- EitherT.cond[Future][AppError, Unit](entity.possibleUsagePlans.contains(entity.defaultUsagePlan), (), AppError.ParsingPayloadError(s"Default Usage Plan (${entity.defaultUsagePlan.value}) not found"))
+      _ <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(entity.tenant).findById(entity.team), AppError.ParsingPayloadError("Team not found"))
+      _ <- EitherT(env.dataStore.teamRepo.forTenant(entity.tenant).findOne(Json.obj("_id" -> Json.obj("$ne" -> entity.id.asJson), "name" -> entity.name)).map {
+        case Some(_) => Left(AppError.ParsingPayloadError("Api name already exists"))
+        case None => Right(())
+      })
+      _ <- entity.documentation.pages.map(_.id).map(pageId => EitherT.fromOptionF[Future, AppError, ApiDocumentationPage](env.dataStore.apiDocumentationPageRepo.forTenant(entity.tenant).findById(pageId), AppError.ParsingPayloadError(s"Documentation page (${pageId.value}) not found")))
         .toList
         .sequence
       _ <- entity.parent match {
-        case Some(api) => EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(entity.tenant).findById(api), AppError.EntityNotFound("parent API"))
+        case Some(api) => EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(entity.tenant).findById(api), AppError.ParsingPayloadError("Parent API not found"))
         case None => EitherT.pure[Future, AppError](())
       }
       _ <- entity.apis match {
-        case Some(apis) => apis.map(api => EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(entity.tenant).findById(api), AppError.EntityNotFound(s"api as children (${api.value})")))
+        case Some(apis) => apis.map(api => EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(entity.tenant).findById(api), AppError.ParsingPayloadError(s"Children API (${api.value}) not found")))
           .toList
           .sequence
         case None => EitherT.pure[Future, AppError](Seq.empty[Api])
@@ -545,7 +547,7 @@ class MessagesAdminApiController(daa: DaikokuApiAction,
     extends AdminApiController[Message, DatastoreId](daa, env, cc) {
   override def entityClass = classOf[Message]
   override def entityName: String = "message"
-  override def pathRoot: String = s"/admin-api/${entityName}s"
+  override def pathRoot: String = s"/admin-api/messages"
   override def entityStore(tenant: Tenant,
                            ds: DataStore): Repo[Message, DatastoreId] =
     ds.messageRepo.forTenant(tenant)
@@ -558,11 +560,12 @@ class MessagesAdminApiController(daa: DaikokuApiAction,
 
   override def validate(entity: Message): EitherT[Future, AppError, Message] =
     for {
-      _ <- EitherT.fromOptionF[Future, AppError, Tenant](env.dataStore.tenantRepo.findById(entity.tenant), AppError.TenantNotFound)
-      _ <- EitherT.fromOptionF[Future, AppError, User](env.dataStore.userRepo.findById(entity.sender), AppError.EntityNotFound(s"sender (${entity.sender.value}"))
-      _ <- entity.participants.map(u => EitherT.fromOptionF[Future, AppError, User](env.dataStore.userRepo.findById(u), AppError.EntityNotFound(s"participant (${u.value})")))
+      _ <- EitherT.fromOptionF[Future, AppError, Tenant](env.dataStore.tenantRepo.findById(entity.tenant), AppError.ParsingPayloadError("Tenant not found"))
+      _ <- EitherT.fromOptionF[Future, AppError, User](env.dataStore.userRepo.findById(entity.sender), AppError.ParsingPayloadError(s"Sender (${entity.sender.value}) not found"))
+      _ <- entity.participants.map(u => EitherT.fromOptionF[Future, AppError, User](env.dataStore.userRepo.findById(u), AppError.ParsingPayloadError(s"Participant (${u.value}) not found")))
         .toList
         .sequence
+      _ <- EitherT.cond[Future][AppError, Unit](entity.participants.contains(entity.sender), (), AppError.ParsingPayloadError("Sender must included in participants"))
     } yield entity
 
   override def getId(entity: Message): DatastoreId = entity.id
@@ -587,8 +590,8 @@ class IssuesAdminApiController(daa: DaikokuApiAction,
 
   override def validate(entity: ApiIssue): EitherT[Future, AppError, ApiIssue] =
     for {
-      _ <- EitherT.fromOptionF[Future, AppError, Tenant](env.dataStore.tenantRepo.findById(entity.tenant), AppError.TenantNotFound)
-      _ <- EitherT.fromOptionF[Future, AppError, User](env.dataStore.userRepo.findById(entity.by), AppError.UserNotFound)
+      _ <- EitherT.fromOptionF[Future, AppError, Tenant](env.dataStore.tenantRepo.findById(entity.tenant), AppError.ParsingPayloadError("Tenant not found"))
+      _ <- EitherT.fromOptionF[Future, AppError, User](env.dataStore.userRepo.findById(entity.by), AppError.ParsingPayloadError("By not found"))
     } yield entity
 
   override def getId(entity: ApiIssue): ApiIssueId = entity.id
@@ -613,7 +616,7 @@ class PostsAdminApiController(daa: DaikokuApiAction,
 
   override def validate(entity: ApiPost): EitherT[Future, AppError, ApiPost] =
     for {
-      _ <- EitherT.fromOptionF[Future, AppError, Tenant](env.dataStore.tenantRepo.findById(entity.tenant), AppError.TenantNotFound)
+      _ <- EitherT.fromOptionF[Future, AppError, Tenant](env.dataStore.tenantRepo.findById(entity.tenant), AppError.ParsingPayloadError("Tenant not found"))
     } yield entity
 
   override def getId(entity: ApiPost): ApiPostId = entity.id
@@ -638,7 +641,7 @@ class CmsPagesAdminApiController(daa: DaikokuApiAction,
 
   override def validate(entity: CmsPage): EitherT[Future, AppError, CmsPage] =
     for {
-      _ <- EitherT.fromOptionF[Future, AppError, Tenant](env.dataStore.tenantRepo.findById(entity.tenant), AppError.TenantNotFound)
+      _ <- EitherT.fromOptionF[Future, AppError, Tenant](env.dataStore.tenantRepo.findById(entity.tenant), AppError.ParsingPayloadError("Tenant not found"))
     } yield entity
 
   override def getId(entity: CmsPage): CmsPageId = entity.id
@@ -663,7 +666,7 @@ class TranslationsAdminApiController(daa: DaikokuApiAction,
 
   override def validate(entity: Translation): EitherT[Future, AppError, Translation] =
     for {
-      _ <- EitherT.fromOptionF[Future, AppError, Tenant](env.dataStore.tenantRepo.findById(entity.tenant), AppError.TenantNotFound)
+      _ <- EitherT.fromOptionF[Future, AppError, Tenant](env.dataStore.tenantRepo.findById(entity.tenant), AppError.ParsingPayloadError("Tenant not found"))
     } yield entity
 
   override def getId(entity: Translation): DatastoreId = entity.id
@@ -688,13 +691,13 @@ class UsagePlansAdminApiController(daa: DaikokuApiAction,
 
   override def validate(entity: UsagePlan): EitherT[Future, AppError, UsagePlan] =
     for {
-      tenant <- EitherT.fromOptionF[Future, AppError, Tenant](env.dataStore.tenantRepo.findById(entity.tenant), AppError.TenantNotFound)
+      tenant <- EitherT.fromOptionF[Future, AppError, Tenant](env.dataStore.tenantRepo.findById(entity.tenant), AppError.ParsingPayloadError("Tenant not found"))
       _ <- entity.otoroshiTarget match {
-        case Some(target) => EitherT.cond[Future][AppError, Unit](tenant.otoroshiSettings.map(_.id).contains(target.otoroshiSettings), (), AppError.EntityNotFound(s"Otoroshi setting (${target.otoroshiSettings.value})"))
+        case Some(target) => EitherT.cond[Future][AppError, Unit](tenant.otoroshiSettings.map(_.id).contains(target.otoroshiSettings), (), AppError.ParsingPayloadError(s"Otoroshi setting not found"))
         case None => EitherT.pure[Future, AppError](())
       }
       _ <- entity.paymentSettings match {
-        case Some(target) => EitherT.cond[Future][AppError, Unit](tenant.thirdPartyPaymentSettings.map(_.id).contains(target.thirdPartyPaymentSettingsId), (), AppError.EntityNotFound(s"Otororoshi setting (${target.thirdPartyPaymentSettingsId.value})"))
+        case Some(target) => EitherT.cond[Future][AppError, Unit](tenant.thirdPartyPaymentSettings.map(_.id).contains(target.thirdPartyPaymentSettingsId), (), AppError.ParsingPayloadError(s"Payment setting not found"))
         case None => EitherT.pure[Future, AppError](())
       }
     } yield entity
@@ -724,11 +727,11 @@ class SubscriptionDemandsAdminApiController(daa: DaikokuApiAction,
 
   override def validate(entity: SubscriptionDemand): EitherT[Future, AppError, SubscriptionDemand] =
     for {
-      _ <- EitherT.fromOptionF[Future, AppError, Tenant](env.dataStore.tenantRepo.findById(entity.tenant), AppError.TenantNotFound)
-      _ <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(entity.tenant).findById(entity.api), AppError.ApiNotFound)
-      _ <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(entity.tenant).findById(entity.plan), AppError.PlanNotFound)
-      _ <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(entity.tenant).findById(entity.team), AppError.TeamNotFound)
-      _ <- EitherT.fromOptionF[Future, AppError, User](env.dataStore.userRepo.findById(entity.from), AppError.UserNotFound)
+      _ <- EitherT.fromOptionF[Future, AppError, Tenant](env.dataStore.tenantRepo.findById(entity.tenant), AppError.ParsingPayloadError("Tenant not found"))
+      _ <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(entity.tenant).findById(entity.api), AppError.ParsingPayloadError("Api not found"))
+      _ <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(entity.tenant).findById(entity.plan), AppError.ParsingPayloadError("Plan not found"))
+      _ <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(entity.tenant).findById(entity.team), AppError.ParsingPayloadError("Team not found"))
+      _ <- EitherT.fromOptionF[Future, AppError, User](env.dataStore.userRepo.findById(entity.from), AppError.ParsingPayloadError("From not found"))
     } yield entity
 
   override def getId(entity: SubscriptionDemand): SubscriptionDemandId = entity.id
