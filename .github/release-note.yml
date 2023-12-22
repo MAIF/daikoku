@@ -6,6 +6,9 @@ changelog:
   - title: "Bugs"
     emoji: ":bug:"
     labels: ["fix", "bug"]
+  - title: "technical"
+    emoji: ":wrench:"
+    labels: ["technical"]
 
   issues:
     exclude:
