@@ -137,6 +137,18 @@ components:
       properties:
         error:
           type: string
+    GraphQLQuery:
+      type: object
+      properties:
+        query:
+          type: string
+    GraphQLResponse:
+      type: object
+      properties:
+        data:
+          type: object
+    GraphQLSchema:
+      type: object
     patch:
       description: >-
         A set of changes described in JSON Patch format: http://jsonpatch.com/
@@ -2536,14 +2548,8 @@ paths:
                 - $ref: '#/components/schemas/patch'
                 - $ref: '#/components/schemas/Tenant'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/Tenant'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -2576,14 +2582,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Tenant'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/Tenant'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -2734,14 +2734,8 @@ paths:
                 - $ref: '#/components/schemas/patch'
                 - $ref: '#/components/schemas/User'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/User'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -2773,14 +2767,8 @@ paths:
             schema:
               $ref: '#/components/schemas/User'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/User'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -2929,14 +2917,8 @@ paths:
                 - $ref: '#/components/schemas/patch'
                 - $ref: '#/components/schemas/Team'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/Team'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -2968,14 +2950,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Team'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/Team'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -3124,14 +3100,8 @@ paths:
                 - $ref: '#/components/schemas/patch'
                 - $ref: '#/components/schemas/Api'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/Api'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -3163,14 +3133,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Api'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/Api'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -3319,14 +3283,8 @@ paths:
                 - $ref: '#/components/schemas/patch'
                 - $ref: '#/components/schemas/ApiSubscription'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/ApiSubscription'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -3358,14 +3316,8 @@ paths:
             schema:
               $ref: '#/components/schemas/ApiSubscription'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/ApiSubscription'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -3516,14 +3468,8 @@ paths:
                 - $ref: '#/components/schemas/patch'
                 - $ref: '#/components/schemas/ApiDocumentationPage'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/ApiDocumentationPage'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -3555,14 +3501,8 @@ paths:
             schema:
               $ref: '#/components/schemas/ApiDocumentationPage'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/ApiDocumentationPage'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -3711,14 +3651,8 @@ paths:
                 - $ref: '#/components/schemas/patch'
                 - $ref: '#/components/schemas/Notification'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/Notification'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -3750,14 +3684,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Notification'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/Notification'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -3906,14 +3834,8 @@ paths:
                 - $ref: '#/components/schemas/patch'
                 - $ref: '#/components/schemas/UserSession'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/UserSession'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -3945,14 +3867,8 @@ paths:
             schema:
               $ref: '#/components/schemas/UserSession'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/UserSession'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -4101,14 +4017,8 @@ paths:
                 - $ref: '#/components/schemas/patch'
                 - $ref: '#/components/schemas/ApiKeyConsumption'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/ApiKeyConsumption'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -4140,14 +4050,8 @@ paths:
             schema:
               $ref: '#/components/schemas/ApiKeyConsumption'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/ApiKeyConsumption'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -4296,14 +4200,8 @@ paths:
                 - $ref: '#/components/schemas/patch'
                 - $ref: '#/components/schemas/object'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/object'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -4335,14 +4233,8 @@ paths:
             schema:
               $ref: '#/components/schemas/object'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/object'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -4491,14 +4383,8 @@ paths:
                 - $ref: '#/components/schemas/patch'
                 - $ref: '#/components/schemas/Message'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/Message'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -4530,14 +4416,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Message'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/Message'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -4686,14 +4566,8 @@ paths:
                 - $ref: '#/components/schemas/patch'
                 - $ref: '#/components/schemas/ApiIssue'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/ApiIssue'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -4725,14 +4599,8 @@ paths:
             schema:
               $ref: '#/components/schemas/ApiIssue'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/ApiIssue'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -4881,14 +4749,8 @@ paths:
                 - $ref: '#/components/schemas/patch'
                 - $ref: '#/components/schemas/ApiPost'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/ApiPost'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -4920,14 +4782,8 @@ paths:
             schema:
               $ref: '#/components/schemas/ApiPost'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/ApiPost'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -5076,14 +4932,8 @@ paths:
                 - $ref: '#/components/schemas/patch'
                 - $ref: '#/components/schemas/Translation'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/Translation'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -5115,14 +4965,8 @@ paths:
             schema:
               $ref: '#/components/schemas/Translation'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/Translation'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -5276,20 +5120,8 @@ paths:
                 - $ref: '#/components/schemas/UsagePlan.QuotasWithoutLimits'
                 - $ref: '#/components/schemas/UsagePlan.PayPerUse'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  oneOf:
-                    - $ref: '#/components/schemas/UsagePlan.Admin'
-                    - $ref: '#/components/schemas/UsagePlan.FreeWithoutQuotas'
-                    - $ref: '#/components/schemas/UsagePlan.FreeWithQuotas'
-                    - $ref: '#/components/schemas/UsagePlan.QuotasWithLimits'
-                    - $ref: '#/components/schemas/UsagePlan.QuotasWithoutLimits'
-                    - $ref: '#/components/schemas/UsagePlan.PayPerUse'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -5327,20 +5159,8 @@ paths:
                 - $ref: '#/components/schemas/UsagePlan.QuotasWithoutLimits'
                 - $ref: '#/components/schemas/UsagePlan.PayPerUse'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  oneOf:
-                    - $ref: '#/components/schemas/UsagePlan.Admin'
-                    - $ref: '#/components/schemas/UsagePlan.FreeWithoutQuotas'
-                    - $ref: '#/components/schemas/UsagePlan.FreeWithQuotas'
-                    - $ref: '#/components/schemas/UsagePlan.QuotasWithLimits'
-                    - $ref: '#/components/schemas/UsagePlan.QuotasWithoutLimits'
-                    - $ref: '#/components/schemas/UsagePlan.PayPerUse'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -5513,14 +5333,8 @@ paths:
                 - $ref: '#/components/schemas/patch'
                 - $ref: '#/components/schemas/SubscriptionDemand'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/SubscriptionDemand'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -5552,14 +5366,8 @@ paths:
             schema:
               $ref: '#/components/schemas/SubscriptionDemand'
       responses:
-        '200':
-          description: updated entity
-          content:
-            application/json:
-              schema:
-                type: object
-                items:
-                  $ref: '#/components/schemas/SubscriptionDemand'
+        '204':
+          description: No Content
         '401':
           description: unauthorized
           content:
@@ -5667,7 +5475,7 @@ paths:
   /integration-api/apis:
     get:
       summary: get all public apis for integration
-      operationId: /integration-api.findallapis
+      operationId: integration-api.findallapis
       responses:
         '200':
           description: List of public APIs
@@ -5696,11 +5504,11 @@ paths:
           name: X-Personal-Token
           required: true
       tags:
-        - /integration-apis
+        - integration-apis
   /integration-api/{teamId}:
     get:
       summary: get all teams for integration
-      operationId: /integration-api.findallateams
+      operationId: integration-api.findallateams
       responses:
         '200':
           description: List of teams
@@ -5734,11 +5542,11 @@ paths:
           name: teamId
           required: true
       tags:
-        - /integration-apis
+        - integration-apis
   /integration-api/{teamId}/{apiId}/complete:
     get:
       summary: get complete API for integration
-      operationId: /integration-api.findcompleteapi
+      operationId: integration-api.findcompleteapi
       responses:
         '200':
           description: Complete API
@@ -5775,11 +5583,11 @@ paths:
           name: apiId
           required: true
       tags:
-        - /integration-apis
+        - integration-apis
   /integration-api/{teamId}/{apiId}/description:
     get:
       summary: get API description
-      operationId: /integration-api.findapidescription
+      operationId: integration-api.findapidescription
       responses:
         '200':
           description: API description
@@ -5816,11 +5624,11 @@ paths:
           name: apiId
           required: true
       tags:
-        - /integration-apis
+        - integration-apis
   /integration-api/{teamId}/{apiId}/plans:
     get:
       summary: get API plans
-      operationId: /integration-api.findapiplans
+      operationId: integration-api.findapiplans
       responses:
         '200':
           description: API plans
@@ -5857,11 +5665,11 @@ paths:
           name: apiId
           required: true
       tags:
-        - /integration-apis
+        - integration-apis
   /integration-api/{teamId}/{apiId}/documentation:
     get:
       summary: get API documentation
-      operationId: /integration-api.findapidocumentation
+      operationId: integration-api.findapidocumentation
       responses:
         '200':
           description: API documentation
@@ -5898,11 +5706,11 @@ paths:
           name: apiId
           required: true
       tags:
-        - /integration-apis
+        - integration-apis
   /integration-api/{teamId}/{apiId}/apidoc:
     get:
       summary: get API description
-      operationId: /integration-api.findapidoc
+      operationId: integration-api.findapidoc
       responses:
         '200':
           description: API doc (swagger)
@@ -5939,11 +5747,11 @@ paths:
           name: apiId
           required: true
       tags:
-        - /integration-apis
+        - integration-apis
   /integration-api/{teamId}/{apiId}:
     get:
       summary: get API
-      operationId: /integration-api.findapi
+      operationId: integration-api.findapi
       responses:
         '200':
           description: API
@@ -5980,4 +5788,65 @@ paths:
           name: apiId
           required: true
       tags:
-        - /integration-apis
+        - integration-apis
+  /admin-api/search:
+    post:
+      summary: search with GraphQL
+      operationId: GraphQL.search
+      requestBody:
+        description: GraphQL query
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/GraphQLQuery'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphQLResponse'
+      tags:
+        - GraphQL
+  /admin-api/schema:
+    post:
+      summary: search with GraphQL
+      operationId: GraphQL.schema
+      requestBody:
+        description: get GraphQL schema
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: '#/components/schemas/GraphQLQuery'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphQLSchema'
+      tags:
+        - GraphQL
+  /admin-api/credentials/{token}/plans:
+    get:
+      summary: get apikey from integration token
+      tags:
+        - Integration ApiKey
+      parameters:
+        - in: path
+          name: token
+          schema:
+            type: string
+          required: true
+          description: integration token
+      responses:
+        '200':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OtoroshiApiKey'
