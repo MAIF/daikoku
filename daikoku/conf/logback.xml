@@ -30,9 +30,6 @@
 
   <logger name="play" level="INFO"/>
   <logger name="application" level="INFO"/>
-  <logger name="MongoDataStore" level="INFO"/>
-  <logger name="MongoTenantAwareRepo" level="INFO"/>
-  <logger name="CommonMongoRepo" level="INFO"/>
   <logger name="daikoku-spec-helper" level="INFO"/>
   <logger name="daikoku-action-maybe-without-user" level="INFO"/>
   <logger name="daikoku-action" level="INFO"/>
@@ -40,9 +37,9 @@
   <logger name="AuditTrailPurgeJob" level="INFO"/>
   <logger name="otoroshi-reactive-pg-kv" level="INFO"/>
   <logger name="PostgresDataStore" level="INFO"/>
-  <logger name="OtoroshiDeletionJob" level="INFO"/>
   <logger name="PostgresTenantAwareRepo" level="INFO"/>
   <logger name="CommonPostgresRepo" level="INFO"/>
+  <logger name="OtoroshiDeletionJob" level="INFO"/>
   <logger name="com.avaje.ebean.config.PropertyMapLoader" level="OFF"/>
   <logger name="com.avaje.ebeaninternal.server.core.XmlConfigLoader" level="OFF"/>
   <logger name="com.avaje.ebeaninternal.server.lib.BackgroundThread" level="OFF"/>

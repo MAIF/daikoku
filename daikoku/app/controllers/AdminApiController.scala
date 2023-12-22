@@ -333,7 +333,7 @@ class ApiAdminApiController(daa: DaikokuApiAction,
         .sequence
       _ <- EitherT.cond[Future][AppError, Unit](entity.possibleUsagePlans.contains(entity.defaultUsagePlan), (), AppError.ParsingPayloadError(s"Default Usage Plan (${entity.defaultUsagePlan.value}) not found"))
       _ <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(entity.tenant).findById(entity.team), AppError.ParsingPayloadError("Team not found"))
-      _ <- EitherT(env.dataStore.teamRepo.forTenant(entity.tenant).findOne(Json.obj("_id" -> Json.obj("$ne" -> entity.id.asJson), "name" -> entity.name)).map {
+      _ <- EitherT(env.dataStore.apiRepo.forTenant(entity.tenant).findOne(Json.obj("_id" -> Json.obj("$ne" -> entity.id.asJson), "name" -> entity.name)).map {
         case Some(_) => Left(AppError.ParsingPayloadError("Api name already exists"))
         case None => Right(())
       })
