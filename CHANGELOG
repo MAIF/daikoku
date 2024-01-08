@@ -519,3 +519,13 @@ We'd like to thank all the contributors who worked on this release!
 
 - API Key metadata not refresh [#618](https://github.com/MAIF/daikoku/issues/618)
 
+## [v17.0.0] - 2024-01-08
+
+## :star: New Features
+
+- migrate to play 3.0.0 [#614](https://github.com/MAIF/daikoku/issues/614)
+
+## :beetle: Bug Fixes
+
+- exclude inner admin apikey from otoroshi verifier job [#617](https://github.com/MAIF/daikoku/issues/617)
+
