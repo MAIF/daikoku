@@ -57,7 +57,7 @@ pre_release_daikoku () {
   git add --all
   git commit -am 'Update documentation before release'
   cd $LOCATION/daikoku
-  sbt "release with-defaults release-version $2 next-version $3"
+  sbt "release release-version $2 next-version $3"
 }
 
 release_daikoku ()  {
