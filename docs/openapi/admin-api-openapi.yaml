@@ -5785,7 +5785,7 @@ paths:
   /admin-api/search:
     post:
       summary: search with GraphQL
-      operationId: GraphQL.schema
+      operationId: GraphQL.search
       requestBody:
         description: GraphQL query
         required: true
