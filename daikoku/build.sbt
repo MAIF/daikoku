@@ -76,9 +76,6 @@ libraryDependencies ++= Seq(
   "com.auth0" % "jwks-rsa" % "0.22.1", // https://github.com/auth0/jwks-rsa-java
   "com.nimbusds" % "nimbus-jose-jwt" % "9.37",
   "com.softwaremill.macwire" %% "macros" % "2.5.9" % "provided",
-  "javax.xml.bind" % "jaxb-api" % "2.3.1",
-  "com.sun.xml.bind" % "jaxb-core" % "4.0.4",
-  "com.sun.xml.bind" % "jaxb-impl" % "4.0.4",
   "io.vertx" % "vertx-pg-client" % "4.4.6",
   "com.ongres.scram" % "common" % "2.1",
   "com.ongres.scram" % "client" % "2.1",

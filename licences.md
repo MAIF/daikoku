@@ -119,8 +119,6 @@ Apache | [Apache Software License - Version 2.0](http://www.apache.org/licenses/
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.txt) | com.google.code.gson # gson # 2.10 | <notextile></notextile>
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) | [com.typesafe # config # 1.4.3](https://github.com/lightbend/config) | <notextile></notextile>
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.txt) | [com.typesafe # ssl-config-core_2.13 # 0.6.1](https://github.com/lightbend/ssl-config) | <notextile></notextile>
-Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.html) | [com.typesafe.play # play-functional_2.13 # 2.10.0-RC6](https://github.com/playframework/play-json) | <notextile></notextile>
-Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.html) | [com.typesafe.play # play-json_2.13 # 2.10.0-RC6](https://github.com/playframework/play-json) | <notextile></notextile>
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.txt) | [commons-fileupload # commons-fileupload # 1.5](https://commons.apache.org/proper/commons-fileupload/) | <notextile></notextile>
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.txt) | [commons-io # commons-io # 2.15.0](https://commons.apache.org/proper/commons-io/) | <notextile></notextile>
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.txt) | [org.apache.commons # commons-lang3 # 3.13.0](https://commons.apache.org/proper/commons-lang/) | <notextile></notextile>
@@ -137,8 +135,8 @@ Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.html) | [org.a
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.html) | [org.apache.pekko # pekko-serialization-jackson_2.13 # 1.0.1](https://pekko.apache.org/) | <notextile></notextile>
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.html) | [org.apache.pekko # pekko-slf4j_2.13 # 1.0.1](https://pekko.apache.org/) | <notextile></notextile>
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.html) | [org.apache.pekko # pekko-stream_2.13 # 1.0.1](https://pekko.apache.org/) | <notextile></notextile>
-Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.txt) | [org.gnieh # diffson-core_2.13 # 4.4.0](https://github.com/gnieh/diffson) | <notextile></notextile>
-Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.txt) | [org.gnieh # diffson-play-json_2.13 # 4.4.0](https://github.com/gnieh/diffson) | <notextile></notextile>
+Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.txt) | [org.gnieh # diffson-core_2.13 # 4.5.0](https://github.com/gnieh/diffson) | <notextile></notextile>
+Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.txt) | [org.gnieh # diffson-play-json_2.13 # 4.5.0](https://github.com/gnieh/diffson) | <notextile></notextile>
 Apache | [Apache-2.0](http://www.apache.org/licenses/LICENSE-2.0.txt) | [org.parboiled # parboiled_2.13 # 2.5.0](http://parboiled.org) | <notextile></notextile>
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.html) | [org.playframework # cachecontrol_2.13 # 3.0.0](https://github.com/playframework/cachecontrol) | <notextile></notextile>
 Apache | [Apache-2.0](http://opensource.org/licenses/Apache-2.0) | [org.playframework # play-ahc-ws-standalone_2.13 # 3.0.0](https://github.com/playframework/play-ws/) | <notextile></notextile>
@@ -168,7 +166,7 @@ Apache | [Apache-2.0](http://opensource.org/licenses/Apache-2.0) | [org.playfram
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0.html) | [org.playframework.twirl # twirl-api_2.13 # 2.0.1](https://github.com/playframework/twirl) | <notextile></notextile>
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) | [org.scala-lang # scala-library # 2.13.12](https://www.scala-lang.org/) | <notextile></notextile>
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) | [org.scala-lang # scala-reflect # 2.13.12](https://www.scala-lang.org/) | <notextile></notextile>
-Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) | [org.scala-lang.modules # scala-collection-compat_2.13 # 2.9.0](http://www.scala-lang.org/) | <notextile></notextile>
+Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) | [org.scala-lang.modules # scala-collection-compat_2.13 # 2.11.0](http://www.scala-lang.org/) | <notextile></notextile>
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) | [org.scala-lang.modules # scala-java8-compat_2.13 # 1.0.2](http://www.scala-lang.org/) | <notextile></notextile>
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) | [org.scala-lang.modules # scala-parser-combinators_2.13 # 1.1.2](http://www.scala-lang.org/) | <notextile></notextile>
 Apache | [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) | [org.scala-lang.modules # scala-xml_2.13 # 2.2.0](http://www.scala-lang.org/) | <notextile></notextile>
@@ -272,11 +270,6 @@ BSD | [BSD License 3](http://opensource.org/licenses/BSD-3-Clause) | [org.hamcre
 BSD | [BSD-3-Clause](https://asm.ow2.io/license.html) | [org.ow2.asm # asm # 9.6](http://asm.ow2.io/) | <notextile></notextile>
 BSD | [EDL 1.0](http://www.eclipse.org/org/documents/edl-v10.php) | com.sun.activation # jakarta.activation # 2.0.1 | <notextile></notextile>
 BSD | [EDL 1.0](http://www.eclipse.org/org/documents/edl-v10.php) | com.sun.mail # jakarta.mail # 2.0.1 | <notextile></notextile>
-BSD | [EDL 1.0](http://www.eclipse.org/org/documents/edl-v10.php) | [jakarta.activation # jakarta.activation-api # 2.1.2](https://github.com/jakartaee/jaf-api) | <notextile></notextile>
-BSD | [EDL 1.0](http://www.eclipse.org/org/documents/edl-v10.php) | org.eclipse.angus # angus-activation # 2.0.1 | <notextile></notextile>
-BSD | [Eclipse Distribution License - v 1.0](http://www.eclipse.org/org/documents/edl-v10.php) | [com.sun.xml.bind # jaxb-core # 4.0.4](https://eclipse-ee4j.github.io/jaxb-ri/) | <notextile></notextile>
-BSD | [Eclipse Distribution License - v 1.0](http://www.eclipse.org/org/documents/edl-v10.php) | [com.sun.xml.bind # jaxb-impl # 4.0.4](https://eclipse-ee4j.github.io/jaxb-ri/) | <notextile></notextile>
-BSD | [Eclipse Distribution License - v 1.0](http://www.eclipse.org/org/documents/edl-v10.php) | jakarta.xml.bind # jakarta.xml.bind-api # 4.0.1 | <notextile></notextile>
 BSD | [ISC/BSD licence](http://www.mindrot.org/files/jBCrypt/LICENSE) | [de.svenkubiak # jBCrypt # 0.4.3](http://www.mindrot.org/projects/jBCrypt) | <notextile></notextile>
 BSD | [The 2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause) | com.ongres.scram # client # 2.1 | <notextile></notextile>
 BSD | [The 2-Clause BSD License](https://opensource.org/licenses/BSD-2-Clause) | com.ongres.scram # common # 2.1 | <notextile></notextile>
@@ -286,8 +279,6 @@ BSD | [The BSD 3-Clause License](https://github.com/xmlunit/xmlunit/blob/main/xm
 BSD | [Two-clause BSD-style license](http://github.com/sbt/junit-interface/blob/master/LICENSE.txt) | [com.github.sbt # junit-interface # 0.13.3](http://github.com/sbt/junit-interface/) | <notextile></notextile>
 Bouncy Castle License | [Bouncy Castle Licence](https://www.bouncycastle.org/licence.html) | [org.bouncycastle # bcprov-jdk18on # 1.76](https://www.bouncycastle.org/java.html) | <notextile></notextile>
 EPL | [Eclipse Public License 1.0](http://www.eclipse.org/legal/epl-v10.html) | [junit # junit # 4.13.2](http://junit.org) | <notextile></notextile>
-GPL | [CDDL/GPLv2+CE](https://github.com/javaee/activation/blob/master/LICENSE.txt) | javax.activation # javax.activation-api # 1.2.0 | <notextile></notextile>
-GPL | [GPL2 w/ CPE](https://oss.oracle.com/licenses/CDDL+GPL-1.1) | javax.xml.bind # jaxb-api # 2.3.1 | <notextile></notextile>
 LGPL | [GNU Lesser General Public License](http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html) | ch.qos.logback # logback-classic # 1.4.11 | <notextile></notextile>
 LGPL | [GNU Lesser General Public License](http://www.gnu.org/licenses/old-licenses/lgpl-2.1.html) | ch.qos.logback # logback-core # 1.4.11 | <notextile></notextile>
 MIT | [MIT](http://opensource.org/licenses/MIT) | [com.themillhousegroup # scoup_2.13 # 1.0.0](https://github.com/themillhousegroup/scoup) | <notextile></notextile>
