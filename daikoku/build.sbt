@@ -85,7 +85,7 @@ libraryDependencies ++= Seq(
   "io.nayuki" % "qrcodegen" % "1.6.0",
   "com.eatthepath" % "java-otp" % "0.4.0",
   "com.sun.mail" % "jakarta.mail" % "2.0.1",
-  "org.gnieh" %% "diffson-play-json" % "4.4.0" excludeAll ExclusionRule(
+  "org.gnieh" %% "diffson-play-json" % "4.5.0" excludeAll ExclusionRule(
     organization = "com.typesafe.akka"
   ),
   "org.typelevel" %% "cats-core" % "2.10.0",
@@ -117,9 +117,6 @@ scalacOptions ++= Seq(
 //  "-Ypartial-unification",
   "-Xfatal-warnings"
 )
-
-resolvers += "bintray" at "https://jcenter.bintray.com"
-resolvers += "Millhouse Bintray" at "https://dl.bintray.com/themillhousegroup/maven"
 
 PlayKeys.devSettings := Seq("play.server.http.port" -> "9000")
 
