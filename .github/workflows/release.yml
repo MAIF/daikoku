@@ -137,17 +137,6 @@ jobs:
         asset_path: ./daikoku/target/universal/daikoku.zip
         asset_name: daikoku-${{ github.event.inputs.releaseversion }}.zip
         asset_content_type: application/octet-stream
-    - name: Zip manual
-      run: zip -r ./daikoku-manual.zip ./docs/manual -x '*.DS_Store'
-    - name: Upload a Release Asset - manual
-      uses: actions/upload-release-asset@v1.0.2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./daikoku-manual.zip
-        asset_name: daikoku-manual-${{ github.event.inputs.releaseversion }}.zip
-        asset_content_type: application/octet-stream
     - name: Login to DockerHub
       uses: docker/login-action@v1
       with:
