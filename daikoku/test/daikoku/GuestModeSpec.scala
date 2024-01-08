@@ -65,7 +65,8 @@ class GuestModeSpec()
                      |    }
                      |  }
                      |""".stripMargin
-          ))
+          )
+        )
       )(publicTenant)
       resp.status mustBe 200
       val myTeam =
@@ -77,7 +78,10 @@ class GuestModeSpec()
               acc :+ team
                 .as[JsObject]
                 .deepMerge(
-                  Json.obj("_tenant" -> (team \ "tenant" \ "id").as[String]))))
+                  Json.obj("_tenant" -> (team \ "tenant" \ "id").as[String])
+                )
+            )
+        )
       myTeam.isSuccess mustBe true
       myTeam.get.size mustBe 0
     }
@@ -91,7 +95,8 @@ class GuestModeSpec()
       )
 
       val resp = httpJsonCallWithoutSessionBlocking(
-        path = s"/api/teams/${teamOwnerId.value}")(publicTenant)
+        path = s"/api/teams/${teamOwnerId.value}"
+      )(publicTenant)
       resp.status mustBe 200
       val team =
         fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(resp.json)
@@ -103,9 +108,11 @@ class GuestModeSpec()
     "get visible apis" in {
       val publicTenant = tenant.copy(isPrivate = false)
       val publicApi = defaultApi.api.copy(id = ApiId("public"))
-      val privateApi = defaultApi.api.copy(id = ApiId("private"),
-                                           visibility = ApiVisibility.Private,
-                                           name = "private api")
+      val privateApi = defaultApi.api.copy(
+        id = ApiId("private"),
+        visibility = ApiVisibility.Private,
+        name = "private api"
+      )
 
       setupEnvBlocking(
         tenants = Seq(publicTenant),
@@ -131,7 +138,8 @@ class GuestModeSpec()
             |          }
             |        }
             |""".stripMargin
-          ))
+          )
+        )
       )(publicTenant)
       resp.status mustBe 200
 
@@ -149,9 +157,11 @@ class GuestModeSpec()
     "get visible apis of team" in {
       val publicTenant = tenant.copy(isPrivate = false)
       val publicApi = defaultApi.api.copy(id = ApiId("public"))
-      val privateApi = defaultApi.api.copy(id = ApiId("private"),
-                                           visibility = ApiVisibility.Private,
-                                           name = "private api")
+      val privateApi = defaultApi.api.copy(
+        id = ApiId("private"),
+        visibility = ApiVisibility.Private,
+        name = "private api"
+      )
 
       setupEnvBlocking(
         tenants = Seq(publicTenant),
@@ -165,9 +175,8 @@ class GuestModeSpec()
         "POST",
         body = Some(
           Json.obj(
-            "variables" -> Json.obj("teamId" -> teamOwnerId.value,
-                                    "limit" -> 5,
-                                    "offset" -> 0),
+            "variables" -> Json
+              .obj("teamId" -> teamOwnerId.value, "limit" -> 5, "offset" -> 0),
             "query" -> s"""
             |query AllVisibleApis ($$teamId: String, $$limit: Int, $$offset: Int) {
             |      visibleApis (teamId: $$teamId, limit: $$limit, offset: $$offset) {
@@ -179,7 +188,8 @@ class GuestModeSpec()
             |    }
             |}
             |""".stripMargin
-          ))
+          )
+        )
       )(publicTenant)
       resp.status mustBe 200
       val apis =
@@ -196,10 +206,10 @@ class GuestModeSpec()
     "get one visible api" in {
       val publicTenant = tenant.copy(isPrivate = false)
       val publicApi =
-        defaultApi.api.copy(id = ApiId("public"),
-                            visibility = ApiVisibility.Public)
-      val privateApi = defaultApi.api.copy(id = ApiId("private"),
-                                           visibility = ApiVisibility.Private)
+        defaultApi.api
+          .copy(id = ApiId("public"), visibility = ApiVisibility.Public)
+      val privateApi = defaultApi.api
+        .copy(id = ApiId("private"), visibility = ApiVisibility.Private)
 
       setupEnvBlocking(
         tenants = Seq(publicTenant),
@@ -209,14 +219,16 @@ class GuestModeSpec()
       )
 
       val resp = httpJsonCallWithoutSessionBlocking(
-        path = s"/api/me/visible-apis/${publicApi.id.value}")(publicTenant)
+        path = s"/api/me/visible-apis/${publicApi.id.value}"
+      )(publicTenant)
       resp.status mustBe 200
       val api = fr.maif.otoroshi.daikoku.domain.json.ApiFormat.reads(resp.json)
       api.isSuccess mustBe true
       api.get.id mustBe publicApi.id
 
       val respError = httpJsonCallWithoutSessionBlocking(
-        path = s"/api/me/visible-apis/${privateApi.id.value}")(publicTenant)
+        path = s"/api/me/visible-apis/${privateApi.id.value}"
+      )(publicTenant)
       respError.status mustBe 401
     }
 
@@ -360,7 +372,7 @@ class GuestModeSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         teams = Seq(teamOwner),
-        apis = Seq(defaultApi.api),
+        apis = Seq(defaultApi.api)
       )
 
       val respGet = httpJsonCallWithoutSessionBlocking(
@@ -377,9 +389,12 @@ class GuestModeSpec()
         path = s"/api/tenants/${tenant.id.value}/otoroshis",
         method = "POST",
         body = Some(
-          OtoroshiSettings(OtoroshiSettingsId("test"),
-                           "localhost",
-                           "https://otoroshi.io").asJson)
+          OtoroshiSettings(
+            OtoroshiSettingsId("test"),
+            "localhost",
+            "https://otoroshi.io"
+          ).asJson
+        )
       )(tenant)
       respCreate.status mustBe 303
 
@@ -387,9 +402,12 @@ class GuestModeSpec()
         path = s"/api/tenants/${tenant.id.value}/otoroshis/default",
         method = "PUT",
         body = Some(
-          OtoroshiSettings(OtoroshiSettingsId("default"),
-                           "test",
-                           "https://otoroshi.io").asJson)
+          OtoroshiSettings(
+            OtoroshiSettingsId("default"),
+            "test",
+            "https://otoroshi.io"
+          ).asJson
+        )
       )(tenant)
       respUpdate.status mustBe 303
 

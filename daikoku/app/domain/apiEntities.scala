@@ -34,7 +34,8 @@ object OtoroshiTarget {
           case e =>
             OtoroshiTarget.logger.error(
               s"Error while parsing expression, returning raw value: $value",
-              e)
+              e
+            )
             value
         } get
       case _ => value
@@ -64,10 +65,11 @@ case class OtoroshiTarget(
   }
 }
 
-case class OtoroshiService(name: String,
-                           otoroshiSettings: OtoroshiSettingsId,
-                           service: OtoroshiServiceId)
-    extends CanJson[OtoroshiService] {
+case class OtoroshiService(
+    name: String,
+    otoroshiSettings: OtoroshiSettingsId,
+    service: OtoroshiServiceId
+) extends CanJson[OtoroshiService] {
   def asJson: JsValue = json.OtoroshiServiceFormat.writes(this)
 }
 
@@ -91,33 +93,38 @@ object BillingTimeUnit {
   }
   val values: Seq[BillingTimeUnit] =
     Seq(Hour, Day, Month, Year)
-  def apply(name: String): Option[BillingTimeUnit] = name.toLowerCase() match {
-    case "hour"   => Hour.some
-    case "hours"  => Hour.some
-    case "day"    => Day.some
-    case "days"   => Day.some
-    case "month"  => Month.some
-    case "months" => Month.some
-    case "year"   => Year.some
-    case "years"  => Year.some
-    case _        => None
-  }
+  def apply(name: String): Option[BillingTimeUnit] =
+    name.toLowerCase() match {
+      case "hour"   => Hour.some
+      case "hours"  => Hour.some
+      case "day"    => Day.some
+      case "days"   => Day.some
+      case "month"  => Month.some
+      case "months" => Month.some
+      case "year"   => Year.some
+      case "years"  => Year.some
+      case _        => None
+    }
 }
 
 case class BillingDuration(value: Long, unit: BillingTimeUnit)
     extends CanJson[BillingDuration] {
   def asJson: JsValue = json.BillingDurationFormat.writes(this)
-  def toDays: Long = unit match {
-    case BillingTimeUnit.Day  => value
-    case BillingTimeUnit.Hour => 1L
-    case BillingTimeUnit.Month =>
-      Days
-        .daysBetween(DateTime.now(), DateTime.now().plusMonths(value.intValue))
-        .getDays
-        .longValue
-    case BillingTimeUnit.Year => 235L
-    case _                    => 0L
-  }
+  def toDays: Long =
+    unit match {
+      case BillingTimeUnit.Day  => value
+      case BillingTimeUnit.Hour => 1L
+      case BillingTimeUnit.Month =>
+        Days
+          .daysBetween(
+            DateTime.now(),
+            DateTime.now().plusMonths(value.intValue)
+          )
+          .getDays
+          .longValue
+      case BillingTimeUnit.Year => 235L
+      case _                    => 0L
+    }
 }
 
 sealed trait ApiVisibility {
@@ -139,13 +146,14 @@ object ApiVisibility {
   }
   val values: Seq[ApiVisibility] =
     Seq(Public, Private, PublicWithAuthorizations)
-  def apply(name: String): Option[ApiVisibility] = name match {
-    case "Public"                   => Public.some
-    case "Private"                  => Private.some
-    case "PublicWithAuthorizations" => PublicWithAuthorizations.some
-    case "AdminOnly"                => AdminOnly.some
-    case _                          => None
-  }
+  def apply(name: String): Option[ApiVisibility] =
+    name match {
+      case "Public"                   => Public.some
+      case "Private"                  => Private.some
+      case "PublicWithAuthorizations" => PublicWithAuthorizations.some
+      case "AdminOnly"                => AdminOnly.some
+      case _                          => None
+    }
 }
 
 sealed trait UsagePlanVisibility {
@@ -162,11 +170,12 @@ object UsagePlanVisibility {
   }
   val values: Seq[UsagePlanVisibility] =
     Seq(Public, Private)
-  def apply(name: String): Option[UsagePlanVisibility] = name match {
-    case "Public"  => Public.some
-    case "Private" => Private.some
-    case _         => None
-  }
+  def apply(name: String): Option[UsagePlanVisibility] =
+    name match {
+      case "Public"  => Public.some
+      case "Private" => Private.some
+      case _         => None
+    }
 }
 
 sealed trait IntegrationProcess {
@@ -181,11 +190,12 @@ object IntegrationProcess {
     def name: String = "ApiKey"
   }
   val values: Seq[IntegrationProcess] = Seq(Automatic, ApiKey)
-  def apply(name: String): Option[IntegrationProcess] = name match {
-    case "Automatic" => Automatic.some
-    case "ApiKey"    => ApiKey.some
-    case _           => None
-  }
+  def apply(name: String): Option[IntegrationProcess] =
+    name match {
+      case "Automatic" => Automatic.some
+      case "ApiKey"    => ApiKey.some
+      case _           => None
+    }
 }
 
 case class Currency(code: String) extends CanJson[Currency] {
@@ -198,25 +208,28 @@ sealed trait PaymentSettings {
   def typeName: String
 }
 
-case class StripePriceIds(basePriceId: String,
-                          additionalPriceId: Option[String] = None)
-    extends CanJson[StripePriceIds] {
+case class StripePriceIds(
+    basePriceId: String,
+    additionalPriceId: Option[String] = None
+) extends CanJson[StripePriceIds] {
   override def asJson: JsValue = json.StripePriceIdsFormat.writes(this)
 }
 case object PaymentSettings {
-  case class Stripe(thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId,
-                    productId: String,
-                    priceIds: StripePriceIds)
-      extends PaymentSettings {
+  case class Stripe(
+      thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId,
+      productId: String,
+      priceIds: StripePriceIds
+  ) extends PaymentSettings {
     override def typeName: String = "Stripe"
   }
 }
 
-case class BasePaymentInformation(costPerMonth: BigDecimal,
-                                  billingDuration: BillingDuration,
-                                  currency: Currency,
-                                  trialPeriod: Option[BillingDuration])
-    extends CanJson[BasePaymentInformation] {
+case class BasePaymentInformation(
+    costPerMonth: BigDecimal,
+    billingDuration: BillingDuration,
+    currency: Currency,
+    trialPeriod: Option[BillingDuration]
+) extends CanJson[BasePaymentInformation] {
   override def asJson: JsValue = json.BasePaymentInformationFormat.writes(this)
 }
 
@@ -254,14 +267,17 @@ sealed trait UsagePlan {
 
   def asJson: JsValue = UsagePlanFormat.writes(this)
   def mergeBase(a: BasePaymentInformation): UsagePlan
-  def addSubscriptionStep(step: ValidationStep,
-                          idx: Option[Int] = None): UsagePlan
+  def addSubscriptionStep(
+      step: ValidationStep,
+      idx: Option[Int] = None
+  ): UsagePlan
   def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan
   def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan
-  def checkCustomName(tenant: Tenant,
-                      plans: Seq[UsagePlan],
-                      apiVisibility: ApiVisibility)(
-      implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
+  def checkCustomName(
+      tenant: Tenant,
+      plans: Seq[UsagePlan],
+      apiVisibility: ApiVisibility
+  )(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
     val existingNames = plans
       .filter(_.id != id)
       .collect(_.customName)
@@ -271,12 +287,12 @@ sealed trait UsagePlan {
       case (ApiVisibility.AdminOnly, _) => EitherT.pure[Future, AppError](())
       case (_, TenantDisplay.Environment) =>
         EitherT.cond[Future](
-          customName.exists(
-            name =>
-              tenant.environments.contains(name) && !existingNames.contains(
-                name)),
+          customName.exists(name =>
+            tenant.environments.contains(name) && !existingNames.contains(name)
+          ),
           (),
-          AppError.EntityConflict("Plan custom name"))
+          AppError.EntityConflict("Plan custom name")
+        )
       case (_, TenantDisplay.Default) => EitherT.pure[Future, AppError](())
     }
   }
@@ -323,14 +339,18 @@ case object UsagePlan {
       IntegrationProcess.ApiKey
     override def mergeBase(a: BasePaymentInformation): Admin = this
 
-    override def addSubscriptionStep(step: ValidationStep,
-                                     idx: Option[Int] = None): UsagePlan = this
+    override def addSubscriptionStep(
+        step: ValidationStep,
+        idx: Option[Int] = None
+    ): UsagePlan = this
 
     override def removeSubscriptionStep(
-        predicate: ValidationStep => Boolean): UsagePlan = this
+        predicate: ValidationStep => Boolean
+    ): UsagePlan = this
 
     override def addDocumentationPages(
-        pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
+        pages: Seq[ApiDocumentationDetailPage]
+    ): UsagePlan =
       this
   }
   case class FreeWithoutQuotas(
@@ -373,11 +393,13 @@ case object UsagePlan {
     override def mergeBase(a: BasePaymentInformation): FreeWithoutQuotas =
       this.copy(
         currency = a.currency,
-        billingDuration = a.billingDuration,
+        billingDuration = a.billingDuration
       )
 
-    override def addSubscriptionStep(step: ValidationStep,
-                                     idx: Option[Int] = None): UsagePlan = {
+    override def addSubscriptionStep(
+        step: ValidationStep,
+        idx: Option[Int] = None
+    ): UsagePlan = {
       idx match {
         case Some(value) =>
           val (front, back) = this.subscriptionProcess.splitAt(value)
@@ -388,14 +410,18 @@ case object UsagePlan {
     }
 
     override def removeSubscriptionStep(
-        predicate: ValidationStep => Boolean): UsagePlan =
+        predicate: ValidationStep => Boolean
+    ): UsagePlan =
       this.copy(
-        subscriptionProcess = this.subscriptionProcess.filter(predicate))
+        subscriptionProcess = this.subscriptionProcess.filter(predicate)
+      )
 
     override def addDocumentationPages(
-        pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
-      this.copy(documentation = documentation.map(d =>
-        d.copy(pages = d.pages ++ pages)))
+        pages: Seq[ApiDocumentationDetailPage]
+    ): UsagePlan =
+      this.copy(documentation =
+        documentation.map(d => d.copy(pages = d.pages ++ pages))
+      )
   }
   case class FreeWithQuotas(
       id: UsagePlanId,
@@ -440,11 +466,13 @@ case object UsagePlan {
     override def mergeBase(a: BasePaymentInformation): FreeWithQuotas =
       this.copy(
         currency = a.currency,
-        billingDuration = a.billingDuration,
+        billingDuration = a.billingDuration
       )
 
-    override def addSubscriptionStep(step: ValidationStep,
-                                     idx: Option[Int] = None): UsagePlan = {
+    override def addSubscriptionStep(
+        step: ValidationStep,
+        idx: Option[Int] = None
+    ): UsagePlan = {
       idx match {
         case Some(value) =>
           val (front, back) = this.subscriptionProcess.splitAt(value)
@@ -455,12 +483,15 @@ case object UsagePlan {
     }
 
     override def removeSubscriptionStep(
-        predicate: ValidationStep => Boolean): UsagePlan = this
+        predicate: ValidationStep => Boolean
+    ): UsagePlan = this
 
     override def addDocumentationPages(
-        pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
-      this.copy(documentation = documentation.map(d =>
-        d.copy(pages = d.pages ++ pages)))
+        pages: Seq[ApiDocumentationDetailPage]
+    ): UsagePlan =
+      this.copy(documentation =
+        documentation.map(d => d.copy(pages = d.pages ++ pages))
+      )
   }
   case class QuotasWithLimits(
       id: UsagePlanId,
@@ -506,11 +537,13 @@ case object UsagePlan {
         costPerMonth = a.costPerMonth,
         currency = a.currency,
         trialPeriod = a.trialPeriod,
-        billingDuration = a.billingDuration,
+        billingDuration = a.billingDuration
       )
 
-    override def addSubscriptionStep(step: ValidationStep,
-                                     idx: Option[Int] = None): UsagePlan = {
+    override def addSubscriptionStep(
+        step: ValidationStep,
+        idx: Option[Int] = None
+    ): UsagePlan = {
       idx match {
         case Some(value) =>
           val (front, back) = this.subscriptionProcess.splitAt(value)
@@ -521,12 +554,15 @@ case object UsagePlan {
     }
 
     override def removeSubscriptionStep(
-        predicate: ValidationStep => Boolean): UsagePlan = this
+        predicate: ValidationStep => Boolean
+    ): UsagePlan = this
 
     override def addDocumentationPages(
-        pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
-      this.copy(documentation = documentation.map(d =>
-        d.copy(pages = d.pages ++ pages)))
+        pages: Seq[ApiDocumentationDetailPage]
+    ): UsagePlan =
+      this.copy(documentation =
+        documentation.map(d => d.copy(pages = d.pages ++ pages))
+      )
   }
   case class QuotasWithoutLimits(
       id: UsagePlanId,
@@ -560,7 +596,10 @@ case object UsagePlan {
     override def maxRequestPerDay: Option[Long] = maxPerDay.some
     override def maxRequestPerMonth: Option[Long] = maxPerMonth.some
     override def costFor(requests: Long): BigDecimal =
-      costPerMonth + (Math.max(requests - maxPerMonth, 0) * costPerAdditionalRequest)
+      costPerMonth + (Math.max(
+        requests - maxPerMonth,
+        0
+      ) * costPerAdditionalRequest)
     override def addAutorizedTeam(teamId: TeamId): UsagePlan =
       this.copy(authorizedTeams = authorizedTeams :+ teamId)
     override def removeAuthorizedTeam(teamId: TeamId): UsagePlan =
@@ -574,11 +613,13 @@ case object UsagePlan {
         costPerMonth = a.costPerMonth,
         currency = a.currency,
         trialPeriod = a.trialPeriod,
-        billingDuration = a.billingDuration,
+        billingDuration = a.billingDuration
       )
 
-    override def addSubscriptionStep(step: ValidationStep,
-                                     idx: Option[Int] = None): UsagePlan = {
+    override def addSubscriptionStep(
+        step: ValidationStep,
+        idx: Option[Int] = None
+    ): UsagePlan = {
       idx match {
         case Some(value) =>
           val (front, back) = this.subscriptionProcess.splitAt(value)
@@ -589,12 +630,15 @@ case object UsagePlan {
     }
 
     override def removeSubscriptionStep(
-        predicate: ValidationStep => Boolean): UsagePlan = this
+        predicate: ValidationStep => Boolean
+    ): UsagePlan = this
 
     override def addDocumentationPages(
-        pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
-      this.copy(documentation = documentation.map(d =>
-        d.copy(pages = d.pages ++ pages)))
+        pages: Seq[ApiDocumentationDetailPage]
+    ): UsagePlan =
+      this.copy(documentation =
+        documentation.map(d => d.copy(pages = d.pages ++ pages))
+      )
   }
   case class PayPerUse(
       id: UsagePlanId,
@@ -634,15 +678,18 @@ case object UsagePlan {
       this.copy(authorizedTeams = Seq.empty)
     override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
       this.copy(authorizedTeams = teamIds)
-    override def mergeBase(a: BasePaymentInformation): PayPerUse = this.copy(
-      costPerMonth = a.costPerMonth,
-      currency = a.currency,
-      trialPeriod = a.trialPeriod,
-      billingDuration = a.billingDuration,
-    )
+    override def mergeBase(a: BasePaymentInformation): PayPerUse =
+      this.copy(
+        costPerMonth = a.costPerMonth,
+        currency = a.currency,
+        trialPeriod = a.trialPeriod,
+        billingDuration = a.billingDuration
+      )
 
-    override def addSubscriptionStep(step: ValidationStep,
-                                     idx: Option[Int] = None): UsagePlan = {
+    override def addSubscriptionStep(
+        step: ValidationStep,
+        idx: Option[Int] = None
+    ): UsagePlan = {
       idx match {
         case Some(value) =>
           val (front, back) = this.subscriptionProcess.splitAt(value)
@@ -653,12 +700,15 @@ case object UsagePlan {
     }
 
     override def removeSubscriptionStep(
-        predicate: ValidationStep => Boolean): UsagePlan = this
+        predicate: ValidationStep => Boolean
+    ): UsagePlan = this
 
     override def addDocumentationPages(
-        pages: Seq[ApiDocumentationDetailPage]): UsagePlan =
-      this.copy(documentation = documentation.map(d =>
-        d.copy(pages = d.pages ++ pages)))
+        pages: Seq[ApiDocumentationDetailPage]
+    ): UsagePlan =
+      this.copy(documentation =
+        documentation.map(d => d.copy(pages = d.pages ++ pages))
+      )
   }
 }
 
@@ -670,13 +720,16 @@ case class OtoroshiApiKey(
   override def asJson: JsValue = json.OtoroshiApiKeyFormat.writes(this)
 }
 
-case class SwaggerAccess(url: Option[String],
-                         content: Option[String] = None,
-                         headers: Map[String, String] =
-                           Map.empty[String, String],
-                         additionalConf: Option[JsObject] = None) {
-  def swaggerContent()(implicit ec: ExecutionContext,
-                       env: Env): Future[JsValue] = {
+case class SwaggerAccess(
+    url: Option[String],
+    content: Option[String] = None,
+    headers: Map[String, String] = Map.empty[String, String],
+    additionalConf: Option[JsObject] = None
+) {
+  def swaggerContent()(implicit
+      ec: ExecutionContext,
+      env: Env
+  ): Future[JsValue] = {
     (content, url) match {
       case (Some(c), _) => FastFuture.successful(Json.parse(c))
       case (None, Some(_url)) =>
@@ -695,21 +748,24 @@ case class SwaggerAccess(url: Option[String],
   }
 }
 
-case class ApiDocumentationDetailPage(id: ApiDocumentationPageId,
-                                      title: String,
-                                      children: Seq[ApiDocumentationDetailPage])
-    extends CanJson[ApiDocumentationDetailPage] {
+case class ApiDocumentationDetailPage(
+    id: ApiDocumentationPageId,
+    title: String,
+    children: Seq[ApiDocumentationDetailPage]
+) extends CanJson[ApiDocumentationDetailPage] {
   override def asJson: JsValue = ???
 }
-case class ApiDocumentation(id: ApiDocumentationId,
-                            tenant: TenantId,
-                            pages: Seq[ApiDocumentationDetailPage],
-                            lastModificationAt: DateTime)
-    extends CanJson[ApiDocumentation] {
+case class ApiDocumentation(
+    id: ApiDocumentationId,
+    tenant: TenantId,
+    pages: Seq[ApiDocumentationDetailPage],
+    lastModificationAt: DateTime
+) extends CanJson[ApiDocumentation] {
   override def asJson: JsValue = json.ApiDocumentationFormat.writes(this)
 
   private def flatDocIds(
-      pages: Seq[ApiDocumentationDetailPage]): Seq[String] = {
+      pages: Seq[ApiDocumentationDetailPage]
+  ): Seq[String] = {
     pages.flatMap(page => Seq(page.id.value) ++ flatDocIds(page.children))
   }
 
@@ -720,7 +776,8 @@ case class ApiDocumentation(id: ApiDocumentationId,
       .findWithProjection(
         Json.obj(
           "_deleted" -> false,
-          "_id" -> Json.obj("$in" -> JsArray(docIds().map(JsString.apply)))),
+          "_id" -> Json.obj("$in" -> JsArray(docIds().map(JsString.apply)))
+        ),
         Json.obj(
           "_id" -> true,
           "_humanReadableId" -> true,
@@ -735,25 +792,26 @@ case class ApiDocumentation(id: ApiDocumentationId,
         // TODO: fetch remote content
         pages
           .map(page =>
-            list.find(o => (o \ "_id").as[String] == page.id.toString))
+            list.find(o => (o \ "_id").as[String] == page.id.toString)
+          )
           .collect { case Some(e) => e }
       }
   }
 }
 
 // "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf"
-case class ApiDocumentationPage(id: ApiDocumentationPageId,
-                                tenant: TenantId,
-                                deleted: Boolean = false,
-                                title: String,
-                                lastModificationAt: DateTime,
-                                content: String,
-                                contentType: String = "text/markdown",
-                                remoteContentEnabled: Boolean = false,
-                                remoteContentUrl: Option[String] = None,
-                                remoteContentHeaders: Map[String, String] =
-                                  Map.empty[String, String])
-    extends CanJson[ApiDocumentationPage] {
+case class ApiDocumentationPage(
+    id: ApiDocumentationPageId,
+    tenant: TenantId,
+    deleted: Boolean = false,
+    title: String,
+    lastModificationAt: DateTime,
+    content: String,
+    contentType: String = "text/markdown",
+    remoteContentEnabled: Boolean = false,
+    remoteContentUrl: Option[String] = None,
+    remoteContentHeaders: Map[String, String] = Map.empty[String, String]
+) extends CanJson[ApiDocumentationPage] {
   //def humanReadableId = s"$index-$level-${title.urlPathSegmentSanitized}"
   def humanReadableId = id.toString
   override def asJson: JsValue = json.ApiDocumentationPageFormat.writes(this)
@@ -761,38 +819,42 @@ case class ApiDocumentationPage(id: ApiDocumentationPageId,
     json.ApiDocumentationPageFormat.writes(this).as[JsObject]
 }
 
-case class ApiPost(id: ApiPostId,
-                   tenant: TenantId,
-                   deleted: Boolean = false,
-                   title: String,
-                   lastModificationAt: DateTime,
-                   content: String)
-    extends CanJson[ApiPost] {
+case class ApiPost(
+    id: ApiPostId,
+    tenant: TenantId,
+    deleted: Boolean = false,
+    title: String,
+    lastModificationAt: DateTime,
+    content: String
+) extends CanJson[ApiPost] {
   def humanReadableId: String = title.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiPostFormat.writes(this)
 }
 
 case class ApiIssueTag(id: ApiIssueTagId, name: String, color: String)
 
-case class ApiIssueComment(by: UserId,
-                           createdAt: DateTime,
-                           lastModificationAt: DateTime,
-                           content: String)
+case class ApiIssueComment(
+    by: UserId,
+    createdAt: DateTime,
+    lastModificationAt: DateTime,
+    content: String
+)
 
-case class ApiIssue(id: ApiIssueId,
-                    seqId: Int,
-                    tenant: TenantId,
-                    deleted: Boolean = false,
-                    title: String,
-                    tags: Set[ApiIssueTagId],
-                    open: Boolean,
-                    createdAt: DateTime,
-                    closedAt: Option[DateTime],
-                    by: UserId,
-                    comments: Seq[ApiIssueComment],
-                    lastModificationAt: DateTime,
-                    apiVersion: Option[String] = None)
-    extends CanJson[ApiIssue] {
+case class ApiIssue(
+    id: ApiIssueId,
+    seqId: Int,
+    tenant: TenantId,
+    deleted: Boolean = false,
+    title: String,
+    tags: Set[ApiIssueTagId],
+    open: Boolean,
+    createdAt: DateTime,
+    closedAt: Option[DateTime],
+    by: UserId,
+    comments: Seq[ApiIssueComment],
+    lastModificationAt: DateTime,
+    apiVersion: Option[String] = None
+) extends CanJson[ApiIssue] {
   def humanReadableId: String = seqId.toString
   override def asJson: JsValue = json.ApiIssueFormat.writes(this)
 }
@@ -830,7 +892,7 @@ case class Testing(
     name: Option[String] = None,
     username: Option[String] = None,
     password: Option[String] = None,
-    config: Option[TestingConfig] = None,
+    config: Option[TestingConfig] = None
 ) extends CanJson[Testing] {
   override def asJson: JsValue = json.TestingFormat.writes(this)
 }
@@ -874,7 +936,8 @@ case class Api(
     testing: Testing = Testing(),
     documentation: ApiDocumentation,
     swagger: Option[SwaggerAccess] = Some(
-      SwaggerAccess(url = "/assets/swaggers/petstore.json".some)),
+      SwaggerAccess(url = "/assets/swaggers/petstore.json".some)
+    ),
     tags: Set[String] = Set.empty,
     categories: Set[String] = Set.empty,
     visibility: ApiVisibility,
@@ -891,30 +954,31 @@ case class Api(
 ) extends CanJson[User] {
   def humanReadableId = name.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiFormat.writes(this)
-  def asSimpleJson: JsValue = Json.obj(
-    "_id" -> id.asJson,
-    "_humanReadableId" -> name.urlPathSegmentSanitized,
-    "_tenant" -> tenant.asJson,
-    "team" -> team.value,
-    "name" -> name,
-    "smallDescription" -> smallDescription,
-    "header" -> header.map(JsString).getOrElse(JsNull).as[JsValue],
-    "image" -> image.map(JsString).getOrElse(JsNull).as[JsValue],
-    "description" -> description,
-    "currentVersion" -> currentVersion.asJson,
-    "supportedVersions" -> JsArray(supportedVersions.map(_.asJson).toSeq),
-    "tags" -> JsArray(tags.map(JsString.apply).toSeq),
-    "categories" -> JsArray(categories.map(JsString.apply).toSeq),
-    "visibility" -> visibility.name,
-    "possibleUsagePlans" -> JsArray(possibleUsagePlans.map(_.asJson).toSeq),
-    "posts" -> SeqPostIdFormat.writes(posts),
-    "issues" -> SeqIssueIdFormat.writes(issues),
-    "issuesTags" -> SetApiTagFormat.writes(issuesTags),
-    "stars" -> stars,
-    "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue],
-    "isDefault" -> isDefault,
-    "state" -> json.ApiStateFormat.writes(state)
-  )
+  def asSimpleJson: JsValue =
+    Json.obj(
+      "_id" -> id.asJson,
+      "_humanReadableId" -> name.urlPathSegmentSanitized,
+      "_tenant" -> tenant.asJson,
+      "team" -> team.value,
+      "name" -> name,
+      "smallDescription" -> smallDescription,
+      "header" -> header.map(JsString).getOrElse(JsNull).as[JsValue],
+      "image" -> image.map(JsString).getOrElse(JsNull).as[JsValue],
+      "description" -> description,
+      "currentVersion" -> currentVersion.asJson,
+      "supportedVersions" -> JsArray(supportedVersions.map(_.asJson).toSeq),
+      "tags" -> JsArray(tags.map(JsString.apply).toSeq),
+      "categories" -> JsArray(categories.map(JsString.apply).toSeq),
+      "visibility" -> visibility.name,
+      "possibleUsagePlans" -> JsArray(possibleUsagePlans.map(_.asJson).toSeq),
+      "posts" -> SeqPostIdFormat.writes(posts),
+      "issues" -> SeqIssueIdFormat.writes(issues),
+      "issuesTags" -> SetApiTagFormat.writes(issuesTags),
+      "stars" -> stars,
+      "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue],
+      "isDefault" -> isDefault,
+      "state" -> json.ApiStateFormat.writes(state)
+    )
   def asIntegrationJson(teams: Seq[Team]): JsValue = {
     val t = teams.find(_.id == team).get.name.urlPathSegmentSanitized
     Json.obj(
@@ -930,33 +994,36 @@ case class Api(
       "stars" -> stars
     )
   }
-  def asPublicWithAuthorizationsJson(): JsValue = Json.obj(
-    "_id" -> id.value,
-    "_humanReadableId" -> name.urlPathSegmentSanitized,
-    "tenant" -> tenant.asJson,
-    "team" -> team.value,
-    "name" -> name,
-    "smallDescription" -> smallDescription,
-    "description" -> description,
-    "currentVersion" -> currentVersion.asJson,
-    "isDefault" -> isDefault,
-    "state" -> json.ApiStateFormat.writes(state),
-    "tags" -> JsArray(tags.map(JsString.apply).toSeq),
-    "categories" -> JsArray(categories.map(JsString.apply).toSeq),
-    "authorizedTeams" -> SeqTeamIdFormat.writes(authorizedTeams),
-    "stars" -> stars,
-    "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
-  )
-  def isPublished: Boolean = state match {
-    case ApiState.Published  => true
-    case ApiState.Deprecated => true
-    case _                   => false
-  }
+  def asPublicWithAuthorizationsJson(): JsValue =
+    Json.obj(
+      "_id" -> id.value,
+      "_humanReadableId" -> name.urlPathSegmentSanitized,
+      "tenant" -> tenant.asJson,
+      "team" -> team.value,
+      "name" -> name,
+      "smallDescription" -> smallDescription,
+      "description" -> description,
+      "currentVersion" -> currentVersion.asJson,
+      "isDefault" -> isDefault,
+      "state" -> json.ApiStateFormat.writes(state),
+      "tags" -> JsArray(tags.map(JsString.apply).toSeq),
+      "categories" -> JsArray(categories.map(JsString.apply).toSeq),
+      "authorizedTeams" -> SeqTeamIdFormat.writes(authorizedTeams),
+      "stars" -> stars,
+      "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
+    )
+  def isPublished: Boolean =
+    state match {
+      case ApiState.Published  => true
+      case ApiState.Deprecated => true
+      case _                   => false
+    }
 }
 
-case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty,
-                              groups: Set[OtoroshiServiceGroupId] = Set.empty,
-                              routes: Set[OtoroshiRouteId] = Set.empty,
+case class AuthorizedEntities(
+    services: Set[OtoroshiServiceId] = Set.empty,
+    groups: Set[OtoroshiServiceGroupId] = Set.empty,
+    routes: Set[OtoroshiRouteId] = Set.empty
 ) extends CanJson[AuthorizedEntities] {
   def asJson: JsValue = json.AuthorizedEntitiesFormat.writes(this)
   def asOtoroshiJson: JsValue =
@@ -964,26 +1031,33 @@ case class AuthorizedEntities(services: Set[OtoroshiServiceId] = Set.empty,
   def isEmpty: Boolean = services.isEmpty && groups.isEmpty && routes.isEmpty
   def equalsAuthorizedEntities(a: AuthorizedEntities): Boolean =
     services.forall(s => a.services.contains(s)) && groups.forall(g =>
-      a.groups.contains(g)) && routes.forall(g => a.routes.contains(g))
+      a.groups.contains(g)
+    ) && routes.forall(g => a.routes.contains(g))
 }
 
-case class ApiWithAuthorizations(api: Api,
-                                 plans: Seq[UsagePlan],
-                                 authorizations: Seq[AuthorizationApi] =
-                                   Seq.empty)
+case class ApiWithAuthorizations(
+    api: Api,
+    plans: Seq[UsagePlan],
+    authorizations: Seq[AuthorizationApi] = Seq.empty
+)
 case class ApiWithCount(apis: Seq[ApiWithAuthorizations], total: Long)
 case class NotificationWithCount(notifications: Seq[Notification], total: Long)
 case class TeamWithCount(teams: Seq[Team], total: Long)
-case class SubscriptionsWithPlan(planId: String,
-                                 isPending: Boolean,
-                                 subscriptionsCount: Int)
+case class SubscriptionsWithPlan(
+    planId: String,
+    isPending: Boolean,
+    subscriptionsCount: Int
+)
 case class ApiWithSubscriptions(
     api: Api,
     plans: Seq[UsagePlan],
-    subscriptionsWithPlan: Seq[SubscriptionsWithPlan])
+    subscriptionsWithPlan: Seq[SubscriptionsWithPlan]
+)
 
-case class AccessibleApisWithNumberOfApis(apis: Seq[ApiWithSubscriptions],
-                                          total: Long)
+case class AccessibleApisWithNumberOfApis(
+    apis: Seq[ApiWithSubscriptions],
+    total: Long
+)
 
 case class AuthorizationApi(team: String, authorized: Boolean, pending: Boolean)
 
@@ -996,11 +1070,12 @@ sealed trait ValidationStep {
 }
 
 object ValidationStep {
-  case class Email(id: String,
-                   emails: Seq[String],
-                   message: Option[String],
-                   title: String)
-      extends ValidationStep {
+  case class Email(
+      id: String,
+      emails: Seq[String],
+      message: Option[String],
+      title: String
+  ) extends ValidationStep {
     def name: String = "email"
 
     override def isAutomatic: Boolean = false
@@ -1015,28 +1090,31 @@ object ValidationStep {
           "motivation" -> Json.obj(
             "type" -> "string",
             "format" -> "textarea",
-            "constraints" -> Json.arr(Json.obj("type" -> "required"))))
+            "constraints" -> Json.arr(Json.obj("type" -> "required"))
+          )
+        )
         .some,
-      formatter: Option[String] = "[[motivation]]".some)
-      extends ValidationStep {
+      formatter: Option[String] = "[[motivation]]".some
+  ) extends ValidationStep {
     def name: String = "teamAdmin"
     override def isAutomatic: Boolean = false
   }
 
-  case class Payment(id: String,
-                     thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId,
-                     title: String = "Payment")
-      extends ValidationStep {
+  case class Payment(
+      id: String,
+      thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId,
+      title: String = "Payment"
+  ) extends ValidationStep {
     def name: String = "payment"
     override def isAutomatic: Boolean = false
   }
 
-  case class HttpRequest(id: String,
-                         title: String,
-                         url: String,
-                         headers: Map[String, String] =
-                           Map.empty[String, String])
-      extends ValidationStep {
+  case class HttpRequest(
+      id: String,
+      title: String,
+      url: String,
+      headers: Map[String, String] = Map.empty[String, String]
+  ) extends ValidationStep {
     def name: String = "httpRequest"
     override def isAutomatic: Boolean = true
   }

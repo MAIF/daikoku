@@ -18,10 +18,11 @@ import play.api.mvc._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class MockController(DaikokuAction: DaikokuAction,
-                     env: Env,
-                     cc: ControllerComponents)
-    extends AbstractController(cc) {
+class MockController(
+    DaikokuAction: DaikokuAction,
+    env: Env,
+    cc: ControllerComponents
+) extends AbstractController(cc) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
 
@@ -46,7 +47,8 @@ class MockController(DaikokuAction: DaikokuAction,
     """.stripMargin
 
   def saveApiDocPages(
-      tenant: TenantId): Future[Seq[ApiDocumentationDetailPage]] = {
+      tenant: TenantId
+  ): Future[Seq[ApiDocumentationDetailPage]] = {
     val id1 = ApiDocumentationPageId(IdGenerator.token(32))
     val id2 = ApiDocumentationPageId(IdGenerator.token(32))
     val id21 = ApiDocumentationPageId(IdGenerator.token(32))
@@ -111,158 +113,190 @@ class MockController(DaikokuAction: DaikokuAction,
       )
     } yield {
       Seq(
-        ApiDocumentationDetailPage(id = id1,
-                                   title = "Introduction",
-                                   children = Seq.empty),
+        ApiDocumentationDetailPage(
+          id = id1,
+          title = "Introduction",
+          children = Seq.empty
+        ),
         ApiDocumentationDetailPage(
           id = id2,
           title = "Do This",
           children = Seq(
-            ApiDocumentationDetailPage(id = id1,
-                                       title = "and do it well",
-                                       children = Seq.empty),
-          )),
-        ApiDocumentationDetailPage(id = id3,
-                                   title = "Do That ",
-                                   children = Seq.empty),
-        ApiDocumentationDetailPage(id = id4,
-                                   title = "FAQ",
-                                   children = Seq.empty)
+            ApiDocumentationDetailPage(
+              id = id1,
+              title = "and do it well",
+              children = Seq.empty
+            )
+          )
+        ),
+        ApiDocumentationDetailPage(
+          id = id3,
+          title = "Do That ",
+          children = Seq.empty
+        ),
+        ApiDocumentationDetailPage(
+          id = id4,
+          title = "FAQ",
+          children = Seq.empty
+        )
       )
     }
   }
 
-  def samplePlans(tenantId: TenantId, linkToOtoroshi: Boolean = false) = Seq(
-    FreeWithoutQuotas(
-      id = UsagePlanId(IdGenerator.token),
-      tenant = tenantId,
-      billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-      currency = Currency("EUR"),
-      customName = None,
-      customDescription = None,
-      allowMultipleKeys = Some(false),
-      autoRotation = None,
-      subscriptionProcess = Seq.empty,
-      integrationProcess = IntegrationProcess.Automatic,
-      otoroshiTarget =
-        if (linkToOtoroshi)
-          Some(
-            OtoroshiTarget(
-              otoroshiSettings = OtoroshiSettingsId("default"),
-              authorizedEntities = Some(AuthorizedEntities(
-                groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
-          )
-        else None,
-    ),
-    FreeWithQuotas(
-      id = UsagePlanId(IdGenerator.token),
-      tenant = tenantId,
-      maxPerSecond = 2000,
-      maxPerDay = 2000,
-      maxPerMonth = 2000,
-      billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-      currency = Currency("EUR"),
-      customName = None,
-      customDescription = None,
-      allowMultipleKeys = Some(false),
-      autoRotation = None,
-      subscriptionProcess = Seq.empty,
-      integrationProcess = IntegrationProcess.Automatic,
-      otoroshiTarget =
-        if (linkToOtoroshi)
-          Some(
-            OtoroshiTarget(
-              otoroshiSettings = OtoroshiSettingsId("default"),
-              authorizedEntities = Some(AuthorizedEntities(
-                groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
-          )
-        else None
-    ),
-    QuotasWithLimits(
-      id = UsagePlanId(IdGenerator.token),
-      tenant = tenantId,
-      maxPerSecond = 10000,
-      maxPerDay = 10000,
-      maxPerMonth = 10000,
-      costPerMonth = BigDecimal(10.0),
-      billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-      trialPeriod = None,
-      currency = Currency("EUR"),
-      customName = None,
-      customDescription = None,
-      allowMultipleKeys = Some(false),
-      autoRotation = None,
-      subscriptionProcess = Seq.empty,
-      integrationProcess = IntegrationProcess.Automatic,
-      otoroshiTarget =
-        if (linkToOtoroshi)
-          Some(
-            OtoroshiTarget(
-              otoroshiSettings = OtoroshiSettingsId("default"),
-              authorizedEntities = Some(AuthorizedEntities(
-                groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
-          )
-        else None
-    ),
-    QuotasWithoutLimits(
-      id = UsagePlanId(IdGenerator.token),
-      tenant = tenantId,
-      maxPerSecond = 10000,
-      maxPerDay = 10000,
-      maxPerMonth = 10000,
-      costPerAdditionalRequest = BigDecimal(0.015),
-      costPerMonth = BigDecimal(10.0),
-      billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-      trialPeriod = None,
-      currency = Currency("EUR"),
-      customName = None,
-      customDescription = None,
-      allowMultipleKeys = Some(false),
-      autoRotation = None,
-      subscriptionProcess = Seq.empty,
-      integrationProcess = IntegrationProcess.Automatic,
-      otoroshiTarget =
-        if (linkToOtoroshi)
-          Some(
-            OtoroshiTarget(
-              otoroshiSettings = OtoroshiSettingsId("default"),
-              authorizedEntities = Some(AuthorizedEntities(
-                groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
-          )
-        else None
-    ),
-    PayPerUse(
-      id = UsagePlanId(IdGenerator.token),
-      tenant = tenantId,
-      costPerMonth = BigDecimal(10.0),
-      costPerRequest = BigDecimal(0.02),
-      billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-      trialPeriod = None,
-      currency = Currency("EUR"),
-      customName = None,
-      customDescription = None,
-      allowMultipleKeys = Some(false),
-      autoRotation = None,
-      subscriptionProcess = Seq.empty,
-      integrationProcess = IntegrationProcess.Automatic,
-      otoroshiTarget =
-        if (linkToOtoroshi)
-          Some(
-            OtoroshiTarget(
-              otoroshiSettings = OtoroshiSettingsId("default"),
-              authorizedEntities = Some(AuthorizedEntities(
-                groups = Set(OtoroshiServiceGroupId("12345"))))) //FIXME: [#119]
-          )
-        else None
+  def samplePlans(tenantId: TenantId, linkToOtoroshi: Boolean = false) =
+    Seq(
+      FreeWithoutQuotas(
+        id = UsagePlanId(IdGenerator.token),
+        tenant = tenantId,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        allowMultipleKeys = Some(false),
+        autoRotation = None,
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.Automatic,
+        otoroshiTarget =
+          if (linkToOtoroshi)
+            Some(
+              OtoroshiTarget(
+                otoroshiSettings = OtoroshiSettingsId("default"),
+                authorizedEntities = Some(
+                  AuthorizedEntities(
+                    groups = Set(OtoroshiServiceGroupId("12345"))
+                  )
+                )
+              ) //FIXME: [#119]
+            )
+          else None
+      ),
+      FreeWithQuotas(
+        id = UsagePlanId(IdGenerator.token),
+        tenant = tenantId,
+        maxPerSecond = 2000,
+        maxPerDay = 2000,
+        maxPerMonth = 2000,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        allowMultipleKeys = Some(false),
+        autoRotation = None,
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.Automatic,
+        otoroshiTarget =
+          if (linkToOtoroshi)
+            Some(
+              OtoroshiTarget(
+                otoroshiSettings = OtoroshiSettingsId("default"),
+                authorizedEntities = Some(
+                  AuthorizedEntities(
+                    groups = Set(OtoroshiServiceGroupId("12345"))
+                  )
+                )
+              ) //FIXME: [#119]
+            )
+          else None
+      ),
+      QuotasWithLimits(
+        id = UsagePlanId(IdGenerator.token),
+        tenant = tenantId,
+        maxPerSecond = 10000,
+        maxPerDay = 10000,
+        maxPerMonth = 10000,
+        costPerMonth = BigDecimal(10.0),
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        trialPeriod = None,
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        allowMultipleKeys = Some(false),
+        autoRotation = None,
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.Automatic,
+        otoroshiTarget =
+          if (linkToOtoroshi)
+            Some(
+              OtoroshiTarget(
+                otoroshiSettings = OtoroshiSettingsId("default"),
+                authorizedEntities = Some(
+                  AuthorizedEntities(
+                    groups = Set(OtoroshiServiceGroupId("12345"))
+                  )
+                )
+              ) //FIXME: [#119]
+            )
+          else None
+      ),
+      QuotasWithoutLimits(
+        id = UsagePlanId(IdGenerator.token),
+        tenant = tenantId,
+        maxPerSecond = 10000,
+        maxPerDay = 10000,
+        maxPerMonth = 10000,
+        costPerAdditionalRequest = BigDecimal(0.015),
+        costPerMonth = BigDecimal(10.0),
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        trialPeriod = None,
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        allowMultipleKeys = Some(false),
+        autoRotation = None,
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.Automatic,
+        otoroshiTarget =
+          if (linkToOtoroshi)
+            Some(
+              OtoroshiTarget(
+                otoroshiSettings = OtoroshiSettingsId("default"),
+                authorizedEntities = Some(
+                  AuthorizedEntities(
+                    groups = Set(OtoroshiServiceGroupId("12345"))
+                  )
+                )
+              ) //FIXME: [#119]
+            )
+          else None
+      ),
+      PayPerUse(
+        id = UsagePlanId(IdGenerator.token),
+        tenant = tenantId,
+        costPerMonth = BigDecimal(10.0),
+        costPerRequest = BigDecimal(0.02),
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        trialPeriod = None,
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        allowMultipleKeys = Some(false),
+        autoRotation = None,
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.Automatic,
+        otoroshiTarget =
+          if (linkToOtoroshi)
+            Some(
+              OtoroshiTarget(
+                otoroshiSettings = OtoroshiSettingsId("default"),
+                authorizedEntities = Some(
+                  AuthorizedEntities(
+                    groups = Set(OtoroshiServiceGroupId("12345"))
+                  )
+                )
+              ) //FIXME: [#119]
+            )
+          else None
+      )
     )
-  )
 
-  def SampleApi(id: String,
-                tenant: TenantId,
-                name: String,
-                team: TeamId,
-                docPages: Seq[ApiDocumentationDetailPage],
-                visibility: ApiVisibility = ApiVisibility.Public) = {
+  def SampleApi(
+      id: String,
+      tenant: TenantId,
+      name: String,
+      team: TeamId,
+      docPages: Seq[ApiDocumentationDetailPage],
+      visibility: ApiVisibility = ApiVisibility.Public
+  ) = {
     val plans = samplePlans(tenant)
     val api = Api(
       id = ApiId(IdGenerator.token(32)),
@@ -312,7 +346,8 @@ class MockController(DaikokuAction: DaikokuAction,
         pages = docPages,
         lastModificationAt = DateTime.now()
       ),
-      swagger = Some(SwaggerAccess("/assets/swaggers/petstore.json".some, None)),
+      swagger =
+        Some(SwaggerAccess("/assets/swaggers/petstore.json".some, None)),
       possibleUsagePlans = plans.map(_.id),
       defaultUsagePlan = plans.head.id
     )
@@ -320,11 +355,13 @@ class MockController(DaikokuAction: DaikokuAction,
     (api, plans)
   }
 
-  def ToyApi(version: String,
-             tenant: TenantId,
-             teamId: TeamId,
-             docPages: Seq[ApiDocumentationDetailPage],
-             authorizedTeams: Seq[TeamId] = Seq.empty) = {
+  def ToyApi(
+      version: String,
+      tenant: TenantId,
+      teamId: TeamId,
+      docPages: Seq[ApiDocumentationDetailPage],
+      authorizedTeams: Seq[TeamId] = Seq.empty
+  ) = {
     val plans = samplePlans(tenant, linkToOtoroshi = true)
     val api = Api(
       id = ApiId(s"my-toy-api-${tenant.value}-$version"),
@@ -372,11 +409,14 @@ class MockController(DaikokuAction: DaikokuAction,
         id = ApiDocumentationId(IdGenerator.token(32)),
         tenant = tenant,
         pages = docPages,
-        lastModificationAt = DateTime.now(),
+        lastModificationAt = DateTime.now()
       ),
       swagger = Some(
-        SwaggerAccess(url = "/assets/swaggers/petstore.json".some,
-                      content = None)),
+        SwaggerAccess(
+          url = "/assets/swaggers/petstore.json".some,
+          content = None
+        )
+      ),
       possibleUsagePlans = plans.map(_.id),
       defaultUsagePlan = plans.head.id
     )
@@ -384,10 +424,12 @@ class MockController(DaikokuAction: DaikokuAction,
     (api, plans)
   }
 
-  def createUserAndTeam(name: String,
-                        email: String,
-                        tenantId: TenantId,
-                        admin: Boolean = true): (User, Team) = {
+  def createUserAndTeam(
+      name: String,
+      email: String,
+      tenantId: TenantId,
+      admin: Boolean = true
+  ): (User, Team) = {
     val userId = UserId(IdGenerator.token)
     val userWithPermission =
       if (admin) UserWithPermission(userId, TeamUser)
@@ -400,7 +442,8 @@ class MockController(DaikokuAction: DaikokuAction,
       name = s"$name",
       description = s"The personal team of $name",
       avatar = Some(
-        s"https://www.gravatar.com/avatar/${email.md5}?size=128&d=robohash"),
+        s"https://www.gravatar.com/avatar/${email.md5}?size=128&d=robohash"
+      ),
       users = Set(userWithPermission),
       authorizedOtoroshiGroups = Set.empty,
       verified = true
@@ -422,14 +465,16 @@ class MockController(DaikokuAction: DaikokuAction,
     (user, team)
   }
 
-  def reset() = Action.async { ctx =>
-    env.config.mode match {
-      case DaikokuMode.Dev => resetDataStore()
-      case _ =>
-        FastFuture.successful(
-          BadRequest(Json.obj("error" -> "Action not avalaible")))
+  def reset() =
+    Action.async { ctx =>
+      env.config.mode match {
+        case DaikokuMode.Dev => resetDataStore()
+        case _ =>
+          FastFuture.successful(
+            BadRequest(Json.obj("error" -> "Action not avalaible"))
+          )
+      }
     }
-  }
 
   def resetDataStore() = {
     val team1Id = IdGenerator.token(32)
@@ -453,18 +498,18 @@ class MockController(DaikokuAction: DaikokuAction,
       createUserAndTeam("Etienne", "etienne@foo.bar", tenantId, false)
 
     val issuesTags = Seq(
-      ApiIssueTag(ApiIssueTagId(IdGenerator.token(32)),
-                  "bug",
-                  "#2980b9"),
-      ApiIssueTag(ApiIssueTagId(IdGenerator.token(32)),
-                  "backoffice",
-                  "#c0392b"),
-      ApiIssueTag(ApiIssueTagId(IdGenerator.token(32)),
-                  "security",
-                  "#8e44ad"),
-      ApiIssueTag(ApiIssueTagId(IdGenerator.token(32)),
-                  "subscription",
-                  "#16a085"),
+      ApiIssueTag(ApiIssueTagId(IdGenerator.token(32)), "bug", "#2980b9"),
+      ApiIssueTag(
+        ApiIssueTagId(IdGenerator.token(32)),
+        "backoffice",
+        "#c0392b"
+      ),
+      ApiIssueTag(ApiIssueTagId(IdGenerator.token(32)), "security", "#8e44ad"),
+      ApiIssueTag(
+        ApiIssueTagId(IdGenerator.token(32)),
+        "subscription",
+        "#16a085"
+      )
     )
     val issues: Seq[ApiIssue] = Seq(
       ApiIssue(
@@ -518,7 +563,8 @@ class MockController(DaikokuAction: DaikokuAction,
       name = s"default-admin-team",
       description = s"The admin team for the default tenant",
       avatar = Some(
-        s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"),
+        s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"
+      ),
       users = Set(
         UserWithPermission(user1.id, TeamPermission.Administrator),
         UserWithPermission(user2.id, TeamPermission.Administrator),
@@ -533,7 +579,8 @@ class MockController(DaikokuAction: DaikokuAction,
       name = s"Johnny-be-good-admin-team",
       description = s"The admin team for the Johnny be good tenant",
       avatar = Some(
-        s"https://www.gravatar.com/avatar/${"Johnny-be-good".md5}?size=128&d=robohash"),
+        s"https://www.gravatar.com/avatar/${"Johnny-be-good".md5}?size=128&d=robohash"
+      )
     )
 
     val sender = user5
@@ -583,7 +630,7 @@ class MockController(DaikokuAction: DaikokuAction,
         tenant = tenant2Id,
         pages = Seq.empty[ApiDocumentationDetailPage],
         lastModificationAt = DateTime.now()
-      ),
+      )
     )
 
     for {
@@ -617,7 +664,8 @@ class MockController(DaikokuAction: DaikokuAction,
           style = Some(
             DaikokuStyle(
               title = "Evil Corp."
-            )),
+            )
+          ),
           contact = "contact@foo.bar",
           mailerSettings = Some(ConsoleMailerSettings()),
           authProvider = AuthProvider.Local,
@@ -653,7 +701,8 @@ class MockController(DaikokuAction: DaikokuAction,
                 |  console.log('Allumez le feu !!!')
                 |</script>
               """.stripMargin,
-              css = """body {
+              css =
+                """body {
               |}
               |
               |.user-logo {
@@ -853,7 +902,8 @@ class MockController(DaikokuAction: DaikokuAction,
               |  }
               |}
             """.stripMargin
-            )),
+            )
+          ),
           mailerSettings = Some(ConsoleMailerSettings()),
           authProvider = AuthProvider.Local,
           authProviderSettings = Json.obj(
@@ -872,14 +922,16 @@ class MockController(DaikokuAction: DaikokuAction,
           adminApi = adminApiTenant2.id
         )
       )
-      _ <- env.dataStore.apiRepo
-        .forTenant(Tenant.Default)
-        .save(adminApiDefaultTenant)
+      _ <-
+        env.dataStore.apiRepo
+          .forTenant(Tenant.Default)
+          .save(adminApiDefaultTenant)
       _ <- env.dataStore.usagePlanRepo.forTenant(Tenant.Default).save(adminPlan)
       _ <- env.dataStore.apiRepo.forTenant(tenant2Id).save(adminApiTenant2)
-      _ <- env.dataStore.usagePlanRepo
-        .forTenant(tenant2Id)
-        .save(adminPlanTenant2)
+      _ <-
+        env.dataStore.usagePlanRepo
+          .forTenant(tenant2Id)
+          .save(adminPlanTenant2)
       _ <- teamRepo1.save(
         Team(
           id = TeamId(team3Id),
@@ -888,7 +940,8 @@ class MockController(DaikokuAction: DaikokuAction,
           name = s"Opun Team",
           description = s"The team for Opun people",
           avatar = Some(
-            s"https://www.gravatar.com/avatar/${"opun-team@otoroshi.io".md5}?size=128&d=robohash"),
+            s"https://www.gravatar.com/avatar/${"opun-team@otoroshi.io".md5}?size=128&d=robohash"
+          ),
           users = Set(
             UserWithPermission(user1.id, TeamUser),
             UserWithPermission(user2.id, TeamUser),
@@ -906,7 +959,8 @@ class MockController(DaikokuAction: DaikokuAction,
           name = s"Fifou's Team",
           description = s"The team for Fifou people",
           avatar = Some(
-            s"https://www.gravatar.com/avatar/${"fifou-team@otoroshi.io".md5}?size=128&d=robohash"),
+            s"https://www.gravatar.com/avatar/${"fifou-team@otoroshi.io".md5}?size=128&d=robohash"
+          ),
           users = Set(
             UserWithPermission(user1.id, Administrator),
             UserWithPermission(user2.id, Administrator),
@@ -924,7 +978,8 @@ class MockController(DaikokuAction: DaikokuAction,
           name = s"Bobby's Team",
           description = s"The team for Bobby people",
           avatar = Some(
-            s"https://www.gravatar.com/avatar/${"bobby-team@otoroshi.io".md5}?size=128&d=robohash"),
+            s"https://www.gravatar.com/avatar/${"bobby-team@otoroshi.io".md5}?size=128&d=robohash"
+          ),
           users = Set(UserWithPermission(user5.id, Administrator))
         )
       )
@@ -936,7 +991,8 @@ class MockController(DaikokuAction: DaikokuAction,
           name = s"Johnny's Team",
           description = s"The team for Johnny's fans",
           avatar = Some(
-            s"https://www.gravatar.com/avatar/${"johnny-team@otoroshi.io".md5}?size=128&d=robohash"),
+            s"https://www.gravatar.com/avatar/${"johnny-team@otoroshi.io".md5}?size=128&d=robohash"
+          ),
           users = Set.empty
         )
       )
@@ -957,35 +1013,39 @@ class MockController(DaikokuAction: DaikokuAction,
       ids <- saveApiDocPages(tenantId)
       ids2 <- saveApiDocPages(tenant2Id)
 
-      toyApiDefault = ToyApi("0",
-                             tenantId,
-                             TeamId(team1Id),
-                             ids,
-                             Seq(TeamId(team3Id)))
+      toyApiDefault =
+        ToyApi("0", tenantId, TeamId(team1Id), ids, Seq(TeamId(team3Id)))
       toyApiJohnny = ToyApi("0", tenant2Id, TeamId(teamJohnnyId), ids2)
-      sampleApi = SampleApi("1",
-                            tenantId,
-                            "Sample Api",
-                            TeamId(team2Id),
-                            ids,
-                            ApiVisibility.PublicWithAuthorizations)
+      sampleApi = SampleApi(
+        "1",
+        tenantId,
+        "Sample Api",
+        TeamId(team2Id),
+        ids,
+        ApiVisibility.PublicWithAuthorizations
+      )
 
       _ <- Future.sequence(
         Seq(
           apiRepo.save(toyApiDefault._1),
           apiRepo2.save(toyApiJohnny._1),
-          apiRepo.save(sampleApi._1),
+          apiRepo.save(sampleApi._1)
         )
       )
-      _ <- env.dataStore.usagePlanRepo
-        .forTenant(Tenant.Default)
-        .insertMany(toyApiDefault._2 ++ sampleApi._2)
-      _ <- env.dataStore.usagePlanRepo
-        .forTenant(tenant2Id)
-        .insertMany(toyApiJohnny._2)
+      _ <-
+        env.dataStore.usagePlanRepo
+          .forTenant(Tenant.Default)
+          .insertMany(toyApiDefault._2 ++ sampleApi._2)
+      _ <-
+        env.dataStore.usagePlanRepo
+          .forTenant(tenant2Id)
+          .insertMany(toyApiJohnny._2)
 
-      _ <- Future.sequence(issues.map(issue =>
-        env.dataStore.apiIssueRepo.forTenant(tenantId).save(issue)))
+      _ <- Future.sequence(
+        issues.map(issue =>
+          env.dataStore.apiIssueRepo.forTenant(tenantId).save(issue)
+        )
+      )
     } yield {
       Ok(Json.obj("done" -> true))
     }
@@ -1037,58 +1097,66 @@ class MockController(DaikokuAction: DaikokuAction,
   )
   var apikeys: Seq[JsObject] = Seq()
 
-  def fakeOtoroshiGroups() = Action {
-    Ok(JsArray(groups))
-  }
-  def fakeOtoroshiServices() = Action {
-    Ok(JsArray(services))
-  }
-  def fakeOtoroshiRoutes() = Action {
-    Ok(JsArray(routes))
-  }
-
-  def fakeOtoroshiGroup(groupId: String) = Action {
-    val found = groups.find { obj =>
-      (obj \ "id").as[String] == groupId
+  def fakeOtoroshiGroups() =
+    Action {
+      Ok(JsArray(groups))
     }
-    found match {
-      case Some(group) => Ok(group)
-      case None        => NotFound(Json.obj("error" -> "not found"))
+  def fakeOtoroshiServices() =
+    Action {
+      Ok(JsArray(services))
     }
-  }
+  def fakeOtoroshiRoutes() =
+    Action {
+      Ok(JsArray(routes))
+    }
 
-  def fakeOtoroshiApiKeys() = Action {
-    Ok(JsArray(apikeys))
-  }
-
-  def fakeOtoroshiApiKey(clientId: String) = Action.async {
-    env.dataStore.apiSubscriptionRepo
-      .forAllTenant()
-      .findOne(Json.obj("apiKey.clientId" -> clientId))
-      .map {
-        case Some(subscription) =>
-          Ok(
-            ActualOtoroshiApiKey(
-              clientId = clientId,
-              clientSecret = subscription.apiKey.clientSecret,
-              clientName = subscription.apiKey.clientName,
-              authorizedEntities = AuthorizedEntities(),
-              throttlingQuota = 10,
-              dailyQuota = 10000,
-              monthlyQuota = 300000,
-              constrainedServicesOnly = true,
-              restrictions = ApiKeyRestrictions(),
-              metadata = Map(),
-              rotation = None
-            ).asJson)
-        case _ => BadRequest(Json.obj("error" -> "Subscription not found"))
+  def fakeOtoroshiGroup(groupId: String) =
+    Action {
+      val found = groups.find { obj =>
+        (obj \ "id").as[String] == groupId
       }
-  }
+      found match {
+        case Some(group) => Ok(group)
+        case None        => NotFound(Json.obj("error" -> "not found"))
+      }
+    }
 
-  def createFakeOtoroshiApiKey() = Action(parse.json) { req =>
-    apikeys = apikeys :+ req.body.as[JsObject]
-    Ok(req.body.as[JsObject])
-  }
+  def fakeOtoroshiApiKeys() =
+    Action {
+      Ok(JsArray(apikeys))
+    }
+
+  def fakeOtoroshiApiKey(clientId: String) =
+    Action.async {
+      env.dataStore.apiSubscriptionRepo
+        .forAllTenant()
+        .findOne(Json.obj("apiKey.clientId" -> clientId))
+        .map {
+          case Some(subscription) =>
+            Ok(
+              ActualOtoroshiApiKey(
+                clientId = clientId,
+                clientSecret = subscription.apiKey.clientSecret,
+                clientName = subscription.apiKey.clientName,
+                authorizedEntities = AuthorizedEntities(),
+                throttlingQuota = 10,
+                dailyQuota = 10000,
+                monthlyQuota = 300000,
+                constrainedServicesOnly = true,
+                restrictions = ApiKeyRestrictions(),
+                metadata = Map(),
+                rotation = None
+              ).asJson
+            )
+          case _ => BadRequest(Json.obj("error" -> "Subscription not found"))
+        }
+    }
+
+  def createFakeOtoroshiApiKey() =
+    Action(parse.json) { req =>
+      apikeys = apikeys :+ req.body.as[JsObject]
+      Ok(req.body.as[JsObject])
+    }
 
   def updateFakeOtoroshiApiKey(clientId: String) =
     Action(parse.json) { req =>
@@ -1113,7 +1181,8 @@ class MockController(DaikokuAction: DaikokuAction,
         .flatMap {
           case None =>
             FastFuture.successful(
-              NotFound(Json.obj("error" -> "subscription not found")))
+              NotFound(Json.obj("error" -> "subscription not found"))
+            )
           case Some(sub) =>
             env.dataStore.apiRepo
               .forAllTenant()
@@ -1126,45 +1195,51 @@ class MockController(DaikokuAction: DaikokuAction,
         }
     }
 
-  def fakeOtoroshiQuotas(clientId: String) = Action.async {
-    val r = scala.util.Random
+  def fakeOtoroshiQuotas(clientId: String) =
+    Action.async {
+      val r = scala.util.Random
 
-    env.dataStore.apiSubscriptionRepo
-      .forAllTenant()
-      .findOneNotDeleted(Json.obj("apiKey.clientId" -> clientId))
-      .flatMap {
-        case None =>
-          FastFuture.successful(
-            NotFound(Json.obj("error" -> "subscription not found")))
-        case Some(sub) =>
-          env.dataStore.usagePlanRepo
-            .forAllTenant()
-            .findOneNotDeleted(Json.obj("_id" -> sub.plan.asJson))
-            .map {
-              case None => NotFound(Json.obj("error" -> "plan not found"))
-              case Some(pp) =>
-                val callPerSec =
-                  r.nextInt(pp.maxRequestPerSecond.getOrElse(10L).toInt)
-                val callPerDay =
-                  r.nextInt(pp.maxRequestPerDay.getOrElse(100L).toInt)
-                val callPerMonth =
-                  r.nextInt(pp.maxRequestPerMonth.getOrElse(1000L).toInt)
+      env.dataStore.apiSubscriptionRepo
+        .forAllTenant()
+        .findOneNotDeleted(Json.obj("apiKey.clientId" -> clientId))
+        .flatMap {
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> "subscription not found"))
+            )
+          case Some(sub) =>
+            env.dataStore.usagePlanRepo
+              .forAllTenant()
+              .findOneNotDeleted(Json.obj("_id" -> sub.plan.asJson))
+              .map {
+                case None => NotFound(Json.obj("error" -> "plan not found"))
+                case Some(pp) =>
+                  val callPerSec =
+                    r.nextInt(pp.maxRequestPerSecond.getOrElse(10L).toInt)
+                  val callPerDay =
+                    r.nextInt(pp.maxRequestPerDay.getOrElse(100L).toInt)
+                  val callPerMonth =
+                    r.nextInt(pp.maxRequestPerMonth.getOrElse(1000L).toInt)
 
-                Ok(ApiKeyQuotas(
-                  authorizedCallsPerSec = pp.maxRequestPerSecond.getOrElse(0),
-                  currentCallsPerSec = callPerSec,
-                  remainingCallsPerSec = pp.maxRequestPerSecond
-                    .getOrElse(0L) - callPerSec,
-                  authorizedCallsPerDay = pp.maxRequestPerDay.getOrElse(0),
-                  currentCallsPerDay = callPerDay,
-                  remainingCallsPerDay = pp.maxRequestPerDay
-                    .getOrElse(0L) - callPerDay,
-                  authorizedCallsPerMonth = pp.maxRequestPerMonth.getOrElse(0),
-                  currentCallsPerMonth = callPerMonth,
-                  remainingCallsPerMonth = pp.maxRequestPerMonth
-                    .getOrElse(0L) - callPerMonth,
-                ).asJson)
-            }
-      }
-  }
+                  Ok(
+                    ApiKeyQuotas(
+                      authorizedCallsPerSec =
+                        pp.maxRequestPerSecond.getOrElse(0),
+                      currentCallsPerSec = callPerSec,
+                      remainingCallsPerSec = pp.maxRequestPerSecond
+                        .getOrElse(0L) - callPerSec,
+                      authorizedCallsPerDay = pp.maxRequestPerDay.getOrElse(0),
+                      currentCallsPerDay = callPerDay,
+                      remainingCallsPerDay = pp.maxRequestPerDay
+                        .getOrElse(0L) - callPerDay,
+                      authorizedCallsPerMonth =
+                        pp.maxRequestPerMonth.getOrElse(0),
+                      currentCallsPerMonth = callPerMonth,
+                      remainingCallsPerMonth = pp.maxRequestPerMonth
+                        .getOrElse(0L) - callPerMonth
+                    ).asJson
+                  )
+              }
+        }
+    }
 }

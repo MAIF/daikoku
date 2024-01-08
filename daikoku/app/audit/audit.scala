@@ -1,11 +1,21 @@
 package fr.maif.otoroshi.daikoku.audit
 
 import org.apache.pekko.Done
-import org.apache.pekko.actor.{Actor, ActorSystem, PoisonPill, Props, Terminated}
+import org.apache.pekko.actor.{
+  Actor,
+  ActorSystem,
+  PoisonPill,
+  Props,
+  Terminated
+}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.http.scaladsl.util.FastFuture._
 import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
-import org.apache.pekko.stream.{Materializer, OverflowStrategy, QueueOfferResult}
+import org.apache.pekko.stream.{
+  Materializer,
+  OverflowStrategy,
+  QueueOfferResult
+}
 import cats.data.EitherT
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
@@ -14,10 +24,18 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, Translator}
 import org.apache.kafka.clients.CommonClientConfigs
-import org.apache.kafka.clients.producer.{Callback, Producer, ProducerRecord, RecordMetadata}
+import org.apache.kafka.clients.producer.{
+  Callback,
+  Producer,
+  ProducerRecord,
+  RecordMetadata
+}
 import org.apache.kafka.common.config.SslConfigs
 import org.apache.kafka.common.config.internals.BrokerSecurityConfigs
-import org.apache.kafka.common.serialization.{ByteArraySerializer, StringSerializer}
+import org.apache.kafka.common.serialization.{
+  ByteArraySerializer,
+  StringSerializer
+}
 import org.apache.pekko.kafka.ProducerSettings
 import org.joda.time.DateTime
 import org.joda.time.format.ISODateTimeFormat
@@ -63,7 +81,7 @@ object AuthorizationLevel {
     override def value: String = "AuthorizedTeamAdmin"
   }
 
-  case object AuthorizedTenantAdmin extends  AuthorizationLevel {
+  case object AuthorizedTenantAdmin extends AuthorizationLevel {
     override def value: String = "AuthorizedTenantAdmin"
   }
 
@@ -82,50 +100,58 @@ object AuthorizationLevel {
 
 sealed trait AuditEvent {
   def message: String
-  def logTenantAuditEvent(tenant: Tenant,
-                          user: User,
-                          session: UserSession,
-                          req: RequestHeader,
-                          ctx: TrieMap[String, String],
-                          authorized: AuthorizationLevel,
-                          details: JsObject = Json.obj())(
-      implicit ec: ExecutionContext,
-      env: Env): Unit = {
+  def logTenantAuditEvent(
+      tenant: Tenant,
+      user: User,
+      session: UserSession,
+      req: RequestHeader,
+      ctx: TrieMap[String, String],
+      authorized: AuthorizationLevel,
+      details: JsObject = Json.obj()
+  )(implicit ec: ExecutionContext, env: Env): Unit = {
     session.impersonatorId.map { iid =>
       env.dataStore.userRepo.findById(iid)
     } getOrElse {
       FastFuture.successful(None)
     } map { impersonator =>
-      env.auditActor ! TenantAuditEvent(this,
-                                        tenant,
-                                        user,
-                                        impersonator,
-                                        Some(req.relativeUri),
-                                        Some(req.method),
-                                        ctx,
-                                        authorized,
-                                        details)
+      env.auditActor ! TenantAuditEvent(
+        this,
+        tenant,
+        user,
+        impersonator,
+        Some(req.relativeUri),
+        Some(req.method),
+        ctx,
+        authorized,
+        details
+      )
     }
   }
 
-  def logJobEvent(tenant: Tenant, user: User, details: JsObject = Json.obj())(
-      implicit ec: ExecutionContext,
-      env: Env): Unit = {
-    env.auditActor ! TenantAuditEvent(this,
-                                      tenant,
-                                      user,
-                                      None,
-                                      None,
-                                      None,
-                                      new TrieMap[String, String](),
-                                      AuthorizationLevel.AuthorizedJob,
-                                      details)
+  def logJobEvent(
+      tenant: Tenant,
+      user: User,
+      details: JsObject = Json.obj()
+  )(implicit ec: ExecutionContext, env: Env): Unit = {
+    env.auditActor ! TenantAuditEvent(
+      this,
+      tenant,
+      user,
+      None,
+      None,
+      None,
+      new TrieMap[String, String](),
+      AuthorizationLevel.AuthorizedJob,
+      details
+    )
   }
 
-  def logUnauthenticatedUserEvent(tenant: Tenant, details: JsObject = Json.obj())(
-    implicit ec: ExecutionContext,
-    env: Env): Unit = {
-    env.auditActor ! TenantAuditEvent(this,
+  def logUnauthenticatedUserEvent(
+      tenant: Tenant,
+      details: JsObject = Json.obj()
+  )(implicit ec: ExecutionContext, env: Env): Unit = {
+    env.auditActor ! TenantAuditEvent(
+      this,
       tenant,
       User(
         UserId("Unauthenticated user"),
@@ -142,30 +168,37 @@ sealed trait AuditEvent {
       None,
       new TrieMap[String, String](),
       AuthorizationLevel.AuthorizedUberPublic,
-      details)
+      details
+    )
   }
 }
 case class AuditTrailEvent(message: String) extends AuditEvent
 case class JobEvent(message: String) extends AuditEvent
 case class AlertEvent(message: String) extends AuditEvent
-case class ApiKeyRotationEvent(message: String = "", subscription: ApiSubscriptionId) extends AuditEvent
+case class ApiKeyRotationEvent(
+    message: String = "",
+    subscription: ApiSubscriptionId
+) extends AuditEvent
 
-case class TenantAuditEvent(evt: AuditEvent,
-                            tenant: Tenant,
-                            user: User,
-                            impersonator: Option[User],
-                            uri: Option[String],
-                            verb: Option[String],
-                            ctx: TrieMap[String, String],
-                            authorized: AuthorizationLevel,
-                            details: JsObject = Json.obj()) {
+case class TenantAuditEvent(
+    evt: AuditEvent,
+    tenant: Tenant,
+    user: User,
+    impersonator: Option[User],
+    uri: Option[String],
+    verb: Option[String],
+    ctx: TrieMap[String, String],
+    authorized: AuthorizationLevel,
+    details: JsObject = Json.obj()
+) {
 
-  private def theType: String = evt match {
-    case _: AuditTrailEvent     => "AuditTrailEvent"
-    case _: AlertEvent          => "AlertEvent"
-    case _: JobEvent            => "JobEvent"
-    case _: ApiKeyRotationEvent => "ApiKeyRotationEvent"
-  }
+  private def theType: String =
+    evt match {
+      case _: AuditTrailEvent     => "AuditTrailEvent"
+      case _: AlertEvent          => "AlertEvent"
+      case _: JobEvent            => "JobEvent"
+      case _: ApiKeyRotationEvent => "ApiKeyRotationEvent"
+    }
 
   def computedMessage(): String = {
     val init = evt.message
@@ -175,61 +208,74 @@ case class TenantAuditEvent(evt: AuditEvent,
       .replace("@{user.id}", user.id.value)
       .replace("@{user.name}", user.name)
       .replace("@{user.email}", user.email)
-      .replace("@{impersonator.id}",
-               impersonator.map(_.id.value).getOrElse("--"))
+      .replace(
+        "@{impersonator.id}",
+        impersonator.map(_.id.value).getOrElse("--")
+      )
       .replace("@{impersonator.name}", impersonator.map(_.name).getOrElse("--"))
-      .replace("@{impersonator.email}",
-               impersonator.map(_.email).getOrElse("--"))
+      .replace(
+        "@{impersonator.email}",
+        impersonator.map(_.email).getOrElse("--")
+      )
       .replace("@{authorized}", authorized.value)
     ctx.foldLeft(init)((a, b) => a.replace(s"@{${b._1}}", b._2))
   }
 
-  def toJson(implicit env: Env): JsObject = Json.obj(
-    "_id" -> IdGenerator.token(32),
-    "@type" -> theType,
-    "@id" -> env.snowflakeGenerator.nextIdStr(),
-    "@timestamp" -> json.DateTimeFormat
-      .writes(DateTime.now()),
-    "@tenantId" -> tenant.id.value,
-    "@userId" -> user.id.value,
-    "message" -> computedMessage(),
-    "url" -> uri.getOrElse("--").asInstanceOf[String],
-    "verb" -> verb.getOrElse("--").asInstanceOf[String],
-    "user" -> Json.obj(
-      "id" -> user.id.value,
-      "email" -> user.email,
-      "name" -> user.name,
-      "isDaikokuAdmin" -> user.isDaikokuAdmin,
-    ),
-    "tenant" -> Json.obj(
-      "id" -> tenant.id.value,
-      "name" -> tenant.name,
-    ),
-    "authorized" -> authorized.value,
-    "impersonator" -> impersonator
-      .map(
-        a =>
+  def toJson(implicit env: Env): JsObject =
+    Json.obj(
+      "_id" -> IdGenerator.token(32),
+      "@type" -> theType,
+      "@id" -> env.snowflakeGenerator.nextIdStr(),
+      "@timestamp" -> json.DateTimeFormat
+        .writes(DateTime.now()),
+      "@tenantId" -> tenant.id.value,
+      "@userId" -> user.id.value,
+      "message" -> computedMessage(),
+      "url" -> uri.getOrElse("--").asInstanceOf[String],
+      "verb" -> verb.getOrElse("--").asInstanceOf[String],
+      "user" -> Json.obj(
+        "id" -> user.id.value,
+        "email" -> user.email,
+        "name" -> user.name,
+        "isDaikokuAdmin" -> user.isDaikokuAdmin
+      ),
+      "tenant" -> Json.obj(
+        "id" -> tenant.id.value,
+        "name" -> tenant.name
+      ),
+      "authorized" -> authorized.value,
+      "impersonator" -> impersonator
+        .map(a =>
           Json.obj(
             "id" -> a.id.value,
             "name" -> a.name,
             "email" -> a.email,
             "isDaikokuAdmin" -> a.isDaikokuAdmin
-        ))
-      .getOrElse(JsNull)
-      .as[JsValue],
-    "details" -> details
-    // TODO: add complete tenant ?
-    // TODO: add complete user ?
-  )
+          )
+        )
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "details" -> details
+      // TODO: add complete tenant ?
+      // TODO: add complete user ?
+    )
 }
 
 case object SendToAnalytics
 
 object AuditActor {
-  def props(implicit env: Env, messagesApi: MessagesApi, translator: Translator) = Props(new AuditActor())
+  def props(implicit
+      env: Env,
+      messagesApi: MessagesApi,
+      translator: Translator
+  ) = Props(new AuditActor())
 }
 
-class AuditActor(implicit env: Env, messagesApi: MessagesApi, translator: Translator) extends Actor {
+class AuditActor(implicit
+    env: Env,
+    messagesApi: MessagesApi,
+    translator: Translator
+) extends Actor {
 
   implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
 
@@ -239,8 +285,10 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi, translator: Transl
   lazy val kafkaWrapperAudit =
     new KafkaWrapper(env.defaultActorSystem, env, _.auditTopic)
 
-  def sendAlertsEmails(tenant: Tenant,
-                       rawEvts: Seq[TenantAuditEvent]): Future[Unit] = {
+  def sendAlertsEmails(
+      tenant: Tenant,
+      rawEvts: Seq[TenantAuditEvent]
+  ): Future[Unit] = {
     tenant.auditTrailConfig.alertsEmails match {
       case e if e.isEmpty => FastFuture.successful(())
       case emails => {
@@ -286,10 +334,12 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi, translator: Transl
 
         if (evts.size > 1) {
           implicit val language: String = tenant.defaultLanguage.getOrElse("en")
-          tenant.mailer.send(s"Otoroshi Alert - ${evts.size} new alerts",
+          tenant.mailer.send(
+            s"Otoroshi Alert - ${evts.size} new alerts",
             emails,
             emailBody,
-            tenant)
+            tenant
+          )
         } else {
           FastFuture.successful(())
         }
@@ -297,8 +347,10 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi, translator: Transl
     }
   }
 
-  def sendRotationEmails(tenant: Tenant,
-                       rawEvts: Seq[TenantAuditEvent]): Future[Done] = {
+  def sendRotationEmails(
+      tenant: Tenant,
+      rawEvts: Seq[TenantAuditEvent]
+  ): Future[Done] = {
     import cats.data.OptionT
     import cats.implicits._
 
@@ -314,17 +366,49 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi, translator: Transl
       .mapAsync(10) { event =>
         implicit val language: String = tenant.defaultLanguage.getOrElse("en")
         val mailSend: OptionT[Future, Future[Unit]] = for {
-          subscription <- OptionT(env.dataStore.apiSubscriptionRepo.forTenant(tenant).findById(event.asInstanceOf[ApiKeyRotationEvent].subscription))
-          api <- OptionT(env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api))
-          team <- OptionT(env.dataStore.teamRepo.forTenant(tenant).findById(subscription.team))
-          admins <- OptionT.liftF(env.dataStore.userRepo.find(
-            Json.obj("_id" -> Json.obj("$in" -> JsArray(team.users.filter(_.teamPermission == TeamPermission.Administrator).map(_.userId.asJson).toSeq)))))
-          plan <- OptionT(env.dataStore.usagePlanRepo.forTenant(tenant).findById(subscription.plan))
-          title <- OptionT.liftF(translator.translate("mail.apikey.rotation.title", tenant))
-          body <- OptionT.liftF(translator.translate("mail.apikey.rotation.body", tenant, Map(
-          "apiName" -> api.name,
-          "planName" -> plan.customName.getOrElse(plan.typeName)
-          )))
+          subscription <- OptionT(
+            env.dataStore.apiSubscriptionRepo
+              .forTenant(tenant)
+              .findById(event.asInstanceOf[ApiKeyRotationEvent].subscription)
+          )
+          api <- OptionT(
+            env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api)
+          )
+          team <- OptionT(
+            env.dataStore.teamRepo.forTenant(tenant).findById(subscription.team)
+          )
+          admins <- OptionT.liftF(
+            env.dataStore.userRepo.find(
+              Json.obj(
+                "_id" -> Json.obj(
+                  "$in" -> JsArray(
+                    team.users
+                      .filter(_.teamPermission == TeamPermission.Administrator)
+                      .map(_.userId.asJson)
+                      .toSeq
+                  )
+                )
+              )
+            )
+          )
+          plan <- OptionT(
+            env.dataStore.usagePlanRepo
+              .forTenant(tenant)
+              .findById(subscription.plan)
+          )
+          title <- OptionT.liftF(
+            translator.translate("mail.apikey.rotation.title", tenant)
+          )
+          body <- OptionT.liftF(
+            translator.translate(
+              "mail.apikey.rotation.body",
+              tenant,
+              Map(
+                "apiName" -> api.name,
+                "planName" -> plan.customName.getOrElse(plan.typeName)
+              )
+            )
+          )
         } yield {
           tenant.mailer.send(title, admins.map(_.email), body, tenant)
         }
@@ -357,13 +441,14 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi, translator: Transl
           Seq(
             env.dataStore.auditTrailRepo
               .forTenant(tenant)
-              .insertMany(evts.map(_.toJson))) ++
+              .insertMany(evts.map(_.toJson))
+          ) ++
             Seq(sendRotationEmails(tenant, evts)) ++
             Seq(sendAlertsEmails(tenant, evts)) ++
             config.auditWebhooks
               .map(c => new WebHookAnalytics(c).publish(evts)) ++
-            config.elasticConfigs.map(c =>
-              new ElasticWritesAnalytics(c, env).publish(evts))
+            config.elasticConfigs
+              .map(c => new ElasticWritesAnalytics(c, env).publish(evts))
         )
       })
     }
@@ -379,18 +464,20 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi, translator: Transl
         case Success(QueueOfferResult.Enqueued) =>
           logger.debug("SEND_TO_ANALYTICS: Event enqueued")
         case Success(QueueOfferResult.Dropped) =>
-          logger.error(
-            "SEND_TO_ANALYTICS_ERROR: Enqueue Dropped AnalyticEvent :(")
+          logger
+            .error("SEND_TO_ANALYTICS_ERROR: Enqueue Dropped AnalyticEvent :(")
         case Success(QueueOfferResult.QueueClosed) =>
           logger.error("SEND_TO_ANALYTICS_ERROR: Queue closed :(")
           context.stop(myself)
         case Success(QueueOfferResult.Failure(t)) =>
           logger.error(
             "SEND_TO_ANALYTICS_ERROR: Enqueue Failure AnalyticEvent :(",
-            t)
+            t
+          )
           context.stop(myself)
         case Failure(e) =>
-          logger.error(s"SEND_TO_ANALYTICS_ERROR: analytics actor error : $e", e)
+          logger
+            .error(s"SEND_TO_ANALYTICS_ERROR: analytics actor error : $e", e)
           context.stop(myself)
       }
     }
@@ -398,7 +485,11 @@ class AuditActor(implicit env: Env, messagesApi: MessagesApi, translator: Transl
   }
 }
 
-class AuditActorSupervizer(env: Env, messagesApi: MessagesApi, translator: Translator) extends Actor {
+class AuditActorSupervizer(
+    env: Env,
+    messagesApi: MessagesApi,
+    translator: Translator
+) extends Actor {
 
   lazy val childName = "audit-actor"
   lazy val logger = Logger("audit-actor-supervizer")
@@ -406,14 +497,20 @@ class AuditActorSupervizer(env: Env, messagesApi: MessagesApi, translator: Trans
   override def receive: Receive = {
     case Terminated(ref) =>
       logger.debug("Restarting analytics actor child")
-      context.watch(context.actorOf(AuditActor.props(env, messagesApi, translator), childName))
+      context.watch(
+        context
+          .actorOf(AuditActor.props(env, messagesApi, translator), childName)
+      )
     case evt => context.child(childName).map(_ ! evt)
   }
 
   override def preStart(): Unit =
     if (context.child(childName).isEmpty) {
       logger.debug(s"Starting new child $childName")
-      val ref = context.actorOf(AuditActor.props(env, messagesApi, translator), childName)
+      val ref = context.actorOf(
+        AuditActor.props(env, messagesApi, translator),
+        childName
+      )
       context.watch(ref)
     }
 
@@ -422,16 +519,21 @@ class AuditActorSupervizer(env: Env, messagesApi: MessagesApi, translator: Trans
 }
 
 object AuditActorSupervizer {
-  def props(implicit env: Env, messagesApi: MessagesApi, translator: Translator) = Props(new AuditActorSupervizer(env, messagesApi, translator))
+  def props(implicit
+      env: Env,
+      messagesApi: MessagesApi,
+      translator: Translator
+  ) = Props(new AuditActorSupervizer(env, messagesApi, translator))
 }
 
-case class KafkaConfig(servers: Seq[String],
-                       keyPass: Option[String] = None,
-                       keystore: Option[String] = None,
-                       truststore: Option[String] = None,
-                       auditTopic: String = "daikoku-audit",
-                       hostValidation: Option[Boolean] = Some(true)
-                      )
+case class KafkaConfig(
+    servers: Seq[String],
+    keyPass: Option[String] = None,
+    keystore: Option[String] = None,
+    truststore: Option[String] = None,
+    auditTopic: String = "daikoku-audit",
+    hostValidation: Option[Boolean] = Some(true)
+)
 
 object KafkaConfig {
   implicit val format: OFormat[KafkaConfig] = Json.format[KafkaConfig]
@@ -441,11 +543,14 @@ object KafkaSettings {
 
   def producerSettings(
       _env: Env,
-      config: KafkaConfig): ProducerSettings[Array[Byte], String] = {
+      config: KafkaConfig
+  ): ProducerSettings[Array[Byte], String] = {
     val settings = ProducerSettings
-      .create(_env.defaultActorSystem,
-              new ByteArraySerializer(),
-              new StringSerializer())
+      .create(
+        _env.defaultActorSystem,
+        new ByteArraySerializer(),
+        new StringSerializer()
+      )
       .withBootstrapServers(config.servers.mkString(","))
 
     val s = for {
@@ -466,7 +571,10 @@ object KafkaSettings {
         kafkaSettings
       } else {
         kafkaSettings
-          .withProperty(SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG, "")
+          .withProperty(
+            SslConfigs.SSL_ENDPOINT_IDENTIFICATION_ALGORITHM_CONFIG,
+            ""
+          )
       }
     }
 
@@ -477,9 +585,11 @@ object KafkaSettings {
 case class KafkaWrapperEvent(event: JsValue, env: Env, config: KafkaConfig)
 case class KafkaWrapperEventClose()
 
-class KafkaWrapper(actorSystem: ActorSystem,
-                   env: Env,
-                   topicFunction: KafkaConfig => String) {
+class KafkaWrapper(
+    actorSystem: ActorSystem,
+    env: Env,
+    topicFunction: KafkaConfig => String
+) {
 
   val kafkaWrapperActor =
     actorSystem.actorOf(KafkaWrapperActor.props(env, topicFunction))
@@ -510,7 +620,8 @@ class KafkaWrapperActor(env: Env, topicFunction: KafkaConfig => String)
       config = Some(event.config)
       eventProducer.foreach(_.close())
       eventProducer = Some(
-        new KafkaEventProducer(event.env, event.config, topicFunction))
+        new KafkaEventProducer(event.env, event.config, topicFunction)
+      )
       eventProducer.get.publish(event.event).andThen {
         case Failure(e) => logger.error("Error while pushing event to kafka", e)
       }
@@ -520,7 +631,8 @@ class KafkaWrapperActor(env: Env, topicFunction: KafkaConfig => String)
       config = Some(event.config)
       eventProducer.foreach(_.close())
       eventProducer = Some(
-        new KafkaEventProducer(event.env, event.config, topicFunction))
+        new KafkaEventProducer(event.env, event.config, topicFunction)
+      )
       eventProducer.get.publish(event.event).andThen {
         case Failure(e) => logger.error("Error while pushing event to kafka", e)
       }
@@ -542,9 +654,11 @@ object KafkaWrapperActor {
     Props(new KafkaWrapperActor(env, topicFunction))
 }
 
-class KafkaEventProducer(_env: Env,
-                         config: KafkaConfig,
-                         topicFunction: KafkaConfig => String) {
+class KafkaEventProducer(
+    _env: Env,
+    config: KafkaConfig,
+    topicFunction: KafkaConfig => String
+) {
 
   implicit val ec: ExecutionContext = _env.defaultExecutionContext
 
@@ -563,8 +677,10 @@ class KafkaEventProducer(_env: Env,
     val promise = Promise[RecordMetadata]()
     try {
       val message = Json.stringify(event)
-      producer.send(new ProducerRecord[Array[Byte], String](topic, message),
-                    callback(promise))
+      producer.send(
+        new ProducerRecord[Array[Byte], String](topic, message),
+        callback(promise)
+      )
     } catch {
       case NonFatal(e) =>
         promise.failure(e)
@@ -577,15 +693,19 @@ class KafkaEventProducer(_env: Env,
   def close() =
     producer.close()
 
-  private def callback(promise: Promise[RecordMetadata]) = new Callback {
-    override def onCompletion(metadata: RecordMetadata, exception: Exception) =
-      if (exception != null) {
-        promise.failure(exception)
-      } else {
-        promise.success(metadata)
-      }
+  private def callback(promise: Promise[RecordMetadata]) =
+    new Callback {
+      override def onCompletion(
+          metadata: RecordMetadata,
+          exception: Exception
+      ) =
+        if (exception != null) {
+          promise.failure(exception)
+        } else {
+          promise.success(metadata)
+        }
 
-  }
+    }
 }
 
 object ElasticTemplates {
@@ -686,7 +806,8 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
         s"Creating Otoroshi template for $index on es cluster at ${config.clusterUri}/${config.index}/${config.`type`}"
       )
       logger.debug(
-        s"Creating otoroshi template with \n${Json.prettyPrint(tpl)}")
+        s"Creating otoroshi template with \n${Json.prettyPrint(tpl)}"
+      )
       Await.result(
         url(urlFromPath("/_template/daikoku-tpl"))
           .get()
@@ -697,8 +818,8 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
                   url(urlFromPath("/_template/daikoku-tpl")).put(tpl)
                 tplCreated.onComplete {
                   case Success(r) if r.status >= 400 =>
-                    logger.error(
-                      s"Error creating template ${r.status}: ${r.body}")
+                    logger
+                      .error(s"Error creating template ${r.status}: ${r.body}")
                   case Failure(e) =>
                     logger.error("Error creating template", e)
                   case _ =>
@@ -711,8 +832,8 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
                   url(urlFromPath("/_template/otoroshi-tpl")).post(tpl)
                 tplCreated.onComplete {
                   case Success(r) if r.status >= 400 =>
-                    logger.error(
-                      s"Error creating template ${r.status}: ${r.body}")
+                    logger
+                      .error(s"Error creating template ${r.status}: ${r.body}")
                   case Failure(e) =>
                     logger.error("Error creating template", e)
                   case _ =>
@@ -722,7 +843,8 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
                 tplCreated.map(_ => ())
               case _ =>
                 logger.error(
-                  s"Error creating template ${resp.status}: ${resp.body}")
+                  s"Error creating template ${resp.status}: ${resp.body}"
+                )
                 FastFuture.successful(())
             }
           },
@@ -737,8 +859,9 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
     val df = ISODateTimeFormat.date().print(DateTime.now())
     val indexWithDate = s"$index-$df"
     val indexClause = Json.stringify(
-      Json.obj(
-        "index" -> Json.obj("_index" -> indexWithDate, "_type" -> `type`)))
+      Json
+        .obj("index" -> Json.obj("_index" -> indexWithDate, "_type" -> `type`))
+    )
     val sourceClause = Json.stringify(source)
     s"$indexClause\n$sourceClause"
   }
@@ -747,13 +870,12 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
     for {
       user <- config.user
       password <- config.password
-    } yield
-      s"Basic ${Base64.getEncoder.encodeToString(s"$user:$password".getBytes())}"
+    } yield s"Basic ${Base64.getEncoder.encodeToString(s"$user:$password".getBytes())}"
   }
 
-  def publish(event: Seq[TenantAuditEvent])(
-      implicit env: Env,
-      ec: ExecutionContext): Future[Unit] = {
+  def publish(
+      event: Seq[TenantAuditEvent]
+  )(implicit env: Env, ec: ExecutionContext): Future[Unit] = {
     val builder = env.wsClient.url(urlFromPath("/_bulk"))
 
     val clientInstance = authHeader()
@@ -779,7 +901,8 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
           case Success(resp) =>
             if (resp.status >= 400) {
               logger.error(
-                s"Error publishing event to elastic: ${resp.status}, ${resp.body} --- event: $event")
+                s"Error publishing event to elastic: ${resp.status}, ${resp.body} --- event: $event"
+              )
             }
           case Failure(e) =>
             logger.error(s"Error publishing event to elastic", e)
@@ -790,20 +913,30 @@ class ElasticWritesAnalytics(config: ElasticAnalyticsConfig, env: Env) {
       .map(_ => ())
   }
 
-  def query(query: JsObject)(implicit ec: ExecutionContext): EitherT[Future, AppError, JsValue] = {
-    if (logger.isDebugEnabled) logger.debug(s"Query to Elasticsearch: $searchUri")
-    if (logger.isDebugEnabled) logger.debug(s"Query to Elasticsearch: ${Json.prettyPrint(query)}")
+  def query(
+      query: JsObject
+  )(implicit ec: ExecutionContext): EitherT[Future, AppError, JsValue] = {
+    if (logger.isDebugEnabled)
+      logger.debug(s"Query to Elasticsearch: $searchUri")
+    if (logger.isDebugEnabled)
+      logger.debug(s"Query to Elasticsearch: ${Json.prettyPrint(query)}")
 
-    EitherT(url(searchUri)
-      .addHttpHeaders(config.headers.toSeq: _*)
-      .post(query)
-      .map { resp =>
-        resp.status match {
-          case 200 => Right[AppError, JsValue](resp.json)
-          case _ =>
-            Left[AppError, JsValue](AppError.InternalServerError(s"Error during es request: \n * ${resp.body}, \nquery was \n * $query"))
+    EitherT(
+      url(searchUri)
+        .addHttpHeaders(config.headers.toSeq: _*)
+        .post(query)
+        .map { resp =>
+          resp.status match {
+            case 200 => Right[AppError, JsValue](resp.json)
+            case _ =>
+              Left[AppError, JsValue](
+                AppError.InternalServerError(
+                  s"Error during es request: \n * ${resp.body}, \nquery was \n * $query"
+                )
+              )
+          }
         }
-      })
+    )
   }
 }
 
@@ -830,24 +963,33 @@ class ElasticReadsAnalytics(config: ElasticAnalyticsConfig, env: Env) {
     for {
       user <- config.user
       password <- config.password
-    } yield
-      s"Basic ${Base64.getEncoder.encodeToString(s"$user:$password".getBytes())}"
+    } yield s"Basic ${Base64.getEncoder.encodeToString(s"$user:$password".getBytes())}"
   }
 
-  def query(query: JsObject)(implicit ec: ExecutionContext): EitherT[Future, AppError, JsValue] = {
-    if (logger.isDebugEnabled) logger.debug(s"Query to Elasticsearch: $searchUri")
-    if (logger.isDebugEnabled) logger.debug(s"Query to Elasticsearch: ${Json.prettyPrint(query)}")
+  def query(
+      query: JsObject
+  )(implicit ec: ExecutionContext): EitherT[Future, AppError, JsValue] = {
+    if (logger.isDebugEnabled)
+      logger.debug(s"Query to Elasticsearch: $searchUri")
+    if (logger.isDebugEnabled)
+      logger.debug(s"Query to Elasticsearch: ${Json.prettyPrint(query)}")
 
-    EitherT(url(searchUri)
-      .addHttpHeaders(config.headers.toSeq: _*)
-      .post(query)
-      .map { resp =>
-        resp.status match {
-          case 200 => Right[AppError, JsValue](resp.json)
-          case _ =>
-            Left[AppError, JsValue](AppError.InternalServerError(s"Error during es request: \n * ${resp.body}, \nquery was \n * $query"))
+    EitherT(
+      url(searchUri)
+        .addHttpHeaders(config.headers.toSeq: _*)
+        .post(query)
+        .map { resp =>
+          resp.status match {
+            case 200 => Right[AppError, JsValue](resp.json)
+            case _ =>
+              Left[AppError, JsValue](
+                AppError.InternalServerError(
+                  s"Error during es request: \n * ${resp.body}, \nquery was \n * $query"
+                )
+              )
+          }
         }
-      })
+    )
   }
 }
 
@@ -855,28 +997,31 @@ class WebHookAnalytics(webhook: Webhook) {
 
   lazy val logger = Logger("otoroshi-analytics-webhook")
 
-  def basicCall(path: String,
-                service: Option[String],
-                from: Option[DateTime],
-                to: Option[DateTime],
-                page: Option[Int] = None,
-                size: Option[Int] = None)(
-      implicit env: Env,
-      ec: ExecutionContext): Future[Option[JsValue]] =
+  def basicCall(
+      path: String,
+      service: Option[String],
+      from: Option[DateTime],
+      to: Option[DateTime],
+      page: Option[Int] = None,
+      size: Option[Int] = None
+  )(implicit env: Env, ec: ExecutionContext): Future[Option[JsValue]] =
     env.wsClient
       .url(webhook.url + path)
       .withHttpHeaders(webhook.headers.toSeq: _*)
       .withQueryStringParameters(
-        defaultParams(service, from, to, page, size): _*)
+        defaultParams(service, from, to, page, size): _*
+      )
       .get()
       .map(_.json)
       .map(r => Some(r))
 
-  private def defaultParams(service: Option[String],
-                            from: Option[DateTime],
-                            to: Option[DateTime],
-                            page: Option[Int] = None,
-                            size: Option[Int] = None): Seq[(String, String)] =
+  private def defaultParams(
+      service: Option[String],
+      from: Option[DateTime],
+      to: Option[DateTime],
+      page: Option[Int] = None,
+      size: Option[Int] = None
+  ): Seq[(String, String)] =
     Seq(
       service.map(s => "services" -> s),
       page.map(s => "page" -> s.toString),
@@ -893,9 +1038,9 @@ class WebHookAnalytics(webhook: Webhook) {
       )
     ).flatten
 
-  def publish(event: Seq[TenantAuditEvent])(
-      implicit env: Env,
-      ec: ExecutionContext): Future[Unit] = {
+  def publish(
+      event: Seq[TenantAuditEvent]
+  )(implicit env: Env, ec: ExecutionContext): Future[Unit] = {
     val headers: Seq[(String, String)] = webhook.headers.toSeq
 
     val url = event.headOption
@@ -908,12 +1053,14 @@ class WebHookAnalytics(webhook: Webhook) {
     postResponse.andThen {
       case Success(resp) => {
         logger.debug(
-          s"SEND_TO_ANALYTICS_SUCCESS: ${resp.status} - ${resp.headers} - ${resp.body}")
+          s"SEND_TO_ANALYTICS_SUCCESS: ${resp.status} - ${resp.headers} - ${resp.body}"
+        )
       }
       case Failure(e) => {
         logger.error(
           "SEND_TO_ANALYTICS_FAILURE: Error while sending AnalyticEvent",
-          e)
+          e
+        )
       }
     }
     postResponse.map(_ => ())

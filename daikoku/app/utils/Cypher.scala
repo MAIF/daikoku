@@ -17,18 +17,22 @@ object Cypher {
   }
 
   def getKey(secret: String, tenant: Tenant): SecretKeySpec = {
-    val spec = new PBEKeySpec(secret.toCharArray,
-                              tenant.id.value.getBytes,
-                              65536,
-                              256) // AES-256
+    val spec = new PBEKeySpec(
+      secret.toCharArray,
+      tenant.id.value.getBytes,
+      65536,
+      256
+    ) // AES-256
     val f = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
     val key = f.generateSecret(spec).getEncoded
     new SecretKeySpec(key, "AES")
   }
 
-  def decrypt(secret: String,
-              encryptedString: String,
-              tenant: Tenant): String = {
+  def decrypt(
+      secret: String,
+      encryptedString: String,
+      tenant: Tenant
+  ): String = {
     val secretKey = getKey(secret, tenant)
     val tokenBytes = java.util.Base64.getUrlDecoder.decode(encryptedString)
     val cipher: Cipher = Cipher.getInstance("AES")

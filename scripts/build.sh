@@ -35,7 +35,7 @@ fmt_ui () {
 
 fmt_server () {
   cd $LOCATION/daikoku
-  sbt ';scalafmt;sbt:scalafmt;test:scalafmt'
+  sbt ';scalafmt;Test/scalafmt'
 }
 
 test_server () {

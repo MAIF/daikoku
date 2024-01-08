@@ -30,11 +30,13 @@ object HtmlSanitizer {
 
 trait Mailer {
   def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
-      implicit ec: ExecutionContext,
+      implicit
+      ec: ExecutionContext,
       translator: Translator,
       messagesApi: MessagesApi,
       env: Env,
-      language: String): Future[Unit]
+      language: String
+  ): Future[Unit]
 }
 
 object ConsoleMailer {
@@ -46,11 +48,13 @@ class ConsoleMailer(settings: ConsoleMailerSettings) extends Mailer {
   lazy val logger = Logger("daikoku-console-mailer")
 
   def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
-      implicit ec: ExecutionContext,
+      implicit
+      ec: ExecutionContext,
       translator: Translator,
       messagesApi: MessagesApi,
       env: Env,
-      language: String): Future[Unit] = {
+      language: String
+  ): Future[Unit] = {
 
     translator
       .getMailTemplate("tenant.mail.template", tenant)
@@ -74,11 +78,13 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
   lazy val logger = Logger("daikoku-mailer")
 
   def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
-      implicit ec: ExecutionContext,
+      implicit
+      ec: ExecutionContext,
       translator: Translator,
       messagesApi: MessagesApi,
       env: Env,
-      language: String): Future[Unit] = {
+      language: String
+  ): Future[Unit] = {
 
     translator
       .getMailTemplate("tenant.mail.template", tenant)
@@ -90,13 +96,15 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
             s"https://api.mailgun.net/v3/${settings.domain}/messages"
           })
           .withAuth("api", settings.key, WSAuthScheme.BASIC)
-          .post(Map(
-            "from" -> Seq(s"${settings.fromTitle} <${settings.fromEmail}>"),
-            "to" -> Seq(to.mkString(", ")),
-            "subject" -> Seq(title),
-            "html" -> Seq(templatedBody.replace("{{email}}", body)),
-            "text" -> Seq(body)
-          ))
+          .post(
+            Map(
+              "from" -> Seq(s"${settings.fromTitle} <${settings.fromEmail}>"),
+              "to" -> Seq(to.mkString(", ")),
+              "subject" -> Seq(title),
+              "html" -> Seq(templatedBody.replace("{{email}}", body)),
+              "text" -> Seq(body)
+            )
+          )
           .andThen {
             case Success(res) =>
               logger.info(s"Alert email sent \r\n ${res.json}")
@@ -114,20 +122,24 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
   lazy val logger = Logger("daikoku-mailer")
 
   def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
-      implicit ec: ExecutionContext,
+      implicit
+      ec: ExecutionContext,
       translator: Translator,
       messagesApi: MessagesApi,
       env: Env,
-      language: String): Future[Unit] = {
+      language: String
+  ): Future[Unit] = {
 
     translator
       .getMailTemplate("tenant.mail.template", tenant)
       .map(templatedBody => {
         wsClient
           .url(s"https://api.mailjet.com/v3.1/send")
-          .withAuth(settings.apiKeyPublic,
-                    settings.apiKeyPrivate,
-                    WSAuthScheme.BASIC)
+          .withAuth(
+            settings.apiKeyPublic,
+            settings.apiKeyPrivate,
+            WSAuthScheme.BASIC
+          )
           .withHttpHeaders("Content-Type" -> "application/json")
           .post(
             Json.obj(
@@ -138,16 +150,15 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
                     "Name" -> settings.fromTitle
                   ),
                   "To" -> JsArray(
-                    to.map(
-                      t =>
-                        Json.obj(
-                          "Email" -> t,
-                          "Name" -> t
+                    to.map(t =>
+                      Json.obj(
+                        "Email" -> t,
+                        "Name" -> t
                       )
                     )
                   ),
                   "Subject" -> title,
-                  "HTMLPart" -> templatedBody.replace("{{email}}", body),
+                  "HTMLPart" -> templatedBody.replace("{{email}}", body)
                   // TextPart
                 )
               )
@@ -173,11 +184,13 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
   lazy val logger = Logger("daikoku-mailer")
 
   def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
-      implicit ec: ExecutionContext,
+      implicit
+      ec: ExecutionContext,
       translator: Translator,
       messagesApi: MessagesApi,
       env: Env,
-      language: String): Future[Unit] = {
+      language: String
+  ): Future[Unit] = {
 
     translator
       .getMailTemplate("tenant.mail.template", tenant)
@@ -194,20 +207,26 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
                 address =>
                   val message: Message =
                     new MimeMessage(
-                      Session.getDefaultInstance(properties, null))
+                      Session.getDefaultInstance(properties, null)
+                    )
                   message.setFrom(new InternetAddress(settings.fromEmail))
-                  message.setRecipients(Message.RecipientType.TO,
-                                        address.asInstanceOf[Array[Address]])
+                  message.setRecipients(
+                    Message.RecipientType.TO,
+                    address.asInstanceOf[Array[Address]]
+                  )
 
                   message.setSentDate(new Date())
                   message.setSubject(title)
-                  message.setContent(templatedBody.replace("{{email}}", body),
-                                     "text/html; charset=utf-8")
+                  message.setContent(
+                    templatedBody.replace("{{email}}", body),
+                    "text/html; charset=utf-8"
+                  )
 
                   Try {
                     Transport.send(message)
                     logger.info(
-                      s"Alert email sent to : ${address.mkString("Array(", ", ", ")")}")
+                      s"Alert email sent to : ${address.mkString("Array(", ", ", ")")}"
+                    )
                   } recover {
                     case e: Exception =>
                       logger.error("Error while sending alert email", e)
@@ -227,11 +246,13 @@ class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
   lazy val logger = Logger("daikoku-mailer")
 
   def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
-      implicit ec: ExecutionContext,
+      implicit
+      ec: ExecutionContext,
       translator: Translator,
       messagesApi: MessagesApi,
       env: Env,
-      language: String): Future[Unit] = {
+      language: String
+  ): Future[Unit] = {
 
     translator
       .getMailTemplate("tenant.mail.template", tenant)

@@ -18,32 +18,42 @@ case class SendMessage(message: Message, tenant: Tenant)
 
 case class StreamMessage(message: Message)
 
-case class GetAllMessage(user: User,
-                         tenant: Tenant,
-                         maybeChat: Option[String],
-                         closedDate: Option[Long] = None)
+case class GetAllMessage(
+    user: User,
+    tenant: Tenant,
+    maybeChat: Option[String],
+    closedDate: Option[Long] = None
+)
 
-case class GetMyAdminMessages(user: User,
-                              tenant: Tenant,
-                              date: Option[Long] = None)
+case class GetMyAdminMessages(
+    user: User,
+    tenant: Tenant,
+    date: Option[Long] = None
+)
 
 case class CloseChat(chat: String, tenant: Tenant)
 
-case class ReadMessages(user: User,
-                        chatId: String,
-                        date: DateTime,
-                        tenant: Tenant)
+case class ReadMessages(
+    user: User,
+    chatId: String,
+    date: DateTime,
+    tenant: Tenant
+)
 
-case class GetLastChatDate(chats: String,
-                           tenant: Tenant,
-                           closedDate: Option[Long])
+case class GetLastChatDate(
+    chats: String,
+    tenant: Tenant,
+    closedDate: Option[Long]
+)
 
-case class GetLastClosedChatDates(chats: Set[String],
-                                  tenant: Tenant,
-                                  closedDate: Option[Long])
+case class GetLastClosedChatDates(
+    chats: Set[String],
+    tenant: Tenant,
+    closedDate: Option[Long]
+)
 
-class MessageActor(
-    implicit env: Env,
+class MessageActor(implicit
+    env: Env,
     messagesApi: MessagesApi,
     translator: Translator
 ) extends Actor
@@ -52,59 +62,74 @@ class MessageActor(
 
   var messages: Seq[Message] = Seq.empty
 
-  def maybeSendMailToRecipent(message: Message,
-                              tenant: Tenant): Future[Unit] = {
+  def maybeSendMailToRecipent(
+      message: Message,
+      tenant: Tenant
+  ): Future[Unit] = {
     implicit val lang: String = tenant.defaultLanguage.getOrElse("en")
     for {
       sender <- env.dataStore.userRepo.findById(message.sender)
-      lastMessage <- env.dataStore.messageRepo
-        .forTenant(tenant)
-        .find(
-          Json.obj(
-            "closed" -> JsNull,
-            "chat" -> message.chat.asJson,
-            "date" -> Json.obj("$lt" -> message.date.getMillis)
-          ))
-        .map(_.sortWith((a, b) => a.date.isAfter(b.date)).headOption)
+      lastMessage <-
+        env.dataStore.messageRepo
+          .forTenant(tenant)
+          .find(
+            Json.obj(
+              "closed" -> JsNull,
+              "chat" -> message.chat.asJson,
+              "date" -> Json.obj("$lt" -> message.date.getMillis)
+            )
+          )
+          .map(_.sortWith((a, b) => a.date.isAfter(b.date)).headOption)
       recipients <- env.dataStore.userRepo.find(
         Json.obj(
           "_id" -> Json.obj(
             "$in" -> JsArray(
               (message.participants + message.chat - message.sender)
                 .map(_.asJson)
-                .toSeq))))
+                .toSeq
+            )
+          )
+        )
+      )
       connected <- env.dataStore.userSessionRepo.find(
         Json.obj(
           "userId" -> Json.obj("$in" -> JsArray(recipients.map(_.id.asJson))),
-          "expires" -> Json.obj("$gt" -> DateTime.now().getMillis)))
+          "expires" -> Json.obj("$gt" -> DateTime.now().getMillis)
+        )
+      )
 
-      emails = if (message.chat == message.sender)
-        recipients
-          .filter(u => lastMessage.exists(m => m.readBy.contains(u.id)))
-          .filter(u => !connected.exists(s => s.userId == u.id))
-          .map(_.email)
-      else
-        recipients
-          .filter(u => lastMessage.exists(_.readBy.contains(u.id)))
-          .filter(_.id == message.chat)
-          .filter(u => !connected.exists(s => s.userId == u.id))
-          .map(_.email)
+      emails =
+        if (message.chat == message.sender)
+          recipients
+            .filter(u => lastMessage.exists(m => m.readBy.contains(u.id)))
+            .filter(u => !connected.exists(s => s.userId == u.id))
+            .map(_.email)
+        else
+          recipients
+            .filter(u => lastMessage.exists(_.readBy.contains(u.id)))
+            .filter(_.id == message.chat)
+            .filter(u => !connected.exists(s => s.userId == u.id))
+            .map(_.email)
       baseLink = env.config.exposedPort match {
         case 80    => s"http://${tenant.domain}/"
         case 443   => s"https://${tenant.domain}/"
         case value => s"http://${tenant.domain}:$value/"
       }
-      link = if (message.sender == message.chat) s"$baseLink/settings/messages"
-      else baseLink
+      link =
+        if (message.sender == message.chat) s"$baseLink/settings/messages"
+        else baseLink
 
-      title <- translator.translate("mail.new.message.title",
-                                    tenant,
-                                    Map(
-                                      "user" -> sender.get.name
-                                    ))
+      title <- translator.translate(
+        "mail.new.message.title",
+        tenant,
+        Map(
+          "user" -> sender.get.name
+        )
+      )
       body <- translator.translate("mail.new.message.body", tenant)
-      _ <- Future.sequence(emails.map(email =>
-        tenant.mailer.send(title, Seq(email), body, tenant)))
+      _ <- Future.sequence(
+        emails.map(email => tenant.mailer.send(title, Seq(email), body, tenant))
+      )
     } yield ()
   }
 
@@ -129,17 +154,21 @@ class MessageActor(
         env.dataStore.messageRepo
           .forTenant(tenant)
           .find(
-            Json.obj("chat" -> user.id.asJson,
-                     "messageType.type" -> "tenant",
-                     "closed" -> value))
+            Json.obj(
+              "chat" -> user.id.asJson,
+              "messageType.type" -> "tenant",
+              "closed" -> value
+            )
+          )
 
       response pipeTo sender()
 
     case SendMessage(message, tenant) =>
       (for {
-        response <- env.dataStore.messageRepo
-          .forTenant(message.tenant)
-          .save(message)
+        response <-
+          env.dataStore.messageRepo
+            .forTenant(message.tenant)
+            .save(message)
         _ <- maybeSendMailToRecipent(message, tenant)
       } yield {
         response
@@ -150,7 +179,8 @@ class MessageActor(
         .forTenant(tenant)
         .updateMany(
           Json.obj("chat" -> chat, "closed" -> JsNull),
-          Json.obj("closed" -> JsNumber(DateTime.now().toDate.getTime)))
+          Json.obj("closed" -> JsNumber(DateTime.now().toDate.getTime))
+        )
 
       response pipeTo sender()
 
@@ -163,7 +193,8 @@ class MessageActor(
               Json.obj("chat" -> chat),
               Json.obj("readBy" -> Json.obj("$ne" -> user.id.asJson)),
               Json.obj("date" -> Json.obj("$lt" -> date.toDate.getTime))
-            )),
+            )
+          ),
           Json.obj("$push" -> Json.obj("readBy" -> user.id.asJson))
         )
     }
@@ -174,7 +205,8 @@ class MessageActor(
         .forTenant(tenant)
         .findMaxByQuery(
           Json.obj("chat" -> chat, "closed" -> Json.obj("$lt" -> date)),
-          "closed")
+          "closed"
+        )
       result pipeTo sender()
 
     case GetLastClosedChatDates(chats, tenant, maybeClosedDate) =>
@@ -183,9 +215,10 @@ class MessageActor(
           val l: Long = maybeClosedDate.getOrElse(DateTime.now().toDate.getTime)
           env.dataStore.messageRepo
             .forTenant(tenant)
-            .findMaxByQuery(Json.obj("chat" -> chat,
-                                     "closed" -> Json.obj("$lt" -> l)),
-                            "closed")
+            .findMaxByQuery(
+              Json.obj("chat" -> chat, "closed" -> Json.obj("$lt" -> l)),
+              "closed"
+            )
             .map {
               case Some(date) =>
                 Json.obj("chat" -> chat, "date" -> JsNumber(date))

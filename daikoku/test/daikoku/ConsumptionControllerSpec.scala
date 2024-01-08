@@ -271,7 +271,8 @@ class ConsumptionControllerSpec()
                   otoApiKey.asJson.as[JsObject] ++
                     Json.obj(
                       "id" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value,
-                      "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value)
+                      "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value
+                    )
                 )
               )
               .withStatus(200)
@@ -289,8 +290,8 @@ class ConsumptionControllerSpec()
                     authorizedCallsPerSec =
                       plan.maxRequestPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(
-                      0L) - callPerSec,
+                    remainingCallsPerSec =
+                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxRequestPerDay
@@ -298,8 +299,8 @@ class ConsumptionControllerSpec()
                     authorizedCallsPerMonth =
                       plan.maxRequestPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(
-                      0L) - callPerMonth
+                    remainingCallsPerMonth =
+                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -327,7 +328,8 @@ class ConsumptionControllerSpec()
       respConsumption.status mustBe 200
 
       val maybeConsumption = json.SeqConsumptionFormat.reads(
-        (respConsumption.json \ "consumptions").as[JsArray])
+        (respConsumption.json \ "consumptions").as[JsArray]
+      )
       maybeConsumption.isSuccess mustBe true
 
       maybeConsumption.get.head.billing.hits mustBe 1000L
@@ -380,8 +382,8 @@ class ConsumptionControllerSpec()
                     authorizedCallsPerSec =
                       plan.maxRequestPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(
-                      0L) - callPerSec,
+                    remainingCallsPerSec =
+                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxRequestPerDay
@@ -389,8 +391,8 @@ class ConsumptionControllerSpec()
                     authorizedCallsPerMonth =
                       plan.maxRequestPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(
-                      0L) - callPerMonth
+                    remainingCallsPerMonth =
+                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -418,7 +420,8 @@ class ConsumptionControllerSpec()
       respConsumption.status mustBe 200
 
       val maybeConsumption = json.SeqConsumptionFormat.reads(
-        (respConsumption.json \ "consumptions").as[JsArray])
+        (respConsumption.json \ "consumptions").as[JsArray]
+      )
       maybeConsumption.isSuccess mustBe true
 
       maybeConsumption.get.head.billing.hits mustBe 1000L
@@ -470,8 +473,8 @@ class ConsumptionControllerSpec()
                     authorizedCallsPerSec =
                       plan.maxRequestPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(
-                      0L) - callPerSec,
+                    remainingCallsPerSec =
+                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxRequestPerDay
@@ -479,8 +482,8 @@ class ConsumptionControllerSpec()
                     authorizedCallsPerMonth =
                       plan.maxRequestPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(
-                      0L) - callPerMonth
+                    remainingCallsPerMonth =
+                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -506,7 +509,8 @@ class ConsumptionControllerSpec()
       )(tenant, session)
       respConsumption.status mustBe 200
       val maybeConsumption = json.SeqConsumptionFormat.reads(
-        (respConsumption.json \ "consumptions").as[JsArray])
+        (respConsumption.json \ "consumptions").as[JsArray]
+      )
       maybeConsumption.isSuccess mustBe true
 
       maybeConsumption.get.head.billing.hits mustBe 1000L
@@ -559,8 +563,8 @@ class ConsumptionControllerSpec()
                     authorizedCallsPerSec =
                       plan.maxRequestPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(
-                      0L) - callPerSec,
+                    remainingCallsPerSec =
+                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxRequestPerDay
@@ -568,8 +572,8 @@ class ConsumptionControllerSpec()
                     authorizedCallsPerMonth =
                       plan.maxRequestPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(
-                      0L) - callPerMonth
+                    remainingCallsPerMonth =
+                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -596,7 +600,8 @@ class ConsumptionControllerSpec()
       respConsumption.status mustBe 200
 
       val maybeConsumption = json.SeqConsumptionFormat.reads(
-        (respConsumption.json \ "consumptions").as[JsArray])
+        (respConsumption.json \ "consumptions").as[JsArray]
+      )
       maybeConsumption.isSuccess mustBe true
 
       maybeConsumption.get.head.billing.hits mustBe 1000L
@@ -762,8 +767,8 @@ class ConsumptionControllerSpec()
                     authorizedCallsPerSec =
                       plan.maxRequestPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(
-                      0L) - callPerSec,
+                    remainingCallsPerSec =
+                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxRequestPerDay
@@ -771,8 +776,8 @@ class ConsumptionControllerSpec()
                     authorizedCallsPerMonth =
                       plan.maxRequestPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(
-                      0L) - callPerMonth
+                    remainingCallsPerMonth =
+                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -837,8 +842,8 @@ class ConsumptionControllerSpec()
                     authorizedCallsPerSec =
                       plan.maxRequestPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(
-                      0L) - callPerSec,
+                    remainingCallsPerSec =
+                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxRequestPerDay
@@ -846,8 +851,8 @@ class ConsumptionControllerSpec()
                     authorizedCallsPerMonth =
                       plan.maxRequestPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(
-                      0L) - callPerMonth
+                    remainingCallsPerMonth =
+                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -912,8 +917,8 @@ class ConsumptionControllerSpec()
                     authorizedCallsPerSec =
                       plan.maxRequestPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(
-                      0L) - callPerSec,
+                    remainingCallsPerSec =
+                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxRequestPerDay
@@ -921,8 +926,8 @@ class ConsumptionControllerSpec()
                     authorizedCallsPerMonth =
                       plan.maxRequestPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(
-                      0L) - callPerMonth
+                    remainingCallsPerMonth =
+                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -986,8 +991,8 @@ class ConsumptionControllerSpec()
                     authorizedCallsPerSec =
                       plan.maxRequestPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
-                    remainingCallsPerSec = plan.maxRequestPerSecond.getOrElse(
-                      0L) - callPerSec,
+                    remainingCallsPerSec =
+                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
                     authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxRequestPerDay
@@ -995,8 +1000,8 @@ class ConsumptionControllerSpec()
                     authorizedCallsPerMonth =
                       plan.maxRequestPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
-                    remainingCallsPerMonth = plan.maxRequestPerMonth.getOrElse(
-                      0L) - callPerMonth
+                    remainingCallsPerMonth =
+                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )

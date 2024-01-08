@@ -18,7 +18,15 @@ import org.joda.time.DateTime
 import org.jsoup.nodes.Document
 import org.mindrot.jbcrypt.BCrypt
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{Args, BeforeAndAfterAll, FailedStatus, Status, Suite, TestSuite, TestSuiteMixin}
+import org.scalatest.{
+  Args,
+  BeforeAndAfterAll,
+  FailedStatus,
+  Status,
+  Suite,
+  TestSuite,
+  TestSuiteMixin
+}
 import org.scalatestplus.play.components.OneServerPerSuiteWithComponents
 import play.api.libs.json.{JsObject, JsValue, Json}
 import play.api.libs.ws.{DefaultWSCookie, WSResponse}
@@ -56,12 +64,17 @@ object utils {
 //    }
 //  }
 
-  trait DaikokuSpecHelper extends TestSuiteMixin with OneServerPerSuiteWithComponents with ScalaFutures { suite: TestSuite =>
+  trait DaikokuSpecHelper
+      extends TestSuiteMixin
+      with OneServerPerSuiteWithComponents
+      with ScalaFutures { suite: TestSuite =>
 
     lazy val daikokuComponents = {
       val components =
         new DaikokuComponentsInstances(context)
-      println(s"Using env ${components.env}") // WARNING: important to keep, needed to switch env between suites
+      println(
+        s"Using env ${components.env}"
+      ) // WARNING: important to keep, needed to switch env between suites
       components
     }
 
@@ -76,14 +89,21 @@ object utils {
 
       def runIfDatabaseAvailable(timeout: FiniteDuration): Status = {
 
-        val triedLong = Try(Await.result(daikokuComponents.env.dataStore.tenantRepo.count(Json.obj()), 1.second))
+        val triedLong = Try(
+          Await.result(
+            daikokuComponents.env.dataStore.tenantRepo.count(Json.obj()),
+            1.second
+          )
+        )
 
         logger.info(s"database is avalaible ? ${triedLong.isSuccess}")
 
         if (triedLong.isSuccess) {
           run
         } else if (timeout < 1.minute) {
-          logger.info(s"database is no longer avalaible, waiting $timeout before retry")
+          logger.info(
+            s"database is no longer avalaible, waiting $timeout before retry"
+          )
           await(timeout)
           val newDuration = timeout * 2
           runIfDatabaseAvailable(newDuration)
@@ -95,8 +115,8 @@ object utils {
       runIfDatabaseAvailable(1.second)
     }
 
-
-    implicit val ec: ExecutionContext = daikokuComponents.env.defaultExecutionContext
+    implicit val ec: ExecutionContext =
+      daikokuComponents.env.defaultExecutionContext
     implicit val as: ActorSystem = daikokuComponents.env.defaultActorSystem
     implicit val mat: Materializer = daikokuComponents.env.defaultMaterializer
 
@@ -129,47 +149,60 @@ object utils {
         _ <- daikokuComponents.env.dataStore.userRepo.deleteAll()
         _ <- daikokuComponents.env.dataStore.teamRepo.forAllTenant().deleteAll()
         _ <- daikokuComponents.env.dataStore.apiRepo.forAllTenant().deleteAll()
-        _ <- daikokuComponents.env.dataStore.apiIssueRepo
-          .forAllTenant()
-          .deleteAll()
-        _ <- daikokuComponents.env.dataStore.apiPostRepo
-          .forAllTenant()
-          .deleteAll()
-        _ <- daikokuComponents.env.dataStore.apiSubscriptionRepo
-          .forAllTenant()
-          .deleteAll()
-        _ <- daikokuComponents.env.dataStore.apiDocumentationPageRepo
-          .forAllTenant()
-          .deleteAll()
-        _ <- daikokuComponents.env.dataStore.notificationRepo
-          .forAllTenant()
-          .deleteAll()
-        _ <- daikokuComponents.env.dataStore.consumptionRepo
-          .forAllTenant()
-          .deleteAll()
-        _ <- daikokuComponents.env.dataStore.auditTrailRepo
-          .forAllTenant()
-          .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.apiIssueRepo
+            .forAllTenant()
+            .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.apiPostRepo
+            .forAllTenant()
+            .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.apiSubscriptionRepo
+            .forAllTenant()
+            .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.apiDocumentationPageRepo
+            .forAllTenant()
+            .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.notificationRepo
+            .forAllTenant()
+            .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.consumptionRepo
+            .forAllTenant()
+            .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.auditTrailRepo
+            .forAllTenant()
+            .deleteAll()
         _ <- daikokuComponents.env.dataStore.userSessionRepo.deleteAll()
         _ <- daikokuComponents.env.dataStore.cmsRepo.forAllTenant().deleteAll()
-        _ <- daikokuComponents.env.dataStore.messageRepo
-          .forAllTenant()
-          .deleteAll()
-        _ <- daikokuComponents.env.dataStore.stepValidatorRepo
-          .forAllTenant()
-          .deleteAll()
-        _ <- daikokuComponents.env.dataStore.subscriptionDemandRepo
-          .forAllTenant()
-          .deleteAll()
-        _ <- daikokuComponents.env.dataStore.operationRepo
-          .forAllTenant()
-          .deleteAll()
-        _ <- daikokuComponents.env.dataStore.usagePlanRepo
-          .forAllTenant()
-          .deleteAll()
-        _ <- daikokuComponents.env.dataStore.translationRepo
-          .forAllTenant()
-          .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.messageRepo
+            .forAllTenant()
+            .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.stepValidatorRepo
+            .forAllTenant()
+            .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.subscriptionDemandRepo
+            .forAllTenant()
+            .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.operationRepo
+            .forAllTenant()
+            .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.usagePlanRepo
+            .forAllTenant()
+            .deleteAll()
+        _ <-
+          daikokuComponents.env.dataStore.translationRepo
+            .forAllTenant()
+            .deleteAll()
       } yield ()
     }
 
@@ -246,144 +279,149 @@ object utils {
         _ <- daikokuComponents.env.dataStore.userSessionRepo.deleteAll()
         _ <- Source(tenants.toList)
           .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.tenantRepo.save(i)(
-              daikokuComponents.env.defaultExecutionContext))
+            daikokuComponents.env.dataStore.tenantRepo
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(users.toList)
           .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.userRepo.save(i)(
-              daikokuComponents.env.defaultExecutionContext))
+            daikokuComponents.env.dataStore.userRepo
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(teams.toList)
-          .mapAsync(1)(
-            i =>
-              daikokuComponents.env.dataStore.teamRepo
-                .forAllTenant()
-                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.teamRepo
+              .forAllTenant()
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(usagePlans.toList)
-          .mapAsync(1)(
-            i =>
-              daikokuComponents.env.dataStore.usagePlanRepo
-                .forAllTenant()
-                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.usagePlanRepo
+              .forAllTenant()
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(apis.toList)
-          .mapAsync(1)(
-            i =>
-              daikokuComponents.env.dataStore.apiRepo
-                .forAllTenant()
-                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.apiRepo
+              .forAllTenant()
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(subscriptions.toList)
-          .mapAsync(1)(
-            i =>
-              daikokuComponents.env.dataStore.apiSubscriptionRepo
-                .forAllTenant()
-                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.apiSubscriptionRepo
+              .forAllTenant()
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(notifications.toList)
-          .mapAsync(1)(
-            i =>
-              daikokuComponents.env.dataStore.notificationRepo
-                .forAllTenant()
-                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.notificationRepo
+              .forAllTenant()
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(consumptions.toList)
-          .mapAsync(1)(
-            i =>
-              daikokuComponents.env.dataStore.consumptionRepo
-                .forAllTenant()
-                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.consumptionRepo
+              .forAllTenant()
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(sessions.toList)
           .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.userSessionRepo.save(i)(
-              daikokuComponents.env.defaultExecutionContext))
+            daikokuComponents.env.dataStore.userSessionRepo
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(resets.toList)
           .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.passwordResetRepo.save(i)(
-              daikokuComponents.env.defaultExecutionContext))
+            daikokuComponents.env.dataStore.passwordResetRepo
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(creations.toList)
           .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.accountCreationRepo.save(i)(
-              daikokuComponents.env.defaultExecutionContext))
+            daikokuComponents.env.dataStore.accountCreationRepo
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(messages.toList)
-          .mapAsync(1)(
-            i =>
-              daikokuComponents.env.dataStore.messageRepo
-                .forAllTenant()
-                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.messageRepo
+              .forAllTenant()
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(issues.toList)
-          .mapAsync(1)(
-            i =>
-              daikokuComponents.env.dataStore.apiIssueRepo
-                .forAllTenant()
-                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.apiIssueRepo
+              .forAllTenant()
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(posts.toList)
-          .mapAsync(1)(
-            i =>
-              daikokuComponents.env.dataStore.apiPostRepo
-                .forAllTenant()
-                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.apiPostRepo
+              .forAllTenant()
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(cmsPages.toList)
-          .mapAsync(1)(
-            i =>
-              daikokuComponents.env.dataStore.cmsRepo
-                .forAllTenant()
-                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.cmsRepo
+              .forAllTenant()
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(pages.toList)
-          .mapAsync(1)(
-            i =>
-              daikokuComponents.env.dataStore.apiDocumentationPageRepo
-                .forAllTenant()
-                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.apiDocumentationPageRepo
+              .forAllTenant()
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(operations.toList)
-          .mapAsync(1)(
-            i =>
-              daikokuComponents.env.dataStore.operationRepo
-                .forAllTenant()
-                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.operationRepo
+              .forAllTenant()
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(subscriptionDemands.toList)
-          .mapAsync(1)(
-            i =>
-              daikokuComponents.env.dataStore.subscriptionDemandRepo
-                .forAllTenant()
-                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.subscriptionDemandRepo
+              .forAllTenant()
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
         _ <- Source(translations.toList)
-          .mapAsync(1)(
-            i =>
-              daikokuComponents.env.dataStore.translationRepo
-                .forAllTenant()
-                .save(i)(daikokuComponents.env.defaultExecutionContext))
+          .mapAsync(1)(i =>
+            daikokuComponents.env.dataStore.translationRepo
+              .forAllTenant()
+              .save(i)(daikokuComponents.env.defaultExecutionContext)
+          )
           .toMat(Sink.ignore)(Keep.right)
           .run()
       } yield ()
@@ -401,7 +439,8 @@ object utils {
         .delete(
           Json.obj(
             "userEmail" -> email
-          ))
+          )
+        )
         .map(_ => ())
     }
 
@@ -418,7 +457,8 @@ object utils {
         .findOneNotDeleted(
           Json.obj(
             "email" -> email
-          ))
+          )
+        )
         .flatMap {
           case None =>
             FastFuture.failed(new RuntimeException("User not found !!!"))
@@ -439,12 +479,12 @@ object utils {
                   )
                 case Some(team) => team
               }
-              .flatMap(
-                t =>
-                  daikokuComponents.env.dataStore.teamRepo
-                    .forTenant(on)
-                    .save(t)
-                    .map(_ => t))
+              .flatMap(t =>
+                daikokuComponents.env.dataStore.teamRepo
+                  .forTenant(on)
+                  .save(t)
+                  .map(_ => t)
+              )
               .flatMap { team =>
                 val session = UserSession(
                   id = DatastoreId(IdGenerator.token(32)),
@@ -469,32 +509,34 @@ object utils {
         }
     }
 
-    def httpJsonCallBlocking(path: String,
-                             method: String = "GET",
-                             headers: Map[String, String] = Map.empty,
-                             body: Option[JsValue] = None,
-                             baseUrl: String = "http://127.0.0.1",
-                             port: Int = port)(
-        implicit tenant: Tenant,
-        session: UserSession): WSResponse =
-      Await.result(httpJsonCall(
-                     path,
-                     method,
-                     headers,
-                     body,
-                     baseUrl,
-                     port
-                   )(tenant, session),
-                   5.seconds)
+    def httpJsonCallBlocking(
+        path: String,
+        method: String = "GET",
+        headers: Map[String, String] = Map.empty,
+        body: Option[JsValue] = None,
+        baseUrl: String = "http://127.0.0.1",
+        port: Int = port
+    )(implicit tenant: Tenant, session: UserSession): WSResponse =
+      Await.result(
+        httpJsonCall(
+          path,
+          method,
+          headers,
+          body,
+          baseUrl,
+          port
+        )(tenant, session),
+        5.seconds
+      )
 
-    def httpJsonCall(_path: String,
-                     method: String = "GET",
-                     headers: Map[String, String] = Map.empty,
-                     body: Option[JsValue] = None,
-                     baseUrl: String = "http://127.0.0.1",
-                     port: Int = port)(
-        implicit tenant: Tenant,
-        session: UserSession): Future[WSResponse] = {
+    def httpJsonCall(
+        _path: String,
+        method: String = "GET",
+        headers: Map[String, String] = Map.empty,
+        body: Option[JsValue] = None,
+        baseUrl: String = "http://127.0.0.1",
+        port: Int = port
+    )(implicit tenant: Tenant, session: UserSession): Future[WSResponse] = {
       val path = _path match {
         case str if str.contains("?") =>
           str + "&sessionId=" + session.sessionId.value
@@ -509,27 +551,29 @@ object utils {
       body
         .map(b => builder.withBody(b))
         .getOrElse(builder)
-        .withCookies(DefaultWSCookie(
-          name = "daikoku-sesssion",
-          value = sign(
-            Algorithm.HMAC256(daikokuComponents.env.config.secret),
-            Json.obj("alg" -> "HS256"),
-            Json.obj(
-              "data" -> Json.obj(
-                "sessionId" -> session.sessionId.value
-              ),
-              "exp" -> ((System
-                .currentTimeMillis() - 10000) + (5 * 60 * 1000)) / 1000,
-              "nbf" -> (System.currentTimeMillis() - 10000) / 1000,
-              "iat" -> (System.currentTimeMillis() - 10000) / 1000
-            )
-          ),
-          domain = Some("localhost"),
-          path = Some("/"),
-          maxAge = Some(500L),
-          secure = false,
-          httpOnly = true
-        ))
+        .withCookies(
+          DefaultWSCookie(
+            name = "daikoku-sesssion",
+            value = sign(
+              Algorithm.HMAC256(daikokuComponents.env.config.secret),
+              Json.obj("alg" -> "HS256"),
+              Json.obj(
+                "data" -> Json.obj(
+                  "sessionId" -> session.sessionId.value
+                ),
+                "exp" -> ((System
+                  .currentTimeMillis() - 10000) + (5 * 60 * 1000)) / 1000,
+                "nbf" -> (System.currentTimeMillis() - 10000) / 1000,
+                "iat" -> (System.currentTimeMillis() - 10000) / 1000
+              )
+            ),
+            domain = Some("localhost"),
+            path = Some("/"),
+            maxAge = Some(500L),
+            secure = false,
+            httpOnly = true
+          )
+        )
         .execute()
     }
 
@@ -539,7 +583,8 @@ object utils {
         headers: Map[String, String] = Map.empty,
         body: Option[JsValue] = None,
         baseUrl: String = "http://127.0.0.1",
-        port: Int = port)(implicit tenant: Tenant): WSResponse =
+        port: Int = port
+    )(implicit tenant: Tenant): WSResponse =
       httpJsonCallWithoutSession(
         path,
         method,
@@ -555,7 +600,8 @@ object utils {
         headers: Map[String, String] = Map.empty,
         body: Option[JsValue] = None,
         baseUrl: String = "http://127.0.0.1",
-        port: Int = port)(implicit tenant: Tenant): Future[WSResponse] = {
+        port: Int = port
+    )(implicit tenant: Tenant): Future[WSResponse] = {
       val builder = daikokuComponents.env.wsClient
         .url(s"$baseUrl:$port$path")
         .withHttpHeaders((headers ++ Map("Host" -> tenant.domain)).toSeq: _*)
@@ -565,16 +611,19 @@ object utils {
       body.map(b => builder.withBody(b)).getOrElse(builder).execute()
     }
 
-    private def sign(algorithm: Algorithm,
-                     headerJson: JsObject,
-                     payloadJson: JsObject): String = {
+    private def sign(
+        algorithm: Algorithm,
+        headerJson: JsObject,
+        payloadJson: JsObject
+    ): String = {
       val header: String = org.apache.commons.codec.binary.Base64
         .encodeBase64URLSafeString(Json.toBytes(headerJson))
       val payload: String = org.apache.commons.codec.binary.Base64
         .encodeBase64URLSafeString(Json.toBytes(payloadJson))
       val signatureBytes: Array[Byte] = algorithm.sign(
         header.getBytes(StandardCharsets.UTF_8),
-        payload.getBytes(StandardCharsets.UTF_8))
+        payload.getBytes(StandardCharsets.UTF_8)
+      )
       val signature: String = org.apache.commons.codec.binary.Base64
         .encodeBase64URLSafeString(signatureBytes)
       String.format("%s.%s.%s", header, payload, signature)
@@ -599,37 +648,45 @@ object utils {
 //      r
     }
 
-    def openPageBlocking(path: String)(implicit tenant: Tenant,
-                                       session: UserSession): Document =
+    def openPageBlocking(
+        path: String
+    )(implicit tenant: Tenant, session: UserSession): Document =
       openPage(path)(tenant, session).futureValue
 
-    def openPage(path: String)(implicit tenant: Tenant,
-                               session: UserSession): Future[Document] =
+    def openPage(
+        path: String
+    )(implicit tenant: Tenant, session: UserSession): Future[Document] =
       actionOnPage(path, Seq("--dump-dom"))(tenant, session).map(str =>
-        Scoup.parseHTML(str))
+        Scoup.parseHTML(str)
+      )
 
-    def screenshotPageBlocking(path: String)(implicit tenant: Tenant,
-                                             session: UserSession): String =
+    def screenshotPageBlocking(
+        path: String
+    )(implicit tenant: Tenant, session: UserSession): String =
       screenshotPage(path)(tenant, session).futureValue
 
-    def screenshotPage(path: String)(implicit tenant: Tenant,
-                                     session: UserSession): Future[String] =
+    def screenshotPage(
+        path: String
+    )(implicit tenant: Tenant, session: UserSession): Future[String] =
       actionOnPage(path, Seq("--screenshot", "--window-size=1920,1080"))(
         tenant,
-        session).map { res =>
+        session
+      ).map { res =>
         Try(Files.createDirectory(new File("./target/screenshots").toPath))
         Files.move(
           new File("./screenshot.png").toPath,
           new File(
-            s"./target/screenshots/screenshot-${DateTime.now().toString("yyyy-MM-dd-HH-mm-ss-SSS")}.png").toPath,
+            s"./target/screenshots/screenshot-${DateTime.now().toString("yyyy-MM-dd-HH-mm-ss-SSS")}.png"
+          ).toPath,
           StandardCopyOption.REPLACE_EXISTING
         )
         res
       }
 
-    def actionOnPage(path: String, action: Seq[String])(
-        implicit tenant: Tenant,
-        session: UserSession): Future[String] = {
+    def actionOnPage(path: String, action: Seq[String])(implicit
+        tenant: Tenant,
+        session: UserSession
+    ): Future[String] = {
       val url =
         s"http://${tenant.domain}:$port$path?sessionId=${session.sessionId.value}"
       val execs = Seq(
@@ -653,8 +710,10 @@ object utils {
         }
         try {
           val p = sys.process.Process
-            .apply(exec,
-                   Seq("--headless", "--disable-gpu") ++ action ++ Seq(url))
+            .apply(
+              exec,
+              Seq("--headless", "--disable-gpu") ++ action ++ Seq(url)
+            )
             .run(log)
           if (p.exitValue() == 0) {
             promise.trySuccess(stdout.mkString("\n"))
@@ -707,8 +766,8 @@ object utils {
       users = Set(
         UserWithPermission(userTeamAdminId, Administrator),
         UserWithPermission(userApiEditorId, ApiEditor),
-        UserWithPermission(userTeamUserId, TeamUser),
-      ),
+        UserWithPermission(userTeamUserId, TeamUser)
+      )
     )
     val teamConsumer = Team(
       id = teamConsumerId,
@@ -719,8 +778,8 @@ object utils {
       users = Set(
         UserWithPermission(userTeamAdminId, Administrator),
         UserWithPermission(userApiEditorId, ApiEditor),
-        UserWithPermission(userTeamUserId, TeamUser),
-      ),
+        UserWithPermission(userTeamUserId, TeamUser)
+      )
     )
     val daikokuAdmin = User(
       id = daikokuAdminId,
@@ -830,21 +889,21 @@ object utils {
       authorizedTeams = Seq(defaultAdminTeam.id)
     )
     val adminApiSubscription = ApiSubscription(
-        id = ApiSubscriptionId(IdGenerator.token(32)),
-        tenant = Tenant.Default,
-        apiKey = OtoroshiApiKey(
-          clientName = "admin-apikey-test",
-          clientId = IdGenerator.token(10),
-          clientSecret = IdGenerator.token(10)
-        ),
-        plan = adminApiPlan.id,
-        createdAt = DateTime.now(),
-        team = defaultAdminTeam.id,
-        api = adminApi.id,
-        by = tenantAdmin.id,
-        customName = Some("admin key for test"),
-        rotation = None,
-        integrationToken = IdGenerator.token(64)
+      id = ApiSubscriptionId(IdGenerator.token(32)),
+      tenant = Tenant.Default,
+      apiKey = OtoroshiApiKey(
+        clientName = "admin-apikey-test",
+        clientId = IdGenerator.token(10),
+        clientSecret = IdGenerator.token(10)
+      ),
+      plan = adminApiPlan.id,
+      createdAt = DateTime.now(),
+      team = defaultAdminTeam.id,
+      api = adminApi.id,
+      by = tenantAdmin.id,
+      customName = Some("admin key for test"),
+      rotation = None,
+      integrationToken = IdGenerator.token(64)
     )
 
     val adminApi2plan = Admin(
@@ -884,7 +943,8 @@ object utils {
       style = Some(
         DaikokuStyle(
           title = "Test Corp."
-        )),
+        )
+      ),
       mailerSettings = Some(ConsoleMailerSettings()),
       authProvider = AuthProvider.Local,
       authProviderSettings = Json.obj(
@@ -918,7 +978,8 @@ object utils {
       style = Some(
         DaikokuStyle(
           title = "Test Corp. II"
-        )),
+        )
+      ),
       mailerSettings = Some(ConsoleMailerSettings()),
       authProvider = AuthProvider.Local,
       authProviderSettings = Json.obj(
@@ -945,10 +1006,12 @@ object utils {
       contact = "contactII@test-corp.foo.bar"
     )
 
-    def generateApi(version: String = "0",
-                    tenant: TenantId,
-                    teamId: TeamId,
-                    docIds: Seq[ApiDocumentationDetailPage]): ApiWithPlans = {
+    def generateApi(
+        version: String = "0",
+        tenant: TenantId,
+        teamId: TeamId,
+        docIds: Seq[ApiDocumentationDetailPage]
+    ): ApiWithPlans = {
       val plans = Seq(
         FreeWithoutQuotas(
           id = UsagePlanId("1"),
@@ -958,10 +1021,14 @@ object utils {
           customName = None,
           customDescription = None,
           otoroshiTarget = Some(
-            OtoroshiTarget(OtoroshiSettingsId("default"),
-                           Some(
-                             AuthorizedEntities(
-                               groups = Set(OtoroshiServiceGroupId("12345")))))
+            OtoroshiTarget(
+              OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345"))
+                )
+              )
+            )
           ),
           allowMultipleKeys = Some(false),
           subscriptionProcess = Seq.empty,
@@ -979,10 +1046,14 @@ object utils {
           customName = None,
           customDescription = None,
           otoroshiTarget = Some(
-            OtoroshiTarget(OtoroshiSettingsId("default"),
-                           Some(
-                             AuthorizedEntities(
-                               groups = Set(OtoroshiServiceGroupId("12345")))))
+            OtoroshiTarget(
+              OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345"))
+                )
+              )
+            )
           ),
           allowMultipleKeys = Some(false),
           subscriptionProcess = Seq.empty,
@@ -1002,10 +1073,14 @@ object utils {
           customName = None,
           customDescription = None,
           otoroshiTarget = Some(
-            OtoroshiTarget(OtoroshiSettingsId("default"),
-                           Some(
-                             AuthorizedEntities(
-                               groups = Set(OtoroshiServiceGroupId("12345")))))
+            OtoroshiTarget(
+              OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345"))
+                )
+              )
+            )
           ),
           allowMultipleKeys = Some(false),
           subscriptionProcess = Seq.empty,
@@ -1026,10 +1101,14 @@ object utils {
           customName = None,
           customDescription = None,
           otoroshiTarget = Some(
-            OtoroshiTarget(OtoroshiSettingsId("default"),
-                           Some(
-                             AuthorizedEntities(
-                               groups = Set(OtoroshiServiceGroupId("12345")))))
+            OtoroshiTarget(
+              OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345"))
+                )
+              )
+            )
           ),
           allowMultipleKeys = Some(true),
           subscriptionProcess = Seq.empty,
@@ -1047,10 +1126,14 @@ object utils {
           customName = None,
           customDescription = None,
           otoroshiTarget = Some(
-            OtoroshiTarget(OtoroshiSettingsId("default"),
-                           Some(
-                             AuthorizedEntities(
-                               groups = Set(OtoroshiServiceGroupId("12345")))))
+            OtoroshiTarget(
+              OtoroshiSettingsId("default"),
+              Some(
+                AuthorizedEntities(
+                  groups = Set(OtoroshiServiceGroupId("12345"))
+                )
+              )
+            )
           ),
           allowMultipleKeys = Some(false),
           subscriptionProcess = Seq.empty,
@@ -1105,11 +1188,14 @@ object utils {
           id = ApiDocumentationId(IdGenerator.token(32)),
           tenant = tenant,
           pages = docIds,
-          lastModificationAt = DateTime.now(),
+          lastModificationAt = DateTime.now()
         ),
         swagger = Some(
-          SwaggerAccess(url = "/assets/swaggers/petstore.json".some,
-                        content = None)),
+          SwaggerAccess(
+            url = "/assets/swaggers/petstore.json".some,
+            content = None
+          )
+        ),
         possibleUsagePlans = plans.map(_.id),
         defaultUsagePlan = UsagePlanId("1")
       )

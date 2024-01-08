@@ -21,7 +21,8 @@ object Errors {
     style = Some(
       DaikokuStyle(
         title = "Daikoku"
-      )),
+      )
+    ),
     mailerSettings = Some(ConsoleMailerSettings()),
     authProvider = AuthProvider.Local,
     authProviderSettings = Json.obj(
@@ -36,12 +37,14 @@ object Errors {
     404 -> ("The page you're looking for does not exist", "notFound.gif")
   )
 
-  def craftResponseResult(message: String,
-                          status: Status,
-                          req: RequestHeader,
-                          maybeCauseId: Option[String] = None,
-                          env: Env,
-                          tenant: Tenant = defaultTenant): Future[Result] = {
+  def craftResponseResult(
+      message: String,
+      status: Status,
+      req: RequestHeader,
+      maybeCauseId: Option[String] = None,
+      env: Env,
+      tenant: Tenant = defaultTenant
+  ): Future[Result] = {
 
     val accept =
       req.headers.get("Accept").getOrElse("text/html").split(",").toSeq
@@ -61,7 +64,7 @@ object Errors {
           )
           .withHeaders(
             "x-error" -> "true",
-            "x-error-msg" -> message,
+            "x-error-msg" -> message
             // TODO: handled by otoroshi filter ?
             // env.config.identitySettings.stateRespHeaderName -> req.headers
             //   .get(env.config.identitySettings.stateHeaderName)
@@ -74,7 +77,7 @@ object Errors {
           .apply(Json.obj("error" -> message))
           .withHeaders(
             "x-error" -> "true",
-            "x-error-msg" -> message,
+            "x-error-msg" -> message
             // TODO: handled by otoroshi filter ?
             // env.config.identitySettings.stateRespHeaderName -> req.headers
             //   .get(env.config.identitySettings.stateHeaderName)

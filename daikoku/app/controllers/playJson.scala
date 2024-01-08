@@ -12,10 +12,12 @@ object playJson extends PlayJsonSupportLowPrioImplicits {
 
     override def emptyMapNode(keys: Seq[String]): MapBuilder =
       new ArrayMapBuilder[Node](keys)
-    override def addMapNodeElem(builder: MapBuilder,
-                                key: String,
-                                value: Node,
-                                optional: Boolean): MapBuilder =
+    override def addMapNodeElem(
+        builder: MapBuilder,
+        key: String,
+        value: Node,
+        optional: Boolean
+    ): MapBuilder =
       builder.add(key, value)
 
     override def mapNode(builder: MapBuilder): Node = JsObject(builder.toSeq)
@@ -30,9 +32,11 @@ object playJson extends PlayJsonSupportLowPrioImplicits {
         case None    => nullNode
       }
 
-    override def scalarNode(value: Any,
-                            typeName: String,
-                            info: Set[ScalarValueInfo]): Node =
+    override def scalarNode(
+        value: Any,
+        typeName: String,
+        info: Set[ScalarValueInfo]
+    ): Node =
       value match {
         case v: String     => JsString(v)
         case true          => JsTrue
@@ -92,10 +96,11 @@ object playJson extends PlayJsonSupportLowPrioImplicits {
     override def isEnumNode(node: JsValue): Boolean =
       node.isInstanceOf[JsString]
 
-    override def isScalarNode(node: JsValue): Boolean = node match {
-      case _: JsBoolean | _: JsNumber | _: JsString => true
-      case _                                        => false
-    }
+    override def isScalarNode(node: JsValue): Boolean =
+      node match {
+        case _: JsBoolean | _: JsNumber | _: JsString => true
+        case _                                        => false
+      }
 
     override def isVariableNode(node: JsValue): Boolean = false
     override def getVariableName(node: JsValue): String =

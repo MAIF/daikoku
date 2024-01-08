@@ -20,10 +20,12 @@ class MessagesControllerSpec()
     with DaikokuSpecHelper
     with IntegrationPatience {
 
-  def adminMessage(user: User,
-                   sender: User,
-                   message: String,
-                   closed: Option[DateTime] = None): Message =
+  def adminMessage(
+      user: User,
+      sender: User,
+      message: String,
+      closed: Option[DateTime] = None
+  ): Message =
     Message(
       id = DatastoreId(IdGenerator.token(128)),
       tenant = tenant.id,
@@ -49,8 +51,10 @@ class MessagesControllerSpec()
       val session = loginWithBlocking(tenantAdmin, tenant)
 
       val resp =
-        httpJsonCallBlocking(path = s"/api/messages/${user.id.value}",
-                             method = "DELETE")(tenant, session)
+        httpJsonCallBlocking(
+          path = s"/api/messages/${user.id.value}",
+          method = "DELETE"
+        )(tenant, session)
 
       resp.status mustBe 200
     }
@@ -86,14 +90,15 @@ class MessagesControllerSpec()
       val session = loginWithBlocking(user, tenant)
 
       val respGetClosedDate = httpJsonCallBlocking(
-        s"/api/messages/${user.id.value}/last-date")(tenant, session)
+        s"/api/messages/${user.id.value}/last-date"
+      )(tenant, session)
       respGetClosedDate.status mustBe 200
       val lastClosedDate = respGetClosedDate.json.as[Long]
       lastClosedDate mustBe closedDate.toDate.getTime
 
       val respGet = httpJsonCallBlocking(
-        s"/api/me/messages?chat=${user.id.value}&date=$lastClosedDate")(tenant,
-                                                                        session)
+        s"/api/me/messages?chat=${user.id.value}&date=$lastClosedDate"
+      )(tenant, session)
       respGet.status mustBe 200
       val messages =
         json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])
@@ -108,8 +113,9 @@ class MessagesControllerSpec()
         tenants = Seq(tenant),
         users = Seq(tenantAdmin, user),
         messages = Seq(
-          adminMessage(user, user, "1", None).copy(
-            date = DateTime.now().minusHours(1)))
+          adminMessage(user, user, "1", None)
+            .copy(date = DateTime.now().minusHours(1))
+        )
       )
       val session = loginWithBlocking(tenantAdmin, tenant)
 
@@ -120,8 +126,10 @@ class MessagesControllerSpec()
       messages.count(_.readBy.contains(tenantAdminId)) mustBe 0
 
       val respRead =
-        httpJsonCallBlocking(path = s"/api/messages/${user.id.value}/_read",
-                             method = "PUT")(tenant, session)
+        httpJsonCallBlocking(
+          path = s"/api/messages/${user.id.value}/_read",
+          method = "PUT"
+        )(tenant, session)
       respRead.status mustBe 200
 
       val respVerif =
@@ -148,10 +156,12 @@ class MessagesControllerSpec()
           Json.obj(
             "message" -> "1",
             "participants" -> JsArray(
-              (Set(user.id.asJson) ++ defaultAdminTeam.users.map(
-                _.userId.asJson)).toSeq),
+              (Set(user.id.asJson) ++ defaultAdminTeam.users
+                .map(_.userId.asJson)).toSeq
+            ),
             "chat" -> user.id.asJson
-          ))
+          )
+        )
       )(tenant, session)
 
       respSend.status mustBe 200
@@ -175,8 +185,10 @@ class MessagesControllerSpec()
 
       val session = loginWithBlocking(user, tenant)
 
-      val resp = httpJsonCallBlocking(path = s"/api/messages/${user.id.value}",
-                                      method = "DELETE")(tenant, session)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/messages/${user.id.value}",
+        method = "DELETE"
+      )(tenant, session)
 
       resp.status mustBe 403
     }

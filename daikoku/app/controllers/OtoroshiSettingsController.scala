@@ -11,8 +11,22 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.json.{AuthorizedEntitiesFormat, OtoroshiSettingsFormat, OtoroshiSettingsIdFormat, TestingConfigFormat}
-import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, Api, ApiKeyRestrictions, AuthorizedEntities, OtoroshiSettings, Testing, TestingAuth, UsagePlan}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  AuthorizedEntitiesFormat,
+  OtoroshiSettingsFormat,
+  OtoroshiSettingsIdFormat,
+  TestingConfigFormat
+}
+import fr.maif.otoroshi.daikoku.domain.{
+  ActualOtoroshiApiKey,
+  Api,
+  ApiKeyRestrictions,
+  AuthorizedEntities,
+  OtoroshiSettings,
+  Testing,
+  TestingAuth,
+  UsagePlan
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
@@ -21,49 +35,62 @@ import org.joda.time.DateTime
 import play.api.http.HttpEntity
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{AbstractController, BodyParser, ControllerComponents, Request, Result}
+import play.api.mvc.{
+  AbstractController,
+  BodyParser,
+  ControllerComponents,
+  Request,
+  Result
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
-                                 env: Env,
-                                 otoroshiClient: OtoroshiClient,
-                                 cc: ControllerComponents)
-    extends AbstractController(cc) {
+class OtoroshiSettingsController(
+    DaikokuAction: DaikokuAction,
+    env: Env,
+    otoroshiClient: OtoroshiClient,
+    cc: ControllerComponents
+) extends AbstractController(cc) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
 
-  def otoroshisSettings(tenantId: String) = DaikokuAction.async { ctx =>
-    TenantAdminOnly(
-      AuditTrailEvent(s"@{user.name} has accessed otoroshi settings list"))(
-      tenantId,
-      ctx) { (tenant, _) =>
-      FastFuture.successful(
-        Ok(JsArray(tenant.otoroshiSettings.map(_.asJson).toSeq)))
+  def otoroshisSettings(tenantId: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} has accessed otoroshi settings list")
+      )(tenantId, ctx) { (tenant, _) =>
+        FastFuture.successful(
+          Ok(JsArray(tenant.otoroshiSettings.map(_.asJson).toSeq))
+        )
+      }
     }
-  }
 
-  def otoroshisSettingsSimple(tenantId: String) = DaikokuAction.async { ctx =>
-    PublicUserAccess(
-      AuditTrailEvent(
-        s"@{user.name} has accessed otoroshi settings simple list"))(ctx) {
-      FastFuture.successful(
-        Ok(JsArray(ctx.tenant.otoroshiSettings.map(_.toUiPayload()).toSeq)))
+  def otoroshisSettingsSimple(tenantId: String) =
+    DaikokuAction.async { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} has accessed otoroshi settings simple list"
+        )
+      )(ctx) {
+        FastFuture.successful(
+          Ok(JsArray(ctx.tenant.otoroshiSettings.map(_.toUiPayload()).toSeq))
+        )
+      }
     }
-  }
 
   def otoroshiSettings(tenantId: String, otoroshiId: String) =
     DaikokuAction.async { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has accessed one otoroshi settings ($otoroshiId)"))(
-        tenantId,
-        ctx) { (tenant, _) =>
+          s"@{user.name} has accessed one otoroshi settings ($otoroshiId)"
+        )
+      )(tenantId, ctx) { (tenant, _) =>
         tenant.otoroshiSettings.find(_.id.value == otoroshiId) match {
           case None =>
             FastFuture.successful(
-              NotFound(Json.obj("error" -> "OtoroshiSettings not found")))
+              NotFound(Json.obj("error" -> "OtoroshiSettings not found"))
+            )
           case Some(oto) => FastFuture.successful(Ok(oto.asJson))
         }
       }
@@ -73,48 +100,59 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
     DaikokuAction.async { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has deleted one otoroshi settings ($otoroshiId)"))(
-        tenantId,
-        ctx) { (tenant, _) =>
+          s"@{user.name} has deleted one otoroshi settings ($otoroshiId)"
+        )
+      )(tenantId, ctx) { (tenant, _) =>
         ctx.tenant.otoroshiSettings.find(_.id.value == otoroshiId) match {
           case Some(otoroshiSettings) =>
             env.dataStore.tenantRepo
-              .save(tenant.copy(otoroshiSettings =
-                tenant.otoroshiSettings.filterNot(_.id == otoroshiSettings.id)))
+              .save(
+                tenant.copy(otoroshiSettings =
+                  tenant.otoroshiSettings.filterNot(_.id == otoroshiSettings.id)
+                )
+              )
               .map { _ =>
                 Ok(Json.obj("done" -> true))
               }
           case None =>
             FastFuture.successful(
-              NotFound(Json.obj("error" -> "Otoroshi not found")))
+              NotFound(Json.obj("error" -> "Otoroshi not found"))
+            )
         }
       }
     }
 
-  def saveOtoroshiSettings(tenantId: String,
-                           otoroshiId: String,
-                           skipValidation: Boolean = false) =
+  def saveOtoroshiSettings(
+      tenantId: String,
+      otoroshiId: String,
+      skipValidation: Boolean = false
+  ) =
     DaikokuAction.async(parse.json) { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has updated one otoroshi settings ($otoroshiId)"))(
-        tenantId,
-        ctx) { (tenant, _) =>
+          s"@{user.name} has updated one otoroshi settings ($otoroshiId)"
+        )
+      )(tenantId, ctx) { (tenant, _) =>
         tenant.otoroshiSettings.find(_.id.value == otoroshiId) match {
           case None =>
             FastFuture.successful(
-              NotFound(Json.obj("error" -> "OtoroshiSettings not found")))
+              NotFound(Json.obj("error" -> "OtoroshiSettings not found"))
+            )
           case Some(_) =>
             OtoroshiSettingsFormat.reads(ctx.request.body) match {
               case JsError(_) =>
                 FastFuture.successful(
-                  BadRequest(
-                    Json.obj("error" -> "Error while parsing payload")))
+                  BadRequest(Json.obj("error" -> "Error while parsing payload"))
+                )
               case JsSuccess(settings, _) =>
                 def saveSettings() =
                   env.dataStore.tenantRepo
-                    .save(tenant.copy(otoroshiSettings = tenant.otoroshiSettings
-                      .filterNot(_.id == settings.id) + settings))
+                    .save(
+                      tenant.copy(otoroshiSettings =
+                        tenant.otoroshiSettings
+                          .filterNot(_.id == settings.id) + settings
+                      )
+                    )
                     .map { _ =>
                       Ok(settings.asJson)
                     }
@@ -128,32 +166,37 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                     }
                     .recover { _ =>
                       BadRequest(
-                        Json.obj(
-                          "error" -> "Failed to join otoroshi instances"))
+                        Json.obj("error" -> "Failed to join otoroshi instances")
+                      )
                     }
             }
         }
       }
     }
 
-  def createOtoroshiSettings(tenantId: String,
-                             skipValidation: Boolean = false) =
+  def createOtoroshiSettings(
+      tenantId: String,
+      skipValidation: Boolean = false
+  ) =
     DaikokuAction.async(parse.json) { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has created one otoroshi settings (@{otoroshi.id})"))(
-        tenantId,
-        ctx) { (tenant, _) =>
+          s"@{user.name} has created one otoroshi settings (@{otoroshi.id})"
+        )
+      )(tenantId, ctx) { (tenant, _) =>
         OtoroshiSettingsFormat.reads(ctx.request.body) match {
           case JsError(_) =>
             FastFuture.successful(
-              BadRequest(Json.obj("error" -> "Error while parsing payload")))
+              BadRequest(Json.obj("error" -> "Error while parsing payload"))
+            )
           case JsSuccess(settings, _) =>
             def createOtoroshi() = {
               ctx.setCtxValue("otoroshi.id", settings.id)
               env.dataStore.tenantRepo
-                .save(tenant.copy(
-                  otoroshiSettings = tenant.otoroshiSettings + settings))
+                .save(
+                  tenant
+                    .copy(otoroshiSettings = tenant.otoroshiSettings + settings)
+                )
                 .map { _ =>
                   Created(settings.asJson)
                 }
@@ -169,22 +212,25 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                 .recover {
                   case _ =>
                     BadRequest(
-                      Json.obj("error" -> "Failed to join otoroshi instances"))
+                      Json.obj("error" -> "Failed to join otoroshi instances")
+                    )
                 }
         }
       }
     }
 
-  def otoroshiGroupsFor(teamId: String, oto: String) = DaikokuAction.async {
-    ctx =>
-      TeamApiEditorOnly(AuditTrailEvent(
-        s"@{user.name} has accessed groups of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"))(
-        teamId,
-        ctx) { _ =>
+  def otoroshiGroupsFor(teamId: String, oto: String) =
+    DaikokuAction.async { ctx =>
+      TeamApiEditorOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed groups of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"
+        )
+      )(teamId, ctx) { _ =>
         ctx.tenant.otoroshiSettings.find(s => s.id.value == oto) match {
           case None =>
             FastFuture.successful(
-              NotFound(Json.obj("error" -> s"Settings $oto not found")))
+              NotFound(Json.obj("error" -> s"Settings $oto not found"))
+            )
           case Some(settings) =>
             otoroshiClient
               .getServiceGroups()(settings)
@@ -196,19 +242,20 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
               }
         }
       }
-  }
+    }
 
   def otoroshiGroupsForTenant(tenantId: String, oto: String) =
     DaikokuAction.async { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has accessed groups of one otoroshi settings ($oto)"))(
-        tenantId,
-        ctx) { (tenant, _) =>
+          s"@{user.name} has accessed groups of one otoroshi settings ($oto)"
+        )
+      )(tenantId, ctx) { (tenant, _) =>
         tenant.otoroshiSettings.find(s => s.id.value == oto) match {
           case None =>
             FastFuture.successful(
-              NotFound(Json.obj("error" -> s"Settings $oto not found")))
+              NotFound(Json.obj("error" -> s"Settings $oto not found"))
+            )
           case Some(settings) =>
             otoroshiClient
               .getServiceGroups()(settings)
@@ -220,16 +267,18 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
       }
     }
 
-  def otoroshiServicesFor(teamId: String, oto: String) = DaikokuAction.async {
-    ctx =>
-      TeamApiEditorOnly(AuditTrailEvent(
-        s"@{user.name} has accessed services of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"))(
-        teamId,
-        ctx) { _ =>
+  def otoroshiServicesFor(teamId: String, oto: String) =
+    DaikokuAction.async { ctx =>
+      TeamApiEditorOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed services of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"
+        )
+      )(teamId, ctx) { _ =>
         ctx.tenant.otoroshiSettings.find(s => s.id.value == oto) match {
           case None =>
             FastFuture.successful(
-              NotFound(Json.obj("error" -> s"Settings $oto not found")))
+              NotFound(Json.obj("error" -> s"Settings $oto not found"))
+            )
           case Some(settings) =>
             otoroshiClient
               .getServices()(settings)
@@ -239,18 +288,20 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
               }
         }
       }
-  }
+    }
 
-  def otoroshiRoutesFor(teamId: String, oto: String) = DaikokuAction.async {
-    ctx =>
-      TeamApiEditorOnly(AuditTrailEvent(
-        s"@{user.name} has accessed routes of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"))(
-        teamId,
-        ctx) { _ =>
+  def otoroshiRoutesFor(teamId: String, oto: String) =
+    DaikokuAction.async { ctx =>
+      TeamApiEditorOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed routes of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"
+        )
+      )(teamId, ctx) { _ =>
         ctx.tenant.otoroshiSettings.find(s => s.id.value == oto) match {
           case None =>
             FastFuture.successful(
-              NotFound(Json.obj("error" -> s"Settings $oto not found")))
+              NotFound(Json.obj("error" -> s"Settings $oto not found"))
+            )
           case Some(settings) =>
             otoroshiClient
               .getRoutes()(settings)
@@ -260,18 +311,20 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
               }
         }
       }
-  }
+    }
 
   def otoroshiServicesForTenant(tenantId: String, oto: String) =
     DaikokuAction.async { ctx =>
-      TenantAdminOnly(AuditTrailEvent(
-        s"@{user.name} has accessed services of one otoroshi settings ($oto)"))(
-        tenantId,
-        ctx) { (tenant, _) =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed services of one otoroshi settings ($oto)"
+        )
+      )(tenantId, ctx) { (tenant, _) =>
         tenant.otoroshiSettings.find(s => s.id.value == oto) match {
           case None =>
             FastFuture.successful(
-              NotFound(Json.obj("error" -> s"Settings $oto not found")))
+              NotFound(Json.obj("error" -> s"Settings $oto not found"))
+            )
           case Some(settings) =>
             otoroshiClient
               .getServices()(settings)
@@ -287,13 +340,14 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
     DaikokuAction.async { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has accessed routes of one otoroshi settings ($oto)"))(
-        tenantId,
-        ctx) { (tenant, _) =>
+          s"@{user.name} has accessed routes of one otoroshi settings ($oto)"
+        )
+      )(tenantId, ctx) { (tenant, _) =>
         tenant.otoroshiSettings.find(s => s.id.value == oto) match {
           case None =>
             FastFuture.successful(
-              NotFound(Json.obj("error" -> s"Settings $oto not found")))
+              NotFound(Json.obj("error" -> s"Settings $oto not found"))
+            )
           case Some(settings) =>
             otoroshiClient
               .getRoutes()(settings)
@@ -309,13 +363,14 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
     DaikokuAction.async { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has accessed groups of one otoroshi settings ($oto)"))(
-        tenantId,
-        ctx) { (tenant, _) =>
+          s"@{user.name} has accessed groups of one otoroshi settings ($oto)"
+        )
+      )(tenantId, ctx) { (tenant, _) =>
         tenant.otoroshiSettings.find(s => s.id.value == oto) match {
           case None =>
             FastFuture.successful(
-              NotFound(Json.obj("error" -> s"Settings $oto not found")))
+              NotFound(Json.obj("error" -> s"Settings $oto not found"))
+            )
           case Some(settings) =>
             otoroshiClient
               .getApiKeys()(settings)
@@ -327,12 +382,13 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
       }
     }
 
-  def createTestingApiKey(teamId: String) = DaikokuAction.async(parse.json) {
-    ctx =>
-      TeamApiEditorOnly(AuditTrailEvent(
-        s"@{user.name} create a testing apikey for team @{team.name} - @{team.id}"))(
-        teamId,
-        ctx) { team =>
+  def createTestingApiKey(teamId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamApiEditorOnly(
+        AuditTrailEvent(
+          s"@{user.name} create a testing apikey for team @{team.name} - @{team.id}"
+        )
+      )(teamId, ctx) { team =>
         val otoroshiSettingsOpt =
           (ctx.request.body \ "otoroshiSettings").asOpt[String]
         val authorizedEntitiesOpt = (ctx.request.body \ "authorizedEntities")
@@ -347,9 +403,11 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
         val maxPerMonthOpt =
           (ctx.request.body \ "customMaxPerMonth").asOpt[Long]
 
-        def createApiKey(clientName: String,
-                         authorizedEntities: AuthorizedEntities,
-                         tag: String) = {
+        def createApiKey(
+            clientName: String,
+            authorizedEntities: AuthorizedEntities,
+            tag: String
+        ) = {
           val tenant = ctx.tenant
           val user = ctx.user
           val createdAt = DateTime.now().toString()
@@ -392,48 +450,56 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
         (for {
           otoroshiSettings <- EitherT.fromOption[Future](
             otoroshiSettingsOpt,
-            AppError.EntityNotFound("Otoroshi settings"))
+            AppError.EntityNotFound("Otoroshi settings")
+          )
           authorizedEntities <- EitherT.fromOption[Future](
             authorizedEntitiesOpt,
-            AppError.EntityNotFound("authorized entities"))
+            AppError.EntityNotFound("authorized entities")
+          )
           clientName <- EitherT.fromOption[Future](
             clientNameOpt,
-            AppError.EntityNotFound("client name"))
-          tag <- EitherT.fromOption[Future](tagOpt,
-                                            AppError.EntityNotFound("tag"))
+            AppError.EntityNotFound("client name")
+          )
+          tag <-
+            EitherT.fromOption[Future](tagOpt, AppError.EntityNotFound("tag"))
           settings <- EitherT.fromOption[Future](
             ctx.tenant.otoroshiSettings.find(s =>
-              s.id.value == otoroshiSettings),
-            AppError.EntityNotFound("Otoroshi settings"))
+              s.id.value == otoroshiSettings
+            ),
+            AppError.EntityNotFound("Otoroshi settings")
+          )
           apiKey = createApiKey(clientName, authorizedEntities, tag)
           createdKey <- EitherT(otoroshiClient.createApiKey(apiKey)(settings))
         } yield Ok(createdKey.asJson))
           .leftMap(_.render())
           .merge
       }
-  }
+    }
 
-  def updateTestingApiKey(teamId: String) = DaikokuAction.async(parse.json) {
-    ctx =>
-      TeamApiEditorOnly(AuditTrailEvent(
-        s"@{user.name} update testing @{apikey.id} apikey for team @{team.name} - @{team.id}"))(
-        teamId,
-        ctx) { _ =>
+  def updateTestingApiKey(teamId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamApiEditorOnly(
+        AuditTrailEvent(
+          s"@{user.name} update testing @{apikey.id} apikey for team @{team.name} - @{team.id}"
+        )
+      )(teamId, ctx) { _ =>
         val entityType = (ctx.request.body \ "entity" \ "type").as[String]
         val entityId = (ctx.request.body \ "entity" \ "_id").as[String]
 
         val testingConfig = ctx.request.body.as(TestingConfigFormat)
 
-        def handleKeyJob(previousSettings: OtoroshiSettings,
-                         actualSettings: OtoroshiSettings,
-                         key: ActualOtoroshiApiKey)
-          : EitherT[Future, AppError, ActualOtoroshiApiKey] = {
+        def handleKeyJob(
+            previousSettings: OtoroshiSettings,
+            actualSettings: OtoroshiSettings,
+            key: ActualOtoroshiApiKey
+        ): EitherT[Future, AppError, ActualOtoroshiApiKey] = {
           if (previousSettings != actualSettings) {
             for {
               _ <- EitherT.liftF(
-                otoroshiClient.deleteApiKey(key.clientId)(previousSettings))
-              newKey <- EitherT(
-                otoroshiClient.createApiKey(key)(actualSettings))
+                otoroshiClient.deleteApiKey(key.clientId)(previousSettings)
+              )
+              newKey <-
+                EitherT(otoroshiClient.createApiKey(key)(actualSettings))
             } yield newKey
           } else {
             EitherT(otoroshiClient.updateApiKey(key)(previousSettings))
@@ -460,26 +526,31 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
           )
 
           otoroshiSettings <- EitherT.fromOption[Future](
-            ctx.tenant.otoroshiSettings.find(
-              _.id == testingConfig.otoroshiSettings),
-            AppError.EntityNotFound("Otoroshi settings"))
+            ctx.tenant.otoroshiSettings
+              .find(_.id == testingConfig.otoroshiSettings),
+            AppError.EntityNotFound("Otoroshi settings")
+          )
           previousSettings <- EitherT.fromOption[Future](
             ctx.tenant.otoroshiSettings.find(s =>
-              testing.config.map(_.otoroshiSettings).contains(s.id)),
-            AppError.EntityNotFound("Otoroshi settings"))
+              testing.config.map(_.otoroshiSettings).contains(s.id)
+            ),
+            AppError.EntityNotFound("Otoroshi settings")
+          )
           apiKey <- EitherT(
-            otoroshiClient.getApikey(testingConfig.clientName)(
-              previousSettings))
-          lastMetadata: Map[String, String] = testing.config
-            .flatMap(_.customMetadata)
-            .flatMap(_.asOpt[Map[String, String]])
-            .getOrElse(Map.empty[String, String])
+            otoroshiClient.getApikey(testingConfig.clientName)(previousSettings)
+          )
+          lastMetadata: Map[String, String] =
+            testing.config
+              .flatMap(_.customMetadata)
+              .flatMap(_.asOpt[Map[String, String]])
+              .getOrElse(Map.empty[String, String])
 
           updatedKey = apiKey.copy(
             authorizedEntities = testingConfig.authorizedEntities,
-            metadata = (apiKey.metadata -- lastMetadata.keySet) ++ testingConfig.customMetadata
-              .flatMap(_.asOpt[Map[String, String]])
-              .getOrElse(Map.empty[String, String]),
+            metadata =
+              (apiKey.metadata -- lastMetadata.keySet) ++ testingConfig.customMetadata
+                .flatMap(_.asOpt[Map[String, String]])
+                .getOrElse(Map.empty[String, String]),
             throttlingQuota = testingConfig.customMaxPerSecond
               .getOrElse(apiKey.throttlingQuota),
             dailyQuota =
@@ -493,27 +564,31 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
           .leftMap(_.render())
           .merge
       }
-  }
+    }
 
-  def deleteTestingApiKey(teamId: String) = DaikokuAction.async(parse.json) {
-    ctx =>
-      TeamApiEditorOnly(AuditTrailEvent(
-        s"@{user.name} delete testing @{apikey.id} apikey for team @{team.name} - @{team.id}"))(
-        teamId,
-        ctx) { _ =>
+  def deleteTestingApiKey(teamId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamApiEditorOnly(
+        AuditTrailEvent(
+          s"@{user.name} delete testing @{apikey.id} apikey for team @{team.name} - @{team.id}"
+        )
+      )(teamId, ctx) { _ =>
         val otoroshiSettingsOpt =
           (ctx.request.body \ "otoroshiSettings").asOpt[String]
         val clientIdOpt = (ctx.request.body \ "clientId").asOpt[String]
         (otoroshiSettingsOpt, clientIdOpt) match {
           case (
-              Some(otoroshiSettings),
-              Some(clientId)
+                Some(otoroshiSettings),
+                Some(clientId)
               ) =>
             ctx.tenant.otoroshiSettings
               .find(s => s.id.value == otoroshiSettings) match {
               case None =>
-                FastFuture.successful(NotFound(
-                  Json.obj("error" -> s"Settings $otoroshiSettings not found")))
+                FastFuture.successful(
+                  NotFound(
+                    Json.obj("error" -> s"Settings $otoroshiSettings not found")
+                  )
+                )
               case Some(settings) =>
                 otoroshiClient
                   .deleteApiKey(clientId)(settings)
@@ -521,10 +596,11 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
             }
           case _ =>
             FastFuture.successful(
-              BadRequest(Json.obj("error" -> "Bad request")))
+              BadRequest(Json.obj("error" -> "Bad request"))
+            )
         }
       }
-  }
+    }
 
   private def hasBody(request: Request[_]): Boolean =
     (request.method, request.headers.get("Content-Length")) match {
@@ -550,7 +626,8 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
         .flatMap {
           case None =>
             FastFuture.successful(
-              NotFound(Json.obj("error" -> "Team not found")))
+              NotFound(Json.obj("error" -> "Team not found"))
+            )
           case Some(team) => {
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
@@ -579,10 +656,14 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                   val finalUrl = api.testing.auth match {
                     case TestingAuth.ApiKey if queryOpt.isDefined =>
                       url
-                        .replace(s"&${queryOpt.get._1}=fake-${api.id.value}",
-                                 s"&${queryOpt.get._1}=${username}")
-                        .replace(s"?${queryOpt.get._1}=fake-${api.id.value}",
-                                 s"?${queryOpt.get._1}=${username}")
+                        .replace(
+                          s"&${queryOpt.get._1}=fake-${api.id.value}",
+                          s"&${queryOpt.get._1}=${username}"
+                        )
+                        .replace(
+                          s"?${queryOpt.get._1}=fake-${api.id.value}",
+                          s"?${queryOpt.get._1}=${username}"
+                        )
                     // case TestingAuth.ApiKey if queryOpt.isDefined && url.contains("?") => (url + "&" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
                     // case TestingAuth.ApiKey if queryOpt.isDefined && !url.contains("?") => (url + "?" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
                     case _ => url
@@ -592,8 +673,8 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                       case TestingAuth.ApiKey if headerOpt.isDefined =>
                         headers - headerOpt.get._1 + (headerOpt.get._1 -> username)
                       case TestingAuth.Basic =>
-                        headers - "Authorization" + ("Authorization" -> s"Basic ${Base64.encodeBase64String(
-                          s"${username}:${password}".getBytes(Charsets.UTF_8))}")
+                        headers - "Authorization" + ("Authorization" -> s"Basic ${Base64
+                          .encodeBase64String(s"${username}:${password}".getBytes(Charsets.UTF_8))}")
                       case _ => headers
                     }
                   val builder = env.wsClient
@@ -604,8 +685,9 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                     .withRequestTimeout(30.seconds)
                   body
                     .map(b =>
-                      builder.withBody(
-                        play.api.libs.ws.InMemoryBody(ByteString(b))))
+                      builder
+                        .withBody(play.api.libs.ws.InMemoryBody(ByteString(b)))
+                    )
                     .getOrElse(builder)
                     .stream()
                     .map { res =>
@@ -643,7 +725,8 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
                 }
                 case _ =>
                   FastFuture.successful(
-                    NotFound(Json.obj("error" -> "Api not found")))
+                    NotFound(Json.obj("error" -> "Api not found"))
+                  )
 
               }
           }
@@ -676,10 +759,14 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
         val finalUrl = api.testing.auth match {
           case TestingAuth.ApiKey if queryOpt.isDefined =>
             url
-              .replace(s"&${queryOpt.get._1}=fake-${api.id.value}",
-                       s"&${queryOpt.get._1}=${username}")
-              .replace(s"?${queryOpt.get._1}=fake-${api.id.value}",
-                       s"?${queryOpt.get._1}=${username}")
+              .replace(
+                s"&${queryOpt.get._1}=fake-${api.id.value}",
+                s"&${queryOpt.get._1}=${username}"
+              )
+              .replace(
+                s"?${queryOpt.get._1}=fake-${api.id.value}",
+                s"?${queryOpt.get._1}=${username}"
+              )
           // case TestingAuth.ApiKey if queryOpt.isDefined && url.contains("?") => (url + "&" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
           // case TestingAuth.ApiKey if queryOpt.isDefined && !url.contains("?") => (url + "?" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
           case _ => url
@@ -689,8 +776,8 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
             case TestingAuth.ApiKey if headerOpt.isDefined =>
               headers - headerOpt.get._1 + (headerOpt.get._1 -> username)
             case TestingAuth.Basic =>
-              headers - "Authorization" + ("Authorization" -> s"Basic ${Base64.encodeBase64String(
-                s"${username}:${password}".getBytes(Charsets.UTF_8))}")
+              headers - "Authorization" + ("Authorization" -> s"Basic ${Base64
+                .encodeBase64String(s"${username}:${password}".getBytes(Charsets.UTF_8))}")
             case _ => headers
           }
         val builder = env.wsClient
@@ -701,7 +788,8 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
           .withRequestTimeout(30.seconds)
         body
           .map(b =>
-            builder.withBody(play.api.libs.ws.InMemoryBody(ByteString(b))))
+            builder.withBody(play.api.libs.ws.InMemoryBody(ByteString(b)))
+          )
           .getOrElse(builder)
           .stream()
           .map { res =>
@@ -739,19 +827,25 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
       }
 
       (for {
-        team <- EitherT.fromOptionF(env.dataStore.teamRepo
-                                      .forTenant(ctx.tenant)
-                                      .findByIdNotDeleted(teamId),
-                                    AppError.TeamNotFound)
+        team <- EitherT.fromOptionF(
+          env.dataStore.teamRepo
+            .forTenant(ctx.tenant)
+            .findByIdNotDeleted(teamId),
+          AppError.TeamNotFound
+        )
         api <- EitherT.fromOptionF(
           env.dataStore.apiRepo
             .forTenant(ctx.tenant)
             .findOneNotDeleted(
-              Json.obj("_id" -> apiId, "team" -> team.id.asJson)),
-          AppError.ApiNotFound)
-        _ <- EitherT.cond[Future][AppError, Unit](api.testing.enabled,
-                                                  (),
-                                                  AppError.ForbiddenAction)
+              Json.obj("_id" -> apiId, "team" -> team.id.asJson)
+            ),
+          AppError.ApiNotFound
+        )
+        _ <- EitherT.cond[Future][AppError, Unit](
+          api.testing.enabled,
+          (),
+          AppError.ForbiddenAction
+        )
         result <- EitherT(makeCall(api))
       } yield result)
         .leftMap(_.render())
@@ -786,10 +880,14 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
         val finalUrl = plan.testing.map(_.auth).get match {
           case TestingAuth.ApiKey if queryOpt.isDefined =>
             url
-              .replace(s"&${queryOpt.get._1}=fake-${plan.id.value}",
-                       s"&${queryOpt.get._1}=$username")
-              .replace(s"?${queryOpt.get._1}=fake-${plan.id.value}",
-                       s"?${queryOpt.get._1}=$username")
+              .replace(
+                s"&${queryOpt.get._1}=fake-${plan.id.value}",
+                s"&${queryOpt.get._1}=$username"
+              )
+              .replace(
+                s"?${queryOpt.get._1}=fake-${plan.id.value}",
+                s"?${queryOpt.get._1}=$username"
+              )
           // case TestingAuth.ApiKey if queryOpt.isDefined && url.contains("?") => (url + "&" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
           // case TestingAuth.ApiKey if queryOpt.isDefined && !url.contains("?") => (url + "?" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
           case _ => url
@@ -799,8 +897,8 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
             case TestingAuth.ApiKey if headerOpt.isDefined =>
               headers - headerOpt.get._1 + (headerOpt.get._1 -> username)
             case TestingAuth.Basic =>
-              headers - "Authorization" + ("Authorization" -> s"Basic ${Base64.encodeBase64String(
-                s"${username}:${password}".getBytes(Charsets.UTF_8))}")
+              headers - "Authorization" + ("Authorization" -> s"Basic ${Base64
+                .encodeBase64String(s"${username}:${password}".getBytes(Charsets.UTF_8))}")
             case _ => headers
           }
         val builder = env.wsClient
@@ -811,7 +909,8 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
           .withRequestTimeout(30.seconds)
         body
           .map(b =>
-            builder.withBody(play.api.libs.ws.InMemoryBody(ByteString(b))))
+            builder.withBody(play.api.libs.ws.InMemoryBody(ByteString(b)))
+          )
           .getOrElse(builder)
           .stream()
           .map { res =>
@@ -849,28 +948,36 @@ class OtoroshiSettingsController(DaikokuAction: DaikokuAction,
       }
 
       (for {
-        team <- EitherT.fromOptionF(env.dataStore.teamRepo
-                                      .forTenant(ctx.tenant)
-                                      .findByIdNotDeleted(teamId),
-                                    AppError.TeamNotFound)
+        team <- EitherT.fromOptionF(
+          env.dataStore.teamRepo
+            .forTenant(ctx.tenant)
+            .findByIdNotDeleted(teamId),
+          AppError.TeamNotFound
+        )
         api <- EitherT.fromOptionF(
           env.dataStore.apiRepo
             .forTenant(ctx.tenant)
             .findOneNotDeleted(
-              Json.obj("_id" -> apiId, "team" -> team.id.asJson)),
-          AppError.ApiNotFound)
+              Json.obj("_id" -> apiId, "team" -> team.id.asJson)
+            ),
+          AppError.ApiNotFound
+        )
         _ <- EitherT.cond[Future][AppError, Unit](
           api.possibleUsagePlans.exists(_.value == planId),
           (),
-          AppError.PlanNotFound)
-        plan <- EitherT.fromOptionF(env.dataStore.usagePlanRepo
-                                      .forTenant(ctx.tenant)
-                                      .findByIdNotDeleted(planId),
-                                    AppError.PlanNotFound)
+          AppError.PlanNotFound
+        )
+        plan <- EitherT.fromOptionF(
+          env.dataStore.usagePlanRepo
+            .forTenant(ctx.tenant)
+            .findByIdNotDeleted(planId),
+          AppError.PlanNotFound
+        )
         _ <- EitherT.cond[Future][AppError, Unit](
           plan.testing.exists(_.enabled),
           (),
-          AppError.ForbiddenAction)
+          AppError.ForbiddenAction
+        )
         result <- EitherT(makeCall(plan))
       } yield result)
         .leftMap(_.render())

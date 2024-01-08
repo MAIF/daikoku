@@ -62,8 +62,8 @@ case class User(
       "email" -> email,
       "picture" -> picture,
       "isDaikokuAdmin" -> isDaikokuAdmin,
-      "defaultLanguage" -> defaultLanguage.fold(JsNull.as[JsValue])(
-        JsString.apply),
+      "defaultLanguage" -> defaultLanguage
+        .fold(JsNull.as[JsValue])(JsString.apply),
       "isGuest" -> isGuest,
       "starredApis" -> starredApis.map(_.value),
       "twoFactorAuthentication" -> twoFactorAuthentication
@@ -78,17 +78,18 @@ case class User(
 }
 
 object GuestUser {
-  def apply(tenantId: TenantId): User = User(
-    id = UserId("anonymous"),
-    tenants = Set(tenantId),
-    origins = Set.empty,
-    name = "anonymous",
-    email = "",
-    lastTenant = None,
-    defaultLanguage = None,
-    personalToken = None,
-    isGuest = true
-  )
+  def apply(tenantId: TenantId): User =
+    User(
+      id = UserId("anonymous"),
+      tenants = Set(tenantId),
+      origins = Set.empty,
+      name = "anonymous",
+      email = "",
+      lastTenant = None,
+      defaultLanguage = None,
+      personalToken = None,
+      isGuest = true
+    )
 }
 
 object GuestUserSession {
@@ -112,28 +113,30 @@ object GuestUserSession {
   }
 }
 
-case class UserSession(id: DatastoreId,
-                       sessionId: UserSessionId,
-                       userId: UserId,
-                       userName: String,
-                       userEmail: String,
-                       impersonatorId: Option[UserId],
-                       impersonatorName: Option[String],
-                       impersonatorEmail: Option[String],
-                       impersonatorSessionId: Option[UserSessionId],
-                       created: DateTime,
-                       ttl: FiniteDuration,
-                       expires: DateTime)
-    extends CanJson[UserSession] {
+case class UserSession(
+    id: DatastoreId,
+    sessionId: UserSessionId,
+    userId: UserId,
+    userName: String,
+    userEmail: String,
+    impersonatorId: Option[UserId],
+    impersonatorName: Option[String],
+    impersonatorEmail: Option[String],
+    impersonatorSessionId: Option[UserSessionId],
+    created: DateTime,
+    ttl: FiniteDuration,
+    expires: DateTime
+) extends CanJson[UserSession] {
   override def asJson: JsValue = json.UserSessionFormat.writes(this)
   def invalidate()(implicit ec: ExecutionContext, env: Env): Future[Unit] = {
     env.dataStore.userSessionRepo.deleteById(id).map(_ => ())
   }
-  def asSimpleJson: JsValue = Json.obj(
-    "created" -> created.toDate.getTime,
-    "expires" -> expires.toDate.getTime,
-    "ttl" -> ttl.toMillis,
-  )
+  def asSimpleJson: JsValue =
+    Json.obj(
+      "created" -> created.toDate.getTime,
+      "expires" -> expires.toDate.getTime,
+      "ttl" -> ttl.toMillis
+    )
   def impersonatorJson(): JsValue = {
     impersonatorId.map { _ =>
       Json.obj(
@@ -147,20 +150,22 @@ case class UserSession(id: DatastoreId,
   }
 }
 
-case class TwoFactorAuthentication(enabled: Boolean = false,
-                                   secret: String,
-                                   token: String,
-                                   backupCodes: String)
-    extends CanJson[TwoFactorAuthentication] {
+case class TwoFactorAuthentication(
+    enabled: Boolean = false,
+    secret: String,
+    token: String,
+    backupCodes: String
+) extends CanJson[TwoFactorAuthentication] {
   override def asJson: JsValue = json.TwoFactorAuthenticationFormat.writes(this)
 }
 
-case class UserInvitation(registered: Boolean,
-                          token: String,
-                          createdAt: DateTime,
-                          team: String,
-                          notificationId: String)
-    extends CanJson[UserInvitation] {
+case class UserInvitation(
+    registered: Boolean,
+    token: String,
+    createdAt: DateTime,
+    team: String,
+    notificationId: String
+) extends CanJson[UserInvitation] {
   override def asJson: JsValue = json.UserInvitationFormat.writes(this)
 }
 
@@ -172,7 +177,7 @@ case class PasswordReset(
     password: String,
     user: UserId,
     creationDate: DateTime,
-    validUntil: DateTime,
+    validUntil: DateTime
 ) extends CanJson[PasswordReset] {
   override def asJson: JsValue = json.PasswordResetFormat.writes(this)
 }
@@ -186,7 +191,7 @@ case class AccountCreation(
     avatar: String,
     password: String,
     creationDate: DateTime,
-    validUntil: DateTime,
+    validUntil: DateTime
 ) extends CanJson[AccountCreation] {
   override def asJson: JsValue = json.AccountCreationFormat.writes(this)
 }
@@ -198,17 +203,18 @@ object MessageType {
   case class Tenant(value: TenantId) extends MessageType
 }
 
-case class Message(id: DatastoreId,
-                   tenant: TenantId,
-                   messageType: MessageType,
-                   participants: Set[UserId],
-                   readBy: Set[UserId],
-                   chat: UserId,
-                   date: DateTime,
-                   sender: UserId,
-                   message: String,
-                   closed: Option[DateTime] = None,
-                   send: Boolean = false)
-    extends CanJson[Message] {
+case class Message(
+    id: DatastoreId,
+    tenant: TenantId,
+    messageType: MessageType,
+    participants: Set[UserId],
+    readBy: Set[UserId],
+    chat: UserId,
+    date: DateTime,
+    sender: UserId,
+    message: String,
+    closed: Option[DateTime] = None,
+    send: Boolean = false
+) extends CanJson[Message] {
   override def asJson: JsValue = json.MessageFormat.writes(this)
 }

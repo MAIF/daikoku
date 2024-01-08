@@ -75,7 +75,8 @@ package object modules {
     lazy val translator = wire[Translator]
 
     override lazy val httpFilters: Seq[EssentialFilter] = Seq(
-      new SecurityFilter(env)) ++ env.expositionFilters ++ env.identityFilters
+      new SecurityFilter(env)
+    ) ++ env.expositionFilters ++ env.identityFilters
 
     lazy val filters = new DefaultHttpFilters(httpFilters: _*)
 
@@ -155,9 +156,12 @@ package object modules {
         .setDatabase(configuration.get[String]("daikoku.postgres.database"))
         .setUser(configuration.get[String]("daikoku.postgres.username"))
         .setPassword(configuration.get[String]("daikoku.postgres.password"))
-        .setProperties(Map(
-          "search_path" -> configuration.get[String]("daikoku.postgres.schema")
-        ).asJava)
+        .setProperties(
+          Map(
+            "search_path" -> configuration
+              .get[String]("daikoku.postgres.schema")
+          ).asJava
+        )
 
       val ssl = configuration
         .getOptional[Configuration]("daikoku.postgres.ssl")
@@ -169,7 +173,8 @@ package object modules {
         val pemKeyCertOptions = new PemKeyCertOptions()
 
         options.setSslMode(
-          SslMode.of(ssl.getOptional[String]("mode").getOrElse("verify-ca")))
+          SslMode.of(ssl.getOptional[String]("mode").getOrElse("verify-ca"))
+        )
         ssl
           .getOptional[Int]("ssl-handshake-timeout")
           .map(options.setSslHandshakeTimeout(_))
@@ -276,7 +281,8 @@ package object modules {
 
       logger.error(
         s"Server Error [$uuid]: ${exception.getMessage} on ${request.relativeUri}",
-        exception)
+        exception
+      )
       Errors.craftResponseResult(
         s"Server Error: $uuid",
         Results.InternalServerError,
@@ -287,12 +293,14 @@ package object modules {
     }
   }
 
-  private class SecurityFilter(env: Env)(implicit val mat: Materializer,
-                                         ec: ExecutionContext)
-      extends Filter {
+  private class SecurityFilter(env: Env)(implicit
+      val mat: Materializer,
+      ec: ExecutionContext
+  ) extends Filter {
     val regex = Pattern.compile("\\/api\\/apis\\/.*\\/pages\\/.*\\/content")
-    def apply(nextFilter: RequestHeader => Future[Result])(
-        request: RequestHeader): Future[Result] = {
+    def apply(
+        nextFilter: RequestHeader => Future[Result]
+    )(request: RequestHeader): Future[Result] = {
       nextFilter(request).map { result =>
         env.config.mode match {
           case DaikokuMode.Dev => result
@@ -301,7 +309,7 @@ package object modules {
             result.withHeaders(
               "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net localhost:3000 blob:; img-src * data: blob:; font-src 'self' https://*; connect-src *",
               "X-XSS-Protection" -> "1 ; mode=block",
-              "X-Content-Type-Options" -> "nosniff",
+              "X-Content-Type-Options" -> "nosniff"
             )
           }
           case DaikokuMode.Prod
@@ -309,7 +317,7 @@ package object modules {
             result.withHeaders(
               "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline'; img-src * data: blob:; font-src 'self' https://*",
               "X-XSS-Protection" -> "1 ; mode=block",
-              "X-Content-Type-Options" -> "nosniff",
+              "X-Content-Type-Options" -> "nosniff"
             )
           }
           case DaikokuMode.Prod
@@ -317,7 +325,7 @@ package object modules {
             result.withHeaders(
               "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline'; img-src * data: blob:; font-src 'self' https://*",
               "X-XSS-Protection" -> "1 ; mode=block",
-              "X-Content-Type-Options" -> "nosniff",
+              "X-Content-Type-Options" -> "nosniff"
             )
           }
           case DaikokuMode.Prod
@@ -325,7 +333,7 @@ package object modules {
             result.withHeaders(
               "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline'; img-src * data: blob:; font-src 'self' https://*",
               "X-XSS-Protection" -> "1 ; mode=block",
-              "X-Content-Type-Options" -> "nosniff",
+              "X-Content-Type-Options" -> "nosniff"
             )
           }
           case DaikokuMode.Prod => {

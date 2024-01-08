@@ -11,7 +11,8 @@ object Helper {
 
   private def _inOperatorToString(
       values: List[String],
-      params: Seq[AnyRef]): (String, Seq[AnyRef]) = {
+      params: Seq[AnyRef]
+  ): (String, Seq[AnyRef]) = {
     if (values.isEmpty)
       ("('DEFAULT VALUE TO AVOID EMPTY LIST')", params)
     else {
@@ -27,9 +28,11 @@ object Helper {
     str.toString
       .replace(quotes, "")
 
-  private def _manageProperty(key: String,
-                              jsValue: JsValue,
-                              params: Seq[AnyRef]): (String, Seq[AnyRef]) = {
+  private def _manageProperty(
+      key: String,
+      jsValue: JsValue,
+      params: Seq[AnyRef]
+  ): (String, Seq[AnyRef]) = {
     val value = _removeQuotes(jsValue)
 
     var out = ""
@@ -40,10 +43,12 @@ object Helper {
       val parts = key.split("\\.")
       if (parts.length > 2)
         throw new UnsupportedOperationException(
-          "Queries with three dots in the property are not supported")
+          "Queries with three dots in the property are not supported"
+        )
 
-      out = s"(content->$$${n + 1} @> '[{$quotes${parts(1)}$quotes : $quotes$value$quotes}]' OR " +
-        s"content->$$${n + 1} @> '{$quotes${parts(1)}$quotes : $quotes$value$quotes}')"
+      out =
+        s"(content->$$${n + 1} @> '[{$quotes${parts(1)}$quotes : $quotes$value$quotes}]' OR " +
+          s"content->$$${n + 1} @> '{$quotes${parts(1)}$quotes : $quotes$value$quotes}')"
 
       outParams ++= Seq(
         _removeQuotes(parts(0))
@@ -78,22 +83,24 @@ object Helper {
 
   def getParam(n: Int): String = "$" + (n + 1).toString
 
-  private def _convertTuple(field: (String, JsValue),
-                            params: Seq[AnyRef]): (String, Seq[AnyRef]) = {
+  private def _convertTuple(
+      field: (String, JsValue),
+      params: Seq[AnyRef]
+  ): (String, Seq[AnyRef]) = {
     logger.debug(s"_convertTuple - $field")
 
     if (field._1 == "$push") {
       val entry = field._2.as[JsObject].fields.head
       (
-        s"content = jsonb_set(content, array[${getParam(params.size)}], content->${getParam(
-          params.size)} || ${getParam(params.size + 1)})",
+        s"content = jsonb_set(content, array[${getParam(
+          params.size
+        )}], content->${getParam(params.size)} || ${getParam(params.size + 1)})",
         params ++ Seq(entry._1, entry._2)
       )
     } else if (field._1 == "$set") {
       val entry = field._2.as[JsObject].fields.head
       (
-        s"content = jsonb_set(content, array[${getParam(params.size)}], ${getParam(
-          params.size + 1)})",
+        s"content = jsonb_set(content, array[${getParam(params.size)}], ${getParam(params.size + 1)})",
         params ++ Seq(entry._1, entry._2)
       )
     } else if (field._1 == "$unset") {
@@ -123,13 +130,16 @@ object Helper {
                 val parts = field._1.split("\\.")
                 if (parts.length > 2)
                   throw new UnsupportedOperationException(
-                    "Queries with three dots in the property are not supported")
+                    "Queries with three dots in the property are not supported"
+                  )
                 else if (parts.length == 2)
                   formattedKey = s"content->'${parts.head}'->>'${parts.last}'"
               }
 
-              (s"( $formattedKey IN $a OR content->${getParam(b.size)} ?| ARRAY[$arr] )",
-               b ++ Seq(field._1))
+              (
+                s"( $formattedKey IN $a OR content->${getParam(b.size)} ?| ARRAY[$arr] )",
+                b ++ Seq(field._1)
+              )
 
             case Some((key: String, _: JsValue)) if key == "$nin" =>
               val (a, b) = _convertTuple(value.fields.head, params)
@@ -179,9 +189,12 @@ object Helper {
               val (a, b) = _convertTuple(value.fields.head, params)
               (
                 s"(content ->> ${getParam(b.size)} IS NULL OR content->>${getParam(
-                  b.size)} <> ${getParam(b.size + 1)})",
-                b ++ Seq(_removeQuotes(field._1),
-                         _removeQuotes(value.fields.head._2))
+                  b.size
+                )} <> ${getParam(b.size + 1)})",
+                b ++ Seq(
+                  _removeQuotes(field._1),
+                  _removeQuotes(value.fields.head._2)
+                )
               )
             case Some((key: String, v: JsValue)) if key == "$exists" =>
               val (a, b) = _convertTuple(value.fields.head, params)
@@ -189,14 +202,18 @@ object Helper {
                 case JsTrue =>
                   (
                     s"(content ->> ${getParam(b.size)} IS NOT NULL)",
-                    b ++ Seq(_removeQuotes(field._1),
-                             _removeQuotes(value.fields.head._2))
+                    b ++ Seq(
+                      _removeQuotes(field._1),
+                      _removeQuotes(value.fields.head._2)
+                    )
                   )
                 case JsFalse =>
                   (
                     s"(content ->> ${getParam(b.size)} IS NULL)",
-                    b ++ Seq(_removeQuotes(field._1),
-                             _removeQuotes(value.fields.head._2))
+                    b ++ Seq(
+                      _removeQuotes(field._1),
+                      _removeQuotes(value.fields.head._2)
+                    )
                   )
                 case _ =>
                   logger.error("WRONG VALUE - $exists needs boolean value")
@@ -262,8 +279,10 @@ object Helper {
   }
 
   // convert jsObject query to jsonb syntax
-  def convertQuery(query: JsObject,
-                   params: Seq[AnyRef] = Seq.empty): (String, Seq[AnyRef]) = {
+  def convertQuery(
+      query: JsObject,
+      params: Seq[AnyRef] = Seq.empty
+  ): (String, Seq[AnyRef]) = {
     var l = ""
     var outParams = params
 

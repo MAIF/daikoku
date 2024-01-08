@@ -25,10 +25,11 @@ object LocalLoginConfig {
 
   val _fmt = new Format[LocalLoginConfig] {
 
-    override def reads(json: JsValue) = fromJson(json) match {
-      case Left(e)  => JsError(e.getMessage)
-      case Right(v) => JsSuccess(v.asInstanceOf[LocalLoginConfig])
-    }
+    override def reads(json: JsValue) =
+      fromJson(json) match {
+        case Left(e)  => JsError(e.getMessage)
+        case Right(v) => JsSuccess(v.asInstanceOf[LocalLoginConfig])
+      }
 
     override def writes(o: LocalLoginConfig) = o.asJson
   }
@@ -46,9 +47,10 @@ object LocalLoginConfig {
 }
 
 case class LocalLoginConfig(sessionMaxAge: Int = 86400) {
-  def asJson = Json.obj(
-    "sessionMaxAge" -> this.sessionMaxAge,
-  )
+  def asJson =
+    Json.obj(
+      "sessionMaxAge" -> this.sessionMaxAge
+    )
 }
 
 object LocalLoginSupport {
@@ -65,8 +67,10 @@ object LocalLoginSupport {
       )
       .map {
         case Some(user)
-            if user.password.isDefined && BCrypt.checkpw(password,
-                                                         user.password.get) =>
+            if user.password.isDefined && BCrypt.checkpw(
+              password,
+              user.password.get
+            ) =>
           Some(user)
         case _ => None
       }

@@ -17,8 +17,9 @@ object AppLogger {
     logger.warn(message)
   }
 
-  def warn(message: => String, error: => Throwable)(
-      implicit mc: MarkerContext): Unit = {
+  def warn(message: => String, error: => Throwable)(implicit
+      mc: MarkerContext
+  ): Unit = {
     logger.warn(message, error)
   }
 
@@ -26,8 +27,9 @@ object AppLogger {
     logger.error(message)
   }
 
-  def error(message: => String, error: => Throwable)(
-      implicit mc: MarkerContext): Unit = {
+  def error(message: => String, error: => Throwable)(implicit
+      mc: MarkerContext
+  ): Unit = {
     logger.error(message, error)
   }
 

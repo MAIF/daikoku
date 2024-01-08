@@ -23,9 +23,12 @@ object RequestImplicits {
       extends AnyVal {
     def relativeUri: String = {
       val uri = requestHeader.uri
-      uriCache.computeIfAbsent(uri, _ => {
-        Try(Uri(uri).toRelative.toString()).getOrElse(uri)
-      })
+      uriCache.computeIfAbsent(
+        uri,
+        _ => {
+          Try(Uri(uri).toRelative.toString()).getOrElse(uri)
+        }
+      )
     }
     def theProtocol: String = {
       requestHeader.headers

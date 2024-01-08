@@ -22,10 +22,11 @@ object OAuth2Config {
 
   val _fmt = new Format[OAuth2Config] {
 
-    override def reads(json: JsValue) = fromJson(json) match {
-      case Left(e)  => JsError(e.getMessage)
-      case Right(v) => JsSuccess(v.asInstanceOf[OAuth2Config])
-    }
+    override def reads(json: JsValue) =
+      fromJson(json) match {
+        case Left(e)  => JsError(e.getMessage)
+        case Right(v) => JsSuccess(v.asInstanceOf[OAuth2Config])
+      }
 
     override def writes(o: OAuth2Config) = o.asJson
   }
@@ -103,38 +104,41 @@ case class OAuth2Config(
     callbackUrl: String = "http://daikoku.foo.bar:8080/auth/oauth2/callback",
     daikokuAdmins: Seq[String] = Seq.empty[String]
 ) {
-  def asJson = Json.obj(
-    "type" -> "oauth2",
-    "sessionMaxAge" -> this.sessionMaxAge,
-    "clientId" -> this.clientId,
-    "clientSecret" -> this.clientSecret,
-    "authorizeUrl" -> this.authorizeUrl,
-    "tokenUrl" -> this.tokenUrl,
-    "userInfoUrl" -> this.userInfoUrl,
-    "loginUrl" -> this.loginUrl,
-    "logoutUrl" -> this.logoutUrl,
-    "scope" -> this.scope,
-    "useJson" -> this.useJson,
-    "readProfileFromToken" -> this.readProfileFromToken,
-    "jwtVerifier" -> jwtVerifier.map(_.asJson).getOrElse(JsNull).as[JsValue],
-    "accessTokenField" -> this.accessTokenField,
-    "nameField" -> this.nameField,
-    "emailField" -> this.emailField,
-    "pictureField" -> this.pictureField,
-    "callbackUrl" -> this.callbackUrl,
-    "daikokuAdmins" -> this.daikokuAdmins
-  )
+  def asJson =
+    Json.obj(
+      "type" -> "oauth2",
+      "sessionMaxAge" -> this.sessionMaxAge,
+      "clientId" -> this.clientId,
+      "clientSecret" -> this.clientSecret,
+      "authorizeUrl" -> this.authorizeUrl,
+      "tokenUrl" -> this.tokenUrl,
+      "userInfoUrl" -> this.userInfoUrl,
+      "loginUrl" -> this.loginUrl,
+      "logoutUrl" -> this.logoutUrl,
+      "scope" -> this.scope,
+      "useJson" -> this.useJson,
+      "readProfileFromToken" -> this.readProfileFromToken,
+      "jwtVerifier" -> jwtVerifier.map(_.asJson).getOrElse(JsNull).as[JsValue],
+      "accessTokenField" -> this.accessTokenField,
+      "nameField" -> this.nameField,
+      "emailField" -> this.emailField,
+      "pictureField" -> this.pictureField,
+      "callbackUrl" -> this.callbackUrl,
+      "daikokuAdmins" -> this.daikokuAdmins
+    )
 }
 
 object OAuth2Support {
 
   import fr.maif.otoroshi.daikoku.utils.future._
 
-  def bindUser(request: RequestHeader,
-               authConfig: OAuth2Config,
-               tenant: Tenant,
-               _env: Env)(
-      implicit ec: ExecutionContext
+  def bindUser(
+      request: RequestHeader,
+      authConfig: OAuth2Config,
+      tenant: Tenant,
+      _env: Env
+  )(implicit
+      ec: ExecutionContext
   ): Future[Either[String, User]] = {
     val clientId = authConfig.clientId
     val clientSecret = authConfig.clientSecret
@@ -172,18 +176,22 @@ object OAuth2Support {
               .flatMap { resp =>
                 val accessToken =
                   (resp.json \ authConfig.accessTokenField).as[String]
-                if (authConfig.readProfileFromToken && authConfig.jwtVerifier.isDefined) {
+                if (
+                  authConfig.readProfileFromToken && authConfig.jwtVerifier.isDefined
+                ) {
                   val algoSettings = authConfig.jwtVerifier.get
                   val tokenHeader =
                     Try(
                       Json.parse(
-                        ApacheBase64.decodeBase64(accessToken.split("\\.")(0))))
-                      .getOrElse(Json.obj())
+                        ApacheBase64.decodeBase64(accessToken.split("\\.")(0))
+                      )
+                    ).getOrElse(Json.obj())
                   val tokenBody =
                     Try(
                       Json.parse(
-                        ApacheBase64.decodeBase64(accessToken.split("\\.")(1))))
-                      .getOrElse(Json.obj())
+                        ApacheBase64.decodeBase64(accessToken.split("\\.")(1))
+                      )
+                    ).getOrElse(Json.obj())
                   val kid = (tokenHeader \ "kid").asOpt[String]
                   val alg =
                     (tokenHeader \ "alg").asOpt[String].getOrElse("RS256")
@@ -196,7 +204,8 @@ object OAuth2Support {
                             .require(algo)
                             .acceptLeeway(10000)
                             .build()
-                            .verify(accessToken)).map { _ =>
+                            .verify(accessToken)
+                        ).map { _ =>
                           FastFuture.successful(tokenBody)
                         } recoverWith {
                           case e => Success(FastFuture.failed(e))
@@ -263,9 +272,10 @@ object OAuth2Support {
                         defaultLanguage = None
                       )
                       for {
-                        _ <- _env.dataStore.teamRepo
-                          .forTenant(tenant.id)
-                          .save(team)
+                        _ <-
+                          _env.dataStore.teamRepo
+                            .forTenant(tenant.id)
+                            .save(team)
                         _ <- _env.dataStore.userRepo.save(user)
                       } yield {
                         Right(user)
@@ -276,17 +286,18 @@ object OAuth2Support {
                         email = email,
                         tenants = u.tenants + tenant.id,
                         origins = u.origins + AuthProvider.OAuth2,
-                        picture =
-                          if (picture.isDefined && u.pictureFromProvider)
-                            picture.get
-                          else
-                            u.picture == User.DEFAULT_IMAGE match {
-                              case true
-                                  if picture.isDefined && u.pictureFromProvider =>
-                                picture.get
-                              case true if picture.isEmpty => User.DEFAULT_IMAGE
-                              case _                   => u.picture
-                            },
+                        picture = if (
+                          picture.isDefined && u.pictureFromProvider
+                        )
+                          picture.get
+                        else
+                          u.picture == User.DEFAULT_IMAGE match {
+                            case true
+                                if picture.isDefined && u.pictureFromProvider =>
+                              picture.get
+                            case true if picture.isEmpty => User.DEFAULT_IMAGE
+                            case _                       => u.picture
+                          },
                         isDaikokuAdmin =
                           if (u.isDaikokuAdmin) true else isDaikokuAdmin
                       )

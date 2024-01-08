@@ -21,7 +21,8 @@ object pgimplicits {
 
   implicit class EnhancedRow(val row: Row) extends AnyVal {
     def opt[A](name: String, typ: String, extractor: (Row, String) => A)(
-        implicit logger: Logger): Option[A] = {
+        implicit logger: Logger
+    ): Option[A] = {
       Try(extractor(row, name)) match {
         case Failure(ex) => {
           logger.error(s"error while getting column '$name' of type $typ", ex)
@@ -64,8 +65,9 @@ object pgimplicits {
   }
 }
 
-class ReactivePg(pool: Pool, configuration: Configuration)(
-    implicit val ec: ExecutionContext) {
+class ReactivePg(pool: Pool, configuration: Configuration)(implicit
+    val ec: ExecutionContext
+) {
 
   import pgimplicits._
 
@@ -80,24 +82,25 @@ class ReactivePg(pool: Pool, configuration: Configuration)(
   private def queryRaw[A](
       query: String,
       params: Seq[Any] = Seq.empty,
-      debug: Boolean = true)(f: Seq[Row] => A): Future[A] = {
+      debug: Boolean = true
+  )(f: Seq[Row] => A): Future[A] = {
     if (debug || debugQueries)
       logger.debug(s"""query: "$query", params: "${params.mkString(", ")}"""")
 
     val isRead = query.toLowerCase().trim.startsWith("select")
     (if (isRead) {
        pool
-         .withConnection(
-           c =>
-             c.preparedQuery(query)
-               .execute(io.vertx.sqlclient.Tuple.from(params.toArray)))
+         .withConnection(c =>
+           c.preparedQuery(query)
+             .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
+         )
          .scala
      } else {
        pool
-         .withConnection(
-           c =>
-             c.preparedQuery(query)
-               .execute(io.vertx.sqlclient.Tuple.from(params.toArray)))
+         .withConnection(c =>
+           c.preparedQuery(query)
+             .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
+         )
          .scala
      })
       .flatMap { _rows =>
@@ -112,8 +115,9 @@ class ReactivePg(pool: Pool, configuration: Configuration)(
       .andThen {
         case Failure(e) =>
           logger.error(
-            s"""Failed to apply query: "$query" with params: "${params.mkString(
-              ", ")}"""")
+            s"""Failed to apply query: "$query" with params: "${params
+              .mkString(", ")}""""
+          )
           logger.error(s"$e")
       }
   }
@@ -121,16 +125,19 @@ class ReactivePg(pool: Pool, configuration: Configuration)(
   def querySeq[A](
       query: String,
       params: Seq[AnyRef] = Seq.empty,
-      debug: Boolean = true)(f: Row => Option[A]): Future[Seq[A]] = {
+      debug: Boolean = true
+  )(f: Row => Option[A]): Future[Seq[A]] = {
     queryRaw[Seq[A]](query, params, debug)(rows => rows.flatMap(f))
   }
 
   def queryOne[A](
       query: String,
       params: Seq[AnyRef] = Seq.empty,
-      debug: Boolean = true)(f: Row => Option[A]): Future[Option[A]] = {
+      debug: Boolean = true
+  )(f: Row => Option[A]): Future[Option[A]] = {
     queryRaw[Option[A]](query, params, debug)(rows =>
-      rows.headOption.flatMap(row => f(row)))
+      rows.headOption.flatMap(row => f(row))
+    )
   }
 
   def rawQuery(sql: String): Future[RowSet[Row]] =
@@ -138,9 +145,9 @@ class ReactivePg(pool: Pool, configuration: Configuration)(
 
   def query(sql: String, params: Seq[AnyRef] = Seq.empty) =
     pool
-      .withConnection(
-        c =>
-          c.preparedQuery(sql)
-            .execute(io.vertx.sqlclient.Tuple.from(params.toArray)))
+      .withConnection(c =>
+        c.preparedQuery(sql)
+          .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
+      )
       .scala
 }

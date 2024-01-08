@@ -38,9 +38,9 @@ sealed trait AlgoSettings extends AsJson {
 
   def asAlgorithm(mode: AlgoMode)(implicit env: Env): Option[Algorithm]
 
-  def asAlgorithmF(mode: AlgoMode)(
-      implicit env: Env,
-      ec: ExecutionContext): Future[Option[Algorithm]] = {
+  def asAlgorithmF(
+      mode: AlgoMode
+  )(implicit env: Env, ec: ExecutionContext): Future[Option[Algorithm]] = {
     FastFuture.successful(asAlgorithm(mode)(env))
   }
 
@@ -98,18 +98,21 @@ object HSAlgoSettings extends FromJson[HSAlgoSettings] {
 }
 case class HSAlgoSettings(size: Int, secret: String) extends AlgoSettings {
 
-  override def asAlgorithm(mode: AlgoMode)(
-      implicit env: Env): Option[Algorithm] = size match {
-    case 256 => Some(Algorithm.HMAC256(transformValue(secret)))
-    case 384 => Some(Algorithm.HMAC384(transformValue(secret)))
-    case 512 => Some(Algorithm.HMAC512(transformValue(secret)))
-    case _   => None
-  }
-  override def asJson = Json.obj(
-    "type" -> "HSAlgoSettings",
-    "size" -> this.size,
-    "secret" -> this.secret
-  )
+  override def asAlgorithm(
+      mode: AlgoMode
+  )(implicit env: Env): Option[Algorithm] =
+    size match {
+      case 256 => Some(Algorithm.HMAC256(transformValue(secret)))
+      case 384 => Some(Algorithm.HMAC384(transformValue(secret)))
+      case 512 => Some(Algorithm.HMAC512(transformValue(secret)))
+      case _   => None
+    }
+  override def asJson =
+    Json.obj(
+      "type" -> "HSAlgoSettings",
+      "size" -> this.size,
+      "secret" -> this.secret
+    )
 }
 object RSAlgoSettings extends FromJson[RSAlgoSettings] {
   override def fromJson(json: JsValue): Either[Throwable, RSAlgoSettings] =
@@ -125,10 +128,11 @@ object RSAlgoSettings extends FromJson[RSAlgoSettings] {
       case e => Left(e)
     } get
 }
-case class RSAlgoSettings(size: Int,
-                          publicKey: String,
-                          privateKey: Option[String])
-    extends AlgoSettings {
+case class RSAlgoSettings(
+    size: Int,
+    publicKey: String,
+    privateKey: Option[String]
+) extends AlgoSettings {
 
   def getPublicKey(value: String): RSAPublicKey = {
     val publicBytes = ApacheBase64.decodeBase64(
@@ -160,44 +164,53 @@ case class RSAlgoSettings(size: Int,
     }
   }
 
-  override def asAlgorithm(mode: AlgoMode)(
-      implicit env: Env): Option[Algorithm] = size match {
-    case 256 =>
-      Some(
-        Algorithm.RSA256(getPublicKey(transformValue(publicKey)),
-                         privateKey
-                           .filterNot(_.trim.isEmpty)
-                           .map(pk => getPrivateKey(transformValue(pk)))
-                           .orNull)
-      )
-    case 384 =>
-      Some(
-        Algorithm.RSA384(getPublicKey(transformValue(publicKey)),
-                         privateKey
-                           .filterNot(_.trim.isEmpty)
-                           .map(pk => getPrivateKey(transformValue(pk)))
-                           .orNull)
-      )
-    case 512 =>
-      Some(
-        Algorithm.RSA512(getPublicKey(transformValue(publicKey)),
-                         privateKey
-                           .filterNot(_.trim.isEmpty)
-                           .map(pk => getPrivateKey(transformValue(pk)))
-                           .orNull)
-      )
-    case _ => None
-  }
+  override def asAlgorithm(
+      mode: AlgoMode
+  )(implicit env: Env): Option[Algorithm] =
+    size match {
+      case 256 =>
+        Some(
+          Algorithm.RSA256(
+            getPublicKey(transformValue(publicKey)),
+            privateKey
+              .filterNot(_.trim.isEmpty)
+              .map(pk => getPrivateKey(transformValue(pk)))
+              .orNull
+          )
+        )
+      case 384 =>
+        Some(
+          Algorithm.RSA384(
+            getPublicKey(transformValue(publicKey)),
+            privateKey
+              .filterNot(_.trim.isEmpty)
+              .map(pk => getPrivateKey(transformValue(pk)))
+              .orNull
+          )
+        )
+      case 512 =>
+        Some(
+          Algorithm.RSA512(
+            getPublicKey(transformValue(publicKey)),
+            privateKey
+              .filterNot(_.trim.isEmpty)
+              .map(pk => getPrivateKey(transformValue(pk)))
+              .orNull
+          )
+        )
+      case _ => None
+    }
 
-  override def asJson = Json.obj(
-    "type" -> "RSAlgoSettings",
-    "size" -> this.size,
-    "publicKey" -> this.publicKey,
-    "privateKey" -> this.privateKey
-      .map(pk => JsString(pk))
-      .getOrElse(JsNull)
-      .as[JsValue]
-  )
+  override def asJson =
+    Json.obj(
+      "type" -> "RSAlgoSettings",
+      "size" -> this.size,
+      "publicKey" -> this.publicKey,
+      "privateKey" -> this.privateKey
+        .map(pk => JsString(pk))
+        .getOrElse(JsNull)
+        .as[JsValue]
+    )
 }
 object ESAlgoSettings extends FromJson[ESAlgoSettings] {
   override def fromJson(json: JsValue): Either[Throwable, ESAlgoSettings] =
@@ -213,10 +226,11 @@ object ESAlgoSettings extends FromJson[ESAlgoSettings] {
       case e => Left(e)
     } get
 }
-case class ESAlgoSettings(size: Int,
-                          publicKey: String,
-                          privateKey: Option[String])
-    extends AlgoSettings {
+case class ESAlgoSettings(
+    size: Int,
+    publicKey: String,
+    privateKey: Option[String]
+) extends AlgoSettings {
 
   def getPublicKey(value: String): ECPublicKey = {
     val publicBytes = ApacheBase64.decodeBase64(
@@ -248,44 +262,53 @@ case class ESAlgoSettings(size: Int,
     }
   }
 
-  override def asAlgorithm(mode: AlgoMode)(
-      implicit env: Env): Option[Algorithm] = size match {
-    case 256 =>
-      Some(
-        Algorithm.ECDSA256(getPublicKey(transformValue(publicKey)),
-                           privateKey
-                             .filterNot(_.trim.isEmpty)
-                             .map(pk => getPrivateKey(transformValue(pk)))
-                             .orNull)
-      )
-    case 384 =>
-      Some(
-        Algorithm.ECDSA384(getPublicKey(transformValue(publicKey)),
-                           privateKey
-                             .filterNot(_.trim.isEmpty)
-                             .map(pk => getPrivateKey(transformValue(pk)))
-                             .orNull)
-      )
-    case 512 =>
-      Some(
-        Algorithm.ECDSA512(getPublicKey(transformValue(publicKey)),
-                           privateKey
-                             .filterNot(_.trim.isEmpty)
-                             .map(pk => getPrivateKey(transformValue(pk)))
-                             .orNull)
-      )
-    case _ => None
-  }
+  override def asAlgorithm(
+      mode: AlgoMode
+  )(implicit env: Env): Option[Algorithm] =
+    size match {
+      case 256 =>
+        Some(
+          Algorithm.ECDSA256(
+            getPublicKey(transformValue(publicKey)),
+            privateKey
+              .filterNot(_.trim.isEmpty)
+              .map(pk => getPrivateKey(transformValue(pk)))
+              .orNull
+          )
+        )
+      case 384 =>
+        Some(
+          Algorithm.ECDSA384(
+            getPublicKey(transformValue(publicKey)),
+            privateKey
+              .filterNot(_.trim.isEmpty)
+              .map(pk => getPrivateKey(transformValue(pk)))
+              .orNull
+          )
+        )
+      case 512 =>
+        Some(
+          Algorithm.ECDSA512(
+            getPublicKey(transformValue(publicKey)),
+            privateKey
+              .filterNot(_.trim.isEmpty)
+              .map(pk => getPrivateKey(transformValue(pk)))
+              .orNull
+          )
+        )
+      case _ => None
+    }
 
-  override def asJson = Json.obj(
-    "type" -> "ESAlgoSettings",
-    "size" -> this.size,
-    "publicKey" -> this.publicKey,
-    "privateKey" -> this.privateKey
-      .map(pk => JsString(pk))
-      .getOrElse(JsNull)
-      .as[JsValue]
-  )
+  override def asJson =
+    Json.obj(
+      "type" -> "ESAlgoSettings",
+      "size" -> this.size,
+      "publicKey" -> this.publicKey,
+      "privateKey" -> this.privateKey
+        .map(pk => JsString(pk))
+        .getOrElse(JsNull)
+        .as[JsValue]
+    )
 }
 object JWKSAlgoSettings extends FromJson[JWKSAlgoSettings] {
 
@@ -319,12 +342,13 @@ object JWKSAlgoSettings extends FromJson[JWKSAlgoSettings] {
     } get
   }
 }
-case class JWKSAlgoSettings(url: String,
-                            headers: Map[String, String],
-                            timeout: FiniteDuration,
-                            ttl: FiniteDuration,
-                            kty: KeyType)
-    extends AlgoSettings {
+case class JWKSAlgoSettings(
+    url: String,
+    headers: Map[String, String],
+    timeout: FiniteDuration,
+    ttl: FiniteDuration,
+    kty: KeyType
+) extends AlgoSettings {
 
   val logger = Logger("jwks")
 
@@ -346,14 +370,15 @@ case class JWKSAlgoSettings(url: String,
     }
   }
 
-  override def asAlgorithm(mode: AlgoMode)(
-      implicit env: Env): Option[Algorithm] = {
+  override def asAlgorithm(
+      mode: AlgoMode
+  )(implicit env: Env): Option[Algorithm] = {
     Await.result(asAlgorithmF(mode)(env, env.defaultExecutionContext), timeout)
   }
 
-  override def asAlgorithmF(mode: AlgoMode)(
-      implicit env: Env,
-      ec: ExecutionContext): Future[Option[Algorithm]] = {
+  override def asAlgorithmF(
+      mode: AlgoMode
+  )(implicit env: Env, ec: ExecutionContext): Future[Option[Algorithm]] = {
     mode match {
       case InputMode(alg, Some(kid)) => {
         JWKSAlgoSettings.cache.get(url) match {
@@ -399,12 +424,13 @@ case class JWKSAlgoSettings(url: String,
     }
   }
 
-  override def asJson: JsValue = Json.obj(
-    "type" -> "JWKSAlgoSettings",
-    "url" -> url,
-    "timeout" -> timeout.toMillis,
-    "headers" -> headers,
-    "ttl" -> ttl.toMillis,
-    "kty" -> kty.getValue
-  )
+  override def asJson: JsValue =
+    Json.obj(
+      "type" -> "JWKSAlgoSettings",
+      "url" -> url,
+      "timeout" -> timeout.toMillis,
+      "headers" -> headers,
+      "ttl" -> ttl.toMillis,
+      "kty" -> kty.getValue
+    )
 }

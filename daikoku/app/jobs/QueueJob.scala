@@ -57,62 +57,78 @@ class QueueJob(
 
     env.dataStore.notificationRepo
       .forTenant(api.tenant)
-      .deleteLogically(Json.obj(
-        "action.type" ->
-          Json.obj("$in" -> JsArray(Seq(
-            "ApiAccess",
-            "ApiSubscription",
-            "ApiSubscriptionAccept",
-            "ApiSubscriptionReject",
-            "NewPostPublished",
-            "NewIssueOpen",
-            "NewCommentOnIssue",
-            "TransferApiOwnership"
-          ).map(JsString))),
-        "$or" -> Json.arr(
-          Json.obj("action.api" -> api.id.asJson),
-          Json.obj("action.apiName" -> JsString(api.name)),
+      .deleteLogically(
+        Json.obj(
+          "action.type" ->
+            Json.obj(
+              "$in" -> JsArray(
+                Seq(
+                  "ApiAccess",
+                  "ApiSubscription",
+                  "ApiSubscriptionAccept",
+                  "ApiSubscriptionReject",
+                  "NewPostPublished",
+                  "NewIssueOpen",
+                  "NewCommentOnIssue",
+                  "TransferApiOwnership"
+                ).map(JsString)
+              )
+            ),
+          "$or" -> Json.arr(
+            Json.obj("action.api" -> api.id.asJson),
+            Json.obj("action.apiName" -> JsString(api.name))
+          )
         )
-      ))
+      )
   }
 
   private def deleteSubscriptionNotifications(
-      subscription: ApiSubscription): Future[Boolean] = {
+      subscription: ApiSubscription
+  ): Future[Boolean] = {
     env.dataStore.notificationRepo
       .forTenant(subscription.tenant)
-      .deleteLogically(Json.obj(
-        "action.type" ->
-          Json.obj(
-            "$in" -> JsArray(
-              Seq(
-                "ApiKeyRotationInProgress",
-                "ApiKeyRotationEndend",
-                "ApiKeyRefresh"
-              ).map(JsString))),
-        "$or" -> Json.arr(
-          Json.obj("action.clientId" -> JsString(subscription.apiKey.clientId)),
-          Json.obj("action.subscription" -> subscription.id.asJson),
+      .deleteLogically(
+        Json.obj(
+          "action.type" ->
+            Json.obj(
+              "$in" -> JsArray(
+                Seq(
+                  "ApiKeyRotationInProgress",
+                  "ApiKeyRotationEndend",
+                  "ApiKeyRefresh"
+                ).map(JsString)
+              )
+            ),
+          "$or" -> Json.arr(
+            Json
+              .obj("action.clientId" -> JsString(subscription.apiKey.clientId)),
+            Json.obj("action.subscription" -> subscription.id.asJson)
+          )
         )
-      ))
+      )
   }
 
   private def deleteTeamNotifications(team: Team): Future[Boolean] = {
     env.dataStore.notificationRepo
       .forTenant(team.tenant)
-      .deleteLogically(Json.obj(
-        "action.type" ->
-          Json.obj(
-            "$in" -> JsArray(
-              Seq(
-                "TeamAccess",
-                "TeamInvitation",
-                "ApiSubscription",
-                "ApiSubscriptionAccept",
-                "ApiSubscriptionReject",
-                "TransferApiOwnership"
-              ).map(JsString))),
-        "action.team" -> team.id.asJson
-      ))
+      .deleteLogically(
+        Json.obj(
+          "action.type" ->
+            Json.obj(
+              "$in" -> JsArray(
+                Seq(
+                  "TeamAccess",
+                  "TeamInvitation",
+                  "ApiSubscription",
+                  "ApiSubscriptionAccept",
+                  "ApiSubscriptionReject",
+                  "TransferApiOwnership"
+                ).map(JsString)
+              )
+            ),
+          "action.team" -> team.id.asJson
+        )
+      )
   }
 
   private def deleteThirdPartyPaymentClient(team: Team) = {
@@ -126,19 +142,25 @@ class QueueJob(
     }
   }
 
-  private def deleteUserNotifications(user: User,
-                                      tenant: TenantId): Future[Boolean] = {
+  private def deleteUserNotifications(
+      user: User,
+      tenant: TenantId
+  ): Future[Boolean] = {
     env.dataStore.notificationRepo
       .forTenant(tenant)
       .deleteLogically(
         Json.obj(
           "action.type" ->
             Json.obj(
-              "$in" -> JsArray(Seq(
-                "TeamInvitation"
-              ).map(JsString))),
+              "$in" -> JsArray(
+                Seq(
+                  "TeamInvitation"
+                ).map(JsString)
+              )
+            ),
           "action.user" -> user.id.asJson
-        ))
+        )
+      )
   }
 
   private def deleteUserMessages(user: User, tenant: TenantId): Future[Long] = {
@@ -173,36 +195,55 @@ class QueueJob(
         api <- OptionT(
           env.dataStore.apiRepo
             .forTenant(o.tenant)
-            .findById(o.itemId))
+            .findById(o.itemId)
+        )
         _ <- OptionT.liftF(
           env.dataStore.operationRepo
             .forTenant(o.tenant)
-            .save(o.copy(status = OperationStatus.InProgress)))
+            .save(o.copy(status = OperationStatus.InProgress))
+        )
         _ <- OptionT.liftF(
           env.dataStore.apiPostRepo
             .forTenant(o.tenant)
-            .deleteLogically(Json.obj(
-              "_id" -> Json.obj("$in" -> JsArray(api.posts.map(_.asJson))))))
+            .deleteLogically(
+              Json.obj(
+                "_id" -> Json.obj("$in" -> JsArray(api.posts.map(_.asJson)))
+              )
+            )
+        )
         _ <- OptionT.liftF(
           env.dataStore.apiIssueRepo
             .forTenant(o.tenant)
-            .deleteLogically(Json.obj(
-              "_id" -> Json.obj("$in" -> JsArray(api.issues.map(_.asJson))))))
+            .deleteLogically(
+              Json.obj(
+                "_id" -> Json.obj("$in" -> JsArray(api.issues.map(_.asJson)))
+              )
+            )
+        )
         _ <- OptionT.liftF(
           env.dataStore.apiDocumentationPageRepo
             .forTenant(o.tenant)
-            .deleteLogically(Json.obj("_id" -> Json.obj(
-              "$in" -> JsArray(api.documentation.docIds().map(JsString))))))
+            .deleteLogically(
+              Json.obj(
+                "_id" -> Json.obj(
+                  "$in" -> JsArray(api.documentation.docIds().map(JsString))
+                )
+              )
+            )
+        )
         _ <- OptionT.liftF(deleteApiNotifications(api))
         _ <- OptionT.liftF(
-          env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id))
+          env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
+        )
       } yield ()).value
         .map(_ =>
-          logger.debug(
-            s"[deletion job] :: api ${o.itemId} successfully deleted"))
+          logger
+            .debug(s"[deletion job] :: api ${o.itemId} successfully deleted")
+        )
         .recover(e => {
           logger.error(
-            s"[deletion job] :: [id ${o.id.value}] :: error during deletion of api ${o.itemId}: $e")
+            s"[deletion job] :: [id ${o.id.value}] :: error during deletion of api ${o.itemId}: $e"
+          )
           env.dataStore.operationRepo
             .forTenant(o.tenant)
             .save(o.copy(status = OperationStatus.Error))
@@ -215,36 +256,46 @@ class QueueJob(
       _ <- EitherT.liftF(
         env.dataStore.operationRepo
           .forTenant(o.tenant)
-          .save(o.copy(status = OperationStatus.InProgress)))
-      tenant <- EitherT.fromOptionF(env.dataStore.tenantRepo.findById(o.tenant),
-                                    AppError.TenantNotFound)
+          .save(o.copy(status = OperationStatus.InProgress))
+      )
+      tenant <- EitherT.fromOptionF(
+        env.dataStore.tenantRepo.findById(o.tenant),
+        AppError.TenantNotFound
+      )
       subscription <- EitherT.fromOptionF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(o.tenant)
           .findById(o.itemId),
-        AppError.EntityNotFound("subscription"))
+        AppError.EntityNotFound("subscription")
+      )
       api <- EitherT.fromOptionF(
         env.dataStore.apiRepo.forTenant(o.tenant).findById(subscription.api),
-        AppError.ApiNotFound)
+        AppError.ApiNotFound
+      )
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
           .findById(subscription.plan),
-        AppError.PlanNotFound)
+        AppError.PlanNotFound
+      )
       //todo: send notification & mail ?
       _ <- EitherT.liftF(
-        apiService.archiveApiKey(tenant, subscription, plan, enabled = false))
+        apiService.archiveApiKey(tenant, subscription, plan, enabled = false)
+      )
       _ <- EitherT.liftF(
         apiKeyStatsJob
-          .syncForSubscription(subscription, tenant, completed = true))
+          .syncForSubscription(subscription, tenant, completed = true)
+      )
       - <- paymentClient.deleteThirdPartySubscription(
         subscription,
         plan.paymentSettings,
-        subscription.thirdPartySubscriptionInformations)
+        subscription.thirdPartySubscriptionInformations
+      )
       _ <- EitherT.liftF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .deleteByIdLogically(subscription.id))
+          .deleteByIdLogically(subscription.id)
+      )
       _ <- EitherT.liftF(deleteSubscriptionNotifications(subscription))
     } yield ()
 
@@ -253,14 +304,16 @@ class QueueJob(
         case Left(error) =>
           logger.error(
             s"[deletion job] :: [id ${o.id.value}] :: error during deletion of subscription ${o.itemId}: ${error
-              .getErrorMessage()}")
+              .getErrorMessage()}"
+          )
           env.dataStore.operationRepo
             .forTenant(o.tenant)
             .save(o.copy(status = OperationStatus.Error))
             .map(_ => ())
         case Right(_) =>
           logger.debug(
-            s"[deletion job] :: subscription ${o.itemId} successfully deleted")
+            s"[deletion job] :: subscription ${o.itemId} successfully deleted"
+          )
           env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
       }
       .map(_ => ())
@@ -268,23 +321,26 @@ class QueueJob(
 
   private def deleteTeam(o: Operation): Future[Unit] = {
     (for {
-      team <- OptionT(
-        env.dataStore.teamRepo.forTenant(o.tenant).findById(o.itemId))
+      team <-
+        OptionT(env.dataStore.teamRepo.forTenant(o.tenant).findById(o.itemId))
       _ <- OptionT.liftF(
         env.dataStore.operationRepo
           .forTenant(o.tenant)
-          .save(o.copy(status = OperationStatus.InProgress)))
+          .save(o.copy(status = OperationStatus.InProgress))
+      )
       _ <- OptionT.liftF(
-        env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id))
+        env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
+      )
       _ <- OptionT.liftF(deleteTeamNotifications(team))
 //      _ <- OptionT.liftF(deleteThirdPartyPaymentClient(team))
     } yield ()).value
       .map(_ =>
-        logger.debug(
-          s"[deletion job] :: team ${o.itemId} successfully deleted"))
+        logger.debug(s"[deletion job] :: team ${o.itemId} successfully deleted")
+      )
       .recover(e => {
         logger.error(
-          s"[deletion job] :: [id ${o.id}] :: error during deletion of team ${o.itemId}: $e")
+          s"[deletion job] :: [id ${o.id}] :: error during deletion of team ${o.itemId}: $e"
+        )
         env.dataStore.operationRepo
           .forTenant(o.tenant)
           .save(o.copy(status = OperationStatus.Error))
@@ -297,18 +353,21 @@ class QueueJob(
       _ <- OptionT.liftF(
         env.dataStore.operationRepo
           .forTenant(o.tenant)
-          .save(o.copy(status = OperationStatus.InProgress)))
+          .save(o.copy(status = OperationStatus.InProgress))
+      )
       _ <- OptionT.liftF(
-        env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id))
+        env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
+      )
       _ <- OptionT.liftF(deleteUserNotifications(user, o.tenant))
       _ <- OptionT.liftF(deleteUserMessages(user, o.tenant))
     } yield ()).value
       .map(_ =>
-        logger.debug(
-          s"[deletion job] :: user ${o.itemId} successfully deleted"))
+        logger.debug(s"[deletion job] :: user ${o.itemId} successfully deleted")
+      )
       .recover(e => {
         logger.error(
-          s"[deletion job] :: [id ${o.id}] :: error during deletion of user ${o.itemId}: $e")
+          s"[deletion job] :: [id ${o.id}] :: error during deletion of user ${o.itemId}: $e"
+        )
         env.dataStore.operationRepo
           .forTenant(o.tenant)
           .save(o.copy(status = OperationStatus.Error))
@@ -324,28 +383,33 @@ class QueueJob(
     logger.debug(Json.prettyPrint(o.asJson))
     logger.debug("**********************************************")
 
-    val settingsAndInfos = o.payload.map(
-      payload =>
-        ((payload \ "paymentSettings").asOpt(json.PaymentSettingsFormat),
-         (payload \ "thirdPartySubscriptionInformations").asOpt(
-           json.ThirdPartySubscriptionInformationsFormat)))
+    val settingsAndInfos = o.payload.map(payload =>
+      (
+        (payload \ "paymentSettings").asOpt(json.PaymentSettingsFormat),
+        (payload \ "thirdPartySubscriptionInformations").asOpt(
+          json.ThirdPartySubscriptionInformationsFormat
+        )
+      )
+    )
 
     (for {
       consumption <- OptionT(
         env.dataStore.consumptionRepo
           .forTenant(o.tenant)
-          .findByIdNotDeleted(o.itemId))
+          .findByIdNotDeleted(o.itemId)
+      )
       _ <- OptionT(
         Future
           .sequence(settingsAndInfos.map {
             case (settings, informations) =>
-              paymentClient.syncWithThirdParty(consumption,
-                                               settings,
-                                               informations)
+              paymentClient
+                .syncWithThirdParty(consumption, settings, informations)
           }.toList)
-          .map(_.headOption))
+          .map(_.headOption)
+      )
       _ <- OptionT.liftF(
-        env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id))
+        env.dataStore.operationRepo.forTenant(o.tenant).deleteById(o.id)
+      )
     } yield ()).value.map(_ => ())
   }
 
@@ -354,36 +418,45 @@ class QueueJob(
     logger.debug(Json.prettyPrint(o.asJson))
     logger.debug("**********************************************")
 
-    val settingsAndInfos = o.payload.map(
-      payload =>
-        ((payload \ "paymentSettings").asOpt(json.PaymentSettingsFormat),
-         (payload \ "thirdPartySubscriptionInformations").asOpt(
-           json.ThirdPartySubscriptionInformationsFormat)))
+    val settingsAndInfos = o.payload.map(payload =>
+      (
+        (payload \ "paymentSettings").asOpt(json.PaymentSettingsFormat),
+        (payload \ "thirdPartySubscriptionInformations").asOpt(
+          json.ThirdPartySubscriptionInformationsFormat
+        )
+      )
+    )
 
     (for {
       _ <- EitherT.liftF(
         env.dataStore.operationRepo
           .forTenant(o.tenant)
-          .save(o.copy(status = OperationStatus.InProgress)))
+          .save(o.copy(status = OperationStatus.InProgress))
+      )
       apiSubscription <- EitherT.fromOptionF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(o.tenant)
           .findById(o.itemId),
-        AppError.EntityNotFound("api subscription"))
+        AppError.EntityNotFound("api subscription")
+      )
       _ <- settingsAndInfos match {
         case Some((settings, informations)) =>
-          paymentClient.deleteThirdPartySubscription(apiSubscription,
-                                                     settings,
-                                                     informations)
+          paymentClient.deleteThirdPartySubscription(
+            apiSubscription,
+            settings,
+            informations
+          )
         case _ =>
           EitherT.left[JsValue](
-            AppError.EntityConflict("operation payload").future())
+            AppError.EntityConflict("operation payload").future()
+          )
       }
     } yield ()).value
       .map {
         case Left(value) =>
           logger.error(
-            s"[QUEUE JOB] :: ${o.id.value} :: ERROR : ${value.getErrorMessage()}")
+            s"[QUEUE JOB] :: ${o.id.value} :: ERROR : ${value.getErrorMessage()}"
+          )
           env.dataStore.operationRepo
             .forTenant(o.tenant)
             .save(o.copy(status = OperationStatus.Error))
@@ -401,25 +474,29 @@ class QueueJob(
     logger.debug("**********************************************")
 
     val maybeSettings: Option[PaymentSettings] = o.payload.flatMap(settings =>
-      (settings \ "paymentSettings").asOpt(json.PaymentSettingsFormat))
+      (settings \ "paymentSettings").asOpt(json.PaymentSettingsFormat)
+    )
 
     (for {
       _ <- EitherT.liftF(
         env.dataStore.operationRepo
           .forTenant(o.tenant)
-          .save(o.copy(status = OperationStatus.InProgress)))
+          .save(o.copy(status = OperationStatus.InProgress))
+      )
       _ <- maybeSettings match {
         case Some(settings) =>
           paymentClient.deleteThirdPartyProduct(settings, o.tenant)
         case _ =>
           EitherT.left[JsValue](
-            AppError.EntityConflict("operation payload").future())
+            AppError.EntityConflict("operation payload").future()
+          )
       }
     } yield ()).value
       .map {
         case Left(value) =>
           logger.error(
-            s"[QUEUE JOB] :: ${o.id.value} :: ERROR : ${value.getErrorMessage()}")
+            s"[QUEUE JOB] :: ${o.id.value} :: ERROR : ${value.getErrorMessage()}"
+          )
           env.dataStore.operationRepo
             .forTenant(o.tenant)
             .save(o.copy(status = OperationStatus.Error))
@@ -446,9 +523,9 @@ class QueueJob(
   //***************************
   //***************************
 
-  private def awaitF(duration: FiniteDuration)(
-      implicit actorSystem: ActorSystem,
-      ec: ExecutionContext): Future[Unit] = {
+  private def awaitF(
+      duration: FiniteDuration
+  )(implicit actorSystem: ActorSystem, ec: ExecutionContext): Future[Unit] = {
     val p = Promise[Unit]()
     actorSystem.scheduler.scheduleOnce(duration) {
       p.trySuccess(())
@@ -464,7 +541,9 @@ class QueueJob(
           "$and" -> Json.arr(
             Json.obj("status" -> Json.obj("$ne" -> OperationStatus.Error.name)),
             Json.obj("status" -> OperationStatus.Idle.name)
-          )))
+          )
+        )
+      )
       .flatMap {
         case Some(operation) =>
           ((operation.itemType, operation.action) match {
@@ -483,8 +562,11 @@ class QueueJob(
               syncConsumption(operation)
             case (_, _) => FastFuture.successful(())
           }).flatMap(_ =>
-              awaitF(1.second)(env.defaultActorSystem,
-                               env.defaultExecutionContext))
+              awaitF(1.second)(
+                env.defaultActorSystem,
+                env.defaultExecutionContext
+              )
+            )
             .flatMap(_ => deleteFirstOperation())
         case None =>
           FastFuture.successful(())

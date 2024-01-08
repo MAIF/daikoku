@@ -22,14 +22,16 @@ class AuditTrailPurgeJob(env: Env) {
   def start(): Unit = {
     logger.info("Start audit trail purge job")
     logger.info(
-      s"audit by cron ==> ${env.config.auditTrailPurgeByCron} every ${env.config.auditTrailPurgeInterval}")
+      s"audit by cron ==> ${env.config.auditTrailPurgeByCron} every ${env.config.auditTrailPurgeInterval}"
+    )
     if (env.config.auditTrailPurgeByCron && ref.get() == null) {
       ref.set(
         env.defaultActorSystem.scheduler
           .scheduleAtFixedRate(10.seconds, env.config.auditTrailPurgeInterval) {
             () =>
               purge()
-          })
+          }
+      )
     }
   }
 
@@ -39,7 +41,8 @@ class AuditTrailPurgeJob(env: Env) {
 
   def purge() = {
     logger.info(
-      s"Run audit trail purge for last ${env.config.auditTrailPurgeMaxDate}")
+      s"Run audit trail purge for last ${env.config.auditTrailPurgeMaxDate}"
+    )
     env.dataStore.auditTrailRepo
       .forAllTenant()
       .delete(
@@ -48,6 +51,9 @@ class AuditTrailPurgeJob(env: Env) {
             "$lt" -> DateTime
               .now()
               .minus(env.config.auditTrailPurgeMaxDate.toMillis)
-              .getMillis)))
+              .getMillis
+          )
+        )
+      )
   }
 }

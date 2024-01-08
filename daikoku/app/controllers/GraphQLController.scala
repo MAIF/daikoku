@@ -1,6 +1,10 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.ctrls.playJson._
 import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.NotAuthorizedError
 import fr.maif.otoroshi.daikoku.domain._
@@ -27,8 +31,8 @@ class GraphQLController(
     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
     DaikokuApiAction: DaikokuApiAction,
     env: Env,
-    cc: ControllerComponents)
-    extends AbstractController(cc)
+    cc: ControllerComponents
+) extends AbstractController(cc)
     with I18nSupport {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
@@ -38,63 +42,67 @@ class GraphQLController(
 
   val logger: Logger = Logger("GraphQLController")
 
-  def adminApiSearch() = DaikokuApiAction.async(parse.json) { ctx =>
-    val query = (ctx.request.body \ "query").as[String]
-    val variables = (ctx.request.body \ "variables").asOpt[JsValue]
-    val operation = (ctx.request.body \ "operation").asOpt[String]
+  def adminApiSearch() =
+    DaikokuApiAction.async(parse.json) { ctx =>
+      val query = (ctx.request.body \ "query").as[String]
+      val variables = (ctx.request.body \ "variables").asOpt[JsValue]
+      val operation = (ctx.request.body \ "operation").asOpt[String]
 
-    val user = User(
-      id = UserId(IdGenerator.token(32)),
-      tenants = Set(ctx.tenant.id),
-      origins = Set(ctx.tenant.authProvider),
-      name = "generated-user",
-      email = "generated-user@foo.bar",
-      isDaikokuAdmin = true,
-      password = Some("password"),
-      lastTenant = Some(ctx.tenant.id),
-      personalToken = Some(IdGenerator.token(32)),
-      defaultLanguage = None
-    )
-    val generatedContext = DaikokuActionContext(
-      ctx.request,
-      user,
-      tenant = ctx.tenant,
-      session = UserSession(
-        id = DatastoreId(IdGenerator.token(32)),
-        userId = user.id,
-        userName = user.name,
-        userEmail = user.email,
-        impersonatorId = None,
-        impersonatorName = None,
-        impersonatorEmail = None,
-        impersonatorSessionId = None,
-        sessionId = UserSessionId(IdGenerator.token),
-        created = DateTime.now(),
-        expires = DateTime.now().plusSeconds(10),
-        ttl = FiniteDuration(10, TimeUnit.SECONDS)
-      ),
-      None,
-      isTenantAdmin = true,
-      apiCreationPermitted = true
-    )
+      val user = User(
+        id = UserId(IdGenerator.token(32)),
+        tenants = Set(ctx.tenant.id),
+        origins = Set(ctx.tenant.authProvider),
+        name = "generated-user",
+        email = "generated-user@foo.bar",
+        isDaikokuAdmin = true,
+        password = Some("password"),
+        lastTenant = Some(ctx.tenant.id),
+        personalToken = Some(IdGenerator.token(32)),
+        defaultLanguage = None
+      )
+      val generatedContext = DaikokuActionContext(
+        ctx.request,
+        user,
+        tenant = ctx.tenant,
+        session = UserSession(
+          id = DatastoreId(IdGenerator.token(32)),
+          userId = user.id,
+          userName = user.name,
+          userEmail = user.email,
+          impersonatorId = None,
+          impersonatorName = None,
+          impersonatorEmail = None,
+          impersonatorSessionId = None,
+          sessionId = UserSessionId(IdGenerator.token),
+          created = DateTime.now(),
+          expires = DateTime.now().plusSeconds(10),
+          ttl = FiniteDuration(10, TimeUnit.SECONDS)
+        ),
+        None,
+        isTenantAdmin = true,
+        apiCreationPermitted = true
+      )
 
-    executeQuery(generatedContext, query, variables, operation)
-  }
+      executeQuery(generatedContext, query, variables, operation)
+    }
 
-  def adminApiSchema = DaikokuApiAction {
-    Ok(SchemaRenderer.renderSchema(schema))
-  }
+  def adminApiSchema =
+    DaikokuApiAction {
+      Ok(SchemaRenderer.renderSchema(schema))
+    }
 
-  def search() = DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
-    val query = (ctx.request.body \ "query").as[String]
-    val variables = (ctx.request.body \ "variables").asOpt[JsValue]
-    val operation = (ctx.request.body \ "operation").asOpt[String]
-    executeQuery(ctx, query, variables, operation)
-  }
+  def search() =
+    DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
+      val query = (ctx.request.body \ "query").as[String]
+      val variables = (ctx.request.body \ "variables").asOpt[JsValue]
+      val operation = (ctx.request.body \ "operation").asOpt[String]
+      executeQuery(ctx, query, variables, operation)
+    }
 
-  def renderSchema = DaikokuAction {
-    Ok(SchemaRenderer.renderSchema(schema))
-  }
+  def renderSchema =
+    DaikokuAction {
+      Ok(SchemaRenderer.renderSchema(schema))
+    }
 
   case object TooComplexQueryError extends Exception("Query is too expensive.")
 
@@ -106,10 +114,12 @@ class GraphQLController(
       HandledException(error.getMessage)
   }
 
-  private def executeQuery(ctx: DaikokuActionContext[JsValue],
-                           query: String,
-                           variables: Option[JsValue],
-                           operation: Option[String]) =
+  private def executeQuery(
+      ctx: DaikokuActionContext[JsValue],
+      query: String,
+      variables: Option[JsValue],
+      operation: Option[String]
+  ) =
     QueryParser.parse(query) match {
       case Success(queryAst) =>
         Executor
@@ -125,9 +135,8 @@ class GraphQLController(
               QueryReducer
                 .rejectMaxDepth[(DataStore, DaikokuActionContext[JsValue])](15),
               QueryReducer.rejectComplexQueries[
-                (DataStore, DaikokuActionContext[JsValue])](
-                4000,
-                (_, _) => TooComplexQueryError)
+                (DataStore, DaikokuActionContext[JsValue])
+              ](4000, (_, _) => TooComplexQueryError)
             )
           )
           .map(Ok(_))
@@ -144,9 +153,14 @@ class GraphQLController(
             Json.obj(
               "syntaxError" -> error.getMessage,
               "locations" -> Json.arr(
-                Json.obj("line" -> error.originalError.position.line,
-                         "column" -> error.originalError.position.column))
-            )))
+                Json.obj(
+                  "line" -> error.originalError.position.line,
+                  "column" -> error.originalError.position.column
+                )
+              )
+            )
+          )
+        )
 
       case Failure(error) =>
         throw error

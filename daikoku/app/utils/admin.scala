@@ -6,7 +6,11 @@ import com.auth0.jwt.JWT
 import com.google.common.base.Charsets
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain.{Tenant, ValueType}
-import fr.maif.otoroshi.daikoku.env.{Env, LocalAdminApiConfig, OtoroshiAdminApiConfig}
+import fr.maif.otoroshi.daikoku.env.{
+  Env,
+  LocalAdminApiConfig,
+  OtoroshiAdminApiConfig
+}
 import fr.maif.otoroshi.daikoku.login.TenantHelper
 import fr.maif.otoroshi.daikoku.utils.Errors
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -32,18 +36,22 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
 
   def decodeBase64(encoded: String): String =
     new String(Base64.getUrlDecoder.decode(encoded), Charsets.UTF_8)
-  private def extractUsernamePassword(header: String): Option[(String, String)] = {
+  private def extractUsernamePassword(
+      header: String
+  ): Option[(String, String)] = {
     val base64 = header.replace("Basic ", "").replace("basic ", "")
     Option(base64)
       .map(decodeBase64)
       .map(_.split(":").toSeq)
       .flatMap(a =>
-        a.headOption.flatMap(head => a.lastOption.map(last => (head, last))))
+        a.headOption.flatMap(head => a.lastOption.map(last => (head, last)))
+      )
   }
 
   override def invokeBlock[A](
       request: Request[A],
-      block: DaikokuApiActionContext[A] => Future[Result]): Future[Result] = {
+      block: DaikokuApiActionContext[A] => Future[Result]
+  ): Future[Result] = {
     TenantHelper.withTenant(request, env) { tenant =>
       env.config.adminApiConfig match {
         case OtoroshiAdminApiConfig(headerName, algo) =>
@@ -53,53 +61,66 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
                 case Success(decoded) if !decoded.getClaim("apikey").isNull =>
                   block(DaikokuApiActionContext[A](request, tenant))
                 case _ =>
-                  Errors.craftResponseResult("No api key provided",
-                                             Results.Unauthorized,
-                                             request,
-                                             None,
-                                             env)
+                  Errors.craftResponseResult(
+                    "No api key provided",
+                    Results.Unauthorized,
+                    request,
+                    None,
+                    env
+                  )
               }
             case _ =>
-              Errors.craftResponseResult("No api key provided",
-                                         Results.Unauthorized,
-                                         request,
-                                         None,
-                                         env)
+              Errors.craftResponseResult(
+                "No api key provided",
+                Results.Unauthorized,
+                request,
+                None,
+                env
+              )
           }
         case LocalAdminApiConfig(_) =>
           request.headers.get("Authorization") match {
             case Some(auth) if auth.startsWith("Basic ") =>
               extractUsernamePassword(auth) match {
                 case None =>
-                  Errors.craftResponseResult("No api key provided",
-                                             Results.Unauthorized,
-                                             request,
-                                             None,
-                                             env)
+                  Errors.craftResponseResult(
+                    "No api key provided",
+                    Results.Unauthorized,
+                    request,
+                    None,
+                    env
+                  )
                 case Some((clientId, clientSecret)) =>
                   env.dataStore.apiSubscriptionRepo
                     .forTenant(tenant)
                     .findNotDeleted(
-                      Json.obj("apiKey.clientId" -> clientId,
-                               "apiKey.clientSecret" -> clientSecret))
+                      Json.obj(
+                        "apiKey.clientId" -> clientId,
+                        "apiKey.clientSecret" -> clientSecret
+                      )
+                    )
                     .map(_.length == 1)
                     .flatMap({
                       case done if done =>
                         block(DaikokuApiActionContext[A](request, tenant))
                       case _ =>
-                        Errors.craftResponseResult("No api key provided",
-                                                   Results.Unauthorized,
-                                                   request,
-                                                   None,
-                                                   env)
+                        Errors.craftResponseResult(
+                          "No api key provided",
+                          Results.Unauthorized,
+                          request,
+                          None,
+                          env
+                        )
                     })
               }
             case _ =>
-              Errors.craftResponseResult("No api key provided",
+              Errors.craftResponseResult(
+                "No api key provided",
                 Results.Unauthorized,
                 request,
                 None,
-                env)
+                env
+              )
           }
       }
     }
@@ -108,33 +129,42 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
   override protected def executionContext: ExecutionContext = ec
 }
 
-class DaikokuApiActionWithoutTenant(val parser: BodyParser[AnyContent],
-                                    env: Env)
-    extends ActionBuilder[Request, AnyContent]
+class DaikokuApiActionWithoutTenant(
+    val parser: BodyParser[AnyContent],
+    env: Env
+) extends ActionBuilder[Request, AnyContent]
     with ActionFunction[Request, Request] {
 
   implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
 
   override def invokeBlock[A](
       request: Request[A],
-      block: Request[A] => Future[Result]): Future[Result] = {
+      block: Request[A] => Future[Result]
+  ): Future[Result] = {
     env.config.adminApiConfig match {
       case OtoroshiAdminApiConfig(headerName, algo) =>
         request.headers.get(headerName) match {
           case Some(value) =>
             Try(JWT.require(algo).build().verify(value)) match {
-              case Success(decoded) if !decoded.getClaim("apikey").isNull => block(request)
-              case _ => Errors.craftResponseResult("No api key provided",
-                Results.Unauthorized,
-                request,
-                None,
-                env)
+              case Success(decoded) if !decoded.getClaim("apikey").isNull =>
+                block(request)
+              case _ =>
+                Errors.craftResponseResult(
+                  "No api key provided",
+                  Results.Unauthorized,
+                  request,
+                  None,
+                  env
+                )
             }
-          case _ => Errors.craftResponseResult("No api key provided",
-            Results.Unauthorized,
-            request,
-            None,
-            env)
+          case _ =>
+            Errors.craftResponseResult(
+              "No api key provided",
+              Results.Unauthorized,
+              request,
+              None,
+              env
+            )
         }
       case LocalAdminApiConfig(keyValue) =>
         request
@@ -142,11 +172,13 @@ class DaikokuApiActionWithoutTenant(val parser: BodyParser[AnyContent],
           .orElse(request.headers.get("X-Api-Key")) match {
           case Some(key) if key == keyValue => block(request)
           case _ =>
-            Errors.craftResponseResult("No api key provided",
-                                       Results.Unauthorized,
-                                       request,
-                                       None,
-                                       env)
+            Errors.craftResponseResult(
+              "No api key provided",
+              Results.Unauthorized,
+              request,
+              None,
+              env
+            )
         }
     }
   }
@@ -157,8 +189,8 @@ class DaikokuApiActionWithoutTenant(val parser: BodyParser[AnyContent],
 abstract class AdminApiController[Of, Id <: ValueType](
     DaikokuApiAction: DaikokuApiAction,
     env: Env,
-    cc: ControllerComponents)
-    extends AbstractController(cc) {
+    cc: ControllerComponents
+) extends AbstractController(cc) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
@@ -175,206 +207,255 @@ abstract class AdminApiController[Of, Id <: ValueType](
   def validate(entity: Of): EitherT[Future, AppError, Of]
   def getId(entity: Of): Id
 
-  def findAll(): Action[AnyContent] = DaikokuApiAction.async { ctx =>
-    val paginationPage: Int = ctx.request.queryString
-      .get("page")
-      .flatMap(_.headOption)
-      .map(_.toInt)
-      .getOrElse(1)
-    val paginationPageSize: Int =
-      ctx.request.queryString
-        .get("pageSize")
+  def findAll(): Action[AnyContent] =
+    DaikokuApiAction.async { ctx =>
+      val paginationPage: Int = ctx.request.queryString
+        .get("page")
         .flatMap(_.headOption)
         .map(_.toInt)
-        .getOrElse(Int.MaxValue)
-    val paginationPosition = (paginationPage - 1) * paginationPageSize
-    val allEntities =
-      if (ctx.request.queryString.get("notDeleted").exists(_.contains("true"))) {
-        entityStore(ctx.tenant, env.dataStore).findAllNotDeleted()
-      } else {
-        entityStore(ctx.tenant, env.dataStore).findAll()
-      }
-    allEntities
-      .map(
-        all =>
-          all.slice(paginationPosition, paginationPosition + paginationPageSize)
-            .map(entity => toJson(entity)))
-      .map { all =>
-        if (ctx.request.queryString.get("stream").exists(_.contains("true"))) {
-          Ok.sendEntity(
-            HttpEntity.Streamed(
-              Source(all.map(a => ByteString(Json.stringify(a))).toList),
-              None,
-              Some("application/x-ndjson")))
+        .getOrElse(1)
+      val paginationPageSize: Int =
+        ctx.request.queryString
+          .get("pageSize")
+          .flatMap(_.headOption)
+          .map(_.toInt)
+          .getOrElse(Int.MaxValue)
+      val paginationPosition = (paginationPage - 1) * paginationPageSize
+      val allEntities =
+        if (
+          ctx.request.queryString.get("notDeleted").exists(_.contains("true"))
+        ) {
+          entityStore(ctx.tenant, env.dataStore).findAllNotDeleted()
         } else {
-          Ok(JsArray(all))
+          entityStore(ctx.tenant, env.dataStore).findAll()
         }
-      }
-  }
-
-  def findById(id: String): Action[AnyContent] = DaikokuApiAction.async { ctx =>
-    val notDeleted: Boolean =
-      ctx.request.queryString.get("notDeleted").exists(_.contains("true"))
-    if (notDeleted) {
-      entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id).flatMap {
-        case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
-        case None =>
-          Errors.craftResponseResult(s"$entityName not found",
-            Results.NotFound,
-            ctx.request,
-            None,
-            env)
-      }
-    } else {
-      entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
-        case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
-        case None =>
-          Errors.craftResponseResult(s"$entityName not found",
-            Results.NotFound,
-            ctx.request,
-            None,
-            env)
-      }
-    }
-  }
-
-  def createEntity(): Action[JsValue] = DaikokuApiAction.async(parse.json) { ctx =>
-    fromJson(ctx.request.body) match {
-      case Left(e) =>
-        logger.error(s"Bad $entityName format", new RuntimeException(e))
-        Errors.craftResponseResult(s"Bad $entityName format",
-                                   Results.BadRequest,
-                                   ctx.request,
-                                   None,
-                                   env)
-      case Right(newEntity) =>
-
-        entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(getId(newEntity).value).flatMap {
-          case Some(_) => AppError.EntityConflict("entity with same id already exists").renderF()
-          case None => validate(newEntity)
-            .map(entity => entityStore(ctx.tenant, env.dataStore)
-              .save(entity)
-              .map(_ => Created(toJson(entity))))
-            .leftMap(_.renderF())
-            .merge.flatten
-        }
-
-    }
-  }
-
-  def updateEntity(id: String): Action[JsValue] = DaikokuApiAction.async(parse.json) { ctx =>
-    entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
-      case None =>
-        Errors.craftResponseResult(s"Entity $entityName not found",
-                                   Results.NotFound,
-                                   ctx.request,
-                                   None,
-                                   env)
-      case Some(_) =>
-        fromJson(ctx.request.body) match {
-          case Left(e) =>
-            logger.error(s"Bad $entityName format", new RuntimeException(e))
-            Errors.craftResponseResult(s"Bad $entityName format",
-                                       Results.BadRequest,
-                                       ctx.request,
-                                       None,
-                                       env)
-          case Right(newEntity) =>
-            validate(newEntity)
-              .map(entity => entityStore(ctx.tenant, env.dataStore)
-                .save(entity)
-                .map(_ => NoContent))
-              .leftMap(_.renderF())
-              .merge.flatten
+      allEntities
+        .map(all =>
+          all
+            .slice(paginationPosition, paginationPosition + paginationPageSize)
+            .map(entity => toJson(entity))
+        )
+        .map { all =>
+          if (
+            ctx.request.queryString.get("stream").exists(_.contains("true"))
+          ) {
+            Ok.sendEntity(
+              HttpEntity.Streamed(
+                Source(all.map(a => ByteString(Json.stringify(a))).toList),
+                None,
+                Some("application/x-ndjson")
+              )
+            )
+          } else {
+            Ok(JsArray(all))
+          }
         }
     }
-  }
 
-  def patchEntity(id: String): Action[JsValue] = DaikokuApiAction.async(parse.json) { ctx =>
-    object JsonPatchHelpers {
-      import diffson.playJson.DiffsonProtocol._
-      import play.api.libs.json._
-
-      def patchJson(patchOps: JsValue, document: JsValue): Option[JsValue] = {
-        val patch = diffson.playJson.DiffsonProtocol.JsonPatchFormat.reads(patchOps).get
-        patch.apply(document) match {
-          case JsSuccess(value, path) => value.some
-          case JsError(errors) =>
-            logger.error(s"error during patch entity : $errors")
-            None
+  def findById(id: String): Action[AnyContent] =
+    DaikokuApiAction.async { ctx =>
+      val notDeleted: Boolean =
+        ctx.request.queryString.get("notDeleted").exists(_.contains("true"))
+      if (notDeleted) {
+        entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id).flatMap {
+          case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
+          case None =>
+            Errors.craftResponseResult(
+              s"$entityName not found",
+              Results.NotFound,
+              ctx.request,
+              None,
+              env
+            )
         }
-      }
-    }
-
-    val fu: Future[Option[Of]] =
-      if (ctx.request.queryString
-            .get("notDeleted")
-            .exists(_.contains("true"))) {
-        entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id)
       } else {
-        entityStore(ctx.tenant, env.dataStore).findById(id)
+        entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
+          case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
+          case None =>
+            Errors.craftResponseResult(
+              s"$entityName not found",
+              Results.NotFound,
+              ctx.request,
+              None,
+              env
+            )
+        }
       }
+    }
 
-    def finalizePatch(patchedJson: JsValue): Future[Result] = {
-      fromJson(patchedJson) match {
+  def createEntity(): Action[JsValue] =
+    DaikokuApiAction.async(parse.json) { ctx =>
+      fromJson(ctx.request.body) match {
         case Left(e) =>
           logger.error(s"Bad $entityName format", new RuntimeException(e))
-          Errors.craftResponseResult(s"Bad $entityName format",
-                                     Results.BadRequest,
-                                     ctx.request,
-                                     None,
-                                     env)
-        case Right(patchedEntity) =>
-          validate(patchedEntity)
-            .map(entity => entityStore(ctx.tenant, env.dataStore)
-              .save(entity)
-              .map(_ => NoContent))
-            .leftMap(_.renderF())
-            .merge.flatten
+          Errors.craftResponseResult(
+            s"Bad $entityName format",
+            Results.BadRequest,
+            ctx.request,
+            None,
+            env
+          )
+        case Right(newEntity) =>
+          entityStore(ctx.tenant, env.dataStore)
+            .findByIdNotDeleted(getId(newEntity).value)
+            .flatMap {
+              case Some(_) =>
+                AppError
+                  .EntityConflict("entity with same id already exists")
+                  .renderF()
+              case None =>
+                validate(newEntity)
+                  .map(entity =>
+                    entityStore(ctx.tenant, env.dataStore)
+                      .save(entity)
+                      .map(_ => Created(toJson(entity)))
+                  )
+                  .leftMap(_.renderF())
+                  .merge
+                  .flatten
+            }
+
       }
     }
 
-    val value: Future[Result] = fu.flatMap {
-      case None =>
-        Errors.craftResponseResult(s"Entity $entityName not found",
-                                   Results.NotFound,
-                                   ctx.request,
-                                   None,
-                                   env)
-      case Some(entity) =>
-        val currentJson = toJson(entity)
+  def updateEntity(id: String): Action[JsValue] =
+    DaikokuApiAction.async(parse.json) { ctx =>
+      entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
+        case None =>
+          Errors.craftResponseResult(
+            s"Entity $entityName not found",
+            Results.NotFound,
+            ctx.request,
+            None,
+            env
+          )
+        case Some(_) =>
+          fromJson(ctx.request.body) match {
+            case Left(e) =>
+              logger.error(s"Bad $entityName format", new RuntimeException(e))
+              Errors.craftResponseResult(
+                s"Bad $entityName format",
+                Results.BadRequest,
+                ctx.request,
+                None,
+                env
+              )
+            case Right(newEntity) =>
+              validate(newEntity)
+                .map(entity =>
+                  entityStore(ctx.tenant, env.dataStore)
+                    .save(entity)
+                    .map(_ => NoContent)
+                )
+                .leftMap(_.renderF())
+                .merge
+                .flatten
+          }
+      }
+    }
 
-        ctx.request.body match {
-          case JsArray(_) =>
-            JsonPatchHelpers.patchJson(ctx.request.body, currentJson) match {
-              case Some(newJson) => finalizePatch(newJson)
-              case None => AppError.InternalServerError("parsing error").renderF()
-            }
+  def patchEntity(id: String): Action[JsValue] =
+    DaikokuApiAction.async(parse.json) { ctx =>
+      object JsonPatchHelpers {
+        import diffson.playJson.DiffsonProtocol._
+        import play.api.libs.json._
 
-          case JsObject(_) =>
-            val newJson =
-              currentJson.as[JsObject].deepMerge(ctx.request.body.as[JsObject])
-            finalizePatch(newJson)
-          case _ =>
-            FastFuture.successful(
-              BadRequest(
-                Json.obj("error" -> "[patch error] wrong patch format")))
+        def patchJson(patchOps: JsValue, document: JsValue): Option[JsValue] = {
+          val patch =
+            diffson.playJson.DiffsonProtocol.JsonPatchFormat.reads(patchOps).get
+          patch.apply(document) match {
+            case JsSuccess(value, path) => value.some
+            case JsError(errors) =>
+              logger.error(s"error during patch entity : $errors")
+              None
+          }
+        }
+      }
+
+      val fu: Future[Option[Of]] =
+        if (
+          ctx.request.queryString
+            .get("notDeleted")
+            .exists(_.contains("true"))
+        ) {
+          entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id)
+        } else {
+          entityStore(ctx.tenant, env.dataStore).findById(id)
         }
 
-    }
-    value
-  }
+      def finalizePatch(patchedJson: JsValue): Future[Result] = {
+        fromJson(patchedJson) match {
+          case Left(e) =>
+            logger.error(s"Bad $entityName format", new RuntimeException(e))
+            Errors.craftResponseResult(
+              s"Bad $entityName format",
+              Results.BadRequest,
+              ctx.request,
+              None,
+              env
+            )
+          case Right(patchedEntity) =>
+            validate(patchedEntity)
+              .map(entity =>
+                entityStore(ctx.tenant, env.dataStore)
+                  .save(entity)
+                  .map(_ => NoContent)
+              )
+              .leftMap(_.renderF())
+              .merge
+              .flatten
+        }
+      }
 
-  def deleteEntity(id: String): Action[AnyContent] = DaikokuApiAction.async { ctx =>
-    if (ctx.request.queryString.get("logically").exists(_.contains("true"))) {
-      entityStore(ctx.tenant, env.dataStore)
-        .deleteByIdLogically(id)
-        .map(_ => Ok(Json.obj("done" -> true)))
-    } else {
-      entityStore(ctx.tenant, env.dataStore)
-        .deleteById(id)
-        .map(_ => Ok(Json.obj("done" -> true)))
+      val value: Future[Result] = fu.flatMap {
+        case None =>
+          Errors.craftResponseResult(
+            s"Entity $entityName not found",
+            Results.NotFound,
+            ctx.request,
+            None,
+            env
+          )
+        case Some(entity) =>
+          val currentJson = toJson(entity)
+
+          ctx.request.body match {
+            case JsArray(_) =>
+              JsonPatchHelpers.patchJson(ctx.request.body, currentJson) match {
+                case Some(newJson) => finalizePatch(newJson)
+                case None =>
+                  AppError.InternalServerError("parsing error").renderF()
+              }
+
+            case JsObject(_) =>
+              val newJson =
+                currentJson
+                  .as[JsObject]
+                  .deepMerge(ctx.request.body.as[JsObject])
+              finalizePatch(newJson)
+            case _ =>
+              FastFuture.successful(
+                BadRequest(
+                  Json.obj("error" -> "[patch error] wrong patch format")
+                )
+              )
+          }
+
+      }
+      value
     }
-  }
+
+  def deleteEntity(id: String): Action[AnyContent] =
+    DaikokuApiAction.async { ctx =>
+      if (ctx.request.queryString.get("logically").exists(_.contains("true"))) {
+        entityStore(ctx.tenant, env.dataStore)
+          .deleteByIdLogically(id)
+          .map(_ => Ok(Json.obj("done" -> true)))
+      } else {
+        entityStore(ctx.tenant, env.dataStore)
+          .deleteById(id)
+          .map(_ => Ok(Json.obj("done" -> true)))
+      }
+    }
 
 }

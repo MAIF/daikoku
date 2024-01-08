@@ -66,21 +66,24 @@ object TenantProvider {
   val values: Seq[TenantProvider] =
     Seq(Local, Header, Hostname)
 
-  def apply(name: String): Option[TenantProvider] = name.toLowerCase() match {
-    case "Local"    => Some(Local)
-    case "local"    => Some(Local)
-    case "Header"   => Some(Header)
-    case "header"   => Some(Header)
-    case "Hostname" => Some(Hostname)
-    case "hostname" => Some(Hostname)
-    case _          => None
-  }
+  def apply(name: String): Option[TenantProvider] =
+    name.toLowerCase() match {
+      case "Local"    => Some(Local)
+      case "local"    => Some(Local)
+      case "Header"   => Some(Header)
+      case "header"   => Some(Header)
+      case "Hostname" => Some(Hostname)
+      case "hostname" => Some(Hostname)
+      case _          => None
+    }
 }
 
 case class AdminConfig(name: String, email: String, password: String)
 
-case class DataConfig(from: Option[String],
-                      headers: Map[String, String] = Map.empty[String, String])
+case class DataConfig(
+    from: Option[String],
+    headers: Map[String, String] = Map.empty[String, String]
+)
 
 case class InitConfig(host: String, admin: AdminConfig, data: DataConfig)
 
@@ -128,7 +131,8 @@ object AdminApiConfig {
         OtoroshiAdminApiConfig(
           config.getOptional[String]("daikoku.api.headerName").get,
           Algorithm.HMAC512(
-            config.getOptional[String]("daikoku.api.headerSecret").get)
+            config.getOptional[String]("daikoku.api.headerSecret").get
+          )
         )
       case _ =>
         LocalAdminApiConfig(config.getOptional[String]("daikoku.api.key").get)
@@ -258,33 +262,39 @@ sealed trait Env {
   def defaultExecutionContext: ExecutionContext
 
   def dataStore: DataStore
-  def updateDataStore(newDataStore: DataStore)(
-      implicit ec: ExecutionContext): Future[Unit]
+  def updateDataStore(newDataStore: DataStore)(implicit
+      ec: ExecutionContext
+  ): Future[Unit]
   def assetsStore: AssetsDataStore
 
   def wsClient: WSClient
 
   def config: Config
   def rawConfiguration: Configuration
-  def identityFilters(implicit mat: Materializer,
-                      ec: ExecutionContext): Seq[EssentialFilter]
+  def identityFilters(implicit
+      mat: Materializer,
+      ec: ExecutionContext
+  ): Seq[EssentialFilter]
 
   def translator: Translator
 
-  def expositionFilters(implicit mat: Materializer,
-                        ec: ExecutionContext): Seq[EssentialFilter]
+  def expositionFilters(implicit
+      mat: Materializer,
+      ec: ExecutionContext
+  ): Seq[EssentialFilter]
 
   def getDaikokuUrl(tenant: Tenant, path: String): String
 }
 
-class DaikokuEnv(ws: WSClient,
-                 val environment: Environment,
-                 configuration: Configuration,
-                 context: Context,
-                 messagesApi: MessagesApi,
-                 interpreter: Translator,
-                 pgPool: PgPool)
-    extends Env {
+class DaikokuEnv(
+    ws: WSClient,
+    val environment: Environment,
+    configuration: Configuration,
+    context: Context,
+    messagesApi: MessagesApi,
+    interpreter: Translator,
+    pgPool: PgPool
+) extends Env {
 
   val actorSystem: ActorSystem = ActorSystem("daikoku")
   implicit val materializer: Materializer =
@@ -295,7 +305,8 @@ class DaikokuEnv(ws: WSClient,
 
   val auditActor: ActorRef =
     actorSystem.actorOf(
-      AuditActorSupervizer.props(this, messagesApi, interpreter))
+      AuditActorSupervizer.props(this, messagesApi, interpreter)
+    )
 
   private val daikokuConfig = new Config(configuration)
 
@@ -304,9 +315,11 @@ class DaikokuEnv(ws: WSClient,
        |please run Daikoku in v13 to run database migration and then run the actual version""".stripMargin
   private var _dataStore: DataStore =
     configuration.getOptional[String]("daikoku.storage") match {
-      case Some("postgres") => new PostgresDataStore(configuration, this, pgPool)
+      case Some("postgres") =>
+        new PostgresDataStore(configuration, this, pgPool)
       case Some("mongo") => throw new RuntimeException(mongoErrorMessage)
-      case Some(e) => throw new RuntimeException(s"Bad storage value from conf: $e")
+      case Some(e) =>
+        throw new RuntimeException(s"Bad storage value from conf: $e")
       case None => throw new RuntimeException("No storage found from conf")
     }
 
@@ -330,8 +343,9 @@ class DaikokuEnv(ws: WSClient,
 
   override def assetsStore: AssetsDataStore = s3assetsStore
 
-  override def updateDataStore(newDataStore: DataStore)(
-      implicit ec: ExecutionContext): Future[Unit] = {
+  override def updateDataStore(
+      newDataStore: DataStore
+  )(implicit ec: ExecutionContext): Future[Unit] = {
     _dataStore
       .stop()
       .map { _ =>
@@ -352,10 +366,11 @@ class DaikokuEnv(ws: WSClient,
           }).map { _ =>
             config.init.data.from match {
               case Some(path)
-                  if path.startsWith("http://") || path.startsWith(
-                    "https://") =>
+                  if path.startsWith("http://") || path
+                    .startsWith("https://") =>
                 AppLogger.warn(
-                  s"Main dataStore seems to be empty, importing from $path ...")
+                  s"Main dataStore seems to be empty, importing from $path ..."
+                )
                 implicit val ec: ExecutionContext = defaultExecutionContext
                 implicit val env: DaikokuEnv = this
                 val initialDataFu = wsClient
@@ -368,13 +383,17 @@ class DaikokuEnv(ws: WSClient,
                     case resp if resp.status == 200 =>
                       dataStore.importFromStream(resp.bodyAsSource)
                     case resp =>
-                      FastFuture.failed(new RuntimeException(
-                        s"Bad response from $path: ${resp.status} - ${resp.body}"))
+                      FastFuture.failed(
+                        new RuntimeException(
+                          s"Bad response from $path: ${resp.status} - ${resp.body}"
+                        )
+                      )
                   }
                 Await.result(initialDataFu, 10 seconds)
               case Some(path) =>
                 AppLogger.warn(
-                  s"Main dataStore seems to be empty, importing from $path ...")
+                  s"Main dataStore seems to be empty, importing from $path ..."
+                )
                 implicit val ec: ExecutionContext = defaultExecutionContext
                 implicit val env: DaikokuEnv = this
                 val initialDataFu =
@@ -391,7 +410,8 @@ class DaikokuEnv(ws: WSClient,
 
                 AppLogger.warn("")
                 AppLogger.warn(
-                  "Main dataStore seems to be empty, generating initial data ...")
+                  "Main dataStore seems to be empty, generating initial data ..."
+                )
                 val userId = UserId(IdGenerator.token(32))
                 val administrationTeamId = TeamId("administration")
                 val adminApiDefaultTenantId =
@@ -403,7 +423,8 @@ class DaikokuEnv(ws: WSClient,
                   name = s"default-admin-team",
                   description = s"The admin team for the default tenant",
                   avatar = Some(
-                    s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"),
+                    s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"
+                  ),
                   users = Set(UserWithPermission(userId, Administrator)),
                   authorizedOtoroshiGroups = Set.empty
                 )
@@ -452,7 +473,8 @@ class DaikokuEnv(ws: WSClient,
                   style = Some(
                     DaikokuStyle(
                       title = "Daikoku Default Tenant"
-                    )),
+                    )
+                  ),
                   contact = "contact@foo.bar",
                   mailerSettings = Some(ConsoleMailerSettings()),
                   authProvider = AuthProvider.Local,
@@ -482,30 +504,34 @@ class DaikokuEnv(ws: WSClient,
                   isDaikokuAdmin = true,
                   lastTenant = Some(tenant.id),
                   password = Some(
-                    BCrypt.hashpw(config.init.admin.password,
-                                  BCrypt.gensalt())),
+                    BCrypt.hashpw(config.init.admin.password, BCrypt.gensalt())
+                  ),
                   personalToken = Some(IdGenerator.token(32)),
                   defaultLanguage = None
                 )
                 val initialDataFu = for {
                   _ <- dataStore.tenantRepo.save(tenant)
                   _ <- dataStore.teamRepo.forTenant(tenant.id).save(team)
-                  _ <- dataStore.teamRepo
-                    .forTenant(tenant.id)
-                    .save(defaultAdminTeam)
-                  _ <- dataStore.apiRepo
-                    .forTenant(tenant.id)
-                    .save(adminApiDefaultTenant)
+                  _ <-
+                    dataStore.teamRepo
+                      .forTenant(tenant.id)
+                      .save(defaultAdminTeam)
+                  _ <-
+                    dataStore.apiRepo
+                      .forTenant(tenant.id)
+                      .save(adminApiDefaultTenant)
                   _ <- dataStore.userRepo.save(user)
                 } yield ()
 
                 Await.result(initialDataFu, 10 seconds)
                 AppLogger.warn("")
                 AppLogger.warn(
-                  s"You can log in with admin@daikoku.io / ${config.init.admin.password}")
+                  s"You can log in with admin@daikoku.io / ${config.init.admin.password}"
+                )
                 AppLogger.warn("")
                 AppLogger.warn(
-                  "Please avoid using the default tenant for anything else than configuring Daikoku")
+                  "Please avoid using the default tenant for anything else than configuring Daikoku"
+                )
                 AppLogger.warn("")
             }
           }
@@ -543,20 +569,24 @@ class DaikokuEnv(ws: WSClient,
     Await.result(actorSystem.terminate(), 20.seconds)
   }
 
-  def identityFilters(implicit mat: Materializer,
-                      ec: ExecutionContext): Seq[EssentialFilter] =
+  def identityFilters(implicit
+      mat: Materializer,
+      ec: ExecutionContext
+  ): Seq[EssentialFilter] =
     Seq(new LoginFilter(this)(mat, ec))
 
-  def expositionFilters(implicit mat: Materializer,
-                        ec: ExecutionContext): Seq[EssentialFilter] =
+  def expositionFilters(implicit
+      mat: Materializer,
+      ec: ExecutionContext
+  ): Seq[EssentialFilter] =
     configuration.getOptional[String]("daikoku.exposition.provider") match {
       case Some("otoroshi") =>
         Seq(
           new OtoroshiExpositionFilter(
-            configuration.get[String](
-              "daikoku.exposition.otoroshi.stateHeaderName"),
-            configuration.get[String](
-              "daikoku.exposition.otoroshi.stateRespHeaderName"),
+            configuration
+              .get[String]("daikoku.exposition.otoroshi.stateHeaderName"),
+            configuration
+              .get[String]("daikoku.exposition.otoroshi.stateRespHeaderName"),
             this
           )(mat, ec)
         )

@@ -23,67 +23,91 @@ import play.api.mvc.{
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class ConsumptionController(DaikokuAction: DaikokuAction,
-                            env: Env,
-                            cc: ControllerComponents,
-                            paymentClient: PaymentClient,
-                            otoroshiClient: OtoroshiClient,
-                            apiKeyStatsJob: ApiKeyStatsJob)
-    extends AbstractController(cc) {
+class ConsumptionController(
+    DaikokuAction: DaikokuAction,
+    env: Env,
+    cc: ControllerComponents,
+    paymentClient: PaymentClient,
+    otoroshiClient: OtoroshiClient,
+    apiKeyStatsJob: ApiKeyStatsJob
+) extends AbstractController(cc) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
 
-  def getSubscriptionConsumption(subscriptionId: String,
-                                 teamId: String,
-                                 from: Option[Long],
-                                 to: Option[Long]): Action[AnyContent] =
+  def getSubscriptionConsumption(
+      subscriptionId: String,
+      teamId: String,
+      from: Option[Long],
+      to: Option[Long]
+  ): Action[AnyContent] =
     DaikokuAction.async { ctx =>
-      TeamApiKeyAction(AuditTrailEvent(
-        s"@{user.name} has accessed to apikey consumption for subscription @{subscriptionId}"))(
+      TeamApiKeyAction(
+        AuditTrailEvent(
+          s"@{user.name} has accessed to apikey consumption for subscription @{subscriptionId}"
+        )
+      )(
         teamId,
         ctx
       ) { team =>
         ctx.setCtxValue("subscriptionId", subscriptionId)
 
         val fromTimestamp = from.getOrElse(
-          DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
+          DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis
+        )
         val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant.id)
           .findById(subscriptionId)
           .flatMap {
             case None =>
-              FastFuture.successful(NotFound(Json.obj(
-                "error" -> "subscription not found for the given clientId")))
+              FastFuture.successful(
+                NotFound(
+                  Json.obj(
+                    "error" -> "subscription not found for the given clientId"
+                  )
+                )
+              )
             case Some(subscription) if team.id != subscription.team =>
-              FastFuture.successful(Unauthorized(Json.obj(
-                "error" -> "You're not authorized on this subscription")))
+              FastFuture.successful(
+                Unauthorized(
+                  Json.obj(
+                    "error" -> "You're not authorized on this subscription"
+                  )
+                )
+              )
             case Some(subscription) =>
               env.dataStore.usagePlanRepo
                 .forTenant(ctx.tenant.id)
                 .findById(subscription.plan)
                 .flatMap {
                   case None =>
-                    FastFuture.successful(NotFound(Json.obj(
-                      "error" -> "Api not found for the given clientId")))
+                    FastFuture.successful(
+                      NotFound(
+                        Json.obj(
+                          "error" -> "Api not found for the given clientId"
+                        )
+                      )
+                    )
                   case Some(plan) =>
                     env.dataStore.consumptionRepo
                       .forTenant(ctx.tenant.id)
                       .find(
-                        Json.obj("clientId" -> subscription.apiKey.clientId,
-                                 "from" -> Json.obj("$gte" -> fromTimestamp),
-                                 "to" -> Json.obj("$lte" -> toTimestamp)),
+                        Json.obj(
+                          "clientId" -> subscription.apiKey.clientId,
+                          "from" -> Json.obj("$gte" -> fromTimestamp),
+                          "to" -> Json.obj("$lte" -> toTimestamp)
+                        ),
                         Some(Json.obj("from" -> 1))
                       )
-                      .map(
-                        consumptions =>
-                          Ok(
-                            Json.obj(
-                              "plan" -> plan.asJson,
-                              "consumptions" -> JsArray(
-                                consumptions.map(_.asJson))
+                      .map(consumptions =>
+                        Ok(
+                          Json.obj(
+                            "plan" -> plan.asJson,
+                            "consumptions" -> JsArray(
+                              consumptions.map(_.asJson)
                             )
+                          )
                         )
                       )
                 }
@@ -93,10 +117,11 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
 
   def syncSubscriptionConsumption(subscriptionId: String, teamId: String) =
     DaikokuAction.async { ctx =>
-      TeamAdminOnly(AuditTrailEvent(
-        s"@{user.name} has sync apikey consumption for subscription @{subscriptionId}"))(
-        teamId,
-        ctx) { team =>
+      TeamAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has sync apikey consumption for subscription @{subscriptionId}"
+        )
+      )(teamId, ctx) { team =>
         ctx.setCtxValue("subscriptionId", subscriptionId);
 
         env.dataStore.apiSubscriptionRepo
@@ -104,11 +129,21 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
           .findById(subscriptionId)
           .flatMap {
             case None =>
-              FastFuture.successful(NotFound(Json.obj(
-                "error" -> "subscription not found for the given clientId")))
+              FastFuture.successful(
+                NotFound(
+                  Json.obj(
+                    "error" -> "subscription not found for the given clientId"
+                  )
+                )
+              )
             case Some(subscription) if team.id != subscription.team =>
-              FastFuture.successful(Unauthorized(Json.obj(
-                "error" -> "You're not authorized on this subscription")))
+              FastFuture.successful(
+                Unauthorized(
+                  Json.obj(
+                    "error" -> "You're not authorized on this subscription"
+                  )
+                )
+              )
             case Some(subscription) =>
               apiKeyStatsJob
                 .syncForSubscription(subscription, ctx.tenant)
@@ -117,74 +152,85 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
       }
     }
 
-  def syncApiConsumption(apiId: String, teamId: String) = DaikokuAction.async {
-    ctx =>
+  def syncApiConsumption(apiId: String, teamId: String) =
+    DaikokuAction.async { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has sync api consumption for api @{apiId}"))(teamId,
-                                                                      ctx) {
-        team =>
-          ctx.setCtxValue("apiId", apiId);
+          s"@{user.name} has sync api consumption for api @{apiId}"
+        )
+      )(teamId, ctx) { team =>
+        ctx.setCtxValue("apiId", apiId);
 
-          env.dataStore.apiRepo
-            .forTenant(ctx.tenant.id)
-            .findByIdOrHrId(apiId)
-            .flatMap {
-              case None =>
-                FastFuture.successful(
-                  NotFound(Json.obj("error" -> "Api not found")))
-              case Some(api) if api.team != team.id =>
-                FastFuture.successful(
-                  Unauthorized(Json.obj("error" -> "unauthorized")))
-              case Some(api) =>
-                apiKeyStatsJob
-                  .syncForApi(api, ctx.tenant)
-                  .map(seq => Ok(JsArray(seq.map(_.asJson))))
+        env.dataStore.apiRepo
+          .forTenant(ctx.tenant.id)
+          .findByIdOrHrId(apiId)
+          .flatMap {
+            case None =>
+              FastFuture.successful(
+                NotFound(Json.obj("error" -> "Api not found"))
+              )
+            case Some(api) if api.team != team.id =>
+              FastFuture.successful(
+                Unauthorized(Json.obj("error" -> "unauthorized"))
+              )
+            case Some(api) =>
+              apiKeyStatsJob
+                .syncForApi(api, ctx.tenant)
+                .map(seq => Ok(JsArray(seq.map(_.asJson))))
 
-            }
+          }
       }
-  }
+    }
 
-  def syncTeamBilling(teamId: String) = DaikokuAction.async { ctx =>
-    TeamAdminOnly(
-      AuditTrailEvent(
-        s"@{user.name} has sync team billing for team @{team.name}"))(teamId,
-                                                                      ctx) {
-      team =>
+  def syncTeamBilling(teamId: String) =
+    DaikokuAction.async { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has sync team billing for team @{team.name}"
+        )
+      )(teamId, ctx) { team =>
         apiKeyStatsJob
           .syncForSubscriber(team, ctx.tenant)
           .map(seq => Ok(JsArray(seq.map(_.asJson))))
+      }
     }
-  }
 
-  def syncTeamIncome(teamId: String) = DaikokuAction.async { ctx =>
-    TeamAdminOnly(
-      AuditTrailEvent(
-        s"@{user.name} has sync team income for team @{team.name}"))(teamId,
-                                                                     ctx) {
-      team =>
+  def syncTeamIncome(teamId: String) =
+    DaikokuAction.async { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has sync team income for team @{team.name}"
+        )
+      )(teamId, ctx) { team =>
         apiKeyStatsJob
           .syncForOwner(team, ctx.tenant)
           .map(seq => Ok(JsArray(seq.map(_.asJson))))
+      }
     }
-  }
 
   def getApiKeyQuotasWithSubscriptionId(
       teamId: String,
-      subscriptionId: String): Action[AnyContent] =
+      subscriptionId: String
+  ): Action[AnyContent] =
     DaikokuAction.async { ctx =>
-      TeamAdminOnly(AuditTrailEvent(
-        s"@{user.name} has accessed to apikey quotas for clientId @{clientId}"))(
-        teamId,
-        ctx) { _ =>
+      TeamAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed to apikey quotas for clientId @{clientId}"
+        )
+      )(teamId, ctx) { _ =>
         ctx.setCtxValue("subscriptionId", subscriptionId)
         env.dataStore.apiSubscriptionRepo
           .forTenant(ctx.tenant.id)
           .findByIdNotDeleted(subscriptionId)
           .flatMap {
             case None =>
-              FastFuture.successful(NotFound(Json.obj(
-                "error" -> "subscription not found for the given clientId")))
+              FastFuture.successful(
+                NotFound(
+                  Json.obj(
+                    "error" -> "subscription not found for the given clientId"
+                  )
+                )
+              )
             case Some(subscription) =>
               env.dataStore.usagePlanRepo
                 .forTenant(ctx.tenant.id)
@@ -192,18 +238,26 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
                 .flatMap {
                   case None =>
                     FastFuture.successful(
-                      NotFound(Json.obj("error" -> "Api not found")))
+                      NotFound(Json.obj("error" -> "Api not found"))
+                    )
                   case Some(plan) =>
                     plan.otoroshiTarget match {
                       case None =>
-                        FastFuture.successful(NotFound(
-                          Json.obj("error" -> "Otoroshi target not found")))
+                        FastFuture.successful(
+                          NotFound(
+                            Json.obj("error" -> "Otoroshi target not found")
+                          )
+                        )
                       case Some(target) =>
                         ctx.tenant.otoroshiSettings
                           .find(_.id == target.otoroshiSettings) match {
                           case None =>
-                            Future.successful(NotFound(Json.obj(
-                              "error" -> "Otoroshi settings not found")))
+                            Future.successful(
+                              NotFound(
+                                Json
+                                  .obj("error" -> "Otoroshi settings not found")
+                              )
+                            )
                           case Some(otoSettings) =>
                             implicit val otoroshiSettings: OtoroshiSettings =
                               otoSettings
@@ -218,21 +272,25 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
       }
     }
 
-  def getGroupConsumption(teamId: String,
-                          apiId: String,
-                          planId: String,
-                          from: Option[Long],
-                          to: Option[Long]): Action[AnyContent] =
+  def getGroupConsumption(
+      teamId: String,
+      apiId: String,
+      planId: String,
+      from: Option[Long],
+      to: Option[Long]
+  ): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has accessed to plan consumption for apiGroup @{apiId} and plan @{planId}")
+          s"@{user.name} has accessed to plan consumption for apiGroup @{apiId} and plan @{planId}"
+        )
       )(teamId, ctx) { team =>
         ctx.setCtxValue("apiId", apiId)
         ctx.setCtxValue("planId", planId)
 
         val fromTimestamp = from.getOrElse(
-          DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
+          DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis
+        )
         val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
 
         env.dataStore.usagePlanRepo
@@ -244,10 +302,12 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
               env.dataStore.consumptionRepo
                 .forTenant(ctx.tenant.id)
                 .find(
-                  Json.obj("api" -> apiId, //FIXME: get api from plan
-                           "plan" -> planId,
-                           "from" -> Json.obj("$gte" -> fromTimestamp),
-                           "to" -> Json.obj("$lte" -> toTimestamp)),
+                  Json.obj(
+                    "api" -> apiId, //FIXME: get api from plan
+                    "plan" -> planId,
+                    "from" -> Json.obj("$gte" -> fromTimestamp),
+                    "to" -> Json.obj("$lte" -> toTimestamp)
+                  ),
                   Some(Json.obj("from" -> 1))
                 )
                 .map(consumptions => Ok(JsArray(consumptions.map(_.asJson))))
@@ -255,40 +315,50 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
       }
     }
 
-  def getApiConsumption(teamId: String,
-                        apiId: String,
-                        from: Option[Long],
-                        to: Option[Long]): Action[AnyContent] =
+  def getApiConsumption(
+      teamId: String,
+      apiId: String,
+      from: Option[Long],
+      to: Option[Long]
+  ): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has accessed to api consumption for api @{apiId}"))(
-        teamId,
-        ctx) { team =>
+          s"@{user.name} has accessed to api consumption for api @{apiId}"
+        )
+      )(teamId, ctx) { team =>
         ctx.setCtxValue("apiId", apiId)
 
         val fromTimestamp = from.getOrElse(
-          DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
+          DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis
+        )
         val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
 
         env.dataStore.apiRepo
           .forTenant(ctx.tenant.id)
           .findOneNotDeleted(
-            Json.obj("team" -> team.id.value,
-                     "$or" -> Json.arr(Json.obj("_id" -> apiId),
-                                       Json.obj("_humanReadableId" -> apiId)))
+            Json.obj(
+              "team" -> team.id.value,
+              "$or" -> Json.arr(
+                Json.obj("_id" -> apiId),
+                Json.obj("_humanReadableId" -> apiId)
+              )
+            )
           )
           .flatMap {
             case None =>
               FastFuture.successful(
-                NotFound(Json.obj("error" -> "Api not found (15)")))
+                NotFound(Json.obj("error" -> "Api not found (15)"))
+              )
             case Some(api) =>
               env.dataStore.consumptionRepo
                 .forTenant(ctx.tenant.id)
                 .find(
-                  Json.obj("api" -> api.id.value,
-                           "from" -> Json.obj("$gte" -> fromTimestamp),
-                           "to" -> Json.obj("$lte" -> toTimestamp)),
+                  Json.obj(
+                    "api" -> api.id.value,
+                    "from" -> Json.obj("$gte" -> fromTimestamp),
+                    "to" -> Json.obj("$lte" -> toTimestamp)
+                  ),
                   Some(Json.obj("from" -> 1))
                 )
                 .map(consumptions => Ok(JsArray(consumptions.map(_.asJson))))
@@ -297,39 +367,56 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
       }
     }
 
-  def consumptions(teamId: String,
-                   from: Option[Long],
-                   to: Option[Long]): Action[AnyContent] = DaikokuAction.async {
-    ctx =>
+  def consumptions(
+      teamId: String,
+      from: Option[Long],
+      to: Option[Long]
+  ): Action[AnyContent] =
+    DaikokuAction.async { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has accessed to team consumption for @{team.name}"))(
-        teamId,
-        ctx) { team =>
+          s"@{user.name} has accessed to team consumption for @{team.name}"
+        )
+      )(teamId, ctx) { team =>
         val fromTimestamp = from.getOrElse(
-          DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
+          DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis
+        )
         val toTimestamp = to.getOrElse(DateTime.now().toDateTime.getMillis)
 
         for {
-          subscriptions <- env.dataStore.apiSubscriptionRepo
-            .forTenant(ctx.tenant.id)
-            .findNotDeleted(Json.obj("team" -> team.id.value))
-          subscribedApis <- env.dataStore.apiRepo
-            .forTenant(ctx.tenant.id)
-            .findNotDeleted(
-              Json.obj("_id" -> Json.obj("$in" -> JsArray(subscriptions.map(s =>
-                s.api.asJson))))
-            )
-          plans <- env.dataStore.usagePlanRepo
-            .forTenant(ctx.tenant)
-            .findNotDeleted(Json.obj("_id" -> Json.obj(
-              "$in" -> JsArray(subscriptions.map(_.plan.asJson)))))
-          consumptions <- env.dataStore.consumptionRepo
-            .forTenant(ctx.tenant.id)
-            .find(Json.obj("team" -> team.id.value,
-                           "from" -> Json.obj("$gte" -> fromTimestamp),
-                           "to" -> Json.obj("$lte" -> toTimestamp)),
-                  Some(Json.obj("from" -> 1)))
+          subscriptions <-
+            env.dataStore.apiSubscriptionRepo
+              .forTenant(ctx.tenant.id)
+              .findNotDeleted(Json.obj("team" -> team.id.value))
+          subscribedApis <-
+            env.dataStore.apiRepo
+              .forTenant(ctx.tenant.id)
+              .findNotDeleted(
+                Json.obj(
+                  "_id" -> Json
+                    .obj("$in" -> JsArray(subscriptions.map(s => s.api.asJson)))
+                )
+              )
+          plans <-
+            env.dataStore.usagePlanRepo
+              .forTenant(ctx.tenant)
+              .findNotDeleted(
+                Json.obj(
+                  "_id" -> Json
+                    .obj("$in" -> JsArray(subscriptions.map(_.plan.asJson)))
+                )
+              )
+          consumptions <-
+            env.dataStore.consumptionRepo
+              .forTenant(ctx.tenant.id)
+              .find(
+                Json.obj(
+                  "team" -> team.id.value,
+                  "from" -> Json.obj("$gte" -> fromTimestamp),
+                  "to" -> Json.obj("$lte" -> toTimestamp)
+                ),
+                Some(Json.obj("from" -> 1))
+              )
         } yield {
           Ok(
             JsArray(
@@ -349,96 +436,113 @@ class ConsumptionController(DaikokuAction: DaikokuAction,
                     .map(plan => plan.customName.getOrElse(plan.typeName))
                     .getOrElse(c.plan.value)
 
-                  c.asJson.as[JsObject] ++ Json.obj("apiName" -> apiName,
-                                                    "clientName" -> clientName,
-                                                    "plan" -> plan)
+                  c.asJson.as[JsObject] ++ Json.obj(
+                    "apiName" -> apiName,
+                    "clientName" -> clientName,
+                    "plan" -> plan
+                  )
                 })
             )
           )
         }
       }
-  }
+    }
 
-  def billings(teamId: String,
-               from: Option[Long],
-               to: Option[Long]): Action[AnyContent] = DaikokuAction.async {
-    ctx =>
-      TeamAdminOnly(AuditTrailEvent(
-        s"@{user.name} has accessed to team billing for @{team.name}"))(teamId,
-                                                                        ctx) {
-        team =>
-          val fromTimestamp = from.getOrElse(
-            DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
-          val toTimestamp = to.getOrElse(
-            DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
-
-          env.dataStore.consumptionRepo
-            .getLastConsumptionsForTenant(
-              ctx.tenant.id,
-              Json.obj("team" -> team.id.value,
-                       "from" -> Json.obj("$gte" -> fromTimestamp),
-                       "to" -> Json.obj("$lte" -> toTimestamp))
-            )
-            .map(consumptions => Ok(JsArray(consumptions.map(_.asJson))))
-      }
-  }
-
-  def invoices(teamId: String, api: String, plan: String): Action[AnyContent] =
+  def billings(
+      teamId: String,
+      from: Option[Long],
+      to: Option[Long]
+  ): Action[AnyContent] =
     DaikokuAction.async { ctx =>
-      TeamAdminOnly(AuditTrailEvent(
-        s"@{user.name} has accessed to team invoices for @{team.name}"))(teamId,
-                                                                         ctx) {
-        team =>
-          val callback = ctx.request
-            .getQueryString("callback")
-            .getOrElse(env.getDaikokuUrl(ctx.tenant, "/apis"))
-          env.dataStore.usagePlanRepo
-            .forTenant(ctx.tenant)
-            .findByIdNotDeleted(plan)
-            .map {
-              case Some(plan) =>
-                paymentClient
-                  .getAllTeamInvoices(ctx.tenant, plan, team, callback)
-                  .map(url => Ok(Json.obj("url" -> url)))
-                  .leftMap(_.render())
-                  .merge
-              case None => AppError.PlanNotFound.renderF()
-            }
-            .flatten
+      TeamAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed to team billing for @{team.name}"
+        )
+      )(teamId, ctx) { team =>
+        val fromTimestamp = from.getOrElse(
+          DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis
+        )
+        val toTimestamp = to.getOrElse(
+          DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis
+        )
+
+        env.dataStore.consumptionRepo
+          .getLastConsumptionsForTenant(
+            ctx.tenant.id,
+            Json.obj(
+              "team" -> team.id.value,
+              "from" -> Json.obj("$gte" -> fromTimestamp),
+              "to" -> Json.obj("$lte" -> toTimestamp)
+            )
+          )
+          .map(consumptions => Ok(JsArray(consumptions.map(_.asJson))))
       }
     }
 
-  def income(teamId: String,
-             from: Option[Long],
-             to: Option[Long]): Action[AnyContent] = DaikokuAction.async {
-    ctx =>
-      TeamAdminOnly(AuditTrailEvent(
-        s"@{user.name} has accessed to team billing for @{team.name}"))(teamId,
-                                                                        ctx) {
-        team =>
-          val fromTimestamp = from.getOrElse(
-            DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
-          val toTimestamp = to.getOrElse(
-            DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis)
+  def invoices(teamId: String, api: String, plan: String): Action[AnyContent] =
+    DaikokuAction.async { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed to team invoices for @{team.name}"
+        )
+      )(teamId, ctx) { team =>
+        val callback = ctx.request
+          .getQueryString("callback")
+          .getOrElse(env.getDaikokuUrl(ctx.tenant, "/apis"))
+        env.dataStore.usagePlanRepo
+          .forTenant(ctx.tenant)
+          .findByIdNotDeleted(plan)
+          .map {
+            case Some(plan) =>
+              paymentClient
+                .getAllTeamInvoices(ctx.tenant, plan, team, callback)
+                .map(url => Ok(Json.obj("url" -> url)))
+                .leftMap(_.render())
+                .merge
+            case None => AppError.PlanNotFound.renderF()
+          }
+          .flatten
+      }
+    }
 
-          for {
-            ownApis <- env.dataStore.apiRepo
+  def income(
+      teamId: String,
+      from: Option[Long],
+      to: Option[Long]
+  ): Action[AnyContent] =
+    DaikokuAction.async { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed to team billing for @{team.name}"
+        )
+      )(teamId, ctx) { team =>
+        val fromTimestamp = from.getOrElse(
+          DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis
+        )
+        val toTimestamp = to.getOrElse(
+          DateTime.now().withTimeAtStartOfDay().toDateTime.getMillis
+        )
+
+        for {
+          ownApis <-
+            env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
               .findNotDeleted(Json.obj("team" -> team.id.value))
-            revenue <- env.dataStore.consumptionRepo
+          revenue <-
+            env.dataStore.consumptionRepo
               .getLastConsumptionsForTenant(
                 ctx.tenant.id,
                 Json.obj(
                   "api" -> Json.obj("$in" -> JsArray(ownApis.map(_.id.asJson))),
-                  "from" -> Json.obj("$gte" -> fromTimestamp,
-                                     "$lte" -> toTimestamp),
-                  "to" -> Json.obj("$gte" -> fromTimestamp,
-                                   "$lte" -> toTimestamp)
+                  "from" -> Json
+                    .obj("$gte" -> fromTimestamp, "$lte" -> toTimestamp),
+                  "to" -> Json
+                    .obj("$gte" -> fromTimestamp, "$lte" -> toTimestamp)
                 )
               )
-          } yield {
-            Ok(JsArray(revenue.map(_.asJson)))
-          }
+        } yield {
+          Ok(JsArray(revenue.map(_.asJson)))
+        }
       }
-  }
+    }
 }

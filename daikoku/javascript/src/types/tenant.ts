@@ -211,7 +211,7 @@ export interface ITranslation {
 export type IMailingTranslation = [
   key: string,
   translations: Array<ITranslation>,
-  defaultValue: string
+  defaultValue: string,
 ];
 
 export interface IAsset {

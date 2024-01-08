@@ -44,11 +44,12 @@ trait PostgresTenantCapableRepo[A, Id <: ValueType]
 
 case class PostgresTenantCapableTeamRepo(
     _repo: () => PostgresRepo[Team, TeamId],
-    _tenantRepo: TenantId => PostgresTenantAwareRepo[Team, TeamId])
-    extends PostgresTenantCapableRepo[Team, TeamId]
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[Team, TeamId]
+) extends PostgresTenantCapableRepo[Team, TeamId]
     with TeamRepo {
   override def tenantRepo(
-      tenant: TenantId): PostgresTenantAwareRepo[Team, TeamId] =
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[Team, TeamId] =
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[Team, TeamId] = _repo()
@@ -56,11 +57,12 @@ case class PostgresTenantCapableTeamRepo(
 
 case class PostgresTenantCapableApiRepo(
     _repo: () => PostgresRepo[Api, ApiId],
-    _tenantRepo: TenantId => PostgresTenantAwareRepo[Api, ApiId])
-    extends PostgresTenantCapableRepo[Api, ApiId]
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[Api, ApiId]
+) extends PostgresTenantCapableRepo[Api, ApiId]
     with ApiRepo {
   override def tenantRepo(
-      tenant: TenantId): PostgresTenantAwareRepo[Api, ApiId] =
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[Api, ApiId] =
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[Api, ApiId] = _repo()
@@ -68,12 +70,15 @@ case class PostgresTenantCapableApiRepo(
 
 case class PostgresTenantCapableApiSubscriptionRepo(
     _repo: () => PostgresRepo[ApiSubscription, ApiSubscriptionId],
-    _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiSubscription,
-                                                     ApiSubscriptionId]
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[
+      ApiSubscription,
+      ApiSubscriptionId
+    ]
 ) extends PostgresTenantCapableRepo[ApiSubscription, ApiSubscriptionId]
     with ApiSubscriptionRepo {
-  override def tenantRepo(tenant: TenantId)
-    : PostgresTenantAwareRepo[ApiSubscription, ApiSubscriptionId] =
+  override def tenantRepo(
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[ApiSubscription, ApiSubscriptionId] =
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[ApiSubscription, ApiSubscriptionId] =
@@ -82,17 +87,22 @@ case class PostgresTenantCapableApiSubscriptionRepo(
 
 case class PostgresTenantCapableApiDocumentationPageRepo(
     _repo: () => PostgresRepo[ApiDocumentationPage, ApiDocumentationPageId],
-    _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiDocumentationPage,
-                                                     ApiDocumentationPageId]
-) extends PostgresTenantCapableRepo[ApiDocumentationPage,
-                                      ApiDocumentationPageId]
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[
+      ApiDocumentationPage,
+      ApiDocumentationPageId
+    ]
+) extends PostgresTenantCapableRepo[
+      ApiDocumentationPage,
+      ApiDocumentationPageId
+    ]
     with ApiDocumentationPageRepo {
-  override def tenantRepo(tenant: TenantId)
-    : PostgresTenantAwareRepo[ApiDocumentationPage, ApiDocumentationPageId] =
+  override def tenantRepo(
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[ApiDocumentationPage, ApiDocumentationPageId] =
     _tenantRepo(tenant)
 
   override def repo()
-    : PostgresRepo[ApiDocumentationPage, ApiDocumentationPageId] =
+      : PostgresRepo[ApiDocumentationPage, ApiDocumentationPageId] =
     _repo()
 }
 
@@ -102,7 +112,8 @@ case class PostgresTenantCapableApiPostRepo(
 ) extends PostgresTenantCapableRepo[ApiPost, ApiPostId]
     with ApiPostRepo {
   override def tenantRepo(
-      tenant: TenantId): PostgresTenantAwareRepo[ApiPost, ApiPostId] =
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[ApiPost, ApiPostId] =
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[ApiPost, ApiPostId] =
@@ -115,7 +126,8 @@ case class PostgresTenantCapableApiIssueRepo(
 ) extends PostgresTenantCapableRepo[ApiIssue, ApiIssueId]
     with ApiIssueRepo {
   override def tenantRepo(
-      tenant: TenantId): PostgresTenantAwareRepo[ApiIssue, ApiIssueId] =
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[ApiIssue, ApiIssueId] =
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[ApiIssue, ApiIssueId] =
@@ -124,12 +136,15 @@ case class PostgresTenantCapableApiIssueRepo(
 
 case class PostgresTenantCapableNotificationRepo(
     _repo: () => PostgresRepo[Notification, NotificationId],
-    _tenantRepo: TenantId => PostgresTenantAwareRepo[Notification,
-                                                     NotificationId]
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[
+      Notification,
+      NotificationId
+    ]
 ) extends PostgresTenantCapableRepo[Notification, NotificationId]
     with NotificationRepo {
   override def tenantRepo(
-      tenant: TenantId): PostgresTenantAwareRepo[Notification, NotificationId] =
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[Notification, NotificationId] =
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[Notification, NotificationId] = _repo()
@@ -137,11 +152,12 @@ case class PostgresTenantCapableNotificationRepo(
 
 case class PostgresTenantCapableAuditTrailRepo(
     _repo: () => PostgresRepo[JsObject, DatastoreId],
-    _tenantRepo: TenantId => PostgresTenantAwareRepo[JsObject, DatastoreId])
-    extends PostgresTenantCapableRepo[JsObject, DatastoreId]
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[JsObject, DatastoreId]
+) extends PostgresTenantCapableRepo[JsObject, DatastoreId]
     with AuditTrailRepo {
   override def tenantRepo(
-      tenant: TenantId): PostgresTenantAwareRepo[JsObject, DatastoreId] =
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[JsObject, DatastoreId] =
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[JsObject, DatastoreId] = _repo()
@@ -153,7 +169,8 @@ case class PostgresTenantCapableTranslationRepo(
 ) extends PostgresTenantCapableRepo[Translation, DatastoreId]
     with TranslationRepo {
   override def tenantRepo(
-      tenant: TenantId): PostgresTenantAwareRepo[Translation, DatastoreId] =
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[Translation, DatastoreId] =
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[Translation, DatastoreId] = _repo()
@@ -165,7 +182,8 @@ case class PostgresTenantCapableMessageRepo(
 ) extends PostgresTenantCapableRepo[Message, DatastoreId]
     with MessageRepo {
   override def tenantRepo(
-      tenant: TenantId): PostgresTenantAwareRepo[Message, DatastoreId] =
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[Message, DatastoreId] =
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[Message, DatastoreId] = _repo()
@@ -177,7 +195,8 @@ case class PostgresTenantCapableCmsPageRepo(
 ) extends PostgresTenantCapableRepo[CmsPage, CmsPageId]
     with CmsPageRepo {
   override def tenantRepo(
-      tenant: TenantId): PostgresTenantAwareRepo[CmsPage, CmsPageId] =
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[CmsPage, CmsPageId] =
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[CmsPage, CmsPageId] = _repo()
@@ -189,7 +208,8 @@ case class PostgresTenantCapableOperationRepo(
 ) extends PostgresTenantCapableRepo[Operation, DatastoreId]
     with OperationRepo {
   override def tenantRepo(
-      tenant: TenantId): PostgresTenantAwareRepo[Operation, DatastoreId] =
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[Operation, DatastoreId] =
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[Operation, DatastoreId] = _repo()
@@ -197,27 +217,33 @@ case class PostgresTenantCapableOperationRepo(
 
 case class PostgresTenantCapableEmailVerificationRepo(
     _repo: () => PostgresRepo[EmailVerification, DatastoreId],
-    _tenantRepo: TenantId => PostgresTenantAwareRepo[EmailVerification,
-                                                     DatastoreId]
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[
+      EmailVerification,
+      DatastoreId
+    ]
 ) extends PostgresTenantCapableRepo[EmailVerification, DatastoreId]
     with EmailVerificationRepo {
-  override def tenantRepo(tenant: TenantId)
-    : PostgresTenantAwareRepo[EmailVerification, DatastoreId] =
+  override def tenantRepo(
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[EmailVerification, DatastoreId] =
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[EmailVerification, DatastoreId] = _repo()
 }
 case class PostgresTenantCapableSubscriptionDemandRepo(
     _repo: () => PostgresRepo[SubscriptionDemand, SubscriptionDemandId],
-    _tenantRepo: TenantId => PostgresTenantAwareRepo[SubscriptionDemand,
-                                                     SubscriptionDemandId]
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[
+      SubscriptionDemand,
+      SubscriptionDemandId
+    ]
 ) extends PostgresTenantCapableRepo[SubscriptionDemand, SubscriptionDemandId]
     with SubscriptionDemandRepo {
   override def repo(): PostgresRepo[SubscriptionDemand, SubscriptionDemandId] =
     _repo()
 
-  override def tenantRepo(tenant: TenantId)
-    : PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId] =
+  override def tenantRepo(
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId] =
     _tenantRepo(tenant)
 }
 
@@ -229,7 +255,8 @@ case class PostgresTenantCapableStepValidatorRepo(
   override def repo(): PostgresRepo[StepValidator, DatastoreId] = _repo()
 
   override def tenantRepo(
-      tenant: TenantId): PostgresTenantAwareRepo[StepValidator, DatastoreId] =
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[StepValidator, DatastoreId] =
     _tenantRepo(tenant)
 }
 
@@ -241,14 +268,17 @@ case class PostgresTenantCapableUsagePlanRepo(
   override def repo(): PostgresRepo[UsagePlan, UsagePlanId] = _repo()
 
   override def tenantRepo(
-      tenant: TenantId): PostgresTenantAwareRepo[UsagePlan, UsagePlanId] =
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[UsagePlan, UsagePlanId] =
     _tenantRepo(tenant)
 }
 
 case class PostgresTenantCapableConsumptionRepo(
     _repo: () => PostgresRepo[ApiKeyConsumption, DatastoreId],
-    _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiKeyConsumption,
-                                                     DatastoreId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[
+      ApiKeyConsumption,
+      DatastoreId
+    ],
     reactivePg: ReactivePg
 ) extends PostgresTenantCapableRepo[ApiKeyConsumption, DatastoreId]
     with ConsumptionRepo {
@@ -262,14 +292,16 @@ case class PostgresTenantCapableConsumptionRepo(
 
   val jsObjectWrites: OWrites[JsObject] = (o: JsObject) => o
 
-  override def tenantRepo(tenant: TenantId)
-    : PostgresTenantAwareRepo[ApiKeyConsumption, DatastoreId] =
+  override def tenantRepo(
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[ApiKeyConsumption, DatastoreId] =
     _tenantRepo(tenant)
 
   override def repo(): PostgresRepo[ApiKeyConsumption, DatastoreId] = _repo()
 
   private def lastConsumptions(tenantId: Option[TenantId], filter: JsObject)(
-      implicit ec: ExecutionContext): Future[Seq[ApiKeyConsumption]] = {
+      implicit ec: ExecutionContext
+  ): Future[Seq[ApiKeyConsumption]] = {
 
     val rep = tenantId match {
       case Some(t) =>
@@ -288,7 +320,8 @@ case class PostgresTenantCapableConsumptionRepo(
         s"SELECT content->>'clientId' as client_id, MAX(content->>'from') as max_from FROM ${rep.tableName} " +
           selector +
           "GROUP BY content->>'clientId'",
-        params) { row =>
+        params
+      ) { row =>
         Json
           .obj(
             "clientId" -> row.getString("client_id"),
@@ -297,32 +330,40 @@ case class PostgresTenantCapableConsumptionRepo(
           .some
       }
       .map(res =>
-        Future.sequence(res.map(queryResult =>
-          findOne(queryResult, rep.tableName, rep.format))))
+        Future.sequence(
+          res
+            .map(queryResult => findOne(queryResult, rep.tableName, rep.format))
+        )
+      )
       .flatMap(r =>
         r.map(res =>
           res.collect {
             case Some(value) => value
-        }))
+          }
+        )
+      )
   }
 
   def findOne(
       query: JsObject,
       tableName: String,
-      format: Format[ApiKeyConsumption])(implicit ec: ExecutionContext) = {
+      format: Format[ApiKeyConsumption]
+  )(implicit ec: ExecutionContext) = {
     val (sql, params) = convertQuery(query)
     reactivePg.queryOne(s"SELECT * FROM $tableName WHERE $sql", params) {
       rowToJson(_, format)
     }
   }
 
-  override def getLastConsumptionsforAllTenant(filter: JsObject)(
-      implicit ec: ExecutionContext
+  override def getLastConsumptionsforAllTenant(filter: JsObject)(implicit
+      ec: ExecutionContext
   ): Future[Seq[ApiKeyConsumption]] = lastConsumptions(None, filter)
 
-  override def getLastConsumptionsForTenant(tenantId: TenantId,
-                                            filter: JsObject)(
-      implicit ec: ExecutionContext
+  override def getLastConsumptionsForTenant(
+      tenantId: TenantId,
+      filter: JsObject
+  )(implicit
+      ec: ExecutionContext
   ): Future[Seq[ApiKeyConsumption]] = lastConsumptions(Some(tenantId), filter)
 }
 
@@ -370,9 +411,11 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       .setDatabase(configuration.get[String]("daikoku.postgres.database"))
       .setUser(configuration.get[String]("daikoku.postgres.username"))
       .setPassword(configuration.get[String]("daikoku.postgres.password"))
-      .setProperties(Map(
-        "search_path" -> getSchema
-      ).asJava)
+      .setProperties(
+        Map(
+          "search_path" -> getSchema
+        ).asJava
+      )
 
     val ssl = configuration
       .getOptional[Configuration]("daikoku.postgres.ssl")
@@ -384,7 +427,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       val pemKeyCertOptions = new PemKeyCertOptions()
 
       options.setSslMode(
-        SslMode.of(ssl.getOptional[String]("mode").getOrElse("verify-ca")))
+        SslMode.of(ssl.getOptional[String]("mode").getOrElse("verify-ca"))
+      )
       ssl
         .getOptional[Int]("ssl-handshake-timeout")
         .map(options.setSslHandshakeTimeout(_))
@@ -453,10 +497,12 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
   private val _userRepo: UserRepo = new PostgresUserRepo(env, reactivePg)
   private val _teamRepo: TeamRepo = PostgresTenantCapableTeamRepo(
     () => new PostgresTeamRepo(env, reactivePg),
-    t => new PostgresTenantTeamRepo(env, reactivePg, t))
+    t => new PostgresTenantTeamRepo(env, reactivePg, t)
+  )
   private val _apiRepo: ApiRepo = PostgresTenantCapableApiRepo(
     () => new PostgresApiRepo(env, reactivePg),
-    t => new PostgresTenantApiRepo(env, reactivePg, t))
+    t => new PostgresTenantApiRepo(env, reactivePg, t)
+  )
   private val _apiSubscriptionRepo: ApiSubscriptionRepo =
     PostgresTenantCapableApiSubscriptionRepo(
       () => new PostgresApiSubscriptionRepo(env, reactivePg),
@@ -502,7 +548,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
   private val _translationRepo: TranslationRepo =
     PostgresTenantCapableTranslationRepo(
       () => new PostgresTranslationRepo(env, reactivePg),
-      t => new PostgresTenantTranslationRepo(env, reactivePg, t))
+      t => new PostgresTenantTranslationRepo(env, reactivePg, t)
+    )
   private val _messageRepo: MessageRepo =
     PostgresTenantCapableMessageRepo(
       () => new PostgresMessageRepo(env, reactivePg),
@@ -613,7 +660,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     reactivePg
       .queryOne(
         "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = $1 AND table_name = 'tenants')",
-        Seq(getSchema)) { row =>
+        Seq(getSchema)
+      ) { row =>
         row.optBoolean("exists")
       }
       .map(_.getOrElse(false))
@@ -622,7 +670,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     reactivePg
       .queryOne(
         "SELECT schema_name FROM information_schema.schemata WHERE schema_name = $1",
-        Seq(getSchema)) { row =>
+        Seq(getSchema)
+      ) { row =>
         row.optString("schema_name")
       }
       .flatMap {
@@ -630,8 +679,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
         case _ =>
           logger.info(s"Create missing schema : $getSchema")
           for {
-            _ <- reactivePg.rawQuery(
-              s"CREATE SCHEMA IF NOT EXISTS ${getSchema}")
+            _ <-
+              reactivePg.rawQuery(s"CREATE SCHEMA IF NOT EXISTS ${getSchema}")
             res <- createDatabase()
           } yield res
       }
@@ -652,12 +701,14 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       s"CREATE TABLE $getSchema.$table (" +
         s"_id character varying PRIMARY KEY," +
         s"${if (allFields) "_deleted BOOLEAN," else ""}" +
-        s"content JSONB)")
+        s"content JSONB)"
+    )
 
     reactivePg
       .query(
         "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = $1 AND table_name = $2)",
-        Seq(getSchema, table))
+        Seq(getSchema, table)
+      )
       .map { r =>
         r.asScala.toSeq.head.getBoolean("exists")
       }
@@ -669,7 +720,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
               s"CREATE TABLE $getSchema.$table (" +
                 s"_id character varying PRIMARY KEY," +
                 s"${if (allFields) "_deleted BOOLEAN," else ""}" +
-                s"content JSONB)")
+                s"content JSONB)"
+            )
             .map { _ =>
               AppLogger.info(s"Created : $table")
             }
@@ -677,11 +729,14 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       }
   }
 
-  override def exportAsStream(pretty: Boolean,
-                              exportAuditTrail: Boolean = true)(
-      implicit ec: ExecutionContext,
+  override def exportAsStream(
+      pretty: Boolean,
+      exportAuditTrail: Boolean = true
+  )(implicit
+      ec: ExecutionContext,
       mat: Materializer,
-      env: Env): Source[ByteString, _] = {
+      env: Env
+  ): Source[ByteString, _] = {
     val collections = ListBuffer[Repo[_, _]]()
     collections ++= List(
       tenantRepo,
@@ -716,11 +771,17 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     Source(collections.toList).flatMapConcat { collection =>
       collection.streamAllRaw().map { doc =>
         if (pretty) {
-          ByteString(Json.prettyPrint(
-            Json.obj("type" -> collection.tableName, "payload" -> doc)) + "\n")
+          ByteString(
+            Json.prettyPrint(
+              Json.obj("type" -> collection.tableName, "payload" -> doc)
+            ) + "\n"
+          )
         } else {
-          ByteString(Json.stringify(
-            Json.obj("type" -> collection.tableName, "payload" -> doc)) + "\n")
+          ByteString(
+            Json.stringify(
+              Json.obj("type" -> collection.tableName, "payload" -> doc)
+            ) + "\n"
+          )
         }
       }
     }
@@ -735,15 +796,18 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       })
       .map { _ =>
         source
-          .via(Framing.delimiter(ByteString("\n"),
-                                 1000000000,
-                                 allowTruncation = true))
+          .via(
+            Framing
+              .delimiter(ByteString("\n"), 1000000000, allowTruncation = true)
+          )
           .map(_.utf8String)
           .map(Json.parse)
           .map(json => json.as[JsObject])
           .map(json => {
-            ((json \ "type").as[String].toLowerCase.replace("_", ""),
-             (json \ "payload").as[JsValue])
+            (
+              (json \ "type").as[String].toLowerCase.replace("_", ""),
+              (json \ "payload").as[JsValue]
+            )
           })
           .mapAsync(1) {
             case ("tenants", payload) =>
@@ -876,12 +940,15 @@ class PostgresTenantApiRepo(env: Env, reactivePg: ReactivePg, tenant: TenantId)
   override def extractId(value: Api): String = value.id.value
 }
 
-class PostgresTenantTranslationRepo(env: Env,
-                                    reactivePg: ReactivePg,
-                                    tenant: TenantId)
-    extends PostgresTenantAwareRepo[Translation, DatastoreId](env,
-                                                              reactivePg,
-                                                              tenant) {
+class PostgresTenantTranslationRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[Translation, DatastoreId](
+      env,
+      reactivePg,
+      tenant
+    ) {
   override def tableName: String = "translations"
 
   override def format: Format[Translation] = json.TranslationFormat
@@ -889,24 +956,30 @@ class PostgresTenantTranslationRepo(env: Env,
   override def extractId(value: Translation): String = value.id.value
 }
 
-class PostgresTenantMessageRepo(env: Env,
-                                reactivePg: ReactivePg,
-                                tenant: TenantId)
-    extends PostgresTenantAwareRepo[Message, DatastoreId](env,
-                                                          reactivePg,
-                                                          tenant) {
+class PostgresTenantMessageRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[Message, DatastoreId](
+      env,
+      reactivePg,
+      tenant
+    ) {
   override def tableName: String = "messages"
 
   override def format: Format[Message] = json.MessageFormat
 
   override def extractId(value: Message): String = value.id.value
 }
-class PostgresTenantOperationRepo(env: Env,
-                                  reactivePg: ReactivePg,
-                                  tenant: TenantId)
-    extends PostgresTenantAwareRepo[Operation, DatastoreId](env,
-                                                            reactivePg,
-                                                            tenant) {
+class PostgresTenantOperationRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[Operation, DatastoreId](
+      env,
+      reactivePg,
+      tenant
+    ) {
   override def tableName: String = "operations"
 
   override def format: Format[Operation] = json.OperationFormat
@@ -914,12 +987,15 @@ class PostgresTenantOperationRepo(env: Env,
   override def extractId(value: Operation): String = value.id.value
 }
 
-class PostgresTenantEmailVerificationRepo(env: Env,
-                                          reactivePg: ReactivePg,
-                                          tenant: TenantId)
-    extends PostgresTenantAwareRepo[EmailVerification, DatastoreId](env,
-                                                                    reactivePg,
-                                                                    tenant) {
+class PostgresTenantEmailVerificationRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[EmailVerification, DatastoreId](
+      env,
+      reactivePg,
+      tenant
+    ) {
   override def tableName: String = "email_verifications"
   override def format: Format[EmailVerification] = json.EmailVerificationFormat
 
@@ -927,13 +1003,15 @@ class PostgresTenantEmailVerificationRepo(env: Env,
 
 }
 
-class PostgresTenantSubscriptionDemandRepo(env: Env,
-                                           reactivePg: ReactivePg,
-                                           tenant: TenantId)
-    extends PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId](
+class PostgresTenantSubscriptionDemandRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId](
       env,
       reactivePg,
-      tenant) {
+      tenant
+    ) {
   override def tableName: String = "subscription_demands"
 
   override def format: Format[SubscriptionDemand] =
@@ -942,12 +1020,15 @@ class PostgresTenantSubscriptionDemandRepo(env: Env,
   override def extractId(value: SubscriptionDemand): String = value.id.value
 }
 
-class PostgresTenantStepValidatorRepo(env: Env,
-                                      reactivePg: ReactivePg,
-                                      tenant: TenantId)
-    extends PostgresTenantAwareRepo[StepValidator, DatastoreId](env,
-                                                                reactivePg,
-                                                                tenant) {
+class PostgresTenantStepValidatorRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[StepValidator, DatastoreId](
+      env,
+      reactivePg,
+      tenant
+    ) {
   override def tableName: String = "step_validators"
 
   override def format: Format[StepValidator] = json.StepValidatorFormat
@@ -955,12 +1036,15 @@ class PostgresTenantStepValidatorRepo(env: Env,
   override def extractId(value: StepValidator): String = value.id.value
 }
 
-class PostgresTenantUsagePlanRepo(env: Env,
-                                  reactivePg: ReactivePg,
-                                  tenant: TenantId)
-    extends PostgresTenantAwareRepo[UsagePlan, UsagePlanId](env,
-                                                            reactivePg,
-                                                            tenant) {
+class PostgresTenantUsagePlanRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[UsagePlan, UsagePlanId](
+      env,
+      reactivePg,
+      tenant
+    ) {
   override def tableName: String = "usage_plans"
 
   override def format: Format[UsagePlan] = json.UsagePlanFormat
@@ -968,10 +1052,15 @@ class PostgresTenantUsagePlanRepo(env: Env,
   override def extractId(value: UsagePlan): String = value.id.value
 }
 
-class PostgresTenantCmsPageRepo(env: Env,
-                                reactivePg: ReactivePg,
-                                tenant: TenantId)
-    extends PostgresTenantAwareRepo[CmsPage, CmsPageId](env, reactivePg, tenant) {
+class PostgresTenantCmsPageRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[CmsPage, CmsPageId](
+      env,
+      reactivePg,
+      tenant
+    ) {
   override def tableName: String = "cmspages"
 
   override def format: Format[CmsPage] = json.CmsPageFormat
@@ -979,13 +1068,15 @@ class PostgresTenantCmsPageRepo(env: Env,
   override def extractId(value: CmsPage): String = value.id.value
 }
 
-class PostgresTenantApiSubscriptionRepo(env: Env,
-                                        reactivePg: ReactivePg,
-                                        tenant: TenantId)
-    extends PostgresTenantAwareRepo[ApiSubscription, ApiSubscriptionId](
+class PostgresTenantApiSubscriptionRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[ApiSubscription, ApiSubscriptionId](
       env,
       reactivePg,
-      tenant) {
+      tenant
+    ) {
   override def tableName: String = "api_subscriptions"
 
   override def format: Format[ApiSubscription] = json.ApiSubscriptionFormat
@@ -993,13 +1084,14 @@ class PostgresTenantApiSubscriptionRepo(env: Env,
   override def extractId(value: ApiSubscription): String = value.id.value
 }
 
-class PostgresTenantApiDocumentationPageRepo(env: Env,
-                                             reactivePg: ReactivePg,
-                                             tenant: TenantId)
-    extends PostgresTenantAwareRepo[ApiDocumentationPage,
-                                    ApiDocumentationPageId](env,
-                                                            reactivePg,
-                                                            tenant) {
+class PostgresTenantApiDocumentationPageRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[
+      ApiDocumentationPage,
+      ApiDocumentationPageId
+    ](env, reactivePg, tenant) {
   override def tableName: String = "api_documentation_pages"
 
   override def format: Format[ApiDocumentationPage] =
@@ -1008,10 +1100,15 @@ class PostgresTenantApiDocumentationPageRepo(env: Env,
   override def extractId(value: ApiDocumentationPage): String = value.id.value
 }
 
-class PostgresTenantApiPostRepo(env: Env,
-                                reactivePg: ReactivePg,
-                                tenant: TenantId)
-    extends PostgresTenantAwareRepo[ApiPost, ApiPostId](env, reactivePg, tenant) {
+class PostgresTenantApiPostRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[ApiPost, ApiPostId](
+      env,
+      reactivePg,
+      tenant
+    ) {
   override def tableName: String = "api_posts"
 
   override def format: Format[ApiPost] = json.ApiPostFormat
@@ -1019,12 +1116,15 @@ class PostgresTenantApiPostRepo(env: Env,
   override def extractId(value: ApiPost): String = value.id.value
 }
 
-class PostgresTenantApiIssueRepo(env: Env,
-                                 reactivePg: ReactivePg,
-                                 tenant: TenantId)
-    extends PostgresTenantAwareRepo[ApiIssue, ApiIssueId](env,
-                                                          reactivePg,
-                                                          tenant) {
+class PostgresTenantApiIssueRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[ApiIssue, ApiIssueId](
+      env,
+      reactivePg,
+      tenant
+    ) {
   override def tableName: String = "api_issues"
 
   override def format: Format[ApiIssue] = json.ApiIssueFormat
@@ -1032,12 +1132,15 @@ class PostgresTenantApiIssueRepo(env: Env,
   override def extractId(value: ApiIssue): String = value.id.value
 }
 
-class PostgresTenantNotificationRepo(env: Env,
-                                     reactivePg: ReactivePg,
-                                     tenant: TenantId)
-    extends PostgresTenantAwareRepo[Notification, NotificationId](env,
-                                                                  reactivePg,
-                                                                  tenant) {
+class PostgresTenantNotificationRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[Notification, NotificationId](
+      env,
+      reactivePg,
+      tenant
+    ) {
   override def tableName: String = "notifications"
 
   override def format: Format[Notification] =
@@ -1046,12 +1149,15 @@ class PostgresTenantNotificationRepo(env: Env,
   override def extractId(value: Notification): String = value.id.value
 }
 
-class PostgresTenantConsumptionRepo(env: Env,
-                                    reactivePg: ReactivePg,
-                                    tenant: TenantId)
-    extends PostgresTenantAwareRepo[ApiKeyConsumption, DatastoreId](env,
-                                                                    reactivePg,
-                                                                    tenant) {
+class PostgresTenantConsumptionRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[ApiKeyConsumption, DatastoreId](
+      env,
+      reactivePg,
+      tenant
+    ) {
   override def tableName: String = "consumptions"
 
   override def format: Format[ApiKeyConsumption] =
@@ -1060,12 +1166,15 @@ class PostgresTenantConsumptionRepo(env: Env,
   override def extractId(value: ApiKeyConsumption): String = value.id.value
 }
 
-class PostgresTenantAuditTrailRepo(env: Env,
-                                   reactivePg: ReactivePg,
-                                   tenant: TenantId)
-    extends PostgresTenantAwareRepo[JsObject, DatastoreId](env,
-                                                           reactivePg,
-                                                           tenant) {
+class PostgresTenantAuditTrailRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[JsObject, DatastoreId](
+      env,
+      reactivePg,
+      tenant
+    ) {
   val _fmt = new Format[JsObject] {
     override def reads(json: JsValue): JsResult[JsObject] =
       JsSuccess(json.as[JsObject])
@@ -1153,8 +1262,10 @@ class PostgresEmailVerificationRepo(env: Env, reactivePg: ReactivePg)
 }
 
 class PostgresSubscriptionDemandRepo(env: Env, reactivePg: ReactivePg)
-    extends PostgresRepo[SubscriptionDemand, SubscriptionDemandId](env,
-                                                                   reactivePg) {
+    extends PostgresRepo[SubscriptionDemand, SubscriptionDemandId](
+      env,
+      reactivePg
+    ) {
   override def tableName: String = "subscription_demands"
 
   override def format: Format[SubscriptionDemand] =
@@ -1201,7 +1312,8 @@ class PostgresApiSubscriptionRepo(env: Env, reactivePg: ReactivePg)
 class PostgresApiDocumentationPageRepo(env: Env, reactivePg: ReactivePg)
     extends PostgresRepo[ApiDocumentationPage, ApiDocumentationPageId](
       env,
-      reactivePg) {
+      reactivePg
+    ) {
   override def tableName: String = "api_documentation_pages"
 
   override def format: Format[ApiDocumentationPage] =
@@ -1274,16 +1386,18 @@ class PostgresAuditTrailRepo(env: Env, reactivePg: ReactivePg)
   override def extractId(value: JsObject): String = (value \ "_id").as[String]
 }
 
-abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
-                                                 reactivePg: ReactivePg)
-    extends CommonRepo[Of, Id](env, reactivePg) {
+abstract class PostgresRepo[Of, Id <: ValueType](
+    env: Env,
+    reactivePg: ReactivePg
+) extends CommonRepo[Of, Id](env, reactivePg) {
 
   private implicit lazy val logger: Logger = Logger(s"PostgresRepo")
 
-  override def findRaw(query: JsObject,
-                       sort: Option[JsObject] = None,
-                       maxDocs: Int = -1)(
-      implicit ec: ExecutionContext): Future[Seq[JsValue]] = {
+  override def findRaw(
+      query: JsObject,
+      sort: Option[JsObject] = None,
+      maxDocs: Int = -1
+  )(implicit ec: ExecutionContext): Future[Seq[JsValue]] = {
     logger.debug(s"$tableName.find(${Json.prettyPrint(query)})")
 
     val limit = if (maxDocs > 0) s"Limit $maxDocs" else ""
@@ -1293,10 +1407,13 @@ abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
         if (query.values.isEmpty)
           reactivePg.querySeq(s"SELECT * FROM $tableName $limit") {
             _.optJsObject("content")
-          } else {
+          }
+        else {
           val (sql, params) = convertQuery(query)
-          reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql $limit",
-                              params) {
+          reactivePg.querySeq(
+            s"SELECT * FROM $tableName WHERE $sql $limit",
+            params
+          ) {
             _.optJsObject("content")
           }
         }
@@ -1305,7 +1422,9 @@ abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
         val sortedKeys = sort
           .map(obj =>
             obj.fields.sortWith((a, b) =>
-              a._2.as[JsNumber].value < b._2.as[JsNumber].value))
+              a._2.as[JsNumber].value < b._2.as[JsNumber].value
+            )
+          )
           .map(r => r.map(x => s"content->>'${x._1}'"))
           .getOrElse(Seq("_id"))
         if (query.values.isEmpty)
@@ -1326,7 +1445,8 @@ abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
   override def find(
       query: JsObject,
       sort: Option[JsObject] = None,
-      maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
+      maxDocs: Int = -1
+  )(implicit ec: ExecutionContext): Future[Seq[Of]] = {
     logger.debug(s"$tableName.find(${Json.prettyPrint(query)})")
 
     val limit = if (maxDocs > 0) s"Limit $maxDocs" else ""
@@ -1336,10 +1456,13 @@ abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
         if (query.values.isEmpty)
           reactivePg.querySeq(s"SELECT * FROM $tableName $limit") {
             rowToJson(_, format)
-          } else {
+          }
+        else {
           val (sql, params) = convertQuery(query)
-          reactivePg.querySeq(s"SELECT * FROM $tableName WHERE $sql $limit",
-                              params) {
+          reactivePg.querySeq(
+            s"SELECT * FROM $tableName WHERE $sql $limit",
+            params
+          ) {
             rowToJson(_, format)
           }
         }
@@ -1348,14 +1471,17 @@ abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
         val sortedKeys = sort
           .map(obj =>
             obj.fields.sortWith((a, b) =>
-              a._2.as[JsNumber].value < b._2.as[JsNumber].value))
+              a._2.as[JsNumber].value < b._2.as[JsNumber].value
+            )
+          )
           .map(r => r.map(x => s"content->>'${x._1}'"))
           .getOrElse(Seq("_id"))
         if (query.values.isEmpty)
           reactivePg.querySeq(
             s"SELECT * FROM $tableName $limit ORDER BY ${sortedKeys.mkString(",")} ASC",
             Seq.empty
-          ) { rowToJson(_, format) } else {
+          ) { rowToJson(_, format) }
+        else {
           val (sql, params) = convertQuery(query)
           reactivePg.querySeq(
             s"SELECT * FROM $tableName WHERE $sql $limit ORDER BY ${sortedKeys.mkString(",")} ASC",
@@ -1368,8 +1494,9 @@ abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
   override def count()(implicit ec: ExecutionContext): Future[Long] =
     count(JsObject.empty)
 
-  override def deleteByIdLogically(id: String)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+  override def deleteByIdLogically(
+      id: String
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteByIdLogically($id)")
     reactivePg
       .query(
@@ -1381,14 +1508,16 @@ abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
       .map(_.size() > 0)
   }
 
-  override def deleteByIdLogically(id: Id)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+  override def deleteByIdLogically(
+      id: Id
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteByIdLogically($id)")
     deleteByIdLogically(id.value)
   }
 
-  override def deleteLogically(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+  override def deleteLogically(
+      query: JsObject
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteLogically(${Json.prettyPrint(query)})")
     val (sql, params) = convertQuery(query)
     reactivePg
@@ -1396,38 +1525,44 @@ abstract class PostgresRepo[Of, Id <: ValueType](env: Env,
         s"UPDATE $tableName " +
           "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
           s"WHERE _deleted = false AND $sql  RETURNING _id",
-        params)
+        params
+      )
       .map(_.size() > 0)
   }
 
-  override def deleteAllLogically()(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+  override def deleteAllLogically()(implicit
+      ec: ExecutionContext
+  ): Future[Boolean] = {
     logger.debug(s"$tableName.deleteAllLogically()")
     reactivePg
-      .query(s"UPDATE $tableName " +
-        "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
-        "WHERE _deleted = false RETURNING _id")
+      .query(
+        s"UPDATE $tableName " +
+          "SET _deleted = true, content = content || '{ \"_deleted\" : true }' " +
+          "WHERE _deleted = false RETURNING _id"
+      )
       .map(_.size() > 0)
   }
 
-  override def findWithPagination(query: JsObject,
-                                  page: Int,
-                                  pageSize: Int,
-                                  sort: Option[JsObject] = None)(
-      implicit ec: ExecutionContext): Future[(Seq[Of], Long)] =
+  override def findWithPagination(
+      query: JsObject,
+      page: Int,
+      pageSize: Int,
+      sort: Option[JsObject] = None
+  )(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] =
     super.findWithPagination(query, page, pageSize, sort)
 }
 
 abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     env: Env,
     reactivePg: ReactivePg,
-    tenant: TenantId)
-    extends CommonRepo[Of, Id](env, reactivePg) {
+    tenant: TenantId
+) extends CommonRepo[Of, Id](env, reactivePg) {
 
   implicit val logger: Logger = Logger(s"PostgresTenantAwareRepo")
 
-  override def deleteByIdLogically(id: String)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+  override def deleteByIdLogically(
+      id: String
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteByIdLogically($id)")
 
     reactivePg
@@ -1440,16 +1575,19 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
       .map(_.size() > 0)
   }
 
-  override def deleteByIdLogically(id: Id)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+  override def deleteByIdLogically(
+      id: Id
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
     deleteByIdLogically(id.value)
   }
 
-  override def deleteLogically(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+  override def deleteLogically(
+      query: JsObject
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.deleteLogically(${Json.prettyPrint(query)})")
     val (sql, params) = convertQuery(
-      query ++ Json.obj("_deleted" -> false, "_tenant" -> tenant.value))
+      query ++ Json.obj("_deleted" -> false, "_tenant" -> tenant.value)
+    )
     reactivePg
       .query(
         s"UPDATE $tableName " +
@@ -1460,8 +1598,9 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
       .map(_.size() > 0)
   }
 
-  override def deleteAllLogically()(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+  override def deleteAllLogically()(implicit
+      ec: ExecutionContext
+  ): Future[Boolean] = {
     logger.debug(s"$tableName.deleteAllLogically()")
 
     reactivePg
@@ -1474,12 +1613,14 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
       .map(_.size() > 0)
   }
 
-  override def findRaw(query: JsObject,
-                       sort: Option[JsObject] = None,
-                       maxDocs: Int = -1)(
-      implicit ec: ExecutionContext): Future[Seq[JsValue]] = {
-    logger.debug(s"$tableName.findRaw(${Json.prettyPrint(
-      query ++ Json.obj("_tenant" -> tenant.value))})")
+  override def findRaw(
+      query: JsObject,
+      sort: Option[JsObject] = None,
+      maxDocs: Int = -1
+  )(implicit ec: ExecutionContext): Future[Seq[JsValue]] = {
+    logger.debug(
+      s"$tableName.findRaw(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})"
+    )
 
     val limit = if (maxDocs > 0) s"Limit $maxDocs" else ""
 
@@ -1487,11 +1628,14 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
       case None =>
         if (query.values.isEmpty)
           reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}' $limit") {
+            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}' $limit"
+          ) {
             _.optJsObject("content")
-          } else {
+          }
+        else {
           val (sql, params) = convertQuery(
-            query ++ Json.obj("_tenant" -> tenant.value))
+            query ++ Json.obj("_tenant" -> tenant.value)
+          )
 
           var out: String = s"SELECT * FROM $tableName WHERE $sql $limit"
           params.zipWithIndex.reverse.foreach {
@@ -1507,7 +1651,9 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
         val sortedKeys = sort
           .map(obj =>
             obj.fields.sortWith((a, b) =>
-              a._2.as[JsNumber].value < b._2.as[JsNumber].value))
+              a._2.as[JsNumber].value < b._2.as[JsNumber].value
+            )
+          )
           .map(r => r.map(x => s"content->>'${x._1}'"))
           .getOrElse(Seq("_id"))
         if (query.values.isEmpty)
@@ -1517,9 +1663,11 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
             Seq.empty
           ) {
             _.optJsObject("content")
-          } else {
+          }
+        else {
           val (sql, params) = convertQuery(
-            query ++ Json.obj("_tenant" -> tenant.value))
+            query ++ Json.obj("_tenant" -> tenant.value)
+          )
           reactivePg.querySeq(
             s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys
               .mkString(",")} ASC $limit",
@@ -1534,9 +1682,11 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
   override def find(
       query: JsObject,
       sort: Option[JsObject] = None,
-      maxDocs: Int = -1)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
+      maxDocs: Int = -1
+  )(implicit ec: ExecutionContext): Future[Seq[Of]] = {
     logger.debug(
-      s"$tableName.find(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})")
+      s"$tableName.find(${Json.prettyPrint(query ++ Json.obj("_tenant" -> tenant.value))})"
+    )
 
     val limit = if (maxDocs > 0) s"Limit $maxDocs" else ""
 
@@ -1544,11 +1694,14 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
       case None =>
         if (query.values.isEmpty)
           reactivePg.querySeq(
-            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}' $limit") {
+            s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value}' $limit"
+          ) {
             rowToJson(_, format)
-          } else {
+          }
+        else {
           val (sql, params) = convertQuery(
-            query ++ Json.obj("_tenant" -> tenant.value))
+            query ++ Json.obj("_tenant" -> tenant.value)
+          )
 
           var out: String = s"SELECT * FROM $tableName WHERE $sql $limit"
           params.zipWithIndex.reverse.foreach {
@@ -1564,7 +1717,9 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
         val sortedKeys = sort
           .map(obj =>
             obj.fields.sortWith((a, b) =>
-              a._2.as[JsNumber].value < b._2.as[JsNumber].value))
+              a._2.as[JsNumber].value < b._2.as[JsNumber].value
+            )
+          )
           .map(r => r.map(x => s"content->>'${x._1}'"))
           .getOrElse(Seq("_id"))
         if (query.values.isEmpty)
@@ -1572,9 +1727,11 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
             s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value} ORDER BY ${sortedKeys
               .mkString(",")} ASC $limit",
             Seq.empty
-          ) { rowToJson(_, format) } else {
+          ) { rowToJson(_, format) }
+        else {
           val (sql, params) = convertQuery(
-            query ++ Json.obj("_tenant" -> tenant.value))
+            query ++ Json.obj("_tenant" -> tenant.value)
+          )
           reactivePg.querySeq(
             s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys
               .mkString(",")} ASC $limit",
@@ -1584,44 +1741,57 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     }
   }
 
-  override def findOne(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Option[Of]] =
+  override def findOne(
+      query: JsObject
+  )(implicit ec: ExecutionContext): Future[Option[Of]] =
     super.findOne(query ++ Json.obj("_tenant" -> tenant.value))
 
-  override def delete(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] =
+  override def delete(
+      query: JsObject
+  )(implicit ec: ExecutionContext): Future[Boolean] =
     super.delete(query ++ Json.obj("_tenant" -> tenant.value))
 
-  override def insertMany(values: Seq[Of])(
-      implicit ec: ExecutionContext): Future[Long] =
+  override def insertMany(
+      values: Seq[Of]
+  )(implicit ec: ExecutionContext): Future[Long] =
     super.insertMany(values, Json.obj("_tenant" -> tenant.value))
 
-  override def exists(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] =
+  override def exists(
+      query: JsObject
+  )(implicit ec: ExecutionContext): Future[Boolean] =
     super.exists(query ++ Json.obj("_tenant" -> tenant.value))
 
   override def count()(implicit ec: ExecutionContext): Future[Long] =
     count(Json.obj("_tenant" -> tenant.value))
 
   override def findWithProjection(query: JsObject, projection: JsObject)(
-      implicit ec: ExecutionContext): Future[Seq[JsObject]] =
-    super.findWithProjection(query ++ Json.obj("_tenant" -> tenant.value),
-                             projection)
+      implicit ec: ExecutionContext
+  ): Future[Seq[JsObject]] =
+    super.findWithProjection(
+      query ++ Json.obj("_tenant" -> tenant.value),
+      projection
+    )
 
   override def findOneWithProjection(query: JsObject, projection: JsObject)(
-      implicit ec: ExecutionContext): Future[Option[JsObject]] =
-    super.findOneWithProjection(query ++ Json.obj("_tenant" -> tenant.value),
-                                projection)
+      implicit ec: ExecutionContext
+  ): Future[Option[JsObject]] =
+    super.findOneWithProjection(
+      query ++ Json.obj("_tenant" -> tenant.value),
+      projection
+    )
 
-  override def findWithPagination(query: JsObject,
-                                  page: Int,
-                                  pageSize: Int,
-                                  sort: Option[JsObject] = None)(
-      implicit ec: ExecutionContext): Future[(Seq[Of], Long)] =
-    super.findWithPagination(query ++ Json.obj("_tenant" -> tenant.value),
-                             page,
-                             pageSize,
-                             sort)
+  override def findWithPagination(
+      query: JsObject,
+      page: Int,
+      pageSize: Int,
+      sort: Option[JsObject] = None
+  )(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] =
+    super.findWithPagination(
+      query ++ Json.obj("_tenant" -> tenant.value),
+      page,
+      pageSize,
+      sort
+    )
 }
 
 abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
@@ -1638,8 +1808,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     override def writes(o: JsObject): JsObject = o
   }
 
-  override def count(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Long] = {
+  override def count(
+      query: JsObject
+  )(implicit ec: ExecutionContext): Future[Long] = {
     logger.debug(s"$tableName.count(${Json.prettyPrint(query)})")
 
     if (query.values.isEmpty)
@@ -1651,14 +1822,17 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     else {
       val (sql, params) = convertQuery(query)
       reactivePg
-        .queryOne(s"SELECT COUNT(*) as count FROM $tableName WHERE $sql",
-                  params) { _.optLong("count") }
+        .queryOne(
+          s"SELECT COUNT(*) as count FROM $tableName WHERE $sql",
+          params
+        ) { _.optLong("count") }
         .map(_.getOrElse(0L))
     }
   }
 
-  override def exists(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+  override def exists(
+      query: JsObject
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
     val (sql, params) = convertQuery(query)
 
     reactivePg
@@ -1666,8 +1840,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       .map(_.size() > 0)
   }
 
-  override def streamAllRaw(query: JsObject = Json.obj())(
-      implicit ec: ExecutionContext): Source[JsValue, NotUsed] = {
+  override def streamAllRaw(
+      query: JsObject = Json.obj()
+  )(implicit ec: ExecutionContext): Source[JsValue, NotUsed] = {
     logger.debug(s"$tableName.streamAllRaw(${Json.prettyPrint(query)})")
 
     val (sql, params) = convertQuery(query)
@@ -1683,10 +1858,12 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       .flatMapConcat(res => Source(res.toList))
   }
 
-  override def streamAllRawFormatted(query: JsObject = Json.obj())(
-      implicit ec: ExecutionContext): Source[Of, NotUsed] = {
+  override def streamAllRawFormatted(
+      query: JsObject = Json.obj()
+  )(implicit ec: ExecutionContext): Source[Of, NotUsed] = {
     logger.debug(
-      s"$tableName.streamAllRawFormatted(${Json.prettyPrint(query)})")
+      s"$tableName.streamAllRawFormatted(${Json.prettyPrint(query)})"
+    )
 
     val (sql, params) = convertQuery(query)
     val selector = if (sql == "") "" else s"WHERE $sql "
@@ -1699,11 +1876,13 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
           }
       )
       .flatMapConcat(res =>
-        Source(res.toList.map(format.reads).filter(_.isSuccess).map(_.get)))
+        Source(res.toList.map(format.reads).filter(_.isSuccess).map(_.get))
+      )
   }
 
-  override def findOneRaw(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Option[JsValue]] = {
+  override def findOneRaw(
+      query: JsObject
+  )(implicit ec: ExecutionContext): Future[Option[JsValue]] = {
     val (sql, params) = convertQuery(query)
     logger.debug(s"$tableName.findOneRaw(${Json.prettyPrint(query)})")
     logger.debug(s"[query] :: SELECT * FROM $tableName WHERE $sql LIMIT 1")
@@ -1718,8 +1897,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       }
   }
 
-  override def findOne(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Option[Of]] = {
+  override def findOne(
+      query: JsObject
+  )(implicit ec: ExecutionContext): Future[Option[Of]] = {
     val (sql, params) = convertQuery(query)
     logger.debug(s"$tableName.findeOne(${Json.prettyPrint(query)})")
     logger.debug(s"[query] :: SELECT * FROM $tableName WHERE $sql LIMIT 1")
@@ -1737,8 +1917,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       }
   }
 
-  override def delete(query: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+  override def delete(
+      query: JsObject
+  )(implicit ec: ExecutionContext): Future[Boolean] = {
     logger.debug(s"$tableName.delete(${Json.prettyPrint(query)})")
 
     if (query.values.isEmpty)
@@ -1751,10 +1932,12 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     }.map(_ => true)
   }
 
-  override def save(query: JsObject, value: JsObject)(
-      implicit ec: ExecutionContext): Future[Boolean] = {
+  override def save(query: JsObject, value: JsObject)(implicit
+      ec: ExecutionContext
+  ): Future[Boolean] = {
     logger.debug(
-      s"$tableName.save(${Json.prettyPrint(query)}) with value ${Json.prettyPrint(value)}")
+      s"$tableName.save(${Json.prettyPrint(query)}) with value ${Json.prettyPrint(value)}"
+    )
 
     (
       if (value.keys.contains("_deleted"))
@@ -1762,9 +1945,11 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
           s"INSERT INTO $tableName(_id, _deleted, content) VALUES($$1,$$2,$$3) " +
             "ON CONFLICT (_id) DO UPDATE " +
             s"set _deleted = $$2, content = $$3",
-          Seq((value \ "_id").as[String],
-              java.lang.Boolean.valueOf((value \ "_deleted").as[Boolean]),
-              new JsonObject(Json.stringify(value)))
+          Seq(
+            (value \ "_id").as[String],
+            java.lang.Boolean.valueOf((value \ "_deleted").as[Boolean]),
+            new JsonObject(Json.stringify(value))
+          )
         )
       else
         reactivePg.query(
@@ -1777,36 +1962,43 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       .recover(_ => false)
   }
 
-  def insertMany(values: Seq[Of], addToPayload: JsObject)(
-      implicit ec: ExecutionContext): Future[Long] = {
+  def insertMany(values: Seq[Of], addToPayload: JsObject)(implicit
+      ec: ExecutionContext
+  ): Future[Long] = {
     logger.debug(s"$tableName.insertMany()")
 
     Future
       .sequence(
         values
           .map(v =>
-            save(Json.obj(), format.writes(v).as[JsObject] ++ addToPayload)))
+            save(Json.obj(), format.writes(v).as[JsObject] ++ addToPayload)
+          )
+      )
       .map(_ => 1L)
   }
 
-  override def insertMany(values: Seq[Of])(
-      implicit ec: ExecutionContext): Future[Long] =
+  override def insertMany(
+      values: Seq[Of]
+  )(implicit ec: ExecutionContext): Future[Long] =
     insertMany(values, Json.obj())
 
-  override def updateMany(query: JsObject, value: JsObject)(
-      implicit ec: ExecutionContext): Future[Long] = {
+  override def updateMany(query: JsObject, value: JsObject)(implicit
+      ec: ExecutionContext
+  ): Future[Long] = {
     logger.debug(s"$tableName.updateMany(${Json.prettyPrint(query)})")
 
     val (sql, params) = convertQuery(query)
     reactivePg
       .query(
         s"UPDATE $tableName SET content = content || ${getParam(params.size)} WHERE $sql RETURNING _id",
-        params ++ Seq(new JsonObject(Json.stringify(value))))
+        params ++ Seq(new JsonObject(Json.stringify(value)))
+      )
       .map(_.size())
   }
 
   override def updateManyByQuery(query: JsObject, queryUpdate: JsObject)(
-      implicit ec: ExecutionContext): Future[Long] = {
+      implicit ec: ExecutionContext
+  ): Future[Long] = {
     logger.debug(s"$tableName.updateManyByQuery(${Json.prettyPrint(query)})")
 
     val (sql1, params1) = convertQuery(queryUpdate)
@@ -1828,8 +2020,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       .map(_ => 1L)
   }
 
-  override def findMaxByQuery(query: JsObject, field: String)(
-      implicit ec: ExecutionContext): Future[Option[Long]] = {
+  override def findMaxByQuery(query: JsObject, field: String)(implicit
+      ec: ExecutionContext
+  ): Future[Option[Long]] = {
     logger.debug(s"$tableName.findMaxByQuery(${Json.prettyPrint(query)})")
 
     val (sql, params) = convertQuery(query)
@@ -1845,7 +2038,8 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       implicit ec: ExecutionContext
   ): Future[Seq[JsObject]] = {
     logger.debug(
-      s"$tableName.findWithProjection(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
+      s"$tableName.findWithProjection(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})"
+    )
 
     if (query.values.isEmpty)
       reactivePg.querySeq(s"SELECT * FROM $tableName") { row =>
@@ -1853,12 +2047,14 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
           .map(key => Json.obj(key -> row.getString(key)))
           .foldLeft(Json.obj())(_ ++ _)
           .some
-      } else {
+      }
+    else {
       val (sql, params) = convertQuery(query)
       reactivePg.querySeq(
         s"SELECT " +
           s"${projection.keys.map(e => s"content->>'$e' as ${e.toLowerCase}").mkString(", ")} FROM $tableName WHERE $sql",
-        params) { row =>
+        params
+      ) { row =>
         projection.keys
           .filter(key => {
             try {
@@ -1879,16 +2075,20 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       implicit ec: ExecutionContext
   ): Future[Option[JsObject]] = {
     logger.debug(
-      s"$tableName.findOneWithProjection(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})")
+      s"$tableName.findOneWithProjection(${Json.prettyPrint(query)}, ${Json.prettyPrint(projection)})"
+    )
 
     if (query.values.isEmpty) {
-      reactivePg.queryOne(s"SELECT $$1 FROM $tableName",
-                          Seq(
-                            if (projection.values.isEmpty) "*"
-                            else
-                              projection.keys
-                                .map(e => s"content->>'$e' as ${e.toLowerCase}")
-                                .mkString(", "))) { row =>
+      reactivePg.queryOne(
+        s"SELECT $$1 FROM $tableName",
+        Seq(
+          if (projection.values.isEmpty) "*"
+          else
+            projection.keys
+              .map(e => s"content->>'$e' as ${e.toLowerCase}")
+              .mkString(", ")
+        )
+      ) { row =>
         projection.keys
           .map(key => Json.obj(key -> row.getString(key)))
           .foldLeft(Json.obj())(_ ++ _)
@@ -1903,7 +2103,8 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
           else
             projection.keys
               .map(e => s"content->>'$e' as ${e.toLowerCase}")
-              .mkString(", "))
+              .mkString(", ")
+        )
       ) { row =>
         projection.keys
           .map(key => Json.obj(key -> row.getString(key)))
@@ -1913,14 +2114,17 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     }
   }
 
-  override def findWithPagination(query: JsObject,
-                                  page: Int,
-                                  pageSize: Int,
-                                  sort: Option[JsObject] = None)(
-      implicit ec: ExecutionContext
+  override def findWithPagination(
+      query: JsObject,
+      page: Int,
+      pageSize: Int,
+      sort: Option[JsObject] = None
+  )(implicit
+      ec: ExecutionContext
   ): Future[(Seq[Of], Long)] = {
     logger.debug(
-      s"$tableName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)")
+      s"$tableName.findWithPagination(${Json.prettyPrint(query)}, $page, $pageSize)"
+    )
 
     for {
       count <- {
@@ -1936,10 +2140,13 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
             s"SELECT COUNT(*) as count FROM $tableName WHERE $sql"
 
           reactivePg
-            .queryOne(out, params.map {
-              case x: String => x.replace("\"", "")
-              case x         => x
-            }) { _.optLong("count") }
+            .queryOne(
+              out,
+              params.map {
+                case x: String => x.replace("\"", "")
+                case x         => x
+              }
+            ) { _.optLong("count") }
             .map(_.getOrElse(0L))
         }
       }
@@ -1947,7 +2154,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
         val sortedKeys = sort
           .map(obj =>
             obj.fields.sortWith((a, b) =>
-              a._2.as[JsNumber].value < b._2.as[JsNumber].value))
+              a._2.as[JsNumber].value < b._2.as[JsNumber].value
+            )
+          )
           .map(r => r.map(x => s"content->>'${x._1}'"))
           .getOrElse(Seq("_id"))
 
@@ -1957,7 +2166,8 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
             Seq(Integer.valueOf(pageSize), Integer.valueOf(page * pageSize))
           ) { row =>
             rowToJson(row, format)
-          } else {
+          }
+        else {
           val (sql, params) = convertQuery(query)
           reactivePg.querySeq(
             s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys

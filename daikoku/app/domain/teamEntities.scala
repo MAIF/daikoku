@@ -26,12 +26,13 @@ object TeamType {
   }
   val values: Seq[TeamType] =
     Seq(Personal, Organization, Admin)
-  def apply(name: String): Option[TeamType] = name match {
-    case "Organization" => Organization.some
-    case "Personal"     => Personal.some
-    case "Admin"        => Admin.some
-    case _              => None
-  }
+  def apply(name: String): Option[TeamType] =
+    name match {
+      case "Organization" => Organization.some
+      case "Personal"     => Personal.some
+      case "Admin"        => Admin.some
+      case _              => None
+    }
 }
 
 sealed trait TeamPermission {
@@ -50,12 +51,13 @@ object TeamPermission {
   }
   val values: Seq[TeamPermission] =
     Seq(Administrator, ApiEditor, TeamUser)
-  def apply(name: String): Option[TeamPermission] = name match {
-    case "Administrator" => Administrator.some
-    case "ApiEditor"     => ApiEditor.some
-    case "User"          => TeamUser.some
-    case _               => None
-  }
+  def apply(name: String): Option[TeamPermission] =
+    name match {
+      case "Administrator" => Administrator.some
+      case "ApiEditor"     => ApiEditor.some
+      case "User"          => TeamUser.some
+      case _               => None
+    }
 }
 
 case class UserWithPermission(
@@ -103,7 +105,8 @@ case class Team(
     users: Set[UserWithPermission] = Set.empty,
     authorizedOtoroshiGroups: Set[OtoroshiGroup] = Set.empty,
     apiKeyVisibility: Option[TeamApiKeyVisibility] = Some(
-      TeamApiKeyVisibility.User),
+      TeamApiKeyVisibility.User
+    ),
     metadata: Map[String, String] = Map.empty,
     apisCreationPermission: Option[Boolean] = None,
     verified: Boolean = false
@@ -155,7 +158,7 @@ case class EmailVerification(
     tenant: TenantId,
     team: TeamId,
     creationDate: DateTime,
-    validUntil: DateTime,
+    validUntil: DateTime
 ) extends CanJson[EmailVerification] {
   override def asJson: JsValue = json.EmailVerificationFormat.writes(this)
 }
@@ -199,11 +202,12 @@ object NotificationAction {
   case class ApiSubscriptionAccept(api: ApiId, plan: UsagePlanId, team: TeamId)
       extends NotificationAction
 
-  case class ApiSubscriptionReject(message: Option[String],
-                                   api: ApiId,
-                                   plan: UsagePlanId,
-                                   team: TeamId)
-      extends NotificationAction
+  case class ApiSubscriptionReject(
+      message: Option[String],
+      api: ApiId,
+      plan: UsagePlanId,
+      team: TeamId
+  ) extends NotificationAction
 
   case class ApiSubscriptionDemand(
       api: ApiId,
@@ -212,31 +216,37 @@ object NotificationAction {
       demand: SubscriptionDemandId,
       step: SubscriptionDemandStepId,
       parentSubscriptionId: Option[ApiSubscriptionId] = None,
-      motivation: Option[String])
-      extends NotificationAction
+      motivation: Option[String]
+  ) extends NotificationAction
 
-  case class OtoroshiSyncSubscriptionError(subscription: ApiSubscription,
-                                           message: String)
-      extends OtoroshiSyncNotificationAction {
+  case class OtoroshiSyncSubscriptionError(
+      subscription: ApiSubscription,
+      message: String
+  ) extends OtoroshiSyncNotificationAction {
     def json: JsValue =
-      Json.obj("errType" -> "OtoroshiSyncSubscriptionError",
-               "errMessage" -> message,
-               "subscription" -> subscription.asJson)
+      Json.obj(
+        "errType" -> "OtoroshiSyncSubscriptionError",
+        "errMessage" -> message,
+        "subscription" -> subscription.asJson
+      )
   }
   case class OtoroshiSyncApiError(api: Api, message: String)
       extends OtoroshiSyncNotificationAction {
     def json: JsValue =
-      Json.obj("errType" -> "OtoroshiSyncApiError",
-               "errMessage" -> message,
-               "api" -> api.asJson)
+      Json.obj(
+        "errType" -> "OtoroshiSyncApiError",
+        "errMessage" -> message,
+        "api" -> api.asJson
+      )
   }
   case class ApiKeyDeletionInformation(api: String, clientId: String)
       extends NotificationAction
 
-  case class ApiKeyRotationInProgress(clientId: String,
-                                      api: String,
-                                      plan: String)
-      extends NotificationAction
+  case class ApiKeyRotationInProgress(
+      clientId: String,
+      api: String,
+      plan: String
+  ) extends NotificationAction
 
   case class ApiKeyRotationEnded(clientId: String, api: String, plan: String)
       extends NotificationAction
@@ -256,11 +266,12 @@ object NotificationAction {
   case class TransferApiOwnership(team: TeamId, api: ApiId)
       extends NotificationAction
 
-  case class CheckoutForSubscription(demand: SubscriptionDemandId,
-                                     api: ApiId,
-                                     plan: UsagePlanId,
-                                     step: SubscriptionDemandStepId)
-      extends NotificationAction
+  case class CheckoutForSubscription(
+      demand: SubscriptionDemandId,
+      api: ApiId,
+      plan: UsagePlanId,
+      step: SubscriptionDemandStepId
+  ) extends NotificationAction
 }
 
 sealed trait NotificationType {

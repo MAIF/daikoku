@@ -19,7 +19,8 @@ class ReplaceAllWith(regex: String) {
       val expression: String = matchResult.group().substring(2).init
       val replacement: String = callback(expression)
       str = str.substring(0, matchResult.start) + replacement + str.substring(
-        matchResult.end)
+        matchResult.end
+      )
       matcher.reset(str)
     }
     str

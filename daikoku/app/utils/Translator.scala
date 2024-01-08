@@ -9,12 +9,15 @@ import play.api.libs.json.Json
 import scala.concurrent.Future
 
 class Translator {
-  def translate(key: String,
-                tenant: Tenant,
-                args: Map[String, String] = Map.empty)(
-      implicit messagesApi: MessagesApi,
+  def translate(
+      key: String,
+      tenant: Tenant,
+      args: Map[String, String] = Map.empty
+  )(implicit
+      messagesApi: MessagesApi,
       language: String,
-      env: Env): Future[String] = {
+      env: Env
+  ): Future[String] = {
     implicit val ec = env.defaultExecutionContext
     implicit val mat = env.defaultMaterializer
 
@@ -32,10 +35,11 @@ class Translator {
       }
   }
 
-  def getMailTemplate(key: String, tenant: Tenant)(
-      implicit language: String,
+  def getMailTemplate(key: String, tenant: Tenant)(implicit
+      language: String,
       env: Env,
-      messagesApi: MessagesApi): Future[String] = {
+      messagesApi: MessagesApi
+  ): Future[String] = {
     implicit val ec = env.defaultExecutionContext
     implicit val mat = env.defaultMaterializer
 
@@ -52,7 +56,8 @@ class Translator {
               mailer.template
                 .map(t => FastFuture.successful(t))
                 .getOrElse(
-                  translate(key, tenant, Map("email" -> defaultTemplate)))
+                  translate(key, tenant, Map("email" -> defaultTemplate))
+                )
           }
         case Some(translation) => FastFuture.successful(translation.value)
       }

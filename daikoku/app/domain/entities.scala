@@ -127,25 +127,27 @@ case class SubscriptionDemandStepId(value: String)
   def asJson: JsValue = JsString(value)
 }
 
-case class Translation(id: DatastoreId,
-                       tenant: TenantId,
-                       language: String,
-                       key: String,
-                       value: String,
-                       lastModificationAt: Option[DateTime] = None)
-    extends CanJson[Translation] {
+case class Translation(
+    id: DatastoreId,
+    tenant: TenantId,
+    language: String,
+    key: String,
+    value: String,
+    lastModificationAt: Option[DateTime] = None
+) extends CanJson[Translation] {
   override def asJson: JsValue = json.TranslationFormat.writes(this)
   def asUiTranslationJson: JsValue = {
     Json.obj(
-      key -> value,
+      key -> value
     )
   }
 }
 
-case class Evolution(id: DatastoreId,
-                     version: String,
-                     applied: Boolean,
-                     date: DateTime = new DateTime())
-    extends CanJson[Evolution] {
+case class Evolution(
+    id: DatastoreId,
+    version: String,
+    applied: Boolean,
+    date: DateTime = new DateTime()
+) extends CanJson[Evolution] {
   override def asJson: JsValue = json.EvolutionFormat.writes(this)
 }
