@@ -4349,7 +4349,7 @@ class ApiController(
                                 )
                               ),
                               possibleUsagePlans = Seq.empty,
-                              defaultUsagePlan = UsagePlanId(""),
+                              defaultUsagePlan = None,
                               posts = Seq.empty,
                               issues = Seq.empty,
                               state = ApiState.Created

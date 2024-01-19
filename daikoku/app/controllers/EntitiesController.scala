@@ -117,7 +117,7 @@ class EntitiesController(
             ),
             visibility = ApiVisibility.Public,
             possibleUsagePlans = Seq.empty,
-            defaultUsagePlan = UsagePlanId("default")
+            defaultUsagePlan = None
           ).asJson
         )
       }
@@ -166,7 +166,7 @@ class EntitiesController(
             ),
             visibility = ApiVisibility.Public,
             possibleUsagePlans = Seq.empty,
-            defaultUsagePlan = UsagePlanId("default")
+            defaultUsagePlan = None
           ).asJson
         )
       }

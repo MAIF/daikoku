@@ -895,7 +895,7 @@ class AdminApiControllerSpec
           method = "POST",
           headers = getAdminApiHeader(adminApiSubscription),
           body = defaultApi.api
-            .copy(defaultUsagePlan = UsagePlanId("unknown"))
+            .copy(defaultUsagePlan = UsagePlanId("unknown").some)
             .asJson
             .some
         )(tenant)
@@ -1016,7 +1016,7 @@ class AdminApiControllerSpec
           users = Seq(user)
         )
 
-        val updated = defaultApi.api.copy(name = "foo")
+        val updated = defaultApi.api.copy(defaultUsagePlan = None)
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
           method = "PUT",

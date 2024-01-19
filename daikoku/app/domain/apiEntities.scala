@@ -942,7 +942,7 @@ case class Api(
     categories: Set[String] = Set.empty,
     visibility: ApiVisibility,
     possibleUsagePlans: Seq[UsagePlanId],
-    defaultUsagePlan: UsagePlanId,
+    defaultUsagePlan: Option[UsagePlanId],
     authorizedTeams: Seq[TeamId] = Seq.empty,
     posts: Seq[ApiPostId] = Seq.empty,
     issues: Seq[ApiIssueId] = Seq.empty,

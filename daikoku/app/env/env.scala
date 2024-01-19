@@ -461,7 +461,7 @@ class DaikokuEnv(
                     Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
                   possibleUsagePlans = Seq(adminApiDefaultPlan.id),
                   visibility = ApiVisibility.AdminOnly,
-                  defaultUsagePlan = adminApiDefaultPlan.id,
+                  defaultUsagePlan = adminApiDefaultPlan.id.some,
                   authorizedTeams = Seq.empty,
                   state = ApiState.Published
                 )

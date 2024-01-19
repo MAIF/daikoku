@@ -883,7 +883,7 @@ object utils {
       ),
       swagger = None,
       possibleUsagePlans = Seq(adminApiPlan.id),
-      defaultUsagePlan = UsagePlanId("admin"),
+      defaultUsagePlan = UsagePlanId("admin").some,
       tags = Set("Administration"),
       visibility = ApiVisibility.AdminOnly,
       authorizedTeams = Seq(defaultAdminTeam.id)
@@ -933,7 +933,7 @@ object utils {
       possibleUsagePlans = Seq(adminApi2plan.id),
       tags = Set("Administration"),
       visibility = ApiVisibility.AdminOnly,
-      defaultUsagePlan = UsagePlanId("1"),
+      defaultUsagePlan = UsagePlanId("1").some,
       authorizedTeams = Seq(tenant2AdminTeam.id)
     )
     val tenant = Tenant(
@@ -1197,7 +1197,7 @@ object utils {
           )
         ),
         possibleUsagePlans = plans.map(_.id),
-        defaultUsagePlan = UsagePlanId("1")
+        defaultUsagePlan = UsagePlanId("1").some
       )
 
       ApiWithPlans(api, plans)

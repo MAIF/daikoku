@@ -427,10 +427,10 @@ class ApiAdminApiController(
           .toList
           .sequence
       _ <- EitherT.cond[Future][AppError, Unit](
-        entity.possibleUsagePlans.contains(entity.defaultUsagePlan),
+        entity.defaultUsagePlan.forall(entity.possibleUsagePlans.contains),
         (),
         AppError.ParsingPayloadError(
-          s"Default Usage Plan (${entity.defaultUsagePlan.value}) not found"
+          s"Default Usage Plan (${entity.defaultUsagePlan.get.value}) not found"
         )
       )
       _ <- EitherT.fromOptionF[Future, AppError, Team](

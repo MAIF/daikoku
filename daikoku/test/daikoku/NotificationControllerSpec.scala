@@ -1367,7 +1367,7 @@ class NotificationControllerSpec()
             notificationType = AcceptOrReject,
             action = ApiSubscriptionDemand(
               defaultApi.api.id,
-              defaultApi.api.defaultUsagePlan,
+              defaultApi.api.defaultUsagePlan.get,
               teamConsumerId,
               motivation = Some("please"),
               demand = demand.id,
@@ -1450,7 +1450,7 @@ class NotificationControllerSpec()
             notificationType = AcceptOrReject,
             action = ApiSubscriptionDemand(
               api = defaultApi.api.id,
-              plan = defaultApi.api.defaultUsagePlan,
+              plan = defaultApi.api.defaultUsagePlan.get,
               team = teamConsumerId,
               parentSubscriptionId = None,
               motivation = Some("please"),

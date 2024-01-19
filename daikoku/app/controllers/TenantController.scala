@@ -270,7 +270,7 @@ class TenantController(
               swagger =
                 Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
               possibleUsagePlans = Seq(adminApiPlan.id),
-              defaultUsagePlan = UsagePlanId("admin"),
+              defaultUsagePlan = UsagePlanId("admin").some,
               authorizedTeams = Seq.empty
             )
             val tenantForCreation = tenant.copy(adminApi = adminApi.id)

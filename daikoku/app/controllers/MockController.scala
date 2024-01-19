@@ -349,7 +349,7 @@ class MockController(
       swagger =
         Some(SwaggerAccess("/assets/swaggers/petstore.json".some, None)),
       possibleUsagePlans = plans.map(_.id),
-      defaultUsagePlan = plans.head.id
+      defaultUsagePlan = plans.head.id.some
     )
 
     (api, plans)
@@ -418,7 +418,7 @@ class MockController(
         )
       ),
       possibleUsagePlans = plans.map(_.id),
-      defaultUsagePlan = plans.head.id
+      defaultUsagePlan = plans.head.id.some
     )
 
     (api, plans)
@@ -612,7 +612,7 @@ class MockController(
       possibleUsagePlans = Seq(adminPlan.id),
       tags = Set("Administration"),
       visibility = ApiVisibility.AdminOnly,
-      defaultUsagePlan = adminPlan.id,
+      defaultUsagePlan = adminPlan.id.some,
       authorizedTeams = Seq.empty,
       issuesTags = issuesTags.toSet,
       issues = issues.map(_.id)
