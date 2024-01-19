@@ -1013,7 +1013,8 @@
             }
           },
           "defaultUsagePlan": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "authorizedTeams": {
             "type": "array",
@@ -1076,7 +1077,6 @@
           "documentation",
           "visibility",
           "possibleUsagePlans",
-          "defaultUsagePlan",
           "state"
         ]
       },
