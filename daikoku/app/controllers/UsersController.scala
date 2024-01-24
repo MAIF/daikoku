@@ -168,7 +168,7 @@ class UsersController(
                                   users = Set(
                                     UserWithPermission(user.id, Administrator)
                                   ),
-                                  authorizedOtoroshiGroups = Set.empty,
+                                  authorizedOtoroshiEntities = None,
                                   contact = userToSave.email,
                                   avatar = Some(userToSave.picture)
                                 )

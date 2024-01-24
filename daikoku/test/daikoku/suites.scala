@@ -96,8 +96,6 @@ object utils {
           )
         )
 
-        logger.info(s"database is avalaible ? ${triedLong.isSuccess}")
-
         if (triedLong.isSuccess) {
           run
         } else if (timeout < 1.minute) {
@@ -475,7 +473,7 @@ object utils {
                     name = user.name,
                     description = s"The personal team of ${user.name}",
                     users = Set(UserWithPermission(user.id, Administrator)),
-                    authorizedOtoroshiGroups = Set.empty
+                    authorizedOtoroshiEntities = None
                   )
                 case Some(team) => team
               }
@@ -846,7 +844,7 @@ object utils {
       description = s"The admin team for the default tenant",
       avatar = None,
       users = Set(UserWithPermission(tenantAdminId, Administrator)),
-      authorizedOtoroshiGroups = Set.empty
+      authorizedOtoroshiEntities = None
     )
     val tenant2AdminTeam = Team(
       id = TeamId(IdGenerator.token),
@@ -856,7 +854,7 @@ object utils {
       description = s"The admin team for the tenant II",
       avatar = None,
       users = Set(UserWithPermission(user.id, Administrator)),
-      authorizedOtoroshiGroups = Set.empty
+      authorizedOtoroshiEntities = None
     )
     val adminApiPlan = Admin(
       id = UsagePlanId("admin"),

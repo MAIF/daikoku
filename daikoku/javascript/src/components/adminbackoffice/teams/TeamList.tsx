@@ -1,39 +1,52 @@
-import { getApolloContext } from "@apollo/client";
-import { type } from '@maif/react-forms';
+import { getApolloContext, gql } from "@apollo/client";
+import { format, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import debounce from "lodash/debounce";
 import { useContext, useEffect, useMemo, useState } from 'react';
 import Pagination from "react-paginate";
 import { toastr } from 'react-redux-toastr';
 import { useNavigate } from 'react-router-dom';
+import Plus from 'react-feather/dist/icons/plus'
 
+import Select, { components } from 'react-select';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
-import { ITeamFull, ITeamFullGql, ITeamSimple } from '../../../types';
+import { IOtoroshiSettings, ITeamFullGql, ITeamSimple, ResponseError, isError } from '../../../types';
 import { teamSchema } from '../../backoffice/teams/TeamEdit';
-import { AvatarWithAction, Can, manage, teamPermissions, tenant as TENANT } from '../../utils';
+import { AvatarWithAction, Can, tenant as TENANT, manage } from '../../utils';
 
 export const TeamList = () => {
   const { tenant } = useTenantBackOffice();
 
   const { translate, Translation } = useContext(I18nContext);
-  const { confirm, openFormModal } = useContext(ModalContext);
+  const { confirm, openFormModal, alert } = useContext(ModalContext);
   const queryClient = useQueryClient();
   const { client } = useContext(getApolloContext());
 
   const [search, setSearch] = useState<string>("");
-  const limit = 10;
+  const limit = 9;
   const [page, setPage] = useState<number>(0);
   const [offset, setOffset] = useState<number>(0)
   const dataRequest = useQuery<{ teams: Array<ITeamFullGql>, total: number }>({
-    queryKey: ["data",
+    queryKey: ["teams",
       search,
       limit,
       offset],
     queryFn: ({ queryKey }) => {
       return client!.query<{ teamsPagination: { teams: Array<ITeamFullGql>, total: number } }>({
-        query: Services.graphql.getAllTeams,
+        query: gql(`
+        query getAllteams ($research: String, $limit: Int, $offset: Int) {
+          teamsPagination (research: $research, limit: $limit, offset: $offset){
+            teams {
+              _id
+              _humanReadableId
+              name
+              avatar
+            }
+            total
+          }
+        }`),
         fetchPolicy: "no-cache",
         variables: {
           research: queryKey[1],
@@ -120,41 +133,75 @@ export const TeamList = () => {
         tooltip: translate('Delete team'),
       },
       {
-        redirect: () => openFormModal({
-          title: translate('Update team'),
-          actionLabel: translate('Update'),
-          schema: {
-            ...teamSchema(team, translate),
-            apisCreationPermission: {
-              type: type.bool,
-              defaultValue: false,
-              label: translate('APIs creation permission'),
-              help: translate('apisCreationPermission.help'),
-              visible: !!tenant.creationSecurity
+        redirect: () => Services.teamFull(team._id)
+          .then(r => {
+            if (isError(r)) {
+              return Promise.reject(r)
+            } else {
+              return r
+            }
+          })
+          .then(team => openFormModal({
+            title: translate('Update team'),
+            actionLabel: translate('Update'),
+            schema: {
+              ...teamSchema(team, translate),
+              apisCreationPermission: {
+                type: type.bool,
+                defaultValue: false,
+                label: translate('APIs creation permission'),
+                help: translate('apisCreationPermission.help'),
+                visible: !!tenant.creationSecurity
+              },
+              metadata: {
+                type: type.object,
+                label: translate('Metadata'),
+              },
+              authorizedOtoroshiEntities: {
+                type: type.object,
+                array: true,
+                label: translate('authorizedOtoroshiEntities'),
+                format: format.form,
+                schema: {
+                  otoroshiSettingsId: {
+                    type: type.string,
+                    format: format.select,
+                    label: translate('Otoroshi instances'),
+                    optionsFrom: Services.allSimpleOtoroshis(tenant._id),
+                    transformer: (s: IOtoroshiSettings) => ({
+                      label: s.url,
+                      value: s._id
+                    }),
+                  },
+                  authorizedEntities: {
+                    type: type.object,
+                    visible: (props) => {
+                      return !!props.rawValues.authorizedOtoroshiEntities[props.informations?.parent?.index || 0].value.otoroshiSettingsId
+                    },
+                    deps: ['authorizedOtoroshiEntities.otoroshiSettingsId'],
+                    render: (props) => OtoroshiEntitiesSelector({ ...props, translate, targetKey: "authorizedOtoroshiEntities" }),
+                    label: translate('Authorized entities'),
+                    placeholder: translate('Authorized.entities.placeholder'),
+                    help: translate('authorized.entities.help'),
+                    defaultValue: { routes: [], services: [], groups: [] }
+                  },
+                },
+              }
             },
-            metadata: {
-              type: type.object,
-              label: translate('Metadata'),
-            }
-          },
-          onSubmit: (data) => {
-            const teamToUpdate: ITeamFull = {
-              ...data,
-              '_tenant': data.tenant.id,
-              users: data.users.map(({ user, teamPermission }) => ({ userId: user.userId, teamPermission }))
-            }
-            return Services.updateTeam(teamToUpdate)
-              .then(r => {
-                if (r.error) {
-                  toastr.error(translate('Error'), r.error)
-                } else {
-                  toastr.success(translate('Success'), translate({ key: "team.updated.success", replacements: [data.name] }))
-                  queryClient.invalidateQueries({ queryKey: ['teams'] });
-                }
-              })
-          },
-          value: team
-        }),
+            onSubmit: (teamToUpdate) => {
+              return Services.updateTeam(teamToUpdate)
+                .then(r => {
+                  if (r.error) {
+                    toastr.error(translate('Error'), r.error)
+                  } else {
+                    toastr.success(translate('Success'), translate({ key: "team.updated.success", replacements: [team.name] }))
+                    queryClient.invalidateQueries({ queryKey: ['teams'] });
+                  }
+                })
+            },
+            value: team
+          }))
+          .catch((error: ResponseError) => alert({ title: translate('Error'), message: error.error })),
         iconClass: 'fas fa-pen',
         tooltip: translate('Edit team'),
         actionLabel: translate('Create')
@@ -186,12 +233,6 @@ export const TeamList = () => {
       <div className="d-flex justify-content-between align-items-center">
         <h1>
           <Translation i18nkey="Teams">Teams</Translation>
-          <button
-            className="btn btn-sm btn-access-negative mb-1 ms-1"
-            title={translate('Create a new team')}
-            onClick={createNewTeam}>
-            <i className="fas fa-plus-circle" />
-          </button>
         </h1>
         <div className="col-5">
           <input
@@ -210,7 +251,14 @@ export const TeamList = () => {
                 <span className=" section team__name text-truncate">{team.name}</span>
               </>} actions={actions(team)} />)
           })}
-          <div className="apis__pagination d-flex justify-content-center" style={{ width: '100%' }}>
+          <div className="avatar-with-action new-team-button">
+            <div className="container">
+              <div className="avatar__container"
+                title={translate('Create a new team')}
+                onClick={createNewTeam}><Plus /></div>
+            </div>
+          </div>
+          <div className="apis__pagination d-flex justify-content-center align-items-center" style={{ width: '100%' }}>
             <Pagination
               previousLabel={translate('Previous')}
               nextLabel={translate('Next')}
@@ -228,7 +276,187 @@ export const TeamList = () => {
         </div>}
     </div>
   </Can>);
+};
 
+const OtoroshiEntitiesSelector = ({
+  rawValues,
+  informations,
+  onChange,
+  translate
+}: any) => {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [groups, setGroups] = useState<Array<any>>([]);
+  const [services, setServices] = useState<Array<any>>([]);
+  const [routes, setRoutes] = useState<Array<any>>([]);
+  const [disabled, setDisabled] = useState<boolean>(true);
+  const [value, setValue] = useState<any>(undefined);
 
+  const { Translation } = useContext(I18nContext);
 
+  useEffect(() => {
+    const otoroshiTarget = rawValues.authorizedOtoroshiEntities[informations?.parent?.index || 0].value
+
+    if (otoroshiTarget && otoroshiTarget.otoroshiSettingsId) {
+      Promise.all([
+        Services.getOtoroshiGroupsAsTeamAdmin(
+          rawValues._id,
+          otoroshiTarget.otoroshiSettingsId
+        ),
+        Services.getOtoroshiServicesAsTeamAdmin(
+          rawValues._id,
+          otoroshiTarget.otoroshiSettingsId
+        ),
+        Services.getOtoroshiRoutesAsTeamAdmin(
+          rawValues._id,
+          otoroshiTarget.otoroshiSettingsId
+        )
+      ])
+        .then(([groups, services, routes]) => {
+          if (!groups.error)
+            setGroups(groups.map((g: any) => ({
+              label: g.name,
+              value: g.id,
+              type: 'group'
+            })));
+          else setGroups([]);
+          if (!services.error)
+            setServices(services.map((g: any) => ({
+              label: g.name,
+              value: g.id,
+              type: 'service'
+            })));
+          else setServices([]);
+          if (!routes.error)
+            setRoutes(routes.map((g: any) => ({
+              label: g.name,
+              value: g.id,
+              type: 'route'
+            })));
+          else setRoutes([]);
+        })
+        .catch(() => {
+          setGroups([]);
+          setServices([]);
+          setRoutes([]);
+        });
+    }
+    setDisabled(!otoroshiTarget?.otoroshiSettingsId);
+  }, [rawValues?.authorizedOtoroshiEntities]);
+
+  useEffect(() => {
+    if (groups && services && routes) {
+      console.log({ groups, services, routes })
+      setLoading(false);
+    }
+  }, [services, groups, routes]);
+
+  useEffect(() => {
+    if (!!groups && !!services && !!routes && !!rawValues.authorizedOtoroshiEntities[informations?.parent?.index || 0].value) {
+      const v = rawValues.authorizedOtoroshiEntities[informations?.parent?.index || 0].value
+      console.log({ v })
+      setValue([
+        ...v.authorizedEntities.groups.map((authGroup: any) => (groups as any).find((g: any) => g.value === authGroup)),
+        ...(v.authorizedEntities.services || []).map((authService: any) => (services as any).find((g: any) => g.value === authService)),
+        ...(v.authorizedEntities.routes || []).map((authRoute: any) => (routes as any).find((g: any) => g.value === authRoute))
+      ].filter((f) => f));
+    }
+  }, [rawValues, groups, services, routes]);
+
+  const onValueChange = (v: any) => {
+    if (!v) {
+      onChange(null);
+      setValue(undefined);
+    } else {
+      const value = v.reduce(
+        (acc: any, entitie: any) => {
+          switch (entitie.type) {
+            case 'group':
+              return {
+                ...acc,
+                groups: [...acc.groups, groups.find((g: any) => g.value === entitie.value).value],
+              };
+            case 'service':
+              return {
+                ...acc,
+                services: [...acc.services, services.find((s: any) => s.value === entitie.value).value],
+              };
+            case 'route':
+              return {
+                ...acc,
+                routes: [...acc.routes, routes.find((s: any) => s.value === entitie.value).value],
+              };
+          }
+        },
+        { groups: [], services: [], routes: [] }
+      );
+      setValue([
+        ...value.groups.map((authGroup: any) => groups.find((g: any) => g.value === authGroup)),
+        ...value.services.map((authService: any) => services.find((g: any) => g.value === authService)),
+        ...value.routes.map((authRoute: any) => routes.find((g: any) => g.value === authRoute)),
+      ]);
+      onChange(value);
+    }
+  };
+
+  const groupedOptions = [
+    { label: 'Service groups', options: groups },
+    { label: 'Services', options: services },
+    { label: 'Routes', options: routes }
+  ];
+
+  const formatGroupLabel = (data) => (
+    <div className="groupStyles">
+      <span>{data.label}</span>
+      <span className="groupBadgeStyles">{data.options.length}</span>
+    </div>
+  )
+
+  return (<div>
+    <Select
+      id={`input-label`}
+      isMulti
+      name={`search-label`}
+      isLoading={loading}
+      isDisabled={disabled && !loading}
+      placeholder={translate('Authorized.entities.placeholder')} //@ts-ignore //FIXME
+      components={(props: any) => <components.Group {...props} />}
+      formatGroupLabel={formatGroupLabel}
+      options={groupedOptions}
+      value={value}
+      onChange={onValueChange}
+      classNamePrefix="reactSelect"
+      className="reactSelect" />
+    <div className="col-12 d-flex flex-row mt-3">
+      <div className="d-flex flex-column flex-grow-1">
+        <strong className="reactSelect__group-heading">
+          <Translation i18nkey="authorized.groups">Services Groups</Translation>
+        </strong>
+        {!!value &&
+          value.filter((x: any) => x.type === 'group')
+            .map((g: any, idx: any) => (<span className="p-2" key={idx}>
+              {g.label}
+            </span>))}
+      </div>
+      <div className="d-flex flex-column flex-grow-1">
+        <strong className="reactSelect__group-heading">
+          <Translation i18nkey="authorized.services">Services</Translation>
+        </strong>
+        {!!value &&
+          value.filter((x: any) => x.type === 'service')
+            .map((g: any, idx: any) => (<span className="p-2" key={idx}>
+              {g.label}
+            </span>))}
+      </div>
+      <div className="d-flex flex-column flex-grow-1">
+        <strong className="reactSelect__group-heading">
+          <Translation i18nkey="authorized.routes">Routes</Translation>
+        </strong>
+        {!!value &&
+          value.filter((x: any) => x.type === 'route')
+            .map((g: any, idx: any) => (<span className="p-2" key={idx}>
+              {g.label}
+            </span>))}
+      </div>
+    </div>
+  </div>);
 };

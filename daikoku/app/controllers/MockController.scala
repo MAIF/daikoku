@@ -445,7 +445,7 @@ class MockController(
         s"https://www.gravatar.com/avatar/${email.md5}?size=128&d=robohash"
       ),
       users = Set(userWithPermission),
-      authorizedOtoroshiGroups = Set.empty,
+      authorizedOtoroshiEntities = None,
       verified = true
     )
     val user = User(
@@ -571,7 +571,7 @@ class MockController(
         UserWithPermission(user3.id, TeamPermission.Administrator),
         UserWithPermission(user4.id, TeamPermission.Administrator)
       ),
-      authorizedOtoroshiGroups = Set.empty
+      authorizedOtoroshiEntities = None
     )
     val tenant2adminTeam = defaultAdminTeam.copy(
       id = TeamId(IdGenerator.token),

@@ -146,7 +146,7 @@ class TenantController(
                         description = s"The personal team of ${ctx.user.name}",
                         users =
                           Set(UserWithPermission(ctx.user.id, Administrator)),
-                        authorizedOtoroshiGroups = Set.empty
+                        authorizedOtoroshiEntities = None
                       )
                     )
                     .map(_ => ())
@@ -232,7 +232,7 @@ class TenantController(
               description = s"The admin team for the default tenant",
               avatar = tenant.style.map(_.logo),
               users = Set.empty,
-              authorizedOtoroshiGroups = Set.empty,
+              authorizedOtoroshiEntities = None,
               contact = tenant.contact,
               apisCreationPermission = true.some
             )

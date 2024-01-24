@@ -559,7 +559,7 @@ class LoginController(
                         name = s"${accountCreation.name}",
                         description = s"Team of ${accountCreation.name}",
                         users = Set(UserWithPermission(userId, Administrator)),
-                        authorizedOtoroshiGroups = Set.empty
+                        authorizedOtoroshiEntities = None
                       )
                       def getUser() =
                         User(

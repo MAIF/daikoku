@@ -726,6 +726,31 @@ object SchemaDefinition {
         )
     )
 
+    lazy val TeamAuthorizedEntitiesType = deriveObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      TeamAuthorizedEntities
+    ](
+      ObjectTypeDescription(
+        "Groups, services and routes allowed to be reached by team"
+      ),
+      ReplaceField(
+        "otoroshiSettingsId",
+        Field(
+          "otoroshiSettingsId",
+          StringType,
+          resolve = _.value.otoroshiSettingsId.value
+        )
+      ),
+      ReplaceField(
+        "authorizedEntities",
+        Field(
+          "authorizedEntities",
+          AuthorizedEntitiesType,
+          resolve = _.value.authorizedEntities
+        )
+      )
+    )
+
     lazy val TeamObjectType
         : ObjectType[(DataStore, DaikokuActionContext[JsValue]), Team] =
       ObjectType[(DataStore, DaikokuActionContext[JsValue]), Team](
@@ -751,9 +776,9 @@ object SchemaDefinition {
               resolve = _.value.users.toSeq
             ),
             Field(
-              "authorizedOtoroshiGroups",
-              ListType(StringType),
-              resolve = _.value.authorizedOtoroshiGroups.toSeq.map(_.value)
+              "authorizedOtoroshiEntities",
+              OptionType(ListType(TeamAuthorizedEntitiesType)),
+              resolve = _.value.authorizedOtoroshiEntities
             ),
             Field(
               "apiKeyVisibility",

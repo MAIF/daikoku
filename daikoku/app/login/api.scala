@@ -251,7 +251,7 @@ class LoginFilter(env: Env)(implicit
         name = s"${user.name}",
         description = s"The personal team of ${user.name}",
         users = Set(UserWithPermission(user.id, Administrator)),
-        authorizedOtoroshiGroups = Set.empty,
+        authorizedOtoroshiEntities = None,
         contact = user.email,
         avatar = Some(user.picture)
       )

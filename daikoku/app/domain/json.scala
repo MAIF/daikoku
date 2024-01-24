@@ -6,16 +6,13 @@ import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
-  Accepted,
-  Pending,
-  Rejected
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.otoroshi.daikoku.domain.ThirdPartySubscriptionInformations.StripeSubscriptionInformations
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
+import fr.maif.otoroshi.daikoku.domain.json.{ApiIdFormat, TeamIdFormat, TenantIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
@@ -2431,10 +2428,8 @@ object json {
               .asOpt(SetUserWithPermissionFormat)
               .map(_.toSet)
               .getOrElse(Set.empty[UserWithPermission]),
-            authorizedOtoroshiGroups = (json \ "authorizedOtoroshiGroups")
-              .asOpt(SeqOtoroshiGroupFormat)
-              .map(_.toSet)
-              .getOrElse(Set.empty[OtoroshiGroup]),
+            authorizedOtoroshiEntities = (json \ "authorizedOtoroshiEntities")
+              .asOpt(SeqTeamAuthorizedEntitiesFormat),
             metadata = (json \ "metadata")
               .asOpt[Map[String, String]]
               .getOrElse(Map.empty),
@@ -2465,9 +2460,10 @@ object json {
         "contact" -> o.contact,
         "avatar" -> o.avatar.map(JsString.apply).getOrElse(JsNull).as[JsValue],
         "users" -> JsArray(o.users.map(UserWithPermissionFormat.writes).toSeq),
-        "authorizedOtoroshiGroups" -> JsArray(
-          o.authorizedOtoroshiGroups.map(OtoroshiGroupFormat.writes).toSeq
-        ),
+        "authorizedOtoroshiEntities" -> o.authorizedOtoroshiEntities
+          .map(SeqTeamAuthorizedEntitiesFormat.writes)
+          .getOrElse(JsNull)
+          .as[JsValue],
         "apiKeyVisibility" -> o.apiKeyVisibility
           .map(_.asJson)
           .getOrElse(JsNull)
@@ -2479,6 +2475,29 @@ object json {
           .as[JsValue],
         "verified" -> o.verified
       )
+  }
+
+  def TeamAuthorizedEntitiesFormat = new Format[TeamAuthorizedEntities] {
+    override def writes(o: TeamAuthorizedEntities): JsValue =
+      Json.obj(
+        "otoroshiSettingsId" -> o.otoroshiSettingsId.asJson,
+        "authorizedEntities" -> o.authorizedEntities.asJson
+      )
+
+    override def reads(json: JsValue): JsResult[TeamAuthorizedEntities] = {
+      Try {
+        JsSuccess(
+          TeamAuthorizedEntities(
+            otoroshiSettingsId = (json \ "otoroshiSettingsId").as(OtoroshiSettingsIdFormat),
+            authorizedEntities = (json \ "authorizedEntities").as(AuthorizedEntitiesFormat)
+          )
+        )
+      } recover {
+        case e =>
+          println("Team AuthorizedEntities format error")
+          JsError(e.getMessage)
+      } get
+    }
   }
 
   val ApiFormat = new Format[Api] {
@@ -4608,6 +4627,11 @@ object json {
     Format(
       Reads.seq(SubscriptionDemandStepFormat),
       Writes.seq(SubscriptionDemandStepFormat)
+    )
+  val SeqTeamAuthorizedEntitiesFormat =
+    Format(
+      Reads.seq(TeamAuthorizedEntitiesFormat),
+      Writes.seq(TeamAuthorizedEntitiesFormat),
     )
 
 }

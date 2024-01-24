@@ -1458,6 +1458,14 @@ export const graphql = {
         apisCreationPermission
         verified
         metadata
+        authorizedOtoroshiEntities {
+          otoroshiSettingsId
+          authorizedEntities {
+            routes
+            groups
+            services
+          }
+        }
       }
       total
     }
