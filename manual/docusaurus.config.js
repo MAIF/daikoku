@@ -125,11 +125,7 @@ const config = {
               {
                 label: 'Discord',
                 href: 'https://discord.gg/vUP2eKYu',
-              },
-              {
-                label: 'Gitter',
-                href: 'https://app.gitter.im/#/room/#MAIF_daikoku:gitter.im',
-              },
+              }
             ],
           },
           {
@@ -150,6 +146,7 @@ const config = {
       prism: {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
+        additionalLanguages: ["bash", "json"]
       },
     }),
 };
