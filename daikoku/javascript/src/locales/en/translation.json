@@ -1301,7 +1301,7 @@
     "Payment": "Payment",
     "third-party.payment.list.add.label": "Add new settings",
     "third-party.payment.settings.delete.confirm.message": "Are your sure to delete this settings?",
-    "third-party.payment.settings.type.select.message": "Please, Select the third-party payment settings type",
+    "third-party.payment.settings.type.select.message": "Please, select the third-party payment settings type",
     "warning.missing.otoroshi": "No Otoroshi instances configured or no entities configured",
     "plan.update.successful": "The plan has been successfully created",
     "plan.creation.successful": "The plan has been successfully modified",
