@@ -11,37 +11,18 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  AuthorizedEntitiesFormat,
-  OtoroshiSettingsFormat,
-  OtoroshiSettingsIdFormat,
-  TestingConfigFormat
-}
-import fr.maif.otoroshi.daikoku.domain.{
-  ActualOtoroshiApiKey,
-  Api,
-  ApiKeyRestrictions,
-  AuthorizedEntities,
-  OtoroshiSettings,
-  Testing,
-  TestingAuth,
-  UsagePlan
-}
+import fr.maif.otoroshi.daikoku.domain.json.{AuthorizedEntitiesFormat, OtoroshiSettingsFormat, OtoroshiSettingsIdFormat, TestingConfigFormat}
+import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, Api, ApiKeyRestrictions, AuthorizedEntities, OtoroshiSettings, Testing, TestingAuth, UsagePlan}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
+import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.apache.commons.codec.binary.Base64
 import org.joda.time.DateTime
 import play.api.http.HttpEntity
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{
-  AbstractController,
-  BodyParser,
-  ControllerComponents,
-  Request,
-  Result
-}
+import play.api.mvc.{AbstractController, BodyParser, ControllerComponents, Request, Result}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -66,16 +47,26 @@ class OtoroshiSettingsController(
       }
     }
 
-  def otoroshisSettingsSimple(tenantId: String) =
+  def otoroshisSettingsSimple(tenantId: String, maybeTeam: Option[String] = None) =
     DaikokuAction.async { ctx =>
-      PublicUserAccess(
-        AuditTrailEvent(
+      maybeTeam match {
+        case Some(team) => TeamAdminOnly(AuditTrailEvent(
           s"@{user.name} has accessed otoroshi settings simple list"
-        )
-      )(ctx) {
-        FastFuture.successful(
-          Ok(JsArray(ctx.tenant.otoroshiSettings.map(_.toUiPayload()).toSeq))
-        )
+        ))(team, ctx) { team =>
+          team.authorizedOtoroshiEntities match {
+            case Some(authorizedEntities) => Ok(JsArray(ctx.tenant.otoroshiSettings
+                .filter(o => authorizedEntities.map(_.otoroshiSettingsId).contains(o.id))
+                .map(_.toUiPayload()).toSeq)).future
+            case None => Ok(JsArray(ctx.tenant.otoroshiSettings.map(_.toUiPayload()).toSeq)).future
+          }
+        }
+        case None => PublicUserAccess(
+          AuditTrailEvent(
+            s"@{user.name} has accessed otoroshi settings simple list"
+          )
+        )(ctx) {
+          Ok(JsArray(ctx.tenant.otoroshiSettings.map(_.toUiPayload()).toSeq)).future
+        }
       }
     }
 
@@ -225,17 +216,23 @@ class OtoroshiSettingsController(
         AuditTrailEvent(
           s"@{user.name} has accessed groups of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"
         )
-      )(teamId, ctx) { _ =>
+      )(teamId, ctx) { team =>
         ctx.tenant.otoroshiSettings.find(s => s.id.value == oto) match {
-          case None =>
-            FastFuture.successful(
-              NotFound(Json.obj("error" -> s"Settings $oto not found"))
-            )
+          case None => NotFound(Json.obj("error" -> s"Settings $oto not found")).future
           case Some(settings) =>
             otoroshiClient
               .getServiceGroups()(settings)
-              .map { groups =>
-                Ok(groups)
+              .map { groups => team.authorizedOtoroshiEntities match {
+                  case Some(authorizedEntities) =>
+                    authorizedEntities.find(x => x.otoroshiSettingsId.value == oto) match {
+                      case Some(entities) => Ok(JsArray(groups.value.filter(g => {
+                        val _id = (g \ "id").as[String]
+                        entities.authorizedEntities.groups.exists(_.value == _id)
+                      })))
+                      case None => NotFound(Json.obj("error" -> s"Settings $oto not found"))
+                    }
+                  case None => Ok(groups)
+                }
               }
               .recover {
                 case error => BadRequest(Json.obj("error" -> error.getMessage))
@@ -273,7 +270,7 @@ class OtoroshiSettingsController(
         AuditTrailEvent(
           s"@{user.name} has accessed services of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"
         )
-      )(teamId, ctx) { _ =>
+      )(teamId, ctx) { team =>
         ctx.tenant.otoroshiSettings.find(s => s.id.value == oto) match {
           case None =>
             FastFuture.successful(
@@ -282,7 +279,19 @@ class OtoroshiSettingsController(
           case Some(settings) =>
             otoroshiClient
               .getServices()(settings)
-              .map(Ok(_))
+              .map { services =>
+                team.authorizedOtoroshiEntities match {
+                  case Some(authorizedEntities) =>
+                    authorizedEntities.find(x => x.otoroshiSettingsId.value == oto) match {
+                      case Some(entities) => Ok(JsArray(services.value.filter(g => {
+                        val _id = (g \ "id").as[String]
+                        entities.authorizedEntities.services.exists(_.value == _id)
+                      })))
+                      case None => NotFound(Json.obj("error" -> s"Settings $oto not found"))
+                    }
+                  case None => Ok(services)
+                }
+              }
               .recover {
                 case error => BadRequest(Json.obj("error" -> error.getMessage))
               }
@@ -296,7 +305,7 @@ class OtoroshiSettingsController(
         AuditTrailEvent(
           s"@{user.name} has accessed routes of one otoroshi settings ($oto) for team @{team.name} - @{team.id}"
         )
-      )(teamId, ctx) { _ =>
+      )(teamId, ctx) { team =>
         ctx.tenant.otoroshiSettings.find(s => s.id.value == oto) match {
           case None =>
             FastFuture.successful(
@@ -305,7 +314,19 @@ class OtoroshiSettingsController(
           case Some(settings) =>
             otoroshiClient
               .getRoutes()(settings)
-              .map(Ok(_))
+              .map { routes =>
+                team.authorizedOtoroshiEntities match {
+                  case Some(authorizedEntities) =>
+                    authorizedEntities.find(x => x.otoroshiSettingsId.value == oto) match {
+                      case Some(entities) => Ok(JsArray(routes.value.filter(g => {
+                        val _id = (g \ "id").as[String]
+                        entities.authorizedEntities.routes.exists(_.value == _id)
+                      })))
+                      case None => NotFound(Json.obj("error" -> s"Settings $oto not found"))
+                    }
+                  case None => Ok(routes)
+                }
+              }
               .recover {
                 case error => BadRequest(Json.obj("error" -> error.getMessage))
               }

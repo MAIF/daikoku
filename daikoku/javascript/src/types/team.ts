@@ -1,5 +1,5 @@
 import { Language } from './types';
-import { IFastApiParent } from './api';
+import { IAuthorizedEntities, IFastApiParent } from './api';
 
 export type TeamPermission = 'Administrator' | 'ApiEditor' | 'User';
 
@@ -19,6 +19,7 @@ export interface ITeamSimple {
   apiKeyVisibility: TeamPermission;
   apisCreationPermission?: boolean;
   verified: boolean;
+  authorizedEntities: Array<{otoroshiSettings: string, authorizedEntities: IAuthorizedEntities}>
 }
 
 export interface ITeamVisibility {

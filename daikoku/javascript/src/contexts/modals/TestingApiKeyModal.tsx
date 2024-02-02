@@ -22,7 +22,7 @@ export const TestingApiKeyModal = <T extends IWithTesting>(props: TestingApiKeyM
       type: type.string,
       format: format.select,
       label: translate('Otoroshi instance'),
-      optionsFrom: Services.allSimpleOtoroshis(tenant._id),
+      optionsFrom: Services.allSimpleOtoroshis(tenant._id).then(r => isError(r) ? [] : r),
       transformer: (o: any) => ({
         label: o.url,
         value: o._id

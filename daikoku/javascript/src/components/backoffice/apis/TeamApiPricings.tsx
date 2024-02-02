@@ -22,7 +22,7 @@ import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
-import { IState, ITeamSimple } from '../../../types';
+import { IState, IStateContext, ITeamSimple } from '../../../types';
 import { IApi, IDocumentation, isError, isValidationStepEmail, isValidationStepHttpRequest, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepHttpRequest, IValidationStepTeamAdmin, IValidationStepType, UsagePlanVisibility } from '../../../types/api';
 import { IOtoroshiSettings, ITenant, ITenantFull, IThirdPartyPaymentSettings } from '../../../types/tenant';
 import {
@@ -521,7 +521,7 @@ export const TeamApiPricings = (props: Props) => {
 
   const { translate } = useContext(I18nContext);
   const { openApiSelectModal, confirm } = useContext(ModalContext);
-  const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
+  const {tenant, currentTeam} = useSelector<IState, IStateContext>(s => s.context)
 
   const queryClient = useQueryClient()
   const queryFullTenant = useQuery({ queryKey: ['full-tenant'], queryFn: () => Services.oneTenant(props.tenant._id) })
@@ -918,7 +918,12 @@ export const TeamApiPricings = (props: Props) => {
               format: format.select,
               disabled: !creation && !!planForEdition?.otoroshiTarget?.otoroshiSettings,
               label: translate('Otoroshi instances'),
-              optionsFrom: Services.allSimpleOtoroshis(props.tenant._id),
+              optionsFrom: Services.allSimpleOtoroshis(props.tenant._id, currentTeam)
+                .then(r => {
+                  console.log(r)
+                  return r
+                })
+                .then(r => isError(r) ? [] : r),
               transformer: (s: IOtoroshiSettings) => ({
                 label: s.url,
                 value: s._id

@@ -133,6 +133,11 @@ export interface IOtoroshiSettings {
   clientId: string;
   clientSecret: string;
 }
+export interface ISimpleOtoroshiSettings {
+  _id: string;
+  url: string;
+  host: string;
+}
 
 interface ITenantStyle {
   js: string;

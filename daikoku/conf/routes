@@ -181,7 +181,7 @@ POST    /user-avatar                                    fr.maif.otoroshi.daikoku
 GET     /asset-thumbnails/:assetId                      fr.maif.otoroshi.daikoku.ctrls.AssetsThumbnailController.getAsset(assetId)
 POST    /asset-thumbnails/:assetId                      fr.maif.otoroshi.daikoku.ctrls.AssetsThumbnailController.storeAsset(assetId)
 
-GET     /api/tenants/:tenantId/otoroshis/simplified             fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshisSettingsSimple(tenantId)
+GET     /api/tenants/:tenantId/otoroshis/simplified             fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshisSettingsSimple(tenantId, team: Option[String] ?= None)
 GET     /api/tenants/:tenantId/otoroshis                        fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshisSettings(tenantId)
 GET     /api/tenants/:tenantId/otoroshis/:id                    fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiSettings(tenantId, id)
 DELETE  /api/tenants/:tenantId/otoroshis/:id                    fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.deleteOtoroshiSettings(tenantId, id)

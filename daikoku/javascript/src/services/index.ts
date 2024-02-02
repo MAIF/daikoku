@@ -18,6 +18,7 @@ import {
   ITranslation,
   IUser,
   IUserSimple,
+  ISimpleOtoroshiSettings,
 } from '../types';
 import {
   ResponseError,
@@ -39,6 +40,8 @@ import {
   IApiKey,
   IOtoroshiApiKey,
 } from '../types/api';
+
+import { Option } from '../components/utils/Option'
 
 const HEADERS = {
   Accept: 'application/json',
@@ -315,8 +318,8 @@ export const pendingMembers = (teamId: string) =>
 export const allOtoroshis = (tenantId: string): Promise<ResponseError | Array<IOtoroshiSettings>> =>
   customFetch(`/api/tenants/${tenantId}/otoroshis`);
 
-export const allSimpleOtoroshis = (tenantId: any) =>
-  customFetch(`/api/tenants/${tenantId}/otoroshis/simplified`);
+export const allSimpleOtoroshis = (tenantId: string, maybeTeam?: ITeamSimple): PromiseWithError<Array<ISimpleOtoroshiSettings>> =>
+  customFetch(`/api/tenants/${tenantId}/otoroshis/simplified${maybeTeam ? `?team=${maybeTeam._id}` : ''}`);
 
 export const oneOtoroshi = (tenantId: string, id: string) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${id}`);

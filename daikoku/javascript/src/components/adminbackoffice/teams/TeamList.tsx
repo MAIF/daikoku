@@ -1,5 +1,5 @@
 import { getApolloContext, gql } from "@apollo/client";
-import { format, type } from '@maif/react-forms';
+import { constraints, format, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import debounce from "lodash/debounce";
 import { useContext, useEffect, useMemo, useState } from 'react';
@@ -118,12 +118,6 @@ export const TeamList = () => {
     };
   }, []);
 
-
-
-
-
-
-
   const actions = (team: ITeamFullGql) => {
     const basicActions = [
       {
@@ -133,74 +127,91 @@ export const TeamList = () => {
         tooltip: translate('Delete team'),
       },
       {
-        redirect: () => Services.teamFull(team._id)
-          .then(r => {
-            if (isError(r)) {
-              return Promise.reject(r)
+        redirect: () => Promise.all([
+          Services.teamFull(team._id),
+          Services.allSimpleOtoroshis(tenant._id)
+        ])
+          .then(([teamFull, otoroshis]) => {
+            if (isError(teamFull)) {
+              return Promise.reject(teamFull)
             } else {
-              return r
+              return { team: teamFull, otoroshis }
             }
           })
-          .then(team => openFormModal({
-            title: translate('Update team'),
-            actionLabel: translate('Update'),
-            schema: {
-              ...teamSchema(team, translate),
-              apisCreationPermission: {
-                type: type.bool,
-                defaultValue: false,
-                label: translate('APIs creation permission'),
-                help: translate('apisCreationPermission.help'),
-                visible: !!tenant.creationSecurity
-              },
-              metadata: {
-                type: type.object,
-                label: translate('Metadata'),
-              },
-              authorizedOtoroshiEntities: {
-                type: type.object,
-                array: true,
-                label: translate('authorizedOtoroshiEntities'),
-                format: format.form,
-                schema: {
-                  otoroshiSettingsId: {
-                    type: type.string,
-                    format: format.select,
-                    label: translate('Otoroshi instances'),
-                    optionsFrom: Services.allSimpleOtoroshis(tenant._id),
-                    transformer: (s: IOtoroshiSettings) => ({
-                      label: s.url,
-                      value: s._id
-                    }),
-                  },
-                  authorizedEntities: {
-                    type: type.object,
-                    visible: (props) => {
-                      return !!props.rawValues.authorizedOtoroshiEntities[props.informations?.parent?.index || 0].value.otoroshiSettingsId
-                    },
-                    deps: ['authorizedOtoroshiEntities.otoroshiSettingsId'],
-                    render: (props) => OtoroshiEntitiesSelector({ ...props, translate, targetKey: "authorizedOtoroshiEntities" }),
-                    label: translate('Authorized entities'),
-                    placeholder: translate('Authorized.entities.placeholder'),
-                    help: translate('authorized.entities.help'),
-                    defaultValue: { routes: [], services: [], groups: [] }
-                  },
+          .then(({ team, otoroshis }) => {
+            //todo: [ERROR HANDLER] handle otoroshis error
+            const _otoroshis = isError(otoroshis) ? [] : otoroshis
+            openFormModal({
+              title: translate('Update team'),
+              actionLabel: translate('Update'),
+              schema: {
+                ...teamSchema(team, translate),
+                apisCreationPermission: {
+                  type: type.bool,
+                  defaultValue: false,
+                  label: translate('APIs creation permission'),
+                  help: translate('apisCreationPermission.help'),
+                  visible: !!tenant.creationSecurity
                 },
-              }
-            },
-            onSubmit: (teamToUpdate) => {
-              return Services.updateTeam(teamToUpdate)
-                .then(r => {
-                  if (r.error) {
-                    toastr.error(translate('Error'), r.error)
-                  } else {
-                    toastr.success(translate('Success'), translate({ key: "team.updated.success", replacements: [team.name] }))
-                    queryClient.invalidateQueries({ queryKey: ['teams'] });
-                  }
-                })
-            },
-            value: team
-          }))
+                metadata: {
+                  type: type.object,
+                  label: translate('Metadata'),
+                },
+                authorizedOtoroshiEntities: {
+                  type: type.object,
+                  array: true,
+                  label: translate('authorizedOtoroshiEntities'),
+                  format: format.form,
+                  schema: {
+                    otoroshiSettingsId: {
+                      type: type.string,
+                      format: format.select,
+                      label: translate('Otoroshi instances'),
+                      optionsFrom: () => {
+                        // const authorizedOto = props.getValue("authorizedOtoroshiEntities").map((o) => o.value.otoroshiSettingsId)
+                        //  console.debug(otoroshis.filter(o => !authorizedOto.includes(o._id)), )
+                        return Promise.resolve(_otoroshis)
+                      },
+                      transformer: (s: IOtoroshiSettings) => ({
+                        label: s.url,
+                        value: s._id
+                      }),
+                      constraints: [
+                        constraints.required()
+                      ]
+                    },
+                    authorizedEntities: {
+                      type: type.object,
+                      visible: (props) => {
+                        return !!props.rawValues.authorizedOtoroshiEntities[props.informations?.parent?.index || 0].value.otoroshiSettingsId
+                      },
+                      deps: ['authorizedOtoroshiEntities.otoroshiSettingsId'],
+                      render: (props) => OtoroshiEntitiesSelector({ ...props, translate, targetKey: "authorizedOtoroshiEntities" }),
+                      label: translate('Authorized entities'),
+                      placeholder: translate('Authorized.entities.placeholder'),
+                      help: translate('authorized.entities.help'),
+                      defaultValue: { routes: [], services: [], groups: [] }
+                    },
+                  },
+                  constraints: [
+                    constraints.max(_otoroshis.length, "oops")
+                  ]
+                }
+              },
+              onSubmit: (teamToUpdate) => {
+                return Services.updateTeam(teamToUpdate)
+                  .then(r => {
+                    if (r.error) {
+                      toastr.error(translate('Error'), r.error)
+                    } else {
+                      toastr.success(translate('Success'), translate({ key: "team.updated.success", replacements: [team.name] }))
+                      queryClient.invalidateQueries({ queryKey: ['teams'] });
+                    }
+                  })
+              },
+              value: team
+            })
+          })
           .catch((error: ResponseError) => alert({ title: translate('Error'), message: error.error })),
         iconClass: 'fas fa-pen',
         tooltip: translate('Edit team'),

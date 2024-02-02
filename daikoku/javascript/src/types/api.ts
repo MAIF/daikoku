@@ -267,7 +267,7 @@ export interface IUsagePlanPayPerUse extends IUsagePlan {
   rotation: boolean;
 }
 
-interface IAuthorizedEntities {
+export interface IAuthorizedEntities {
   groups: Array<string>;
   services: Array<string>;
   routes: Array<string>;

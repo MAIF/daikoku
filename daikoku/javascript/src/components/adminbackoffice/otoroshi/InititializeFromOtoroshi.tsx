@@ -62,7 +62,9 @@ export const InitializeFromOtoroshi = () => {
           if (!isError(teams)) {
             setTeams(teams);
           }
-          setOtoroshis(otoroshis);
+          if (!isError(otoroshis)) {
+            setOtoroshis(otoroshis);
+          }
           setApis(apis);
         }
       );
