@@ -1185,7 +1185,7 @@
     "Translate": "Translate",
     "Insert URL": "Insert URL",
     "custom.metadata.process.change.to.manual": "Custom metadata has been configured. A validation step by administrator has been created to guarantee the verification of this information.",
-    "subscription security": "subscription security",
+    "subscription security": "Subscription security",
     "subscription.security.help": "if enabled, personal teams will not be able to subscribed to an API",
     "API reference visibility": "API reference visibility",
     "api.reference.visibility.help": "if enabled, guest user can't see API reference on public API",
