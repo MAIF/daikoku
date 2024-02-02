@@ -736,7 +736,9 @@ object utils {
     def otoroshiPathApiKeyQuotas(clientId: String) =
       s"/api/apikeys/$clientId/quotas"
     val otoroshiPathStats = s"/api/stats"
-    val otoroshiPathGroup = s"/api/groups/[\\w-]*"
+    val otoroshiPathGroup = s"/api/groups/?[\\w-]*"
+    val otoroshiPathServices = s"/api/services/?[\\w-]*"
+    val otoroshiPathRoutes = s"/api/routes/?[\\w-]*"
     def otoroshiDeleteApikeyPath(clientId: String) = s"/api/apikeys/$clientId"
     def otoroshiUpdateApikeyPath(clientId: String) = s"/api/apikeys/$clientId"
     def otoroshiGetApikeyPath(clientId: String) = s"/api/apikeys/$clientId"
@@ -754,6 +756,8 @@ object utils {
     val userTeamAdminId = UserId("team-admin")
     val userApiEditorId = UserId("team-api-editor")
     val userTeamUserId = UserId("team-user")
+
+    val wiremockedOtoroshi = OtoroshiSettingsId("wiremock")
 
     val teamOwner = Team(
       id = teamOwnerId,
@@ -951,7 +955,7 @@ object utils {
       bucketSettings = None,
       otoroshiSettings = Set(
         OtoroshiSettings(
-          id = OtoroshiSettingsId("wiremock"),
+          id = wiremockedOtoroshi,
           url = s"$wireMockUrl",
           host = "otoroshi-api.foo.bar",
           clientSecret = "admin-api-apikey-id"
@@ -986,7 +990,7 @@ object utils {
       bucketSettings = None,
       otoroshiSettings = Set(
         OtoroshiSettings(
-          id = OtoroshiSettingsId("wiremock"),
+          id = wiremockedOtoroshi,
           url = s"$wireMockUrl",
           host = "otoroshi-api.foo.bar",
           clientSecret = "admin-api-apikey-id"

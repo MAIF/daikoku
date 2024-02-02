@@ -755,6 +755,191 @@ class ApiControllerSpec()
       result.get.equals(api) mustBe true
     }
 
+    "create usage plan with only otoroshiTarget entities for which access is authorized" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin),
+        apis = Seq(defaultApi.api.copy(possibleUsagePlans = Seq.empty)),
+        teams = Seq(teamConsumer, teamOwner.copy(
+          authorizedOtoroshiEntities = Some(Seq(
+            TeamAuthorizedEntities(
+              OtoroshiSettingsId("wiremock"),
+              AuthorizedEntities(
+                services = Set(OtoroshiServiceId("s_auth")),
+                groups = Set(OtoroshiServiceGroupId("g_auth")),
+                routes = Set(OtoroshiRouteId("r_auth"))
+              )))))),
+      )
+      val planToCreate = UsagePlan.FreeWithoutQuotas(
+        id = UsagePlanId(IdGenerator.token),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = None,
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false)
+      )
+
+      val otoroshitargetWithUnauthGroup = Some(
+        OtoroshiTarget(
+          wiremockedOtoroshi,
+          Some(
+            AuthorizedEntities(
+              groups = Set(OtoroshiServiceGroupId("g_unauth"))
+            )
+          )
+        )
+      )
+      val otoroshitargetWithUnauthService = Some(
+        OtoroshiTarget(
+          wiremockedOtoroshi,
+          Some(
+            AuthorizedEntities(
+              services = Set(OtoroshiServiceId("s_unauth"))
+            )
+          )
+        )
+      )
+      val otoroshitargetWithUnauthRoute = Some(
+        OtoroshiTarget(
+          wiremockedOtoroshi,
+          Some(
+            AuthorizedEntities(
+              routes = Set(OtoroshiRouteId("r_unauth"))
+            )
+          )
+        )
+      )
+      val otoroshitargetWithAuthEntities = Some(
+        OtoroshiTarget(
+          wiremockedOtoroshi,
+          Some(
+            AuthorizedEntities(
+              routes = Set(OtoroshiRouteId("r_auth")),
+              services = Set(OtoroshiServiceId("s_auth")),
+              groups = Set(OtoroshiServiceGroupId("g_auth")),
+            )
+          )
+        )
+      )
+      stubFor(
+        get(urlMatching(s"$otoroshiPathGroup.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  Json.arr(
+                    Json.obj("id" -> "g_unauth", "name" -> "unauth group"),
+                    Json.obj("id" -> "g_auth", "name" -> "auth group"),
+                  )
+                )
+              )
+              .withStatus(200)
+          )
+      )
+      stubFor(
+        get(urlMatching(s"$otoroshiPathRoutes.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  Json.arr(
+                    Json.obj("id" -> "r_unauth", "name" -> "unauth route"),
+                    Json.obj("id" -> "r_auth", "name" -> "auth route"),
+                  )
+                )
+              )
+              .withStatus(200)
+          )
+      )
+      stubFor(
+        get(urlMatching(s"$otoroshiPathServices.*"))
+          .willReturn(
+            aResponse()
+              .withBody(
+                Json.stringify(
+                  Json.arr(
+                    Json.obj("id" -> "s_unauth", "name" -> "unauth service"),
+                    Json.obj("id" -> "s_auth", "name" -> "auth service"),
+                  )
+                )
+              )
+              .withStatus(200)
+          )
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val respGroupsForOwner = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/groups"
+      )(tenant, session)
+      val respRoutesForOwner = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/routes"
+      )(tenant, session)
+      val respServicesForOwner = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/services"
+      )(tenant, session)
+
+      respGroupsForOwner.status mustBe 200
+      respGroupsForOwner.json.as[JsArray].value.length mustBe 1
+      respRoutesForOwner.status mustBe 200
+      respRoutesForOwner.json.as[JsArray].value.length mustBe 1
+      respServicesForOwner.status mustBe 200
+      respServicesForOwner.json.as[JsArray].value.length mustBe 1
+
+      val respGroupsForConsumer = httpJsonCallBlocking(
+        path = s"/api/teams/${teamConsumerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/groups"
+      )(tenant, session)
+      val respRoutesForConsumer = httpJsonCallBlocking(
+        path = s"/api/teams/${teamConsumerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/routes"
+      )(tenant, session)
+      val respServicesForConsumer = httpJsonCallBlocking(
+        path = s"/api/teams/${teamConsumerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/services"
+      )(tenant, session)
+
+      respGroupsForConsumer.status mustBe 200
+      respGroupsForConsumer.json.as[JsArray].value.length mustBe 2
+      respRoutesForConsumer.status mustBe 200
+      respRoutesForConsumer.json.as[JsArray].value.length mustBe 2
+      respServicesForConsumer.status mustBe 200
+      respServicesForConsumer.json.as[JsArray].value.length mustBe 2
+
+      val respUnauthRoute = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan",
+        method = "POST",
+        body = planToCreate.copy(otoroshiTarget = otoroshitargetWithUnauthRoute).asJson.some
+      )(tenant, session)
+      respUnauthRoute.status mustBe 401
+
+      val respUnauthGroup = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan",
+        method = "POST",
+        body = planToCreate.copy(otoroshiTarget = otoroshitargetWithUnauthGroup).asJson.some
+      )(tenant, session)
+      respUnauthGroup.status mustBe 401
+
+      val respUnauthService = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan",
+        method = "POST",
+        body = planToCreate.copy(otoroshiTarget = otoroshitargetWithUnauthService).asJson.some
+      )(tenant, session)
+      respUnauthService.status mustBe 401
+
+      val respAuthEntities = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan",
+        method = "POST",
+        body = planToCreate.copy(otoroshiTarget = otoroshitargetWithAuthEntities).asJson.some
+      )(tenant, session)
+      respAuthEntities.status mustBe 201
+    }
+
     "delete an api subscription from an api of his team" in {
       val payPerUsePlanId: UsagePlanId = UsagePlanId("5")
       val payPerUserSub: ApiSubscription = ApiSubscription(
@@ -3286,6 +3471,7 @@ class ApiControllerSpec()
       result.get.length mustBe 0
     }
   }
+
   "a deletion of a api" must {
     "delete all subscriptions" in {
       val plan = PayPerUse(

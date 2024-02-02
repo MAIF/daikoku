@@ -305,9 +305,9 @@ sealed trait UsagePlan {
         teamAuthorizedEntities match {
           case Some(authorizedEntities) =>
             for {
-              _ <- EitherT.cond[Future](authorizedEntities.authorizedEntities.groups.diff(otoroshiTarget.authorizedEntities.map(_.groups).getOrElse(Set.empty)).isEmpty, (), AppError.Unauthorized)
-              _ <- EitherT.cond[Future](authorizedEntities.authorizedEntities.services.diff(otoroshiTarget.authorizedEntities.map(_.services).getOrElse(Set.empty)).isEmpty, (), AppError.Unauthorized)
-              _ <- EitherT.cond[Future](authorizedEntities.authorizedEntities.routes.diff(otoroshiTarget.authorizedEntities.map(_.routes).getOrElse(Set.empty)).isEmpty, (), AppError.Unauthorized)
+              _ <- EitherT.cond[Future][AppError, Unit](authorizedEntities.authorizedEntities.groups.diff(otoroshiTarget.authorizedEntities.map(_.groups).getOrElse(Set.empty)).isEmpty, (), AppError.Unauthorized)
+              _ <- EitherT.cond[Future][AppError, Unit](authorizedEntities.authorizedEntities.services.diff(otoroshiTarget.authorizedEntities.map(_.services).getOrElse(Set.empty)).isEmpty, (), AppError.Unauthorized)
+              _ <- EitherT.cond[Future][AppError, Unit](authorizedEntities.authorizedEntities.routes.diff(otoroshiTarget.authorizedEntities.map(_.routes).getOrElse(Set.empty)).isEmpty, (), AppError.Unauthorized)
             } yield ()
           case None => EitherT.leftT[Future, Unit](AppError.Unauthorized)
         }
