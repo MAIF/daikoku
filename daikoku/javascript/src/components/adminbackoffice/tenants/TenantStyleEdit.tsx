@@ -101,20 +101,20 @@ export const TenantStyleEdit = () => {
       <div className="d-flex flex-row justify-content-between mb-1">
         <div>
           <button
-            className="btn btn-access-negative"
+            className="btn btn-access-negative btn-sm"
             onClick={() => setState({ ...state, preview: !state.preview })}
           >
             <Translation i18nkey="Preview">Preview</Translation>
+          </button>
+          <button className="btn btn-access-negative btn-sm ms-2" onClick={() => reset()}>
+            <Translation i18nkey="Reset">Reset</Translation>
           </button>
         </div>
         <div>
           <button className="btn btn-access-negative" onClick={() => goBack()}>
             <Translation i18nkey="Cancel">Cancel</Translation>
           </button>
-          <button className="btn btn-access-negative mx-2" onClick={() => reset()}>
-            <Translation i18nkey="Reset">Reset</Translation>
-          </button>
-          <button className="btn btn-outline-success" onClick={() => save()}>
+          <button className="btn btn-outline-success ms-2" onClick={() => save()}>
             <Translation i18nkey="Save">Save</Translation>
           </button>
         </div>
