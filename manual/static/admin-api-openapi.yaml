@@ -719,6 +719,7 @@ components:
             type: string
         defaultUsagePlan:
           type: string
+          nullable: true
         authorizedTeams:
           type: array
           nullable: true
@@ -765,7 +766,6 @@ components:
         - documentation
         - visibility
         - possibleUsagePlans
-        - defaultUsagePlan
         - state
     ApiIssueTag:
       description: ApiIssueTag
