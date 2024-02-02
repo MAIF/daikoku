@@ -170,7 +170,8 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
     },
     defaultMessage: {
       type: type.string,
-      format: format.text
+      format: format.text,
+      label: translate('Message')
     }
   }
 
