@@ -296,6 +296,24 @@ sealed trait UsagePlan {
       case (_, TenantDisplay.Default) => EitherT.pure[Future, AppError](())
     }
   }
+
+  def checkAuthorizedEntities(team: Team)(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
+    otoroshiTarget match {
+      case Some(otoroshiTarget) if team.authorizedOtoroshiEntities.isDefined =>
+        val teamAuthorizedEntities = team.authorizedOtoroshiEntities.get.find(_.otoroshiSettingsId == otoroshiTarget.otoroshiSettings)
+
+        teamAuthorizedEntities match {
+          case Some(authorizedEntities) =>
+            for {
+              _ <- EitherT.cond[Future](authorizedEntities.authorizedEntities.groups.diff(otoroshiTarget.authorizedEntities.map(_.groups).getOrElse(Set.empty)).isEmpty, (), AppError.Unauthorized)
+              _ <- EitherT.cond[Future](authorizedEntities.authorizedEntities.services.diff(otoroshiTarget.authorizedEntities.map(_.services).getOrElse(Set.empty)).isEmpty, (), AppError.Unauthorized)
+              _ <- EitherT.cond[Future](authorizedEntities.authorizedEntities.routes.diff(otoroshiTarget.authorizedEntities.map(_.routes).getOrElse(Set.empty)).isEmpty, (), AppError.Unauthorized)
+            } yield ()
+          case None => EitherT.leftT[Future, Unit](AppError.Unauthorized)
+        }
+      case _ => EitherT.pure[Future, AppError](())
+    }
+  }
 }
 
 case object UsagePlan {

@@ -4730,6 +4730,7 @@ class ApiController(
         }
 
         (for {
+          _ <- newPlan.checkAuthorizedEntities(team)
           api <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
@@ -5059,6 +5060,7 @@ class ApiController(
         }
 
         val value: EitherT[Future, AppError, Result] = for {
+          _ <- updatedPlan.checkAuthorizedEntities(team)
           api <- EitherT.fromOptionF(
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
