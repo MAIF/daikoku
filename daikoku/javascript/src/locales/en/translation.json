@@ -1282,7 +1282,7 @@
     "api.delete.subscription.form.title": "Subscription deletion",
     "api.delete.subscription.message": "You are about to delete the subscription of team %s for plan %s. This action cannot be undone. Are you sure you want to delete this subscription?",
     "secret.refresh.confirm": "You are about to refresh the secret the subscription of team %s for plan %s. This action cannot be undone. Are you sure you want to refresh the secret ?",
-    "authorized.groups": "Services  groups",
+    "authorized.groups": "Services groups",
     "authorized.services": "Services",
     "authorized.routes": "Routes",
     "login.placeholder": "Email adress",
