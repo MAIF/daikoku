@@ -25,7 +25,7 @@ export const TeamList = () => {
   const { client } = useContext(getApolloContext());
 
   const [search, setSearch] = useState<string>("");
-  const limit = 9;
+  const limit = 11;
   const [page, setPage] = useState<number>(0);
   const [offset, setOffset] = useState<number>(0)
   const dataRequest = useQuery<{ teams: Array<ITeamFullGql>, total: number }>({
