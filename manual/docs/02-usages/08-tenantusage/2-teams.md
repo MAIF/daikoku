@@ -2,7 +2,9 @@
 
 Go to `settings/Organizations settings` and then click `teams` on the left menu. You should see the list of existing `teams`
 
-`Teams` can only be updated (or deleted) by admin, mainly to update metadata or authorizedEntities (2 properties editable only by a tenant admin).
+`Teams` can only be created or updated by admin, mainly to add metadata or authorizedEntities (2 properties editable only by a tenant admin).
+
+## Create a team
 A team needs the folowing informations :
 
 * Tenant (By default, the current tenant)
