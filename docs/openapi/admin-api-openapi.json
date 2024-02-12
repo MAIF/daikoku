@@ -865,11 +865,18 @@
               "$ref": "#/components/schemas/UserWithPermission"
             }
           },
-          "authorizedOtoroshiGroups": {
+          "authorizedEntities": {
             "type": "array",
             "nullable": true,
             "items": {
-              "type": "string"
+              "properties": {
+                "otoroshiSettingsId": {
+                  "type": "string"
+                }, 
+                "authorizedEntities": {
+                  "$ref": "#/components/schemas/AuthorizedEntities"
+                }
+              }
             }
           },
           "apiKeyVisibility": {
@@ -1013,7 +1020,8 @@
             }
           },
           "defaultUsagePlan": {
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           "authorizedTeams": {
             "type": "array",
@@ -1076,7 +1084,6 @@
           "documentation",
           "visibility",
           "possibleUsagePlans",
-          "defaultUsagePlan",
           "state"
         ]
       },
