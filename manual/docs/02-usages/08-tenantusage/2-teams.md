@@ -2,9 +2,7 @@
 
 Go to `settings/Organizations settings` and then click `teams` on the left menu. You should see the list of existing `teams`
 
-## Add a new team
-
-Click on the `Create` button.
+`Teams` can only be updated (or deleted) by admin, mainly to update metadata or authorizedEntities (2 properties editable only by a tenant admin).
 A team needs the folowing informations :
 
 * Tenant (By default, the current tenant)
@@ -13,6 +11,7 @@ A team needs the folowing informations :
 * Team contact, an email address for a simple contact
 * Team avatar, it could be an URl or an asset from the object manager
 * Metadata, some extra informations that will be sent with the api calls with team apikeys
+* Authorized entities, a collection of otoroshi entities visible to the team, the others are not accessible.
 
 ## Update an existing team
 Hover over team's avatar and click the `update` button (Pen icon). All the informations filled during the team creation can be overwritten.

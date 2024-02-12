@@ -611,11 +611,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/UserWithPermission'
-        authorizedOtoroshiGroups:
+        authorizedEntities:
           type: array
           nullable: true
           items:
-            type: string
+            properties: 
+              otoroshiSettingsId:
+                type: string
+              authorizedEntities:
+                $ref: '#/components/schemas/AuthorizedEntities'
+
         apiKeyVisibility:
           type: string
           enum:
@@ -719,6 +724,7 @@ components:
             type: string
         defaultUsagePlan:
           type: string
+          nullable: true
         authorizedTeams:
           type: array
           nullable: true
@@ -765,7 +771,6 @@ components:
         - documentation
         - visibility
         - possibleUsagePlans
-        - defaultUsagePlan
         - state
     ApiIssueTag:
       description: ApiIssueTag
