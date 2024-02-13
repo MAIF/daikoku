@@ -81,13 +81,13 @@ export const TeamList = () => {
     authorizedOtoroshiEntities: {
       type: type.object,
       array: true,
-      label: translate('authorizedOtoroshiEntities'),
+      label: translate('Authorized entities'),
       format: format.form,
       schema: {
         otoroshiSettingsId: {
           type: type.string,
           format: format.select,
-          label: translate('Otoroshi instances'),
+          label: translate('Otoroshi instance'),
           optionsFrom: () => Promise.resolve(_otoroshis),
           transformer: (s: IOtoroshiSettings) => ({
             label: s.url,
