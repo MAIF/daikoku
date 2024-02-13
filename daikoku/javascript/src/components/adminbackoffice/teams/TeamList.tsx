@@ -12,7 +12,7 @@ import Select, { components } from 'react-select';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../core';
 import * as Services from '../../../services';
-import { IOtoroshiSettings, ITeamFullGql, ITeamSimple, ResponseError, isError } from '../../../types';
+import { IAuthorizedEntities, IOtoroshiSettings, ISimpleOtoroshiSettings, ITeamFullGql, ITeamSimple, ResponseError, isError } from '../../../types';
 import { teamSchema } from '../../backoffice/teams/TeamEdit';
 import { AvatarWithAction, Can, tenant as TENANT, manage } from '../../utils';
 
@@ -65,14 +65,90 @@ export const TeamList = () => {
 
   const navigate = useNavigate();
 
+  const teamSchemaForAdmin = (team: ITeamSimple, _otoroshis: ISimpleOtoroshiSettings[]) => ({
+    ...teamSchema(team, translate),
+    apisCreationPermission: {
+      type: type.bool,
+      defaultValue: false,
+      label: translate('APIs creation permission'),
+      help: translate('apisCreationPermission.help'),
+      visible: !!tenant.creationSecurity
+    },
+    metadata: {
+      type: type.object,
+      label: translate('Metadata'),
+    },
+    authorizedOtoroshiEntities: {
+      type: type.object,
+      array: true,
+      label: translate('authorizedOtoroshiEntities'),
+      format: format.form,
+      schema: {
+        otoroshiSettingsId: {
+          type: type.string,
+          format: format.select,
+          label: translate('Otoroshi instances'),
+          optionsFrom: () => Promise.resolve(_otoroshis),
+          transformer: (s: IOtoroshiSettings) => ({
+            label: s.url,
+            value: s._id
+          }),
+          constraints: [
+            constraints.required(translate('constraints.required.value'))
+          ]
+        },
+        authorizedEntities: {
+          type: type.object,
+          visible: (props) => {
+            return !!props.rawValues.authorizedOtoroshiEntities[props.informations?.parent?.index || 0].value.otoroshiSettingsId
+          },
+          deps: ['authorizedOtoroshiEntities.otoroshiSettingsId'],
+          render: (props) => OtoroshiEntitiesSelector({ ...props, translate, targetKey: "authorizedOtoroshiEntities" }),
+          label: translate('Authorized entities'),
+          placeholder: translate('Authorized.entities.placeholder'),
+          help: translate('authorized.entities.help'),
+          defaultValue: { routes: [], services: [], groups: [] }
+        },
+      }
+    }
+  })
+
+  const sanitizeTeamAuthorizedEntities = (team: ITeamSimple) => {
+    return Promise.resolve({
+      ...team,
+      authorizedOtoroshiEntities: team.authorizedOtoroshiEntities.reduce<Array<{ otoroshiSettingsId: string, authorizedEntities: IAuthorizedEntities }>>((acc, curr) => {
+        if (acc.some(x => x.otoroshiSettingsId === curr.otoroshiSettingsId)) {
+          const authorizedEntities = acc.find(x => x.otoroshiSettingsId === curr.otoroshiSettingsId)!.authorizedEntities
+          return [
+            ...acc.filter(x => x.otoroshiSettingsId !== curr.otoroshiSettingsId),
+            {
+              otoroshiSettingsId: curr.otoroshiSettingsId,
+              authorizedEntities: {
+                groups: [...new Set([...curr.authorizedEntities.groups, ...authorizedEntities.groups])],
+                services: [...new Set([...curr.authorizedEntities.services, ...authorizedEntities.services])],
+                routes: [...new Set([...curr.authorizedEntities.routes, ...authorizedEntities.routes])]
+              }
+            }]
+        } else {
+          return [...acc, curr]
+        }
+      }, [])
+    })
+  }
+
   const createNewTeam = () => {
-    Services.fetchNewTeam()
-      .then((newTeam) => {
+    Promise.all([
+      Services.fetchNewTeam(),
+      Services.allSimpleOtoroshis(tenant._id)
+    ])
+      .then(([newTeam, otoroshis]) => {
+        const _otoroshis = isError(otoroshis) ? [] : otoroshis
         openFormModal({
           title: translate('Create a new team'),
           actionLabel: translate('Create'),
-          schema: teamSchema(newTeam, translate),
-          onSubmit: (data: ITeamSimple) => Services.createTeam(data)
+          schema: teamSchemaForAdmin(newTeam, _otoroshis),
+          onSubmit: (data: ITeamSimple) => sanitizeTeamAuthorizedEntities(data)
+            .then(team => Services.createTeam(team))
             .then(r => {
               if (r.error) {
                 toastr.error(translate('Error'), r.error)
@@ -144,62 +220,10 @@ export const TeamList = () => {
             openFormModal({
               title: translate('Update team'),
               actionLabel: translate('Update'),
-              schema: {
-                ...teamSchema(team, translate),
-                apisCreationPermission: {
-                  type: type.bool,
-                  defaultValue: false,
-                  label: translate('APIs creation permission'),
-                  help: translate('apisCreationPermission.help'),
-                  visible: !!tenant.creationSecurity
-                },
-                metadata: {
-                  type: type.object,
-                  label: translate('Metadata'),
-                },
-                authorizedOtoroshiEntities: {
-                  type: type.object,
-                  array: true,
-                  label: translate('authorizedOtoroshiEntities'),
-                  format: format.form,
-                  schema: {
-                    otoroshiSettingsId: {
-                      type: type.string,
-                      format: format.select,
-                      label: translate('Otoroshi instances'),
-                      optionsFrom: () => {
-                        // const authorizedOto = props.getValue("authorizedOtoroshiEntities").map((o) => o.value.otoroshiSettingsId)
-                        //  console.debug(otoroshis.filter(o => !authorizedOto.includes(o._id)), )
-                        return Promise.resolve(_otoroshis)
-                      },
-                      transformer: (s: IOtoroshiSettings) => ({
-                        label: s.url,
-                        value: s._id
-                      }),
-                      constraints: [
-                        constraints.required()
-                      ]
-                    },
-                    authorizedEntities: {
-                      type: type.object,
-                      visible: (props) => {
-                        return !!props.rawValues.authorizedOtoroshiEntities[props.informations?.parent?.index || 0].value.otoroshiSettingsId
-                      },
-                      deps: ['authorizedOtoroshiEntities.otoroshiSettingsId'],
-                      render: (props) => OtoroshiEntitiesSelector({ ...props, translate, targetKey: "authorizedOtoroshiEntities" }),
-                      label: translate('Authorized entities'),
-                      placeholder: translate('Authorized.entities.placeholder'),
-                      help: translate('authorized.entities.help'),
-                      defaultValue: { routes: [], services: [], groups: [] }
-                    },
-                  },
-                  constraints: [
-                    constraints.max(_otoroshis.length, "oops")
-                  ]
-                }
-              },
+              schema: teamSchemaForAdmin(team, _otoroshis),
               onSubmit: (teamToUpdate) => {
-                return Services.updateTeam(teamToUpdate)
+                return sanitizeTeamAuthorizedEntities(teamToUpdate)
+                  .then(teamToUpdate => Services.updateTeam(teamToUpdate))
                   .then(r => {
                     if (r.error) {
                       toastr.error(translate('Error'), r.error)
@@ -356,7 +380,6 @@ const OtoroshiEntitiesSelector = ({
 
   useEffect(() => {
     if (groups && services && routes) {
-      console.log({ groups, services, routes })
       setLoading(false);
     }
   }, [services, groups, routes]);
@@ -364,7 +387,6 @@ const OtoroshiEntitiesSelector = ({
   useEffect(() => {
     if (!!groups && !!services && !!routes && !!rawValues.authorizedOtoroshiEntities[informations?.parent?.index || 0].value) {
       const v = rawValues.authorizedOtoroshiEntities[informations?.parent?.index || 0].value
-      console.log({ v })
       setValue([
         ...v.authorizedEntities.groups.map((authGroup: any) => (groups as any).find((g: any) => g.value === authGroup)),
         ...(v.authorizedEntities.services || []).map((authService: any) => (services as any).find((g: any) => g.value === authService)),

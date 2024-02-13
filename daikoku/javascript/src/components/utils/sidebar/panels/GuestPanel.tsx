@@ -25,6 +25,7 @@ export const GuestPanel = () => {
     password: {
       type: type.string,
       label: translate('password.label'),
+      placeholder: translate('password.label'),
       format: format.password,
       constraints: [constraints.required(translate('constraints.required.password'))],
     },
@@ -73,10 +74,10 @@ export const GuestPanel = () => {
                   );
                 }}
               />
-              <div className="d-flex flex-row mt-3">
+              <div className="d-flex flex-row justify-content-between mt-3">
                 {loginProvider == 'Local' && (
                   <a className="text-center" href="/signup">
-                    {' '}Create an account.
+                    <Translation i18nkey="create.account.link.label" />
                   </a>
                 )}
                 <a className="text-center" href="/reset">

@@ -541,6 +541,7 @@
   "Username": "Nom d'utilisateur",
   "Login": "Se connecter",
   "Forgot your password ?": "Mot de passe oublié ?",
+  "create.account.link.label": "Créer un compte",
   "Api saved": "API sauvegardée",
   "api.created.success": "API %s créée",
   "group.created.success": "API groupe %s créée",
