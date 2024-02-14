@@ -1,7 +1,7 @@
 use std::any::Any;
 use std::collections::HashMap;
-use std::io;
 use std::convert::Infallible;
+use std::{io, result};
 use std::path::PathBuf;
 
 use http_body_util::Full;
@@ -17,142 +17,191 @@ use std::fs;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct CmsPage {
-  _id: String,
-  _tenant: String,
-  _deleted: bool,
-  visible: bool,
-  authenticated: bool,
-  name: String,
-  // picture: Option<dyn Any>,
-  tags: Vec<String>,
-  metadata: HashMap<String, String>,
-  #[serde(alias = "contentType")]
-  content_type: String,
-  // forwardRef: dyn Any,
-  path: Option<String>,
-  exact: bool,
-  #[serde(alias = "lastPublishedDate")]
-  last_published_date: u64
+    _id: String,
+    _tenant: String,
+    _deleted: bool,
+    visible: bool,
+    authenticated: bool,
+    name: String,
+    // picture: Option<dyn Any>,
+    tags: Vec<String>,
+    metadata: HashMap<String, String>,
+    #[serde(alias = "contentType")]
+    content_type: String,
+    // forwardRef: dyn Any,
+    path: Option<String>,
+    exact: bool,
+    #[serde(alias = "lastPublishedDate")]
+    last_published_date: u64,
+}
+
+#[derive(Debug)]
+struct RouterCmsPage<'a> {
+    _id: &'a str,
+    exact: bool,
+    path: &'a str,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct Summary {
-  pages: Vec<CmsPage>
+    pages: Vec<CmsPage>,
 }
 
 fn read_cms_pages() -> Summary {
-  let content = fs::read_to_string(PathBuf::from("./my-first-cms/src/summary.json")).unwrap();
-  let Summary { pages } =serde_json::from_str(&content).unwrap();
+    let content = fs::read_to_string(PathBuf::from("./my-first-cms/src/summary.json")).unwrap();
+    let Summary { pages } = serde_json::from_str(&content).unwrap();
 
-  Summary { pages: pages.into_iter().filter(|page| page.path.is_some()).collect() }
+    Summary {
+        pages: pages
+            .into_iter()
+            .filter(|page| page.path.is_some())
+            .collect(),
+    }
 }
 
-fn get_matching_routes(path: &String, cms_paths: Vec<(String, CmsPage)>, strict_mode: bool) -> Vec<CmsPage> {
+fn get_matching_routes<'a>(
+    path: &'a String,
+    cms_paths: Vec<(&'a str, &'a RouterCmsPage<'a>)>,
+    strict_mode: bool,
+) -> Vec<&'a RouterCmsPage<'a>> {
+    let str = path.clone().replace("/_", "");
+    let paths = str
+        .split("/")
+        .filter(|p| !p.is_empty())
+        .collect::<Vec<&str>>();
 
-  let paths = path      
-    .replace("/_", "")
-    .split("/")
-    .filter(|p| !p.is_empty())
-    .collect::<Vec<&str>>();
+    if paths.is_empty() {
+        vec![]
+    } else {
+        let mut matched = false;
 
-  if paths.is_empty() {
-    vec![]
-  } else {
-    let mut matched = false;
+        let mut init: Vec<(Vec<String>, &RouterCmsPage)> = vec![];
 
-    let init: Vec<(Vec<String>, CmsPage)> = cms_paths
-      .into_iter()
-      .map(|r| {
-        let path = r.0.replace("/_/", "").split("/").map(|s| s.to_string()).collect::<Vec<String>>();
-        let page = r.1;
+        cms_paths
+            .iter()
+            .for_each(|r| {
+                let page = r.1;
 
-        let path_suffix = (if page.exact {
-          "" 
-        } else {
-          "*"
-        }).to_string();
+                let mut current_path: Vec<String> = r.0
+                  .replace("/_/", "")
+                  .split("/")
+                  .map(String::from)
+                  .collect();
 
-        path.push(path_suffix);
-        (path, page)
-      })
-      .collect::<Vec<(Vec<String>, CmsPage)>>();
+                let path_suffix = if page.exact { "" } else { "*" }.to_string();
 
-    paths
-      .into_iter()
-      .fold(init, |acc: Vec<(Vec<String>, CmsPage)>, path| {
+                current_path.push(path_suffix);
+                current_path = current_path.into_iter().filter(|p| !p.is_empty()).collect();
 
-        if acc.is_empty() || matched {
-          acc
-        } else {
-          let matching_routes: Vec<(Vec<String>, CmsPage)> = acc.into_iter().filter(|p|
-            !p.0.is_empty() && (p.0.into_iter().nth(0).unwrap() == path || p.0.into_iter().nth(0).unwrap() == "*")
-          ).collect();
-          if !matching_routes.is_empty() {
-            matching_routes
+                if !current_path.is_empty() {
+                  init.push((current_path, page))
+                }
+            });
+
+        println!("possible paths : {:?}", init);
+
+        paths
+            .iter()
+            .fold(init, |acc: Vec<(Vec<String>, &RouterCmsPage)>, path| {
+              println!("Start compare with {}", path);
+                if acc.is_empty() || matched {
+                    acc
+                } else {
+                    let matching_routes: Vec<(Vec<String>, &RouterCmsPage)> = acc
+                        .iter()
+                        .filter(|p| {
+                          if p.0.is_empty() {
+                            false
+                          } else {
+                            let path_path = p.0.iter().nth(0).unwrap();
+                            path_path == path || path_path == "*"
+                          }
+                        })
+                        .map(|p| (p.0.to_vec(), p.1))
+                        .collect();
+
+                    println!("matching route : {:?}", matching_routes);
+
+                    if !matching_routes.is_empty() {
+                        matching_routes.iter()
+                        .map(|p| (p.0.to_vec().into_iter().skip(1).collect(), p.1))
+                        .collect()
+                    } else {
+                        match acc.iter().find(|p| p.0.is_empty()) {
+                            Some(matching_route) if !strict_mode => {
+                                matched = true;
+                                let mut results = Vec::new();
+                                results.push((matching_route.0.to_vec(), matching_route.1));
+                                results
+                            }
+                            _ => Vec::new(),
+                        }
+                    }
+                }
+            })
             .into_iter()
-            .map(|p| (p.0.into_iter().skip(1).collect(), p.1))
+            .map(|f| f.1)
             .collect()
-          } else {
-            let matching_route = acc.into_iter().find(|p| p.0.is_empty());
-            if matching_route.is_some() && !strict_mode {
-              matched = true;
-              let mut results = Vec::new();
-              results.push(matching_route.unwrap());
-              results
-            } else {
-              Vec::new()
-            }
-          }
-        }
-      })
-      .into_iter()
-      .map(|f| f.1)
-      .collect()
-  }
+    }
+}
+
+fn get_pages<'a>(
+    router_pages: &'a Vec<RouterCmsPage<'a>>,
+    exact: bool,
+) -> Vec<(&'a str, &'a RouterCmsPage<'a>)> {
+    router_pages
+        .into_iter()
+        .filter(|p| p.exact == exact)
+        .map(|p| (p.path, p))
+        .collect()
 }
 
 async fn hello(req: Request<hyper::body::Incoming>) -> Result<Response<Full<Bytes>>, Infallible> {
+    let path = req.uri().path().to_string();
 
-  let path = req.uri().path().to_string();
+    let Summary { pages } = read_cms_pages();
 
-  let Summary { pages } = read_cms_pages();
+    let mut router_pages = vec![];
 
-  let option_page = (&pages).into_iter().find(|page| page.path.as_ref().unwrap() == &path);
+    pages.iter().filter(|p| p.path.is_some()).for_each(|p| {
+        let path = p.path.as_ref().map(|x| &**x).unwrap();
+        router_pages.push(RouterCmsPage {
+            _id: &p._id,
+            exact: p.exact,
+            path: &path,
+        })
+    });
 
-  match option_page {
-    Some(page) if page.visible => Ok(Response::new(Full::new(Bytes::from("NOT FOUND")))),
-    Some(page) if page.authenticated /* && not user */ => Ok(Response::new(Full::new(Bytes::from("REDIRECT TO LOGIN PAGE")))),
-    Some(page) => {
-      println!("{:?}", page);
-      Ok(Response::new(Full::new(Bytes::from("J'AI LA PAGE"))))
-    },// call 
-    None => {
-      let strict_page = get_matching_routes(&path,
-        (&pages)
-          .into_iter()
-          .filter(|p| p.exact && p.path.is_some())
-          .map(|p| (p.path.unwrap(), p))
-          .collect(),
-        true
-      );
+    match pages.iter().find(|page| page.path.clone().unwrap() == path) {
+      Some(page) if !page.visible => Ok(Response::new(Full::new(Bytes::from("NOT VISIBLE")))),
+      Some(page) if page.authenticated /* && not user */ => Ok(Response::new(Full::new(Bytes::from("REDIRECT TO LOGIN PAGE")))),
+      Some(_page) => {
+        Ok(Response::new(Full::new(Bytes::from("J'AI LA PAGE DIRECT"))))
+      },// call 
+      None => {
+        let strict_page = get_matching_routes(&path, get_pages(&router_pages, true),true);
 
-      let page = if !strict_page.is_empty() {
-        strict_page
-      } else {
-        get_matching_routes(&path,
-            (&pages)
-              .into_iter()
-              .filter(|p| !p.exact && p.path.is_some())
-              .map(|p| (p.path.unwrap(), p))
-              .collect(),
-              false
-        )
-      };
-      println!("{:?}", page);
-      Ok(Response::new(Full::new(Bytes::from("J'AI LA PAGE"))))
-    }
+        println!("Strict pages {:?}", strict_page);
+
+        let result_page = if !strict_page.is_empty() {
+          strict_page
+        } else {
+          get_matching_routes(&path, get_pages(&router_pages, false), false)
+        };
+
+        println!("{:?}", result_page);
+        
+        match result_page.iter().nth(0) {
+          None => Ok(Response::new(Full::new(Bytes::from("NOT FOUND")))),
+          Some(res) => render_page(pages.iter().find(|p| p._id == res._id).unwrap())
+        }
+      }
   }
-  // Ok(Response::new(Full::new(Bytes::from(path))))
+}
+
+fn render_page(page: &CmsPage) -> Result<Response<Full<Bytes>>, Infallible> {
+
+  Ok(Response::new(Full::new(Bytes::from(page._id.clone()))))
 }
 
 pub async fn watching() -> io::Result<()> {
