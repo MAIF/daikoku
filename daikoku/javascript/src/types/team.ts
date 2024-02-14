@@ -22,14 +22,6 @@ export interface ITeamSimple {
   authorizedOtoroshiEntities: Array<{otoroshiSettingsId: string, authorizedEntities: IAuthorizedEntities}>
 }
 
-export interface ITeamVisibility {
-  _id: string;
-  _humanReadableId: string;
-  type: 'Personal' | 'Organization' | 'Admin';
-  name: string;
-  avatar: string;
-}
-
 export interface ITeamFull extends ITeamSimple {
   _deleted: boolean;
   metadata: object;

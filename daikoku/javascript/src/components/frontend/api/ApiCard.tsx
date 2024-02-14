@@ -4,14 +4,14 @@ import classNames from 'classnames';
 import { Can, manage, api as API, ActionWithTeamSelector } from '../../utils';
 import StarsButton from './StarsButton';
 import { I18nContext } from '../../../core';
-import { IApiWithAuthorization, ITeamSimple, ITeamVisibility, IUserSimple } from '../../../types';
+import { IApiWithAuthorization, ITeamSimple, IUserSimple } from '../../../types';
 import { useNavigate } from "react-router-dom";
 
 export const ApiCard = (props: {
   user: IUserSimple
   apiWithAutho: Array<IApiWithAuthorization>
   teamVisible: boolean
-  team?: ITeamSimple | ITeamVisibility
+  team?: ITeamSimple
   myTeams: Array<ITeamSimple>
   askForApiAccess: (teams: Array<string>) => Promise<any>
   redirectToApiPage: () => void
@@ -37,7 +37,7 @@ export const ApiCard = (props: {
   const { translate, Translation } = useContext(I18nContext);
   const navigate = useNavigate();
 
-  const redirectToTeamPage = (team: ITeamSimple | ITeamVisibility) => {
+  const redirectToTeamPage = (team: ITeamSimple) => {
     navigate(`/${team._humanReadableId}`);
   };
 

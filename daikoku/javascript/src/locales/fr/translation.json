@@ -1026,6 +1026,7 @@
   "constraints.reserved.char.version": "Certains caractères sont reservés pour la version (%s)",
   "constraints.file.type.forbidden": "Le type du fichier est interdit",
   "constraints.file.type.required": "Le content-type du fichier est requis",
+  "constraints.min.0": "La valeur minimum est de 0",
   "constraint.min.authorizedEntities": "Les entitées autorisées doivent contenir au minimum une service ou un groupe",
   "constraint.test.required.variables": "la valeur doit contenir les variables requises",
   "SEO": "SEO",

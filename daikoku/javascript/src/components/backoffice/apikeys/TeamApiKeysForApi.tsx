@@ -620,6 +620,7 @@ const ApiKeyCard = ({
                       enabled: false,
                       rotationEvery: 744,
                       gracePeriod: 168,
+                      pendingRotation: false
                     })}
                     footer={({ valid }) => {
                       return (

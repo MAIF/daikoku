@@ -101,6 +101,20 @@ export const FastApiCard = (props: FastApiCardProps) => {
     }
   }
 
+  type IUsagePlanGQL = {
+    _id: string
+    otoroshiTarget: {
+      otoroshiSettings: string
+    }
+    aggregationApiKeysSecurity: boolean
+  }
+  type IApiGQL = {
+    _id: string
+    _humanReadableId: string
+    currentVersion: string
+    name: string
+    possibleUsagePlans: IUsagePlanGQL[]
+  }
 
   const subscribeOrExtends = (apiId: string, team: ITeamSimple, plan: IFastPlan) => {
     if (client) {
@@ -111,18 +125,18 @@ export const FastApiCard = (props: FastApiCardProps) => {
         })
           .then(({ data }) => ({ apis: data.apis, subscriptions }))
         )
-        .then(({ apis, subscriptions }: { apis: Array<IApi>, subscriptions: Array<ISubscriptionWithApiInfo> }) => {
+        .then(({ apis, subscriptions }: { apis: Array<IApiGQL>, subscriptions: Array<ISubscriptionWithApiInfo> }) => {
           const int = subscriptions
             .map((subscription) => {
               const api = apis.find((a) => a._id === subscription.api);
-              const plan: IUsagePlan = Option(api?.possibleUsagePlans)
-                .flatMap((plans: Array<IUsagePlan>) => Option(plans.find((plan) => plan._id === subscription.plan)))
+              const plan = Option(api?.possibleUsagePlans)
+                .flatMap((plans) => Option(plans.find((plan) => plan._id === subscription.plan)))
                 .getOrNull();
               return { subscription, api, plan };
             })
 
           const filteredApiKeys = int.filter((infos) => infos.plan?.otoroshiTarget?.otoroshiSettings ===
-            plan?.otoroshiTarget?.otoroshiSettings && infos.plan.aggregationApiKeysSecurity
+            plan?.otoroshiTarget?.otoroshiSettings && infos.plan?.aggregationApiKeysSecurity
           )
             .map((infos) => infos.subscription);
 

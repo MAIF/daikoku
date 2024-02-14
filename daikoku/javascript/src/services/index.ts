@@ -1561,6 +1561,7 @@ export const graphql = {
         customMaxPerSecond
         customMaxPerDay
         customMaxPerMonth
+        customReadOnly
         adminCustomName
         parent {
           _id

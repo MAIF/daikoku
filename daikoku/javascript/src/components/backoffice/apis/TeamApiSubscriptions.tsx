@@ -9,7 +9,7 @@ import {ModalContext} from '../../../contexts';
 import {CustomSubscriptionData} from '../../../contexts/modals/SubscriptionMetadataModal';
 import {I18nContext} from '../../../core';
 import * as Services from '../../../services';
-import {IApi, isError, IState, ITeamSimple, IUsagePlan} from "../../../types";
+import {IApi, isError, IState, ISubscriptionCustomization, ITeamSimple, IUsagePlan} from "../../../types";
 import {SwitchButton, Table, TableRef} from '../../inputs';
 import {
   api as API,
@@ -38,7 +38,7 @@ type LimitedPlan = {
   type: string
 
 }
-interface IApiSubscriptionGql {
+interface IApiSubscriptionGql extends ISubscriptionCustomization {
   _id: string
   apiKey: {
     clientName: string
@@ -62,6 +62,7 @@ interface IApiSubscriptionGql {
   customMaxPerSecond?: number
   customMaxPerDay?: number
   customMaxPerMonth?: number
+  customReadOnly?: boolean
   tags: Array<string>
   metadata?: JSON
   parent: {

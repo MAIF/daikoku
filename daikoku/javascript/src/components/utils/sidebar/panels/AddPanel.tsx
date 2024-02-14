@@ -121,11 +121,11 @@ export const AddPanel = () => {
   } else if (myTeamsRequest.data && !isError(myTeamsRequest.data)) {
     const teams = myTeamsRequest.data
     const maybeTeam: string | undefined = Option(match)
-      .map((m: PathMatch) => m.params)
-      .map((p: Params) => p.teamId)
-      .map((id: string) => teams.find((t) => t._humanReadableId === id))
-      .filter((t: ITeamSimple) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted))
-      .map((t: ITeamSimple) => t._id)
+      .map((m) => m.params)
+      .map((p) => p.teamId)
+      .map((id) => teams.find((t) => t._humanReadableId === id))
+      .filter((t) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted))
+      .map((t) => t._id)
       .getOrNull();
 
     return (

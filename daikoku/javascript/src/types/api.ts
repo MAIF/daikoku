@@ -1,5 +1,5 @@
 import { Schema } from '@maif/react-forms';
-import { IFastTeam, ITeamSimple, ITeamVisibility } from './team';
+import { IFastTeam, ITeamSimple } from './team';
 import { ThirdPartyPaymentType } from './tenant';
 import { INotification } from './types';
 
@@ -375,13 +375,14 @@ export interface IBaseSubscription {
   customName: string | null;
   enabled: boolean;
   rotation: IRotation;
-  customMetadata?: object;
   metadata?: object;
   tags: Array<string>;
-  customMaxPerSecond: number | null;
-  customMaxPerMonth: number | null;
-  customMaxPerDay: number | null;
-  customReadOnly: boolean | null;
+  customMetadata?: object;
+  customMaxPerSecond?: number;
+  customMaxPerMonth?: number;
+  customMaxPerDay?: number;
+  customReadOnly?: boolean;
+  adminCustomName?: string;
   parent: string | null;
   parentUp: boolean;
 }
@@ -418,13 +419,22 @@ export function isPromise<T>(obj: any): obj is Promise<T> {
   return (<Promise<T>>obj).then !== undefined && typeof (<Promise<T>>obj).then === 'function';
 }
 
-export interface ISafeSubscription extends IBaseSubscription {
+export interface ISafeSubscription extends IBaseSubscription, ISubscriptionCustomization  {
   apiKey: { clientName: string };
 }
 
 export interface ISubscription extends IBaseSubscription {
   apiKey: IApiKey;
   integrationToken: string;
+}
+
+export interface ISubscriptionCustomization  {
+  customMetadata?: object;
+  customMaxPerSecond?: number;
+  customMaxPerMonth?: number;
+  customMaxPerDay?: number;
+  customReadOnly?: boolean;
+  adminCustomName?: string;
 }
 
 export interface ISubscriptionExtended extends ISubscription {
@@ -531,13 +541,14 @@ export interface ISubscriptionDemand {
   team: string;
   from: string;
   date: string;
-  motivation?: string;
+  motivation?: object;
   parentSubscriptionId?: string;
   customReadOnly?: boolean;
   customMetadata?: object;
   customMaxPerSecond?: number;
   customMaxPerDay?: number;
   customMaxPerMonth?: number;
+  adminCustomName?: string;
 }
 
 export interface IGlobalInformations {
