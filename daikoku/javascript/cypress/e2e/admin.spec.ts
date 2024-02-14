@@ -52,7 +52,7 @@ describe('teams page', () => {
       .visit('http://localhost:9000/settings/settings/general')
       .get('.navbar-companion .block__entry__link').contains('Teams').click()
       .url().should('include', '/settings/teams')
-      .get('.avatar-with-action').should('have.length', 6)
+      .get('.avatar-with-action:not(.new-team-button)').should('have.length', 6)
       .visit('http://localhost:9000/settings/teams/consumers/members')
       .get('.avatar-with-action').should('have.length', 1);
   });
