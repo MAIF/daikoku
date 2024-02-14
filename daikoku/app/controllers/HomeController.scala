@@ -186,25 +186,27 @@ class HomeController(
     else {
       var matched = false
 
+      val init: Seq[(Array[String], CmsPage)] = cmsPaths
+        .map(r =>
+          (
+            r._1.replace("/_/", "").split("/") ++ Array(
+              if (r._2.exact) "" else "*"
+            ),
+            r._2
+          )
+        )
+        .map(p => (p._1.filter(_.nonEmpty), p._2))
+        .filter(p => p._1.nonEmpty);
+
       paths
         .foldLeft(
-          cmsPaths
-            .map(r =>
-              (
-                r._1.replace("/_/", "").split("/") ++ Array(
-                  if (r._2.exact) "" else "*"
-                ),
-                r._2
-              )
-            )
-            .map(p => (p._1.filter(_.nonEmpty), p._2))
-            .filter(p => p._1.nonEmpty)
+          init
         ) { (paths, path) =>
           {
             if (paths.isEmpty || matched)
               paths
             else {
-              val matchingRoutes = paths.filter(p =>
+              val matchingRoutes: Seq[(Array[String], CmsPage)] = paths.filter(p =>
                 p._1.nonEmpty && (p._1.head == path || p._1.head == "*")
               )
               if (matchingRoutes.nonEmpty)
@@ -224,8 +226,26 @@ class HomeController(
     }
   }
 
-  def cmsPageByPath(path: String) =
-    DaikokuActionMaybeWithoutUser.async { ctx =>
+  def renderCmsPage() = DaikokuActionMaybeWithoutUser.async(parse.json) { ctx =>
+      val body = ctx.request.body.as[JsObject]
+      val cmsPage = (body \ "page").as(CmsPageFormat)
+
+      renderCmsPage(ctx, Some(cmsPage))
+    }
+
+  private def renderCmsPage[A](ctx: DaikokuActionMaybeWithoutUserContext[A], page: Option[CmsPage]) = {
+    page match {
+      case Some(r)
+        if r.authenticated && (ctx.user.isEmpty || ctx.user
+          .exists(_.isGuest)) =>
+        redirectToLoginPage(ctx)
+      case Some(r) => render(ctx, r)
+      case None => cmsPageNotFound(ctx)
+    }
+  }
+
+  def cmsPageByPath(path: String, page: Option[CmsPage] = None) =
+    DaikokuActionMaybeWithoutUser.async { ctx: DaikokuActionMaybeWithoutUserContext[AnyContent] =>
       val actualPath = if (path.startsWith("/")) {
         path
       } else {
@@ -279,14 +299,7 @@ class HomeController(
                           .map(p => (p.path.get, p))
                       )
 
-                  page.headOption match {
-                    case Some(r)
-                        if r.authenticated && (ctx.user.isEmpty || ctx.user
-                          .exists(_.isGuest)) =>
-                      redirectToLoginPage(ctx)
-                    case Some(r) => render(ctx, r)
-                    case None    => cmsPageNotFound(ctx)
-                  }
+                  renderCmsPage(ctx, page.headOption)
                 })
             case Some(page) if !page.visible => cmsPageNotFound(ctx)
             case Some(page) if page.authenticated && ctx.user.isEmpty =>
