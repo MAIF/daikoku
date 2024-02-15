@@ -74,7 +74,7 @@ export const TenantStyleEdit = () => {
     }, ':root {\n') + '}';
 
   const goBack = () => {
-    navigate(`/settings/tenants/${state.tenant._id}`);
+    navigate(`/settings/tenants/${state.tenant._id}/customization`);
   };
 
   const reset = () => {
