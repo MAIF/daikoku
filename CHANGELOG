@@ -529,3 +529,18 @@ We'd like to thank all the contributors who worked on this release!
 
 - exclude inner admin apikey from otoroshi verifier job [#617](https://github.com/MAIF/daikoku/issues/617)
 
+## [v17.1.0] - 2024-02-15
+
+## :star: New Features
+
+- use team.authorizedOtoroshiGroups  [#600](https://github.com/MAIF/daikoku/issues/600)
+
+## :beetle: Bug Fixes
+
+- Add a way to configure the openAPI file name [#633](https://github.com/MAIF/daikoku/issues/633)
+- Sidebar navigation is lost after Cancel a Tenant customization [#632](https://github.com/MAIF/daikoku/issues/632)
+- The picker color disappear after scroll on Tenants / customization [#631](https://github.com/MAIF/daikoku/issues/631)
+- Error when addin a third-party payment settings [#630](https://github.com/MAIF/daikoku/issues/630)
+- api.defaultUsagePlan is mandatory but api.possibleUsagePlans can be an empty Set [#629](https://github.com/MAIF/daikoku/issues/629)
+- sync jobs error mail is send to deleted users [#628](https://github.com/MAIF/daikoku/issues/628)
+
