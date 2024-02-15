@@ -162,7 +162,7 @@ dockerExposedPorts := Seq(
 )
 Docker / packageName := "daikoku"
 Docker / maintainer := "MAIF OSS Team <oss@maif.fr>"
-dockerBaseImage := "eclipse-temurin:21-jre-ubi9-minimal"
+dockerBaseImage := "eclipse-temurin:21.0.1_12-jre-ubi9-minimal"
 dockerUsername := Some("maif")
 dockerUpdateLatest := true
 dockerCommands := dockerCommands.value.filterNot {
