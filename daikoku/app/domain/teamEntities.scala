@@ -93,7 +93,10 @@ object TeamApiKeyVisibility {
     }
 }
 
-case class TeamAuthorizedEntities(otoroshiSettingsId: OtoroshiSettingsId, authorizedEntities: AuthorizedEntities)
+case class TeamAuthorizedEntities(
+    otoroshiSettingsId: OtoroshiSettingsId,
+    authorizedEntities: AuthorizedEntities
+)
 case class Team(
     id: TeamId,
     tenant: TenantId,
@@ -138,7 +141,7 @@ case class Team(
       "authorizedOtoroshiEntities" -> authorizedOtoroshiEntities
         .map(json.SeqTeamAuthorizedEntitiesFormat.writes)
         .getOrElse(JsNull)
-        .as[JsValue],
+        .as[JsValue]
     )
   }
   def includeUser(userId: UserId): Boolean = {
