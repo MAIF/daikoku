@@ -1,19 +1,24 @@
-use std::any::Any;
 use std::collections::HashMap;
 use std::convert::Infallible;
-use std::{io, result};
+use std::io;
 use std::path::PathBuf;
 
-use http_body_util::Full;
+use bytes::Buf;
+use http_body_util::{BodyExt, Full};
 use hyper::body::Bytes;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
-use hyper::{Request, Response};
-use hyper_util::rt::TokioIo;
+use hyper_tls::HttpsConnector;
+use hyper_util::client::legacy::Client;
+use hyper_util::rt::{TokioExecutor, TokioIo};
+use hyper::{Error, Request, Response};
+use hyper::{body::Incoming as IncomingBody, header, Method, StatusCode};
 use serde::{Deserialize, Serialize};
-use tokio::net::TcpListener;
+use tokio::net::{TcpListener, TcpStream};
 
 use std::fs;
+
+use crate::plugin::{read_contents, Folder};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 struct CmsPage {
@@ -47,6 +52,13 @@ struct Summary {
     pages: Vec<CmsPage>,
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+struct CmsRequestRendering {
+    pages: Vec<CmsPage>,
+    content: Folder,
+    current_page: String
+}
+
 fn read_cms_pages() -> Summary {
     let content = fs::read_to_string(PathBuf::from("./my-first-cms/src/summary.json")).unwrap();
     let Summary { pages } = serde_json::from_str(&content).unwrap();
@@ -54,7 +66,7 @@ fn read_cms_pages() -> Summary {
     Summary {
         pages: pages
             .into_iter()
-            .filter(|page| page.path.is_some())
+            // .filter(|page| page.path.is_some())
             .collect(),
     }
 }
@@ -98,12 +110,12 @@ fn get_matching_routes<'a>(
                 }
             });
 
-        println!("possible paths : {:?}", init);
+        // println!("possible paths : {:?}", init);
 
         paths
             .iter()
             .fold(init, |acc: Vec<(Vec<String>, &RouterCmsPage)>, path| {
-              println!("Start compare with {}", path);
+              // println!("Start compare with {}", path);
                 if acc.is_empty() || matched {
                     acc
                 } else {
@@ -120,7 +132,7 @@ fn get_matching_routes<'a>(
                         .map(|p| (p.0.to_vec(), p.1))
                         .collect();
 
-                    println!("matching route : {:?}", matching_routes);
+                    // println!("matching route : {:?}", matching_routes);
 
                     if !matching_routes.is_empty() {
                         matching_routes.iter()
@@ -172,16 +184,14 @@ async fn hello(req: Request<hyper::body::Incoming>) -> Result<Response<Full<Byte
         })
     });
 
-    match pages.iter().find(|page| page.path.clone().unwrap() == path) {
+    match pages.iter().find(|page| page.path.clone().map(|p| p == path).unwrap_or(false)) {
       Some(page) if !page.visible => Ok(Response::new(Full::new(Bytes::from("NOT VISIBLE")))),
-      Some(page) if page.authenticated /* && not user */ => Ok(Response::new(Full::new(Bytes::from("REDIRECT TO LOGIN PAGE")))),
-      Some(_page) => {
-        Ok(Response::new(Full::new(Bytes::from("J'AI LA PAGE DIRECT"))))
-      },// call 
+      Some(page) if page.authenticated /* && not user */ => render_page(page).await, // Ok(Response::new(Full::new(Bytes::from("REDIRECT TO LOGIN PAGE")))),
+      Some(page) => render_page(page).await,// call 
       None => {
         let strict_page = get_matching_routes(&path, get_pages(&router_pages, true),true);
 
-        println!("Strict pages {:?}", strict_page);
+        // println!("Strict pages {:?}", strict_page);
 
         let result_page = if !strict_page.is_empty() {
           strict_page
@@ -189,19 +199,75 @@ async fn hello(req: Request<hyper::body::Incoming>) -> Result<Response<Full<Byte
           get_matching_routes(&path, get_pages(&router_pages, false), false)
         };
 
-        println!("{:?}", result_page);
+        // println!("{:?}", result_page);
         
         match result_page.iter().nth(0) {
           None => Ok(Response::new(Full::new(Bytes::from("NOT FOUND")))),
-          Some(res) => render_page(pages.iter().find(|p| p._id == res._id).unwrap())
+          Some(res) => render_page(pages.iter().find(|p| p._id == res._id).unwrap()).await
         }
       }
   }
 }
 
-fn render_page(page: &CmsPage) -> Result<Response<Full<Bytes>>, Infallible> {
+// fn extract_extension(page: &CmsPage) -> &str {
+//   match page.content_type.as_str() {
+//     "text/javascript" => "js",
+//     "text/html" => "hmtl",
+//     "application/json" => "json",
+//     _ => "html"
+//   }
+// }
 
-  Ok(Response::new(Full::new(Bytes::from(page._id.clone()))))
+async fn render_page(page: &CmsPage) -> Result<Response<Full<Bytes>>, Infallible> {
+
+  println!("Page found {:?}", page);
+
+  let url = format!("http://localhost:9000/__/?force_reloading=true");
+  let Summary { pages } = read_cms_pages();
+
+  let content = read_contents(&PathBuf::from("./my-first-cms/src").into_os_string().into_string().unwrap());
+
+  let body_obj = CmsRequestRendering {
+    pages,
+    content,
+    current_page: page._id.clone()
+  };
+
+  let body = Bytes::from(serde_json::to_string(&body_obj).unwrap());
+
+  let req = Request::builder()
+    .method(Method::POST)
+    .uri(url)
+    .header(header::HOST, "localhost:9000")
+    .header(header::CONTENT_TYPE, "application/json")
+    .body(Full::new(body))
+    .unwrap();
+
+  let host = req.uri().host().expect("uri has no host");
+  let port = req.uri().port_u16().expect("uri has no port");
+  let stream = TcpStream::connect(format!("{}:{}", host, port)).await.unwrap();
+  let io = TokioIo::new(stream);
+
+  let (mut sender, conn) = hyper::client::conn::http1::handshake(io).await.unwrap();
+
+  tokio::task::spawn(async move {
+      if let Err(err) = conn.await {
+          println!("Connection error: {:?}", err);
+      }
+  });
+
+  let web_res = sender.send_request(req).await.unwrap();
+
+  let whole_body = web_res.collect().await.unwrap().aggregate();
+
+  let res = io::read_to_string(whole_body.reader()).unwrap();
+  
+  Ok(
+    Response::builder()
+      .header(header::CONTENT_TYPE, &page.content_type)
+      .body(Full::new(Bytes::from(res)))
+      .unwrap()
+  )
 }
 
 pub async fn watching() -> io::Result<()> {

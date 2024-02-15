@@ -1,21 +1,16 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.github.blemale.scaffeine.{Cache, Scaffeine}
 import com.nimbusds.jose.util.StandardCharset
 import daikoku.BuildInfo
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuActionMaybeWithoutUserContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.CmsPageFormat
+import fr.maif.otoroshi.daikoku.domain.json.{CmsPageFormat, CmsRequestRenderingFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator, diff_match_patch}
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json._
@@ -25,8 +20,8 @@ import java.io.{ByteArrayOutputStream, File, FileInputStream, FileOutputStream}
 import java.util
 import java.util.concurrent.TimeUnit
 import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream}
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, Future}
 
 class HomeController(
     DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
@@ -226,11 +221,19 @@ class HomeController(
     }
   }
 
-  def renderCmsPage() = DaikokuActionMaybeWithoutUser.async(parse.json) { ctx =>
+  def renderCmsPageFromBody() = DaikokuActionMaybeWithoutUser.async(parse.json) { ctx =>
       val body = ctx.request.body.as[JsObject]
-      val cmsPage = (body \ "page").as(CmsPageFormat)
 
-      renderCmsPage(ctx, Some(cmsPage))
+      val req = body.as(CmsRequestRenderingFormat)
+
+      val currentPage = req.pages.find(_.id.value == req.current_page)
+
+      currentPage match {
+        case Some(r)
+          if r.authenticated && (ctx.user.isEmpty || ctx.user.exists(_.isGuest)) => redirectToLoginPage(ctx)
+        case Some(page) => render(ctx, page, Some(req))
+        case None => cmsPageNotFound(ctx)
+      }
     }
 
   private def renderCmsPage[A](ctx: DaikokuActionMaybeWithoutUserContext[A], page: Option[CmsPage]) = {
@@ -319,7 +322,7 @@ class HomeController(
     )
 
   private def cmsPageNotFound[A](
-      ctx: DaikokuActionMaybeWithoutUserContext[A]
+                                  ctx: DaikokuActionMaybeWithoutUserContext[A]
   ): Future[Result] = {
     val optionFoundPage: Option[DaikokuStyle] = ctx.tenant.style
       .find(p => p.homePageVisible && p.notFoundCmsPage.nonEmpty)
@@ -331,7 +334,7 @@ class HomeController(
           .findById(p.notFoundCmsPage.get)
           .flatMap {
             case Some(page) =>
-              page.render(ctx).map(res => Ok(res._1).as(res._2))
+              page.render(ctx, req = None).map(res => Ok(res._1).as(res._2))
             case _ =>
               Errors.craftResponseResult(
                 "Page not found !",
@@ -354,7 +357,8 @@ class HomeController(
 
   private def render[A](
       ctx: DaikokuActionMaybeWithoutUserContext[A],
-      r: CmsPage
+      r: CmsPage,
+      req: Option[CmsRequestRendering] = None
   ) = {
     val isDraftRender: Boolean =
       ctx.request.getQueryString("draft").contains("true")
@@ -380,13 +384,13 @@ class HomeController(
       })
 
     if (isDraftRender || forceReloading)
-      r.render(ctx, None).map(res => Ok(res._1).as(res._2))
+      r.render(ctx, None, req = req).map(res => Ok(res._1).as(res._2))
     else
       cache.getIfPresent(cacheId) match {
         case Some(value) =>
           FastFuture.successful(Ok(value.content).as(value.contentType))
         case _ =>
-          r.render(ctx, None)
+          r.render(ctx, None, req = req)
             .map(res => {
               cache.put(
                 cacheId,

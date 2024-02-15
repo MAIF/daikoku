@@ -45,6 +45,7 @@
     "js-md5": "0.8.3",
     "json5": "2.2.3",
     "lodash": "4.17.21",
+    "mobx": "^6.12.0",
     "moment": "2.29.4",
     "nanoid": "^5.0.2",
     "popper.js": "1.16.1",
@@ -71,6 +72,7 @@
     "redux-thunk": "2.4.2",
     "set-value": "4.1.0",
     "showdown": "2.1.0",
+    "styled-components": "^6.1.8",
     "swagger-editor": "4.11.2",
     "swagger-ui-dist": "5.9.1",
     "xstate": "^4.38.3"

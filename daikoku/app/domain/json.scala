@@ -4429,6 +4429,66 @@ object json {
       }
   }
 
+
+  val CmsFileFormat = new Format[CmsFile] {
+    override def writes(o: CmsFile): JsValue =
+      Json.obj(
+        "name" -> o.name,
+        "content" -> o.content
+      )
+    override def reads(json: JsValue): JsResult[CmsFile] =
+      Try {
+        CmsFile(
+          name = (json \ "name").as[String],
+          content = (json \ "content").as[String]
+        )
+      } match {
+        case Failure(exception) => JsError(exception.getMessage)
+        case Success(page)      => JsSuccess(page)
+      }
+  }
+
+  val CmsRequestRenderingFormat = new Format[CmsRequestRendering] {
+    override def writes(o: CmsRequestRendering): JsValue =
+      Json.obj(
+        "pages" -> o.pages.map(CmsPageFormat.writes),
+        "content" -> CmsContentsFormat.writes(o.content),
+        "current_page" -> o.current_page
+      )
+    override def reads(json: JsValue): JsResult[CmsRequestRendering] =
+      Try {
+        CmsRequestRendering(
+          pages = (json \ "pages").as(Reads.seq(CmsPageFormat)),
+          content = (json \ "content").as(CmsContentsFormat),
+          current_page = (json \ "current_page").as[String]
+        )
+      } match {
+        case Failure(exception) => JsError(exception.getMessage)
+        case Success(page)      => JsSuccess(page)
+      }
+  }
+
+  val CmsContentsFormat = new Format[CmsContents] {
+    override def writes(o: CmsContents): JsValue =
+      Json.obj(
+        "pages" -> o.pages.map(CmsFileFormat.writes),
+        "blocks" -> o.blocks.map(CmsFileFormat.writes),
+        "metadata" -> o.metadata.map(CmsFileFormat.writes),
+      )
+    override def reads(json: JsValue): JsResult[CmsContents] =
+      Try {
+        CmsContents(
+          pages = (json \ "pages").as(Reads.seq(CmsFileFormat)),
+          blocks = (json \ "blocks").as(Reads.seq(CmsFileFormat)),
+          metadata = (json \ "metadata").as(Reads.seq(CmsFileFormat))
+        )
+      } match {
+        case Failure(exception) => JsError(exception.getMessage)
+        case Success(page)      => JsSuccess(page)
+      }
+  }
+
+
   val CmsPageFormat = new Format[CmsPage] {
     override def writes(o: CmsPage): JsValue =
       Json.obj(
