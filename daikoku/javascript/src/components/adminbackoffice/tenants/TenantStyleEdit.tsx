@@ -5,6 +5,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { SketchPicker } from 'react-color';
 import { toastr } from 'react-redux-toastr';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import XCircle from 'react-feather/dist/icons/x-circle'
 
 import * as Services from '../../../services';
 import { Can, manage, Option, tenant as TENANT } from '../../utils';
@@ -243,6 +244,7 @@ const ColorPicker = ({
     popover: {
       position: 'absolute',
       zIndex: '2',
+      top: '0'
     },
     cover: {
       position: 'fixed',
@@ -280,7 +282,9 @@ const ColorPicker = ({
         <div style={{
           position: 'absolute',
           zIndex: '2',
-        }}>x
+          top: '0'
+        }}>
+          <XCircle style={{position: 'relative', top: '12px', right: '12px', cursor: 'pointer', backgroundColor: '#fff'}}/>
           <div style={{
             position: 'fixed',
             top: '0px',
