@@ -10,20 +10,20 @@
   }
 }
 
-.toastr.rrt-success {
+.toast.rrt-success {
     .rrt-middle-container{
       background-color: $success-color;
       border-radius: 4px;
     }
 }
-.toastr.rrt-info {
+.toast.rrt-info {
     .rrt-middle-container{
       background-color: $info-color;
       border-radius: 4px;
     }
 }
 
-.toastr.rrt-error{
+.toast.rrt-error{
     .rrt-middle-container{
       background-color: $error-color;
       border-radius: 4px;

@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import Plus from 'react-feather/dist/icons/plus';
 import { useDispatch, useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { Link, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select';
 
@@ -58,7 +58,7 @@ const CreateNewVersionButton = ({
       .then((newVersion) => {
         if (newVersion) {
           if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
-            toastr.error(translate('Error'), "Can't create version with special characters : " + reservedCharacters.join(' | '));
+            toast.error(translate({key: "semver.error.message", replacements: [reservedCharacters.join(' | ')]}));
           else
             createNewVersion(newVersion);
         }
@@ -67,9 +67,9 @@ const CreateNewVersionButton = ({
 
   const createNewVersion = (newVersion: string) => {
     Services.createNewApiVersion(apiId, currentTeam._id, newVersion).then((res) => {
-      if (res.error) toastr.error(translate('Error'), res.error);
+      if (res.error) toast.error(res.error);
       else {
-        toastr.success(translate('Success'), 'New version of api created');
+        toast.success(translate('version.creation.success.message'));
         navigate(`/${teamId}/settings/apis/${apiId}/${newVersion}/${tab ? tab : 'infos'}`);
       }
     });
@@ -177,12 +177,10 @@ export const TeamApi = (props: { creation: boolean }) => {
       return Services.createTeamApi(currentTeam._id, editedApi)
         .then((createdApi) => {
           if (createdApi.error) {
-            toastr.error(translate('Error'), translate(createdApi.error));
+            toast.error(translate(createdApi.error));
             return createdApi;
           } else if (createdApi.name) {
-            toastr.success(
-              translate('Success'),
-              translate({ key: 'api.created.success', replacements: [createdApi.name] })
+            toast.success(translate({ key: 'api.created.success', replacements: [createdApi.name] })
             );
             methods.setApi(createdApi);
             navigate(`/${currentTeam._humanReadableId}/settings/apis/${createdApi._humanReadableId}/${createdApi.currentVersion}/infos`);
@@ -196,9 +194,9 @@ export const TeamApi = (props: { creation: boolean }) => {
         editedApi._humanReadableId
       ).then((res) => {
         if (isError(res)) {
-          toastr.error(translate('Error'), translate(res.error));
+          toast.error(translate(res.error));
         } else {
-          toastr.success(translate('Success'), translate('Api saved'));
+          toast.success(translate('Api saved'));
           if (res._humanReadableId !== editedApi._humanReadableId) {
             navigate(`/${currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`);
           } else {
@@ -219,7 +217,7 @@ export const TeamApi = (props: { creation: boolean }) => {
         updatedApi._humanReadableId
       ).then((response) => {
         if (isError(response)) {
-          toastr.error(translate('Error'), translate(response.error));
+          toast.error(translate(response.error));
         } else {
           queryClient.invalidateQueries({ queryKey: ['api'] })
         }
@@ -318,7 +316,7 @@ export const TeamApi = (props: { creation: boolean }) => {
                     api: api,
                     teamId: currentTeam._id,
                     onClose: () => {
-                      toastr.success(translate('Success'), translate('doc.page.import.successfull'));
+                      toast.success(translate('doc.page.import.successfull'));
                       queryClient.invalidateQueries({ queryKey: ['details'] });
                       queryClient.invalidateQueries({ queryKey: ['api'] });
                     },

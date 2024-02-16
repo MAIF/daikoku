@@ -6,7 +6,7 @@ import * as Services from '../../../../services';
 import { manage, CanIDoAction, api as API, Option, Spinner } from '../..';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { teamSchema } from '../../../backoffice/teams/TeamEdit'
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { isError, IState, IStateContext, ITeamSimple } from '../../../../types';
 import { ModalContext } from '../../../../contexts';
@@ -30,14 +30,12 @@ export const AddPanel = () => {
         onSubmit: (data) => Services.createTeam(data)
           .then(r => {
             if (r.error) {
-              toastr.error(translate('Error'), r.error)
+              toast.error(r.error)
             } else {
               queryClient.invalidateQueries({ queryKey: ['teams'] })
               queryClient.invalidateQueries({ queryKey: ['myTeams'] })
-              toastr.info(
-                translate("mailValidation.sent.title"),
-                translate("mailValidation.sent.body"))
-              toastr.success(translate('Success'), translate({ key: "Team %s created successfully", replacements: [data.name] }))
+              toast.info(translate("mailValidation.sent.body"))
+              toast.success(translate({ key: "Team %s created successfully", replacements: [data.name] }))
             }
           }),
         actionLabel: translate('Create'),

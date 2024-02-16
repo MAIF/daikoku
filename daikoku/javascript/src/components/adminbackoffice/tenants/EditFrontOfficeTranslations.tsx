@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { nanoid } from 'nanoid';
 import { type, format, constraints } from '@maif/react-forms';
 
@@ -117,7 +117,7 @@ export function EditFrontOfficeTranslations(props: any) {
                       } else {
                         updateTranslation(t)
                           .then(() => {
-                            toastr.success(translate('Success'), translate('mailing_internalization.translation_updated'))
+                            toast.success(translate('mailing_internalization.translation_updated'))
                             table.current?.update()
                           })
                       }

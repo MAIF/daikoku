@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
 import { I18nContext } from '../../core';
@@ -33,7 +33,7 @@ export const JoinTeamInvitationModal = (props: IBaseModalProps) => {
     Services.acceptNotificationOfTeam(notificationId)
       .then(() => {
         Services.removeTeamInvitation().then(() => {
-          toastr.success(translate('Success'), translate('team_member.has_joined'));
+          toast.success(translate('team_member.has_joined'));
           goToHome();
         });
       });

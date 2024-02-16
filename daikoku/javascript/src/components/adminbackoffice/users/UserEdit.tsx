@@ -4,7 +4,7 @@ import { md5 } from 'js-md5';
 import { nanoid } from 'nanoid';
 import React, { useContext, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
@@ -42,7 +42,7 @@ const Avatar = ({
       return Services.storeUserAvatar(filename, contentType, file)
         .then((res) => {
           if (res.error) {
-            toastr.error(translate('Error'), res.error);
+            toast.error(res.error);
           } else {
             setValue!('pictureFromProvider', false);
             onChange!(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
@@ -243,7 +243,7 @@ export const UserEdit = () => {
         if (ok) {
           Services.deleteUserById(user._id)
             .then(() => {
-              toastr.success(translate('Success'), translate({ key: 'remove.user.success', replacements: [user.name] }));
+              toast.success(translate({ key: 'remove.user.success', replacements: [user.name] }));
               navigate('/settings/users');
             });
         }
@@ -253,7 +253,7 @@ export const UserEdit = () => {
   const save = (u: IUser) => {
     Services.updateUserById(u)
       .then((updatedUser) => {
-        toastr.success(translate('Success'), translate({ key: 'user.updated.success', replacements: [u.name] }));
+        toast.success(translate({ key: 'user.updated.success', replacements: [u.name] }));
         if (u.email !== queryUser.data?.email) {
           navigate(`/settings/users/${updatedUser._humanReadableId}`)
         } else {

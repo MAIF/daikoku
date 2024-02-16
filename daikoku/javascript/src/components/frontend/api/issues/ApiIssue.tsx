@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Routes, useParams, Route, Navigate } from 'react-router-dom';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 
 import { ApiIssues } from './ApiIssues';
 import { ApiTimelineIssue } from './ApiTimelineIssue';
@@ -38,7 +38,7 @@ export function ApiIssue({
           setRootApi(res)
         }
       })
-      .then(() => toastr.success(translate('Success'), translate('Api saved')));
+      .then(() => toast.success(translate('Api saved')));
   };
 
   const basePath = `/${ownerTeam._humanReadableId}/${api ? (api as any)._humanReadableId : ''}/${versionId}`;

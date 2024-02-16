@@ -3,7 +3,7 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { Link, useParams } from 'react-router-dom';
 
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
@@ -91,9 +91,9 @@ const EditMailtemplate = ({
 
   const manageError = (res: any) => {
     if (res.error) {
-      toastr.error(translate('Error'), res.error);
+      toast.error(res.error);
     } else {
-      toastr.success(translate('Success'), translate('mailing_internalization.translation_updated'));
+      toast.success(translate('mailing_internalization.translation_updated'));
     }
   };
 
@@ -174,9 +174,9 @@ export const MailingInternalization = () => {
     Services.saveTranslation(translation)
       .then((res) => {
         if (res.error)
-          toastr.error(translate('Error'), translate('mailing_internalization.failed_translation_update'));
+          toast.error(translate('mailing_internalization.failed_translation_update'));
         else {
-          toastr.success(translate('Error'), translate('mailing_internalization.translation_updated'));
+          toast.success(translate('mailing_internalization.translation_updated'));
           table.current?.update();
         }
       });

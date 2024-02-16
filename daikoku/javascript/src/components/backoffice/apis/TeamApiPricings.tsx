@@ -12,7 +12,7 @@ import Settings from 'react-feather/dist/icons/settings';
 import Trash from 'react-feather/dist/icons/trash';
 import User from 'react-feather/dist/icons/user';
 import Globe from 'react-feather/dist/icons/globe';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { useParams } from 'react-router-dom';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
@@ -716,7 +716,7 @@ export const TeamApiPricings = (props: Props) => {
       .then(() => props.reload())
       .then(() => {
         queryClient.invalidateQueries({ queryKey: ['plans'] })
-        toastr.success(translate('Success'), translate('plan.deletion.successful'))
+        toast.success(translate('plan.deletion.successful'))
       })
   };
 
@@ -754,9 +754,9 @@ export const TeamApiPricings = (props: Props) => {
     return service(props.team._id, props.api._id, props.api.currentVersion, plan)
       .then(response => {
         if (isError(response)) {
-          toastr.error(translate('Error'), translate(response.error))
+          toast.error(translate(response.error))
         } else {
-          toastr.success(translate('Success'), creation ? translate('plan.creation.successful') : translate('plan.update.successful'))
+          toast.success(creation ? translate('plan.creation.successful') : translate('plan.update.successful'))
           setPlanForEdition(response)
           setCreation(false)
           props.reload()
@@ -770,9 +770,9 @@ export const TeamApiPricings = (props: Props) => {
     return Services.setupPayment(props.team._id, props.api._id, props.api.currentVersion, plan)
       .then(response => {
         if (isError(response)) {
-          toastr.error(translate('Error'), translate(response.error))
+          toast.error(translate(response.error))
         } else {
-          toastr.success(translate('Success'), translate('plan.payment.setup.successful'))
+          toast.success(translate('plan.payment.setup.successful'))
           setPlanForEdition(response)
           props.reload()
         }
@@ -1924,7 +1924,7 @@ const TeamApiPricingDocumentation = (props: TeamApiPricingDocumentationProps) =>
           api: props.api,
           teamId: props.team._id,
           onClose: () => {
-            toastr.success(translate('Success'), translate('doc.page.import.successfull'));
+            toast.success(translate('doc.page.import.successfull'));
             props.reloadState()
           },
           getDocumentationPages: () => Services.getAllPlansDocumentation(props.team._id, props.api._humanReadableId, props.api.currentVersion),

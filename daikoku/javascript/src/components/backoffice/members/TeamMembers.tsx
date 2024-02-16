@@ -1,7 +1,7 @@
 import classnames from 'classnames';
 import sortBy from 'lodash/sortBy';
 import { useContext, useEffect, useState } from 'react';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { Navigate } from 'react-router-dom';
 
 import { ModalContext, useTeamBackOffice } from '../../../contexts';
@@ -106,8 +106,8 @@ export const TeamMembersSimpleComponent = () => {
             Services.removeMemberFromTeam(teamId, member._id)
               .then(({ done, team }) => {
                 done
-                  ? toastr.success(translate('Success'), translate({ key: 'remove.member.success', replacements: [member.name] }))
-                  : toastr.error(translate('Error'), translate('Failure'));
+                  ? toast.success(translate({ key: 'remove.member.success', replacements: [member.name] }))
+                  : toast.error(translate('Failure'));
                 Promise.resolve(dispatch(updateTeam(team)))
                   .then(() => updateMembers(currentTeam));
               });
@@ -122,11 +122,8 @@ export const TeamMembersSimpleComponent = () => {
       .then(({ done }) => {
         setState({ ...state, selectedMember: undefined });
         done
-          ? toastr.success(
-            translate('Success'),
-            translate({ key: 'member.now.invited', replacements: [member.name] })
-          )
-          : toastr.error(translate('error'), translate('Failure'));
+          ? toast.success(translate({ key: 'member.now.invited', replacements: [member.name] }))
+          : toast.error(translate('Failure'));
       })
       .then(() => updateMembers(currentTeam));
   };
@@ -157,11 +154,8 @@ export const TeamMembersSimpleComponent = () => {
         Services.updateTeamMemberPermission(teamId, [member._id], newPermission).then(
           ({ done, team }) => {
             done
-              ? toastr.success(
-                translate('Success'),
-                translate({ key: 'member.new.permission.success', replacements: [member.name, newPermission] })
-              )
-              : toastr.error(translate('Error'), translate('Failure'));
+              ? toast.success(translate({ key: 'member.new.permission.success', replacements: [member.name, newPermission] }))
+              : toast.error(translate('Failure'));
             Promise.resolve(dispatch(updateTeam(team)))
               .then(() => updateMembers(currentTeam));
           }

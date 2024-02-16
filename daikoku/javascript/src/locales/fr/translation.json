@@ -1375,6 +1375,8 @@
   "constraints.plan.custom-name.one-of.environment": "Le nom du plan doit correspondre à l'un des environnements disponibles",
   "aggregated.apikey.badge.title": "Clé d'API aggrégée",
   "aggregated.apikey.badge.apikey.name": "Nom personnalisée de la clé",
-  "apisubscription.lastUsage.label": "Last usage",
-  "N/A": "N/A"
+  "apisubscription.lastUsage.label": "Dernier usage",
+  "N/A": "N/A",
+  "semver.error.message": "Une version ne peut pas être créée avec des caractère spéciaux : %s",
+  "version.creation.success.message": "La nouvelle version de l'API a été créée avec succès"
 }

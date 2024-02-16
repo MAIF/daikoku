@@ -2,7 +2,7 @@ import { Form, constraints, format, type } from '@maif/react-forms';
 import { md5 } from 'js-md5';
 import { useContext, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 
 import { ModalContext, useUserBackOffice } from '../../../contexts';
 import { I18nContext, updateUser } from '../../../core';
@@ -33,7 +33,7 @@ const TwoFactorAuthentication = ({
       .then((ok) => {
         if (ok) {
           Services.disable2FA().then(() => {
-            toastr.success(translate('Success'), translate('2fa.successfully_disabled_from_pr'));
+            toast.success(translate('2fa.successfully_disabled_from_pr'));
             window.location.reload();
           });
         }
@@ -42,7 +42,7 @@ const TwoFactorAuthentication = ({
 
   function copyToClipboard() {
     navigator.clipboard.writeText(user?.twoFactorAuthentication.backupCodes);
-    toastr.success(translate('succes'), translate('2fa.copied'));
+    toast.success(translate('2fa.copied'));
   }
 
   function verify() {
@@ -56,7 +56,7 @@ const TwoFactorAuthentication = ({
           setModal({ ...modal, code: '' });
         }
         else {
-          toastr.success(translate('Success'), res.message);
+          toast.success(res.message);
           setBackupCodes(res.backupCodes);
         }
       });
@@ -70,7 +70,7 @@ const TwoFactorAuthentication = ({
         <input type="text" disabled={true} value={backupCodes} className="form-control" />
         <button className="btn btn-outline-success ms-1" type="button" onClick={() => {
           navigator.clipboard.writeText(backupCodes);
-          toastr.success(translate('Success'), translate('Copied'));
+          toast.success(translate('Copied'));
         }}>
           <i className="fas fa-copy" />
         </button>
@@ -164,7 +164,7 @@ const Avatar = ({
     return Services.storeUserAvatar(filename, contentType, file)
       .then((res) => {
         if (res.error) {
-          toastr.error(translate('Error'), res.error);
+          toast.error(res.error);
         } else {
           setValue('pictureFromProvider', false);
           onChange(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
@@ -385,10 +385,7 @@ export const MyProfile = () => {
 
       if (language !== user.defaultLanguage) setLanguage(user.defaultLanguage);
 
-      toastr.success(
-        translate('Success'),
-        translate({ key: 'user.updated.success', replacements: [user.name] })
-      );
+      toast.success(translate({ key: 'user.updated.success', replacements: [user.name] }));
     });
   };
 
@@ -407,15 +404,12 @@ export const MyProfile = () => {
   }: any) => {
     Services.updateMyPassword(oldPassword, newPassword).then((user) => {
       if (user.error) {
-        toastr.error(translate('Error'), translate(user.error));
+        toast.error(translate(user.error));
       } else {
         setUser(user);
         dispatch(updateUser(user));
 
-        toastr.success(
-          translate('Success'),
-          translate('user.password.updated.success')
-        );
+        toast.success(translate('user.password.updated.success'));
       }
     });
   };

@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 
 import * as Services from '../../../services';
 import { Can, read, manage, api as API } from '../../utils';
@@ -108,7 +108,7 @@ export const TeamApis = () => {
         if (ok) {
           Services.deleteTeamApi(currentTeam._id, api._id)
             .then(() => {
-              toastr.success(translate('Success'), translate({ key: 'delete.api.success', replacements: [api.name] }));
+              toast.success(translate({ key: 'delete.api.success', replacements: [api.name] }));
               table.current?.update();
             });
         }

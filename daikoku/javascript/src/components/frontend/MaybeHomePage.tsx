@@ -1,6 +1,6 @@
 import React, { useContext, useEffect } from 'react';
 import { useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { I18nContext } from '../../contexts/i18n-context';
 
@@ -19,7 +19,7 @@ export const MaybeHomePage = ({
     const params = new URLSearchParams(search);
     const created = params.get("userCreated")
     if (params.get("userCreated") === "true") {
-      toastr.success(translate('Success'), translate('user.validated.success'))
+      toast.success(translate('user.validated.success'))
     }
 
     if (!tenant.homePageVisible || connectedUser?._humanReadableId) {

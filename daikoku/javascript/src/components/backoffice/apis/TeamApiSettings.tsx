@@ -1,6 +1,6 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { Form, constraints, type, format } from '@maif/react-forms';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import sortBy from 'lodash/sortBy';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
@@ -24,11 +24,11 @@ export const TeamApiSettings = ({
 
     Services.transferApiOwnership(team, api.team, api._id).then((r) => {
       if (r.notify) {
-        toastr.info(translate('Info'), translate('team.transfer.notified'));
+        toast.info(translate('team.transfer.notified'));
       } else if (r.error) {
-        toastr.error(translate('Error'), r.error);
+        toast.error(r.error);
       } else {
-        toastr.error(translate('Error'), translate('issues.on_error'));
+        toast.error(translate('issues.on_error'));
       }
     });
   };
@@ -71,7 +71,7 @@ export const TeamApiSettings = ({
         if (ok) {
           Services.deleteTeamApi(currentTeam._id, api._id)
             .then(() => navigate(`/${currentTeam._humanReadableId}/settings/apis`))
-            .then(() => toastr.success(translate('Success'), translate('deletion successful')));
+            .then(() => toast.success(translate('deletion successful')));
         }
       });
   };

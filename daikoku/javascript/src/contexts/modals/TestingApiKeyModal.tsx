@@ -1,6 +1,6 @@
 import React, { useContext, useRef } from 'react';
 import { Form, type, format, constraints, FormRef } from '@maif/react-forms';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { useSelector } from 'react-redux';
 
 import { Spinner } from '../../components/utils';
@@ -135,7 +135,7 @@ export const TestingApiKeyModal = <T extends IWithTesting>(props: TestingApiKeyM
           props.close();
           props.onChange(apikey, { ...updatedConfig, ...props.metadata });
         } else {
-          toastr.error(translate('Error'), apikey.error);
+          toast.error(apikey.error);
           props.close();
         }
       });
@@ -157,7 +157,7 @@ export const TestingApiKeyModal = <T extends IWithTesting>(props: TestingApiKeyM
           props.close();
           props.onChange(apikey, { ...updatedConfig, ...props.metadata });
         } else {
-          toastr.error(translate('Error'), apikey.error);
+          toast.error(apikey.error);
           props.close();
         }
       });

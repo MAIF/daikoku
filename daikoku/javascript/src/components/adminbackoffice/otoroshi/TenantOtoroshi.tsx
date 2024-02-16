@@ -5,7 +5,7 @@ import { Form, type, constraints } from '@maif/react-forms'
 
 import * as Services from '../../../services';
 import { Can, manage, tenant as TENANT, Spinner } from '../../utils';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { useTenantBackOffice } from '../../../contexts';
 
@@ -57,9 +57,9 @@ export const TenantOtoroshi = () => {
       Services.createOtoroshiSettings(tenant._id, data)
         .then((result) => {
           if (result.error) {
-            toastr.error('Failure', result.error);
+            toast.error(result.error);
           } else {
-            toastr.success(translate('Success'), translate('otoroshi.settings.created.success'));
+            toast.success(translate('otoroshi.settings.created.success'));
             navigate('/settings/otoroshis')
           }
         });
@@ -67,9 +67,9 @@ export const TenantOtoroshi = () => {
       Services.saveOtoroshiSettings(tenant._id, data)
         .then((result) => {
           if (result.error) {
-            toastr.error('Failure', result.error);
+            toast.error(result.error);
           } else {
-            toastr.success(translate('Success'), translate('otoroshi.settings.updated.success'));
+            toast.success(translate('otoroshi.settings.updated.success'));
             navigate('/settings/otoroshis')
           }
         });

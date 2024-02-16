@@ -24,6 +24,7 @@ import { I18nProvider } from './contexts/i18n-context';
 import { DaikokuApp, DaikokuHomeApp } from './apps';
 
 import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client';
+import { Toaster } from 'sonner';
 
 const client = new ApolloClient({
   uri: '/api/search',
@@ -67,6 +68,7 @@ export function init(
       <ApolloProvider client={client}>
         <QueryClientProvider client={queryClient}>
           <I18nProvider tenant={tenant} user={user}>
+            <Toaster richColors position="top-right"/>
             <DaikokuApp
               session={session}
               user={user}

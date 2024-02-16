@@ -27,6 +27,7 @@ import { ApiCard } from '../api';
 import * as Services from "../../../services";
 import { FilterPreview, Spinner, arrayStringToTOps } from "../../utils";
 import queryClient from "../../utils/queryClient";
+import { Toaster, toast } from "sonner";
 
 const GRID = 'GRID';
 const LIST = 'LIST';
@@ -163,7 +164,7 @@ export const ApiList = (props: TApiList) => {
   const askForApiAccess = (apiWithAuth: IApiWithAuthorization, teams: string[]) =>
     Services.askForApiAccess(teams, apiWithAuth.api._id)
       .then(() => {
-        toastr.info(translate('Info'), translate({ key: 'ask.api.access.info', replacements: [apiWithAuth.api.name] }));
+        toast.info(translate({ key: 'ask.api.access.info', replacements: [apiWithAuth.api.name] }));
         if (dataRequest.data) {
           queryClient.invalidateQueries({ queryKey: ['data'] })
         }

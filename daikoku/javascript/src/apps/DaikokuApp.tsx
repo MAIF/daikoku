@@ -2,15 +2,12 @@ import React, { useContext, useEffect, useState } from 'react';
 import { BrowserRouter, BrowserRouter as Router, Route, Routes, useParams } from 'react-router-dom';
 import { Navigate } from 'react-router';
 import { useDispatch, useSelector } from 'react-redux';
-import ReduxToastr from 'react-redux-toastr';
 
 import { SideBar, Spinner, Error, Footer } from '../components/utils';
 import * as Services from '../services';
 import { updateTeam, setError } from '../core';
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
 import { ModalProvider, NavProvider } from '../contexts';
-
-import 'react-redux-toastr/src/styles/index.scss';
 
 import {
   TeamHome,
@@ -403,14 +400,6 @@ export const DaikokuApp = ({
                 <Error />
               </div>
             </div>
-            <ReduxToastr
-              timeOut={4000}
-              newestOnTop={false}
-              position="top-right"
-              transitionIn="fadeIn"
-              transitionOut="fadeOut"
-              closeOnToastrClick
-            />
             <Routes>
               {['/settings', '/notifications', '/me', '/:teamId/settings'].map((r) => (
                 <Route key={r} path={r} element={<></>} />

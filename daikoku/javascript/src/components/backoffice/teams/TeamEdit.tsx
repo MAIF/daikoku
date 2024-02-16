@@ -2,7 +2,7 @@ import { constraints, Form, format, type } from '@maif/react-forms';
 import { md5 } from 'js-md5';
 import { useContext, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { useLocation, useNavigate } from 'react-router-dom';
 
 import { ModalContext, useTeamBackOffice } from '../../../contexts';
@@ -153,10 +153,10 @@ export const TeamEditForm = ({
         Services.deleteTeam(team._id)
           .then((r) => {
             if (isError(r)) {
-              toastr.error(translate("Error"), r.error)
+              toast.error(r.error)
             } else {
               navigate("/apis")
-              toastr.success(translate("Success"), translate({ key: 'team.deleted.success', replacements: [team.name] }))
+              toast.success(translate({ key: 'team.deleted.success', replacements: [team.name] }))
             }
           })
       }
@@ -198,15 +198,15 @@ export const TeamEdit = () => {
   useEffect(() => {
     const params = new URLSearchParams(search);
     if (params.get("teamVerified") === "true") {
-      toastr.success(translate('Success'), translate('team.validated.success'))
+      toast.success(translate('team.validated.success'))
     } else if (params.get("error") === "2") {
-      toastr.error(translate('Error'), translate('team.email.alreadyVerified'))
+      toast.error(translate('team.email.alreadyVerified'))
     } else if (params.get("error") === "3") {
-      toastr.error(translate('Error'), translate('token.missing'))
+      toast.error(translate('token.missing'))
     } else if (params.get("error") === "4") {
-      toastr.error(translate('Error'), translate('token.notFound'))
+      toast.error(translate('token.notFound'))
     } else if (params.get("error") === "5") {
-      toastr.error(translate('Error'), translate('token.expired'))
+      toast.error(translate('token.expired'))
     }
   }, []);
   const save = (data: ITeamSimple, contact: string) => {
@@ -217,17 +217,11 @@ export const TeamEdit = () => {
         }
         if (contact !== updatedTeam.contact) {
           setContact(updatedTeam.contact)
-          toastr.info(
-            translate("mailValidation.sent.title"),
-            translate("mailValidation.sent.body")
-          )
+          toast.info(translate("mailValidation.sent.body"))
           setAlreadyClicked(false)
         }
         dispatch(updateTeam(updatedTeam))
-        toastr.success(
-          translate('Success'),
-          translate({ key: 'team.updated.success', replacements: [updatedTeam.name] })
-        );
+        toast.success(translate({ key: 'team.updated.success', replacements: [updatedTeam.name] }));
       });
   };
 
@@ -240,13 +234,10 @@ export const TeamEdit = () => {
             Services.sendEmailVerification(currentTeam._id)
               .then((r) => {
                 if (isError(r)) {
-                  toastr.success(translate("Error"), r.error)
+                  toast.success(r.error)
                 } else {
                   setAlreadyClicked(true)
-                  toastr.success(
-                    translate("Success"),
-                    translate({ key: 'team.email.verification.send', replacements: [currentTeam.contact] })
-                  )
+                  toast.success(translate({ key: 'team.email.verification.send', replacements: [currentTeam.contact] }))
                 }
               })
           }}>{translate('team.email.notVerified')}</button>

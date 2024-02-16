@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { useSelector } from 'react-redux';
 import Select from 'react-select';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import values from 'lodash/values';
 import sortBy from 'lodash/sortBy';
 import { useParams } from 'react-router-dom';
@@ -66,13 +66,13 @@ const AdminList = () => {
     if (selectedAdmin) {
       Services.addAdminsToTenant(tenant?._id, [(selectedAdmin as any)._id]).then((team) => {
         if (team.error) {
-          toastr.error('Failure', team.error);
+          toast.error(team.error);
         }
         else {
           setTeam(team);
           setAdmins([...admins, selectedAdmin]);
           setAddableAdmins(addableAdmins.filter((u: any) => u._id !== selectedAdmin._id));
-          toastr.success(translate('Success'), translate({ key: 'admin.added.successfully', replacements: [selectedAdmin.name] }));
+          toast.success(translate({ key: 'admin.added.successfully', replacements: [selectedAdmin.name] }));
           setSelectedAdmin(null);
         }
       });
@@ -103,13 +103,13 @@ const AdminList = () => {
           if (ok) {
             Services.removeAdminFromTenant(tenant?._id, admin._id).then((team) => {
               if (team.error) {
-                toastr.error(translate('Failure'), team.error);
+                toast.error(team.error);
               }
               else {
                 setTeam(team);
                 setAddableAdmins([...addableAdmins, admin]);
                 setAdmins(admins.filter((a) => a._id !== admin._id));
-                toastr.success(translate('Success'), translate({ key: 'remove.admin.tenant.success', replacements: [admin.name] }));
+                toast.success(translate({ key: 'remove.admin.tenant.success', replacements: [admin.name] }));
               }
             });
           }

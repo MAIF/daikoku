@@ -1,7 +1,7 @@
 /* eslint-disable react/display-name */
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { constraints, format, type } from '@maif/react-forms';
 
 import * as Services from '../../../services';
@@ -275,7 +275,7 @@ export const AssetsList = ({
               asset={item}
               tenantMode={tenantMode}
               teamId={currentTeam ? currentTeam._id : undefined}
-              displayError={(error) => toastr.error(translate('Error'), error)}
+              displayError={(error) => toast.error(error)}
               postAction={() => tableRef.current?.update()}
             />
             <a href={assetLink(item.meta.asset, false)} target="_blank" rel="noreferrer noopener">
@@ -338,18 +338,18 @@ export const AssetsList = ({
               Services.updateTenantAsset(asset.meta.asset, asset.contentType, file)
                 .then((r) => {
                   if (r.error) {
-                    toastr.error(translate('Error'), r.error)
+                    toast.error(r.error)
                   } else {
-                    toastr.success(translate('Success'), translate('asset.update.successful'))
+                    toast.success(translate('asset.update.successful'))
                   }
                 });
             } else {
               Services.updateAsset(currentTeam._id, asset.meta.asset, asset.contentType, file)
                 .then((r) => {
                   if (r.error) {
-                    toastr.error(translate('Error'), r.error)
+                    toast.error(r.error)
                   } else {
-                    toastr.success(translate('Success'), translate('asset.update.successful'))
+                    toast.success(translate('asset.update.successful'))
                   }
                 })
             }

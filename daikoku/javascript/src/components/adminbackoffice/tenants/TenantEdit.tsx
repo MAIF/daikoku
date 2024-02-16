@@ -1,6 +1,6 @@
 import { useContext } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 
 import { useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
@@ -29,10 +29,10 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
   const updateTenant = useMutation({
     mutationFn: (tenant: ITenantFull) => Services.saveTenant(tenant).then(r => isError(r) ? Promise.reject(r) : r),
     onSuccess: () => {
-      toastr.success(translate('Success'), translate('Tenant updated successfully'))
+      toast.success(translate('Tenant updated successfully'))
     },
     onError: (e: ResponseError) => {
-      toastr.error(translate('Error'), translate(e.error))
+      toast.error(translate(e.error))
       //todo: reset forms
     }
   });
@@ -41,9 +41,9 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
     onSuccess: (createdTenant) => {
       navigate(`/settings/tenants/${createdTenant._humanReadableId}/general`)
       queryClient.invalidateQueries({ queryKey: ['tenant'] })
-      toastr.success(translate('Success'), translate('Tenant created successfully'))
+      toast.success(translate('Tenant created successfully'))
     },
-    onError: () => { toastr.error(translate('Error'), translate('Error')) }
+    onError: () => { toast.error(translate('Error')) }
   });
 
   if (isLoading && !state) {

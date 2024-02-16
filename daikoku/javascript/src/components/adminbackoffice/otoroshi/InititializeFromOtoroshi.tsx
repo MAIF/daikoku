@@ -3,7 +3,7 @@ import { useMachine } from '@xstate/react';
 import orderBy from 'lodash/orderBy';
 import React, { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import StepWizard from 'react-step-wizard';
 import ReactDOMServer from 'react-dom/server';
 
@@ -155,14 +155,14 @@ export const InitializeFromOtoroshi = () => {
       setStep(1);
       // setApis({apis});
       setCreatedApis([]);
-      toastr.success(translate('Success'), translate('Apis successfully created'));
+      toast.success(translate('Apis successfully created'));
     });
   };
 
   const afterSubCreation = () => {
     setStep(1);
     setCreatedSubs([]);
-    toastr.success(translate('Success'), translate('Subscriptions successfully created'));
+    toast.success(translate('Subscriptions successfully created'));
   };
 
   const loadPreviousState = () => {
@@ -178,7 +178,7 @@ export const InitializeFromOtoroshi = () => {
       setCreatedSubs(prevState.createdSubs);
       send('LOAD_PREVIOUS_STATE', { otoroshi: prevState.otoroshi, tenant: prevState.tenant, goto: 'apikeys' });
     } else {
-      toastr.warning(translate('Warning'), translate('Seems to have no saved state...please continue'));
+      toast.warning(translate('Seems to have no saved state...please continue'));
     }
   };
 

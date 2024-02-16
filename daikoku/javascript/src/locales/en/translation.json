@@ -1372,5 +1372,7 @@
     "aggregated.apikey.badge.title": "Aggregated API key",
     "aggregated.apikey.badge.apikey.name": "API key custom name",
     "apisubscription.lastUsage.label": "Last usage",
-    "N/A": "N/A"
+    "N/A": "N/A",
+    "semver.error.message": "Can't create version with special characters : %s",
+    "version.creation.success.message": "New version of api created successfully"
 }

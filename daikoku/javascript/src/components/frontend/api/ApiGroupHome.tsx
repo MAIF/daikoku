@@ -1,7 +1,7 @@
 import { getApolloContext } from '@apollo/client';
 import { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 
 import { useApiGroupFrontOffice } from '../../../contexts';
@@ -175,21 +175,15 @@ export const ApiGroupHome = () => {
     return Services.askForApiKey(apiGroup._id, team, plan._id)
       .then((result) => {
         if (isError(result)) {
-          return toastr.error(translate('Error'), result.error);
+          return toast.error(result.error);
         } else if (Services.isCheckoutUrl(result)) {
           window.location.href = result.checkoutUrl
         } else if (result.creation === 'done') {
           const teamName = myTeams.find((t) => t._id === result.subscription.team)!.name;
-          return toastr.success(
-            translate('Done'),
-            translate({ key: 'subscription.plan.accepted', replacements: [planName, teamName] })
-          );
+          return toast.success(translate({ key: 'subscription.plan.accepted', replacements: [planName, teamName] }));
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
-          return toastr.info(
-            translate('Pending request'),
-            translate({ key: 'subscription.plan.waiting', replacements: [planName, teamName] })
-          );
+          return toast.info(translate({ key: 'subscription.plan.waiting', replacements: [planName, teamName] }));
         }
       })
       .then(() => updateSubscriptions(apiGroup));

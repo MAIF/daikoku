@@ -1,7 +1,7 @@
 import { Form, constraints, format, type } from '@maif/react-forms';
 import { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -66,12 +66,10 @@ export const TeamApiGroup = () => {
     if (creation) {
       return Services.createTeamApi(currentTeam._id, group).then((createdGroup) => {
         if (createdGroup.error) {
-          toastr.error(translate('Error'), translate(createdGroup.error));
+          toast.error(translate(createdGroup.error));
           return createdGroup;
         } else if (createdGroup.name) {
-          toastr.success(
-            translate('Success'),
-            translate({ key: 'group.created.success', replacements: [createdGroup.name] })
+          toast.success(translate({ key: 'group.created.success', replacements: [createdGroup.name] })
           );
 
           navigate(`/${currentTeam._humanReadableId}/settings/apigroups/${createdGroup._humanReadableId}/infos`);
@@ -85,10 +83,10 @@ export const TeamApiGroup = () => {
         group._humanReadableId
       ).then((res) => {
         if (isError(res)) {
-          toastr.error(translate('error'), translate(res.error));
+          toast.error(translate(res.error));
           return res;
         } else {
-          toastr.success(translate('Success'), translate('Group saved'));
+          toast.success(translate('Group saved'));
           queryClient.invalidateQueries({ queryKey: ['apiGroup'] })
 
           if (res._humanReadableId !== group._humanReadableId) {
@@ -109,7 +107,7 @@ export const TeamApiGroup = () => {
         updatedApi._humanReadableId
       ).then((response) => {
         if (isError(response)) {
-          toastr.error(translate('Error'), translate(response.error));
+          toast.error(translate(response.error));
         } else {
           queryClient.invalidateQueries({ queryKey: ['apiGroup'] })
         }

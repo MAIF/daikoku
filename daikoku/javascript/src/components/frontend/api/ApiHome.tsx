@@ -2,7 +2,7 @@ import { getApolloContext } from '@apollo/client';
 import hljs from 'highlight.js';
 import { useContext, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select';
 
@@ -271,21 +271,15 @@ export const ApiHome = ({
       ).then((result) => {
 
         if (isError(result)) {
-          return toastr.error(translate('Error'), result.error);
+          return toast.error(result.error);
         } else if (Services.isCheckoutUrl(result)) {
           window.location.href = result.checkoutUrl
         } else if (result.creation === 'done') {
           const teamName = myTeams.find((t) => t._id === result.subscription.team)!.name;
-          return toastr.success(
-            translate('Done'),
-            translate({ key: 'subscription.plan.accepted', replacements: [planName, teamName] })
-          );
+          return toast.success(translate({ key: 'subscription.plan.accepted', replacements: [planName, teamName] }));
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
-          return toastr.info(
-            translate('Pending request'),
-            translate({ key: 'subscription.plan.waiting', replacements: [planName, teamName] })
-          );
+          return toast.info(translate({ key: 'subscription.plan.waiting', replacements: [planName, teamName] }));
         }
 
       })
@@ -352,7 +346,7 @@ export const ApiHome = ({
             actionLabel={translate('Ask access to API')}
             action={(teams) => {
               Services.askForApiAccess(teams, showAccessModal.api._id).then((_) => {
-                toastr.info(translate('Info'), translate({ key: 'ask.api.access.info', replacements: showAccessModal.api.name }));
+                toast.info(translate({ key: 'ask.api.access.info', replacements: showAccessModal.api.name }));
                 updateSubscriptions(showAccessModal.api._id);
               });
             }}>

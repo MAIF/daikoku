@@ -6,7 +6,7 @@ import { nanoid } from 'nanoid';
 import * as Services from '../../../services';
 import { Table, TableRef } from '../../inputs';
 import { Can, manage, tenant as TENANT } from '../../utils';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { IOtoroshiSettings, isError, IState, IStateContext } from '../../../types';
@@ -83,7 +83,7 @@ export const TenantOtoroshis = () => {
         if (ok) {
           Services.deleteOtoroshiSettings(tenant._id, id)
             .then(() => {
-              toastr.success(translate('Success'), translate('otoroshi.settings.deleted.success'));
+              toast.success(translate('otoroshi.settings.deleted.success'));
               table.current?.update();
             });
         }

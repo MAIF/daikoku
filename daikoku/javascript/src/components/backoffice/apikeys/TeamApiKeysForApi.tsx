@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import classNames from 'classnames';
 import sortBy from 'lodash/sortBy';
 import { getApolloContext } from '@apollo/client';
@@ -83,17 +83,15 @@ export const TeamApiKeysForApi = () => {
           Services.makeUniqueApiKey(currentTeam._id, subscription._id)
             .then(() => {
               queryClient.invalidateQueries({queryKey: ['subscriptions']})
-              toastr.success(translate('Success'), translate('team_apikey_for_api.ask_for_make_unique.success_message'));
+              toast.success(translate('team_apikey_for_api.ask_for_make_unique.success_message'));
             });
       });
   };
 
   const toggleApiKeyRotation = (subscription: ISubscription, plan: IUsagePlan, enabled: boolean, rotationEvery: number, gracePeriod: number) => {
     if (plan.autoRotation) {
-      return Promise.resolve(toastr.error(
-        translate('Error'),
-        translate('rotation.error.message')
-      ));
+      toast.error(translate('rotation.error.message'))
+      return Promise.resolve()
     }
 
     return Services.toggleApiKeyRotation(
@@ -113,7 +111,7 @@ export const TeamApiKeysForApi = () => {
           Services.regenerateApiKeySecret(currentTeam._id, subscription._id)
             .then(() => {
               queryClient.invalidateQueries({queryKey: ['subscriptions']})
-              toastr.success(translate('Success'), translate('secret reseted successfully'))
+              toast.success(translate('secret reseted successfully'))
             })
         }
       });
@@ -431,8 +429,8 @@ const ApiKeyCard = ({
                             : integrationToken
 
                           navigator.clipboard.writeText(credentials)
-                            .then(() => toastr.info(translate('Info'), translate('credential.copy.success')))
-                            .catch(() => toastr.warning(translate('Warning'), translate('credential.copy.error')))
+                            .then(() => toast.info(translate('credential.copy.success')))
+                            .catch(() => toast.warning(translate('credential.copy.error')))
                         }}
                       >
                         <i className="fas fa-copy" />

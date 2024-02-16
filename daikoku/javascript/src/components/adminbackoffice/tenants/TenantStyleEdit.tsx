@@ -3,7 +3,7 @@ import sortBy from 'lodash/sortBy';
 import uniq from 'lodash/uniq';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { SketchPicker } from 'react-color';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import XCircle from 'react-feather/dist/icons/x-circle'
 
@@ -90,7 +90,7 @@ export const TenantStyleEdit = () => {
       .then(() => {
         document.location.href = `/settings/tenants/${state.tenant._id}`;
       })
-      .then(() => toastr.success(translate('Success'), translate('Tenant updated successfully')));
+      .then(() => toast.success(translate('Tenant updated successfully')));
   };
 
   if (!state.tenant) {

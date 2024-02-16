@@ -2,7 +2,7 @@ import { constraints, format, type } from '@maif/react-forms';
 import classNames from 'classnames';
 import { useContext, useEffect, useState } from 'react';
 import { useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import Select, { CSSObjectWithLabel } from 'react-select';
 
@@ -67,9 +67,9 @@ export function ApiFilter({
     Services.createNewIssue(api._humanReadableId, team, issue)
       .then((res) => {
         if (res.error) {
-          toastr.error(translate('Error'), res.error);
+          toast.error(res.error);
         } else {
-          toastr.success(translate(''), 'Issue created');
+          toast.success('Issue created');
           refresh()
         }
       });
