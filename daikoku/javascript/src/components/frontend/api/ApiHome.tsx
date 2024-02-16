@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select';
+import Navigation from 'react-feather/dist/icons/navigation';
 
 import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiSwagger } from '.';
 import { ModalContext, useApiFrontOffice } from '../../../contexts';
@@ -266,8 +267,8 @@ export const ApiHome = ({
     if (api) {
       return (
         apiKey
-          ? Services.extendApiKey(api!._id, apiKey._id, team, plan._id, motivation)
-          : Services.askForApiKey(api!._id, team, plan._id, motivation)
+          ? Services.extendApiKey(api._id, apiKey._id, team, plan._id, motivation)
+          : Services.askForApiKey(api._id, team, plan._id, motivation)
       ).then((result) => {
 
         if (isError(result)) {
@@ -276,7 +277,17 @@ export const ApiHome = ({
           window.location.href = result.checkoutUrl
         } else if (result.creation === 'done') {
           const teamName = myTeams.find((t) => t._id === result.subscription.team)!.name;
-          return toast.success(translate({ key: 'subscription.plan.accepted', replacements: [planName, teamName] }));
+          return toast.success(translate({ key: 'subscription.plan.accepted', replacements: [planName, teamName] }), {
+            duration: 200000,
+            actionButtonStyle: {
+              color: 'inherit',
+              backgroundColor: 'inherit'
+            },
+            action: {
+              label: <Navigation />,
+              onClick: () => navigate(`/${result.subscription.team}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`)
+            }
+          });
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
           return toast.info(translate({ key: 'subscription.plan.waiting', replacements: [planName, teamName] }));
