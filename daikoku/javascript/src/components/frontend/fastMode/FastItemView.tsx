@@ -4,7 +4,7 @@ import EyeOff from 'react-feather/dist/icons/eye-off';
 import ArrowLeft from 'react-feather/dist/icons/arrow-left';
 import ArrowRight from 'react-feather/dist/icons/arrow-right';
 
-import { I18nContext } from "../../../core";
+import { I18nContext } from "../../../contexts";
 import { IFastApiSubscription, IFastPlan } from "../../../types";
 import {
   BeautifulTitle,

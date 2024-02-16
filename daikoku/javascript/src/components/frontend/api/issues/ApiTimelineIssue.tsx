@@ -10,7 +10,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select/creatable';
 
 import { api as API, manage } from '../../..';
-import { I18nContext } from '../../../../core';
+import { I18nContext } from '../../../../contexts';
 import * as Services from '../../../../services';
 import { converter } from '../../../../services/showdown';
 import { Can, getColorByBgColor, randomColor } from '../../../utils';

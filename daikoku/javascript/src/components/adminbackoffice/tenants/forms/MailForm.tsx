@@ -2,7 +2,7 @@ import { constraints, format, type, Form } from '@maif/react-forms';
 import { useContext, useState } from 'react';
 import { UseMutationResult } from '@tanstack/react-query';
 
-import { I18nContext } from '../../../../core';
+import { I18nContext } from '../../../../contexts';
 import { IMailerSettings, ITenantFull } from '../../../../types';
 
 export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {

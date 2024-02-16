@@ -1,35 +1,32 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { toast } from 'sonner';
-import classNames from 'classnames';
-import sortBy from 'lodash/sortBy';
 import { getApolloContext } from '@apollo/client';
 import { Form, constraints, type } from '@maif/react-forms';
+import classNames from 'classnames';
+import sortBy from 'lodash/sortBy';
+import React, { useContext, useEffect, useState } from 'react';
+import { Link, useLocation, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
-import * as Services from '../../../services';
-import {
-  formatPlanType,
-  Can,
-  read,
-  apikey,
-  stat,
-  PaginatedComponent,
-  BeautifulTitle,
-  Option,
-  queryClient,
-  Spinner,
-} from '../../utils';
-import { I18nContext } from '../../../core';
-import { ModalContext, useTeamBackOffice } from '../../../contexts';
-import { IApi, IRotation, ISafeSubscription, isError, IState, IStateContext, ISubscription, ISubscriptionExtended, ITeamSimple, IUsagePlan, ResponseError } from '../../../types';
 import { useQuery } from '@tanstack/react-query';
+import { I18nContext, ModalContext, useTeamBackOffice } from '../../../contexts';
+import * as Services from '../../../services';
+import { IApi, IRotation, ISafeSubscription, ISubscription, ISubscriptionExtended, ITeamSimple, IUsagePlan, ResponseError, isError } from '../../../types';
+import {
+  BeautifulTitle,
+  Can,
+  Option,
+  PaginatedComponent,
+  Spinner,
+  apikey,
+  formatPlanType,
+  queryClient,
+  read,
+  stat,
+} from '../../utils';
 
 type ISubscriptionWithChildren = ISubscriptionExtended & { children: Array<ISubscriptionExtended> }
 
 export const TeamApiKeysForApi = () => {
-  const { currentTeam } = useSelector<IState, IStateContext>((state) => state.context);
-  useTeamBackOffice(currentTeam);
+  const { isLoading, error, currentTeam } = useTeamBackOffice();
 
   const [searched, setSearched] = useState('');
 
@@ -39,8 +36,16 @@ export const TeamApiKeysForApi = () => {
   const { translate, Translation } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
 
-  const apiQuery = useQuery({ queryKey: ['data', 'visibleApi'], queryFn: () => Services.getTeamVisibleApi(currentTeam._id, params.apiId!, params.versionId!) }) //FIXME: not real IAPI (betterApis with plans & pendingPlans)
-  const subsQuery = useQuery({ queryKey: ['data', 'subscriptions'], queryFn: () => Services.getTeamSubscriptions(params.apiId!, currentTeam._id, params.versionId!) })
+  const apiQuery = useQuery({ 
+    queryKey: ['data', 'visibleApi'], 
+    queryFn: () => Services.getTeamVisibleApi((currentTeam as ITeamSimple)._id, params.apiId!, params.versionId!),
+    enabled: currentTeam && !isError(currentTeam) 
+  }) //FIXME: not real IAPI (betterApis with plans & pendingPlans)
+  const subsQuery = useQuery({ 
+    queryKey: ['data', 'subscriptions'], 
+    queryFn: () => Services.getTeamSubscriptions(params.apiId!, (currentTeam as ITeamSimple)._id, params.versionId!),
+    enabled: currentTeam && !isError(currentTeam) 
+  })
 
   const teamQuery = useQuery({
     queryKey: ['data', 'team'],
@@ -60,29 +65,30 @@ export const TeamApiKeysForApi = () => {
   })
 
   useEffect(() => {
-    queryClient.invalidateQueries({queryKey: ['data']})
+    queryClient.invalidateQueries({ queryKey: ['data'] })
   }, [location]);
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ApiKeys`;
-  }, []);
+    if (currentTeam && !isError(currentTeam))
+      document.title = `${currentTeam.name} - ApiKeys`;
+  }, [currentTeam]);
 
   const updateCustomName = (subscription: ISubscription, customName: string) => {
-    return Services.updateSubscriptionCustomName(currentTeam, subscription, customName);
+    return Services.updateSubscriptionCustomName(currentTeam as ITeamSimple, subscription, customName);
   };
 
   const archiveApiKey = (subscription: ISubscription) => {
-    return Services.archiveApiKey(currentTeam._id, subscription._id, !subscription.enabled)
-      .then(() => queryClient.invalidateQueries({queryKey: ['subscriptions']}))
+    return Services.archiveApiKey((currentTeam as ITeamSimple)._id, subscription._id, !subscription.enabled)
+      .then(() => queryClient.invalidateQueries({ queryKey: ['subscriptions'] }))
   };
 
   const makeUniqueApiKey = (subscription: ISubscription) => {
     confirm({ message: translate('team_apikey_for_api.ask_for_make_unique') })
       .then((ok) => {
         if (ok)
-          Services.makeUniqueApiKey(currentTeam._id, subscription._id)
+          Services.makeUniqueApiKey((currentTeam as ITeamSimple)._id, subscription._id)
             .then(() => {
-              queryClient.invalidateQueries({queryKey: ['subscriptions']})
+              queryClient.invalidateQueries({ queryKey: ['subscriptions'] })
               toast.success(translate('team_apikey_for_api.ask_for_make_unique.success_message'));
             });
       });
@@ -95,22 +101,22 @@ export const TeamApiKeysForApi = () => {
     }
 
     return Services.toggleApiKeyRotation(
-      currentTeam._id,
+      (currentTeam as ITeamSimple)._id,
       subscription._id,
       enabled,
       rotationEvery,
       gracePeriod
     )
-      .then(() => queryClient.invalidateQueries({queryKey: ['subscriptions']}))
+      .then(() => queryClient.invalidateQueries({ queryKey: ['subscriptions'] }))
   };
 
   const regenerateApiKeySecret = (subscription: ISubscription) => {
     return confirm({ message: translate('reset.secret.confirm') })
       .then((ok) => {
         if (ok) {
-          Services.regenerateApiKeySecret(currentTeam._id, subscription._id)
+          Services.regenerateApiKeySecret((currentTeam as ITeamSimple)._id, subscription._id)
             .then(() => {
-              queryClient.invalidateQueries({queryKey: ['subscriptions']})
+              queryClient.invalidateQueries({ queryKey: ['subscriptions'] })
               toast.success(translate('secret reseted successfully'))
             })
         }
@@ -118,9 +124,9 @@ export const TeamApiKeysForApi = () => {
   };
 
 
-  if (apiQuery.isLoading && subsQuery.isLoading && teamQuery.isLoading && subApisQuery.isLoading) {
+  if (apiQuery.isLoading && subsQuery.isLoading && teamQuery.isLoading && subApisQuery.isLoading && isLoading) {
     return <Spinner />
-  } else if (apiQuery.data && subsQuery.data && teamQuery.data && subApisQuery.data && !isError(apiQuery.data) && !isError(subsQuery.data) && !isError(teamQuery.data) && !isError(subApisQuery.data)) {
+  } else if (currentTeam && apiQuery.data && subsQuery.data && teamQuery.data && subApisQuery.data && !isError(apiQuery.data) && !isError(subsQuery.data) && !isError(teamQuery.data) && !isError(subApisQuery.data) && !isError(currentTeam)) {
     const api = apiQuery.data;
     const apiTeam = teamQuery.data;
     const subscriptions = subsQuery.data;

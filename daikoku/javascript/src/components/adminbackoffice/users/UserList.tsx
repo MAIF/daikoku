@@ -1,17 +1,17 @@
 import sortBy from 'lodash/sortBy';
 import { useContext, useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../contexts/i18n-context';
+import { CurrentUserContext } from '../../../contexts/userContext';
 import * as Services from '../../../services';
-import { IState, IUserSimple, isError } from '../../../types';
+import { IUserSimple, isError } from '../../../types';
 import { AvatarWithAction, Can, PaginatedComponent, daikoku, manage } from '../../utils';
 
 export const UserList = () => {
-  const connectedUser = useSelector<IState, IUserSimple>((s) => s.context.connectedUser);
+  const { connectedUser } = useContext(CurrentUserContext);
   useDaikokuBackOffice();
 
   const { alert, confirm } = useContext(ModalContext);

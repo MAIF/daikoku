@@ -1,13 +1,13 @@
 import { Form, constraints, format, type } from '@maif/react-forms';
 import { md5 } from 'js-md5';
 import { useContext, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 
 import { ModalContext, useUserBackOffice } from '../../../contexts';
-import { I18nContext, updateUser } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IState, ITenant } from '../../../types';
+import { CurrentUserContext } from '../../../contexts/userContext';
 
 const TwoFactorAuthentication = ({
   user
@@ -293,8 +293,7 @@ export const MyProfile = () => {
   const [user, setUser] = useState();
   const [tab, setTab] = useState('infos');
 
-  const tenant = useSelector<IState, ITenant>((state) => state.context.tenant);
-  const dispatch = useDispatch();
+  const { tenant, reloadContext } = useContext(CurrentUserContext);
 
   const { translate, setLanguage, language, Translation, languages } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
@@ -379,14 +378,15 @@ export const MyProfile = () => {
   }, []);
 
   const save = (data: any) => {
-    Services.updateUserById(data).then((user) => {
-      setUser(user);
-      dispatch(updateUser(user));
+    Services.updateUserById(data)
+      .then((user) => {
+        setUser(user);
+        reloadContext();
 
-      if (language !== user.defaultLanguage) setLanguage(user.defaultLanguage);
+        if (language !== user.defaultLanguage) setLanguage(user.defaultLanguage);
 
-      toast.success(translate({ key: 'user.updated.success', replacements: [user.name] }));
-    });
+        toast.success(translate({ key: 'user.updated.success', replacements: [user.name] }));
+      });
   };
 
   const removeUser = () => {
@@ -407,7 +407,7 @@ export const MyProfile = () => {
         toast.error(translate(user.error));
       } else {
         setUser(user);
-        dispatch(updateUser(user));
+        reloadContext();
 
         toast.success(translate('user.password.updated.success'));
       }

@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { Can, read, team as TEAM } from '../../utils';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 
 type Props = {
     user?: any;

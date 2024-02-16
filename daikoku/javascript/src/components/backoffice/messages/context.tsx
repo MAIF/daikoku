@@ -1,12 +1,12 @@
 import moment from 'moment';
 import { nanoid } from 'nanoid';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 
-import { useSelector } from 'react-redux';
 import * as Services from '../../../services';
 import * as MessageEvents from '../../../services/messages';
 import { isError, IState, ITeamSimple, IUserSimple } from '../../../types';
 import { Option, partition } from '../../utils';
+import { CurrentUserContext } from '../../../contexts/userContext';
 
 const initMessageContext = {
   messages: [],
@@ -45,7 +45,7 @@ export const MessagesProvider = ({
   const [lastClosedDates, setLastClosedDates] = useState<Array<any>>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const connectedUser = useSelector<IState, IUserSimple>(s => s.context.connectedUser)
+  const { connectedUser } = useContext(CurrentUserContext)
 
   const sseId = nanoid(64);
 

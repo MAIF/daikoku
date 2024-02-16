@@ -2,7 +2,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { createRoot } from 'react-dom/client'
-import { Provider } from 'react-redux';
 import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
 import SwaggerEditor, { plugins } from 'swagger-editor'; //!!! don't remove this line !!!
 
@@ -16,7 +15,6 @@ import './style/main.scss';
 
 import 'bootstrap';
 
-import { store } from './core';
 import { LoginPage, queryClient } from './components';
 import { customizeFetch } from './services/customize';
 import { I18nProvider } from './contexts/i18n-context';
@@ -25,6 +23,7 @@ import { DaikokuApp, DaikokuHomeApp } from './apps';
 
 import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client';
 import { Toaster } from 'sonner';
+import { CurrentUserContextProvider } from './contexts/userContext';
 
 const client = new ApolloClient({
   uri: '/api/search',
@@ -49,26 +48,17 @@ export function init(
   apiCreationPermitted: any
 ) {
   const expertMode = JSON.parse(localStorage.getItem('expertMode') || 'false');
-  const storeInst = store({
-    connectedUser: user,
-    tenant,
-    impersonator,
-    isTenantAdmin,
-    apiCreationPermitted,
-    expertMode,
-  });
 
-  customizeFetch(storeInst);
 
   const container = document.getElementById('app');
   const root = createRoot(container!)
 
   root.render(
-    <Provider store={storeInst}>
-      <ApolloProvider client={client}>
-        <QueryClientProvider client={queryClient}>
+    <ApolloProvider client={client}>
+      <QueryClientProvider client={queryClient}>
+        <CurrentUserContextProvider>
           <I18nProvider tenant={tenant} user={user}>
-            <Toaster richColors position="top-right"/>
+            <Toaster richColors position="top-right" />
             <DaikokuApp
               session={session}
               user={user}
@@ -77,36 +67,30 @@ export function init(
               loginAction={loginCallback}
             />
           </I18nProvider>
-        </QueryClientProvider>
-      </ApolloProvider>
-    </Provider>,
-    
+        </CurrentUserContextProvider>
+      </QueryClientProvider>
+    </ApolloProvider>
+
   );
 }
 
 export function login(provider: any, callback: any, tenant: any) {
-  const storeInst = store({ tenant });
   ReactDOM.render(
-    <Provider store={storeInst}>
-      <I18nProvider tenant={tenant}>
-        <LoginPage provider={provider} action={callback} tenant={tenant} method="post" />
-      </I18nProvider>
-    </Provider>,
+    <I18nProvider tenant={tenant}>
+      <LoginPage provider={provider} action={callback} tenant={tenant} method="post" />
+    </I18nProvider>,
     document.getElementById('app')
   );
 }
 
 export function initNotLogged(tenant: any) {
-  const storeInst = store({ tenant });
 
   const container = document.getElementById('app');
   const root = createRoot(container!)
 
   root.render(
-    <Provider store={storeInst}>
-      <I18nProvider tenant={tenant}>
-        <DaikokuHomeApp tenant={tenant} />
-      </I18nProvider>
-    </Provider>
+    <I18nProvider tenant={tenant}>
+      <DaikokuHomeApp tenant={tenant} />
+    </I18nProvider>
   );
 }

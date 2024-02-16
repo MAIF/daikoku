@@ -1,12 +1,11 @@
 import classNames from "classnames";
 import { useContext, useEffect, useState } from "react";
-import { useSelector } from "react-redux";
 import { Route, Routes } from "react-router-dom";
 
 import { useTeamBackOffice } from "../../contexts";
-import { I18nContext } from "../../core";
+import { I18nContext } from "../../contexts";
 import * as Services from "../../services";
-import { IState, IStateError, ITeamSimple } from "../../types";
+import { IState, IStateError, ITeamSimple, isError } from "../../types";
 import {
   TeamApi,
   TeamApiGroup,
@@ -22,6 +21,7 @@ import {
   TeamMembers,
 } from "../backoffice";
 import { LastDemands, LastDemandsExt, Revenus } from "./widgets";
+import { Spinner } from "../utils";
 
 const BackOfficeContent = (props) => {
   return (
@@ -37,117 +37,116 @@ type TeamHome = ITeamSimple & {
 };
 
 const TeamBackOfficeHome = () => {
-  const currentTeam = useSelector<IState, ITeamSimple>(
-    (state) => state.context.currentTeam
-  );
-  useTeamBackOffice(currentTeam);
+  const { isLoading, currentTeam } = useTeamBackOffice();
 
   const { translate } = useContext(I18nContext);
-  const [team, setTeam] = useState<TeamHome>();
   const [mode, setMode] = useState<"producer" | "consumer">("consumer");
 
   useEffect(() => {
-    Services.teamHome(currentTeam._id).then(setTeam);
+    if (currentTeam && !isError(currentTeam))
+      document.title = `${currentTeam.name}`;
+  }, [currentTeam]);
 
-    document.title = `${currentTeam.name}`;
-  }, []);
-
-  if (!team) {
-    return null;
-  }
-
-  return (
-    <div className="row">
-      <div className="col">
-        <div className="d-flex flex-row justify-content-center gap-1">
-          <button
-            className={classNames("btn btn-outline-primary", {
-              active: mode === "producer",
-            })}
-            onClick={() => setMode("producer")}
-          >
-            {translate('team.dashboard.label.producer')}
-          </button>
-          <button
-            className={classNames("btn btn-outline-primary", {
-              active: mode === "consumer",
-            })}
-            onClick={() => setMode("consumer")}
-          >
-            {translate('team.dashboard.label.consumer')}
-          </button>
-        </div>
-        <div>
-          {mode === "producer" && <ProducerDashboard />}
-          {mode === "consumer" && <ConsumerDashboard />}
+  if (isLoading) {
+    return <Spinner />
+  } else if (currentTeam && !isError(currentTeam)) {
+    return (
+      <div className="row">
+        <div className="col">
+          <div className="d-flex flex-row justify-content-center gap-1">
+            <button
+              className={classNames("btn btn-outline-primary", {
+                active: mode === "producer",
+              })}
+              onClick={() => setMode("producer")}
+            >
+              {translate('team.dashboard.label.producer')}
+            </button>
+            <button
+              className={classNames("btn btn-outline-primary", {
+                active: mode === "consumer",
+              })}
+              onClick={() => setMode("consumer")}
+            >
+              {translate('team.dashboard.label.consumer')}
+            </button>
+          </div>
+          <div>
+            {mode === "producer" && <ProducerDashboard />}
+            {mode === "consumer" && <ConsumerDashboard />}
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  } else {
+    return <div>Error while fetching team</div>
+  }
+
 };
 
 type TeamBackOfficeProps = {
   isLoading: boolean;
 };
-export const TeamBackOffice = ({ isLoading }: TeamBackOfficeProps) => {
-  const currentTeam = useSelector<IState, ITeamSimple>(
-    (s) => s.context.currentTeam
-  );
-  const error = useSelector<IState, IStateError>((s) => s.error);
+export const TeamBackOffice = () => {
+  const { isLoading, currentTeam } = useTeamBackOffice()
 
   useEffect(() => {
-    document.title = currentTeam.name;
-  }, []);
+    if (currentTeam && !isError(currentTeam))
+      document.title = currentTeam.name;
+  }, [currentTeam]);
 
-  if (!currentTeam) {
-    return null;
+  if (isLoading) {
+    return <Spinner />
+  } else if (currentTeam && !isError(currentTeam)) {
+    return (
+      <div className="row">
+        <main role="main" className="ml-sm-auto px-4 mt-3">
+          <div
+            className={classNames("back-office-overlay", {
+              active: isLoading && !error.status,
+            })}
+          />
+          <BackOfficeContent error={error}>
+            <Routes>
+              <Route path={`/edition`} element={<TeamEdit />} />
+              <Route path={`/assets`} element={<TeamAssets />} />
+
+              <Route path={`/consumption`} element={<TeamConsumption />} />
+              <Route path={`/billing`} element={<TeamBilling />} />
+              <Route path={`/income`} element={<TeamIncome />} />
+              <Route
+                path={`/apikeys/:apiId/:versionId/subscription/:subscription/consumptions`}
+                element={<TeamApiKeyConsumption />}
+              />
+              <Route
+                path={`/apikeys/:apiId/:versionId`}
+                element={<TeamApiKeysForApi />}
+              />
+              <Route path={`/apikeys`} element={<TeamApiKeys />} />
+              <Route path={`/members`} element={<TeamMembers />} />
+              <Route
+                path={`/apis/:apiId/:versionId/:tab/*`}
+                element={<TeamApi creation={false} />}
+              />
+              <Route
+                path={`/apis/:apiId/:tab`}
+                element={<TeamApi creation={true} />}
+              />
+              <Route
+                path={`/apigroups/:apiGroupId/:tab/*`}
+                element={<TeamApiGroup />}
+              />
+              <Route path={`/apis`} element={<TeamApis />} />
+              <Route path="/" element={<TeamBackOfficeHome />} />
+            </Routes>
+          </BackOfficeContent>
+        </main>
+      </div>
+    );
+  } else {
+    return <div>Error while fetching team</div>
   }
 
-  return (
-    <div className="row">
-      <main role="main" className="ml-sm-auto px-4 mt-3">
-        <div
-          className={classNames("back-office-overlay", {
-            active: isLoading && !error.status,
-          })}
-        />
-        <BackOfficeContent error={error}>
-          <Routes>
-            <Route path={`/edition`} element={<TeamEdit />} />
-            <Route path={`/assets`} element={<TeamAssets />} />
-
-            <Route path={`/consumption`} element={<TeamConsumption />} />
-            <Route path={`/billing`} element={<TeamBilling />} />
-            <Route path={`/income`} element={<TeamIncome />} />
-            <Route
-              path={`/apikeys/:apiId/:versionId/subscription/:subscription/consumptions`}
-              element={<TeamApiKeyConsumption />}
-            />
-            <Route
-              path={`/apikeys/:apiId/:versionId`}
-              element={<TeamApiKeysForApi />}
-            />
-            <Route path={`/apikeys`} element={<TeamApiKeys />} />
-            <Route path={`/members`} element={<TeamMembers />} />
-            <Route
-              path={`/apis/:apiId/:versionId/:tab/*`}
-              element={<TeamApi creation={false} />}
-            />
-            <Route
-              path={`/apis/:apiId/:tab`}
-              element={<TeamApi creation={true} />}
-            />
-            <Route
-              path={`/apigroups/:apiGroupId/:tab/*`}
-              element={<TeamApiGroup />}
-            />
-            <Route path={`/apis`} element={<TeamApis />} />
-            <Route path="/" element={<TeamBackOfficeHome />} />
-          </Routes>
-        </BackOfficeContent>
-      </main>
-    </div>
-  );
 };
 
 type ProducerDashboardType = {};

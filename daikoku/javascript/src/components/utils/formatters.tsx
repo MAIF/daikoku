@@ -11,7 +11,7 @@ import {
   IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit
 } from '../../types';
 
-import {I18nContext} from "../../core";
+import {I18nContext} from "../../contexts";
 import React, {useContext} from "react";
 import {currency} from "../frontend";
 import find from "lodash/find";

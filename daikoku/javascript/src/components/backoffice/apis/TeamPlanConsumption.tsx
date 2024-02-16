@@ -1,15 +1,14 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { Link, useMatch } from 'react-router-dom';
-import moment from 'moment';
-import { useSelector } from 'react-redux';
-
-import * as Services from '../../../services';
-import { OtoroshiStatsVizualization, Spinner } from '../../utils';
-import { I18nContext } from '../../../core';
-import { IApi, isError, IState, ITeamSimple, IUsagePlan } from '../../../types';
-import { Moment } from "moment/moment";
 import { getApolloContext } from "@apollo/client";
 import { useQuery } from '@tanstack/react-query';
+import moment from 'moment';
+import { Moment } from "moment/moment";
+import { useContext, useEffect } from 'react';
+import { useMatch } from 'react-router-dom';
+
+import { I18nContext, useTeamBackOffice } from '../../../contexts';
+import * as Services from '../../../services';
+import { ITeamSimple, isError } from '../../../types';
+import { OtoroshiStatsVizualization, Spinner } from '../../utils';
 
 type IGlobalInformations = {
   avgDuration?: number,
@@ -48,10 +47,9 @@ type IgqlConsumption = {
 
 }
 export const TeamPlanConsumption = (props: { apiGroup?: boolean }) => {
-  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
   const { translate } = useContext(I18nContext);
-
   const { client } = useContext(getApolloContext());
+  const { isLoading, error, currentTeam } = useTeamBackOffice()
 
   const urlMatching = !!props.apiGroup
     ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId'
@@ -115,54 +113,62 @@ export const TeamPlanConsumption = (props: { apiGroup?: boolean }) => {
   };
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${translate('Plan consumption')}`;
-  }, []);
+    if (!!currentTeam && !isError(currentTeam))
+      document.title = `${currentTeam.name} - ${translate('Plan consumption')}`;
+  }, [currentTeam]);
 
-  return (
-    <div>
-      <div className="row">
-        <div className="col">
-          <h1>Api Consumption</h1>
-          <PlanInformations
-            apiId={match?.params.apiId!}
-            version={match?.params.version!}
-            planId={match?.params.planId!} />
+  if (isLoading) {
+    <Spinner />
+  } else if (!error && !!currentTeam && !isError(currentTeam)) {
+    return (
+      <div>
+        <div className="row">
+          <div className="col">
+            <h1>Api Consumption</h1>
+            <PlanInformations
+              apiId={match?.params.apiId!}
+              version={match?.params.version!}
+              planId={match?.params.planId!}
+              currentTeam={currentTeam} />
+          </div>
         </div>
+        <OtoroshiStatsVizualization
+          sync={() => Services.syncApiConsumption(match?.params.apiId, currentTeam._id)}
+          fetchData={(from: Moment, to: Moment) =>
+            client!.query<{ apiConsumptions: Array<IgqlConsumption> }>({
+              query: Services.graphql.getApiConsumptions,
+              fetchPolicy: "no-cache",
+              variables: {
+                apiId: match?.params.apiId,
+                teamId: currentTeam._id,
+                from: from.valueOf(),
+                to: to.from.valueOf(),
+                planId: match?.params.planId
+              }
+            }).then(({ data: { apiConsumptions } }) => {
+              return apiConsumptions
+            })
+          }
+          mappers={mappers}
+        />
       </div>
-      <OtoroshiStatsVizualization
-        sync={() => Services.syncApiConsumption(match?.params.apiId, currentTeam._id)}
-        fetchData={(from: Moment, to: Moment) =>
-          client!.query<{ apiConsumptions: Array<IgqlConsumption> }>({
-            query: Services.graphql.getApiConsumptions,
-            fetchPolicy: "no-cache",
-            variables: {
-              apiId: match?.params.apiId,
-              teamId: currentTeam._id,
-              from: from.valueOf(),
-              to: to.from.valueOf(),
-              planId: match?.params.planId
-            }
-          }).then(({ data: { apiConsumptions } }) => {
-            return apiConsumptions
-          })
-        }
-        mappers={mappers}
-      />
-    </div>
-  );
+    );
+  } else {
+    return <div>Error while fetching team</div>
+  }
+
 };
 
 type PlanInformationsProps = {
   apiId: string
   version: string
   planId: string
+  currentTeam: ITeamSimple
 }
 
 const PlanInformations = (props: PlanInformationsProps) => {
-  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
-
-  const apiRequest = useQuery({ queryKey: ['api'], queryFn: () => Services.teamApi(currentTeam._id, props.apiId, props.version) })
-  const planRequest = useQuery({ queryKey: ['plan'], queryFn: () => Services.planOfApi(currentTeam._id, props.apiId, props.version, props.planId) })
+  const apiRequest = useQuery({ queryKey: ['api'], queryFn: () => Services.teamApi(props.currentTeam._id, props.apiId, props.version) })
+  const planRequest = useQuery({ queryKey: ['plan'], queryFn: () => Services.planOfApi(props.currentTeam._id, props.apiId, props.version, props.planId) })
 
   if (apiRequest.isLoading || planRequest.isLoading) {
     return <Spinner width="50" height="50" />;

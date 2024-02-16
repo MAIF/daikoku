@@ -6,28 +6,25 @@ import sortBy from 'lodash/sortBy';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { Grid, List } from 'react-feather';
 import Pagination from 'react-paginate';
-import { useDispatch, useSelector } from 'react-redux';
-import { toastr } from "react-redux-toastr";
 import { useLocation, useNavigate } from 'react-router-dom';
 import Select, { SingleValue } from 'react-select';
 
-import { I18nContext, updateUser } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import {
   IApiAuthoWithCount,
   IApiWithAuthorization,
-  IState,
   ITeamSimple,
-  IUserSimple,
   TOption,
   TOptions,
   isError
 } from '../../../types';
 import { ApiCard } from '../api';
 
+import { toast } from "sonner";
+import { CurrentUserContext } from "../../../contexts/userContext";
 import * as Services from "../../../services";
 import { FilterPreview, Spinner, arrayStringToTOps } from "../../utils";
 import queryClient from "../../utils/queryClient";
-import { Toaster, toast } from "sonner";
 
 const GRID = 'GRID';
 const LIST = 'LIST';
@@ -53,10 +50,8 @@ export const ApiList = (props: TApiList) => {
 
 
 
-  const connectedUser = useSelector<IState, IUserSimple>((state) => state.context.connectedUser);
+  const { connectedUser, reloadContext } = useContext(CurrentUserContext);
   const location = useLocation();
-
-  const dispatch = useDispatch();
 
   const [searched, setSearched] = useState("");
   const [inputVal, setInputVal] = useState("")
@@ -225,26 +220,8 @@ export const ApiList = (props: TApiList) => {
   const user = connectedUser;
 
   const toggleStar = (apiWithAuthorization: IApiWithAuthorization) => {
-    Services.toggleStar(apiWithAuthorization.api._id).then((res) => {
-      if (!isError(res)) {
-        const alreadyStarred = connectedUser.starredApis.includes(apiWithAuthorization.api._id);
-
-        setApisWithAuth(
-          apisWithAuth!.map((apiWithAuth) => {
-
-            if (apiWithAuth.api._id === apiWithAuthorization.api._id) apiWithAuth.api.stars += alreadyStarred ? -1 : 1;
-            return apiWithAuth;
-          }),
-        );
-
-        dispatch(updateUser({
-          ...connectedUser,
-          starredApis: alreadyStarred
-            ? connectedUser.starredApis.filter((id: any) => id !== apiWithAuthorization.api._id)
-            : [...connectedUser.starredApis, apiWithAuthorization.api._id],
-        }));
-      }
-    });
+    Services.toggleStar(apiWithAuthorization.api._id)
+      .then(reloadContext);
   };
 
   return (

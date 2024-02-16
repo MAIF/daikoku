@@ -1,11 +1,9 @@
 import { Form, FormRef, format, type } from '@maif/react-forms';
 import { nanoid } from 'nanoid';
 import { MutableRefObject, useContext } from 'react';
-import { useSelector } from 'react-redux';
 
-import { useDispatch } from 'react-redux';
 import { ModalContext } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IApi, IState, ITeamSimple, ITesting, ITestingConfig, IUsagePlan, IWithTesting, isApi, isUsagePlan } from '../../../types';
 import { Option } from '../../utils';

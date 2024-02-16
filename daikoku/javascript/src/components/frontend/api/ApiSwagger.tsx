@@ -1,13 +1,13 @@
 import { useContext, useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { SwaggerUIBundle } from 'swagger-ui-dist';
 
 import { ModalContext } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import { IState, IStateContext, ISwagger, ITesting } from '../../../types';
 
 import 'swagger-ui-dist/swagger-ui.css';
+import { CurrentUserContext } from '../../../contexts/userContext';
 
 
 type ApiSwaggerProps = {
@@ -19,7 +19,7 @@ type ApiSwaggerProps = {
 }
 export function ApiSwagger(props: ApiSwaggerProps) {
 
-  const { tenant, connectedUser } = useSelector<IState, IStateContext>(s => s.context)
+  const { tenant, connectedUser } = useContext(CurrentUserContext)
 
   const { translate } = useContext(I18nContext);
   const { alert, openLoginOrRegisterModal } = useContext(ModalContext);

@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
-import { I18nContext } from '../../core';
+import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
 import { IBaseModalProps } from './types';
 

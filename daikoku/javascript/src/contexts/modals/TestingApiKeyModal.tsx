@@ -1,19 +1,19 @@
+import { Form, FormRef, constraints, format, type } from '@maif/react-forms';
 import React, { useContext, useRef } from 'react';
-import { Form, type, format, constraints, FormRef } from '@maif/react-forms';
 import { toast } from 'sonner';
-import { useSelector } from 'react-redux';
 
 import { Spinner } from '../../components/utils';
+import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
-import { I18nContext } from '../../core';
+import { ITestingConfig, IWithTesting, isApi, isError } from '../../types';
+import { CurrentUserContext } from '../userContext';
 import { IBaseModalProps, TestingApiKeyModalProps } from './types';
-import { IState, ITenant, ITestingConfig, IWithTesting, isApi, isError } from '../../types';
 
 
 export const TestingApiKeyModal = <T extends IWithTesting>(props: TestingApiKeyModalProps<T> & IBaseModalProps) => {
   const formRef = useRef<FormRef>();
 
-  const tenant = useSelector<IState, ITenant>(s => s.context.tenant);
+  const { tenant } = useContext(CurrentUserContext)
 
   const { translate, Translation } = useContext(I18nContext);
 

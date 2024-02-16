@@ -1,6 +1,6 @@
 import { useContext } from 'react';
 
-import { I18nContext } from '../../core';
+import { I18nContext } from '../../contexts';
 import { IBaseModalProps, ILoginOrRegisterModalProps } from './types';
 
 

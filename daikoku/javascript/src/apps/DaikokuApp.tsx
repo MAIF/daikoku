@@ -1,58 +1,56 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { BrowserRouter, BrowserRouter as Router, Route, Routes, useParams } from 'react-router-dom';
+import { useContext, useEffect } from 'react';
 import { Navigate } from 'react-router';
-import { useDispatch, useSelector } from 'react-redux';
+import { BrowserRouter, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
-import { SideBar, Spinner, Error, Footer } from '../components/utils';
-import * as Services from '../services';
-import { updateTeam, setError } from '../core';
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
+import { Error, Footer, SideBar } from '../components/utils';
 import { ModalProvider, NavProvider } from '../contexts';
 
 import {
-  TeamHome,
-  MyHome,
-  MaybeHomePage,
-  ApiHome,
   ApiGroupHome,
-  UnauthenticatedHome,
-  UnauthenticatedTopBar,
-  UnauthenticatedFooter,
+  ApiHome,
   FrontOffice,
   JoinTeam,
+  MaybeHomePage,
+  MyHome,
+  TeamHome,
+  UnauthenticatedFooter,
+  UnauthenticatedHome,
+  UnauthenticatedTopBar,
 } from '../components/frontend';
 
-import { NotificationList, MyProfile, MessagesProvider } from '../components/backoffice';
+import { MessagesProvider, MyProfile, NotificationList } from '../components/backoffice';
 
 import {
-  TenantOtoroshi,
-  TenantOtoroshis,
-  TenantList,
-  TenantEdit,
-  TenantEditForAdmin,
-  TenantStyleEdit,
-  UserList,
-  UserEdit,
+  AdminMessages,
   AuditTrailList,
-  SessionList,
-  ImportExport,
-  TeamMembersForAdmin,
-  TeamList,
-  TenantAdminList,
+  CMSOffice,
   DaikokuTenantAdminList,
+  ImportExport,
   InitializeFromOtoroshi,
   MailingInternalization,
-  AdminMessages,
-  CMSOffice,
+  SessionList,
+  TeamList,
+  TeamMembersForAdmin,
+  TenantAdminList,
+  TenantEdit,
+  TenantEditForAdmin,
+  TenantList,
+  TenantOtoroshi,
+  TenantOtoroshis,
+  TenantStyleEdit,
+  UserEdit,
+  UserList,
 } from '../components/adminbackoffice';
 
-import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
-import { MessagesEvents } from '../services/messages';
-import { I18nContext } from '../contexts/i18n-context';
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
+import { FastMode } from "../components/frontend/fastMode/FastMode";
+import { I18nContext } from '../contexts/i18n-context';
 import { SessionModal } from '../contexts/modals/SessionModal';
-import { ISession, IState, ITeamSimple, ITenant, IUserSimple } from '../types';
-import {FastMode} from "../components/frontend/fastMode/FastMode";
+import { MessagesEvents } from '../services/messages';
+import { ISession, IState, ITenant, IUserSimple } from '../types';
+import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
+import { CurrentUserContext } from '../contexts/userContext';
 
 type DaikokuAppProps = {
   session: ISession,
@@ -335,7 +333,7 @@ export const DaikokuApp = ({
                           key: "fastMode.title.page",
                           replacements: [tenant.title || tenant.name]
                         })}>
-                        <FastMode/>
+                        <FastMode />
                       </RouteWithTitle>
                     }
                   />
@@ -367,7 +365,7 @@ export const DaikokuApp = ({
 
                   <Route
                     path="/:teamId/settings*"
-                    element={<TeamBackOfficeRouter />}
+                    element={<TeamBackOffice />}
                   />
 
                   <Route
@@ -414,40 +412,6 @@ export const DaikokuApp = ({
   );
 };
 
-//custom component route to get team object if it's not present in  redux store...
-
-const TeamBackOfficeRouter = () => {
-  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
-
-  const dispatch = useDispatch();
-  const params = useParams();
-
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    if (!currentTeam || params.teamId !== currentTeam._humanReadableId) {
-      setLoading(true);
-      getMyTeam();
-    } else setLoading(false);
-  }, [params.teamId]);
-
-  function getMyTeam() {
-    Services.oneOfMyTeam(params.teamId)
-      .then((team) => {
-        if (team.error) {
-          dispatch(setError(team.error));
-        }
-        else {
-          dispatch(updateTeam(team));
-        }
-        setLoading(false);
-      });
-  }
-
-  if (!currentTeam || loading) return <Spinner />;
-  else return <TeamBackOffice isLoading={loading} />;
-};
-
 const FrontOfficeRoute = (props: { title?: string, children: JSX.Element }) => {
   return (
     <RouteWithTitle {...props}>
@@ -467,7 +431,7 @@ const RouteWithTitle = (props: { title?: string, children: JSX.Element }) => {
 };
 
 const UnauthenticatedRoute = (props: { children: JSX.Element, title: string }) => {
-  const connectedUser = useSelector<IState, IUserSimple>(s => s.context.connectedUser)
+  const { connectedUser } = useContext(CurrentUserContext)
   if (connectedUser._humanReadableId) {
     return <Navigate to="/" />;
   }

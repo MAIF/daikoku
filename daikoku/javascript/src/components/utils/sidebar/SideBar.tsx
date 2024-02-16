@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
 import classNames from 'classnames';
 import Search from 'react-feather/dist/icons/search'
 import Plus from 'react-feather/dist/icons/plus'
@@ -10,7 +9,6 @@ import Zap from 'react-feather/dist/icons/zap'
 import Bell from 'react-feather/dist/icons/bell'
 
 import * as Services from '../../../services';
-import { updateNotifications } from '../../../core';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { MessagesContext } from '../../backoffice';
 

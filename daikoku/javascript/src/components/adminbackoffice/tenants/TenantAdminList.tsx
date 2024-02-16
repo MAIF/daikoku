@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { useSelector } from 'react-redux';
 import Select from 'react-select';
 import { toast } from 'sonner';
 import values from 'lodash/values';
@@ -15,12 +14,13 @@ import {
   AvatarWithAction,
   Option,
 } from '../../utils';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import { ModalContext, useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
 import { isError, IState, IStateContext, ITeamSimple, ITenantFull, IUser, IUserSimple } from '../../../types';
+import { CurrentUserContext } from '../../../contexts/userContext';
 
 const AdminList = () => {
-  const context = useSelector<IState, IStateContext>((s) => s.context);
+  const context = useContext(CurrentUserContext);
 
   const [search, setSearch] = useState('');
   const [addableAdmins, setAddableAdmins] = useState<Array<IUser>>([]);
@@ -29,7 +29,7 @@ const AdminList = () => {
   const [team, setTeam] = useState<ITeamSimple>();
   const [tenant, setTenant] = useState<ITenantFull>();
   const [filteredAdmins, setFilteredAdmins] = useState<Array<IUser>>([]);
-  const [selectedAdmin, setSelectedAdmin] = useState<any>(undefined);
+  const [selectedAdmin, setSelectedAdmin] = useState<IUser>();
 
   const { translate, Translation } = useContext(I18nContext);
   const { alert, confirm } = useContext(ModalContext);
@@ -56,7 +56,7 @@ const AdminList = () => {
 
   useEffect(() => {
     const filteredAdmins = Option(search)
-      .map((search) => admins.filter(({ name, email }) => [name, email].some((value) => (value as any).toLowerCase().includes(search))))
+      .map((search) => admins.filter(({ name, email }) => [name, email].some((value) => value.toLowerCase().includes(search))))
       .getOrElse(admins);
 
     setFilteredAdmins(filteredAdmins);
@@ -64,22 +64,22 @@ const AdminList = () => {
 
   useEffect(() => {
     if (selectedAdmin) {
-      Services.addAdminsToTenant(tenant?._id, [(selectedAdmin as any)._id]).then((team) => {
+      Services.addAdminsToTenant(tenant?._id, [selectedAdmin._id]).then((team) => {
         if (team.error) {
           toast.error(team.error);
         }
         else {
           setTeam(team);
           setAdmins([...admins, selectedAdmin]);
-          setAddableAdmins(addableAdmins.filter((u: any) => u._id !== selectedAdmin._id));
+          setAddableAdmins(addableAdmins.filter((u) => u._id !== selectedAdmin._id));
           toast.success(translate({ key: 'admin.added.successfully', replacements: [selectedAdmin.name] }));
-          setSelectedAdmin(null);
+          setSelectedAdmin(undefined);
         }
       });
     }
   }, [selectedAdmin]);
 
-  const adminToSelector = (admin: any) => ({
+  const adminToSelector = (admin: IUser) => ({
     label: (
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         {admin.name} ({admin.email}){' '}
@@ -127,9 +127,9 @@ const AdminList = () => {
         <div className="col-12 mb-3 d-flex justify-content-start">
           <Select
             placeholder={translate('Add new admin')}
-            className="add-member-select me-2 reactSelect"
-            options={addableAdmins.map(adminToSelector)}
-            onChange={(slug) => setSelectedAdmin(slug.value)}
+            className="add-member-select me-2 reactSelect"//@ts-ignore
+            options={addableAdmins.map(adminToSelector)}//@ts-ignore
+            onChange={(slug) => setSelectedAdmin(slug!.value)}
             value={selectedAdmin}
             filterOption={(data, search) => values(data.value)
               .filter((e) => typeof e === 'string')
@@ -138,7 +138,7 @@ const AdminList = () => {
           <input placeholder={translate('Find an admin')} className="form-control" onChange={(e) => setSearch(e.target.value)} />
         </div>
       </div>
-      <PaginatedComponent items={sortBy(filteredAdmins, [(a) => (a as any).name.toLowerCase()])} count={15} formatter={(admin) => {
+      <PaginatedComponent items={sortBy(filteredAdmins, [(a) => a.name.toLowerCase()])} count={15} formatter={(admin) => {
         return (<AvatarWithAction key={admin._id} avatar={admin.picture} infos={<span className="team-member__name">{admin.name}</span>} actions={[
           {
             action: () => removeAdmin(admin),

@@ -2,7 +2,7 @@ import classNames from 'classnames';
 import { useContext, useState } from 'react';
 import { CheckSquare, Square } from 'react-feather';
 
-import { I18nContext } from '../../core';
+import { I18nContext } from '../../contexts';
 import { ITeamSimple } from '../../types';
 import { IBaseModalProps, TeamSelectorModalProps } from './types';
 

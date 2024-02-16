@@ -5,7 +5,7 @@ import { constraints, type, format } from "@maif/react-forms";
 import moment from 'moment';
 
 import { Table, TableRef } from '../../inputs';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services/index';
 import { ModalContext } from '../../../contexts';
 import { createColumnHelper } from '@tanstack/react-table';

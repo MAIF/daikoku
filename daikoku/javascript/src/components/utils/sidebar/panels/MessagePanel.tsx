@@ -1,16 +1,16 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { Send } from 'react-feather';
 import classNames from 'classnames';
+import { useContext, useEffect, useState } from 'react';
+import { Send } from 'react-feather';
 
-import { converter } from '../../../../services/showdown';
-import { Option } from '../../../utils';
 import { I18nContext } from '../../../../contexts/i18n-context';
-import { MessagesContext } from '../../../backoffice';
+import { CurrentUserContext } from '../../../../contexts/userContext';
 import * as MessageEvents from '../../../../services/messages';
+import { converter } from '../../../../services/showdown';
+import { MessagesContext } from '../../../backoffice';
+import { Option } from '../../../utils';
 
 export const MessagePanel = () => {
-  const { connectedUser, tenant } = useSelector((s) => (s as any).context);
+  const { connectedUser, tenant } = useContext(CurrentUserContext);
 
   const [newMessage, setNewMessage] = useState('');
 

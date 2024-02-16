@@ -4,22 +4,21 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import { nanoid } from 'nanoid';
-import { SyntheticEvent, useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import AtSign from 'react-feather/dist/icons/at-sign';
 import CreditCard from 'react-feather/dist/icons/credit-card';
+import Globe from 'react-feather/dist/icons/globe';
 import Plus from 'react-feather/dist/icons/plus';
 import Settings from 'react-feather/dist/icons/settings';
 import Trash from 'react-feather/dist/icons/trash';
 import User from 'react-feather/dist/icons/user';
-import Globe from 'react-feather/dist/icons/globe';
-import { toast } from 'sonner';
 import { useParams } from 'react-router-dom';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
+import { toast } from 'sonner';
 
 import React from 'react';
-import { ModalContext } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
 import { IState, IStateContext, ITeamSimple } from '../../../types';
@@ -34,10 +33,10 @@ import {
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
 import { Help } from '../apikeys';
-import { useSelector } from 'react-redux';
 import { TeamApiDocumentation } from './TeamApiDocumentation';
 import { TeamApiSwagger } from './TeamApiSwagger';
 import { TeamApiTesting } from './TeamApiTesting';
+import { CurrentUserContext } from '../../../contexts/userContext';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -369,8 +368,7 @@ const Card = ({
 }: CardProps) => {
   const { translate, Translation } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
-
-  const tenant = useSelector<IState, ITenant>(s => s.context.tenant);
+  const { tenant } = useContext(CurrentUserContext);
 
   const pricing = renderPricing(plan, translate)
 
@@ -521,7 +519,7 @@ export const TeamApiPricings = (props: Props) => {
 
   const { translate } = useContext(I18nContext);
   const { openApiSelectModal, confirm } = useContext(ModalContext);
-  const {tenant, currentTeam} = useSelector<IState, IStateContext>(s => s.context)
+  const { tenant } = useContext(CurrentUserContext);
 
   const queryClient = useQueryClient()
   const queryFullTenant = useQuery({ queryKey: ['full-tenant'], queryFn: () => Services.oneTenant(props.tenant._id) })

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import { useNavigate, useParams } from 'react-router-dom';
 import * as Services from '../../../services';
 import { getApolloContext } from '@apollo/client';

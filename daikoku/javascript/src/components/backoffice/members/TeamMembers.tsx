@@ -1,22 +1,24 @@
 import classnames from 'classnames';
 import sortBy from 'lodash/sortBy';
 import { useContext, useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { Navigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
-import { ModalContext, useTeamBackOffice } from '../../../contexts';
-import { I18nContext, updateTeam } from '../../../core';
+import { I18nContext, ModalContext, useTeamBackOffice } from '../../../contexts';
 import * as Services from '../../../services';
 import {
-  administrator,
-  apiEditor, AvatarWithAction,
+  AvatarWithAction,
   Can,
-  manage, Option,
-  PaginatedComponent, team, user
+  Option,
+  PaginatedComponent, Spinner,
+  administrator,
+  apiEditor,
+  manage,
+  team, user
 } from '../../utils';
 
-import { useDispatch, useSelector } from 'react-redux';
-import { IState, IStateContext, ITeamSimple, IUserSimple, ResponseError, TeamPermission, TeamUser } from '../../../types';
+import { CurrentUserContext } from '../../../contexts/userContext';
+import { ITeamSimple, IUserSimple, ResponseError, TeamPermission, TeamUser, isError } from '../../../types';
 
 type Tabs = 'MEMBERS' | 'PENDING'
 const TABS: { [key: string]: Tabs } = {
@@ -32,10 +34,9 @@ type TState = {
   members?: Array<IUserSimple>
   search?: string
 }
-export const TeamMembersSimpleComponent = () => {
+export const TeamMembersSimpleComponent = ({ currentTeam }: { currentTeam: ITeamSimple }) => {
 
-  const dispatch = useDispatch();
-  const { currentTeam, tenant, connectedUser } = useSelector<IState, IStateContext>(s => s.context);
+  const { tenant, connectedUser, reloadContext } = useContext(CurrentUserContext);
 
   const [state, setState] = useState<TState>({
     pendingUsers: [],
@@ -99,7 +100,7 @@ export const TeamMembersSimpleComponent = () => {
     ) {
       alert({ message: translate('remove.member.alert') });
     } else {
-      (confirm({message: translate('remove.member.confirm')}))//@ts-ignore
+      (confirm({ message: translate('remove.member.confirm') }))//@ts-ignore
         .then((ok: boolean) => {
           if (ok) {
             const teamId = currentTeam._id;
@@ -309,7 +310,7 @@ export const TeamMembersSimpleComponent = () => {
           ? [
             {
               action: () => {
-                confirm({message: translate('team_member.confirm_remove_invitation')})
+                confirm({ message: translate('team_member.confirm_remove_invitation') })
                   //@ts-ignore
                   .then((ok: boolean) => {
                     if (ok)
@@ -330,18 +331,25 @@ export const TeamMembersSimpleComponent = () => {
 
 
 export const TeamMembers = () => {
-  const currentTeam = useSelector<IState, ITeamSimple>(s => s.context.currentTeam)
 
-  useTeamBackOffice(currentTeam);
+  const { isLoading, currentTeam } = useTeamBackOffice();
   const { translate } = useContext(I18nContext);
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${translate({ key: 'Member', plural: true })}`;
-  }, []);
+    if (currentTeam && !isError(currentTeam))
+      document.title = `${currentTeam.name} - ${translate({ key: 'Member', plural: true })}`;
+  }, [currentTeam]);
 
-  return (
-    <Can I={manage} a={team} team={currentTeam} dispatchError={true}>
-      <TeamMembersSimpleComponent />
-    </Can>
-  );
+  if (isLoading) {
+    return <Spinner />
+  } else if (currentTeam && !isError(currentTeam)) {
+    return (
+      <Can I={manage} a={team} team={currentTeam} dispatchError={true}>
+        <TeamMembersSimpleComponent currentTeam={currentTeam} />
+      </Can>
+    );
+  } else {
+    return <div>Error while fetching team</div>
+  }
+
 };

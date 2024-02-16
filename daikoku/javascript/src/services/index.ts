@@ -19,6 +19,7 @@ import {
   IUser,
   IUserSimple,
   ISimpleOtoroshiSettings,
+  IStateContext,
 } from '../types';
 import {
   ResponseError,
@@ -42,6 +43,7 @@ import {
 } from '../types/api';
 
 import { Option } from '../components/utils/Option'
+import { TContext } from '../contexts/userContext';
 
 const HEADERS = {
   Accept: 'application/json',
@@ -57,6 +59,7 @@ const customFetch = <T>(
 export const me = () => customFetch('/api/me');
 export const myOwnTeam = () => customFetch('/api/me/teams/own');
 export const oneOfMyTeam = (id: any) => customFetch(`/api/me/teams/${id}`);
+export const getUserContext = (): PromiseWithError<IStateContext> => customFetch('/api/me/context')
 
 export const getVisibleApiWithId = (id: string): PromiseWithError<IApi> =>
   customFetch(`/api/me/visible-apis/${id}`);

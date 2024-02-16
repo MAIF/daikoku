@@ -2,13 +2,13 @@ import { Form, constraints, format, type } from '@maif/react-forms';
 import { createColumnHelper } from '@tanstack/react-table';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'sonner';
 import { Link, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
+import { CurrentUserContext } from '../../../contexts/userContext';
 import * as Services from '../../../services';
 import { IMailingTranslation, ITenantFull, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
@@ -39,7 +39,7 @@ const EditMailtemplate = ({
       .then((tenant) => {
         if (!isError(tenant)) {
           setTenant(tenant);
-  
+
           Promise.all([
             Services.getTranslationLanguages(),
             Services.getMailTranslations(KEY_MAIL_TEMPLATE)
@@ -162,10 +162,9 @@ const EditMailtemplate = ({
 export const MailingInternalization = () => {
   useTenantBackOffice();
   const table = useRef<TableRef>();
-  const { tenant } = useSelector((s: any) => s.context);
+  const { tenant } = useContext(CurrentUserContext);
 
   const { domain } = useParams();
-  const dispatch = useDispatch();
 
   const { translate, Translation } = useContext(I18nContext);
   const { openFormModal } = useContext(ModalContext);

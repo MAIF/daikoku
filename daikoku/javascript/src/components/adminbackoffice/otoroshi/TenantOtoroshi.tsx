@@ -1,16 +1,16 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { Form, type, constraints } from '@maif/react-forms'
+import { Form, type } from '@maif/react-forms';
+import { useContext, useEffect, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import * as Services from '../../../services';
-import { Can, manage, tenant as TENANT, Spinner } from '../../utils';
 import { toast } from 'sonner';
-import { I18nContext } from '../../../contexts/i18n-context';
 import { useTenantBackOffice } from '../../../contexts';
+import { I18nContext } from '../../../contexts/i18n-context';
+import { CurrentUserContext } from '../../../contexts/userContext';
+import * as Services from '../../../services';
+import { Can, tenant as TENANT, manage } from '../../utils';
 
 export const TenantOtoroshi = () => {
-  const { tenant } = useSelector((s) => (s as any).context);
+  const { tenant } = useContext(CurrentUserContext);
   useTenantBackOffice();
 
   const { translate, Translation } = useContext(I18nContext);

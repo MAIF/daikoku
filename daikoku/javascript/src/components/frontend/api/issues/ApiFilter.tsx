@@ -1,13 +1,12 @@
 import { constraints, format, type } from '@maif/react-forms';
 import classNames from 'classnames';
 import { useContext, useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
 import Select, { CSSObjectWithLabel } from 'react-select';
 
 import { ModalContext } from '../../../../contexts';
-import { I18nContext } from '../../../../core';
+import { I18nContext } from '../../../../contexts';
 import * as Services from '../../../../services';
 import { IState, ITeamSimple } from '../../../../types';
 import { api as API, Can, CanIDoAction, manage } from '../../../utils';

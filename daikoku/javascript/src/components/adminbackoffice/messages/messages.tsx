@@ -1,22 +1,22 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { useSelector } from 'react-redux';
 import classNames from 'classnames';
-import { Send, ChevronLeft } from 'react-feather';
 import head from 'lodash/head';
+import maxBy from 'lodash/maxBy';
+import orderBy from 'lodash/orderBy';
 import sortBy from 'lodash/sortBy';
 import values from 'lodash/values';
-import orderBy from 'lodash/orderBy';
-import maxBy from 'lodash/maxBy';
 import moment from 'moment';
+import { useContext, useEffect, useState } from 'react';
+import { ChevronLeft, Send } from 'react-feather';
 import Select from 'react-select';
 
-import { MessagesContext } from '../../backoffice';
-import * as MessagesEvents from '../../../services/messages';
-import * as Services from '../../../services';
-import { Option, partition, formatMessageDate, BeautifulTitle } from '../../utils';
-import { I18nContext } from '../../../contexts/i18n-context';
 import { useTenantBackOffice } from '../../../contexts';
-import { isError, IState, IUserSimple } from '../../../types';
+import { I18nContext } from '../../../contexts/i18n-context';
+import { CurrentUserContext } from '../../../contexts/userContext';
+import * as Services from '../../../services';
+import * as MessagesEvents from '../../../services/messages';
+import { IUserSimple, isError } from '../../../types';
+import { MessagesContext } from '../../backoffice';
+import { BeautifulTitle, Option, formatMessageDate, partition } from '../../utils';
 
 export const AdminMessages = () => {
   useTenantBackOffice();
@@ -40,7 +40,7 @@ export const AdminMessages = () => {
 
   const [possibleNewUsers, setPossibleNewUsers] = useState<Array<IUserSimple>>([]);
 
-  const connectedUser = useSelector<IState, IUserSimple>((s) => s.context.connectedUser);
+  const { connectedUser } = useContext(CurrentUserContext);
 
   useEffect(() => {
     Services.fetchAllUsers()

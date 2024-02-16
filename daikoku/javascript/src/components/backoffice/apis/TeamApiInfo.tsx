@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { type, constraints, format, Schema } from '@maif/react-forms';
 import * as Services from '../../../services';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import { ITeamSimple } from '../../../types';
 

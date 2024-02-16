@@ -10,7 +10,7 @@ import Plus from 'react-feather/dist/icons/plus'
 
 import Select, { components } from 'react-select';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IAuthorizedEntities, IOtoroshiSettings, ISimpleOtoroshiSettings, ITeamFullGql, ITeamSimple, ResponseError, isError } from '../../../types';
 import { teamSchema } from '../../backoffice/teams/TeamEdit';

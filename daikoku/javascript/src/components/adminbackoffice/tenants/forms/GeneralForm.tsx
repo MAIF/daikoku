@@ -3,7 +3,7 @@ import { UseMutationResult } from '@tanstack/react-query';
 import { useContext } from 'react';
 
 
-import { I18nContext } from '../../../../core';
+import { I18nContext } from '../../../../contexts';
 import { ITenantFull, Language } from '../../../../types';
 
 

@@ -9,7 +9,7 @@ import Navigation from 'react-feather/dist/icons/navigation';
 
 import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiSwagger } from '.';
 import { ModalContext, useApiFrontOffice } from '../../../contexts';
-import { I18nContext, setError, updateUser } from '../../../core';
+import { I18nContext, setError, updateUser } from '../../../contexts';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import { IApi, IState, IStateContext, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, TeamPermission, TeamType, isError } from '../../../types';

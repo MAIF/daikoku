@@ -1,13 +1,19 @@
-import React from 'react';
-import { useSelector } from 'react-redux';
 
 import { AssetsList } from '../';
 import { useTeamBackOffice } from '../../../contexts';
+import { isError } from '../../../types';
+import { Spinner } from '../../utils/Spinner';
 
 export const TeamAssets = () => {
-  const { currentTeam } = useSelector((state) => (state as any).context);
 
-  useTeamBackOffice(currentTeam);
+  const { isLoading, currentTeam } = useTeamBackOffice();
 
-    return <AssetsList tenantMode={false} />;
+  if (isLoading) {
+    return <Spinner />
+  } else if (currentTeam && !isError(currentTeam)) {
+    return <AssetsList currentTeam={currentTeam} />;
+  } else {
+    return <div>Error while fetching team</div>
+  }
+
 };

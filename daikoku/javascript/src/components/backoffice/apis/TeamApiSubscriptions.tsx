@@ -2,12 +2,11 @@ import {getApolloContext} from "@apollo/client";
 import {format, type} from "@maif/react-forms";
 import {createColumnHelper} from '@tanstack/react-table';
 import {useContext, useEffect, useRef, useState} from 'react';
-import {useSelector} from 'react-redux';
 import {toast} from 'sonner';
 
 import {ModalContext} from '../../../contexts';
 import {CustomSubscriptionData} from '../../../contexts/modals/SubscriptionMetadataModal';
-import {I18nContext} from '../../../core';
+import {I18nContext} from '../../../contexts';
 import * as Services from '../../../services';
 import {IApi, isError, IState, ISubscriptionCustomization, ITeamSimple, IUsagePlan} from "../../../types";
 import {SwitchButton, Table, TableRef} from '../../inputs';
@@ -85,7 +84,6 @@ interface IApiSubscriptionGqlWithUsage extends IApiSubscriptionGql {
 }
 
 export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
-  const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
 
   const { client } = useContext(getApolloContext());
 

@@ -1,18 +1,17 @@
-import React, { useContext, useEffect, useState, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-
-import * as Services from '../../../services';
-import { Table, TableRef } from '../../inputs';
-import { Can, manage, apikey, isUserIsTeamAdmin } from '../../utils';
-import { I18nContext } from '../../../core';
-import { ModalContext, useTeamBackOffice } from '../../../contexts';
 import { createColumnHelper } from '@tanstack/react-table';
-import { IApi } from '../../../types';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
+
+import { I18nContext, ModalContext, useTeamBackOffice } from '../../../contexts';
+import { CurrentUserContext } from '../../../contexts/userContext';
+import * as Services from '../../../services';
+import { IApi, ITeamSimple, isError } from '../../../types';
+import { Table, TableRef } from '../../inputs';
+import { Can, Spinner, apikey, isUserIsTeamAdmin, manage, teamPermissions } from '../../utils';
 
 export const TeamApiKeys = () => {
-  const { currentTeam, connectedUser } = useSelector((state) => (state as any).context);
-  useTeamBackOffice(currentTeam);
+  const { connectedUser } = useContext(CurrentUserContext);
+  const { isLoading, currentTeam } = useTeamBackOffice();
 
   const tableRef = useRef<TableRef>();
   const [showApiKey, setShowApiKey] = useState(false);
@@ -21,19 +20,22 @@ export const TeamApiKeys = () => {
   const { confirm } = useContext(ModalContext);
 
   useEffect(() => {
-    setShowApiKey(
-      connectedUser.isDaikokuAdmin ||
-      !currentTeam.showApiKeyOnlyToAdmins ||
-      isUserIsTeamAdmin(connectedUser, currentTeam)
-    );
-  }, [connectedUser.isDaikokuAdmin, currentTeam.showApiKeyOnlyToAdmins]);
+    if (currentTeam && !isError(currentTeam)) {
+      setShowApiKey(
+        connectedUser.isDaikokuAdmin ||
+        currentTeam.apiKeyVisibility !== teamPermissions.administrator ||
+        isUserIsTeamAdmin(connectedUser, currentTeam)
+      );
+    }
+  }, [connectedUser.isDaikokuAdmin, currentTeam]);
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${translate('API key')}`;
-  }, []);
+    if (currentTeam && !isError(currentTeam))
+      document.title = `${currentTeam.name} - ${translate('API key')}`;
+  }, [currentTeam]);
 
   const columnHelper = createColumnHelper<IApi>();
-  const columns = [
+  const columns = (currentTeam: ITeamSimple) => [
     columnHelper.accessor("name", {
       header: translate('Api Name'),
       meta: { style: { textAlign: 'left' } }
@@ -70,39 +72,46 @@ export const TeamApiKeys = () => {
     confirm({ message: translate('clean.archived.sub.confirm') })
       .then((ok) => {
         if (ok) {
-          Services.cleanArchivedSubscriptions(currentTeam._id)
+          Services.cleanArchivedSubscriptions((currentTeam as ITeamSimple)._id)
             .then(() => tableRef.current?.update());
         }
       });
   }
 
-  return (
-    <Can I={manage} a={apikey} team={currentTeam} dispatchError={true}>
-      <div className="row">
-        <div className="col">
-          <h1>
-            <Translation i18nkey="Subscribed Apis">Subscribed Apis</Translation>
-          </h1>
-          <Link
-            to={`/${currentTeam._humanReadableId}/settings/consumption`}
-            className="btn btn-sm btn-access-negative mb-2"
-          >
-            <i className="fas fa-chart-bar me-1" />
-            <Translation i18nkey="See Stats">See Stats</Translation>
-          </Link>
-          <div className="section p-2">
-            <Table
-              defaultSort="name"
-              columns={columns}
-              fetchItems={() => Services.subscribedApis(currentTeam._id)}
-              ref={tableRef}
-            />
-            <button className="btn btn-sm btn-danger-negative mt-1" onClick={cleanSubs}>
-              <Translation i18nkey="clean archived apikeys">clean archived apikeys</Translation>
-            </button>
+  if (isLoading) {
+    return <Spinner />
+  } else if (currentTeam && !isError(currentTeam)) {
+    return (
+      <Can I={manage} a={apikey} team={currentTeam} dispatchError={true}>
+        <div className="row">
+          <div className="col">
+            <h1>
+              <Translation i18nkey="Subscribed Apis">Subscribed Apis</Translation>
+            </h1>
+            <Link
+              to={`/${currentTeam._humanReadableId}/settings/consumption`}
+              className="btn btn-sm btn-access-negative mb-2"
+            >
+              <i className="fas fa-chart-bar me-1" />
+              <Translation i18nkey="See Stats">See Stats</Translation>
+            </Link>
+            <div className="section p-2">
+              <Table
+                defaultSort="name"
+                columns={columns(currentTeam)}
+                fetchItems={() => Services.subscribedApis(currentTeam._id)}
+                ref={tableRef}
+              />
+              <button className="btn btn-sm btn-danger-negative mt-1" onClick={cleanSubs}>
+                <Translation i18nkey="clean archived apikeys">clean archived apikeys</Translation>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
-    </Can>
-  );
+      </Can>
+    );
+  } else {
+    return <div>Error while fetching team</div>
+  }
+
 };

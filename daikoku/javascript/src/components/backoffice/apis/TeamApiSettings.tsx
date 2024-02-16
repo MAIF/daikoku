@@ -2,10 +2,9 @@ import React, { useContext, useState, useEffect } from 'react';
 import { Form, constraints, type, format } from '@maif/react-forms';
 import { toast } from 'sonner';
 import sortBy from 'lodash/sortBy';
-import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { ModalContext } from '../../../contexts';
 import { isError, IState, ITeamSimple } from '../../../types';
@@ -17,7 +16,7 @@ export const TeamApiSettings = ({
 }: any) => {
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
-  const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
+  const {currentTeam} = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
   const navigate = useNavigate();
 
   const transferOwnership = ({team}: any) => {

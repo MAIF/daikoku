@@ -1,15 +1,15 @@
-import React, { useContext, useEffect } from 'react';
-import { useSelector } from 'react-redux';
-import { toast } from 'sonner';
+import { useContext, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { I18nContext } from '../../contexts/i18n-context';
 
-import { IState, ITenant, IUserSimple } from '../../types';
+import { CurrentUserContext } from '../../contexts/userContext';
+import { ITenant } from '../../types';
 
 export const MaybeHomePage = ({
   tenant
-}: {tenant: ITenant}) => {
-  const connectedUser = useSelector<IState, IUserSimple>((state) => state.context.connectedUser);
+}: { tenant: ITenant }) => {
+  const { connectedUser } = useContext(CurrentUserContext);
   const { translate } = useContext(I18nContext);
 
   const navigate = useNavigate();

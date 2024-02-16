@@ -1,21 +1,22 @@
 import React, { useContext, useEffect } from 'react';
-import { useSelector } from 'react-redux';
 import sortBy from 'lodash/sortBy';
 
-import { OtoroshiStatsVizualization } from '../../utils';
+import { OtoroshiStatsVizualization, Spinner } from '../../utils';
 import * as Services from '../../../services';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import { useTeamBackOffice } from '../../../contexts';
+import { isError } from '../../../types';
 
 export const TeamConsumption = () => {
   const { translate } = useContext(I18nContext);
 
-  const { currentTeam } = useSelector((state) => (state as any).context);
-  useTeamBackOffice(currentTeam);
+  const { isLoading, error, currentTeam } = useTeamBackOffice();
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${translate('Consumption')}`;
-  }, []);
+    if (currentTeam && !isError(currentTeam)) {
+      document.title = `${currentTeam.name} - ${translate('Consumption')}`;
+    }
+  }, [currentTeam]);
 
   const mappers = [
     {
@@ -48,18 +49,27 @@ export const TeamConsumption = () => {
     },
   ];
 
-  return (
-    <div className="row">
-      <div className="col">
-        <h1>Consumption</h1>
-        <OtoroshiStatsVizualization
-          sync={() => Services.syncTeamBilling(currentTeam._id)}
-          fetchData={(from: any, to: any) =>
-            Services.getTeamConsumptions(currentTeam._id, from.valueOf(), to.valueOf())
-          }
-          mappers={mappers}
-        />
+  if (isLoading) {
+    return <Spinner />
+  } else if (currentTeam && !isError(currentTeam)) {
+    return (
+      <div className="row">
+        <div className="col">
+          <h1>Consumption</h1>
+          <OtoroshiStatsVizualization
+            sync={() => Services.syncTeamBilling(currentTeam._id)}
+            fetchData={(from: any, to: any) =>
+              Services.getTeamConsumptions(currentTeam._id, from.valueOf(), to.valueOf())
+            }
+            mappers={mappers}
+          />
+        </div>
       </div>
-    </div>
-  );
+    );
+  } else {
+    return (
+      <div>Error while fetching team</div>
+    )
+  }
+
 };

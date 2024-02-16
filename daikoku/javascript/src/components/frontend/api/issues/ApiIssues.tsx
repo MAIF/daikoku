@@ -4,10 +4,10 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../../services/index';
-import { I18nContext } from '../../../../core';
+import { I18nContext } from '../../../../contexts';
 import { ApiFilter } from './ApiFilter';
-import { useSelector } from 'react-redux';
 import {BeautifulTitle, getColorByBgColor} from '../../..';
+import { CurrentUserContext } from '../../../../contexts/userContext';
 
 export function ApiIssues({
   filter,
@@ -19,7 +19,7 @@ export function ApiIssues({
 }: any) {
   const [issues, setIssues] = useState([]);
   const { versionId } = useParams();
-  const { connectedUser } = useSelector(state => (state as any).context);
+  const { connectedUser } = useContext(CurrentUserContext);
 
     const { translate } = useContext(I18nContext);
 

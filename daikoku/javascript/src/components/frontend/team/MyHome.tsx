@@ -1,23 +1,20 @@
 import { useQuery } from '@tanstack/react-query';
 import { useContext } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 
-import { I18nContext, updateTeam } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import { IApiWithAuthorization, isError, IState, ITenant, IUsagePlan, IUserSimple } from '../../../types';
 import { ApiList } from './ApiList';
 import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
+import { CurrentUserContext } from '../../../contexts/userContext';
 
 export const MyHome = () => {
 
 
-  const dispatch = useDispatch();
-  const connectedUser = useSelector<IState, IUserSimple>(s => s.context.connectedUser)
-  const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
-  const apiCreationPermitted = useSelector<IState, boolean>(s => s.context.apiCreationPermitted)
+  const { connectedUser, tenant, apiCreationPermitted } = useContext(CurrentUserContext)
 
   const myTeamsRequest = useQuery({ queryKey: ['myTeams'], queryFn: () => Services.myTeams() })
 
@@ -48,13 +45,10 @@ export const MyHome = () => {
     const api = apiWithAutho.api
 
     if (api.team && CanIDoAction(connectedUser, manage, API, api.team, apiCreationPermitted)) {
-      Promise.resolve(dispatch(updateTeam(api.team)))
-        .then(() => {
-          const url = api.apis
-            ? `/${api.team._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
-            : `/${api.team._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
-          navigate(url);
-        });
+      const url = api.apis
+        ? `/${api.team._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
+        : `/${api.team._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
+      navigate(url);
     }
   };
 

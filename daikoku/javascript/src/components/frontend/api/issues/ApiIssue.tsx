@@ -7,7 +7,7 @@ import { ApiTimelineIssue } from './ApiTimelineIssue';
 import { TeamApiIssueTags } from './TeamApiIssueTags';
 import * as Services from '../../../../services';
 import { Can, manage, api as API } from '../../../utils';
-import { I18nContext } from '../../../../core';
+import { I18nContext } from '../../../../contexts';
 import { IApi, isError } from '../../../../types';
 
 export function ApiIssue({

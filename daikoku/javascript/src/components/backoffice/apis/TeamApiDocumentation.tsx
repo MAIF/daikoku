@@ -2,17 +2,17 @@ import { constraints, Flow, format, Schema, type } from '@maif/react-forms';
 import { useQueryClient } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
 import { useContext } from 'react';
-import { useSelector } from 'react-redux';
 import { toast } from 'sonner';
 
 import { IFormModalProps, ModalContext } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IApi, IAsset, IDocPage, IDocumentation, IDocumentationPage, IDocumentationPages, isError, IState, ITeamSimple, ITenant } from '../../../types';
 import { BeautifulTitle } from '../../utils';
 import { SortableTree } from '../../utils/dnd/SortableTree';
 import { Wrapper } from '../../utils/dnd/Wrapper';
+import { CurrentUserContext } from '../../../contexts/userContext';
 
 const mimeTypes = [
   { label: '.adoc Ascii doctor', value: 'text/asciidoc' },
@@ -113,7 +113,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   const { translate } = useContext(I18nContext);
   const { confirm, openFormModal } = useContext(ModalContext);
 
-  const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
+  const { tenant } = useContext(CurrentUserContext);
 
   const queryClient = useQueryClient();
 

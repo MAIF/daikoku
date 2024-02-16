@@ -14,7 +14,7 @@ export interface IStateModal {
 }
 
 export interface IStateContext {
-  impersonator: any;
+  impersonator?: IUserSimple;
   connectedUser: IUserSimple;
   currentTeam: ITeamSimple;
   unreadNotificationsCount: number;

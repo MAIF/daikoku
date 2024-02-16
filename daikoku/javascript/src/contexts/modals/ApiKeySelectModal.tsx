@@ -1,5 +1,5 @@
 import React, { useContext, useState } from 'react';
-import { I18nContext } from '../../core';
+import { I18nContext } from '../../contexts';
 import { IApiKey, IFastPlan, ISubscription, ISubscriptionWithApiInfo, IUsagePlan } from '../../types';
 import { IBaseModalProps } from './types';
 

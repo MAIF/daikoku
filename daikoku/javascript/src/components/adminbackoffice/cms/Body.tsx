@@ -1,7 +1,7 @@
 import { Form, FormRef, type } from '@maif/react-forms';
 import React, { useContext, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import { ContentSideView } from './ContentSideView';
 import DragAndDropWrapper from './DragAndDropWrapper';
 

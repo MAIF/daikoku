@@ -7,7 +7,7 @@ import Select from 'react-select';
 import maxBy from 'lodash/maxBy';
 import { Line, LineChart, Tooltip, XAxis, YAxis, ResponsiveContainer } from 'recharts';
 import { Spinner } from './Spinner';
-import { I18nContext } from '../../core';
+import { I18nContext } from '../../contexts';
 import { IConsumption, ResponseError } from '../../types';
 
 (Number.prototype as any).prettify = function () {

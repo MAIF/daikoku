@@ -1,10 +1,9 @@
 import maxBy from 'lodash/maxBy';
 import { useContext, useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
 import dayjs from 'dayjs';
 
 import { useTeamBackOffice } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { MonthPicker } from '../../inputs/monthPicker';
 import {
@@ -25,8 +24,7 @@ type IConsumptionByApi = {
 }
 
 export const TeamBilling = () => {
-  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
-  useTeamBackOffice(currentTeam);
+  const { isLoading, currentTeam } = useTeamBackOffice();
 
   const { translate, Translation } = useContext(I18nContext);
 
@@ -37,16 +35,22 @@ export const TeamBilling = () => {
   const queryBillings = useQuery({
     queryKey: ['billings', date],
     queryFn: () => Services.getTeamBillings(
-      currentTeam._id,
+      (currentTeam as ITeamSimple)._id,
       date.startOf('month').valueOf(),
       date.endOf('month').valueOf()
-    )
+    ),
+    enabled: currentTeam && !isError(currentTeam)
   });
-  const queryApis = useQuery({ queryKey: ['apis'], queryFn: () => Services.subscribedApis(currentTeam._id) })
+  const queryApis = useQuery({
+    queryKey: ['apis'],
+    queryFn: () => Services.subscribedApis((currentTeam as ITeamSimple)._id),
+    enabled: currentTeam && !isError(currentTeam)
+  })
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${translate('Billing')}`;
-  }, []);
+    if (currentTeam && !isError(currentTeam))
+      document.title = `${currentTeam.name} - ${translate('Billing')}`;
+  }, [currentTeam]);
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['billings'] })
@@ -66,7 +70,7 @@ export const TeamBilling = () => {
 
 
   const sync = () => {
-    Services.syncTeamBilling(currentTeam._id)
+    Services.syncTeamBilling((currentTeam as ITeamSimple)._id)
       .then(() => queryClient.invalidateQueries({ queryKey: ['billings'] }))
   };
 
@@ -174,7 +178,7 @@ export const TeamBilling = () => {
           label={usagePlan.customName || formatPlanType(usagePlan, translate)}
           total={props.total}
           currency={usagePlan.currency}
-          fetchInvoices={() => Services.fetchInvoices(currentTeam._id, props.api._id, usagePlan._id, window.location.href)
+          fetchInvoices={() => Services.fetchInvoices((currentTeam as ITeamSimple)._id, props.api._id, usagePlan._id, window.location.href)
             .then(({ url }) => window.location.href = url)} />
       );
     } else {
@@ -200,32 +204,37 @@ export const TeamBilling = () => {
     }
   }
 
-  return (
-    <Can I={read} a={stat} team={currentTeam} dispatchError={true}>
-      <div className="row">
-        <div className="col">
-          <h1>
-            <Translation i18nkey="Billing">Billing</Translation>
-          </h1>
-          <div className="row">
-            <div className="col apis">
-              <div className="row month__and__total">
-                <div className="col-12 month__selector d-flex align-items-center">
-                  <MonthPicker updateDate={setDate} value={date} />
-                  <button className="btn btn-sm btn-access-negative ms-1" onClick={sync}>
-                    <i className="fas fa-sync-alt" />
-                  </button>
-                  {getLastDate()}
+  if (isLoading) {
+    return <Spinner />
+  } else if (currentTeam && !isError(currentTeam)) {
+    return (
+      <Can I={read} a={stat} team={currentTeam} dispatchError={true}>
+        <div className="row">
+          <div className="col">
+            <h1>
+              <Translation i18nkey="Billing">Billing</Translation>
+            </h1>
+            <div className="row">
+              <div className="col apis">
+                <div className="row month__and__total">
+                  <div className="col-12 month__selector d-flex align-items-center">
+                    <MonthPicker updateDate={setDate} value={date} />
+                    <button className="btn btn-sm btn-access-negative ms-1" onClick={sync}>
+                      <i className="fas fa-sync-alt" />
+                    </button>
+                    {getLastDate()}
+                  </div>
                 </div>
+                {drawApis()}
               </div>
-              {drawApis()}
-            </div>
-            <div className="col apikeys">
-              {drawApiConsumption()}
+              <div className="col apikeys">
+                {drawApiConsumption()}
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </Can>
-  )
+      </Can>
+    )
+  }
+
 };

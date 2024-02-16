@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { I18nContext } from '../../core';
+import { I18nContext } from '../../contexts';
 import { IBaseModalProps, ISaverOrCancelModalProps } from './types';
 
 export const SaveOrCancelModal = (props: ISaverOrCancelModalProps & IBaseModalProps) => {

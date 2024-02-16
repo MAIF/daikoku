@@ -1,17 +1,17 @@
 import { constraints, Form, FormRef, type } from '@maif/react-forms';
 import { useContext, useRef } from 'react';
-import { useSelector } from 'react-redux';
 
-import { I18nContext } from '../../core';
+import { I18nContext } from '../../contexts';
 import { IState, ITenant } from '../../types';
 import { IBaseModalProps, ITeamInvitationModalProps } from './types';
+import { CurrentUserContext } from '../userContext';
 
 export const TeamInvitationModal = (props: ITeamInvitationModalProps & IBaseModalProps) => {
   const ref = useRef<FormRef>();
   
   const { translate } = useContext(I18nContext);
-  const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
-
+  const { tenant } = useContext(CurrentUserContext)
+  
   const invitUser = (email: string) => {
     props.invitUser(email)
       .then(props.close)

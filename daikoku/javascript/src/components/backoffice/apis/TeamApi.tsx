@@ -1,9 +1,8 @@
 import { useContext, useEffect, useState } from 'react';
 import Plus from 'react-feather/dist/icons/plus';
-import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'sonner';
 import { Link, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select';
+import { toast } from 'sonner';
 
 import {
   TeamApiConsumption,
@@ -21,12 +20,11 @@ import { api as API, Can, Spinner, api, manage } from '../../utils';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  I18nContext,
-  setError,
-  toggleExpertMode,
-} from '../../../core';
+  I18nContext
+} from '../../../contexts';
 import { IState, IStateContext, ITeamSimple } from '../../../types';
 import { IApi, IUsagePlan, isError } from '../../../types/api';
+import { CurrentUserContext } from '../../../contexts/userContext';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 type ButtonProps = {
@@ -97,9 +95,7 @@ export const TeamApi = (props: { creation: boolean }) => {
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/apis/:apiId/:version/stats/plan/:planId');
 
-  const dispatch = useDispatch();
-  const { currentTeam, tenant, expertMode } = useSelector<IState, IStateContext>((s) => s.context);
-
+  const { tenant } = useContext(CurrentUserContext);
   const { translate } = useContext(I18nContext);
   const { openApiDocumentationSelectModal } = useContext(ModalContext);
 

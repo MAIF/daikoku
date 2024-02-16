@@ -4,11 +4,9 @@ import classNames from 'classnames';
 import difference from 'lodash/difference';
 import find from 'lodash/find';
 import React, { useContext, useEffect } from 'react';
-import { useSelector } from 'react-redux';
 import { Link, useMatch, useNavigate } from 'react-router-dom';
 
-import { ModalContext } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
 import {
@@ -26,6 +24,7 @@ import { formatPlanType } from '../../utils/formatters';
 import { ApiDocumentation } from './ApiDocumentation';
 import { ApiRedoc } from './ApiRedoc';
 import { ApiSwagger } from './ApiSwagger';
+import { CurrentUserContext } from '../../../contexts/userContext';
 
 export const currency = (plan?: IBaseUsagePlan) => {
   if (!plan) {
@@ -50,7 +49,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
   const { openFormModal, openLoginOrRegisterModal, openApiKeySelectModal, openCustomModal, close } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
-  const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context)
+  const { connectedUser, tenant } = useContext(CurrentUserContext)
 
   const showApiKeySelectModal = (team: string) => {
     const { plan } = props;

@@ -1,4 +1,4 @@
-import { SET_ERROR } from '../core';
+import { SET_ERROR } from '../contexts';
 import queryString from 'query-string';
 
 export function customizeFetch(store: any) {

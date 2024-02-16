@@ -13,7 +13,7 @@ import { Can, manage, Option, tenant as TENANT } from '../../utils';
 //@ts-ignore //FIXME: check if it works
 import styleVariables from '!!raw-loader!../../../style/variables.scss';
 import { useDaikokuBackOffice } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import { isError } from '../../../types';
 
 const regexp = /var\((--.*),\s?(.*)\).*\/\/(.*)/g;

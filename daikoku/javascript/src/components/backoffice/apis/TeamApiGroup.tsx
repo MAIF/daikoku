@@ -1,11 +1,9 @@
 import { Form, constraints, format, type } from '@maif/react-forms';
 import { useContext, useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { toast } from 'sonner';
 import { useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useDispatch } from 'react-redux';
 import {
   TeamApiConsumption,
   TeamApiPricings,
@@ -13,10 +11,10 @@ import {
   TeamApiSubscriptions,
   TeamPlanConsumption,
 } from '.';
-import { ModalContext, useApiGroupBackOffice } from '../../../contexts';
-import { I18nContext, toggleExpertMode } from '../../../core';
+import { I18nContext, ModalContext, useApiGroupBackOffice } from '../../../contexts';
+import { CurrentUserContext } from '../../../contexts/userContext';
 import * as Services from '../../../services';
-import { IApi, IState, IStateContext, ITeamSimple, IUsagePlan, isError } from '../../../types';
+import { IApi, ITeamSimple, IUsagePlan, isError } from '../../../types';
 import { api as API, Can, Spinner, manage } from '../../utils';
 
 type LocationState = {
@@ -29,8 +27,7 @@ export const TeamApiGroup = () => {
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/apigroups/:apiGroupId/stats/plan/:planId');
 
-  const { currentTeam, expertMode, tenant } = useSelector<IState, IStateContext>(s => s.context);
-  const dispatch = useDispatch();
+  const { tenant } = useContext(CurrentUserContext);
 
   const state: LocationState = location.state as LocationState
   const creation = state?.newApiGroup;

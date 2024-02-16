@@ -3,7 +3,7 @@ import { useDispatch } from 'react-redux';
 import { useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { I18nContext } from '../../contexts/i18n-context';
-import { unsetError } from '../../core';
+import { unsetError } from '../../contexts';
 
 import { IState, IStateError, ITenant } from '../../types';
 

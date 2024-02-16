@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 
 import { useApiGroupFrontOffice } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IState, IStateContext, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, IUserSimple, isError } from '../../../types';
 import { formatPlanType } from '../../utils/formatters';

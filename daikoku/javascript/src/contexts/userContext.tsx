@@ -1,0 +1,82 @@
+import { useQuery } from "@tanstack/react-query"
+import React, { PropsWithChildren } from "react"
+
+import { queryClient } from "../components"
+import { Spinner } from "../components/utils/Spinner"
+import * as Services from '../services/index'
+import { AuthProvider, DaikokuMode, Display, ITenant, IUserSimple, TenanMode, isError } from "../types"
+
+
+export interface IStateContext {
+  impersonator?: IUserSimple;
+  connectedUser: IUserSimple;
+  tenant: ITenant;
+  isTenantAdmin: boolean;
+  apiCreationPermitted: boolean;
+}
+export type TContext = IStateContext & { reloadContext: () => Promise<void> }
+
+const initContext: TContext = {
+  connectedUser: {
+    _id: "",
+    _humanReadableId: "",
+    email: "",
+    picture: "",
+    isDaikokuAdmin: false,
+    isGuest: true,
+    starredApis: [],
+    twoFactorAuthentication: null,
+    name: "fifou",
+  },
+  tenant: {
+    _humanReadableId: "string",
+    _id: "string",
+    name: "string",
+    contact: "string",
+    creationSecurity: true,
+    subscriptionSecurity: true,
+    aggregationApiKeysSecurity: true,
+    apiReferenceHideForGuest: true,
+    authProvider: AuthProvider.local,
+    homePageVisible: true,
+    mode: DaikokuMode.dev,
+    tenantMode: TenanMode.default,
+    display: Display.default,
+    environments: [],
+  },
+  isTenantAdmin: false,
+  apiCreationPermitted: false,
+  reloadContext: () => Promise.resolve()
+
+}
+
+export const CurrentUserContext = React.createContext<TContext>(initContext)
+export const useCurrentUserContext = () => {
+  return React.useContext(CurrentUserContext)
+}
+
+
+export const CurrentUserContextProvider = (props: PropsWithChildren) => {
+  const currentUserQuery = useQuery({
+    queryKey: ['context'],
+    queryFn: () => Services.getUserContext(),
+  })
+
+  if (currentUserQuery.isLoading) {
+    return <Spinner /> //todo: get a real better loader who block & mask all the window
+  }
+
+  //todo: get a real better error displaying
+  if (currentUserQuery.isError || isError(currentUserQuery.data) || !currentUserQuery.data) {
+    return <div>Something's happened when fetching user informations</div>
+  }
+
+  const reloadContext = () => queryClient.invalidateQueries({ queryKey: ["context"] })
+
+  return (
+    <CurrentUserContext.Provider value={{ ...currentUserQuery.data, reloadContext }}>
+      {props.children}
+    </CurrentUserContext.Provider>
+  )
+
+}

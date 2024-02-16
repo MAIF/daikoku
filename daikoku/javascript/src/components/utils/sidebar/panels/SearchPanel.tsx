@@ -1,19 +1,19 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Link } from 'react-router-dom';
-import { useSelector } from 'react-redux';
 import debounce from 'lodash/debounce';
+import { useContext, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 
-import * as Services from '../../../../services';
-import { I18nContext } from '../../../../contexts/i18n-context';
-import { isError, IState, IStateContext, ITeamSimple } from '../../../../types';
 import { useQuery } from '@tanstack/react-query';
+import { I18nContext } from '../../../../contexts/i18n-context';
+import { CurrentUserContext } from '../../../../contexts/userContext';
+import * as Services from '../../../../services';
+import { isError } from '../../../../types';
 import { Spinner } from '../../Spinner';
 
 export const SearchPanel = () => {
   const [results, setResults] = useState<Array<any>>([]);
 
   const { translate } = useContext(I18nContext);
-  const { tenant, connectedUser } = useSelector<IState, IStateContext>((state) => state.context);
+  const { tenant, connectedUser } = useContext(CurrentUserContext);
 
   const myTeamsRequest = useQuery({ queryKey: ['myTeams'], queryFn: () => Services.myTeams() })
 
@@ -21,7 +21,7 @@ export const SearchPanel = () => {
     debouncedSearch('');
   }, []);
 
-  const search = (inputValue: any) => {
+  const search = (inputValue: string) => {
     const options = [
       {
         value: 'me',

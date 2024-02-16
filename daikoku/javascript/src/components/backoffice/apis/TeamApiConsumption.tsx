@@ -7,7 +7,7 @@ import classNames from 'classnames';
 import * as Services from '../../../services';
 import {OtoroshiStatsVizualization, renderPlanInfo} from '../../utils';
 import { GlobalDataConsumption, Can, read, stat, formatPlanType } from '../../utils';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import {IApi, IGlobalInformations, ITeamSimple, IUsagePlan} from '../../../types';
 import {getApolloContext} from "@apollo/client";
 

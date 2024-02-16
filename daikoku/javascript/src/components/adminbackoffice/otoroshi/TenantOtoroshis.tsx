@@ -1,19 +1,19 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
 import { nanoid } from 'nanoid';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
-import * as Services from '../../../services';
-import { Table, TableRef } from '../../inputs';
-import { Can, manage, tenant as TENANT } from '../../utils';
-import { toast } from 'sonner';
-import { I18nContext } from '../../../contexts/i18n-context';
-import { ModalContext, useTenantBackOffice } from '../../../contexts';
-import { IOtoroshiSettings, isError, IState, IStateContext } from '../../../types';
 import { createColumnHelper } from '@tanstack/react-table';
+import { toast } from 'sonner';
+import { ModalContext, useTenantBackOffice } from '../../../contexts';
+import { I18nContext } from '../../../contexts/i18n-context';
+import { CurrentUserContext } from '../../../contexts/userContext';
+import * as Services from '../../../services';
+import { IOtoroshiSettings, isError } from '../../../types';
+import { Table, TableRef } from '../../inputs';
+import { Can, tenant as TENANT, manage } from '../../utils';
 
 export const TenantOtoroshis = () => {
-  const { tenant, connectedUser } = useSelector<IState, IStateContext>((s) => s.context);
+  const { tenant, connectedUser } = useContext(CurrentUserContext);
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
   const navigate = useNavigate();
@@ -43,7 +43,7 @@ export const TenantOtoroshis = () => {
     }),
     columnHelper.display({
       header: translate('Actions'),
-      meta: {style: { textAlign: 'center', width: '120px' }},
+      meta: { style: { textAlign: 'center', width: '120px' } },
       enableColumnFilter: false,
       enableSorting: false,
       cell: (info) => {

@@ -1,11 +1,12 @@
 import classNames from 'classnames';
-import { useSelector } from 'react-redux';
 import { converter } from '../../services/showdown';
 import { IState, ITenant } from '../../types';
+import { CurrentUserContext } from '../../contexts/userContext';
+import { useContext } from 'react';
 
-export const Footer = (props: {isBackOffice: boolean}) => {
+export const Footer = (props: { isBackOffice: boolean }) => {
 
-  const tenant = useSelector<IState, ITenant>((s) => s.context.tenant)
+  const { tenant } = useContext(CurrentUserContext)
 
   if (!tenant.footer) {
     return null;

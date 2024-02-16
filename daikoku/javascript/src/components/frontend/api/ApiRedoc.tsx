@@ -1,11 +1,11 @@
 import { useContext } from 'react';
-import { useSelector } from 'react-redux';
 import { RedocStandalone, SideNavStyleEnum } from 'redoc';
 
 import { ModalContext } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import { IState, IStateContext, ISwagger } from '../../../types';
 import { Option } from '../../utils/Option';
+import { CurrentUserContext } from '../../../contexts/userContext';
 
 type ApiRedocProps = {
   swaggerUrl: string,
@@ -13,7 +13,7 @@ type ApiRedocProps = {
 }
 export function ApiRedoc(props: ApiRedocProps) {
 
-  const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context)
+  const { connectedUser, tenant } = useContext(CurrentUserContext)
 
   const { translate } = useContext(I18nContext);
   const { openLoginOrRegisterModal } = useContext(ModalContext);

@@ -1,15 +1,14 @@
+import { useQuery } from '@tanstack/react-query';
 import classNames from 'classnames';
 import { useContext, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useDispatch } from 'react-redux';
 
-import { I18nContext } from '../../core';
+import { BeautifulTitle } from '../../components/utils';
+import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
 import { IAsset, ITeamSimple } from '../../types';
-import { isError, ResponseError } from '../../types/api';
-import { BeautifulTitle } from '../../components/utils';
-import { IAssetSelectorModalProps, IBaseModalProps } from './types';
+import { ResponseError, isError } from '../../types/api';
 import { ModalContext } from '../modalContext';
+import { IAssetSelectorModalProps, IBaseModalProps } from './types';
 
 export const MimeTypeFilter = {
   image: (value: string) => value.startsWith('image'),
@@ -23,8 +22,6 @@ export const AssetSelectorModal = (props: IAssetSelectorModalProps & IBaseModalP
   const [search, setSearch] = useState<string>();
 
   const { translate, Translation } = useContext(I18nContext);
-
-  const dispatch = useDispatch();
 
   const selectAssetAndCloseModal = () => {
     if (selectedAsset) {

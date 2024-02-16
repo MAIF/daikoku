@@ -1,43 +1,31 @@
 import { useQuery } from '@tanstack/react-query';
-import { useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import { useTenantBackOffice } from '../../../contexts';
 
-import { updateTeam } from '../../../core/';
 import * as Services from '../../../services';
-import { isError, IState, ITeamSimple } from '../../../types';
+import { isError } from '../../../types';
 import { TeamMembersSimpleComponent } from '../../backoffice';
-import { Can, manage, tenant } from '../../utils';
+import { Can, manage, Spinner, tenant } from '../../utils';
 
 export const TeamMembersForAdmin = () => {
   useTenantBackOffice();
 
-  const currentTeam = useSelector<IState, ITeamSimple>(s => s.context.currentTeam)
-
   const queryTeam = useQuery({
-    queryKey: ['team-infos'], 
+    queryKey: ['team-infos'],
     queryFn: () => Services.teamFull(params.teamSettingId!)
   });
   const params = useParams();
 
-  const dispatch = useDispatch();
-
-  useEffect(() => {
-    if(queryTeam.data && !isError(queryTeam.data)) {
-      dispatch(updateTeam(queryTeam.data))
-    }
-  }, [queryTeam]);
-
-  if (!currentTeam) {
+  if (queryTeam.isLoading) {
+    return <Spinner />
+  } else if (queryTeam.data && !isError(queryTeam.data)) {
     return (
-      <div>loading</div>
+      <Can I={manage} a={tenant} dispatchError>
+        <TeamMembersSimpleComponent currentTeam={queryTeam.data}/>
+      </Can>
     );
+  } else {
+    return <div>Error while fetching team</div>
   }
 
-  return (
-    <Can I={manage} a={tenant} dispatchError>
-      <TeamMembersSimpleComponent />
-    </Can>
-  );
 };

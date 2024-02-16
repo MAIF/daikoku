@@ -29,6 +29,7 @@ GET     /apis/*path                                     fr.maif.otoroshi.daikoku
 GET     /consumptions/*path                             fr.maif.otoroshi.daikoku.ctrls.HomeController.indexWithPath(path)
 GET     /health                                         fr.maif.otoroshi.daikoku.ctrls.HomeController.health()
 GET     /api/versions/_daikoku                          fr.maif.otoroshi.daikoku.ctrls.HomeController.getDaikokuVersion()
+GET     /api/me/context                                 fr.maif.otoroshi.daikoku.ctrls.HomeController.getConnectedUser()
 
 GET     /logout                                         fr.maif.otoroshi.daikoku.ctrls.LoginController.logout()
 GET     /api/2fa                                        fr.maif.otoroshi.daikoku.ctrls.LoginController.verifyCode(token: Option[String] ?= None, code: Option[String] ?= None)

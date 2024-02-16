@@ -1,12 +1,14 @@
 import merge from 'lodash/merge';
 import React, { useContext, useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
 import { Link, useMatch, useNavigate, useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 
 import { api as API, Can, manage } from '../components/utils';
-import { I18nContext } from '../core';
-import { IApi, IState, IStateContext, IStoreState, ITeamSimple, ITenant, IUserSimple } from '../types';
+import { I18nContext } from '../contexts';
+import { IApi, IState, IStateContext, IStoreState, ITeamSimple, ITenant, IUserSimple, isError } from '../types';
 import { ModalContext } from './modalContext';
+import * as Services from '../services/index';
+import { CurrentUserContext } from './userContext';
 
 
 export enum navMode {
@@ -107,7 +109,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
   const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
   const { openContactModal } = useContext(ModalContext);
-  const { connectedUser, tenant } = useSelector<IState, IStateContext>((state) => state.context);
+  const { connectedUser, tenant } = useContext(CurrentUserContext);
   const navigate = useNavigate();
   const params = useParams();
 
@@ -247,7 +249,7 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
   const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
   const { openContactModal } = useContext(ModalContext);
-  const { connectedUser, tenant } = useSelector<IState, IStateContext>((state) => state.context);
+  const { connectedUser, tenant } = useContext(CurrentUserContext);
   const navigate = useNavigate();
   const params = useParams();
 
@@ -367,11 +369,11 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
   return { addMenu };
 };
 
-export const useApiBackOffice = (api: any, creation: any) => {
+export const useApiBackOffice = (api: IApi, creation: boolean) => {
   const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const { currentTeam, tenant } = useSelector<IState, IStateContext>((state) => state.context);
+  const { tenant } = useContext(CurrentUserContext);
 
   const navigate = useNavigate();
   const params = useParams();
@@ -463,11 +465,11 @@ export const useApiBackOffice = (api: any, creation: any) => {
   return { addMenu, setApi };
 };
 
-export const useApiGroupBackOffice = (apiGroup: any, creation: boolean) => {
+export const useApiGroupBackOffice = (apiGroup: IApi, creation: boolean) => {
   const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const { currentTeam, tenant } = useSelector<IState, IStateContext>((state) => state.context);
+  const { tenant } = useContext(CurrentUserContext);
 
   const navigate = useNavigate();
   const params = useParams();
@@ -575,14 +577,16 @@ export const useApiGroupBackOffice = (apiGroup: any, creation: boolean) => {
   return { addMenu, setApiGroup };
 };
 
-export const useTeamBackOffice = (team: ITeamSimple) => {
+export const useTeamBackOffice = () => {
   const { setMode, setOffice, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
 
   const navigate = useNavigate();
-  const match = useMatch('/:teamId/settings/:tab*'); //todo etster si c'est bon sinon rollback /:teamId/settings/:tab*
+  const match = useMatch('/:teamId/settings/:tab*'); //todo tester si c'est bon sinon rollback /:teamId/settings/:tab*
+  const teamId = match?.params.teamId;
+
+  const queryTeam = useQuery({ queryKey: ['team-backoffice'], queryFn: () => Services.team(teamId!), enabled: !!teamId })
 
   const schema = (currentTab: string) => ({
     title: team.name,
@@ -653,17 +657,17 @@ export const useTeamBackOffice = (team: ITeamSimple) => {
   });
 
   const navigateTo = (navTab: string) => {
-    navigate(`/${currentTeam._humanReadableId}/settings/${navTab}`);
+    navigate(`/${(queryTeam.data as ITeamSimple)._humanReadableId}/settings/${navTab}`);
   };
 
   useEffect(() => {
-    if (team) {
+    if (queryTeam.data && !isError(queryTeam.data)) {
       setMode(navMode.team);
       setOffice(officeMode.back);
-      setTeam(team);
+      setTeam(queryTeam.data);
       setMenu(schema(match?.params['tab']));
     }
-  }, [team]);
+  }, [queryTeam.data]);
 
   useEffect(() => {
     return () => {
@@ -673,7 +677,9 @@ export const useTeamBackOffice = (team: ITeamSimple) => {
     };
   }, []);
 
-  return { addMenu };
+  //todo handle error
+
+  return { isLoading: queryTeam.isLoading, error: queryTeam.error, currentTeam: queryTeam.data, addMenu };
 };
 
 export const useTenantBackOffice = (maybeTenant?: ITenant) => {
@@ -686,8 +692,8 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
 
   const match = matchParent || matchSub
 
-  const currentTenant = useSelector<IStoreState, ITenant>((state) => state.context.tenant);
-  const tenant = maybeTenant || currentTenant;
+  const context = useContext(CurrentUserContext);
+  const tenant = maybeTenant || context.tenant;
 
   const schema = (currentTab?: string, subTab?: string) => ({
     title: tenant.name,
@@ -924,7 +930,7 @@ export const useUserBackOffice = () => {
   const { setMode, setOffice, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const connectedUser = useSelector<IState, IUserSimple>((state) => state.context.connectedUser);
+  const { connectedUser } = useContext(CurrentUserContext);
 
   const navigate = useNavigate();
   const match = useMatch('/:tab');
