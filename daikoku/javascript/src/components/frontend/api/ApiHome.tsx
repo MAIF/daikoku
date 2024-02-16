@@ -278,7 +278,6 @@ export const ApiHome = ({
         } else if (result.creation === 'done') {
           const teamName = myTeams.find((t) => t._id === result.subscription.team)!.name;
           return toast.success(translate({ key: 'subscription.plan.accepted', replacements: [planName, teamName] }), {
-            duration: 200000,
             actionButtonStyle: {
               color: 'inherit',
               backgroundColor: 'inherit'
