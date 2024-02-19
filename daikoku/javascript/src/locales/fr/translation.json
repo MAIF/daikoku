@@ -1378,5 +1378,6 @@
   "apisubscription.lastUsage.label": "Dernier usage",
   "N/A": "N/A",
   "semver.error.message": "Une version ne peut pas être créée avec des caractère spéciaux : %s",
-  "version.creation.success.message": "La nouvelle version de l'API a été créée avec succès"
+  "version.creation.success.message": "La nouvelle version de l'API a été créée avec succès",
+  "error.message.creation.security.enabled": "Vous n'êtes pas authorisé a créer d'API, merci de contacter votre administrateur."
 }

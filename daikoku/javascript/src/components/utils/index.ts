@@ -7,7 +7,6 @@ export * from './Spinner';
 export * from './AvatarChooser';
 export * from './PaginatedComponent';
 export * from './AvatarWithAction';
-export * from './Errors';
 export * from './Option';
 export * from './permissions';
 export * from './Footer';

@@ -224,9 +224,7 @@ export const TeamApi = (props: TeamBackOfficeProps<{ creation: boolean }>) => {
 
   const tab: string = params.tab || 'infos';
 
-  if (tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
-    dispatch(setError({ error: { status: 403, message: 'Creation security enabled' } }));
-  }
+  
 
   useEffect(() => {
     if (api) {
@@ -281,6 +279,11 @@ export const TeamApi = (props: TeamBackOfficeProps<{ creation: boolean }>) => {
       }
     }
   }, [api]);
+
+  if (tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
+    toast.error(translate('creation.security.enabled.message'))
+    return null;
+  }
 
   if (!newApi && apiRequest.isLoading) {
     return <Spinner />

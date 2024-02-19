@@ -1,9 +1,10 @@
 import classNames from "classnames";
-import { useContext, useEffect, useState } from "react";
+import { PropsWithChildren, useContext, useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
+import { toast } from 'sonner';
 
 import { I18nContext, useTeamBackOffice } from "../../contexts";
-import { IState, ITeamSimple, isError } from "../../types";
+import { ITeamSimple, isError } from "../../types";
 import {
   TeamApi,
   TeamApiGroup,
@@ -21,17 +22,13 @@ import {
 import { Spinner } from "../utils";
 import { LastDemands, LastDemandsExt } from "./widgets";
 
-const BackOfficeContent = (props) => {
+const BackOfficeContent = (props: PropsWithChildren) => {
+
   return (
-    <div className="" style={{ height: "100%" }}>
-      {!props.error.status && props.children}
+    <div style={{ height: "100%" }}>
+      {props.children}
     </div>
   );
-};
-type TeamHome = ITeamSimple & {
-  apisCount: number;
-  subscriptionsCount: number;
-  notificationCount: number;
 };
 
 const TeamBackOfficeHome = (props: TeamBackOfficeProps) => {
@@ -64,8 +61,8 @@ const TeamBackOfficeHome = (props: TeamBackOfficeProps) => {
           </button>
         </div>
         <div>
-          {mode === "producer" && <ProducerDashboard {...props}/>}
-          {mode === "consumer" && <ConsumerDashboard {...props}/>}
+          {mode === "producer" && <ProducerDashboard {...props} />}
+          {mode === "consumer" && <ConsumerDashboard {...props} />}
         </div>
       </div>
     </div>
@@ -75,7 +72,7 @@ const TeamBackOfficeHome = (props: TeamBackOfficeProps) => {
 export type TeamBackOfficeProps<P = unknown> = P & { currentTeam: ITeamSimple, reloadCurrentTeam: () => Promise<void> }
 
 export const TeamBackOffice = () => {
-  const { isLoading, currentTeam, reloadCurrentTeam } = useTeamBackOffice()
+  const { isLoading, currentTeam, reloadCurrentTeam, error } = useTeamBackOffice()
 
   useEffect(() => {
     if (currentTeam && !isError(currentTeam))
@@ -88,12 +85,7 @@ export const TeamBackOffice = () => {
     return (
       <div className="row">
         <main role="main" className="ml-sm-auto px-4 mt-3">
-          <div
-            className={classNames("back-office-overlay", {
-              active: isLoading && !error.status,
-            })}
-          />
-          <BackOfficeContent error={error}>
+          <BackOfficeContent>
             <Routes>
               <Route path={`/edition`} element={<TeamEdit currentTeam={currentTeam} reloadCurrentTeam={reloadCurrentTeam} />} />
               <Route path={`/assets`} element={<TeamAssets currentTeam={currentTeam} reloadCurrentTeam={reloadCurrentTeam} />} />
@@ -121,7 +113,7 @@ export const TeamBackOffice = () => {
               />
               <Route
                 path={`/apigroups/:apiGroupId/:tab/*`}
-                element={<TeamApiGroup currentTeam={currentTeam} reloadCurrentTeam={reloadCurrentTeam}/>}
+                element={<TeamApiGroup currentTeam={currentTeam} reloadCurrentTeam={reloadCurrentTeam} />}
               />
               <Route path={`/apis`} element={<TeamApis currentTeam={currentTeam} reloadCurrentTeam={reloadCurrentTeam} />} />
               <Route path="/" element={<TeamBackOfficeHome currentTeam={currentTeam} reloadCurrentTeam={reloadCurrentTeam} />} />
@@ -131,7 +123,13 @@ export const TeamBackOffice = () => {
       </div>
     );
   } else {
-    return <div>Error while fetching team</div>
+
+    const e = error?.message || currentTeam?.error
+
+    toast.error(e)
+
+    return null; //todo: [#609] display a better error
+
   }
 
 };

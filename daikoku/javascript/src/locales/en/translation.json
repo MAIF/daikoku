@@ -1374,5 +1374,6 @@
     "apisubscription.lastUsage.label": "Last usage",
     "N/A": "N/A",
     "semver.error.message": "Can't create version with special characters : %s",
-    "version.creation.success.message": "New version of api created successfully"
+    "version.creation.success.message": "New version of api created successfully",
+    "error.message.creation.security.enabled": "You're not authorized to create API, please contact your administrator."
 }

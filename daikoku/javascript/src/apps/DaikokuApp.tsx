@@ -3,7 +3,7 @@ import { Navigate } from 'react-router';
 import { BrowserRouter, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
-import { Error, Footer, SideBar } from '../components/utils';
+import { Footer, SideBar } from '../components/utils';
 import { ModalProvider, NavProvider } from '../contexts';
 
 import {
@@ -395,7 +395,6 @@ export const DaikokuApp = ({
                     }
                   />
                 </Routes>
-                <Error />
               </div>
             </div>
             <Routes>

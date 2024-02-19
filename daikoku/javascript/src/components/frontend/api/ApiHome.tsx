@@ -200,24 +200,6 @@ export const ApiHome = ({
     }
   }, [subscriptions, myTeams]);
 
-  // type TTeamGQL = {
-  //   name: string
-  //   _humanReadableId: string
-  //   _id: string
-  //   type: TeamType
-  //   apiKeyVisibility: TeamPermission
-  //   apisCreationPermission: boolean
-  //   verified: boolean
-  //   users: Array<{
-  //     user:  {
-  //       userId: string
-  //     }
-  //     teamPermission: TeamPermission
-  //   }>
-  // }
-  // type TMyTeamsGQL = {
-  //   myTeams: Array<TTeamGQL>
-  // }
   const updateSubscriptions = (apiId: string) => {
     //FIXME: handle case if appolo client is not setted
     if (!client) {
@@ -238,7 +220,7 @@ export const ApiHome = ({
         },
       ]) => {
         if (isError(api)) {
-          dispatch(setError({ error: { status: 404, message: api.error } }));
+          toast.error(api.error) //FIXME [#609] better error management
         } else {
           setApi(api);
           setSubscriptions(subscriptions);
