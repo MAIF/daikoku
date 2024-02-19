@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IMailingTranslation, ITenantFull, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
@@ -162,7 +162,7 @@ const EditMailtemplate = ({
 export const MailingInternalization = () => {
   useTenantBackOffice();
   const table = useRef<TableRef>();
-  const { tenant } = useContext(CurrentUserContext);
+  const { tenant } = useContext(GlobalContext);
 
   const { domain } = useParams();
 

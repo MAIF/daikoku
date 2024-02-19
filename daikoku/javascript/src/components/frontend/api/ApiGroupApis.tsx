@@ -2,7 +2,7 @@ import { getApolloContext } from '@apollo/client';
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import { IApiWithAuthorization, ITeamSimple } from '../../../types';
@@ -14,7 +14,7 @@ export const ApiGroupApis = ({
 }: any) => {
   const navigate = useNavigate();
 
-  const { connectedUser, apiCreationPermitted } = useContext(CurrentUserContext);
+  const { connectedUser, apiCreationPermitted } = useContext(GlobalContext);
 
   const [myTeams, setMyTeams] = useState<Array<ITeamSimple>>([]);
 

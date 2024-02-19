@@ -19,7 +19,7 @@ import {
   ApiPricing,
 } from './';
 import classNames from 'classnames';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 export const ApiGroupHome = () => {
   const [apiGroup, setApiGroup] = useState<any>();
@@ -32,7 +32,7 @@ export const ApiGroupHome = () => {
   const navigate = useNavigate();
   const match = useMatch('/:teamId/apigroups/:apiGroupId/apis/:apiId/:versionId/:tab');
 
-  const { connectedUser, tenant } = useContext(CurrentUserContext);
+  const { connectedUser, tenant } = useContext(GlobalContext);
 
   const { addMenu } = useApiGroupFrontOffice(apiGroup, ownerTeam);
 

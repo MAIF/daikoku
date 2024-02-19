@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useContext } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IApiWithAuthorization, isError, ITeamSimple } from '../../../types';
 import { Can, read, Spinner, team as TEAM } from '../../utils';
@@ -13,7 +13,7 @@ export const TeamHome = () => {
   const navigate = useNavigate();
   const params = useParams();
 
-  const { tenant } = useContext(CurrentUserContext);
+  const { tenant } = useContext(GlobalContext);
 
   const { client } = useContext(getApolloContext());
 

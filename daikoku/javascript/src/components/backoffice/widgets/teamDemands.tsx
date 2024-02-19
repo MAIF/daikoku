@@ -11,7 +11,7 @@ import { FeedbackButton } from '../../utils/FeedbackButton';
 import { Widget } from './widget';
 import { ModalContext } from '../../../contexts';
 import { Option } from '../../utils';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 type LastDemandsProps = {
   team: ITeamSimple
@@ -49,7 +49,7 @@ export const LastDemands = (props: LastDemandsProps) => {
       }
     }
   `
-  const { connectedUser } = useContext(CurrentUserContext);
+  const { connectedUser } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());

@@ -6,7 +6,7 @@ import Moon from 'react-feather/dist/icons/moon'
 import * as Services from '../../../../services';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import classNames from 'classnames';
-import { CurrentUserContext } from '../../../../contexts/userContext';
+import { GlobalContext } from '../../../../contexts/globalContext';
 
 export const DarkModeActivator = (props: { className: string }) => {
   const DARK = 'DARK';
@@ -35,7 +35,7 @@ export const SettingsPanel = ({ }) => {
   const [version, setVersion] = useState();
 
   const { translate, isTranslationMode } = useContext(I18nContext);
-  const { tenant, connectedUser, impersonator, isTenantAdmin, reloadContext } = useContext(CurrentUserContext);
+  const { tenant, connectedUser, impersonator, isTenantAdmin, reloadContext } = useContext(GlobalContext);
 
   useEffect(() => {
     Services.getDaikokuVersion().then((res) => setVersion(res.version));

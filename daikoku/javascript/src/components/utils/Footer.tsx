@@ -1,12 +1,12 @@
 import classNames from 'classnames';
 import { converter } from '../../services/showdown';
 import { IState, ITenant } from '../../types';
-import { CurrentUserContext } from '../../contexts/userContext';
+import { GlobalContext } from '../../contexts/globalContext';
 import { useContext } from 'react';
 
 export const Footer = (props: { isBackOffice: boolean }) => {
 
-  const { tenant } = useContext(CurrentUserContext)
+  const { tenant } = useContext(GlobalContext)
 
   if (!tenant.footer) {
     return null;

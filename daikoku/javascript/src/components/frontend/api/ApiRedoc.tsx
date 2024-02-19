@@ -5,7 +5,7 @@ import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../contexts';
 import { IState, IStateContext, ISwagger } from '../../../types';
 import { Option } from '../../utils/Option';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 type ApiRedocProps = {
   swaggerUrl: string,
@@ -13,7 +13,7 @@ type ApiRedocProps = {
 }
 export function ApiRedoc(props: ApiRedocProps) {
 
-  const { connectedUser, tenant } = useContext(CurrentUserContext)
+  const { connectedUser, tenant } = useContext(GlobalContext)
 
   const { translate } = useContext(I18nContext);
   const { openLoginOrRegisterModal } = useContext(ModalContext);

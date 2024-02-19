@@ -10,7 +10,7 @@ import { I18nContext, ModalContext, useDaikokuBackOffice } from '../../../contex
 import * as Services from '../../../services';
 import { IState, ITenant, IUser } from '../../../types';
 import { Can, daikoku, manage, Spinner } from '../../utils';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 const Avatar = ({
   setValue,
@@ -167,7 +167,7 @@ const PictureUpload = (props: { setFiles: (l: FileList | null) => void }) => {
 };
 
 export const UserEdit = () => {
-  const { tenant } = useContext(CurrentUserContext);
+  const { tenant } = useContext(GlobalContext);
   useDaikokuBackOffice();
   const { translate, Translation } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);

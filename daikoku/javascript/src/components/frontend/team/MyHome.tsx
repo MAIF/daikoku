@@ -9,12 +9,12 @@ import { converter } from '../../../services/showdown';
 import { IApiWithAuthorization, isError, IState, ITenant, IUsagePlan, IUserSimple } from '../../../types';
 import { ApiList } from './ApiList';
 import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 export const MyHome = () => {
 
 
-  const { connectedUser, tenant, apiCreationPermitted } = useContext(CurrentUserContext)
+  const { connectedUser, tenant, apiCreationPermitted } = useContext(GlobalContext)
 
   const myTeamsRequest = useQuery({ queryKey: ['myTeams'], queryFn: () => Services.myTeams() })
 

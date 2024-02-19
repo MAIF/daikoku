@@ -6,7 +6,7 @@ import * as Services from '../../../services';
 import * as MessageEvents from '../../../services/messages';
 import { isError, IState, ITeamSimple, IUserSimple } from '../../../types';
 import { Option, partition } from '../../utils';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 const initMessageContext = {
   messages: [],
@@ -45,7 +45,7 @@ export const MessagesProvider = ({
   const [lastClosedDates, setLastClosedDates] = useState<Array<any>>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
-  const { connectedUser } = useContext(CurrentUserContext)
+  const { connectedUser } = useContext(GlobalContext)
 
   const sseId = nanoid(64);
 

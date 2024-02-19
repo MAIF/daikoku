@@ -3,7 +3,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { I18nContext, ModalContext, useTeamBackOffice } from '../../../contexts';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IApi, ITeamSimple, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
@@ -11,7 +11,7 @@ import { Can, Spinner, apikey, isUserIsTeamAdmin, manage, teamPermissions } from
 import { TeamBackOfficeProps } from '../TeamBackOffice';
 
 export const TeamApiKeys = (props: TeamBackOfficeProps) => {
-  const { connectedUser } = useContext(CurrentUserContext);
+  const { connectedUser } = useContext(GlobalContext);
 
   const tableRef = useRef<TableRef>();
   const [showApiKey, setShowApiKey] = useState(false);

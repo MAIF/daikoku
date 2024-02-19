@@ -4,13 +4,13 @@ import hljs from 'highlight.js';
 
 import { converter } from '../../../services/showdown';
 import { I18nContext } from '../../../contexts';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 export function UnauthenticatedHome({ children }: PropsWithChildren) {
   const { Translation } = useContext(I18nContext);
   const location = useLocation();
 
-  const { tenant } = useContext(CurrentUserContext)
+  const { tenant } = useContext(GlobalContext)
   const content = tenant.unloggedHome || '';
   const pathname = location ? location.pathname : '';
   const displayInformation = pathname !== '/2fa' && pathname !== '/signup';

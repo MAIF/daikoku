@@ -6,14 +6,14 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { toast } from 'sonner';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../contexts/i18n-context';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IOtoroshiSettings, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
 import { Can, tenant as TENANT, manage } from '../../utils';
 
 export const TenantOtoroshis = () => {
-  const { tenant, connectedUser } = useContext(CurrentUserContext);
+  const { tenant, connectedUser } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
   const navigate = useNavigate();

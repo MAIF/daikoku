@@ -12,7 +12,7 @@ import { IApi, IAsset, IDocPage, IDocumentation, IDocumentationPage, IDocumentat
 import { BeautifulTitle } from '../../utils';
 import { SortableTree } from '../../utils/dnd/SortableTree';
 import { Wrapper } from '../../utils/dnd/Wrapper';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 const mimeTypes = [
   { label: '.adoc Ascii doctor', value: 'text/asciidoc' },
@@ -113,7 +113,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   const { translate } = useContext(I18nContext);
   const { confirm, openFormModal } = useContext(ModalContext);
 
-  const { tenant } = useContext(CurrentUserContext);
+  const { tenant } = useContext(GlobalContext);
 
   const queryClient = useQueryClient();
 

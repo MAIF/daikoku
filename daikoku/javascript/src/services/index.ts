@@ -43,7 +43,7 @@ import {
 } from '../types/api';
 
 import { Option } from '../components/utils/Option'
-import { TContext } from '../contexts/userContext';
+import { TContext } from '../contexts/globalContext';
 
 const HEADERS = {
   Accept: 'application/json',

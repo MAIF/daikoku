@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 import { useQuery } from '@tanstack/react-query';
 import { I18nContext } from '../../../../contexts/i18n-context';
-import { CurrentUserContext } from '../../../../contexts/userContext';
+import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services';
 import { isError } from '../../../../types';
 import { Spinner } from '../../Spinner';
@@ -13,7 +13,7 @@ export const SearchPanel = () => {
   const [results, setResults] = useState<Array<any>>([]);
 
   const { translate } = useContext(I18nContext);
-  const { tenant, connectedUser } = useContext(CurrentUserContext);
+  const { tenant, connectedUser } = useContext(GlobalContext);
 
   const myTeamsRequest = useQuery({ queryKey: ['myTeams'], queryFn: () => Services.myTeams() })
 

@@ -24,7 +24,7 @@ import { formatPlanType } from '../../utils/formatters';
 import { ApiDocumentation } from './ApiDocumentation';
 import { ApiRedoc } from './ApiRedoc';
 import { ApiSwagger } from './ApiSwagger';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 export const currency = (plan?: IBaseUsagePlan) => {
   if (!plan) {
@@ -49,7 +49,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
   const { openFormModal, openLoginOrRegisterModal, openApiKeySelectModal, openCustomModal, close } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
-  const { connectedUser, tenant } = useContext(CurrentUserContext)
+  const { connectedUser, tenant } = useContext(GlobalContext)
 
   const showApiKeySelectModal = (team: string) => {
     const { plan } = props;

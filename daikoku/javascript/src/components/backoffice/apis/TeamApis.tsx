@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { I18nContext, ModalContext } from '../../../contexts';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IApi, ITeamSimple, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
@@ -12,7 +12,7 @@ import { api as API, Can, Spinner, manage, read } from '../../utils';
 import { TeamBackOfficeProps } from '../TeamBackOffice';
 
 export const TeamApis = (props: TeamBackOfficeProps) => {
-  const { tenant } = useContext(CurrentUserContext);
+  const { tenant } = useContext(GlobalContext);
 
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);

@@ -2,7 +2,7 @@ import { useContext, useEffect, useState } from 'react';
 
 import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
-import { CurrentUserContext } from '../userContext';
+import { GlobalContext } from '../globalContext';
 import { IBaseModalProps, IContactModalComponentProps } from './types';
 
 export const ContactModal = (props: IContactModalComponentProps & IBaseModalProps) => {
@@ -14,7 +14,7 @@ export const ContactModal = (props: IContactModalComponentProps & IBaseModalProp
   const [formRef, setFormRef] = useState<HTMLFormElement | null>(null);
   const [validity, setValidity] = useState(false);
 
-  const { tenant } = useContext(CurrentUserContext)
+  const { tenant } = useContext(GlobalContext)
 
   const { translate, Translation, language } = useContext(I18nContext);
 

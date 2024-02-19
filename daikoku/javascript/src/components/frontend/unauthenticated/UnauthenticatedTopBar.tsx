@@ -1,8 +1,8 @@
 import React, { useContext, useState } from 'react';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 export const UnauthenticatedTopBar = () => {
-  const { tenant } = useContext(CurrentUserContext)
+  const { tenant } = useContext(GlobalContext)
   const [error, setError] = useState<string>()
 
   const userMenu = () => {

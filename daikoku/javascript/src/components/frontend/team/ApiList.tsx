@@ -21,7 +21,7 @@ import {
 import { ApiCard } from '../api';
 
 import { toast } from "sonner";
-import { CurrentUserContext } from "../../../contexts/userContext";
+import { GlobalContext } from "../../../contexts/globalContext";
 import * as Services from "../../../services";
 import { FilterPreview, Spinner, arrayStringToTOps } from "../../utils";
 import queryClient from "../../utils/queryClient";
@@ -50,7 +50,7 @@ export const ApiList = (props: TApiList) => {
 
 
 
-  const { connectedUser, reloadContext } = useContext(CurrentUserContext);
+  const { connectedUser, reloadContext } = useContext(GlobalContext);
   const location = useLocation();
 
   const [searched, setSearched] = useState("");

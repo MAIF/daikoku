@@ -3,14 +3,14 @@ import { useContext, useEffect, useState } from 'react';
 import { Send } from 'react-feather';
 
 import { I18nContext } from '../../../../contexts/i18n-context';
-import { CurrentUserContext } from '../../../../contexts/userContext';
+import { GlobalContext } from '../../../../contexts/globalContext';
 import * as MessageEvents from '../../../../services/messages';
 import { converter } from '../../../../services/showdown';
 import { MessagesContext } from '../../../backoffice';
 import { Option } from '../../../utils';
 
 export const MessagePanel = () => {
-  const { connectedUser, tenant } = useContext(CurrentUserContext);
+  const { connectedUser, tenant } = useContext(GlobalContext);
 
   const [newMessage, setNewMessage] = useState('');
 

@@ -36,7 +36,7 @@ import { Help } from '../apikeys';
 import { TeamApiDocumentation } from './TeamApiDocumentation';
 import { TeamApiSwagger } from './TeamApiSwagger';
 import { TeamApiTesting } from './TeamApiTesting';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import { TeamBackOfficeProps } from '../TeamBackOffice';
 
 const SUBSCRIPTION_PLAN_TYPES = {
@@ -369,7 +369,7 @@ const Card = ({
 }: CardProps) => {
   const { translate, Translation } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
-  const { tenant } = useContext(CurrentUserContext);
+  const { tenant } = useContext(GlobalContext);
 
   const pricing = renderPricing(plan, translate)
 
@@ -520,7 +520,7 @@ export const TeamApiPricings = (props: TeamBackOfficeProps<Props>) => {
 
   const { translate } = useContext(I18nContext);
   const { openApiSelectModal, confirm } = useContext(ModalContext);
-  const { tenant } = useContext(CurrentUserContext);
+  const { tenant } = useContext(GlobalContext);
 
   const queryClient = useQueryClient()
   const queryFullTenant = useQuery({ queryKey: ['full-tenant'], queryFn: () => Services.oneTenant(props.tenant._id) })

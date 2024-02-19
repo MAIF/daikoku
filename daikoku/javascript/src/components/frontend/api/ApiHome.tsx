@@ -18,7 +18,7 @@ import StarsButton from './StarsButton';
 
 import 'highlight.js/styles/monokai.css';
 import classNames from 'classnames';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 (window as any).hljs = hljs;
 
@@ -135,7 +135,7 @@ export const ApiHome = ({
   const [showAccessModal, setAccessModalError] = useState<any>();
   const [showGuestModal, setGuestModal] = useState(false);
 
-  const { connectedUser, tenant, reloadContext } = useContext(CurrentUserContext)
+  const { connectedUser, tenant, reloadContext } = useContext(GlobalContext)
 
   const navigate = useNavigate();
   const defaultParams = useParams();

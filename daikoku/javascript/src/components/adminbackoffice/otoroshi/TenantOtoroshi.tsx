@@ -5,12 +5,12 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useTenantBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../contexts/i18n-context';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { Can, tenant as TENANT, manage } from '../../utils';
 
 export const TenantOtoroshi = () => {
-  const { tenant } = useContext(CurrentUserContext);
+  const { tenant } = useContext(GlobalContext);
   useTenantBackOffice();
 
   const { translate, Translation } = useContext(I18nContext);

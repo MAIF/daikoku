@@ -24,7 +24,7 @@ import {
 } from '../../../contexts';
 import { IState, IStateContext, ITeamSimple } from '../../../types';
 import { IApi, IUsagePlan, isError } from '../../../types/api';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import { TeamBackOfficeProps } from '../TeamBackOffice';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
@@ -96,7 +96,7 @@ export const TeamApi = (props: TeamBackOfficeProps<{ creation: boolean }>) => {
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/apis/:apiId/:version/stats/plan/:planId');
 
-  const { tenant } = useContext(CurrentUserContext);
+  const { tenant } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
   const { openApiDocumentationSelectModal } = useContext(ModalContext);
 

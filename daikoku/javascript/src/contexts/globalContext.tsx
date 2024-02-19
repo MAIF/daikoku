@@ -50,9 +50,9 @@ const initContext: TContext = {
 
 }
 
-export const CurrentUserContext = React.createContext<TContext>(initContext)
+export const GlobalContext = React.createContext<TContext>(initContext)
 export const useCurrentUserContext = () => {
-  return React.useContext(CurrentUserContext)
+  return React.useContext(GlobalContext)
 }
 
 
@@ -74,9 +74,9 @@ export const CurrentUserContextProvider = (props: PropsWithChildren) => {
   const reloadContext = () => queryClient.invalidateQueries({ queryKey: ["context"] })
 
   return (
-    <CurrentUserContext.Provider value={{ ...currentUserQuery.data, reloadContext }}>
+    <GlobalContext.Provider value={{ ...currentUserQuery.data, reloadContext }}>
       {props.children}
-    </CurrentUserContext.Provider>
+    </GlobalContext.Provider>
   )
 
 }

@@ -17,10 +17,10 @@ import {
 import { I18nContext } from '../../../contexts';
 import { ModalContext, useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
 import { isError, IState, IStateContext, ITeamSimple, ITenantFull, IUser, IUserSimple } from '../../../types';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 const AdminList = () => {
-  const context = useContext(CurrentUserContext);
+  const context = useContext(GlobalContext);
 
   const [search, setSearch] = useState('');
   const [addableAdmins, setAddableAdmins] = useState<Array<IUser>>([]);

@@ -7,7 +7,7 @@ import { ModalContext, useUserBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IState, ITenant } from '../../../types';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 const TwoFactorAuthentication = ({
   user
@@ -293,7 +293,7 @@ export const MyProfile = () => {
   const [user, setUser] = useState();
   const [tab, setTab] = useState('infos');
 
-  const { tenant, reloadContext } = useContext(CurrentUserContext);
+  const { tenant, reloadContext } = useContext(GlobalContext);
 
   const { translate, setLanguage, language, Translation, languages } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);

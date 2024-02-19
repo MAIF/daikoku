@@ -5,13 +5,13 @@ import { toast } from 'sonner';
 
 import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../contexts/i18n-context';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IUserSimple, isError } from '../../../types';
 import { AvatarWithAction, Can, PaginatedComponent, daikoku, manage } from '../../utils';
 
 export const UserList = () => {
-  const { connectedUser } = useContext(CurrentUserContext);
+  const { connectedUser } = useContext(GlobalContext);
   useDaikokuBackOffice();
 
   const { alert, confirm } = useContext(ModalContext);

@@ -7,7 +7,7 @@ import { I18nContext } from '../../../contexts';
 import { IState, IStateContext, ISwagger, ITesting } from '../../../types';
 
 import 'swagger-ui-dist/swagger-ui.css';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 
 type ApiSwaggerProps = {
@@ -19,7 +19,7 @@ type ApiSwaggerProps = {
 }
 export function ApiSwagger(props: ApiSwaggerProps) {
 
-  const { tenant, connectedUser } = useContext(CurrentUserContext)
+  const { tenant, connectedUser } = useContext(GlobalContext)
 
   const { translate } = useContext(I18nContext);
   const { alert, openLoginOrRegisterModal } = useContext(ModalContext);

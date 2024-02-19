@@ -6,14 +6,14 @@ import { Spinner } from '../../components/utils';
 import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
 import { ITestingConfig, IWithTesting, isApi, isError } from '../../types';
-import { CurrentUserContext } from '../userContext';
+import { GlobalContext } from '../globalContext';
 import { IBaseModalProps, TestingApiKeyModalProps } from './types';
 
 
 export const TestingApiKeyModal = <T extends IWithTesting>(props: TestingApiKeyModalProps<T> & IBaseModalProps) => {
   const formRef = useRef<FormRef>();
 
-  const { tenant } = useContext(CurrentUserContext)
+  const { tenant } = useContext(GlobalContext)
 
   const { translate, Translation } = useContext(I18nContext);
 

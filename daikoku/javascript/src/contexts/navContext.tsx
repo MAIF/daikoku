@@ -8,7 +8,7 @@ import { I18nContext } from '../contexts';
 import { IApi, IState, IStateContext, IStoreState, ITeamSimple, ITenant, IUserSimple, isError } from '../types';
 import { ModalContext } from './modalContext';
 import * as Services from '../services/index';
-import { CurrentUserContext } from './userContext';
+import { GlobalContext } from './globalContext';
 
 
 export enum navMode {
@@ -109,7 +109,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
   const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
   const { openContactModal } = useContext(ModalContext);
-  const { connectedUser, tenant } = useContext(CurrentUserContext);
+  const { connectedUser, tenant } = useContext(GlobalContext);
   const navigate = useNavigate();
   const params = useParams();
 
@@ -249,7 +249,7 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
   const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
   const { openContactModal } = useContext(ModalContext);
-  const { connectedUser, tenant } = useContext(CurrentUserContext);
+  const { connectedUser, tenant } = useContext(GlobalContext);
   const navigate = useNavigate();
   const params = useParams();
 
@@ -373,7 +373,7 @@ export const useApiBackOffice = (api: IApi, creation: boolean) => {
   const { setMode, setOffice, setApi, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const { tenant } = useContext(CurrentUserContext);
+  const { tenant } = useContext(GlobalContext);
 
   const navigate = useNavigate();
   const params = useParams();
@@ -471,7 +471,7 @@ export const useApiGroupBackOffice = (apiGroup: IApi, creation: boolean) => {
   const { setMode, setOffice, setApiGroup, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const { tenant } = useContext(CurrentUserContext);
+  const { tenant } = useContext(GlobalContext);
 
   const navigate = useNavigate();
   const params = useParams();
@@ -697,7 +697,7 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
 
   const match = matchParent || matchSub
 
-  const context = useContext(CurrentUserContext);
+  const context = useContext(GlobalContext);
   const tenant = maybeTenant || context.tenant;
 
   const schema = (currentTab?: string, subTab?: string) => ({
@@ -935,7 +935,7 @@ export const useUserBackOffice = () => {
   const { setMode, setOffice, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const { connectedUser } = useContext(CurrentUserContext);
+  const { connectedUser } = useContext(GlobalContext);
 
   const navigate = useNavigate();
   const match = useMatch('/:tab');

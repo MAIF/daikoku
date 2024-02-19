@@ -23,7 +23,7 @@ import { DaikokuApp, DaikokuHomeApp } from './apps';
 
 import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client';
 import { Toaster } from 'sonner';
-import { CurrentUserContextProvider } from './contexts/userContext';
+import { CurrentUserContextProvider } from './contexts/globalContext';
 
 const client = new ApolloClient({
   uri: '/api/search',

@@ -4,13 +4,13 @@ import { useContext, useRef } from 'react';
 import { I18nContext } from '../../contexts';
 import { IState, ITenant } from '../../types';
 import { IBaseModalProps, ITeamInvitationModalProps } from './types';
-import { CurrentUserContext } from '../userContext';
+import { GlobalContext } from '../globalContext';
 
 export const TeamInvitationModal = (props: ITeamInvitationModalProps & IBaseModalProps) => {
   const ref = useRef<FormRef>();
   
   const { translate } = useContext(I18nContext);
-  const { tenant } = useContext(CurrentUserContext)
+  const { tenant } = useContext(GlobalContext)
   
   const invitUser = (email: string) => {
     props.invitUser(email)

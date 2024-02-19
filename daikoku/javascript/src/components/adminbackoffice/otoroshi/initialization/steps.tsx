@@ -9,7 +9,7 @@ import Creatable from 'react-select/creatable';
 import { createColumnHelper } from '@tanstack/react-table';
 import { ModalContext } from '../../../../contexts';
 import { I18nContext } from '../../../../contexts/i18n-context';
-import { CurrentUserContext } from '../../../../contexts/userContext';
+import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services';
 import { IApiKey, ISubscription } from '../../../../types/api';
 import { Table, TableRef } from '../../../inputs';
@@ -564,7 +564,7 @@ export const ApiKeyStep = (props: ApiKeyStepProps) => {
 
 const ApiKey = (props: any) => {
   const { translate } = useContext(I18nContext);
-  const { tenant } = useContext(CurrentUserContext)
+  const { tenant } = useContext(GlobalContext)
   const [selectedApi, setSelectedApi] = useState(
     props
       .maybeCreatedSub(props.apikey)

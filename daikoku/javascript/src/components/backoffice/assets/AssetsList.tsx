@@ -10,7 +10,7 @@ import { I18nContext } from '../../../contexts';
 import { ModalContext } from '../../../contexts';
 import { createColumnHelper } from '@tanstack/react-table';
 import { IAsset, IState, IStateContext, ITeamSimple } from '../../../types';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 
 const mimeTypes = [
@@ -145,7 +145,7 @@ export const AssetsList = ({
   currentTeam
 }: { currentTeam?: ITeamSimple }) => {
   const tableRef = useRef<TableRef>();
-  const { tenant } = useContext(CurrentUserContext);
+  const { tenant } = useContext(GlobalContext);
 
   const { translate } = useContext(I18nContext);
   const { confirm, openFormModal } = useContext(ModalContext);

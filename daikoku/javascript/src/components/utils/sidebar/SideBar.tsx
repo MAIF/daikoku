@@ -9,7 +9,7 @@ import Zap from 'react-feather/dist/icons/zap';
 import { Link, useLocation } from 'react-router-dom';
 
 import { I18nContext } from '../../../contexts/i18n-context';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { MessagesContext } from '../../backoffice';
 import { Companion } from './companions';
@@ -25,7 +25,7 @@ export const SideBar = () => {
   const [panelState, setPanelState] = useState(state.closed);
   const [panelContent, setPanelContent] = useState<JSX.Element>();
 
-  const { tenant, connectedUser, impersonator, unreadNotificationsCount, isTenantAdmin } = useContext(CurrentUserContext);
+  const { tenant, connectedUser, impersonator, unreadNotificationsCount, isTenantAdmin } = useContext(GlobalContext);
   const location = useLocation();
 
   const { totalUnread } = useContext(MessagesContext);

@@ -50,7 +50,7 @@ import { SessionModal } from '../contexts/modals/SessionModal';
 import { MessagesEvents } from '../services/messages';
 import { ISession, IState, ITenant, IUserSimple } from '../types';
 import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
-import { CurrentUserContext } from '../contexts/userContext';
+import { GlobalContext } from '../contexts/globalContext';
 
 type DaikokuAppProps = {
   session: ISession,
@@ -431,7 +431,7 @@ const RouteWithTitle = (props: { title?: string, children: JSX.Element }) => {
 };
 
 const UnauthenticatedRoute = (props: { children: JSX.Element, title: string }) => {
-  const { connectedUser } = useContext(CurrentUserContext)
+  const { connectedUser } = useContext(GlobalContext)
   if (connectedUser._humanReadableId) {
     return <Navigate to="/" />;
   }

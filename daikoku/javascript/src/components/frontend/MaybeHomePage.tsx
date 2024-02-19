@@ -3,13 +3,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { I18nContext } from '../../contexts/i18n-context';
 
-import { CurrentUserContext } from '../../contexts/userContext';
+import { GlobalContext } from '../../contexts/globalContext';
 import { ITenant } from '../../types';
 
 export const MaybeHomePage = ({
   tenant
 }: { tenant: ITenant }) => {
-  const { connectedUser } = useContext(CurrentUserContext);
+  const { connectedUser } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
 
   const navigate = useNavigate();

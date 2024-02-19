@@ -7,7 +7,7 @@ import StepWizard from 'react-step-wizard';
 import { toast } from 'sonner';
 
 import { I18nContext, useTenantBackOffice } from '../../../contexts';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { isError } from '../../../types';
 import { BeautifulTitle, Can, Option, Spinner, tenant as TENANT, manage } from '../../utils';
@@ -22,7 +22,7 @@ import {
 } from './initialization';
 
 export const InitializeFromOtoroshi = () => {
-  const { tenant } = useContext(CurrentUserContext);
+  const { tenant } = useContext(GlobalContext);
   useTenantBackOffice();
 
   const [state, send] = useMachine<any>(theMachine);

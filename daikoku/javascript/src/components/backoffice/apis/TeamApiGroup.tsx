@@ -12,7 +12,7 @@ import {
   TeamPlanConsumption,
 } from '.';
 import { I18nContext, ModalContext, useApiGroupBackOffice } from '../../../contexts';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IApi, ITeamSimple, IUsagePlan, isError } from '../../../types';
 import { api as API, Can, Spinner, manage } from '../../utils';
@@ -28,7 +28,7 @@ export const TeamApiGroup = (props: TeamBackOfficeProps) => {
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/apigroups/:apiGroupId/stats/plan/:planId');
 
-  const { tenant } = useContext(CurrentUserContext);
+  const { tenant } = useContext(GlobalContext);
 
   const state: LocationState = location.state as LocationState
   const creation = state?.newApiGroup;

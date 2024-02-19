@@ -7,7 +7,7 @@ import * as Services from '../../../../services/index';
 import { I18nContext } from '../../../../contexts';
 import { ApiFilter } from './ApiFilter';
 import {BeautifulTitle, getColorByBgColor} from '../../..';
-import { CurrentUserContext } from '../../../../contexts/userContext';
+import { GlobalContext } from '../../../../contexts/globalContext';
 
 export function ApiIssues({
   filter,
@@ -19,7 +19,7 @@ export function ApiIssues({
 }: any) {
   const [issues, setIssues] = useState([]);
   const { versionId } = useParams();
-  const { connectedUser } = useContext(CurrentUserContext);
+  const { connectedUser } = useContext(GlobalContext);
 
     const { translate } = useContext(I18nContext);
 

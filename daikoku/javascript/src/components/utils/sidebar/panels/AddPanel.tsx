@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { api as API, CanIDoAction, Option, Spinner, manage } from '../..';
 import { ModalContext } from '../../../../contexts';
 import { I18nContext } from '../../../../contexts/i18n-context';
-import { CurrentUserContext } from '../../../../contexts/userContext';
+import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services';
 import { isError } from '../../../../types';
 import { teamSchema } from '../../../backoffice/teams/TeamEdit';
@@ -15,7 +15,7 @@ export const AddPanel = () => {
   const { translate } = useContext(I18nContext);
   const { openFormModal, openTeamSelectorModal } = useContext(ModalContext);
 
-  const { tenant, connectedUser, apiCreationPermitted } = useContext(CurrentUserContext);
+  const { tenant, connectedUser, apiCreationPermitted } = useContext(GlobalContext);
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/*');
   const queryClient = useQueryClient();

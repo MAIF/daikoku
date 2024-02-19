@@ -17,7 +17,7 @@ import {
   team, user
 } from '../../utils';
 
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import { ITeamSimple, IUserSimple, ResponseError, TeamPermission, TeamUser } from '../../../types';
 import { TeamBackOfficeProps } from '../TeamBackOffice';
 import { props } from 'cypress/types/bluebird';
@@ -38,7 +38,7 @@ type TState = {
 }
 export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: TeamBackOfficeProps) => {
 
-  const { tenant, connectedUser, reloadContext } = useContext(CurrentUserContext);
+  const { tenant, connectedUser, reloadContext } = useContext(GlobalContext);
 
   const [state, setState] = useState<TState>({
     pendingUsers: [],

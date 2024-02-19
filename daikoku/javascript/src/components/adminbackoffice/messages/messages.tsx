@@ -11,7 +11,7 @@ import Select from 'react-select';
 
 import { useTenantBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../contexts/i18n-context';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import * as MessagesEvents from '../../../services/messages';
 import { IUserSimple, isError } from '../../../types';
@@ -40,7 +40,7 @@ export const AdminMessages = () => {
 
   const [possibleNewUsers, setPossibleNewUsers] = useState<Array<IUserSimple>>([]);
 
-  const { connectedUser } = useContext(CurrentUserContext);
+  const { connectedUser } = useContext(GlobalContext);
 
   useEffect(() => {
     Services.fetchAllUsers()

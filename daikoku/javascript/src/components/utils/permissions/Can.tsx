@@ -13,7 +13,7 @@ import {
 import { doNothing } from './actions';
 import { permissions, TPermission, TPermissions } from './permissions';
 import { tenant } from './subjects';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import { toast } from 'sonner';
 import { I18nContext } from '../../../contexts';
 
@@ -78,7 +78,7 @@ export const Can = ({
   orElse?: JSX.Element;
   whichOne?: ITenant;
 }): JSX.Element => {
-  const { connectedUser, isTenantAdmin, tenant } = useContext(CurrentUserContext);
+  const { connectedUser, isTenantAdmin, tenant } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
 
   const authorized = teams

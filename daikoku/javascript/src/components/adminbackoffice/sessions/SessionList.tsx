@@ -6,13 +6,13 @@ import * as Services from '../../../services';
 import { createColumnHelper } from '@tanstack/react-table';
 import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../contexts/i18n-context';
-import { CurrentUserContext } from '../../../contexts/userContext';
+import { GlobalContext } from '../../../contexts/globalContext';
 import { ISession } from '../../../types';
 import { Table, TableRef } from '../../inputs';
 import { Can, daikoku, manage } from '../../utils';
 
 export const SessionList = () => {
-  const { connectedUser } = useContext(CurrentUserContext)
+  const { connectedUser } = useContext(GlobalContext)
     ;
   useDaikokuBackOffice();
 
