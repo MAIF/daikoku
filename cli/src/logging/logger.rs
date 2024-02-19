@@ -20,8 +20,7 @@ pub fn indent_println(str: String) {
 pub fn check_loading() {
     unsafe {
         if (*LOADING_MESSAGE).is_some() {
-            LOADING_LOGGER
-                .done();
+            LOADING_LOGGER.done();
 
             if !(*LOADING_MESSAGE).as_ref().unwrap().is_empty() {
                 LOADING_LOGGER.success(&(*LOADING_MESSAGE.as_ref().unwrap()));
@@ -29,11 +28,6 @@ pub fn check_loading() {
             *LOADING_MESSAGE = None;
         }
     }
-}
-
-pub fn log(_: String) {
-    // let mut logger = Logger::new();
-    // logger.log(str);
 }
 
 pub fn error(str: String) {
