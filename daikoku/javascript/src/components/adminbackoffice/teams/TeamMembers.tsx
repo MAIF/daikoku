@@ -5,7 +5,7 @@ import { useTenantBackOffice } from '../../../contexts';
 import * as Services from '../../../services';
 import { isError } from '../../../types';
 import { TeamMembersSimpleComponent } from '../../backoffice';
-import { Can, manage, Spinner, tenant } from '../../utils';
+import { Can, manage, queryClient, Spinner, tenant } from '../../utils';
 
 export const TeamMembersForAdmin = () => {
   useTenantBackOffice();
@@ -21,7 +21,7 @@ export const TeamMembersForAdmin = () => {
   } else if (queryTeam.data && !isError(queryTeam.data)) {
     return (
       <Can I={manage} a={tenant} dispatchError>
-        <TeamMembersSimpleComponent currentTeam={queryTeam.data}/>
+        <TeamMembersSimpleComponent currentTeam={queryTeam.data} reloadCurrentTeam={() => queryClient.invalidateQueries({ queryKey: ['team-infos']})}/>
       </Can>
     );
   } else {

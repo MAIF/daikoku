@@ -1,7 +1,6 @@
 import { getApolloContext } from '@apollo/client';
 import hljs from 'highlight.js';
 import { useContext, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select';
@@ -9,7 +8,7 @@ import Navigation from 'react-feather/dist/icons/navigation';
 
 import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiSwagger } from '.';
 import { ModalContext, useApiFrontOffice } from '../../../contexts';
-import { I18nContext, setError, updateUser } from '../../../contexts';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import { IApi, IState, IStateContext, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, TeamPermission, TeamType, isError } from '../../../types';
@@ -19,6 +18,7 @@ import StarsButton from './StarsButton';
 
 import 'highlight.js/styles/monokai.css';
 import classNames from 'classnames';
+import { CurrentUserContext } from '../../../contexts/userContext';
 
 (window as any).hljs = hljs;
 
@@ -135,8 +135,7 @@ export const ApiHome = ({
   const [showAccessModal, setAccessModalError] = useState<any>();
   const [showGuestModal, setGuestModal] = useState(false);
 
-  const dispatch = useDispatch();
-  const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context)
+  const { connectedUser, tenant, reloadContext } = useContext(CurrentUserContext)
 
   const navigate = useNavigate();
   const defaultParams = useParams();
@@ -302,20 +301,7 @@ export const ApiHome = ({
   const toggleStar = () => {
     if (api) {
       Services.toggleStar(api._id)
-        .then((res) => {
-          if (!isError(res)) {
-            const alreadyStarred = connectedUser.starredApis.includes(api._id);
-            api.stars += alreadyStarred ? -1 : 1;
-            setApi(api);
-
-            dispatch(updateUser({
-              ...connectedUser,
-              starredApis: alreadyStarred
-                ? connectedUser.starredApis.filter((id: any) => id !== api._id)
-                : [...connectedUser.starredApis, api._id],
-            }));
-          }
-        });
+        .then(() => reloadContext());
     }
   };
 

@@ -1,10 +1,11 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import dayjs from 'dayjs';
 import maxBy from 'lodash/maxBy';
 import { useContext, useEffect, useState } from 'react';
-import dayjs from 'dayjs';
 
-import { useTeamBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
+import { IApi, IConsumption, ITeamSimple, isError } from '../../../types';
 import { MonthPicker } from '../../inputs/monthPicker';
 import {
   Can,
@@ -14,17 +15,15 @@ import {
   read,
   stat
 } from '../../utils';
+import { TeamBackOfficeProps } from '../TeamBackOffice';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
-import { IApi, IConsumption, IState, ITeamSimple, isError } from '../../../types';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 type IConsumptionByApi = {
   billing: { hits: number, total: number },
   api: string
 }
 
-export const TeamBilling = () => {
-  const { isLoading, currentTeam } = useTeamBackOffice();
+export const TeamBilling = (props: TeamBackOfficeProps) => {
 
   const { translate, Translation } = useContext(I18nContext);
 
@@ -35,22 +34,20 @@ export const TeamBilling = () => {
   const queryBillings = useQuery({
     queryKey: ['billings', date],
     queryFn: () => Services.getTeamBillings(
-      (currentTeam as ITeamSimple)._id,
+      (props.currentTeam as ITeamSimple)._id,
       date.startOf('month').valueOf(),
       date.endOf('month').valueOf()
     ),
-    enabled: currentTeam && !isError(currentTeam)
   });
   const queryApis = useQuery({
     queryKey: ['apis'],
-    queryFn: () => Services.subscribedApis((currentTeam as ITeamSimple)._id),
-    enabled: currentTeam && !isError(currentTeam)
+    queryFn: () => Services.subscribedApis(props.currentTeam._id),
   })
 
   useEffect(() => {
-    if (currentTeam && !isError(currentTeam))
-      document.title = `${currentTeam.name} - ${translate('Billing')}`;
-  }, [currentTeam]);
+    if (props.currentTeam && !isError(props.currentTeam))
+      document.title = `${props.currentTeam.name} - ${translate('Billing')}`;
+  }, [props.currentTeam]);
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['billings'] })
@@ -70,7 +67,7 @@ export const TeamBilling = () => {
 
 
   const sync = () => {
-    Services.syncTeamBilling((currentTeam as ITeamSimple)._id)
+    Services.syncTeamBilling(props.currentTeam._id)
       .then(() => queryClient.invalidateQueries({ queryKey: ['billings'] }))
   };
 
@@ -154,6 +151,7 @@ export const TeamBilling = () => {
               .map(({ plan, billing }, idx: number) => {
                 return (
                   <BillingCartridge
+                    {...props}
                     key={idx}
                     api={selectedApi}
                     planId={plan}
@@ -166,7 +164,7 @@ export const TeamBilling = () => {
     }
   }
 
-  const BillingCartridge = (props: { api: IApi, planId: string, total: number }) => {
+  const BillingCartridge = (props: { api: IApi, planId: string, total: number, currentTeam: ITeamSimple }) => {
     const planQuery = useQuery({ queryKey: ['plan'], queryFn: () => Services.planOfApi(props.api.team, props.api._id, props.api.currentVersion, props.planId) })
 
     if (planQuery.isLoading) {
@@ -178,7 +176,7 @@ export const TeamBilling = () => {
           label={usagePlan.customName || formatPlanType(usagePlan, translate)}
           total={props.total}
           currency={usagePlan.currency}
-          fetchInvoices={() => Services.fetchInvoices((currentTeam as ITeamSimple)._id, props.api._id, usagePlan._id, window.location.href)
+          fetchInvoices={() => Services.fetchInvoices(props.currentTeam._id, props.api._id, usagePlan._id, window.location.href)
             .then(({ url }) => window.location.href = url)} />
       );
     } else {
@@ -204,37 +202,33 @@ export const TeamBilling = () => {
     }
   }
 
-  if (isLoading) {
-    return <Spinner />
-  } else if (currentTeam && !isError(currentTeam)) {
-    return (
-      <Can I={read} a={stat} team={currentTeam} dispatchError={true}>
-        <div className="row">
-          <div className="col">
-            <h1>
-              <Translation i18nkey="Billing">Billing</Translation>
-            </h1>
-            <div className="row">
-              <div className="col apis">
-                <div className="row month__and__total">
-                  <div className="col-12 month__selector d-flex align-items-center">
-                    <MonthPicker updateDate={setDate} value={date} />
-                    <button className="btn btn-sm btn-access-negative ms-1" onClick={sync}>
-                      <i className="fas fa-sync-alt" />
-                    </button>
-                    {getLastDate()}
-                  </div>
+  return (
+    <Can I={read} a={stat} team={props.currentTeam} dispatchError={true}>
+      <div className="row">
+        <div className="col">
+          <h1>
+            <Translation i18nkey="Billing">Billing</Translation>
+          </h1>
+          <div className="row">
+            <div className="col apis">
+              <div className="row month__and__total">
+                <div className="col-12 month__selector d-flex align-items-center">
+                  <MonthPicker updateDate={setDate} value={date} />
+                  <button className="btn btn-sm btn-access-negative ms-1" onClick={sync}>
+                    <i className="fas fa-sync-alt" />
+                  </button>
+                  {getLastDate()}
                 </div>
-                {drawApis()}
               </div>
-              <div className="col apikeys">
-                {drawApiConsumption()}
-              </div>
+              {drawApis()}
+            </div>
+            <div className="col apikeys">
+              {drawApiConsumption()}
             </div>
           </div>
         </div>
-      </Can>
-    )
-  }
+      </div>
+    </Can>
+  )
 
 };

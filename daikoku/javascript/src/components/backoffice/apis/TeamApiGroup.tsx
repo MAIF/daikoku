@@ -16,12 +16,13 @@ import { CurrentUserContext } from '../../../contexts/userContext';
 import * as Services from '../../../services';
 import { IApi, ITeamSimple, IUsagePlan, isError } from '../../../types';
 import { api as API, Can, Spinner, manage } from '../../utils';
+import { TeamBackOfficeProps } from '../TeamBackOffice';
 
 type LocationState = {
   newApiGroup?: IApi
 }
 
-export const TeamApiGroup = () => {
+export const TeamApiGroup = (props: TeamBackOfficeProps) => {
   const params = useParams();
   const location = useLocation();
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ export const TeamApiGroup = () => {
   const queryClient = useQueryClient();
   const apiGroupRequest = useQuery({
     queryKey: ['apiGroup', params.apiGroupId!],
-    queryFn: () => Services.teamApi(currentTeam._id, params.apiGroupId!, '1.0.0'),
+    queryFn: () => Services.teamApi(props.currentTeam._id, params.apiGroupId!, '1.0.0'),
     enabled: !creation
   })
 
@@ -50,9 +51,7 @@ export const TeamApiGroup = () => {
       if (!isError(apiGroupRequest.data)) {
         const apiGroup = apiGroupRequest.data
 
-
-
-        document.title = `${currentTeam.name} - ${apiGroup ? apiGroup.name : translate('API group')}`;
+        document.title = `${props.currentTeam.name} - ${apiGroup ? apiGroup.name : translate('API group')}`;
       }
     }
   }, [apiGroupRequest.data]);
@@ -61,7 +60,7 @@ export const TeamApiGroup = () => {
 
   const save = (group: IApi) => {
     if (creation) {
-      return Services.createTeamApi(currentTeam._id, group).then((createdGroup) => {
+      return Services.createTeamApi(props.currentTeam._id, group).then((createdGroup) => {
         if (createdGroup.error) {
           toast.error(translate(createdGroup.error));
           return createdGroup;
@@ -69,12 +68,12 @@ export const TeamApiGroup = () => {
           toast.success(translate({ key: 'group.created.success', replacements: [createdGroup.name] })
           );
 
-          navigate(`/${currentTeam._humanReadableId}/settings/apigroups/${createdGroup._humanReadableId}/infos`);
+          navigate(`/${props.currentTeam._humanReadableId}/settings/apigroups/${createdGroup._humanReadableId}/infos`);
         }
       });
     } else {
       return Services.saveTeamApiWithId(
-        currentTeam._id,
+        props.currentTeam._id,
         group,
         group.currentVersion,
         group._humanReadableId
@@ -87,7 +86,7 @@ export const TeamApiGroup = () => {
           queryClient.invalidateQueries({ queryKey: ['apiGroup'] })
 
           if (res._humanReadableId !== group._humanReadableId) {
-            navigate(`/${currentTeam._humanReadableId}/settings/apigrouups/${res._humanReadableId}/infos`);
+            navigate(`/${props.currentTeam._humanReadableId}/settings/apigrouups/${res._humanReadableId}/infos`);
           }
         }
       });
@@ -98,7 +97,7 @@ export const TeamApiGroup = () => {
     if (apiGroup && apiGroup.defaultUsagePlan !== plan._id && plan.visibility !== 'Private') {
       const updatedApi = { ...apiGroup, defaultUsagePlan: plan._id }
       Services.saveTeamApiWithId(
-        currentTeam._id,
+        props.currentTeam._id,
         updatedApi,
         apiGroup.currentVersion,
         updatedApi._humanReadableId
@@ -199,7 +198,7 @@ export const TeamApiGroup = () => {
       label: translate({ key: 'API', plural: true }),
       format: format.select,
       isMulti: true,
-      optionsFrom: () => Services.teamApis(currentTeam._id)
+      optionsFrom: () => Services.teamApis(props.currentTeam._id)
         .then((apis) => {
           if (!isError(apis)) {
             return apis.filter((api) => api._id !== apiGroup?._id && !api.apis)
@@ -249,7 +248,7 @@ export const TeamApiGroup = () => {
   } else if (creation || (apiGroupRequest.data && !isError(apiGroupRequest.data))) {
     const apiGroup = creation || apiGroupRequest.data as IApi
     return (
-      <Can I={manage} a={API} team={currentTeam} dispatchError>
+      <Can I={manage} a={API} team={props.currentTeam} dispatchError>
         <div className="d-flex flex-row justify-content-between align-items-center">
           {creation ? (<h2>{apiGroup.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
             <h2 className="me-2">{apiGroup.name}{additionalHeader ? ` - ${additionalHeader}` : ''}</h2>
@@ -271,9 +270,10 @@ export const TeamApiGroup = () => {
               </div>)}
               {params.tab === 'plans' && (<div>
                 <TeamApiPricings
+                  {...props}
                   api={apiGroup}
                   reload={() => queryClient.invalidateQueries({ queryKey: ["apigroup"] })}
-                  team={currentTeam}
+                  team={props.currentTeam}
                   tenant={tenant}
                   setDefaultPlan={plan => setDefaultPlan(apiGroup, plan)}
                   creation={!!creation}
@@ -287,10 +287,10 @@ export const TeamApiGroup = () => {
                   setHeader={(planName) => setAdditionalHeader(planName)} />
 
               </div>)}
-              {tab === 'settings' && <TeamApiSettings api={apiGroup} apiGroup />}
-              {tab === 'stats' && !match && <TeamApiConsumption api={apiGroup} apiGroup />}
+              {tab === 'settings' && <TeamApiSettings api={apiGroup} apiGroup {...props} />}
+              {tab === 'stats' && !match && <TeamApiConsumption api={apiGroup} apiGroup {...props} />}
               {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption apiGroup />)}
-              {tab === 'subscriptions' && <TeamApiSubscriptions api={apiGroup} />} {/* FIXME: a props APIGROUP has been removed...maybe add it in team api sub component */}
+              {tab === 'subscriptions' && <TeamApiSubscriptions api={apiGroup} {...props} />} {/* FIXME: a props APIGROUP has been removed...maybe add it in team api sub component */}
             </div>
           </div>
         </div>

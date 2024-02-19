@@ -1,22 +1,26 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { Form, constraints, type, format } from '@maif/react-forms';
-import { toast } from 'sonner';
+import { constraints, Form, format, type } from '@maif/react-forms';
 import sortBy from 'lodash/sortBy';
+import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
-import { I18nContext } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
-import { ModalContext } from '../../../contexts';
-import { isError, IState, ITeamSimple } from '../../../types';
+import { IApi, isError } from '../../../types';
 import { FeedbackButton } from '../../utils/FeedbackButton';
+import { TeamBackOfficeProps } from '../TeamBackOffice';
 
+type TeamApiSettingsProps = {
+  api: IApi,
+  apiGroup?: boolean
+}
 export const TeamApiSettings = ({
   api,
-  apiGroup
-}: any) => {
+  apiGroup,
+  currentTeam
+}: TeamBackOfficeProps<TeamApiSettingsProps>) => {
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
-  const {currentTeam} = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
   const navigate = useNavigate();
 
   const transferOwnership = ({team}: any) => {

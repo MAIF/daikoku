@@ -1,26 +1,25 @@
+import { createColumnHelper } from '@tanstack/react-table';
 import { useContext, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Toaster, toast } from 'sonner';
+import { toast } from 'sonner';
 
-import { createColumnHelper } from '@tanstack/react-table';
-import { I18nContext, ModalContext, useTeamBackOffice } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
 import { CurrentUserContext } from '../../../contexts/userContext';
 import * as Services from '../../../services';
 import { IApi, ITeamSimple, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
 import { api as API, Can, Spinner, manage, read } from '../../utils';
+import { TeamBackOfficeProps } from '../TeamBackOffice';
 
-export const TeamApis = () => {
+export const TeamApis = (props: TeamBackOfficeProps) => {
   const { tenant } = useContext(CurrentUserContext);
-  const { isLoading, currentTeam } = useTeamBackOffice();
 
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
 
   useEffect(() => {
-    if (currentTeam && !isError(currentTeam))
-      document.title = `${currentTeam.name} - ${translate({ key: 'API', plural: true })}`;
-  }, [currentTeam]);
+    document.title = `${props.currentTeam.name} - ${translate({ key: 'API', plural: true })}`;
+  }, [props.currentTeam]);
 
   let table = useRef<TableRef>();
 
@@ -105,7 +104,7 @@ export const TeamApis = () => {
     confirm({ message: translate('delete.api.confirm'), okLabel: translate('Yes') })
       .then((ok) => {
         if (ok) {
-          Services.deleteTeamApi((currentTeam as ITeamSimple)._id, api._id)
+          Services.deleteTeamApi(props.currentTeam._id, api._id)
             .then(() => {
               toast.success(translate({ key: 'delete.api.success', replacements: [api.name] }));
               table.current?.update();
@@ -114,22 +113,19 @@ export const TeamApis = () => {
       });
   };
 
-  if (isLoading) {
-    return <Spinner />
-  } else if (currentTeam && !isError(currentTeam)) {
-    if (tenant.creationSecurity && !currentTeam.apisCreationPermission) {
+    if (tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
       // dispatch(setError({ error: { status: 403, message: 'Creation security enabled' } })); //FIXME with a better error gestion
       toast.error(translate('Creation security enabled'))
       return null;
     }
     return (
-      <Can I={read} a={API} dispatchError={true} team={currentTeam}>
+      <Can I={read} a={API} dispatchError={true} team={props.currentTeam}>
         <div className="row">
           <div className="col">
             <div className="p-2">
               <Table
-                columns={columns(currentTeam)}
-                fetchItems={() => Services.teamApis(currentTeam._id)}
+                columns={columns(props.currentTeam)}
+                fetchItems={() => Services.teamApis(props.currentTeam._id)}
                 ref={table}
               />
             </div>
@@ -137,8 +133,4 @@ export const TeamApis = () => {
         </div>
       </Can>
     );
-  } else {
-    return <div>Error while fetching team</div>
-  }
-
 };

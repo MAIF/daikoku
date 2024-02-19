@@ -1,20 +1,19 @@
-import React, { useState, useEffect, useContext, useRef } from 'react';
-import Select, { components } from 'react-select';
-import Creatable from 'react-select/creatable';
-import AsyncSelect from 'react-select/async';
 import classNames from 'classnames';
-import orderBy from 'lodash/orderBy';
 import cloneDeep from 'lodash/cloneDeep';
+import orderBy from 'lodash/orderBy';
+import { useContext, useEffect, useRef, useState } from 'react';
+import Select, { components } from 'react-select';
+import AsyncSelect from 'react-select/async';
+import Creatable from 'react-select/creatable';
 
-import { Table, TableRef } from '../../../inputs';
-import * as Services from '../../../../services';
-import { newPossibleUsagePlan, BeautifulTitle, formatPlanType, Option } from '../../../utils';
-import { I18nContext } from '../../../../contexts/i18n-context';
-import { ModalContext } from '../../../../contexts';
 import { createColumnHelper } from '@tanstack/react-table';
-import { IApi, IApiKey, ISubscription } from '../../../../types/api';
-import { IState, ITenant, TOption } from '../../../../types';
-import { useSelector } from 'react-redux';
+import { ModalContext } from '../../../../contexts';
+import { I18nContext } from '../../../../contexts/i18n-context';
+import { CurrentUserContext } from '../../../../contexts/userContext';
+import * as Services from '../../../../services';
+import { IApiKey, ISubscription } from '../../../../types/api';
+import { Table, TableRef } from '../../../inputs';
+import { BeautifulTitle, Option, formatPlanType, newPossibleUsagePlan } from '../../../utils';
 
 export const SelectionStepStep = (props: any) => {
   const { Translation } = useContext(I18nContext);
@@ -304,8 +303,8 @@ export const ServicesStep = (props: any) => {
         {props.groups.find((g: any) => g.id === props.service.groupId)
           ? props.groups.find((g: any) => g.id === props.service.groupId).name
           : props.groups.find((g: any) => props.service.groups.includes(g.id))
-          ? props.groups.find((g: any) => props.service.groups.includes(g.id)).name
-          : ''}
+            ? props.groups.find((g: any) => props.service.groups.includes(g.id)).name
+            : ''}
       </div>
     </div>
     <div className="col-6">
@@ -464,16 +463,16 @@ const SelectTeam = ({
 };
 
 type ApiKeyStepProps = {
-  groups: Array<{id: string, name: string}>,
-  services: Array<{id: string, name: string}>,
-  routes: Array<{id: string, name: string}>,
-  getFilteredApikeys: (entity: {value: string, prefix: string, label: string}) => Array<IApiKey>
+  groups: Array<{ id: string, name: string }>,
+  services: Array<{ id: string, name: string }>,
+  routes: Array<{ id: string, name: string }>,
+  getFilteredApikeys: (entity: { value: string, prefix: string, label: string }) => Array<IApiKey>
   createdSubs: Array<ISubscription>
   cancel: () => void
 }
 export const ApiKeyStep = (props: ApiKeyStepProps) => {
   const table = useRef<TableRef>()
-  const [selectedEntity, setSelectedEntity] = useState<{value: string, prefix: string, label: string} | null>();
+  const [selectedEntity, setSelectedEntity] = useState<{ value: string, prefix: string, label: string } | null>();
 
   const { translate, Translation } = useContext(I18nContext);
 
@@ -482,7 +481,7 @@ export const ApiKeyStep = (props: ApiKeyStepProps) => {
       table.current.update()
     }
   }, [selectedEntity])
-  
+
 
   const groups = props.groups.map((g: any) => ({
     value: g.id,
@@ -504,12 +503,12 @@ export const ApiKeyStep = (props: ApiKeyStepProps) => {
   const columns = [
     columnHelper.accessor('clientName', {
       header: translate('initialize_from_otoroshi.otoroshi_api_key'),
-      meta: {style: { textAlign: 'left', width: '20%' }},
+      meta: { style: { textAlign: 'left', width: '20%' } },
       sortingFn: 'basic',
     }),
     columnHelper.display({
       header: translate('API.s'),
-      meta: {style: { textAlign: 'left' }},
+      meta: { style: { textAlign: 'left' } },
       enableColumnFilter: false,
       enableSorting: false,
       cell: (info) => {
@@ -565,7 +564,7 @@ export const ApiKeyStep = (props: ApiKeyStepProps) => {
 
 const ApiKey = (props: any) => {
   const { translate } = useContext(I18nContext);
-  const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
+  const { tenant } = useContext(CurrentUserContext)
   const [selectedApi, setSelectedApi] = useState(
     props
       .maybeCreatedSub(props.apikey)

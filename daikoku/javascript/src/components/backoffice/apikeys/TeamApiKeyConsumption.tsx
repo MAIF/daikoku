@@ -4,7 +4,7 @@ import moment from 'moment';
 import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
-import { BeautifulTitle, OtoroshiStatsVizualization } from '../..';
+import { BeautifulTitle, OtoroshiStatsVizualization, TeamBackOfficeProps } from '../..';
 import { Spinner, Can, read, stat } from '../../utils';
 import { I18nContext } from '../../../contexts';
 import { useTeamBackOffice } from '../../../contexts';
@@ -81,8 +81,7 @@ const Quotas = (props: QuotasProps) => {
     return <div>Error while searching quotas.</div>
   }
 }
-export const TeamApiKeyConsumption = () => {
-  const { isLoading, error, currentTeam } = useTeamBackOffice();
+export const TeamApiKeyConsumption = (props: TeamBackOfficeProps) => {
   const { translate, Translation } = useContext(I18nContext);
   const params = useParams();
 
@@ -91,8 +90,7 @@ export const TeamApiKeyConsumption = () => {
   };
   const subInf = useQuery({
     queryKey: ['subInf'],
-    queryFn: () => getInformations(currentTeam as ITeamSimple),
-    enabled: !!currentTeam && !isError(currentTeam)
+    queryFn: () => getInformations(props.currentTeam),
   });
 
   let mappers = [
@@ -123,15 +121,15 @@ export const TeamApiKeyConsumption = () => {
         {
           type: 'Custom',
           label: translate('Quotas consumptions'),
-          formatter: () => <Quotas currentTeam={currentTeam} typePlan={subInf.data!.plan.type} />,
+          formatter: () => <Quotas currentTeam={props.currentTeam} typePlan={subInf.data!.plan.type} />,
         },
       ];
   }
 
   useEffect(() => {
-    if (currentTeam && !isError(currentTeam))
-      document.title = `${currentTeam.name} - ${translate('API key consumption')}`;
-  }, [currentTeam]);
+    if (props.currentTeam && !isError(props.currentTeam))
+      document.title = `${props.currentTeam.name} - ${translate('API key consumption')}`;
+  }, [props.currentTeam]);
 
   const getLabelForDataIn = (datas: any, max: any) => {
     let hits = datas.length ? datas.reduce((acc: any, data: any) => acc + data.hits, 0) : 0;
@@ -160,40 +158,35 @@ export const TeamApiKeyConsumption = () => {
     );
   };
 
-  if (isLoading) {
-    return <Spinner />
-  } else if (currentTeam && !isError(currentTeam)) {
-    return (
-      <Can I={read} a={stat} team={currentTeam} dispatchError>
-        <div className="d-flex col flex-column pricing-content">
-          <div className="row">
-            <div className="col-12">
-              <h1>Api Consumption</h1>
-              <PlanInformations fetchData={() => getInformations(currentTeam)} />
-            </div>
-            <div className="col section p-2">
-              <OtoroshiStatsVizualization
-                sync={() =>
-                  Services.syncSubscriptionConsumption(params.subscription, currentTeam._id)
-                }
-                fetchData={(from: any, to: any) =>
-                  Services.subscriptionConsumption(
-                    params.subscription,
-                    currentTeam._id,
-                    from.valueOf(),
-                    to.valueOf()
-                  ).then((c) => c.consumptions)
-                }
-                mappers={mappers(currentTeam)}
-                forConsumer={true}
-              />
-            </div>
+  return (
+    <Can I={read} a={stat} team={props.currentTeam} dispatchError>
+      <div className="d-flex col flex-column pricing-content">
+        <div className="row">
+          <div className="col-12">
+            <h1>Api Consumption</h1>
+            <PlanInformations fetchData={() => getInformations(props.currentTeam)} />
+          </div>
+          <div className="col section p-2">
+            <OtoroshiStatsVizualization
+              sync={() =>
+                Services.syncSubscriptionConsumption(params.subscription, props.currentTeam._id)
+              }
+              fetchData={(from: any, to: any) =>
+                Services.subscriptionConsumption(
+                  params.subscription,
+                  props.currentTeam._id,
+                  from.valueOf(),
+                  to.valueOf()
+                ).then((c) => c.consumptions)
+              }
+              mappers={mappers}
+              forConsumer={true}
+            />
           </div>
         </div>
-      </Can>
-    );
-  }
-
+      </div>
+    </Can>
+  );
 }
 
 const PlanInformations = (props: any) => {

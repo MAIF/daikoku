@@ -1,22 +1,21 @@
-import React, { useContext, useEffect } from 'react';
 import sortBy from 'lodash/sortBy';
+import { useContext, useEffect } from 'react';
 
-import { OtoroshiStatsVizualization, Spinner } from '../../utils';
+import { I18nContext, useTeamBackOffice } from '../../../contexts';
 import * as Services from '../../../services';
-import { I18nContext } from '../../../contexts';
-import { useTeamBackOffice } from '../../../contexts';
 import { isError } from '../../../types';
+import { OtoroshiStatsVizualization, Spinner } from '../../utils';
+import { TeamBackOfficeProps } from '../TeamBackOffice';
 
-export const TeamConsumption = () => {
+export const TeamConsumption = (props: TeamBackOfficeProps) => {
   const { translate } = useContext(I18nContext);
 
-  const { isLoading, error, currentTeam } = useTeamBackOffice();
 
   useEffect(() => {
-    if (currentTeam && !isError(currentTeam)) {
-      document.title = `${currentTeam.name} - ${translate('Consumption')}`;
+    if (props.currentTeam && !isError(props.currentTeam)) {
+      document.title = `${props.currentTeam.name} - ${translate('Consumption')}`;
     }
-  }, [currentTeam]);
+  }, [props.currentTeam]);
 
   const mappers = [
     {
@@ -49,27 +48,18 @@ export const TeamConsumption = () => {
     },
   ];
 
-  if (isLoading) {
-    return <Spinner />
-  } else if (currentTeam && !isError(currentTeam)) {
-    return (
-      <div className="row">
-        <div className="col">
-          <h1>Consumption</h1>
-          <OtoroshiStatsVizualization
-            sync={() => Services.syncTeamBilling(currentTeam._id)}
-            fetchData={(from: any, to: any) =>
-              Services.getTeamConsumptions(currentTeam._id, from.valueOf(), to.valueOf())
-            }
-            mappers={mappers}
-          />
-        </div>
+  return (
+    <div className="row">
+      <div className="col">
+        <h1>Consumption</h1>
+        <OtoroshiStatsVizualization
+          sync={() => Services.syncTeamBilling(props.currentTeam._id)}
+          fetchData={(from: any, to: any) =>
+            Services.getTeamConsumptions(props.currentTeam._id, from.valueOf(), to.valueOf())
+          }
+          mappers={mappers}
+        />
       </div>
-    );
-  } else {
-    return (
-      <div>Error while fetching team</div>
-    )
-  }
-
+    </div>
+  );
 };

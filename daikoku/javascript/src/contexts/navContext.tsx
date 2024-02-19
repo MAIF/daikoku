@@ -3,7 +3,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Link, useMatch, useNavigate, useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 
-import { api as API, Can, manage } from '../components/utils';
+import { api as API, Can, manage, queryClient } from '../components/utils';
 import { I18nContext } from '../contexts';
 import { IApi, IState, IStateContext, IStoreState, ITeamSimple, ITenant, IUserSimple, isError } from '../types';
 import { ModalContext } from './modalContext';
@@ -370,13 +370,17 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
 };
 
 export const useApiBackOffice = (api: IApi, creation: boolean) => {
-  const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
+  const { setMode, setOffice, setApi, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
   const { tenant } = useContext(CurrentUserContext);
 
   const navigate = useNavigate();
   const params = useParams();
+
+  const teamId = params.teamId;
+  const queryTeam = useQuery({ queryKey: ['team-backoffice'], queryFn: () => Services.team(teamId!), enabled: !!teamId })
+
 
   const schema = (currentTab?: string) => ({
     title: api?.name,
@@ -440,7 +444,7 @@ export const useApiBackOffice = (api: IApi, creation: boolean) => {
 
   const navigateTo = (navTab: string) => {
     navigate(
-      `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/${navTab}`
+      `/${(queryTeam.data as ITeamSimple)._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/${navTab}`
     );
   };
 
@@ -449,7 +453,6 @@ export const useApiBackOffice = (api: IApi, creation: boolean) => {
     setMode(navMode.api);
     setOffice(officeMode.back);
     setApi(api);
-    setTeam(currentTeam);
   }, [api?._id, api?.name, params]);
 
   useEffect(() => {
@@ -457,7 +460,6 @@ export const useApiBackOffice = (api: IApi, creation: boolean) => {
     return () => {
       setMode(navMode.initial);
       setApi(undefined);
-      setTeam(undefined);
       setMenu({});
     };
   }, []);
@@ -466,13 +468,17 @@ export const useApiBackOffice = (api: IApi, creation: boolean) => {
 };
 
 export const useApiGroupBackOffice = (apiGroup: IApi, creation: boolean) => {
-  const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext);
+  const { setMode, setOffice, setApiGroup, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
   const { tenant } = useContext(CurrentUserContext);
 
   const navigate = useNavigate();
   const params = useParams();
+
+  const teamId = params.teamId;
+  const queryTeam = useQuery({ queryKey: ['team-backoffice'], queryFn: () => Services.team(teamId!), enabled: !!teamId })
+
 
   const schema = (currentTab?: string) => ({
     title: apiGroup?.name,
@@ -522,7 +528,7 @@ export const useApiGroupBackOffice = (apiGroup: IApi, creation: boolean) => {
           view: {
             component: (
               <Link
-                to={`/${currentTeam._humanReadableId}/apigroups/${apiGroup?._humanReadableId}/apis`}
+                to={`/${(queryTeam.data as ITeamSimple)._humanReadableId}/apigroups/${apiGroup?._humanReadableId}/apis`}
                 className="btn btn-sm btn-access-negative mb-2"
               >
                 {translate('View this APIs Group')}
@@ -538,10 +544,10 @@ export const useApiGroupBackOffice = (apiGroup: IApi, creation: boolean) => {
                   background: 'transparent',
                   outline: 'none',
                 }}
-                to={`/${currentTeam._humanReadableId}/settings/apis`}
+                to={`/${(queryTeam.data as ITeamSimple)._humanReadableId}/settings/apis`}
               >
                 <i className="fas fa-chevron-left" />
-                {translate({ key: 'back.to.team', replacements: [currentTeam.name] })}
+                {translate({ key: 'back.to.team', replacements: [(queryTeam.data as ITeamSimple).name] })}
               </Link>
             ),
           },
@@ -552,7 +558,7 @@ export const useApiGroupBackOffice = (apiGroup: IApi, creation: boolean) => {
 
   const navigateTo = (navTab: string) => {
     navigate(
-      `/${currentTeam._humanReadableId}/settings/apigroups/${apiGroup._humanReadableId}/${navTab}`
+      `/${(queryTeam.data as ITeamSimple)._humanReadableId}/settings/apigroups/${apiGroup._humanReadableId}/${navTab}`
     );
   };
 
@@ -561,7 +567,6 @@ export const useApiGroupBackOffice = (apiGroup: IApi, creation: boolean) => {
     setMode(navMode.apiGroup);
     setOffice(officeMode.back);
     setApiGroup(apiGroup);
-    setTeam(currentTeam);
   }, [apiGroup?._id, apiGroup?.name, params]);
 
   useEffect(() => {
@@ -569,7 +574,6 @@ export const useApiGroupBackOffice = (apiGroup: IApi, creation: boolean) => {
     return () => {
       setMode(navMode.initial);
       setApiGroup(undefined);
-      setTeam(undefined);
       setMenu({});
     };
   }, []);
@@ -588,9 +592,8 @@ export const useTeamBackOffice = () => {
 
   const queryTeam = useQuery({ queryKey: ['team-backoffice'], queryFn: () => Services.team(teamId!), enabled: !!teamId })
 
-  const schema = (currentTab: string) => ({
+  const schema = (currentTab: string, team: ITeamSimple) => ({
     title: team.name,
-
     blocks: {
       links: {
         order: 1,
@@ -665,7 +668,7 @@ export const useTeamBackOffice = () => {
       setMode(navMode.team);
       setOffice(officeMode.back);
       setTeam(queryTeam.data);
-      setMenu(schema(match?.params['tab']));
+      setMenu(schema(match?.params['tab'], queryTeam.data));
     }
   }, [queryTeam.data]);
 
@@ -677,9 +680,11 @@ export const useTeamBackOffice = () => {
     };
   }, []);
 
+  const reloadCurrentTeam = () => queryClient.invalidateQueries({ queryKey: ['team-backoffice']})
+
   //todo handle error
 
-  return { isLoading: queryTeam.isLoading, error: queryTeam.error, currentTeam: queryTeam.data, addMenu };
+  return { isLoading: queryTeam.isLoading, error: queryTeam.error, currentTeam: queryTeam.data, addMenu, reloadCurrentTeam };
 };
 
 export const useTenantBackOffice = (maybeTenant?: ITenant) => {

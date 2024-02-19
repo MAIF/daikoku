@@ -4,13 +4,13 @@ import { useContext, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { I18nContext, ModalContext, useTeamBackOffice } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
 import {
   AvatarWithAction,
   Can,
   Option,
-  PaginatedComponent, Spinner,
+  PaginatedComponent,
   administrator,
   apiEditor,
   manage,
@@ -18,7 +18,9 @@ import {
 } from '../../utils';
 
 import { CurrentUserContext } from '../../../contexts/userContext';
-import { ITeamSimple, IUserSimple, ResponseError, TeamPermission, TeamUser, isError } from '../../../types';
+import { ITeamSimple, IUserSimple, ResponseError, TeamPermission, TeamUser } from '../../../types';
+import { TeamBackOfficeProps } from '../TeamBackOffice';
+import { props } from 'cypress/types/bluebird';
 
 type Tabs = 'MEMBERS' | 'PENDING'
 const TABS: { [key: string]: Tabs } = {
@@ -34,7 +36,7 @@ type TState = {
   members?: Array<IUserSimple>
   search?: string
 }
-export const TeamMembersSimpleComponent = ({ currentTeam }: { currentTeam: ITeamSimple }) => {
+export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: TeamBackOfficeProps) => {
 
   const { tenant, connectedUser, reloadContext } = useContext(CurrentUserContext);
 
@@ -50,7 +52,7 @@ export const TeamMembersSimpleComponent = ({ currentTeam }: { currentTeam: ITeam
 
   useEffect(() => {
     updateMembers(currentTeam);
-  }, []);
+  }, [currentTeam]);
 
   const updateMembers = (team: ITeamSimple) => {
     return Promise.all([
@@ -109,9 +111,8 @@ export const TeamMembersSimpleComponent = ({ currentTeam }: { currentTeam: ITeam
                 done
                   ? toast.success(translate({ key: 'remove.member.success', replacements: [member.name] }))
                   : toast.error(translate('Failure'));
-                Promise.resolve(dispatch(updateTeam(team)))
-                  .then(() => updateMembers(currentTeam));
-              });
+              })
+              .then(() => reloadCurrentTeam());
           }
         });
     }
@@ -152,15 +153,13 @@ export const TeamMembersSimpleComponent = ({ currentTeam }: { currentTeam: ITeam
         alert({ message: translate('remove.admin.alert') });
       } else {
         const newPermission = userHavePemission(member, permission) ? user : permission;
-        Services.updateTeamMemberPermission(teamId, [member._id], newPermission).then(
-          ({ done, team }) => {
+        Services.updateTeamMemberPermission(teamId, [member._id], newPermission)
+          .then(({ done }) => {
             done
               ? toast.success(translate({ key: 'member.new.permission.success', replacements: [member.name, newPermission] }))
               : toast.error(translate('Failure'));
-            Promise.resolve(dispatch(updateTeam(team)))
-              .then(() => updateMembers(currentTeam));
-          }
-        );
+          })
+          .then(reloadCurrentTeam)
       }
     } else {
       alert({ message: translate('not.admin.alert') });
@@ -330,26 +329,18 @@ export const TeamMembersSimpleComponent = ({ currentTeam }: { currentTeam: ITeam
 };
 
 
-export const TeamMembers = () => {
+export const TeamMembers = (props: TeamBackOfficeProps) => {
 
-  const { isLoading, currentTeam } = useTeamBackOffice();
   const { translate } = useContext(I18nContext);
 
   useEffect(() => {
-    if (currentTeam && !isError(currentTeam))
-      document.title = `${currentTeam.name} - ${translate({ key: 'Member', plural: true })}`;
-  }, [currentTeam]);
+    document.title = `${props.currentTeam.name} - ${translate({ key: 'Member', plural: true })}`;
+  }, [props.currentTeam]);
 
-  if (isLoading) {
-    return <Spinner />
-  } else if (currentTeam && !isError(currentTeam)) {
-    return (
-      <Can I={manage} a={team} team={currentTeam} dispatchError={true}>
-        <TeamMembersSimpleComponent currentTeam={currentTeam} />
-      </Can>
-    );
-  } else {
-    return <div>Error while fetching team</div>
-  }
+  return (
+    <Can I={manage} a={team} team={props.currentTeam} dispatchError={true}>
+      <TeamMembersSimpleComponent {...props} />
+    </Can>
+  );
 
 };

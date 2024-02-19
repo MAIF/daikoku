@@ -7,6 +7,7 @@ import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IApi, IState, ITeamSimple, ITesting, ITestingConfig, IUsagePlan, IWithTesting, isApi, isUsagePlan } from '../../../types';
 import { Option } from '../../utils';
+import { TeamBackOfficeProps } from '../TeamBackOffice';
 
 interface TeamApiTestingProps<T extends IWithTesting> {
   value: T
@@ -17,9 +18,8 @@ interface TeamApiTestingProps<T extends IWithTesting> {
   api?: IApi
 }
 
-export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProps<T>) => {
+export const TeamApiTesting = <T extends IWithTesting>(props: TeamBackOfficeProps<TeamApiTestingProps<T>>) => {
   const testing = props.value.testing;
-  const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
   const { translate, Translation } = useContext(I18nContext);
   const { confirm, openTestingApikeyModal, openSubMetadataModal } = useContext(ModalContext);
 
@@ -39,7 +39,7 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
       save: (metadata) => {
         openTestingApikeyModal({
           metadata,
-          teamId: currentTeam._id,
+          teamId: props.currentTeam._id,
           config: newConfig,
           update: !!testing?.config && !!testing.config.otoroshiSettings,
           title: translate('Otoroshi settings'),
@@ -72,7 +72,7 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
     confirm({ message: translate('otoroshi.testing.delete.confirm') })
       .then((ok) => {
         if (ok)
-          Services.deleteTestingApiKey(currentTeam._id, {
+          Services.deleteTestingApiKey(props.currentTeam._id, {
             otoroshiSettings: testing!.config!.otoroshiSettings,
             authorizedEntities: testing!.config!.authorizedEntities,
             clientId: testing!.username,

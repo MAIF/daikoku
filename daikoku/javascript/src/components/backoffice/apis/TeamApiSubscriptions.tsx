@@ -22,6 +22,7 @@ import {
   Spinner,
 } from '../../utils';
 import {useQuery} from "@tanstack/react-query";
+import { TeamBackOfficeProps } from "../TeamBackOffice";
 
 type TeamApiSubscriptionsProps = {
   api: IApi,
@@ -83,7 +84,7 @@ interface IApiSubscriptionGqlWithUsage extends IApiSubscriptionGql {
   lastUsage?: number
 }
 
-export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
+export const TeamApiSubscriptions = ({ api, currentTeam }: TeamBackOfficeProps<TeamApiSubscriptionsProps>) => {
 
   const { client } = useContext(getApolloContext());
 

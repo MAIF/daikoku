@@ -37,6 +37,7 @@ import { TeamApiDocumentation } from './TeamApiDocumentation';
 import { TeamApiSwagger } from './TeamApiSwagger';
 import { TeamApiTesting } from './TeamApiTesting';
 import { CurrentUserContext } from '../../../contexts/userContext';
+import { TeamBackOfficeProps } from '../TeamBackOffice';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {
@@ -510,7 +511,7 @@ type Props = {
 }
 type Tab = 'settings' | 'security' | 'payment' | 'subscription-process' | 'swagger' | 'documentation' | 'testing'
 
-export const TeamApiPricings = (props: Props) => {
+export const TeamApiPricings = (props: TeamBackOfficeProps<Props>) => {
   const possibleMode = { list: 'LIST', creation: 'CREATION', edition: 'EDITION' };
   const [planForEdition, setPlanForEdition] = useState<IUsagePlan>();
   const [mode, setMode] = useState('LIST');
@@ -916,7 +917,7 @@ export const TeamApiPricings = (props: Props) => {
               format: format.select,
               disabled: !creation && !!planForEdition?.otoroshiTarget?.otoroshiSettings,
               label: translate('Otoroshi instances'),
-              optionsFrom: Services.allSimpleOtoroshis(props.tenant._id, currentTeam)
+              optionsFrom: Services.allSimpleOtoroshis(props.tenant._id, props.currentTeam)
                 .then(r => {
                   console.log(r)
                   return r
@@ -1382,6 +1383,7 @@ export const TeamApiPricings = (props: Props) => {
             {queryPlans.data && selectedTab === 'testing' && (
               //FIXME: inaccessible si pas de swagger
               <TeamApiTesting
+                {...props}
                 value={planForEdition}
                 api={props.api}
                 onChange={savePlan}

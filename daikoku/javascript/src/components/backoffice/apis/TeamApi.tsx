@@ -25,6 +25,7 @@ import {
 import { IState, IStateContext, ITeamSimple } from '../../../types';
 import { IApi, IUsagePlan, isError } from '../../../types/api';
 import { CurrentUserContext } from '../../../contexts/userContext';
+import { TeamBackOfficeProps } from '../TeamBackOffice';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 type ButtonProps = {
@@ -56,7 +57,7 @@ const CreateNewVersionButton = ({
       .then((newVersion) => {
         if (newVersion) {
           if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
-            toast.error(translate({key: "semver.error.message", replacements: [reservedCharacters.join(' | ')]}));
+            toast.error(translate({ key: "semver.error.message", replacements: [reservedCharacters.join(' | ')] }));
           else
             createNewVersion(newVersion);
         }
@@ -86,7 +87,7 @@ type TeamApiParams = {
   teamId: string
   tab: string
 }
-export const TeamApi = (props: { creation: boolean }) => {
+export const TeamApi = (props: TeamBackOfficeProps<{ creation: boolean }>) => {
   const params = useParams<TeamApiParams>();
 
   const [additionalHeader, setAdditionalHeader] = useState<string>()
@@ -104,13 +105,13 @@ export const TeamApi = (props: { creation: boolean }) => {
   const queryClient = useQueryClient();
   const apiRequest = useQuery({
     queryKey: ['api', params.apiId, params.versionId, location],
-    queryFn: () => Services.teamApi(currentTeam._id, params.apiId!, params.versionId!),
+    queryFn: () => Services.teamApi(props.currentTeam._id, params.apiId!, params.versionId!),
     enabled: !newApi
   })
 
   const versionsRequest = useQuery({
     queryKey: ['apiVersions', params.apiId, params.versionId, location],
-    queryFn: () => Services.getAllApiVersions(currentTeam._id, params.apiId!),
+    queryFn: () => Services.getAllApiVersions(props.currentTeam._id, params.apiId!),
     enabled: !newApi
   })
 
@@ -128,7 +129,7 @@ export const TeamApi = (props: { creation: boolean }) => {
           value: v
         }));
 
-        document.title = `${currentTeam.name} - ${api ? api.name : translate('API')}`;
+        document.title = `${props.currentTeam.name} - ${api ? api.name : translate('API')}`;
 
         methods.setApi(api)
 
@@ -147,7 +148,7 @@ export const TeamApi = (props: { creation: boolean }) => {
                           options={versions}
                           onChange={(e) =>
                             navigate(
-                              `/${currentTeam._humanReadableId}/settings/apis/${api?._humanReadableId}/${e?.value}/${tab}`
+                              `/${props.currentTeam._humanReadableId}/settings/apis/${api?._humanReadableId}/${e?.value}/${tab}`
                             )
                           }
                           classNamePrefix="reactSelect"
@@ -155,7 +156,7 @@ export const TeamApi = (props: { creation: boolean }) => {
                           menuPlacement="auto"
                           menuPosition="fixed"
                         />
-                        <CreateNewVersionButton apiId={params.apiId!} teamId={params.teamId!} versionId={params.versionId!} tab={params.tab!} currentTeam={currentTeam} />
+                        <CreateNewVersionButton apiId={params.apiId!} teamId={params.teamId!} versionId={params.versionId!} tab={params.tab!} currentTeam={props.currentTeam} />
                       </div>
                     ),
                   },
@@ -170,7 +171,7 @@ export const TeamApi = (props: { creation: boolean }) => {
 
   const save = (editedApi: IApi) => {
     if (props.creation) {
-      return Services.createTeamApi(currentTeam._id, editedApi)
+      return Services.createTeamApi(props.currentTeam._id, editedApi)
         .then((createdApi) => {
           if (createdApi.error) {
             toast.error(translate(createdApi.error));
@@ -179,12 +180,12 @@ export const TeamApi = (props: { creation: boolean }) => {
             toast.success(translate({ key: 'api.created.success', replacements: [createdApi.name] })
             );
             methods.setApi(createdApi);
-            navigate(`/${currentTeam._humanReadableId}/settings/apis/${createdApi._humanReadableId}/${createdApi.currentVersion}/infos`);
+            navigate(`/${props.currentTeam._humanReadableId}/settings/apis/${createdApi._humanReadableId}/${createdApi.currentVersion}/infos`);
           }
         });
     } else {
       return Services.saveTeamApiWithId(
-        currentTeam._id,
+        props.currentTeam._id,
         editedApi,
         editedApi.currentVersion,
         editedApi._humanReadableId
@@ -194,7 +195,7 @@ export const TeamApi = (props: { creation: boolean }) => {
         } else {
           toast.success(translate('Api saved'));
           if (res._humanReadableId !== editedApi._humanReadableId) {
-            navigate(`/${currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`);
+            navigate(`/${props.currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`);
           } else {
             queryClient.invalidateQueries({ queryKey: ['api'] })
           }
@@ -207,7 +208,7 @@ export const TeamApi = (props: { creation: boolean }) => {
     if (api && api.defaultUsagePlan !== plan._id && plan.visibility !== 'Private') {
       const updatedApi = { ...api, defaultUsagePlan: plan._id }
       Services.saveTeamApiWithId(
-        currentTeam._id,
+        props.currentTeam._id,
         updatedApi,
         api.currentVersion,
         updatedApi._humanReadableId
@@ -223,7 +224,7 @@ export const TeamApi = (props: { creation: boolean }) => {
 
   const tab: string = params.tab || 'infos';
 
-  if (tenant.creationSecurity && !currentTeam.apisCreationPermission) {
+  if (tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
     dispatch(setError({ error: { status: 403, message: 'Creation security enabled' } }));
   }
 
@@ -237,10 +238,10 @@ export const TeamApi = (props: { creation: boolean }) => {
             background: 'transparent',
             outline: 'none',
           }}
-          to={`/${currentTeam._humanReadableId}/settings/apis`}
+          to={`/${props.currentTeam._humanReadableId}/settings/apis`}
         >
           <i className="fas fa-chevron-left me-1" />
-          {translate({ key: 'back.to.team', replacements: [currentTeam.name] })}
+          {translate({ key: 'back.to.team', replacements: [props.currentTeam.name] })}
         </Link>
       );
       if (props.creation) {
@@ -263,7 +264,7 @@ export const TeamApi = (props: { creation: boolean }) => {
                 view: {
                   component: (
                     <Link
-                      to={`/${currentTeam._humanReadableId}/${params.apiId}/${params.versionId}/description`}
+                      to={`/${props.currentTeam._humanReadableId}/${params.apiId}/${params.versionId}/description`}
                       className="btn btn-sm btn-access-negative mb-2"
                     >
                       {translate('View this Api')}
@@ -287,7 +288,7 @@ export const TeamApi = (props: { creation: boolean }) => {
     const api = newApi || apiRequest.data;
 
     return (
-      <Can I={manage} a={API} team={currentTeam} dispatchError>
+      <Can I={manage} a={API} team={props.currentTeam} dispatchError>
         <div className="d-flex flex-row justify-content-between align-items-center">
           {props.creation ? (<h2>{api.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
             <h2 className="me-2">{api.name} {additionalHeader ? ` - ${additionalHeader}` : ''}</h2>
@@ -303,21 +304,21 @@ export const TeamApi = (props: { creation: boolean }) => {
               {tab === 'documentation' && (
                 <TeamApiDocumentation
                   creationInProgress={props.creation}
-                  team={currentTeam}
+                  team={props.currentTeam}
                   api={api}
                   onSave={documentation => save({ ...api, documentation })}
                   reloadState={() => queryClient.invalidateQueries({ queryKey: ['api'] })}
                   documentation={api.documentation}
                   importPage={() => openApiDocumentationSelectModal({
                     api: api,
-                    teamId: currentTeam._id,
+                    teamId: props.currentTeam._id,
                     onClose: () => {
                       toast.success(translate('doc.page.import.successfull'));
                       queryClient.invalidateQueries({ queryKey: ['details'] });
                       queryClient.invalidateQueries({ queryKey: ['api'] });
                     },
-                    getDocumentationPages: () => Services.getAllApiDocumentation(currentTeam._id, api._id, api.currentVersion),
-                    importPages: (pages: Array<string>, linked?: boolean) => Services.importApiPages(currentTeam._id, api._id, pages, api.currentVersion, linked)
+                    getDocumentationPages: () => Services.getAllApiDocumentation(props.currentTeam._id, api._id, api.currentVersion),
+                    importPages: (pages: Array<string>, linked?: boolean) => Services.importApiPages(props.currentTeam._id, api._id, pages, api.currentVersion, linked)
                   })}
                   importAuthorized={!!versionsRequest.data && !!versionsRequest.data.length} />)}
               {tab === 'plans' && (
@@ -325,7 +326,7 @@ export const TeamApi = (props: { creation: boolean }) => {
                   api={api}
                   reload={() => queryClient.invalidateQueries({ queryKey: ['api'] })}
                   setDefaultPlan={plan => setDefaultPlan(api, plan)}
-                  team={currentTeam}
+                  team={props.currentTeam}
                   tenant={tenant}
                   creation={!!props.creation}
                   expertMode={expertMode}
@@ -338,7 +339,7 @@ export const TeamApi = (props: { creation: boolean }) => {
               {tab === 'infos' && (
                 <TeamApiInfos
                   value={api}
-                  team={currentTeam}
+                  team={props.currentTeam}
                   tenant={tenant}
                   save={save}
                   creation={props.creation}
@@ -348,11 +349,11 @@ export const TeamApi = (props: { creation: boolean }) => {
                       links: { links: { informations: { childs: { menu: { component } } } } },
                     },
                   })} />)}
-              {tab === 'news' && (<TeamApiPost team={currentTeam} api={api} />)}
-              {tab === 'settings' && <TeamApiSettings api={api} />}
-              {tab === 'stats' && !match && <TeamApiConsumption api={api} />}
+              {tab === 'news' && (<TeamApiPost team={props.currentTeam} api={api} />)}
+              {tab === 'settings' && <TeamApiSettings api={api} {...props} />}
+              {tab === 'stats' && !match && <TeamApiConsumption api={api} {...props} />}
               {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption />)}
-              {tab === 'subscriptions' && <TeamApiSubscriptions api={api} />}
+              {tab === 'subscriptions' && <TeamApiSubscriptions api={api} {...props} />}
             </div>
           </div>
         </div>

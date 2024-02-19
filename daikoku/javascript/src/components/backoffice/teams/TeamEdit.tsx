@@ -9,6 +9,7 @@ import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/As
 import * as Services from '../../../services';
 import { isError, IState, ITeamSimple } from '../../../types';
 import { Spinner } from '../../utils';
+import { TeamBackOfficeProps } from '../TeamBackOffice';
 
 
 type AvatarProps = {
@@ -182,14 +183,11 @@ export const TeamEditForm = ({
   );
 };
 
-export const TeamEdit = () => {
+export const TeamEdit = (props: TeamBackOfficeProps) => {
   const navigate = useNavigate();
 
-
-  const [contact, setContact] = useState(currentTeam.contact)
+  const [contact, setContact] = useState(props.currentTeam.contact)
   const [alreadyClicked, setAlreadyClicked] = useState(false)
-
-  const { isLoading, currentTeam } = useTeamBackOffice();
 
   const { search } = useLocation();
   const { translate } = useContext(I18nContext);
@@ -219,40 +217,34 @@ export const TeamEdit = () => {
           toast.info(translate("mailValidation.sent.body"))
           setAlreadyClicked(false)
         }
-        dispatch(updateTeam(updatedTeam))
-        toast.success(translate({ key: 'team.updated.success', replacements: [updatedTeam.name] }));
+        props.reloadCurrentTeam()
+          .then(() => toast.success(translate({ key: 'team.updated.success', replacements: [updatedTeam.name] })));
       });
   };
 
-  if (isLoading) {
-    return <Spinner />
-  } else if (currentTeam && !isError(currentTeam)) {
-    return (
-      <div>
-        {!currentTeam.verified && !alreadyClicked &&
-          <div className="alert alert-warning" role="alert">
-            {translate('team.email.notVerified.info')}
-            <button className="btn btn-outline-warning d-flex align-items-end" onClick={() => {
-              Services.sendEmailVerification(currentTeam._id)
-                .then((r) => {
-                  if (isError(r)) {
-                    toast.success(r.error)
-                  } else {
-                    setAlreadyClicked(true)
-                    toast.success(translate({ key: 'team.email.verification.send', replacements: [currentTeam.contact] }))
-                  }
-                })
-            }}>{translate('team.email.notVerified')}</button>
-          </div>}
-        {!currentTeam.verified && alreadyClicked &&
-          <div className="alert alert-success" role="alert">
-            {translate('mail.sent')}
-          </div>}
-        <TeamEditForm team={currentTeam} updateTeam={(team) => save(team, contact)} />
-      </div>
-    );
-  } else {
-    return <div>Error while fetching team</div>
-  }
+  return (
+    <div>
+      {!props.currentTeam.verified && !alreadyClicked &&
+        <div className="alert alert-warning" role="alert">
+          {translate('team.email.notVerified.info')}
+          <button className="btn btn-outline-warning d-flex align-items-end" onClick={() => {
+            Services.sendEmailVerification(props.currentTeam._id)
+              .then((r) => {
+                if (isError(r)) {
+                  toast.success(r.error)
+                } else {
+                  setAlreadyClicked(true)
+                  toast.success(translate({ key: 'team.email.verification.send', replacements: [props.currentTeam.contact] }))
+                }
+              })
+          }}>{translate('team.email.notVerified')}</button>
+        </div>}
+      {!props.currentTeam.verified && alreadyClicked &&
+        <div className="alert alert-success" role="alert">
+          {translate('mail.sent')}
+        </div>}
+      <TeamEditForm team={props.currentTeam} updateTeam={(team) => save(team, contact)} />
+    </div>
+  )
 
 };

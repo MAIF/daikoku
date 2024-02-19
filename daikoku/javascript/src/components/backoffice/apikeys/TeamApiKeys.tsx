@@ -8,10 +8,10 @@ import * as Services from '../../../services';
 import { IApi, ITeamSimple, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
 import { Can, Spinner, apikey, isUserIsTeamAdmin, manage, teamPermissions } from '../../utils';
+import { TeamBackOfficeProps } from '../TeamBackOffice';
 
-export const TeamApiKeys = () => {
+export const TeamApiKeys = (props: TeamBackOfficeProps) => {
   const { connectedUser } = useContext(CurrentUserContext);
-  const { isLoading, currentTeam } = useTeamBackOffice();
 
   const tableRef = useRef<TableRef>();
   const [showApiKey, setShowApiKey] = useState(false);
@@ -20,19 +20,16 @@ export const TeamApiKeys = () => {
   const { confirm } = useContext(ModalContext);
 
   useEffect(() => {
-    if (currentTeam && !isError(currentTeam)) {
-      setShowApiKey(
-        connectedUser.isDaikokuAdmin ||
-        currentTeam.apiKeyVisibility !== teamPermissions.administrator ||
-        isUserIsTeamAdmin(connectedUser, currentTeam)
-      );
-    }
-  }, [connectedUser.isDaikokuAdmin, currentTeam]);
+    setShowApiKey(
+      connectedUser.isDaikokuAdmin ||
+      props.currentTeam.apiKeyVisibility !== teamPermissions.administrator ||
+      isUserIsTeamAdmin(connectedUser, props.currentTeam)
+    );
+  }, [connectedUser.isDaikokuAdmin, props.currentTeam]);
 
   useEffect(() => {
-    if (currentTeam && !isError(currentTeam))
-      document.title = `${currentTeam.name} - ${translate('API key')}`;
-  }, [currentTeam]);
+    document.title = `${props.currentTeam.name} - ${translate('API key')}`;
+  }, [props.currentTeam]);
 
   const columnHelper = createColumnHelper<IApi>();
   const columns = (currentTeam: ITeamSimple) => [
@@ -72,46 +69,40 @@ export const TeamApiKeys = () => {
     confirm({ message: translate('clean.archived.sub.confirm') })
       .then((ok) => {
         if (ok) {
-          Services.cleanArchivedSubscriptions((currentTeam as ITeamSimple)._id)
+          Services.cleanArchivedSubscriptions(props.currentTeam._id)
             .then(() => tableRef.current?.update());
         }
       });
   }
 
-  if (isLoading) {
-    return <Spinner />
-  } else if (currentTeam && !isError(currentTeam)) {
-    return (
-      <Can I={manage} a={apikey} team={currentTeam} dispatchError={true}>
-        <div className="row">
-          <div className="col">
-            <h1>
-              <Translation i18nkey="Subscribed Apis">Subscribed Apis</Translation>
-            </h1>
-            <Link
-              to={`/${currentTeam._humanReadableId}/settings/consumption`}
-              className="btn btn-sm btn-access-negative mb-2"
-            >
-              <i className="fas fa-chart-bar me-1" />
-              <Translation i18nkey="See Stats">See Stats</Translation>
-            </Link>
-            <div className="section p-2">
-              <Table
-                defaultSort="name"
-                columns={columns(currentTeam)}
-                fetchItems={() => Services.subscribedApis(currentTeam._id)}
-                ref={tableRef}
-              />
-              <button className="btn btn-sm btn-danger-negative mt-1" onClick={cleanSubs}>
-                <Translation i18nkey="clean archived apikeys">clean archived apikeys</Translation>
-              </button>
-            </div>
+  return (
+    <Can I={manage} a={apikey} team={props.currentTeam} dispatchError={true}>
+      <div className="row">
+        <div className="col">
+          <h1>
+            <Translation i18nkey="Subscribed Apis">Subscribed Apis</Translation>
+          </h1>
+          <Link
+            to={`/${props.currentTeam._humanReadableId}/settings/consumption`}
+            className="btn btn-sm btn-access-negative mb-2"
+          >
+            <i className="fas fa-chart-bar me-1" />
+            <Translation i18nkey="See Stats">See Stats</Translation>
+          </Link>
+          <div className="section p-2">
+            <Table
+              defaultSort="name"
+              columns={columns(props.currentTeam)}
+              fetchItems={() => Services.subscribedApis(props.currentTeam._id)}
+              ref={tableRef}
+            />
+            <button className="btn btn-sm btn-danger-negative mt-1" onClick={cleanSubs}>
+              <Translation i18nkey="clean archived apikeys">clean archived apikeys</Translation>
+            </button>
           </div>
         </div>
-      </Can>
-    );
-  } else {
-    return <div>Error while fetching team</div>
-  }
+      </div>
+    </Can>
+  );
 
 };

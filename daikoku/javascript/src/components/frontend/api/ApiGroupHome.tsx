@@ -1,6 +1,5 @@
 import { getApolloContext } from '@apollo/client';
 import { useContext, useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
 import { toast } from 'sonner';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 
@@ -20,6 +19,7 @@ import {
   ApiPricing,
 } from './';
 import classNames from 'classnames';
+import { CurrentUserContext } from '../../../contexts/userContext';
 
 export const ApiGroupHome = () => {
   const [apiGroup, setApiGroup] = useState<any>();
@@ -32,7 +32,7 @@ export const ApiGroupHome = () => {
   const navigate = useNavigate();
   const match = useMatch('/:teamId/apigroups/:apiGroupId/apis/:apiId/:versionId/:tab');
 
-  const { connectedUser, tenant } = useSelector<IState, IStateContext>((s) => s.context);
+  const { connectedUser, tenant } = useContext(CurrentUserContext);
 
   const { addMenu } = useApiGroupFrontOffice(apiGroup, ownerTeam);
 
