@@ -12,7 +12,7 @@ use crate::models::folder::ToContentType;
 use crate::models::folder::FOLDER_NAMES;
 use crate::SourceCommands;
 
-use super::configuration::get_sources_root;
+// use super::configuration::get_sources_root;
 use super::watch::read_cms_pages;
 
 pub(crate) fn run(command: SourceCommands) -> DaikokuResult<()> {
@@ -49,45 +49,46 @@ fn remove_file(
     name: Option<String>,
     extension: Option<String>,
 ) -> DaikokuResult<()> {
-    logger::loading("<yellow>Deleting</> file ...".to_string());
+    Ok(())
+    // logger::loading("<yellow>Deleting</> file ...".to_string());
 
-    let mut contents = read_cms_pages();
+    // let mut contents = read_cms_pages();
 
-    if let Some(page) = contents.pages.iter().find(|p| match (&id, &name, &extension) {
-        (Some(file_id), _, _) => &p._id == file_id,
-        (_, Some(filename), Some(file_extension)) => {
-            &p.name == filename
-                && p.content_type
-                    == SourceExtension::from_str(&file_extension)
-                        .unwrap()
-                        .content_type()
-        }
-        (_, _, _) => false,
-    }) {
-        let root_path = get_sources_root().unwrap(); // TOOD - handle error
-        let source = SourceExtension::from_str(page.content_type.as_str()).unwrap();
-        let filepath = search_filepath(
-            &root_path,
-            &source.path(),
-            &format!("{}{}", &page.name, &source.ext()),
-        )?;
+    // if let Some(page) = contents.pages.iter().find(|p| match (&id, &name, &extension) {
+    //     (Some(file_id), _, _) => &p._id == file_id,
+    //     (_, Some(filename), Some(file_extension)) => {
+    //         &p.name == filename
+    //             && p.content_type
+    //                 == SourceExtension::from_str(&file_extension)
+    //                     .unwrap()
+    //                     .content_type()
+    //     }
+    //     (_, _, _) => false,
+    // }) {
+    //     let root_path = get_sources_root().unwrap(); // TOOD - handle error
+    //     let source = SourceExtension::from_str(page.content_type.as_str()).unwrap();
+    //     let filepath = search_filepath(
+    //         &root_path,
+    //         &source.path(),
+    //         &format!("{}{}", &page.name, &source.ext()),
+    //     )?;
 
-        match fs::remove_file(&filepath) {
-            Ok(()) => {
-                logger::loading("<green>File deleted successfully".to_string());
-                match contents.remove_file(id, name, extension) {
-                    Ok(_) => {
-                        logger::println("<green>CMS updated</>".to_string());
-                        Ok(())
-                    }
-                    Err(e) => Err(e),
-                }
-            }
-            Err(e) => Err(DaikokuCliError::FileSystem(e.to_string())),
-        }
-    } else {
-        Err(DaikokuCliError::FileSystem("page not found".to_string()))
-    }
+    //     match fs::remove_file(&filepath) {
+    //         Ok(()) => {
+    //             logger::loading("<green>File deleted successfully".to_string());
+    //             match contents.remove_file(id, name, extension) {
+    //                 Ok(_) => {
+    //                     logger::println("<green>CMS updated</>".to_string());
+    //                     Ok(())
+    //                 }
+    //                 Err(e) => Err(e),
+    //             }
+    //         }
+    //         Err(e) => Err(DaikokuCliError::FileSystem(e.to_string())),
+    //     }
+    // } else {
+    //     Err(DaikokuCliError::FileSystem("page not found".to_string()))
+    // }
 }
 
 fn search_filepath(
@@ -135,61 +136,62 @@ fn new_file(
     block: Option<bool>,
     overwrite: bool,
 ) -> DaikokuResult<()> {
-    logger::loading("<yellow>Creating</> new source file ...".to_string());
+    Ok(())
+    // logger::loading("<yellow>Creating</> new source file ...".to_string());
 
-    let source = SourceExtension::from_str(&extension.as_str()).unwrap();
+    // let source = SourceExtension::from_str(&extension.as_str()).unwrap();
 
-    let mut folder_path = source.path();
+    // let mut folder_path = source.path();
 
-    if let Some(true) = block {
-        folder_path = "blocks".to_string();
-    } else if path.is_none() {
-        return Err(DaikokuCliError::Configuration(
-            "you need to specify a exposition path to create a page".to_string(),
-        ));
-    }
+    // if let Some(true) = block {
+    //     folder_path = "blocks".to_string();
+    // } else if path.is_none() {
+    //     return Err(DaikokuCliError::Configuration(
+    //         "you need to specify a exposition path to create a page".to_string(),
+    //     ));
+    // }
 
-    let mut summary = read_cms_pages();
-    let already_present = summary.contains_page(&name, &source.content_type());
+    // let mut summary = read_cms_pages();
+    // let already_present = summary.contains_page(&name, &source.content_type());
 
-    match (already_present, get_sources_root()) {
-        (_, None) => Err(DaikokuCliError::FileSystem(
-            "missing root sources path".to_string(),
-        )),
-        (true, _) if !overwrite => Err(DaikokuCliError::FileSystem(
-            "a source file of the same name and type already exists".to_string(),
-        )),
-        (_, Some(root_path)) => {
-            let filepath = Path::new(&root_path)
-                .join("src")
-                .join(&folder_path)
-                .join(format!("{}{}", &name, &source.ext()))
-                .to_path_buf();
+    // match (already_present, get_sources_root()) {
+    //     (_, None) => Err(DaikokuCliError::FileSystem(
+    //         "missing root sources path".to_string(),
+    //     )),
+    //     (true, _) if !overwrite => Err(DaikokuCliError::FileSystem(
+    //         "a source file of the same name and type already exists".to_string(),
+    //     )),
+    //     (_, Some(root_path)) => {
+    //         let filepath = Path::new(&root_path)
+    //             .join("src")
+    //             .join(&folder_path)
+    //             .join(format!("{}{}", &name, &source.ext()))
+    //             .to_path_buf();
 
-            logger::println(format!("<green>At path {:?}</>", &filepath).to_string());
-            match fs::File::create(filepath) {
-                Ok(_) => {
-                    logger::println("<green>Source file created</>".to_string());
-                    logger::println("<yellow>Starting</> patch the summary file".to_string());
+    //         logger::println(format!("<green>At path {:?}</>", &filepath).to_string());
+    //         match fs::File::create(filepath) {
+    //             Ok(_) => {
+    //                 logger::println("<green>Source file created</>".to_string());
+    //                 logger::println("<yellow>Starting</> patch the summary file".to_string());
 
-                    let _ = summary.add_new_file(
-                        name,
-                        visible,
-                        authenticated,
-                        path,
-                        exact,
-                        &source.content_type(),
-                        overwrite,
-                    )?;
+    //                 let _ = summary.add_new_file(
+    //                     name,
+    //                     visible,
+    //                     authenticated,
+    //                     path,
+    //                     exact,
+    //                     &source.content_type(),
+    //                     overwrite,
+    //                 )?;
 
-                    logger::println("<green>Summary has been patched</>".to_string());
-                    Ok(())
-                }
-                Err(e) => Err(DaikokuCliError::FileSystem(format!(
-                    "failed to create new source file : {}",
-                    e.to_string()
-                ))),
-            }
-        }
-    }
+    //                 logger::println("<green>Summary has been patched</>".to_string());
+    //                 Ok(())
+    //             }
+    //             Err(e) => Err(DaikokuCliError::FileSystem(format!(
+    //                 "failed to create new source file : {}",
+    //                 e.to_string()
+    //             ))),
+    //         }
+    //     }
+    // }
 }

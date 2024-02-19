@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate ini;
+
 mod commands;
 mod logging;
 mod models;
@@ -108,34 +111,31 @@ pub enum SourceCommands {
 
 #[derive(Debug, Subcommand)]
 pub enum ConfigCommands {
-    Reset {},
-    Set {
-        /// The path to the configuration folder
-        #[arg(
-            value_name = "PATH",
-            short = 'p',
-            long = "path",
-            help = "The path to the configuration folder",
-            required = false
-        )]
-        path: Option<String>,
-        /// The remote server to build your plugins
-        #[arg(
-            value_name = "SERVER",
-            short = 's',
-            long = "server",
-            help = "The remote server to build your plugins",
-            required = false
-        )]
+    Add {
+        #[arg(value_name = "NAME", short = 'n', long = "name")]
+        name: String,
+        #[arg(value_name = "SERVER", short = 's', long = "server")]
         server: Option<String>,
-        /// client id
-        #[arg(value_name = "CLIENT_ID", long = "clientId", required = false)]
-        client_id: Option<String>,
-        /// client secret
-        #[arg(value_name = "CLIENT_SECRET", long = "clientSecret", required = false)]
-        client_secret: Option<String>,
+        #[arg(value_name = "SECURED", long = "secured", required = false)]
+        secured: Option<bool>,
     },
-    Get {},
+    Clear {},
+    Default {
+        #[arg(value_name = "NAME", short = 'n', long = "name")]
+        name: String,
+    },
+    Delete {
+        #[arg(value_name = "NAME", short = 'n', long = "name")]
+        name: String,
+    },
+    Get {
+        #[arg(value_name = "NAME", short = 'n', long = "name")]
+        name: String,
+    },
+    Use {
+        #[arg(value_name = "NAME", short = 'n', long = "name")]
+        name: String,
+    },
 }
 
 #[tokio::main]

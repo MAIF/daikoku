@@ -327,6 +327,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "acbf1af155f9b9ef647e42cdc158db4b64a1b61f743629225fde6f3e0be2a7c7"
 
 [[package]]
+name = "configparser"
+version = "1.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe1d7dcda7d1da79e444bdfba1465f2f849a58b07774e1df473ee77030cb47a7"
+
+[[package]]
 name = "constant_time_eq"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -428,6 +434,7 @@ dependencies = [
  "hyper 1.1.0",
  "hyper-tls",
  "hyper-util",
+ "ini",
  "lazy_static",
  "once_cell",
  "paris",
@@ -997,6 +1004,15 @@ checksum = "d530e1a18b1cb4c484e6e34556a0d948706958449fca0cab753d649f2bce3d1f"
 dependencies = [
  "equivalent",
  "hashbrown",
+]
+
+[[package]]
+name = "ini"
+version = "1.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0a9271a5dfd4228fa56a78d7508a35c321639cc71f783bb7a5723552add87bce"
+dependencies = [
+ "configparser",
 ]
 
 [[package]]

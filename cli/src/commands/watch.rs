@@ -22,10 +22,6 @@ use crate::logging::logger;
 use crate::models::folder::{read_contents, Folder, SourceExtension, ToContentType};
 use crate::utils::get_current_working_dir;
 
-use super::configuration::{
-    read_configuration, DAIKOKU_CLIENT_ID, DAIKOKU_CLIENT_SECRET, DAIKOKU_SERVER,
-};
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub(crate) struct CmsPage {
     pub(crate) _id: String,
@@ -201,33 +197,34 @@ fn initialize_command(
     client_id: Option<String>,
     client_secret: Option<String>,
 ) -> DaikokuResult<()> {
-    let mut configuration = read_configuration()?;
+    Ok(())
+    // let mut configuration = read_configuration()?;
 
-    let complete_path = match path {
-        Some(p) => p,
-        None => get_current_working_dir()?,
-    };
+    // let complete_path = match path {
+    //     Some(p) => p,
+    //     None => get_current_working_dir()?,
+    // };
 
-    if server.is_some() {
-        configuration.insert(DAIKOKU_SERVER.to_owned(), server.unwrap().to_owned());
-    }
+    // if server.is_some() {
+    //     configuration.insert(DAIKOKU_SERVER.to_owned(), server.unwrap().to_owned());
+    // }
 
-    if client_id.is_some() {
-        configuration.insert(DAIKOKU_CLIENT_ID.to_owned(), client_id.unwrap().to_owned());
-    }
+    // if client_id.is_some() {
+    //     configuration.insert(DAIKOKU_CLIENT_ID.to_owned(), client_id.unwrap().to_owned());
+    // }
 
-    if client_secret.is_some() {
-        configuration.insert(
-            DAIKOKU_CLIENT_SECRET.to_owned(),
-            client_secret.unwrap().to_owned(),
-        );
-    }
+    // if client_secret.is_some() {
+    //     configuration.insert(
+    //         DAIKOKU_CLIENT_SECRET.to_owned(),
+    //         client_secret.unwrap().to_owned(),
+    //     );
+    // }
 
-    if !Path::new(&complete_path).exists() {
-        return Err(DaikokuCliError::FolderNotExists(complete_path));
-    } else {
-        Ok(())
-    }
+    // if !Path::new(&complete_path).exists() {
+    //     return Err(DaikokuCliError::FolderNotExists(complete_path));
+    // } else {
+    //     Ok(())
+    // }
 }
 
 pub(crate) fn read_cms_pages() -> Summary {
