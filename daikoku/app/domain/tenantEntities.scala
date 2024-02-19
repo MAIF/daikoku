@@ -553,7 +553,7 @@ object CmsPage {
 }
 
 case class CmsFile(name: String, content: String)
-case class CmsContents(pages: Seq[CmsFile], blocks: Seq[CmsFile], metadata: Seq[CmsFile])
+case class CmsContents(pages: Seq[CmsFile], blocks: Seq[CmsFile], metadata: Seq[CmsFile], scripts: Seq[CmsFile], styles: Seq[CmsFile], data: Seq[CmsFile])
 case class CmsRequestRendering(pages: Seq[CmsPage], content: CmsContents, current_page: String)
 case class CmsHistory(id: String, date: DateTime, diff: String, user: UserId)
 
@@ -590,7 +590,6 @@ case class CmsPage(
       ec: ExecutionContext,
       messagesApi: MessagesApi
   ): Handlebars = {
-
     handlebars.registerHelper(
       s"daikoku-user",
       (id: String, options: Options) => {
@@ -995,7 +994,7 @@ case class CmsPage(
           tenant = ctx.tenant.id,
           visible = true,
           authenticated = false,
-          name = "generated",
+          name = "#generated",
           forwardRef = None,
           tags = List(),
           metadata = Map(),
@@ -1012,7 +1011,7 @@ case class CmsPage(
                         id: String,
                         req: Option[CmsRequestRendering])(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
     req match {
-      case Some(value) => value.pages.find(_.id.value == id)
+      case Some(value) => value.pages.find(_.id.value == id) // TODO - manage the not deleted field
       case None => Await.result(
         env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id),
         10.seconds
@@ -1098,6 +1097,7 @@ case class CmsPage(
       jsonToCombine: Map[String, JsValue],
       req: Option[CmsRequestRendering]
   )(implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi) = {
+    println("daikoku-template-wrapper", id, parentId)
     cmsFindByIdNotDeleted(ctx, id, req) match {
       case None => "page not found"
       case Some(page) =>
@@ -1114,7 +1114,7 @@ case class CmsPage(
                   tenant = ctx.tenant.id,
                   visible = true,
                   authenticated = false,
-                  name = "generated",
+                  name = "#generated",
                   forwardRef = None,
                   tags = List(),
                   metadata = Map(),
@@ -1136,6 +1136,7 @@ case class CmsPage(
           jsonToCombine,
           req = req
         )
+        println("rendering wrapper with", outFields)
         Await.result(
           page
             .render(
@@ -1479,6 +1480,17 @@ case class CmsPage(
       acc.combine(item._1, item._2)
     }
 
+  private def cmsPathcontainsName(cmsName: String, page: CmsPage) = cmsName.split("\\.").headOption.getOrElse("") == page.name
+
+  private def searchCmsFile(req: CmsRequestRendering, page: CmsPage) = {
+     req.content.pages.find(p => cmsPathcontainsName(p.name, page)) // search pages
+              .orElse(req.content.blocks.find(p => cmsPathcontainsName(p.name, page))) // or search blocks
+              .orElse(req.content.scripts.find(p => cmsPathcontainsName(p.name, page))) // or search scripts
+              .orElse(req.content.styles.find(p => cmsPathcontainsName(p.name, page))) // or search styles
+              .orElse(req.content.data.find(p => cmsPathcontainsName(p.name, page))) // or search data
+              .map(_.content).getOrElse("")
+  }
+
   def render(
       ctx: DaikokuActionMaybeWithoutUserContext[_],
       parentId: Option[String] = None,
@@ -1487,11 +1499,15 @@ case class CmsPage(
       req: Option[CmsRequestRendering]
   )(implicit env: Env, messagesApi: MessagesApi): Future[(String, String)] = {
     implicit val ec: ExecutionContext = env.defaultExecutionContext
+
     val page = forwardRef match {
       case Some(id) => cmsFindByIdNotDeleted(ctx, id.value, req).getOrElse(this)
       case None => this
     }
     try {
+
+      println(s"rendering ${page.name}")
+
       import com.github.jknack.handlebars.EscapingStrategy
       implicit val ec = CmsPage.pageRenderingEc
 
@@ -1559,7 +1575,6 @@ case class CmsPage(
             }
           }
         )
-
         handlebars.registerHelper(
           "size",
           (variable: String, _: Options) => {
@@ -1788,15 +1803,17 @@ case class CmsPage(
         )
 
         val c = context.build()
+
         val template = req match {
-          case Some(value) => {
-            value.content.pages.find(p => p.name.split("\\.").headOption.getOrElse("") == page.name) // search pages
-              .orElse(value.content.blocks.find(p => p.name.split("\\.").headOption.getOrElse("") == page.name)) // or search blocks
-              .map(_.content).getOrElse("")
-          }
-          case None => if (ctx.request.getQueryString("draft").contains("true")) page.draft
+          case Some(value) if page.name != "#generated" => searchCmsFile(value, page)
+          case _ => if (ctx.request.getQueryString("draft").contains("true")) page.draft
             else page.body
         }
+
+        if (template == "") {
+          println("missing rendering", page.name)
+        } else
+          println("starting rendering", page.name)
 
         val result = handlebars.compileInline(template).apply(c)
         c.destroy()

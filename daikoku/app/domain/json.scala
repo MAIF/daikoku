@@ -4474,13 +4474,19 @@ object json {
         "pages" -> o.pages.map(CmsFileFormat.writes),
         "blocks" -> o.blocks.map(CmsFileFormat.writes),
         "metadata" -> o.metadata.map(CmsFileFormat.writes),
+        "scripts" -> o.scripts.map(CmsFileFormat.writes),
+        "styles" -> o.styles.map(CmsFileFormat.writes),
+        "data" -> o.data.map(CmsFileFormat.writes),
       )
     override def reads(json: JsValue): JsResult[CmsContents] =
       Try {
         CmsContents(
           pages = (json \ "pages").as(Reads.seq(CmsFileFormat)),
           blocks = (json \ "blocks").as(Reads.seq(CmsFileFormat)),
-          metadata = (json \ "metadata").as(Reads.seq(CmsFileFormat))
+          metadata = (json \ "metadata").as(Reads.seq(CmsFileFormat)),
+          scripts = (json \ "scripts").as(Reads.seq(CmsFileFormat)),
+          styles = (json \ "styles").as(Reads.seq(CmsFileFormat)),
+          data = (json \ "data").as(Reads.seq(CmsFileFormat))
         )
       } match {
         case Failure(exception) => JsError(exception.getMessage)

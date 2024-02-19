@@ -228,6 +228,8 @@ class HomeController(
 
       val currentPage = req.pages.find(_.id.value == req.current_page)
 
+      println("incoming " + currentPage.get.authenticated, if(ctx.user.isEmpty || ctx.user.exists(_.isGuest)) "guest" else "connected")
+
       currentPage match {
         case Some(r)
           if r.authenticated && (ctx.user.isEmpty || ctx.user.exists(_.isGuest)) => redirectToLoginPage(ctx)

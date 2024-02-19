@@ -1,5 +1,5 @@
-mod logging;
 mod commands;
+mod logging;
 mod models;
 mod utils;
 
@@ -39,22 +39,9 @@ pub enum Commands {
         #[arg(value_name = "PATH", short = 'p', long = "path", required = false)]
         path: Option<String>,
     },
-    #[command()]
     Source {
-        #[arg(value_name = "NAME", short = 'n', long = "name")]
-        name: String,
-        #[arg(value_name = "EXTENSION", short = 'e', long = "extension", value_parser=["javascript", "html", "json", "css"], require_equals = true)]
-        extension: String,
-        #[arg(value_name = "VISIBLE", short = 'v', long = "visible", required = false)]
-        visible: Option<bool>,
-        #[arg(value_name = "AUTHENTICATED", short = 'a', long = "authenticated", required = false)]
-        authenticated: Option<bool>,
-        #[arg(value_name = "PATH", long = "path")]
-        path: Option<String>,
-        #[arg(value_name = "EXACT", long = "exact", required = false)]
-        exact: Option<bool>,
-        #[arg(value_name = "BLOCK", long = "block", required = false)]
-        block: Option<bool>
+        #[command(subcommand)]
+        command: SourceCommands,
     },
     ///
     #[command()]
@@ -76,6 +63,46 @@ pub enum Commands {
     Config {
         #[command(subcommand)]
         command: ConfigCommands,
+    },
+}
+
+#[derive(Debug, Subcommand)]
+pub enum SourceCommands {
+    New {
+        #[arg(value_name = "NAME", short = 'n', long = "name")]
+        name: String,
+        #[arg(value_name = "EXTENSION", short = 'e', long = "extension", value_parser=["javascript", "html", "json", "css"], require_equals = true)]
+        extension: String,
+        #[arg(
+            value_name = "VISIBLE",
+            short = 'v',
+            long = "visible",
+            required = false
+        )]
+        visible: Option<bool>,
+        #[arg(
+            value_name = "AUTHENTICATED",
+            short = 'a',
+            long = "authenticated",
+            required = false
+        )]
+        authenticated: Option<bool>,
+        #[arg(value_name = "PATH", long = "path")]
+        path: Option<String>,
+        #[arg(value_name = "EXACT", long = "exact", required = false)]
+        exact: Option<bool>,
+        #[arg(value_name = "BLOCK", long = "block", required = false)]
+        block: Option<bool>,
+        #[arg(value_name = "OVERWRITE", long = "overwrite", required = false)]
+        overwrite: Option<bool>,
+    },
+    Delete {
+        #[arg(value_name = "ID", short = 'i', long = "identifier")]
+        id: Option<String>,
+        #[arg(value_name = "NAME", short = 'n', long = "name")]
+        name: Option<String>,
+        #[arg(value_name = "EXTENSION", short = 'e', long = "extension", value_parser=["javascript", "html", "json", "css"], require_equals = true)]
+        extension: Option<String>,
     },
 }
 
@@ -122,18 +149,17 @@ async fn main() {
             name,
             path,
         } => commands::initialization::run(template, name, path.map(absolute_path)),
-        Commands::Source { name, extension, visible, authenticated, path, exact, block } =>
-            commands::source::run(name, extension, visible, authenticated, path, exact, block),
+        Commands::Source { command } => commands::source::run(command),
         Commands::Watch {
-            path, 
-            server, 
-            client_id, 
-            client_secret
-         } => {
+            path,
+            server,
+            client_id,
+            client_secret,
+        } => {
             commands::watch::run(path.map(absolute_path), server, client_id, client_secret).await;
             Ok(())
-         },
-        Commands::Config { command } => commands::configuration::run(command)
+        }
+        Commands::Config { command } => commands::configuration::run(command),
     };
 
     if let Err(e) = out {

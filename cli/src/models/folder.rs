@@ -1,6 +1,11 @@
 use serde::{Deserialize, Serialize};
 
-use std::{fs::{self, DirEntry}, str::FromStr};
+use std::{
+    fs::{self, DirEntry},
+    str::FromStr,
+};
+
+pub(crate) const FOLDER_NAMES: [&str; 5] = ["pages", "styles", "scripts", "data", "blocks"];
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct Folder {
@@ -65,8 +70,8 @@ fn read_directories_files(path: &str) -> Vec<DirEntry> {
     match fs::read_dir(path) {
         Ok(files) => files.map(|f| f.unwrap()).collect(),
         Err(e) => panic!(
-            "Should be able to read contents at the specified path, {}",
-            e
+            "Should be able to read contents at the specified path : {} \n {}",
+            &path, e
         ),
     }
 }
@@ -108,9 +113,13 @@ impl FromStr for SourceExtension {
     fn from_str(input: &str) -> Result<SourceExtension, Self::Err> {
         match input.to_lowercase().as_str() {
             "html" => Ok(SourceExtension::HTML),
+            "text/html" => Ok(SourceExtension::HTML),
             "css" => Ok(SourceExtension::CSS),
+            "text/css" => Ok(SourceExtension::CSS),
             "javascript" => Ok(SourceExtension::Javascript),
+            "text/javascript" => Ok(SourceExtension::Javascript),
             "json" => Ok(SourceExtension::JSON),
+            "application/json" => Ok(SourceExtension::JSON),
             _ => panic!("Bad page extension"),
         }
     }
@@ -122,7 +131,7 @@ impl FilePath for SourceExtension {
             SourceExtension::HTML => String::from("pages"),
             SourceExtension::CSS => String::from("styles"),
             SourceExtension::Javascript => String::from("scripts"),
-            SourceExtension::JSON => String::from("json")
+            SourceExtension::JSON => String::from("json"),
         }
     }
 }
@@ -133,7 +142,7 @@ impl ToContentType for SourceExtension {
             SourceExtension::HTML => String::from("text/html"),
             SourceExtension::CSS => String::from("text/css"),
             SourceExtension::Javascript => String::from("text/javascript"),
-            SourceExtension::JSON => String::from("application/json")
+            SourceExtension::JSON => String::from("application/json"),
         }
     }
 }
@@ -144,7 +153,7 @@ impl Ext for SourceExtension {
             SourceExtension::HTML => String::from(".html"),
             SourceExtension::CSS => String::from(".css"),
             SourceExtension::Javascript => String::from(".js"),
-            SourceExtension::JSON => String::from(".json")
+            SourceExtension::JSON => String::from(".json"),
         }
     }
 }

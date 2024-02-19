@@ -109,11 +109,7 @@ fn _5_can_set_configuration() -> Result<(), Box<dyn std::error::Error>> {
     let setup = Setup::new();
 
     let mut cmd = Command::cargo_bin("wasmo")?;
-    cmd.args([
-        "config",
-        "set",
-        "--path=/tmp/wasmo"
-    ]);
+    cmd.args(["config", "set", "--path=/tmp/wasmo"]);
     cmd.assert()
         .stdout(predicate::str::contains("wasmo configuration patched"))
         .success();

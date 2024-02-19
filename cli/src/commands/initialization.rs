@@ -74,7 +74,7 @@ fn rename_plugin(template: String, name: String, path: Option<String>) -> Daikok
     ) {
         Ok(()) => {
             // update_metadata_file(&complete_path, &name, &template)?;
-            logger::println("<green>Plugin created</>".to_string());
+            logger::println("<green>CMS created</>".to_string());
             Ok(())
         }
         Err(e) => Err(DaikokuCliError::CmsCreationFile(e.to_string())),

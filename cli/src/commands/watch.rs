@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::io::Read;
-use std::iter::Sum;
 use std::path::{Path, PathBuf};
+use std::str::FromStr;
 
 use http_body_util::{BodyExt, Full};
 use hyper::body::Bytes;
@@ -13,12 +13,13 @@ use hyper::{Request, Response};
 use hyper_util::rt::TokioIo;
 use serde::{Deserialize, Serialize};
 use tokio::net::{TcpListener, TcpStream};
+use uuid::Uuid;
 
-use std::fs;
+use std::{fmt, fs};
 
 use crate::logging::error::{DaikokuCliError, DaikokuResult};
 use crate::logging::logger;
-use crate::models::folder::{read_contents, Folder};
+use crate::models::folder::{read_contents, Folder, SourceExtension, ToContentType};
 use crate::utils::get_current_working_dir;
 
 use super::configuration::{
@@ -27,7 +28,7 @@ use super::configuration::{
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub(crate) struct CmsPage {
-    _id: String,
+    pub(crate) _id: String,
     _tenant: String,
     _deleted: bool,
     visible: bool,
@@ -64,6 +65,28 @@ struct CmsRequestRendering {
     current_page: String,
 }
 
+impl fmt::Display for CmsPage {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{:?} - {} - {}{}{}",
+            self.path.clone().unwrap_or("NO_PATH".to_string()),
+            self.name,
+            self.content_type,
+            if self.authenticated {
+                "- AUTH_REQUIRED -"
+            } else {
+                ""
+            },
+            if self.exact {
+                "- EXACT_MATCHING"
+            } else {
+                ""
+            }
+        )
+    }
+}
+
 impl Summary {
     pub(crate) fn add_new_file(
         &mut self,
@@ -72,26 +95,72 @@ impl Summary {
         authenticated: Option<bool>,
         path: Option<String>,
         exact: Option<bool>,
-        content_type: String,
+        content_type: &String,
+        overwrite: bool,
     ) -> DaikokuResult<()> {
         let new_page = CmsPage {
-            _id: "".to_string(),     // TODO - generate new UUID
-            _tenant: "".to_string(), // TODO - get tenant from configuration file
+            _id: Uuid::new_v4().to_string(), // TODO - generate new UUID
+            _tenant: "".to_string(),         // TODO - get tenant from configuration file
             _deleted: false,
             visible: visible.unwrap_or(true),
             authenticated: authenticated.unwrap_or(false),
-            name,
+            name: name.clone(),
             tags: vec![],
             metadata: HashMap::new(),
-            content_type,
+            content_type: content_type.clone(),
             path,
             exact: exact.unwrap_or(true),
             last_published_date: chrono::offset::Utc::now().timestamp() as u64,
         };
 
+        if overwrite && self.contains_page(&name, content_type) {
+            self.pages = self
+                .pages
+                .iter()
+                .filter(|p| !(p.name == name.clone() && p.content_type == content_type.clone()))
+                .cloned()
+                .collect();
+        }
+
         self.pages.push(new_page);
 
         write_cms_pages(&self)
+    }
+
+    pub(crate) fn remove_file(
+        &mut self,
+        id: Option<String>,
+        name: Option<String>,
+        extension: Option<String>,
+    ) -> DaikokuResult<()> {
+        let contents = read_cms_pages();
+
+        let identifier = id.map(|p| p.clone()).unwrap_or("".to_string());
+        let name = &name.unwrap_or("".to_string());
+        let extension = &extension
+            .map(|e| SourceExtension::from_str(&e).unwrap().content_type())
+            .unwrap_or("text/html".to_string());
+
+        match contents
+            .pages
+            .iter()
+            .position(|p| p._id == identifier || (self.contains_page(&name, &extension)))
+        {
+            Some(idx) => {
+                self.pages.remove(idx);
+                write_cms_pages(&self)
+            }
+            None => Err(DaikokuCliError::Configuration(
+                "file registration is missing".to_string(),
+            )),
+        }
+    }
+
+    pub(crate) fn contains_page(&self, name: &String, content_type: &String) -> bool {
+        self.pages
+            .iter()
+            .find(|p| &p.name == name && &p.content_type == content_type)
+            .is_some()
     }
 }
 
@@ -101,6 +170,8 @@ pub(crate) async fn run(
     client_id: Option<String>,
     client_secret: Option<String>,
 ) {
+    logger::loading("<yellow>Listening</> on 3333".to_string());
+
     let _ = initialize_command(path, server, client_id, client_secret).unwrap();
 
     let listener = TcpListener::bind(format!("0.0.0.0:3333")).await.unwrap();
@@ -287,6 +358,8 @@ fn not_found_page() -> Result<Response<Full<Bytes>>, hyper::Error> {
 async fn watcher(
     req: Request<hyper::body::Incoming>,
 ) -> Result<Response<Full<Bytes>>, hyper::Error> {
+    logger::println(format!("<green>Request received</> {}", &req.uri()));
+
     let Summary { pages } = read_cms_pages();
 
     let mut router_pages = vec![];
@@ -325,7 +398,7 @@ async fn watcher(
 }
 
 async fn render_page(page: &CmsPage) -> Result<Response<Full<Bytes>>, hyper::Error> {
-    println!("Page found {:?}", page);
+    logger::println(format!("<green>Serve page</> {}", page));
 
     let host = "localhost:9000";
 
@@ -333,7 +406,7 @@ async fn render_page(page: &CmsPage) -> Result<Response<Full<Bytes>>, hyper::Err
     let Summary { pages } = read_cms_pages();
 
     let content = read_contents(
-        &PathBuf::from("./my-first-cms/src")
+        &PathBuf::from("./cms/src")
             .into_os_string()
             .into_string()
             .unwrap(),
@@ -400,7 +473,7 @@ async fn render_page(page: &CmsPage) -> Result<Response<Full<Bytes>>, hyper::Err
         })
         .unwrap_or(host.to_string());
 
-    println!("{:?} - {} - {}", redirect_location, location, status);
+    // println!("{:?} - {} - {}", redirect_location, location, status);
 
     let status = status.as_u16();
 
@@ -414,7 +487,7 @@ async fn render_page(page: &CmsPage) -> Result<Response<Full<Bytes>>, hyper::Err
             .body(Full::new(Bytes::from(result)))
             .unwrap();
 
-        println!("{:?}", response.headers());
+        // println!("{:?}", response.headers());
         Ok(response)
     }
 }
