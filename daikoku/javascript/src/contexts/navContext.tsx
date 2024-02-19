@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import merge from 'lodash/merge';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useMatch, useNavigate, useParams } from 'react-router-dom';
 
-import { api as API, Can, manage, queryClient } from '../components/utils';
+import { api as API, Can, manage } from '../components/utils';
 import { I18nContext } from '../contexts';
 import * as Services from '../services/index';
 import { IApi, ITeamSimple, ITenant, isError } from '../types';
@@ -584,6 +584,8 @@ export const useApiGroupBackOffice = (apiGroup: IApi, creation: boolean) => {
 export const useTeamBackOffice = () => {
   const { setMode, setOffice, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
+
+  const queryClient = useQueryClient();
 
 
   const navigate = useNavigate();

@@ -1,13 +1,12 @@
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import React, { PropsWithChildren, useState } from "react"
 
-import { queryClient } from "../components"
 import { Spinner } from "../components/utils/Spinner"
 import * as Services from '../services/index'
 import { AuthProvider, DaikokuMode, Display, IStateContext, TenanMode, isError } from "../types"
 
 
-type TGlobalContext = IStateContext & { reloadContext: () => void, toggleExpertMode: () => void }
+type TGlobalContext = IStateContext & { reloadContext: () => void, toggleExpertMode: () => void, reloadUnreadNotificationsCount: () => void }
 const initContext: TGlobalContext = {
   connectedUser: {
     _id: "",
@@ -38,8 +37,10 @@ const initContext: TGlobalContext = {
   },
   isTenantAdmin: false,
   apiCreationPermitted: false,
-  reloadContext: () => Promise.resolve(),
+  unreadNotificationsCount: 0,
   expertMode: JSON.parse(localStorage.getItem('expertMode') || 'false'),
+  reloadContext: () => Promise.resolve(),
+  reloadUnreadNotificationsCount: () => { },
   toggleExpertMode: () => { }
 
 }
@@ -55,9 +56,14 @@ export const CurrentUserContextProvider = (props: PropsWithChildren) => {
 
   const [expertMode, setExpertMode] = useState<boolean>(getExpertMode())
 
+  const queryClient = useQueryClient();
   const currentUserQuery = useQuery({
     queryKey: ['context'],
     queryFn: () => Services.getUserContext(),
+  })
+  const notificationCountQuery = useQuery({
+    queryKey: ['notification-count'],
+    queryFn: () => Services.myUnreadNotificationsCount(),
   })
 
   if (currentUserQuery.isLoading) {
@@ -70,6 +76,7 @@ export const CurrentUserContextProvider = (props: PropsWithChildren) => {
   }
 
   const reloadContext = () => queryClient.invalidateQueries({ queryKey: ["context"] })
+  const reloadUnreadNotificationsCount = () => queryClient.invalidateQueries({ queryKey: ["notification-count"] })
 
   const toggleExpertMode = () => {
     localStorage.setItem('expertMode', (!expertMode).toLocaleString())
@@ -78,7 +85,14 @@ export const CurrentUserContextProvider = (props: PropsWithChildren) => {
 
 
   return (
-    <GlobalContext.Provider value={{ ...currentUserQuery.data, reloadContext, expertMode, toggleExpertMode }}>
+    <GlobalContext.Provider value={{
+      ...currentUserQuery.data,
+      reloadContext,
+      expertMode,
+      toggleExpertMode,
+      unreadNotificationsCount: notificationCountQuery.data?.count || 0,
+      reloadUnreadNotificationsCount
+    }}>
       {props.children}
     </GlobalContext.Provider>
   )

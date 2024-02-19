@@ -6,7 +6,7 @@ import React, { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { I18nContext, ModalContext, useTeamBackOffice } from '../../../contexts';
 import * as Services from '../../../services';
 import { IApi, IRotation, ISafeSubscription, ISubscription, ISubscriptionExtended, ITeamSimple, IUsagePlan, ResponseError, isError } from '../../../types';
@@ -18,7 +18,6 @@ import {
   Spinner,
   apikey,
   formatPlanType,
-  queryClient,
   read,
   stat,
 } from '../../utils';
@@ -34,6 +33,7 @@ export const TeamApiKeysForApi = (props: TeamBackOfficeProps) => {
   const { client } = useContext(getApolloContext());
   const { translate, Translation } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
+  const queryClient = useQueryClient();
 
   const apiQuery = useQuery({
     queryKey: ['data', 'visibleApi'],

@@ -1,5 +1,5 @@
 import { getApolloContext } from "@apollo/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import classNames from 'classnames';
 import debounce from "lodash/debounce";
 import sortBy from 'lodash/sortBy';
@@ -24,7 +24,6 @@ import { toast } from "sonner";
 import { GlobalContext } from "../../../contexts/globalContext";
 import * as Services from "../../../services";
 import { FilterPreview, Spinner, arrayStringToTOps } from "../../utils";
-import queryClient from "../../utils/queryClient";
 
 const GRID = 'GRID';
 const LIST = 'LIST';
@@ -44,6 +43,7 @@ type TApiList = {
 export const ApiList = (props: TApiList) => {
 
   const { client } = useContext(getApolloContext());
+  const queryClient = useQueryClient();
 
   const { translate } = useContext(I18nContext);
   const navigate = useNavigate();

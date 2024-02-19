@@ -18,10 +18,9 @@ import {
   formatPlanType,
   manage,
   Option,
-  queryClient,
   Spinner,
 } from '../../utils';
-import {useQuery} from "@tanstack/react-query";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
 import { TeamBackOfficeProps } from "../TeamBackOffice";
 
 type TeamApiSubscriptionsProps = {
@@ -87,6 +86,7 @@ interface IApiSubscriptionGqlWithUsage extends IApiSubscriptionGql {
 export const TeamApiSubscriptions = ({ api, currentTeam }: TeamBackOfficeProps<TeamApiSubscriptionsProps>) => {
 
   const { client } = useContext(getApolloContext());
+  const queryClient = useQueryClient();
 
   const [filters, setFilters] = useState<SubscriptionsFilter>()
   const tableRef = useRef<TableRef>()

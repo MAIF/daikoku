@@ -20,6 +20,7 @@ export interface IStateContext {
   isTenantAdmin: boolean;
   apiCreationPermitted: boolean;
   expertMode: boolean;
+  unreadNotificationsCount: number;
 }
 
 export interface IStateError {

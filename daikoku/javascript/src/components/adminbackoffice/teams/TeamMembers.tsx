@@ -1,15 +1,16 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useParams } from 'react-router-dom';
 import { useTenantBackOffice } from '../../../contexts';
 
 import * as Services from '../../../services';
 import { isError } from '../../../types';
 import { TeamMembersSimpleComponent } from '../../backoffice';
-import { Can, manage, queryClient, Spinner, tenant } from '../../utils';
+import { Can, manage, Spinner, tenant } from '../../utils';
 
 export const TeamMembersForAdmin = () => {
   useTenantBackOffice();
 
+  const queryClient = useQueryClient();
   const queryTeam = useQuery({
     queryKey: ['team-infos'],
     queryFn: () => Services.teamFull(params.teamSettingId!)

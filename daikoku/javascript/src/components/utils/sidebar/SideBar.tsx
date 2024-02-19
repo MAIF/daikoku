@@ -25,7 +25,7 @@ export const SideBar = () => {
   const [panelState, setPanelState] = useState(state.closed);
   const [panelContent, setPanelContent] = useState<JSX.Element>();
 
-  const { tenant, connectedUser, impersonator, isTenantAdmin } = useContext(GlobalContext);
+  const { tenant, connectedUser, impersonator, isTenantAdmin, unreadNotificationsCount } = useContext(GlobalContext);
   const location = useLocation();
 
   const { totalUnread } = useContext(MessagesContext);
@@ -34,14 +34,6 @@ export const SideBar = () => {
   useEffect(() => {
     setPanelState(state.closed);
   }, [location]);
-
-  useEffect(() => {
-    Services.myUnreadNotificationsCount()
-      .then((notifCount) => {
-        dispatch(updateNotifications(notifCount.count));
-      }
-      );
-  }, []);
 
   const closeOnEsc = (e: any) => {
     if (e.key == 'Escape' || e.key == 'Esc') {

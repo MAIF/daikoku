@@ -98,11 +98,13 @@ export const myNotifications = (
 ): Promise<{ notifications: Array<INotification>; count: number }> =>
   customFetch(`/api/me/notifications?page=${page}&pageSize=${pageSize}`);
 
-export const myUnreadNotificationsCount = () =>
-  fetch('/api/me/notifications/unread-count').then(
-    (r) => (r.status === 200 ? r.json() : { count: 0 }),
-    () => ({ count: 0 })
-  );
+export const myUnreadNotificationsCount = (): Promise<{count: number}> =>
+  fetch('/api/me/notifications/unread-count')
+    .then(
+      (r) => (r.status === 200 ? r.json() : { count: 0 }),
+      () => ({ count: 0 })
+    )
+    .catch(() => ({ count: 0 }));
 
 export const acceptNotificationOfTeam = (
   NotificationId: string,

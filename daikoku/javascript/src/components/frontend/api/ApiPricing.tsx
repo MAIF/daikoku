@@ -1,5 +1,5 @@
 import { getApolloContext } from '@apollo/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import difference from 'lodash/difference';
 import find from 'lodash/find';
@@ -26,7 +26,7 @@ import {
   access,
   apikey,
   isPublish, isSubscriptionProcessIsAutomatic,
-  queryClient, renderPlanInfo, renderPricing
+  renderPlanInfo, renderPricing
 } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
 import { ApiDocumentation } from './ApiDocumentation';
@@ -348,7 +348,9 @@ type ApiPricingProps = {
 }
 
 export const ApiPricing = (props: ApiPricingProps) => {
+  const queryClient = useQueryClient();
   const usagePlansQuery = useQuery({ queryKey: ['plans', props.api.currentVersion], queryFn: () => Services.getVisiblePlans(props.api._id, props.api.currentVersion) })
+
 
   const match = useMatch('/:team/:api/:version/pricing/:env/:tab')
 

@@ -1,29 +1,23 @@
 
-import React from 'react';
-import ReactDOM from 'react-dom';
-import { createRoot } from 'react-dom/client'
-import { QueryClientProvider, QueryClient } from "@tanstack/react-query";
-import SwaggerEditor, { plugins } from 'swagger-editor'; //!!! don't remove this line !!!
-
+import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client';
+import { QueryClientProvider } from "@tanstack/react-query";
 import jQuery from 'jquery';
+import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
+import { Toaster } from 'sonner';
 
+import { DaikokuApp, DaikokuHomeApp } from './apps';
+import { LoginPage, queryClient } from './components';
+import { CurrentUserContextProvider } from './contexts/globalContext';
+import { I18nProvider } from './contexts/i18n-context';
 
-import 'react-tooltip/dist/react-tooltip.css'
-import 'bootstrap/dist/css/bootstrap.css';
 import '@maif/react-forms/lib/index.css';
+import 'bootstrap/dist/css/bootstrap.css';
+import 'react-tooltip/dist/react-tooltip.css';
 import './style/main.scss';
 
 import 'bootstrap';
 
-import { LoginPage, queryClient } from './components';
-import { customizeFetch } from './services/customize';
-import { I18nProvider } from './contexts/i18n-context';
-
-import { DaikokuApp, DaikokuHomeApp } from './apps';
-
-import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client';
-import { Toaster } from 'sonner';
-import { CurrentUserContextProvider } from './contexts/globalContext';
 
 const client = new ApolloClient({
   uri: '/api/search',
