@@ -28,7 +28,7 @@ export const TeamApiGroup = (props: TeamBackOfficeProps) => {
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/apigroups/:apiGroupId/stats/plan/:planId');
 
-  const { tenant } = useContext(GlobalContext);
+  const { tenant, expertMode, toggleExpertMode } = useContext(GlobalContext);
 
   const state: LocationState = location.state as LocationState
   const creation = state?.newApiGroup;
@@ -253,7 +253,7 @@ export const TeamApiGroup = (props: TeamBackOfficeProps) => {
           {creation ? (<h2>{apiGroup.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
             <h2 className="me-2">{apiGroup.name}{additionalHeader ? ` - ${additionalHeader}` : ''}</h2>
           </div>)}
-          <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
+          <button onClick={() => toggleExpertMode()} className="btn btn-sm btn-outline-primary">
             {expertMode && translate('Standard mode')}
             {!expertMode && translate('Expert mode')}
           </button>

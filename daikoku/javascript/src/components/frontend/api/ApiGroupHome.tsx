@@ -1,12 +1,13 @@
 import { getApolloContext } from '@apollo/client';
 import { useContext, useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
-import { useApiGroupFrontOffice } from '../../../contexts';
-import { I18nContext } from '../../../contexts';
+import classNames from 'classnames';
+import { I18nContext, useApiGroupFrontOffice } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
-import { IState, IStateContext, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, IUserSimple, isError } from '../../../types';
+import { ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, isError } from '../../../types';
 import { formatPlanType } from '../../utils/formatters';
 import {
   ApiDescription,
@@ -18,8 +19,6 @@ import {
   ApiPost,
   ApiPricing,
 } from './';
-import classNames from 'classnames';
-import { GlobalContext } from '../../../contexts/globalContext';
 
 export const ApiGroupHome = () => {
   const [apiGroup, setApiGroup] = useState<any>();

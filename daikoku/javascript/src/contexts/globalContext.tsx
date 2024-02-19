@@ -1,22 +1,14 @@
 import { useQuery } from "@tanstack/react-query"
-import React, { PropsWithChildren } from "react"
+import React, { PropsWithChildren, useState } from "react"
 
 import { queryClient } from "../components"
 import { Spinner } from "../components/utils/Spinner"
 import * as Services from '../services/index'
-import { AuthProvider, DaikokuMode, Display, ITenant, IUserSimple, TenanMode, isError } from "../types"
+import { AuthProvider, DaikokuMode, Display, IStateContext, TenanMode, isError } from "../types"
 
 
-export interface IStateContext {
-  impersonator?: IUserSimple;
-  connectedUser: IUserSimple;
-  tenant: ITenant;
-  isTenantAdmin: boolean;
-  apiCreationPermitted: boolean;
-}
-export type TContext = IStateContext & { reloadContext: () => Promise<void> }
-
-const initContext: TContext = {
+type TGlobalContext = IStateContext & { reloadContext: () => void, toggleExpertMode: () => void }
+const initContext: TGlobalContext = {
   connectedUser: {
     _id: "",
     _humanReadableId: "",
@@ -46,17 +38,23 @@ const initContext: TContext = {
   },
   isTenantAdmin: false,
   apiCreationPermitted: false,
-  reloadContext: () => Promise.resolve()
+  reloadContext: () => Promise.resolve(),
+  expertMode: JSON.parse(localStorage.getItem('expertMode') || 'false'),
+  toggleExpertMode: () => { }
 
 }
 
-export const GlobalContext = React.createContext<TContext>(initContext)
+export const GlobalContext = React.createContext<TGlobalContext>(initContext)
 export const useCurrentUserContext = () => {
   return React.useContext(GlobalContext)
 }
 
 
 export const CurrentUserContextProvider = (props: PropsWithChildren) => {
+  const getExpertMode = (): boolean => JSON.parse(localStorage.getItem('expertMode') || 'false')
+
+  const [expertMode, setExpertMode] = useState<boolean>(getExpertMode())
+
   const currentUserQuery = useQuery({
     queryKey: ['context'],
     queryFn: () => Services.getUserContext(),
@@ -73,8 +71,14 @@ export const CurrentUserContextProvider = (props: PropsWithChildren) => {
 
   const reloadContext = () => queryClient.invalidateQueries({ queryKey: ["context"] })
 
+  const toggleExpertMode = () => {
+    localStorage.setItem('expertMode', (!expertMode).toLocaleString())
+    setExpertMode(!expertMode)
+  };
+
+
   return (
-    <GlobalContext.Provider value={{ ...currentUserQuery.data, reloadContext }}>
+    <GlobalContext.Provider value={{ ...currentUserQuery.data, reloadContext, expertMode, toggleExpertMode }}>
       {props.children}
     </GlobalContext.Provider>
   )

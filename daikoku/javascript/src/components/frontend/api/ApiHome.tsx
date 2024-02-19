@@ -1,23 +1,22 @@
 import { getApolloContext } from '@apollo/client';
 import hljs from 'highlight.js';
 import { useContext, useEffect, useState } from 'react';
-import { toast } from 'sonner';
+import Navigation from 'react-feather/dist/icons/navigation';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select';
-import Navigation from 'react-feather/dist/icons/navigation';
+import { toast } from 'sonner';
 
 import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiSwagger } from '.';
-import { ModalContext, useApiFrontOffice } from '../../../contexts';
-import { I18nContext } from '../../../contexts';
+import { I18nContext, ModalContext, useApiFrontOffice } from '../../../contexts';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { IApi, IState, IStateContext, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, TeamPermission, TeamType, isError } from '../../../types';
+import { IApi, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, isError } from '../../../types';
 import { ActionWithTeamSelector, Can, CanIDoAction, Option, apikey, manage } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
 import StarsButton from './StarsButton';
 
-import 'highlight.js/styles/monokai.css';
 import classNames from 'classnames';
+import 'highlight.js/styles/monokai.css';
 import { GlobalContext } from '../../../contexts/globalContext';
 
 (window as any).hljs = hljs;

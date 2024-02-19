@@ -16,8 +16,6 @@ export interface IStateModal {
 export interface IStateContext {
   impersonator?: IUserSimple;
   connectedUser: IUserSimple;
-  currentTeam: ITeamSimple;
-  unreadNotificationsCount: number;
   tenant: ITenant;
   isTenantAdmin: boolean;
   apiCreationPermitted: boolean;

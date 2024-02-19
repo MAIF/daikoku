@@ -1,14 +1,14 @@
+import { useQuery } from '@tanstack/react-query';
 import merge from 'lodash/merge';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useMatch, useNavigate, useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 
 import { api as API, Can, manage, queryClient } from '../components/utils';
 import { I18nContext } from '../contexts';
-import { IApi, IState, IStateContext, IStoreState, ITeamSimple, ITenant, IUserSimple, isError } from '../types';
-import { ModalContext } from './modalContext';
 import * as Services from '../services/index';
+import { IApi, ITeamSimple, ITenant, isError } from '../types';
 import { GlobalContext } from './globalContext';
+import { ModalContext } from './modalContext';
 
 
 export enum navMode {

@@ -1,16 +1,15 @@
 /* eslint-disable react/display-name */
-import React, { useState, useEffect, useContext, useRef } from 'react';
-import { toast } from 'sonner';
 import { constraints, format, type } from '@maif/react-forms';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
-import * as Services from '../../../services';
-import { Table, TableRef } from '../../inputs';
-import { Can, manage, asset, tenant as TENANT } from '../../utils';
-import { I18nContext } from '../../../contexts';
-import { ModalContext } from '../../../contexts';
 import { createColumnHelper } from '@tanstack/react-table';
-import { IAsset, IState, IStateContext, ITeamSimple } from '../../../types';
+import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
+import * as Services from '../../../services';
+import { IAsset, ITeamSimple } from '../../../types';
+import { Table, TableRef } from '../../inputs';
+import { Can, tenant as TENANT, asset, manage } from '../../utils';
 
 
 const mimeTypes = [

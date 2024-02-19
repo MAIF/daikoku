@@ -19,9 +19,10 @@ import { toast } from 'sonner';
 
 import React from 'react';
 import { I18nContext, ModalContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
-import { IState, IStateContext, ITeamSimple } from '../../../types';
+import { ITeamSimple } from '../../../types';
 import { IApi, IDocumentation, isError, isValidationStepEmail, isValidationStepHttpRequest, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepHttpRequest, IValidationStepTeamAdmin, IValidationStepType, UsagePlanVisibility } from '../../../types/api';
 import { IOtoroshiSettings, ITenant, ITenantFull, IThirdPartyPaymentSettings } from '../../../types/tenant';
 import {
@@ -33,11 +34,10 @@ import {
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
 import { Help } from '../apikeys';
+import { TeamBackOfficeProps } from '../TeamBackOffice';
 import { TeamApiDocumentation } from './TeamApiDocumentation';
 import { TeamApiSwagger } from './TeamApiSwagger';
 import { TeamApiTesting } from './TeamApiTesting';
-import { GlobalContext } from '../../../contexts/globalContext';
-import { TeamBackOfficeProps } from '../TeamBackOffice';
 
 const SUBSCRIPTION_PLAN_TYPES = {
   FreeWithoutQuotas: {

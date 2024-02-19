@@ -25,7 +25,7 @@ export const SideBar = () => {
   const [panelState, setPanelState] = useState(state.closed);
   const [panelContent, setPanelContent] = useState<JSX.Element>();
 
-  const { tenant, connectedUser, impersonator, unreadNotificationsCount, isTenantAdmin } = useContext(GlobalContext);
+  const { tenant, connectedUser, impersonator, isTenantAdmin } = useContext(GlobalContext);
   const location = useLocation();
 
   const { totalUnread } = useContext(MessagesContext);

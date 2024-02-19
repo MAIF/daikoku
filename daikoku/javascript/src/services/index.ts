@@ -1,14 +1,16 @@
 import { gql } from '@apollo/client';
 import {
-  IFastApiSubscription,
   IAsset,
   IAuditTrail,
+  IFastApiSubscription,
   IMailingTranslation,
   INotification,
   IOtoroshiSettings,
   IQuotas,
   ISafeSubscription,
   ISession,
+  ISimpleOtoroshiSettings,
+  IStateContext,
   ISubscriptionInformation,
   ITeamFull,
   ITeamSimple,
@@ -18,32 +20,26 @@ import {
   ITranslation,
   IUser,
   IUserSimple,
-  ISimpleOtoroshiSettings,
-  IStateContext,
 } from '../types';
 import {
-  ResponseError,
   IApi,
+  IApiExtended,
+  IApiPost,
+  IConsumption,
   IDocDetail,
   IDocPage,
-  ISubscription,
-  ResponseDone,
-  IApiPost,
-  ISubscriptionWithApiInfo,
-  IUsagePlan,
-  ISubscriptionDemand,
-  IConsumption,
-  ISubscriptionExtended,
-  IApiExtended,
   IDocumentation,
   IImportingDocumentation,
-  ITestingConfig,
-  IApiKey,
   IOtoroshiApiKey,
+  ISubscription,
+  ISubscriptionDemand,
+  ISubscriptionExtended,
+  ISubscriptionWithApiInfo,
+  ITestingConfig,
+  IUsagePlan,
+  ResponseDone,
+  ResponseError
 } from '../types/api';
-
-import { Option } from '../components/utils/Option'
-import { TContext } from '../contexts/globalContext';
 
 const HEADERS = {
   Accept: 'application/json',

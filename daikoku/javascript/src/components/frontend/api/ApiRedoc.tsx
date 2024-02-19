@@ -1,11 +1,10 @@
 import { useContext } from 'react';
 import { RedocStandalone, SideNavStyleEnum } from 'redoc';
 
-import { ModalContext } from '../../../contexts';
-import { I18nContext } from '../../../contexts';
-import { IState, IStateContext, ISwagger } from '../../../types';
-import { Option } from '../../utils/Option';
+import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
+import { ISwagger } from '../../../types';
+import { Option } from '../../utils/Option';
 
 type ApiRedocProps = {
   swaggerUrl: string,

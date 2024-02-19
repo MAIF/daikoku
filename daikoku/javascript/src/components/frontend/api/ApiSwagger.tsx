@@ -2,12 +2,11 @@ import { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { SwaggerUIBundle } from 'swagger-ui-dist';
 
-import { ModalContext } from '../../../contexts';
-import { I18nContext } from '../../../contexts';
-import { IState, IStateContext, ISwagger, ITesting } from '../../../types';
+import { I18nContext, ModalContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
+import { ISwagger, ITesting } from '../../../types';
 
 import 'swagger-ui-dist/swagger-ui.css';
-import { GlobalContext } from '../../../contexts/globalContext';
 
 
 type ApiSwaggerProps = {

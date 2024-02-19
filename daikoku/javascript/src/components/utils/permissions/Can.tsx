@@ -1,9 +1,10 @@
 import { ReactNode, useContext } from 'react';
 
+import { toast } from 'sonner';
 import { Option } from '..';
+import { I18nContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import {
-  IState,
-  IStateContext,
   ITeamSimple,
   ITenant,
   IUserSimple,
@@ -11,11 +12,8 @@ import {
   TeamUser
 } from '../../../types';
 import { doNothing } from './actions';
-import { permissions, TPermission, TPermissions } from './permissions';
+import { TPermission, TPermissions, permissions } from './permissions';
 import { tenant } from './subjects';
-import { GlobalContext } from '../../../contexts/globalContext';
-import { toast } from 'sonner';
-import { I18nContext } from '../../../contexts';
 
 export const CanIDoAction = (
   user: IUserSimple,

@@ -22,9 +22,9 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   I18nContext
 } from '../../../contexts';
-import { IState, IStateContext, ITeamSimple } from '../../../types';
-import { IApi, IUsagePlan, isError } from '../../../types/api';
 import { GlobalContext } from '../../../contexts/globalContext';
+import { ITeamSimple } from '../../../types';
+import { IApi, IUsagePlan, isError } from '../../../types/api';
 import { TeamBackOfficeProps } from '../TeamBackOffice';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
@@ -96,7 +96,7 @@ export const TeamApi = (props: TeamBackOfficeProps<{ creation: boolean }>) => {
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/apis/:apiId/:version/stats/plan/:planId');
 
-  const { tenant } = useContext(GlobalContext);
+  const { tenant, expertMode, toggleExpertMode } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
   const { openApiDocumentationSelectModal } = useContext(ModalContext);
 
@@ -293,7 +293,7 @@ export const TeamApi = (props: TeamBackOfficeProps<{ creation: boolean }>) => {
           {props.creation ? (<h2>{api.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
             <h2 className="me-2">{api.name} {additionalHeader ? ` - ${additionalHeader}` : ''}</h2>
           </div>)}
-          <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
+          <button onClick={() => toggleExpertMode()} className="btn btn-sm btn-outline-primary">
             {expertMode && translate('Standard mode')}
             {!expertMode && translate('Expert mode')}
           </button>
@@ -323,6 +323,7 @@ export const TeamApi = (props: TeamBackOfficeProps<{ creation: boolean }>) => {
                   importAuthorized={!!versionsRequest.data && !!versionsRequest.data.length} />)}
               {tab === 'plans' && (
                 <TeamApiPricings
+                  {...props}
                   api={api}
                   reload={() => queryClient.invalidateQueries({ queryKey: ['api'] })}
                   setDefaultPlan={plan => setDefaultPlan(api, plan)}

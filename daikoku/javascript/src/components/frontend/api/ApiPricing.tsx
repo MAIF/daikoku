@@ -7,24 +7,31 @@ import React, { useContext, useEffect } from 'react';
 import { Link, useMatch, useNavigate } from 'react-router-dom';
 
 import { I18nContext, ModalContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
 import {
-  IApi, IBaseUsagePlan, isError,
-  isMiniFreeWithQuotas, IState, IStateContext, ISubscription,
-  ISubscriptionDemand, ISubscriptionWithApiInfo, isValidationStepTeamAdmin,
-  ITeamSimple, IUsagePlan
+  IApi, IBaseUsagePlan,
+  ISubscription,
+  ISubscriptionDemand, ISubscriptionWithApiInfo,
+  ITeamSimple, IUsagePlan,
+  isError,
+  isMiniFreeWithQuotas,
+  isValidationStepTeamAdmin
 } from '../../../types';
 import {
+  Can,
+  Option,
+  Spinner,
   access,
-  apikey, Can, isPublish, isSubscriptionProcessIsAutomatic,
-  Option, queryClient, renderPlanInfo, renderPricing, Spinner
+  apikey,
+  isPublish, isSubscriptionProcessIsAutomatic,
+  queryClient, renderPlanInfo, renderPricing
 } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
 import { ApiDocumentation } from './ApiDocumentation';
 import { ApiRedoc } from './ApiRedoc';
 import { ApiSwagger } from './ApiSwagger';
-import { GlobalContext } from '../../../contexts/globalContext';
 
 export const currency = (plan?: IBaseUsagePlan) => {
   if (!plan) {
