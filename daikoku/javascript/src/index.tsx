@@ -1,14 +1,14 @@
 
 import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client';
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import jQuery from 'jquery';
 import ReactDOM from 'react-dom';
 import { createRoot } from 'react-dom/client';
 import { Toaster } from 'sonner';
 
 import { DaikokuApp, DaikokuHomeApp } from './apps';
-import { LoginPage, queryClient } from './components';
-import { CurrentUserContextProvider } from './contexts/globalContext';
+import { LoginPage } from './components';
+import { GlobalContextProvider } from './contexts/globalContext';
 import { I18nProvider } from './contexts/i18n-context';
 
 import '@maif/react-forms/lib/index.css';
@@ -35,22 +35,27 @@ const client = new ApolloClient({
 export function init(
   user: any,
   tenant: any,
-  impersonator: any,
   session: any,
   loginCallback: any,
-  isTenantAdmin: any,
-  apiCreationPermitted: any
 ) {
-  const expertMode = JSON.parse(localStorage.getItem('expertMode') || 'false');
 
 
   const container = document.getElementById('app');
   const root = createRoot(container!)
 
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false, // TODO for dev only
+        refetchOnWindowFocus: false, // TODO for dev only
+      },
+    },
+  });
+
   root.render(
     <ApolloProvider client={client}>
       <QueryClientProvider client={queryClient}>
-        <CurrentUserContextProvider>
+        <GlobalContextProvider>
           <I18nProvider tenant={tenant} user={user}>
             <Toaster richColors position="top-right" />
             <DaikokuApp
@@ -61,7 +66,7 @@ export function init(
               loginAction={loginCallback}
             />
           </I18nProvider>
-        </CurrentUserContextProvider>
+        </GlobalContextProvider>
       </QueryClientProvider>
     </ApolloProvider>
 

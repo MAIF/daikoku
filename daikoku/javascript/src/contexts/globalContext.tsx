@@ -46,12 +46,8 @@ const initContext: TGlobalContext = {
 }
 
 export const GlobalContext = React.createContext<TGlobalContext>(initContext)
-export const useCurrentUserContext = () => {
-  return React.useContext(GlobalContext)
-}
 
-
-export const CurrentUserContextProvider = (props: PropsWithChildren) => {
+export const GlobalContextProvider = (props: PropsWithChildren) => {
   const getExpertMode = (): boolean => JSON.parse(localStorage.getItem('expertMode') || 'false')
 
   const [expertMode, setExpertMode] = useState<boolean>(getExpertMode())
@@ -82,7 +78,6 @@ export const CurrentUserContextProvider = (props: PropsWithChildren) => {
     localStorage.setItem('expertMode', (!expertMode).toLocaleString())
     setExpertMode(!expertMode)
   };
-
 
   return (
     <GlobalContext.Provider value={{

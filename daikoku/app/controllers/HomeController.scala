@@ -174,7 +174,7 @@ class HomeController(
   def getConnectedUser() =
     DaikokuActionMaybeWithoutUser { ctx =>
       Ok(Json.obj(
-        "user" -> ctx.user.get.toUiPayload(),
+        "connectedUser" -> ctx.user.get.toUiPayload(),
         "impersonator" -> ctx.session.get.impersonatorJson(),
         "session" -> ctx.session.get.asSimpleJson,
         "tenant" -> ctx.tenant.toUiPayload(env),
