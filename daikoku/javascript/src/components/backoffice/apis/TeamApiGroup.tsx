@@ -22,6 +22,7 @@ type LocationState = {
   newApiGroup?: IApi
 }
 
+
 export const TeamApiGroup = (props: TeamBackOfficeProps) => {
   const params = useParams();
   const location = useLocation();
@@ -42,7 +43,7 @@ export const TeamApiGroup = (props: TeamBackOfficeProps) => {
     enabled: !creation
   })
 
-  const methods = useApiGroupBackOffice(apiGroupRequest.data, !!creation);
+  const methods = useApiGroupBackOffice(!!creation);
 
   useEffect(() => {
     if (apiGroupRequest.isLoading) {

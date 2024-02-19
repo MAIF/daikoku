@@ -115,7 +115,7 @@ export const TeamApi = (props: TeamBackOfficeProps<{ creation: boolean }>) => {
     enabled: !newApi
   })
 
-  const methods = useApiBackOffice(apiRequest.data, props.creation);
+  const methods = useApiBackOffice(props.creation);
 
   useEffect(() => {
     if (apiRequest.isLoading && versionsRequest.isLoading) {
