@@ -180,7 +180,7 @@ class HomeController(
         "tenant" -> ctx.tenant.toUiPayload(env),
         "isTenantAdmin" -> ctx.isTenantAdmin,
         "apiCreationPermitted" -> ctx.apiCreationPermitted,
-        "loginUrl" -> fr.maif.otoroshi.daikoku.ctrls.routes.LoginController.login(ctx.tenant.authProvider.name).url
+        "loginAction" -> fr.maif.otoroshi.daikoku.ctrls.routes.LoginController.login(ctx.tenant.authProvider.name).url,
       ))
     }
 

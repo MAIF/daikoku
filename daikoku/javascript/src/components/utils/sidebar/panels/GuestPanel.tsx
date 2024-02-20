@@ -4,10 +4,11 @@ import { Form, type, constraints, format } from '@maif/react-forms';
 import * as Services from '../../../../services';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { NavContext } from '../../../../contexts';
+import { GlobalContext } from '../../../../contexts/globalContext';
 
 export const GuestPanel = () => {
   const { translate, Translation } = useContext(I18nContext);
-  const { loginAction, loginProvider } = useContext(NavContext);
+  const { loginAction, tenant } = useContext(GlobalContext);
 
   const [loginError, setLoginError] = useState(false);
 
@@ -31,18 +32,20 @@ export const GuestPanel = () => {
     },
   };
 
-  const submit = (data: any) => {
+  const submit = (data: { username: string, password: string }) => {
     setLoginError(false);
 
     const { username, password } = data;
 
-    Services.login(username, password, loginAction).then((res) => {
-      if (res.status === 400) {
-        setLoginError(true);
-      } else if (res.redirected) {
-        window.location.href = res.url;
-      }
-    });
+
+    Services.login(username, password, loginAction)
+      .then((res) => {
+        if (res.status === 400) {
+          setLoginError(true);
+        } else if (res.redirected) {
+          window.location.href = res.url;
+        }
+      });
   };
 
   return (
@@ -50,7 +53,7 @@ export const GuestPanel = () => {
       <div className="mb-3" style={{ height: '40px' }}></div>
       <div className="blocks">
         <div className="mb-3 block">
-          {loginProvider === 'Local' && (
+          {tenant.loginProvider === 'Local' && (
             <div className="ms-2 block__entries d-flex flex-column">
               {loginError && (
                 <span className="badge bg-danger">
@@ -75,7 +78,7 @@ export const GuestPanel = () => {
                 }}
               />
               <div className="d-flex flex-row justify-content-between mt-3">
-                {loginProvider == 'Local' && (
+                {tenant.loginProvider == 'Local' && (
                   <a className="text-center" href="/signup">
                     <Translation i18nkey="create.account.link.label" />
                   </a>
@@ -86,13 +89,13 @@ export const GuestPanel = () => {
               </div>
             </div>
           )}
-          {loginProvider !== 'Local' && (
+          {tenant.loginProvider !== 'Local' && (
             <div className="ms-2 block__entries d-flex flex-column">
-              <a href={`/auth/${loginProvider}/login`} className="block__entry__link">
+              <a href={`/auth/${tenant.loginProvider}/login`} className="block__entry__link">
                 {translate('Login')}
               </a>
               <a
-                href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
+                href={`${tenant.loginProvider === 'Local' ? '/signup' : `/auth/${tenant.loginProvider}/login`}`}
                 className="block__entry__link"
               >
                 {translate('Register')}

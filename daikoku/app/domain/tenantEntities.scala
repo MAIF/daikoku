@@ -374,7 +374,8 @@ case class Tenant(
         .getOrElse(JsBoolean(false))
         .as[JsValue],
       "display" -> display.name,
-      "environments" -> JsArray(environments.map(JsString.apply).toSeq)
+      "environments" -> JsArray(environments.map(JsString.apply).toSeq),
+      "loginProvider" -> authProvider.name
     )
   }
   def colorTheme(): Html = {

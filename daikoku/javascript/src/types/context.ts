@@ -1,5 +1,5 @@
-import { ITeamSimple, IUserSimple } from './team';
-import { ITenant } from './tenant';
+import { IUserSimple } from './team';
+import { ISimpleSession, ITenant } from './tenant';
 
 export interface IState {
   modal: IStateModal;
@@ -21,6 +21,8 @@ export interface IStateContext {
   apiCreationPermitted: boolean;
   expertMode: boolean;
   unreadNotificationsCount: number;
+  session: ISimpleSession;
+  loginAction: string;
 }
 
 export interface IStateError {

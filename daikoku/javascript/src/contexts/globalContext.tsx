@@ -34,6 +34,12 @@ const initContext: TGlobalContext = {
     tenantMode: TenanMode.default,
     display: Display.default,
     environments: [],
+    loginProvider: 'Local'
+  },
+  session: {
+    created: new Date().getTime(),
+    expires: new Date().getTime(),
+    ttl: 0
   },
   isTenantAdmin: false,
   apiCreationPermitted: false,
@@ -41,8 +47,8 @@ const initContext: TGlobalContext = {
   expertMode: JSON.parse(localStorage.getItem('expertMode') || 'false'),
   reloadContext: () => Promise.resolve(),
   reloadUnreadNotificationsCount: () => { },
-  toggleExpertMode: () => { }
-
+  toggleExpertMode: () => { },
+  loginAction: ''
 }
 
 export const GlobalContext = React.createContext<TGlobalContext>(initContext)

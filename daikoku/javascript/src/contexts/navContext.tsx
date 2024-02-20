@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import merge from 'lodash/merge';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { PropsWithChildren, useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 
 import { api as API, Can, manage } from '../components/utils';
@@ -26,8 +26,6 @@ export enum officeMode {
   back = 'BACK',
 };
 const initNavContext = {
-  loginAction: 'action',
-  loginProvider: 'provider',
   menu: {},
   addMenu: () => { },
   setMenu: () => { },
@@ -42,8 +40,6 @@ const initNavContext = {
 }
 
 type TNavContext = {
-  loginAction: string,
-  loginProvider: string,
   menu: object,
   addMenu: (m: object) => void,
   setMenu: (m: object) => void,
@@ -62,8 +58,7 @@ type TNavContext = {
 }
 export const NavContext = React.createContext<TNavContext>(initNavContext);
 
-export const NavProvider = ({ children, loginAction, loginProvider }:
-  { children: JSX.Element | Array<JSX.Element>, loginAction: string, loginProvider: string }) => {
+export const NavProvider = (props: PropsWithChildren) => {
   const [mode, setMode] = useState(navMode.initial);
   const [office, setOffice] = useState(officeMode.front);
 
@@ -81,8 +76,6 @@ export const NavProvider = ({ children, loginAction, loginProvider }:
   return (
     <NavContext.Provider
       value={{
-        loginAction,
-        loginProvider,
         menu,
         addMenu,
         setMenu,
@@ -100,7 +93,7 @@ export const NavProvider = ({ children, loginAction, loginProvider }:
         setTenant,
       }}
     >
-      {children}
+      {props.children}
     </NavContext.Provider>
   );
 };

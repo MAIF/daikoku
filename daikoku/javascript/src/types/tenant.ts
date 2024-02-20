@@ -182,6 +182,7 @@ export interface ITenant {
   tenantMode: TenanMode;
   display: Display;
   environments: Array<string>;
+  loginProvider: string;
 }
 
 export interface ITenantFull extends ITenant {
@@ -281,6 +282,12 @@ export interface ISession {
   impersonatorName?: string;
   impersonatorEmail?: string;
   impersonatorSessionId?: string;
+  created: number;
+  expires: number;
+  ttl: number;
+}
+
+export interface ISimpleSession {
   created: number;
   expires: number;
   ttl: number;

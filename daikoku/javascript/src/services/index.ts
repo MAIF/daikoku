@@ -990,10 +990,12 @@ export const checkConnection = (config: any, user?: any) =>
     body: user ? JSON.stringify({ config, user }) : JSON.stringify(config),
   });
 
-export const login = (username: any, password: any, action: any) => {
+export const login = (username: string, password: string, action: string) => {
   const body = new URLSearchParams();
   body.append('username', username);
   body.append('password', password);
+
+  console.debug({action})
 
   return fetch(action, {
     method: 'POST',

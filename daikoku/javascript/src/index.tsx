@@ -58,13 +58,7 @@ export function init(
         <GlobalContextProvider>
           <I18nProvider tenant={tenant} user={user}>
             <Toaster richColors position="top-right" />
-            <DaikokuApp
-              session={session}
-              user={user}
-              tenant={tenant}
-              loginProvider={tenant.authProvider}
-              loginAction={loginCallback}
-            />
+            <DaikokuApp />
           </I18nProvider>
         </GlobalContextProvider>
       </QueryClientProvider>

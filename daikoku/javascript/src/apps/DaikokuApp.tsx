@@ -45,39 +45,27 @@ import {
 
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
 import { FastMode } from "../components/frontend/fastMode/FastMode";
+import { GlobalContext } from '../contexts/globalContext';
 import { I18nContext } from '../contexts/i18n-context';
 import { SessionModal } from '../contexts/modals/SessionModal';
 import { MessagesEvents } from '../services/messages';
-import { ISession, IState, ITenant, IUserSimple } from '../types';
 import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
-import { GlobalContext } from '../contexts/globalContext';
 
-type DaikokuAppProps = {
-  session: ISession,
-  user: IUserSimple,
-  tenant: ITenant,
-  loginProvider: string,
-  loginAction: string
-}
-export const DaikokuApp = ({
-  user,
-  tenant,
-  loginProvider,
-  loginAction,
-  session
-}: DaikokuAppProps) => {
+export const DaikokuApp = () => {
+  const { connectedUser, session, tenant} = useContext(GlobalContext)
+
   useEffect(() => {
-    if (!user.isGuest) {
+    if (!connectedUser.isGuest) {
       MessagesEvents.start();
       return () => {
         MessagesEvents.stop();
       };
     }
-  }, []);
+  }, [connectedUser]);
 
   const { translate } = useContext(I18nContext);
 
-  if (!user) {
+  if (!connectedUser) {
     return (
       <Router>
         <div
@@ -110,7 +98,7 @@ export const DaikokuApp = ({
   return (
     <BrowserRouter>
       <MessagesProvider>
-        <NavProvider loginAction={loginAction} loginProvider={loginProvider}>
+        <NavProvider>
           <ModalProvider>
             <div className="d-flex flex-row">
               <SideBar />
