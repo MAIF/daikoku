@@ -1,12 +1,25 @@
 use std::fmt;
+use std::error::Error;
 
 pub type DaikokuResult<T> = std::result::Result<T, DaikokuCliError>;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum DaikokuCliError {
     CmsCreationFile(String),
     FileSystem(String),
-    Configuration(String)
+    Configuration(String),
+    HyperError(hyper::Error)
+}
+
+impl Error for DaikokuCliError {}
+trait StdErrorTrait: Error + Send + Sync + 'static {}
+
+impl<T: Error + Send + Sync + 'static> StdErrorTrait for T {}
+
+impl From<DaikokuCliError> for Box<dyn StdErrorTrait> {
+    fn from(err: DaikokuCliError) -> Self {
+        Box::new(err)
+    }
 }
 
 impl fmt::Display for DaikokuCliError {
@@ -19,6 +32,9 @@ impl fmt::Display for DaikokuCliError {
                 write!(f, "[FILE SYSTEM] : {}\n", &err)
             }
             DaikokuCliError::Configuration(err) => {
+                write!(f, "[CONFIGURATION] : {}\n", &err)
+            }
+            DaikokuCliError::HyperError(err) => {
                 write!(f, "[CONFIGURATION] : {}\n", &err)
             }
         }

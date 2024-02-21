@@ -7,8 +7,14 @@ use crate::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
     },
+    utils::absolute_path,
     ProjectCommands,
 };
+
+pub(crate) struct Project {
+    pub(crate)path: String,
+    pub(crate)name: String,
+}
 
 pub(crate) fn run(command: ProjectCommands) -> DaikokuResult<()> {
     match command {
@@ -16,10 +22,31 @@ pub(crate) fn run(command: ProjectCommands) -> DaikokuResult<()> {
             name,
             path,
             overwrite,
-        } => add(name, path, overwrite.unwrap_or(false)),
+        } => add(name, absolute_path(path), overwrite.unwrap_or(false)),
         ProjectCommands::Default { name } => update_default(name),
         ProjectCommands::Delete { name } => delete(name),
         ProjectCommands::List {} => list(),
+    }
+}
+
+pub(crate) fn get_default_project() -> DaikokuResult<Project> {
+    let config = read(false)?;
+
+    let missing_error = DaikokuCliError::Configuration(
+        "missing default project or values in project. Use project default --name<YOUR_PROJECT>"
+            .to_string(),
+    );
+
+    let default_project_name = config.get("default", "project").ok_or(missing_error)?;
+
+    let project = config
+        .get_map()
+        .map(|m| m[&default_project_name])
+        .ok_or(missing_error)?;
+
+    match (project["name"], project["path"]) {
+        (Some(name), Some(path)) => Ok(Project { name, path }),
+        (_, _) => Err(missing_error),
     }
 }
 
@@ -35,6 +62,7 @@ fn add(name: String, path: String, overwrite: bool) -> DaikokuResult<()> {
     }
 
     config.set(&name, "path", Some(path));
+    config.set(&name, "name", Some(name.clone()));
     config.set("default", "project", Some(name.clone()));
 
     match config.write(&get_path()?) {

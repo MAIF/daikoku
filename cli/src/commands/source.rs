@@ -12,8 +12,8 @@ use crate::models::folder::ToContentType;
 use crate::models::folder::FOLDER_NAMES;
 use crate::SourceCommands;
 
-// use super::configuration::get_sources_root;
-use super::watch::read_cms_pages;
+use super::projects;
+use super::watch::read_cms_pages_from_project;
 
 pub(crate) fn run(command: SourceCommands) -> DaikokuResult<()> {
     match command {
@@ -136,62 +136,59 @@ fn new_file(
     block: Option<bool>,
     overwrite: bool,
 ) -> DaikokuResult<()> {
-    Ok(())
-    // logger::loading("<yellow>Creating</> new source file ...".to_string());
+    logger::loading("<yellow>Creating</> new source file ...".to_string());
 
-    // let source = SourceExtension::from_str(&extension.as_str()).unwrap();
+    let source = SourceExtension::from_str(&extension.as_str()).unwrap();
 
-    // let mut folder_path = source.path();
+    let mut folder_path = source.path();
 
-    // if let Some(true) = block {
-    //     folder_path = "blocks".to_string();
-    // } else if path.is_none() {
-    //     return Err(DaikokuCliError::Configuration(
-    //         "you need to specify a exposition path to create a page".to_string(),
-    //     ));
-    // }
+    if let Some(true) = block {
+        folder_path = "blocks".to_string();
+    } else if path.is_none() {
+        return Err(DaikokuCliError::Configuration(
+            "you need to specify a exposition path to create a page".to_string(),
+        ));
+    }
+    
+    let root = projects::get_default_project()?;
 
-    // let mut summary = read_cms_pages();
-    // let already_present = summary.contains_page(&name, &source.content_type());
+    let mut summary = read_cms_pages_from_project(root)?;
+    let already_present = summary.contains_page(&name, &source.content_type());
 
-    // match (already_present, get_sources_root()) {
-    //     (_, None) => Err(DaikokuCliError::FileSystem(
-    //         "missing root sources path".to_string(),
-    //     )),
-    //     (true, _) if !overwrite => Err(DaikokuCliError::FileSystem(
-    //         "a source file of the same name and type already exists".to_string(),
-    //     )),
-    //     (_, Some(root_path)) => {
-    //         let filepath = Path::new(&root_path)
-    //             .join("src")
-    //             .join(&folder_path)
-    //             .join(format!("{}{}", &name, &source.ext()))
-    //             .to_path_buf();
+    if already_present && !overwrite {
+        Err(DaikokuCliError::FileSystem(
+            "a source file of the same name and type already exists".to_string(),
+        ))
+    } else {
+        let filepath = Path::new(&root.path)
+            .join("src")
+            .join(&folder_path)
+            .join(format!("{}{}", &name, &source.ext()))
+            .to_path_buf();
 
-    //         logger::println(format!("<green>At path {:?}</>", &filepath).to_string());
-    //         match fs::File::create(filepath) {
-    //             Ok(_) => {
-    //                 logger::println("<green>Source file created</>".to_string());
-    //                 logger::println("<yellow>Starting</> patch the summary file".to_string());
+        logger::println(format!("<green>At path {:?}</>", &filepath).to_string());
+        match fs::File::create(filepath) {
+            Ok(_) => {
+                logger::println("<green>Source file created</>".to_string());
+                logger::println("<yellow>Starting</> patch the summary file".to_string());
 
-    //                 let _ = summary.add_new_file(
-    //                     name,
-    //                     visible,
-    //                     authenticated,
-    //                     path,
-    //                     exact,
-    //                     &source.content_type(),
-    //                     overwrite,
-    //                 )?;
+                let _ = summary.add_new_file(
+                    name,
+                    visible,
+                    authenticated,
+                    path,
+                    exact,
+                    &source.content_type(),
+                    overwrite,
+                )?;
 
-    //                 logger::println("<green>Summary has been patched</>".to_string());
-    //                 Ok(())
-    //             }
-    //             Err(e) => Err(DaikokuCliError::FileSystem(format!(
-    //                 "failed to create new source file : {}",
-    //                 e.to_string()
-    //             ))),
-    //         }
-    //     }
-    // }
+                logger::println("<green>Summary has been patched</>".to_string());
+                Ok(())
+            }
+            Err(e) => Err(DaikokuCliError::FileSystem(format!(
+                "failed to create new source file : {}",
+                e.to_string()
+            ))),
+        }
+    }
 }

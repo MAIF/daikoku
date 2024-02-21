@@ -12,6 +12,7 @@ use hyper::{Request, Response};
 
 use hyper_util::rt::TokioIo;
 use serde::{Deserialize, Serialize};
+use tokio::io;
 use tokio::net::{TcpListener, TcpStream};
 use uuid::Uuid;
 
@@ -21,6 +22,8 @@ use crate::logging::error::{DaikokuCliError, DaikokuResult};
 use crate::logging::logger;
 use crate::models::folder::{read_contents, Folder, SourceExtension, ToContentType};
 use crate::utils::get_current_working_dir;
+
+use super::projects::{self, Project};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub(crate) struct CmsPage {
@@ -74,11 +77,7 @@ impl fmt::Display for CmsPage {
             } else {
                 ""
             },
-            if self.exact {
-                "- EXACT_MATCHING"
-            } else {
-                ""
-            }
+            if self.exact { "- EXACT_MATCHING" } else { "" }
         )
     }
 }
@@ -129,7 +128,7 @@ impl Summary {
         name: Option<String>,
         extension: Option<String>,
     ) -> DaikokuResult<()> {
-        let contents = read_cms_pages();
+        let contents = read_cms_pages()?;
 
         let identifier = id.map(|p| p.clone()).unwrap_or("".to_string());
         let name = &name.unwrap_or("".to_string());
@@ -227,13 +226,19 @@ fn initialize_command(
     // }
 }
 
-pub(crate) fn read_cms_pages() -> Summary {
-    let content = fs::read_to_string(PathBuf::from("./cms/src/summary.json")).unwrap();
+pub(crate) fn read_cms_pages() -> DaikokuResult<Summary> {
+    let project = projects::get_default_project()?;
+
+    read_cms_pages_from_project(project)
+}
+
+pub(crate) fn read_cms_pages_from_project(project: Project) -> DaikokuResult<Summary> {
+    let content = fs::read_to_string(PathBuf::from(project.path)).unwrap();
     let Summary { pages } = serde_json::from_str(&content).unwrap();
 
-    Summary {
+    Ok(Summary {
         pages: pages.into_iter().collect(),
-    }
+    })
 }
 
 fn write_cms_pages(contents: &Summary) -> DaikokuResult<()> {
@@ -344,20 +349,20 @@ fn get_pages<'a>(
         .collect()
 }
 
-fn not_visible_page() -> Result<Response<Full<Bytes>>, hyper::Error> {
+fn not_visible_page() -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     Ok(Response::new(Full::new(Bytes::from("NOT VISIBLE"))))
 }
 
-fn not_found_page() -> Result<Response<Full<Bytes>>, hyper::Error> {
+fn not_found_page() -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     Ok(Response::new(Full::new(Bytes::from("NOT FOUND"))))
 }
 
 async fn watcher(
     req: Request<hyper::body::Incoming>,
-) -> Result<Response<Full<Bytes>>, hyper::Error> {
+) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     logger::println(format!("<green>Request received</> {}", &req.uri()));
 
-    let Summary { pages } = read_cms_pages();
+    let Summary { pages } = read_cms_pages()?;
 
     let mut router_pages = vec![];
 
@@ -394,13 +399,13 @@ async fn watcher(
     }
 }
 
-async fn render_page(page: &CmsPage) -> Result<Response<Full<Bytes>>, hyper::Error> {
+async fn render_page(page: &CmsPage) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     logger::println(format!("<green>Serve page</> {}", page));
 
     let host = "localhost:9000";
 
     let url: String = format!("http://{}/__/?force_reloading=true", host);
-    let Summary { pages } = read_cms_pages();
+    let Summary { pages } = read_cms_pages()?;
 
     let content = read_contents(
         &PathBuf::from("./cms/src")

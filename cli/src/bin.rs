@@ -4,7 +4,7 @@ mod models;
 mod utils;
 
 use clap::{Parser, Subcommand};
-use logging::logger;
+use logging::{error::DaikokuResult, logger};
 use utils::absolute_path;
 
 /// A fictional versioning CLI
@@ -139,7 +139,6 @@ pub enum ConfigCommands {
     List {},
 }
 
-
 #[derive(Debug, Subcommand)]
 pub enum ProjectCommands {
     Add {
@@ -148,7 +147,7 @@ pub enum ProjectCommands {
         #[arg(value_name = "PATH", short = 'p', long = "path")]
         path: String,
         #[arg(value_name = "OVERWRITE", short = 'o', long = "overwrite")]
-        overwrite: Option<bool>
+        overwrite: Option<bool>,
     },
     Default {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
@@ -161,17 +160,14 @@ pub enum ProjectCommands {
     List {},
 }
 
-#[tokio::main]
-async fn main() {
-    let args = Cli::parse();
-
-    let out = match args.command {
+async fn process(command: Commands) -> DaikokuResult<()> {
+    match command {
         Commands::Version {} => commands::version::run(),
         Commands::Create {
             template,
             name,
             path,
-        } => commands::creation::run(template, name, path.map(absolute_path)),
+        } => commands::creation::run(template, name, path.map(absolute_path)).await,
         Commands::Source { command } => commands::source::run(command),
         Commands::Watch {
             path,
@@ -183,8 +179,15 @@ async fn main() {
             Ok(())
         }
         Commands::Config { command } => commands::configuration::run(command),
-        Commands::Projects { command } => commands::projects::run(command)
-    };
+        Commands::Projects { command } => commands::projects::run(command),
+    }
+}
+
+#[tokio::main]
+async fn main() {
+    let args = Cli::parse();
+
+    let out = process(args.command).await;
 
     if let Err(e) = out {
         logger::error(format!("{}", e));

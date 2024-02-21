@@ -1,15 +1,26 @@
-use std::{fs, path::{Path, PathBuf}};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
-use crate::logging::{
-    error::{DaikokuCliError, DaikokuResult},
-    logger,
+use async_recursion::async_recursion;
+
+use crate::{
+    logging::{
+        error::{DaikokuCliError, DaikokuResult},
+        logger,
+    }, process, Commands
 };
 
 use std::io::Write;
 
 const ZIP_CMS: &[u8] = include_bytes!("../../templates/empty.zip");
 
-pub(crate) fn run(template: Option<String>, name: String, path: Option<String>) -> DaikokuResult<()> {
+pub(crate) async fn run(
+    template: Option<String>,
+    name: String,
+    path: Option<String>,
+) -> DaikokuResult<()> {
     logger::loading("<yellow>Creating</> plugin ...".to_string());
 
     let manifest_dir = std::env::temp_dir();
@@ -42,12 +53,13 @@ pub(crate) fn run(template: Option<String>, name: String, path: Option<String>) 
     let zip_action = zip_extensions::read::zip_extract(&PathBuf::from(zip_path), &manifest_dir);
 
     match zip_action {
-        Ok(()) => rename_plugin(template, name, path),
+        Ok(()) => rename_plugin(template, name, path).await,
         Err(er) => Err(DaikokuCliError::FileSystem(er.to_string())),
     }
 }
 
-fn rename_plugin(template: String, name: String, path: Option<String>) -> DaikokuResult<()> {
+#[async_recursion]
+async fn rename_plugin(template: String, name: String, path: Option<String>) -> DaikokuResult<()> {
     let complete_path = match &path {
         Some(p) => Path::new(p).join(&name),
         None => Path::new("./").join(&name),
@@ -73,7 +85,14 @@ fn rename_plugin(template: String, name: String, path: Option<String>) -> Daikok
         &complete_path,
     ) {
         Ok(()) => {
-            // update_metadata_file(&complete_path, &name, &template)?;
+            process(Commands::Projects {
+                command: crate::ProjectCommands::Add {
+                    name: name,
+                    path: complete_path.into_os_string().into_string().unwrap(),
+                    overwrite: None,
+                },
+            })
+            .await?;
             logger::println("<green>CMS created</>".to_string());
             Ok(())
         }
