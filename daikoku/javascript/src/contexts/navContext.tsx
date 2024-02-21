@@ -375,23 +375,22 @@ export const useApiBackOffice = (creation: boolean) => {
   const { tenant } = useContext(GlobalContext);
 
   const navigate = useNavigate();
-  const params = useParams<TeamApiParams>();
-
-  const teamId = params.teamId;
-  const queryTeam = useQuery({ queryKey: ['team-backoffice'], queryFn: () => Services.team(teamId!), enabled: !!teamId })
+  const { teamId, apiId, versionId, tab } = useParams<TeamApiParams>();
 
   const location = useLocation();
   const newApi = location && location.state && location.state.newApi
 
+  const queryTeam = useQuery({ queryKey: ['team-backoffice', teamId], queryFn: () => Services.team(teamId!), enabled: !!teamId })
+
   const apiRequest = useQuery({
-    queryKey: ['api', params.apiId, params.versionId, location],
-    queryFn: () => Services.teamApi((queryTeam.data as ITeamSimple)._id, params.apiId!, params.versionId!),
+    queryKey: ['api', apiId, versionId, location],
+    queryFn: () => Services.teamApi((queryTeam.data as ITeamSimple)._id, apiId!, versionId!),
     enabled: !newApi && queryTeam.data && !isError(queryTeam.data)
   })
 
   const versionsRequest = useQuery({
-    queryKey: ['apiVersions', params.apiId, params.versionId, location],
-    queryFn: () => Services.getAllApiVersions((queryTeam.data as ITeamSimple)._id, params.apiId!),
+    queryKey: ['apiVersions', apiId, versionId, location],
+    queryFn: () => Services.getAllApiVersions((queryTeam.data as ITeamSimple)._id, apiId!),
     enabled: !newApi && queryTeam.data && !isError(queryTeam.data)
   })
 
@@ -462,7 +461,7 @@ export const useApiBackOffice = (creation: boolean) => {
 
   useEffect(() => {
     if (apiRequest.data && !isError(apiRequest.data)) {
-      addMenu(schema(apiRequest.data, params.tab));
+      addMenu(schema(apiRequest.data, tab));
       setMode(navMode.api);
       setOffice(officeMode.back);
     }
@@ -472,7 +471,7 @@ export const useApiBackOffice = (creation: boolean) => {
       setApi(undefined);
       setMenu({});
     };
-  }, [params, apiRequest]);
+  }, [tab, apiRequest]);
 
   // useEffect(() => {
   //   return () => {
@@ -628,12 +627,12 @@ export const useTeamBackOffice = () => {
   const match = useMatch('/:teamId/settings/:tab*'); //todo tester si c'est bon sinon rollback /:teamId/settings/:tab*
   const teamId = match?.params.teamId;
 
-  const queryTeam = useQuery({ 
-    queryKey: ['team-backoffice', teamId], 
+  const queryTeam = useQuery({
+    queryKey: ['team-backoffice', teamId],
     queryFn: () => {
       return Services.team(teamId!)
-    }, 
-    enabled: !!teamId 
+    },
+    enabled: !!teamId
   })
 
   const schema = (currentTab: string, team: ITeamSimple) => ({
@@ -724,7 +723,7 @@ export const useTeamBackOffice = () => {
     };
   }, []);
 
-  const reloadCurrentTeam = () => queryClient.invalidateQueries({ queryKey: ['team-backoffice']})
+  const reloadCurrentTeam = () => queryClient.invalidateQueries({ queryKey: ['team-backoffice'] })
 
   //todo handle error
 

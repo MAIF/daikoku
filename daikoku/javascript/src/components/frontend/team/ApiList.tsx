@@ -72,7 +72,6 @@ export const ApiList = (props: TApiList) => {
   const pageNumber = view === GRID ? 12 : 10;
 
 
-
   const dataRequest = useQuery({
     queryKey: ["data",
       props.teamId,
@@ -221,7 +220,10 @@ export const ApiList = (props: TApiList) => {
 
   const toggleStar = (apiWithAuthorization: IApiWithAuthorization) => {
     Services.toggleStar(apiWithAuthorization.api._id)
-      .then(reloadContext);
+      .then(() => {
+        queryClient.invalidateQueries({queryKey: ['data']})
+        reloadContext()
+      }); 
   };
 
   return (
