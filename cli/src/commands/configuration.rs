@@ -125,7 +125,24 @@ fn update_default(name: String) -> DaikokuResult<()> {
     }
 }
 fn delete(name: String) -> DaikokuResult<()> {
-    todo!()
+    logger::loading("<yellow>Deleting</> environment".to_string());
+    let mut config: Ini = read()?;
+
+    if name.to_lowercase() == "default" {
+        return Err(DaikokuCliError::Configuration("protected environment cant be deleted".to_string()));
+    }
+    
+    if config.remove_section(&name).is_none() {
+        return Err(DaikokuCliError::Configuration("a non-existing section cannot be delete".to_string()))
+    };
+
+    match config.write(&get_path()) {
+        Ok(()) => {
+            logger::println(format!("<green>{}</> deleted", &name));
+            Ok(())
+        }
+        Err(err) => Err(DaikokuCliError::Configuration(err.to_string())),
+    }
 }
 fn get(name: String) -> DaikokuResult<()> {
     todo!()

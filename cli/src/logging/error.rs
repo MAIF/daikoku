@@ -6,24 +6,20 @@ pub type DaikokuResult<T> = std::result::Result<T, DaikokuCliError>;
 pub enum DaikokuCliError {
     CmsCreationFile(String),
     FileSystem(String),
-    Configuration(String),
-    FolderNotExists(String)
+    Configuration(String)
 }
 
 impl fmt::Display for DaikokuCliError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             DaikokuCliError::CmsCreationFile(err) => {
-                write!(f, "cms failed to be create, {}\n", &err)
+                write!(f, "[CMS CREATION] : {}\n", &err)
             }
             DaikokuCliError::FileSystem(err) => {
-                write!(f, "something happened using file system, {}\n", &err)
+                write!(f, "[FILE SYSTEM] : {}\n", &err)
             }
             DaikokuCliError::Configuration(err) => {
-                write!(f, "something happened with the configuration, {}\n", &err)
-            }
-            DaikokuCliError::FolderNotExists(err) => {
-                write!(f, "folder not found, {}\n", &err)
+                write!(f, "[CONFIGURATION] : {}\n", &err)
             }
         }
     }
