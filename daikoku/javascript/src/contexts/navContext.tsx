@@ -628,7 +628,13 @@ export const useTeamBackOffice = () => {
   const match = useMatch('/:teamId/settings/:tab*'); //todo tester si c'est bon sinon rollback /:teamId/settings/:tab*
   const teamId = match?.params.teamId;
 
-  const queryTeam = useQuery({ queryKey: ['team-backoffice'], queryFn: () => Services.team(teamId!), enabled: !!teamId })
+  console.debug({ match, teamId })
+
+  const queryTeam = useQuery({ 
+    queryKey: ['team-backoffice'], 
+    queryFn: () => Services.team(teamId!), 
+    enabled: !!teamId 
+  })
 
   const schema = (currentTab: string, team: ITeamSimple) => ({
     title: team.name,
@@ -638,7 +644,7 @@ export const useTeamBackOffice = () => {
         links: {
           settings: {
             label: translate('Settings'),
-            action: () => navigateTo(''),
+            action: () => navigateTo('dashboard'),
             className: {
               active: !currentTab || ['edition', 'assets', 'members'].includes(currentTab),
             },
@@ -722,7 +728,9 @@ export const useTeamBackOffice = () => {
 
   //todo handle error
 
-  return { isLoading: queryTeam.isLoading, error: queryTeam.error, currentTeam: queryTeam.data, addMenu, reloadCurrentTeam };
+  console.debug({ queryTeam })
+
+  return { isLoading: queryTeam.isLoading || queryTeam.status === 'pending', error: queryTeam.error, currentTeam: queryTeam.data, addMenu, reloadCurrentTeam };
 };
 
 export const useTenantBackOffice = (maybeTenant?: ITenant) => {

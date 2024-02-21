@@ -116,14 +116,14 @@ export const TeamBackOffice = () => {
                 element={<TeamApiGroup currentTeam={currentTeam} reloadCurrentTeam={reloadCurrentTeam} />}
               />
               <Route path={`/apis`} element={<TeamApis currentTeam={currentTeam} reloadCurrentTeam={reloadCurrentTeam} />} />
-              <Route path="/" element={<TeamBackOfficeHome currentTeam={currentTeam} reloadCurrentTeam={reloadCurrentTeam} />} />
+              <Route path="/dashboard" element={<TeamBackOfficeHome currentTeam={currentTeam} reloadCurrentTeam={reloadCurrentTeam} />} />
             </Routes>
           </BackOfficeContent>
         </main>
       </div>
     );
   } else {
-
+    console.debug({error, currentTeam})
     const e = error?.message || currentTeam?.error
 
     toast.error(e)

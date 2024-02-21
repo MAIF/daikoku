@@ -188,7 +188,7 @@ export const ApiList = (props: TApiList) => {
   }, [dataRequest.data]);
 
   const redirectToTeam = (team: ITeamSimple) => {
-    navigate(`/${team._humanReadableId}/settings`);
+    navigate(`/${team._humanReadableId}/settings/dashboard`);
   };
 
   const clearFilter = () => {
