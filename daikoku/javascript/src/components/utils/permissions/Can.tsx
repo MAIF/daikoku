@@ -83,9 +83,9 @@ export const Can = ({
     ? CanIDoActionForOneOfTeams(connectedUser, I, a, teams)
     : CanIDoAction(connectedUser, I, a, team, isTenantAdmin, whichOne || tenant, tenant);
   if (!authorized) {
-    toast.error(translate('Unauthorized'))
     if (dispatchError) {
-      return <></> //FIXME [#609]
+      toast.error(translate('Unauthorized'))
+      return orElse; //FIXME [#609]
     }
     return orElse;
   }
