@@ -11,6 +11,11 @@ pub fn println(str: String) {
     logger.info(str.replace("\n", ""));
 }
 
+pub fn info(str: String) {
+    let mut logger = Logger::new();
+    logger.info(str);
+}
+
 pub fn indent_println(str: String) {
     check_loading();
     let mut logger = Logger::new();

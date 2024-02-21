@@ -1,5 +1,6 @@
 pub mod watch;
 pub mod configuration;
 pub mod version;
-pub mod initialization;
+pub mod creation;
 pub mod source;
+pub mod projects;

@@ -22,7 +22,7 @@ pub enum Commands {
     Version {},
     /// Initialize a cms folder
     #[command()]
-    Init {
+    Create {
         /// The template to clone
         #[arg(
             value_name = "TEMPLATE",
@@ -59,10 +59,13 @@ pub enum Commands {
         #[arg(value_name = "CLIENT_SECRET", long = "clientSecret", required = false)]
         client_secret: Option<String>,
     },
-    /// Globally configure the CLI with the path where the configuration file will be stored and the server to reach during the build. These parameters are optional and can be passed when running the build command.
     Config {
         #[command(subcommand)]
         command: ConfigCommands,
+    },
+    Projects {
+        #[command(subcommand)]
+        command: ProjectCommands,
     },
 }
 
@@ -112,7 +115,7 @@ pub enum ConfigCommands {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
         #[arg(value_name = "SERVER", short = 's', long = "server")]
-        server: Option<String>,
+        server: String,
         #[arg(value_name = "SECURED", long = "secured", required = false)]
         secured: Option<bool>,
         #[arg(value_name = "APIKEY", short = 'a', long = "apikey")]
@@ -129,14 +132,33 @@ pub enum ConfigCommands {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
     },
-    Get {
+    Env {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
     },
-    Use {
+    List {},
+}
+
+
+#[derive(Debug, Subcommand)]
+pub enum ProjectCommands {
+    Add {
+        #[arg(value_name = "NAME", short = 'n', long = "name")]
+        name: String,
+        #[arg(value_name = "PATH", short = 'p', long = "path")]
+        path: String,
+        #[arg(value_name = "OVERWRITE", short = 'o', long = "overwrite")]
+        overwrite: Option<bool>
+    },
+    Default {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
     },
+    Delete {
+        #[arg(value_name = "NAME", short = 'n', long = "name")]
+        name: String,
+    },
+    List {},
 }
 
 #[tokio::main]
@@ -145,11 +167,11 @@ async fn main() {
 
     let out = match args.command {
         Commands::Version {} => commands::version::run(),
-        Commands::Init {
+        Commands::Create {
             template,
             name,
             path,
-        } => commands::initialization::run(template, name, path.map(absolute_path)),
+        } => commands::creation::run(template, name, path.map(absolute_path)),
         Commands::Source { command } => commands::source::run(command),
         Commands::Watch {
             path,
@@ -161,6 +183,7 @@ async fn main() {
             Ok(())
         }
         Commands::Config { command } => commands::configuration::run(command),
+        Commands::Projects { command } => commands::projects::run(command)
     };
 
     if let Err(e) = out {
