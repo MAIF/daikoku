@@ -1,4 +1,4 @@
-import { constraints, Form, format, type } from '@maif/react-forms';
+import { constraints, Form, format, Schema, type } from '@maif/react-forms';
 import { md5 } from 'js-md5';
 import { useContext, useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -76,7 +76,7 @@ const Avatar = ({
   );
 };
 
-export const teamSchema = (team: ITeamSimple, translate: (props: string | TranslateParams) => string) => ({
+export const teamSchema = (team: ITeamSimple, translate: (props: string | TranslateParams) => string): Schema => ({
   name: {
     type: type.string,
     label: translate('Name'),
@@ -206,6 +206,7 @@ export const TeamEdit = (props: TeamBackOfficeProps) => {
       toast.error(translate('token.expired'))
     }
   }, []);
+
   const save = (data: ITeamSimple, contact: string) => {
     Services.updateTeam(data)
       .then((updatedTeam: ITeamSimple) => {
@@ -217,9 +218,9 @@ export const TeamEdit = (props: TeamBackOfficeProps) => {
           toast.info(translate("mailValidation.sent.body"))
           setAlreadyClicked(false)
         }
-        props.reloadCurrentTeam()
-          .then(() => toast.success(translate({ key: 'team.updated.success', replacements: [updatedTeam.name] })));
-      });
+      })
+      .then(() => props.reloadCurrentTeam())
+      .then(() => toast.success(translate({ key: 'team.updated.success', replacements: [data.name] })));
   };
 
   return (

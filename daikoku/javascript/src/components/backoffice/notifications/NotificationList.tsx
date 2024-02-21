@@ -8,6 +8,7 @@ import { I18nContext } from '../../../contexts';
 import { getApolloContext, gql } from '@apollo/client';
 import { ModalContext, useUserBackOffice } from '../../../contexts';
 import { ITesting, isError } from '../../../types';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 type NotificationsGQL = {
   notifications: Array<NotificationGQL>
@@ -78,6 +79,7 @@ type NotificationGQL = {
 export const NotificationList = () => {
   useUserBackOffice();
   const { translate, Translation } = useContext(I18nContext);
+  const { reloadUnreadNotificationsCount } = useContext(GlobalContext)
   const { alert } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
@@ -144,12 +146,6 @@ export const NotificationList = () => {
     );
   }, []);
 
-  //FIXME
-  // useEffect(() => {
-  //   if (state.untreatedNotifications)
-  //     dispatch(updateNotifications(state.untreatedNotifications.length));
-  // }, [state.untreatedNotifications]);
-
   const acceptNotification = (notificationId: string, values?: object): void => {
     setState({
       ...state,
@@ -185,7 +181,8 @@ export const NotificationList = () => {
           untreatedCount: total,
           untreatedNotifications: notifications.filter((n: NotificationGQL) => isUntreatedNotification(n)),
         })
-      );
+      )
+      .then(reloadUnreadNotificationsCount);
   };
 
   useEffect(() => {
@@ -199,7 +196,10 @@ export const NotificationList = () => {
     }).then(({ data: { myNotifications } }) => {
       return myNotifications
     })
+
+    return () => reloadUnreadNotificationsCount()
   }, [])
+  
 
   const rejectNotification = (notificationId: string, message?: string) => {
     setState({
@@ -228,7 +228,8 @@ export const NotificationList = () => {
           untreatedCount: total,
           untreatedNotifications: notifications.filter((n: NotificationGQL) => isUntreatedNotification(n)),
         });
-      });
+      })
+      .then(reloadUnreadNotificationsCount);
   };
 
   useEffect(() => {
@@ -258,9 +259,6 @@ export const NotificationList = () => {
       }
   }, [state.tab, state.page, state.loading])
 
-  const onSelectTab = (tab: any) => {
-    setState({ ...state, tab, loading: true, page: 0 });
-  };
 
   const moreBtnIsDisplay = () => !!state.count && state.count > state.notifications.length;
 

@@ -628,11 +628,11 @@ export const useTeamBackOffice = () => {
   const match = useMatch('/:teamId/settings/:tab*'); //todo tester si c'est bon sinon rollback /:teamId/settings/:tab*
   const teamId = match?.params.teamId;
 
-  console.debug({ match, teamId })
-
   const queryTeam = useQuery({ 
-    queryKey: ['team-backoffice'], 
-    queryFn: () => Services.team(teamId!), 
+    queryKey: ['team-backoffice', teamId], 
+    queryFn: () => {
+      return Services.team(teamId!)
+    }, 
     enabled: !!teamId 
   })
 
@@ -727,8 +727,6 @@ export const useTeamBackOffice = () => {
   const reloadCurrentTeam = () => queryClient.invalidateQueries({ queryKey: ['team-backoffice']})
 
   //todo handle error
-
-  console.debug({ queryTeam })
 
   return { isLoading: queryTeam.isLoading || queryTeam.status === 'pending', error: queryTeam.error, currentTeam: queryTeam.data, addMenu, reloadCurrentTeam };
 };

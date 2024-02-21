@@ -46,7 +46,7 @@ const initContext: TGlobalContext = {
   unreadNotificationsCount: 0,
   expertMode: JSON.parse(localStorage.getItem('expertMode') || 'false'),
   reloadContext: () => Promise.resolve(),
-  reloadUnreadNotificationsCount: () => { },
+  reloadUnreadNotificationsCount: () => Promise.resolve(),
   toggleExpertMode: () => { },
   loginAction: ''
 }
