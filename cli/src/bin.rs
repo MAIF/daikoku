@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate ini;
-
 mod commands;
 mod logging;
 mod models;
@@ -118,6 +115,10 @@ pub enum ConfigCommands {
         server: Option<String>,
         #[arg(value_name = "SECURED", long = "secured", required = false)]
         secured: Option<bool>,
+        #[arg(value_name = "APIKEY", short = 'a', long = "apikey")]
+        apikey: String,
+        #[arg(value_name = "OVERWRITE", long = "overwrite", required = false)]
+        overwrite: Option<bool>,
     },
     Clear {},
     Default {

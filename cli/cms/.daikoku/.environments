@@ -1,9 +1,3 @@
-[DEFAULT]
-configuration = DEV
-
-
-[DEV]
-server = localhost:9000
-secured = false
-apikey = Vkn2QqS2KVLITXT7jX5vJHz8l3b69u6V:GxSPe5SMbPQdQxVb5DveIBB1lrInUqNwuqrd7b9oFt0YhrC3TlM08PxBWo963qtI
-
+environment=coucu
+[config]
+environment=coucu

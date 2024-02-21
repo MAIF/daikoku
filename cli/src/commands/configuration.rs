@@ -1,8 +1,12 @@
 use crate::{
-    logging::{error::{DaikokuCliError, DaikokuResult}, logger},
+    logging::{
+        error::{DaikokuCliError, DaikokuResult},
+        logger,
+    },
     ConfigCommands,
 };
-use std::path::Path;
+use configparser::ini::{Ini, WriteOptions};
+use std::{collections::HashMap, io, path::Path};
 
 // TODO - provider a way to save and get the path to the CMS project
 
@@ -13,7 +17,9 @@ pub(crate) fn run(command: ConfigCommands) -> DaikokuResult<()> {
             name,
             server,
             secured,
-        } => add(name, server, secured),
+            apikey,
+            overwrite,
+        } => add(name, server, secured, apikey, overwrite.unwrap_or(false)),
         ConfigCommands::Default { name } => update_default(name),
         ConfigCommands::Delete { name } => delete(name),
         ConfigCommands::Get { name } => get(name),
@@ -29,8 +35,12 @@ fn get_path() -> String {
         .unwrap()
 }
 
+fn set_content_file(content: &String) -> Result<(), io::Error> {
+    std::fs::write(get_path(), content)
+}
+
 fn clear() -> DaikokuResult<()> {
-    match std::fs::write(get_path(), "".to_string()) {
+    match set_content_file(&"".to_string()) {
         Ok(_) => {
             logger::println("<green>Environments erased</>".to_string());
             Ok(())
@@ -42,15 +52,77 @@ fn clear() -> DaikokuResult<()> {
     }
 }
 
-fn add(name: String, server: Option<String>, secured: Option<bool>) -> DaikokuResult<()> {
-    let map = ini!(&get_path());
+fn read() -> DaikokuResult<Ini> {
+    let mut config = Ini::new();
 
-    println!("{:?}", map);
-    Ok(())
+    match config.load(&get_path()) {
+        Ok(_) => Ok(config),
+        Err(e) => Err(DaikokuCliError::Configuration(e.to_string())),
+    }
+}
+
+fn add(
+    name: String,
+    server: Option<String>,
+    secured: Option<bool>,
+    apikey: String,
+    overwrite: bool,
+) -> DaikokuResult<()> {
+    logger::loading("<yellow>Patching</> configuration".to_string());
+    let mut config: Ini = read()?;
+
+    let exists = config.get(&name, "server").is_some();
+
+    if name.to_lowercase() == "default" {
+        return Err(DaikokuCliError::Configuration("forbidden keyword usage".to_string()));
+    }
+
+    if exists && !overwrite {
+        return Err(DaikokuCliError::Configuration("configuration already exists. use the --overwrite=true parameter to override the contets".to_string()));
+    }
+
+    config.set(&name, "server", server);
+    config.set(
+        &name,
+        "secured",
+        Some(
+            secured
+                .map(|p| p.to_string())
+                .unwrap_or("false".to_string()),
+        ),
+    );
+    config.set(&name, "apikey", Some(apikey));
+
+    match config.write(&get_path()) {
+        Ok(()) => {
+            logger::println(if exists {
+                "<green>Entry</> updated".to_string()
+            } else {
+                "<green>New entry</> added".to_string()
+            });
+            Ok(())
+        }
+        Err(err) => Err(DaikokuCliError::Configuration(err.to_string())),
+    }
 }
 
 fn update_default(name: String) -> DaikokuResult<()> {
-    todo!()
+    logger::loading("<yellow>Updating</> default environment".to_string());
+    let mut config: Ini = read()?;
+
+    if config.get(&name, "server").is_none() {
+        return Err(DaikokuCliError::Configuration("a non-existing section cannot be set as default".to_string()))
+    }
+    
+    config.set("default", "environment", Some(name));
+
+    match config.write(&get_path()) {
+        Ok(()) => {
+            logger::println("<green>Defaut</> updated".to_string());
+            Ok(())
+        }
+        Err(err) => Err(DaikokuCliError::Configuration(err.to_string())),
+    }
 }
 fn delete(name: String) -> DaikokuResult<()> {
     todo!()
