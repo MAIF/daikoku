@@ -1,31 +1,41 @@
-import { Form, constraints, format, type } from '@maif/react-forms';
+import { Form, Schema, SchemaRenderType, constraints, format, type } from '@maif/react-forms';
 import { md5 } from 'js-md5';
-import { useContext, useEffect, useState } from 'react';
+import { ChangeEvent, useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { ModalContext, useUserBackOffice } from '../../../contexts';
-import { I18nContext } from '../../../contexts';
-import * as Services from '../../../services';
-import { IState, ITenant } from '../../../types';
+import { I18nContext, ModalContext, useUserBackOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
+import * as Services from '../../../services';
+import { I2FAQrCode, ITenant, IUser, isError } from '../../../types';
+import { Spinner } from '../../utils';
+
+type TwoFactorAuthenticationProps = {
+  user: IUser
+}
 
 const TwoFactorAuthentication = ({
   user
-}: any) => {
-  const [modal, setModal] = useState<any>(false);
-  const [error, setError] = useState<string | undefined>();
+}: TwoFactorAuthenticationProps) => {
+  const [modal, setModal] = useState<I2FAQrCode & { code: string }>();
+  const [error, setError] = useState<string>();
   const [backupCodes, setBackupCodes] = useState('');
 
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
 
   const getQRCode = () => {
-    Services.getQRCode().then((res) =>
-      setModal({
-        ...res,
-        code: '',
-      })
-    );
+    Services.getQRCode()
+      .then((res) => {
+        if (!isError(res)) {
+          setModal({
+            ...res,
+            code: '',
+          })
+        } else {
+          toast.error(res.error)
+        }
+      }
+      );
   };
 
   const disable2FA = () => {
@@ -41,25 +51,26 @@ const TwoFactorAuthentication = ({
   };
 
   function copyToClipboard() {
-    navigator.clipboard.writeText(user?.twoFactorAuthentication.backupCodes);
+    navigator.clipboard.writeText(user!.twoFactorAuthentication!.backupCodes);
     toast.success(translate('2fa.copied'));
   }
 
   function verify() {
-    if (!modal.code || modal.code.length !== 6) {
+    if (!modal!.code || modal!.code.length !== 6) {
       setError(translate('2fa.code_error'));
-      setModal({ ...modal, code: '' });
+      setModal({ ...modal!, code: '' });
     } else {
-      Services.selfVerify2faCode((modal as any).code).then((res) => {
-        if (res.error) {
-          setError(translate('2fa.wrong_code'));
-          setModal({ ...modal, code: '' });
-        }
-        else {
-          toast.success(res.message);
-          setBackupCodes(res.backupCodes);
-        }
-      });
+      Services.selfVerify2faCode(modal!.code)
+        .then((res) => {
+          if (res.error) {
+            setError(translate('2fa.wrong_code'));
+            setModal({ ...modal!, code: '' });
+          }
+          else {
+            toast.success(res.message);
+            setBackupCodes(res.backupCodes);
+          }
+        });
     }
   }
 
@@ -84,7 +95,7 @@ const TwoFactorAuthentication = ({
           <span className="my-3 text-center w-75 mx-auto">
             {translate('2fa.advice_scan')}
           </span>
-          <img src={`data:image/svg+xml;utf8,${encodeURIComponent((modal as any).qrcode)}`} style={{
+          <img src={`data:image/svg+xml;utf8,${encodeURIComponent(modal.qrcode)}`} style={{
             maxWidth: '250px',
             height: '250px',
           }} />
@@ -100,7 +111,10 @@ const TwoFactorAuthentication = ({
             border: 0,
             color: 'black',
             letterSpacing: '3px',
-          }} disabled={true} value={(modal as any).rawSecret.match(/.{1,4}/g).join(' ')} className="form-control" />
+          }}
+            disabled={true}
+            value={modal.rawSecret.match(/.{1,4}/g)!.join(' ')}
+            className="form-control" />
         </div>
       </div>
       <div className="w-75 mx-auto">
@@ -109,7 +123,7 @@ const TwoFactorAuthentication = ({
         {error && (<div className="alert alert-danger" role="alert">
           {error}
         </div>)}
-        <input type="number" value={(modal as any).code} placeholder={translate('2fa.insert_code')} onChange={(e) => {
+        <input type="number" value={modal.code} placeholder={translate('2fa.insert_code')} onChange={(e) => {
           if (e.target.value.length < 7) {
             setError(undefined);
             setModal({ ...modal, code: e.target.value });
@@ -151,25 +165,26 @@ const Avatar = ({
   setValue,
   rawValues,
   value,
-  error,
   onChange,
   tenant
 }: any) => {
-  const { translate, Translation } = useContext(I18nContext);
+  const { Translation } = useContext(I18nContext);
 
-  const setFiles = (files: any) => {
-    const file = files[0];
-    const filename = file.name;
-    const contentType = file.type;
-    return Services.storeUserAvatar(filename, contentType, file)
-      .then((res) => {
-        if (res.error) {
-          toast.error(res.error);
-        } else {
-          setValue('pictureFromProvider', false);
-          onChange(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
-        }
-      });
+  const setFiles = (files: FileList | null) => {
+    if (files) {
+      const file = files[0];
+      const filename = file.name;
+      const contentType = file.type;
+      return Services.storeUserAvatar(filename, contentType, file)
+        .then((res) => {
+          if (res.error) {
+            toast.error(res.error);
+          } else {
+            setValue('pictureFromProvider', false);
+            onChange(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
+          }
+        });
+    }
   };
 
   const setPictureFromProvider = () => {
@@ -194,7 +209,7 @@ const Avatar = ({
   const isOtherOriginThanLocal = rawValues?.origins?.some((o: any) => o.toLowerCase !== 'local');
 
   if (!isOtherOriginThanLocal) {
-    return null;
+    return <></>;
   }
   return (
     <div className="">
@@ -210,7 +225,7 @@ const Avatar = ({
           alt="avatar"
           className="mx-3"
         />
-        <PictureUpload setFiles={setFiles} />
+        <PictureUpload setFiles={setFiles} tenant={tenant}/>
       </div>
       <div className="">
         <input
@@ -243,12 +258,17 @@ const Avatar = ({
   );
 };
 
-const PictureUpload = (props: any) => {
+type PictureUploadProps = {
+  tenant: ITenant,
+  setFiles: (files: FileList | null) => void
+}
+const PictureUpload = (props: PictureUploadProps) => {
   const [uploading, setUploading] = useState(false);
 
   const { Translation } = useContext(I18nContext);
 
-  const setFiles = (e: any) => {
+  const setFiles = (e: ChangeEvent<HTMLInputElement>) => {
+
     const files = e.target.files;
     setUploading(true);
     props.setFiles(files);
@@ -267,7 +287,7 @@ const PictureUpload = (props: any) => {
         ref={(r) => (input = r)}
         type="file"
         className="form-control hide"
-        onChange={setFiles}
+        onChange={e => setFiles(e)}
       />
       <button
         type="button"
@@ -290,7 +310,7 @@ const PictureUpload = (props: any) => {
 export const MyProfile = () => {
   useUserBackOffice();
 
-  const [user, setUser] = useState();
+  const [user, setUser] = useState<IUser>();
   const [tab, setTab] = useState('infos');
 
   const { tenant, reloadContext } = useContext(GlobalContext);
@@ -298,7 +318,7 @@ export const MyProfile = () => {
   const { translate, setLanguage, language, Translation, languages } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
 
-  const formSchema = {
+  const formSchema: Schema = {
     name: {
       type: type.string,
       label: translate('Name'),
@@ -316,7 +336,7 @@ export const MyProfile = () => {
     picture: {
       type: type.string,
       label: translate('Avatar'),
-      render: (v: any) => Avatar({ ...v, tenant: tenant }),
+      render: (v) => Avatar({ ...v, tenant: tenant }),
       constraints: [
         constraints.required(translate('constraints.required.avatar')),
         constraints.url(
@@ -371,9 +391,13 @@ export const MyProfile = () => {
   useEffect(() => {
     Services.me()
       .then((user) => {
-        setUser(user);
-        if (user.defaultLanguage && user.defaultLanguage !== language)
-          setLanguage(user.defaultLanguage);
+        if (!isError(user)) {
+          setUser(user);
+          if (user.defaultLanguage && user.defaultLanguage !== language)
+            setLanguage(user.defaultLanguage);
+        } else {
+          toast.error(user.error)
+        }
       });
   }, []);
 
@@ -401,18 +425,23 @@ export const MyProfile = () => {
   const updatePassword = ({
     oldPassword,
     newPassword
-  }: any) => {
-    Services.updateMyPassword(oldPassword, newPassword).then((user) => {
-      if (user.error) {
-        toast.error(translate(user.error));
-      } else {
-        setUser(user);
-        reloadContext();
+  }: { oldPassword: string, newPassword: string }) => {
+    Services.updateMyPassword(oldPassword, newPassword)
+      .then((user) => {
+        if (user.error) {
+          toast.error(translate(user.error));
+        } else {
+          setUser(user);
+          reloadContext();
 
-        toast.success(translate('user.password.updated.success'));
-      }
-    });
+          toast.success(translate('user.password.updated.success'));
+        }
+      });
   };
+
+  if (!user) {
+    return <Spinner />
+  }
 
   return (
     <div className="container-fluid">

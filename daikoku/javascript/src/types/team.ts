@@ -52,6 +52,11 @@ interface I2FA {
   backupCodes: string;
 }
 
+export interface I2FAQrCode {
+  rawSecret: string;
+  qrcode: string;
+}
+
 export interface IFastTeam {
   _id: string;
   _humanReadableId: string;

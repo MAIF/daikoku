@@ -1,5 +1,6 @@
 import { gql } from '@apollo/client';
 import {
+  I2FAQrCode,
   IAsset,
   IAuditTrail,
   IFastApiSubscription,
@@ -52,7 +53,7 @@ const customFetch = <T>(
   { headers = HEADERS, method = 'GET', body, ...props }: any = {}
 ) => fetch(url, { headers, method, body, ...props }).then((r) => r.json());
 
-export const me = () => customFetch('/api/me');
+export const me = (): PromiseWithError<IUser> => customFetch('/api/me');
 export const myOwnTeam = () => customFetch('/api/me/teams/own');
 export const oneOfMyTeam = (id: any) => customFetch(`/api/me/teams/${id}`);
 export const getUserContext = (): PromiseWithError<IStateContext> => customFetch('/api/me/context')
@@ -1085,7 +1086,7 @@ export const updateIssue = (apiId: any, teamId: any, issueId: any, issue: any) =
     }),
   });
 
-export const getQRCode = () => customFetch('/api/me/_2fa');
+export const getQRCode = (): PromiseWithError<I2FAQrCode> => customFetch('/api/me/_2fa');
 
 export const verify2faCode = (token: any, code: any) =>
   fetch(`/api/2fa?token=${token}&code=${code}`);
@@ -1101,7 +1102,7 @@ export const reset2faAccess = (backupCodes: any) =>
     body: JSON.stringify({ backupCodes }),
   });
 
-export const selfVerify2faCode = (code: any) => customFetch(`/api/me/_2fa/enable?code=${code}`);
+export const selfVerify2faCode = (code: string) => customFetch(`/api/me/_2fa/enable?code=${code}`);
 
 export const validateInvitationToken = (token: any) =>
   customFetch('/api/me/invitation/_check', {
