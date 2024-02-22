@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import merge from 'lodash/merge';
 import React, { PropsWithChildren, useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
@@ -380,19 +380,34 @@ export const useApiBackOffice = (creation: boolean) => {
   const location = useLocation();
   const newApi = location && location.state && location.state.newApi
 
-  const queryTeam = useQuery({ queryKey: ['team-backoffice', teamId], queryFn: () => Services.team(teamId!), enabled: !!teamId })
+  // const queryTeam = useQuery({ queryKey: ['team-backoffice', teamId], queryFn: () => Services.team(teamId!), enabled: !!teamId })
 
-  const apiRequest = useQuery({
-    queryKey: ['api', apiId, versionId, location],
-    queryFn: () => Services.teamApi((queryTeam.data as ITeamSimple)._id, apiId!, versionId!),
-    enabled: !newApi && queryTeam.data && !isError(queryTeam.data)
-  })
+  // const apiRequest = useQuery({
+  //   queryKey: ['api', apiId, versionId, location],
+  //   queryFn: () => Services.teamApi((queryTeam.data as ITeamSimple)._id, apiId!, versionId!),
+  //   enabled: !newApi && queryTeam.data && !isError(queryTeam.data)
+  // })
 
-  const versionsRequest = useQuery({
-    queryKey: ['apiVersions', apiId, versionId, location],
-    queryFn: () => Services.getAllApiVersions((queryTeam.data as ITeamSimple)._id, apiId!),
-    enabled: !newApi && queryTeam.data && !isError(queryTeam.data)
-  })
+  // const versionsRequest = useQuery({
+  //   queryKey: ['apiVersions', apiId, versionId, location],
+  //   queryFn: () => Services.getAllApiVersions((queryTeam.data as ITeamSimple)._id, apiId!),
+  //   enabled: !newApi && queryTeam.data && !isError(queryTeam.data)
+  // })
+
+  const queryClient = useQueryClient();
+  const queries = useQueries({queries: [
+    { queryKey: ['useApiBackOffice', 'team-backoffice', teamId], queryFn: () => Services.team(teamId!), enabled: !!teamId },
+    {
+      queryKey: ['useApiBackOffice', 'api', apiId, versionId, location],
+      queryFn: () => Services.teamApi(teamId!, apiId!, versionId!),
+      enabled: !newApi
+    },
+    {
+      queryKey: ['useApiBackOffice', 'api', 'apiVersions', apiId, versionId, location],
+      queryFn: () => Services.getAllApiVersions(teamId!, apiId!),
+      enabled: !newApi
+    }
+  ]})
 
 
   const schema = (api: IApi, currentTab?: string) => ({
@@ -456,35 +471,33 @@ export const useApiBackOffice = (creation: boolean) => {
   });
 
   const navigateTo = (navTab: string, api: IApi) => {
-    navigate(`/${(queryTeam.data as ITeamSimple)._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/${navTab}`);
+    navigate(`/${(queries[0].data as ITeamSimple)._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/${navTab}`);
   };
 
   useEffect(() => {
-    if (apiRequest.data && !isError(apiRequest.data)) {
-      addMenu(schema(apiRequest.data, tab));
+    if (queries[1].data && !isError(queries[1].data)) {
+      addMenu(schema(queries[1].data, tab));
       setMode(navMode.api);
       setOffice(officeMode.back);
     }
+  }, [tab, queries[1]]);
 
+  useEffect(() => {
     return () => {
       setMode(navMode.initial);
       setApi(undefined);
       setMenu({});
     };
-  }, [tab, apiRequest]);
+  }, []);
 
-  // useEffect(() => {
-  //   return () => {
-  //     setMode(navMode.initial);
-  //     setApi(undefined);
-  //     setMenu({});
-  //   };
-  // }, []);
+  const api = (queries[1].data && isError(queries[1].data)) ? undefined : queries[1].data;
+  const versions = (queries[2].data && isError(queries[2].data)) ? [] : queries[2].data || [];
 
-  const api = isError(apiRequest.data) ? undefined : apiRequest.data;
-  const versions = isError(versionsRequest.data) ? [] : versionsRequest.data || [];
+  const isLoading = queries.map(q => q.isLoading).some(state => state)
 
-  return { addMenu, setApi, api, versions };
+  const reloadApi = () => queryClient.invalidateQueries({queryKey: ['useApiBackOffice', 'api']})
+
+  return { isLoading, addMenu, setApi, api, versions, reloadApi };
 };
 
 export const useApiGroupBackOffice = (creation: boolean) => {
