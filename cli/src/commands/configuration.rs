@@ -6,7 +6,12 @@ use crate::{
     ConfigCommands,
 };
 use configparser::ini::Ini;
-use std::{io, path::Path};
+use std::{
+    io,
+    path::{Path, PathBuf},
+};
+
+use super::projects;
 
 pub(crate) fn run(command: ConfigCommands) -> DaikokuResult<()> {
     match command {
@@ -25,25 +30,28 @@ pub(crate) fn run(command: ConfigCommands) -> DaikokuResult<()> {
     }
 }
 
-fn get_path() -> String {
-    Path::new("./cms/.daikoku/.environments")
-        .to_path_buf()
+fn get_path() -> DaikokuResult<String> {
+    let project = projects::get_default_project()?;
+
+    Ok(Path::new(&PathBuf::from(project.path))
+        .join(".daikoku")
+        .join(".environments")
         .into_os_string()
         .into_string()
-        .unwrap()
+        .unwrap())
 }
 
 fn read() -> DaikokuResult<Ini> {
     let mut config = Ini::new();
 
-    match config.load(&get_path()) {
+    match config.load(&get_path()?) {
         Ok(_) => Ok(config),
         Err(e) => Err(DaikokuCliError::Configuration(e.to_string())),
     }
 }
 
-fn set_content_file(content: &String) -> Result<(), io::Error> {
-    std::fs::write(get_path(), content)
+fn set_content_file(content: &String) -> DaikokuResult<()> {
+    std::fs::write(get_path()?, content).map_err(|err| DaikokuCliError::FileSystem(err.to_string()))
 }
 
 fn clear() -> DaikokuResult<()> {
@@ -93,7 +101,7 @@ fn add(
     );
     config.set(&name, "apikey", Some(apikey));
 
-    match config.write(&get_path()) {
+    match config.write(&get_path()?) {
         Ok(()) => {
             logger::println(if exists {
                 "<green>Entry</> updated".to_string()
@@ -119,7 +127,7 @@ fn update_default(name: String) -> DaikokuResult<()> {
 
     config.set("default", "environment", Some(name.clone()));
 
-    match config.write(&get_path()) {
+    match config.write(&get_path()?) {
         Ok(()) => {
             logger::println("<green>Defaut</> updated".to_string());
             let _ = get("default".to_string());
@@ -145,7 +153,7 @@ fn delete(name: String) -> DaikokuResult<()> {
         ));
     };
 
-    match config.write(&get_path()) {
+    match config.write(&get_path()?) {
         Ok(()) => {
             logger::println(format!("<green>{}</> deleted", &name));
             Ok(())

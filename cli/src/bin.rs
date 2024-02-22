@@ -158,6 +158,7 @@ pub enum ProjectCommands {
         name: String,
     },
     List {},
+    Reset {}
 }
 
 async fn process(command: Commands) -> DaikokuResult<()> {
@@ -167,7 +168,7 @@ async fn process(command: Commands) -> DaikokuResult<()> {
             template,
             name,
             path,
-        } => commands::creation::run(template, name, path.map(absolute_path)).await,
+        } => commands::creation::run(template, name, path.map(|p| absolute_path(p).unwrap())).await,
         Commands::Source { command } => commands::source::run(command),
         Commands::Watch {
             path,
@@ -175,7 +176,7 @@ async fn process(command: Commands) -> DaikokuResult<()> {
             client_id,
             client_secret,
         } => {
-            commands::watch::run(path.map(absolute_path), server, client_id, client_secret).await;
+            commands::watch::run(path.map(|p| absolute_path(p).unwrap()), server, client_id, client_secret).await;
             Ok(())
         }
         Commands::Config { command } => commands::configuration::run(command),

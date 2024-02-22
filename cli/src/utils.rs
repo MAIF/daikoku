@@ -18,17 +18,16 @@ pub(crate) fn get_home() -> DaikokuResult<PathBuf> {
     }
 }
 
-pub fn absolute_path(path: String) -> String {
+pub fn absolute_path(path: String) -> DaikokuResult<String> {
     match expand_tilde(&path) {
         None => fs::canonicalize(path)
             .unwrap()
             .into_os_string()
             .into_string()
-            .unwrap(),
-        Some(path) => match fs::canonicalize(path) {
-            Ok(res) => res.into_os_string().into_string().unwrap(),
-            Err(err) => panic!("{:#?}", err),
-        },
+            .map_err(|p| DaikokuCliError::FileSystem("failed to canonicalize path".to_string())),
+        Some(path) => fs::canonicalize(path)
+            .map(|res| res.into_os_string().into_string().unwrap())
+            .map_err(|p| DaikokuCliError::FileSystem(p.to_string()))
     }
 }
 

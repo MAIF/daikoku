@@ -1,4 +1,4 @@
-use std::{collections::HashMap, path::PathBuf};
+use std::{collections::HashMap, path::{Path, PathBuf}};
 
 use configparser::ini::Ini;
 
@@ -11,9 +11,10 @@ use crate::{
     ProjectCommands,
 };
 
+#[derive(Clone)]
 pub(crate) struct Project {
-    pub(crate)path: String,
-    pub(crate)name: String,
+    pub(crate) path: String,
+    pub(crate) name: String,
 }
 
 pub(crate) fn run(command: ProjectCommands) -> DaikokuResult<()> {
@@ -22,31 +23,38 @@ pub(crate) fn run(command: ProjectCommands) -> DaikokuResult<()> {
             name,
             path,
             overwrite,
-        } => add(name, absolute_path(path), overwrite.unwrap_or(false)),
+        } => add(name, absolute_path(path)?, overwrite.unwrap_or(false)),
         ProjectCommands::Default { name } => update_default(name),
         ProjectCommands::Delete { name } => delete(name),
         ProjectCommands::List {} => list(),
+        ProjectCommands::Reset {} => clear(),
     }
 }
 
 pub(crate) fn get_default_project() -> DaikokuResult<Project> {
     let config = read(false)?;
 
-    let missing_error = DaikokuCliError::Configuration(
-        "missing default project or values in project. Use project default --name<YOUR_PROJECT>"
+    let default_project_name = config
+        .get("default", "project")
+        .ok_or(DaikokuCliError::Configuration(
+        "missing default project or values in project. Specify a default project to use. See projects commands"
             .to_string(),
-    );
-
-    let default_project_name = config.get("default", "project").ok_or(missing_error)?;
+    ))?;
 
     let project = config
         .get_map()
-        .map(|m| m[&default_project_name])
-        .ok_or(missing_error)?;
+        .map(|m| m[&default_project_name].clone())
+        .ok_or(DaikokuCliError::Configuration(
+        "missing default project or values in project. Specify a default project to use. See projects commands"
+            .to_string(),
+    ))?;
 
-    match (project["name"], project["path"]) {
-        (Some(name), Some(path)) => Ok(Project { name, path }),
-        (_, _) => Err(missing_error),
+    match (&project["name"], &project["path"]) {
+        (Some(name), Some(path)) => Ok(Project { name: name.to_string(), path: path.to_string() }),
+        (_, _) => Err(DaikokuCliError::Configuration(
+            "missing default project or values in project. Specify a default project to use. See projects commands"
+                .to_string(),
+        )),
     }
 }
 
@@ -58,6 +66,12 @@ fn add(name: String, path: String, overwrite: bool) -> DaikokuResult<()> {
     if config.get(&name, "path").is_some() && !overwrite {
         return Err(DaikokuCliError::Configuration(
             "project already exists".to_string(),
+        ));
+    }
+
+    if !Path::new(&path).exists() {
+        return Err(DaikokuCliError::Configuration(
+            "failed to find project at path".to_string(),
         ));
     }
 
@@ -182,5 +196,22 @@ fn read(last_attempt: bool) -> DaikokuResult<Ini> {
             Err(e) => Err(DaikokuCliError::Configuration(e.to_string())),
         },
         Err(e) => Err(DaikokuCliError::Configuration(e.to_string())),
+    }
+}
+
+fn clear() -> DaikokuResult<()> {
+    let mut config = Ini::new();
+    
+    config.clear();
+    
+    match config.write(&get_path()?) {
+        Ok(_) => {
+            logger::println("<green>Environments erased</>".to_string());
+            Ok(())
+        }
+        Err(e) => Err(DaikokuCliError::FileSystem(format!(
+            "failed to reset the environments file : {}",
+            e.to_string()
+        ))),
     }
 }

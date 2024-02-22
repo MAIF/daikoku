@@ -146,13 +146,13 @@ fn new_file(
         folder_path = "blocks".to_string();
     } else if path.is_none() {
         return Err(DaikokuCliError::Configuration(
-            "you need to specify a exposition path to create a page".to_string(),
+            "you need to specify a exposition path to create a page. Add --path=/<your-path>".to_string(),
         ));
     }
     
     let root = projects::get_default_project()?;
 
-    let mut summary = read_cms_pages_from_project(root)?;
+    let mut summary = read_cms_pages_from_project(root.clone())?;
     let already_present = summary.contains_page(&name, &source.content_type());
 
     if already_present && !overwrite {

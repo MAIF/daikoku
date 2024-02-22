@@ -233,7 +233,7 @@ pub(crate) fn read_cms_pages() -> DaikokuResult<Summary> {
 }
 
 pub(crate) fn read_cms_pages_from_project(project: Project) -> DaikokuResult<Summary> {
-    let content = fs::read_to_string(PathBuf::from(project.path)).unwrap();
+    let content = fs::read_to_string(PathBuf::from(project.path).join("src").join("summary.json")).unwrap();
     let Summary { pages } = serde_json::from_str(&content).unwrap();
 
     Ok(Summary {
@@ -242,8 +242,10 @@ pub(crate) fn read_cms_pages_from_project(project: Project) -> DaikokuResult<Sum
 }
 
 fn write_cms_pages(contents: &Summary) -> DaikokuResult<()> {
+    let project = projects::get_default_project()?;
+    let path = PathBuf::from(project.path).join("src").join("summary.json");
     match fs::write(
-        PathBuf::from("./cms/src/summary.json"),
+        path,
         serde_json::to_string_pretty(contents).unwrap(),
     ) {
         Ok(_) => Ok(()),
@@ -407,8 +409,10 @@ async fn render_page(page: &CmsPage) -> Result<Response<Full<Bytes>>, DaikokuCli
     let url: String = format!("http://{}/__/?force_reloading=true", host);
     let Summary { pages } = read_cms_pages()?;
 
+    let project = projects::get_default_project()?;
+
     let content = read_contents(
-        &PathBuf::from("./cms/src")
+        &PathBuf::from(&project.path).join("src")
             .into_os_string()
             .into_string()
             .unwrap(),
@@ -432,7 +436,7 @@ async fn render_page(page: &CmsPage) -> Result<Response<Full<Bytes>>, DaikokuCli
 
     let stream = TcpStream::connect(format!("{}:{}", &"localhost", 9000))
         .await
-        .unwrap();
+        .map_err(|err| DaikokuCliError::DaikokuError(err))?;
     let io = TokioIo::new(stream);
 
     let (mut sender, conn) = hyper::client::conn::http1::handshake(io).await.unwrap();

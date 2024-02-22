@@ -8,7 +8,8 @@ pub enum DaikokuCliError {
     CmsCreationFile(String),
     FileSystem(String),
     Configuration(String),
-    HyperError(hyper::Error)
+    HyperError(hyper::Error),
+    DaikokuError(std::io::Error)
 }
 
 impl Error for DaikokuCliError {}
@@ -36,6 +37,9 @@ impl fmt::Display for DaikokuCliError {
             }
             DaikokuCliError::HyperError(err) => {
                 write!(f, "[CONFIGURATION] : {}\n", &err)
+            }
+            DaikokuCliError::DaikokuError(err) => {
+                write!(f, "[DAIKOKU] : {}\n", &err)
             }
         }
     }
