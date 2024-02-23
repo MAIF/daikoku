@@ -4,21 +4,18 @@ import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { I18nContext, ModalContext } from '../../../contexts';
+import { I18nContext, ModalContext, useApiBackOffice } from '../../../contexts';
 import * as Services from '../../../services';
-import { IApi, isError } from '../../../types';
+import { IApi, isError, ITeamSimple } from '../../../types';
 import { FeedbackButton } from '../../utils/FeedbackButton';
-import { TeamBackOfficeProps } from '../TeamBackOffice';
+import { Spinner } from '../../utils/Spinner';
 
 type TeamApiSettingsProps = {
   api: IApi,
-  apiGroup?: boolean
+  currentTeam: ITeamSimple
 }
-export const TeamApiSettings = ({
-  api,
-  apiGroup,
-  currentTeam
-}: TeamBackOfficeProps<TeamApiSettingsProps>) => {
+export const TeamApiSettings = ({ api, currentTeam }: TeamApiSettingsProps) => {
+
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
   const navigate = useNavigate();
@@ -79,37 +76,37 @@ export const TeamApiSettings = ({
       });
   };
 
-  return (
-    <div>
-      <div
-        className="action mb-3"
-        style={{ border: '1px solid tomato', borderRadius: '4px', padding: '5px' }}
-      >
-        <h3>{translate('transfer.api.ownership.title')}</h3>
-        <i>{translate('transfer.api.ownership.description')}</i>
-        <Form
-          schema={transferSchema}
-          onSubmit={transferOwnership}
-          options={{ actions: { submit: { label: translate('Transfer') } } }}
-        />
-      </div>
-      <div
-        className="action d-flex flex-row align-items-center"
-        style={{ border: '1px solid tomato', borderRadius: '4px', padding: '5px' }}
-      >
-        <div>
-          <h3>{translate('delete.api.title')}</h3>
-          <i>{translate('delete.api.description')}</i>
+    return (
+      <div>
+        <div
+          className="action mb-3"
+          style={{ border: '1px solid tomato', borderRadius: '4px', padding: '5px' }}
+        >
+          <h3>{translate('transfer.api.ownership.title')}</h3>
+          <i>{translate('transfer.api.ownership.description')}</i>
+          <Form
+            schema={transferSchema}
+            onSubmit={transferOwnership}
+            options={{ actions: { submit: { label: translate('Transfer') } } }}
+          />
         </div>
-        <div className="flex-grow-1 text-end" style={{ paddingRight: '15px' }}>
-          <FeedbackButton
-            type="danger"
-            onPress={() => deleteApi()}
-            feedbackTimeout={1000}
-            disabled={false}
-          >{translate('Delete this Api')}</FeedbackButton>
+        <div
+          className="action d-flex flex-row align-items-center"
+          style={{ border: '1px solid tomato', borderRadius: '4px', padding: '5px' }}
+        >
+          <div>
+            <h3>{translate('delete.api.title')}</h3>
+            <i>{translate('delete.api.description')}</i>
+          </div>
+          <div className="flex-grow-1 text-end" style={{ paddingRight: '15px' }}>
+            <FeedbackButton
+              type="danger"
+              onPress={() => deleteApi()}
+              feedbackTimeout={1000}
+              disabled={false}
+            >{translate('Delete this Api')}</FeedbackButton>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
 };

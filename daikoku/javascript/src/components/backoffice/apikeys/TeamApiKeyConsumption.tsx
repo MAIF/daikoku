@@ -4,15 +4,16 @@ import moment from 'moment';
 import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../services';
-import { BeautifulTitle, OtoroshiStatsVizualization, TeamBackOfficeProps } from '../..';
+import { BeautifulTitle, OtoroshiStatsVizualization } from '../..';
 import { Spinner, Can, read, stat } from '../../utils';
 import { I18nContext } from '../../../contexts';
 import { useTeamBackOffice } from '../../../contexts';
 import { useQuery } from "@tanstack/react-query";
-import { IState, ITeamSimple, isError } from "../../../types";
+import { IState, ITeamSimple, ResponseError, isError } from "../../../types";
+import { toast } from 'sonner';
 
 type QuotasProps = {
-  currentTeam: ITeamSimple,
+  currentTeam?: ITeamSimple | ResponseError,
   typePlan: string
 
 }
@@ -20,7 +21,8 @@ const Quotas = (props: QuotasProps) => {
   const params = useParams()
   const queryQuotas = useQuery({
     queryKey: ['quotas'],
-    queryFn: () => Services.getConsummedQuotasWithSubscriptionId(props.currentTeam._id, params.subscription!)
+    queryFn: () => Services.getConsummedQuotasWithSubscriptionId((props.currentTeam as ITeamSimple)._id, params.subscription!),
+    enabled: props.currentTeam && !isError(props.currentTeam)
   })
 
   const { translate } = useContext(I18nContext);
@@ -81,7 +83,9 @@ const Quotas = (props: QuotasProps) => {
     return <div>Error while searching quotas.</div>
   }
 }
-export const TeamApiKeyConsumption = (props: TeamBackOfficeProps) => {
+export const TeamApiKeyConsumption = () => {
+  const { isLoading, currentTeam, error } = useTeamBackOffice();
+
   const { translate, Translation } = useContext(I18nContext);
   const params = useParams();
 
@@ -90,7 +94,8 @@ export const TeamApiKeyConsumption = (props: TeamBackOfficeProps) => {
   };
   const subInf = useQuery({
     queryKey: ['subInf'],
-    queryFn: () => getInformations(props.currentTeam),
+    queryFn: () => getInformations((currentTeam as ITeamSimple)),
+    enabled: currentTeam && !isError(currentTeam)
   });
 
   let mappers = [
@@ -121,15 +126,15 @@ export const TeamApiKeyConsumption = (props: TeamBackOfficeProps) => {
         {
           type: 'Custom',
           label: translate('Quotas consumptions'),
-          formatter: () => <Quotas currentTeam={props.currentTeam} typePlan={subInf.data!.plan.type} />,
+          formatter: () => <Quotas currentTeam={currentTeam} typePlan={subInf.data!.plan.type} />,
         },
       ];
   }
 
   useEffect(() => {
-    if (props.currentTeam && !isError(props.currentTeam))
-      document.title = `${props.currentTeam.name} - ${translate('API key consumption')}`;
-  }, [props.currentTeam]);
+    if (currentTeam && !isError(currentTeam))
+      document.title = `${currentTeam.name} - ${translate('API key consumption')}`;
+  }, [currentTeam]);
 
   const getLabelForDataIn = (datas: any, max: any) => {
     let hits = datas.length ? datas.reduce((acc: any, data: any) => acc + data.hits, 0) : 0;
@@ -158,35 +163,44 @@ export const TeamApiKeyConsumption = (props: TeamBackOfficeProps) => {
     );
   };
 
-  return (
-    <Can I={read} a={stat} team={props.currentTeam} dispatchError>
-      <div className="d-flex col flex-column pricing-content">
-        <div className="row">
-          <div className="col-12">
-            <h1>Api Consumption</h1>
-            <PlanInformations fetchData={() => getInformations(props.currentTeam)} />
-          </div>
-          <div className="col section p-2">
-            <OtoroshiStatsVizualization
-              sync={() =>
-                Services.syncSubscriptionConsumption(params.subscription, props.currentTeam._id)
-              }
-              fetchData={(from: any, to: any) =>
-                Services.subscriptionConsumption(
-                  params.subscription,
-                  props.currentTeam._id,
-                  from.valueOf(),
-                  to.valueOf()
-                ).then((c) => c.consumptions)
-              }
-              mappers={mappers}
-              forConsumer={true}
-            />
+  if (isLoading) {
+    return <Spinner />
+  } else if (currentTeam && !isError(currentTeam)) {
+    return (
+      <Can I={read} a={stat} team={currentTeam} dispatchError>
+        <div className="d-flex col flex-column pricing-content">
+          <div className="row">
+            <div className="col-12">
+              <h1>Api Consumption</h1>
+              <PlanInformations fetchData={() => getInformations(currentTeam)} />
+            </div>
+            <div className="col section p-2">
+              <OtoroshiStatsVizualization
+                sync={() =>
+                  Services.syncSubscriptionConsumption(params.subscription, currentTeam._id)
+                }
+                fetchData={(from: any, to: any) =>
+                  Services.subscriptionConsumption(
+                    params.subscription,
+                    currentTeam._id,
+                    from.valueOf(),
+                    to.valueOf()
+                  ).then((c) => c.consumptions)
+                }
+                mappers={mappers}
+                forConsumer={true}
+              />
+            </div>
           </div>
         </div>
-      </div>
-    </Can>
-  );
+      </Can>
+    );
+  } else {
+    toast.error(error?.message || currentTeam?.error)
+    return <></>;
+  }
+
+  
 }
 
 const PlanInformations = (props: any) => {

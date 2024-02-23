@@ -9,6 +9,7 @@ import * as Services from '../services/index';
 import { IApi, ITeamSimple, ITenant, isError } from '../types';
 import { GlobalContext } from './globalContext';
 import { ModalContext } from './modalContext';
+import { toast } from 'sonner';
 
 
 export enum navMode {
@@ -368,6 +369,12 @@ type TeamApiParams = {
   teamId: string
   tab: string
 }
+type TeamApiGroupParams = {
+  apigroupId: string
+  versionId: string
+  teamId: string
+  tab: string
+}
 export const useApiBackOffice = (creation: boolean) => {
   const { setMode, setOffice, setApi, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
@@ -380,34 +387,22 @@ export const useApiBackOffice = (creation: boolean) => {
   const location = useLocation();
   const newApi = location && location.state && location.state.newApi
 
-  // const queryTeam = useQuery({ queryKey: ['team-backoffice', teamId], queryFn: () => Services.team(teamId!), enabled: !!teamId })
-
-  // const apiRequest = useQuery({
-  //   queryKey: ['api', apiId, versionId, location],
-  //   queryFn: () => Services.teamApi((queryTeam.data as ITeamSimple)._id, apiId!, versionId!),
-  //   enabled: !newApi && queryTeam.data && !isError(queryTeam.data)
-  // })
-
-  // const versionsRequest = useQuery({
-  //   queryKey: ['apiVersions', apiId, versionId, location],
-  //   queryFn: () => Services.getAllApiVersions((queryTeam.data as ITeamSimple)._id, apiId!),
-  //   enabled: !newApi && queryTeam.data && !isError(queryTeam.data)
-  // })
-
   const queryClient = useQueryClient();
-  const queries = useQueries({queries: [
-    { queryKey: ['useApiBackOffice', 'team-backoffice', teamId], queryFn: () => Services.team(teamId!), enabled: !!teamId },
-    {
-      queryKey: ['useApiBackOffice', 'api', apiId, versionId, location],
-      queryFn: () => Services.teamApi(teamId!, apiId!, versionId!),
-      enabled: !newApi
-    },
-    {
-      queryKey: ['useApiBackOffice', 'api', 'apiVersions', apiId, versionId, location],
-      queryFn: () => Services.getAllApiVersions(teamId!, apiId!),
-      enabled: !newApi
-    }
-  ]})
+  const queries = useQueries({
+    queries: [
+      { queryKey: ['useApiBackOffice', 'team-backoffice', teamId], queryFn: () => Services.team(teamId!), enabled: !!teamId },
+      {
+        queryKey: ['useApiBackOffice', 'api', apiId, versionId, location],
+        queryFn: () => Services.teamApi(teamId!, apiId!, versionId!),
+        enabled: !newApi
+      },
+      {
+        queryKey: ['useApiBackOffice', 'api', 'apiVersions', apiId, versionId, location],
+        queryFn: () => Services.getAllApiVersions(teamId!, apiId!),
+        enabled: !newApi
+      }
+    ]
+  })
 
 
   const schema = (api: IApi, currentTab?: string) => ({
@@ -480,7 +475,7 @@ export const useApiBackOffice = (creation: boolean) => {
       setMode(navMode.api);
       setOffice(officeMode.back);
     }
-  }, [tab, queries[1]]);
+  }, [tab, queries[1].data]);
 
   useEffect(() => {
     return () => {
@@ -491,13 +486,17 @@ export const useApiBackOffice = (creation: boolean) => {
   }, []);
 
   const api = (queries[1].data && isError(queries[1].data)) ? undefined : queries[1].data;
+  const currentTeam = (queries[0].data && isError(queries[0].data)) ? undefined : queries[0].data;
   const versions = (queries[2].data && isError(queries[2].data)) ? [] : queries[2].data || [];
 
   const isLoading = queries.map(q => q.isLoading).some(state => state)
+  //todo: handle errors ???
 
-  const reloadApi = () => queryClient.invalidateQueries({queryKey: ['useApiBackOffice', 'api']})
+  const reloadApi = () => {
+    return queryClient.invalidateQueries({ queryKey: ['useApiBackOffice', 'api'] })
+  }
 
-  return { isLoading, addMenu, setApi, api, versions, reloadApi };
+  return { isLoading, addMenu, setApi, api, versions, reloadApi, currentTeam };
 };
 
 export const useApiGroupBackOffice = (creation: boolean) => {
@@ -508,14 +507,20 @@ export const useApiGroupBackOffice = (creation: boolean) => {
 
   const navigate = useNavigate();
   const params = useParams();
+  const { teamId, apigroupId, tab } = useParams<TeamApiGroupParams>();
 
-  const teamId = params.teamId;
-  const queryTeam = useQuery({ queryKey: ['team-backoffice'], queryFn: () => Services.team(teamId!), enabled: !!teamId })
+  const queryClient = useQueryClient();
 
-  const apiGroupRequest = useQuery({
-    queryKey: ['apiGroup', params.apiGroupId!],
-    queryFn: () => Services.teamApi((queryTeam.data as ITeamSimple)._id, params.apiGroupId!, '1.0.0'),
-    enabled: !creation && queryTeam.data && !isError(queryTeam.data)
+
+  const queries = useQueries({
+    queries: [
+      { queryKey: ['useApiBackOffice', 'team-backoffice', teamId], queryFn: () => Services.team(teamId!), enabled: !!teamId },
+      {
+        queryKey: ['useApiGroupBackOffice', 'apigroup', apigroupId, location],
+        queryFn: () => Services.teamApi(teamId!, params.apiGroupId!, '1.0.0'),
+        enabled: !creation && !!teamId
+      }
+    ]
   })
 
 
@@ -567,7 +572,7 @@ export const useApiGroupBackOffice = (creation: boolean) => {
           view: {
             component: (
               <Link
-                to={`/${(queryTeam.data as ITeamSimple)._humanReadableId}/apigroups/${apiGroup?._humanReadableId}/apis`}
+                to={`/${(queries[0].data as ITeamSimple)._humanReadableId}/apigroups/${apiGroup?._humanReadableId}/apis`}
                 className="btn btn-sm btn-access-negative mb-2"
               >
                 {translate('View this APIs Group')}
@@ -583,10 +588,10 @@ export const useApiGroupBackOffice = (creation: boolean) => {
                   background: 'transparent',
                   outline: 'none',
                 }}
-                to={`/${(queryTeam.data as ITeamSimple)._humanReadableId}/settings/apis`}
+                to={`/${(queries[0].data as ITeamSimple)._humanReadableId}/settings/apis`}
               >
                 <i className="fas fa-chevron-left" />
-                {translate({ key: 'back.to.team', replacements: [(queryTeam.data as ITeamSimple).name] })}
+                {translate({ key: 'back.to.team', replacements: [(queries[0].data as ITeamSimple).name] })}
               </Link>
             ),
           },
@@ -597,36 +602,41 @@ export const useApiGroupBackOffice = (creation: boolean) => {
 
   const navigateTo = (navTab: string, apiGroup: IApi) => {
     navigate(
-      `/${(queryTeam.data as ITeamSimple)._humanReadableId}/settings/apigroups/${apiGroup._humanReadableId}/${navTab}`
+      `/${(queries[0].data as ITeamSimple)._humanReadableId}/settings/apigroups/${apiGroup._humanReadableId}/${navTab}`
     );
   };
 
   useEffect(() => {
-    if (apiGroupRequest.data && !isError(apiGroupRequest.data)) {
-      addMenu(schema(apiGroupRequest.data, params.tab));
+    if (queries[1].data && !isError(queries[1].data)) {
+      addMenu(schema(queries[1].data, params.tab));
       setMode(navMode.apiGroup);
       setOffice(officeMode.back);
     }
+  }, [params, queries[1].data]);
 
+  useEffect(() => {
     return () => {
       setMode(navMode.initial);
       setApiGroup(undefined);
       setMenu({});
     };
-  }, [params, apiGroupRequest.data]);
+  }, [params]);
 
-  // useEffect(() => {
-  //   addMenu(schema(params.tab));
-  //   return () => {
-  //     setMode(navMode.initial);
-  //     setApiGroup(undefined);
-  //     setMenu({});
-  //   };
-  // }, []);
+  const currentTeam = (queries[0].data && isError(queries[0].data)) ? undefined : queries[0].data;
+  const apiGroup = (queries[1].data && isError(queries[1].data)) ? undefined : queries[1].data;
 
-  const apiGroup = isError(apiGroupRequest.data) ? undefined : apiGroupRequest.data
+  const isLoading = queries.map(q => q.isLoading).some(state => state)
+  const error = queries.reduce<string | undefined>((acc, q) => acc || q.error?.message, undefined)
 
-  return { addMenu, setApiGroup, apiGroup };
+  if (error) {
+    toast.error(error)
+  }
+
+  const reloadApiGroup = () => {
+    return queryClient.invalidateQueries({ queryKey: ['useApiGroupBackOffice', 'apigroup'] })
+  }
+
+  return { addMenu, setApiGroup, apiGroup, currentTeam, reloadApiGroup, isLoading };
 };
 
 export const useTeamBackOffice = () => {
@@ -637,7 +647,7 @@ export const useTeamBackOffice = () => {
 
 
   const navigate = useNavigate();
-  const match = useMatch('/:teamId/settings/:tab*'); //todo tester si c'est bon sinon rollback /:teamId/settings/:tab*
+  const match = useMatch('/:teamId/settings/:tab*');
   const teamId = match?.params.teamId;
 
   const queryTeam = useQuery({
@@ -739,7 +749,6 @@ export const useTeamBackOffice = () => {
   const reloadCurrentTeam = () => queryClient.invalidateQueries({ queryKey: ['team-backoffice'] })
 
   //todo handle error
-
   return { isLoading: queryTeam.isLoading || queryTeam.status === 'pending', error: queryTeam.error, currentTeam: queryTeam.data, addMenu, reloadCurrentTeam };
 };
 

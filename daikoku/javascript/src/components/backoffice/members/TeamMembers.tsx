@@ -4,13 +4,14 @@ import { useContext, useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { I18nContext, ModalContext } from '../../../contexts';
+import { I18nContext, ModalContext, useTeamBackOffice } from '../../../contexts';
 import * as Services from '../../../services';
 import {
   AvatarWithAction,
   Can,
   Option,
   PaginatedComponent,
+  Spinner,
   administrator,
   apiEditor,
   manage,
@@ -18,9 +19,7 @@ import {
 } from '../../utils';
 
 import { GlobalContext } from '../../../contexts/globalContext';
-import { ITeamSimple, IUserSimple, ResponseError, TeamPermission, TeamUser } from '../../../types';
-import { TeamBackOfficeProps } from '../TeamBackOffice';
-import { props } from 'cypress/types/bluebird';
+import { ITeamSimple, IUserSimple, ResponseError, TeamPermission, TeamUser, isError } from '../../../types';
 
 type Tabs = 'MEMBERS' | 'PENDING'
 const TABS: { [key: string]: Tabs } = {
@@ -36,7 +35,7 @@ type TState = {
   members?: Array<IUserSimple>
   search?: string
 }
-export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: TeamBackOfficeProps) => {
+export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }) => {
 
   const { tenant, connectedUser, reloadContext } = useContext(GlobalContext);
 
@@ -329,18 +328,29 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
 };
 
 
-export const TeamMembers = (props: TeamBackOfficeProps) => {
+export const TeamMembers = () => {
+  const { isLoading, currentTeam, error, reloadCurrentTeam } = useTeamBackOffice()
 
   const { translate } = useContext(I18nContext);
 
   useEffect(() => {
-    document.title = `${props.currentTeam.name} - ${translate({ key: 'Member', plural: true })}`;
-  }, [props.currentTeam]);
+    if (currentTeam && !isError(currentTeam))
+      document.title = `${currentTeam.name} - ${translate({ key: 'Member', plural: true })}`;
+  }, [currentTeam]);
 
-  return (
-    <Can I={manage} a={team} team={props.currentTeam} dispatchError={true}>
-      <TeamMembersSimpleComponent {...props} />
-    </Can>
-  );
+
+  if (isLoading) {
+    return <Spinner />
+  } else if (currentTeam && !isError(currentTeam)) {
+    return (
+      <Can I={manage} a={team} team={currentTeam} dispatchError={true}>
+        <TeamMembersSimpleComponent currentTeam={currentTeam} reloadCurrentTeam={reloadCurrentTeam}/>
+      </Can>
+    );
+  } else {
+    toast.error(error?.message || currentTeam?.error)
+    return <></>;
+  }
+
 
 };

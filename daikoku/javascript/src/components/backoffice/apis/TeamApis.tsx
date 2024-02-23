@@ -3,23 +3,25 @@ import { useContext, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { I18nContext, ModalContext } from '../../../contexts';
+import { I18nContext, ModalContext, useTeamBackOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IApi, ITeamSimple, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
 import { api as API, Can, Spinner, manage, read } from '../../utils';
-import { TeamBackOfficeProps } from '../TeamBackOffice';
 
-export const TeamApis = (props: TeamBackOfficeProps) => {
+export const TeamApis = () => {
+  const { isLoading, currentTeam, error } = useTeamBackOffice()
+
   const { tenant } = useContext(GlobalContext);
 
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
 
   useEffect(() => {
-    document.title = `${props.currentTeam.name} - ${translate({ key: 'API', plural: true })}`;
-  }, [props.currentTeam]);
+    if (currentTeam && !isError(currentTeam))
+      document.title = `${currentTeam.name} - ${translate({ key: 'API', plural: true })}`;
+  }, [currentTeam]);
 
   let table = useRef<TableRef>();
 
@@ -104,7 +106,7 @@ export const TeamApis = (props: TeamBackOfficeProps) => {
     confirm({ message: translate('delete.api.confirm'), okLabel: translate('Yes') })
       .then((ok) => {
         if (ok) {
-          Services.deleteTeamApi(props.currentTeam._id, api._id)
+          Services.deleteTeamApi((currentTeam as ITeamSimple)._id, api._id)
             .then(() => {
               toast.success(translate({ key: 'delete.api.success', replacements: [api.name] }));
               table.current?.update();
@@ -113,19 +115,21 @@ export const TeamApis = (props: TeamBackOfficeProps) => {
       });
   };
 
-    if (tenant.creationSecurity && !props.currentTeam.apisCreationPermission) {
-      // dispatch(setError({ error: { status: 403, message: 'Creation security enabled' } })); //FIXME with a better error gestion
+  if (isLoading) {
+    return <Spinner />
+  } else if (currentTeam && !isError(currentTeam)) {
+    if (tenant.creationSecurity && !currentTeam.apisCreationPermission) {
       toast.error(translate('Creation security enabled'))
       return null;
     }
     return (
-      <Can I={read} a={API} dispatchError={true} team={props.currentTeam}>
+      <Can I={read} a={API} dispatchError={true} team={currentTeam}>
         <div className="row">
           <div className="col">
             <div className="p-2">
               <Table
-                columns={columns(props.currentTeam)}
-                fetchItems={() => Services.teamApis(props.currentTeam._id)}
+                columns={columns(currentTeam)}
+                fetchItems={() => Services.teamApis(currentTeam._id)}
                 ref={table}
               />
             </div>
@@ -133,4 +137,8 @@ export const TeamApis = (props: TeamBackOfficeProps) => {
         </div>
       </Can>
     );
+  } else {
+    toast.error(error?.message || currentTeam?.error)
+    return <></>;
+  }
 };

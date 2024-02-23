@@ -2,14 +2,13 @@ import { Form, FormRef, format, type } from '@maif/react-forms';
 import { nanoid } from 'nanoid';
 import { MutableRefObject, useContext } from 'react';
 
-import { ModalContext } from '../../../contexts';
-import { I18nContext } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
-import { IApi, IState, ITeamSimple, ITesting, ITestingConfig, IUsagePlan, IWithTesting, isApi, isUsagePlan } from '../../../types';
+import { IApi, ITeamSimple, ITesting, ITestingConfig, IUsagePlan, IWithTesting, isUsagePlan } from '../../../types';
 import { Option } from '../../utils';
-import { TeamBackOfficeProps } from '../TeamBackOffice';
 
 interface TeamApiTestingProps<T extends IWithTesting> {
+  currentTeam: ITeamSimple;
   value: T
   onChange: (s: T) => void
   reference?: MutableRefObject<FormRef | undefined>
@@ -18,7 +17,7 @@ interface TeamApiTestingProps<T extends IWithTesting> {
   api?: IApi
 }
 
-export const TeamApiTesting = <T extends IWithTesting>(props: TeamBackOfficeProps<TeamApiTestingProps<T>>) => {
+export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProps<T>) => {
   const testing = props.value.testing;
   const { translate, Translation } = useContext(I18nContext);
   const { confirm, openTestingApikeyModal, openSubMetadataModal } = useContext(ModalContext);

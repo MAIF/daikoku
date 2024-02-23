@@ -7,7 +7,7 @@ import { useMatch } from 'react-router-dom';
 
 import { I18nContext, useTeamBackOffice } from '../../../contexts';
 import * as Services from '../../../services';
-import { ITeamSimple, isError } from '../../../types';
+import { IApi, ITeamSimple, isError } from '../../../types';
 import { OtoroshiStatsVizualization, Spinner } from '../../utils';
 
 type IGlobalInformations = {
@@ -46,10 +46,15 @@ type IgqlConsumption = {
 
 
 }
-export const TeamPlanConsumption = (props: { apiGroup?: boolean }) => {
+
+type TeamPlanConsumptionProps = {
+  apiGroup?: boolean,
+  currentTeam: ITeamSimple,
+  api: IApi
+}
+export const TeamPlanConsumption = (props: TeamPlanConsumptionProps) => {
   const { translate } = useContext(I18nContext);
   const { client } = useContext(getApolloContext());
-  const { isLoading, error, currentTeam } = useTeamBackOffice()
 
   const urlMatching = !!props.apiGroup
     ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId'
@@ -113,71 +118,61 @@ export const TeamPlanConsumption = (props: { apiGroup?: boolean }) => {
   };
 
   useEffect(() => {
-    if (!!currentTeam && !isError(currentTeam))
-      document.title = `${currentTeam.name} - ${translate('Plan consumption')}`;
-  }, [currentTeam]);
+    document.title = `${props.currentTeam.name} - ${translate('Plan consumption')}`;
+  }, [props.currentTeam]);
 
-  if (isLoading) {
-    <Spinner />
-  } else if (!error && !!currentTeam && !isError(currentTeam)) {
-    return (
-      <div>
-        <div className="row">
-          <div className="col">
-            <h1>Api Consumption</h1>
-            <PlanInformations
-              apiId={match?.params.apiId!}
-              version={match?.params.version!}
-              planId={match?.params.planId!}
-              currentTeam={currentTeam} />
-          </div>
+  return (
+    <div>
+      <div className="row">
+        <div className="col">
+          <h1>Api Consumption</h1>
+          <PlanInformations
+            api={props.api}
+            version={match?.params.version!}
+            planId={match?.params.planId!}
+            currentTeam={props.currentTeam} />
         </div>
-        <OtoroshiStatsVizualization
-          sync={() => Services.syncApiConsumption(match?.params.apiId, currentTeam._id)}
-          fetchData={(from: Moment, to: Moment) =>
-            client!.query<{ apiConsumptions: Array<IgqlConsumption> }>({
-              query: Services.graphql.getApiConsumptions,
-              fetchPolicy: "no-cache",
-              variables: {
-                apiId: match?.params.apiId,
-                teamId: currentTeam._id,
-                from: from.valueOf(),
-                to: to.from.valueOf(),
-                planId: match?.params.planId
-              }
-            }).then(({ data: { apiConsumptions } }) => {
-              return apiConsumptions
-            })
-          }
-          mappers={mappers}
-        />
       </div>
-    );
-  } else {
-    return <div>Error while fetching team</div>
-  }
-
+      <OtoroshiStatsVizualization
+        sync={() => Services.syncApiConsumption(match?.params.apiId, props.currentTeam._id)}
+        fetchData={(from: Moment, to: Moment) =>
+          client!.query<{ apiConsumptions: Array<IgqlConsumption> }>({
+            query: Services.graphql.getApiConsumptions,
+            fetchPolicy: "no-cache",
+            variables: {
+              apiId: match?.params.apiId,
+              teamId: props.currentTeam._id,
+              from: from.valueOf(),
+              to: to.from.valueOf(),
+              planId: match?.params.planId
+            }
+          }).then(({ data: { apiConsumptions } }) => {
+            return apiConsumptions
+          })
+        }
+        mappers={mappers}
+      />
+    </div>
+  );
 };
 
 type PlanInformationsProps = {
-  apiId: string
+  api: IApi
   version: string
   planId: string
   currentTeam: ITeamSimple
 }
 
 const PlanInformations = (props: PlanInformationsProps) => {
-  const apiRequest = useQuery({ queryKey: ['api'], queryFn: () => Services.teamApi(props.currentTeam._id, props.apiId, props.version) })
-  const planRequest = useQuery({ queryKey: ['plan'], queryFn: () => Services.planOfApi(props.currentTeam._id, props.apiId, props.version, props.planId) })
+  const planRequest = useQuery({ queryKey: ['plan'], queryFn: () => Services.planOfApi(props.currentTeam._id, props.api._id, props.version, props.planId) })
 
-  if (apiRequest.isLoading || planRequest.isLoading) {
+  if (planRequest.isLoading) {
     return <Spinner width="50" height="50" />;
-  } else if (apiRequest.data && !isError(apiRequest.data) && planRequest.data && !isError(planRequest.data)) {
-    const api = apiRequest.data
+  } else if (planRequest.data && !isError(planRequest.data)) {
     const plan = planRequest.data
 
     return (<h3>
-      {api.name} - {plan.customName || plan.type}
+      {props.api.name} - {plan.customName || plan.type}
     </h3>);
   } else {
     return <div>Error while fetching usage plan</div>

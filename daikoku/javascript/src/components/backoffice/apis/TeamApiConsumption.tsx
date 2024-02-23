@@ -8,7 +8,6 @@ import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IApi, IGlobalInformations, ITeamSimple, IUsagePlan } from '../../../types';
 import { Can, GlobalDataConsumption, OtoroshiStatsVizualization, formatPlanType, read, renderPlanInfo, stat } from '../../utils';
-import { TeamBackOfficeProps } from "../TeamBackOffice";
 
 
 type IgqlConsumption = {
@@ -49,13 +48,14 @@ const sumGlobalInformations = (data: Array<IgqlConsumption>) => data
 
 type TeamApiConsumptionProps = {
   api: IApi,
-  apiGroup?: boolean
+  apiGroup?: boolean,
+  currentTeam: ITeamSimple
 }
 export const TeamApiConsumption = ({
   api,
   apiGroup,
   currentTeam
-}: TeamBackOfficeProps<TeamApiConsumptionProps>) => {
+}: TeamApiConsumptionProps) => {
   const [state] = useState({
     consumptions: null,
     period: {

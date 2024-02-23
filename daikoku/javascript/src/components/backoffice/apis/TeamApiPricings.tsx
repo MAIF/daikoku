@@ -34,7 +34,6 @@ import {
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
 import { Help } from '../apikeys';
-import { TeamBackOfficeProps } from '../TeamBackOffice';
 import { TeamApiDocumentation } from './TeamApiDocumentation';
 import { TeamApiSwagger } from './TeamApiSwagger';
 import { TeamApiTesting } from './TeamApiTesting';
@@ -498,6 +497,7 @@ const PUBLIC: UsagePlanVisibility = 'Public';
 const PRIVATE: UsagePlanVisibility = 'Private';
 
 type Props = {
+  currentTeam: ITeamSimple
   api: IApi
   team: ITeamSimple
   tenant: ITenant
@@ -511,7 +511,7 @@ type Props = {
 }
 type Tab = 'settings' | 'security' | 'payment' | 'subscription-process' | 'swagger' | 'documentation' | 'testing'
 
-export const TeamApiPricings = (props: TeamBackOfficeProps<Props>) => {
+export const TeamApiPricings = (props: Props) => {
   const possibleMode = { list: 'LIST', creation: 'CREATION', edition: 'EDITION' };
   const [planForEdition, setPlanForEdition] = useState<IUsagePlan>();
   const [mode, setMode] = useState('LIST');
@@ -1383,7 +1383,7 @@ export const TeamApiPricings = (props: TeamBackOfficeProps<Props>) => {
             {queryPlans.data && selectedTab === 'testing' && (
               //FIXME: inaccessible si pas de swagger
               <TeamApiTesting
-                {...props}
+                currentTeam={props.currentTeam}
                 value={planForEdition}
                 api={props.api}
                 onChange={savePlan}

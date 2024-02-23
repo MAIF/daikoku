@@ -21,10 +21,10 @@ import {
   Spinner,
 } from '../../utils';
 import {useQuery, useQueryClient} from "@tanstack/react-query";
-import { TeamBackOfficeProps } from "../TeamBackOffice";
 
 type TeamApiSubscriptionsProps = {
   api: IApi,
+  currentTeam: ITeamSimple
 }
 type SubscriptionsFilter = {
   metadata: Array<{ key: string, value: string }>,
@@ -83,7 +83,7 @@ interface IApiSubscriptionGqlWithUsage extends IApiSubscriptionGql {
   lastUsage?: number
 }
 
-export const TeamApiSubscriptions = ({ api, currentTeam }: TeamBackOfficeProps<TeamApiSubscriptionsProps>) => {
+export const TeamApiSubscriptions = ({ api, currentTeam }: TeamApiSubscriptionsProps) => {
 
   const { client } = useContext(getApolloContext());
   const queryClient = useQueryClient();
