@@ -785,7 +785,7 @@ class TeamController(
   ): Future[Result] = {
     import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 
-    def createInvitedUser(team: String, notificationId: String) =
+    def createInvitedUser(team: String, notificationId: String) = {
       User(
         id = UserId(IdGenerator.token(32)),
         tenants = Set(ctx.tenant.id),
@@ -807,6 +807,7 @@ class TeamController(
           )
         )
       )
+    }
 
     env.dataStore.userRepo
       .findOne(Json.obj("email" -> email))
@@ -818,11 +819,17 @@ class TeamController(
         case None =>
           val notificationId = NotificationId(IdGenerator.token(32))
           val invitedUser = createInvitedUser(team.name, notificationId.value)
+
+          val cipheredInvitationToken = encrypt(
+            env.config.cypherSecret,
+            invitedUser.invitation.get.token,
+            ctx.tenant
+          )
+
           env.dataStore.userRepo
             .save(invitedUser)
             .flatMap {
               case true =>
-                implicit val lang: Lang = Lang("en")
                 val tenant = ctx.tenant
 
                 env.dataStore.notificationRepo
@@ -850,7 +857,7 @@ class TeamController(
                              |
                              |<p>Please click on the following link to join this team.</p>
                              |
-                             |<a href="${ctx.request.theProtocol}://${ctx.request.theHost}/join?token=${invitedUser.invitation.get.token}">Click to join the team</a>
+                             |<a href="${ctx.request.theProtocol}://${ctx.request.theHost}/join?token=$cipheredInvitationToken">Click to join the team</a>
                              |
                           """.stripMargin,
                           tenant

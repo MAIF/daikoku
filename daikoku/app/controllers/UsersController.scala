@@ -2,27 +2,21 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
+import fr.maif.otoroshi.daikoku.utils.Cypher.decrypt
 import fr.maif.otoroshi.daikoku.utils.{DeletionService, IdGenerator}
 import io.nayuki.qrcodegen.QrCode
 import org.apache.commons.codec.binary.Base32
 import org.joda.time.{DateTime, Hours}
 import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  ControllerComponents
-}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
 
 import java.time.Instant
 import java.util.Base64
@@ -485,12 +479,13 @@ class UsersController(
       )(ctx) {
         val body = ctx.request.body
         (body \ "token").asOpt[String] match {
-          case Some(token) =>
+          case Some(encryptedToken) =>
+            val token =
+              decrypt(env.config.cypherSecret, encryptedToken, ctx.tenant)
             env.dataStore.userRepo
               .findOneNotDeleted(
                 Json.obj(
-                  "invitation.token" -> token,
-                  "email" -> ctx.user.email
+                  "invitation.token" -> token
                 )
               )
               .map {
