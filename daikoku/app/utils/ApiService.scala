@@ -43,6 +43,14 @@ class ApiService(
   implicit val me: MessagesApi = messagesApi
   implicit val tr: Translator = translator
 
+  def jsonToOtoroshiMetadata(json: JsObject) = {
+    json.fieldSet.map {
+      case (a, b:JsString) => a -> b.value
+      case (a, b) => a -> Json.stringify(b)
+    }
+      .toMap + ("raw_custom_metadata" -> Json.stringify(json))
+  }
+
   def getListFromStringMap(
       key: String,
       metadata: Map[String, String]
@@ -108,10 +116,11 @@ class ApiService(
     ) ++ user.metadata
       .map(t => ("user.metadata." + t._1, t._2))
 
+    //FIXME: if custom.metadata are not string:string it's broken
     val processedMetadata = plan.otoroshiTarget
       .map(_.processedMetadata(ctx))
       .getOrElse(Map.empty[String, String]) ++ customMetadata
-      .flatMap(_.asOpt[Map[String, String]])
+      .map(jsonToOtoroshiMetadata)
       .getOrElse(Map.empty[String, String])
 
     val processedTags = plan.otoroshiTarget
@@ -237,7 +246,7 @@ class ApiService(
           val automaticMetadata = tunedApiKey.metadata.filterNot(i =>
             i._1.startsWith("daikoku_")
           ) -- customMetadata
-            .flatMap(_.asOpt[Map[String, String]])
+            .map(jsonToOtoroshiMetadata)
             .getOrElse(Map.empty[String, String])
             .keys
 
