@@ -446,7 +446,8 @@ class MockController(
       ),
       users = Set(userWithPermission),
       authorizedOtoroshiEntities = None,
-      verified = true
+      verified = true,
+      contact = email
     )
     val user = User(
       id = userId,
@@ -571,7 +572,8 @@ class MockController(
         UserWithPermission(user3.id, TeamPermission.Administrator),
         UserWithPermission(user4.id, TeamPermission.Administrator)
       ),
-      authorizedOtoroshiEntities = None
+      authorizedOtoroshiEntities = None,
+      contact = "admin@daikoku.io"
     )
     val tenant2adminTeam = defaultAdminTeam.copy(
       id = TeamId(IdGenerator.token),
@@ -948,7 +950,8 @@ class MockController(
             UserWithPermission(user3.id, TeamUser),
             UserWithPermission(user4.id, TeamUser),
             UserWithPermission(user5.id, Administrator)
-          )
+          ),
+          contact = "opun@daikoku.io"
         )
       )
       _ <- teamRepo1.save(
@@ -967,7 +970,8 @@ class MockController(
             UserWithPermission(user3.id, Administrator),
             UserWithPermission(user4.id, Administrator),
             UserWithPermission(user5.id, ApiEditor)
-          )
+          ),
+          contact = "fifou@foo.bar"
         )
       )
       _ <- teamRepo1.save(
@@ -980,7 +984,8 @@ class MockController(
           avatar = Some(
             s"https://www.gravatar.com/avatar/${"bobby-team@otoroshi.io".md5}?size=128&d=robohash"
           ),
-          users = Set(UserWithPermission(user5.id, Administrator))
+          users = Set(UserWithPermission(user5.id, Administrator)),
+          contact = "bobby@foo.bar"
         )
       )
       _ <- teamRepo2.save(
@@ -993,7 +998,8 @@ class MockController(
           avatar = Some(
             s"https://www.gravatar.com/avatar/${"johnny-team@otoroshi.io".md5}?size=128&d=robohash"
           ),
-          users = Set.empty
+          users = Set.empty,
+          contact = "johnny@foo.bar"
         )
       )
       _ <- env.dataStore.userRepo.save(user1)

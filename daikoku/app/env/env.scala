@@ -426,7 +426,8 @@ class DaikokuEnv(
                     s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"
                   ),
                   users = Set(UserWithPermission(userId, Administrator)),
-                  authorizedOtoroshiEntities = None
+                  authorizedOtoroshiEntities = None,
+                  contact = "no-replay@daikoku.io"
                 )
                 val adminApiDefaultPlan = FreeWithoutQuotas(
                   id = UsagePlanId(IdGenerator.token),
@@ -492,7 +493,8 @@ class DaikokuEnv(
                   name = s"${config.init.admin.name}",
                   description = s"${config.init.admin.name}'s team",
                   users = Set(UserWithPermission(userId, Administrator)),
-                  authorizedOtoroshiEntities = None
+                  authorizedOtoroshiEntities = None,
+                  contact = "admin@daikoku.io"
                 )
                 val user = User(
                   id = userId,

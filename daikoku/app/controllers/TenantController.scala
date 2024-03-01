@@ -146,7 +146,8 @@ class TenantController(
                         description = s"The personal team of ${ctx.user.name}",
                         users =
                           Set(UserWithPermission(ctx.user.id, Administrator)),
-                        authorizedOtoroshiEntities = None
+                        authorizedOtoroshiEntities = None,
+                        contact = ctx.user.email
                       )
                     )
                     .map(_ => ())

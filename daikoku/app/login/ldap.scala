@@ -213,7 +213,8 @@ object LdapSupport {
   private def getPersonalTeam(
       tenantId: TenantId,
       name: String,
-      userId: UserId
+      userId: UserId,
+      email: String
   ) =
     Team(
       id = TeamId(IdGenerator.token(32)),
@@ -222,7 +223,8 @@ object LdapSupport {
       name = s"$name",
       description = s"The personal team of $name",
       users = Set(UserWithPermission(userId, Administrator)),
-      authorizedOtoroshiEntities = None
+      authorizedOtoroshiEntities = None,
+      contact = email
     )
 
   private def getUser(
@@ -368,7 +370,7 @@ object LdapSupport {
                         }
                       case None =>
                         val userId = UserId(IdGenerator.token(32))
-                        val team = getPersonalTeam(tenant.id, name, userId)
+                        val team = getPersonalTeam(tenant.id, name, userId, email)
                         val user = getUser(
                           userId,
                           tenant.id,
@@ -424,7 +426,7 @@ object LdapSupport {
                         }
                       case None =>
                         val userId = UserId(IdGenerator.token(32))
-                        val team = getPersonalTeam(tenant.id, name, userId)
+                        val team = getPersonalTeam(tenant.id, name, userId, email)
                         val user = getUser(
                           userId,
                           tenant.id,

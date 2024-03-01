@@ -132,7 +132,8 @@ object OtoroshiIdentityFilter {
                           description = s"The personal team of $name",
                           users =
                             Set(UserWithPermission(userId, Administrator)),
-                          authorizedOtoroshiEntities = None
+                          authorizedOtoroshiEntities = None,
+                          contact = email,
                         )
                         val session = maybeSession.getOrElse(
                           UserSession(
@@ -195,7 +196,8 @@ object OtoroshiIdentityFilter {
                           name = s"$name",
                           description = s"The personal team of $name",
                           users = Set(UserWithPermission(u.id, Administrator)),
-                          authorizedOtoroshiEntities = None
+                          authorizedOtoroshiEntities = None,
+                          contact = email
                         )
                         val session = maybeSession.getOrElse(
                           UserSession(
@@ -275,7 +277,8 @@ object OtoroshiIdentityFilter {
                     name = s"$name",
                     description = s"The personal team of $name",
                     users = Set(UserWithPermission(user.id, Administrator)),
-                    authorizedOtoroshiEntities = None
+                    authorizedOtoroshiEntities = None,
+                    contact = user.email
                   )
                   val session = maybeSession.getOrElse(
                     UserSession(
