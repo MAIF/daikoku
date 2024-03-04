@@ -291,6 +291,8 @@ POST    /api/state/migrate                              fr.maif.otoroshi.daikoku
 POST    /api/state/lock                                 fr.maif.otoroshi.daikoku.ctrls.StateController.enableMaintenanceMode()
 POST    /api/state/unlock                               fr.maif.otoroshi.daikoku.ctrls.StateController.disableMaintenanceMode()
 GET     /api/state/lock                                 fr.maif.otoroshi.daikoku.ctrls.StateController.isMaintenanceMode()
+GET     /api/state/anonymous                            fr.maif.otoroshi.daikoku.ctrls.StateController.getAnonymousState()
+POST    /api/state/anonymous                            fr.maif.otoroshi.daikoku.ctrls.StateController.updateAnonymousState()
 
 POST    /api/search                                    fr.maif.otoroshi.daikoku.ctrls.GraphQLController.search()
 GET     /api/render-schema                              fr.maif.otoroshi.daikoku.ctrls.GraphQLController.renderSchema()

@@ -19,6 +19,7 @@ import {
   IUser,
   IUserSimple,
   ISimpleOtoroshiSettings,
+  IAnonymousState,
 } from '../types';
 import {
   ResponseError,
@@ -569,6 +570,12 @@ export const deleteSessions = () =>
   customFetch('/api/admin/sessions', {
     method: 'DELETE',
   });
+
+export const getAnonymousState = ():  Promise<IAnonymousState> => customFetch('/api/state/anonymous');
+export const updateAnonymousState = (id: string, value: boolean, currentDate?: number) => customFetch('/api/state/anonymous', {
+  method: 'POST',
+    body: JSON.stringify({ id, value, currentDate}),
+});
 
 export const search = (search: any) =>
   customFetch('/api/_search', {

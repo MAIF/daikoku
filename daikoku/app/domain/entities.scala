@@ -153,8 +153,9 @@ case class Evolution(
 }
 
 case class ReportsInfo(
-    id: DatastoreId,
-    activated: Boolean
-  ) extends CanJson[StepValidator] {
+                        id: DatastoreId,
+                        activated: Boolean,
+                        date: Option[Double] = None,
+  ) extends CanJson[ReportsInfo] {
   override def asJson: JsValue = json.ReportsInfoFormat.writes(this)
 }

@@ -27,3 +27,9 @@ export interface IStateContext {
 export interface IStateError {
   status: number;
 }
+
+export interface IAnonymousState {
+  activated: boolean
+  id: string
+  date?: number
+}

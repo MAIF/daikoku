@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useContext } from 'react';
+import {useContext, useEffect, useState} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,9 +7,17 @@ import { useNavigate } from 'react-router-dom';
 import { I18nContext, updateTeam } from '../../../core';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { IApiWithAuthorization, isError, IState, ITenant, IUsagePlan, IUserSimple } from '../../../types';
+import {
+  IApiWithAuthorization,
+  isError,
+  IState,
+  ITenant,
+  IUserSimple
+} from '../../../types';
 import { ApiList } from './ApiList';
 import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
+import {toastr} from "react-redux-toastr";
+import {ModalContext} from "../../../contexts";
 
 export const MyHome = () => {
 
@@ -24,8 +32,40 @@ export const MyHome = () => {
   const navigate = useNavigate();
 
   const { translate } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
+
+  const [isAnonEnabled, setIsAnonEnabled] = useState<boolean>()
+  const [daikokuId, setDaikokuId] = useState<string>()
+  const [lastResponseDate, setLastResponseDate] = useState<number>()
+  const currentDate = new Date();
+  const sixMonthsAgo = new Date(new Date().setMonth(currentDate.getMonth() - 6));
 
 
+
+  useEffect(() => {
+    Services.getAnonymousState().then(res =>{
+      setIsAnonEnabled(res.activated)
+      setDaikokuId(res.id)
+      setLastResponseDate(res.date)
+    })
+  }, []);
+
+  useEffect(() => {
+    if(isAnonEnabled === false && connectedUser.isDaikokuAdmin && daikokuId && (!lastResponseDate || new Date(lastResponseDate) < sixMonthsAgo)) {
+      confirm({title: translate('Enable Anonymous reporting'), message: translate('Enable Anonymous reporting for helping us ? This will help us a lot. More info at (url Doc)'), okLabel: translate('Yes') }) //TODO lien vers la doc
+        .then((ok) => {
+          if (ok) {
+            Services.updateAnonymousState(daikokuId, true, currentDate.getTime()).then(() => {
+              toastr.success(translate('Success'), translate("anonymous.reporting.success.enabled"))
+            })
+          } else {
+            Services.updateAnonymousState(daikokuId, false, currentDate.getTime()).then(() => {
+              toastr.info(translate('Info'), translate("anonymous.reporting.popup.no"))
+            })
+          }
+        });
+    }
+  }, [isAnonEnabled]);
 
 
   const redirectToApiPage = (apiWithAutho: IApiWithAuthorization) => {
@@ -57,6 +97,8 @@ export const MyHome = () => {
         });
     }
   };
+
+
 
   if (myTeamsRequest.isLoading) {
     return (

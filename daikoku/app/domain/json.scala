@@ -4336,6 +4336,7 @@ object json {
           JsSuccess(ReportsInfo(
             (json \ "_id").as(DatastoreIdFormat),
             (json \ "activated").as[Boolean],
+            (json \ "date").asOpt[Double]
           ))
         } recover {
           case e => JsError(e.getMessage)
@@ -4345,6 +4346,7 @@ object json {
         Json.obj(
           "_id" -> DatastoreIdFormat.writes(o.id),
           "activated" -> o.activated,
+          "date" -> o.date
         )
     }
   val SeqOtoroshiSettingsFormat = Format(

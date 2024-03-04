@@ -1376,5 +1376,10 @@
   "aggregated.apikey.badge.title": "Clé d'API aggrégée",
   "aggregated.apikey.badge.apikey.name": "Nom personnalisée de la clé",
   "apisubscription.lastUsage.label": "Last usage",
-  "N/A": "N/A"
+  "N/A": "N/A",
+  "anonymous.reporting.success.enabled" : "Rapports anonymes activés.",
+  "anonymous.reporting.success.disabled" : "Rapports anonymes désactivés.",
+  "anonymous.reporting.error": "Erreur lors du changement de valeur.",
+  "anonymous.reporting.popup.info": "Activer les rapports anonymes pour nous aider ? Cela nous aidera beaucoup. Plus d'info ici : (url Doc).",
+  "anonymous.reporting.popup.no": "Rapports anonymes non acceptés."
 }
