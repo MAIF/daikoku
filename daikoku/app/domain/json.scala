@@ -4329,6 +4329,24 @@ object json {
         )
     }
 
+  val ReportsInfoFormat: Format[ReportsInfo] =
+    new Format[ReportsInfo] {
+      override def reads(json: JsValue): JsResult[ReportsInfo] =
+        Try {
+          JsSuccess(ReportsInfo(
+            (json \ "_id").as(DatastoreIdFormat),
+            (json \ "activated").as[Boolean],
+          ))
+        } recover {
+          case e => JsError(e.getMessage)
+        } get
+
+      override def writes(o: ReportsInfo): JsValue =
+        Json.obj(
+          "_id" -> DatastoreIdFormat.writes(o.id),
+          "activated" -> o.activated,
+        )
+    }
   val SeqOtoroshiSettingsFormat = Format(
     Reads.seq(OtoroshiSettingsFormat),
     Writes.seq(OtoroshiSettingsFormat)

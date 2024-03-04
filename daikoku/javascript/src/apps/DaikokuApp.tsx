@@ -56,6 +56,7 @@ import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets
 import { SessionModal } from '../contexts/modals/SessionModal';
 import { ISession, IState, ITeamSimple, ITenant, IUserSimple } from '../types';
 import {FastMode} from "../components/frontend/fastMode/FastMode";
+import {AnonymousReporting} from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
 
 type DaikokuAppProps = {
   session: ISession,
@@ -294,6 +295,16 @@ export const DaikokuApp = ({
                         title={`${tenant.title} - ${translate('Import / Export')}`}
                       >
                         <ImportExport />
+                      </RouteWithTitle>
+                    }
+                  />
+                  <Route
+                    path="/settings/anonymous-reports"
+                    element={
+                      <RouteWithTitle
+                        title={`${tenant.title} - ${translate('Anonymous reporting')}`}
+                      >
+                        <AnonymousReporting/>
                       </RouteWithTitle>
                     }
                   />

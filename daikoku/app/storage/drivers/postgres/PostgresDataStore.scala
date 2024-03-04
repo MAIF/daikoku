@@ -398,7 +398,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     "operations" -> true,
     "subscription_demands" -> true,
     "step_validators" -> true,
-    "usage_plans" -> true
+    "usage_plans" -> true,
+    "reports_info" -> true
   )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
@@ -543,6 +544,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     )
   private val _passwordResetRepo: PasswordResetRepo =
     new PostgresPasswordResetRepo(env, reactivePg)
+  private val _reportsInfoRepo: ReportsInfoRepo =
+    new PostgresReportsInfoRepo(env, reactivePg)
   private val _accountCreationRepo: AccountCreationRepo =
     new PostgresAccountCreationRepo(env, reactivePg)
   private val _translationRepo: TranslationRepo =
@@ -618,6 +621,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
   override def consumptionRepo: ConsumptionRepo = _consumptionRepo
 
   override def passwordResetRepo: PasswordResetRepo = _passwordResetRepo
+  override def reportsInfoRepo: ReportsInfoRepo = _reportsInfoRepo
 
   override def accountCreationRepo: AccountCreationRepo = _accountCreationRepo
 
@@ -911,7 +915,15 @@ class PostgresPasswordResetRepo(env: Env, reactivePg: ReactivePg)
 
   override def extractId(value: PasswordReset): String = value.id.value
 }
+class PostgresReportsInfoRepo(env: Env, reactivePg: ReactivePg)
+  extends PostgresRepo[ReportsInfo, DatastoreId](env, reactivePg)
+  with ReportsInfoRepo {
+  override def tableName: String = "reports_info"
 
+  override def format: Format[ReportsInfo] = json.ReportsInfoFormat
+
+  override def extractId(value: ReportsInfo): String = value.id.value
+}
 class PostgresAccountCreationRepo(env: Env, reactivePg: ReactivePg)
     extends PostgresRepo[AccountCreation, DatastoreId](env, reactivePg)
     with AccountCreationRepo {

@@ -896,6 +896,11 @@ export const useDaikokuBackOffice = (props?: { creation?: boolean }) => {
               action: () => navigateTo('import-export'),
               className: { active: currentTab === 'import-export' },
             },
+            anonymousreporting: {
+              label: translate('Anonymous Reporting'),
+              action: () => navigateTo('anonymous-reports'),
+              className: { active: currentTab === 'anonymous-reports' },
+            },
           },
         },
       }
