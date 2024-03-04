@@ -370,7 +370,8 @@ object LdapSupport {
                         }
                       case None =>
                         val userId = UserId(IdGenerator.token(32))
-                        val team = getPersonalTeam(tenant.id, name, userId, email)
+                        val team =
+                          getPersonalTeam(tenant.id, name, userId, email)
                         val user = getUser(
                           userId,
                           tenant.id,
@@ -426,7 +427,8 @@ object LdapSupport {
                         }
                       case None =>
                         val userId = UserId(IdGenerator.token(32))
-                        val team = getPersonalTeam(tenant.id, name, userId, email)
+                        val team =
+                          getPersonalTeam(tenant.id, name, userId, email)
                         val user = getUser(
                           userId,
                           tenant.id,

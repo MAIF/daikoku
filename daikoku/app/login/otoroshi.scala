@@ -133,7 +133,7 @@ object OtoroshiIdentityFilter {
                           users =
                             Set(UserWithPermission(userId, Administrator)),
                           authorizedOtoroshiEntities = None,
-                          contact = email,
+                          contact = email
                         )
                         val session = maybeSession.getOrElse(
                           UserSession(

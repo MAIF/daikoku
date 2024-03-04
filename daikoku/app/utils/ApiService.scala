@@ -45,10 +45,9 @@ class ApiService(
 
   def jsonToOtoroshiMetadata(json: JsObject) = {
     json.fieldSet.map {
-      case (a, b:JsString) => a -> b.value
-      case (a, b) => a -> Json.stringify(b)
-    }
-      .toMap + ("raw_custom_metadata" -> Json.stringify(json))
+      case (a, b: JsString) => a -> b.value
+      case (a, b)           => a -> Json.stringify(b)
+    }.toMap + ("raw_custom_metadata" -> Json.stringify(json))
   }
 
   def getListFromStringMap(

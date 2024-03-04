@@ -444,9 +444,23 @@ class ApiAdminApiController(
             Json.obj(
               "_id" -> Json.obj("$ne" -> entity.id.asJson),
               "$or" -> Json.arr(
-                Json.obj("_id" -> Json.obj("$ne" -> entity.parent.map(_.asJson).getOrElse(JsNull).as[JsValue])),
+                Json.obj(
+                  "_id" -> Json.obj(
+                    "$ne" -> entity.parent
+                      .map(_.asJson)
+                      .getOrElse(JsNull)
+                      .as[JsValue]
+                  )
+                ),
                 Json.obj("parent" -> Json.obj("$ne" -> entity.id.asJson)),
-                Json.obj("parent" -> Json.obj("$ne" -> entity.parent.map(_.asJson).getOrElse(entity.id.asJson).as[JsValue])),
+                Json.obj(
+                  "parent" -> Json.obj(
+                    "$ne" -> entity.parent
+                      .map(_.asJson)
+                      .getOrElse(entity.id.asJson)
+                      .as[JsValue]
+                  )
+                )
               ),
               "name" -> entity.name
             )
