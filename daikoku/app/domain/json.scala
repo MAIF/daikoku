@@ -21,6 +21,7 @@ import fr.maif.otoroshi.daikoku.utils._
 import org.joda.time.DateTime
 import play.api.libs.json._
 
+import java.util
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
@@ -4434,13 +4435,15 @@ object json {
     override def writes(o: CmsFile): JsValue =
       Json.obj(
         "name" -> o.name,
-        "content" -> o.content
+        "content" -> o.content,
+        "metadata" -> o.metadata.map(_.asJson)
       )
     override def reads(json: JsValue): JsResult[CmsFile] =
       Try {
         CmsFile(
           name = (json \ "name").as[String],
-          content = (json \ "content").as[String]
+          content = (json \ "content").as[String],
+          metadata = (json \ "metadata").asOpt(CmsPageFormat.reads)
         )
       } match {
         case Failure(exception) => JsError(exception.getMessage)

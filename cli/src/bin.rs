@@ -3,6 +3,8 @@ mod logging;
 mod models;
 mod utils;
 
+use std::{collections::HashMap, io::Read, iter::Map};
+
 use clap::{Parser, Subcommand};
 use logging::{error::DaikokuResult, logger};
 use utils::absolute_path;
@@ -158,7 +160,7 @@ pub enum ProjectCommands {
         name: String,
     },
     List {},
-    Reset {}
+    Reset {},
 }
 
 async fn process(command: Commands) -> DaikokuResult<()> {
@@ -176,7 +178,13 @@ async fn process(command: Commands) -> DaikokuResult<()> {
             client_id,
             client_secret,
         } => {
-            commands::watch::run(path.map(|p| absolute_path(p).unwrap()), server, client_id, client_secret).await;
+            commands::watch::run(
+                path.map(|p| absolute_path(p).unwrap()),
+                server,
+                client_id,
+                client_secret,
+            )
+            .await;
             Ok(())
         }
         Commands::Config { command } => commands::configuration::run(command),

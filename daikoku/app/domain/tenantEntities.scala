@@ -22,6 +22,7 @@ import play.api.mvc.Request
 import play.twirl.api.Html
 import storage.TenantCapableRepo
 
+import java.util
 import java.util.concurrent.Executors
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -552,7 +553,7 @@ object CmsPage {
   )
 }
 
-case class CmsFile(name: String, content: String)
+case class CmsFile(name: String, content: String, metadata: Option[CmsPage] = None)
 case class CmsContents(pages: Seq[CmsFile], blocks: Seq[CmsFile], metadata: Seq[CmsFile], scripts: Seq[CmsFile], styles: Seq[CmsFile], data: Seq[CmsFile])
 case class CmsRequestRendering(pages: Seq[CmsPage], content: CmsContents, current_page: String)
 case class CmsHistory(id: String, date: DateTime, diff: String, user: UserId)
@@ -1482,13 +1483,12 @@ case class CmsPage(
 
   private def cmsPathcontainsName(cmsName: String, page: CmsPage) = cmsName.split("\\.").headOption.getOrElse("") == page.name
 
-  private def searchCmsFile(req: CmsRequestRendering, page: CmsPage) = {
+  private def searchCmsFile(req: CmsRequestRendering, page: CmsPage): Option[CmsFile] = {
      req.content.pages.find(p => cmsPathcontainsName(p.name, page)) // search pages
               .orElse(req.content.blocks.find(p => cmsPathcontainsName(p.name, page))) // or search blocks
               .orElse(req.content.scripts.find(p => cmsPathcontainsName(p.name, page))) // or search scripts
               .orElse(req.content.styles.find(p => cmsPathcontainsName(p.name, page))) // or search styles
               .orElse(req.content.data.find(p => cmsPathcontainsName(p.name, page))) // or search data
-              .map(_.content).getOrElse("")
   }
 
   def render(
@@ -1523,6 +1523,7 @@ case class CmsPage(
       else if (parentId.nonEmpty && page.id.value == parentId.get)
         FastFuture.successful(("", page.contentType))
       else {
+
         val context = combineFieldsToContext(
           Context
             .newBuilder(this)
@@ -1543,6 +1544,18 @@ case class CmsPage(
           fields,
           jsonToCombine
         )
+
+        req match {
+          case Some(value) if page.name != "#generated" =>
+            searchCmsFile(value, page)
+              .flatMap(_.metadata)
+              // TODO - change CMSPAGE to Struct Metadata and create it in Rust project
+              .foreach(p => context.combine(p., p._2 match {
+                case JsString(value) => value  // remove quotes framing string
+                case value => value
+              }))
+          case _ =>
+        }
 
         val handlebars = new Handlebars().`with`(new EscapingStrategy() {
           override def escape(value: CharSequence): String = value.toString
@@ -1805,7 +1818,7 @@ case class CmsPage(
         val c = context.build()
 
         val template = req match {
-          case Some(value) if page.name != "#generated" => searchCmsFile(value, page)
+          case Some(value) if page.name != "#generated" => searchCmsFile(value, page).map(_.content).getOrElse("")
           case _ => if (ctx.request.getQueryString("draft").contains("true")) page.draft
             else page.body
         }

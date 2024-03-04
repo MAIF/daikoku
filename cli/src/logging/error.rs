@@ -1,5 +1,5 @@
-use std::fmt;
 use std::error::Error;
+use std::fmt;
 
 pub type DaikokuResult<T> = std::result::Result<T, DaikokuCliError>;
 
@@ -9,7 +9,9 @@ pub enum DaikokuCliError {
     FileSystem(String),
     Configuration(String),
     HyperError(hyper::Error),
-    DaikokuError(std::io::Error)
+    DaikokuError(std::io::Error),
+    DaikokuYamlError(serde_yaml::Error),
+    ParsingError(String)
 }
 
 impl Error for DaikokuCliError {}
@@ -39,6 +41,12 @@ impl fmt::Display for DaikokuCliError {
                 write!(f, "[CONFIGURATION] : {}\n", &err)
             }
             DaikokuCliError::DaikokuError(err) => {
+                write!(f, "[DAIKOKU] : {}\n", &err)
+            }
+            DaikokuCliError::DaikokuYamlError(err) => {
+                write!(f, "[DAIKOKU] : {}\n", &err)
+            }
+            DaikokuCliError::ParsingError(err) => {
                 write!(f, "[DAIKOKU] : {}\n", &err)
             }
         }
