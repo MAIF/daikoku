@@ -544,3 +544,11 @@ We'd like to thank all the contributors who worked on this release!
 - api.defaultUsagePlan is mandatory but api.possibleUsagePlans can be an empty Set [#629](https://github.com/MAIF/daikoku/issues/629)
 - sync jobs error mail is send to deleted users [#628](https://github.com/MAIF/daikoku/issues/628)
 
+## [v17.1.2] - 2024-03-04
+
+## :beetle: Bug Fixes
+
+- can't update any api with more than one version witj admin api [#641](https://github.com/MAIF/daikoku/issues/641)
+- subscription customMetadata not present in otoroshi apikey [#638](https://github.com/MAIF/daikoku/issues/638)
+- personal team is created with contact as contact@foo.bar [#636](https://github.com/MAIF/daikoku/issues/636)
+
