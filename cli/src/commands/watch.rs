@@ -181,47 +181,128 @@ fn not_visible_page() -> Result<Response<Full<Bytes>>, DaikokuCliError> {
 async fn watcher(
     req: Request<hyper::body::Incoming>,
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
-    let path = req.uri().path().to_string().replace("_/", "");
-    
-    logger::println(format!("<green>Request received</> {}", &path));
+    let uri = req.uri().path().to_string();
+    if uri.starts_with("/api") {
+        forward_api_call(uri).await
+    } else {
+        let path = uri.replace("_/", "");
 
-    let Summary { pages } = read_cms_pages()?;
+        logger::println(format!("<green>Request received</> {}", &path));
 
-    let mut router_pages = vec![];
+        let Summary { pages } = read_cms_pages()?;
 
-    pages.iter().for_each(|p| {
-        router_pages.push(RouterCmsPage {
-            exact: p.exact(),
-            path: p.path(),
-        })
-    });
+        let mut router_pages = vec![];
 
-    match pages.iter().find(|page| page.path() == path) {
-        Some(page) if !page.visible() => not_visible_page(),
-        Some(page) => render_page(page, path).await,
-        None => {
-            let strict_page = get_matching_routes(&path, get_pages(&router_pages, true), true);
+        pages.iter().for_each(|p| {
+            router_pages.push(RouterCmsPage {
+                exact: p.exact(),
+                path: p.path(),
+            })
+        });
 
-            let result_page = if !strict_page.is_empty() {
-                strict_page
-            } else {
-                get_matching_routes(&path, get_pages(&router_pages, false), false)
-            };
+        match pages.iter().find(|page| page.path() == path) {
+            Some(page) if !page.visible() => not_visible_page(),
+            Some(page) => render_page(page, path).await,
+            None => {
+                let strict_page = get_matching_routes(&path, get_pages(&router_pages, true), true);
 
-            println!("{:?}", result_page);
+                let result_page = if !strict_page.is_empty() {
+                    strict_page
+                } else {
+                    get_matching_routes(&path, get_pages(&router_pages, false), false)
+                };
 
-            match result_page.iter().nth(0) {
-                None => render_page(pages.iter().find(|p| p.path() == "/404").unwrap(), path).await,
-                Some(res) => {
-                    render_page(pages.iter().find(|p| p.path() == res.path).unwrap(), path).await
+                println!("{:?}", result_page);
+
+                match result_page.iter().nth(0) {
+                    None => {
+                        render_page(pages.iter().find(|p| p.path() == "/404").unwrap(), path).await
+                    }
+                    Some(res) => {
+                        render_page(pages.iter().find(|p| p.path() == res.path).unwrap(), path)
+                            .await
+                    }
                 }
             }
         }
     }
 }
 
-async fn render_page(page: &CmsFile, watch_path: String) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
-    logger::println(format!("<green>Serve page</> {} {}", page.path(), page.name));
+async fn forward_api_call(uri: String) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
+    let host = "localhost:9000";
+
+    let url: String = format!("http://{}{}", host, uri);
+    
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri(&url)
+        .header(header::HOST, host)
+        .body(http_body_util::Empty::<Bytes>::new())
+        .unwrap();
+
+    let stream = TcpStream::connect(&host)
+        .await
+        .map_err(|err| DaikokuCliError::DaikokuError(err))?;
+    let io = TokioIo::new(stream);
+
+    let (mut sender, conn) = hyper::client::conn::http1::handshake(io)
+        .await
+        .map_err(|err| DaikokuCliError::HyperError(err))?;
+
+    tokio::task::spawn(async move {
+        if let Err(err) = conn.await {
+            println!("Connection error: {:?}", err);
+        }
+    });
+
+    let upstream_resp = sender.send_request(req).await.map_err(|err| {
+        println!("{:?}", err);
+
+        DaikokuCliError::ParsingError(err.to_string())
+    })?;
+
+    let (
+        hyper::http::response::Parts {
+            headers: _, status, ..
+        },
+        mut body,
+    ) = upstream_resp.into_parts();
+
+    let mut result: Vec<u8> = Vec::new();
+
+    while let Some(next) = body.frame().await {
+        let frame = next.unwrap();
+        if let Ok(chunk) = frame.into_data() {
+            for b in chunk.bytes() {
+                (result).push(b.unwrap().clone());
+            }
+        }
+    }
+
+    let status = status.as_u16();
+
+    if status >= 300 && status < 400 {
+        Ok(Response::new(Full::new(Bytes::from(
+            "Authentication needed! Refresh this page once done",
+        ))))
+    } else {
+        let response = Response::builder()
+            .body(Full::new(Bytes::from(result)))
+            .unwrap();
+
+        Ok(response)
+    }
+}
+
+async fn render_page(
+    page: &CmsFile,
+    watch_path: String,
+) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
+    logger::println(format!(
+        "<green>Serve page</> {} {}",
+        page.path(),
+        page.name
+    ));
 
     let project = projects::get_default_project()?;
 

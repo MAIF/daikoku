@@ -1,5 +1,4 @@
-function askForApiKey(api, plan) {
-  
+function askForApiKey(api, plan) {  
   const options = {
     credentials: 'include',
     headers: {

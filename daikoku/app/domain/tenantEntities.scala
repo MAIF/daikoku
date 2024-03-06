@@ -983,7 +983,7 @@ case class CmsPage(
               req
             )
           )
-          .getOrElse("")
+          .getOrElse(s"$name not found")
       }
     )
     handlebars.registerHelper(

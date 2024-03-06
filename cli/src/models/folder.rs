@@ -106,7 +106,8 @@ fn read_file(file_path: PathBuf, file_name: String, extension: String) -> CmsFil
         .join("/")
         .replace("/pages", "/")
         .replace("pages/", "/")
-        .replace("/page.html", "");
+        .replace("/page.html", "")
+        .replace("/page.css", "");
 
     if formatted_path == "" && file_name == "page.html" {
         formatted_path = "/".to_string();
