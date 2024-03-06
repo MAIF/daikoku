@@ -1,7 +1,9 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
+import cats.data.EitherT
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.implicits.catsSyntaxOptionId
+import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
@@ -11,6 +13,7 @@ import fr.maif.otoroshi.daikoku.env.{DaikokuMode, Env}
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
+import org.apache.pekko.Done
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json._
@@ -466,24 +469,15 @@ class MockController(
   }
 
   def reset() =
-    Action.async { ctx =>
-      env.config.mode match {
-        case DaikokuMode.Dev => resetDataStore()
-        case _ =>
-          FastFuture.successful(
-            BadRequest(Json.obj("error" -> "Action not avalaible"))
-          )
-      }
+    Action.async { _ =>
+      (for {
+        _ <- EitherT.cond[Future][AppError, Unit](env.config.isDev, (), AppError.SecurityError("Action not avalaible"))
+        _ <- EitherT.liftF[Future, AppError, Unit](env.dataStore.clear())
+        _ <- EitherT.liftF[Future, AppError, Done](env.initDatastore())
+      } yield Redirect("/"))
+        .leftMap(_.render())
+        .merge
     }
-
-  def resetDataStore(): Future[Result] = {
-    for {
-      _ <- env.dataStore.clear()
-      _ <- env.initDatastore()
-    } yield {
-      Redirect("/")
-    }
-  }
 
   val groups: Seq[JsObject] = Seq(
     Json.obj(

@@ -16,6 +16,7 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import fr.maif.otoroshi.daikoku.utils.admin._
 import io.vertx.pgclient.PgPool
+import org.apache.pekko.Done
 import org.apache.pekko.stream.scaladsl.Source
 import play.api.http.HttpEntity
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
@@ -265,6 +266,17 @@ class StateAdminApiController(
       env.dataStore
         .importFromStream(req.body)
         .map(_ => Ok(Json.obj("done" -> true)))
+    }
+
+  def reset() =
+    DaikokuApiAction.async { _ =>
+      (for {
+        _ <- EitherT.cond[Future][AppError, Unit](env.config.isDev, (), AppError.SecurityError("Action not avalaible"))
+        _ <- EitherT.liftF[Future, AppError, Unit](env.dataStore.clear())
+        _ <- EitherT.liftF[Future, AppError, Done](env.initDatastore())
+      } yield Ok(Json.obj("done" -> true)))
+        .leftMap(_.render())
+        .merge
     }
 }
 
