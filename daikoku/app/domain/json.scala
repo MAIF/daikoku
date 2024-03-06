@@ -4436,15 +4436,14 @@ object json {
       Json.obj(
         "name" -> o.name,
         "content" -> o.content,
-        "metadata" -> o.metadata.map(_.asJson)
+        "metadata" -> o.metadata
       )
     override def reads(json: JsValue): JsResult[CmsFile] =
       Try {
         CmsFile(
           name = (json \ "name").as[String],
           content = (json \ "content").as[String],
-          metadata = (json \ "metadata").asOpt(CmsPageFormat.reads)
-        )
+          metadata = (json \ "metadata").asOpt[Map[String, JsValue]].getOrElse(Map.empty))
       } match {
         case Failure(exception) => JsError(exception.getMessage)
         case Success(page)      => JsSuccess(page)
@@ -4454,15 +4453,13 @@ object json {
   val CmsRequestRenderingFormat = new Format[CmsRequestRendering] {
     override def writes(o: CmsRequestRendering): JsValue =
       Json.obj(
-        "pages" -> o.pages.map(CmsPageFormat.writes),
-        "content" -> CmsContentsFormat.writes(o.content),
+        "content" -> o.content.map(CmsFileFormat.writes),
         "current_page" -> o.current_page
       )
     override def reads(json: JsValue): JsResult[CmsRequestRendering] =
       Try {
         CmsRequestRendering(
-          pages = (json \ "pages").as(Reads.seq(CmsPageFormat)),
-          content = (json \ "content").as(CmsContentsFormat),
+          content = (json \ "content").as(Reads.seq(CmsFileFormat.reads)),
           current_page = (json \ "current_page").as[String]
         )
       } match {
@@ -4470,33 +4467,6 @@ object json {
         case Success(page)      => JsSuccess(page)
       }
   }
-
-  val CmsContentsFormat = new Format[CmsContents] {
-    override def writes(o: CmsContents): JsValue =
-      Json.obj(
-        "pages" -> o.pages.map(CmsFileFormat.writes),
-        "blocks" -> o.blocks.map(CmsFileFormat.writes),
-        "metadata" -> o.metadata.map(CmsFileFormat.writes),
-        "scripts" -> o.scripts.map(CmsFileFormat.writes),
-        "styles" -> o.styles.map(CmsFileFormat.writes),
-        "data" -> o.data.map(CmsFileFormat.writes),
-      )
-    override def reads(json: JsValue): JsResult[CmsContents] =
-      Try {
-        CmsContents(
-          pages = (json \ "pages").as(Reads.seq(CmsFileFormat)),
-          blocks = (json \ "blocks").as(Reads.seq(CmsFileFormat)),
-          metadata = (json \ "metadata").as(Reads.seq(CmsFileFormat)),
-          scripts = (json \ "scripts").as(Reads.seq(CmsFileFormat)),
-          styles = (json \ "styles").as(Reads.seq(CmsFileFormat)),
-          data = (json \ "data").as(Reads.seq(CmsFileFormat))
-        )
-      } match {
-        case Failure(exception) => JsError(exception.getMessage)
-        case Success(page)      => JsSuccess(page)
-      }
-  }
-
 
   val CmsPageFormat = new Format[CmsPage] {
     override def writes(o: CmsPage): JsValue =

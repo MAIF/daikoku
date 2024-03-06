@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", async function () {
-  const res = await fetch('{{daikoku-page-url "62025dcf1a0100ac3d020ffc"}}')
+  const res = await fetch('{{daikoku-page-url "data/preview.json"}}')
   const { news } = await res.json()
   
   console.log(news)
@@ -7,7 +7,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   const container = document.getElementById('news')
   
   const blocks = news.map(({ id, title, content, url, slug }) => {
-    return `{{daikoku-include-block "62026d251501007a8439f599" title="${title}" content="${content}" url="${url}" slug="${slug}"  }}`
+    return `{{daikoku-include-block "blocks/Card.html" title="${title}" content="${content}" url="${url}" slug="${slug}"  }}`
   })
   
   console.log(blocks)

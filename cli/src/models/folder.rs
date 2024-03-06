@@ -1,192 +1,153 @@
 use serde::{Deserialize, Serialize};
-use serde_yaml::{Deserializer, Value};
+use walkdir::WalkDir;
 
 use std::{
     collections::HashMap,
     fs::{self, DirEntry},
+    path::PathBuf,
     str::FromStr,
 };
-
-use crate::{commands::watch::CmsPage, logging::{
-    error::{DaikokuCliError, DaikokuResult},
-    logger,
-}};
 
 pub(crate) const FOLDER_NAMES: [&str; 5] = ["pages", "styles", "scripts", "data", "blocks"];
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Folder {
-    blocks: Vec<CmsFile>,
-    pages: Vec<CmsFile>,
-    metadata: Vec<CmsFile>,
-    styles: Vec<CmsFile>,
-    scripts: Vec<CmsFile>,
-    data: Vec<CmsFile>,
+pub(crate) struct CmsFile {
+    pub(crate) name: String,
+    pub(crate) content: String,
+    pub(crate) metadata: HashMap<String, String>,
 }
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub(self) struct CmsFile {
-    name: String,
-    content: String,
-    metadata: Option<CmsPage>,
-}
-
 
 impl CmsFile {
-    fn new(file: &DirEntry) -> CmsFile {
+    fn new(file_path: PathBuf, file_name: String, metadata: HashMap<String, String>) -> CmsFile {
         CmsFile {
-            content: fs::read_to_string(file.path()).unwrap(),
-            name: file.file_name().into_string().unwrap(),
-            metadata: None,
+            content: fs::read_to_string(file_path).unwrap(),
+            name: file_name,
+            metadata,
         }
+    }
+
+    pub(crate) fn path(&self) -> String {
+        self.metadata
+            .get("_path")
+            .cloned()
+            .unwrap_or("".to_string())
+    }
+
+    fn bool(&self, key: String) -> bool {
+        self.metadata
+            .get(&key)
+            .map(|str| str.parse().unwrap_or(false))
+            .unwrap_or(false)
+    }
+
+    pub(crate) fn authenticated(&self) -> bool {
+        self.bool("_authenticated".to_string())
+    }
+
+    pub(crate) fn visible(&self) -> bool {
+        self.metadata
+            .get("_visible")
+            .map(|str| str.parse().unwrap_or(true))
+            .unwrap_or(true)
+    }
+
+    pub(crate) fn exact(&self) -> bool {
+        self.bool("_exact".to_string())
+    }
+
+    pub(crate) fn content_type(&self) -> String {
+        self.metadata
+            .get("_content_type")
+            .cloned()
+            .unwrap_or("".to_string())
     }
 }
 
-pub fn read_contents(path: &String) -> Folder {
-    let metadata_paths = read_directories_files(path);
-    let blocks_paths = read_directories_files(format!("{}/{}", path.as_str(), "blocks").as_str());
-    let data_paths = read_directories_files(format!("{}/{}", path.as_str(), "data").as_str());
-    let scripts_paths = read_directories_files(format!("{}/{}", path.as_str(), "scripts").as_str());
-    let styles_paths = read_directories_files(format!("{}/{}", path.as_str(), "styles").as_str());
-    let pages_paths = read_directories_files(format!("{}/{}", path.as_str(), "pages").as_str());
-
-    println!("read metadata");
-    let metadata = read_files_contents(&metadata_paths);
-    println!("read block");
-    let blocks = read_files_contents(&blocks_paths);
-    println!("read pages");
-    let pages = read_files_contents(&pages_paths);
-    println!("read data");
-    let data = read_files_contents(&data_paths);
-    println!("read scripts");
-    let scripts = read_files_contents(&scripts_paths);
-    println!("read styles");
-    let styles = read_files_contents(&styles_paths);
-    println!("end");
-
-    // println!("{:#?}", &pages);
-
-    let new_plugin = Folder {
-        metadata,
-        blocks,
-        pages,
-        data,
-        scripts,
-        styles,
-    };
-
-    new_plugin
+pub fn read_contents(path: &String) -> Vec<CmsFile> {
+    read_sources(&format!("{}/{}", path.as_str(), "src"))
 }
 
-// fn deserializer_to_map(name: &String, dese: Deserializer) -> DaikokuResult<HashMap<String, Value>> {
-//     let content = Value::deserialize(dese).map_err(|err| {
-//         logger::error(format!(
-//             "Failed parsing metadata {} : {}",
-//             name,
-//             err.to_string()
-//         ));
-//         DaikokuCliError::DaikokuYamlError(err)
-//     })?;
+pub(crate) fn read_sources(path: &String) -> Vec<CmsFile> {
+    let mut pages: Vec<CmsFile> = Vec::new();
 
-//     let value: HashMap<String, Value> = serde_yaml::from_value(content).map_err(|err| {
-//         logger::error(format!(
-//             "Failed parsing yaml metadata of file {} : {}",
-//             name,
-//             err.to_string()
-//         ));
-//         DaikokuCliError::DaikokuYamlError(err)
-//     })?;
+    for entry in WalkDir::new(path).into_iter().filter_map(Result::ok) {
+        let f_name = String::from(entry.file_name().to_string_lossy());
 
-//     Ok(value)
-// }
-
-// fn deserializer_to_str(name: &String, dese: Deserializer) -> DaikokuResult<String> {
-//     let content = Value::deserialize(dese).map_err(|err| {
-//         logger::error(format!(
-//             "Failed parsing file {} : {}",
-//             name,
-//             err.to_string()
-//         ));
-//         DaikokuCliError::DaikokuYamlError(err)
-//     })?;
-
-//     let value: String = serde_yaml::from_value(content).map_err(|err| {
-//         logger::error(format!(
-//             "Failed parsing content of file {} : {}",
-//             name,
-//             err.to_string()
-//         ));
-//         DaikokuCliError::DaikokuYamlError(err)
-//     })?;
-
-//     Ok(value)
-// }
-
-fn read_files_contents(files: &Vec<DirEntry>) -> Vec<CmsFile> {
-    let r = files
-        .into_iter()
-        .filter(|file| {
-            !file.file_name().into_string().unwrap().eq(".DS_Store")
-                && fs::read_to_string(file.path()).is_ok()
-        })
-        .map(|file| {
-            let content = fs::read_to_string(file.path()).unwrap();
-            let name = file.file_name().into_string().unwrap();
-
-            if name.contains(".html") && content.contains("---") {
-                println!("HER");
-
-                // TODO - fail to deserialize documents of two parts
-
-                let parts = content.split("---");
-
-                let metadata: CmsPage = serde_yaml::from_str(&parts.clone().nth(0).unwrap()).unwrap();
-
-                println!("TWO");
-
-                // let mut metadata = HashMap::new();
-                let content = parts.into_iter().nth(1).unwrap();
-
-                CmsFile {
-                    content: content.to_string(),
-                    name: file.file_name().into_string().unwrap(),
-                    metadata: Some(metadata),
-                }
-
-                // for (idx, item) in documents.into_iter().enumerate() {
-                //     if idx == 0 {
-                //         metadata = deserializer_to_map(&name, item).unwrap_or(HashMap::new());
-                //         println!("4");
-                //     } else {
-                //         // let test: String = item. 
-                //         content = deserializer_to_str(&name, item).unwrap_or(String::from(""));
-                //         println!("5");
-
-                //         return CmsFile {
-                //             content,
-                //             name: file.file_name().into_string().unwrap(),
-                //             metadata: Some(metadata),
-                //         }
-                //     }
-                // }
-                // CmsFile::new(&file)
-                
-            } else {
-                CmsFile::new(&file)
+        if entry.metadata().unwrap().is_file() {
+            if let Some(extension) = entry.clone().path().extension() {
+                let new_file = read_file(
+                    entry.clone().into_path(),
+                    f_name,
+                    extension.to_string_lossy().into_owned(),
+                );
+                pages.push(new_file);
             }
-        })
-        .collect();
+        }
+    }
 
-    r
+    pages
 }
 
-fn read_directories_files(path: &str) -> Vec<DirEntry> {
-    match fs::read_dir(path) {
-        Ok(files) => files.map(|f| f.unwrap()).collect(),
-        Err(e) => panic!(
-            "Should be able to read contents at the specified path : {} \n {}",
-            &path, e
-        ),
+fn read_file(file_path: PathBuf, file_name: String, extension: String) -> CmsFile {
+    // println!("read file {} - {:?} - {}", file_name, file_path, extension);
+    let content = fs::read_to_string(&file_path).unwrap();
+
+    let parts = &file_path
+        .as_os_str()
+        .to_str()
+        .unwrap()
+        .split("src/")
+        .last()
+        .unwrap()
+        .split("/")
+        .collect::<Vec<&str>>();
+
+    let mut formatted_path = parts[0..parts.len()]
+        .join("/")
+        .replace("/pages", "/")
+        .replace("pages/", "/")
+        .replace("/page.html", "");
+
+    if formatted_path == "" && file_name == "page.html" {
+        formatted_path = "/".to_string();
+    }
+
+    if content.contains("---") {
+        let parts = content.split("---");
+
+        let mut metadata: HashMap<String, String> =
+            serde_yaml::from_str(&parts.clone().nth(0).unwrap()).unwrap();
+        let content = parts.into_iter().nth(1).unwrap();
+
+        metadata.insert("_path".to_string(), formatted_path.to_string());
+
+        metadata.insert(
+            "_content_type".to_string(),
+            SourceExtension::from_str(&extension)
+                .unwrap()
+                .content_type(),
+        );
+
+        metadata.insert("_name".to_string(), file_name.clone());
+
+        CmsFile {
+            content: content.to_string(),
+            name: file_name,
+            metadata,
+        }
+    } else {
+        let mut metadata: HashMap<String, String> = HashMap::new();
+        metadata.insert("_path".to_string(), formatted_path.to_string());
+
+        metadata.insert(
+            "_content_type".to_string(),
+            SourceExtension::from_str(&extension)
+                .unwrap()
+                .content_type(),
+        );
+        metadata.insert("_name".to_string(), file_name.clone());
+
+        CmsFile::new(file_path, file_name, metadata)
     }
 }
 
@@ -196,10 +157,6 @@ pub(crate) enum SourceExtension {
     CSS,
     Javascript,
     JSON,
-}
-
-pub(crate) trait FilePath {
-    fn path(&self) -> String;
 }
 
 pub(crate) trait ToContentType {
@@ -231,21 +188,11 @@ impl FromStr for SourceExtension {
             "css" => Ok(SourceExtension::CSS),
             "text/css" => Ok(SourceExtension::CSS),
             "javascript" => Ok(SourceExtension::Javascript),
+            "js" => Ok(SourceExtension::Javascript),
             "text/javascript" => Ok(SourceExtension::Javascript),
             "json" => Ok(SourceExtension::JSON),
             "application/json" => Ok(SourceExtension::JSON),
             _ => panic!("Bad page extension"),
-        }
-    }
-}
-
-impl FilePath for SourceExtension {
-    fn path(&self) -> String {
-        match &self {
-            SourceExtension::HTML => String::from("pages"),
-            SourceExtension::CSS => String::from("styles"),
-            SourceExtension::Javascript => String::from("scripts"),
-            SourceExtension::JSON => String::from("json"),
         }
     }
 }

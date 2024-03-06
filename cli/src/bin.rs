@@ -41,10 +41,6 @@ pub enum Commands {
         #[arg(value_name = "PATH", short = 'p', long = "path", required = false)]
         path: Option<String>,
     },
-    Source {
-        #[command(subcommand)]
-        command: SourceCommands,
-    },
     ///
     #[command()]
     Watch {
@@ -171,7 +167,6 @@ async fn process(command: Commands) -> DaikokuResult<()> {
             name,
             path,
         } => commands::creation::run(template, name, path.map(|p| absolute_path(p).unwrap())).await,
-        Commands::Source { command } => commands::source::run(command),
         Commands::Watch {
             path,
             server,

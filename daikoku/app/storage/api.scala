@@ -168,7 +168,7 @@ trait Repo[Of, Id <: ValueType] {
 
   def findByIdOrHrIdNotDeleted(
       idOrHrid: String
-  )(implicit ec: ExecutionContext): Future[Option[Of]] =
+  )(implicit ec: ExecutionContext): Future[Option[Of]] = {
     findOneNotDeleted(
       Json.obj(
         "_deleted" -> false,
@@ -178,6 +178,7 @@ trait Repo[Of, Id <: ValueType] {
         )
       )
     )
+  }
 
   def findByIdOrHrIdRaw(id: String, hrid: String)(implicit
       ec: ExecutionContext

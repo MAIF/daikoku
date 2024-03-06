@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 use std::io::Read;
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
+use std::path::PathBuf;
 
 use http_body_util::{BodyExt, Full};
 use hyper::body::Bytes;
@@ -12,151 +11,29 @@ use hyper::{Request, Response};
 
 use hyper_util::rt::TokioIo;
 use serde::{Deserialize, Serialize};
-use tokio::io;
 use tokio::net::{TcpListener, TcpStream};
-use uuid::Uuid;
-
-use std::{fmt, fs};
 
 use crate::logging::error::{DaikokuCliError, DaikokuResult};
-use crate::logging::logger;
-use crate::models::folder::{read_contents, Folder, SourceExtension, ToContentType};
-use crate::utils::get_current_working_dir;
+use crate::logging::logger::{self, println};
+use crate::models::folder::{read_contents, read_sources, CmsFile};
 
 use super::projects::{self, Project};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub(crate) struct CmsPage {
-    pub(crate) _id: String,
-    _tenant: String,
-    _deleted: bool,
-    visible: bool,
-    authenticated: bool,
-    pub(crate) name: String,
-    // picture: Option<dyn Any>,
-    // tags: Vec<String>,
-    // metadata: HashMap<String, String>,
-    #[serde(alias = "contentType")]
-    pub(crate) content_type: String,
-    // forwardRef: dyn Any,
-    path: Option<String>,
-    exact: bool,
-    #[serde(alias = "lastPublishedDate")]
-    last_published_date: u64,
-}
-
 #[derive(Debug)]
-struct RouterCmsPage<'a> {
-    _id: &'a str,
+struct RouterCmsPage {
     exact: bool,
-    path: &'a str,
+    path: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub(crate) struct Summary {
-    pub(crate) pages: Vec<CmsPage>,
+    pub(crate) pages: Vec<CmsFile>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 struct CmsRequestRendering {
-    pages: Vec<CmsPage>,
-    content: Folder,
+    content: Vec<CmsFile>,
     current_page: String,
-}
-
-impl fmt::Display for CmsPage {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{:?} - {} - {}{}{}",
-            self.path.clone().unwrap_or("NO_PATH".to_string()),
-            self.name,
-            self.content_type,
-            if self.authenticated {
-                "- AUTH_REQUIRED -"
-            } else {
-                ""
-            },
-            if self.exact { "- EXACT_MATCHING" } else { "" }
-        )
-    }
-}
-
-impl Summary {
-    pub(crate) fn add_new_file(
-        &mut self,
-        name: String,
-        visible: Option<bool>,
-        authenticated: Option<bool>,
-        path: Option<String>,
-        exact: Option<bool>,
-        content_type: &String,
-        overwrite: bool,
-    ) -> DaikokuResult<()> {
-        let new_page = CmsPage {
-            _id: Uuid::new_v4().to_string(), // TODO - generate new UUID
-            _tenant: "".to_string(),         // TODO - get tenant from configuration file
-            _deleted: false,
-            visible: visible.unwrap_or(true),
-            authenticated: authenticated.unwrap_or(false),
-            name: name.clone(),
-            // tags: vec![],
-            // metadata: HashMap::new(),
-            content_type: content_type.clone(),
-            path,
-            exact: exact.unwrap_or(true),
-            last_published_date: chrono::offset::Utc::now().timestamp() as u64,
-        };
-
-        if overwrite && self.contains_page(&name, content_type) {
-            self.pages = self
-                .pages
-                .iter()
-                .filter(|p| !(p.name == name.clone() && p.content_type == content_type.clone()))
-                .cloned()
-                .collect();
-        }
-
-        self.pages.push(new_page);
-
-        write_cms_pages(&self)
-    }
-
-    pub(crate) fn remove_file(
-        &mut self,
-        id: Option<String>,
-        name: Option<String>,
-        extension: Option<String>,
-    ) -> DaikokuResult<()> {
-        let contents = read_cms_pages()?;
-
-        let identifier = id.map(|p| p.clone()).unwrap_or("".to_string());
-        let name = &name.unwrap_or("".to_string());
-        let extension = &extension
-            .map(|e| SourceExtension::from_str(&e).unwrap().content_type())
-            .unwrap_or("text/html".to_string());
-
-        match contents
-            .pages
-            .iter()
-            .position(|p| p._id == identifier || (self.contains_page(&name, &extension)))
-        {
-            Some(idx) => {
-                self.pages.remove(idx);
-                write_cms_pages(&self)
-            }
-            None => Err(DaikokuCliError::Configuration(
-                "file registration is missing".to_string(),
-            )),
-        }
-    }
-
-    pub(crate) fn contains_page(&self, name: &String, content_type: &String) -> bool {
-        self.pages
-            .iter()
-            .find(|p| &p.name == name && &p.content_type == content_type)
-            .is_some()
-    }
 }
 
 pub(crate) async fn run(
@@ -195,31 +72,22 @@ pub(crate) fn read_cms_pages() -> DaikokuResult<Summary> {
 }
 
 pub(crate) fn read_cms_pages_from_project(project: Project) -> DaikokuResult<Summary> {
-    let content =
-        fs::read_to_string(PathBuf::from(project.path).join("src").join("summary.json")).unwrap();
-    let Summary { pages } = serde_json::from_str(&content).unwrap();
-
     Ok(Summary {
-        pages: pages.into_iter().collect(),
+        pages: read_sources(
+            &PathBuf::from(project.path)
+                .join("src")
+                .into_os_string()
+                .into_string()
+                .unwrap(),
+        ),
     })
-}
-
-fn write_cms_pages(contents: &Summary) -> DaikokuResult<()> {
-    let project = projects::get_default_project()?;
-    let path = PathBuf::from(project.path).join("src").join("summary.json");
-    match fs::write(path, serde_json::to_string_pretty(contents).unwrap()) {
-        Ok(_) => Ok(()),
-        Err(_) => Err(DaikokuCliError::Configuration(
-            "failed to patch the summary file".to_string(),
-        )),
-    }
 }
 
 fn get_matching_routes<'a>(
     path: &'a String,
-    cms_paths: Vec<(&'a str, &'a RouterCmsPage<'a>)>,
+    cms_paths: Vec<(String, &'a RouterCmsPage)>,
     strict_mode: bool,
-) -> Vec<&'a RouterCmsPage<'a>> {
+) -> Vec<&'a RouterCmsPage> {
     let str = path.clone().replace("/_", "");
     let paths = str
         .split("/")
@@ -252,12 +120,9 @@ fn get_matching_routes<'a>(
             }
         });
 
-        // println!("possible paths : {:?}", init);
-
         paths
             .iter()
             .fold(init, |acc: Vec<(Vec<String>, &RouterCmsPage)>, path| {
-                // println!("Start compare with {}", path);
                 if acc.is_empty() || matched {
                     acc
                 } else {
@@ -273,8 +138,6 @@ fn get_matching_routes<'a>(
                         })
                         .map(|p| (p.0.to_vec(), p.1))
                         .collect();
-
-                    // println!("matching route : {:?}", matching_routes);
 
                     if !matching_routes.is_empty() {
                         matching_routes
@@ -301,13 +164,13 @@ fn get_matching_routes<'a>(
 }
 
 fn get_pages<'a>(
-    router_pages: &'a Vec<RouterCmsPage<'a>>,
+    router_pages: &'a Vec<RouterCmsPage>,
     exact: bool,
-) -> Vec<(&'a str, &'a RouterCmsPage<'a>)> {
+) -> Vec<(String, &'a RouterCmsPage)> {
     router_pages
         .into_iter()
         .filter(|p| p.exact == exact)
-        .map(|p| (p.path, p))
+        .map(|p| (p.path.clone(), p))
         .collect()
 }
 
@@ -318,28 +181,24 @@ fn not_visible_page() -> Result<Response<Full<Bytes>>, DaikokuCliError> {
 async fn watcher(
     req: Request<hyper::body::Incoming>,
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
-    logger::println(format!("<green>Request received</> {}", &req.uri()));
+    let path = req.uri().path().to_string().replace("_/", "");
+    
+    logger::println(format!("<green>Request received</> {}", &path));
 
     let Summary { pages } = read_cms_pages()?;
 
     let mut router_pages = vec![];
 
-    pages.iter().filter(|p| p.path.is_some()).for_each(|p| {
-        let path = p.path.as_ref().map(|x| &**x).unwrap();
+    pages.iter().for_each(|p| {
         router_pages.push(RouterCmsPage {
-            _id: &p._id,
-            exact: p.exact,
-            path: &path,
+            exact: p.exact(),
+            path: p.path(),
         })
     });
 
-    let path = req.uri().path().to_string();
-    match pages
-        .iter()
-        .find(|page| page.path.clone().map(|p| p == path).unwrap_or(false))
-    {
-        Some(page) if !page.visible => not_visible_page(),
-        Some(page) => render_page(page).await,
+    match pages.iter().find(|page| page.path() == path) {
+        Some(page) if !page.visible() => not_visible_page(),
+        Some(page) => render_page(page, path).await,
         None => {
             let strict_page = get_matching_routes(&path, get_pages(&router_pages, true), true);
 
@@ -349,30 +208,27 @@ async fn watcher(
                 get_matching_routes(&path, get_pages(&router_pages, false), false)
             };
 
+            println!("{:?}", result_page);
+
             match result_page.iter().nth(0) {
-                // None => not_found_page(),
-                None => render_page(pages.iter().find(|p| p.name == "404").unwrap()).await,
-                Some(res) => render_page(pages.iter().find(|p| p._id == res._id).unwrap()).await,
+                None => render_page(pages.iter().find(|p| p.path() == "/404").unwrap(), path).await,
+                Some(res) => {
+                    render_page(pages.iter().find(|p| p.path() == res.path).unwrap(), path).await
+                }
             }
         }
     }
 }
 
-async fn render_page(page: &CmsPage) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
-    logger::println(format!("<green>Serve page</> {}", page));
-
-    let host = "localhost:9000";
-
-    let url: String = format!("http://{}/__/?force_reloading=true", host);
-    let Summary { pages } = read_cms_pages()?;
+async fn render_page(page: &CmsFile, watch_path: String) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
+    logger::println(format!("<green>Serve page</> {} {}", page.path(), page.name));
 
     let project = projects::get_default_project()?;
 
-    logger::info("read content".to_string());
+    // logger::info("read content".to_string());
 
     let content = read_contents(
         &PathBuf::from(&project.path)
-            .join("src")
             .into_os_string()
             .into_string()
             .map_err(|err| {
@@ -380,18 +236,25 @@ async fn render_page(page: &CmsPage) -> Result<Response<Full<Bytes>>, DaikokuCli
             })?,
     );
 
-    logger::info("got content".to_string());
+    content.iter().for_each(|f| println!("{:?}", f.metadata));
+
+    // logger::info("got content".to_string());
 
     let body_obj = CmsRequestRendering {
-        pages,
         content,
-        current_page: page._id.clone(),
+        current_page: page.path().clone(),
     };
 
     let body = Bytes::from(
         serde_json::to_string(&body_obj)
             .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?,
     );
+
+    let host = "localhost:9000";
+
+    let url: String = format!("http://{}/_{}?force_reloading=true", host, watch_path);
+
+    // println!("calling daikoku server {}", url);
 
     let req = Request::builder()
         .method(Method::POST)
@@ -401,19 +264,22 @@ async fn render_page(page: &CmsPage) -> Result<Response<Full<Bytes>>, DaikokuCli
         .body(Full::new(body))
         .unwrap();
 
-    let stream = TcpStream::connect(format!("{}:{}", &"localhost", 9000))
+    let stream = TcpStream::connect(&host)
         .await
         .map_err(|err| DaikokuCliError::DaikokuError(err))?;
     let io = TokioIo::new(stream);
 
-    let (mut sender, _conn) = hyper::client::conn::http1::handshake(io)
+    let (mut sender, conn) = hyper::client::conn::http1::handshake(io)
         .await
         .map_err(|err| DaikokuCliError::HyperError(err))?;
-    
 
-    logger::println(format!("<green>Query</> server {}", page));
+    tokio::task::spawn(async move {
+        if let Err(err) = conn.await {
+            println!("Connection error: {:?}", err);
+        }
+    });
 
-    println!("PASSE");
+    logger::println(format!("<green>Query</> server {}", page.name));
 
     let upstream_resp = sender.send_request(req).await.map_err(|err| {
         println!("{:?}", err);
@@ -421,16 +287,12 @@ async fn render_page(page: &CmsPage) -> Result<Response<Full<Bytes>>, DaikokuCli
         DaikokuCliError::ParsingError(err.to_string())
     })?;
 
-    println!("AFTE");
-
     let (
         hyper::http::response::Parts {
             headers, status, ..
         },
         mut body,
     ) = upstream_resp.into_parts();
-
-    println!("AFTESDS");
 
     let mut result: Vec<u8> = Vec::new();
 
@@ -442,8 +304,6 @@ async fn render_page(page: &CmsPage) -> Result<Response<Full<Bytes>>, DaikokuCli
             }
         }
     }
-
-println!("PASSE");
 
     // let redirect_location = headers.get::<String>(header::LOCATION.to_string());
 
@@ -467,7 +327,7 @@ println!("PASSE");
         ))))
     } else {
         let response = Response::builder()
-            .header(header::CONTENT_TYPE, &page.content_type)
+            .header(header::CONTENT_TYPE, &page.content_type())
             .body(Full::new(Bytes::from(result)))
             .unwrap();
 

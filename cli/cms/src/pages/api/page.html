@@ -1,0 +1,18 @@
+{{#daikoku-api "{{daikoku-path-param '0'}}"}}
+
+{{#daikoku-template-wrapper "blocks/wrapper" title="{{api.name}}" desc="Description de mon API" }}
+
+<h2 class="my-3">List of plans</h2>
+{{daikoku-include-block "blocks/plans.html"}}
+
+
+<h2 class="my-3">Complète Description</h2>
+<div>
+{{api.description}}
+</div>
+<button type="button" class="btn btn-secondary mt-3">
+    <a href="{{daikoku-page-url "/apis.html"}}" style="color: #fff; text-decoration: none">Retour à la liste d'APIS</a>
+</button>
+ 
+{{/daikoku-template-wrapper}}
+{{/daikoku-api}}

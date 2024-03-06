@@ -553,9 +553,34 @@ object CmsPage {
   )
 }
 
-case class CmsFile(name: String, content: String, metadata: Option[CmsPage] = None)
-case class CmsContents(pages: Seq[CmsFile], blocks: Seq[CmsFile], metadata: Seq[CmsFile], scripts: Seq[CmsFile], styles: Seq[CmsFile], data: Seq[CmsFile])
-case class CmsRequestRendering(pages: Seq[CmsPage], content: CmsContents, current_page: String)
+case class CmsFile(name: String, content: String, metadata: Map[String, JsValue] = Map.empty) {
+    def path(): String = metadata.getOrElse("_path", JsString("")).as[String]
+    def contentType(): String = metadata.getOrElse("_content_type", JsString("")).as[String]
+
+    def authenticated(): Boolean = Json.parse(metadata.getOrElse("_authenticated", JsString("false")).as[String]).as[Boolean]
+    def visible(): Boolean = Json.parse(metadata.getOrElse("_visible", JsString("false")).as[String]).as[Boolean]
+    def exact(): Boolean = Json.parse(metadata.getOrElse("_exact", JsString("false")).as[String]).as[Boolean]
+
+    def toCmsPage(tenantId: TenantId): CmsPage = {
+      CmsPage(
+        id = CmsPageId(path()),
+        tenant = tenantId,
+        visible = visible(),
+        authenticated = authenticated(),
+        name = name,
+        forwardRef = None,
+        tags = List.empty,
+        metadata = Map.empty,
+        contentType = contentType(),
+        body= "",
+        draft = "",
+        path = Some(path())
+      )
+    }
+}
+
+
+case class CmsRequestRendering(content: Seq[CmsFile], current_page: String)
 case class CmsHistory(id: String, date: DateTime, diff: String, user: UserId)
 
 case class CmsPage(
@@ -1011,8 +1036,11 @@ case class CmsPage(
   private def cmsFindByIdNotDeleted(ctx: DaikokuActionMaybeWithoutUserContext[_],
                         id: String,
                         req: Option[CmsRequestRendering])(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
+    println("cmsFindByIdNotDeleted", id)
     req match {
-      case Some(value) => value.pages.find(_.id.value == id) // TODO - manage the not deleted field
+      case Some(value) => value.content
+        .find(_.path() == id)
+        .map(_.toCmsPage(ctx.tenant.id))
       case None => Await.result(
         env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id),
         10.seconds
@@ -1024,7 +1052,9 @@ case class CmsPage(
                         id: String,
                         req: Option[CmsRequestRendering])(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
     req match {
-      case Some(value) => value.pages.find(_.id.value == id)
+      case Some(value) => value.content
+        .find(_.path() == id)
+        .map(_.toCmsPage(ctx.tenant.id))
       case None => Await.result(
         env.dataStore.cmsRepo.forTenant(ctx.tenant).findById(id),
         10.seconds
@@ -1036,7 +1066,9 @@ case class CmsPage(
                         id: String,
                         req: Option[CmsRequestRendering])(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
     req match {
-      case Some(value) => value.pages.find(_.id.value == id)
+      case Some(value) => value.content
+        .find(_.path() == id)
+        .map(_.toCmsPage(ctx.tenant.id))
       case None => Await.result(
         env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> id)),
         10.seconds
@@ -1159,9 +1191,9 @@ case class CmsPage(
       req: Option[CmsRequestRendering]
   )(implicit env: Env, ec: ExecutionContext) = {
     val pages = req match {
-      case Some(value) => value.pages
-        .filter(p => p.path.isDefined && p.path.nonEmpty)
-        .map(_.path.get)
+      case Some(value) => value.content
+        .filter(p => p.path().nonEmpty)
+        .map(r => s"/_${r.path()}")
       case None => Await
       .result(
         env.dataStore.cmsRepo
@@ -1481,14 +1513,9 @@ case class CmsPage(
       acc.combine(item._1, item._2)
     }
 
-  private def cmsPathcontainsName(cmsName: String, page: CmsPage) = cmsName.split("\\.").headOption.getOrElse("") == page.name
-
   private def searchCmsFile(req: CmsRequestRendering, page: CmsPage): Option[CmsFile] = {
-     req.content.pages.find(p => cmsPathcontainsName(p.name, page)) // search pages
-              .orElse(req.content.blocks.find(p => cmsPathcontainsName(p.name, page))) // or search blocks
-              .orElse(req.content.scripts.find(p => cmsPathcontainsName(p.name, page))) // or search scripts
-              .orElse(req.content.styles.find(p => cmsPathcontainsName(p.name, page))) // or search styles
-              .orElse(req.content.data.find(p => cmsPathcontainsName(p.name, page))) // or search data
+//    println("search cms file", req.content.map(_.path()), page.path)
+     req.content.find(p => p.path() == page.path.getOrElse(""))
   }
 
   def render(
@@ -1506,7 +1533,7 @@ case class CmsPage(
     }
     try {
 
-      println(s"rendering ${page.name}")
+//      println(s"rendering ${page.name}")
 
       import com.github.jknack.handlebars.EscapingStrategy
       implicit val ec = CmsPage.pageRenderingEc
@@ -1523,7 +1550,6 @@ case class CmsPage(
       else if (parentId.nonEmpty && page.id.value == parentId.get)
         FastFuture.successful(("", page.contentType))
       else {
-
         val context = combineFieldsToContext(
           Context
             .newBuilder(this)
@@ -1548,11 +1574,11 @@ case class CmsPage(
         req match {
           case Some(value) if page.name != "#generated" =>
             searchCmsFile(value, page)
-              .flatMap(_.metadata)
-              // TODO - change CMSPAGE to Struct Metadata and create it in Rust project
-              .foreach(p => context.combine(p., p._2 match {
-                case JsString(value) => value  // remove quotes framing string
-                case value => value
+              .foreach(_.metadata.foreach(p => {
+                context.combine(p._1, p._2 match {
+                  case JsString(value) => value  // remove quotes framing string
+                  case value => value
+                })
               }))
           case _ =>
         }
@@ -1826,7 +1852,7 @@ case class CmsPage(
         if (template == "") {
           println("missing rendering", page.name)
         } else
-          println("starting rendering", page.name)
+          println("starting rendering", page.path, page.name)
 
         val result = handlebars.compileInline(template).apply(c)
         c.destroy()

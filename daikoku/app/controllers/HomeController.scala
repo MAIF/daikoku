@@ -221,19 +221,19 @@ class HomeController(
     }
   }
 
-  def renderCmsPageFromBody() = DaikokuActionMaybeWithoutUser.async(parse.json) { ctx =>
+  def renderCmsPageFromBody(path: String) = DaikokuActionMaybeWithoutUser.async(parse.json) { ctx =>
       val body = ctx.request.body.as[JsObject]
 
       val req = body.as(CmsRequestRenderingFormat)
 
-      val currentPage = req.pages.find(_.id.value == req.current_page)
+      val currentPage = req.content.find(_.path() == req.current_page)
 
-      println("incoming " + currentPage.get.authenticated, if(ctx.user.isEmpty || ctx.user.exists(_.isGuest)) "guest" else "connected")
+//      println("incoming " + currentPage.get.authenticated, if(ctx.user.isEmpty || ctx.user.exists(_.isGuest)) "guest" else "connected")
 
       currentPage match {
         case Some(r)
-          if r.authenticated && (ctx.user.isEmpty || ctx.user.exists(_.isGuest)) => redirectToLoginPage(ctx)
-        case Some(page) => render(ctx, page, Some(req))
+          if r.authenticated() && (ctx.user.isEmpty || ctx.user.exists(_.isGuest)) => redirectToLoginPage(ctx)
+        case Some(page) => render(ctx, page.toCmsPage(ctx.tenant.id), Some(req))
         case None => cmsPageNotFound(ctx)
       }
     }
