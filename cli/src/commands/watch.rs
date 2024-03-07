@@ -18,8 +18,8 @@ use crate::logging::error::{DaikokuCliError, DaikokuResult};
 use crate::logging::logger::{self};
 use crate::models::folder::{read_contents, read_sources, CmsFile};
 
-use super::configuration::read_cookie_from_environment;
-use super::projects::{self, Project};
+use super::enviroments::read_cookie_from_environment;
+use super::projects::{self, get_project, Project};
 
 #[derive(Debug)]
 struct RouterCmsPage {
@@ -38,43 +38,48 @@ struct CmsRequestRendering {
     current_page: String,
 }
 
-pub(crate) async fn run(
-    path: Option<String>,
-    server: Option<String>,
-    client_id: Option<String>,
-    client_secret: Option<String>,
-) {
+pub(crate) async fn run(incoming_project: Option<String>) -> DaikokuResult<()> {
     let port = std::env::var("WATCHING_PORT").unwrap_or("3333".to_string());
     logger::loading(format!("<yellow>Listening</> on {}", port));
 
-    let listener = TcpListener::bind(format!("0.0.0.0:{}", port)).await.unwrap();
+    let listener = TcpListener::bind(format!("0.0.0.0:{}", port))
+        .await
+        .unwrap();
 
     loop {
-        match listener.accept().await {
-            Err(err) => logger::error(format!("{}", err.to_string())),
-            Ok((stream, _)) => {
-                let io = TokioIo::new(stream);
+        let project = incoming_project
+            .clone()
+            .map(|name| get_project(name).ok())
+            .flatten();
 
-                tokio::task::spawn(async move {
-                    if let Err(err) = http1::Builder::new()
-                        .serve_connection(io, service_fn(watcher))
-                        .await
-                    {
-                        println!("Error serving connection: {:?}", err);
-                    }
-                });
-            }
-        };
+        if incoming_project.is_some() && project.is_none() {
+            return Err(DaikokuCliError::Configuration(
+                "project not found".to_string(),
+            ));
+        }
+
+        {
+            match listener.accept().await {
+                Err(err) => logger::error(format!("{}", err.to_string())),
+                Ok((stream, _)) => {
+                    let io = TokioIo::new(stream);
+
+                    tokio::task::spawn(async move {
+                        if let Err(err) = http1::Builder::new()
+                            .serve_connection(io, service_fn(|req| watcher(req, project.clone())))
+                            .await
+                        {
+                            println!("Error serving connection: {:?}", err);
+                        }
+                    });
+                }
+            };
+        }
     }
 }
 
-pub(crate) fn read_cms_pages() -> DaikokuResult<Summary> {
-    let project = projects::get_default_project()?;
-
-    read_cms_pages_from_project(project)
-}
-
-pub(crate) fn read_cms_pages_from_project(project: Project) -> DaikokuResult<Summary> {
+fn read_cms_pages(project: Option<Project>) -> DaikokuResult<Summary> {
+    let project = project.unwrap_or(projects::get_default_project()?);
     Ok(Summary {
         pages: read_sources(
             &PathBuf::from(project.path)
@@ -86,103 +91,9 @@ pub(crate) fn read_cms_pages_from_project(project: Project) -> DaikokuResult<Sum
     })
 }
 
-fn get_matching_routes<'a>(
-    path: &'a String,
-    cms_paths: Vec<(String, &'a RouterCmsPage)>,
-    strict_mode: bool,
-) -> Vec<&'a RouterCmsPage> {
-    let str = path.clone().replace("/_", "");
-    let paths = str
-        .split("/")
-        .filter(|p| !p.is_empty())
-        .collect::<Vec<&str>>();
-
-    if paths.is_empty() {
-        vec![]
-    } else {
-        let mut matched = false;
-
-        let mut init: Vec<(Vec<String>, &RouterCmsPage)> = vec![];
-
-        cms_paths.iter().for_each(|r| {
-            let page = r.1;
-
-            let mut current_path: Vec<String> =
-                r.0.replace("/_/", "")
-                    .split("/")
-                    .map(String::from)
-                    .collect();
-
-            let path_suffix = if page.exact { "" } else { "*" }.to_string();
-
-            current_path.push(path_suffix);
-            current_path = current_path.into_iter().filter(|p| !p.is_empty()).collect();
-
-            if !current_path.is_empty() {
-                init.push((current_path, page))
-            }
-        });
-
-        paths
-            .iter()
-            .fold(init, |acc: Vec<(Vec<String>, &RouterCmsPage)>, path| {
-                if acc.is_empty() || matched {
-                    acc
-                } else {
-                    let matching_routes: Vec<(Vec<String>, &RouterCmsPage)> = acc
-                        .iter()
-                        .filter(|p| {
-                            if p.0.is_empty() {
-                                false
-                            } else {
-                                let path_path = p.0.iter().nth(0).unwrap();
-                                path_path == path || path_path == "*"
-                            }
-                        })
-                        .map(|p| (p.0.to_vec(), p.1))
-                        .collect();
-
-                    if !matching_routes.is_empty() {
-                        matching_routes
-                            .iter()
-                            .map(|p| (p.0.to_vec().into_iter().skip(1).collect(), p.1))
-                            .collect()
-                    } else {
-                        match acc.iter().find(|p| p.0.is_empty()) {
-                            Some(matching_route) if !strict_mode => {
-                                matched = true;
-                                let mut results = Vec::new();
-                                results.push((matching_route.0.to_vec(), matching_route.1));
-                                results
-                            }
-                            _ => Vec::new(),
-                        }
-                    }
-                }
-            })
-            .into_iter()
-            .map(|f| f.1)
-            .collect()
-    }
-}
-
-fn get_pages<'a>(
-    router_pages: &'a Vec<RouterCmsPage>,
-    exact: bool,
-) -> Vec<(String, &'a RouterCmsPage)> {
-    router_pages
-        .into_iter()
-        .filter(|p| p.exact == exact)
-        .map(|p| (p.path.clone(), p))
-        .collect()
-}
-
-fn not_visible_page() -> Result<Response<Full<Bytes>>, DaikokuCliError> {
-    Ok(Response::new(Full::new(Bytes::from("NOT VISIBLE"))))
-}
-
 async fn watcher(
     req: Request<hyper::body::Incoming>,
+    project: Option<Project>,
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     let uri = req.uri().path().to_string();
 
@@ -194,7 +105,7 @@ async fn watcher(
 
         logger::println(format!("<green>Request received</> {}", &path));
 
-        let Summary { pages } = read_cms_pages()?;
+        let Summary { pages } = read_cms_pages(project)?;
 
         let mut router_pages = vec![];
 
@@ -206,7 +117,6 @@ async fn watcher(
         });
 
         match pages.iter().find(|page| page.path() == path) {
-            Some(page) if !page.visible() => not_visible_page(),
             Some(page) => render_page(page, path).await,
             None => {
                 let strict_page = get_matching_routes(&path, get_pages(&router_pages, true), true);
@@ -217,25 +127,24 @@ async fn watcher(
                     get_matching_routes(&path, get_pages(&router_pages, false), false)
                 };
 
-                println!("{:?}", result_page);
-
-                match result_page.iter().nth(0) {
-                    None => {
-                        render_page(pages.iter().find(|p| p.path() == "/404").unwrap(), path).await
-                    }
-                    Some(res) => {
-                        render_page(pages.iter().find(|p| p.path() == res.path).unwrap(), path)
-                            .await
+                if result_page.is_empty() {
+                    Ok(Response::new("404 page not found".into()))
+                } else {
+                    match result_page.iter().nth(0) {
+                        None => match pages.iter().find(|p| p.path() == "/404") {
+                            Some(page) => render_page(page, path).await,
+                            None => Ok(Response::new("404 page not found".into())),
+                        },
+                        Some(res) => {
+                            render_page(pages.iter().find(|p| p.path() == res.path).unwrap(), path)
+                                .await
+                        }
                     }
                 }
             }
         }
     }
 }
-
-// fn full<T: Into<Bytes>>(chunk: T) -> BoxBody<Bytes, Infallible> {
-//     Full::new(chunk.into()).boxed()
-// }
 
 async fn forward_api_call(
     uri: String,
@@ -365,9 +274,12 @@ async fn render_page(
 
     let url: String = format!("http://{}/_{}?force_reloading=true", host, watch_path);
 
+    let cookie = read_cookie_from_environment()?;
+
     let req = Request::builder()
         .method(Method::POST)
         .uri(&url)
+        .header(header::COOKIE, format!("daikoku-session={}", cookie))
         .header(header::HOST, host)
         .header(header::CONTENT_TYPE, "application/json")
         .body(Full::new(body))
@@ -428,4 +340,95 @@ async fn render_page(
 
         Ok(response)
     }
+}
+
+fn get_matching_routes<'a>(
+    path: &'a String,
+    cms_paths: Vec<(String, &'a RouterCmsPage)>,
+    strict_mode: bool,
+) -> Vec<&'a RouterCmsPage> {
+    let str = path.clone().replace("/_", "");
+    let paths = str
+        .split("/")
+        .filter(|p| !p.is_empty())
+        .collect::<Vec<&str>>();
+
+    if paths.is_empty() {
+        vec![]
+    } else {
+        let mut matched = false;
+
+        let mut init: Vec<(Vec<String>, &RouterCmsPage)> = vec![];
+
+        cms_paths.iter().for_each(|r| {
+            let page = r.1;
+
+            let mut current_path: Vec<String> =
+                r.0.replace("/_/", "")
+                    .split("/")
+                    .map(String::from)
+                    .collect();
+
+            let path_suffix = if page.exact { "" } else { "*" }.to_string();
+
+            current_path.push(path_suffix);
+            current_path = current_path.into_iter().filter(|p| !p.is_empty()).collect();
+
+            if !current_path.is_empty() {
+                init.push((current_path, page))
+            }
+        });
+
+        paths
+            .iter()
+            .fold(init, |acc: Vec<(Vec<String>, &RouterCmsPage)>, path| {
+                if acc.is_empty() || matched {
+                    acc
+                } else {
+                    let matching_routes: Vec<(Vec<String>, &RouterCmsPage)> = acc
+                        .iter()
+                        .filter(|p| {
+                            if p.0.is_empty() {
+                                false
+                            } else {
+                                let path_path = p.0.iter().nth(0).unwrap();
+                                path_path == path || path_path == "*"
+                            }
+                        })
+                        .map(|p| (p.0.to_vec(), p.1))
+                        .collect();
+
+                    if !matching_routes.is_empty() {
+                        matching_routes
+                            .iter()
+                            .map(|p| (p.0.to_vec().into_iter().skip(1).collect(), p.1))
+                            .collect()
+                    } else {
+                        match acc.iter().find(|p| p.0.is_empty()) {
+                            Some(matching_route) if !strict_mode => {
+                                matched = true;
+                                let mut results = Vec::new();
+                                results.push((matching_route.0.to_vec(), matching_route.1));
+                                results
+                            }
+                            _ => Vec::new(),
+                        }
+                    }
+                }
+            })
+            .into_iter()
+            .map(|f| f.1)
+            .collect()
+    }
+}
+
+fn get_pages<'a>(
+    router_pages: &'a Vec<RouterCmsPage>,
+    exact: bool,
+) -> Vec<(String, &'a RouterCmsPage)> {
+    router_pages
+        .into_iter()
+        .filter(|p| p.exact == exact)
+        .map(|p| (p.path.clone(), p))
+        .collect()
 }

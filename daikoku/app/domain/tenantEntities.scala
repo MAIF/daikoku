@@ -558,8 +558,8 @@ case class CmsFile(name: String, content: String, metadata: Map[String, JsValue]
     def contentType(): String = metadata.getOrElse("_content_type", JsString("")).as[String]
 
     def authenticated(): Boolean = Json.parse(metadata.getOrElse("_authenticated", JsString("false")).as[String]).as[Boolean]
-    def visible(): Boolean = Json.parse(metadata.getOrElse("_visible", JsString("false")).as[String]).as[Boolean]
-    def exact(): Boolean = Json.parse(metadata.getOrElse("_exact", JsString("false")).as[String]).as[Boolean]
+    def visible(): Boolean = Json.parse(metadata.getOrElse("_visible", JsString("true")).as[String]).as[Boolean]
+    def exact(): Boolean = Json.parse(metadata.getOrElse("_exact", JsString("true")).as[String]).as[Boolean]
 
     def toCmsPage(tenantId: TenantId): CmsPage = {
       CmsPage(

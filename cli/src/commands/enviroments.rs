@@ -3,31 +3,27 @@ use crate::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
     },
-    ConfigCommands,
+    EnvironmentsCommands,
 };
 use configparser::ini::Ini;
-use home::env;
-use std::{
-    io,
-    path::{Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
 use super::projects;
 
-pub(crate) fn run(command: ConfigCommands) -> DaikokuResult<()> {
+pub(crate) fn run(command: EnvironmentsCommands) -> DaikokuResult<()> {
     match command {
-        ConfigCommands::Clear {} => clear(),
-        ConfigCommands::Add {
+        EnvironmentsCommands::Clear {} => clear(),
+        EnvironmentsCommands::Add {
             name,
             server,
             token,
             overwrite,
         } => add(name, server, token, overwrite.unwrap_or(false)),
-        ConfigCommands::Default { name } => update_default(name),
-        ConfigCommands::Delete { name } => delete(name),
-        ConfigCommands::Env { name } => get(name),
-        ConfigCommands::List {} => list(),
-        ConfigCommands::PathDefault { token } => patch_default(token),
+        EnvironmentsCommands::Default { name } => update_default(name),
+        EnvironmentsCommands::Delete { name } => delete(name),
+        EnvironmentsCommands::Env { name } => get(name),
+        EnvironmentsCommands::List {} => list(),
+        EnvironmentsCommands::PathDefault { token } => patch_default(token),
     }
 }
 
@@ -151,7 +147,7 @@ fn patch_default(token: String) -> DaikokuResult<()> {
 }
 
 pub(crate) fn read_cookie_from_environment() -> DaikokuResult<String> {
-    let mut config: Ini = read()?;
+    let config: Ini = read()?;
 
     if let Some(environment) = config.get("default", "environment") {
         config

@@ -18,9 +18,9 @@ struct Cli {
 
 #[derive(Debug, Subcommand)]
 pub enum Commands {
-    /// get installed version
+    /// Get installed version
     Version {},
-    /// Initialize a cms folder
+    /// Initialize a new CMS project from template at specific path. Currently adding project as default project
     #[command()]
     Create {
         /// The template to clone
@@ -32,41 +32,37 @@ pub enum Commands {
             require_equals = true,
         )]
         template: Option<String>,
-        /// The plugin name
+        /// Project name
         #[arg(value_name = "NAME", short = 'n', long = "name", required = false)]
         name: String,
-        /// The path where initialize the plugin
+        /// Path where initialize the project
         #[arg(value_name = "PATH", short = 'p', long = "path", required = false)]
         path: Option<String>,
     },
+    /// Add a token to the current project. The token must be pasted from your Daikoku profile page.
     Login {
         #[arg(
             value_name = "TOKEN",
             short = 't',
             long = "token",
-            require_equals = true,
+            require_equals = true
         )]
-        token: String
+        token: String,
     },
-    ///
+    /// Watch project changes and serve pages on :3333 (or on WATCHING_PORT=)
     #[command()]
     Watch {
-        /// The remote to target
-        #[arg(value_name = "PATH", short = 'p', long = "path", required = false)]
-        path: Option<String>,
-        /// The server to build
-        #[arg(value_name = "SERVER", short = 's', long = "server", required = false)]
-        server: Option<String>,
-        /// client id
-        #[arg(value_name = "CLIENT_ID", long = "clientId", required = false)]
-        client_id: Option<String>,
-        /// client secret
-        #[arg(value_name = "CLIENT_SECRET", long = "clientSecret", required = false)]
-        client_secret: Option<String>,
+        #[arg(
+            value_name = "PROJECT",
+            short = 'p',
+            long = "project",
+            required = false
+        )]
+        project: Option<String>,
     },
-    Config {
+    Environment {
         #[command(subcommand)]
-        command: ConfigCommands,
+        command: EnvironmentsCommands,
     },
     Projects {
         #[command(subcommand)]
@@ -115,7 +111,7 @@ pub enum SourceCommands {
 }
 
 #[derive(Debug, Subcommand)]
-pub enum ConfigCommands {
+pub enum EnvironmentsCommands {
     Add {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
@@ -131,9 +127,9 @@ pub enum ConfigCommands {
             value_name = "TOKEN",
             short = 't',
             long = "token",
-            require_equals = true,
+            require_equals = true
         )]
-        token: String
+        token: String,
     },
     Clear {},
     Default {
@@ -181,24 +177,9 @@ async fn process(command: Commands) -> DaikokuResult<()> {
             name,
             path,
         } => commands::creation::run(template, name, path.map(|p| absolute_path(p).unwrap())).await,
-        Commands::Watch {
-            path,
-            server,
-            client_id,
-            client_secret,
-        } => {
-            commands::watch::run(
-                path.map(|p| absolute_path(p).unwrap()),
-                server,
-                client_id,
-                client_secret,
-            )
-            .await;
-            Ok(())
-        }
-        Commands::Config { command } => commands::configuration::run(command),
+        Commands::Watch { project } => commands::watch::run(project).await,
+        Commands::Environment { command } => commands::enviroments::run(command),
         Commands::Projects { command } => commands::projects::run(command),
-
         Commands::Login { token } => commands::login::run(token).await,
     }
 }

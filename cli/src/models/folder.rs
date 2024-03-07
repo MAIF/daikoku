@@ -3,12 +3,10 @@ use walkdir::WalkDir;
 
 use std::{
     collections::HashMap,
-    fs::{self, DirEntry},
+    fs::{self},
     path::PathBuf,
     str::FromStr,
 };
-
-pub(crate) const FOLDER_NAMES: [&str; 5] = ["pages", "styles", "scripts", "data", "blocks"];
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub(crate) struct CmsFile {
@@ -38,17 +36,6 @@ impl CmsFile {
             .get(&key)
             .map(|str| str.parse().unwrap_or(false))
             .unwrap_or(false)
-    }
-
-    pub(crate) fn authenticated(&self) -> bool {
-        self.bool("_authenticated".to_string())
-    }
-
-    pub(crate) fn visible(&self) -> bool {
-        self.metadata
-            .get("_visible")
-            .map(|str| str.parse().unwrap_or(true))
-            .unwrap_or(true)
     }
 
     pub(crate) fn exact(&self) -> bool {

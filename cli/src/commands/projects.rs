@@ -1,4 +1,7 @@
-use std::{collections::HashMap, path::{Path, PathBuf}};
+use std::{
+    collections::HashMap,
+    path::{Path, PathBuf},
+};
 
 use configparser::ini::Ini;
 
@@ -14,7 +17,7 @@ use crate::{
 #[derive(Clone)]
 pub(crate) struct Project {
     pub(crate) path: String,
-    pub(crate) name: String,
+    // name: String,
 }
 
 pub(crate) fn run(command: ProjectCommands) -> DaikokuResult<()> {
@@ -50,7 +53,9 @@ pub(crate) fn get_default_project() -> DaikokuResult<Project> {
     ))?;
 
     match (&project["name"], &project["path"]) {
-        (Some(name), Some(path)) => Ok(Project { name: name.to_string(), path: path.to_string() }),
+        (Some(_name), Some(path)) => Ok(Project { 
+            // name: name.to_string(), 
+            path: path.to_string() }),
         (_, _) => Err(DaikokuCliError::Configuration(
             "missing default project or values in project. Specify a default project to use. See projects commands"
                 .to_string(),
@@ -82,7 +87,7 @@ fn add(name: String, path: String, overwrite: bool) -> DaikokuResult<()> {
     match config.write(&get_path()?) {
         Ok(()) => {
             logger::println("<green>New entry</> added".to_string());
-            let _ = get(name);
+            let _ = get_project(name);
             Ok(())
         }
         Err(err) => Err(DaikokuCliError::Configuration(err.to_string())),
@@ -104,31 +109,38 @@ fn update_default(name: String) -> DaikokuResult<()> {
     match config.write(&get_path()?) {
         Ok(()) => {
             logger::println("<green>Defaut</> updated".to_string());
-            let _ = get("default".to_string());
+            let _ = get_project("default".to_string());
             Ok(())
         }
         Err(err) => Err(DaikokuCliError::Configuration(err.to_string())),
     }
 }
 
-fn get(name: String) -> DaikokuResult<()> {
-    let config: Ini = read(false)?;
+pub(crate) fn get_project(name: String) -> DaikokuResult<Project> {
+    let config = read(false)?;
 
-    let values = config
-        .get_map()
-        .map(Ok)
-        .unwrap_or(Err(DaikokuCliError::Configuration(
-            "failed to access projects file".to_string(),
-        )))?;
+    let projects = config.get_map().ok_or(DaikokuCliError::Configuration(
+        "missing project or values in project.".to_string(),
+    ))?;
 
-    match values.get(&name) {
-        Some(value) => {
-            logger::info(serde_json::to_string_pretty(&value).unwrap());
-            Ok(())
+    match projects.get(&name) {
+        Some(project) => match (&project["name"], &project["path"]) {
+            (Some(_name), Some(path)) => {
+                logger::info(serde_json::to_string_pretty(&project).unwrap());
+                Ok(Project {
+                    // name: name.to_string(),
+                    path: path.to_string(),
+                })
+            }
+            (_, _) => Err(DaikokuCliError::Configuration(
+                "missing project or values in project.".to_string(),
+            )),
+        },
+        None => {
+            return Err(DaikokuCliError::Configuration(
+                "project is missing".to_string(),
+            ))
         }
-        None => Err(DaikokuCliError::Configuration(
-            "failed to access value".to_string(),
-        )),
     }
 }
 
@@ -201,9 +213,9 @@ fn read(last_attempt: bool) -> DaikokuResult<Ini> {
 
 fn clear() -> DaikokuResult<()> {
     let mut config = Ini::new();
-    
+
     config.clear();
-    
+
     match config.write(&get_path()?) {
         Ok(_) => {
             logger::println("<green>Environments erased</>".to_string());
