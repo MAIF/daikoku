@@ -8,6 +8,7 @@ import { ModalContext, useUserBackOffice } from '../../../contexts';
 import { I18nContext, updateUser } from '../../../core';
 import * as Services from '../../../services';
 import { IState, ITenant } from '../../../types';
+import { BeautifulTitle } from '../../utils';
 
 const TwoFactorAuthentication = ({
   user
@@ -293,6 +294,8 @@ export const MyProfile = () => {
   const [user, setUser] = useState();
   const [tab, setTab] = useState('infos');
 
+  const [token, setToken] = useState("");
+
   const tenant = useSelector<IState, ITenant>((state) => state.context.tenant);
   const dispatch = useDispatch();
 
@@ -440,6 +443,14 @@ export const MyProfile = () => {
               <Translation i18nkey="Security">AccountSecurity</Translation>
             </span>
           </li>
+          <li className="nav-item">
+            <span
+              className={`nav-link cursor-pointer ${tab === 'cms_cli' ? 'active' : ''}`}
+              onClick={() => setTab('cms_cli')}
+            >
+              <Translation i18nkey="CMS CLI">CMS CLI</Translation>
+            </span>
+          </li>
         </ul>
         {tab === 'infos' && (
           <Form
@@ -517,6 +528,30 @@ export const MyProfile = () => {
             </div>
           </div>
         )}
+
+        {tab === "cms_cli" && <div>
+          <button
+            type="button"
+            className="btn btn-sm btn-access-negative ms-1"
+            onClick={() => {
+              fetch('/api/cms/session', {
+                credentials: 'include'
+              })
+                .then(r => r.json())
+                .then(data => {
+                  setToken(data.token);
+
+                  if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(`daikokucli config add --token=${data.token}`);
+                  }
+                })
+            }}
+          >
+            Reset
+          </button>
+
+          <textarea value={`daikokucli config add --token=${token}`} />
+        </div>}
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ use crate::{
     ConfigCommands,
 };
 use configparser::ini::Ini;
+use home::env;
 use std::{
     io,
     path::{Path, PathBuf},
@@ -19,14 +20,14 @@ pub(crate) fn run(command: ConfigCommands) -> DaikokuResult<()> {
         ConfigCommands::Add {
             name,
             server,
-            secured,
-            apikey,
+            token,
             overwrite,
-        } => add(name, server, secured, apikey, overwrite.unwrap_or(false)),
+        } => add(name, server, token, overwrite.unwrap_or(false)),
         ConfigCommands::Default { name } => update_default(name),
         ConfigCommands::Delete { name } => delete(name),
         ConfigCommands::Env { name } => get(name),
         ConfigCommands::List {} => list(),
+        ConfigCommands::PathDefault { token } => patch_default(token),
     }
 }
 
@@ -67,13 +68,7 @@ fn clear() -> DaikokuResult<()> {
     }
 }
 
-fn add(
-    name: String,
-    server: String,
-    secured: Option<bool>,
-    apikey: String,
-    overwrite: bool,
-) -> DaikokuResult<()> {
+fn add(name: String, server: String, token: String, overwrite: bool) -> DaikokuResult<()> {
     logger::loading("<yellow>Patching</> configuration".to_string());
     let mut config: Ini = read()?;
 
@@ -90,16 +85,9 @@ fn add(
     }
 
     config.set(&name, "server", Some(server));
-    config.set(
-        &name,
-        "secured",
-        Some(
-            secured
-                .map(|p| p.to_string())
-                .unwrap_or("false".to_string()),
-        ),
-    );
-    config.set(&name, "apikey", Some(apikey));
+    config.set(&name, "token", Some(token));
+
+    config.set("default", "environment", Some(name.clone()));
 
     match config.write(&get_path()?) {
         Ok(()) => {
@@ -134,6 +122,48 @@ fn update_default(name: String) -> DaikokuResult<()> {
             Ok(())
         }
         Err(err) => Err(DaikokuCliError::Configuration(err.to_string())),
+    }
+}
+
+fn patch_default(token: String) -> DaikokuResult<()> {
+    logger::loading("<yellow>Patching</> default environment".to_string());
+    let mut config: Ini = read()?;
+
+    match config.get("default", "environment") {
+        None => {
+            return Err(DaikokuCliError::Configuration(
+                "no default environment is configured".to_string(),
+            ))
+        }
+        Some(environment) => {
+            config.set(&environment, "token", Some(token));
+
+            match config.write(&get_path()?) {
+                Ok(()) => {
+                    logger::println("<green>Defaut</> updated".to_string());
+                    let _ = get(environment);
+                    Ok(())
+                }
+                Err(err) => Err(DaikokuCliError::Configuration(err.to_string())),
+            }
+        }
+    }
+}
+
+pub(crate) fn read_cookie_from_environment() -> DaikokuResult<String> {
+    let mut config: Ini = read()?;
+
+    if let Some(environment) = config.get("default", "environment") {
+        config
+            .get(&environment, "token")
+            .map(Ok)
+            .unwrap_or(Err(DaikokuCliError::Configuration(
+                "missing token on default environment".to_string(),
+            )))
+    } else {
+        Err(DaikokuCliError::Configuration(
+            "missing default environment".to_string(),
+        ))
     }
 }
 

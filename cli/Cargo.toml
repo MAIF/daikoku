@@ -6,13 +6,13 @@ authors = ["Zwiterrion <etienne.anne@icloud.com>"]
 license = "MIT OR Apache-2.0"
 description = "A CLI to create and build WASM binaries"
 readme = "README.md"
-homepage = "https://github.com/MAIF/wasmo"
-repository = "https://github.com/MAIF/wasmo"
+homepage = "https://github.com/MAIF/daikoku/tree/cli"
+repository = "https://github.com/MAIF/daikoku/tree/cli"
 keywords = ["cli", "wasm", "build", "webassembly"]
 categories = ["command-line-utilities"]
 
 [[bin]]
-name = "wasmo"
+name = "daikokucli"
 path = "src/bin.rs"
 
 [dependencies]

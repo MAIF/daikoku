@@ -1,0 +1,51 @@
+<div class="row">
+    {{#daikoku-plans "{{daikoku-path-param '0'}}"}}
+    <div class="card bg-light mb-3" style="max-width: 15rem; margin: 6px; padding: 0">
+      <div class="card-header">{{getOrElse "{{plan.customName}}" "Un plan"}}</div>
+      <div class="card-body">
+        <h4 class="card-title">{{plan.type}}</h4>
+        <p class="card-text">
+          {{#ifeq "{{plan.type}}" "FreeWithoutQuotas"}}
+          You'll pay nothing and do whatever you want :)
+          {{/ifeq}}
+          {{#ifeq "{{plan.type}}" "FreeWithQuotas"}}
+          You'll pay nothing but you'll have {{maxPerMonth}} authorized requests per month
+          {{/ifeq}}
+          {{#ifeq "{{plan.type}}" "QuotasWithLimits"}}
+          You'll pay {{costPerMonth}} and you'll have {{maxPerMonth}} authorized requests per month
+          {{/ifeq}}
+          {{#ifeq "{{plan.type}}" "QuotasWithoutLimits"}}
+          You'll pay {{costPerMonth}} and you'll be charged {{costPerAdditionalRequest}} per additional request
+          {{/ifeq}}
+          {{#ifeq "{{plan.type}}" "PayPerUse"}}
+          You'll pay {{costPerMonth}} per month and you'll be charged {{costPerRequest}} per request
+          {{/ifeq}}
+        </p>
+      </div>
+      <div class="card-body">
+          <div><span class="plan-quotas">Limites : appels illimités</span></div>
+          <div><span class="plan-pricing">Tarif : {{plan.billingDuration.value}} {{plan.currency.code}}/{{plan.billingDuration.unit}}</span></div>
+      </div>
+      <div class="alert alert-dismissible alert-danger" style="display: none" id="subscription-error-{{plan._id}}">
+        
+      </div>
+      <div class="alert alert-dismissible alert-success" style="display: none" id="subscription-success-{{plan._id}}">
+        <div style="row">
+          <span>Api key id :</span>
+          <span id="subscription-success-key-{{plan._id}}"></span>
+        </div>
+        <div style="row">
+          <span>Api key secret :</span>
+          <span id="subscription-success-secret-{{plan._id}}"></span>
+        </div>
+      </div>
+      <div class="d-flex justify-content-between align-items-center mx-auto">
+          <button type="button" class="btn btn-primary" onclick="askForApiKey(&quot;{{api._id}}&quot;,&quot;{{plan._id}}&quot;)">
+            Get an api key
+          </button>
+      </div>
+    </div>
+    {{/daikoku-plans}}
+    
+    <script src="{{daikoku-page-url "6204edef290100e89f5d2d35"}}"></script>
+</div>

@@ -1036,7 +1036,6 @@ case class CmsPage(
   private def cmsFindByIdNotDeleted(ctx: DaikokuActionMaybeWithoutUserContext[_],
                         id: String,
                         req: Option[CmsRequestRendering])(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
-    println("cmsFindByIdNotDeleted", id)
     req match {
       case Some(value) => value.content
         .find(_.path() == id)
@@ -1130,7 +1129,6 @@ case class CmsPage(
       jsonToCombine: Map[String, JsValue],
       req: Option[CmsRequestRendering]
   )(implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi) = {
-    println("daikoku-template-wrapper", id, parentId)
     cmsFindByIdNotDeleted(ctx, id, req) match {
       case None => "page not found"
       case Some(page) =>
@@ -1169,7 +1167,6 @@ case class CmsPage(
           jsonToCombine,
           req = req
         )
-        println("rendering wrapper with", outFields)
         Await.result(
           page
             .render(
@@ -1514,7 +1511,6 @@ case class CmsPage(
     }
 
   private def searchCmsFile(req: CmsRequestRendering, page: CmsPage): Option[CmsFile] = {
-//    println("search cms file", req.content.map(_.path()), page.path)
      req.content.find(p => p.path() == page.path.getOrElse(""))
   }
 
@@ -1532,9 +1528,6 @@ case class CmsPage(
       case None => this
     }
     try {
-
-//      println(s"rendering ${page.name}")
-
       import com.github.jknack.handlebars.EscapingStrategy
       implicit val ec = CmsPage.pageRenderingEc
 

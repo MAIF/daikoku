@@ -3,3 +3,4 @@ pub mod configuration;
 pub mod version;
 pub mod creation;
 pub mod projects;
+pub mod login;

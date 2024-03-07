@@ -442,6 +442,19 @@ class HomeController(
       }
     }
 
+  def session() = DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent("@{user.name} get session")
+      )(ctx.tenant.id.value, ctx) { (tenant, _) =>
+        {
+          val token = ctx.request.cookies.get("daikoku-session").map(_.value).getOrElse("")
+          FastFuture.successful(
+            Ok(Json.obj("token" -> token))
+          )
+        }
+      }
+    }
+
   def cmsDiffById(id: String, diffId: String) =
     DaikokuAction.async { ctx =>
       TenantAdminOnly(AuditTrailEvent("@{user.name} has get a cms diff"))(

@@ -3,8 +3,6 @@ mod logging;
 mod models;
 mod utils;
 
-use std::{collections::HashMap, io::Read, iter::Map};
-
 use clap::{Parser, Subcommand};
 use logging::{error::DaikokuResult, logger};
 use utils::absolute_path;
@@ -40,6 +38,15 @@ pub enum Commands {
         /// The path where initialize the plugin
         #[arg(value_name = "PATH", short = 'p', long = "path", required = false)]
         path: Option<String>,
+    },
+    Login {
+        #[arg(
+            value_name = "TOKEN",
+            short = 't',
+            long = "token",
+            require_equals = true,
+        )]
+        token: String
     },
     ///
     #[command()]
@@ -114,12 +121,19 @@ pub enum ConfigCommands {
         name: String,
         #[arg(value_name = "SERVER", short = 's', long = "server")]
         server: String,
-        #[arg(value_name = "SECURED", long = "secured", required = false)]
-        secured: Option<bool>,
-        #[arg(value_name = "APIKEY", short = 'a', long = "apikey")]
-        apikey: String,
+        #[arg(value_name = "TOKEN", short = 'a', long = "token")]
+        token: String,
         #[arg(value_name = "OVERWRITE", long = "overwrite", required = false)]
         overwrite: Option<bool>,
+    },
+    PathDefault {
+        #[arg(
+            value_name = "TOKEN",
+            short = 't',
+            long = "token",
+            require_equals = true,
+        )]
+        token: String
     },
     Clear {},
     Default {
@@ -184,6 +198,8 @@ async fn process(command: Commands) -> DaikokuResult<()> {
         }
         Commands::Config { command } => commands::configuration::run(command),
         Commands::Projects { command } => commands::projects::run(command),
+
+        Commands::Login { token } => commands::login::run(token).await,
     }
 }
 

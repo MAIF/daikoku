@@ -1,9 +1,12 @@
-use std::collections::HashMap;
+use std::any::Any;
+use std::convert::Infallible;
 use std::io::Read;
 use std::path::PathBuf;
+use std::str::FromStr;
 
-use http_body_util::{BodyExt, Full};
-use hyper::body::Bytes;
+use http_body_util::combinators::BoxBody;
+use http_body_util::{BodyExt, Empty, Full};
+use hyper::body::{Body, Bytes};
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper::{header, Method};
@@ -11,12 +14,14 @@ use hyper::{Request, Response};
 
 use hyper_util::rt::TokioIo;
 use serde::{Deserialize, Serialize};
+use serde_json::from_str;
 use tokio::net::{TcpListener, TcpStream};
 
 use crate::logging::error::{DaikokuCliError, DaikokuResult};
 use crate::logging::logger::{self, println};
 use crate::models::folder::{read_contents, read_sources, CmsFile};
 
+use super::configuration::read_cookie_from_environment;
 use super::projects::{self, Project};
 
 #[derive(Debug)]
@@ -182,8 +187,10 @@ async fn watcher(
     req: Request<hyper::body::Incoming>,
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     let uri = req.uri().path().to_string();
+
     if uri.starts_with("/api") {
-        forward_api_call(uri).await
+        println!("forward to api");
+        forward_api_call(uri, req).await
     } else {
         let path = uri.replace("_/", "");
 
@@ -228,17 +235,50 @@ async fn watcher(
     }
 }
 
-async fn forward_api_call(uri: String) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
+// fn full<T: Into<Bytes>>(chunk: T) -> BoxBody<Bytes, Infallible> {
+//     Full::new(chunk.into()).boxed()
+// }
+
+async fn forward_api_call(
+    uri: String,
+    mut req: Request<hyper::body::Incoming>,
+) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     let host = "localhost:9000";
+    let method = req.method().to_string();
 
     let url: String = format!("http://{}{}", host, uri);
-    
-    let req = Request::builder()
-        .method(Method::GET)
+
+    println!("forward to {}", url);
+
+    let cookie = read_cookie_from_environment()?;
+
+    let raw_req = Request::builder()
+        .method(Method::from_str(&method).unwrap())
         .uri(&url)
         .header(header::HOST, host)
-        .body(http_body_util::Empty::<Bytes>::new())
-        .unwrap();
+        .header(header::COOKIE, format!("daikoku-session={}", cookie));
+
+    let req = if method == "GET" {
+        raw_req
+            .body(Empty::<Bytes>::new().boxed())
+            .unwrap()
+    } else {    
+        let mut result: Vec<u8> = Vec::new();
+    
+        while let Some(next) = req.frame().await {
+            let frame = next.unwrap();
+            if let Ok(chunk) = frame.into_data() {
+                for b in chunk.bytes() {
+                    (result).push(b.unwrap().clone());
+                }
+            }
+        }
+        let body = Full::new(hyper::body::Bytes::from(result)).boxed();
+        raw_req
+            .header(header::CONTENT_TYPE, "application/json")
+            .body(body)
+            .unwrap()
+    };
 
     let stream = TcpStream::connect(&host)
         .await
@@ -306,8 +346,6 @@ async fn render_page(
 
     let project = projects::get_default_project()?;
 
-    // logger::info("read content".to_string());
-
     let content = read_contents(
         &PathBuf::from(&project.path)
             .into_os_string()
@@ -316,10 +354,6 @@ async fn render_page(
                 DaikokuCliError::Configuration(err.to_str().unwrap_or(&"").to_string())
             })?,
     );
-
-    content.iter().for_each(|f| println!("{:?}", f.metadata));
-
-    // logger::info("got content".to_string());
 
     let body_obj = CmsRequestRendering {
         content,
@@ -334,8 +368,6 @@ async fn render_page(
     let host = "localhost:9000";
 
     let url: String = format!("http://{}/_{}?force_reloading=true", host, watch_path);
-
-    // println!("calling daikoku server {}", url);
 
     let req = Request::builder()
         .method(Method::POST)
@@ -370,7 +402,7 @@ async fn render_page(
 
     let (
         hyper::http::response::Parts {
-            headers, status, ..
+            headers: _, status, ..
         },
         mut body,
     ) = upstream_resp.into_parts();
@@ -385,20 +417,6 @@ async fn render_page(
             }
         }
     }
-
-    // let redirect_location = headers.get::<String>(header::LOCATION.to_string());
-
-    // let location = redirect_location
-    //     .map(|location| {
-    //         format!(
-    //             "{}{}",
-    //             host.to_string(),
-    //             String::from_utf8(location.as_bytes().to_vec()).unwrap()
-    //         )
-    //     })
-    //     .unwrap_or(host.to_string());
-
-    // println!("{:?} - {} - {}", redirect_location, location, status);
 
     let status = status.as_u16();
 

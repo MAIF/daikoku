@@ -1,4 +1,5 @@
-function askForApiKey(api, plan) {  
+function askForApiKey(api, plan) {
+  
   const options = {
     credentials: 'include',
     headers: {
@@ -11,10 +12,13 @@ function askForApiKey(api, plan) {
     .then(r => r.json())
     .then(team => {
       console.log("askForApiKey", api, plan, team)
-      fetch(`/api/apis/${api}/plan/${plan}/team/${team._id}/_subscribe`, {
+      fetch(`/api/apis/${api}/subscriptions`, {
         ...options,
         method: 'POST',
-        body: JSON.stringify({})
+        body: JSON.stringify({
+          plan, 
+          teams: [team._id]
+        })
       })
       .then(r => {
         if(r.status === 200) {
