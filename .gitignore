@@ -25,3 +25,6 @@ daikoku/javascript/index.json
 yalc.lock
 daikoku/javascript/yarn-error.log
 manual/.docusaurus
+cli/cms
+cli/cms2
+cli/testcms
