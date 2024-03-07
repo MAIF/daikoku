@@ -578,7 +578,7 @@ class TeamController(
 
   def pendingMembersOfTeam(teamId: String) =
     DaikokuAction.async { ctx =>
-      TeamAdminOrTenantAdminOnly(
+      TeamMemberOnly(
         AuditTrailEvent(
           s"@{user.name} has accessed list of addable members to team @{team.name} - @{team.id}"
         )
@@ -605,11 +605,11 @@ class TeamController(
             )
           )
         } yield {
-          Ok(
+          Right(Ok(
             Json.obj(
               "pendingUsers" -> JsArray(pendingUsers.map(_.asSimpleJson))
             )
-          )
+          ))
         }
       }
     }
@@ -951,7 +951,7 @@ class TeamController(
 
   def membersOfTeam(teamId: String) =
     DaikokuAction.async { ctx =>
-      TeamAdminOrTenantAdminOnly(
+      TeamMemberOnly(
         AuditTrailEvent(
           s"@{user.name} has accessed the member list of team @{team.name} - @{team.id}"
         )
@@ -965,7 +965,7 @@ class TeamController(
             )
           )
           .map { users =>
-            Ok(JsArray(users.map(_.asSimpleJson)))
+            Right(Ok(JsArray(users.map(_.asSimpleJson))))
           }
       }
     }
@@ -1102,7 +1102,7 @@ class TeamController(
     DaikokuAction.async { ctx =>
       TeamAdminOrTenantAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has removed invitation to ${userId} of team @{team.name} - @{team.id}"
+          s"@{user.name} has removed invitation to $userId of team @{team.name} - @{team.id}"
         )
       )(teamId, ctx) { team =>
         team.`type` match {
@@ -1135,9 +1135,17 @@ class TeamController(
                         )
                       )
                   }
+                case Some(user) if !team.users.exists(_.userId == user.id) =>
+                  env.dataStore.notificationRepo.forTenant(ctx.tenant)
+                    .findOne(Json.obj("action.type" -> "TeamInvitation", "action.user" -> user.id.asJson))
+                    .flatMap {
+                      case Some(n) => env.dataStore.notificationRepo.forTenant(ctx.tenant).deleteById(n.id)
+                        .map(_ => Ok(Json.obj("deleted" -> true)))
+                      case None => FastFuture.successful(BadRequest(Json.obj("error" -> "User isn't invited")))
+                    }
                 case Some(_) =>
                   FastFuture.successful(
-                    BadRequest(Json.obj("error" -> "User isn't invited"))
+                    Conflict(Json.obj("error" -> "User is already member of your team"))
                   )
                 case None =>
                   FastFuture.successful(

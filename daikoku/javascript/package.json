@@ -12,6 +12,7 @@
     "start": "webpack serve --port 3000 --host 0.0.0.0 --live-reload --color --mode development",
     "watch": "webpack --watch --mode development --live-reload -d --color",
     "build": "rm -rf ../public/react-app && mkdir ../public/react-app && webpack --mode production --progress",
+    "test": "playwright test --workers 1 --trace on",
     "cypress": "cypress open",
     "test:cypress": "cypress run --record --key $CYPRESS_RECORD_KEY",
     "cypress:report:merge": "mochawesome-merge cypress/results/json/*.json > cypress/results/index.json",

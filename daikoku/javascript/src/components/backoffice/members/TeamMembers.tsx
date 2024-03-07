@@ -9,12 +9,14 @@ import * as Services from '../../../services';
 import {
   AvatarWithAction,
   Can,
+  CanIDoAction,
   Option,
   PaginatedComponent,
   Spinner,
   administrator,
   apiEditor,
   manage,
+  read,
   team, user
 } from '../../utils';
 
@@ -35,9 +37,13 @@ type TState = {
   members?: Array<IUserSimple>
   search?: string
 }
-export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }) => {
+type TeamMembersSimpleComponentProps = {
+  currentTeam: ITeamSimple,
+  reloadCurrentTeam: () => Promise<void>
+}
+export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: TeamMembersSimpleComponentProps) => {
 
-  const { tenant, connectedUser, reloadContext } = useContext(GlobalContext);
+  const { tenant, connectedUser } = useContext(GlobalContext);
 
   const [state, setState] = useState<TState>({
     pendingUsers: [],
@@ -68,21 +74,8 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }) =
       );
   };
 
-  const isAdmin = (user: IUserSimple) => {
-    if (!currentTeam) {
-      return false;
-    }
-
-    if (user.isDaikokuAdmin) {
-      return true;
-    }
-
-    return Option(currentTeam.users.find((u) => u.userId === user._id))
-      .map((user: TeamUser) => user.teamPermission)
-      .fold(
-        () => false,
-        (perm: TeamPermission) => perm === administrator
-      );
+  const isTeamAdmin = (user: IUserSimple) => {
+    return currentTeam.users.some(u => u.userId === user._id && u.teamPermission === administrator)
   };
 
   const userHavePemission = (user: IUserSimple, permission: TeamPermission) => {
@@ -96,7 +89,7 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }) =
 
   const removeMember = (member: IUserSimple) => {
     if (
-      isAdmin(member) &&
+      isTeamAdmin(member) &&
       currentTeam.users.filter((u) => u.teamPermission === administrator).length === 1
     ) {
       alert({ message: translate('remove.member.alert') });
@@ -143,7 +136,7 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }) =
   };
 
   const togglePermission = (member: IUserSimple, permission: TeamPermission) => {
-    if (isAdmin(connectedUser)) {
+    if (isTeamAdmin(connectedUser) || connectedUser.isDaikokuAdmin) {
       const teamId = currentTeam._id;
       if (
         userHavePemission(member, administrator) &&
@@ -205,17 +198,19 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }) =
     : state.pendingUsers;
   return <>
     <div className="container-fluid" style={{ position: 'relative' }}>
-      <button className="btn btn-success" type="button" onClick={() => {
-        openInvitationTeamModal({
-          team: currentTeam,
-          searchLdapMember: searchLdapMember,
-          members: filteredMembers,
-          invitUser: invitUser,
-          pendingUsers: filteredPending,
-        });
-      }}>
-        {translate('team_member.invit_user')}
-      </button>
+      <Can I={manage} a={team} team={currentTeam}>
+        <button className="btn btn-success" type="button" onClick={() => {
+          openInvitationTeamModal({
+            team: currentTeam,
+            searchLdapMember: searchLdapMember,
+            members: filteredMembers,
+            invitUser: invitUser,
+            pendingUsers: filteredPending,
+          });
+        }}>
+          {translate('team_member.invit_user')}
+        </button>
+      </Can>
       <div className="row">
         <div className="col mt-3 onglets">
           <ul className="nav nav-tabs flex-column flex-sm-row">
@@ -271,7 +266,7 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }) =
         {userHavePemission(member, administrator) && (<i className="fas fa-shield-alt" style={{ marginRight: '10px' }} />)}
         {userHavePemission(member, apiEditor) && (<i className="fas fa-pencil-alt" style={{ marginRight: '10px' }} />)}
         <span className="team-member__name">{member.name}</span>
-      </>} actions={[
+      </>} actions={CanIDoAction(connectedUser, manage, team, currentTeam) ? [
         {
           action: () => removeMember(member),
           iconClass: 'fas fa-trash delete-icon',
@@ -297,30 +292,33 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }) =
           iconClass: 'fas fa-user-cog',
           tooltip: translate('Manage permissions'),
         },
-      ]} />);
+      ] : []} />);
     }} />)}
     {state.tab === TABS.pending &&
       (filteredPending.length > 0 ? (<PaginatedComponent items={sortBy(filteredPending, [(member) => member.name.toLowerCase()])} count={15} formatter={(member) => {
         const invitedUser = member.name === 'invited user';
         return (<AvatarWithAction key={member._id} avatar={member.picture} infos={<span className="team-member__name">
           {invitedUser ? member.email : member.name}
-        </span>} actions={invitedUser
-          ? [
+        </span>} actions={CanIDoAction(connectedUser, manage, team, currentTeam) ?
+          [
             {
               action: () => {
                 confirm({ message: translate('team_member.confirm_remove_invitation') })
-                  //@ts-ignore
                   .then((ok: boolean) => {
                     if (ok)
                       Services.removeInvitation(currentTeam._id, member._id)
+                        .then(response => {
+                          if (isError(response)) {
+                            toast.error(response.error)
+                          }
+                        })
                         .then(() => updateMembers(currentTeam));
                   });
               },
               iconClass: 'fas fa-trash delete-icon',
               tooltip: translate('Remove invitation'),
             },
-          ]
-          : []} />);
+          ] : []} />);
       }} />) : (<div className="p-3">
         <Translation i18nkey="team_member.no_pending_members" />
       </div>))}
@@ -343,8 +341,8 @@ export const TeamMembers = () => {
     return <Spinner />
   } else if (currentTeam && !isError(currentTeam)) {
     return (
-      <Can I={manage} a={team} team={currentTeam} dispatchError={true}>
-        <TeamMembersSimpleComponent currentTeam={currentTeam} reloadCurrentTeam={reloadCurrentTeam}/>
+      <Can I={read} a={team} team={currentTeam} dispatchError={true}>
+        <TeamMembersSimpleComponent currentTeam={currentTeam} reloadCurrentTeam={reloadCurrentTeam} />
       </Can>
     );
   } else {

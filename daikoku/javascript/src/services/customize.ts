@@ -42,7 +42,8 @@ export function customizeFetch(store: any) {
         } else if (status > 299 && status < 400) {
           // nothing to do yet
         } else if (status === 409) {
-          // toast.error('Conflict', 'The resource already exists');
+          return r.json()
+            .then(error => toast.error(error.message))
         } else if (status === 404) {
           // nothing to do yet
         } else if (status >= 500 && status < 600) {
