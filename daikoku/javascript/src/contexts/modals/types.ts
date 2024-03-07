@@ -128,13 +128,13 @@ interface ApiSubscriptionGql extends ISubscriptionCustomization {
   };
   customName: string;
   enabled: boolean;
-  customMetadata: object
-  customMaxPerSecond?: number
-  customMaxPerDay?: number
-  customMaxPerMonth?: number
-  customReadOnly?: boolean
-  adminCustomName?: string
-};
+  customMetadata: object;
+  customMaxPerSecond?: number;
+  customMaxPerDay?: number;
+  customMaxPerMonth?: number;
+  customReadOnly?: boolean;
+  adminCustomName?: string;
+}
 type NotificationGQL = {
   _id: string;
   action: {

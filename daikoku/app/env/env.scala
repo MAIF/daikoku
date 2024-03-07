@@ -407,120 +407,122 @@ class DaikokuEnv(
 
               import scala.concurrent._
 
-              AppLogger.warn("")
-              AppLogger.warn(
-                "Main dataStore seems to be empty, generating initial data ..."
-              )
-              val userId = UserId(IdGenerator.token(32))
-              val administrationTeamId = TeamId("administration")
-              val adminApiDefaultTenantId =
-                ApiId(s"admin-api-tenant-${Tenant.Default.value}")
-              val defaultAdminTeam = Team(
-                id = TeamId(IdGenerator.token),
-                tenant = Tenant.Default,
-                `type` = TeamType.Admin,
-                name = s"default-admin-team",
-                description = s"The admin team for the default tenant",
-                avatar = Some(
-                  s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"
-                ),
-                users = Set(UserWithPermission(userId, Administrator)),
-                authorizedOtoroshiEntities = None
-              )
-              val adminApiDefaultPlan = FreeWithoutQuotas(
-                id = UsagePlanId(IdGenerator.token),
-                tenant = Tenant.Default,
-                billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-                currency = Currency("EUR"),
-                customName = Some("admin"),
-                customDescription = None,
-                otoroshiTarget = None,
-                allowMultipleKeys = Some(true),
-                autoRotation = None,
-                subscriptionProcess = Seq.empty,
-                integrationProcess = IntegrationProcess.ApiKey
-              )
-
-              val adminApiDefaultTenant = Api(
-                id = adminApiDefaultTenantId,
-                tenant = Tenant.Default,
-                team = defaultAdminTeam.id,
-                name = s"admin-api-tenant-${Tenant.Default.value}",
-                lastUpdate = DateTime.now(),
-                smallDescription = "admin api",
-                description = "admin api",
-                currentVersion = Version("1.0.0"),
-                documentation = ApiDocumentation(
-                  id = ApiDocumentationId(IdGenerator.token(32)),
+                AppLogger.warn("")
+                AppLogger.warn(
+                  "Main dataStore seems to be empty, generating initial data ..."
+                )
+                val userId = UserId(IdGenerator.token(32))
+                val administrationTeamId = TeamId("administration")
+                val adminApiDefaultTenantId =
+                  ApiId(s"admin-api-tenant-${Tenant.Default.value}")
+                val defaultAdminTeam = Team(
+                  id = TeamId(IdGenerator.token),
                   tenant = Tenant.Default,
-                  pages = Seq.empty[ApiDocumentationDetailPage],
-                  lastModificationAt = DateTime.now()
-                ),
-                swagger =
-                  Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
-                possibleUsagePlans = Seq(adminApiDefaultPlan.id),
-                visibility = ApiVisibility.AdminOnly,
-                defaultUsagePlan = adminApiDefaultPlan.id.some,
-                authorizedTeams = Seq.empty,
-                state = ApiState.Published
-              )
-              val tenant = Tenant(
-                id = Tenant.Default,
-                name = "Daikoku Default Tenant",
-                domain = config.init.host,
-                defaultLanguage = Some("En"),
-                style = Some(
-                  DaikokuStyle(
-                    title = "Daikoku Default Tenant"
-                  )
-                ),
-                contact = "contact@foo.bar",
-                mailerSettings = Some(ConsoleMailerSettings()),
-                authProvider = AuthProvider.Local,
-                authProviderSettings = Json.obj(
-                  "sessionMaxAge" -> 86400
-                ),
-                bucketSettings = None,
-                otoroshiSettings = Set(),
-                adminApi = adminApiDefaultTenantId
-              )
-              val team = Team(
-                id = TeamId(IdGenerator.token(32)),
-                tenant = tenant.id,
-                `type` = TeamType.Personal,
-                name = s"${config.init.admin.name}",
-                description = s"${config.init.admin.name}'s team",
-                users = Set(UserWithPermission(userId, Administrator)),
-                authorizedOtoroshiEntities = None
-              )
-              val user = User(
-                id = userId,
-                tenants = Set(tenant.id),
-                origins = Set(AuthProvider.Otoroshi),
-                name = config.init.admin.name,
-                email = config.init.admin.email,
-                picture = config.init.admin.email.gravatar,
-                isDaikokuAdmin = true,
-                lastTenant = Some(tenant.id),
-                password = Some(
-                  BCrypt.hashpw(config.init.admin.password, BCrypt.gensalt())
-                ),
-                personalToken = Some(IdGenerator.token(32)),
-                defaultLanguage = None
-              )
-              val initialDataFu = for {
-                _ <- dataStore.tenantRepo.save(tenant)
-                _ <- dataStore.teamRepo.forTenant(tenant.id).save(team)
-                _ <-
-                  dataStore.teamRepo
-                    .forTenant(tenant.id)
-                    .save(defaultAdminTeam)
-                _ <-
-                  dataStore.apiRepo
-                    .forTenant(tenant.id)
-                    .save(adminApiDefaultTenant)
-                _ <- dataStore.userRepo.save(user)
-              } yield ()
+                  `type` = TeamType.Admin,
+                  name = s"default-admin-team",
+                  description = s"The admin team for the default tenant",
+                  avatar = Some(
+                    s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"
+                  ),
+                  users = Set(UserWithPermission(userId, Administrator)),
+                  authorizedOtoroshiEntities = None,
+                  contact = "no-replay@daikoku.io"
+                )
+                val adminApiDefaultPlan = FreeWithoutQuotas(
+                  id = UsagePlanId(IdGenerator.token),
+                  tenant = Tenant.Default,
+                  billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+                  currency = Currency("EUR"),
+                  customName = Some("admin"),
+                  customDescription = None,
+                  otoroshiTarget = None,
+                  allowMultipleKeys = Some(true),
+                  autoRotation = None,
+                  subscriptionProcess = Seq.empty,
+                  integrationProcess = IntegrationProcess.ApiKey
+                )
+
+                val adminApiDefaultTenant = Api(
+                  id = adminApiDefaultTenantId,
+                  tenant = Tenant.Default,
+                  team = defaultAdminTeam.id,
+                  name = s"admin-api-tenant-${Tenant.Default.value}",
+                  lastUpdate = DateTime.now(),
+                  smallDescription = "admin api",
+                  description = "admin api",
+                  currentVersion = Version("1.0.0"),
+                  documentation = ApiDocumentation(
+                    id = ApiDocumentationId(IdGenerator.token(32)),
+                    tenant = Tenant.Default,
+                    pages = Seq.empty[ApiDocumentationDetailPage],
+                    lastModificationAt = DateTime.now()
+                  ),
+                  swagger =
+                    Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
+                  possibleUsagePlans = Seq(adminApiDefaultPlan.id),
+                  visibility = ApiVisibility.AdminOnly,
+                  defaultUsagePlan = adminApiDefaultPlan.id.some,
+                  authorizedTeams = Seq.empty,
+                  state = ApiState.Published
+                )
+                val tenant = Tenant(
+                  id = Tenant.Default,
+                  name = "Daikoku Default Tenant",
+                  domain = config.init.host,
+                  defaultLanguage = Some("En"),
+                  style = Some(
+                    DaikokuStyle(
+                      title = "Daikoku Default Tenant"
+                    )
+                  ),
+                  contact = "contact@foo.bar",
+                  mailerSettings = Some(ConsoleMailerSettings()),
+                  authProvider = AuthProvider.Local,
+                  authProviderSettings = Json.obj(
+                    "sessionMaxAge" -> 86400
+                  ),
+                  bucketSettings = None,
+                  otoroshiSettings = Set(),
+                  adminApi = adminApiDefaultTenantId
+                )
+                val team = Team(
+                  id = TeamId(IdGenerator.token(32)),
+                  tenant = tenant.id,
+                  `type` = TeamType.Personal,
+                  name = s"${config.init.admin.name}",
+                  description = s"${config.init.admin.name}'s team",
+                  users = Set(UserWithPermission(userId, Administrator)),
+                  authorizedOtoroshiEntities = None,
+                  contact = "admin@daikoku.io"
+                )
+                val user = User(
+                  id = userId,
+                  tenants = Set(tenant.id),
+                  origins = Set(AuthProvider.Otoroshi),
+                  name = config.init.admin.name,
+                  email = config.init.admin.email,
+                  picture = config.init.admin.email.gravatar,
+                  isDaikokuAdmin = true,
+                  lastTenant = Some(tenant.id),
+                  password = Some(
+                    BCrypt.hashpw(config.init.admin.password, BCrypt.gensalt())
+                  ),
+                  personalToken = Some(IdGenerator.token(32)),
+                  defaultLanguage = None
+                )
+                val initialDataFu = for {
+                  _ <- dataStore.tenantRepo.save(tenant)
+                  _ <- dataStore.teamRepo.forTenant(tenant.id).save(team)
+                  _ <-
+                    dataStore.teamRepo
+                      .forTenant(tenant.id)
+                      .save(defaultAdminTeam)
+                  _ <-
+                    dataStore.apiRepo
+                      .forTenant(tenant.id)
+                      .save(adminApiDefaultTenant)
+                  _ <- dataStore.userRepo.save(user)
+                } yield ()
 
               Await.result(initialDataFu, 10 seconds)
               AppLogger.warn("")

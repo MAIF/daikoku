@@ -449,7 +449,8 @@ class MockController(
       ),
       users = Set(userWithPermission),
       authorizedOtoroshiEntities = None,
-      verified = true
+      verified = true,
+      contact = email
     )
     val user = User(
       id = userId,

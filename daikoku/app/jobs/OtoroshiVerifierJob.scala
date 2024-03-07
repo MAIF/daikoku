@@ -152,8 +152,10 @@ class OtoroshiVerifierJob(
           }
         )
     }
-    env.dataStore.userRepo.findAllNotDeleted().map(_.filter(_.isDaikokuAdmin)).map {
-      users =>
+    env.dataStore.userRepo
+      .findAllNotDeleted()
+      .map(_.filter(_.isDaikokuAdmin))
+      .map { users =>
         def sendMail(mailer: Mailer, tenant: Tenant): Unit = {
           implicit val language: String = tenant.defaultLanguage.getOrElse("en")
           mailer.send(
@@ -190,7 +192,7 @@ class OtoroshiVerifierJob(
               case Some(tenant) => sendMail(tenant.mailer(env), tenant)
             }
           }
-    }
+      }
   }
 
   private def verifyIfOtoroshiGroupsStillExists(

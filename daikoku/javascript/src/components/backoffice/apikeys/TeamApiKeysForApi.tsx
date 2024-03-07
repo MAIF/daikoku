@@ -292,7 +292,7 @@ const ApiKeyCard = ({
           rawValues
         }: any) => !rawValues.enabled,
         props: { steps: 1, min: 0 },
-        constraints: [constraints.positive()],
+        constraints: [constraints.positive(translate('constraints.positive'))],
       },
       gracePeriod: {
         type: type.number,
@@ -303,7 +303,7 @@ const ApiKeyCard = ({
         }: any) => !rawValues.enabled,
         props: { steps: 1, min: 0 },
         constraints: [
-          constraints.positive(),
+          constraints.positive(translate('constraints.positive')),
           constraints.lessThan(
             constraints.ref<number>('rotationEvery'),
             translate('constraint.apikey.grace.period')

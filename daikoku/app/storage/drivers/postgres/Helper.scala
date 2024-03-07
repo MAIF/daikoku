@@ -188,7 +188,7 @@ object Helper {
             case Some((key: String, _: JsValue)) if key == "$ne" =>
               val (a, b) = _convertTuple(value.fields.head, params)
               (
-                s"(content ->> ${getParam(b.size)} IS NULL OR content->>${getParam(
+                s"(content->>${getParam(
                   b.size
                 )} <> ${getParam(b.size + 1)})",
                 b ++ Seq(

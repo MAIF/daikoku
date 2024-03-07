@@ -93,7 +93,10 @@ object TeamApiKeyVisibility {
     }
 }
 
-case class TeamAuthorizedEntities(otoroshiSettingsId: OtoroshiSettingsId, authorizedEntities: AuthorizedEntities)
+case class TeamAuthorizedEntities(
+    otoroshiSettingsId: OtoroshiSettingsId,
+    authorizedEntities: AuthorizedEntities
+)
 case class Team(
     id: TeamId,
     tenant: TenantId,
@@ -101,7 +104,7 @@ case class Team(
     `type`: TeamType,
     name: String,
     description: String,
-    contact: String = "contact@foo.bar",
+    contact: String,
     avatar: Option[String] = Some("/assets/images/daikoku.svg"),
     users: Set[UserWithPermission] = Set.empty,
     authorizedOtoroshiEntities: Option[Seq[TeamAuthorizedEntities]] = None,
@@ -138,7 +141,7 @@ case class Team(
       "authorizedOtoroshiEntities" -> authorizedOtoroshiEntities
         .map(json.SeqTeamAuthorizedEntitiesFormat.writes)
         .getOrElse(JsNull)
-        .as[JsValue],
+        .as[JsValue]
     )
   }
   def includeUser(userId: UserId): Boolean = {

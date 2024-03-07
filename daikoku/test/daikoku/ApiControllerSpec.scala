@@ -760,15 +760,23 @@ class ApiControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin),
         apis = Seq(defaultApi.api.copy(possibleUsagePlans = Seq.empty)),
-        teams = Seq(teamConsumer, teamOwner.copy(
-          authorizedOtoroshiEntities = Some(Seq(
-            TeamAuthorizedEntities(
-              OtoroshiSettingsId("wiremock"),
-              AuthorizedEntities(
-                services = Set(OtoroshiServiceId("s_auth")),
-                groups = Set(OtoroshiServiceGroupId("g_auth")),
-                routes = Set(OtoroshiRouteId("r_auth"))
-              )))))),
+        teams = Seq(
+          teamConsumer,
+          teamOwner.copy(
+            authorizedOtoroshiEntities = Some(
+              Seq(
+                TeamAuthorizedEntities(
+                  OtoroshiSettingsId("wiremock"),
+                  AuthorizedEntities(
+                    services = Set(OtoroshiServiceId("s_auth")),
+                    groups = Set(OtoroshiServiceGroupId("g_auth")),
+                    routes = Set(OtoroshiRouteId("r_auth"))
+                  )
+                )
+              )
+            )
+          )
+        )
       )
       val planToCreate = UsagePlan.FreeWithoutQuotas(
         id = UsagePlanId(IdGenerator.token),
@@ -821,7 +829,7 @@ class ApiControllerSpec()
             AuthorizedEntities(
               routes = Set(OtoroshiRouteId("r_auth")),
               services = Set(OtoroshiServiceId("s_auth")),
-              groups = Set(OtoroshiServiceGroupId("g_auth")),
+              groups = Set(OtoroshiServiceGroupId("g_auth"))
             )
           )
         )
@@ -834,7 +842,7 @@ class ApiControllerSpec()
                 Json.stringify(
                   Json.arr(
                     Json.obj("id" -> "g_unauth", "name" -> "unauth group"),
-                    Json.obj("id" -> "g_auth", "name" -> "auth group"),
+                    Json.obj("id" -> "g_auth", "name" -> "auth group")
                   )
                 )
               )
@@ -849,7 +857,7 @@ class ApiControllerSpec()
                 Json.stringify(
                   Json.arr(
                     Json.obj("id" -> "r_unauth", "name" -> "unauth route"),
-                    Json.obj("id" -> "r_auth", "name" -> "auth route"),
+                    Json.obj("id" -> "r_auth", "name" -> "auth route")
                   )
                 )
               )
@@ -864,7 +872,7 @@ class ApiControllerSpec()
                 Json.stringify(
                   Json.arr(
                     Json.obj("id" -> "s_unauth", "name" -> "unauth service"),
-                    Json.obj("id" -> "s_auth", "name" -> "auth service"),
+                    Json.obj("id" -> "s_auth", "name" -> "auth service")
                   )
                 )
               )
@@ -874,13 +882,16 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
 
       val respGroupsForOwner = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/groups"
+        path =
+          s"/api/teams/${teamOwnerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/groups"
       )(tenant, session)
       val respRoutesForOwner = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/routes"
+        path =
+          s"/api/teams/${teamOwnerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/routes"
       )(tenant, session)
       val respServicesForOwner = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/services"
+        path =
+          s"/api/teams/${teamOwnerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/services"
       )(tenant, session)
 
       respGroupsForOwner.status mustBe 200
@@ -891,13 +902,16 @@ class ApiControllerSpec()
       respServicesForOwner.json.as[JsArray].value.length mustBe 1
 
       val respGroupsForConsumer = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/groups"
+        path =
+          s"/api/teams/${teamConsumerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/groups"
       )(tenant, session)
       val respRoutesForConsumer = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/routes"
+        path =
+          s"/api/teams/${teamConsumerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/routes"
       )(tenant, session)
       val respServicesForConsumer = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/services"
+        path =
+          s"/api/teams/${teamConsumerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/services"
       )(tenant, session)
 
       respGroupsForConsumer.status mustBe 200
@@ -911,7 +925,10 @@ class ApiControllerSpec()
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan",
         method = "POST",
-        body = planToCreate.copy(otoroshiTarget = otoroshitargetWithUnauthRoute).asJson.some
+        body = planToCreate
+          .copy(otoroshiTarget = otoroshitargetWithUnauthRoute)
+          .asJson
+          .some
       )(tenant, session)
       respUnauthRoute.status mustBe 401
 
@@ -919,7 +936,10 @@ class ApiControllerSpec()
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan",
         method = "POST",
-        body = planToCreate.copy(otoroshiTarget = otoroshitargetWithUnauthGroup).asJson.some
+        body = planToCreate
+          .copy(otoroshiTarget = otoroshitargetWithUnauthGroup)
+          .asJson
+          .some
       )(tenant, session)
       respUnauthGroup.status mustBe 401
 
@@ -927,7 +947,10 @@ class ApiControllerSpec()
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan",
         method = "POST",
-        body = planToCreate.copy(otoroshiTarget = otoroshitargetWithUnauthService).asJson.some
+        body = planToCreate
+          .copy(otoroshiTarget = otoroshitargetWithUnauthService)
+          .asJson
+          .some
       )(tenant, session)
       respUnauthService.status mustBe 401
 
@@ -935,7 +958,10 @@ class ApiControllerSpec()
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan",
         method = "POST",
-        body = planToCreate.copy(otoroshiTarget = otoroshitargetWithAuthEntities).asJson.some
+        body = planToCreate
+          .copy(otoroshiTarget = otoroshitargetWithAuthEntities)
+          .asJson
+          .some
       )(tenant, session)
       respAuthEntities.status mustBe 201
     }

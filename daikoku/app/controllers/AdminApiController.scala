@@ -19,7 +19,7 @@ import io.vertx.pgclient.PgPool
 import org.apache.pekko.Done
 import org.apache.pekko.stream.scaladsl.Source
 import play.api.http.HttpEntity
-import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
+import play.api.libs.json.{JsArray, JsNull, JsObject, JsValue, Json}
 import play.api.libs.streams.Accumulator
 import play.api.mvc._
 import storage.drivers.postgres.PostgresDataStore
@@ -455,6 +455,25 @@ class ApiAdminApiController(
           .findOne(
             Json.obj(
               "_id" -> Json.obj("$ne" -> entity.id.asJson),
+              "$or" -> Json.arr(
+                Json.obj(
+                  "_id" -> Json.obj(
+                    "$ne" -> entity.parent
+                      .map(_.asJson)
+                      .getOrElse(JsNull)
+                      .as[JsValue]
+                  )
+                ),
+                Json.obj("parent" -> Json.obj("$ne" -> entity.id.asJson)),
+                Json.obj(
+                  "parent" -> Json.obj(
+                    "$ne" -> entity.parent
+                      .map(_.asJson)
+                      .getOrElse(entity.id.asJson)
+                      .as[JsValue]
+                  )
+                )
+              ),
               "name" -> entity.name
             )
           )

@@ -1075,8 +1075,8 @@ export const TeamApiPricings = (props: Props) => {
             min: 0,
           },
           constraints: [
-            constraints.positive('constraints.positive'),
-            constraints.integer('constraints.integer'),
+            constraints.positive(translate('constraints.positive')),
+            constraints.integer(translate('constraints.integer')),
           ],
         },
         maxPerDay: {
@@ -1088,8 +1088,8 @@ export const TeamApiPricings = (props: Props) => {
             min: 0,
           },
           constraints: [
-            constraints.positive('constraints.positive'),
-            constraints.integer('constraints.integer'),
+            constraints.positive(translate('constraints.positive')),
+            constraints.integer(translate('constraints.integer')),
           ],
         },
         maxPerMonth: {
@@ -1101,8 +1101,8 @@ export const TeamApiPricings = (props: Props) => {
             min: 0,
           },
           constraints: [
-            constraints.positive('constraints.positive'),
-            constraints.integer('constraints.integer'),
+            constraints.positive(translate('constraints.positive')),
+            constraints.integer(translate('constraints.integer')),
           ],
         },
       },
@@ -1134,19 +1134,19 @@ export const TeamApiPricings = (props: Props) => {
       type: type.number,
       label: ({ rawValues }) => translate(`Cost per ${rawValues?.billingDuration?.unit.toLocaleLowerCase()}`),
       placeholder: translate('Cost per billing period'),
-      constraints: [constraints.positive('constraints.positive')],
+      constraints: [constraints.positive(translate('constraints.positive'))],
     },
     costPerAdditionalRequest: {
       type: type.number,
       label: translate('Cost per add. req.'),
       placeholder: translate('Cost per additionnal request'),
-      constraints: [constraints.positive('constraints.positive')],
+      constraints: [constraints.positive(translate('constraints.positive'))],
     },
     costPerRequest: {
       type: type.number,
       label: translate('Cost per req.'),
       placeholder: translate('Cost per request'),
-      constraints: [constraints.positive('constraints.positive')],
+      constraints: [constraints.positive(translate('constraints.positive'))],
     },
     currency: {
       type: type.object,
@@ -1179,9 +1179,9 @@ export const TeamApiPricings = (props: Props) => {
             min: 0,
           },
           constraints: [
-            constraints.positive('constraints.positive'),
-            constraints.integer('constraints.integer'),
-            constraints.required('constraints.required.billing.period'),
+            constraints.positive(translate('constraints.positive')),
+            constraints.integer(translate('constraints.integer')),
+            constraints.required(translate('constraints.required.billing.period')),
           ],
         },
         unit: {

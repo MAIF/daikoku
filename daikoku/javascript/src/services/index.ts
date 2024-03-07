@@ -320,8 +320,13 @@ export const pendingMembers = (teamId: string) =>
 export const allOtoroshis = (tenantId: string): Promise<ResponseError | Array<IOtoroshiSettings>> =>
   customFetch(`/api/tenants/${tenantId}/otoroshis`);
 
-export const allSimpleOtoroshis = (tenantId: string, maybeTeam?: ITeamSimple): PromiseWithError<Array<ISimpleOtoroshiSettings>> =>
-  customFetch(`/api/tenants/${tenantId}/otoroshis/simplified${maybeTeam ? `?team=${maybeTeam._id}` : ''}`);
+export const allSimpleOtoroshis = (
+  tenantId: string,
+  maybeTeam?: ITeamSimple
+): PromiseWithError<Array<ISimpleOtoroshiSettings>> =>
+  customFetch(
+    `/api/tenants/${tenantId}/otoroshis/simplified${maybeTeam ? `?team=${maybeTeam._id}` : ''}`
+  );
 
 export const oneOtoroshi = (tenantId: string, id: string) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${id}`);

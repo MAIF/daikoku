@@ -419,7 +419,7 @@ export function isPromise<T>(obj: any): obj is Promise<T> {
   return (<Promise<T>>obj).then !== undefined && typeof (<Promise<T>>obj).then === 'function';
 }
 
-export interface ISafeSubscription extends IBaseSubscription, ISubscriptionCustomization  {
+export interface ISafeSubscription extends IBaseSubscription, ISubscriptionCustomization {
   apiKey: { clientName: string };
 }
 
@@ -428,7 +428,7 @@ export interface ISubscription extends IBaseSubscription {
   integrationToken: string;
 }
 
-export interface ISubscriptionCustomization  {
+export interface ISubscriptionCustomization {
   customMetadata?: object;
   customMaxPerSecond?: number;
   customMaxPerMonth?: number;
