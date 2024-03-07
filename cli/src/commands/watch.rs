@@ -1,12 +1,9 @@
-use std::any::Any;
-use std::convert::Infallible;
 use std::io::Read;
 use std::path::PathBuf;
 use std::str::FromStr;
 
-use http_body_util::combinators::BoxBody;
 use http_body_util::{BodyExt, Empty, Full};
-use hyper::body::{Body, Bytes};
+use hyper::body::Bytes;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
 use hyper::{header, Method};
@@ -14,11 +11,11 @@ use hyper::{Request, Response};
 
 use hyper_util::rt::TokioIo;
 use serde::{Deserialize, Serialize};
-use serde_json::from_str;
+
 use tokio::net::{TcpListener, TcpStream};
 
 use crate::logging::error::{DaikokuCliError, DaikokuResult};
-use crate::logging::logger::{self, println};
+use crate::logging::logger::{self};
 use crate::models::folder::{read_contents, read_sources, CmsFile};
 
 use super::configuration::read_cookie_from_environment;
@@ -47,9 +44,10 @@ pub(crate) async fn run(
     client_id: Option<String>,
     client_secret: Option<String>,
 ) {
-    logger::loading("<yellow>Listening</> on 3333".to_string());
+    let port = std::env::var("WATCHING_PORT").unwrap_or("3333".to_string());
+    logger::loading(format!("<yellow>Listening</> on {}", port));
 
-    let listener = TcpListener::bind(format!("0.0.0.0:3333")).await.unwrap();
+    let listener = TcpListener::bind(format!("0.0.0.0:{}", port)).await.unwrap();
 
     loop {
         match listener.accept().await {
@@ -259,12 +257,10 @@ async fn forward_api_call(
         .header(header::COOKIE, format!("daikoku-session={}", cookie));
 
     let req = if method == "GET" {
-        raw_req
-            .body(Empty::<Bytes>::new().boxed())
-            .unwrap()
-    } else {    
+        raw_req.body(Empty::<Bytes>::new().boxed()).unwrap()
+    } else {
         let mut result: Vec<u8> = Vec::new();
-    
+
         while let Some(next) = req.frame().await {
             let frame = next.unwrap();
             if let Ok(chunk) = frame.into_data() {
