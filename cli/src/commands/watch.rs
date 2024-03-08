@@ -16,7 +16,7 @@ use tokio::net::{TcpListener, TcpStream};
 
 use crate::logging::error::{DaikokuCliError, DaikokuResult};
 use crate::logging::logger::{self};
-use crate::models::folder::{read_contents, CmsFile};
+use crate::models::folder::{read_contents, CmsFile, SourceExtension};
 
 use super::enviroments::{
     can_join_daikoku, check_environment_from_str, read_cookie_from_environment, Environment,
@@ -24,6 +24,7 @@ use super::enviroments::{
 use super::projects::{self};
 
 const SESSION_EXPIRED: &[u8] = include_bytes!("../../templates/session_expired.html");
+const MANAGER_PAGE: &[u8] = include_bytes!("../../templates/manager.html");
 
 #[derive(Debug)]
 struct RouterCmsPage {
@@ -88,11 +89,17 @@ async fn watcher(
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     let uri = req.uri().path().to_string();
 
-    if uri.starts_with("/api") {
-        println!("forward to api");
+    if uri.starts_with("/api") || uri.starts_with("/tenant-assets") {
+        println!("forward to api or /tenant-assets");
         forward_api_call(uri, req, environment).await
     } else {
         let path = uri.replace("_/", "");
+
+        let root_source = req
+            .uri()
+            .query()
+            .map(|queries| queries.contains("root_source"))
+            .unwrap_or(false);
 
         logger::println(format!("<green>Request received</> {}", &path));
 
@@ -108,7 +115,7 @@ async fn watcher(
         });
 
         match pages.iter().find(|page| page.path() == path) {
-            Some(page) => render_page(page, path, environment).await,
+            Some(page) => render_page(page, path, environment, root_source).await,
             None => {
                 let strict_page = get_matching_routes(&path, get_pages(&router_pages, true), true);
 
@@ -123,7 +130,7 @@ async fn watcher(
                 } else {
                     match result_page.iter().nth(0) {
                         None => match pages.iter().find(|p| p.path() == "/404") {
-                            Some(page) => render_page(page, path, environment).await,
+                            Some(page) => render_page(page, path, environment, root_source).await,
                             None => Ok(Response::new("404 page not found".into())),
                         },
                         Some(res) => {
@@ -131,6 +138,7 @@ async fn watcher(
                                 pages.iter().find(|p| p.path() == res.path).unwrap(),
                                 path,
                                 environment,
+                                root_source,
                             )
                             .await
                         }
@@ -243,6 +251,7 @@ async fn render_page(
     page: &CmsFile,
     watch_path: String,
     environment: &Environment,
+    root_source: bool,
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     logger::println(format!(
         "<green>Serve page</> {} {}",
@@ -354,10 +363,33 @@ async fn render_page(
     } else if status >= 400 {
         Ok(Response::new(Full::new(Bytes::from(result))))
     } else {
-        Ok(Response::builder()
-            .header(header::CONTENT_TYPE, &page.content_type())
-            .body(Full::new(Bytes::from(result)))
-            .unwrap())
+        if !root_source {
+            Ok(Response::builder()
+                .header(header::CONTENT_TYPE, &page.content_type())
+                .body(Full::new(Bytes::from(result)))
+                .unwrap())
+        } else {
+            let source = String::from_utf8(result).unwrap().replace('"', "&quot;");
+            let children: String = if SourceExtension::from_str(&page.content_type()).unwrap()
+                == SourceExtension::HTML
+            {
+                format!("<iframe srcdoc=\"{}\"></iframe>", source)
+            } else {
+                format!("<textarea readonly>{}</textarea>", source)
+            };
+
+            Ok(Response::builder()
+                // .header(header::CONTENT_TYPE, &page.content_type())
+                .header(header::CONTENT_TYPE, "text/html")
+                // .body(Full::new(Bytes::from(result)))
+                .body(Full::new(Bytes::from(
+                    String::from_utf8(MANAGER_PAGE.to_vec())
+                        .unwrap()
+                        .replace("{{components}}", "<div>ICI DES TRUCS</div>")
+                        .replace("{{children}}", children.as_str()),
+                )))
+                .unwrap())
+        }
     }
 }
 

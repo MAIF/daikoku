@@ -1,0 +1,42 @@
+<style>
+    @import url('https://cdn.jsdelivr.net/npm/@xz/fonts@1/serve/inter.css');
+
+
+    html,
+    body {
+        padding: 0;
+        margin: 0;
+    }
+
+    #main {
+        display: flex;
+        height: 100dvh;
+        min-height: 100vh;
+    }
+
+    .pages * {
+        font-family: inter, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    }
+
+    .pages {
+        display: flex;
+        flex-direction: column;
+        background-color: #eee;
+        padding: 0 1rem;
+    }
+
+    textarea,
+    iframe {
+        flex: 1;
+        border: none;
+    }
+</style>
+<div id="main">
+    <div class="pages">
+        <h1>Pages</h1>
+        <div class="components">
+            {{components}}
+        </div>
+    </div>
+    {{children}}
+</div>

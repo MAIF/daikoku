@@ -186,7 +186,7 @@ impl FromStr for SourceExtension {
             "text/javascript" => Ok(SourceExtension::Javascript),
             "json" => Ok(SourceExtension::JSON),
             "application/json" => Ok(SourceExtension::JSON),
-            _ => panic!("Bad page extension"),
+            _ => Ok(SourceExtension::HTML),
         }
     }
 }
