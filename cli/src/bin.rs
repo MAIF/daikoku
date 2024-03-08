@@ -41,6 +41,7 @@ pub enum Commands {
     },
     /// Add a token to the current project. The token must be pasted from your Daikoku profile page.
     Login {
+        /// Token can be found on your Daikoku profile page and used by Daikoku to access authenticated resources
         #[arg(
             value_name = "TOKEN",
             short = 't',
@@ -52,6 +53,7 @@ pub enum Commands {
     /// Watch project changes and serve pages on :3333 (or on WATCHING_PORT=)
     #[command()]
     Watch {
+        /// if specified, the default project will be ignored and the CLI will use that one
         #[arg(
             value_name = "PROJECT",
             short = 'p',
@@ -60,10 +62,12 @@ pub enum Commands {
         )]
         project: Option<String>,
     },
+    /// Manage your environments representing your Daikoku servers
     Environments {
         #[command(subcommand)]
         command: EnvironmentsCommands,
     },
+    /// Manage your CMS projects
     Projects {
         #[command(subcommand)]
         command: ProjectCommands,
@@ -112,6 +116,7 @@ pub enum SourceCommands {
 
 #[derive(Debug, Subcommand)]
 pub enum EnvironmentsCommands {
+    /// add a new environment to the list of environments and use it as default
     Add {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
@@ -122,6 +127,7 @@ pub enum EnvironmentsCommands {
         #[arg(value_name = "OVERWRITE", long = "overwrite", required = false)]
         overwrite: Option<bool>,
     },
+    /// update default environment by adding auth token
     PathDefault {
         #[arg(
             value_name = "TOKEN",
@@ -131,19 +137,24 @@ pub enum EnvironmentsCommands {
         )]
         token: String,
     },
+    /// ⚠️  be careful, this will clear all environments
     Clear {},
+    /// change the default environment to the specified name
     Default {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
     },
+    /// remove the specified environment
     Delete {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
     },
+    /// show information of the specified environment
     Env {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
     },
+    /// list all environments
     List {},
 }
 

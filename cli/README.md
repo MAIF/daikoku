@@ -45,13 +45,21 @@ You can start a new project
 daikokucli create --name=<PROJECT_NAME> --path=<PROJECT_PATH_OR_CURRENT_FOLDER>
 ``` 
 
-and watch file changes on it
+then add a default Daikoku environment  
+
+```sh
+daikokucli environments --name=<ENVIRONMENT_NAME> --server=<ENVIROMNENT_SERVER>
+``` 
+
+> The Daikoku server has to be reachable and will be checked before saving the configuration
+
+you can start to develop and watch file changes
 
 ```sh
 daikokucli watch
 ``` 
 
-You can also configure the token to access your CMS with an authenticated user (paste the token from your Daikoku profile page)
+Common practices involve utilizing the directives within the Daikoku CMS to access private entities based on the connected user's permissions. You have the option to configure the token for accessing your CMS with an authenticated user by pasting the token from your Daikoku profile page.
 
 ```sh
 daikokucli login --token=<YOUR_TOKEN>
