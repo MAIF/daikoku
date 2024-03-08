@@ -144,7 +144,7 @@ pub enum EnvironmentsCommands {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
     },
-    /// remove the specified environment
+    /// ⚠️  be careful, remove the specified environment
     Delete {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
@@ -160,6 +160,7 @@ pub enum EnvironmentsCommands {
 
 #[derive(Debug, Subcommand)]
 pub enum ProjectCommands {
+    /// register a new project to the CLI
     Add {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
@@ -168,15 +169,19 @@ pub enum ProjectCommands {
         #[arg(value_name = "OVERWRITE", short = 'o', long = "overwrite")]
         overwrite: Option<bool>,
     },
+    /// change the default project to the specified name
     Default {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
     },
+    /// ⚠️  be careful, remove the specified project
     Delete {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
     },
+      /// list all projects
     List {},
+      /// ⚠️  be careful, this will clear all projects
     Reset {},
 }
 
