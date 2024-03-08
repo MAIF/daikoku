@@ -75,46 +75,6 @@ pub enum Commands {
 }
 
 #[derive(Debug, Subcommand)]
-pub enum SourceCommands {
-    New {
-        #[arg(value_name = "NAME", short = 'n', long = "name")]
-        name: String,
-        #[arg(value_name = "EXTENSION", short = 'e', long = "extension", value_parser=["javascript", "html", "json", "css"], require_equals = true)]
-        extension: String,
-        #[arg(
-            value_name = "VISIBLE",
-            short = 'v',
-            long = "visible",
-            required = false
-        )]
-        visible: Option<bool>,
-        #[arg(
-            value_name = "AUTHENTICATED",
-            short = 'a',
-            long = "authenticated",
-            required = false
-        )]
-        authenticated: Option<bool>,
-        #[arg(value_name = "PATH", long = "path")]
-        path: Option<String>,
-        #[arg(value_name = "EXACT", long = "exact", required = false)]
-        exact: Option<bool>,
-        #[arg(value_name = "BLOCK", long = "block", required = false)]
-        block: Option<bool>,
-        #[arg(value_name = "OVERWRITE", long = "overwrite", required = false)]
-        overwrite: Option<bool>,
-    },
-    Delete {
-        #[arg(value_name = "ID", short = 'i', long = "identifier")]
-        id: Option<String>,
-        #[arg(value_name = "NAME", short = 'n', long = "name")]
-        name: Option<String>,
-        #[arg(value_name = "EXTENSION", short = 'e', long = "extension", value_parser=["javascript", "html", "json", "css"], require_equals = true)]
-        extension: Option<String>,
-    },
-}
-
-#[derive(Debug, Subcommand)]
 pub enum EnvironmentsCommands {
     /// add a new environment to the list of environments and use it as default
     Add {

@@ -8,6 +8,8 @@ use std::{
     str::FromStr,
 };
 
+use crate::logging::error::DaikokuResult;
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub(crate) struct CmsFile {
     pub(crate) name: String,
@@ -50,11 +52,11 @@ impl CmsFile {
     }
 }
 
-pub fn read_contents(path: &String) -> Vec<CmsFile> {
-    read_sources(&format!("{}/{}", path.as_str(), "src"))
+pub fn read_contents(path: &PathBuf) -> DaikokuResult<Vec<CmsFile>> {
+    read_sources(path.join("src"))
 }
 
-pub(crate) fn read_sources(path: &String) -> Vec<CmsFile> {
+pub(crate) fn read_sources(path: PathBuf) -> DaikokuResult<Vec<CmsFile>> {
     let mut pages: Vec<CmsFile> = Vec::new();
 
     for entry in WalkDir::new(path).into_iter().filter_map(Result::ok) {
@@ -72,7 +74,7 @@ pub(crate) fn read_sources(path: &String) -> Vec<CmsFile> {
         }
     }
 
-    pages
+    Ok(pages)
 }
 
 fn read_file(file_path: PathBuf, file_name: String, extension: String) -> CmsFile {

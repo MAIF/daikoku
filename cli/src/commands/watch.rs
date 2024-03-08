@@ -273,14 +273,7 @@ async fn render_page(
 
     let project = projects::get_default_project()?;
 
-    let content = read_contents(
-        &PathBuf::from(&project.path)
-            .into_os_string()
-            .into_string()
-            .map_err(|err| {
-                DaikokuCliError::Configuration(err.to_str().unwrap_or(&"").to_string())
-            })?,
-    );
+    let content = read_contents(&PathBuf::from(&project.path))?;
 
     let body_obj = CmsRequestRendering {
         content,
