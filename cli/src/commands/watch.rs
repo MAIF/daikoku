@@ -16,12 +16,14 @@ use tokio::net::{TcpListener, TcpStream};
 
 use crate::logging::error::{DaikokuCliError, DaikokuResult};
 use crate::logging::logger::{self};
-use crate::models::folder::{read_contents, read_sources, CmsFile};
+use crate::models::folder::{read_contents, CmsFile};
 
 use super::enviroments::{
-    can_join_daikoku, get_default_environment, read_cookie_from_environment, Environment,
+    can_join_daikoku, check_environment_from_str, read_cookie_from_environment, Environment,
 };
-use super::projects::{self, get_project, Project};
+use super::projects::{self};
+
+const SESSION_EXPIRED: &[u8] = include_bytes!("../../templates/session_expired.html");
 
 #[derive(Debug)]
 struct RouterCmsPage {
@@ -40,8 +42,8 @@ struct CmsRequestRendering {
     current_page: String,
 }
 
-pub(crate) async fn run(incoming_project: Option<String>) -> DaikokuResult<()> {
-    let environment = get_default_environment()?;
+pub(crate) async fn run(incoming_environment: Option<String>) -> DaikokuResult<()> {
+    let environment = check_environment_from_str(incoming_environment.clone())?;
 
     let _ = can_join_daikoku(&environment.server).await?;
 
@@ -53,19 +55,7 @@ pub(crate) async fn run(incoming_project: Option<String>) -> DaikokuResult<()> {
         .unwrap();
 
     loop {
-        let project = incoming_project
-            .clone()
-            .map(|name| get_project(name).ok())
-            .flatten();
-
         let environment = environment.clone();
-
-        if incoming_project.is_some() && project.is_none() {
-            return Err(DaikokuCliError::Configuration(
-                "project not found".to_string(),
-            ));
-        }
-
         {
             match listener.accept().await {
                 Err(err) => logger::error(format!("{}", err.to_string())),
@@ -74,10 +64,7 @@ pub(crate) async fn run(incoming_project: Option<String>) -> DaikokuResult<()> {
 
                     tokio::task::spawn(async move {
                         if let Err(err) = http1::Builder::new()
-                            .serve_connection(
-                                io,
-                                service_fn(|req| watcher(req, project.clone(), &environment)),
-                            )
+                            .serve_connection(io, service_fn(|req| watcher(req, &environment)))
                             .await
                         {
                             println!("Error serving connection: {:?}", err);
@@ -89,22 +76,14 @@ pub(crate) async fn run(incoming_project: Option<String>) -> DaikokuResult<()> {
     }
 }
 
-fn read_cms_pages(project: Option<Project>) -> DaikokuResult<Summary> {
-    let project = project.unwrap_or(projects::get_default_project()?);
+fn read_cms_pages() -> DaikokuResult<Summary> {
     Ok(Summary {
-        pages: read_sources(
-            &PathBuf::from(project.path)
-                .join("src")
-                .into_os_string()
-                .into_string()
-                .unwrap(),
-        ),
+        pages: read_contents(&PathBuf::from(projects::get_default_project()?.path))?,
     })
 }
 
 async fn watcher(
     req: Request<hyper::body::Incoming>,
-    project: Option<Project>,
     environment: &Environment,
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     let uri = req.uri().path().to_string();
@@ -117,7 +96,7 @@ async fn watcher(
 
         logger::println(format!("<green>Request received</> {}", &path));
 
-        let Summary { pages } = read_cms_pages(project)?;
+        let Summary { pages } = read_cms_pages()?;
 
         let mut router_pages = vec![];
 
@@ -295,16 +274,30 @@ async fn render_page(
         environment.server, watch_path
     );
 
-    let cookie = read_cookie_from_environment()?;
-
-    let req = Request::builder()
+    let mut builder = Request::builder()
         .method(Method::POST)
         .uri(&url)
-        .header(header::COOKIE, format!("daikoku-session={}", cookie))
         .header(header::HOST, &host)
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(Full::new(body))
-        .unwrap();
+        .header(header::CONTENT_TYPE, "application/json");
+
+    if page.authenticated() {
+        match read_cookie_from_environment() {
+            Ok(cookie) => {
+                builder = builder.header(header::COOKIE, format!("daikoku-session={}", cookie))
+            }
+            Err(err) => {
+                return Ok(Response::builder()
+                    .header(header::CONTENT_TYPE, "text/html")
+                    .body(Full::new(Bytes::from(
+                        String::from_utf8(SESSION_EXPIRED.to_vec())
+                            .unwrap()
+                            .replace("{{message}}", err.to_string().as_str()),
+                    )))
+                    .unwrap())
+            }
+        }
+    }
+    let req = builder.body(Full::new(body)).unwrap();
 
     let stream = TcpStream::connect(&host)
         .await
@@ -349,17 +342,22 @@ async fn render_page(
 
     let status = status.as_u16();
 
-    if status >= 300 && status < 400 {
-        Ok(Response::new(Full::new(Bytes::from(
-            "Authentication needed! Refresh this page once done",
-        ))))
+    if status == 303 {
+        Ok(Response::builder()
+            .header(header::CONTENT_TYPE, "text/html")
+            .body(Full::new(Bytes::from(
+                String::from_utf8(SESSION_EXPIRED.to_vec())
+                    .unwrap()
+                    .replace("{{message}}", "Whoops, your token has expired"),
+            )))
+            .unwrap())
+    } else if status >= 400 {
+        Ok(Response::new(Full::new(Bytes::from(result))))
     } else {
-        let response = Response::builder()
+        Ok(Response::builder()
             .header(header::CONTENT_TYPE, &page.content_type())
             .body(Full::new(Bytes::from(result)))
-            .unwrap();
-
-        Ok(response)
+            .unwrap())
     }
 }
 

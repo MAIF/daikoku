@@ -65,15 +65,16 @@ Common practices involve utilizing the directives within the Daikoku CMS to acce
 daikokucli login --token=<YOUR_TOKEN>
 ```
 
-If you have many projects you can switch between us simply using
+If you have many environments you can switch between us simply using
 
 ```sh
-daikokucli watch --project=<NAME_OF_YOUR_PROJECT>
+daikokucli watch --environment=<NAME_OF_YOUR_ENVIRONMENT>
 ``` 
 
-or permanently by changing the default project
+or permanently by changing the default project or environment
 
 ```sh
+daikokucli environments default --name=<NAME_OF_YOUR_ENVIRONMENT>
 daikokucli projects default --name=<NAME_OF_YOUR_PROJECT>
 ``` 
 

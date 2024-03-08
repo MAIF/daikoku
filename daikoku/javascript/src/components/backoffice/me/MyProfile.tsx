@@ -1,6 +1,6 @@
 import { Form, constraints, format, type } from '@maif/react-forms';
 import { md5 } from 'js-md5';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
@@ -8,7 +8,6 @@ import { ModalContext, useUserBackOffice } from '../../../contexts';
 import { I18nContext, updateUser } from '../../../core';
 import * as Services from '../../../services';
 import { IState, ITenant } from '../../../types';
-import { BeautifulTitle } from '../../utils';
 
 const TwoFactorAuthentication = ({
   user
@@ -296,6 +295,8 @@ export const MyProfile = () => {
 
   const [token, setToken] = useState("");
 
+  const [copiedTimeout, setCopiedTimeout] = useState<any>()
+
   const tenant = useSelector<IState, ITenant>((state) => state.context.tenant);
   const dispatch = useDispatch();
 
@@ -379,6 +380,12 @@ export const MyProfile = () => {
         if (user.defaultLanguage && user.defaultLanguage !== language)
           setLanguage(user.defaultLanguage);
       });
+
+    return () => {
+      if (copiedTimeout) {
+        clearTimeout(copiedTimeout)
+      }
+    }
   }, []);
 
   const save = (data: any) => {
@@ -423,6 +430,31 @@ export const MyProfile = () => {
     });
   };
 
+  const resetToken = () => {
+    fetch('/api/cms/session', {
+      credentials: 'include'
+    })
+      .then(r => r.json())
+      .then(data => {
+        setToken(data.token);
+
+        copyToken()
+      })
+  }
+
+  const copyToken = () => {
+    if (navigator.clipboard && window.isSecureContext && !copiedTimeout) {
+      navigator.clipboard.writeText(`daikokucli login --token=${token}`);
+
+      setCopiedTimeout(setTimeout(() => {
+        console.log('here')
+        setCopiedTimeout(null)
+      }, 1500))
+    }
+  }
+
+  console.log(copiedTimeout)
+
   return (
     <div className="container-fluid">
       <div className="row">
@@ -446,7 +478,10 @@ export const MyProfile = () => {
           <li className="nav-item">
             <span
               className={`nav-link cursor-pointer ${tab === 'cms_cli' ? 'active' : ''}`}
-              onClick={() => setTab('cms_cli')}
+              onClick={() => {
+                resetToken()
+                setTab('cms_cli')
+              }}
             >
               <Translation i18nkey="CMS CLI">CMS CLI</Translation>
             </span>
@@ -530,27 +565,37 @@ export const MyProfile = () => {
         )}
 
         {tab === "cms_cli" && <div>
-          <button
-            type="button"
-            className="btn btn-sm btn-access-negative ms-1"
-            onClick={() => {
-              fetch('/api/cms/session', {
-                credentials: 'include'
-              })
-                .then(r => r.json())
-                .then(data => {
-                  setToken(data.token);
-
-                  if (navigator.clipboard && window.isSecureContext) {
-                    navigator.clipboard.writeText(`daikokucli config add --token=${data.token}`);
-                  }
-                })
-            }}
-          >
-            Reset
-          </button>
-
-          <textarea value={`daikokucli config add --token=${token}`} />
+          <textarea
+            readOnly
+            rows={4}
+            className="form-control input-sm" value={`daikokucli login --token=${token}`} />
+          <div className='d-flex align-items-center mt-3' style={{ gap: '.25rem' }}>
+            <button
+              type="button"
+              className="btn btn-sm btn-access-negative m-1"
+              onClick={resetToken}
+            >
+              Reset token
+            </button>
+            <button
+              type="button"
+              disabled={copiedTimeout}
+              className="btn btn-sm btn-access-negative m-1"
+              onClick={copyToken}
+            >
+              {copiedTimeout ? <span>
+                <Translation i18nkey="profile.cmscli.paste">
+                  Copied
+                </Translation>
+                <i className='fas fa-paste ms-1' />
+              </span> : <span>
+                <Translation i18nkey="profile.cmscli.copy">
+                  Copy
+                </Translation>
+                <i className='fas fa-copy ms-1' />
+              </span>}
+            </button>
+          </div>
         </div>}
       </div>
     </div>

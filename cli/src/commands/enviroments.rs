@@ -280,7 +280,7 @@ fn get(name: String) -> DaikokuResult<Environment> {
                 "failed reading environment".to_string(),
             ))),
         None => Err(DaikokuCliError::Configuration(
-            "failed to access value".to_string(),
+            "enviromnment not found".to_string(),
         )),
     }
 }
@@ -293,6 +293,12 @@ pub(crate) fn get_default_environment() -> DaikokuResult<Environment> {
     ))?;
 
     get(default_environment)
+}
+
+pub(crate) fn check_environment_from_str(name: Option<String>) -> DaikokuResult<Environment> {
+    name
+        .map(|project_name| get(project_name))
+        .unwrap_or(get_default_environment())
 }
 
 fn list() -> DaikokuResult<()> {

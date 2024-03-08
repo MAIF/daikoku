@@ -53,14 +53,14 @@ pub enum Commands {
     /// Watch project changes and serve pages on :3333 (or on WATCHING_PORT=)
     #[command()]
     Watch {
-        /// if specified, the default project will be ignored and the CLI will use that one
+        /// if specified, the default environment will be ignored and the CLI will use that one
         #[arg(
-            value_name = "PROJECT",
-            short = 'p',
-            long = "project",
+            value_name = "ENVIRONMENT",
+            short = 'e',
+            long = "environment",
             required = false
         )]
-        project: Option<String>,
+        environment: Option<String>,
     },
     /// Manage your environments representing your Daikoku servers
     Environments {
@@ -153,7 +153,7 @@ async fn process(command: Commands) -> DaikokuResult<()> {
             name,
             path,
         } => commands::creation::run(template, name, path.map(|p| absolute_path(p).unwrap())).await,
-        Commands::Watch { project } => commands::watch::run(project).await,
+        Commands::Watch { environment } => commands::watch::run(environment).await,
         Commands::Environments { command } => commands::enviroments::run(command).await,
         Commands::Projects { command } => commands::projects::run(command),
         Commands::Login { token } => commands::login::run(token).await,
