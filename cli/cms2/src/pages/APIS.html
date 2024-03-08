@@ -1,8 +1,0 @@
-{{#daikoku-template-wrapper "blocks/wrapper" title="Nos APIS" desc="La liste complète de nos offres"}}
-
-<div class="row">
-{{#daikoku-apis}}
-  {{daikoku-include-block "blocks/Card.html" slug="/{{api._id}}" content="{{api.description}}" title="{{api.name}}" version="{{api.currentVersion}}"}}
-{{/daikoku-apis}}
-</div>
-{{/daikoku-template-wrapper}}
