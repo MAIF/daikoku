@@ -10,6 +10,8 @@ pub enum DaikokuCliError {
     Configuration(String),
     HyperError(hyper::Error),
     DaikokuError(std::io::Error),
+    DaikokuStrError(String),
+    DaikokuErrorWithMessage(String, std::io::Error),
     DaikokuYamlError(serde_yaml::Error),
     ParsingError(String)
 }
@@ -42,6 +44,12 @@ impl fmt::Display for DaikokuCliError {
             }
             DaikokuCliError::DaikokuError(err) => {
                 write!(f, "[DAIKOKU] : {}\n", &err)
+            }
+            DaikokuCliError::DaikokuStrError(err) => {
+                write!(f, "[DAIKOKU] : {}\n", &err)
+            }
+            DaikokuCliError::DaikokuErrorWithMessage(message, err) => {
+                write!(f, "[DAIKOKU] : {} - {}\n", &message, &err)
             }
             DaikokuCliError::DaikokuYamlError(err) => {
                 write!(f, "[DAIKOKU] : {}\n", &err)

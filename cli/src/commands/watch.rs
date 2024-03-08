@@ -18,7 +18,9 @@ use crate::logging::error::{DaikokuCliError, DaikokuResult};
 use crate::logging::logger::{self};
 use crate::models::folder::{read_contents, read_sources, CmsFile};
 
-use super::enviroments::read_cookie_from_environment;
+use super::enviroments::{
+    can_join_daikoku, get_default_environment, read_cookie_from_environment, Environment,
+};
 use super::projects::{self, get_project, Project};
 
 #[derive(Debug)]
@@ -39,6 +41,10 @@ struct CmsRequestRendering {
 }
 
 pub(crate) async fn run(incoming_project: Option<String>) -> DaikokuResult<()> {
+    let environment = get_default_environment()?;
+
+    let _ = can_join_daikoku(&environment.server).await?;
+
     let port = std::env::var("WATCHING_PORT").unwrap_or("3333".to_string());
     logger::loading(format!("<yellow>Listening</> on {}", port));
 
@@ -51,6 +57,8 @@ pub(crate) async fn run(incoming_project: Option<String>) -> DaikokuResult<()> {
             .clone()
             .map(|name| get_project(name).ok())
             .flatten();
+
+        let environment = environment.clone();
 
         if incoming_project.is_some() && project.is_none() {
             return Err(DaikokuCliError::Configuration(
@@ -66,7 +74,10 @@ pub(crate) async fn run(incoming_project: Option<String>) -> DaikokuResult<()> {
 
                     tokio::task::spawn(async move {
                         if let Err(err) = http1::Builder::new()
-                            .serve_connection(io, service_fn(|req| watcher(req, project.clone())))
+                            .serve_connection(
+                                io,
+                                service_fn(|req| watcher(req, project.clone(), &environment)),
+                            )
                             .await
                         {
                             println!("Error serving connection: {:?}", err);
@@ -94,12 +105,13 @@ fn read_cms_pages(project: Option<Project>) -> DaikokuResult<Summary> {
 async fn watcher(
     req: Request<hyper::body::Incoming>,
     project: Option<Project>,
+    environment: &Environment,
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     let uri = req.uri().path().to_string();
 
     if uri.starts_with("/api") {
         println!("forward to api");
-        forward_api_call(uri, req).await
+        forward_api_call(uri, req, environment).await
     } else {
         let path = uri.replace("_/", "");
 
@@ -117,7 +129,7 @@ async fn watcher(
         });
 
         match pages.iter().find(|page| page.path() == path) {
-            Some(page) => render_page(page, path).await,
+            Some(page) => render_page(page, path, environment).await,
             None => {
                 let strict_page = get_matching_routes(&path, get_pages(&router_pages, true), true);
 
@@ -132,12 +144,16 @@ async fn watcher(
                 } else {
                     match result_page.iter().nth(0) {
                         None => match pages.iter().find(|p| p.path() == "/404") {
-                            Some(page) => render_page(page, path).await,
+                            Some(page) => render_page(page, path, environment).await,
                             None => Ok(Response::new("404 page not found".into())),
                         },
                         Some(res) => {
-                            render_page(pages.iter().find(|p| p.path() == res.path).unwrap(), path)
-                                .await
+                            render_page(
+                                pages.iter().find(|p| p.path() == res.path).unwrap(),
+                                path,
+                                environment,
+                            )
+                            .await
                         }
                     }
                 }
@@ -149,11 +165,16 @@ async fn watcher(
 async fn forward_api_call(
     uri: String,
     mut req: Request<hyper::body::Incoming>,
+    environment: &Environment,
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
-    let host = "localhost:9000";
+    let host = environment
+        .server
+        .replace("http://", "")
+        .replace("https://", "");
+
     let method = req.method().to_string();
 
-    let url: String = format!("http://{}{}", host, uri);
+    let url: String = format!("{}{}", environment.server, uri);
 
     println!("forward to {}", url);
 
@@ -162,7 +183,7 @@ async fn forward_api_call(
     let raw_req = Request::builder()
         .method(Method::from_str(&method).unwrap())
         .uri(&url)
-        .header(header::HOST, host)
+        .header(header::HOST, &host)
         .header(header::COOKIE, format!("daikoku-session={}", cookie));
 
     let req = if method == "GET" {
@@ -242,6 +263,7 @@ async fn forward_api_call(
 async fn render_page(
     page: &CmsFile,
     watch_path: String,
+    environment: &Environment,
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     logger::println(format!(
         "<green>Serve page</> {} {}",
@@ -270,9 +292,15 @@ async fn render_page(
             .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?,
     );
 
-    let host = "localhost:9000";
+    let host = environment
+        .server
+        .replace("http://", "")
+        .replace("https://", "");
 
-    let url: String = format!("http://{}/_{}?force_reloading=true", host, watch_path);
+    let url: String = format!(
+        "{}/_{}?force_reloading=true",
+        environment.server, watch_path
+    );
 
     let cookie = read_cookie_from_environment()?;
 
@@ -280,7 +308,7 @@ async fn render_page(
         .method(Method::POST)
         .uri(&url)
         .header(header::COOKIE, format!("daikoku-session={}", cookie))
-        .header(header::HOST, host)
+        .header(header::HOST, &host)
         .header(header::CONTENT_TYPE, "application/json")
         .body(Full::new(body))
         .unwrap();

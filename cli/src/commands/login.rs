@@ -4,7 +4,7 @@ use crate::{logging::error::DaikokuResult, process, Commands};
 
 #[async_recursion]
 pub(crate) async fn run(token: String) -> DaikokuResult<()> {
-    process(Commands::Environment {
+    process(Commands::Environments {
         command: crate::EnvironmentsCommands::PathDefault { token },
     })
     .await?;

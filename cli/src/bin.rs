@@ -60,7 +60,7 @@ pub enum Commands {
         )]
         project: Option<String>,
     },
-    Environment {
+    Environments {
         #[command(subcommand)]
         command: EnvironmentsCommands,
     },
@@ -118,7 +118,7 @@ pub enum EnvironmentsCommands {
         #[arg(value_name = "SERVER", short = 's', long = "server")]
         server: String,
         #[arg(value_name = "TOKEN", short = 'a', long = "token")]
-        token: String,
+        token: Option<String>,
         #[arg(value_name = "OVERWRITE", long = "overwrite", required = false)]
         overwrite: Option<bool>,
     },
@@ -178,7 +178,7 @@ async fn process(command: Commands) -> DaikokuResult<()> {
             path,
         } => commands::creation::run(template, name, path.map(|p| absolute_path(p).unwrap())).await,
         Commands::Watch { project } => commands::watch::run(project).await,
-        Commands::Environment { command } => commands::enviroments::run(command),
+        Commands::Environments { command } => commands::enviroments::run(command).await,
         Commands::Projects { command } => commands::projects::run(command),
         Commands::Login { token } => commands::login::run(token).await,
     }
