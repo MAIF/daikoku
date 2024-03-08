@@ -16,7 +16,7 @@ use tokio::net::{TcpListener, TcpStream};
 
 use crate::logging::error::{DaikokuCliError, DaikokuResult};
 use crate::logging::logger::{self};
-use crate::models::folder::{read_contents, CmsFile, SourceExtension};
+use crate::models::folder::{read_contents, CmsFile, SourceExtension, UiCmsFile};
 
 use super::enviroments::{
     can_join_daikoku, check_environment_from_str, read_cookie_from_environment, Environment,
@@ -89,7 +89,7 @@ async fn watcher(
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     let uri = req.uri().path().to_string();
 
-    if uri.starts_with("/api") || uri.starts_with("/tenant-assets") {
+    if uri.starts_with("/api/") || uri.starts_with("/tenant-assets/") {
         println!("forward to api or /tenant-assets");
         forward_api_call(uri, req, environment).await
     } else {
@@ -264,7 +264,7 @@ async fn render_page(
     let content = read_contents(&PathBuf::from(&project.path))?;
 
     let body_obj = CmsRequestRendering {
-        content,
+        content: content.clone(),
         current_page: page.path().clone(),
     };
 
@@ -385,7 +385,17 @@ async fn render_page(
                 .body(Full::new(Bytes::from(
                     String::from_utf8(MANAGER_PAGE.to_vec())
                         .unwrap()
-                        .replace("{{components}}", "<div>ICI DES TRUCS</div>")
+                        .replace(
+                            "{{components}}",
+                            serde_json::to_string(
+                                &content
+                                    .iter()
+                                    .map(|file| file.to_ui_component())
+                                    .collect::<Vec<UiCmsFile>>(),
+                            )
+                            .unwrap()
+                            .as_str(),
+                        )
                         .replace("{{children}}", children.as_str()),
                 )))
                 .unwrap())

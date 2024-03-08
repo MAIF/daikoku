@@ -1,8 +1,8 @@
-{{#daikoku-template-wrapper "61fbaa95320100dbfca04d11" title="Nos APIS" desc="La liste complète de nos offres"}}
+{{#daikoku-template-wrapper "blocks/wrapper" title="Nos APIS" desc="La liste complète de nos offres"}}
 
 <div class="row">
 {{#daikoku-apis}}
-  {{daikoku-include-block "62026d251501007a8439f599" slug="/{{api._id}}" content="{{api.description}}" title="{{api.name}}" version="{{api.currentVersion}}"}}
+  {{daikoku-include-block "blocks/Card.html" slug="/{{api._id}}" content="{{api.description}}" title="{{api.name}}" version="{{api.currentVersion}}"}}
 {{/daikoku-apis}}
 </div>
 {{/daikoku-template-wrapper}}

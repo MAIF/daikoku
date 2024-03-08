@@ -17,12 +17,25 @@ pub(crate) struct CmsFile {
     pub(crate) metadata: HashMap<String, String>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub(crate) struct UiCmsFile {
+    pub(crate) name: String,
+    pub(crate) path: String,
+}
+
 impl CmsFile {
     fn new(file_path: PathBuf, file_name: String, metadata: HashMap<String, String>) -> CmsFile {
         CmsFile {
             content: fs::read_to_string(file_path).unwrap(),
             name: file_name,
             metadata,
+        }
+    }
+
+    pub(crate) fn to_ui_component(&self) -> UiCmsFile {
+        UiCmsFile {
+            name: self.name.clone(),
+            path: self.path(),
         }
     }
 

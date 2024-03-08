@@ -1130,7 +1130,7 @@ case class CmsPage(
       req: Option[CmsRequestRendering]
   )(implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi) = {
     cmsFindByIdNotDeleted(ctx, id, req) match {
-      case None => "page not found"
+      case None => "wrapper component not found"
       case Some(page) =>
         val tmpFields = getAttrs(ctx, parentId, options, fields, jsonToCombine, req)
         val outFields = getAttrs(
@@ -1555,7 +1555,7 @@ case class CmsPage(
             .combine(
               "daikoku-css", {
                 if (env.config.mode == DaikokuMode.Dev)
-                  s"${env.getDaikokuUrl(ctx.tenant, "/daikoku.css")}"
+                  s"http://localhost:3000/daikoku.css"
                 else if (env.config.mode == DaikokuMode.Prod)
                   s"${env.getDaikokuUrl(ctx.tenant, "/assets/react-app/daikoku.min.css")}"
               }
