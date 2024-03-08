@@ -72,6 +72,8 @@ pub enum Commands {
         #[command(subcommand)]
         command: ProjectCommands,
     },
+    /// ⚠️ synchronize projects file with Daikoku
+    Sync {}
 }
 
 #[derive(Debug, Subcommand)]
@@ -157,6 +159,7 @@ async fn process(command: Commands) -> DaikokuResult<()> {
         Commands::Environments { command } => commands::enviroments::run(command).await,
         Commands::Projects { command } => commands::projects::run(command),
         Commands::Login { token } => commands::login::run(token).await,
+        Commands::Sync {  } => commands::sync::run().await
     }
 }
 

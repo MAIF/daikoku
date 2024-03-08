@@ -6,8 +6,9 @@ import daikoku.BuildInfo
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.sync.TeamMemberOnly
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{CmsPageFormat, CmsRequestRenderingFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{CmsFileFormat, CmsPageFormat, CmsRequestRenderingFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator, diff_match_patch}
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -439,14 +440,40 @@ class HomeController(
     }
 
   def session() = DaikokuAction.async { ctx =>
-      TenantAdminOnly(
+      TeamMemberOnly(
         AuditTrailEvent("@{user.name} get session")
-      )(ctx.tenant.id.value, ctx) { (tenant, _) =>
+      )(ctx.tenant.id.value, ctx) { _ =>
         {
           val token = ctx.request.cookies.get("daikoku-session").map(_.value).getOrElse("")
-          FastFuture.successful(
-            Ok(Json.obj("token" -> token))
-          )
+          Ok(Json.obj("token" -> token))
+        }
+      }
+    }
+
+  def sync() = DaikokuAction.async(parse.json) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent("@{user.name} sync cms project")
+      )(ctx.tenant.id.value, ctx) { (tenant, _) => {
+          val body = ctx.request.body
+
+        (for {
+            _ <- env.dataStore.cmsRepo.forTenant(tenant).deleteAll()
+          } yield {
+            Future.sequence(body
+              .as(Reads.seq(CmsFileFormat.reads))
+              .map(page => {
+                println(page)
+                env
+                  .dataStore
+                  .cmsRepo
+                  .forTenant(tenant)
+                  .save(page.toCmsPage(ctx.tenant.id))
+              }))
+              .map(_ => NoContent)
+              .recover {
+                case e: Throwable => BadRequest(Json.obj("error" -> e.getMessage))
+              }
+            }).flatten
         }
       }
     }

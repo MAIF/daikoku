@@ -4,3 +4,4 @@ pub mod version;
 pub mod creation;
 pub mod projects;
 pub mod login;
+pub mod sync;

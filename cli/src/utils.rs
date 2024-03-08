@@ -1,5 +1,8 @@
 use std::{fs, path::{Path, PathBuf}};
 
+use http_body_util::BodyExt;
+use std::io::Read;
+
 use crate::logging::error::{DaikokuCliError, DaikokuResult};
 
 
@@ -34,4 +37,19 @@ fn expand_tilde<P: AsRef<Path>>(path_user_input: P) -> Option<PathBuf> {
             h
         }
     })
+}
+
+pub(crate) async fn frame_to_bytes_body(mut req: hyper::body::Incoming) -> Vec<u8> {
+    let mut result: Vec<u8> = Vec::new();
+
+    while let Some(next) = req.frame().await {
+        let frame = next.unwrap();
+        if let Ok(chunk) = frame.into_data() {
+            for b in chunk.bytes() {
+                (result).push(b.unwrap().clone());
+            }
+        }
+    }
+
+    result
 }

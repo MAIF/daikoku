@@ -17,6 +17,7 @@ use tokio::net::{TcpListener, TcpStream};
 use crate::logging::error::{DaikokuCliError, DaikokuResult};
 use crate::logging::logger::{self};
 use crate::models::folder::{read_contents, CmsFile, SourceExtension, UiCmsFile};
+use crate::utils::frame_to_bytes_body;
 
 use super::enviroments::{
     can_join_daikoku, check_environment_from_str, read_cookie_from_environment, Environment,
@@ -218,19 +219,10 @@ async fn forward_api_call(
         hyper::http::response::Parts {
             headers: _, status, ..
         },
-        mut body,
+        body,
     ) = upstream_resp.into_parts();
 
-    let mut result: Vec<u8> = Vec::new();
-
-    while let Some(next) = body.frame().await {
-        let frame = next.unwrap();
-        if let Ok(chunk) = frame.into_data() {
-            for b in chunk.bytes() {
-                (result).push(b.unwrap().clone());
-            }
-        }
-    }
+    let result: Vec<u8> = frame_to_bytes_body(body).await;
 
     let status = status.as_u16();
 
@@ -335,19 +327,10 @@ async fn render_page(
         hyper::http::response::Parts {
             headers: _, status, ..
         },
-        mut body,
+        body,
     ) = upstream_resp.into_parts();
 
-    let mut result: Vec<u8> = Vec::new();
-
-    while let Some(next) = body.frame().await {
-        let frame = next.unwrap();
-        if let Ok(chunk) = frame.into_data() {
-            for b in chunk.bytes() {
-                (result).push(b.unwrap().clone());
-            }
-        }
-    }
+    let result: Vec<u8> = frame_to_bytes_body(body).await;
 
     let status = status.as_u16();
 

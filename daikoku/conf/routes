@@ -14,6 +14,7 @@ POST    /api/cms/pages                                  fr.maif.otoroshi.daikoku
 DELETE  /api/cms/pages/:id                              fr.maif.otoroshi.daikoku.ctrls.HomeController.deleteCmsPage(id)
 GET     /api/cms/pages/:id                              fr.maif.otoroshi.daikoku.ctrls.HomeController.getCmsPage(id)
 GET     /api/cms/session                                fr.maif.otoroshi.daikoku.ctrls.HomeController.session()
+PUT     /api/cms/sync                                   fr.maif.otoroshi.daikoku.ctrls.HomeController.sync()
 
 GET     /                                               fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
 GET     /robots.txt                                     fr.maif.otoroshi.daikoku.ctrls.HomeController.index()

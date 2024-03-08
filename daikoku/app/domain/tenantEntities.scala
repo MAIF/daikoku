@@ -563,7 +563,7 @@ case class CmsFile(name: String, content: String, metadata: Map[String, JsValue]
 
     def toCmsPage(tenantId: TenantId): CmsPage = {
       CmsPage(
-        id = CmsPageId(path()),
+        id = CmsPageId(path().replaceAll("/", "-")),
         tenant = tenantId,
         visible = visible(),
         authenticated = authenticated(),
@@ -572,8 +572,8 @@ case class CmsFile(name: String, content: String, metadata: Map[String, JsValue]
         tags = List.empty,
         metadata = Map.empty,
         contentType = contentType(),
-        body= "",
-        draft = "",
+        body= content,
+        draft = content,
         path = Some(path())
       )
     }
@@ -1038,13 +1038,30 @@ case class CmsPage(
                         req: Option[CmsRequestRendering])(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
     req match {
       case Some(value) => value.content
-        .find(_.path() == id)
+        .find(p => cleanPath(p.path()) == cleanPath(id))
         .map(_.toCmsPage(ctx.tenant.id))
-      case None => Await.result(
-        env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id),
+      case None => findCmsPageByTheId(ctx, id)
+    }
+  }
+
+  private def cleanPath(path: String) = {
+    val out = path.replace("/_/", "/")
+    if (!path.startsWith("/"))
+      s"/$out"
+    else
+      out
+  }
+
+  private def findCmsPageByTheId(ctx: DaikokuActionMaybeWithoutUserContext[_], id: String)(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
+
+    Await.result(
+        env.dataStore.cmsRepo.forTenant(ctx.tenant).findOne(Json.obj("$or" -> Json.arr(
+          Json.obj("_id" -> cleanPath(id)),
+          Json.obj("_id" -> cleanPath(id).replace("/", "-")),
+          Json.obj("_id" -> cleanPath(id).replace("/", "-").substring(1))
+        ))),
         10.seconds
       )
-    }
   }
 
   private def cmsFindById(ctx: DaikokuActionMaybeWithoutUserContext[_],
@@ -1054,10 +1071,7 @@ case class CmsPage(
       case Some(value) => value.content
         .find(_.path() == id)
         .map(_.toCmsPage(ctx.tenant.id))
-      case None => Await.result(
-        env.dataStore.cmsRepo.forTenant(ctx.tenant).findById(id),
-        10.seconds
-      )
+      case None => findCmsPageByTheId(ctx, id)
     }
   }
 
@@ -1066,10 +1080,13 @@ case class CmsPage(
                         req: Option[CmsRequestRendering])(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
     req match {
       case Some(value) => value.content
-        .find(_.path() == id)
+        .find(p => cleanPath(p.path()) == cleanPath(id))
         .map(_.toCmsPage(ctx.tenant.id))
       case None => Await.result(
-        env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("path" -> id)),
+        env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("$or" -> Json.arr(
+          Json.obj("path" -> cleanPath(id)),
+          Json.obj("_id" -> cleanPath(id)),
+          Json.obj("_id" -> cleanPath(id).replace("/", "-"))))),
         10.seconds
       )
     }
@@ -1226,10 +1243,15 @@ case class CmsPage(
       case None => "#not-found"
       case Some(page) =>
         val wantDraft = ctx.request.getQueryString("draft").contains("true")
+        var path = page.path.getOrElse("")
+
+        if (!path.startsWith("/"))
+          path = s"/$path"
+
         if (wantDraft)
-          s"/_${page.path.getOrElse("")}?draft=true"
+          s"/_${path}?draft=true"
         else
-          s"/_${page.path.getOrElse("")}"
+          s"/_${path}"
     }
   }
 
