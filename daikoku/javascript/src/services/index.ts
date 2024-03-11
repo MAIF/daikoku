@@ -1109,7 +1109,7 @@ export const reset2faAccess = (backupCodes: any) =>
 
 export const selfVerify2faCode = (code: string) => customFetch(`/api/me/_2fa/enable?code=${code}`);
 
-export const validateInvitationToken = (token: any) =>
+export const validateInvitationToken = (token?: string | null): PromiseWithError<{team: string, notificationId: string}> =>
   customFetch('/api/me/invitation/_check', {
     method: 'POST',
     body: JSON.stringify({ token }),

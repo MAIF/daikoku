@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
 import { IBaseModalProps } from './types';
+import { isError } from '../../types';
 
 export const JoinTeamInvitationModal = (props: IBaseModalProps) => {
   const [error, setError] = useState<string>();
@@ -18,14 +19,15 @@ export const JoinTeamInvitationModal = (props: IBaseModalProps) => {
     const params = new URLSearchParams(window.location.search);
     if (!params.get('token')) setError(translate('team_member.missing_token'));
     else {
-      Services.validateInvitationToken(params.get('token')).then((res) => {
-        if (res.error) {
-          setError(res.error);
-        } else {
-          setTeam(res.team);
-          setNotificationId(res.notificationId);
-        }
-      });
+      Services.validateInvitationToken(params.get('token'))
+        .then((res) => {
+          if (isError(res)) {
+            setError(res.error);
+          } else {
+            setTeam(res.team);
+            setNotificationId(res.notificationId);
+          }
+        });
     }
   }, []);
 
