@@ -1,7 +1,7 @@
 use std::path::PathBuf;
 
 use bytes::Bytes;
-use http_body_util::{BodyExt, Full};
+use http_body_util::Full;
 use hyper::{header, Method, Request};
 use hyper_util::rt::TokioIo;
 use tokio::net::TcpStream;

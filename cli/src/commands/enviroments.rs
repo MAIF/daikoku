@@ -129,6 +129,8 @@ pub(crate) async fn can_join_daikoku(server: &String) -> DaikokuResult<bool> {
 
     let status = status.as_u16();
 
+    logger::info(format!("Daikoku have returned : {}", status));
+
     Ok(status == 200)
 }
 
@@ -289,7 +291,7 @@ pub(crate) fn get_default_environment() -> DaikokuResult<Environment> {
     let config: Ini = read()?;
 
     let default_environment = config.get("default", "environment").map(Ok).unwrap_or(Err(
-        DaikokuCliError::Configuration("default environment not found".to_string()),
+        DaikokuCliError::Configuration("default environment not found. see daikokucli environments help".to_string()),
     ))?;
 
     get(default_environment)

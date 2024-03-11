@@ -88,6 +88,10 @@ At anytime, you can track an existing CMS folder or update its information
 daikokucli projects add --name=<NAME_OF_YOUR_PROJECT> --path=<PATH_TO_YOUR_PROJECT> --overwrite=<true|false>
 ``` 
 
+Once ready, you can synchronize your sources with the Daikoku environment
+```sh
+daikokucli sync
+```
 
 # License
 

@@ -70,7 +70,7 @@ fn add(name: String, path: String, overwrite: bool) -> DaikokuResult<()> {
 
     if config.get(&name, "path").is_some() && !overwrite {
         return Err(DaikokuCliError::Configuration(
-            "project already exists".to_string(),
+            "project already exists in your configuration file. use daikokucli projects list and remove it".to_string(),
         ));
     }
 

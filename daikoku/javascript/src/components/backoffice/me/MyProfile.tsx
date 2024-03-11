@@ -431,7 +431,8 @@ export const MyProfile = () => {
   };
 
   const resetToken = () => {
-    fetch('/api/cms/session', {
+    let rawUser: any = user;
+    fetch(`/api/users/${rawUser._id as string}/session`, {
       credentials: 'include'
     })
       .then(r => r.json())

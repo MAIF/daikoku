@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{{daikoku-css}}" />
+    <link rel="stylesheet" href="https://bootswatch.com/5/sketchy/bootstrap.min.css" />
+    <link rel="stylesheet" href="{{daikoku-page-url "620d0ef44b0100fd16094437"}}" />
+    <link rel="stylesheet" href="//use.fontawesome.com/releases/v5.0.7/css/all.css">
+</head>
+
+<body>
+    <div class="p-3">
+      {{daikoku-include-block "620244e51a0100ac3d020f39"}}
+  
+      {{#if title}}
+      <div class="my-3" style="display: flex; flex-direction: column; align-items: center; background-color: #eee; padding: 24px 0">
+        <h1>{{title}}</h1>
+        <figcaption class="blockquote-footer my-3">
+          {{desc}}
+        </figcaption>
+      </div>
+      {{/if}}
+      
+      {{children}}
+    </div>
+    {{daikoku-include-block "620d0e944b0100fd16094408"}}
+    
+    <script src="https://bootswatch.com/_vendor/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>

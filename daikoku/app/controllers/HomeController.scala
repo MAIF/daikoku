@@ -5,7 +5,7 @@ import com.nimbusds.jose.util.StandardCharset
 import daikoku.BuildInfo
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{DaikokuAdminOrSelf, TenantAdminOnly}
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.sync.TeamMemberOnly
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.{CmsFileFormat, CmsPageFormat, CmsRequestRenderingFormat}
@@ -439,15 +439,11 @@ class HomeController(
       }
     }
 
-  def session() = DaikokuAction.async { ctx =>
-      TeamMemberOnly(
-        AuditTrailEvent("@{user.name} get session")
-      )(ctx.tenant.id.value, ctx) { _ =>
-        {
+  def session(userId: String) = DaikokuAction.async { ctx =>
+    DaikokuAdminOrSelf(AuditTrailEvent("@{user.name} get session"))(UserId(userId), ctx) {
           val token = ctx.request.cookies.get("daikoku-session").map(_.value).getOrElse("")
-          Ok(Json.obj("token" -> token))
+          FastFuture.successful(Ok(Json.obj("token" -> token)))
         }
-      }
     }
 
   def sync() = DaikokuAction.async(parse.json) { ctx =>

@@ -281,23 +281,23 @@ async fn render_page(
         .header(header::HOST, &host)
         .header(header::CONTENT_TYPE, "application/json");
 
-    if page.authenticated() {
-        match read_cookie_from_environment() {
-            Ok(cookie) => {
-                builder = builder.header(header::COOKIE, format!("daikoku-session={}", cookie))
-            }
-            Err(err) => {
-                return Ok(Response::builder()
-                    .header(header::CONTENT_TYPE, "text/html")
-                    .body(Full::new(Bytes::from(
-                        String::from_utf8(SESSION_EXPIRED.to_vec())
-                            .unwrap()
-                            .replace("{{message}}", err.to_string().as_str()),
-                    )))
-                    .unwrap())
-            }
+    // if page.authenticated() {
+    match read_cookie_from_environment() {
+        Ok(cookie) => {
+            builder = builder.header(header::COOKIE, format!("daikoku-session={}", cookie))
+        }
+        Err(err) => {
+            return Ok(Response::builder()
+                .header(header::CONTENT_TYPE, "text/html")
+                .body(Full::new(Bytes::from(
+                    String::from_utf8(SESSION_EXPIRED.to_vec())
+                        .unwrap()
+                        .replace("{{message}}", err.to_string().as_str()),
+                )))
+                .unwrap())
         }
     }
+    // }
     let req = builder.body(Full::new(body)).unwrap();
 
     let stream = TcpStream::connect(&host)

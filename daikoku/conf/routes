@@ -13,7 +13,7 @@ POST    /api/cms/pages/:pageName                        fr.maif.otoroshi.daikoku
 POST    /api/cms/pages                                  fr.maif.otoroshi.daikoku.ctrls.HomeController.createCmsPage()
 DELETE  /api/cms/pages/:id                              fr.maif.otoroshi.daikoku.ctrls.HomeController.deleteCmsPage(id)
 GET     /api/cms/pages/:id                              fr.maif.otoroshi.daikoku.ctrls.HomeController.getCmsPage(id)
-GET     /api/cms/session                                fr.maif.otoroshi.daikoku.ctrls.HomeController.session()
+GET     /api/users/:userId/session                      fr.maif.otoroshi.daikoku.ctrls.HomeController.session(userId)
 PUT     /api/cms/sync                                   fr.maif.otoroshi.daikoku.ctrls.HomeController.sync()
 
 GET     /                                               fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
