@@ -6,7 +6,7 @@ import * as Services from '../services/index'
 import { AuthProvider, DaikokuMode, Display, IStateContext, TenanMode, isError } from "../types"
 
 
-type TGlobalContext = IStateContext & { reloadContext: () => void, toggleExpertMode: () => void, reloadUnreadNotificationsCount: () => void }
+type TGlobalContext = IStateContext & { reloadContext: () => void, toggleExpertMode: () => void, toggleTheme: () => void,reloadUnreadNotificationsCount: () => void }
 const initContext: TGlobalContext = {
   connectedUser: {
     _id: "",
@@ -48,15 +48,25 @@ const initContext: TGlobalContext = {
   reloadContext: () => Promise.resolve(),
   reloadUnreadNotificationsCount: () => Promise.resolve(),
   toggleExpertMode: () => { },
-  loginAction: ''
+  loginAction: '',
+  theme: localStorage.getItem('theme') || 'LIGHT',
+  toggleTheme: () => { },
+
 }
 
 export const GlobalContext = React.createContext<TGlobalContext>(initContext)
 
 export const GlobalContextProvider = (props: PropsWithChildren) => {
   const getExpertMode = (): boolean => JSON.parse(localStorage.getItem('expertMode') || 'false')
+  const getTheme = () : string => {
+    const actualTheme=localStorage.getItem('theme') || 'LIGHT'
+    document.documentElement.setAttribute('data-theme', actualTheme);
+    return actualTheme
+  }
 
   const [expertMode, setExpertMode] = useState<boolean>(getExpertMode())
+  const [theme, setTheme] = useState<string>(getTheme())
+
 
   const queryClient = useQueryClient();
   const currentUserQuery = useQuery({
@@ -85,12 +95,27 @@ export const GlobalContextProvider = (props: PropsWithChildren) => {
     setExpertMode(!expertMode)
   };
 
+  const toggleTheme = () => {
+    console.log('thm',theme)
+    if (theme === 'DARK') {
+      document.documentElement.setAttribute('data-theme', 'LIGHT');
+      localStorage.setItem('theme', 'LIGHT');
+      setTheme('LIGHT')
+    } else {
+      document.documentElement.setAttribute('data-theme', 'DARK');
+      localStorage.setItem('theme', 'DARK');
+      setTheme('DARK')
+    }
+  };
+
   return (
     <GlobalContext.Provider value={{
       ...currentUserQuery.data,
       reloadContext,
       expertMode,
       toggleExpertMode,
+      theme,
+      toggleTheme,
       unreadNotificationsCount: notificationCountQuery.data?.count || 0,
       reloadUnreadNotificationsCount
     }}>

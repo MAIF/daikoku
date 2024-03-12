@@ -23,6 +23,7 @@ export interface IStateContext {
   unreadNotificationsCount: number;
   session: ISimpleSession;
   loginAction: string;
+  theme: string;
 }
 
 export interface IStateError {

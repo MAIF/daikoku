@@ -9,24 +9,11 @@ import classNames from 'classnames';
 import { GlobalContext } from '../../../../contexts/globalContext';
 
 export const DarkModeActivator = (props: { className: string }) => {
-  const DARK = 'DARK';
-  const LIGHT = 'LIGHT';
-
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || LIGHT);
-
-  useEffect(() => {
-    if (theme === DARK) {
-      document.documentElement.setAttribute('data-theme', DARK);
-      localStorage.setItem('theme', DARK);
-    } else {
-      document.documentElement.setAttribute('data-theme', LIGHT);
-      localStorage.setItem('theme', LIGHT);
-    }
-  }, [theme]);
+  const {theme, toggleTheme } = useContext(GlobalContext);
 
   return (
-    <div className={classNames("block__entry__link cursor-pointer", props.className)} onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}>
-      {theme === DARK ? <Sun /> : <Moon />}
+    <div className={classNames("block__entry__link cursor-pointer", props.className)} onClick={() => toggleTheme()}>
+      {theme === 'DARK' ? <Sun /> : <Moon />}
     </div>
   );
 };

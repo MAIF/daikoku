@@ -1,13 +1,13 @@
-@import '../variables';
+// @import '../variables';
 
 [data-sonner-toaster][data-theme='light'] {
   --normal-bg: #fff;
   --normal-border: var(--gray4);
   --normal-text: var(--gray12);
 
-  --success-bg: hsl(143, 85%, 96%);
-  --success-border: hsl(145, 92%, 91%);
-  --success-text: hsl(140, 100%, 27%);
+  --success-bg: #{$success-color};
+  --success-border: #{$success-color};
+  --success-text: #{$success-hover-color};
 
   --info-bg: hsl(208, 100%, 97%);
   --info-border: hsl(221, 91%, 91%);
@@ -30,7 +30,7 @@
   --success-bg: hsl(150, 100%, 6%);
   --success-border: hsl(147, 100%, 12%);
   --success-text: hsl(150, 86%, 65%);
-
+  
   --info-bg: hsl(215, 100%, 6%);
   --info-border: hsl(223, 100%, 12%);
   --info-text: hsl(216, 87%, 65%);

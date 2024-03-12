@@ -1,3 +1,4 @@
+import { useContext } from 'react';
 
 import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -8,7 +9,7 @@ import { Toaster } from 'sonner';
 
 import { DaikokuApp, DaikokuHomeApp } from './apps';
 import { LoginPage } from './components';
-import { GlobalContextProvider } from './contexts/globalContext';
+import { GlobalContextProvider, GlobalContext } from './contexts/globalContext';
 import { I18nProvider } from './contexts/i18n-context';
 
 import '@maif/react-forms/lib/index.css';
@@ -52,12 +53,13 @@ export function init(
     },
   });
 
+
   root.render(
     <ApolloProvider client={client}>
       <QueryClientProvider client={queryClient}>
         <GlobalContextProvider>
           <I18nProvider tenant={tenant} user={user}>
-            <Toaster richColors position="top-right" />
+            <ToasterComponent />
             <DaikokuApp />
           </I18nProvider>
         </GlobalContextProvider>
@@ -65,6 +67,14 @@ export function init(
     </ApolloProvider>
 
   );
+}
+
+const ToasterComponent = () => {
+  const {theme} = useContext(GlobalContext)
+
+  return (
+    <Toaster richColors position="top-right" theme={theme.toLocaleLowerCase() as 'light' | 'dark'} />
+  )
 }
 
 export function login(provider: any, callback: any, tenant: any) {
