@@ -1,19 +1,20 @@
 import { useContext, useEffect, useState } from 'react';
-import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
 import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
-import { IBaseModalProps } from './types';
 import { isError } from '../../types';
+import { GlobalContext } from '../globalContext';
+import { IBaseModalProps } from './types';
+import { toast } from 'sonner';
 
 export const JoinTeamInvitationModal = (props: IBaseModalProps) => {
   const [error, setError] = useState<string>();
   const [team, setTeam] = useState<string>();
-  const [notificationId, setNotificationId] = useState('');
   const navigate = useNavigate();
 
   const { translate, Translation } = useContext(I18nContext);
+  const { tenant } = useContext(GlobalContext);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -25,70 +26,72 @@ export const JoinTeamInvitationModal = (props: IBaseModalProps) => {
             setError(res.error);
           } else {
             setTeam(res.team);
-            setNotificationId(res.notificationId);
           }
         });
     }
   }, []);
 
-  function accept() {
-    Services.acceptNotificationOfTeam(notificationId)
-      .then(() => {
-        Services.removeTeamInvitation().then(() => {
-          toast.success(translate('team_member.has_joined'));
-          goToHome();
-        });
-      });
-  }
-
-  function refuse() {
-    Services.rejectNotificationOfTeam(notificationId)
-      .then(() => {
-        Services.removeTeamInvitation();
-        goToHome();
-      });
-  }
 
   function goToHome() {
     props.close();
     navigate('/apis');
   }
 
+  const signup = () => {
+    props.close();
+    if (tenant.loginProvider === 'Local') {
+      navigate('/signup');
+    } else {
+      navigate(`/auth/${tenant.loginProvider}/login`)
+    }
+  }
+
+  const decline = () => {
+    const params = new URLSearchParams(window.location.search);
+    Services.declineMyTeamInvitation(params.get('token') as string)
+      .then(r => {
+        if (isError(r)) {
+          toast.error(r.error)
+        } else {
+          toast.success(translate('team_member.invitation.decline.successful'));
+          goToHome();
+        }
+      })
+
+  }
+
   return (
-    <div className="modal-content mx-auto p-3" style={{ maxWidth: '448px' }}>
-      <div className="modal-header d-flex flex-column align-items-center">
-        <i className="fas fa-users fa-2x mb-3" />
-        <h5 className="modal-title text-center">
-          <Translation i18nkey="team_member.invitation" replacements={[team]} />
-          <span style={{ fontWeight: 'bold', display: 'block' }}>{team}</span>
+    <div className="modal-content">
+      <div className="modal-header">
+        <h5 className="modal-title">
+          team invitation
         </h5>
       </div>
       <div className="modal-body">
+        {!error && <Translation i18nkey="team_member.invitation" replacements={[team]} />}
         {error && (
           <div className="alert alert-danger" role="alert">
             {translate(error)}
           </div>
         )}
-        {error ? (
-          <button
-            className="btn btn-info btn-block btn-lg"
-            type="button"
-            onClick={() => {
-              props.close();
-              navigate('/apis');
-            }}
-          >
-            {translate('Home')}
+
+      </div>
+      <div className="modal-footer">
+        {!error && <>
+          <button type="button" className="btn btn-outline-danger" onClick={() => decline()}>
+            {translate('team_member.refuse_invitation')}
           </button>
-        ) : (
-          <div className="d-flex mt-3">
-            <button className="btn btn-success btn-block" type="button" onClick={accept}>
-              {translate('team_member.accept_invitation')}
-            </button>
-            <button className="btn btn-danger ms-2" type="button" onClick={refuse}>
-              {translate('team_member.refuse_invitation')}
-            </button>
-          </div>
+          {tenant.loginProvider === 'Local' && <button type="button" className="btn btn-outline-success" onClick={() => signup()}>
+            {translate('team_member.accept_invitation')}
+          </button>}
+          {tenant.loginProvider !== 'Local' && <a className="btn btn-outline-success" href={`/auth/${tenant.loginProvider}/login`}>
+            {translate('team_member.accept_invitation')}
+          </a>}
+        </>}
+        {error && (
+          <button type="button" className="btn btn-outline-success" onClick={() => goToHome()}>
+            {translate('Ok')}
+          </button>
         )}
       </div>
     </div>

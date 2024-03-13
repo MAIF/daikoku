@@ -139,6 +139,14 @@ export const DaikokuApp = () => {
                     }
                   />
                   <Route
+                    path="/signup"
+                    element={
+                      <UnauthenticatedRoute title={`${tenant.title} - ${translate('Signup')}`} >
+                        <Signup />
+                      </UnauthenticatedRoute>
+                    }
+                  />
+                  <Route
                     path="/notifications*"
                     element={
                       <RouteWithTitle title={`${tenant.title} - ${translate('Notifications')}`}>

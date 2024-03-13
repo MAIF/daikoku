@@ -53,7 +53,7 @@ GET     /api/me/_2fa                                    fr.maif.otoroshi.daikoku
 GET     /api/me/_2fa/enable                             fr.maif.otoroshi.daikoku.ctrls.UsersController.enable2fa(code: Option[String] ?= None)
 DELETE  /api/me/_2fa                                    fr.maif.otoroshi.daikoku.ctrls.UsersController.disable2fa()
 POST    /api/me/invitation/_check                       fr.maif.otoroshi.daikoku.ctrls.UsersController.checkTokenInvitation()
-DELETE  /api/me/invitation                              fr.maif.otoroshi.daikoku.ctrls.UsersController.removeInvitation()
+DELETE  /api/me/invitation                              fr.maif.otoroshi.daikoku.ctrls.UsersController.removeInvitation(token: Option[String] ?= None)
 PUT     /api/me/password                                fr.maif.otoroshi.daikoku.ctrls.UsersController.updatePassword()
 
 GET     /api/me/notifications                           fr.maif.otoroshi.daikoku.ctrls.NotificationController.myUntreatedNotifications(page: Int ?= 0, pageSize: Int ?= 10)

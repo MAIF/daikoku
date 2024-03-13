@@ -99,7 +99,7 @@ export const myNotifications = (
 ): Promise<{ notifications: Array<INotification>; count: number }> =>
   customFetch(`/api/me/notifications?page=${page}&pageSize=${pageSize}`);
 
-export const myUnreadNotificationsCount = (): Promise<{count: number}> =>
+export const myUnreadNotificationsCount = (): Promise<{ count: number }> =>
   fetch('/api/me/notifications/unread-count')
     .then(
       (r) => (r.status === 200 ? r.json() : { count: 0 }),
@@ -1001,7 +1001,7 @@ export const login = (username: string, password: string, action: string) => {
   body.append('username', username);
   body.append('password', password);
 
-  console.debug({action})
+  console.debug({ action })
 
   return fetch(action, {
     method: 'POST',
@@ -1109,13 +1109,13 @@ export const reset2faAccess = (backupCodes: any) =>
 
 export const selfVerify2faCode = (code: string) => customFetch(`/api/me/_2fa/enable?code=${code}`);
 
-export const validateInvitationToken = (token?: string | null): PromiseWithError<{team: string, notificationId: string}> =>
+export const validateInvitationToken = (token?: string | null): PromiseWithError<{ team: string, notificationId: string, user: string }> =>
   customFetch('/api/me/invitation/_check', {
     method: 'POST',
     body: JSON.stringify({ token }),
   });
 
-export const removeTeamInvitation = () => customFetch('/api/me/invitation', { method: 'DELETE' });
+export const declineMyTeamInvitation = (token: string): PromiseWithError<ResponseDone> => customFetch(`/api/me/invitation?token=${token}`, { method: 'DELETE' });
 
 export const createNewApiVersion = (apiId: string, teamId: string, version: string) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {

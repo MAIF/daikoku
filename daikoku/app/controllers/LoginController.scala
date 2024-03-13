@@ -1,13 +1,10 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
+import cats.data.EitherT
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuTenantAction,
-  DaikokuTenantActionContext
-}
+import controllers.AppError
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuTenantAction, DaikokuTenantActionContext}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
@@ -445,10 +442,10 @@ class LoginController(
       val body = ctx.request.body.as[JsObject]
       val email = (body \ "email").as[String]
       val name = (body \ "name").as[String]
-      val avatar =
-        (body \ "avatar").asOpt[String].getOrElse(User.DEFAULT_IMAGE)
+      val avatar = (body \ "avatar").asOpt[String].getOrElse(User.DEFAULT_IMAGE)
       val password = (body \ "password").as[String]
       val confirmPawword = (body \ "confirmPassword").as[String]
+
       env.dataStore.userRepo.findOne(Json.obj("email" -> email)).flatMap {
         case Some(user)
             if user.invitation.isEmpty || user.invitation.get.registered =>
@@ -464,7 +461,7 @@ class LoginController(
           ) match {
             case Left(msg) =>
               FastFuture.successful(BadRequest(Json.obj("error" -> msg)))
-            case Right(_) => {
+            case Right(_) =>
               val randomId = IdGenerator.token(128)
               env.dataStore.accountCreationRepo
                 .save(
@@ -497,7 +494,7 @@ class LoginController(
                       ctx.tenant,
                       Map(
                         "tenant" -> ctx.tenant.name,
-                        "link" -> s"${ctx.request.theProtocol}://${host}/account/validate?id=${randomId}"
+                        "link" -> s"${ctx.request.theProtocol}://$host/account/validate?id=$randomId"
                       )
                     )
                   } yield {
@@ -508,7 +505,6 @@ class LoginController(
                       }
                   }).flatten
                 }
-            }
           }
       }
     }
@@ -528,15 +524,14 @@ class LoginController(
             .findOneNotDeleted(Json.obj("randomId" -> id))
             .flatMap {
               case Some(accountCreation)
-                  if accountCreation.validUntil.isBefore(DateTime.now()) => {
+                  if accountCreation.validUntil.isBefore(DateTime.now()) =>
                 env.dataStore.accountCreationRepo
                   .deleteByIdLogically(accountCreation.id.value)
                   .map { _ =>
                     Redirect("/signup?error=not.valid.anymore")
                   }
-              }
               case Some(accountCreation)
-                  if accountCreation.validUntil.isAfter(DateTime.now()) => {
+                  if accountCreation.validUntil.isAfter(DateTime.now()) =>
                 env.dataStore.userRepo
                   .findOne(Json.obj("email" -> accountCreation.email))
                   .flatMap {
@@ -570,7 +565,6 @@ class LoginController(
                           name = accountCreation.name,
                           email = accountCreation.email,
                           picture = accountCreation.avatar,
-                          isDaikokuAdmin = false,
                           lastTenant = Some(ctx.tenant.id),
                           password = Some(accountCreation.password),
                           personalToken = Some(IdGenerator.token(32)),
@@ -595,13 +589,12 @@ class LoginController(
                           env.dataStore.accountCreationRepo
                             .deleteByIdLogically(accountCreation.id.value)
                       } yield ()
-                      userCreation.map { user =>
+                      userCreation.map { _ =>
                         Status(302)(
                           Json.obj("Location" -> "/?userCreated=true")
                         ).withHeaders("Location" -> "/?userCreated=true")
                       }
                   }
-              }
               case _ =>
                 Errors.craftResponseResult(
                   "Your link is invalid",

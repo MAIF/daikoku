@@ -1,7 +1,9 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
+import cats.data.EitherT
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
+import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
@@ -22,7 +24,7 @@ import java.util.Base64
 import java.util.concurrent.TimeUnit
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.FiniteDuration
 
 class UsersController(
@@ -477,30 +479,19 @@ class UsersController(
         )
       )(ctx) {
         val body = ctx.request.body
-        AppLogger.info(s"${(body \ "token").asOpt[String]}")
         (body \ "token").asOpt[String] match {
           case Some(token) =>
             env.dataStore.userRepo
-              .findOneNotDeleted(
-                Json.obj(
-                  "invitation.token" -> token,
-//                  "email" -> ctx.user.email
-                )
-              )
+              .findOneNotDeleted(Json.obj("invitation.token" -> token))
               .map {
-                case Some(user)
-                    if Hours
-                      .hoursBetween(
-                        user.invitation.get.createdAt,
-                        DateTime.now()
-                      )
-                      .isLessThan(Hours.ONE) =>
+                case Some(user) =>
                   user.invitation
                     .map { invitation =>
                       Ok(
                         Json.obj(
                           "team" -> invitation.team,
-                          "notificationId" -> invitation.notificationId
+                          "notificationId" -> invitation.notificationId,
+                          "user" -> user.email
                         )
                       )
                     }
@@ -524,20 +515,28 @@ class UsersController(
       }
     }
 
-  def removeInvitation(): Action[AnyContent] =
-    DaikokuAction.async { ctx =>
-      PublicUserAccess(
-        AuditTrailEvent("@{user.name} has closed team invitation")
+  def removeInvitation(maybeToken: Option[String]): Action[AnyContent] =
+    DaikokuActionMaybeWithGuest.async { ctx =>
+      UberPublicUserAccess(
+        AuditTrailEvent("@{invited_user} has declined his team invitation")
       )(ctx) {
-        env.dataStore.userRepo
-          .save(ctx.user.copy(invitation = None))
-          .map {
-            case true => Ok(Json.obj("done" -> true))
-            case false =>
-              BadRequest(
-                Json.obj("error" -> "Unable to remove data invitation")
-              )
-          }
+
+        (for {
+          token <- EitherT.fromOption[Future][AppError, String](maybeToken, AppError.InternalServerError("no token provided"))
+          _ = AppLogger.info(token)
+          user <- EitherT.fromOptionF[Future, AppError, User](env.dataStore.userRepo.findOne(Json.obj("invitation.token" -> token)), AppError.UserNotFound)
+          _ = AppLogger.info(user.id.value)
+          _ <- EitherT.pure[Future, AppError](ctx.setCtxValue("invited_user", user.email))
+          notification <- EitherT.fromOptionF[Future, AppError, Notification](env.dataStore.notificationRepo.forTenant(ctx.tenant).findOne(Json.obj(
+            "action.type" -> "TeamInvitation",
+            "action.user" -> user.id.asJson
+          )), AppError.EntityNotFound("notification"))
+          _ = AppLogger.info(notification.id.value)
+          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.notificationRepo.forTenant(ctx.tenant).deleteById(notification.id))
+          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.userRepo.deleteById(user.id))
+        } yield Ok(Json.obj("done" -> true)))
+          .leftMap(_.render())
+          .merge
       }
     }
 
