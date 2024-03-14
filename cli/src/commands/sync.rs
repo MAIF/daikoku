@@ -40,7 +40,7 @@ pub(crate) async fn run() -> DaikokuResult<()> {
     let cookie = read_cookie_from_environment()?;
     
     let req = Request::builder()
-        .method(Method::PUT)
+        .method(Method::POST)
         .uri(&url)
         .header(header::HOST, &host)
         .header(header::CONTENT_TYPE, "application/json")

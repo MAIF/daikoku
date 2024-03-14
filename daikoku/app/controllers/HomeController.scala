@@ -717,10 +717,28 @@ class HomeController(
     "text/xml" -> "xml"
   )
 
+  def summary() = DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent("@{user.name} has download the cms summary")
+      )(ctx.tenant.id.value, ctx) { (tenant, _) =>
+        env.dataStore.cmsRepo
+          .forTenant(tenant)
+          .findAllNotDeleted()
+          .map(pages => {
+            val summary = pages.foldLeft(Json.arr()) { (acc, page) =>
+                acc ++ Json
+                  .arr(page.asJson.as[JsObject] - "draft" - "history")
+              }
+
+            Ok(summary)
+          })
+      }
+    }
+
   def download() =
     DaikokuAction.async { ctx =>
       TenantAdminOnly(
-        AuditTrailEvent("@{user.nae} has download all files of the cms")
+        AuditTrailEvent("@{user.name} has download all files of the cms")
       )(ctx.tenant.id.value, ctx) { (tenant, _) =>
         env.dataStore.cmsRepo
           .forTenant(tenant)
@@ -742,12 +760,10 @@ class HomeController(
               out.write(data, 0, data.length)
             })
 
-            val summary: JsObject = Json.obj(
-              "pages" -> pages.foldLeft(Json.arr()) { (acc, page) =>
+            val summary = pages.foldLeft(Json.arr()) { (acc, page) =>
                 acc ++ Json
                   .arr(page.asJson.as[JsObject] - "body" - "draft" - "history")
               }
-            )
 
             val sb = new StringBuilder()
             sb.append(Json.stringify(summary))

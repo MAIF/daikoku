@@ -145,6 +145,13 @@ pub enum ProjectCommands {
     List {},
       /// ⚠️  be careful, this will clear all projects
     Reset {},
+    /// ⚠️ import legacy projects from Daikoku
+    Import {
+        #[arg(value_name = "NAME", short = 'n', long = "name")]
+        name: String,
+        #[arg(value_name = "PATH", short = 'p', long = "path")]
+        path: String,
+    }
 }
 
 async fn process(command: Commands) -> DaikokuResult<()> {
@@ -157,7 +164,7 @@ async fn process(command: Commands) -> DaikokuResult<()> {
         } => commands::creation::run(template, name, path.map(|p| absolute_path(p).unwrap())).await,
         Commands::Watch { environment } => commands::watch::run(environment).await,
         Commands::Environments { command } => commands::enviroments::run(command).await,
-        Commands::Projects { command } => commands::projects::run(command),
+        Commands::Projects { command } => commands::projects::run(command).await,
         Commands::Login { token } => commands::login::run(token).await,
         Commands::Sync {  } => commands::sync::run().await
     }

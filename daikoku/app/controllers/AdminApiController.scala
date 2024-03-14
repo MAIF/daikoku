@@ -8,7 +8,7 @@ import cats.implicits._
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.DaikokuAdminOnly
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{DaikokuAdminOnly, TenantAdminOnly}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -18,7 +18,7 @@ import fr.maif.otoroshi.daikoku.utils.admin._
 import io.vertx.pgclient.PgPool
 import org.apache.pekko.stream.scaladsl.Source
 import play.api.http.HttpEntity
-import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
+import play.api.libs.json.{JsArray, JsObject, JsValue, Json, Reads}
 import play.api.libs.streams.Accumulator
 import play.api.mvc._
 import storage.drivers.postgres.PostgresDataStore
@@ -906,6 +906,28 @@ class CmsPagesAdminApiController(
     } yield entity
 
   override def getId(entity: CmsPage): CmsPageId = entity.id
+
+  def sync() = daa.async(parse.json) { ctx =>
+    val body = ctx.request.body
+
+      (for {
+          _ <- env.dataStore.cmsRepo.forTenant(ctx.tenant).deleteAll()
+        } yield {
+          Future.sequence(body
+            .as(Reads.seq(CmsFileFormat.reads))
+            .map(page => {
+              env
+                .dataStore
+                .cmsRepo
+                .forTenant(ctx.tenant)
+                .save(page.toCmsPage(ctx.tenant.id))
+            }))
+            .map(_ => NoContent)
+            .recover {
+              case e: Throwable => BadRequest(Json.obj("error" -> e.getMessage))
+            }
+          }).flatten
+      }
 }
 
 class TranslationsAdminApiController(

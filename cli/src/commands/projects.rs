@@ -1,18 +1,30 @@
 use std::{
     collections::HashMap,
+    fs,
+    io::{Read, Write},
     path::{Path, PathBuf},
+    str::FromStr,
 };
 
+use bytes::Bytes;
 use configparser::ini::Ini;
+use http_body_util::Empty;
+use hyper::{header, Method, Request};
+use hyper_util::rt::TokioIo;
+use serde::{Deserialize, Serialize};
+use tokio::net::TcpStream;
 
 use crate::{
     logging::{
         error::{DaikokuCliError, DaikokuResult},
-        logger,
+        logger::{self, println},
     },
-    utils::absolute_path,
+    models::folder::{Ext, SourceExtension},
+    utils::{absolute_path, frame_to_bytes_body},
     ProjectCommands,
 };
+
+use super::enviroments::{get_default_environment, read_cookie_from_environment};
 
 #[derive(Clone)]
 pub(crate) struct Project {
@@ -20,7 +32,23 @@ pub(crate) struct Project {
     // name: String,
 }
 
-pub(crate) fn run(command: ProjectCommands) -> DaikokuResult<()> {
+#[derive(Clone, Deserialize, Serialize, Debug)]
+struct CmsPage {
+    _id: String,         //: "651443d43d00001b85d2dc7a",
+    visible: bool,       //: true,
+    authenticated: bool, //: false,
+    name: String,        //: "parcours-affiliation-digitale",
+    #[serde(alias = "contentType")]
+    content_type: String, //: "text/html",
+    path: Option<String>, //: "/parcours-affiliation-digitale",
+    exact: bool,         //: false,
+    #[serde(alias = "lastPublishedDate")]
+    last_published_date: u64, //: 1706520418595
+    #[serde(alias = "body")]
+    content: String,
+}
+
+pub(crate) async fn run(command: ProjectCommands) -> DaikokuResult<()> {
     match command {
         ProjectCommands::Add {
             name,
@@ -31,6 +59,7 @@ pub(crate) fn run(command: ProjectCommands) -> DaikokuResult<()> {
         ProjectCommands::Delete { name } => delete(name),
         ProjectCommands::List {} => list(),
         ProjectCommands::Reset {} => clear(),
+        ProjectCommands::Import { name, path } => import(name, path).await,
     }
 }
 
@@ -53,8 +82,8 @@ pub(crate) fn get_default_project() -> DaikokuResult<Project> {
     ))?;
 
     match (&project["name"], &project["path"]) {
-        (Some(_name), Some(path)) => Ok(Project { 
-            // name: name.to_string(), 
+        (Some(_name), Some(path)) => Ok(Project {
+            // name: name.to_string(),
             path: path.to_string() }),
         (_, _) => Err(DaikokuCliError::Configuration(
             "missing default project or values in project. Specify a default project to use. See projects commands"
@@ -226,4 +255,221 @@ fn clear() -> DaikokuResult<()> {
             e.to_string()
         ))),
     }
+}
+
+async fn import(name: String, path: String) -> DaikokuResult<()> {
+    logger::loading("<yellow>Converting</> legacy project from Daikoku environment".to_string());
+
+    let environment = get_default_environment()?;
+
+    let host = environment
+        .server
+        .replace("http://", "")
+        .replace("https://", "");
+
+    let url: String = format!("{}/api/cms", environment.server);
+
+    let cookie = read_cookie_from_environment()?;
+
+    let req = Request::builder()
+        .method(Method::GET)
+        .uri(&url)
+        .header(header::HOST, &host)
+        .header(header::COOKIE, format!("daikoku-session={}", cookie))
+        .body(Empty::<Bytes>::new())
+        .unwrap();
+
+    let stream = TcpStream::connect(&host).await.map_err(|err| {
+        DaikokuCliError::DaikokuErrorWithMessage("failed to join the server".to_string(), err)
+    })?;
+    let io = TokioIo::new(stream);
+
+    let (mut sender, conn) = hyper::client::conn::http1::handshake(io)
+        .await
+        .map_err(|err| DaikokuCliError::HyperError(err))?;
+
+    tokio::task::spawn(async move {
+        if let Err(err) = conn.await {
+            logger::error(format!("Connection error {:?}", err));
+        }
+    });
+
+    let upstream_resp = sender
+        .send_request(req)
+        .await
+        .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?;
+
+    let (
+        hyper::http::response::Parts {
+            headers: _, status, ..
+        },
+        body,
+    ) = upstream_resp.into_parts();
+
+    let status = status.as_u16();
+
+    if status == 200 {
+        let zip_bytes: Vec<u8> = frame_to_bytes_body(body).await;
+
+        // let _ = extract_zip(zip_bytes, &name, &path);
+
+        let items: Vec<CmsPage> = read_summary_file(zip_bytes)?;
+
+        convert_cms_pages(
+            items,
+            PathBuf::from_str(&path)
+                .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?
+                .join(name),
+        )?;
+
+        create_project()?;
+
+        Ok(())
+    } else {
+        Err(DaikokuCliError::DaikokuStrError(format!(
+            "failed to reach the Daikoku server {}",
+            status
+        )))
+    }
+}
+
+fn convert_cms_pages(items: Vec<CmsPage>, project_path: PathBuf) -> DaikokuResult<()> {
+    items.iter().for_each(|item| {
+        let _ = SourceExtension::from_str(&item.content_type).map(|extension| match extension {
+            content_type @ SourceExtension::HTML => {
+                create_html(item, content_type, project_path.clone())
+            }
+            SourceExtension::CSS => create_css_file(item, project_path.clone()),
+            SourceExtension::Javascript => create_js_script(item, project_path.clone()),
+            content_type @ SourceExtension::JSON => {
+                create_date_file(item, content_type, project_path.clone())
+            }
+        });
+    });
+
+    Ok(())
+}
+
+fn create_date_file(
+    item: &CmsPage,
+    content_type: SourceExtension,
+    project_path: PathBuf,
+) -> DaikokuResult<()> {
+    create_path_and_file(
+        project_path
+            .join("data")
+            .join(format!("{}{}", item.name, content_type.ext())),
+        item.content.clone(),
+    )
+}
+
+fn create_js_script(item: &CmsPage, project_path: PathBuf) -> DaikokuResult<()> {
+    create_path_and_file(
+        project_path
+            .join("scripts")
+            .join(format!("{}{}", item.name, ".js")),
+        item.content.clone(),
+    )
+}
+
+fn create_css_file(item: &CmsPage, project_path: PathBuf) -> DaikokuResult<()> {
+    create_path_and_file(
+        project_path
+            .join("styles")
+            .join(format!("{}{}", item.name, ".css")),
+        item.content.clone(),
+    )
+}
+
+fn create_html(
+    item: &CmsPage,
+    content_type: SourceExtension,
+    project_path: PathBuf,
+) -> DaikokuResult<()> {
+    let parent = item.path.clone().map(|_| "pages").unwrap_or("blocks");
+
+    create_path_and_file(
+        project_path
+            .join(parent)
+            .join(format!("{}{}", item.name, content_type.ext())),
+        item.content.clone(),
+    )
+}
+
+fn create_path_and_file(file_buf: PathBuf, content: String) -> DaikokuResult<()> {
+    let parent =
+        file_buf
+            .parent()
+            .map(|path| Ok(path))
+            .unwrap_or(Err(DaikokuCliError::FileSystem(
+                "failed to recursively create paths".to_string(),
+            )))?;
+
+    if !parent.exists() {
+        fs::create_dir_all(parent).map_err(map_error_to_filesystem_error)?;
+    }
+
+    Ok(fs::write(file_buf, content).map_err(map_error_to_filesystem_error)?)
+}
+
+fn create_project() -> DaikokuResult<()> {
+    Ok(())
+}
+
+fn read_summary_file(content: Vec<u8>) -> DaikokuResult<Vec<CmsPage>> {
+    // let file_buf = PathBuf::from_str(&path)
+    //     .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?
+    //     .join(format!("{}-dev", name))
+    //     .join("summary.json");
+
+    // let content = fs::read_to_string(&file_buf).map_err(map_error_to_filesystem_error)?;
+
+    let content = String::from_utf8(content).map_err(map_error_to_filesystem_error)?;
+
+    let summary: Vec<CmsPage> =
+        serde_json::from_str(&content).map_err(map_error_to_filesystem_error)?;
+
+    Ok(summary)
+}
+
+// fn extract_zip(zip_bytes: Vec<u8>, name: &String, path: &String) -> DaikokuResult<()> {
+//     let file_buf = PathBuf::from_str(&path)
+//         .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?
+//         .join(format!("{}.zip", name));
+
+//     let file_path = file_buf
+//         .clone()
+//         .into_os_string()
+//         .into_string()
+//         .map_err(|_err| {
+//             DaikokuCliError::FileSystem(String::from("failed to convert path buf to string"))
+//         })?;
+
+//     if file_path.split("/").count() > 2 {
+//         let parent =
+//             file_buf
+//                 .parent()
+//                 .map(|path| Ok(path))
+//                 .unwrap_or(Err(DaikokuCliError::FileSystem(
+//                     "failed to recursively create paths".to_string(),
+//                 )))?;
+//         fs::create_dir_all(parent).map_err(map_error_to_filesystem_error)?;
+//     }
+
+//     let mut file = fs::File::create(&file_path).map_err(map_error_to_filesystem_error)?;
+
+//     file.write_all(&zip_bytes)
+//         .map_err(map_error_to_filesystem_error)?;
+
+//     zip_extensions::read::zip_extract(
+//         &file_buf,
+//         &PathBuf::from(&path).join(format!("{}-dev", &name)),
+//     )
+//     .map_err(map_error_to_filesystem_error)?;
+
+//     Ok(())
+// }
+
+fn map_error_to_filesystem_error<T: std::error::Error>(err: T) -> DaikokuCliError {
+    DaikokuCliError::FileSystem(err.to_string())
 }

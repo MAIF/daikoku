@@ -1,0 +1,70 @@
+<header>
+  <div class="container p-4">
+    <div class="row justify-content-between">
+      <div class="col-1 d-md-block header-left">
+        <a title="Daikoku home" href="{{url_retour}}">
+          <img src="https://daikokucms-images.opunmaif.fr/logo-maif.jpg">
+        </a>
+      </div>
+      <div class="row justify-content-between col-lg-7 d-none d-lg-flex">
+        <a href="/_/univers-mobilite" class="col-4">Nos offres d’assurance <span class="maif-color-text">Mobilité</span></a>
+        <a href="/_/univers-vie-quotidienne-pro" class="col-4">Nos offres d’assurance <span class="maif-color-text">Vie Quotidienne & Pro</span></a>
+        <a href="/_/parcours-api" class="col-4" style="text-align: center;">Nos parcours API</a>
+      </div>
+      <div class="col-lg-4 d-none d-lg-flex header-right">
+        <!-- Connecté -->
+        {{#if connected}}
+        <div class="non-connecte">
+          <a title="Accès aux notifications" href="{{daikoku-links-notifications}}"><i class="fas fa-bell"></i></a>
+          <a title="Accès aux messages" href="/settings/messages"><i class="fas fa-comment-alt"></i></a>
+          <a title="Accéder aux API" href="{{daikoku-links-backoffice}}"><i class="fas fa-gear"></i></a>
+          <a title="{{user.name}}" href="/me"><img class="icon" src="{{user.picture}}" /></a>
+          <a title="Déconnexion" href="{{daikoku-links-logout}}"><i class="fas fa-solid fa-right-from-bracket"></i></a>
+        </div>
+        {{/if}}
+  
+        <!-- Non connecté -->
+        {{#unless connected}}
+        <div class="buttons">
+          <a href="/signup">Créer un compte</a>
+          <a role="button" href="{{daikoku-links-login}}">Se connecter</a>
+        </div>
+        {{/unless}}      
+      </div>
+  
+      <div class="container-burger-menu d-flex col-8 d-lg-none header-right" >
+        <a href="#" id="openBtn">
+            <span class="burger-icon">
+              <span></span>
+              <span></span>
+              <span></span>
+            </span>
+          </a>
+        <div id="mySidenav" class="sidenav">
+          <a id="closeBtn" href="#" class="close">×</a>
+          <ul>
+            <li><a href="/_/univers-mobilite">Nos offres <span class="maif-color-text">Mobilité</span></a></li>
+            <li><a href="/_/univers-vie-quotidienne-pro">Nos offres <span class="maif-color-text">Vie Quotidienne & Pro</span></a></li>
+            <li><a href="/_/parcours-api">Nos parcours API</a></li>
+            {{#if connected}}
+        
+            <li></li><a title="Accès aux notifications" href="{{daikoku-links-notifications}}"><i class="fas fa-bell"></i> Notifications</a></li>
+            <li><a title="Accès aux messages" href="/settings/messages"><i class="fas fa-comment-alt"></i> Messages</a></li>
+            <li><a title="Accéder aux API" href="{{daikoku-links-backoffice}}"><i class="fas fa-gear"></i> API</a></li>
+            <li><a title="{{user.name}}" href="/me"><img class="icon" src="{{user.picture}}" /> Mon profil</a></li>
+            <li><a title="Déconnexion" href="{{daikoku-links-logout}}"><i class="fas fa-solid fa-right-from-bracket"></i>Déconnexion</a></li>
+            {{/if}}
+  
+            <!-- Non connecté -->
+            {{#unless connected}}
+            <li><a href="/signup">Créer un compte</a></li>
+            <li><a role="button" href="{{daikoku-links-login}}">Se connecter</a></li>
+            {{/unless}} 
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+  <script src="{{daikoku-page-url "655dcd5615000001e6aed967"}}"></script>
+  </div>
+</header>
