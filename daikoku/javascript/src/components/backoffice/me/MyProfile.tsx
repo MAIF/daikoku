@@ -430,7 +430,7 @@ export const MyProfile = () => {
     });
   };
 
-  const resetToken = () => {
+  const resetToken = (copy) => {
     let rawUser: any = user;
     fetch(`/api/users/${rawUser._id as string}/session`, {
       credentials: 'include'
@@ -439,7 +439,8 @@ export const MyProfile = () => {
       .then(data => {
         setToken(data.token);
 
-        copyToken()
+        if (copy)
+          copyToken()
       })
   }
 
@@ -453,8 +454,6 @@ export const MyProfile = () => {
       }, 1500))
     }
   }
-
-  console.log(copiedTimeout)
 
   return (
     <div className="container-fluid">
@@ -480,7 +479,7 @@ export const MyProfile = () => {
             <span
               className={`nav-link cursor-pointer ${tab === 'cms_cli' ? 'active' : ''}`}
               onClick={() => {
-                resetToken()
+                resetToken(undefined)
                 setTab('cms_cli')
               }}
             >

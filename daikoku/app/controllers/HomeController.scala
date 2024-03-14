@@ -458,7 +458,6 @@ class HomeController(
             Future.sequence(body
               .as(Reads.seq(CmsFileFormat.reads))
               .map(page => {
-                println(page)
                 env
                   .dataStore
                   .cmsRepo
