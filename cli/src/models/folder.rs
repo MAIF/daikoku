@@ -95,7 +95,6 @@ pub(crate) fn read_sources(path: PathBuf) -> DaikokuResult<Vec<CmsFile>> {
 }
 
 fn read_file(file_path: PathBuf, file_name: String, extension: String) -> CmsFile {
-    // println!("read file {} - {:?} - {}", file_name, file_path, extension);
     let content = fs::read_to_string(&file_path).unwrap();
 
     let parts = &file_path

@@ -59,7 +59,7 @@ pub(crate) async fn run() -> DaikokuResult<()> {
 
     tokio::task::spawn(async move {
         if let Err(err) = conn.await {
-            println!("Connection error: {:?}", err);
+            logger::error(format!("Connection error {:?}", err));
         }
     });
 

@@ -69,7 +69,7 @@ pub(crate) async fn run(incoming_environment: Option<String>) -> DaikokuResult<(
                             .serve_connection(io, service_fn(|req| watcher(req, &environment)))
                             .await
                         {
-                            println!("Error serving connection: {:?}", err);
+                            logger::error(format!("Error serving connection {:?}", err));
                         }
                     });
                 }
@@ -91,7 +91,7 @@ async fn watcher(
     let uri = req.uri().path().to_string();
 
     if uri.starts_with("/api/") || uri.starts_with("/tenant-assets/") {
-        println!("forward to api or /tenant-assets");
+        logger::println("forward to api or /tenant-assets".to_string());
         forward_api_call(uri, req, environment).await
     } else {
         let path = uri.replace("_/", "");
@@ -164,8 +164,6 @@ async fn forward_api_call(
 
     let url: String = format!("{}{}", environment.server, uri);
 
-    println!("forward to {}", url);
-
     let cookie = read_cookie_from_environment()?;
 
     let raw_req = Request::builder()
@@ -205,13 +203,12 @@ async fn forward_api_call(
 
     tokio::task::spawn(async move {
         if let Err(err) = conn.await {
-            println!("Connection error: {:?}", err);
+            logger::error(format!("Connection error: {:?}", err));
         }
     });
 
     let upstream_resp = sender.send_request(req).await.map_err(|err| {
-        println!("{:?}", err);
-
+        logger::error(format!("send request failed {:?}", err));
         DaikokuCliError::ParsingError(err.to_string())
     })?;
 
@@ -311,15 +308,12 @@ async fn render_page(
 
     tokio::task::spawn(async move {
         if let Err(err) = conn.await {
-            println!("Connection error: {:?}", err);
+            logger::error(format!("Connection error {:?}", err));
         }
     });
 
-    logger::println(format!("<green>Query</> server {}", page.name));
-
     let upstream_resp = sender.send_request(req).await.map_err(|err| {
-        println!("{:?}", err);
-
+        logger::error(format!("{:?}", err));
         DaikokuCliError::ParsingError(err.to_string())
     })?;
 

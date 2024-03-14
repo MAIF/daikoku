@@ -111,7 +111,7 @@ pub(crate) async fn can_join_daikoku(server: &String) -> DaikokuResult<bool> {
 
     tokio::task::spawn(async move {
         if let Err(err) = conn.await {
-            println!("Connection error: {:?}", err);
+            logger::error(format!("Connection error {:?}", err));
         }
     });
 
