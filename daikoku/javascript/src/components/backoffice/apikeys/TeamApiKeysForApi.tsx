@@ -36,14 +36,14 @@ export const TeamApiKeysForApi = () => {
   const queryClient = useQueryClient();
 
   const apiQuery = useQuery({
-    queryKey: ['data', 'visibleApi'],
+    queryKey: ['data', 'visibleApi', params.apiId, params.versionId],
     queryFn: () => Services.getTeamVisibleApi((currentTeam as ITeamSimple)._id, params.apiId!, params.versionId!),
-    enabled: currentTeam && !isError(currentTeam)
+    enabled: !!currentTeam && !isError(currentTeam)
   }) //FIXME: not real IAPI (betterApis with plans & pendingPlans)
   const subsQuery = useQuery({
     queryKey: ['data', 'subscriptions'],
     queryFn: () => Services.getTeamSubscriptions(params.apiId!, (currentTeam as ITeamSimple)._id, params.versionId!),
-    enabled: currentTeam && !isError(currentTeam)
+    enabled: !!currentTeam && !isError(currentTeam)
   })
 
   const teamQuery = useQuery({
@@ -78,12 +78,12 @@ export const TeamApiKeysForApi = () => {
     const updateCustomName = (subscription: ISubscription, customName: string) => {
       return Services.updateSubscriptionCustomName(currentTeam, subscription, customName);
     };
-  
+
     const archiveApiKey = (subscription: ISubscription) => {
       return Services.archiveApiKey(currentTeam._id, subscription._id, !subscription.enabled)
         .then(() => queryClient.invalidateQueries({ queryKey: ['subscriptions'] }))
     };
-  
+
     const makeUniqueApiKey = (subscription: ISubscription) => {
       confirm({ message: translate('team_apikey_for_api.ask_for_make_unique') })
         .then((ok) => {
@@ -95,13 +95,13 @@ export const TeamApiKeysForApi = () => {
               });
         });
     };
-  
+
     const toggleApiKeyRotation = (subscription: ISubscription, plan: IUsagePlan, enabled: boolean, rotationEvery: number, gracePeriod: number) => {
       if (plan.autoRotation) {
         toast.error(translate('rotation.error.message'))
         return Promise.resolve()
       }
-  
+
       return Services.toggleApiKeyRotation(
         currentTeam._id,
         subscription._id,
@@ -111,7 +111,7 @@ export const TeamApiKeysForApi = () => {
       )
         .then(() => queryClient.invalidateQueries({ queryKey: ['subscriptions'] }))
     };
-  
+
     const regenerateApiKeySecret = (subscription: ISubscription) => {
       return confirm({ message: translate('reset.secret.confirm') })
         .then((ok) => {
@@ -124,8 +124,8 @@ export const TeamApiKeysForApi = () => {
           }
         });
     };
-  
-  
+
+
     if (apiQuery.isLoading && subsQuery.isLoading && teamQuery.isLoading && subApisQuery.isLoading) {
       return <Spinner />
     } else if (apiQuery.data && subsQuery.data && teamQuery.data && subApisQuery.data && !isError(apiQuery.data) && !isError(subsQuery.data) && !isError(teamQuery.data) && !isError(subApisQuery.data)) {
@@ -133,7 +133,7 @@ export const TeamApiKeysForApi = () => {
       const apiTeam = teamQuery.data;
       const subscriptions = subsQuery.data;
       const subscribedApis = subApisQuery.data.data.apis;
-  
+
       const search = searched.trim().toLowerCase();
       const filteredApiKeys =
         search === ''
@@ -149,7 +149,7 @@ export const TeamApiKeysForApi = () => {
                 .includes(search);
             }
           });
-  
+
       const sorted = sortBy(filteredApiKeys, ['plan', 'customName', 'parent']);
       const sortedApiKeys = sorted
         .filter((f) => f.parent)
@@ -162,7 +162,7 @@ export const TeamApiKeysForApi = () => {
             })
             : [...acc, { ...sub, children: [] }];
         }, sorted.filter((f) => !f.parent).map((sub) => ({ ...sub, children: [] })));
-  
+
       return (
         <Can I={read} a={apikey} team={currentTeam} dispatchError>
           {api && apiTeam ? (<div className="row">
@@ -178,7 +178,7 @@ export const TeamApiKeysForApi = () => {
             <div className="col-12 mt-2 mb-4">
               <input type="text" className="form-control col-5" placeholder={translate('Search your apiKey...')} aria-label="Search your apikey" value={searched} onChange={(e) => setSearched(e.target.value)} />
             </div>
-  
+
             <div className="col-12">
               <PaginatedComponent items={sortedApiKeys} count={5} formatter={(subscription: ISubscriptionWithChildren) => {
                 return (
@@ -200,14 +200,13 @@ export const TeamApiKeysForApi = () => {
         </Can>
       );
     } else {
-
       return <div>an error occured</div>
     }
   } else {
     toast.error(error?.message || currentTeam?.error)
   }
 
-  
+
 }
 
 type ApiKeyCardProps = {
@@ -249,7 +248,7 @@ const ApiKeyCard = ({
 
   const { translate, Translation } = useContext(I18nContext);
 
-  const planQuery = useQuery({ queryKey: ['plan'], queryFn: () => Services.getVisiblePlan(api._id, api.currentVersion, subscription.plan) })
+  const planQuery = useQuery({ queryKey: ['plan', subscription.plan], queryFn: () => Services.getVisiblePlan(api._id, api.currentVersion, subscription.plan) })
 
 
   useEffect(() => {
@@ -339,8 +338,6 @@ const ApiKeyCard = ({
     };
 
     const disableRotation = api.visibility === 'AdminOnly' || !!plan.autoRotation;
-
-    console.debug({ subscription })
 
     return (
       <div className="col-12 col-sm-6 col-md-4 mb-2">

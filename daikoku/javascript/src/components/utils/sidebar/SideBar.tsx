@@ -84,6 +84,7 @@ export const SideBar = () => {
               <div className="nav_item mb-3 cursor-pointer">
                 <Plus
                   className="notification-link"
+                  aria-label="create"
                   onClick={() => {
                     setPanelState(state.opened);
                     setPanelContent(<AddPanel />);

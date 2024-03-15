@@ -5,9 +5,9 @@
   --normal-border: var(--gray4);
   --normal-text: var(--gray12);
 
-  --success-bg: #{$success-color};
-  --success-border: #{$success-color};
-  --success-text: #{$success-hover-color};
+  --success-bg: #{$success-hover-color};
+  --success-border: #{$success-hover-color};
+  --success-text: #{$success-color};
 
   --info-bg: hsl(208, 100%, 97%);
   --info-border: hsl(221, 91%, 91%);
@@ -17,9 +17,9 @@
   --warning-border: hsl(49, 91%, 91%);
   --warning-text: hsl(31, 92%, 45%);
 
-  --error-bg: rebeccapurple !important;
-  --error-border: rebeccapurple !important;;
-  --error-text: #fff !important;
+  --error-bg: #{$error-hover-color};
+  --error-border: #{$error-hover-color};
+  --error-text: #{$error-color};
 }
 
 [data-sonner-toaster][data-theme='dark'] {

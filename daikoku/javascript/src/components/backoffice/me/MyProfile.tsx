@@ -318,6 +318,8 @@ export const MyProfile = () => {
   const { translate, setLanguage, language, Translation, languages } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
 
+  console.debug({languages, defaultValue: languages.find((l) => l.value === tenant.defaultLanguage)})
+
   const formSchema: Schema = {
     name: {
       type: type.string,
@@ -348,7 +350,7 @@ export const MyProfile = () => {
       type: type.string,
       format: format.select,
       label: translate('Default language'),
-      defaultValue: languages.find((l: any) => l.value === tenant.defaultLanguage),
+      defaultValue: languages.find((l) => l.value === tenant.defaultLanguage)?.value || 'En',
       options: languages,
     },
   };
