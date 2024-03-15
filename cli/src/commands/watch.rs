@@ -18,6 +18,7 @@ use crate::logging::error::{DaikokuCliError, DaikokuResult};
 use crate::logging::logger::{self};
 use crate::models::folder::{read_contents, CmsFile, SourceExtension, UiCmsFile};
 use crate::utils::frame_to_bytes_body;
+use html_escape;
 
 use super::enviroments::{
     can_join_daikoku, check_environment_from_str, read_cookie_from_environment, Environment,
@@ -50,7 +51,10 @@ pub(crate) async fn run(incoming_environment: Option<String>) -> DaikokuResult<(
     let _ = can_join_daikoku(&environment.server).await?;
 
     let port = std::env::var("WATCHING_PORT").unwrap_or("3333".to_string());
+
     logger::loading(format!("<yellow>Listening</> on {}", port));
+
+    // if webbrowser::open(&format!("http://localhost:{}", port)).is_ok() {}
 
     let listener = TcpListener::bind(format!("0.0.0.0:{}", port))
         .await
@@ -127,13 +131,19 @@ async fn watcher(
                 };
 
                 if result_page.is_empty() {
+                    logger::println("<red>No page found</>".to_string());
                     Ok(Response::new("404 page not found".into()))
                 } else {
                     match result_page.iter().nth(0) {
-                        None => match pages.iter().find(|p| p.path() == "/404") {
-                            Some(page) => render_page(page, path, environment, root_source).await,
-                            None => Ok(Response::new("404 page not found".into())),
-                        },
+                        None => {
+                            logger::println("<green>Serve 404</>".to_string());
+                            match pages.iter().find(|p| p.path() == "/404") {
+                                Some(page) => {
+                                    render_page(page, path, environment, root_source).await
+                                }
+                                None => Ok(Response::new("404 page not found".into())),
+                            }
+                        }
                         Some(res) => {
                             render_page(
                                 pages.iter().find(|p| p.path() == res.path).unwrap(),
@@ -346,14 +356,38 @@ async fn render_page(
                 .body(Full::new(Bytes::from(result)))
                 .unwrap())
         } else {
-            let source = String::from_utf8(result).unwrap().replace('"', "&quot;");
+            let src = String::from_utf8(result).unwrap();
+            // let source = html_escape::encode_text(&src);
+            // src.replace('"', "&quot;");
+            // .replace("&", "&amp;")
+            let source = src.replace('"', "&quot;");
+
+            // let source = src.replace("\"", "&quot;");
             let children: String = if SourceExtension::from_str(&page.content_type()).unwrap()
                 == SourceExtension::HTML
             {
                 format!("<iframe srcdoc=\"{}\"></iframe>", source)
             } else {
-                format!("<textarea readonly>{}</textarea>", source)
+                format!("<textarea readonly>{}</textarea>", src)
             };
+
+            println!(
+                "{}",
+                String::from_utf8(MANAGER_PAGE.to_vec())
+                    .unwrap()
+                    .replace(
+                        "{{components}}",
+                        serde_json::to_string(
+                            &content
+                                .iter()
+                                .map(|file| file.to_ui_component())
+                                .collect::<Vec<UiCmsFile>>(),
+                        )
+                        .unwrap()
+                        .as_str(),
+                    )
+                    .replace("{{children}}", children.as_str())
+            );
 
             Ok(Response::builder()
                 // .header(header::CONTENT_TYPE, &page.content_type())

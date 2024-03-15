@@ -113,10 +113,12 @@ fn read_file(file_path: PathBuf, file_name: String, extension: String) -> CmsFil
         .replace("pages/", "/")
         .replace("/page.html", "")
         .replace("/page.css", "");
-
+    
     if formatted_path == "" && file_name == "page.html" {
         formatted_path = "/".to_string();
     }
+
+    formatted_path = formatted_path.replace(".html", "");
 
     if content.contains("---") {
         let parts = content.split("---");

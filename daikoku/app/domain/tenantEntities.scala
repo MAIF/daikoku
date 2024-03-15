@@ -1045,7 +1045,7 @@ case class CmsPage(
   }
 
   private def cleanPath(path: String) = {
-    val out = path.replace("/_/", "/")
+    val out = path.replace("/_/", "/").replace(".html", "")
     if (!path.startsWith("/"))
       s"/$out"
     else

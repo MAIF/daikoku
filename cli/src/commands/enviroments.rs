@@ -35,7 +35,7 @@ pub(crate) async fn run(command: EnvironmentsCommands) -> DaikokuResult<()> {
             overwrite,
         } => add(name, server, token, overwrite.unwrap_or(false)).await,
         EnvironmentsCommands::Default { name } => update_default(name),
-        EnvironmentsCommands::Delete { name } => delete(name),
+        EnvironmentsCommands::Remove { name } => delete(name),
         EnvironmentsCommands::Env { name } => {
             let environment = get(name)?;
             logger::info(serde_json::to_string_pretty(&environment).unwrap());
@@ -100,9 +100,9 @@ pub(crate) async fn can_join_daikoku(server: &String) -> DaikokuResult<bool> {
         .body(Empty::<Bytes>::new())
         .unwrap();
 
-    let stream = TcpStream::connect(&host)
-        .await
-        .map_err(|err| DaikokuCliError::DaikokuErrorWithMessage("failed to join the server".to_string(), err))?;
+    let stream = TcpStream::connect(&host).await.map_err(|err| {
+        DaikokuCliError::DaikokuErrorWithMessage("failed to join the server".to_string(), err)
+    })?;
     let io = TokioIo::new(stream);
 
     let (mut sender, conn) = hyper::client::conn::http1::handshake(io)
@@ -129,12 +129,17 @@ pub(crate) async fn can_join_daikoku(server: &String) -> DaikokuResult<bool> {
 
     let status = status.as_u16();
 
-    logger::info(format!("Daikoku have returned : {}", status));
+    logger::println(format!("Daikoku have returned : {}", status));
 
     Ok(status == 200)
 }
 
-async fn add(name: String, server: String, token: Option<String>, overwrite: bool) -> DaikokuResult<()> {
+async fn add(
+    name: String,
+    server: String,
+    token: Option<String>,
+    overwrite: bool,
+) -> DaikokuResult<()> {
     logger::loading("<yellow>Patching</> configuration".to_string());
     let mut config: Ini = read()?;
 
@@ -291,15 +296,16 @@ pub(crate) fn get_default_environment() -> DaikokuResult<Environment> {
     let config: Ini = read()?;
 
     let default_environment = config.get("default", "environment").map(Ok).unwrap_or(Err(
-        DaikokuCliError::Configuration("default environment not found. see daikokucli environments help".to_string()),
+        DaikokuCliError::Configuration(
+            "default environment not found. see daikokucli environments help".to_string(),
+        ),
     ))?;
 
     get(default_environment)
 }
 
 pub(crate) fn check_environment_from_str(name: Option<String>) -> DaikokuResult<Environment> {
-    name
-        .map(|project_name| get(project_name))
+    name.map(|project_name| get(project_name))
         .unwrap_or(get_default_environment())
 }
 

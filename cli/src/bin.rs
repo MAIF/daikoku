@@ -73,7 +73,7 @@ pub enum Commands {
         command: ProjectCommands,
     },
     /// ⚠️ synchronize projects file with Daikoku
-    Sync {}
+    Sync {},
 }
 
 #[derive(Debug, Subcommand)]
@@ -107,7 +107,7 @@ pub enum EnvironmentsCommands {
         name: String,
     },
     /// ⚠️  be careful, remove the specified environment
-    Delete {
+    Remove {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
     },
@@ -137,21 +137,27 @@ pub enum ProjectCommands {
         name: String,
     },
     /// ⚠️  be careful, remove the specified project
-    Delete {
+    Remove {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
+        #[arg(value_name = "FILES", short = 'f', long = "files")]
+        remove_files: bool,
     },
-      /// list all projects
+    /// list all projects
     List {},
-      /// ⚠️  be careful, this will clear all projects
-    Reset {},
+    /// ⚠️  be careful, this will clear all projects
+    Clear {},
     /// ⚠️ import legacy projects from Daikoku
     Import {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
         #[arg(value_name = "PATH", short = 'p', long = "path")]
         path: String,
-    }
+        #[arg(value_name = "TOKEN", short = 't', long = "token")]
+        token: String,
+        #[arg(value_name = "SERVER", short = 's', long = "server")]
+        server: String,
+    },
 }
 
 async fn process(command: Commands) -> DaikokuResult<()> {
@@ -166,7 +172,7 @@ async fn process(command: Commands) -> DaikokuResult<()> {
         Commands::Environments { command } => commands::enviroments::run(command).await,
         Commands::Projects { command } => commands::projects::run(command).await,
         Commands::Login { token } => commands::login::run(token).await,
-        Commands::Sync {  } => commands::sync::run().await
+        Commands::Sync {} => commands::sync::run().await,
     }
 }
 
