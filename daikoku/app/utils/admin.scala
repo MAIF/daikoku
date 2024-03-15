@@ -424,7 +424,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
               JsonPatchHelpers.patchJson(ctx.request.body, currentJson) match {
                 case Some(newJson) => finalizePatch(newJson)
                 case None =>
-                  AppError.InternalServerError("parsing error").renderF()
+                  AppError.EntityConflict("Parsing").renderF()
               }
 
             case JsObject(_) =>
