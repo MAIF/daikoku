@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use tokio::net::{TcpListener, TcpStream};
 
 use crate::logging::error::{DaikokuCliError, DaikokuResult};
-use crate::logging::logger::{self};
+use crate::logging::logger::{self, println};
 use crate::models::folder::{read_contents, CmsFile, SourceExtension, UiCmsFile};
 use crate::utils::frame_to_bytes_body;
 
@@ -44,7 +44,10 @@ struct CmsRequestRendering {
     current_page: String,
 }
 
-pub(crate) async fn run(incoming_environment: Option<String>) -> DaikokuResult<()> {
+pub(crate) async fn run(
+    incoming_environment: Option<String>,
+    authentication: Option<bool>,
+) -> DaikokuResult<()> {
     let environment = check_environment_from_str(incoming_environment.clone())?;
 
     let _ = can_join_daikoku(&environment.server).await?;
@@ -61,6 +64,7 @@ pub(crate) async fn run(incoming_environment: Option<String>) -> DaikokuResult<(
 
     loop {
         let environment = environment.clone();
+        let authentication = authentication.unwrap_or(true);
         {
             match listener.accept().await {
                 Err(err) => logger::error(format!("{}", err.to_string())),
@@ -69,7 +73,10 @@ pub(crate) async fn run(incoming_environment: Option<String>) -> DaikokuResult<(
 
                     tokio::task::spawn(async move {
                         if let Err(err) = http1::Builder::new()
-                            .serve_connection(io, service_fn(|req| watcher(req, &environment)))
+                            .serve_connection(
+                                io,
+                                service_fn(|req| watcher(req, &environment, authentication)),
+                            )
                             .await
                         {
                             logger::error(format!("Error serving connection {:?}", err));
@@ -90,6 +97,7 @@ fn read_cms_pages() -> DaikokuResult<Summary> {
 async fn watcher(
     req: Request<hyper::body::Incoming>,
     environment: &Environment,
+    authentication: bool,
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     let uri = req.uri().path().to_string();
 
@@ -119,7 +127,7 @@ async fn watcher(
         });
 
         match pages.iter().find(|page| page.path() == path) {
-            Some(page) => render_page(page, path, environment, root_source).await,
+            Some(page) => render_page(page, path, environment, root_source, authentication).await,
             None => {
                 let strict_page = get_matching_routes(&path, get_pages(&router_pages, true), true);
 
@@ -138,7 +146,14 @@ async fn watcher(
                             logger::println("<green>Serve 404</>".to_string());
                             match pages.iter().find(|p| p.path() == "/404") {
                                 Some(page) => {
-                                    render_page(page, path, environment, root_source).await
+                                    render_page(
+                                        page,
+                                        path,
+                                        environment,
+                                        root_source,
+                                        authentication,
+                                    )
+                                    .await
                                 }
                                 None => Ok(Response::new("404 page not found".into())),
                             }
@@ -149,6 +164,7 @@ async fn watcher(
                                 path,
                                 environment,
                                 root_source,
+                                authentication,
                             )
                             .await
                         }
@@ -250,6 +266,7 @@ async fn render_page(
     watch_path: String,
     environment: &Environment,
     root_source: bool,
+    authentication: bool,
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     logger::println(format!(
         "<green>Serve page</> {} {}",
@@ -287,23 +304,23 @@ async fn render_page(
         .header(header::HOST, &host)
         .header(header::CONTENT_TYPE, "application/json");
 
-    // if page.authenticated() {
-    match read_cookie_from_environment() {
-        Ok(cookie) => {
-            builder = builder.header(header::COOKIE, format!("daikoku-session={}", cookie))
-        }
-        Err(err) => {
-            return Ok(Response::builder()
-                .header(header::CONTENT_TYPE, "text/html")
-                .body(Full::new(Bytes::from(
-                    String::from_utf8(SESSION_EXPIRED.to_vec())
-                        .unwrap()
-                        .replace("{{message}}", err.to_string().as_str()),
-                )))
-                .unwrap())
+    if authentication {
+        match read_cookie_from_environment() {
+            Ok(cookie) => {
+                builder = builder.header(header::COOKIE, format!("daikoku-session={}", cookie))
+            }
+            Err(err) => {
+                return Ok(Response::builder()
+                    .header(header::CONTENT_TYPE, "text/html")
+                    .body(Full::new(Bytes::from(
+                        String::from_utf8(SESSION_EXPIRED.to_vec())
+                            .unwrap()
+                            .replace("{{message}}", err.to_string().as_str()),
+                    )))
+                    .unwrap())
+            }
         }
     }
-    // }
     let req = builder.body(Full::new(body)).unwrap();
 
     let stream = TcpStream::connect(&host)
@@ -418,7 +435,7 @@ fn get_matching_routes<'a>(
     cms_paths: Vec<(String, &'a RouterCmsPage)>,
     strict_mode: bool,
 ) -> Vec<&'a RouterCmsPage> {
-    let str = path.clone().replace("/_", "");
+    let str = path.clone().replace("/_", "").replace(".html", "");
     let paths = str
         .split("/")
         .filter(|p| !p.is_empty())

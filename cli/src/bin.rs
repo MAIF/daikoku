@@ -61,6 +61,9 @@ pub enum Commands {
             required = false
         )]
         environment: Option<String>,
+        /// Enable/Disable token usage - really useful for testing authenticated pages
+        #[arg(value_name = "AUTHENTICATION", short = 'a', long = "authentication")]
+        authentication: Option<bool>,
     },
     /// Manage your environments representing your Daikoku servers
     Environments {
@@ -168,7 +171,10 @@ async fn process(command: Commands) -> DaikokuResult<()> {
             name,
             path,
         } => commands::creation::run(template, name, path.map(|p| absolute_path(p).unwrap())).await,
-        Commands::Watch { environment } => commands::watch::run(environment).await,
+        Commands::Watch {
+            environment,
+            authentication,
+        } => commands::watch::run(environment, authentication).await,
         Commands::Environments { command } => commands::enviroments::run(command).await,
         Commands::Projects { command } => commands::projects::run(command).await,
         Commands::Login { token } => commands::login::run(token).await,
