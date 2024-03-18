@@ -15,7 +15,10 @@ use crate::{
     utils::frame_to_bytes_body,
 };
 
-use super::{enviroments::{get_default_environment, read_cookie_from_environment}, projects};
+use super::{
+    enviroments::{get_daikokuignore, get_default_environment, read_cookie_from_environment},
+    projects,
+};
 
 pub(crate) async fn run() -> DaikokuResult<()> {
     logger::loading(format!("<yellow>Syncing</> project"));
@@ -32,9 +35,40 @@ pub(crate) async fn run() -> DaikokuResult<()> {
 
     let mut body = read_contents(&PathBuf::from(&project.path))?;
 
-    body = body.into_iter().filter(|file| {
+    let daikoku_ignore = get_daikokuignore()?;
 
-    }).collect::<Vec<CmsFile>>();
+    body = body
+        .into_iter()
+        .filter(|file| {
+            daikoku_ignore
+                .iter()
+                .filter(|line| !line.is_empty())
+                .find(|&line| {
+                    line == &file.name || line == &file.path() || file.path().starts_with(line)
+                })
+                .is_none()
+        })
+        .collect::<Vec<CmsFile>>();
+
+    let rules: Vec<&String> = daikoku_ignore
+        .iter()
+        .filter(|line| !line.is_empty())
+        .collect::<Vec<&String>>();
+
+    if !rules.is_empty() {
+        logger::println("Excluded files and folders".to_string());
+        body.iter().for_each(|file| {
+            if rules
+                .iter()
+                .find(|&&line| {
+                    line == &file.name || line == &file.path() || file.path().starts_with(line)
+                })
+                .is_none()
+            {
+                logger::println(file.name.to_string());
+            }
+        });
+    }
 
     let body = Bytes::from(
         serde_json::to_string(&body)
@@ -42,7 +76,7 @@ pub(crate) async fn run() -> DaikokuResult<()> {
     );
 
     let cookie = read_cookie_from_environment()?;
-    
+
     let req = Request::builder()
         .method(Method::POST)
         .uri(&url)
@@ -88,7 +122,10 @@ pub(crate) async fn run() -> DaikokuResult<()> {
 
         logger::error(format!(
             "failed to sync project : {:?}",
-            String::from_utf8(bytes_body).unwrap().as_str().replace("\n", "")
+            String::from_utf8(bytes_body)
+                .unwrap()
+                .as_str()
+                .replace("\n", "")
         ));
     }
 

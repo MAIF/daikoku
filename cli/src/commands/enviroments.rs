@@ -13,6 +13,7 @@ use hyper_util::rt::TokioIo;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
+    fs,
     path::{Path, PathBuf},
 };
 use tokio::net::TcpStream;
@@ -317,4 +318,27 @@ fn list() -> DaikokuResult<()> {
     logger::info(serde_json::to_string_pretty(&map).unwrap());
 
     Ok(())
+}
+
+pub(crate) fn get_daikokuignore() -> DaikokuResult<Vec<String>> {
+    let project = projects::get_default_project()?;
+
+    let daikokuignore_path = Path::new(&PathBuf::from(project.path))
+        .join(".daikoku")
+        .join(".daikokuignore")
+        .into_os_string()
+        .into_string();
+
+    match daikokuignore_path {
+        Ok(path) => {
+            let content = fs::read_to_string(path)
+                .map_err(|err| DaikokuCliError::Configuration(err.to_string()))?;
+
+            Ok(content
+                .split("\n")
+                .map(|str| str.to_string())
+                .collect::<Vec<String>>())
+        }
+        Err(_) => Ok(Vec::new()),
+    }
 }
