@@ -11,7 +11,7 @@ use crate::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
     },
-    models::folder::read_contents,
+    models::folder::{read_contents, CmsFile},
     utils::frame_to_bytes_body,
 };
 
@@ -30,7 +30,11 @@ pub(crate) async fn run() -> DaikokuResult<()> {
 
     let project = projects::get_default_project()?;
 
-    let body = read_contents(&PathBuf::from(&project.path))?;
+    let mut body = read_contents(&PathBuf::from(&project.path))?;
+
+    body = body.into_iter().filter(|file| {
+
+    }).collect::<Vec<CmsFile>>();
 
     let body = Bytes::from(
         serde_json::to_string(&body)

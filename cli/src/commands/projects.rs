@@ -497,7 +497,11 @@ fn extract_metadata(item: &CmsPage) -> DaikokuResult<HashMap<String, String>> {
 fn create_daikoku_hidden_files(complete_path: PathBuf) -> DaikokuResult<File> {
     fs::create_dir_all(complete_path.join(".daikoku"))
         .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
-    fs::File::create(complete_path.join(".daikoku").join(".environments"))
+
+        fs::File::create(complete_path.join(".daikoku").join(".environments"))
+        .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+
+    fs::File::create(complete_path.join(".daikoku").join(".daikokuignore"))
         .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))
 }
 

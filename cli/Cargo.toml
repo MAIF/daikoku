@@ -44,7 +44,6 @@ serde_yaml = "0.9.32"
 void = "1.0.2"
 walkdir = "2.5.0"
 webbrowser = "0.8.13"
-html-escape = "0.2.13"
 
 [dependencies.uuid]
 version = "1.7.0"

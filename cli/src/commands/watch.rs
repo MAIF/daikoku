@@ -18,7 +18,6 @@ use crate::logging::error::{DaikokuCliError, DaikokuResult};
 use crate::logging::logger::{self};
 use crate::models::folder::{read_contents, CmsFile, SourceExtension, UiCmsFile};
 use crate::utils::frame_to_bytes_body;
-use html_escape;
 
 use super::enviroments::{
     can_join_daikoku, check_environment_from_str, read_cookie_from_environment, Environment,
