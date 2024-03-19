@@ -1,0 +1,63 @@
+{
+	"_id": "CXssdGGN875vZzpHLgkpaQ8v",
+	"_tenant": "default",
+	"_deleted": false,
+	"maxPerSecond": 10,
+	"maxPerDay": 500,
+	"maxPerMonth": 10000,
+	"currency": {
+		"code": "EUR"
+	},
+	"billingDuration": {
+		"value": 1,
+		"unit": "Month"
+	},
+	"customName": "test plan",
+	"customDescription": "Free plan with limited number of calls per day and per month",
+	"otoroshiTarget": {
+		"otoroshiSettings": "default",
+		"authorizedEntities": {
+			"groups": [],
+			"services": [],
+			"routes": []
+		},
+		"apikeyCustomization": {
+			"clientIdOnly": false,
+			"constrainedServicesOnly": false,
+			"readOnly": false,
+			"metadata": {},
+			"customMetadata": [],
+			"tags": [],
+			"restrictions": {
+				"enabled": false,
+				"allowLast": true,
+				"allowed": [],
+				"forbidden": [],
+				"notFound": []
+			}
+		}
+	},
+	"allowMultipleKeys": false,
+	"visibility": "Public",
+	"authorizedTeams": [],
+	"autoRotation": false,
+	"subscriptionProcess": [],
+	"integrationProcess": "ApiKey",
+	"aggregationApiKeysSecurity": null,
+	"testing": {
+		"enabled": false,
+		"auth": "Basic",
+		"name": null,
+		"username": null,
+		"password": null,
+		"config": null
+	},
+	"documentation": null,
+	"swagger": {
+		"url": null,
+		"content": null,
+		"headers": {},
+		"additionalConf": null
+	},
+	"type": "FreeWithQuotas"
+}

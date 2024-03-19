@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import newApi from './resources/test_api_2.json';
+import newApiUsagePlan from './resources/test_api_2_usage_plan.json';
 
 const adminApikeyId = 'admin_key_client_id';
 const adminApikeySecret = 'admin_key_client_secret';
@@ -79,7 +81,7 @@ test('Create & manage API', async ({ page }) => {
   await page.getByRole('button', { name: 'Save' }).click();
   await page.getByText('Plans').click();
   await expect(page.getByText('public & automatic')).toBeVisible();
-  
+
   //create second plan (public & manual)
   await page.getByRole('button', { name: 'Add plan' }).waitFor({ state: 'visible' });
   await page.getByRole('button', { name: 'Add plan' }).click();
@@ -178,8 +180,8 @@ test('Create & manage API', async ({ page }) => {
   // await page.goto('http://localhost:9000/notifications#');
   //FIXME ???
   await page.goto('http://localhost:1080/');
-  
-  await page.locator('div').filter({ hasText: /^validation@foo\.bar$/ }).waitFor({state: 'visible'})
+
+  await page.locator('div').filter({ hasText: /^validation@foo\.bar$/ }).waitFor({ state: 'visible' })
   // await expect(page.locator('div').filter({ hasText: /^validation@foo\.bar$/ })).toBeVisible();
   await page.getByText('Validate a subscription', { exact: true }).click();
   await page.getByRole('link', { name: 'Accept' }).click();
@@ -191,18 +193,30 @@ test('Create & manage API', async ({ page }) => {
   //FIXME
   // await expect(page.locator('#tooltip-TwFQ')).toBeVisible();
   //FIXME: due to small viewport``
-  
-  await expect(page.locator('.card-header').filter({hasText: 'public & automatic'})).toBeVisible()
+
+  await expect(page.locator('.card-header').filter({ hasText: 'public & automatic' })).toBeVisible()
 })
 
 /**
  * activate aggregation mode on tenant and API
  * subscribe on first api
- * subreibe on second API and aggregate it
+ * subscribe on second API and aggregate it
  * delete a key
  */
 test('aggregation mode', async ({ page, request }) => {
-  
+  await request.post('http://localhost:9000/admin-api/usage-plans', {
+    headers: {
+      "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
+    },
+    data: newApiUsagePlan
+  })
+  await request.post('http://localhost:9000/admin-api/apis', {
+    headers: {
+      "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
+    },
+    data: newApi
+  }).then(r => r.json())
+    .then(console.log)
 
 })
 
@@ -213,6 +227,6 @@ test('aggregation mode', async ({ page, request }) => {
  * delete a plan -> subscriptions
  */
 test('Cascading deletion', async ({ page, request }) => {
-  
+
 
 })
