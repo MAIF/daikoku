@@ -6,11 +6,7 @@ import com.auth0.jwt.JWT
 import com.google.common.base.Charsets
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain.{Tenant, ValueType}
-import fr.maif.otoroshi.daikoku.env.{
-  Env,
-  LocalAdminApiConfig,
-  OtoroshiAdminApiConfig
-}
+import fr.maif.otoroshi.daikoku.env.{Env, LocalAdminApiConfig, OtoroshiAdminApiConfig}
 import fr.maif.otoroshi.daikoku.login.TenantHelper
 import fr.maif.otoroshi.daikoku.utils.Errors
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -360,16 +356,21 @@ abstract class AdminApiController[Of, Id <: ValueType](
         import diffson.playJson.DiffsonProtocol._
         import play.api.libs.json._
 
-        def patchJson(patchOps: JsValue, document: JsValue): Option[JsValue] = {
+        def patchJson(patchOps: JsValue, document: JsValue): Option[JsObject] = {
           val patch =
             diffson.playJson.DiffsonProtocol.JsonPatchFormat.reads(patchOps).get
           patch.apply(document) match {
-            case JsSuccess(value, path) => value.some
+            case JsSuccess(value, path) => Json.obj("status" ->"OK", "message" -> value).some
             case JsError(errors) =>
               logger.error(s"error during patch entity : $errors")
-              None
+              val formattedErrors = errors.toVector.flatMap {
+                case (JsPath(nodes), es) =>
+                  es.map(e => e.message)
+              }
+              Json.obj("status" ->"KO", "message" -> formattedErrors.mkString(",")).some
           }
         }
+
       }
 
       val fu: Future[Option[Of]] =
@@ -421,18 +422,22 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
           ctx.request.body match {
             case JsArray(_) =>
-              JsonPatchHelpers.patchJson(ctx.request.body, currentJson) match {
-                case Some(newJson) => finalizePatch(newJson)
-                case None =>
-                  AppError.EntityConflict("Parsing").renderF()
+              val patchedJson = JsonPatchHelpers.patchJson(ctx.request.body, currentJson).get
+              patchedJson("status").asInstanceOf[JsString].value match {
+                case "OK" => finalizePatch(patchedJson.value("message"))
+                case "KO" => AppError.EntityConflict(patchedJson("message").asInstanceOf[JsString].value).renderF()
               }
-
             case JsObject(_) =>
               val newJson =
                 currentJson
                   .as[JsObject]
                   .deepMerge(ctx.request.body.as[JsObject])
-              finalizePatch(newJson)
+              if (newJson.value.size > currentJson.asInstanceOf[JsObject].value.size) {
+                AppError.EntityConflict("Parsing Object").renderF()
+              } else {
+                finalizePatch(newJson)
+              }
+
             case _ =>
               FastFuture.successful(
                 BadRequest(
