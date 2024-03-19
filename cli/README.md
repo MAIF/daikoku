@@ -97,6 +97,16 @@ Once ready, you can synchronize your sources with the Daikoku environment
 daikokucli sync
 ```
 
+## Start a new project by importing an existing one
+
+If you already have a legacy CMS on your Daikoku, you can start by importing it 
+```sh
+daikokucli projects import --name=<NEW_NAME_OF_YOUR_PROJECT> \
+                           --path=<PATH_TO_THE_NEW_PROJECT> \
+                           --server=<DAIKOKU_SERVER_TO_PULL> \
+                           --token=<AUTHENTICATION_TOKEN>
+```
+
 # License
 
 This project is licensed under the Apache 2.0 license with the LLVM exception.

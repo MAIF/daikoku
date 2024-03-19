@@ -143,7 +143,7 @@ fn update_default(name: String) -> DaikokuResult<()> {
     match config.write(&get_path()?) {
         Ok(()) => {
             logger::println("<green>Defaut</> updated".to_string());
-            let _ = get_project("default".to_string());
+            let _ = get_project(name.clone());
             Ok(())
         }
         Err(err) => Err(DaikokuCliError::Configuration(err.to_string())),
@@ -158,18 +158,20 @@ pub(crate) fn get_project(name: String) -> DaikokuResult<Project> {
     ))?;
 
     match projects.get(&name) {
-        Some(project) => match (&project["name"], &project["path"]) {
-            (Some(_name), Some(path)) => {
-                logger::info(serde_json::to_string_pretty(&project).unwrap());
-                Ok(Project {
-                    // name: name.to_string(),
-                    path: path.to_string(),
-                })
+        Some(project) => {
+            match (&project["name"], &project["path"]) {
+                (Some(_name), Some(path)) => {
+                    logger::info(serde_json::to_string_pretty(&project).unwrap());
+                    Ok(Project {
+                        // name: name.to_string(),
+                        path: path.to_string(),
+                    })
+                }
+                (_, _) => Err(DaikokuCliError::Configuration(
+                    "missing project or values in project.".to_string(),
+                )),
             }
-            (_, _) => Err(DaikokuCliError::Configuration(
-                "missing project or values in project.".to_string(),
-            )),
-        },
+        }
         None => {
             return Err(DaikokuCliError::Configuration(
                 "project is missing".to_string(),
@@ -498,7 +500,7 @@ fn create_daikoku_hidden_files(complete_path: PathBuf) -> DaikokuResult<File> {
     fs::create_dir_all(complete_path.join(".daikoku"))
         .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
 
-        fs::File::create(complete_path.join(".daikoku").join(".environments"))
+    fs::File::create(complete_path.join(".daikoku").join(".environments"))
         .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
 
     fs::File::create(complete_path.join(".daikoku").join(".daikokuignore"))
@@ -524,6 +526,7 @@ async fn create_environment(name: String, server: String, token: String) -> Daik
             server,
             token: Some(token),
             overwrite: Some(true),
+            force: Some(false),
         },
     })
     .await?;

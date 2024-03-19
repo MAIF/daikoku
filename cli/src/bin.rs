@@ -91,6 +91,8 @@ pub enum EnvironmentsCommands {
         token: Option<String>,
         #[arg(value_name = "OVERWRITE", long = "overwrite", required = false)]
         overwrite: Option<bool>,
+        #[arg(value_name = "FORCE", long = "force", required = false)]
+        force: Option<bool>,
     },
     /// update default environment by adding auth token
     PathDefault {

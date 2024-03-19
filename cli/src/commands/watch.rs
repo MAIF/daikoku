@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 use tokio::net::{TcpListener, TcpStream};
 
 use crate::logging::error::{DaikokuCliError, DaikokuResult};
-use crate::logging::logger::{self, println};
+use crate::logging::logger::{self};
 use crate::models::folder::{read_contents, CmsFile, SourceExtension, UiCmsFile};
 use crate::utils::frame_to_bytes_body;
 

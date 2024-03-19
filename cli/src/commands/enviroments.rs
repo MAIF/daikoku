@@ -34,7 +34,17 @@ pub(crate) async fn run(command: EnvironmentsCommands) -> DaikokuResult<()> {
             server,
             token,
             overwrite,
-        } => add(name, server, token, overwrite.unwrap_or(false)).await,
+            force,
+        } => {
+            add(
+                name,
+                server,
+                token,
+                overwrite.unwrap_or(false),
+                force.unwrap_or(false),
+            )
+            .await
+        }
         EnvironmentsCommands::Default { name } => update_default(name),
         EnvironmentsCommands::Remove { name } => delete(name),
         EnvironmentsCommands::Env { name } => {
@@ -140,6 +150,7 @@ async fn add(
     server: String,
     token: Option<String>,
     overwrite: bool,
+    force: bool,
 ) -> DaikokuResult<()> {
     logger::loading("<yellow>Patching</> configuration".to_string());
     let mut config: Ini = read()?;
@@ -156,7 +167,7 @@ async fn add(
         return Err(DaikokuCliError::Configuration("configuration already exists. you maybe want to use --overwrite=true parameter to overwrite contents".to_string()));
     }
 
-    if !can_join_daikoku(&server).await? {
+    if !force && !can_join_daikoku(&server).await? {
         return Err(DaikokuCliError::Configuration(
             "failed to save configuration. The specified Daikoku server can not be reached"
                 .to_string(),
