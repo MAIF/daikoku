@@ -81,7 +81,7 @@ export const TeamApiKeysForApi = () => {
 
     const archiveApiKey = (subscription: ISubscription) => {
       return Services.archiveApiKey(currentTeam._id, subscription._id, !subscription.enabled)
-        .then(() => queryClient.invalidateQueries({ queryKey: ['subscriptions'] }))
+        .then(() => queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] }))
     };
 
     const makeUniqueApiKey = (subscription: ISubscription) => {
@@ -90,7 +90,7 @@ export const TeamApiKeysForApi = () => {
           if (ok)
             Services.makeUniqueApiKey(currentTeam._id, subscription._id)
               .then(() => {
-                queryClient.invalidateQueries({ queryKey: ['subscriptions'] })
+                queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] })
                 toast.success(translate('team_apikey_for_api.ask_for_make_unique.success_message'));
               });
         });
@@ -109,7 +109,9 @@ export const TeamApiKeysForApi = () => {
         rotationEvery,
         gracePeriod
       )
-        .then(() => queryClient.invalidateQueries({ queryKey: ['subscriptions'] }))
+        .then((r) => {
+          queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] })
+        })
     };
 
     const regenerateApiKeySecret = (subscription: ISubscription) => {
@@ -118,7 +120,7 @@ export const TeamApiKeysForApi = () => {
           if (ok) {
             Services.regenerateApiKeySecret(currentTeam._id, subscription._id)
               .then(() => {
-                queryClient.invalidateQueries({ queryKey: ['subscriptions'] })
+                queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] })
                 toast.success(translate('secret reseted successfully'))
               })
           }
@@ -186,7 +188,7 @@ export const TeamApiKeysForApi = () => {
                     api={api}
                     currentTeam={currentTeam}
                     statsLink={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${subscription._id}/consumptions`}
-                    key={subscription._id}
+                    key={subscription.apiKey.clientId}
                     subscription={subscription}
                     subscribedApis={subscribedApis}
                     updateCustomName={name => updateCustomName(subscription, name)}
@@ -463,6 +465,7 @@ const ApiKeyCard = ({
                         <button
                           type="button"
                           disabled={subscription.parent ? !subscription.parentUp : false}
+                          aria-label={subscription.enabled ? 'disable' : 'enable'}
                           className={classNames('btn btn-sm ms-1', {
                             'btn-outline-danger':
                               subscription.enabled &&
@@ -481,6 +484,7 @@ const ApiKeyCard = ({
                       <BeautifulTitle title={translate('team_apikey_for_api.make_unique')}>
                         <button
                           type="button"
+                          aria-label='make unique'
                           className="btn btn-sm ms-1 btn-outline-danger"
                           onClick={makeUniqueApiKey}
                         >

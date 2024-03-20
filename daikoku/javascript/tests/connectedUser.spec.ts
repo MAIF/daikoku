@@ -5,16 +5,13 @@ import newApiUsagePlan from './resources/test_api_2_usage_plan.json';
 const adminApikeyId = 'admin_key_client_id';
 const adminApikeySecret = 'admin_key_client_secret';
 
-test.beforeEach(async () => {
+test.beforeEach(async ({ request }) => {
   console.log(`Running ${test.info().title}`);
-  await fetch('http://localhost:9000/admin-api/state/reset', {
-    method: 'POST',
+  await request.post('http://localhost:9000/admin-api/state/reset', {
     headers: {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
     }
   })
-    .then(r => r.json())
-    .then(r => console.log({ r }))
     .then(() => fetch('http://localhost:1080/api/emails', {
       method: 'DELETE'
     }))
@@ -210,13 +207,97 @@ test('aggregation mode', async ({ page, request }) => {
     },
     data: newApiUsagePlan
   })
+
+
   await request.post('http://localhost:9000/admin-api/apis', {
     headers: {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
     },
     data: newApi
-  }).then(r => r.json())
-    .then(console.log)
+  })
+
+  await request.patch('http://localhost:9000/admin-api/tenants/default', {
+    headers: {
+      "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
+    },
+    data: [
+      {
+        "op": "replace",
+        "path": "/aggregationApiKeysSecurity",
+        "value": true
+      }
+    ]
+  })
+
+  await request.patch('http://localhost:9000/admin-api/usage-plans/lhsc79x9s0p4drv8j3ebapwrbnqhu1oo', {
+    headers: {
+      "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
+    },
+    data: [
+      {
+        "op": "replace",
+        "path": "/aggregationApiKeysSecurity",
+        "value": true
+      }
+    ]
+  })
+
+  //login
+  await page.goto('http://localhost:9000/apis');
+  await page.getByRole('img', { name: 'user menu' }).click();
+  await page.getByPlaceholder('Email adress').fill('admin@foo.bar');
+  await page.getByPlaceholder('Password').fill('password');
+  await page.getByRole('button', { name: 'Login' }).click();
+
+  //subscribe first API
+  await page.getByRole('heading', { name: 'test API', exact: true }).click();
+  await page.getByText('Plans').click();
+  await page.locator('.usage-plan__card').filter({ hasText: 'not test plan' }).getByRole('button').click();
+  await page.locator('div').filter({ hasText: /^Consumers$/ }).click();
+  await page.getByRole('button', { name: '+ Subscribe with a new api key' }).click();
+  await page.getByRole('link', { name: 'Daikoku home' }).click();
+
+  //subscribe second api with aggregation
+  await page.getByRole('heading', { name: 'test API 2' }).click();
+  await page.getByText('Plans').click();
+  await page.getByRole('button', { name: 'Get API key' }).click();
+  await page.locator('.team-selection').filter({ hasText: 'Consumer' }).click();
+  await page.getByRole('button', { name: ' Subscribe using an existing' }).click();
+  await page.getByText('test API/not test plan').click();
+
+  //go to subscriptions
+  await page.getByRole('link', { name: 'Daikoku home' }).click();
+  await page.locator('.top__container').filter({ hasText: 'Your teams' })
+    .getByText('Consumers').click()
+  // await page.getByLabel('Notifications alt+T').getByRole('button').click();
+  await page.getByText('API keys', { exact: true }).click();
+  await page.getByRole('row', { name: 'test API 2 1.0.0  API keys' }).getByRole('link').click();
+
+  //get the client id value to check
+  const clientId = await page.getByLabel('Client Id').inputValue()
+
+  await page.getByText('API keys', { exact: true }).click();
+  await page.getByRole('row', { name: 'test API 2.0.0  API keys' }).getByRole('link').click();
+  await expect(page.getByLabel('Client Id').first()).toHaveValue(clientId);
+  await page.getByRole('button', { name: 'Show aggregate subscriptions' }).click();
+  await expect(page.getByRole('link', { name: 'test API 2/test plan' })).toBeVisible();
+  await page.getByText('API keys', { exact: true }).click();
+  await page.getByRole('row', { name: 'test API 2 1.0.0  API keys' }).getByRole('link').click();
+  await page.getByRole('button', { name: 'make unique' }).click();
+  await expect(page.getByRole('paragraph')).toContainText('Are you sure to make this API key unique and separate from his parent plan?');
+  await page.getByRole('button', { name: 'Ok' }).click();
+  await expect(page.getByLabel('Client Id').first()).not.toHaveValue(clientId);
+
+  //test archive apikey & clean archive apikeys
+  await page.getByRole('button', { name: 'disable' }).click();
+  await expect(page.getByRole('button', { name: 'enable' })).toBeVisible();
+  await page.getByText('API keys', { exact: true }).click();
+  await page.getByRole('button', { name: 'clean archived API keys' }).click();
+  await expect(page.getByRole('paragraph')).toContainText('Are you sure you want to clean archived API keys?');
+  await page.getByRole('button', { name: 'Ok' }).click();
+  await expect(page.locator('tbody')).not.toContainText('test API 2')
+
+
 
 })
 

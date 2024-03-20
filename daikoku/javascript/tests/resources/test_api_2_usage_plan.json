@@ -19,7 +19,7 @@
 		"authorizedEntities": {
 			"groups": [],
 			"services": [],
-			"routes": []
+			"routes": ["r_12346"]
 		},
 		"apikeyCustomization": {
 			"clientIdOnly": false,
@@ -43,7 +43,7 @@
 	"autoRotation": false,
 	"subscriptionProcess": [],
 	"integrationProcess": "ApiKey",
-	"aggregationApiKeysSecurity": null,
+	"aggregationApiKeysSecurity": true,
 	"testing": {
 		"enabled": false,
 		"auth": "Basic",
