@@ -5,24 +5,28 @@ _authenticated: 'false'
 ---
 
 {{#daikoku-template-wrapper "/blocks/IAAS-BASIC-template.html"}}
-  <!-- Introduction-->
+<!-- Introduction-->
 <div class="container p-4">
-    <div class="row home-section">
-      <div class="col-lg-5 home-section-left">
-        <div class="home-section-header">
-          <h1>Portail <span class="maif-color-text">API </span><strong class="maif-color-text">MAIF</strong></h1>
-          <span>Le site dédié aux partenaires de distribution digitale des assurances <strong class="maif-color-text">MAIF</strong></span>
-        </div>
-        <div class="row col-lg-11 offset-lg-2">
-          <p class="en-tete">
-            Proposez à vos utilisateurs des 
-            <strong class="maif-color-text">solutions d'assurance intégrées</strong> 
-            dans vos parcours digitaux</p>
-        </div>
-      </div>      
-      <div class="col-md-7 d-none d-lg-block home-img">
-        <img src="https://daikokucms-images.opunmaif.fr/page-accueil-intro.jpg" alt="image présentant une offre">
+  <img style="border-radius: 25%" src="{{daikoku-asset-url 'wasmo-png'}}" alt="" width="180"
+    class="mb-3">
+  <div class="row home-section">
+    <div class="col-lg-5 home-section-left">
+      <div class="home-section-header">
+        <h1>Portail <span class="maif-color-text">API </span><strong class="maif-color-text">MAIF</strong></h1>
+        <span>Le site dédié aux partenaires de distribution digitale des assurances <strong
+            class="maif-color-text">MAIF</strong></span>
+      </div>
+      <div class="row col-lg-11 offset-lg-2">
+        <p class="en-tete">
+          Proposez à vos utilisateurs des
+          <strong class="maif-color-text">solutions d'assurance intégrées</strong>
+          dans vos parcours digitaux
+        </p>
       </div>
     </div>
+    <div class="col-md-7 d-none d-lg-block home-img">
+      <img src="https://daikokucms-images.opunmaif.fr/page-accueil-intro.jpg" alt="image présentant une offre">
+    </div>
+  </div>
 </div>
 {{/daikoku-template-wrapper}}

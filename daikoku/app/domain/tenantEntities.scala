@@ -583,6 +583,10 @@ case class CmsFile(name: String, content: String, metadata: Map[String, JsValue]
 case class CmsRequestRendering(content: Seq[CmsFile], current_page: String)
 case class CmsHistory(id: String, date: DateTime, diff: String, user: UserId)
 
+case class Asset(id: AssetId, tenant: TenantId, slug: String) extends CanJson[Asset] {
+  override def asJson: JsValue = json.AssetFormat.writes(this)
+}
+
 case class CmsPage(
     id: CmsPageId,
     tenant: TenantId,

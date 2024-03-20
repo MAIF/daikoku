@@ -459,6 +459,29 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
     }
   }
 
+  def doesObjectExists(
+      path: String
+  )(implicit conf: S3Configuration): Boolean = {
+    lazy val opts = new ClientConfiguration()
+    lazy val endpointConfiguration =
+      new EndpointConfiguration(conf.endpoint, conf.region)
+    lazy val credentialsProvider = new AWSStaticCredentialsProvider(
+      new BasicAWSCredentials(conf.access, conf.secret)
+    )
+    lazy val s3Client = AmazonS3ClientBuilder
+      .standard()
+      .withCredentials(credentialsProvider)
+      .withClientConfiguration(opts)
+      .withEndpointConfiguration(endpointConfiguration)
+      .build()
+
+    try {
+      s3Client.doesObjectExist("", path)
+    } catch {
+      case _: SdkClientException => false
+    }
+  }
+
   def getTeamAssetPresignedUrl(tenant: TenantId, team: TeamId, asset: AssetId)(
       implicit conf: S3Configuration
   ): Option[String] = {

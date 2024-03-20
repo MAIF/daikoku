@@ -171,7 +171,7 @@ pub enum ProjectCommands {
 
 #[derive(Debug, Subcommand)]
 pub enum AssetsCommands {
-    /// register a new project to the CLI
+    /// register a new asset
     Add {
         #[arg(value_name = "FILENAME", short = 'f', long = "filename")]
         filename: String,
@@ -182,13 +182,17 @@ pub enum AssetsCommands {
         #[arg(value_name = "PATH", short = 'p', long = "path")]
         path: String,
     },
-    /// ⚠️  be careful, remove the specified project
+    /// ⚠️  be careful, remove remote and local asset
     Remove {
         #[arg(value_name = "filename", short = 'f', long = "filename")]
         filename: String,
+        #[arg(value_name = "PATH", short = 'p', long = "path")]
+        path: String,
     },
-    /// list all projects
+    /// list all assets
     List {},
+    /// sync all assets to the remote bucket
+    Sync {}
 }
 
 async fn process(command: Commands) -> DaikokuResult<()> {

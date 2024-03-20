@@ -4408,6 +4408,17 @@ object json {
     override def writes(o: CmsPageId): JsValue = JsString(o.value)
   }
 
+  val AssetIdFormat = new Format[AssetId] {
+    override def reads(json: JsValue): JsResult[AssetId] =
+      Try {
+        JsSuccess(AssetId(json.as[String]))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: AssetId): JsValue = JsString(o.value)
+  }
+
   val CmsHistoryFormat = new Format[CmsHistory] {
     override def writes(o: CmsHistory): JsValue =
       Json.obj(
@@ -4461,6 +4472,26 @@ object json {
         CmsRequestRendering(
           content = (json \ "content").as(Reads.seq(CmsFileFormat.reads)),
           current_page = (json \ "current_page").as[String]
+        )
+      } match {
+        case Failure(exception) => JsError(exception.getMessage)
+        case Success(page)      => JsSuccess(page)
+      }
+  }
+
+  val AssetFormat = new Format[Asset] {
+    override def writes(o: Asset): JsValue =
+      Json.obj(
+        "_id" -> o.id.value,
+        "slug" -> o.slug,
+        "_tenant" -> o.tenant.value
+      )
+    override def reads(json: JsValue): JsResult[Asset] =
+      Try {
+        Asset(
+          id = (json \ "_id").as(AssetIdFormat),
+          slug = (json \ "slug").as[String],
+          tenant = (json \ "_tenant").as(TenantIdFormat)
         )
       } match {
         case Failure(exception) => JsError(exception.getMessage)

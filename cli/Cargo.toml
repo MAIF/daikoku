@@ -45,6 +45,7 @@ void = "1.0.2"
 walkdir = "2.5.0"
 webbrowser = "0.8.13"
 testcontainers = "0.15.0"
+slug = "0.1.5"
 
 [dependencies.uuid]
 version = "1.7.0"

@@ -321,7 +321,7 @@ trait Repo[Of, Id <: ValueType] {
   def deleteAllLogically()(implicit ec: ExecutionContext): Future[Boolean]
 
   def findAllNotDeleted()(implicit ec: ExecutionContext): Future[Seq[Of]] =
-    find(Json.obj("_deleted" -> false))
+    find(Json.obj("$or" -> Json.arr(Json.obj("_deleted" -> false), Json.obj("_deleted" -> JsNull))))
 
   def findNotDeleted(
       query: JsObject,
@@ -480,6 +480,8 @@ trait MessageRepo extends TenantCapableRepo[Message, DatastoreId]
 
 trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId]
 
+trait AssetRepo extends TenantCapableRepo[Asset, AssetId]
+
 trait OperationRepo extends TenantCapableRepo[Operation, DatastoreId]
 
 trait SubscriptionDemandRepo
@@ -546,6 +548,8 @@ trait DataStore {
   def messageRepo: MessageRepo
 
   def cmsRepo: CmsPageRepo
+
+  def assetRepo: AssetRepo
 
   def operationRepo: OperationRepo
 
