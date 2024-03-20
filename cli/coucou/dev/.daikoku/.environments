@@ -1,4 +1,4 @@
 environment=dev
 [dev]
-server=http://localhost:9000
 token=eyJhbGciOiJIUzI1NiJ9.eyJkYXRhIjp7InNlc3Npb25JZCI6IkJvMmxpeGNmT05KMVJhYTk4YWRvVlBVWThIZTNRU2k2VVNXc2k2cmdjUERBbzcwemlrdW82VzhoQ3M4bmhuRGsifSwiZXhwIjoxNzExMDE0NTcyLCJuYmYiOjE3MTA3NTUzNzIsImlhdCI6MTcxMDc1NTM3Mn0.LRWKWmRkchnDf9fjF-SChtjNL-8g9KuSmCYqqdaLLRo
+server=http://localhost:9000

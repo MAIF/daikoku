@@ -77,6 +77,10 @@ pub enum Commands {
     },
     /// ⚠️ synchronize projects file with Daikoku
     Sync {},
+    Assets {
+        #[command(subcommand)]
+        command: AssetsCommands,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -165,6 +169,28 @@ pub enum ProjectCommands {
     },
 }
 
+#[derive(Debug, Subcommand)]
+pub enum AssetsCommands {
+    /// register a new project to the CLI
+    Add {
+        #[arg(value_name = "FILENAME", short = 'f', long = "filename")]
+        filename: String,
+        #[arg(value_name = "TITLE", short = 't', long = "title")]
+        title: String,
+        #[arg(value_name = "DESC", short = 'd', long = "desc")]
+        desc: String,
+        #[arg(value_name = "PATH", short = 'p', long = "path")]
+        path: String,
+    },
+    /// ⚠️  be careful, remove the specified project
+    Remove {
+        #[arg(value_name = "filename", short = 'f', long = "filename")]
+        filename: String,
+    },
+    /// list all projects
+    List {},
+}
+
 async fn process(command: Commands) -> DaikokuResult<()> {
     match command {
         Commands::Version {} => commands::version::run(),
@@ -181,6 +207,7 @@ async fn process(command: Commands) -> DaikokuResult<()> {
         Commands::Projects { command } => commands::projects::run(command).await,
         Commands::Login { token } => commands::login::run(token).await,
         Commands::Sync {} => commands::sync::run().await,
+        Commands::Assets { command } => commands::assets::run(command).await,
     }
 }
 

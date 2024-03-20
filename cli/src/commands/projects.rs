@@ -43,7 +43,7 @@ struct CmsPage {
     path: Option<String>, //: "/parcours-affiliation-digitale",
     exact: bool,         //: false,
     #[serde(alias = "lastPublishedDate")]
-    last_published_date: u64, //: 1706520418595
+    last_published_date: Option<u64>, //: 1706520418595
     #[serde(alias = "body")]
     content: String,
 }
@@ -488,11 +488,8 @@ fn extract_metadata(item: &CmsPage) -> DaikokuResult<HashMap<String, String>> {
     metadata.insert("_authenticated".to_string(), item.authenticated.to_string());
     metadata.insert("_visible".to_string(), item.visible.to_string());
     metadata.insert("_exact".to_string(), item.exact.to_string());
-    metadata.insert(
-        "_last_published_date".to_string(),
-        item.last_published_date.to_string(),
-    );
-
+    item.last_published_date
+        .map(|value| metadata.insert("_last_published_date".to_string(), value.to_string()));
     Ok(metadata)
 }
 
