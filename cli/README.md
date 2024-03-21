@@ -1,12 +1,8 @@
 <div align="center">
   <h1><code>daikokucli</code></h1>
-
-<strong>A <a href="https://github.com/MAIF/">MAIF</a> opensource project</strong>
-
-  <p>
-    <strong>CLI to manage your Daikoku CMS</strong>
-  </p>
 </div>
+
+![CLI architecture](architecture.png "Architecture")
 
 
 # Installation
@@ -38,8 +34,6 @@ $ daikokucli help
 ```
 
 # Core commands
-
-![CLI architecture](architecture.png "Architecture")
 
 Daikokucli uses your home folder to store the list of projects inside a `.daikoku` file. Each project created with the CLI should contain a `src` folder and a `.daikoku/.environments`. This file will contain
 
