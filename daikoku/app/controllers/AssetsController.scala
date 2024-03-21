@@ -410,10 +410,12 @@ class TenantAssetsController(
             .getQueryString("filename")
             .getOrElse(IdGenerator.token(16))
         )
-        val title =
-          normalize(ctx.request.getQueryString("title").getOrElse("--"))
+        val title = normalize(ctx.request.getQueryString("title").getOrElse("--"))
         val desc = ctx.request.getQueryString("desc").getOrElse("--")
+        val querySlug: Option[String] = ctx.request.getQueryString("slug")
+            .flatMap(slug => if (slug.isEmpty) None else Some(slug))
         val assetId = AssetId(IdGenerator.uuid)
+
         ctx.tenant.bucketSettings match {
           case None =>
             FastFuture.successful(
@@ -431,10 +433,12 @@ class TenantAssetsController(
                 ctx.request.body
               )(cfg)
               .flatMap { _ =>
-                val slug = filename.slugify
+                val slug = querySlug.map(_.slugify).getOrElse(filename.slugify)
+
                 env.dataStore.assetRepo.forTenant(ctx.tenant)
                   .save(Asset(assetId, tenant = ctx.tenant.id, slug = slug))
                   .map(_ => Ok(Json.obj("done" -> true, "id" -> assetId.value, "slug" -> slug)))
+
               } recover {
               case e =>
                 AppLogger.error(
@@ -598,16 +602,16 @@ class TenantAssetsController(
     }
   }
 
-  def doesAssetExists(assetIdOrSlug: String) = {
+  def doesAssetExists(slug: String) = {
     DaikokuTenantAction.async { ctx =>
       ctx.tenant.bucketSettings match {
         case None =>
           FastFuture.successful(
             NotFound(Json.obj("error" -> "No bucket config found !"))
           )
-        case Some(cfg) => env.assetsStore.doesObjectExists(assetIdOrSlug)(cfg) match {
-          case true => FastFuture.successful(NoContent)
-          case false => FastFuture.successful(NotFound)
+        case Some(cfg) => env.dataStore.assetRepo.forTenant(ctx.tenant).findOne(Json.obj("slug" -> slug)).map {
+          case Some(_) => NoContent
+          case None => NotFound
         }
       }
     }
