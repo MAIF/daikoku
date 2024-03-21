@@ -307,7 +307,8 @@ case class Tenant(
     robotTxt: Option[String] = None,
     thirdPartyPaymentSettings: Seq[ThirdPartyPaymentSettings] = Seq.empty,
     display: TenantDisplay = TenantDisplay.Default,
-    environments: Set[String] = Set.empty
+    environments: Set[String] = Set.empty,
+    cmsRedirections: Set[String] = Set.empty,
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -371,7 +372,8 @@ case class Tenant(
         .getOrElse(JsBoolean(false))
         .as[JsValue],
       "display" -> display.name,
-      "environments" -> JsArray(environments.map(JsString.apply).toSeq)
+      "environments" -> JsArray(environments.map(JsString.apply).toSeq),
+      "cmsRedirections" -> JsArray(cmsRedirections.map(JsString.apply).toSeq)
     )
   }
   def colorTheme(): Html = {

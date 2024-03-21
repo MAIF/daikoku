@@ -2175,6 +2175,9 @@ object json {
               .getOrElse(TenantDisplay.Default),
             environments = (json \ "environments")
               .asOpt[Set[String]]
+              .getOrElse(Set.empty),
+            cmsRedirections = (json \ "cmsRedirections")
+              .asOpt[Set[String]]
               .getOrElse(Set.empty)
           )
         )
@@ -2247,7 +2250,8 @@ object json {
         "thirdPartyPaymentSettings" -> SeqThirdPartyPaymentSettingsFormat
           .writes(o.thirdPartyPaymentSettings),
         "display" -> TenantDisplayFormat.writes(o.display),
-        "environments" -> JsArray(o.environments.map(JsString.apply).toSeq)
+        "environments" -> JsArray(o.environments.map(JsString.apply).toSeq),
+        "cmsRedirections" -> JsArray(o.cmsRedirections.map(JsString.apply).toSeq)
       )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
