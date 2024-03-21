@@ -112,7 +112,7 @@ daikokucli projects import --name=<NEW_NAME_OF_YOUR_PROJECT> \
 You can manage your images, diagrams, or any type of files directly by creating a `/assets` folder inside your CMS project.
 
 Each asset is save in the S3 of your Daikoku using the following command
-```
+```sh
 daikokucli assets add --filename=<ASSET_FILENAME> \
   --path=<ONLY_NESTED_FOLDER_BEHIND_ASSETS_FOLDER> \
   --desc=<ASSET_DESCRIPTION> \
@@ -124,17 +124,17 @@ If you require a particular `slug` for your asset, you have the option to replac
 
 To delete your asset you have to give the `filename` and the `slug` iif it differs
 
-```
+```sh
 daikokucli assets remove --slug=<CUSTOM_SLUG> --filename=<ASSET_FILENAME>
 ```
 
 As others commands, you can display all registered assets 
-```
+```sh
 daikokucli assets list
 ```
 
 If you prefer to synchronize all assets with a single command, it offers speed advantages over doing so individually, albeit with reduced configurability.
-```
+```sh
 daikokucli assets sync
 ```
 
