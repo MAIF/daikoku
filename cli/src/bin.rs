@@ -77,6 +77,7 @@ pub enum Commands {
     },
     /// ⚠️ synchronize projects file with Daikoku
     Sync {},
+    /// Manage your CMS assets
     Assets {
         #[command(subcommand)]
         command: AssetsCommands,
@@ -180,19 +181,23 @@ pub enum AssetsCommands {
         #[arg(value_name = "DESC", short = 'd', long = "desc")]
         desc: String,
         #[arg(value_name = "PATH", short = 'p', long = "path")]
-        path: String,
+        path: Option<String>,
+        #[arg(value_name = "SLUG", short = 's', long = "slug")]
+        slug: Option<String>,
     },
     /// ⚠️  be careful, remove remote and local asset
     Remove {
         #[arg(value_name = "filename", short = 'f', long = "filename")]
         filename: String,
+        #[arg(value_name = "SLUG", short = 's', long = "slug")]
+        slug: Option<String>,
         #[arg(value_name = "PATH", short = 'p', long = "path")]
-        path: String,
+        path: Option<String>,
     },
     /// list all assets
     List {},
     /// sync all assets to the remote bucket
-    Sync {}
+    Sync {},
 }
 
 async fn process(command: Commands) -> DaikokuResult<()> {

@@ -44,8 +44,13 @@ pub(crate) async fn run(command: AssetsCommands) -> DaikokuResult<()> {
             title,
             desc,
             path,
-        } => add(filename, title, desc, path).await,
-        AssetsCommands::Remove { filename, path } => remove(filename, path).await,
+            slug,
+        } => add(filename, title, desc, path, slug).await,
+        AssetsCommands::Remove {
+            filename,
+            path,
+            slug,
+        } => remove(filename, path, slug).await,
         AssetsCommands::List {} => list().await,
         AssetsCommands::Sync {} => sync().await,
     }
@@ -67,7 +72,7 @@ async fn exists(filename: String) -> DaikokuResult<()> {
         slug::slugify(filename.clone()),
     );
 
-    let req = Request::post(&url)
+    let req = Request::head(&url)
         .header(header::HOST, &host)
         .header(header::COOKIE, format!("daikoku-session={}", cookie))
         .body(Empty::<Bytes>::new())
@@ -93,7 +98,14 @@ async fn exists(filename: String) -> DaikokuResult<()> {
         .await
         .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?;
 
-    if upstream_resp.status() != 204 {
+    let status = upstream_resp.status();
+
+    println!("{:?}", status);
+    if status == 303 {
+        Err(DaikokuCliError::DaikokuStrError(
+            "Whoops, your token has expired. daikokucli login --token is required".to_string(),
+        ))
+    } else if status != 404 {
         Err(DaikokuCliError::DaikokuStrError(
             "resource already exists".to_string(),
         ))
@@ -103,10 +115,20 @@ async fn exists(filename: String) -> DaikokuResult<()> {
 }
 
 #[async_recursion]
-async fn add(filename: String, title: String, desc: String, path: String) -> DaikokuResult<()> {
+async fn add(
+    filename: String,
+    title: String,
+    desc: String,
+    path: Option<String>,
+    slug: Option<String>,
+) -> DaikokuResult<()> {
     logger::loading("<yellow>Creating</> new assets".to_string());
 
-    exists(filename.clone()).await?;
+    exists(match &slug {
+        Some(s) => s.clone(),
+        None => filename.clone(),
+    })
+    .await?;
 
     let environment = get_default_environment()?;
 
@@ -118,11 +140,12 @@ async fn add(filename: String, title: String, desc: String, path: String) -> Dai
     let cookie = read_cookie_from_environment()?;
 
     let url: String = format!(
-        "{}/tenant-assets?filename={}&title={}&desc={}",
+        "{}/tenant-assets?filename={}&title={}&desc={}&slug={}",
         environment.server,
         filename.clone(),
         title,
-        desc
+        desc,
+        slug.unwrap_or("".to_string())
     );
 
     let project = get_default_project()?;
@@ -131,7 +154,7 @@ async fn add(filename: String, title: String, desc: String, path: String) -> Dai
         PathBuf::from_str(&project.path)
             .unwrap()
             .join("assets")
-            .join(path)
+            .join(path.unwrap_or("".to_string()))
             .join(filename),
     )
     .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
@@ -190,7 +213,7 @@ async fn add(filename: String, title: String, desc: String, path: String) -> Dai
     }
 }
 
-async fn remove(filename: String, path: String) -> DaikokuResult<()> {
+async fn remove(filename: String, path: Option<String>, slug: Option<String>) -> DaikokuResult<()> {
     logger::loading(format!("<yellow>Removing</> {} asset", filename));
 
     let environment = get_default_environment()?;
@@ -205,7 +228,7 @@ async fn remove(filename: String, path: String) -> DaikokuResult<()> {
     let url: String = format!(
         "{}/tenant-assets/{}",
         environment.server,
-        slug::slugify(filename.clone())
+        slug.unwrap_or(slug::slugify(filename.clone()))
     );
 
     let req = Request::delete(&url)
@@ -250,7 +273,7 @@ async fn remove(filename: String, path: String) -> DaikokuResult<()> {
             PathBuf::from_str(&project.path)
                 .unwrap()
                 .join("assets")
-                .join(path)
+                .join(path.unwrap_or("".to_string()))
                 .join(filename),
         )
         .map_err(|_err| DaikokuCliError::FileSystem("failed to remove local file".to_string()))
