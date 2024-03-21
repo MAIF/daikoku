@@ -24,7 +24,7 @@ use super::enviroments::{
 };
 use super::projects::{self};
 
-const SESSION_EXPIRED: &[u8] = include_bytes!("../../templates/session_expired.html");
+pub(crate) const SESSION_EXPIRED: &[u8] = include_bytes!("../../templates/session_expired.html");
 const MANAGER_PAGE: &[u8] = include_bytes!("../../templates/manager.html");
 
 #[derive(Debug)]
@@ -195,7 +195,7 @@ async fn forward_api_call(
         .method(Method::from_str(&method).unwrap())
         .uri(&url)
         .header(header::HOST, &host)
-        .header(header::COOKIE, format!("daikoku-session={}", cookie));
+        .header(header::COOKIE, cookie);
 
     let req = if method == "GET" {
         raw_req.body(Empty::<Bytes>::new().boxed()).unwrap()
@@ -307,7 +307,7 @@ async fn render_page(
     if authentication {
         match read_cookie_from_environment() {
             Ok(cookie) => {
-                builder = builder.header(header::COOKIE, format!("daikoku-session={}", cookie))
+                builder = builder.header(header::COOKIE, cookie)
             }
             Err(err) => {
                 return Ok(Response::builder()

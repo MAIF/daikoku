@@ -246,7 +246,13 @@ pub(crate) fn read_cookie_from_environment() -> DaikokuResult<String> {
     if let Some(environment) = config.get("default", "environment") {
         config
             .get(&environment, "token")
-            .map(Ok)
+            .map(|cookie| {
+                if cookie.starts_with("daikoku-session=") {
+                    Ok(cookie.to_string())
+                } else {
+                    Ok(format!("daikoku-session={}", cookie))
+                }
+            })
             .unwrap_or(Err(DaikokuCliError::Configuration(
                 "missing token on default environment".to_string(),
             )))

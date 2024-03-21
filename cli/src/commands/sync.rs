@@ -82,7 +82,7 @@ pub(crate) async fn run() -> DaikokuResult<()> {
         .uri(&url)
         .header(header::HOST, &host)
         .header(header::CONTENT_TYPE, "application/json")
-        .header(header::COOKIE, format!("daikoku-session={}", cookie))
+        .header(header::COOKIE, cookie)
         .body(Full::new(body))
         .unwrap();
 

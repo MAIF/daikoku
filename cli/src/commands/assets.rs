@@ -74,7 +74,7 @@ async fn exists(filename: String) -> DaikokuResult<()> {
 
     let req = Request::head(&url)
         .header(header::HOST, &host)
-        .header(header::COOKIE, format!("daikoku-session={}", cookie))
+        .header(header::COOKIE, cookie)
         .body(Empty::<Bytes>::new())
         .expect("failed to build a request");
 
@@ -166,7 +166,7 @@ async fn add(
 
     let req = Request::post(&url)
         .header(header::HOST, &host)
-        .header(header::COOKIE, format!("daikoku-session={}", cookie))
+        .header(header::COOKIE, cookie)
         .body(Full::new(Bytes::from(contents)))
         .expect("failed to build a request");
 
@@ -233,7 +233,7 @@ async fn remove(filename: String, path: Option<String>, slug: Option<String>) ->
 
     let req = Request::delete(&url)
         .header(header::HOST, &host)
-        .header(header::COOKIE, format!("daikoku-session={}", cookie))
+        .header(header::COOKIE, cookie)
         .body(Empty::<Bytes>::new())
         .expect("failed to build a request");
 
@@ -301,7 +301,7 @@ async fn list() -> DaikokuResult<()> {
 
     let req = Request::get(&url)
         .header(header::HOST, &host)
-        .header(header::COOKIE, format!("daikoku-session={}", cookie))
+        .header(header::COOKIE, cookie)
         .body(Empty::<Bytes>::new())
         .expect("failed to build a request");
 
@@ -427,7 +427,7 @@ async fn sync() -> DaikokuResult<()> {
 
     let req = Request::post(&url)
         .header(header::HOST, &host)
-        .header(header::COOKIE, format!("daikoku-session={}", cookie))
+        .header(header::COOKIE, cookie)
         .body(Full::new(Bytes::from(
             serde_json::to_string(&contents).map_err(|_err| {
                 DaikokuCliError::ParsingError("failed to convert assets to json array".to_string())

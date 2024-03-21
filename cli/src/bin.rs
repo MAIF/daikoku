@@ -42,13 +42,8 @@ pub enum Commands {
     /// Add a token to the current project. The token must be pasted from your Daikoku profile page.
     Login {
         /// Token can be found on your Daikoku profile page and used by Daikoku to access authenticated resources
-        #[arg(
-            value_name = "TOKEN",
-            short = 't',
-            long = "token",
-            require_equals = true
-        )]
-        token: String,
+        #[arg(value_name = "TOKEN", short = 't', long = "token")]
+        token: Option<String>,
     },
     /// Watch project changes and serve pages on :3333 (or on WATCHING_PORT=)
     #[command()]

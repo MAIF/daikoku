@@ -318,7 +318,14 @@ async fn import(name: String, path: String, server: String, token: String) -> Da
         .method(Method::GET)
         .uri(&url)
         .header(header::HOST, &host)
-        .header(header::COOKIE, format!("daikoku-session={}", token))
+        .header(
+            header::COOKIE,
+            if token.clone().starts_with("daikoku-session={}") {
+                token.clone()
+            } else {
+                format!("daikoku-session={}", token.clone())
+            },
+        )
         .body(Empty::<Bytes>::new())
         .unwrap();
 
