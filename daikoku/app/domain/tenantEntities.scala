@@ -1488,9 +1488,9 @@ case class CmsPage(
               .combine("request", EntitiesToMap.request(ctx.request))
               .combine(
                 "daikoku-css", {
-                  if (env.config.mode == DaikokuMode.Dev)
+                  if (env.config.isDev)
                     s"${env.getDaikokuUrl(ctx.tenant, "/daikoku.css")}"
-                  else if (env.config.mode == DaikokuMode.Prod)
+                  else if (env.config.isProd)
                     s"${env.getDaikokuUrl(ctx.tenant, "/assets/react-app/daikoku.min.css")}"
                 }
               ),

@@ -11,7 +11,7 @@ import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.DaikokuAdminOnly
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
-import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.env.{DaikokuMode, Env}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.OtoroshiClient
 import fr.maif.otoroshi.daikoku.utils.admin._
@@ -271,7 +271,7 @@ class StateAdminApiController(
   def reset() =
     DaikokuApiAction.async { _ =>
       (for {
-        _ <- EitherT.cond[Future][AppError, Unit](env.config.isDev, (), AppError.SecurityError("Action not avalaible"))
+        _ <- EitherT.cond[Future][AppError, Unit](env.config.isDev || env.config.mode == DaikokuMode.Test, (), AppError.SecurityError("Action not avalaible"))
         _ <- EitherT.liftF[Future, AppError, Unit](env.dataStore.clear())
         _ <- EitherT.liftF[Future, AppError, Done](env.initDatastore())
       } yield Ok(Json.obj("done" -> true)))

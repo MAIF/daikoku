@@ -9,10 +9,10 @@
 
 @customStyle = {
 @(tenant.colorTheme())
-@if(env.config.mode == DaikokuMode.Dev) {
+@if(env.config.isDev) {
     <link rel="stylesheet" media="screen" href="http://@host:3000/daikoku.css">
 }
-@if(env.config.mode == DaikokuMode.Prod) {
+@if(env.config.isProd) {
     <link rel="stylesheet" media="screen" href="/assets/react-app/daikoku.home.min.css">
 }
 @(tenant.moareStyle())
@@ -24,10 +24,10 @@
 
 @main(tenant.style.map(_.title).getOrElse(tenant.name), moreStyles = customStyle, moreScripts = customJs, favicon = tenant.favicon()) {
     <div id="app"></div>
-    @if(env.config.mode == DaikokuMode.Dev) {
+    @if(env.config.isDev) {
         <script type="text/javascript" src="http://@host:3000/daikoku.js"></script>
     }
-    @if(env.config.mode == DaikokuMode.Prod) {
+    @if(env.config.isProd) {
         <script type="text/javascript" src="/assets/react-app/daikoku.home.min.js"></script>
     }
     <script>

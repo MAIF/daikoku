@@ -15,7 +15,8 @@ test.beforeEach(async ({page}) => {
   .then(r => console.log({r}));
 })
 
-test('test', async ({ page }) => {
+test('test a complete user journey', async ({ page }) => {
+  //connection
   await page.goto('http://localhost:9000/apis');
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('user@foo.bar');
@@ -24,10 +25,8 @@ test('test', async ({ page }) => {
   await page.waitForResponse(response => response.url().includes('/auth/Local/callback') && response.status() === 303)
   await page.waitForSelector("section.organisation__header")
   // FIXME: find the fine selector to check user is connected
-  // await page.getByRole('img', { name: 'user menu' }).click();
-  // await expect(page.locator('div.block__category:nth-child(1)')).toContainText('user@foo.bar');
 
-
+  //create a new team
   await page.locator('div:nth-child(3) > .notification-link').first().click();
   await page.getByRole('button', { name: '' }).first().click();
   await page.getByLabel('Name').fill('The A team');
@@ -37,12 +36,11 @@ test('test', async ({ page }) => {
   await expect(page.getByRole('list')).toContainText('Team The A team created successfully');
   await page.locator('.navbar-panel-background').click();
 
-  // await expect(page.getByRole('main')).toContainText('The A team');
+  //create a new API
   await page.locator('div:nth-child(3) > .notification-link').first().click();
   await page.locator('span').filter({ hasText: 'API' }).first().click();
   await page.locator('div').filter({ hasText: /^The A team$/ }).click();
 
-  // await page.locator('.top__container span.cursor-pointer').filter({ hasText: /^The A team$/ }).click();
   await page.getByRole('button', { name: 'Published' }).click();
   await page.getByPlaceholder('New Api').fill('Test API');
   await expect(page.locator('form')).toContainText('API with this name already exists');
@@ -55,6 +53,8 @@ test('test', async ({ page }) => {
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
+
+  //create a simple plan
   await page.getByText('Plans').click();
   await page.getByRole('button', { name: 'Add plan' }).click();
   await page.locator('.react-form-select__input-container').click();
@@ -108,6 +108,7 @@ test('test', async ({ page }) => {
   //-----------------------------------------------
   //-----------------------------------------------
 
+  //subscribe
   await page.getByText('Subscriptions').click();
   await expect(page.getByRole('main')).toContainText('0 Result');
   await page.getByRole('link', { name: 'Daikoku home' }).click();

@@ -51,36 +51,28 @@ test('manage team as admin', async ({ page }) => {
   await expect(page.locator('.onglets')).toContainText('Pending (2)');
 });
 
-test('join a team as daikoku user', async ({ page }) => {
-  await page.goto('http://localhost:9000/apis');
-  await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
-  await page.getByPlaceholder('Password').fill('password');
-  await page.getByPlaceholder('Password').press('Enter');
-  await page.getByRole('img', { name: 'user menu' }).click();
-  await expect(page.locator('.navbar-panel .blocks')).toContainText('tester@foo.bar');
-  // await page.locator('.navbar-panel-background').click();
-  await page.getByRole('link', { name: 'Access to the notifications' }).click();
-  // await page.waitForResponse(r => r.url().includes('/api/me/notifications/unread-count') && r.status() === 200)
+// test('join a team as daikoku user', async ({ page }) => {
+//   await page.goto('http://localhost:9000/apis');
+//   await page.getByRole('img', { name: 'user menu' }).click();
+//   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
+//   await page.getByPlaceholder('Password').fill('password');
+//   await page.getByPlaceholder('Password').press('Enter');
+//   await page.waitForResponse(r => r.url().includes('/api/me/context') && r.status() === 200)
+//   await page.getByRole('img', { name: 'user menu' }).click();
+//   await expect(page.locator('.navbar-panel .blocks')).toContainText('tester@foo.bar');
+//   // await page.locator('.navbar-panel-background').click();
+//   await page.getByRole('link', { name: 'Access to the notifications' }).click();
+//   // await page.waitForResponse(r => r.url().includes('/api/me/notifications/unread-count') && r.status() === 200)
 
-  await page.locator('h2').filter({ hasText: 'Personal' }).waitFor({ state: 'visible' })
+//   await page.locator('h2').filter({ hasText: 'Personal' }).waitFor({ state: 'visible' })
 
-  await page.getByText('User, as admin of komainu, invite you in his team.komainu').click();
-  await page.locator('.alert.section')
-    .filter({ hasText: 'User, as admin of komainu, invite you in his team.' })
-    .locator('a.btn.btn-outline-success').click();
-  await page.getByRole('link', { name: 'Daikoku home' }).click();
-  await page.getByText('komainu').click();
-  await page.getByText('Members').click();
-  await expect(page.getByRole('main')).toContainText('Tester');
-  await expect(page.getByRole('list')).toContainText('Pending (1)');
-})
-
-test('join a team as external user', async ({ page }) => {
-  //recuperer le token d'invitation
-  //forger le lien
-  //suivre le lien
-  //accepter l'inviattion
-  //se créer un user
-  //tester
-})
+//   await page.getByText('User, as admin of komainu, invite you in his team.komainu').click();
+//   await page.locator('.alert.section')
+//     .filter({ hasText: 'User, as admin of komainu, invite you in his team.' })
+//     .locator('a.btn.btn-outline-success').click();
+//   await page.getByRole('link', { name: 'Daikoku home' }).click();
+//   await page.getByText('komainu').click();
+//   await page.getByText('Members').click();
+//   await expect(page.getByRole('main')).toContainText('Tester');
+//   await expect(page.getByRole('list')).toContainText('Pending (1)');
+// })

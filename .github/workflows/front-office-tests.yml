@@ -26,7 +26,11 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
+      smtp-server:
+        image: reachfive/fake-smtp-server
+        ports:
+          - 1080:1080
+          - 1025:1025
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -58,13 +62,13 @@ jobs:
         npm run build
       env:
         NODE_OPTIONS: --max_old_space_size=4096
-    - name: Cypress run and publish report
-      uses: cypress-io/github-action@v6
-      env: 
-        CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
-      with:
-        browser: chrome
-        start: npm run cypress:start:backend
-        wait-on: 'http://localhost:9000'
-        command: npm run test:cypress
-        working-directory: daikoku/javascript
+
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps
+    - name: start backend
+      run: |
+        cd daikoku
+        sbt "bgRun -Dhttp.port=9000 -Ddaikoku.storage=postgres -Ddaikoku.postgres.database=daikoku_test -Ddaikoku.postgres.user=postgres -Ddaikoku.init.data.from=javascript/cypress/cypress-test-export.ndjson"
+    - name: Run tests
+      run: npx playwright test --project chromium
+      working-directory: ./daikoku/javascripts

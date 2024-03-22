@@ -43,6 +43,9 @@ object DaikokuMode {
   case object Dev extends DaikokuMode {
     def name = "Dev"
   }
+  case object Test extends DaikokuMode {
+    def name = "Test"
+  }
 
 }
 
@@ -155,6 +158,7 @@ class Config(val underlying: Configuration) {
   lazy val mode: DaikokuMode =
     underlying.getOptional[String]("daikoku.mode").map(_.toLowerCase) match {
       case Some("dev") => DaikokuMode.Dev
+      case Some("test") => DaikokuMode.Test
       case _           => DaikokuMode.Prod
     }
 
@@ -176,7 +180,7 @@ class Config(val underlying: Configuration) {
   lazy val tenantJwtVerifier: JWTVerifier =
     JWT.require(tenantJwtAlgo).acceptLeeway(10).build()
 
-  lazy val isProd: Boolean = mode == DaikokuMode.Prod
+  lazy val isProd: Boolean = mode == DaikokuMode.Prod || mode == DaikokuMode.Test
   lazy val isDev: Boolean = mode == DaikokuMode.Dev
   lazy val tenantProvider: TenantProvider = underlying
     .getOptional[String]("daikoku.tenants.provider")

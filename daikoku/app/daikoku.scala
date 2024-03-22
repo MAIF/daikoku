@@ -304,6 +304,7 @@ package object modules {
       nextFilter(request).map { result =>
         env.config.mode match {
           case DaikokuMode.Dev => result
+          case DaikokuMode.Test => result
           case DaikokuMode.Prod
               if regex.matcher(request.relativeUri).find() => {
             result.withHeaders(
