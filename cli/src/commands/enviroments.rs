@@ -240,22 +240,28 @@ fn patch_default(token: String) -> DaikokuResult<()> {
     }
 }
 
-pub(crate) fn read_cookie_from_environment() -> DaikokuResult<String> {
+pub(crate) fn format_cookie(str: String) -> String {
+    if str.starts_with("daikoku-session=") {
+        str.to_string()
+    } else {
+        format!("daikoku-session={}", str)
+    }
+}
+
+pub(crate) fn read_cookie_from_environment(failed_if_not_present: bool) -> DaikokuResult<String> {
     let config: Ini = read()?;
 
     if let Some(environment) = config.get("default", "environment") {
         config
             .get(&environment, "token")
-            .map(|cookie| {
-                if cookie.starts_with("daikoku-session=") {
-                    Ok(cookie.to_string())
-                } else {
-                    Ok(format!("daikoku-session={}", cookie))
-                }
+            .map(|cookie| Ok(format_cookie(cookie)))
+            .unwrap_or(if failed_if_not_present {
+                Err(DaikokuCliError::Configuration(
+                    "missing token on default environment".to_string(),
+                ))
+            } else {
+                Ok("".to_string())
             })
-            .unwrap_or(Err(DaikokuCliError::Configuration(
-                "missing token on default environment".to_string(),
-            )))
     } else {
         Err(DaikokuCliError::Configuration(
             "missing default environment".to_string(),

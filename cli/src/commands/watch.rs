@@ -189,7 +189,7 @@ async fn forward_api_call(
 
     let url: String = format!("{}{}", environment.server, uri);
 
-    let cookie = read_cookie_from_environment()?;
+    let cookie = read_cookie_from_environment(true)?;
 
     let raw_req = Request::builder()
         .method(Method::from_str(&method).unwrap())
@@ -304,11 +304,9 @@ async fn render_page(
         .header(header::HOST, &host)
         .header(header::CONTENT_TYPE, "application/json");
 
-    if authentication {
-        match read_cookie_from_environment() {
-            Ok(cookie) => {
-                builder = builder.header(header::COOKIE, cookie)
-            }
+    if authentication && page.authenticated() {
+        match read_cookie_from_environment(true) {
+            Ok(cookie) => builder = builder.header(header::COOKIE, cookie),
             Err(err) => {
                 return Ok(Response::builder()
                     .header(header::CONTENT_TYPE, "text/html")

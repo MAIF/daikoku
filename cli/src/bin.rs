@@ -159,7 +159,7 @@ pub enum ProjectCommands {
         #[arg(value_name = "PATH", short = 'p', long = "path")]
         path: String,
         #[arg(value_name = "TOKEN", short = 't', long = "token")]
-        token: String,
+        token: Option<String>,
         #[arg(value_name = "SERVER", short = 's', long = "server")]
         server: String,
     },

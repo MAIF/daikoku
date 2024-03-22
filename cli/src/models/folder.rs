@@ -57,9 +57,9 @@ impl CmsFile {
         self.bool("_exact".to_string())
     }
 
-    // pub(crate) fn authenticated(&self) -> bool {
-    //     self.bool("_authenticated".to_string())
-    // }
+    pub(crate) fn authenticated(&self) -> bool {
+        self.bool("_authenticated".to_string())
+    }
 
     pub(crate) fn content_type(&self) -> String {
         self.metadata

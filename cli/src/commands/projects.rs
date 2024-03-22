@@ -25,7 +25,9 @@ use crate::{
     Commands, ProjectCommands,
 };
 
-use super::enviroments::{can_join_daikoku, Environment};
+use super::enviroments::{
+    can_join_daikoku, format_cookie, read_cookie_from_environment, Environment,
+};
 
 #[derive(Clone)]
 pub(crate) struct Project {
@@ -287,7 +289,12 @@ fn clear() -> DaikokuResult<()> {
 }
 
 #[async_recursion]
-async fn import(name: String, path: String, server: String, token: String) -> DaikokuResult<()> {
+async fn import(
+    name: String,
+    path: String,
+    server: String,
+    token: Option<String>,
+) -> DaikokuResult<()> {
     logger::loading("<yellow>Converting</> legacy project from Daikoku environment".to_string());
 
     if internal_get_project(name.clone()).is_some() {
@@ -302,9 +309,14 @@ async fn import(name: String, path: String, server: String, token: String) -> Da
         ));
     }
 
+    let cookie = token
+        .map(format_cookie)
+        .unwrap_or(read_cookie_from_environment(false)?)
+        .clone();
+
     let environment = Environment {
         server: server.clone(),
-        token: Some(token.clone()),
+        token: Some(cookie.clone()),
     };
 
     let host = environment
@@ -318,14 +330,7 @@ async fn import(name: String, path: String, server: String, token: String) -> Da
         .method(Method::GET)
         .uri(&url)
         .header(header::HOST, &host)
-        .header(
-            header::COOKIE,
-            if token.clone().starts_with("daikoku-session={}") {
-                token.clone()
-            } else {
-                format!("daikoku-session={}", token.clone())
-            },
-        )
+        .header(header::COOKIE, cookie.clone())
         .body(Empty::<Bytes>::new())
         .unwrap();
 
@@ -377,7 +382,7 @@ async fn import(name: String, path: String, server: String, token: String) -> Da
 
         create_project(name.clone(), project_path.clone()).await?;
 
-        create_environment(name, server, token).await?;
+        create_environment(name, server, cookie).await?;
 
         Ok(())
     } else {

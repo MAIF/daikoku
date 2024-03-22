@@ -90,7 +90,7 @@ async fn watcher(
     }
     
     thread::spawn(move || {
-        thread::sleep(Duration::from_millis(5000));
+        thread::sleep(Duration::from_millis(15000));
         process::exit(1);
     });
 

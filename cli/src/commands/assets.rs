@@ -64,7 +64,7 @@ async fn exists(filename: String) -> DaikokuResult<()> {
         .replace("http://", "")
         .replace("https://", "");
 
-    let cookie = read_cookie_from_environment()?;
+    let cookie = read_cookie_from_environment(true)?;
 
     let url: String = format!(
         "{}/tenant-assets/{}",
@@ -137,7 +137,7 @@ async fn add(
         .replace("http://", "")
         .replace("https://", "");
 
-    let cookie = read_cookie_from_environment()?;
+    let cookie = read_cookie_from_environment(true)?;
 
     let url: String = format!(
         "{}/tenant-assets?filename={}&title={}&desc={}&slug={}",
@@ -223,7 +223,7 @@ async fn remove(filename: String, path: Option<String>, slug: Option<String>) ->
         .replace("http://", "")
         .replace("https://", "");
 
-    let cookie = read_cookie_from_environment()?;
+    let cookie = read_cookie_from_environment(true)?;
 
     let url: String = format!(
         "{}/tenant-assets/{}",
@@ -295,7 +295,7 @@ async fn list() -> DaikokuResult<()> {
         .replace("http://", "")
         .replace("https://", "");
 
-    let cookie = read_cookie_from_environment()?;
+    let cookie = read_cookie_from_environment(true)?;
 
     let url: String = format!("{}/tenant-assets/slugified", environment.server);
 
@@ -401,7 +401,7 @@ async fn sync() -> DaikokuResult<()> {
         .replace("http://", "")
         .replace("https://", "");
 
-    let cookie = read_cookie_from_environment()?;
+    let cookie = read_cookie_from_environment(true)?;
 
     let url: String = format!("{}/tenant-assets/bulk", environment.server,);
 

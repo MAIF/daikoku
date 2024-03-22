@@ -75,7 +75,7 @@ pub(crate) async fn run() -> DaikokuResult<()> {
             .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?,
     );
 
-    let cookie = read_cookie_from_environment()?;
+    let cookie = read_cookie_from_environment(true)?;
 
     let req = Request::builder()
         .method(Method::POST)
