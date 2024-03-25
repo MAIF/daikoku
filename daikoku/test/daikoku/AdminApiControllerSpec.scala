@@ -3,6 +3,7 @@ package fr.maif.otoroshi.daikoku.tests
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.{FreeWithoutQuotas, PayPerUse}
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
@@ -1086,6 +1087,81 @@ class AdminApiControllerSpec
         )(tenant)
 
         verif.status mustBe 404
+      }
+
+      "PATCH == Conflict :: Name already exists" in {
+        val childApiId = ApiId(IdGenerator.token)
+        val otherApiId = ApiId(IdGenerator.token)
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(
+            defaultApi.api,
+            defaultApi.api.copy(id = childApiId, parent = defaultApi.api.id.some, currentVersion = Version("2.0.0-test")),
+            defaultApi.api.copy(id = otherApiId, name = "other API")
+          ),
+          usagePlans = defaultApi.plans,
+          teams = Seq(teamOwner),
+          users = Seq(userAdmin)
+        )
+        //2 api, une parent une enfant et une autre osef
+        //modifier l'enfant ==> ok
+        val respChild = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${childApiId.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json
+            .arr(
+              Json.obj("op" -> "replace", "path" -> "/description", "value" -> "foo")
+            )
+            .some
+        )(tenant)
+
+//        AppLogger.info(Json.stringify(respChild.json))
+        respChild.status mustBe 204
+
+        //modifier la parent => ok
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${defaultApi.api.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json
+            .arr(
+              Json.obj("op" -> "replace", "path" -> "/description", "value" -> "foo")
+            )
+            .some
+        )(tenant)
+//        AppLogger.info(Json.stringify(resp.json))
+        resp.status mustBe 204
+
+
+        //modiifer la 3eme et donner le meme nom que les 2 autre => KO
+
+        val respOther = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${otherApiId.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json
+            .arr(
+              Json.obj("op" -> "replace", "path" -> "/name", "value" -> defaultApi.api.name)
+            )
+            .some
+        )(tenant)
+
+        respOther.status mustBe 400
+
+        val respOther2 = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${otherApiId.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json
+            .arr(
+              Json.obj("op" -> "replace", "path" -> "/name", "value" -> "test-test-test")
+            )
+            .some
+        )(tenant)
+
+        respOther2.status mustBe 204
       }
     }
 

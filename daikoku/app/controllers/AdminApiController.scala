@@ -454,27 +454,18 @@ class ApiAdminApiController(
           .forTenant(entity.tenant)
           .findOne(
             Json.obj(
-              "_id" -> Json.obj("$ne" -> entity.id.asJson),
-              "$or" -> Json.arr(
-                Json.obj(
-                  "_id" -> Json.obj(
-                    "$ne" -> entity.parent
-                      .map(_.asJson)
-                      .getOrElse(JsNull)
-                      .as[JsValue]
-                  )
-                ),
-                Json.obj("parent" -> Json.obj("$ne" -> entity.id.asJson)),
-                Json.obj(
-                  "parent" -> Json.obj(
-                    "$ne" -> entity.parent
-                      .map(_.asJson)
-                      .getOrElse(entity.id.asJson)
-                      .as[JsValue]
-                  )
-                )
-              ),
-              "name" -> entity.name
+                "_id" -> Json.obj("$ne" -> entity.id.asJson),
+                "$or" -> Seq(
+                  entity.parent.map(p => Json.obj(
+                    "_id" -> Json.obj(
+                      "$ne" -> p.asJson
+                    )
+                  )),
+                  Json.obj("parent" -> Json.obj("$ne" -> entity.id.asJson)).some,
+                  entity.parent.map(p => Json.obj(
+                    "parent" -> Json.obj("$ne" -> p.asJson)
+                  ))).filter(_.isDefined).map(_.get),
+                  "name" -> entity.name
             )
           )
           .map {
