@@ -137,6 +137,7 @@ fn read_file(file_path: PathBuf, file_name: String, extension: String) -> CmsFil
         );
 
         metadata.insert("_name".to_string(), file_name.clone());
+        metadata.insert("from".to_string(), "cli".to_string());
 
         CmsFile {
             content: content.to_string(),
@@ -154,6 +155,7 @@ fn read_file(file_path: PathBuf, file_name: String, extension: String) -> CmsFil
                 .content_type(),
         );
         metadata.insert("_name".to_string(), file_name.clone());
+        metadata.insert("from".to_string(), "cli".to_string());
 
         CmsFile::new(file_path, file_name, metadata)
     }

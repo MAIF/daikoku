@@ -132,6 +132,14 @@ If you prefer to synchronize all assets with a single command, it offers speed a
 daikokucli assets sync
 ```
 
+# Authorized applications
+
+Just before running the `daikoku login` command, you have to configure your tenant by adding the CLI server. By default, the server is set to `http://localhost:3334` but you can overwrite it using the `WATCHING_PORT` environment variable.
+
+```sh
+daikokucli login
+```
+
 # CMS Directives
 
 ## daikoku-user

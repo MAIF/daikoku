@@ -17,7 +17,7 @@ use tokio::net::TcpStream;
 use crate::{
     logging::{
         error::{DaikokuCliError, DaikokuResult},
-        logger,
+        logger::{self},
     },
     models::folder::{Ext, SourceExtension},
     process,
@@ -25,9 +25,7 @@ use crate::{
     Commands, ProjectCommands,
 };
 
-use super::enviroments::{
-    can_join_daikoku, format_cookie, read_cookie_from_environment, Environment,
-};
+use super::enviroments::{can_join_daikoku, format_cookie, Environment};
 
 #[derive(Clone)]
 pub(crate) struct Project {
@@ -66,7 +64,7 @@ pub(crate) async fn run(command: ProjectCommands) -> DaikokuResult<()> {
             path,
             server,
             token,
-        } => import(name, path, server, token).await,
+        } => import(name, absolute_path(path)?, server, token).await,
     }
 }
 
@@ -198,6 +196,16 @@ fn internal_get_project(name: String) -> Option<Project> {
         .flatten()
 }
 
+fn force_clearing_default_project() -> DaikokuResult<()> {
+    let mut config: Ini = read(false)?;
+
+    config.remove_section("default");
+
+    config
+        .write(&get_path()?)
+        .map_err(|err| DaikokuCliError::Configuration(err.to_string()))
+}
+
 fn list() -> DaikokuResult<()> {
     let config: Ini = read(false)?;
 
@@ -289,18 +297,15 @@ fn clear() -> DaikokuResult<()> {
 }
 
 #[async_recursion]
-async fn import(
-    name: String,
-    path: String,
-    server: String,
-    token: Option<String>,
-) -> DaikokuResult<()> {
+async fn import(name: String, path: String, server: String, token: String) -> DaikokuResult<()> {
     logger::loading("<yellow>Converting</> legacy project from Daikoku environment".to_string());
 
     if internal_get_project(name.clone()).is_some() {
         return Err(DaikokuCliError::Configuration(
             "Project already exists".to_string(),
         ));
+    } else {
+        force_clearing_default_project()?
     }
 
     if !can_join_daikoku(&server.clone()).await? {
@@ -309,10 +314,7 @@ async fn import(
         ));
     }
 
-    let cookie = token
-        .map(format_cookie)
-        .unwrap_or(read_cookie_from_environment(false)?)
-        .clone();
+    let cookie = format_cookie(token);
 
     let environment = Environment {
         server: server.clone(),
@@ -368,6 +370,12 @@ async fn import(
 
         let items: Vec<CmsPage> = read_summary_file(zip_bytes)?;
 
+        if items.iter().find(|p| p.path.is_none()).is_none() {
+            return Err(DaikokuCliError::DaikokuStrError(
+                "imported project is not a legacy project".to_string(),
+            ));
+        }
+
         let project_path = PathBuf::from_str(&path)
             .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?
             .join(name.clone());
@@ -401,7 +409,11 @@ fn replace_ids(items: Vec<CmsPage>) -> DaikokuResult<Vec<CmsPage>> {
 
     let mut paths: HashMap<String, String> = HashMap::new();
     items.iter().for_each(|item| {
-        if let Ok(path) = get_cms_page_path(item).into_os_string().into_string() {
+        if let Ok(path) = get_cms_page_path(item)
+            .unwrap()
+            .into_os_string()
+            .into_string()
+        {
             paths.insert(item._id.clone(), format!("/{}", path));
         }
     });
@@ -426,7 +438,7 @@ fn convert_cms_pages(items: Vec<CmsPage>, project_path: PathBuf) -> DaikokuResul
     items.iter().for_each(|item| {
         let extension = SourceExtension::from_str(&item.content_type).unwrap();
 
-        let file_path = project_path.clone().join(get_cms_page_path(item));
+        let file_path = project_path.clone().join(get_cms_page_path(item).unwrap());
 
         let _ = create_path_and_file(file_path, item.content.clone(), item, extension);
     });
@@ -434,7 +446,7 @@ fn convert_cms_pages(items: Vec<CmsPage>, project_path: PathBuf) -> DaikokuResul
     Ok(())
 }
 
-fn get_cms_page_path(item: &CmsPage) -> PathBuf {
+fn get_cms_page_path(item: &CmsPage) -> DaikokuResult<PathBuf> {
     let extension = SourceExtension::from_str(&item.content_type).unwrap();
 
     let folder = match extension {
@@ -452,11 +464,19 @@ fn get_cms_page_path(item: &CmsPage) -> PathBuf {
         }
     });
 
-    PathBuf::from_str(folder).unwrap().join(format!(
+    let folder_path = PathBuf::from_str(folder).unwrap().join(format!(
         "{}{}",
         router_path.unwrap_or(item.name.clone()),
         extension.ext()
-    ))
+    ));
+
+    let parent = folder_path.parent().unwrap();
+
+    if !parent.exists() {
+        fs::create_dir_all(parent).map_err(map_error_to_filesystem_error)?;
+    }
+
+    Ok(folder_path)
 }
 
 fn create_path_and_file(
@@ -477,7 +497,7 @@ fn create_path_and_file(
         fs::create_dir_all(parent).map_err(map_error_to_filesystem_error)?;
     }
 
-    println!("Creating {} {:?}", item.name, file_buf);
+    logger::println(format!("Creating {} {:?}", item.name, file_buf));
 
     if content_type == SourceExtension::HTML {
         let metadata = extract_metadata(item)?;

@@ -56,7 +56,7 @@ pub(crate) async fn run(
 
     logger::loading(format!("<yellow>Listening</> on {}", port));
 
-    // if webbrowser::open(&format!("http://localhost:{}", port)).is_ok() {}
+    if webbrowser::open(&format!("http://localhost:{}", port)).is_ok() {}
 
     let listener = TcpListener::bind(format!("0.0.0.0:{}", port))
         .await

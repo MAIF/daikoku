@@ -572,7 +572,7 @@ case class CmsFile(name: String, content: String, metadata: Map[String, JsValue]
         name = name,
         forwardRef = None,
         tags = List.empty,
-        metadata = Map.empty,
+        metadata = metadata.map { case (key, value) => (key, value.toString.replaceAll("\"", "")) },
         contentType = contentType(),
         body= content,
         draft = content,
@@ -1869,11 +1869,6 @@ case class CmsPage(
           case _ => if (ctx.request.getQueryString("draft").contains("true")) page.draft
             else page.body
         }
-
-        if (template == "") {
-          println("missing rendering", page.name)
-        } else
-          println("starting rendering", page.path, page.name)
 
         val result = handlebars.compileInline(template).apply(c)
         c.destroy()

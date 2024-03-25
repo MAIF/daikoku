@@ -88,11 +88,13 @@ async fn watcher(
             .await?;
         }
     }
-    
+
     thread::spawn(move || {
         thread::sleep(Duration::from_millis(15000));
         process::exit(1);
     });
+
+    logger::println("Everything is configured. Run daikokucli watch".to_string());
 
     Ok(Response::builder()
         .header(header::CONTENT_TYPE, "text/html")

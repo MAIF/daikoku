@@ -10,7 +10,7 @@ use crate::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
     },
-    utils::frame_to_bytes_body,
+    utils::{absolute_path, frame_to_bytes_body},
     AssetsCommands,
 };
 
@@ -45,12 +45,21 @@ pub(crate) async fn run(command: AssetsCommands) -> DaikokuResult<()> {
             desc,
             path,
             slug,
-        } => add(filename, title, desc, path, slug).await,
+        } => {
+            add(
+                filename,
+                title,
+                desc,
+                path.map(|p| absolute_path(p).unwrap()),
+                slug,
+            )
+            .await
+        }
         AssetsCommands::Remove {
             filename,
             path,
             slug,
-        } => remove(filename, path, slug).await,
+        } => remove(filename, path.map(|p| absolute_path(p).unwrap()), slug).await,
         AssetsCommands::List {} => list().await,
         AssetsCommands::Sync {} => sync().await,
     }
