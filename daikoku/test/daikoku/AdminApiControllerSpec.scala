@@ -2365,6 +2365,115 @@ class AdminApiControllerSpec
         resp.status mustBe 400
       }
 
+      "PATCH :: Json PATCH :: OK" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(defaultAdminTeam),
+          subscriptions = Seq(adminApiSubscription)
+        )
+        val userAdminEmail = "newUserAdminEmail@gmail.com"
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/users/${user.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json
+            .arr(
+              Json.obj(
+                "op" -> "replace",
+                "path" -> "/email",
+                "value" -> userAdminEmail
+              )
+            )
+            .some
+        )(tenant)
+        resp.status mustBe 204
+      }
+
+      "PATCH :: Conflict :: Json PATCH :: Path Not Found" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(defaultAdminTeam),
+          subscriptions = Seq(adminApiSubscription)
+        )
+
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/users/${user.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json
+            .arr(
+              Json.obj(
+                "op" -> "replace",
+                "path" -> "/personalEmail",
+                "value" -> userAdmin.email
+              )
+            )
+            .some
+        )(tenant)
+        resp.status mustBe 409
+      }
+
+      "PATCH :: Conflict :: Json Object:: Path Not Found" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(defaultAdminTeam),
+          subscriptions = Seq(adminApiSubscription)
+        )
+        val userAdminEmail = "newUserAdminEmail@gmail.com"
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/users/${user.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json.obj(
+            "personalEmail" -> userAdminEmail
+          ).some
+        )(tenant)
+        resp.status mustBe 409
+      }
+
+      "PATCH :: Conflict :: Json Object:: Add a path element that does not exist in a list" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(defaultAdminTeam),
+          subscriptions = Seq(adminApiSubscription)
+        )
+        val userAdminEmail = "newUserAdminEmail@gmail.com"
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/users/${user.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json.obj(
+            "tenants" -> Json.arr(Json.obj("email" -> userAdminEmail))
+          ).some
+        )(tenant)
+        resp.status mustBe 409
+      }
+
+      "PATCH :: Json Object :: OK" in {
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          users = Seq(user, userAdmin),
+          teams = Seq(defaultAdminTeam),
+          subscriptions = Seq(adminApiSubscription)
+        )
+        val userAdminEmail = "newUserAdminEmail@gmail.com"
+        val resp = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/users/${user.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json.obj(
+            "email" -> userAdminEmail
+          ).some
+        )(tenant)
+        resp.status mustBe 204
+      }
+
+
       "GET :: Not Found" in {
         setupEnvBlocking(
           tenants = Seq(tenant),
