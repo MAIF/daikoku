@@ -19,15 +19,10 @@ export interface ITeamSimple {
   apiKeyVisibility: TeamPermission;
   apisCreationPermission?: boolean;
   verified: boolean;
-  authorizedEntities: Array<{otoroshiSettings: string, authorizedEntities: IAuthorizedEntities}>
-}
-
-export interface ITeamVisibility {
-  _id: string;
-  _humanReadableId: string;
-  type: 'Personal' | 'Organization' | 'Admin';
-  name: string;
-  avatar: string;
+  authorizedOtoroshiEntities: Array<{
+    otoroshiSettingsId: string;
+    authorizedEntities: IAuthorizedEntities;
+  }>;
 }
 
 export interface ITeamFull extends ITeamSimple {

@@ -6,13 +6,21 @@ import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
+  Accepted,
+  Pending,
+  Rejected
+}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.otoroshi.daikoku.domain.ThirdPartySubscriptionInformations.StripeSubscriptionInformations
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiIdFormat, TeamIdFormat, TenantIdFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiIdFormat,
+  TeamIdFormat,
+  TenantIdFormat
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
@@ -2482,28 +2490,31 @@ object json {
       )
   }
 
-  def TeamAuthorizedEntitiesFormat = new Format[TeamAuthorizedEntities] {
-    override def writes(o: TeamAuthorizedEntities): JsValue =
-      Json.obj(
-        "otoroshiSettingsId" -> o.otoroshiSettingsId.asJson,
-        "authorizedEntities" -> o.authorizedEntities.asJson
-      )
-
-    override def reads(json: JsValue): JsResult[TeamAuthorizedEntities] = {
-      Try {
-        JsSuccess(
-          TeamAuthorizedEntities(
-            otoroshiSettingsId = (json \ "otoroshiSettingsId").as(OtoroshiSettingsIdFormat),
-            authorizedEntities = (json \ "authorizedEntities").as(AuthorizedEntitiesFormat)
-          )
+  def TeamAuthorizedEntitiesFormat =
+    new Format[TeamAuthorizedEntities] {
+      override def writes(o: TeamAuthorizedEntities): JsValue =
+        Json.obj(
+          "otoroshiSettingsId" -> o.otoroshiSettingsId.asJson,
+          "authorizedEntities" -> o.authorizedEntities.asJson
         )
-      } recover {
-        case e =>
-          println("Team AuthorizedEntities format error")
-          JsError(e.getMessage)
-      } get
+
+      override def reads(json: JsValue): JsResult[TeamAuthorizedEntities] = {
+        Try {
+          JsSuccess(
+            TeamAuthorizedEntities(
+              otoroshiSettingsId =
+                (json \ "otoroshiSettingsId").as(OtoroshiSettingsIdFormat),
+              authorizedEntities =
+                (json \ "authorizedEntities").as(AuthorizedEntitiesFormat)
+            )
+          )
+        } recover {
+          case e =>
+            println("Team AuthorizedEntities format error")
+            JsError(e.getMessage)
+        } get
+      }
     }
-  }
 
   val ApiFormat = new Format[Api] {
     override def reads(json: JsValue): JsResult[Api] = {
@@ -4705,7 +4716,7 @@ object json {
   val SeqTeamAuthorizedEntitiesFormat =
     Format(
       Reads.seq(TeamAuthorizedEntitiesFormat),
-      Writes.seq(TeamAuthorizedEntitiesFormat),
+      Writes.seq(TeamAuthorizedEntitiesFormat)
     )
 
 }

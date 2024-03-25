@@ -8,6 +8,7 @@ import {
   IOtoroshiApiKey,
   ISafeSubscription,
   ISubscription,
+  ISubscriptionCustomization,
   ISubscriptionDemand,
   ITeamSimple,
   ITenant,
@@ -108,7 +109,7 @@ type LimitedTeam = {
   _id: string;
   name?: string;
 };
-type ApiSubscriptionGql = {
+interface ApiSubscriptionGql extends ISubscriptionCustomization {
   _id: String;
   apiKey: {
     clientName: string;
@@ -127,7 +128,13 @@ type ApiSubscriptionGql = {
   };
   customName: string;
   enabled: boolean;
-};
+  customMetadata: object;
+  customMaxPerSecond?: number;
+  customMaxPerDay?: number;
+  customMaxPerMonth?: number;
+  customReadOnly?: boolean;
+  adminCustomName?: string;
+}
 type NotificationGQL = {
   _id: string;
   action: {
@@ -165,7 +172,7 @@ export type SubscriptionMetadataModalProps<T extends IWithTesting> = {
   team?: ITeamSimple | LimitedTeam;
   notification?: INotification | NotificationGQL;
   config?: ITestingConfig;
-  subscription?: ISafeSubscription | ApiSubscriptionGql;
+  subscription?: ISubscriptionCustomization;
   subscriptionDemand?: ISubscriptionDemand;
   description?: any;
   noClose?: boolean;

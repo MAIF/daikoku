@@ -8,7 +8,6 @@ import {
   IState,
   IStateContext,
   ITeamSimple,
-  ITeamVisibility,
   ITenant,
   IUserSimple,
   TeamPermission,
@@ -22,7 +21,7 @@ export const CanIDoAction = (
   user: IUserSimple,
   action: number,
   what: string,
-  team?: ITeamSimple | ITeamVisibility,
+  team?: ITeamSimple,
   isTenantAdmin?: boolean,
   whichOne?: any,
   currentTenant?: any
@@ -36,7 +35,7 @@ export const CanIDoAction = (
     Option(isTenantAdmin).map((x) => x);
 
     const realPerm: number = Option(team)
-      .map((t: ITeamSimple) => t.users)
+      .map((t) => t.users)
       .flatMap((users: TeamUser[]) => Option(users.find((u) => u.userId === user._id)))
       .map((userWithPermission: TeamUser) => userWithPermission.teamPermission)
       .map((ability: TeamPermission) => permissions[ability])
@@ -44,7 +43,7 @@ export const CanIDoAction = (
       .map((perm: TPermission) =>
         Option(perm.condition).fold(
           () => perm.action,
-          (condition: (t?: ITeamSimple | ITeamVisibility) => boolean) => (condition(team) ? perm.action : doNothing)
+          (condition: (t) => boolean) => (condition(team) ? perm.action : doNothing)
         )
       )
       .fold(
@@ -72,7 +71,7 @@ export const Can = ({
 }: {
   I: number;
   a: string;
-  team?: ITeamSimple | ITeamVisibility;
+  team?: ITeamSimple;
   teams?: Array<ITeamSimple>;
   dispatchError?: boolean;
   children: ReactNode;

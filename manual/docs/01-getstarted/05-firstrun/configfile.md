@@ -61,20 +61,6 @@ or
 
 ## DB configuration
 
-> Choose database
-
-| name | type | default value  | description |
-| ---- |:----:| -------------- | ----- |
-|`daikoku.storage` | string | "postgres" | You can use mongo or postgres database. mongoDb is deprecated and will be no longer supported in the next major release |
-
-
-> Mongo configuration
-
-| name | type | default value  | description |
-| ---- |:----:| -------------- | ----- |
-|`mongodb.uri` | string | "mongodb://localhost:27017/daikoku" | the uri to mongdb datastore |
-
-
 > Postgres configuration
 
 | name | type | default value  | description |
@@ -199,8 +185,9 @@ daikoku {
   }
 }
 
-mongodb {
-  uri = "mongodb://localhost:27017/daikoku"
+postgres {
+  database = "daikoku_test"
+  poolSize = 4
 }
 
 

@@ -2351,12 +2351,14 @@ object SchemaDefinition {
             Field(
               "defaultUsagePlan",
               OptionType(UsagePlanInterfaceType),
-              resolve = ctx => ctx.value.defaultUsagePlan match {
-                case Some(value) => ctx.ctx._1.usagePlanRepo
-                  .forTenant(ctx.ctx._2.tenant)
-                  .findById(value)
-                case None => FastFuture.successful(None)
-              },
+              resolve = ctx =>
+                ctx.value.defaultUsagePlan match {
+                  case Some(value) =>
+                    ctx.ctx._1.usagePlanRepo
+                      .forTenant(ctx.ctx._2.tenant)
+                      .findById(value)
+                  case None => FastFuture.successful(None)
+                },
               possibleTypes = List(
                 AdminUsagePlanType,
                 FreeWithQuotasUsagePlanType,

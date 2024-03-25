@@ -1,12 +1,12 @@
 import { constraints, Form, format, FormRef, type } from '@maif/react-forms';
 import sortBy from 'lodash/sortBy';
 import { useContext, useRef } from 'react';
-
 import { useQuery } from '@tanstack/react-query';
+
 import { Option, Spinner } from '../../components/utils';
 import { I18nContext } from '../../core';
 import * as Services from '../../services';
-import { IApi, isApi, isError, ITestingConfig, IUsagePlan, IWithTesting } from '../../types';
+import { IApi, isError, IUsagePlan, IWithTesting } from '../../types';
 import { IBaseModalProps, SubscriptionMetadataModalProps } from './types';
 
 export type OverwriteSubscriptionData = {
@@ -156,11 +156,10 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
   } else if (!props.api && planQuery.data || (apiQuery.data && !isError(apiQuery.data))) {
     const plan = !!props.plan ? !isError(planQuery.data) ? planQuery.data : undefined : undefined
 
-    const maybeSubMetadata = Option(props.subscription)
-      .orElse(props.config)
-      .orElse(props.subscriptionDemand)
-      .map((s) => ({...s.motivation, ...s.customMetadata}))
-      .map((v: object) => Object.entries(v))
+    const maybeSubMetadata = Option(props.subscription?.customMetadata)
+      .orElse(props.config?.customMetadata)
+      .orElse({...props.subscriptionDemand?.motivation, ...props.subscriptionDemand?.customMetadata})
+      .map((v) => Object.entries(v))
       .getOrElse([]);
 
     const [maybeMetadata, maybeCustomMetadata] = maybeSubMetadata.reduce(
@@ -173,36 +172,29 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(props: Subscri
       [[], []]
     );
 
-    console.debug({props})
     const value = {
       metadata: Object.fromEntries(maybeMetadata),
       customMetadata: Object.fromEntries(maybeCustomMetadata),
       customQuotas: {
-        customMaxPerSecond: Option(props.subscription)
-          .orElse(props.config)
-          .orElse(props.subscriptionDemand)
-          .map((s: any) => s.customMaxPerSecond)
+        customMaxPerSecond: Option(props.subscription?.customMaxPerSecond)
+          .orElse(props.config?.customMaxPerSecond)
+          .orElse(props.subscriptionDemand?.customMaxPerSecond)
           .getOrNull(),
-        customMaxPerDay: Option(props.subscription)
-          .orElse(props.config)
-          .orElse(props.subscriptionDemand)
-          .map((s: any) => s.customMaxPerDay)
+        customMaxPerDay: Option(props.subscription?.customMaxPerDay)
+          .orElse(props.config?.customMaxPerDay)
+          .orElse(props.subscriptionDemand?.customMaxPerDay)
           .getOrNull(),
-        customMaxPerMonth: Option(props.subscription)
-          .orElse(props.config)
-          .orElse(props.subscriptionDemand)
-          .map((s: any) => s.customMaxPerMonth)
+        customMaxPerMonth: Option(props.subscription?.customMaxPerMonth)
+          .orElse(props.config?.customMaxPerMonth)
+          .orElse(props.subscriptionDemand?.customMaxPerMonth)
           .getOrNull(),
       },
-      customReadOnly: Option(props.subscription)
-        .orElse(props.config)
-        .orElse(props.subscriptionDemand)
-        .map((s: any) => s.customReadOnly)
+      customReadOnly: Option(props.subscription?.customReadOnly)
+        .orElse(props.config?.customReadOnly)
+        .orElse(props.subscriptionDemand?.customReadOnly)
         .getOrNull(),
-      adminCustomName: Option(props.subscription)
-        .orElse(props.config)
-        .orElse(props.subscriptionDemand)
-        .map((s: any) => s.adminCustomName)
+      adminCustomName: Option(props.subscription?.adminCustomName)
+        .orElse(props.subscriptionDemand?.adminCustomName)
         .getOrNull()
     }
 

@@ -17,18 +17,18 @@ import {
 } from '../../utils';
 import { I18nContext } from '../../../core';
 import { ModalContext, useDaikokuBackOffice, useTenantBackOffice } from '../../../contexts';
-import { isError, IState, IStateContext, ITeamSimple, ITenantFull, IUserSimple } from '../../../types';
+import { isError, IState, IStateContext, ITeamSimple, ITenantFull, IUser, IUserSimple } from '../../../types';
 
 const AdminList = () => {
   const context = useSelector<IState, IStateContext>((s) => s.context);
 
   const [search, setSearch] = useState('');
-  const [addableAdmins, setAddableAdmins] = useState<Array<any>>([]);
-  const [admins, setAdmins] = useState<Array<any>>([]);
+  const [addableAdmins, setAddableAdmins] = useState<Array<IUser>>([]);
+  const [admins, setAdmins] = useState<Array<IUser>>([]);
   const [loading, setLoading] = useState(true);
   const [team, setTeam] = useState<ITeamSimple>();
   const [tenant, setTenant] = useState<ITenantFull>();
-  const [filteredAdmins, setFilteredAdmins] = useState([]);
+  const [filteredAdmins, setFilteredAdmins] = useState<Array<IUser>>([]);
   const [selectedAdmin, setSelectedAdmin] = useState<any>(undefined);
 
   const { translate, Translation } = useContext(I18nContext);
@@ -56,7 +56,7 @@ const AdminList = () => {
 
   useEffect(() => {
     const filteredAdmins = Option(search)
-      .map((search: any) => admins.filter(({ name, email }) => [name, email].some((value) => (value as any).toLowerCase().includes(search))))
+      .map((search) => admins.filter(({ name, email }) => [name, email].some((value) => (value as any).toLowerCase().includes(search))))
       .getOrElse(admins);
 
     setFilteredAdmins(filteredAdmins);
@@ -94,7 +94,7 @@ const AdminList = () => {
     value: admin
   });
 
-  const removeAdmin = (admin: IUserSimple) => {
+  const removeAdmin = (admin: IUser) => {
     if (team?.users.length === 1) {
       alert({ message: translate('remove.admin.tenant.alert') });
     } else {

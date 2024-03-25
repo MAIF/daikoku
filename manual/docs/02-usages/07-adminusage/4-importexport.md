@@ -16,7 +16,12 @@ If you want to restore an export, Go to `settings (avatar icon) / Organizations 
 
 ## Database migration
 
-Since v1.1.1 Daikoku support postgresql database. If you want to migrate you mongoDB to postgresql, it's dead simple like :
+Since v1.1.1 Daikoku support postgresql database. If you want to migrate you mongoDB to postgresql, it's dead simple like the following instructions.
+
+:::danger
+Since **v17.1.2**, Daikoku do not support mongoDB anymore. To run database migration, you need to be in **16.3.6 max**.
+:::
+
   1. add your postgresql access in daikoku configuration
   2. keep mongo as daikoku.storage configuration
   3. run the migration

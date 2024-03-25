@@ -331,13 +331,13 @@ const Breadcrumb = <T,>({
   chooseStep: (idx: string) => void,
   creation: boolean,
   direction?: 'vertical' | 'horizontal',
-  context?: T
+  context: T
 }) => {
   const currentIdx = steps.findIndex((s) => s.id === currentStep);
 
   const handleChooseStep = (idx: number) => {
     const disabled = Option(steps[idx])
-      .map((step: IMultistepsformStep<T>) => step.disabled)
+      .map((step) => step.disabled)
       .map((d) => typeof d === 'function' ? d(context) : d)
       .getOrElse(false);
     if (!disabled && (!creation || idx < currentIdx)) {

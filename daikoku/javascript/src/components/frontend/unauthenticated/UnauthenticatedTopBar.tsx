@@ -9,7 +9,8 @@ export const UnauthenticatedTopBar = () => {
     return (
       <div className="dropdown-menu dropdown-menu-right">
         <a className="dropdown-item" href="/signup">
-          <i className="fas fa-sign-out-alt" /> Sign up
+          <i className="fas fa-sign-out-alt" /> 
+           Sign up
         </a>
       </div>
     );

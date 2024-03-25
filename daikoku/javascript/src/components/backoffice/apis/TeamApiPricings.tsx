@@ -4,7 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import { nanoid } from 'nanoid';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { SyntheticEvent, useContext, useEffect, useRef, useState } from 'react';
 import AtSign from 'react-feather/dist/icons/at-sign';
 import CreditCard from 'react-feather/dist/icons/credit-card';
 import Plus from 'react-feather/dist/icons/plus';
@@ -248,24 +248,24 @@ const CustomMetadataInput = (props: {
 }) => {
   const { alert } = useContext(ModalContext);
 
-  const changeValue = (possibleValues: any, key: any) => {
-    const oldValue = Option(props.value?.find((x: any) => x.key === key)).getOrElse({ '': '' });
-    const newValues = [...(props.value || []).filter((x: any) => x.key !== key), { ...oldValue, key, possibleValues }];
+  const changeValue = (possibleValues: any, key: string) => {
+    const oldValue = Option(props.value?.find((x) => x.key === key)).getOrElse({ key: '', possibleValues: [] });
+    const newValues = [...(props.value || []).filter((x) => x.key !== key), { ...oldValue, key, possibleValues }];
     props.onChange && props.onChange(newValues);
   };
 
-  const changeKey = (e: any, oldName: any) => {
+  const changeKey = (e: React.ChangeEvent<HTMLInputElement>, oldName: string) => {
     if (e && e.preventDefault) e.preventDefault();
 
-    const oldValue = Option(props.value?.find((x: any) => x.key === oldName)).getOrElse({ '': '' });
+    const oldValue = Option(props.value?.find((x) => x.key === oldName)).getOrElse({ key: '', possibleValues: [] });
     const newValues = [
-      ...(props.value || []).filter((x: any) => x.key !== oldName),
+      ...(props.value || []).filter((x) => x.key !== oldName),
       { ...oldValue, key: e.target.value },
     ];
     props.onChange && props.onChange(newValues);
   };
 
-  const addFirst = (e: any) => {
+  const addFirst = (e: React.MouseEvent<HTMLElement>) => {
     if (e && e.preventDefault) e.preventDefault();
     if (!props.value || props.value.length === 0) {
       props.onChange && props.onChange([{ key: '', possibleValues: [] }]);
@@ -273,14 +273,14 @@ const CustomMetadataInput = (props: {
     }
   };
 
-  const addNext = (e: any) => {
+  const addNext = (e: React.MouseEvent<HTMLElement>) => {
     if (e && e.preventDefault) e.preventDefault();
     const newItem = { key: '', possibleValues: [] };
     const newValues = [...(props.value || []), newItem];
     props.onChange && props.onChange(newValues);
   };
 
-  const remove = (e: any, key: any) => {
+  const remove = (e: React.MouseEvent<HTMLElement>, key: string) => {
     if (e && e.preventDefault) e.preventDefault();
 
     props.onChange && props.onChange((props.value || []).filter((x: any) => x.key !== key));
@@ -290,7 +290,7 @@ const CustomMetadataInput = (props: {
     <div>
       {!props.value?.length && (
         <div className="col-sm-10">
-          <button type="button" className="btn btn-outline-primary" onClick={addFirst}>
+          <button type="button" className="btn btn-outline-primary" onClick={e => addFirst(e)}>
             <i className="fas fa-plus" />{' '}
           </button>
         </div>
@@ -1080,8 +1080,8 @@ export const TeamApiPricings = (props: Props) => {
             min: 0,
           },
           constraints: [
-            constraints.positive('constraints.positive'),
-            constraints.integer('constraints.integer'),
+            constraints.positive(translate('constraints.positive')),
+            constraints.integer(translate('constraints.integer')),
           ],
         },
         maxPerDay: {
@@ -1093,8 +1093,8 @@ export const TeamApiPricings = (props: Props) => {
             min: 0,
           },
           constraints: [
-            constraints.positive('constraints.positive'),
-            constraints.integer('constraints.integer'),
+            constraints.positive(translate('constraints.positive')),
+            constraints.integer(translate('constraints.integer')),
           ],
         },
         maxPerMonth: {
@@ -1106,8 +1106,8 @@ export const TeamApiPricings = (props: Props) => {
             min: 0,
           },
           constraints: [
-            constraints.positive('constraints.positive'),
-            constraints.integer('constraints.integer'),
+            constraints.positive(translate('constraints.positive')),
+            constraints.integer(translate('constraints.integer')),
           ],
         },
       },
@@ -1139,19 +1139,19 @@ export const TeamApiPricings = (props: Props) => {
       type: type.number,
       label: ({ rawValues }) => translate(`Cost per ${rawValues?.billingDuration?.unit.toLocaleLowerCase()}`),
       placeholder: translate('Cost per billing period'),
-      constraints: [constraints.positive('constraints.positive')],
+      constraints: [constraints.positive(translate('constraints.positive'))],
     },
     costPerAdditionalRequest: {
       type: type.number,
       label: translate('Cost per add. req.'),
       placeholder: translate('Cost per additionnal request'),
-      constraints: [constraints.positive('constraints.positive')],
+      constraints: [constraints.positive(translate('constraints.positive'))],
     },
     costPerRequest: {
       type: type.number,
       label: translate('Cost per req.'),
       placeholder: translate('Cost per request'),
-      constraints: [constraints.positive('constraints.positive')],
+      constraints: [constraints.positive(translate('constraints.positive'))],
     },
     currency: {
       type: type.object,
@@ -1184,9 +1184,9 @@ export const TeamApiPricings = (props: Props) => {
             min: 0,
           },
           constraints: [
-            constraints.positive('constraints.positive'),
-            constraints.integer('constraints.integer'),
-            constraints.required('constraints.required.billing.period'),
+            constraints.positive(translate('constraints.positive')),
+            constraints.integer(translate('constraints.integer')),
+            constraints.required(translate('constraints.required.billing.period')),
           ],
         },
         unit: {

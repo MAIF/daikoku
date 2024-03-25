@@ -1,16 +1,16 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import Select from 'react-select';
-import { type, constraints, format } from '@maif/react-forms';
+import { constraints, format, type } from '@maif/react-forms';
 import classNames from 'classnames';
-import { useDispatch, useSelector } from 'react-redux';
+import { useContext, useEffect, useState } from 'react';
+import { useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
+import { Link } from 'react-router-dom';
+import Select, { CSSObjectWithLabel } from 'react-select';
 
-import * as Services from '../../../../services';
-import { Can, manage, CanIDoAction, api as API } from '../../../utils';
-import { I18nContext } from '../../../../core';
-import { IState, ITeamSimple } from '../../../../types';
 import { ModalContext } from '../../../../contexts';
+import { I18nContext } from '../../../../core';
+import * as Services from '../../../../services';
+import { IState, ITeamSimple } from '../../../../types';
+import { api as API, Can, CanIDoAction, manage } from '../../../utils';
 
 export function ApiFilter({
   handleFilter,
@@ -116,11 +116,11 @@ export function ApiFilter({
           className="input-select reactSelect ms-1"
           classNamePrefix="reactSelect"
           styles={{
-            menu: (provided) => ({ ...provided, zIndex: 9999 }),
+            menu: (provided) => ({ ...provided, zIndex: 9999 } as CSSObjectWithLabel),
             container: (base) => ({
               ...base,
               minWidth: '140px',
-            }),
+            } as CSSObjectWithLabel),
           }}
         />
       </div>

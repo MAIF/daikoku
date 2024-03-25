@@ -185,7 +185,10 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
       type: type.string,
       format: format.buttonsSelect,
       options: ['Stripe'],
-      label: translate('third-party.payment.settings.type.select.message')
+      label: translate('third-party.payment.settings.type.select.message'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
     }
   }
 
