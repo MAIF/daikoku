@@ -450,7 +450,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
                     env
                   )
                 case Right(patchedEntity) =>
-                  val patchedJson = JsonPatchHelpers.diffJson(newJson, patchedEntity.asInstanceOf[CanJson[Of]].asJson)
+                  val patchedJson = JsonPatchHelpers.diffJson(newJson, toJson(patchedEntity))
                   patchedJson.fold(error => error.renderF(), json => finalizePatch(json))
 
               }
