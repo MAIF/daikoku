@@ -2,7 +2,7 @@ import classNames from 'classnames';
 import React, { useContext } from 'react';
 import ExternalLink from 'react-feather/dist/icons/external-link'
 
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import { formatCurrency, getCurrencySymbol } from '../../utils/formatters';
 import { ICurrency } from '../../../types';
 

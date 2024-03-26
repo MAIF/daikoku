@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { constraints, format, type } from '@maif/react-forms';
 
 import { formatPlanType, Option } from '../../utils';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import { ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { FeedbackButton } from '../../utils/FeedbackButton';

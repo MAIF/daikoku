@@ -4,10 +4,10 @@
 
 @customStyle = {
   @(tenant.colorTheme())
-  @if(_env.config.mode == DaikokuMode.Dev) {
+  @if(_env.config.isDev) {
     <link rel="stylesheet" media="screen" href="http://@host:3000/daikoku.css" />
   }
-  @if(_env.config.mode == DaikokuMode.Prod) {
+  @if(_env.config.isProd) {
     <link rel="stylesheet" media="screen" href="/assets/react-app/daikoku.min.css" />
   }
   @(tenant.moareStyle())

@@ -1,16 +1,15 @@
 /* eslint-disable react/display-name */
-import React, { useState, useEffect, useContext, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
 import { constraints, format, type } from '@maif/react-forms';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 
-import * as Services from '../../../services';
-import { Table, TableRef } from '../../inputs';
-import { Can, manage, asset, tenant as TENANT } from '../../utils';
-import { I18nContext } from '../../../core';
-import { ModalContext } from '../../../contexts';
 import { createColumnHelper } from '@tanstack/react-table';
-import { IAsset, IState, IStateContext } from '../../../types';
+import { I18nContext, ModalContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
+import * as Services from '../../../services';
+import { IAsset, ITeamSimple } from '../../../types';
+import { Table, TableRef } from '../../inputs';
+import { Can, tenant as TENANT, asset, manage } from '../../utils';
 
 
 const mimeTypes = [
@@ -142,20 +141,24 @@ const ReplaceButton = (props: any) => {
 };
 
 export const AssetsList = ({
-  tenantMode
-}: { tenantMode: boolean }) => {
+  currentTeam
+}: { currentTeam?: ITeamSimple }) => {
   const tableRef = useRef<TableRef>();
-  const { currentTeam, tenant } = useSelector<IState, IStateContext>((state) => state.context);
+  const { tenant } = useContext(GlobalContext);
 
   const { translate } = useContext(I18nContext);
   const { confirm, openFormModal } = useContext(ModalContext);
 
   useEffect(() => {
-    document.title = `${tenantMode ? tenant.title : currentTeam.name} - ${translate({ key: 'Asset', plural: true })}`;
+    if (currentTeam) {
+      document.title = `${currentTeam.name} - ${translate({ key: 'Asset', plural: true })}`;
+    } else {
+      document.title = `${tenant.title} - ${translate({ key: 'Asset', plural: true })}`;
+    }
   }, []);
 
   const acceptableMimeTypes = mimeTypes
-    .filter((mt) => (tenantMode ? true : !mt.tenantModeOnly))
+    .filter((mt) => (!currentTeam ? true : !mt.tenantModeOnly))
   const schema = {
     filename: {
       type: type.string,
@@ -273,9 +276,9 @@ export const AssetsList = ({
             )}
             <ReplaceButton
               asset={item}
-              tenantMode={tenantMode}
+              tenantMode={!currentTeam}
               teamId={currentTeam ? currentTeam._id : undefined}
-              displayError={(error) => toastr.error(translate('Error'), error)}
+              displayError={(error) => toast.error(error)}
               postAction={() => tableRef.current?.update()}
             />
             <a href={assetLink(item.meta.asset, false)} target="_blank" rel="noreferrer noopener">
@@ -309,7 +312,7 @@ export const AssetsList = ({
 
   const readAndUpdate = (asset: IAsset) => {
     let link;
-    if (tenantMode) {
+    if (!currentTeam) {
       link = `/tenant-assets/${asset.meta.asset}?download=true`;
     } else {
       link = `/api/teams/${currentTeam._id}/assets/${asset.meta.asset}?download=true`;
@@ -334,22 +337,22 @@ export const AssetsList = ({
             const textFileAsBlob = new Blob([data.content], { type: 'text/plain' });
             const file = new File([textFileAsBlob], asset.filename);
 
-            if (tenantMode) {
+            if (!currentTeam) {
               Services.updateTenantAsset(asset.meta.asset, asset.contentType, file)
                 .then((r) => {
                   if (r.error) {
-                    toastr.error(translate('Error'), r.error)
+                    toast.error(r.error)
                   } else {
-                    toastr.success(translate('Success'), translate('asset.update.successful'))
+                    toast.success(translate('asset.update.successful'))
                   }
                 });
             } else {
               Services.updateAsset(currentTeam._id, asset.meta.asset, asset.contentType, file)
                 .then((r) => {
                   if (r.error) {
-                    toastr.error(translate('Error'), r.error)
+                    toast.error(r.error)
                   } else {
-                    toastr.success(translate('Success'), translate('asset.update.successful'))
+                    toast.success(translate('asset.update.successful'))
                   }
                 })
             }
@@ -361,7 +364,7 @@ export const AssetsList = ({
   };
 
   const assetLink = (asset: string, download = true) => {
-    if (tenantMode) {
+    if (!currentTeam) {
       return `/tenant-assets/${asset}?download=${download}`;
     } else {
       return `/api/teams/${currentTeam._id}/assets/${asset}?download=${download}`;
@@ -369,7 +372,7 @@ export const AssetsList = ({
   };
 
   const serviceDelete = (asset: string) => {
-    if (tenantMode) {
+    if (!currentTeam) {
       return Services.deleteTenantAsset(asset);
     } else {
       return Services.deleteAsset(currentTeam._id, asset);
@@ -388,7 +391,7 @@ export const AssetsList = ({
 
   const fetchAssets = () => {
     let getAssets;
-    if (tenantMode) {
+    if (!currentTeam) {
       getAssets = Services.listTenantAssets();
     } else {
       getAssets = Services.listAssets(currentTeam._id);
@@ -398,7 +401,7 @@ export const AssetsList = ({
 
   const addAsset = (asset: any) => {
     const file = asset.file[0];
-    if (tenantMode) {
+    if (!currentTeam) {
       return Services.storeTenantAsset(
         asset.filename,
         asset.title,
@@ -423,7 +426,7 @@ export const AssetsList = ({
   }
 
   return (
-    <Can I={manage} a={tenantMode ? TENANT : asset} team={currentTeam} dispatchError>
+    <Can I={manage} a={!currentTeam ? TENANT : asset} team={currentTeam} dispatchError>
       <div className="row">
         <div className="col-12 mb-3 d-flex justify-content-end">
           <button

@@ -3,7 +3,7 @@ import moment from 'moment';
 
 import { Link } from 'react-router-dom';
 import { ActionWithTeamSelector, Can, manage, apikey, CanIDoAction } from '../../utils';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 
 const Separator = () => <hr className="hr-apidescription" />;
 

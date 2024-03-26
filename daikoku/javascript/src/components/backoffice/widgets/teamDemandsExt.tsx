@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useContext } from 'react';
 import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
 
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { ITeamSimple } from '../../../types';
 import { formatPlanType } from '../../utils';

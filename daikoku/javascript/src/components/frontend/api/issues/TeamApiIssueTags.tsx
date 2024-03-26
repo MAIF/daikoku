@@ -5,7 +5,7 @@ import { SketchPicker } from 'react-color';
 import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
 
 import { ModalContext } from '../../../../contexts';
-import { I18nContext } from '../../../../core';
+import { I18nContext } from '../../../../contexts';
 import { randomColor } from '../../../utils';
 
 export function TeamApiIssueTags({

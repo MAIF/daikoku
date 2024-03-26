@@ -1,9 +1,8 @@
 import { useContext, useEffect, useState } from 'react';
 import Plus from 'react-feather/dist/icons/plus';
-import { useDispatch, useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
 import { Link, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select';
+import { toast } from 'sonner';
 
 import {
   TeamApiConsumption,
@@ -15,18 +14,12 @@ import {
   TeamApiSubscriptions,
   TeamPlanConsumption
 } from '.';
-import { ModalContext, useApiBackOffice } from '../../../contexts';
+import { I18nContext, ModalContext, useApiBackOffice } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
-import { api as API, Can, Spinner, api, manage } from '../../utils';
-
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  I18nContext,
-  setError,
-  toggleExpertMode,
-} from '../../../core';
-import { IState, IStateContext, ITeamSimple } from '../../../types';
+import { ITeamSimple } from '../../../types';
 import { IApi, IUsagePlan, isError } from '../../../types/api';
+import { api as API, Can, Spinner, manage } from '../../utils';
 
 const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 type ButtonProps = {
@@ -58,7 +51,7 @@ const CreateNewVersionButton = ({
       .then((newVersion) => {
         if (newVersion) {
           if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
-            toastr.error(translate('Error'), "Can't create version with special characters : " + reservedCharacters.join(' | '));
+            toast.error(translate({ key: "semver.error.message", replacements: [reservedCharacters.join(' | ')] }));
           else
             createNewVersion(newVersion);
         }
@@ -67,9 +60,9 @@ const CreateNewVersionButton = ({
 
   const createNewVersion = (newVersion: string) => {
     Services.createNewApiVersion(apiId, currentTeam._id, newVersion).then((res) => {
-      if (res.error) toastr.error(translate('Error'), res.error);
+      if (res.error) toast.error(res.error);
       else {
-        toastr.success(translate('Success'), 'New version of api created');
+        toast.success(translate('version.creation.success.message'));
         navigate(`/${teamId}/settings/apis/${apiId}/${newVersion}/${tab ? tab : 'infos'}`);
       }
     });
@@ -97,112 +90,92 @@ export const TeamApi = (props: { creation: boolean }) => {
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/apis/:apiId/:version/stats/plan/:planId');
 
-  const dispatch = useDispatch();
-  const { currentTeam, tenant, expertMode } = useSelector<IState, IStateContext>((s) => s.context);
-
+  const { tenant, expertMode, toggleExpertMode } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
   const { openApiDocumentationSelectModal } = useContext(ModalContext);
 
-  const newApi = location && location.state && location.state.newApi
+  const newApi: IApi | undefined = location && location.state && location.state.newApi
 
-  const queryClient = useQueryClient();
-  const apiRequest = useQuery({
-    queryKey: ['api', params.apiId, params.versionId, location],
-    queryFn: () => Services.teamApi(currentTeam._id, params.apiId!, params.versionId!),
-    enabled: !newApi
-  })
-
-  const versionsRequest = useQuery({
-    queryKey: ['apiVersions', params.apiId, params.versionId, location],
-    queryFn: () => Services.getAllApiVersions(currentTeam._id, params.apiId!),
-    enabled: !newApi
-  })
-
-  const methods = useApiBackOffice(apiRequest.data, props.creation);
+  const { addMenu, api, versions, isLoading, setApi, reloadApi, currentTeam } = useApiBackOffice(props.creation);
 
   useEffect(() => {
-    if (apiRequest.isLoading && versionsRequest.isLoading) {
+    if (isLoading) {
       document.title = translate('???');
-    } else if (apiRequest.data && versionsRequest.data) {
+    } else if (currentTeam && props.creation) {
+      document.title = `${currentTeam.name} - ${translate('New api')}`;
+    } else if (currentTeam && api && versions) {
+      const _versions = versions.map((v) => ({
+        label: v,
+        value: v
+      }));
 
-      if (!isError(apiRequest.data) && !isError(versionsRequest.data)) {
-        const api = apiRequest.data
-        const versions = versionsRequest.data.map((v) => ({
-          label: v,
-          value: v
-        }));
+      document.title = `${currentTeam.name} - ${api ? api.name : translate('API')}`;
 
-        document.title = `${currentTeam.name} - ${api ? api.name : translate('API')}`;
 
-        methods.setApi(api)
-
-        if (!props.creation) {
-          methods.addMenu({
-            blocks: {
+      if (!props.creation) {
+        addMenu({
+          blocks: {
+            links: {
               links: {
-                links: {
-                  version: {
-                    order: 1,
-                    component: (
-                      <div className="d-flex flex-row mb-3">
-                        <Select
-                          name="versions-selector"
-                          value={{ value: params.versionId, label: params.versionId }}
-                          options={versions}
-                          onChange={(e) =>
-                            navigate(
-                              `/${currentTeam._humanReadableId}/settings/apis/${api?._humanReadableId}/${e?.value}/${tab}`
-                            )
-                          }
-                          classNamePrefix="reactSelect"
-                          className="flex-grow-1"
-                          menuPlacement="auto"
-                          menuPosition="fixed"
-                        />
-                        <CreateNewVersionButton apiId={params.apiId!} teamId={params.teamId!} versionId={params.versionId!} tab={params.tab!} currentTeam={currentTeam} />
-                      </div>
-                    ),
-                  },
+                version: {
+                  order: 1,
+                  component: (
+                    <div className="d-flex flex-row mb-3">
+                      <Select
+                        name="versions-selector"
+                        value={{ value: params.versionId, label: params.versionId }}
+                        options={_versions}
+                        onChange={(e) =>
+                          navigate(
+                            `/${currentTeam._humanReadableId}/settings/apis/${api?._humanReadableId}/${e?.value}/${tab}`
+                          )
+                        }
+                        classNamePrefix="reactSelect"
+                        className="flex-grow-1"
+                        menuPlacement="auto"
+                        menuPosition="fixed"
+                      />
+                      <CreateNewVersionButton apiId={params.apiId!} teamId={params.teamId!} versionId={params.versionId!} tab={params.tab!} currentTeam={currentTeam} />
+                    </div>
+                  ),
                 },
               },
             },
-          });
-        }
+          },
+        });
       }
     }
-  }, [apiRequest.data, versionsRequest.data]);
+  }, [api, versions, isLoading]);
 
   const save = (editedApi: IApi) => {
     if (props.creation) {
-      return Services.createTeamApi(currentTeam._id, editedApi)
+      return Services.createTeamApi(currentTeam!._id, editedApi)
         .then((createdApi) => {
           if (createdApi.error) {
-            toastr.error(translate('Error'), translate(createdApi.error));
+            toast.error(translate(createdApi.error));
             return createdApi;
           } else if (createdApi.name) {
-            toastr.success(
-              translate('Success'),
-              translate({ key: 'api.created.success', replacements: [createdApi.name] })
+            toast.success(translate({ key: 'api.created.success', replacements: [createdApi.name] })
             );
-            methods.setApi(createdApi);
-            navigate(`/${currentTeam._humanReadableId}/settings/apis/${createdApi._humanReadableId}/${createdApi.currentVersion}/infos`);
+            setApi(createdApi);
+            navigate(`/${currentTeam!._humanReadableId}/settings/apis/${createdApi._humanReadableId}/${createdApi.currentVersion}/infos`);
           }
         });
     } else {
       return Services.saveTeamApiWithId(
-        currentTeam._id,
+        currentTeam!._id,
         editedApi,
         editedApi.currentVersion,
         editedApi._humanReadableId
       ).then((res) => {
         if (isError(res)) {
-          toastr.error(translate('Error'), translate(res.error));
+          toast.error(translate(res.error));
         } else {
-          toastr.success(translate('Success'), translate('Api saved'));
+          toast.success(translate('Api saved'));
           if (res._humanReadableId !== editedApi._humanReadableId) {
-            navigate(`/${currentTeam._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`);
+            navigate(`/${currentTeam!._humanReadableId}/settings/apis/${res._humanReadableId}/${res.currentVersion}/infos`);
           } else {
-            queryClient.invalidateQueries({ queryKey: ['api'] })
+            reloadApi()
           }
         }
       });
@@ -213,15 +186,15 @@ export const TeamApi = (props: { creation: boolean }) => {
     if (api && api.defaultUsagePlan !== plan._id && plan.visibility !== 'Private') {
       const updatedApi = { ...api, defaultUsagePlan: plan._id }
       Services.saveTeamApiWithId(
-        currentTeam._id,
+        currentTeam!._id,
         updatedApi,
         api.currentVersion,
         updatedApi._humanReadableId
       ).then((response) => {
         if (isError(response)) {
-          toastr.error(translate('Error'), translate(response.error));
+          toast.error(translate(response.error));
         } else {
-          queryClient.invalidateQueries({ queryKey: ['api'] })
+          reloadApi()
         }
       })
     }
@@ -229,12 +202,8 @@ export const TeamApi = (props: { creation: boolean }) => {
 
   const tab: string = params.tab || 'infos';
 
-  if (tenant.creationSecurity && !currentTeam.apisCreationPermission) {
-    dispatch(setError({ error: { status: 403, message: 'Creation security enabled' } }));
-  }
-
   useEffect(() => {
-    if (api) {
+    if (currentTeam && api) {
       const backButton = (
         <Link
           className="d-flex justify-content-around mt-3 align-items-center"
@@ -250,7 +219,7 @@ export const TeamApi = (props: { creation: boolean }) => {
         </Link>
       );
       if (props.creation) {
-        methods.addMenu({
+        addMenu({
           blocks: {
             actions: {
               links: {
@@ -262,7 +231,7 @@ export const TeamApi = (props: { creation: boolean }) => {
           },
         });
       } else {
-        methods.addMenu({
+        addMenu({
           blocks: {
             actions: {
               links: {
@@ -270,8 +239,7 @@ export const TeamApi = (props: { creation: boolean }) => {
                   component: (
                     <Link
                       to={`/${currentTeam._humanReadableId}/${params.apiId}/${params.versionId}/description`}
-                      className="btn btn-sm btn-access-negative mb-2"
-                    >
+                      className="btn btn-sm btn-access-negative mb-2">
                       {translate('View this Api')}
                     </Link>
                   ),
@@ -285,20 +253,25 @@ export const TeamApi = (props: { creation: boolean }) => {
         });
       }
     }
-  }, [api]);
+  }, [currentTeam, api]);
 
-  if (!newApi && apiRequest.isLoading) {
+  if (tenant.creationSecurity && !currentTeam?.apisCreationPermission) {
+    toast.error(translate('creation.security.enabled.message'))
+    return null;
+  }
+
+  if (!newApi && isLoading) {
     return <Spinner />
-  } else if (newApi || (apiRequest.data && !isError(apiRequest.data))) {
-    const api = newApi || apiRequest.data;
+  } else if ((newApi || api) && currentTeam) {
+    const _api = (newApi || api) as IApi;
 
     return (
       <Can I={manage} a={API} team={currentTeam} dispatchError>
         <div className="d-flex flex-row justify-content-between align-items-center">
-          {props.creation ? (<h2>{api.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
-            <h2 className="me-2">{api.name} {additionalHeader ? ` - ${additionalHeader}` : ''}</h2>
+          {props.creation ? (<h2>{_api.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
+            <h2 className="me-2">{_api.name} {additionalHeader ? ` - ${additionalHeader}` : ''}</h2>
           </div>)}
-          <button onClick={() => dispatch(toggleExpertMode())} className="btn btn-sm btn-outline-primary">
+          <button onClick={() => toggleExpertMode()} className="btn btn-sm btn-outline-primary">
             {expertMode && translate('Standard mode')}
             {!expertMode && translate('Expert mode')}
           </button>
@@ -310,32 +283,32 @@ export const TeamApi = (props: { creation: boolean }) => {
                 <TeamApiDocumentation
                   creationInProgress={props.creation}
                   team={currentTeam}
-                  api={api}
-                  onSave={documentation => save({ ...api, documentation })}
-                  reloadState={() => queryClient.invalidateQueries({ queryKey: ['api'] })}
-                  documentation={api.documentation}
+                  api={_api}
+                  onSave={documentation => save({ ..._api, documentation })}
+                  reloadState={() => reloadApi()}
+                  documentation={_api.documentation}
                   importPage={() => openApiDocumentationSelectModal({
-                    api: api,
+                    api: _api,
                     teamId: currentTeam._id,
                     onClose: () => {
-                      toastr.success(translate('Success'), translate('doc.page.import.successfull'));
-                      queryClient.invalidateQueries({ queryKey: ['details'] });
-                      queryClient.invalidateQueries({ queryKey: ['api'] });
+                      toast.success(translate('doc.page.import.successfull'));
+                      reloadApi()
                     },
-                    getDocumentationPages: () => Services.getAllApiDocumentation(currentTeam._id, api._id, api.currentVersion),
-                    importPages: (pages: Array<string>, linked?: boolean) => Services.importApiPages(currentTeam._id, api._id, pages, api.currentVersion, linked)
+                    getDocumentationPages: () => Services.getAllApiDocumentation(currentTeam._id, _api._id, _api.currentVersion),
+                    importPages: (pages: Array<string>, linked?: boolean) => Services.importApiPages(currentTeam._id, _api._id, pages, _api.currentVersion, linked)
                   })}
-                  importAuthorized={!!versionsRequest.data && !!versionsRequest.data.length} />)}
+                  importAuthorized={!!versions && !!versions.length} />)}
               {tab === 'plans' && (
                 <TeamApiPricings
-                  api={api}
-                  reload={() => queryClient.invalidateQueries({ queryKey: ['api'] })}
-                  setDefaultPlan={plan => setDefaultPlan(api, plan)}
+                  currentTeam={currentTeam}
+                  api={_api}
+                  reload={() => reloadApi()}
+                  setDefaultPlan={plan => setDefaultPlan(_api, plan)}
                   team={currentTeam}
                   tenant={tenant}
                   creation={!!props.creation}
                   expertMode={expertMode}
-                  injectSubMenu={(component) => methods.addMenu({
+                  injectSubMenu={(component) => addMenu({
                     blocks: {
                       links: { links: { plans: { childs: { menu: { component } } } } },
                     },
@@ -343,22 +316,22 @@ export const TeamApi = (props: { creation: boolean }) => {
                   setHeader={(planName) => setAdditionalHeader(planName)} />)}
               {tab === 'infos' && (
                 <TeamApiInfos
-                  value={api}
+                  value={_api}
                   team={currentTeam}
                   tenant={tenant}
                   save={save}
                   creation={props.creation}
                   expertMode={expertMode}
-                  injectSubMenu={(component) => methods.addMenu({
+                  injectSubMenu={(component) => addMenu({
                     blocks: {
                       links: { links: { informations: { childs: { menu: { component } } } } },
                     },
                   })} />)}
-              {tab === 'news' && (<TeamApiPost team={currentTeam} api={api} />)}
-              {tab === 'settings' && <TeamApiSettings api={api} />}
-              {tab === 'stats' && !match && <TeamApiConsumption api={api} />}
-              {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption />)}
-              {tab === 'subscriptions' && <TeamApiSubscriptions api={api} />}
+              {tab === 'news' && (<TeamApiPost team={currentTeam} api={_api} />)}
+              {tab === 'settings' && <TeamApiSettings api={_api} currentTeam={currentTeam} />}
+              {tab === 'stats' && !match && <TeamApiConsumption api={_api} currentTeam={currentTeam}/>}
+              {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={_api} currentTeam={currentTeam}/>)}
+              {tab === 'subscriptions' && <TeamApiSubscriptions api={_api} currentTeam={currentTeam} />}
             </div>
           </div>
         </div>

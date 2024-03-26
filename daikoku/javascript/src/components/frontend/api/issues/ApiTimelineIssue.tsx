@@ -5,12 +5,12 @@ import moment from 'moment';
 import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
 //@ts-ignore
 import X from 'react-feather/dist/icons/x';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select/creatable';
 
 import { api as API, manage } from '../../..';
-import { I18nContext } from '../../../../core';
+import { I18nContext } from '../../../../contexts';
 import * as Services from '../../../../services';
 import { converter } from '../../../../services/showdown';
 import { Can, getColorByBgColor, randomColor } from '../../../utils';
@@ -105,7 +105,7 @@ export function ApiTimelineIssue({
     Services.updateIssue(api._id, team._id, id, updatedIssue)
       .then((res) => {
         if (res.error) {
-          toastr.error(translate('Error'), res.error);
+          toast.error(res.error);
         } else
           setIssue(updatedIssue);
       });
@@ -146,9 +146,9 @@ export function ApiTimelineIssue({
           setIssue(updatedIssue);
           Services.updateIssue(api._humanReadableId, team._id, id, updatedIssue).then((res) => {
             if (res.error)
-              toastr.error(translate('Error'), res.error);
+              toast.error(res.error);
             else
-              toastr.success(translate('Success'), translate('Api saved'));
+              toast.success(translate('Api saved'));
           });
         }
       });

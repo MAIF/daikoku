@@ -167,6 +167,19 @@ class HomeController(
       Ok(Json.obj("version" -> BuildInfo.version))
     }
 
+  def getConnectedUser() =
+    DaikokuActionMaybeWithoutUser { ctx =>
+      Ok(Json.obj(
+        "connectedUser" -> ctx.user.get.toUiPayload(),
+        "impersonator" -> ctx.session.get.impersonatorJson(),
+        "session" -> ctx.session.get.asSimpleJson,
+        "tenant" -> ctx.tenant.toUiPayload(env),
+        "isTenantAdmin" -> ctx.isTenantAdmin,
+        "apiCreationPermitted" -> ctx.apiCreationPermitted,
+        "loginAction" -> fr.maif.otoroshi.daikoku.ctrls.routes.LoginController.login(ctx.tenant.authProvider.name).url,
+      ))
+    }
+
   private def getMatchingRoutes(
       path: String,
       cmsPaths: Seq[(String, CmsPage)],

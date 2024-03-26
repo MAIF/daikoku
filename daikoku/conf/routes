@@ -33,6 +33,7 @@ GET     /apis/*path                                     fr.maif.otoroshi.daikoku
 GET     /consumptions/*path                             fr.maif.otoroshi.daikoku.ctrls.HomeController.indexWithPath(path)
 GET     /health                                         fr.maif.otoroshi.daikoku.ctrls.HomeController.health()
 GET     /api/versions/_daikoku                          fr.maif.otoroshi.daikoku.ctrls.HomeController.getDaikokuVersion()
+GET     /api/me/context                                 fr.maif.otoroshi.daikoku.ctrls.HomeController.getConnectedUser()
 
 GET     /logout                                         fr.maif.otoroshi.daikoku.ctrls.LoginController.logout()
 GET     /api/2fa                                        fr.maif.otoroshi.daikoku.ctrls.LoginController.verifyCode(token: Option[String] ?= None, code: Option[String] ?= None)
@@ -57,7 +58,7 @@ GET     /api/me/_2fa                                    fr.maif.otoroshi.daikoku
 GET     /api/me/_2fa/enable                             fr.maif.otoroshi.daikoku.ctrls.UsersController.enable2fa(code: Option[String] ?= None)
 DELETE  /api/me/_2fa                                    fr.maif.otoroshi.daikoku.ctrls.UsersController.disable2fa()
 POST    /api/me/invitation/_check                       fr.maif.otoroshi.daikoku.ctrls.UsersController.checkTokenInvitation()
-DELETE  /api/me/invitation                              fr.maif.otoroshi.daikoku.ctrls.UsersController.removeInvitation()
+DELETE  /api/me/invitation                              fr.maif.otoroshi.daikoku.ctrls.UsersController.removeInvitation(token: Option[String] ?= None)
 PUT     /api/me/password                                fr.maif.otoroshi.daikoku.ctrls.UsersController.updatePassword()
 
 GET     /api/me/notifications                           fr.maif.otoroshi.daikoku.ctrls.NotificationController.myUntreatedNotifications(page: Int ?= 0, pageSize: Int ?= 10)
@@ -319,40 +320,9 @@ GET     /admin-api/swagger.json                      fr.maif.otoroshi.daikoku.ct
 GET     /admin-api/openapi.json                      fr.maif.otoroshi.daikoku.ctrls.AdminApiSwaggerController.swagger()
 
 
-###
-#  summary: read the full content of the datastore in nd-json format
-#  tags:
-#    - Import / Export
-#  responses:
-#    200:
-#      description: success
-#      content:
-#        application/nd-json:
-#          schema:
-#            type: object
-###
 GET     /admin-api/state/export                         fr.maif.otoroshi.daikoku.ctrls.StateAdminApiController.exportState()
-
-###
-#  summary: insert the full content of the datastore from nd-json format
-#  tags:
-#    - Import / Export
-#  requestBody:
-#    description: Datastore content
-#    required: true
-#    content:
-#      application/nd-json:
-#        schema:
-#            type: object
-#  responses:
-#    200:
-#      description: success
-#      content:
-#        application/json:
-#          schema:
-#            type: object
-###
 POST    /admin-api/state/import                         fr.maif.otoroshi.daikoku.ctrls.StateAdminApiController.importState()
+POST    /admin-api/state/reset                          fr.maif.otoroshi.daikoku.ctrls.StateAdminApiController.reset()
 
 DELETE  /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.deleteEntity(id)
 PATCH   /admin-api/tenants/:id                          fr.maif.otoroshi.daikoku.ctrls.TenantAdminApiController.patchEntity(id)
@@ -473,20 +443,7 @@ PUT     /admin-api/subscription-demands/:id                     fr.maif.otoroshi
 GET     /admin-api/subscription-demands/:id                     fr.maif.otoroshi.daikoku.ctrls.SubscriptionDemandsAdminApiController.findById(id)
 POST    /admin-api/subscription-demands                         fr.maif.otoroshi.daikoku.ctrls.SubscriptionDemandsAdminApiController.createEntity()
 GET     /admin-api/subscription-demands                         fr.maif.otoroshi.daikoku.ctrls.SubscriptionDemandsAdminApiController.findAll()
-###
-#  summary: get apikey from integration token
-#  tags:
-#    - Integration ApiKey
-#  responses:
-#    200:
-#      description: success
-#      content:
-#        application/json:
-#          schema:
-#            type: object
-#            items:
-#              $ref: '#/components/schemas/fr.maif.otoroshi.daikoku.domain.OtoroshiApiKey'
-###
+
 GET     /admin-api/credentials/:token                   fr.maif.otoroshi.daikoku.ctrls.CredentialsAdminApiController.getCredentials(token)
 
 POST     /admin-api/search                               fr.maif.otoroshi.daikoku.ctrls.GraphQLController.adminApiSearch()

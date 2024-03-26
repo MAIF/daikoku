@@ -3,7 +3,7 @@ import { useContext, useState } from 'react';
 import Select from 'react-select';
 
 import { Spinner } from '../../components/utils/Spinner';
-import { I18nContext } from '../../core';
+import { I18nContext } from '../../contexts';
 import { IImportingDocumentation, isError } from '../../types';
 import { IApiDocumentationSelectModalProps, IBaseModalProps } from './types';
 

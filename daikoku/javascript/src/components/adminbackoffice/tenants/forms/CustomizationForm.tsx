@@ -1,15 +1,14 @@
 import { getApolloContext, gql } from '@apollo/client';
-import { Flow, Form, format, FormRef, Schema, SchemaEntry, type } from '@maif/react-forms';
-import { useContext, useRef } from 'react';
+import { Flow, Form, FormRef, Schema, SchemaEntry, format, type } from '@maif/react-forms';
 import { UseMutationResult, useQuery } from '@tanstack/react-query';
-import { useDispatch } from 'react-redux';
+import { useContext, useRef } from 'react';
+import { Settings } from 'react-feather';
 import { useNavigate } from 'react-router-dom';
-import { Settings } from 'react-feather'
 
-import { I18nContext } from '../../../../contexts/i18n-context';
-import { ITenantFull } from '../../../../types';
-import { AssetChooserByModal, MimeTypeFilter } from '../../../../contexts/modals/AssetsChooserModal';
 import { ModalContext } from '../../../../contexts';
+import { I18nContext } from '../../../../contexts/i18n-context';
+import { AssetChooserByModal, MimeTypeFilter } from '../../../../contexts/modals/AssetsChooserModal';
+import { ITenantFull } from '../../../../types';
 
 
 export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
@@ -20,7 +19,6 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
 
   const formRef = useRef<FormRef>()
 
-  const dispatch = useDispatch()
   const navigate = useNavigate();
 
   const queryCMSPages = useQuery({

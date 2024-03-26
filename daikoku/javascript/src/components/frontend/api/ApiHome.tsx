@@ -1,23 +1,23 @@
 import { getApolloContext } from '@apollo/client';
 import hljs from 'highlight.js';
 import { useContext, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
+import Navigation from 'react-feather/dist/icons/navigation';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select';
+import { toast } from 'sonner';
 
 import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiSwagger } from '.';
-import { ModalContext, useApiFrontOffice } from '../../../contexts';
-import { I18nContext, setError, updateUser } from '../../../core';
+import { I18nContext, ModalContext, useApiFrontOffice } from '../../../contexts';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { IApi, IState, IStateContext, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, TeamPermission, TeamType, isError } from '../../../types';
+import { IApi, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, isError } from '../../../types';
 import { ActionWithTeamSelector, Can, CanIDoAction, Option, apikey, manage } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
 import StarsButton from './StarsButton';
 
-import 'highlight.js/styles/monokai.css';
 import classNames from 'classnames';
+import 'highlight.js/styles/monokai.css';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 (window as any).hljs = hljs;
 
@@ -134,8 +134,7 @@ export const ApiHome = ({
   const [showAccessModal, setAccessModalError] = useState<any>();
   const [showGuestModal, setGuestModal] = useState(false);
 
-  const dispatch = useDispatch();
-  const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context)
+  const { connectedUser, tenant, reloadContext } = useContext(GlobalContext)
 
   const navigate = useNavigate();
   const defaultParams = useParams();
@@ -201,24 +200,6 @@ export const ApiHome = ({
     }
   }, [subscriptions, myTeams]);
 
-  // type TTeamGQL = {
-  //   name: string
-  //   _humanReadableId: string
-  //   _id: string
-  //   type: TeamType
-  //   apiKeyVisibility: TeamPermission
-  //   apisCreationPermission: boolean
-  //   verified: boolean
-  //   users: Array<{
-  //     user:  {
-  //       userId: string
-  //     }
-  //     teamPermission: TeamPermission
-  //   }>
-  // }
-  // type TMyTeamsGQL = {
-  //   myTeams: Array<TTeamGQL>
-  // }
   const updateSubscriptions = (apiId: string) => {
     //FIXME: handle case if appolo client is not setted
     if (!client) {
@@ -239,7 +220,7 @@ export const ApiHome = ({
         },
       ]) => {
         if (isError(api)) {
-          dispatch(setError({ error: { status: 404, message: api.error } }));
+          toast.error(api.error) //FIXME [#609] better error management
         } else {
           setApi(api);
           setSubscriptions(subscriptions);
@@ -266,26 +247,29 @@ export const ApiHome = ({
     if (api) {
       return (
         apiKey
-          ? Services.extendApiKey(api!._id, apiKey._id, team, plan._id, motivation)
-          : Services.askForApiKey(api!._id, team, plan._id, motivation)
+          ? Services.extendApiKey(api._id, apiKey._id, team, plan._id, motivation)
+          : Services.askForApiKey(api._id, team, plan._id, motivation)
       ).then((result) => {
 
         if (isError(result)) {
-          return toastr.error(translate('Error'), result.error);
+          return toast.error(result.error);
         } else if (Services.isCheckoutUrl(result)) {
           window.location.href = result.checkoutUrl
         } else if (result.creation === 'done') {
           const teamName = myTeams.find((t) => t._id === result.subscription.team)!.name;
-          return toastr.success(
-            translate('Done'),
-            translate({ key: 'subscription.plan.accepted', replacements: [planName, teamName] })
-          );
+          return toast.success(translate({ key: 'subscription.plan.accepted', replacements: [planName, teamName] }), {
+            actionButtonStyle: {
+              color: 'inherit',
+              backgroundColor: 'inherit'
+            },
+            action: {
+              label: <Navigation />,
+              onClick: () => navigate(`/${result.subscription.team}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`)
+            }
+          });
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
-          return toastr.info(
-            translate('Pending request'),
-            translate({ key: 'subscription.plan.waiting', replacements: [planName, teamName] })
-          );
+          return toast.info(translate({ key: 'subscription.plan.waiting', replacements: [planName, teamName] }));
         }
 
       })
@@ -298,20 +282,7 @@ export const ApiHome = ({
   const toggleStar = () => {
     if (api) {
       Services.toggleStar(api._id)
-        .then((res) => {
-          if (!isError(res)) {
-            const alreadyStarred = connectedUser.starredApis.includes(api._id);
-            api.stars += alreadyStarred ? -1 : 1;
-            setApi(api);
-
-            dispatch(updateUser({
-              ...connectedUser,
-              starredApis: alreadyStarred
-                ? connectedUser.starredApis.filter((id: any) => id !== api._id)
-                : [...connectedUser.starredApis, api._id],
-            }));
-          }
-        });
+        .then(() => reloadContext());
     }
   };
 
@@ -352,7 +323,7 @@ export const ApiHome = ({
             actionLabel={translate('Ask access to API')}
             action={(teams) => {
               Services.askForApiAccess(teams, showAccessModal.api._id).then((_) => {
-                toastr.info(translate('Info'), translate({ key: 'ask.api.access.info', replacements: showAccessModal.api.name }));
+                toast.info(translate({ key: 'ask.api.access.info', replacements: showAccessModal.api.name }));
                 updateSubscriptions(showAccessModal.api._id);
               });
             }}>

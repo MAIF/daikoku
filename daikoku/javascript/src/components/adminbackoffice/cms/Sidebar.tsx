@@ -2,7 +2,7 @@ import React, { MutableRefObject, useContext, useEffect, useImperativeHandle, us
 import { useNavigate, useParams } from 'react-router-dom';
 import moment from 'moment';
 import { constraints, Form, format, type, FormRef } from '@maif/react-forms';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 
 export type SideBarRef = {
   handleSubmit: () => void

@@ -2,9 +2,8 @@
 import { getApolloContext, gql } from '@apollo/client';
 import { useQuery } from '@tanstack/react-query';
 import { useContext } from 'react';
-import { useSelector } from 'react-redux';
 
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IState, ISubscriptionDemand, ITeamSimple, IUserSimple } from '../../../types';
 import { formatPlanType } from '../../utils';
@@ -12,6 +11,7 @@ import { FeedbackButton } from '../../utils/FeedbackButton';
 import { Widget } from './widget';
 import { ModalContext } from '../../../contexts';
 import { Option } from '../../utils';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 type LastDemandsProps = {
   team: ITeamSimple
@@ -49,10 +49,11 @@ export const LastDemands = (props: LastDemandsProps) => {
       }
     }
   `
-  const connectedUser = useSelector<IState, IUserSimple>((s) => s.context.connectedUser);
+  const { connectedUser } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
+
   const { isLoading, isError, data } = useQuery({
     queryKey: ["widget", "widget_team_last_demands"],
     queryFn: () => client?.query({

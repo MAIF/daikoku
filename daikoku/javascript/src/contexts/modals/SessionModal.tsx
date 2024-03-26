@@ -1,10 +1,10 @@
 import React, { useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ISession } from '../../types';
+import { ISession, ISimpleSession } from '../../types';
 import { I18nContext } from '../i18n-context';
 import { ModalContext } from '../modalContext';
 
-export const SessionModal = (props: {session: ISession}) => {
+export const SessionModal = (props: {session: ISimpleSession}) => {
   const { translate } = useContext(I18nContext);
   const { alert } = useContext(ModalContext);
   const navigate = useNavigate();
@@ -34,7 +34,7 @@ export const SessionModal = (props: {session: ISession}) => {
           });
       };
 
-      const setupTimeouts = (_session: ISession) => {
+      const setupTimeouts = (_session: ISimpleSession) => {
         const firstPing = _session.expires - Date.now() - 2 * 60 * 1000;
         const secondPing = _session.expires - Date.now() + 2000;
         setTimeout(() => {

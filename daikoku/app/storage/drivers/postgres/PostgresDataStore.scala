@@ -687,7 +687,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       }
       .map(_.getOrElse(false))
 
-  def checkDatabase(): Future[Any] = {
+  def checkDatabase(): Future[Unit] = {
     reactivePg
       .queryOne(
         "SELECT schema_name FROM information_schema.schemata WHERE schema_name = $1",
@@ -696,14 +696,14 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
         row.optString("schema_name")
       }
       .flatMap {
-        case Some(_) => createDatabase()
+        case Some(_) => createDatabase().map(_ => ())
         case _ =>
           logger.info(s"Create missing schema : $getSchema")
           for {
             _ <-
               reactivePg.rawQuery(s"CREATE SCHEMA IF NOT EXISTS ${getSchema}")
-            res <- createDatabase()
-          } yield res
+            _ <- createDatabase()
+          } yield ()
       }
       .recover {
         case e: Exception =>
@@ -915,6 +915,19 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
           .toMat(Sink.ignore)(Keep.right)
           .run()(env.defaultMaterializer)
       }
+  }
+
+  override def clear() = {
+    Source.future(reactivePg
+      .query("select 'drop table if exists \"' || tablename || '\" cascade;' as query from pg_tables where schemaname = 'public';")
+      .map(r => r.asScala.toSeq.map(_.getString("query"))))
+      .mapConcat(identity)
+      .mapAsync(5)(query => {
+        logger.debug(query)
+        reactivePg.query(query)
+      })
+      .runWith(Sink.ignore)(env.defaultMaterializer)
+      .map(_ => ())
   }
 }
 

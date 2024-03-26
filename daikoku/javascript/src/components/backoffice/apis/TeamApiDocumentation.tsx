@@ -1,19 +1,18 @@
 import { constraints, Flow, format, Schema, type } from '@maif/react-forms';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { nanoid } from 'nanoid';
-import { useContext, useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
-import { useParams } from 'react-router-dom';
+import { useContext } from 'react';
+import { toast } from 'sonner';
 
 import { IFormModalProps, ModalContext } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
-import { IApi, IAsset, IDocPage, IDocumentation, IDocumentationPage, IDocumentationPages, isError, IState, IStateContext, ITeamSimple, ITenant } from '../../../types';
-import { BeautifulTitle, Spinner } from '../../utils';
+import { IApi, IAsset, IDocPage, IDocumentation, IDocumentationPage, IDocumentationPages, isError, IState, ITeamSimple, ITenant } from '../../../types';
+import { BeautifulTitle } from '../../utils';
 import { SortableTree } from '../../utils/dnd/SortableTree';
 import { Wrapper } from '../../utils/dnd/Wrapper';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 const mimeTypes = [
   { label: '.adoc Ascii doctor', value: 'text/asciidoc' },
@@ -114,7 +113,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   const { translate } = useContext(I18nContext);
   const { confirm, openFormModal } = useContext(ModalContext);
 
-  const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
+  const { tenant } = useContext(GlobalContext);
 
   const queryClient = useQueryClient();
 
@@ -237,7 +236,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
     Services.getApiDocPage(props.api._id, selectedPage)
       .then((page) => {
         if (isError(page)) {
-          toastr.error(translate('Error'), page.error);
+          toast.error(page.error);
         } else {
           openFormModal({
             title: translate('doc.page.update.modal.title'),
@@ -279,10 +278,10 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
       return Services.saveDocPage(props.team._id, page)
         .then((resp) => {
           if (isError(resp)) {
-            toastr.error(translate('Error'), resp.error);
+            toast.error(resp.error);
           } else if (resp.title === original.title) {
             props.reloadState()
-            toastr.success(translate('Success'), translate("doc.page.save.successfull"))
+            toast.success(translate("doc.page.save.successfull"))
           } else {
             updatePages(updateTitle(props.documentation.pages, page.title, page._id))
           }
@@ -293,7 +292,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   const updatePages = (pages: IDocumentationPages) => {
     return props.onSave({ ...props.documentation, pages })
       .then(() => {
-        toastr.success(translate('Success'), translate('doc.page.update.successfull'))
+        toast.success(translate('doc.page.update.successfull'))
         props.reloadState()
       })
   }
@@ -351,7 +350,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
     Promise.all([
       apiDocPageToList(page, []).map((apiDoc => Services.deleteDocPage(props.team._id, apiDoc.id)))
     ]).then(() => {
-      toastr.success(translate('Success'), translate('doc.page.deletion.successfull'))
+      toast.success(translate('doc.page.deletion.successfull'))
       queryClient.invalidateQueries({ queryKey: ['details'] })
     })
   }

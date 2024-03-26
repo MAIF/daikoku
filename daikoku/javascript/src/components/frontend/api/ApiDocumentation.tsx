@@ -5,7 +5,7 @@ import classNames from 'classnames';
 import hljs from 'highlight.js';
 import { useContext, useEffect, useState } from 'react';
 
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import { converter } from '../../../services/showdown';
 import { IDocPage, IDocumentation, IDocumentationPages, ResponseError, isError } from '../../../types';
 import { Spinner } from '../../utils';

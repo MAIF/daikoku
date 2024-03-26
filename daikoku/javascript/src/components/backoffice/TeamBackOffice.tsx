@@ -1,12 +1,10 @@
 import classNames from "classnames";
-import { useContext, useEffect, useState } from "react";
-import { useSelector } from "react-redux";
+import { PropsWithChildren, useContext, useEffect, useState } from "react";
 import { Route, Routes } from "react-router-dom";
+import { toast } from 'sonner';
 
-import { useTeamBackOffice } from "../../contexts";
-import { I18nContext } from "../../core";
-import * as Services from "../../services";
-import { IState, IStateError, ITeamSimple } from "../../types";
+import { I18nContext, useTeamBackOffice } from "../../contexts";
+import { ITeamSimple, isError } from "../../types";
 import {
   TeamApi,
   TeamApiGroup,
@@ -21,97 +19,74 @@ import {
   TeamIncome,
   TeamMembers,
 } from "../backoffice";
-import { LastDemands, LastDemandsExt, Revenus } from "./widgets";
+import { Spinner } from "../utils";
+import { LastDemands, LastDemandsExt } from "./widgets";
 
-const BackOfficeContent = (props) => {
+const BackOfficeContent = (props: PropsWithChildren) => {
+
   return (
-    <div className="" style={{ height: "100%" }}>
-      {!props.error.status && props.children}
+    <div style={{ height: "100%" }}>
+      {props.children}
     </div>
   );
-};
-type TeamHome = ITeamSimple & {
-  apisCount: number;
-  subscriptionsCount: number;
-  notificationCount: number;
 };
 
 const TeamBackOfficeHome = () => {
-  const currentTeam = useSelector<IState, ITeamSimple>(
-    (state) => state.context.currentTeam
-  );
-  useTeamBackOffice(currentTeam);
+  const { isLoading, currentTeam, error } = useTeamBackOffice()
 
   const { translate } = useContext(I18nContext);
-  const [team, setTeam] = useState<TeamHome>();
   const [mode, setMode] = useState<"producer" | "consumer">("consumer");
 
   useEffect(() => {
-    Services.teamHome(currentTeam._id).then(setTeam);
+    if (currentTeam && !isError(currentTeam))
+      document.title = `${currentTeam.name}`;
+  }, [currentTeam]);
 
-    document.title = `${currentTeam.name}`;
-  }, []);
-
-  if (!team) {
-    return null;
-  }
-
-  return (
-    <div className="row">
-      <div className="col">
-        <div className="d-flex flex-row justify-content-center gap-1">
-          <button
-            className={classNames("btn btn-outline-primary", {
-              active: mode === "producer",
-            })}
-            onClick={() => setMode("producer")}
-          >
-            {translate('team.dashboard.label.producer')}
-          </button>
-          <button
-            className={classNames("btn btn-outline-primary", {
-              active: mode === "consumer",
-            })}
-            onClick={() => setMode("consumer")}
-          >
-            {translate('team.dashboard.label.consumer')}
-          </button>
-        </div>
-        <div>
-          {mode === "producer" && <ProducerDashboard />}
-          {mode === "consumer" && <ConsumerDashboard />}
+  if (isLoading) {
+    return <Spinner />
+  } else if (currentTeam && !isError(currentTeam)) {
+    return (
+      <div className="row">
+        <div className="col">
+          <div className="d-flex flex-row justify-content-center gap-1">
+            <button
+              className={classNames("btn btn-outline-primary", {
+                active: mode === "producer",
+              })}
+              onClick={() => setMode("producer")}
+            >
+              {translate('team.dashboard.label.producer')}
+            </button>
+            <button
+              className={classNames("btn btn-outline-primary", {
+                active: mode === "consumer",
+              })}
+              onClick={() => setMode("consumer")}
+            >
+              {translate('team.dashboard.label.consumer')}
+            </button>
+          </div>
+          <div>
+            {mode === "producer" && <ProducerDashboard currentTeam={currentTeam} />}
+            {mode === "consumer" && <ConsumerDashboard currentTeam={currentTeam} />}
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
-
-type TeamBackOfficeProps = {
-  isLoading: boolean;
-};
-export const TeamBackOffice = ({ isLoading }: TeamBackOfficeProps) => {
-  const currentTeam = useSelector<IState, ITeamSimple>(
-    (s) => s.context.currentTeam
-  );
-  const error = useSelector<IState, IStateError>((s) => s.error);
-
-  useEffect(() => {
-    document.title = currentTeam.name;
-  }, []);
-
-  if (!currentTeam) {
-    return null;
+    );
+  } else {
+    toast.error(error?.message || currentTeam?.error)
+    return <></>;
   }
+
+
+};
+
+export const TeamBackOffice = () => {
 
   return (
     <div className="row">
       <main role="main" className="ml-sm-auto px-4 mt-3">
-        <div
-          className={classNames("back-office-overlay", {
-            active: isLoading && !error.status,
-          })}
-        />
-        <BackOfficeContent error={error}>
+        <BackOfficeContent>
           <Routes>
             <Route path={`/edition`} element={<TeamEdit />} />
             <Route path={`/assets`} element={<TeamAssets />} />
@@ -142,7 +117,7 @@ export const TeamBackOffice = ({ isLoading }: TeamBackOfficeProps) => {
               element={<TeamApiGroup />}
             />
             <Route path={`/apis`} element={<TeamApis />} />
-            <Route path="/" element={<TeamBackOfficeHome />} />
+            <Route path="/dashboard" element={<TeamBackOfficeHome />} />
           </Routes>
         </BackOfficeContent>
       </main>
@@ -150,15 +125,12 @@ export const TeamBackOffice = ({ isLoading }: TeamBackOfficeProps) => {
   );
 };
 
-type ProducerDashboardType = {};
+type ProducerDashboardType = { currentTeam: ITeamSimple };
 const ProducerDashboard = (props: ProducerDashboardType) => {
-  const currentTeam = useSelector<IState, ITeamSimple>(
-    (state) => state.context.currentTeam
-  );
   return (
     <>
       <div className="col-12 mt-5 tbo__dasboard">
-        <LastDemandsExt team={currentTeam} />
+        <LastDemandsExt team={props.currentTeam} />
         {/* <Revenus size="small" title="My Revenus small" /> */}
       </div>
       {/* <div className="col-12 mt-5 tbo__dasboard">
@@ -168,14 +140,11 @@ const ProducerDashboard = (props: ProducerDashboardType) => {
   );
 };
 
-type ConsumerDashboardType = {};
+type ConsumerDashboardType = { currentTeam: ITeamSimple };
 const ConsumerDashboard = (props: ConsumerDashboardType) => {
-  const currentTeam = useSelector<IState, ITeamSimple>(
-    (state) => state.context.currentTeam
-  );
   return (
     <div className="col-12 mt-5 tbo__dasboard">
-      <LastDemands team={currentTeam} />
+      <LastDemands team={props.currentTeam} />
     </div>
   );
 };

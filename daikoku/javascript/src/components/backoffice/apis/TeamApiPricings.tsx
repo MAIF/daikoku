@@ -4,25 +4,25 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import { nanoid } from 'nanoid';
-import { SyntheticEvent, useContext, useEffect, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import AtSign from 'react-feather/dist/icons/at-sign';
 import CreditCard from 'react-feather/dist/icons/credit-card';
+import Globe from 'react-feather/dist/icons/globe';
 import Plus from 'react-feather/dist/icons/plus';
 import Settings from 'react-feather/dist/icons/settings';
 import Trash from 'react-feather/dist/icons/trash';
 import User from 'react-feather/dist/icons/user';
-import Globe from 'react-feather/dist/icons/globe';
-import { toastr } from 'react-redux-toastr';
 import { useParams } from 'react-router-dom';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
+import { toast } from 'sonner';
 
 import React from 'react';
-import { ModalContext } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext, ModalContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
-import { IState, IStateContext, ITeamSimple } from '../../../types';
+import { ITeamSimple } from '../../../types';
 import { IApi, IDocumentation, isError, isValidationStepEmail, isValidationStepHttpRequest, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepHttpRequest, IValidationStepTeamAdmin, IValidationStepType, UsagePlanVisibility } from '../../../types/api';
 import { IOtoroshiSettings, ITenant, ITenantFull, IThirdPartyPaymentSettings } from '../../../types/tenant';
 import {
@@ -34,7 +34,6 @@ import {
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
 import { Help } from '../apikeys';
-import { useSelector } from 'react-redux';
 import { TeamApiDocumentation } from './TeamApiDocumentation';
 import { TeamApiSwagger } from './TeamApiSwagger';
 import { TeamApiTesting } from './TeamApiTesting';
@@ -369,8 +368,7 @@ const Card = ({
 }: CardProps) => {
   const { translate, Translation } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
-
-  const tenant = useSelector<IState, ITenant>(s => s.context.tenant);
+  const { tenant } = useContext(GlobalContext);
 
   const pricing = renderPricing(plan, translate)
 
@@ -499,6 +497,7 @@ const PUBLIC: UsagePlanVisibility = 'Public';
 const PRIVATE: UsagePlanVisibility = 'Private';
 
 type Props = {
+  currentTeam: ITeamSimple
   api: IApi
   team: ITeamSimple
   tenant: ITenant
@@ -521,7 +520,7 @@ export const TeamApiPricings = (props: Props) => {
 
   const { translate } = useContext(I18nContext);
   const { openApiSelectModal, confirm } = useContext(ModalContext);
-  const {tenant, currentTeam} = useSelector<IState, IStateContext>(s => s.context)
+  const { tenant } = useContext(GlobalContext);
 
   const queryClient = useQueryClient()
   const queryFullTenant = useQuery({ queryKey: ['full-tenant'], queryFn: () => Services.oneTenant(props.tenant._id) })
@@ -716,7 +715,7 @@ export const TeamApiPricings = (props: Props) => {
       .then(() => props.reload())
       .then(() => {
         queryClient.invalidateQueries({ queryKey: ['plans'] })
-        toastr.success(translate('Success'), translate('plan.deletion.successful'))
+        toast.success(translate('plan.deletion.successful'))
       })
   };
 
@@ -754,9 +753,9 @@ export const TeamApiPricings = (props: Props) => {
     return service(props.team._id, props.api._id, props.api.currentVersion, plan)
       .then(response => {
         if (isError(response)) {
-          toastr.error(translate('Error'), translate(response.error))
+          toast.error(translate(response.error))
         } else {
-          toastr.success(translate('Success'), creation ? translate('plan.creation.successful') : translate('plan.update.successful'))
+          toast.success(creation ? translate('plan.creation.successful') : translate('plan.update.successful'))
           setPlanForEdition(response)
           setCreation(false)
           props.reload()
@@ -770,9 +769,9 @@ export const TeamApiPricings = (props: Props) => {
     return Services.setupPayment(props.team._id, props.api._id, props.api.currentVersion, plan)
       .then(response => {
         if (isError(response)) {
-          toastr.error(translate('Error'), translate(response.error))
+          toast.error(translate(response.error))
         } else {
-          toastr.success(translate('Success'), translate('plan.payment.setup.successful'))
+          toast.success(translate('plan.payment.setup.successful'))
           setPlanForEdition(response)
           props.reload()
         }
@@ -918,11 +917,7 @@ export const TeamApiPricings = (props: Props) => {
               format: format.select,
               disabled: !creation && !!planForEdition?.otoroshiTarget?.otoroshiSettings,
               label: translate('Otoroshi instances'),
-              optionsFrom: Services.allSimpleOtoroshis(props.tenant._id, currentTeam)
-                .then(r => {
-                  console.log(r)
-                  return r
-                })
+              optionsFrom: Services.allSimpleOtoroshis(props.tenant._id, props.currentTeam)
                 .then(r => isError(r) ? [] : r),
               transformer: (s: IOtoroshiSettings) => ({
                 label: s.url,
@@ -1384,6 +1379,7 @@ export const TeamApiPricings = (props: Props) => {
             {queryPlans.data && selectedTab === 'testing' && (
               //FIXME: inaccessible si pas de swagger
               <TeamApiTesting
+                currentTeam={props.currentTeam}
                 value={planForEdition}
                 api={props.api}
                 onChange={savePlan}
@@ -1924,7 +1920,7 @@ const TeamApiPricingDocumentation = (props: TeamApiPricingDocumentationProps) =>
           api: props.api,
           teamId: props.team._id,
           onClose: () => {
-            toastr.success(translate('Success'), translate('doc.page.import.successfull'));
+            toast.success(translate('doc.page.import.successfull'));
             props.reloadState()
           },
           getDocumentationPages: () => Services.getAllPlansDocumentation(props.team._id, props.api._humanReadableId, props.api.currentVersion),

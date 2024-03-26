@@ -1114,7 +1114,8 @@ object evolutions {
   def run(
       dataStore: DataStore,
       otoroshiClient: OtoroshiClient
-  )(implicit ec: ExecutionContext, mat: Materializer): Future[Done] =
+  )(implicit ec: ExecutionContext, mat: Materializer): Future[Done] = {
+    AppLogger.info("Running missing evolutions")
     Source(list)
       .mapAsync(1) { evolution =>
         dataStore.evolutionRepo
@@ -1158,4 +1159,5 @@ object evolutions {
           }
       }
       .runWith(Sink.ignore)
+  }
 }

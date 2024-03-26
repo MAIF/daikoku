@@ -681,16 +681,14 @@ class PaymentClient(
         env.dataStore.tenantRepo.findByIdNotDeleted(apiSubscription.tenant),
         AppError.TenantNotFound
       )
-      settings <- EitherT.fromOption[Future](
-        plan.paymentSettings.flatMap(s =>
+      settings = plan.paymentSettings.flatMap(s =>
           tenant.thirdPartyPaymentSettings
             .find(_.id == s.thirdPartyPaymentSettingsId)
-        ),
-        AppError.EntityNotFound("payment settings")
-      )
+        )
       value <- settings match {
-        case p: StripeSettings =>
+        case Some(p: StripeSettings) =>
           toggleStateStripeSubscription(apiSubscription)(p)
+        case None => EitherT.pure[Future, AppError](apiSubscription.asJson)
       }
     } yield value
   }

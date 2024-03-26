@@ -19,7 +19,7 @@ import Pagination from 'react-paginate';
 import Select from 'react-select';
 
 import { Spinner } from '../utils';
-import { I18nContext } from '../../core';
+import { I18nContext } from '../../contexts';
 import { isError, isPromise, ResponseError } from '../../types';
 
 export function useForceUpdate() {

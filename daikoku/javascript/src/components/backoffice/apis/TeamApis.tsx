@@ -1,33 +1,33 @@
-import React, { useContext, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
-
-import * as Services from '../../../services';
-import { Can, read, manage, api as API } from '../../utils';
-import { SwitchButton, Table, BooleanColumnFilter, TableRef } from '../../inputs';
-import { I18nContext, setError } from '../../../core';
-import { ModalContext, useTeamBackOffice } from '../../../contexts';
-import { IApi, IState, IStateContext } from '../../../types';
 import { createColumnHelper } from '@tanstack/react-table';
+import { useContext, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
+
+import { I18nContext, ModalContext, useTeamBackOffice } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
+import * as Services from '../../../services';
+import { IApi, ITeamSimple, isError } from '../../../types';
+import { Table, TableRef } from '../../inputs';
+import { api as API, Can, Spinner, manage, read } from '../../utils';
 
 export const TeamApis = () => {
-  const { currentTeam, tenant } = useSelector<IState, IStateContext>((state) => state.context);
-  const dispatch = useDispatch();
-  useTeamBackOffice(currentTeam);
+  const { isLoading, currentTeam, error } = useTeamBackOffice()
+
+  const { tenant } = useContext(GlobalContext);
 
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${translate({ key: 'API', plural: true })}`;
-  }, []);
+    if (currentTeam && !isError(currentTeam))
+      document.title = `${currentTeam.name} - ${translate({ key: 'API', plural: true })}`;
+  }, [currentTeam]);
 
   let table = useRef<TableRef>();
 
   const columnHelper = createColumnHelper<IApi>();
 
-  const columns = [
+  const columns = (currentTeam: ITeamSimple) => [
     columnHelper.accessor(api => api.apis ? api.name : `${api.name} - (${api.currentVersion})`, {
       header: translate('Name'),
       meta: { style: { textAlign: 'left' } },
@@ -106,31 +106,39 @@ export const TeamApis = () => {
     confirm({ message: translate('delete.api.confirm'), okLabel: translate('Yes') })
       .then((ok) => {
         if (ok) {
-          Services.deleteTeamApi(currentTeam._id, api._id)
+          Services.deleteTeamApi((currentTeam as ITeamSimple)._id, api._id)
             .then(() => {
-              toastr.success(translate('Success'), translate({ key: 'delete.api.success', replacements: [api.name] }));
+              toast.success(translate({ key: 'delete.api.success', replacements: [api.name] }));
               table.current?.update();
             });
         }
       });
   };
 
-  if (tenant.creationSecurity && !currentTeam.apisCreationPermission) {
-    dispatch(setError({ error: { status: 403, message: 'Creation security enabled' } }));
-  }
-  return (
-    <Can I={read} a={API} dispatchError={true} team={currentTeam}>
-      <div className="row">
-        <div className="col">
-          <div className="p-2">
-            <Table
-              columns={columns}
-              fetchItems={() => Services.teamApis(currentTeam._id)}
-              ref={table}
-            />
+  if (isLoading) {
+    return <Spinner />
+  } else if (currentTeam && !isError(currentTeam)) {
+    if (tenant.creationSecurity && !currentTeam.apisCreationPermission) {
+      toast.error(translate('Creation security enabled'))
+      return null;
+    }
+    return (
+      <Can I={read} a={API} dispatchError={true} team={currentTeam}>
+        <div className="row">
+          <div className="col">
+            <div className="p-2">
+              <Table
+                columns={columns(currentTeam)}
+                fetchItems={() => Services.teamApis(currentTeam._id)}
+                ref={table}
+              />
+            </div>
           </div>
         </div>
-      </div>
-    </Can>
-  );
+      </Can>
+    );
+  } else {
+    toast.error(error?.message || currentTeam?.error)
+    return <></>;
+  }
 };

@@ -6,16 +6,13 @@ import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.TeamFormat
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.{LdapConfig, LdapSupport}
 import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.otoroshi.daikoku.utils.{DeletionService, IdGenerator, Translator}
@@ -394,6 +391,8 @@ class TeamController(
                 case Some(team) =>
                   ctx.setCtxValue("team.id", team.id)
                   ctx.setCtxValue("team.name", team.name)
+                  AppLogger.info(Json.prettyPrint(ctx.request.body))
+                  AppLogger.info(Json.prettyPrint(team.asJson))
                   val teamWithEdits =
                     if (ctx.user.isDaikokuAdmin || ctx.isTenantAdmin) newTeam
                     else
@@ -402,10 +401,8 @@ class TeamController(
                         apisCreationPermission = team.apisCreationPermission
                       )
 
-                  val isTeamContactChanged =
-                    team.contact != teamWithEdits.contact
-                  val teamToSave =
-                    teamWithEdits.copy(verified = !isTeamContactChanged)
+                  val isTeamContactChanged = team.contact != teamWithEdits.contact
+                  val teamToSave = teamWithEdits.copy(verified = teamWithEdits.verified && !isTeamContactChanged)
                   if (isTeamContactChanged) {
                     implicit val language: String = ctx.user.defaultLanguage
                       .getOrElse(ctx.tenant.defaultLanguage.getOrElse("en"))
@@ -581,7 +578,7 @@ class TeamController(
 
   def pendingMembersOfTeam(teamId: String) =
     DaikokuAction.async { ctx =>
-      TeamAdminOrTenantAdminOnly(
+      TeamMemberOnly(
         AuditTrailEvent(
           s"@{user.name} has accessed list of addable members to team @{team.name} - @{team.id}"
         )
@@ -608,11 +605,11 @@ class TeamController(
             )
           )
         } yield {
-          Ok(
+          Right(Ok(
             Json.obj(
               "pendingUsers" -> JsArray(pendingUsers.map(_.asSimpleJson))
             )
-          )
+          ))
         }
       }
     }
@@ -954,7 +951,7 @@ class TeamController(
 
   def membersOfTeam(teamId: String) =
     DaikokuAction.async { ctx =>
-      TeamAdminOrTenantAdminOnly(
+      TeamMemberOnly(
         AuditTrailEvent(
           s"@{user.name} has accessed the member list of team @{team.name} - @{team.id}"
         )
@@ -968,7 +965,7 @@ class TeamController(
             )
           )
           .map { users =>
-            Ok(JsArray(users.map(_.asSimpleJson)))
+            Right(Ok(JsArray(users.map(_.asSimpleJson))))
           }
       }
     }
@@ -1105,7 +1102,7 @@ class TeamController(
     DaikokuAction.async { ctx =>
       TeamAdminOrTenantAdminOnly(
         AuditTrailEvent(
-          s"@{user.name} has removed invitation to ${userId} of team @{team.name} - @{team.id}"
+          s"@{user.name} has removed invitation to $userId of team @{team.name} - @{team.id}"
         )
       )(teamId, ctx) { team =>
         team.`type` match {
@@ -1138,9 +1135,17 @@ class TeamController(
                         )
                       )
                   }
+                case Some(user) if !team.users.exists(_.userId == user.id) =>
+                  env.dataStore.notificationRepo.forTenant(ctx.tenant)
+                    .findOne(Json.obj("action.type" -> "TeamInvitation", "action.user" -> user.id.asJson))
+                    .flatMap {
+                      case Some(n) => env.dataStore.notificationRepo.forTenant(ctx.tenant).deleteById(n.id)
+                        .map(_ => Ok(Json.obj("deleted" -> true)))
+                      case None => FastFuture.successful(BadRequest(Json.obj("error" -> "User isn't invited")))
+                    }
                 case Some(_) =>
                   FastFuture.successful(
-                    BadRequest(Json.obj("error" -> "User isn't invited"))
+                    Conflict(Json.obj("error" -> "User is already member of your team"))
                   )
                 case None =>
                   FastFuture.successful(

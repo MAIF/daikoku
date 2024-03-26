@@ -5,7 +5,7 @@ import { useContext, useEffect, useRef } from 'react';
 import { nanoid } from 'nanoid';
 
 import { ModalContext } from '../../../../contexts';
-import { I18nContext } from '../../../../core';
+import { I18nContext } from '../../../../contexts';
 import { ITenantFull, IThirdPartyPaymentSettings, ThirdPartyPaymentType } from '../../../../types';
 import { Table, TableRef } from '../../../inputs/Table';
 import { Can, manage, tenant as TENANT } from '../../../utils';

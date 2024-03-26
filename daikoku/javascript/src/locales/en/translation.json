@@ -909,9 +909,10 @@
     "team_member.invit_user": "Invite a collaborator",
     "team_member.invite_user_to": "Invite a collaborator to ",
     "team_member.send_email": "Send invitation",
-    "team_member.invitation": "Join %s",
+    "team_member.invitation": "The team %s has invited you to join them. Please create an account first then accept the invitation in your notification center.",
+    "team_member.invitation.decline.successful": "Invitation successfully declined",
     "team_member.accept_invitation": "Accept",
-    "team_member.refuse_invitation": "Refuse",
+    "team_member.refuse_invitation": "Decline",
     "team_member.has_joined": "You're now in the team",
     "team_member.missing_token": "Missing token",
     "login_page.register_message": "New to %s ?",
@@ -1372,5 +1373,8 @@
     "aggregated.apikey.badge.title": "Aggregated API key",
     "aggregated.apikey.badge.apikey.name": "API key custom name",
     "apisubscription.lastUsage.label": "Last usage",
-    "N/A": "N/A"
+    "N/A": "N/A",
+    "semver.error.message": "Can't create version with special characters : %s",
+    "version.creation.success.message": "New version of api created successfully",
+    "error.message.creation.security.enabled": "You're not authorized to create API, please contact your administrator."
 }

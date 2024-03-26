@@ -1,33 +1,19 @@
 import React, { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
 import Sun from 'react-feather/dist/icons/sun'
 import Moon from 'react-feather/dist/icons/moon'
 
 import * as Services from '../../../../services';
-import { updateTenant } from '../../../../core/context/actions';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import classNames from 'classnames';
+import { GlobalContext } from '../../../../contexts/globalContext';
 
-export const DarkModeActivator = (props: {className: string}) => {
-  const DARK = 'DARK';
-  const LIGHT = 'LIGHT';
-
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || LIGHT);
-
-  useEffect(() => {
-    if (theme === DARK) {
-      document.documentElement.setAttribute('data-theme', DARK);
-      localStorage.setItem('theme', DARK);
-    } else {
-      document.documentElement.setAttribute('data-theme', LIGHT);
-      localStorage.setItem('theme', LIGHT);
-    }
-  }, [theme]);
+export const DarkModeActivator = (props: { className: string }) => {
+  const {theme, toggleTheme } = useContext(GlobalContext);
 
   return (
-    <div className={classNames("block__entry__link cursor-pointer", props.className)} onClick={() => setTheme(theme === DARK ? LIGHT : DARK)}>
-      {theme === DARK ? <Sun/> : <Moon />}
+    <div className={classNames("block__entry__link cursor-pointer", props.className)} onClick={() => toggleTheme()}>
+      {theme === 'DARK' ? <Sun /> : <Moon />}
     </div>
   );
 };
@@ -36,9 +22,7 @@ export const SettingsPanel = ({ }) => {
   const [version, setVersion] = useState();
 
   const { translate, isTranslationMode } = useContext(I18nContext);
-  const { tenant, connectedUser, impersonator, isTenantAdmin } = useSelector((state) => (state as any).context);
-
-  const dispatch = useDispatch();
+  const { tenant, connectedUser, impersonator, isTenantAdmin, reloadContext } = useContext(GlobalContext);
 
   useEffect(() => {
     Services.getDaikokuVersion().then((res) => setVersion(res.version));
@@ -58,15 +42,12 @@ export const SettingsPanel = ({ }) => {
 
   const isMaintenanceMode = tenant?.tenantMode !== 'Default' && !isTranslationMode;
   const toggleMaintenanceMode = () => {
-    const toggleApi = isMaintenanceMode
+    const toggleTenantMode = isMaintenanceMode
       ? Services.disableMaintenanceMode
       : Services.enableMaintenanceMode;
 
-    toggleApi().then((maybeTenant) => {
-      if (maybeTenant._id) {
-        dispatch(updateTenant(maybeTenant));
-      }
-    });
+    toggleTenantMode()
+      .then(reloadContext);
   };
 
   return (

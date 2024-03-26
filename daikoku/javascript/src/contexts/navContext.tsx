@@ -1,12 +1,15 @@
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import merge from 'lodash/merge';
-import React, { useContext, useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { Link, useMatch, useNavigate, useParams } from 'react-router-dom';
+import React, { PropsWithChildren, useContext, useEffect, useState } from 'react';
+import { Link, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 
 import { api as API, Can, manage } from '../components/utils';
-import { I18nContext } from '../core';
-import { IApi, IState, IStateContext, IStoreState, ITeamSimple, ITenant, IUserSimple } from '../types';
+import { I18nContext } from '../contexts';
+import * as Services from '../services/index';
+import { IApi, ITeamSimple, ITenant, isError } from '../types';
+import { GlobalContext } from './globalContext';
 import { ModalContext } from './modalContext';
+import { toast } from 'sonner';
 
 
 export enum navMode {
@@ -24,8 +27,6 @@ export enum officeMode {
   back = 'BACK',
 };
 const initNavContext = {
-  loginAction: 'action',
-  loginProvider: 'provider',
   menu: {},
   addMenu: () => { },
   setMenu: () => { },
@@ -40,8 +41,6 @@ const initNavContext = {
 }
 
 type TNavContext = {
-  loginAction: string,
-  loginProvider: string,
   menu: object,
   addMenu: (m: object) => void,
   setMenu: (m: object) => void,
@@ -60,8 +59,7 @@ type TNavContext = {
 }
 export const NavContext = React.createContext<TNavContext>(initNavContext);
 
-export const NavProvider = ({ children, loginAction, loginProvider }:
-  { children: JSX.Element | Array<JSX.Element>, loginAction: string, loginProvider: string }) => {
+export const NavProvider = (props: PropsWithChildren) => {
   const [mode, setMode] = useState(navMode.initial);
   const [office, setOffice] = useState(officeMode.front);
 
@@ -79,8 +77,6 @@ export const NavProvider = ({ children, loginAction, loginProvider }:
   return (
     <NavContext.Provider
       value={{
-        loginAction,
-        loginProvider,
         menu,
         addMenu,
         setMenu,
@@ -98,7 +94,7 @@ export const NavProvider = ({ children, loginAction, loginProvider }:
         setTenant,
       }}
     >
-      {children}
+      {props.children}
     </NavContext.Provider>
   );
 };
@@ -107,7 +103,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
   const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
   const { openContactModal } = useContext(ModalContext);
-  const { connectedUser, tenant } = useSelector<IState, IStateContext>((state) => state.context);
+  const { connectedUser, tenant } = useContext(GlobalContext);
   const navigate = useNavigate();
   const params = useParams();
 
@@ -247,7 +243,7 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
   const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
   const { openContactModal } = useContext(ModalContext);
-  const { connectedUser, tenant } = useSelector<IState, IStateContext>((state) => state.context);
+  const { connectedUser, tenant } = useContext(GlobalContext);
   const navigate = useNavigate();
   const params = useParams();
 
@@ -367,16 +363,49 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
   return { addMenu };
 };
 
-export const useApiBackOffice = (api: any, creation: any) => {
-  const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
+type TeamApiParams = {
+  apiId: string
+  versionId: string
+  teamId: string
+  tab: string
+}
+type TeamApiGroupParams = {
+  apigroupId: string
+  versionId: string
+  teamId: string
+  tab: string
+}
+export const useApiBackOffice = (creation: boolean) => {
+  const { setMode, setOffice, setApi, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const { currentTeam, tenant } = useSelector<IState, IStateContext>((state) => state.context);
+  const { tenant } = useContext(GlobalContext);
 
   const navigate = useNavigate();
-  const params = useParams();
+  const { teamId, apiId, versionId, tab } = useParams<TeamApiParams>();
 
-  const schema = (currentTab?: string) => ({
+  const location = useLocation();
+  const newApi = location && location.state && location.state.newApi
+
+  const queryClient = useQueryClient();
+  const queries = useQueries({
+    queries: [
+      { queryKey: ['useApiBackOffice', 'team-backoffice', teamId], queryFn: () => Services.team(teamId!), enabled: !!teamId },
+      {
+        queryKey: ['useApiBackOffice', 'api', apiId, versionId, location],
+        queryFn: () => Services.teamApi(teamId!, apiId!, versionId!),
+        enabled: !newApi
+      },
+      {
+        queryKey: ['useApiBackOffice', 'api', 'apiVersions', apiId, versionId, location],
+        queryFn: () => Services.getAllApiVersions(teamId!, apiId!),
+        enabled: !newApi
+      }
+    ]
+  })
+
+
+  const schema = (api: IApi, currentTab?: string) => ({
     title: api?.name,
 
     blocks: {
@@ -386,49 +415,49 @@ export const useApiBackOffice = (api: any, creation: any) => {
           informations: {
             order: 2,
             label: translate('Informations'),
-            action: () => navigateTo('infos'),
+            action: () => navigateTo('infos', api),
             className: { active: currentTab === 'infos' },
           },
           plans: {
             order: 3,
             visible: !creation,
             label: tenant.display === 'environment' ? translate("navbar.environments.label") : translate('Plans'),
-            action: () => navigateTo('plans'),
+            action: () => navigateTo('plans', api),
             className: { active: currentTab === 'plans' },
           },
           documentation: {
             order: 4,
             visible: !creation,
             label: translate('Documentation'),
-            action: () => navigateTo('documentation'),
+            action: () => navigateTo('documentation', api),
             className: { active: currentTab === 'documentation', 'd-none': tenant.display === 'environment' },
           },
           news: {
             order: 5,
             visible: !creation,
             label: translate('News'),
-            action: () => navigateTo('news'),
+            action: () => navigateTo('news', api),
             className: { active: currentTab === 'news' },
           },
           subscriptions: {
             order: 5,
             visible: !creation,
             label: translate('Subscriptions'),
-            action: () => navigateTo('subscriptions'),
+            action: () => navigateTo('subscriptions', api),
             className: { active: currentTab === 'subscriptions' },
           },
           consumptions: {
             order: 5,
             visible: !creation,
             label: translate('Consumptions'),
-            action: () => navigateTo('stats'),
+            action: () => navigateTo('stats', api),
             className: { active: currentTab === 'stats' },
           },
           settings: {
             order: 5,
             visible: !creation,
             label: translate('Settings'),
-            action: () => navigateTo('settings'),
+            action: () => navigateTo('settings', api),
             className: { active: currentTab === 'settings' },
           },
         },
@@ -436,44 +465,67 @@ export const useApiBackOffice = (api: any, creation: any) => {
     }
   });
 
-  const navigateTo = (navTab: string) => {
-    navigate(
-      `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/${navTab}`
-    );
+  const navigateTo = (navTab: string, api: IApi) => {
+    navigate(`/${(queries[0].data as ITeamSimple)._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/${navTab}`);
   };
 
   useEffect(() => {
-    addMenu(schema(params.tab));
-    setMode(navMode.api);
-    setOffice(officeMode.back);
-    setApi(api);
-    setTeam(currentTeam);
-  }, [api?._id, api?.name, params]);
+    if (queries[1].data && !isError(queries[1].data)) {
+      addMenu(schema(queries[1].data, tab));
+      setMode(navMode.api);
+      setOffice(officeMode.back);
+    }
+  }, [tab, queries[1].data]);
 
   useEffect(() => {
-    addMenu(schema(params.tab));
     return () => {
       setMode(navMode.initial);
       setApi(undefined);
-      setTeam(undefined);
       setMenu({});
     };
   }, []);
 
-  return { addMenu, setApi };
+  const api = (queries[1].data && isError(queries[1].data)) ? undefined : queries[1].data;
+  const currentTeam = (queries[0].data && isError(queries[0].data)) ? undefined : queries[0].data;
+  const versions = (queries[2].data && isError(queries[2].data)) ? [] : queries[2].data || [];
+
+  const isLoading = queries.map(q => q.isLoading).some(state => state)
+  //todo: handle errors ???
+
+  const reloadApi = () => {
+    return queryClient.invalidateQueries({ queryKey: ['useApiBackOffice', 'api'] })
+  }
+
+  return { isLoading, addMenu, setApi, api, versions, reloadApi, currentTeam };
 };
 
-export const useApiGroupBackOffice = (apiGroup: any, creation: boolean) => {
-  const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext);
+export const useApiGroupBackOffice = (creation: boolean) => {
+  const { setMode, setOffice, setApiGroup, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const { currentTeam, tenant } = useSelector<IState, IStateContext>((state) => state.context);
+  const { tenant } = useContext(GlobalContext);
 
   const navigate = useNavigate();
   const params = useParams();
+  const { teamId, apigroupId, tab } = useParams<TeamApiGroupParams>();
 
-  const schema = (currentTab?: string) => ({
-    title: apiGroup?.name,
+  const queryClient = useQueryClient();
+
+
+  const queries = useQueries({
+    queries: [
+      { queryKey: ['useApiBackOffice', 'team-backoffice', teamId], queryFn: () => Services.team(teamId!), enabled: !!teamId },
+      {
+        queryKey: ['useApiGroupBackOffice', 'apigroup', apigroupId, location],
+        queryFn: () => Services.teamApi(teamId!, params.apiGroupId!, '1.0.0'),
+        enabled: !creation && !!teamId
+      }
+    ]
+  })
+
+
+  const schema = (apiGroup: IApi, currentTab?: string) => ({
+    title: apiGroup.name,
 
     blocks: {
       links: {
@@ -482,35 +534,35 @@ export const useApiGroupBackOffice = (apiGroup: any, creation: boolean) => {
           informations: {
             order: 2,
             label: translate('Informations'),
-            action: () => navigateTo('infos'),
+            action: () => navigateTo('infos', apiGroup),
             className: { active: currentTab === 'infos' },
           },
           plans: {
             order: 3,
             visible: !creation,
             label: tenant.display === 'environment' ? translate("Environments") : translate({ key: 'Plan', plural: true }),
-            action: () => navigateTo('plans'),
+            action: () => navigateTo('plans', apiGroup),
             className: { active: currentTab === 'plans' },
           },
           subscriptions: {
             order: 5,
             visible: !creation,
             label: translate('Subscriptions'),
-            action: () => navigateTo('subscriptions'),
+            action: () => navigateTo('subscriptions', apiGroup),
             className: { active: currentTab === 'subscriptions' },
           },
           consumptions: {
             order: 5,
             visible: !creation,
             label: translate('Consumptions'),
-            action: () => navigateTo('stats'),
+            action: () => navigateTo('stats', apiGroup),
             className: { active: currentTab === 'stats' },
           },
           settings: {
             order: 5,
             visible: !creation,
             label: translate('Settings'),
-            action: () => navigateTo('settings'),
+            action: () => navigateTo('settings', apiGroup),
             className: { active: currentTab === 'settings' },
           },
         },
@@ -520,7 +572,7 @@ export const useApiGroupBackOffice = (apiGroup: any, creation: boolean) => {
           view: {
             component: (
               <Link
-                to={`/${currentTeam._humanReadableId}/apigroups/${apiGroup?._humanReadableId}/apis`}
+                to={`/${(queries[0].data as ITeamSimple)._humanReadableId}/apigroups/${apiGroup?._humanReadableId}/apis`}
                 className="btn btn-sm btn-access-negative mb-2"
               >
                 {translate('View this APIs Group')}
@@ -536,10 +588,10 @@ export const useApiGroupBackOffice = (apiGroup: any, creation: boolean) => {
                   background: 'transparent',
                   outline: 'none',
                 }}
-                to={`/${currentTeam._humanReadableId}/settings/apis`}
+                to={`/${(queries[0].data as ITeamSimple)._humanReadableId}/settings/apis`}
               >
                 <i className="fas fa-chevron-left" />
-                {translate({ key: 'back.to.team', replacements: [currentTeam.name] })}
+                {translate({ key: 'back.to.team', replacements: [(queries[0].data as ITeamSimple).name] })}
               </Link>
             ),
           },
@@ -548,52 +600,73 @@ export const useApiGroupBackOffice = (apiGroup: any, creation: boolean) => {
     }
   });
 
-  const navigateTo = (navTab: string) => {
+  const navigateTo = (navTab: string, apiGroup: IApi) => {
     navigate(
-      `/${currentTeam._humanReadableId}/settings/apigroups/${apiGroup._humanReadableId}/${navTab}`
+      `/${(queries[0].data as ITeamSimple)._humanReadableId}/settings/apigroups/${apiGroup._humanReadableId}/${navTab}`
     );
   };
 
   useEffect(() => {
-    addMenu(schema(params.tab));
-    setMode(navMode.apiGroup);
-    setOffice(officeMode.back);
-    setApiGroup(apiGroup);
-    setTeam(currentTeam);
-  }, [apiGroup?._id, apiGroup?.name, params]);
+    if (queries[1].data && !isError(queries[1].data)) {
+      addMenu(schema(queries[1].data, params.tab));
+      setMode(navMode.apiGroup);
+      setOffice(officeMode.back);
+    }
+  }, [params, queries[1].data]);
 
   useEffect(() => {
-    addMenu(schema(params.tab));
     return () => {
       setMode(navMode.initial);
       setApiGroup(undefined);
-      setTeam(undefined);
       setMenu({});
     };
-  }, []);
+  }, [params]);
 
-  return { addMenu, setApiGroup };
+  const currentTeam = (queries[0].data && isError(queries[0].data)) ? undefined : queries[0].data;
+  const apiGroup = (queries[1].data && isError(queries[1].data)) ? undefined : queries[1].data;
+
+  const isLoading = queries.map(q => q.isLoading).some(state => state)
+  const error = queries.reduce<string | undefined>((acc, q) => acc || q.error?.message, undefined)
+
+  if (error) {
+    toast.error(error)
+  }
+
+  const reloadApiGroup = () => {
+    return queryClient.invalidateQueries({ queryKey: ['useApiGroupBackOffice', 'apigroup'] })
+  }
+
+  return { addMenu, setApiGroup, apiGroup, currentTeam, reloadApiGroup, isLoading };
 };
 
-export const useTeamBackOffice = (team: ITeamSimple) => {
+export const useTeamBackOffice = () => {
   const { setMode, setOffice, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
+  const queryClient = useQueryClient();
+
 
   const navigate = useNavigate();
-  const match = useMatch('/:teamId/settings/:tab*'); //todo etster si c'est bon sinon rollback /:teamId/settings/:tab*
+  const match = useMatch('/:teamId/settings/:tab*');
+  const teamId = match?.params.teamId;
 
-  const schema = (currentTab: string) => ({
+  const queryTeam = useQuery({
+    queryKey: ['team-backoffice', teamId],
+    queryFn: () => {
+      return Services.team(teamId!)
+    },
+    enabled: !!teamId
+  })
+
+  const schema = (currentTab: string, team: ITeamSimple) => ({
     title: team.name,
-
     blocks: {
       links: {
         order: 1,
         links: {
           settings: {
             label: translate('Settings'),
-            action: () => navigateTo(''),
+            action: () => navigateTo('dashboard'),
             className: {
               active: !currentTab || ['edition', 'assets', 'members'].includes(currentTab),
             },
@@ -653,17 +726,17 @@ export const useTeamBackOffice = (team: ITeamSimple) => {
   });
 
   const navigateTo = (navTab: string) => {
-    navigate(`/${currentTeam._humanReadableId}/settings/${navTab}`);
+    navigate(`/${(queryTeam.data as ITeamSimple)._humanReadableId}/settings/${navTab}`);
   };
 
   useEffect(() => {
-    if (team) {
+    if (queryTeam.data && !isError(queryTeam.data)) {
       setMode(navMode.team);
       setOffice(officeMode.back);
-      setTeam(team);
-      setMenu(schema(match?.params['tab']));
+      setTeam(queryTeam.data);
+      setMenu(schema(match?.params['tab'], queryTeam.data));
     }
-  }, [team]);
+  }, [queryTeam.data]);
 
   useEffect(() => {
     return () => {
@@ -673,7 +746,10 @@ export const useTeamBackOffice = (team: ITeamSimple) => {
     };
   }, []);
 
-  return { addMenu };
+  const reloadCurrentTeam = () => queryClient.invalidateQueries({ queryKey: ['team-backoffice'] })
+
+  //todo handle error
+  return { isLoading: queryTeam.isLoading || queryTeam.status === 'pending', error: queryTeam.error, currentTeam: queryTeam.data, addMenu, reloadCurrentTeam };
 };
 
 export const useTenantBackOffice = (maybeTenant?: ITenant) => {
@@ -686,8 +762,8 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
 
   const match = matchParent || matchSub
 
-  const currentTenant = useSelector<IStoreState, ITenant>((state) => state.context.tenant);
-  const tenant = maybeTenant || currentTenant;
+  const context = useContext(GlobalContext);
+  const tenant = maybeTenant || context.tenant;
 
   const schema = (currentTab?: string, subTab?: string) => ({
     title: tenant.name,
@@ -924,7 +1000,7 @@ export const useUserBackOffice = () => {
   const { setMode, setOffice, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
 
-  const connectedUser = useSelector<IState, IUserSimple>((state) => state.context.connectedUser);
+  const { connectedUser } = useContext(GlobalContext);
 
   const navigate = useNavigate();
   const match = useMatch('/:tab');

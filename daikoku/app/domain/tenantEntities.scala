@@ -373,6 +373,7 @@ case class Tenant(
         .as[JsValue],
       "display" -> display.name,
       "environments" -> JsArray(environments.map(JsString.apply).toSeq),
+      "loginProvider" -> authProvider.name,
       "cmsRedirections" -> JsArray(cmsRedirections.map(JsString.apply).toSeq)
     )
   }
@@ -1582,9 +1583,9 @@ case class CmsPage(
             .combine("request", EntitiesToMap.request(ctx.request))
             .combine(
               "daikoku-css", {
-                if (env.config.mode == DaikokuMode.Dev)
+                if (env.config.isDev)
                   s"http://localhost:3000/daikoku.css"
-                else if (env.config.mode == DaikokuMode.Prod)
+                else if (env.config.isProd)
                   s"${env.getDaikokuUrl(ctx.tenant, "/assets/react-app/daikoku.min.css")}"
               }
             ),

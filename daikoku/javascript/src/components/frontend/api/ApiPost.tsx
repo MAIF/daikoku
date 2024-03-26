@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services/index';
 import { converter } from '../../../services/showdown';
 import moment from 'moment';

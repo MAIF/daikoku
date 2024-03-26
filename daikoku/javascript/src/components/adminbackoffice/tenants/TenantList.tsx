@@ -4,7 +4,7 @@ import sortBy from 'lodash/sortBy';
 
 import * as Services from '../../../services';
 import { PaginatedComponent, AvatarWithAction, Can, manage, daikoku } from '../../utils';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
 
 export const TenantList = () => {

@@ -1,18 +1,19 @@
-import React, { useContext, useRef } from 'react';
-import { useSelector } from 'react-redux';
 import moment from 'moment';
+import { useContext, useRef } from 'react';
 
 import * as Services from '../../../services';
 
-import { Table, TableRef } from '../../inputs';
-import { Can, manage, daikoku } from '../../utils';
-import { I18nContext } from '../../../contexts/i18n-context';
-import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
-import { ISession, IState, IUserSimple } from '../../../types';
 import { createColumnHelper } from '@tanstack/react-table';
+import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
+import { I18nContext } from '../../../contexts/i18n-context';
+import { GlobalContext } from '../../../contexts/globalContext';
+import { ISession } from '../../../types';
+import { Table, TableRef } from '../../inputs';
+import { Can, daikoku, manage } from '../../utils';
 
 export const SessionList = () => {
-  const connectedUser = useSelector<IState, IUserSimple>((s) => s.context.connectedUser);
+  const { connectedUser } = useContext(GlobalContext)
+    ;
   useDaikokuBackOffice();
 
   const { translate, Translation } = useContext(I18nContext);

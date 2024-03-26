@@ -3,6 +3,7 @@ package fr.maif.otoroshi.daikoku.tests
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.{FreeWithoutQuotas, PayPerUse}
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
@@ -884,7 +885,7 @@ class AdminApiControllerSpec
           path = s"/admin-api/apis",
           method = "POST",
           headers = getAdminApiHeader(adminApiSubscription),
-          body = defaultApi.api.copy(name = "foo").asJson.some
+          body = defaultApi.api.copy(id = ApiId("foo"), name = "foo").asJson.some
         )(tenant)
 
         respName.status mustBe 400
@@ -1086,6 +1087,132 @@ class AdminApiControllerSpec
         )(tenant)
 
         verif.status mustBe 404
+      }
+
+      "Conflict :: Name already exists" in {
+        val childApiId = ApiId(IdGenerator.token)
+        val otherApiId = ApiId(IdGenerator.token)
+
+        val childApi = defaultApi.api.copy(id = childApiId, parent = defaultApi.api.id.some, currentVersion = Version("2.0.0-test"))
+        val otherApi = defaultApi.api.copy(id = otherApiId, name = "other API")
+
+        setupEnvBlocking(
+          tenants = Seq(tenant),
+          subscriptions = Seq(adminApiSubscription),
+          apis = Seq(
+            defaultApi.api,
+            childApi,
+            otherApi
+          ),
+          usagePlans = defaultApi.plans,
+          teams = Seq(teamOwner),
+          users = Seq(userAdmin)
+        )
+        val respChildPatch = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${childApiId.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json
+            .arr(
+              Json.obj("op" -> "replace", "path" -> "/description", "value" -> "foo")
+            )
+            .some
+        )(tenant)
+
+        respChildPatch.status mustBe 204
+
+        val respChildPut = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${childApiId.value}",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = childApi.copy(description = "foofoo").asJson.some
+        )(tenant)
+
+        respChildPut.status mustBe 204
+
+        val respParentPatch = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${defaultApi.api.id.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json
+            .arr(
+              Json.obj("op" -> "replace", "path" -> "/description", "value" -> "foo")
+            )
+            .some
+        )(tenant)
+        respParentPatch.status mustBe 204
+
+        val respParentPut = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${defaultApi.api.id.value}",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = defaultApi.api.copy(description = "foofoo").asJson.some
+        )(tenant)
+        respParentPut.status mustBe 204
+
+        val respOtherPatch = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${otherApiId.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json
+            .arr(
+              Json.obj("op" -> "replace", "path" -> "/name", "value" -> defaultApi.api.name)
+            )
+            .some
+        )(tenant)
+
+        respOtherPatch.status mustBe 400
+
+        val respOtherPut = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${otherApiId.value}",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = otherApi.copy(name = defaultApi.api.name).asJson.some
+        )(tenant)
+
+        respOtherPut.status mustBe 400
+
+
+        val respOtherOkPatch = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${otherApiId.value}",
+          method = "PATCH",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = Json
+            .arr(
+              Json.obj("op" -> "replace", "path" -> "/name", "value" -> "test-test-test")
+            )
+            .some
+        )(tenant)
+
+        respOtherOkPatch.status mustBe 204
+
+
+        val respOtherOkPut = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis/${otherApiId.value}",
+          method = "PUT",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = otherApi.copy(name = "test-test-test-test").asJson.some
+        )(tenant)
+
+        respOtherOkPut.status mustBe 204
+
+        val respCreateKo = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = defaultApi.api.copy(id = ApiId(IdGenerator.token), parent = None).asJson.some
+        )(tenant)
+
+        respCreateKo.status mustBe 400
+
+        val respCreateOk = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = defaultApi.api.copy(id = ApiId(IdGenerator.token), name = "final_api_test").asJson.some
+        )(tenant)
+
+        respCreateOk.status mustBe 201
       }
     }
 

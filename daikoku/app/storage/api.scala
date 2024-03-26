@@ -570,4 +570,6 @@ trait DataStore {
   ): Source[ByteString, _]
 
   def importFromStream(source: Source[ByteString, _]): Future[Unit]
+
+  def clear(): Future[Unit]
 }

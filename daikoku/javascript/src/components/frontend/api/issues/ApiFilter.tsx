@@ -1,16 +1,27 @@
 import { constraints, format, type } from '@maif/react-forms';
 import classNames from 'classnames';
 import { useContext, useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
 import { Link } from 'react-router-dom';
 import Select, { CSSObjectWithLabel } from 'react-select';
+import { toast } from 'sonner';
 
-import { ModalContext } from '../../../../contexts';
-import { I18nContext } from '../../../../core';
+import { I18nContext, ModalContext } from '../../../../contexts';
 import * as Services from '../../../../services';
-import { IState, ITeamSimple } from '../../../../types';
 import { api as API, Can, CanIDoAction, manage } from '../../../utils';
+import { IApi, ITeamSimple, IUserSimple } from '../../../../types';
+
+type ApiFilterProps = {
+  handleFilter,
+  filter,
+  connectedUser: IUserSimple,
+  team: string,
+  api: IApi,
+  selectedVersion: string,
+  setSelectedVersion: (version: string) => void,
+  refresh: () => void,
+  ownerTeam: ITeamSimple,
+  basePath: string,
+}
 
 export function ApiFilter({
   handleFilter,
@@ -22,13 +33,11 @@ export function ApiFilter({
   setSelectedVersion,
   refresh,
   ownerTeam,
-  basePath
-}: any) {
+  basePath,
+}: ApiFilterProps) {
   const [availableApiVersions, setApiVersions] = useState<Array<string>>([]);
   const { translate } = useContext(I18nContext);
   const { openFormModal } = useContext(ModalContext);
-
-  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
 
   const schema = {
     title: {
@@ -54,7 +63,7 @@ export function ApiFilter({
         name
       }: any) => ({ value: id, label: name }),
       isMulti: true,
-      visible: CanIDoAction(connectedUser, manage, API, currentTeam),
+      visible: CanIDoAction(connectedUser, manage, API, ownerTeam),
     },
     comment: {
       type: type.string,
@@ -63,13 +72,13 @@ export function ApiFilter({
     },
   };
 
-  const createIssue = (issue: any) => {
+  const createIssue = (issue) => {
     Services.createNewIssue(api._humanReadableId, team, issue)
       .then((res) => {
         if (res.error) {
-          toastr.error(translate('Error'), res.error);
+          toast.error(res.error);
         } else {
-          toastr.success(translate(''), 'Issue created');
+          toast.success('Issue created');
           refresh()
         }
       });
@@ -80,6 +89,18 @@ export function ApiFilter({
       .then(setApiVersions);
   }, []);
 
+
+  interface VersionOption {
+    readonly value: string;
+    readonly label: string;
+    readonly isFixed?: boolean;
+    readonly isDisabled?: boolean;
+  }
+
+  const options: readonly VersionOption[] = [
+    ...availableApiVersions.map((iss) => ({ value: iss, label: `Version : ${iss}` })),
+    { value: 'all version', label: 'All version' },
+  ]
 
   return (
     <div className="d-flex flex-row justify-content-between">
@@ -107,11 +128,8 @@ export function ApiFilter({
         </button>
         <Select
           id="apiVersion"
-          onChange={(apiVersion) => setSelectedVersion(apiVersion)}
-          options={[
-            ...availableApiVersions.map((iss) => ({ value: iss, label: `Version : ${iss}` })),
-            { value: 'all version', label: 'All version' },
-          ]}
+          onChange={(apiVersion) => setSelectedVersion(apiVersion!)} //@ts-ignore
+          options={options}
           value={selectedVersion}
           className="input-select reactSelect ms-1"
           classNamePrefix="reactSelect"

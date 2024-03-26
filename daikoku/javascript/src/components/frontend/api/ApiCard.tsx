@@ -3,7 +3,7 @@ import classNames from 'classnames';
 
 import { Can, manage, api as API, ActionWithTeamSelector } from '../../utils';
 import StarsButton from './StarsButton';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import { IApiWithAuthorization, ITeamSimple, IUserSimple } from '../../../types';
 import { useNavigate } from "react-router-dom";
 

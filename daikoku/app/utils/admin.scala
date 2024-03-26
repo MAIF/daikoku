@@ -181,6 +181,19 @@ class DaikokuApiActionWithoutTenant(
   override protected def executionContext: ExecutionContext = ec
 }
 
+sealed trait UpdateOrCreate {
+  def name: String
+}
+
+object UpdateOrCreate {
+  case object Update extends UpdateOrCreate {
+    def name: String = "Update"
+  }
+  case object Create extends UpdateOrCreate {
+    def name: String = "Create"
+  }
+}
+
 abstract class AdminApiController[Of, Id <: ValueType](
     DaikokuApiAction: DaikokuApiAction,
     env: Env,
@@ -199,7 +212,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
   def toJson(entity: Of): JsValue
   def fromJson(entity: JsValue): Either[String, Of]
   def entityClass: Class[Of]
-  def validate(entity: Of): EitherT[Future, AppError, Of]
+  def validate(entity: Of, updateOrCreate: UpdateOrCreate): EitherT[Future, AppError, Of]
   def getId(entity: Of): Id
 
   def findAll(): Action[AnyContent] =
@@ -299,7 +312,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
                   .EntityConflict("entity with same id already exists")
                   .renderF()
               case None =>
-                validate(newEntity)
+                validate(newEntity, UpdateOrCreate.Create)
                   .map(entity =>
                     entityStore(ctx.tenant, env.dataStore)
                       .save(entity)
@@ -312,6 +325,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
       }
     }
+
 
   def updateEntity(id: String): Action[JsValue] =
     DaikokuApiAction.async(parse.json) { ctx =>
@@ -336,7 +350,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
                 env
               )
             case Right(newEntity) =>
-              validate(newEntity)
+              validate(newEntity, UpdateOrCreate.Update)
                 .map(entity =>
                   entityStore(ctx.tenant, env.dataStore)
                     .save(entity)
@@ -407,7 +421,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
               env
             )
           case Right(patchedEntity) =>
-            validate(patchedEntity)
+            validate(patchedEntity, UpdateOrCreate.Update)
               .map(entity =>
                 entityStore(ctx.tenant, env.dataStore)
                   .save(entity)

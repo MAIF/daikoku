@@ -3,7 +3,7 @@ import { Form, Schema, type } from '@maif/react-forms';
 import { UseMutationResult } from '@tanstack/react-query';
 
 
-import { I18nContext } from '../../../../core';
+import { I18nContext } from '../../../../contexts';
 import { ITenantFull } from '../../../../types';
 import { ModalContext } from '../../../../contexts';
 

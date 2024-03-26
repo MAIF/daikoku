@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Select, { SingleValue } from 'react-select';
 import { ModalContext } from '../../../contexts';
 
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import Editor from './Editor';
 import Helpers from './helpers.json';
 

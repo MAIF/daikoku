@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 
 import DatePicker from 'antd/lib/date-picker';
-import { I18nContext } from '../../core';
+import { I18nContext } from '../../contexts';
 
 const getDateFormat = (language: string) => {
   switch (language.toUpperCase()) {

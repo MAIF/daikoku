@@ -1,21 +1,22 @@
-import React, { useContext, useEffect } from 'react';
-import { useSelector } from 'react-redux';
 import sortBy from 'lodash/sortBy';
+import { useContext, useEffect } from 'react';
 
-import { OtoroshiStatsVizualization } from '../../utils';
+import { I18nContext, useTeamBackOffice } from '../../../contexts';
 import * as Services from '../../../services';
-import { I18nContext } from '../../../core';
-import { useTeamBackOffice } from '../../../contexts';
+import { isError } from '../../../types';
+import { OtoroshiStatsVizualization, Spinner } from '../../utils';
+import { toast } from 'sonner';
 
 export const TeamConsumption = () => {
   const { translate } = useContext(I18nContext);
+  const { isLoading, currentTeam, error } = useTeamBackOffice()
 
-  const { currentTeam } = useSelector((state) => (state as any).context);
-  useTeamBackOffice(currentTeam);
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${translate('Consumption')}`;
-  }, []);
+    if (currentTeam && !isError(currentTeam)) {
+      document.title = `${currentTeam.name} - ${translate('Consumption')}`;
+    }
+  }, [currentTeam]);
 
   const mappers = [
     {
@@ -48,18 +49,27 @@ export const TeamConsumption = () => {
     },
   ];
 
-  return (
-    <div className="row">
-      <div className="col">
-        <h1>Consumption</h1>
-        <OtoroshiStatsVizualization
-          sync={() => Services.syncTeamBilling(currentTeam._id)}
-          fetchData={(from: any, to: any) =>
-            Services.getTeamConsumptions(currentTeam._id, from.valueOf(), to.valueOf())
-          }
-          mappers={mappers}
-        />
+  if (isLoading) {
+    return <Spinner />
+  } else if (currentTeam && !isError(currentTeam)) {
+    return (
+      <div className="row">
+        <div className="col">
+          <h1>Consumption</h1>
+          <OtoroshiStatsVizualization
+            sync={() => Services.syncTeamBilling(currentTeam._id)}
+            fetchData={(from: any, to: any) =>
+              Services.getTeamConsumptions(currentTeam._id, from.valueOf(), to.valueOf())
+            }
+            mappers={mappers}
+          />
+        </div>
       </div>
-    </div>
-  );
+    );
+  } else {
+    toast.error(error?.message || currentTeam?.error)
+    return <></>;
+  }
+
+
 };

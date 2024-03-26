@@ -4,13 +4,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import debounce from "lodash/debounce";
 import { useContext, useEffect, useMemo, useState } from 'react';
 import Pagination from "react-paginate";
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import Plus from 'react-feather/dist/icons/plus'
 
 import Select, { components } from 'react-select';
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IAuthorizedEntities, IOtoroshiSettings, ISimpleOtoroshiSettings, ITeamFullGql, ITeamSimple, ResponseError, isError } from '../../../types';
 import { teamSchema } from '../../backoffice/teams/TeamEdit';
@@ -151,13 +151,11 @@ export const TeamList = () => {
             .then(team => Services.createTeam(team))
             .then(r => {
               if (r.error) {
-                toastr.error(translate('Error'), r.error)
+                toast.error(r.error)
               } else {
                 queryClient.invalidateQueries({ queryKey: ['teams'] });
-                toastr.info(
-                  translate("mailValidation.sent.title"),
-                  translate("mailValidation.sent.body"))
-                toastr.success(translate('Success'), translate({ key: "team.created.success", replacements: [data.name] }))
+                toast.info(translate("mailValidation.sent.body"))
+                toast.success(translate({ key: "team.created.success", replacements: [data.name] }))
               }
             }),
           value: newTeam
@@ -226,9 +224,9 @@ export const TeamList = () => {
                   .then(teamToUpdate => Services.updateTeam(teamToUpdate))
                   .then(r => {
                     if (r.error) {
-                      toastr.error(translate('Error'), r.error)
+                      toast.error(r.error)
                     } else {
-                      toastr.success(translate('Success'), translate({ key: "team.updated.success", replacements: [team.name] }))
+                      toast.success(translate({ key: "team.updated.success", replacements: [team.name] }))
                       queryClient.invalidateQueries({ queryKey: ['teams'] });
                     }
                   })

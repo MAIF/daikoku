@@ -1,12 +1,10 @@
-import { ReactNode } from 'react';
-import { useSelector } from 'react-redux';
-import { useDispatch } from 'react-redux';
+import { ReactNode, useContext } from 'react';
 
+import { toast } from 'sonner';
 import { Option } from '..';
-import { setError } from '../../../core';
+import { I18nContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import {
-  IState,
-  IStateContext,
   ITeamSimple,
   ITenant,
   IUserSimple,
@@ -14,7 +12,7 @@ import {
   TeamUser
 } from '../../../types';
 import { doNothing } from './actions';
-import { permissions, TPermission, TPermissions } from './permissions';
+import { TPermission, TPermissions, permissions } from './permissions';
 import { tenant } from './subjects';
 
 export const CanIDoAction = (
@@ -78,15 +76,16 @@ export const Can = ({
   orElse?: JSX.Element;
   whichOne?: ITenant;
 }): JSX.Element => {
-  const dispatch = useDispatch();
-  const {connectedUser, isTenantAdmin, tenant} = useSelector<IState, IStateContext>(s => s.context)
+  const { connectedUser, isTenantAdmin, tenant } = useContext(GlobalContext);
+  const { translate } = useContext(I18nContext);
 
   const authorized = teams
     ? CanIDoActionForOneOfTeams(connectedUser, I, a, teams)
     : CanIDoAction(connectedUser, I, a, team, isTenantAdmin, whichOne || tenant, tenant);
   if (!authorized) {
     if (dispatchError) {
-      dispatch(setError({ error: { status: 401, message: 'unauthorized', from: 'CAN component' } }));
+      toast.error(translate('Unauthorized'))
+      return orElse; //FIXME [#609]
     }
     return orElse;
   }

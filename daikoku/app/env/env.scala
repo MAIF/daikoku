@@ -15,6 +15,7 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._
 import io.vertx.pgclient.PgPool
+import org.apache.pekko.Done
 import org.joda.time.DateTime
 import play.api.ApplicationLoader.Context
 import play.api.i18n.MessagesApi
@@ -41,6 +42,9 @@ object DaikokuMode {
 
   case object Dev extends DaikokuMode {
     def name = "Dev"
+  }
+  case object Test extends DaikokuMode {
+    def name = "Test"
   }
 
 }
@@ -154,6 +158,7 @@ class Config(val underlying: Configuration) {
   lazy val mode: DaikokuMode =
     underlying.getOptional[String]("daikoku.mode").map(_.toLowerCase) match {
       case Some("dev") => DaikokuMode.Dev
+      case Some("test") => DaikokuMode.Test
       case _           => DaikokuMode.Prod
     }
 
@@ -175,7 +180,7 @@ class Config(val underlying: Configuration) {
   lazy val tenantJwtVerifier: JWTVerifier =
     JWT.require(tenantJwtAlgo).acceptLeeway(10).build()
 
-  lazy val isProd: Boolean = mode == DaikokuMode.Prod
+  lazy val isProd: Boolean = mode == DaikokuMode.Prod || mode == DaikokuMode.Test
   lazy val isDev: Boolean = mode == DaikokuMode.Dev
   lazy val tenantProvider: TenantProvider = underlying
     .getOptional[String]("daikoku.tenants.provider")
@@ -284,6 +289,8 @@ sealed trait Env {
   ): Seq[EssentialFilter]
 
   def getDaikokuUrl(tenant: Tenant, path: String): String
+
+  def initDatastore()(implicit ec: ExecutionContext): Future[Done]
 }
 
 class DaikokuEnv(
@@ -353,60 +360,56 @@ class DaikokuEnv(
       }
   }
 
-  override def onStartup(): Unit = {
-
-    implicit val ec: ExecutionContext = defaultExecutionContext
-
-    def tryToInitDatastore(): Future[Unit] = {
-      dataStore.isEmpty().map {
-        case true =>
-          (dataStore match {
-            case store: PostgresDataStore => store.checkDatabase()
-            case _                        => FastFuture.successful(None)
-          }).map { _ =>
-            config.init.data.from match {
-              case Some(path)
-                  if path.startsWith("http://") || path
-                    .startsWith("https://") =>
-                AppLogger.warn(
-                  s"Main dataStore seems to be empty, importing from $path ..."
-                )
-                implicit val ec: ExecutionContext = defaultExecutionContext
-                implicit val env: DaikokuEnv = this
-                val initialDataFu = wsClient
-                  .url(path)
-                  .withHttpHeaders(config.init.data.headers.toSeq: _*)
-                  .withMethod("GET")
-                  .withRequestTimeout(10.seconds)
-                  .get()
-                  .flatMap {
-                    case resp if resp.status == 200 =>
-                      dataStore.importFromStream(resp.bodyAsSource)
-                    case resp =>
-                      FastFuture.failed(
-                        new RuntimeException(
-                          s"Bad response from $path: ${resp.status} - ${resp.body}"
-                        )
+  override def initDatastore()(implicit ec: ExecutionContext): Future[Done] = {
+    def run(isEmpty: Boolean): Future[Unit] = {
+      if (isEmpty) {
+        (dataStore match {
+          case store: PostgresDataStore => store.checkDatabase()
+          case _ => FastFuture.successful(None)
+        }).map { _ =>
+          config.init.data.from match {
+            case Some(path)
+              if path.startsWith("http://") || path
+                .startsWith("https://") =>
+              AppLogger.warn(
+                s"Main dataStore seems to be empty, importing from $path ..."
+              )
+              implicit val ec: ExecutionContext = defaultExecutionContext
+              implicit val env: DaikokuEnv = this
+              val initialDataFu = wsClient
+                .url(path)
+                .withHttpHeaders(config.init.data.headers.toSeq: _*)
+                .withMethod("GET")
+                .withRequestTimeout(10.seconds)
+                .get()
+                .flatMap {
+                  case resp if resp.status == 200 =>
+                    dataStore.importFromStream(resp.bodyAsSource)
+                  case resp =>
+                    FastFuture.failed(
+                      new RuntimeException(
+                        s"Bad response from $path: ${resp.status} - ${resp.body}"
                       )
-                  }
-                Await.result(initialDataFu, 10 seconds)
-              case Some(path) =>
-                AppLogger.warn(
-                  s"Main dataStore seems to be empty, importing from $path ..."
-                )
-                implicit val ec: ExecutionContext = defaultExecutionContext
-                implicit val env: DaikokuEnv = this
-                val initialDataFu =
-                  dataStore.importFromStream(FileIO.fromPath(Paths.get(path)))
-                Await.result(initialDataFu, 10 seconds)
-              case _ =>
-                import fr.maif.otoroshi.daikoku.domain._
-                import fr.maif.otoroshi.daikoku.login._
-                import fr.maif.otoroshi.daikoku.utils.StringImplicits._
-                import org.mindrot.jbcrypt.BCrypt
-                import play.api.libs.json._
+                    )
+                }
+              Await.result(initialDataFu, 10 seconds)
+            case Some(path) =>
+              AppLogger.warn(
+                s"Main dataStore seems to be empty, importing from $path ..."
+              )
+              implicit val ec: ExecutionContext = defaultExecutionContext
+              implicit val env: DaikokuEnv = this
+              val initialDataFu =
+                dataStore.importFromStream(FileIO.fromPath(Paths.get(path)))
+              Await.result(initialDataFu, 10 seconds)
+            case _ =>
+              import fr.maif.otoroshi.daikoku.domain._
+              import fr.maif.otoroshi.daikoku.login._
+              import fr.maif.otoroshi.daikoku.utils.StringImplicits._
+              import org.mindrot.jbcrypt.BCrypt
+              import play.api.libs.json._
 
-                import scala.concurrent._
+              import scala.concurrent._
 
                 AppLogger.warn("")
                 AppLogger.warn(
@@ -525,36 +528,47 @@ class DaikokuEnv(
                   _ <- dataStore.userRepo.save(user)
                 } yield ()
 
-                Await.result(initialDataFu, 10 seconds)
-                AppLogger.warn("")
-                AppLogger.warn(
-                  s"You can log in with admin@daikoku.io / ${config.init.admin.password}"
-                )
-                AppLogger.warn("")
-                AppLogger.warn(
-                  "Please avoid using the default tenant for anything else than configuring Daikoku"
-                )
-                AppLogger.warn("")
-            }
+              Await.result(initialDataFu, 10 seconds)
+              AppLogger.warn("")
+              AppLogger.warn(
+                s"You can log in with admin@daikoku.io / ${config.init.admin.password}"
+              )
+              AppLogger.warn("")
+              AppLogger.warn(
+                "Please avoid using the default tenant for anything else than configuring Daikoku"
+              )
+              AppLogger.warn("")
           }
-        case false =>
-          (dataStore match {
-            case store: PostgresDataStore => store.checkDatabase()
-            case _                        => FastFuture.successful(None)
-          }).flatMap { _ =>
-            evolutions.run(dataStore, new OtoroshiClient(this))
-          }
+        }
+      } else {
+        dataStore match {
+          case store: PostgresDataStore => store.checkDatabase()
+          case _ => FastFuture.successful(None)
+        }
       }
     }
+
+    for {
+      isEmpty <- dataStore.isEmpty()
+      _ <- run(isEmpty)
+      done <- evolutions.run(dataStore, new OtoroshiClient(this))
+    } yield {
+      done
+    }
+  }
+
+  override def onStartup(): Unit = {
+
+    implicit val ec: ExecutionContext = defaultExecutionContext
 
     dataStore.start()
 
     Source
       .tick(1.second, 5.seconds, ())
       .mapAsync(1) { _ =>
-        tryToInitDatastore().transform {
+        initDatastore().transform {
           case Success(_) => Success(true)
-          case Failure(e) => Success(false)
+          case Failure(_) => Success(false)
         }
       }
       .filter(v => v)

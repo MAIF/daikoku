@@ -1,15 +1,13 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { useSelector} from 'react-redux';
-import moment, {Moment} from 'moment';
-import { useNavigate } from 'react-router-dom';
+import { getApolloContext } from "@apollo/client";
 import classNames from 'classnames';
+import moment, { Moment } from 'moment';
+import { useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
-import {OtoroshiStatsVizualization, renderPlanInfo} from '../../utils';
-import { GlobalDataConsumption, Can, read, stat, formatPlanType } from '../../utils';
-import { I18nContext } from '../../../core';
-import {IApi, IGlobalInformations, ITeamSimple, IUsagePlan} from '../../../types';
-import {getApolloContext} from "@apollo/client";
+import { IApi, IGlobalInformations, ITeamSimple, IUsagePlan } from '../../../types';
+import { Can, GlobalDataConsumption, OtoroshiStatsVizualization, formatPlanType, read, renderPlanInfo, stat } from '../../utils';
 
 
 type IgqlConsumption = {
@@ -48,10 +46,16 @@ const sumGlobalInformations = (data: Array<IgqlConsumption>) => data
     return acc;
   }, {});
 
+type TeamApiConsumptionProps = {
+  api: IApi,
+  apiGroup?: boolean,
+  currentTeam: ITeamSimple
+}
 export const TeamApiConsumption = ({
   api,
-  apiGroup
-}: any) => {
+  apiGroup,
+  currentTeam
+}: TeamApiConsumptionProps) => {
   const [state] = useState({
     consumptions: null,
     period: {
@@ -61,7 +65,6 @@ export const TeamApiConsumption = ({
   });
   const { client } = useContext(getApolloContext());
 
-  const { currentTeam } = useSelector((state) => (state as any).context);
   const navigate = useNavigate();
 
   const { translate } = useContext(I18nContext);

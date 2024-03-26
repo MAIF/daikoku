@@ -901,9 +901,10 @@
   "team_member.invit_user": "Inviter un collaborateur",
   "team_member.invite_user_to": "Inviter un collaborateur dans",
   "team_member.send_email": "Envoyer l'invitation",
-  "team_member.invitation": "Rejoindre %s",
+  "team_member.invitation": "L'équipe %s vous a invité à la rejoindre, veuillez d'abord créer un compte puis accepter l'invitation dans votre centre de notification.",
+  "team_member.invitation.decline.successful": "Invitation refusée avec succès",
   "team_member.accept_invitation": "Accepter",
-  "team_member.refuse_invitation": "Refuser",
+  "team_member.refuse_invitation": "Décliner",
   "team_member.has_joined": "Vous avez rejoint l'équipe",
   "team_member.missing_token": "Jeton manquant",
   "login_page.register_message": "Nouveau sur %s ?",
@@ -1375,6 +1376,9 @@
   "constraints.plan.custom-name.one-of.environment": "Le nom du plan doit correspondre à l'un des environnements disponibles",
   "aggregated.apikey.badge.title": "Clé d'API aggrégée",
   "aggregated.apikey.badge.apikey.name": "Nom personnalisée de la clé",
-  "apisubscription.lastUsage.label": "Last usage",
-  "N/A": "N/A"
+  "apisubscription.lastUsage.label": "Dernier usage",
+  "N/A": "N/A",
+  "semver.error.message": "Une version ne peut pas être créée avec des caractère spéciaux : %s",
+  "version.creation.success.message": "La nouvelle version de l'API a été créée avec succès",
+  "error.message.creation.security.enabled": "Vous n'êtes pas authorisé a créer d'API, merci de contacter votre administrateur."
 }

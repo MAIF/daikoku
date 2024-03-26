@@ -1,26 +1,32 @@
 import { getApolloContext } from '@apollo/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import difference from 'lodash/difference';
 import find from 'lodash/find';
 import React, { useContext, useEffect } from 'react';
-import { useSelector } from 'react-redux';
 import { Link, useMatch, useNavigate } from 'react-router-dom';
 
-import { ModalContext } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext, ModalContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { currencies } from '../../../services/currencies';
 import {
-  IApi, IBaseUsagePlan, isError,
-  isMiniFreeWithQuotas, IState, IStateContext, ISubscription,
-  ISubscriptionDemand, ISubscriptionWithApiInfo, isValidationStepTeamAdmin,
-  ITeamSimple, IUsagePlan
+  IApi, IBaseUsagePlan,
+  ISubscription,
+  ISubscriptionDemand, ISubscriptionWithApiInfo,
+  ITeamSimple, IUsagePlan,
+  isError,
+  isMiniFreeWithQuotas,
+  isValidationStepTeamAdmin
 } from '../../../types';
 import {
+  Can,
+  Option,
+  Spinner,
   access,
-  apikey, Can, isPublish, isSubscriptionProcessIsAutomatic,
-  Option, queryClient, renderPlanInfo, renderPricing, Spinner
+  apikey,
+  isPublish, isSubscriptionProcessIsAutomatic,
+  renderPlanInfo, renderPricing
 } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
 import { ApiDocumentation } from './ApiDocumentation';
@@ -50,7 +56,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
   const { openFormModal, openLoginOrRegisterModal, openApiKeySelectModal, openCustomModal, close } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
-  const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context)
+  const { connectedUser, tenant } = useContext(GlobalContext)
 
   const showApiKeySelectModal = (team: string) => {
     const { plan } = props;
@@ -342,7 +348,9 @@ type ApiPricingProps = {
 }
 
 export const ApiPricing = (props: ApiPricingProps) => {
+  const queryClient = useQueryClient();
   const usagePlansQuery = useQuery({ queryKey: ['plans', props.api.currentVersion], queryFn: () => Services.getVisiblePlans(props.api._id, props.api.currentVersion) })
+
 
   const match = useMatch('/:team/:api/:version/pricing/:env/:tab')
 

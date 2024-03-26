@@ -1,7 +1,7 @@
 import { useContext, useEffect, useState } from 'react';
 import Select from 'react-select';
 
-import { I18nContext } from '../../core';
+import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
 import { IApi, IUsagePlan, isError } from '../../types';
 import { IBaseModalProps } from './types';

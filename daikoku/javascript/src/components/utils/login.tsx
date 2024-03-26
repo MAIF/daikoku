@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import * as Services from '../../services/index';
-import { I18nContext } from '../../core';
+import { I18nContext } from '../../contexts';
 
 export function LoginPage(props: any) {
   const { Translation, translate } = useContext(I18nContext);
