@@ -64,11 +64,11 @@ jobs:
         NODE_OPTIONS: --max_old_space_size=4096
 
     - name: Install Playwright Browsers
-      run: npx playwright install --with-deps
+      run: npx playwright install --with-deps chromium
     - name: start backend
       run: |
         cd daikoku
-        sbt "bgRun -Dhttp.port=9000 -Ddaikoku.storage=postgres -Ddaikoku.postgres.database=daikoku_test -Ddaikoku.postgres.user=postgres -Ddaikoku.init.data.from=javascript/cypress/cypress-test-export.ndjson"
+        sbt "bgRun -Ddaikoku.mode=test -Dhttp.port=9000 -Ddaikoku.storage=postgres -Ddaikoku.postgres.database=daikoku_test -Ddaikoku.postgres.user=postgres -Ddaikoku.init.data.from=javascript/cypress/cypress-test-export.ndjson"
     - name: Run tests
       run: |
         cd daikoku/javascript
