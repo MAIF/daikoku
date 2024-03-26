@@ -103,7 +103,6 @@ class TeamAssetsController(
                 ctx.request.body
               )(cfg)
               .map { res =>
-                println(res)
                 Ok(Json.obj("done" -> true, "id" -> assetId.value))
               } recover {
               case e: fr.maif.otoroshi.daikoku.utils.BadFileContentFromContentType =>
