@@ -1,4 +1,4 @@
-name: Cypress tests
+name: Playwright tests
 on: 
   push:
     paths:

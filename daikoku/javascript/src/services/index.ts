@@ -1007,8 +1007,7 @@ function updateQueryStringParameter(uri, key, value) {
   }
 }
 
-export const login = (username: any, password: any, action: any, redirect?: string) => {
-export const login = (username: string, password: string, action: string) => {
+export const login = (username: string, password: string, action: string, redirect?: string) => {
   const body = new URLSearchParams();
   body.append('username', username);
   body.append('password', password);
