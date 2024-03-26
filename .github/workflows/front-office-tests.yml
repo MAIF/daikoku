@@ -8,8 +8,8 @@ on:
   workflow_dispatch:
   
 jobs:
-  cypress-run:
-    name: Cypress run
+  playwright-run:
+    name: playwright run
     runs-on: ubuntu-latest
 
     services:
@@ -70,5 +70,6 @@ jobs:
         cd daikoku
         sbt "bgRun -Dhttp.port=9000 -Ddaikoku.storage=postgres -Ddaikoku.postgres.database=daikoku_test -Ddaikoku.postgres.user=postgres -Ddaikoku.init.data.from=javascript/cypress/cypress-test-export.ndjson"
     - name: Run tests
-      run: npx playwright test --project chromium
-      working-directory: ./daikoku/javascripts
+      run: |
+        cd daikoku/javascript
+        npx playwright test --project chromium
