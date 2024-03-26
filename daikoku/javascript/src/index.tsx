@@ -78,16 +78,16 @@ export function init(
         </QueryClientProvider>
       </ApolloProvider>
     </Provider>,
-    
+
   );
 }
 
-export function login(provider: any, callback: any, tenant: any) {
+export function login(provider: any, callback: any, tenant: any, redirect?: string) {
   const storeInst = store({ tenant });
   ReactDOM.render(
     <Provider store={storeInst}>
       <I18nProvider tenant={tenant}>
-        <LoginPage provider={provider} action={callback} tenant={tenant} method="post" />
+        <LoginPage provider={provider} action={callback} tenant={tenant} redirect={redirect} method="post" />
       </I18nProvider>
     </Provider>,
     document.getElementById('app')

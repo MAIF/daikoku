@@ -1,6 +1,6 @@
 import { Form, constraints, format, type } from '@maif/react-forms';
 import { md5 } from 'js-md5';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { toastr } from 'react-redux-toastr';
 
@@ -293,6 +293,10 @@ export const MyProfile = () => {
   const [user, setUser] = useState();
   const [tab, setTab] = useState('infos');
 
+  const [token, setToken] = useState("");
+
+  const [copiedTimeout, setCopiedTimeout] = useState<any>()
+
   const tenant = useSelector<IState, ITenant>((state) => state.context.tenant);
   const dispatch = useDispatch();
 
@@ -376,6 +380,12 @@ export const MyProfile = () => {
         if (user.defaultLanguage && user.defaultLanguage !== language)
           setLanguage(user.defaultLanguage);
       });
+
+    return () => {
+      if (copiedTimeout) {
+        clearTimeout(copiedTimeout)
+      }
+    }
   }, []);
 
   const save = (data: any) => {
@@ -420,6 +430,31 @@ export const MyProfile = () => {
     });
   };
 
+  const resetToken = (copy) => {
+    let rawUser: any = user;
+    fetch(`/api/users/${rawUser._id as string}/session`, {
+      credentials: 'include'
+    })
+      .then(r => r.json())
+      .then(data => {
+        setToken(data.token);
+
+        if (copy)
+          copyToken()
+      })
+  }
+
+  const copyToken = () => {
+    if (navigator.clipboard && window.isSecureContext && !copiedTimeout) {
+      navigator.clipboard.writeText(`daikokucli login --token=${token}`);
+
+      setCopiedTimeout(setTimeout(() => {
+        console.log('here')
+        setCopiedTimeout(null)
+      }, 1500))
+    }
+  }
+
   return (
     <div className="container-fluid">
       <div className="row">
@@ -438,6 +473,17 @@ export const MyProfile = () => {
               onClick={() => setTab('security')}
             >
               <Translation i18nkey="Security">AccountSecurity</Translation>
+            </span>
+          </li>
+          <li className="nav-item">
+            <span
+              className={`nav-link cursor-pointer ${tab === 'cms_cli' ? 'active' : ''}`}
+              onClick={() => {
+                resetToken(undefined)
+                setTab('cms_cli')
+              }}
+            >
+              <Translation i18nkey="CMS CLI">CMS CLI</Translation>
             </span>
           </li>
         </ul>
@@ -517,6 +563,40 @@ export const MyProfile = () => {
             </div>
           </div>
         )}
+
+        {tab === "cms_cli" && <div>
+          <textarea
+            readOnly
+            rows={4}
+            className="form-control input-sm" value={`daikokucli login --token=${token}`} />
+          <div className='d-flex align-items-center mt-3' style={{ gap: '.25rem' }}>
+            <button
+              type="button"
+              className="btn btn-sm btn-access-negative m-1"
+              onClick={resetToken}
+            >
+              Reset token
+            </button>
+            <button
+              type="button"
+              disabled={copiedTimeout}
+              className="btn btn-sm btn-access-negative m-1"
+              onClick={copyToken}
+            >
+              {copiedTimeout ? <span>
+                <Translation i18nkey="profile.cmscli.paste">
+                  Copied
+                </Translation>
+                <i className='fas fa-paste ms-1' />
+              </span> : <span>
+                <Translation i18nkey="profile.cmscli.copy">
+                  Copy
+                </Translation>
+                <i className='fas fa-copy ms-1' />
+              </span>}
+            </button>
+          </div>
+        </div>}
       </div>
     </div>
   );

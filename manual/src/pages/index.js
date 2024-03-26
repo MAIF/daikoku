@@ -35,7 +35,7 @@ function HeroBanner() {
           <Link className="button button--primary" to="/docs/getstarted">
             Get Started
           </Link>
-          <Link className="button button--info" to="/docs/usages">
+          <Link className="button button--info" to="/docs/usages" style={{ marginLeft: '1rem' }}>
             Documentation
           </Link>
           <span className={styles.indexCtasGitHubButtonWrapper}>

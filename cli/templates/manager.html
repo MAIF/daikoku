@@ -1,0 +1,172 @@
+<style>
+    @import url('https://cdn.jsdelivr.net/npm/@xz/fonts@1/serve/inter.css');
+
+
+    html,
+    body {
+        padding: 0;
+        margin: 0;
+    }
+
+    h1 {
+        padding-left: .5rem;
+        margin: .25rem 0;
+    }
+
+    #main {
+        display: flex;
+        height: 100dvh;
+        min-height: 100vh;
+    }
+
+    .pages * {
+        font-family: inter, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
+    }
+
+    .pages {
+        display: flex;
+        flex-direction: column;
+        background-color: #eee;
+        min-width: 250px;
+
+        border-right: 2px solid #ddd;
+    }
+
+    textarea,
+    iframe {
+        flex: 1;
+        border: none;
+    }
+
+    .section {
+        background: rgb(221, 221, 221);
+        color: rgb(0, 0, 0);
+        font-weight: bold;
+        margin-bottom: 0.25rem;
+    }
+
+    .section span {
+        padding: .25rem 0;
+        padding-left: 1rem;
+        display: inline-block;
+    }
+
+    .section-pages {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .section-pages a {
+        padding: 0.5rem;
+        padding-left: 1rem;
+    }
+
+    .section-pages a:hover {
+        background-color: #ddd;
+    }
+
+    a,
+    button {
+        box-sizing: border-box;
+        border-radius: 0;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        padding-bottom: .25rem;
+        cursor: pointer;
+        background: #eee;
+        border: none;
+        text-decoration: none;
+        color: #000;
+        font-weight: 400;
+        font-size: .85rem;
+    }
+
+    .components {
+        display: flex;
+        flex-direction: column;
+        overflow-y: scroll;
+    }
+</style>
+<script defer>
+    document.addEventListener("DOMContentLoaded", (event) => {
+
+        let pages = JSON.parse('{{components}}');
+
+        function insert(tree, paths, value) {
+            if (paths.length === 1) {
+                return {
+                    ...tree,
+                    src: [
+                        ...(tree.src || []),
+                        value
+                    ]
+                }
+            } else if (paths.length === 2) {
+                const section = value.path.split("/")[0].length === 0 ? value.path : `/${value.path.split("/")[0]}`;
+                return {
+                    ...tree,
+                    [section]: [
+                        ...(tree[section] || []),
+                        value
+                    ]
+                }
+            } else {
+                return {
+                    ...tree,
+                    [paths[0]]: insert(tree, paths.slice(1), value)
+                }
+            }
+        }
+
+        function uppercaseFirstLetter(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        const sections = pages.reduce((acc, page) => {
+            const paths = page.path.split('/');
+
+            return insert(acc, paths, page);
+        }, {});
+
+        console.log(pages)
+        console.log(Object
+            .entries(sections)
+            .sort((a, b) => a[0] < b[0] ? -1 : 1))
+        
+        const components = document.getElementById("components")
+
+        Object
+            .entries(sections)
+            .sort((a, b) => a[0] < b[0] ? -1 : 1)
+            .map(([section, pages]) => {
+                const div = document.createElement('div');
+
+                div.innerHTML = `<div>
+                    <div class="section">
+                        <span>${uppercaseFirstLetter(section)}</span>
+                    <div>
+
+                    <div class="section-pages">
+                        ${pages
+                            .map(page => ({
+                                ...page,
+                                path: page.path.startsWith('/') ? page.path : `/${page.path}`
+                            }))
+                            .map(page => `<a href="${page.path}?root_source"">${page.name}</a>`).join('')}
+                    </div>
+                </div>`
+                components.appendChild(div);
+            })
+
+    });
+</script>
+<div id="main">
+    <div class="pages">
+        <h1>Pages</h1>
+        <div class="components" id="components">
+
+        </div>
+    </div>
+    {{children}}
+</div>

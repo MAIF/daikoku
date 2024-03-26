@@ -98,7 +98,8 @@ libraryDependencies ++= Seq(
   ),
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.15.3",
   "org.apache.logging.log4j" % "log4j-api" % "2.19.0",
-  "com.github.blemale" %% "scaffeine" % "5.2.1"
+  "com.github.blemale" %% "scaffeine" % "5.2.1",
+  "com.github.slugify" % "slugify" % "3.0.6"
 )
 
 dependencyOverrides += "io.netty" % "netty-handler" % "4.1.100.Final"

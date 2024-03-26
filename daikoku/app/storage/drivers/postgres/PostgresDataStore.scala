@@ -202,6 +202,19 @@ case class PostgresTenantCapableCmsPageRepo(
   override def repo(): PostgresRepo[CmsPage, CmsPageId] = _repo()
 }
 
+case class PostgresTenantCapableAssetRepo(
+    _repo: () => PostgresRepo[Asset, AssetId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[Asset, AssetId]
+) extends PostgresTenantCapableRepo[Asset, AssetId]
+    with AssetRepo {
+  override def tenantRepo(
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[Asset, AssetId] =
+    _tenantRepo(tenant)
+
+  override def repo(): PostgresRepo[Asset, AssetId] = _repo()
+}
+
 case class PostgresTenantCapableOperationRepo(
     _repo: () => PostgresRepo[Operation, DatastoreId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[Operation, DatastoreId]
@@ -398,7 +411,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     "operations" -> true,
     "subscription_demands" -> true,
     "step_validators" -> true,
-    "usage_plans" -> true
+    "usage_plans" -> true,
+    "assets" -> true
   )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
@@ -560,6 +574,11 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       () => new PostgresCmsPageRepo(env, reactivePg),
       t => new PostgresTenantCmsPageRepo(env, reactivePg, t)
     )
+  private val _assetRepo: AssetRepo =
+    PostgresTenantCapableAssetRepo(
+      () => new PostgresAssetRepo(env, reactivePg),
+      t => new PostgresTenantAssetRepo(env, reactivePg, t)
+    )
   private val _evolutionRepo: EvolutionRepo =
     new PostgresEvolutionRepo(env, reactivePg)
 
@@ -626,6 +645,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
   override def messageRepo: MessageRepo = _messageRepo
 
   override def cmsRepo: CmsPageRepo = _cmsPageRepo
+
+  override def assetRepo: AssetRepo = _assetRepo
 
   override def evolutionRepo: EvolutionRepo = _evolutionRepo
 
@@ -760,6 +781,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       operationRepo.forAllTenant(),
       emailVerificationRepo.forAllTenant(),
       cmsRepo.forAllTenant(),
+      assetRepo.forAllTenant(),
       stepValidatorRepo.forAllTenant(),
       subscriptionDemandRepo.forAllTenant(),
       usagePlanRepo.forAllTenant()
@@ -878,6 +900,10 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
               cmsRepo
                 .forAllTenant()
                 .save(json.CmsPageFormat.reads(payload).get)
+            case ("assets", payload) =>
+              assetRepo
+                .forAllTenant()
+                .save(json.AssetFormat.reads(payload).get)
             case ("emailverifications", payload) =>
               emailVerificationRepo
                 .forAllTenant()
@@ -1068,6 +1094,22 @@ class PostgresTenantCmsPageRepo(
   override def extractId(value: CmsPage): String = value.id.value
 }
 
+class PostgresTenantAssetRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[Asset, AssetId](
+      env,
+      reactivePg,
+      tenant
+    ) {
+  override def tableName: String = "assets"
+
+  override def format: Format[Asset] = json.AssetFormat
+
+  override def extractId(value: Asset): String = value.id.value
+}
+
 class PostgresTenantApiSubscriptionRepo(
     env: Env,
     reactivePg: ReactivePg,
@@ -1243,6 +1285,15 @@ class PostgresCmsPageRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[CmsPage] = json.CmsPageFormat
 
   override def extractId(value: CmsPage): String = value.id.value
+}
+
+class PostgresAssetRepo(env: Env, reactivePg: ReactivePg)
+    extends PostgresRepo[Asset, AssetId](env, reactivePg) {
+  override def tableName: String = "cmspages"
+
+  override def format: Format[Asset] = json.AssetFormat
+
+  override def extractId(value: Asset): String = value.id.value
 }
 
 class PostgresOperationRepo(env: Env, reactivePg: ReactivePg)

@@ -1,21 +1,17 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.github.blemale.scaffeine.{Cache, Scaffeine}
 import com.nimbusds.jose.util.StandardCharset
 import daikoku.BuildInfo
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuActionMaybeWithoutUserContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{DaikokuAdminOrSelf, TenantAdminOnly}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.sync.TeamMemberOnly
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.CmsPageFormat
+import fr.maif.otoroshi.daikoku.domain.json.{CmsFileFormat, CmsPageFormat, CmsRequestRenderingFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator, diff_match_patch}
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json._
@@ -25,8 +21,8 @@ import java.io.{ByteArrayOutputStream, File, FileInputStream, FileOutputStream}
 import java.util
 import java.util.concurrent.TimeUnit
 import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream}
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
+import scala.concurrent.{ExecutionContext, Future}
 
 class HomeController(
     DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
@@ -186,25 +182,27 @@ class HomeController(
     else {
       var matched = false
 
+      val init: Seq[(Array[String], CmsPage)] = cmsPaths
+        .map(r =>
+          (
+            r._1.replace("/_/", "").split("/") ++ Array(
+              if (r._2.exact) "" else "*"
+            ),
+            r._2
+          )
+        )
+        .map(p => (p._1.filter(_.nonEmpty), p._2))
+        .filter(p => p._1.nonEmpty);
+
       paths
         .foldLeft(
-          cmsPaths
-            .map(r =>
-              (
-                r._1.replace("/_/", "").split("/") ++ Array(
-                  if (r._2.exact) "" else "*"
-                ),
-                r._2
-              )
-            )
-            .map(p => (p._1.filter(_.nonEmpty), p._2))
-            .filter(p => p._1.nonEmpty)
+          init
         ) { (paths, path) =>
           {
             if (paths.isEmpty || matched)
               paths
             else {
-              val matchingRoutes = paths.filter(p =>
+              val matchingRoutes: Seq[(Array[String], CmsPage)] = paths.filter(p =>
                 p._1.nonEmpty && (p._1.head == path || p._1.head == "*")
               )
               if (matchingRoutes.nonEmpty)
@@ -224,8 +222,32 @@ class HomeController(
     }
   }
 
-  def cmsPageByPath(path: String) =
-    DaikokuActionMaybeWithoutUser.async { ctx =>
+  def renderCmsPageFromBody(path: String) = DaikokuActionMaybeWithoutUser.async(parse.json) { ctx =>
+      val req = ctx.request.body.as[JsObject].as(CmsRequestRenderingFormat)
+
+      val currentPage = req.content.find(_.path() == req.current_page)
+
+      currentPage match {
+        case Some(r) if r.authenticated() && (ctx.user.isEmpty || ctx.user.exists(_.isGuest)) => redirectToLoginPage(ctx)
+        case Some(r) if !r.visible() => cmsPageNotFound(ctx)
+        case Some(page) => render(ctx, page.toCmsPage(ctx.tenant.id), Some(req))
+        case None => cmsPageNotFound(ctx)
+      }
+    }
+
+  private def renderCmsPage[A](ctx: DaikokuActionMaybeWithoutUserContext[A], page: Option[CmsPage]) = {
+    page match {
+      case Some(r)
+        if r.authenticated && (ctx.user.isEmpty || ctx.user
+          .exists(_.isGuest)) =>
+        redirectToLoginPage(ctx)
+      case Some(r) => render(ctx, r)
+      case None => cmsPageNotFound(ctx)
+    }
+  }
+
+  def cmsPageByPath(path: String, page: Option[CmsPage] = None) =
+    DaikokuActionMaybeWithoutUser.async { ctx: DaikokuActionMaybeWithoutUserContext[AnyContent] =>
       val actualPath = if (path.startsWith("/")) {
         path
       } else {
@@ -279,14 +301,7 @@ class HomeController(
                           .map(p => (p.path.get, p))
                       )
 
-                  page.headOption match {
-                    case Some(r)
-                        if r.authenticated && (ctx.user.isEmpty || ctx.user
-                          .exists(_.isGuest)) =>
-                      redirectToLoginPage(ctx)
-                    case Some(r) => render(ctx, r)
-                    case None    => cmsPageNotFound(ctx)
-                  }
+                  renderCmsPage(ctx, page.headOption)
                 })
             case Some(page) if !page.visible => cmsPageNotFound(ctx)
             case Some(page) if page.authenticated && ctx.user.isEmpty =>
@@ -306,7 +321,7 @@ class HomeController(
     )
 
   private def cmsPageNotFound[A](
-      ctx: DaikokuActionMaybeWithoutUserContext[A]
+                                  ctx: DaikokuActionMaybeWithoutUserContext[A]
   ): Future[Result] = {
     val optionFoundPage: Option[DaikokuStyle] = ctx.tenant.style
       .find(p => p.homePageVisible && p.notFoundCmsPage.nonEmpty)
@@ -318,7 +333,7 @@ class HomeController(
           .findById(p.notFoundCmsPage.get)
           .flatMap {
             case Some(page) =>
-              page.render(ctx).map(res => Ok(res._1).as(res._2))
+              page.render(ctx, req = None).map(res => Ok(res._1).as(res._2))
             case _ =>
               Errors.craftResponseResult(
                 "Page not found !",
@@ -341,7 +356,8 @@ class HomeController(
 
   private def render[A](
       ctx: DaikokuActionMaybeWithoutUserContext[A],
-      r: CmsPage
+      r: CmsPage,
+      req: Option[CmsRequestRendering] = None
   ) = {
     val isDraftRender: Boolean =
       ctx.request.getQueryString("draft").contains("true")
@@ -367,13 +383,13 @@ class HomeController(
       })
 
     if (isDraftRender || forceReloading)
-      r.render(ctx, None).map(res => Ok(res._1).as(res._2))
+      r.render(ctx, None, req = req).map(res => Ok(res._1).as(res._2))
     else
       cache.getIfPresent(cacheId) match {
         case Some(value) =>
           FastFuture.successful(Ok(value.content).as(value.contentType))
         case _ =>
-          r.render(ctx, None)
+          r.render(ctx, None, req = req)
             .map(res => {
               cache.put(
                 cacheId,
@@ -419,6 +435,40 @@ class HomeController(
               case None       => NotFound(Json.obj("error" -> "cms page not found"))
               case Some(page) => Ok(page.asJson)
             }
+        }
+      }
+    }
+
+  def session(userId: String) = DaikokuAction.async { ctx =>
+    DaikokuAdminOrSelf(AuditTrailEvent("@{user.name} get session"))(UserId(userId), ctx) {
+          val token = ctx.request.cookies.get("daikoku-session").map(_.value).getOrElse("")
+          FastFuture.successful(Ok(Json.obj("token" -> token)))
+        }
+    }
+
+  def sync() = DaikokuAction.async(parse.json) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent("@{user.name} sync cms project")
+      )(ctx.tenant.id.value, ctx) { (tenant, _) => {
+          val body = ctx.request.body
+
+        (for {
+            _ <- env.dataStore.cmsRepo.forTenant(tenant).deleteAll()
+          } yield {
+            Future.sequence(body
+              .as(Reads.seq(CmsFileFormat.reads))
+              .map(page => {
+                env
+                  .dataStore
+                  .cmsRepo
+                  .forTenant(tenant)
+                  .save(page.toCmsPage(ctx.tenant.id))
+              }))
+              .map(_ => NoContent)
+              .recover {
+                case e: Throwable => BadRequest(Json.obj("error" -> e.getMessage))
+              }
+            }).flatten
         }
       }
     }
@@ -667,10 +717,28 @@ class HomeController(
     "text/xml" -> "xml"
   )
 
+  def summary() = DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent("@{user.name} has download the cms summary")
+      )(ctx.tenant.id.value, ctx) { (tenant, _) =>
+        env.dataStore.cmsRepo
+          .forTenant(tenant)
+          .findAllNotDeleted()
+          .map(pages => {
+            val summary = pages.foldLeft(Json.arr()) { (acc, page) =>
+                acc ++ Json
+                  .arr(page.asJson.as[JsObject] - "draft" - "history")
+              }
+
+            Ok(summary)
+          })
+      }
+    }
+
   def download() =
     DaikokuAction.async { ctx =>
       TenantAdminOnly(
-        AuditTrailEvent("@{user.nae} has download all files of the cms")
+        AuditTrailEvent("@{user.name} has download all files of the cms")
       )(ctx.tenant.id.value, ctx) { (tenant, _) =>
         env.dataStore.cmsRepo
           .forTenant(tenant)
@@ -692,12 +760,10 @@ class HomeController(
               out.write(data, 0, data.length)
             })
 
-            val summary: JsObject = Json.obj(
-              "pages" -> pages.foldLeft(Json.arr()) { (acc, page) =>
+            val summary = pages.foldLeft(Json.arr()) { (acc, page) =>
                 acc ++ Json
                   .arr(page.asJson.as[JsObject] - "body" - "draft" - "history")
               }
-            )
 
             val sb = new StringBuilder()
             sb.append(Json.stringify(summary))
