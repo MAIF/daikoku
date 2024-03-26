@@ -1,0 +1,80 @@
+name: Build CLI
+
+on: 
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number"
+
+env:
+  CARGO_TERM_COLOR: always
+
+permissions:
+  contents: write
+
+jobs:
+  build_and_push_cli:
+    name: ${{ matrix.platform.os_name }} with rust ${{ matrix.toolchain }}
+    runs-on: ${{ matrix.platform.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - os_name: Linux-x86_64
+            os: ubuntu-20.04
+            target: x86_64-unknown-linux-gnu
+            bin: daikokucli-linux-amd64
+          - os_name: Windows-x86_64
+            os: windows-latest
+            target: x86_64-pc-windows-msvc
+            bin: daikokucli-amd64.exe
+          - os_name: macOS-x86_64
+            os: macOS-latest
+            target: x86_64-apple-darwin
+            bin: daikokucli-darwin-amd64
+          - os_name: macOS-aarch64
+            os: macOS-latest
+            target: aarch64-apple-darwin
+            bin: daikokucli-darwin-arm64
+        toolchain:
+          - stable
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build binary
+        uses: houseabsolute/actions-rust-cross@v0
+        with:
+          command: "build"
+          working-directory: "./cli"
+          target: ${{ matrix.platform.target }}
+          toolchain: ${{ matrix.toolchain }}
+          args: "--release"
+          strip: true
+      - name: Rename binary (linux and macos)
+        run: mv ./cli/target/${{ matrix.platform.target }}/release/daikokucli ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+        if: matrix.platform.os_name != 'Windows-x86_64'
+      - name: Rename binary (windows)
+        run: mv ./cli/target/${{ matrix.platform.target }}/release/daikokucli.exe ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+        if: matrix.platform.os_name == 'Windows-x86_64'
+      - name: Generate SHA-256
+        run: shasum -a 256 ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} | cut -d ' ' -f 1 > ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}.sha256
+      - name: Release binary and SHA-256 checksum to GitHub
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ inputs.version }}
+          files: |
+            ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+            ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}.sha256
+  
+  cratesio:
+      runs-on: ubuntu-latest
+      defaults:
+        run:
+          working-directory: ./cli
+      steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: cargo build --verbose --release
+      - name: Run tests
+        run: RUST_TEST_THREADS=1 cargo test --verbose
+      - name: Publish to crates.io
+        run: cargo publish --token ${{ secrets.CARGO_REGISTRY_TOKEN }} --allow-dirty
