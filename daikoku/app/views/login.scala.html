@@ -2,7 +2,7 @@
 @import fr.maif.otoroshi.daikoku.domain.Tenant
 @import fr.maif.otoroshi.daikoku.login.AuthProvider
 
-@(provider: AuthProvider, tenant: Tenant, host: String, env: Env)
+@(provider: AuthProvider, tenant: Tenant, host: String, env: Env, redirect: Option[String] = None)
 
 @customStyle = {
 @(tenant.colorTheme())
@@ -34,6 +34,7 @@
           '@(provider.name)',
           '@(fr.maif.otoroshi.daikoku.ctrls.routes.LoginController.login(provider.name).url)',
           @Html(play.api.libs.json.Json.prettyPrint(tenant.toUiPayload(env))),
+          '@(redirect)'
         )
     </script>
 }

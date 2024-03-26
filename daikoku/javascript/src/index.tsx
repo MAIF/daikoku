@@ -77,10 +77,10 @@ const ToasterComponent = () => {
   )
 }
 
-export function login(provider: any, callback: any, tenant: any) {
+export function login(provider: any, callback: any, tenant: any, redirect?: string) {
   ReactDOM.render(
     <I18nProvider tenant={tenant}>
-      <LoginPage provider={provider} action={callback} tenant={tenant} method="post" />
+      <LoginPage provider={provider} action={callback} tenant={tenant} redirect={redirect} method="post" />
     </I18nProvider>,
     document.getElementById('app')
   );

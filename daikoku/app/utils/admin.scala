@@ -1,16 +1,11 @@
 package fr.maif.otoroshi.daikoku.utils.admin
 
 import cats.data.EitherT
-import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.JWT
 import com.google.common.base.Charsets
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.domain.{Tenant, ValueType}
-import fr.maif.otoroshi.daikoku.env.{
-  Env,
-  LocalAdminApiConfig,
-  OtoroshiAdminApiConfig
-}
+import fr.maif.otoroshi.daikoku.domain.{CanJson, Tenant, ValueType}
+import fr.maif.otoroshi.daikoku.env.{Env, LocalAdminApiConfig, OtoroshiAdminApiConfig}
 import fr.maif.otoroshi.daikoku.login.TenantHelper
 import fr.maif.otoroshi.daikoku.utils.Errors
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -371,19 +366,36 @@ abstract class AdminApiController[Of, Id <: ValueType](
   def patchEntity(id: String): Action[JsValue] =
     DaikokuApiAction.async(parse.json) { ctx =>
       object JsonPatchHelpers {
+        import diffson.jsonpatch._
         import diffson.playJson.DiffsonProtocol._
-        import play.api.libs.json._
+        import diffson.lcs._
+        import diffson.playJson._
+        import diffson.jsonpatch.lcsdiff.remembering.JsonDiffDiff
 
-        def patchJson(patchOps: JsValue, document: JsValue): Option[JsValue] = {
-          val patch =
-            diffson.playJson.DiffsonProtocol.JsonPatchFormat.reads(patchOps).get
-          patch.apply(document) match {
-            case JsSuccess(value, path) => value.some
+        private def patchResponse(patchJson: JsonPatch[JsValue], document: JsValue): Either[AppError, JsValue] = {
+          patchJson.apply(document) match {
+            case JsSuccess(value, path) => Right(value)
             case JsError(errors) =>
               logger.error(s"error during patch entity : $errors")
-              None
+              val formattedErrors = errors.toVector.flatMap {
+                case (JsPath(nodes), es) =>
+                  es.map(e => e.message)
+              }
+              Left(AppError.EntityConflict(formattedErrors.mkString(",")))
           }
         }
+
+        def patchJson(patchOps: JsValue, document: JsValue): Either[AppError, JsValue] = {
+          val patch = diffson.playJson.DiffsonProtocol.JsonPatchFormat.reads(patchOps).get
+          patchResponse(patch, document)
+        }
+
+        def diffJson(sourceJson: JsValue,targetJson: JsValue): Either[AppError, JsValue] = {
+          implicit val lcs = new Patience[JsValue]
+          val diff = diffson.diff(sourceJson, targetJson)
+          patchResponse(diff, targetJson)
+        }
+
       }
 
       val fu: Future[Option[Of]] =
@@ -432,21 +444,31 @@ abstract class AdminApiController[Of, Id <: ValueType](
           )
         case Some(entity) =>
           val currentJson = toJson(entity)
-
           ctx.request.body match {
             case JsArray(_) =>
-              JsonPatchHelpers.patchJson(ctx.request.body, currentJson) match {
-                case Some(newJson) => finalizePatch(newJson)
-                case None =>
-                  AppError.InternalServerError("parsing error").renderF()
-              }
-
+              val patchedJson = JsonPatchHelpers.patchJson(ctx.request.body, currentJson)
+              patchedJson.fold(error => error.renderF(), json => finalizePatch(json))
             case JsObject(_) =>
               val newJson =
                 currentJson
                   .as[JsObject]
                   .deepMerge(ctx.request.body.as[JsObject])
-              finalizePatch(newJson)
+              fromJson(newJson) match {
+                case Left(e) =>
+                  logger.error(s"Bad $entityName format", new RuntimeException(e))
+                  Errors.craftResponseResult(
+                    s"Bad $entityName format",
+                    Results.BadRequest,
+                    ctx.request,
+                    None,
+                    env
+                  )
+                case Right(patchedEntity) =>
+                  val patchedJson = JsonPatchHelpers.diffJson(newJson, toJson(patchedEntity))
+                  patchedJson.fold(error => error.renderF(), json => finalizePatch(json))
+
+              }
+
             case _ =>
               FastFuture.successful(
                 BadRequest(

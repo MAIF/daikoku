@@ -996,14 +996,26 @@ export const checkConnection = (config: any, user?: any) =>
     body: user ? JSON.stringify({ config, user }) : JSON.stringify(config),
   });
 
+function updateQueryStringParameter(uri, key, value) {
+  const re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
+  const separator = uri.indexOf('?') !== -1 ? "&" : "?";
+  if (uri.match(re)) {
+    return uri.replace(re, '$1' + key + "=" + value + '$2');
+  }
+  else {
+    return uri + separator + key + "=" + value;
+  }
+}
+
+export const login = (username: any, password: any, action: any, redirect?: string) => {
 export const login = (username: string, password: string, action: string) => {
   const body = new URLSearchParams();
   body.append('username', username);
   body.append('password', password);
 
-  console.debug({ action })
+  const url = redirect ? updateQueryStringParameter(action, "redirect", redirect) : action;
 
-  return fetch(action, {
+  return fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',

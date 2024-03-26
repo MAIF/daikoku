@@ -93,7 +93,7 @@ export const Create = (props: any) => {
               },
             });
           else if (res.error) {
-            alert({message: res.error});
+            alert({ message: res.error });
           } else setSavePath((finalSideValue as any).path);
 
           if (onUpdatePreview) setTimeout(() => setTab(1), 100);
@@ -148,18 +148,20 @@ export const Create = (props: any) => {
     return <Spinner />;
   }
 
+  const editable = !inValue.side.metadata.from;
+
   return (
     <div className='d-flex'>
-      <Sidebar
+      {editable && <Sidebar
         setFinalValue={setFinalSideValue}
         updatePage={updatePage}
         ref={sideRef}
         savePath={savePath}
         pages={props.pages}
         setContentType={setContentType}
-        inValue={inValue.side} />
+        inValue={inValue.side} />}
       <div className="p-2 d-flex flex-column" style={{ flex: 1, overflow: 'hidden' }}>
-        <div className="d-flex align-items-center mt-2">
+        {editable && <div className="d-flex align-items-center mt-2">
           {[
             { title: translate('cms.create.draft'), id: 0, showPreview: () => setTab(0) },
             {
@@ -180,8 +182,8 @@ export const Create = (props: any) => {
               setTab(id);
             }
           }} />))}
-        </div>
-        <Body show={tab === 0} ref={bodyRef} pages={props.pages} contentType={contentType} setFinalValue={setFinalBodyValue} inValue={(inValue as any).draft} history={(inValue as any).history} publish={onPublish} />
+        </div>}
+        <Body show={tab === 0} ref={bodyRef} pages={props.pages} contentType={contentType} setFinalValue={setFinalBodyValue} inValue={(inValue as any).draft} history={(inValue as any).history} publish={onPublish} editable={editable} />
         {tab === 1 && (<iframe className="mt-3" style={{ flex: 1 }} src={`/_${savePath || '/'}?draft=true`} />)}
         {tab === 2 && (<iframe className="mt-3" style={{ flex: 1 }} src={`/_${savePath || '/'}?force_reloading=true`} />)}
       </div>

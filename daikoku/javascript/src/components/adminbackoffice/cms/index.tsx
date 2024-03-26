@@ -17,6 +17,7 @@ export interface IPage {
   path: string
   contentType: string
   lastPublishedDate: string
+  metadata: any
 }
 
 const getAllPages = () => ({
@@ -28,6 +29,7 @@ const getAllPages = () => ({
         path
         contentType
         lastPublishedDate
+        metadata
       }
     }
   `,

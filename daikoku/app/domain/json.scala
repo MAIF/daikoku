@@ -29,6 +29,7 @@ import fr.maif.otoroshi.daikoku.utils._
 import org.joda.time.DateTime
 import play.api.libs.json._
 
+import java.util
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
@@ -2182,6 +2183,9 @@ object json {
               .getOrElse(TenantDisplay.Default),
             environments = (json \ "environments")
               .asOpt[Set[String]]
+              .getOrElse(Set.empty),
+            cmsRedirections = (json \ "cmsRedirections")
+              .asOpt[Set[String]]
               .getOrElse(Set.empty)
           )
         )
@@ -2254,7 +2258,8 @@ object json {
         "thirdPartyPaymentSettings" -> SeqThirdPartyPaymentSettingsFormat
           .writes(o.thirdPartyPaymentSettings),
         "display" -> TenantDisplayFormat.writes(o.display),
-        "environments" -> JsArray(o.environments.map(JsString.apply).toSeq)
+        "environments" -> JsArray(o.environments.map(JsString.apply).toSeq),
+        "cmsRedirections" -> JsArray(o.cmsRedirections.map(JsString.apply).toSeq)
       )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
@@ -4418,6 +4423,17 @@ object json {
     override def writes(o: CmsPageId): JsValue = JsString(o.value)
   }
 
+  val AssetIdFormat = new Format[AssetId] {
+    override def reads(json: JsValue): JsResult[AssetId] =
+      Try {
+        JsSuccess(AssetId(json.as[String]))
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: AssetId): JsValue = JsString(o.value)
+  }
+
   val CmsHistoryFormat = new Format[CmsHistory] {
     override def writes(o: CmsHistory): JsValue =
       Json.obj(
@@ -4433,6 +4449,64 @@ object json {
           date = (o \ "date").as(DateTimeFormat),
           diff = (o \ "diff").as[String],
           user = (o \ "user").as(UserIdFormat)
+        )
+      } match {
+        case Failure(exception) => JsError(exception.getMessage)
+        case Success(page)      => JsSuccess(page)
+      }
+  }
+
+
+  val CmsFileFormat = new Format[CmsFile] {
+    override def writes(o: CmsFile): JsValue =
+      Json.obj(
+        "name" -> o.name,
+        "content" -> o.content,
+        "metadata" -> o.metadata
+      )
+    override def reads(json: JsValue): JsResult[CmsFile] =
+      Try {
+        CmsFile(
+          name = (json \ "name").as[String],
+          content = (json \ "content").as[String],
+          metadata = (json \ "metadata").asOpt[Map[String, JsValue]].getOrElse(Map.empty))
+      } match {
+        case Failure(exception) => JsError(exception.getMessage)
+        case Success(page)      => JsSuccess(page)
+      }
+  }
+
+  val CmsRequestRenderingFormat = new Format[CmsRequestRendering] {
+    override def writes(o: CmsRequestRendering): JsValue =
+      Json.obj(
+        "content" -> o.content.map(CmsFileFormat.writes),
+        "current_page" -> o.current_page
+      )
+    override def reads(json: JsValue): JsResult[CmsRequestRendering] =
+      Try {
+        CmsRequestRendering(
+          content = (json \ "content").as(Reads.seq(CmsFileFormat.reads)),
+          current_page = (json \ "current_page").as[String]
+        )
+      } match {
+        case Failure(exception) => JsError(exception.getMessage)
+        case Success(page)      => JsSuccess(page)
+      }
+  }
+
+  val AssetFormat = new Format[Asset] {
+    override def writes(o: Asset): JsValue =
+      Json.obj(
+        "_id" -> o.id.value,
+        "slug" -> o.slug,
+        "_tenant" -> o.tenant.value
+      )
+    override def reads(json: JsValue): JsResult[Asset] =
+      Try {
+        Asset(
+          id = (json \ "_id").as(AssetIdFormat),
+          slug = (json \ "slug").as[String],
+          tenant = (json \ "_tenant").as(TenantIdFormat)
         )
       } match {
         case Failure(exception) => JsError(exception.getMessage)

@@ -81,7 +81,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       type: type.string,
       format: format.select,
       visible: ({ rawValues }) => rawValues?.homePageVisible,
-      options: queryCMSPages.data?.map((t) => ({ label: `${t.name}`, value: t.id })),
+      options: queryCMSPages.data?.map((t) => ({ label: `${t.path}`, value: t.id })),
       label: translate('tenant_edit.home_page'),
       disabled: !tenant?.style?.homePageVisible,
 
@@ -92,7 +92,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       visible: ({ rawValues }) => rawValues?.homePageVisible,
       label: translate('tenant_edit.404_page'),
       disabled: !tenant?.style?.homePageVisible,
-      options: queryCMSPages.data?.map((t) => ({ label: `${t.name}`, value: t.id })),
+      options: queryCMSPages.data?.map((t) => ({ label: `${t.path}`, value: t.id })),
 
     },
     authenticatedCmsPage: {
@@ -102,7 +102,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       label: translate('tenant_edit.authenticated_cmspage'),
       help: translate('tenant_edit.authenticated_cmspage_help'),
       disabled: !tenant?.style?.homePageVisible,
-      options: queryCMSPages.data?.map((t) => ({ label: `${t.name}`, value: t.id })),
+      options: queryCMSPages.data?.map((t) => ({ label: `${t.path}`, value: t.id })),
 
     },
     cacheTTL: {

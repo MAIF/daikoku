@@ -1,9 +1,9 @@
 package fr.maif.otoroshi.daikoku.utils
 
+import com.github.slugify.Slugify
+
 import java.math.BigInteger
 import java.security.MessageDigest
-
-import org.apache.commons.lang3.StringUtils
 
 object StringImplicits {
 
@@ -30,5 +30,6 @@ object StringImplicits {
         .toLowerCase
         .trim
     }
+     def slugify: String = Slugify.builder().build().slugify(s)
   }
 }

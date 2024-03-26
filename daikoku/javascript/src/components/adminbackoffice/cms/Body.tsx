@@ -8,7 +8,7 @@ import DragAndDropWrapper from './DragAndDropWrapper';
 export type BodyRef = {
   handleSubmit: () => void
 }
-export default React.forwardRef<BodyRef, any>(({ contentType, setFinalValue, show, pages, inValue, publish, history }, ref) => {
+export default React.forwardRef<BodyRef, any>(({ contentType, setFinalValue, show, pages, inValue, publish, history, editable }, ref) => {
   const { translate } = useContext(I18nContext);
   const r = useRef<FormRef>();
 
@@ -50,6 +50,7 @@ export default React.forwardRef<BodyRef, any>(({ contentType, setFinalValue, sho
             <ContentSideView
               {...formProps}
               pages={pages}
+              editable={editable}
               contentType={contentType}
               publish={publish}
               value={draft}

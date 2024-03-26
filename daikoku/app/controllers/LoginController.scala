@@ -3,6 +3,7 @@ package fr.maif.otoroshi.daikoku.ctrls
 import cats.data.EitherT
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuTenantAction, DaikokuTenantActionContext}
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuTenantAction, DaikokuTenantActionContext}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
@@ -41,6 +42,50 @@ class LoginController(
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
   implicit val tr: Translator = translator
+
+  def redirectToLoginPage() = DaikokuTenantAction.async { ctx => {
+      val user = ctx.request.attrs.get(IdentityAttrs.UserKey)
+      val redirect = ctx.request.queryString.get("redirect").flatMap(_.headOption)
+
+      val hasUserAndRedirect = redirect.isDefined && user.exists(u => !u.isGuest)
+
+      println(hasUserAndRedirect, ctx.tenant.cmsRedirections)
+
+      if (hasUserAndRedirect && (ctx.tenant.cmsRedirections.isEmpty || !ctx.tenant.cmsRedirections.contains(redirect.get))) {
+          FastFuture.successful(BadRequest(Json.obj("error" -> "application not authorized")))
+      } else {
+        if (hasUserAndRedirect) {
+          FastFuture.successful(Redirect(redirect.get))
+        } else {
+          ctx.tenant.authProvider match {
+            case Otoroshi => FastFuture.successful(Redirect("/"))
+            case OAuth2 =>
+              val authConfig = OAuth2Config
+                .fromJson(ctx.tenant.authProviderSettings)
+                .toOption
+                .get
+              val clientId = authConfig.clientId
+              val responseType = "code"
+              val scope = authConfig.scope // "openid profile email name"
+              val redirectUri = authConfig.callbackUrl
+
+              FastFuture.successful(
+                Redirect(
+                  s"${authConfig.loginUrl}?scope=$scope&client_id=$clientId&response_type=$responseType&redirect_uri=$redirectUri"
+                ).addingToSession(
+                  s"redirect" -> ctx.request.getQueryString("redirect").getOrElse("/")
+                )(ctx.request)
+              )
+            case _ =>
+              FastFuture.successful(
+                Ok(views.html.login(ctx.tenant.authProvider, ctx.tenant, ctx.request.domain, env,
+                  ctx.request.queryString.get("redirect").flatMap(_.headOption)))
+              )
+          }
+        }
+      }
+    }
+  }
 
   def loginPage(provider: String) =
     DaikokuTenantAction.async { ctx =>
@@ -168,7 +213,8 @@ class LoginController(
             AuthorizationLevel.AuthorizedSelf
           )
 
-          val redirectUri = request.session.get("redirect").getOrElse("/")
+          val redirectUri = request.session.get("redirect")
+            .getOrElse(request.getQueryString("redirect").getOrElse("/"))
 
           Redirect(if (redirectUri.startsWith("/api/")) "/" else redirectUri)
             .withSession("sessionId" -> session.sessionId.value)

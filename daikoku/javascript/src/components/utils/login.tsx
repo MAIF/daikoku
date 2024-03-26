@@ -24,7 +24,7 @@ export function LoginPage(props: any) {
     e.preventDefault();
     const { username, password } = state;
 
-    Services.login(username, password, props.action).then((res) => {
+    Services.login(username, password, props.action, props.redirect).then((res) => {
       if (res.status === 400)
         setState({
           ...state,
