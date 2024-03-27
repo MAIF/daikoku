@@ -6,7 +6,7 @@
 
 ## Reference Documentation
 
-The reference documentation is available at [https://maif.github.io/daikoku/manual/](https://maif.github.io/daikoku/manual/)
+The reference documentation is available at [https://maif.github.io/daikoku/](https://maif.github.io/daikoku/)
 
 ## Community
 You can join these groups and chats to discuss and ask daikoku related questions:
