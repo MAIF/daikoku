@@ -5,7 +5,11 @@ import com.auth0.jwt.JWT
 import com.google.common.base.Charsets
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain.{CanJson, Tenant, ValueType}
-import fr.maif.otoroshi.daikoku.env.{Env, LocalAdminApiConfig, OtoroshiAdminApiConfig}
+import fr.maif.otoroshi.daikoku.env.{
+  Env,
+  LocalAdminApiConfig,
+  OtoroshiAdminApiConfig
+}
 import fr.maif.otoroshi.daikoku.login.TenantHelper
 import fr.maif.otoroshi.daikoku.utils.Errors
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -212,7 +216,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
   def toJson(entity: Of): JsValue
   def fromJson(entity: JsValue): Either[String, Of]
   def entityClass: Class[Of]
-  def validate(entity: Of, updateOrCreate: UpdateOrCreate): EitherT[Future, AppError, Of]
+  def validate(
+      entity: Of,
+      updateOrCreate: UpdateOrCreate
+  ): EitherT[Future, AppError, Of]
   def getId(entity: Of): Id
 
   def findAll(): Action[AnyContent] =
@@ -326,7 +333,6 @@ abstract class AdminApiController[Of, Id <: ValueType](
       }
     }
 
-
   def updateEntity(id: String): Action[JsValue] =
     DaikokuApiAction.async(parse.json) { ctx =>
       entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
@@ -372,7 +378,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
         import diffson.playJson._
         import diffson.jsonpatch.lcsdiff.remembering.JsonDiffDiff
 
-        private def patchResponse(patchJson: JsonPatch[JsValue], document: JsValue): Either[AppError, JsValue] = {
+        private def patchResponse(
+            patchJson: JsonPatch[JsValue],
+            document: JsValue
+        ): Either[AppError, JsValue] = {
           patchJson.apply(document) match {
             case JsSuccess(value, path) => Right(value)
             case JsError(errors) =>
@@ -385,12 +394,19 @@ abstract class AdminApiController[Of, Id <: ValueType](
           }
         }
 
-        def patchJson(patchOps: JsValue, document: JsValue): Either[AppError, JsValue] = {
-          val patch = diffson.playJson.DiffsonProtocol.JsonPatchFormat.reads(patchOps).get
+        def patchJson(
+            patchOps: JsValue,
+            document: JsValue
+        ): Either[AppError, JsValue] = {
+          val patch =
+            diffson.playJson.DiffsonProtocol.JsonPatchFormat.reads(patchOps).get
           patchResponse(patch, document)
         }
 
-        def diffJson(sourceJson: JsValue,targetJson: JsValue): Either[AppError, JsValue] = {
+        def diffJson(
+            sourceJson: JsValue,
+            targetJson: JsValue
+        ): Either[AppError, JsValue] = {
           implicit val lcs = new Patience[JsValue]
           val diff = diffson.diff(sourceJson, targetJson)
           patchResponse(diff, targetJson)
@@ -446,8 +462,12 @@ abstract class AdminApiController[Of, Id <: ValueType](
           val currentJson = toJson(entity)
           ctx.request.body match {
             case JsArray(_) =>
-              val patchedJson = JsonPatchHelpers.patchJson(ctx.request.body, currentJson)
-              patchedJson.fold(error => error.renderF(), json => finalizePatch(json))
+              val patchedJson =
+                JsonPatchHelpers.patchJson(ctx.request.body, currentJson)
+              patchedJson.fold(
+                error => error.renderF(),
+                json => finalizePatch(json)
+              )
             case JsObject(_) =>
               val newJson =
                 currentJson
@@ -455,7 +475,10 @@ abstract class AdminApiController[Of, Id <: ValueType](
                   .deepMerge(ctx.request.body.as[JsObject])
               fromJson(newJson) match {
                 case Left(e) =>
-                  logger.error(s"Bad $entityName format", new RuntimeException(e))
+                  logger.error(
+                    s"Bad $entityName format",
+                    new RuntimeException(e)
+                  )
                   Errors.craftResponseResult(
                     s"Bad $entityName format",
                     Results.BadRequest,
@@ -464,8 +487,12 @@ abstract class AdminApiController[Of, Id <: ValueType](
                     env
                   )
                 case Right(patchedEntity) =>
-                  val patchedJson = JsonPatchHelpers.diffJson(newJson, toJson(patchedEntity))
-                  patchedJson.fold(error => error.renderF(), json => finalizePatch(json))
+                  val patchedJson =
+                    JsonPatchHelpers.diffJson(newJson, toJson(patchedEntity))
+                  patchedJson.fold(
+                    error => error.renderF(),
+                    json => finalizePatch(json)
+                  )
 
               }
 

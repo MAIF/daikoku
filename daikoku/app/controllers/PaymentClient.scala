@@ -682,9 +682,9 @@ class PaymentClient(
         AppError.TenantNotFound
       )
       settings = plan.paymentSettings.flatMap(s =>
-          tenant.thirdPartyPaymentSettings
-            .find(_.id == s.thirdPartyPaymentSettingsId)
-        )
+        tenant.thirdPartyPaymentSettings
+          .find(_.id == s.thirdPartyPaymentSettingsId)
+      )
       value <- settings match {
         case Some(p: StripeSettings) =>
           toggleStateStripeSubscription(apiSubscription)(p)

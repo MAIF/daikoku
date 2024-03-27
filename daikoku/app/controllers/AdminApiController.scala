@@ -271,7 +271,11 @@ class StateAdminApiController(
   def reset() =
     DaikokuApiAction.async { _ =>
       (for {
-        _ <- EitherT.cond[Future][AppError, Unit](env.config.isDev || env.config.mode == DaikokuMode.Test, (), AppError.SecurityError("Action not avalaible"))
+        _ <- EitherT.cond[Future][AppError, Unit](
+          env.config.isDev || env.config.mode == DaikokuMode.Test,
+          (),
+          AppError.SecurityError("Action not avalaible")
+        )
         _ <- EitherT.liftF[Future, AppError, Unit](env.dataStore.clear())
         _ <- EitherT.liftF[Future, AppError, Done](env.initDatastore())
       } yield Ok(Json.obj("done" -> true)))
@@ -300,7 +304,10 @@ class TenantAdminApiController(
       .asEither
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 
-  override def validate(entity: Tenant, updateOrCreate: UpdateOrCreate): EitherT[Future, AppError, Tenant] =
+  override def validate(
+      entity: Tenant,
+      updateOrCreate: UpdateOrCreate
+  ): EitherT[Future, AppError, Tenant] =
     EitherT(
       env.dataStore.tenantRepo
         .findOne(
@@ -336,7 +343,10 @@ class UserAdminApiController(
       .asEither
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 
-  override def validate(entity: User, updateOrCreate: UpdateOrCreate): EitherT[Future, AppError, User] =
+  override def validate(
+      entity: User,
+      updateOrCreate: UpdateOrCreate
+  ): EitherT[Future, AppError, User] =
     EitherT(
       env.dataStore.userRepo
         .findOne(
@@ -377,7 +387,10 @@ class TeamAdminApiController(
       .asEither
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 
-  override def validate(entity: Team, updateOrCreate: UpdateOrCreate): EitherT[Future, AppError, Team] = {
+  override def validate(
+      entity: Team,
+      updateOrCreate: UpdateOrCreate
+  ): EitherT[Future, AppError, Team] = {
     import cats.implicits._
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
@@ -417,7 +430,10 @@ class ApiAdminApiController(
       .asEither
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 
-  override def validate(entity: Api, updateOrCreate: UpdateOrCreate): EitherT[Future, AppError, Api] = {
+  override def validate(
+      entity: Api,
+      updateOrCreate: UpdateOrCreate
+  ): EitherT[Future, AppError, Api] = {
     import cats.implicits._
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
@@ -458,15 +474,22 @@ class ApiAdminApiController(
                 Json.obj(
                   "_id" -> Json.obj("$ne" -> entity.id.asJson),
                   "$or" -> Seq(
-                    entity.parent.map(p => Json.obj(
-                      "_id" -> Json.obj(
-                        "$ne" -> p.asJson
+                    entity.parent.map(p =>
+                      Json.obj(
+                        "_id" -> Json.obj(
+                          "$ne" -> p.asJson
+                        )
                       )
-                    )),
-                    Json.obj("parent" -> Json.obj("$ne" -> entity.id.asJson)).some,
-                    entity.parent.map(p => Json.obj(
-                      "parent" -> Json.obj("$ne" -> p.asJson)
-                    ))).filter(_.isDefined).map(_.get),
+                    ),
+                    Json
+                      .obj("parent" -> Json.obj("$ne" -> entity.id.asJson))
+                      .some,
+                    entity.parent.map(p =>
+                      Json.obj(
+                        "parent" -> Json.obj("$ne" -> p.asJson)
+                      )
+                    )
+                  ).filter(_.isDefined).map(_.get),
                   "name" -> entity.name
                 )
               )
@@ -480,7 +503,12 @@ class ApiAdminApiController(
           EitherT(
             env.dataStore.apiRepo
               .forTenant(entity.tenant)
-              .findOne(Json.obj("_id" -> Json.obj("$ne" -> entity.id.asJson), "name" -> entity.name))
+              .findOne(
+                Json.obj(
+                  "_id" -> Json.obj("$ne" -> entity.id.asJson),
+                  "name" -> entity.name
+                )
+              )
               .map {
                 case None =>
                   Right(())
@@ -558,7 +586,8 @@ class ApiSubscriptionAdminApiController(
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 
   override def validate(
-      entity: ApiSubscription, updateOrCreate: UpdateOrCreate
+      entity: ApiSubscription,
+      updateOrCreate: UpdateOrCreate
   ): EitherT[Future, AppError, ApiSubscription] = {
     import cats.implicits._
     for {
@@ -624,7 +653,8 @@ class ApiDocumentationPageAdminApiController(
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 
   override def validate(
-      entity: ApiDocumentationPage, updateOrCreate: UpdateOrCreate
+      entity: ApiDocumentationPage,
+      updateOrCreate: UpdateOrCreate
   ): EitherT[Future, AppError, ApiDocumentationPage] =
     EitherT.pure[Future, AppError](entity)
 
@@ -653,7 +683,8 @@ class NotificationAdminApiController(
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 
   override def validate(
-      entity: Notification, updateOrCreate: UpdateOrCreate
+      entity: Notification,
+      updateOrCreate: UpdateOrCreate
   ): EitherT[Future, AppError, Notification] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
@@ -686,7 +717,8 @@ class UserSessionAdminApiController(
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 
   override def validate(
-      entity: UserSession, updateOrCreate: UpdateOrCreate
+      entity: UserSession,
+      updateOrCreate: UpdateOrCreate
   ): EitherT[Future, AppError, UserSession] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, User](
@@ -719,7 +751,8 @@ class ApiKeyConsumptionAdminApiController(
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 
   override def validate(
-      entity: ApiKeyConsumption, updateOrCreate: UpdateOrCreate
+      entity: ApiKeyConsumption,
+      updateOrCreate: UpdateOrCreate
   ): EitherT[Future, AppError, ApiKeyConsumption] = {
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
@@ -767,7 +800,10 @@ class AuditEventAdminApiController(
       case None    => Left("Not an object")
     }
 
-  override def validate(entity: JsObject, updateOrCreate: UpdateOrCreate): EitherT[Future, AppError, JsObject] =
+  override def validate(
+      entity: JsObject,
+      updateOrCreate: UpdateOrCreate
+  ): EitherT[Future, AppError, JsObject] =
     EitherT.pure[Future, AppError](entity)
 
   override def getId(entity: JsObject): DatastoreId =
@@ -814,7 +850,10 @@ class MessagesAdminApiController(
       case None    => Left("Not an object")
     }
 
-  override def validate(entity: Message, updateOrCreate: UpdateOrCreate): EitherT[Future, AppError, Message] =
+  override def validate(
+      entity: Message,
+      updateOrCreate: UpdateOrCreate
+  ): EitherT[Future, AppError, Message] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
         env.dataStore.tenantRepo.findById(entity.tenant),
@@ -868,7 +907,10 @@ class IssuesAdminApiController(
       .asEither
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 
-  override def validate(entity: ApiIssue, updateOrCreate: UpdateOrCreate): EitherT[Future, AppError, ApiIssue] =
+  override def validate(
+      entity: ApiIssue,
+      updateOrCreate: UpdateOrCreate
+  ): EitherT[Future, AppError, ApiIssue] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
         env.dataStore.tenantRepo.findById(entity.tenant),
@@ -903,7 +945,10 @@ class PostsAdminApiController(
       .asEither
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 
-  override def validate(entity: ApiPost, updateOrCreate: UpdateOrCreate): EitherT[Future, AppError, ApiPost] =
+  override def validate(
+      entity: ApiPost,
+      updateOrCreate: UpdateOrCreate
+  ): EitherT[Future, AppError, ApiPost] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
         env.dataStore.tenantRepo.findById(entity.tenant),
@@ -934,7 +979,10 @@ class CmsPagesAdminApiController(
       .asEither
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 
-  override def validate(entity: CmsPage, updateOrCreate: UpdateOrCreate): EitherT[Future, AppError, CmsPage] =
+  override def validate(
+      entity: CmsPage,
+      updateOrCreate: UpdateOrCreate
+  ): EitherT[Future, AppError, CmsPage] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
         env.dataStore.tenantRepo.findById(entity.tenant),
@@ -944,27 +992,29 @@ class CmsPagesAdminApiController(
 
   override def getId(entity: CmsPage): CmsPageId = entity.id
 
-  def sync() = daa.async(parse.json) { ctx =>
-    val body = ctx.request.body
+  def sync() =
+    daa.async(parse.json) { ctx =>
+      val body = ctx.request.body
 
       (for {
-          _ <- env.dataStore.cmsRepo.forTenant(ctx.tenant).deleteAll()
-        } yield {
-          Future.sequence(body
-            .as(Reads.seq(CmsFileFormat.reads))
-            .map(page => {
-              env
-                .dataStore
-                .cmsRepo
-                .forTenant(ctx.tenant)
-                .save(page.toCmsPage(ctx.tenant.id))
-            }))
-            .map(_ => NoContent)
-            .recover {
-              case e: Throwable => BadRequest(Json.obj("error" -> e.getMessage))
-            }
-          }).flatten
-      }
+        _ <- env.dataStore.cmsRepo.forTenant(ctx.tenant).deleteAll()
+      } yield {
+        Future
+          .sequence(
+            body
+              .as(Reads.seq(CmsFileFormat.reads))
+              .map(page => {
+                env.dataStore.cmsRepo
+                  .forTenant(ctx.tenant)
+                  .save(page.toCmsPage(ctx.tenant.id))
+              })
+          )
+          .map(_ => NoContent)
+          .recover {
+            case e: Throwable => BadRequest(Json.obj("error" -> e.getMessage))
+          }
+      }).flatten
+    }
 }
 
 class TranslationsAdminApiController(
@@ -988,7 +1038,8 @@ class TranslationsAdminApiController(
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 
   override def validate(
-      entity: Translation, updateOrCreate: UpdateOrCreate
+      entity: Translation,
+      updateOrCreate: UpdateOrCreate
   ): EitherT[Future, AppError, Translation] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](
@@ -1021,7 +1072,8 @@ class UsagePlansAdminApiController(
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 
   override def validate(
-      entity: UsagePlan, updateOrCreate: UpdateOrCreate
+      entity: UsagePlan,
+      updateOrCreate: UpdateOrCreate
   ): EitherT[Future, AppError, UsagePlan] =
     for {
       tenant <- EitherT.fromOptionF[Future, AppError, Tenant](
@@ -1078,7 +1130,8 @@ class SubscriptionDemandsAdminApiController(
       .leftMap(_.flatMap(_._2).map(_.message).mkString(", "))
 
   override def validate(
-      entity: SubscriptionDemand, updateOrCreate: UpdateOrCreate
+      entity: SubscriptionDemand,
+      updateOrCreate: UpdateOrCreate
   ): EitherT[Future, AppError, SubscriptionDemand] =
     for {
       _ <- EitherT.fromOptionF[Future, AppError, Tenant](

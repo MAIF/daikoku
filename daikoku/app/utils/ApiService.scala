@@ -591,7 +591,8 @@ class ApiService(
                 otoroshiClient.updateApiKey(apiKey.copy(enabled = enabled))
               )
           }
-          _ <- paymentClient.toggleStateThirdPartySubscription(updatedSubscription)
+          _ <-
+            paymentClient.toggleStateThirdPartySubscription(updatedSubscription)
           _ <- EitherT.liftF(
             env.dataStore.apiSubscriptionRepo
               .forTenant(tenant.id)

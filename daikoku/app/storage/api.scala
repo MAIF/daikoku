@@ -321,7 +321,12 @@ trait Repo[Of, Id <: ValueType] {
   def deleteAllLogically()(implicit ec: ExecutionContext): Future[Boolean]
 
   def findAllNotDeleted()(implicit ec: ExecutionContext): Future[Seq[Of]] =
-    find(Json.obj("$or" -> Json.arr(Json.obj("_deleted" -> false), Json.obj("_deleted" -> JsNull))))
+    find(
+      Json.obj(
+        "$or" -> Json
+          .arr(Json.obj("_deleted" -> false), Json.obj("_deleted" -> JsNull))
+      )
+    )
 
   def findNotDeleted(
       query: JsObject,

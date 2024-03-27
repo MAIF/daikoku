@@ -6,10 +6,16 @@ import com.github.jknack.handlebars.{Context, Handlebars, Options}
 import controllers.AppError
 import controllers.AppError.toJson
 import domain.JsonNodeValueResolver
-import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuActionMaybeWithoutUserContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuActionContext,
+  DaikokuActionMaybeWithoutUserContext
+}
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, KafkaConfig}
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
+  _TeamMemberOnly,
+  _UberPublicUserAccess
+}
 import fr.maif.otoroshi.daikoku.domain.json.CmsPageFormat
 import fr.maif.otoroshi.daikoku.env.{DaikokuMode, Env}
 import fr.maif.otoroshi.daikoku.login.AuthProvider
@@ -308,7 +314,7 @@ case class Tenant(
     thirdPartyPaymentSettings: Seq[ThirdPartyPaymentSettings] = Seq.empty,
     display: TenantDisplay = TenantDisplay.Default,
     environments: Set[String] = Set.empty,
-    cmsRedirections: Set[String] = Set.empty,
+    cmsRedirections: Set[String] = Set.empty
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -556,37 +562,53 @@ object CmsPage {
   )
 }
 
-case class CmsFile(name: String, content: String, metadata: Map[String, JsValue] = Map.empty) {
-    def path(): String = metadata.getOrElse("_path", JsString("")).as[String]
-    def contentType(): String = metadata.getOrElse("_content_type", JsString("")).as[String]
+case class CmsFile(
+    name: String,
+    content: String,
+    metadata: Map[String, JsValue] = Map.empty
+) {
+  def path(): String = metadata.getOrElse("_path", JsString("")).as[String]
+  def contentType(): String =
+    metadata.getOrElse("_content_type", JsString("")).as[String]
 
-    def authenticated(): Boolean = Json.parse(metadata.getOrElse("_authenticated", JsString("false")).as[String]).as[Boolean]
-    def visible(): Boolean = Json.parse(metadata.getOrElse("_visible", JsString("true")).as[String]).as[Boolean]
-    def exact(): Boolean = Json.parse(metadata.getOrElse("_exact", JsString("true")).as[String]).as[Boolean]
+  def authenticated(): Boolean =
+    Json
+      .parse(metadata.getOrElse("_authenticated", JsString("false")).as[String])
+      .as[Boolean]
+  def visible(): Boolean =
+    Json
+      .parse(metadata.getOrElse("_visible", JsString("true")).as[String])
+      .as[Boolean]
+  def exact(): Boolean =
+    Json
+      .parse(metadata.getOrElse("_exact", JsString("true")).as[String])
+      .as[Boolean]
 
-    def toCmsPage(tenantId: TenantId): CmsPage = {
-      CmsPage(
-        id = CmsPageId(path().replaceAll("/", "-")),
-        tenant = tenantId,
-        visible = visible(),
-        authenticated = authenticated(),
-        name = name,
-        forwardRef = None,
-        tags = List.empty,
-        metadata = metadata.map { case (key, value) => (key, value.toString.replaceAll("\"", "")) },
-        contentType = contentType(),
-        body= content,
-        draft = content,
-        path = Some(path())
-      )
-    }
+  def toCmsPage(tenantId: TenantId): CmsPage = {
+    CmsPage(
+      id = CmsPageId(path().replaceAll("/", "-")),
+      tenant = tenantId,
+      visible = visible(),
+      authenticated = authenticated(),
+      name = name,
+      forwardRef = None,
+      tags = List.empty,
+      metadata = metadata.map {
+        case (key, value) => (key, value.toString.replaceAll("\"", ""))
+      },
+      contentType = contentType(),
+      body = content,
+      draft = content,
+      path = Some(path())
+    )
+  }
 }
-
 
 case class CmsRequestRendering(content: Seq[CmsFile], current_page: String)
 case class CmsHistory(id: String, date: DateTime, diff: String, user: UserId)
 
-case class Asset(id: AssetId, tenant: TenantId, slug: String) extends CanJson[Asset] {
+case class Asset(id: AssetId, tenant: TenantId, slug: String)
+    extends CanJson[Asset] {
   override def asJson: JsValue = json.AssetFormat.writes(this)
 }
 
@@ -746,8 +768,10 @@ case class CmsPage(
     handlebars.registerHelper(
       s"daikoku-json-$name",
       (id: String, options: Options) => {
-        val renderedParameter = renderString(ctx, parentId, id, fields, jsonToCombine, req)
-        val version = options.hash.getOrDefault("version", "1.0.0").asInstanceOf[String]
+        val renderedParameter =
+          renderString(ctx, parentId, id, fields, jsonToCombine, req)
+        val version =
+          options.hash.getOrDefault("version", "1.0.0").asInstanceOf[String]
         val optApi = Await.result(
           env.dataStore.apiRepo
             .findByVersion(ctx.tenant, renderedParameter, version),
@@ -1035,18 +1059,27 @@ case class CmsPage(
           body = str,
           draft = str,
           path = Some("/")
-        ).render(ctx, parentId, fields = fields, jsonToCombine = jsonToCombine, req = req),
+        ).render(
+          ctx,
+          parentId,
+          fields = fields,
+          jsonToCombine = jsonToCombine,
+          req = req
+        ),
         10.seconds
       )
       ._1
 
-  private def cmsFindByIdNotDeleted(ctx: DaikokuActionMaybeWithoutUserContext[_],
-                        id: String,
-                        req: Option[CmsRequestRendering])(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
+  private def cmsFindByIdNotDeleted(
+      ctx: DaikokuActionMaybeWithoutUserContext[_],
+      id: String,
+      req: Option[CmsRequestRendering]
+  )(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
     req match {
-      case Some(value) => value.content
-        .find(p => cleanPath(p.path()) == cleanPath(id))
-        .map(_.toCmsPage(ctx.tenant.id))
+      case Some(value) =>
+        value.content
+          .find(p => cleanPath(p.path()) == cleanPath(id))
+          .map(_.toCmsPage(ctx.tenant.id))
       case None => findCmsPageByTheId(ctx, id)
     }
   }
@@ -1059,43 +1092,66 @@ case class CmsPage(
       out
   }
 
-  private def findCmsPageByTheId(ctx: DaikokuActionMaybeWithoutUserContext[_], id: String)(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
+  private def findCmsPageByTheId(
+      ctx: DaikokuActionMaybeWithoutUserContext[_],
+      id: String
+  )(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
 
     Await.result(
-        env.dataStore.cmsRepo.forTenant(ctx.tenant).findOne(Json.obj("$or" -> Json.arr(
-          Json.obj("_id" -> cleanPath(id)),
-          Json.obj("_id" -> cleanPath(id).replace("/", "-")),
-          Json.obj("_id" -> cleanPath(id).replace("/", "-").substring(1))
-        ))),
-        10.seconds
-      )
+      env.dataStore.cmsRepo
+        .forTenant(ctx.tenant)
+        .findOne(
+          Json.obj(
+            "$or" -> Json.arr(
+              Json.obj("_id" -> cleanPath(id)),
+              Json.obj("_id" -> cleanPath(id).replace("/", "-")),
+              Json.obj("_id" -> cleanPath(id).replace("/", "-").substring(1))
+            )
+          )
+        ),
+      10.seconds
+    )
   }
 
-  private def cmsFindById(ctx: DaikokuActionMaybeWithoutUserContext[_],
-                        id: String,
-                        req: Option[CmsRequestRendering])(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
+  private def cmsFindById(
+      ctx: DaikokuActionMaybeWithoutUserContext[_],
+      id: String,
+      req: Option[CmsRequestRendering]
+  )(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
     req match {
-      case Some(value) => value.content
-        .find(_.path() == id)
-        .map(_.toCmsPage(ctx.tenant.id))
+      case Some(value) =>
+        value.content
+          .find(_.path() == id)
+          .map(_.toCmsPage(ctx.tenant.id))
       case None => findCmsPageByTheId(ctx, id)
     }
   }
 
-  private def cmsFindOneNotDeleted(ctx: DaikokuActionMaybeWithoutUserContext[_],
-                        id: String,
-                        req: Option[CmsRequestRendering])(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
+  private def cmsFindOneNotDeleted(
+      ctx: DaikokuActionMaybeWithoutUserContext[_],
+      id: String,
+      req: Option[CmsRequestRendering]
+  )(implicit env: Env, ec: ExecutionContext): Option[CmsPage] = {
     req match {
-      case Some(value) => value.content
-        .find(p => cleanPath(p.path()) == cleanPath(id))
-        .map(_.toCmsPage(ctx.tenant.id))
-      case None => Await.result(
-        env.dataStore.cmsRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("$or" -> Json.arr(
-          Json.obj("path" -> cleanPath(id)),
-          Json.obj("_id" -> cleanPath(id)),
-          Json.obj("_id" -> cleanPath(id).replace("/", "-"))))),
-        10.seconds
-      )
+      case Some(value) =>
+        value.content
+          .find(p => cleanPath(p.path()) == cleanPath(id))
+          .map(_.toCmsPage(ctx.tenant.id))
+      case None =>
+        Await.result(
+          env.dataStore.cmsRepo
+            .forTenant(ctx.tenant)
+            .findOneNotDeleted(
+              Json.obj(
+                "$or" -> Json.arr(
+                  Json.obj("path" -> cleanPath(id)),
+                  Json.obj("_id" -> cleanPath(id)),
+                  Json.obj("_id" -> cleanPath(id).replace("/", "-"))
+                )
+              )
+            ),
+          10.seconds
+        )
     }
   }
 
@@ -1112,7 +1168,11 @@ case class CmsPage(
 
     cmsFindByIdNotDeleted(ctx, id, req) match {
       case None =>
-        cmsFindOneNotDeleted(ctx, renderString(ctx, parentId, id, outFields, jsonToCombine, req), req) match {
+        cmsFindOneNotDeleted(
+          ctx,
+          renderString(ctx, parentId, id, outFields, jsonToCombine, req),
+          req
+        ) match {
           case None => s"block '$id' not found"
           case Some(page) =>
             Await.result(
@@ -1156,7 +1216,8 @@ case class CmsPage(
     cmsFindByIdNotDeleted(ctx, id, req) match {
       case None => "wrapper component not found"
       case Some(page) =>
-        val tmpFields = getAttrs(ctx, parentId, options, fields, jsonToCombine, req)
+        val tmpFields =
+          getAttrs(ctx, parentId, options, fields, jsonToCombine, req)
         val outFields = getAttrs(
           ctx,
           parentId,
@@ -1212,16 +1273,19 @@ case class CmsPage(
       req: Option[CmsRequestRendering]
   )(implicit env: Env, ec: ExecutionContext) = {
     val pages = req match {
-      case Some(value) => value.content
-        .filter(p => p.path().nonEmpty)
-        .map(r => s"/_${r.path()}")
-      case None => Await
-      .result(
-        env.dataStore.cmsRepo
-          .forTenant(ctx.tenant)
-          .findWithProjection(Json.obj(), Json.obj("path" -> true)),
-        10.seconds
-      ).map(r => s"/_${(r \ "path").as[String]}")
+      case Some(value) =>
+        value.content
+          .filter(p => p.path().nonEmpty)
+          .map(r => s"/_${r.path()}")
+      case None =>
+        Await
+          .result(
+            env.dataStore.cmsRepo
+              .forTenant(ctx.tenant)
+              .findWithProjection(Json.obj(), Json.obj("path" -> true)),
+            10.seconds
+          )
+          .map(r => s"/_${(r \ "path").as[String]}")
     }
 
     pages
@@ -1246,7 +1310,7 @@ case class CmsPage(
       id: String,
       req: Option[CmsRequestRendering]
   )(implicit env: Env, ec: ExecutionContext, messagesApi: MessagesApi) = {
-   cmsFindByIdNotDeleted(ctx, id, req) match {
+    cmsFindByIdNotDeleted(ctx, id, req) match {
       case None => "#not-found"
       case Some(page) =>
         val wantDraft = ctx.request.getQueryString("draft").contains("true")
@@ -1264,7 +1328,8 @@ case class CmsPage(
 
   private def daikokuLinks(
       ctx: DaikokuActionMaybeWithoutUserContext[_],
-      handlebars: Handlebars ) = {
+      handlebars: Handlebars
+  ) = {
     val links = Map(
       "login" -> s"/auth/${ctx.tenant.authProvider.name}/login",
       "logout" -> "/logout",
@@ -1382,7 +1447,14 @@ case class CmsPage(
     env.dataStore.apiRepo
       .forTenant(tenant)
       .findByIdOrHrId(
-        renderString(ctx, parentId, id, fields, jsonToCombine = jsonToCombine, req)(
+        renderString(
+          ctx,
+          parentId,
+          id,
+          fields,
+          jsonToCombine = jsonToCombine,
+          req
+        )(
           env,
           ec,
           messagesApi
@@ -1456,7 +1528,9 @@ case class CmsPage(
                     api.documentation
                       .docIds()
                       .map(pageId =>
-                        env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant).findById(pageId)
+                        env.dataStore.apiDocumentationPageRepo
+                          .forTenant(ctx.tenant)
+                          .findById(pageId)
                       )
                   )
                 case _ => FastFuture.successful(Seq())
@@ -1484,7 +1558,11 @@ case class CmsPage(
                     api.documentation
                       .docIds()
                       .slice(page, page + 1)
-                      .map(env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant).findById(_))
+                      .map(
+                        env.dataStore.apiDocumentationPageRepo
+                          .forTenant(ctx.tenant)
+                          .findById(_)
+                      )
                   )
                 case _ => FastFuture.successful(Seq())
               },
@@ -1509,7 +1587,11 @@ case class CmsPage(
                   api.documentation
                     .docIds()
                     .find(_ == page)
-                    .map(env.dataStore.apiDocumentationPageRepo.forTenant(ctx.tenant).findById(_))
+                    .map(
+                      env.dataStore.apiDocumentationPageRepo
+                        .forTenant(ctx.tenant)
+                        .findById(_)
+                    )
                     .getOrElse(FastFuture.successful(None))
                 case _ => FastFuture.successful(None)
               },
@@ -1539,8 +1621,11 @@ case class CmsPage(
       acc.combine(item._1, item._2)
     }
 
-  private def searchCmsFile(req: CmsRequestRendering, page: CmsPage): Option[CmsFile] = {
-     req.content.find(p => p.path() == page.path.getOrElse(""))
+  private def searchCmsFile(
+      req: CmsRequestRendering,
+      page: CmsPage
+  ): Option[CmsFile] = {
+    req.content.find(p => p.path() == page.path.getOrElse(""))
   }
 
   def render(
@@ -1554,20 +1639,25 @@ case class CmsPage(
 
     val page = forwardRef match {
       case Some(id) => cmsFindByIdNotDeleted(ctx, id.value, req).getOrElse(this)
-      case None => this
+      case None     => this
     }
     try {
       import com.github.jknack.handlebars.EscapingStrategy
       implicit val ec = CmsPage.pageRenderingEc
 
-      if (page.authenticated && (ctx.user.isEmpty || ctx.user.exists(_.isGuest)))
+      if (
+        page.authenticated && (ctx.user.isEmpty || ctx.user.exists(_.isGuest))
+      )
         ctx.tenant.style.flatMap(_.authenticatedCmsPage) match {
           case Some(value) =>
             cmsFindById(ctx, value, req) match {
-              case Some(value) => value.render(ctx, parentId, fields, jsonToCombine, req)
-              case None => FastFuture.successful(("Need to be logged", page.contentType))
+              case Some(value) =>
+                value.render(ctx, parentId, fields, jsonToCombine, req)
+              case None =>
+                FastFuture.successful(("Need to be logged", page.contentType))
             }
-          case None => FastFuture.successful(("Need to be logged", page.contentType))
+          case None =>
+            FastFuture.successful(("Need to be logged", page.contentType))
         }
       else if (parentId.nonEmpty && page.id.value == parentId.get)
         FastFuture.successful(("", page.contentType))
@@ -1597,10 +1687,14 @@ case class CmsPage(
           case Some(value) if page.name != "#generated" =>
             searchCmsFile(value, page)
               .foreach(_.metadata.foreach(p => {
-                context.combine(p._1, p._2 match {
-                  case JsString(value) => value  // remove quotes framing string
-                  case value => value
-                })
+                context.combine(
+                  p._1,
+                  p._2 match {
+                    case JsString(value) =>
+                      value // remove quotes framing string
+                    case value => value
+                  }
+                )
               }))
           case _ =>
         }
@@ -1612,7 +1706,8 @@ case class CmsPage(
         handlebars.registerHelper(
           "for",
           (variable: String, options: Options) => {
-            val s = renderString(ctx, parentId, variable, fields, jsonToCombine, req)
+            val s =
+              renderString(ctx, parentId, variable, fields, jsonToCombine, req)
             val field = options.hash.getOrDefault("field", "object").toString
 
             try {
@@ -1639,7 +1734,8 @@ case class CmsPage(
         handlebars.registerHelper(
           "size",
           (variable: String, _: Options) => {
-            val s = renderString(ctx, parentId, variable, fields, jsonToCombine, req)
+            val s =
+              renderString(ctx, parentId, variable, fields, jsonToCombine, req)
             try {
               String.valueOf(Json.parse(s).asInstanceOf[JsArray].value.length)
             } catch {
@@ -1651,7 +1747,14 @@ case class CmsPage(
           "ifeq",
           (variable: String, options: Options) => {
             if (
-              renderString(ctx, parentId, variable, fields, jsonToCombine, req) ==
+              renderString(
+                ctx,
+                parentId,
+                variable,
+                fields,
+                jsonToCombine,
+                req
+              ) ==
                 renderString(
                   ctx,
                   parentId,
@@ -1679,7 +1782,14 @@ case class CmsPage(
           "ifnoteq",
           (variable: String, options: Options) => {
             if (
-              renderString(ctx, parentId, variable, fields, jsonToCombine, req) !=
+              renderString(
+                ctx,
+                parentId,
+                variable,
+                fields,
+                jsonToCombine,
+                req
+              ) !=
                 renderString(
                   ctx,
                   parentId,
@@ -1706,7 +1816,8 @@ case class CmsPage(
         handlebars.registerHelper(
           "getOrElse",
           (variable: String, options: Options) => {
-            val str = renderString(ctx, parentId, variable, fields, jsonToCombine, req)
+            val str =
+              renderString(ctx, parentId, variable, fields, jsonToCombine, req)
             if (str != "null" && str.nonEmpty)
               str
             else
@@ -1866,8 +1977,10 @@ case class CmsPage(
         val c = context.build()
 
         val template = req match {
-          case Some(value) if page.name != "#generated" => searchCmsFile(value, page).map(_.content).getOrElse("")
-          case _ => if (ctx.request.getQueryString("draft").contains("true")) page.draft
+          case Some(value) if page.name != "#generated" =>
+            searchCmsFile(value, page).map(_.content).getOrElse("")
+          case _ =>
+            if (ctx.request.getQueryString("draft").contains("true")) page.draft
             else page.body
         }
 

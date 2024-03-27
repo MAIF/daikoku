@@ -918,9 +918,14 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
   }
 
   override def clear() = {
-    Source.future(reactivePg
-      .query("select 'drop table if exists \"' || tablename || '\" cascade;' as query from pg_tables where schemaname = 'public';")
-      .map(r => r.asScala.toSeq.map(_.getString("query"))))
+    Source
+      .future(
+        reactivePg
+          .query(
+            "select 'drop table if exists \"' || tablename || '\" cascade;' as query from pg_tables where schemaname = 'public';"
+          )
+          .map(r => r.asScala.toSeq.map(_.getString("query")))
+      )
       .mapConcat(identity)
       .mapAsync(5)(query => {
         logger.debug(query)

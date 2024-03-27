@@ -4,7 +4,10 @@ import cats.data.EitherT
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -17,7 +20,12 @@ import org.apache.commons.codec.binary.Base32
 import org.joda.time.{DateTime, Hours}
 import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
-import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
+import play.api.mvc.{
+  AbstractController,
+  Action,
+  AnyContent,
+  ControllerComponents
+}
 
 import java.time.Instant
 import java.util.Base64
@@ -522,18 +530,40 @@ class UsersController(
       )(ctx) {
 
         (for {
-          token <- EitherT.fromOption[Future][AppError, String](maybeToken, AppError.InternalServerError("no token provided"))
+          token <- EitherT.fromOption[Future][AppError, String](
+            maybeToken,
+            AppError.InternalServerError("no token provided")
+          )
           _ = AppLogger.info(token)
-          user <- EitherT.fromOptionF[Future, AppError, User](env.dataStore.userRepo.findOne(Json.obj("invitation.token" -> token)), AppError.UserNotFound)
+          user <- EitherT.fromOptionF[Future, AppError, User](
+            env.dataStore.userRepo
+              .findOne(Json.obj("invitation.token" -> token)),
+            AppError.UserNotFound
+          )
           _ = AppLogger.info(user.id.value)
-          _ <- EitherT.pure[Future, AppError](ctx.setCtxValue("invited_user", user.email))
-          notification <- EitherT.fromOptionF[Future, AppError, Notification](env.dataStore.notificationRepo.forTenant(ctx.tenant).findOne(Json.obj(
-            "action.type" -> "TeamInvitation",
-            "action.user" -> user.id.asJson
-          )), AppError.EntityNotFound("notification"))
+          _ <- EitherT.pure[Future, AppError](
+            ctx.setCtxValue("invited_user", user.email)
+          )
+          notification <- EitherT.fromOptionF[Future, AppError, Notification](
+            env.dataStore.notificationRepo
+              .forTenant(ctx.tenant)
+              .findOne(
+                Json.obj(
+                  "action.type" -> "TeamInvitation",
+                  "action.user" -> user.id.asJson
+                )
+              ),
+            AppError.EntityNotFound("notification")
+          )
           _ = AppLogger.info(notification.id.value)
-          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.notificationRepo.forTenant(ctx.tenant).deleteById(notification.id))
-          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.userRepo.deleteById(user.id))
+          _ <- EitherT.liftF[Future, AppError, Boolean](
+            env.dataStore.notificationRepo
+              .forTenant(ctx.tenant)
+              .deleteById(notification.id)
+          )
+          _ <- EitherT.liftF[Future, AppError, Boolean](
+            env.dataStore.userRepo.deleteById(user.id)
+          )
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())
           .merge

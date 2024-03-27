@@ -6,7 +6,11 @@ import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain._
@@ -401,8 +405,11 @@ class TeamController(
                         apisCreationPermission = team.apisCreationPermission
                       )
 
-                  val isTeamContactChanged = team.contact != teamWithEdits.contact
-                  val teamToSave = teamWithEdits.copy(verified = teamWithEdits.verified && !isTeamContactChanged)
+                  val isTeamContactChanged =
+                    team.contact != teamWithEdits.contact
+                  val teamToSave = teamWithEdits.copy(verified =
+                    teamWithEdits.verified && !isTeamContactChanged
+                  )
                   if (isTeamContactChanged) {
                     implicit val language: String = ctx.user.defaultLanguage
                       .getOrElse(ctx.tenant.defaultLanguage.getOrElse("en"))
@@ -605,11 +612,13 @@ class TeamController(
             )
           )
         } yield {
-          Right(Ok(
-            Json.obj(
-              "pendingUsers" -> JsArray(pendingUsers.map(_.asSimpleJson))
+          Right(
+            Ok(
+              Json.obj(
+                "pendingUsers" -> JsArray(pendingUsers.map(_.asSimpleJson))
+              )
             )
-          ))
+          )
         }
       }
     }
@@ -1136,16 +1145,30 @@ class TeamController(
                       )
                   }
                 case Some(user) if !team.users.exists(_.userId == user.id) =>
-                  env.dataStore.notificationRepo.forTenant(ctx.tenant)
-                    .findOne(Json.obj("action.type" -> "TeamInvitation", "action.user" -> user.id.asJson))
+                  env.dataStore.notificationRepo
+                    .forTenant(ctx.tenant)
+                    .findOne(
+                      Json.obj(
+                        "action.type" -> "TeamInvitation",
+                        "action.user" -> user.id.asJson
+                      )
+                    )
                     .flatMap {
-                      case Some(n) => env.dataStore.notificationRepo.forTenant(ctx.tenant).deleteById(n.id)
-                        .map(_ => Ok(Json.obj("deleted" -> true)))
-                      case None => FastFuture.successful(BadRequest(Json.obj("error" -> "User isn't invited")))
+                      case Some(n) =>
+                        env.dataStore.notificationRepo
+                          .forTenant(ctx.tenant)
+                          .deleteById(n.id)
+                          .map(_ => Ok(Json.obj("deleted" -> true)))
+                      case None =>
+                        FastFuture.successful(
+                          BadRequest(Json.obj("error" -> "User isn't invited"))
+                        )
                     }
                 case Some(_) =>
                   FastFuture.successful(
-                    Conflict(Json.obj("error" -> "User is already member of your team"))
+                    Conflict(
+                      Json.obj("error" -> "User is already member of your team")
+                    )
                   )
                 case None =>
                   FastFuture.successful(

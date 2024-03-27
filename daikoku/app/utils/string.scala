@@ -30,6 +30,6 @@ object StringImplicits {
         .toLowerCase
         .trim
     }
-     def slugify: String = Slugify.builder().build().slugify(s)
+    def slugify: String = Slugify.builder().build().slugify(s)
   }
 }

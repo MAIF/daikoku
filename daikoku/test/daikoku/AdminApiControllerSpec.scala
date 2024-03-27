@@ -885,7 +885,8 @@ class AdminApiControllerSpec
           path = s"/admin-api/apis",
           method = "POST",
           headers = getAdminApiHeader(adminApiSubscription),
-          body = defaultApi.api.copy(id = ApiId("foo"), name = "foo").asJson.some
+          body =
+            defaultApi.api.copy(id = ApiId("foo"), name = "foo").asJson.some
         )(tenant)
 
         respName.status mustBe 400
@@ -1093,7 +1094,11 @@ class AdminApiControllerSpec
         val childApiId = ApiId(IdGenerator.token)
         val otherApiId = ApiId(IdGenerator.token)
 
-        val childApi = defaultApi.api.copy(id = childApiId, parent = defaultApi.api.id.some, currentVersion = Version("2.0.0-test"))
+        val childApi = defaultApi.api.copy(
+          id = childApiId,
+          parent = defaultApi.api.id.some,
+          currentVersion = Version("2.0.0-test")
+        )
         val otherApi = defaultApi.api.copy(id = otherApiId, name = "other API")
 
         setupEnvBlocking(
@@ -1114,7 +1119,11 @@ class AdminApiControllerSpec
           headers = getAdminApiHeader(adminApiSubscription),
           body = Json
             .arr(
-              Json.obj("op" -> "replace", "path" -> "/description", "value" -> "foo")
+              Json.obj(
+                "op" -> "replace",
+                "path" -> "/description",
+                "value" -> "foo"
+              )
             )
             .some
         )(tenant)
@@ -1136,7 +1145,11 @@ class AdminApiControllerSpec
           headers = getAdminApiHeader(adminApiSubscription),
           body = Json
             .arr(
-              Json.obj("op" -> "replace", "path" -> "/description", "value" -> "foo")
+              Json.obj(
+                "op" -> "replace",
+                "path" -> "/description",
+                "value" -> "foo"
+              )
             )
             .some
         )(tenant)
@@ -1156,7 +1169,11 @@ class AdminApiControllerSpec
           headers = getAdminApiHeader(adminApiSubscription),
           body = Json
             .arr(
-              Json.obj("op" -> "replace", "path" -> "/name", "value" -> defaultApi.api.name)
+              Json.obj(
+                "op" -> "replace",
+                "path" -> "/name",
+                "value" -> defaultApi.api.name
+              )
             )
             .some
         )(tenant)
@@ -1172,20 +1189,22 @@ class AdminApiControllerSpec
 
         respOtherPut.status mustBe 400
 
-
         val respOtherOkPatch = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${otherApiId.value}",
           method = "PATCH",
           headers = getAdminApiHeader(adminApiSubscription),
           body = Json
             .arr(
-              Json.obj("op" -> "replace", "path" -> "/name", "value" -> "test-test-test")
+              Json.obj(
+                "op" -> "replace",
+                "path" -> "/name",
+                "value" -> "test-test-test"
+              )
             )
             .some
         )(tenant)
 
         respOtherOkPatch.status mustBe 204
-
 
         val respOtherOkPut = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${otherApiId.value}",
@@ -1200,7 +1219,10 @@ class AdminApiControllerSpec
           path = s"/admin-api/apis",
           method = "POST",
           headers = getAdminApiHeader(adminApiSubscription),
-          body = defaultApi.api.copy(id = ApiId(IdGenerator.token), parent = None).asJson.some
+          body = defaultApi.api
+            .copy(id = ApiId(IdGenerator.token), parent = None)
+            .asJson
+            .some
         )(tenant)
 
         respCreateKo.status mustBe 400
@@ -1209,7 +1231,10 @@ class AdminApiControllerSpec
           path = s"/admin-api/apis",
           method = "POST",
           headers = getAdminApiHeader(adminApiSubscription),
-          body = defaultApi.api.copy(id = ApiId(IdGenerator.token), name = "final_api_test").asJson.some
+          body = defaultApi.api
+            .copy(id = ApiId(IdGenerator.token), name = "final_api_test")
+            .asJson
+            .some
         )(tenant)
 
         respCreateOk.status mustBe 201
@@ -2555,9 +2580,11 @@ class AdminApiControllerSpec
           path = s"/admin-api/users/${user.id.value}",
           method = "PATCH",
           headers = getAdminApiHeader(adminApiSubscription),
-          body = Json.obj(
-            "personalEmail" -> userAdminEmail
-          ).some
+          body = Json
+            .obj(
+              "personalEmail" -> userAdminEmail
+            )
+            .some
         )(tenant)
         resp.status mustBe 409
       }
@@ -2574,9 +2601,11 @@ class AdminApiControllerSpec
           path = s"/admin-api/users/${user.id.value}",
           method = "PATCH",
           headers = getAdminApiHeader(adminApiSubscription),
-          body = Json.obj(
-            "tenants" -> Json.arr(Json.obj("email" -> userAdminEmail))
-          ).some
+          body = Json
+            .obj(
+              "tenants" -> Json.arr(Json.obj("email" -> userAdminEmail))
+            )
+            .some
         )(tenant)
         resp.status mustBe 409
       }
@@ -2593,13 +2622,14 @@ class AdminApiControllerSpec
           path = s"/admin-api/users/${user.id.value}",
           method = "PATCH",
           headers = getAdminApiHeader(adminApiSubscription),
-          body = Json.obj(
-            "email" -> userAdminEmail
-          ).some
+          body = Json
+            .obj(
+              "email" -> userAdminEmail
+            )
+            .some
         )(tenant)
         resp.status mustBe 204
       }
-
 
       "GET :: Not Found" in {
         setupEnvBlocking(

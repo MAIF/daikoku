@@ -472,7 +472,11 @@ class MockController(
   def reset() =
     Action.async { _ =>
       (for {
-        _ <- EitherT.cond[Future][AppError, Unit](env.config.isDev, (), AppError.SecurityError("Action not avalaible"))
+        _ <- EitherT.cond[Future][AppError, Unit](
+          env.config.isDev,
+          (),
+          AppError.SecurityError("Action not avalaible")
+        )
         _ <- EitherT.liftF[Future, AppError, Unit](env.dataStore.clear())
         _ <- EitherT.liftF[Future, AppError, Done](env.initDatastore())
       } yield Redirect("/"))

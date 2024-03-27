@@ -39,7 +39,7 @@ import {
   ITestingConfig,
   IUsagePlan,
   ResponseDone,
-  ResponseError
+  ResponseError,
 } from '../types/api';
 
 const HEADERS = {
@@ -56,7 +56,7 @@ const customFetch = <T>(
 export const me = (): PromiseWithError<IUser> => customFetch('/api/me');
 export const myOwnTeam = () => customFetch('/api/me/teams/own');
 export const oneOfMyTeam = (id: any) => customFetch(`/api/me/teams/${id}`);
-export const getUserContext = (): PromiseWithError<IStateContext> => customFetch('/api/me/context')
+export const getUserContext = (): PromiseWithError<IStateContext> => customFetch('/api/me/context');
 
 export const getVisibleApiWithId = (id: string): PromiseWithError<IApi> =>
   customFetch(`/api/me/visible-apis/${id}`);
@@ -997,13 +997,12 @@ export const checkConnection = (config: any, user?: any) =>
   });
 
 function updateQueryStringParameter(uri, key, value) {
-  const re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
-  const separator = uri.indexOf('?') !== -1 ? "&" : "?";
+  const re = new RegExp('([?&])' + key + '=.*?(&|$)', 'i');
+  const separator = uri.indexOf('?') !== -1 ? '&' : '?';
   if (uri.match(re)) {
-    return uri.replace(re, '$1' + key + "=" + value + '$2');
-  }
-  else {
-    return uri + separator + key + "=" + value;
+    return uri.replace(re, '$1' + key + '=' + value + '$2');
+  } else {
+    return uri + separator + key + '=' + value;
   }
 }
 
@@ -1012,7 +1011,7 @@ export const login = (username: string, password: string, action: string, redire
   body.append('username', username);
   body.append('password', password);
 
-  const url = redirect ? updateQueryStringParameter(action, "redirect", redirect) : action;
+  const url = redirect ? updateQueryStringParameter(action, 'redirect', redirect) : action;
 
   return fetch(url, {
     method: 'POST',
@@ -1120,13 +1119,16 @@ export const reset2faAccess = (backupCodes: any) =>
 
 export const selfVerify2faCode = (code: string) => customFetch(`/api/me/_2fa/enable?code=${code}`);
 
-export const validateInvitationToken = (token?: string | null): PromiseWithError<{ team: string, notificationId: string, user: string }> =>
+export const validateInvitationToken = (
+  token?: string | null
+): PromiseWithError<{ team: string; notificationId: string; user: string }> =>
   customFetch('/api/me/invitation/_check', {
     method: 'POST',
     body: JSON.stringify({ token }),
   });
 
-export const declineMyTeamInvitation = (token: string): PromiseWithError<ResponseDone> => customFetch(`/api/me/invitation?token=${token}`, { method: 'DELETE' });
+export const declineMyTeamInvitation = (token: string): PromiseWithError<ResponseDone> =>
+  customFetch(`/api/me/invitation?token=${token}`, { method: 'DELETE' });
 
 export const createNewApiVersion = (apiId: string, teamId: string, version: string) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {

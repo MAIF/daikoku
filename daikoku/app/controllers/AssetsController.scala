@@ -3,7 +3,12 @@ package fr.maif.otoroshi.daikoku.ctrls
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.apache.pekko.util.ByteString
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuTenantAction}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest,
+  DaikokuTenantAction
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.{Asset, AssetId}
@@ -15,7 +20,13 @@ import org.apache.pekko.stream.connectors.s3.ObjectMetadata
 import play.api.http.HttpEntity
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{AbstractController, Action, AnyContent, BodyParser, ControllerComponents}
+import play.api.mvc.{
+  AbstractController,
+  Action,
+  AnyContent,
+  BodyParser,
+  ControllerComponents
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
@@ -197,10 +208,20 @@ class TeamAssetsController(
                     )(cfg)
                     .flatMap { _ =>
                       val slug = filename.slugify
-                      env.dataStore.assetRepo.forTenant(ctx.tenant)
+                      env.dataStore.assetRepo
+                        .forTenant(ctx.tenant)
                         .deleteById(assetId)
-                        .flatMap(_ => env.dataStore.assetRepo.forTenant(ctx.tenant)
-                          .save(Asset(AssetId(assetId), tenant = ctx.tenant.id, slug)))
+                        .flatMap(_ =>
+                          env.dataStore.assetRepo
+                            .forTenant(ctx.tenant)
+                            .save(
+                              Asset(
+                                AssetId(assetId),
+                                tenant = ctx.tenant.id,
+                                slug
+                              )
+                            )
+                        )
                         .map(_ => Ok(Json.obj("done" -> true, "id" -> assetId)))
                     } recover {
                     case e =>
@@ -343,57 +364,84 @@ class TenantAssetsController(
       Accumulator.source[ByteString].map(Right.apply)
     }
 
+  def storeAssets() =
+    DaikokuAction.async(bodyParser) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} syncs assets")
+      )(ctx.tenant.id.value, ctx) { (_, _) =>
+        ctx.tenant.bucketSettings match {
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> "No bucket config found !"))
+            )
+          case Some(cfg) =>
+            ctx.request.body
+              .runWith(Sink.reduce[ByteString](_ ++ _))(env.defaultMaterializer)
+              .map(str => str.utf8String)
+              .map(Json.parse)
+              .flatMap(items =>
+                Future.sequence(
+                  items
+                    .as[JsArray]
+                    .value
+                    .map(item => {
+                      val filename = (item \ "filename").as[String]
+                      val assetId = AssetId(IdGenerator.uuid)
+                      val slug = filename.slugify
 
-  def storeAssets() = DaikokuAction.async(bodyParser) { ctx =>
-    TenantAdminOnly(
-      AuditTrailEvent(s"@{user.name} syncs assets")
-    )(ctx.tenant.id.value, ctx) { (_, _) =>
-
-      ctx.tenant.bucketSettings match {
-        case None =>
-          FastFuture.successful(NotFound(Json.obj("error" -> "No bucket config found !")))
-        case Some(cfg) =>
-          ctx.request.body
-            .runWith(Sink.reduce[ByteString](_ ++ _))(env.defaultMaterializer)
-            .map(str => str.utf8String)
-            .map(Json.parse)
-            .flatMap(items => Future.sequence(items.as[JsArray].value.map(item => {
-              val filename = (item \ "filename").as[String]
-              val assetId = AssetId(IdGenerator.uuid)
-              val slug = filename.slugify
-
-              env.assetsStore
-                .storeTenantAsset(
-                  ctx.tenant.id,
-                  assetId,
-                  name = filename,
-                  title = filename,
-                  desc = filename,
-                  contentType = "application/octet-stream",
-                  content = Source.single((item \ "content").get)
-                    .map(Json.stringify)
-                    .map(ByteString.apply)
-                )(cfg)
-                .flatMap { _ =>
-                  internalDeleteAsset(slug, ctx)
-                    .map(_ => env.dataStore.assetRepo.forTenant(ctx.tenant).save(Asset(assetId, tenant = ctx.tenant.id, slug = slug)))
-                    .map(_ => Json.obj("done" -> true, "id" -> assetId.value, "slug" -> slug))
-                } recover {
-                  case e =>
-                    AppLogger.error(
-                      s"Error during tenant asset storage: $filename",
-                      e
-                    )
-                  Json.obj("id" -> assetId.value, "error" -> ec.toString)
-                }
-            })))
-            .map(results => Ok(Json.arr(results)))
-            .recover {
-              case e: Throwable => BadRequest(Json.obj("error" -> e.getMessage))
-            }
+                      env.assetsStore
+                        .storeTenantAsset(
+                          ctx.tenant.id,
+                          assetId,
+                          name = filename,
+                          title = filename,
+                          desc = filename,
+                          contentType = "application/octet-stream",
+                          content = Source
+                            .single((item \ "content").get)
+                            .map(Json.stringify)
+                            .map(ByteString.apply)
+                        )(cfg)
+                        .flatMap { _ =>
+                          internalDeleteAsset(slug, ctx)
+                            .map(_ =>
+                              env.dataStore.assetRepo
+                                .forTenant(ctx.tenant)
+                                .save(
+                                  Asset(
+                                    assetId,
+                                    tenant = ctx.tenant.id,
+                                    slug = slug
+                                  )
+                                )
+                            )
+                            .map(_ =>
+                              Json.obj(
+                                "done" -> true,
+                                "id" -> assetId.value,
+                                "slug" -> slug
+                              )
+                            )
+                        } recover {
+                        case e =>
+                          AppLogger.error(
+                            s"Error during tenant asset storage: $filename",
+                            e
+                          )
+                          Json
+                            .obj("id" -> assetId.value, "error" -> ec.toString)
+                      }
+                    })
+                )
+              )
+              .map(results => Ok(Json.arr(results)))
+              .recover {
+                case e: Throwable =>
+                  BadRequest(Json.obj("error" -> e.getMessage))
+              }
+        }
       }
     }
-  }
 
   def storeAsset() =
     DaikokuAction.async(bodyParser) { ctx =>
@@ -409,10 +457,12 @@ class TenantAssetsController(
             .getQueryString("filename")
             .getOrElse(IdGenerator.token(16))
         )
-        val title = normalize(ctx.request.getQueryString("title").getOrElse("--"))
+        val title =
+          normalize(ctx.request.getQueryString("title").getOrElse("--"))
         val desc = ctx.request.getQueryString("desc").getOrElse("--")
-        val querySlug: Option[String] = ctx.request.getQueryString("slug")
-            .flatMap(slug => if (slug.isEmpty) None else Some(slug))
+        val querySlug: Option[String] = ctx.request
+          .getQueryString("slug")
+          .flatMap(slug => if (slug.isEmpty) None else Some(slug))
         val assetId = AssetId(IdGenerator.uuid)
 
         ctx.tenant.bucketSettings match {
@@ -434,9 +484,18 @@ class TenantAssetsController(
               .flatMap { _ =>
                 val slug = querySlug.map(_.slugify).getOrElse(filename.slugify)
 
-                env.dataStore.assetRepo.forTenant(ctx.tenant)
+                env.dataStore.assetRepo
+                  .forTenant(ctx.tenant)
                   .save(Asset(assetId, tenant = ctx.tenant.id, slug = slug))
-                  .map(_ => Ok(Json.obj("done" -> true, "id" -> assetId.value, "slug" -> slug)))
+                  .map(_ =>
+                    Ok(
+                      Json.obj(
+                        "done" -> true,
+                        "id" -> assetId.value,
+                        "slug" -> slug
+                      )
+                    )
+                  )
 
               } recover {
               case e =>
@@ -500,10 +559,20 @@ class TenantAssetsController(
                     )(cfg)
                     .flatMap { _ =>
                       val slug = filename.slugify
-                      env.dataStore.assetRepo.forTenant(ctx.tenant)
+                      env.dataStore.assetRepo
+                        .forTenant(ctx.tenant)
                         .deleteById(assetId)
-                        .flatMap(_ =>  env.dataStore.assetRepo.forTenant(ctx.tenant)
-                            .save(Asset(AssetId(assetId), tenant = ctx.tenant.id, slug)))
+                        .flatMap(_ =>
+                          env.dataStore.assetRepo
+                            .forTenant(ctx.tenant)
+                            .save(
+                              Asset(
+                                AssetId(assetId),
+                                tenant = ctx.tenant.id,
+                                slug
+                              )
+                            )
+                        )
                         .map(_ => Ok(Json.obj("done" -> true, "id" -> assetId)))
                     } recover {
                     case e =>
@@ -559,10 +628,12 @@ class TenantAssetsController(
 
   def slugifiedAssets() =
     DaikokuAction.async { ctx =>
-      TenantAdminOnly(AuditTrailEvent(s"@{user.name} access to slugified assets"))(ctx.tenant.id.value, ctx) { (_, _) =>
-          env.dataStore.assetRepo.forTenant(ctx.tenant).findAllNotDeleted().map {
-            res => Ok(JsArray(res.map(_.asJson)))
-          }
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} access to slugified assets")
+      )(ctx.tenant.id.value, ctx) { (_, _) =>
+        env.dataStore.assetRepo.forTenant(ctx.tenant).findAllNotDeleted().map {
+          res => Ok(JsArray(res.map(_.asJson)))
+        }
       }
     }
 
@@ -576,27 +647,33 @@ class TenantAssetsController(
       }
     }
 
-  private def internalDeleteAsset[T](assetId: String, ctx: DaikokuActionContext[T]) = {
+  private def internalDeleteAsset[T](
+      assetId: String,
+      ctx: DaikokuActionContext[T]
+  ) = {
     ctx.tenant.bucketSettings match {
       case None =>
         FastFuture.successful(
           NotFound(Json.obj("error" -> "No bucket config found !"))
         )
       case Some(cfg) =>
-        env.dataStore.assetRepo.forTenant(ctx.tenant)
+        env.dataStore.assetRepo
+          .forTenant(ctx.tenant)
           .findOne(Json.obj("slug" -> assetId))
           .map(_.map(_.id.value))
           .map {
-            case None => assetId
+            case None     => assetId
             case Some(id) => id
           }
           .flatMap(id => {
-             env.assetsStore
-                .deleteTenantAsset(ctx.tenant.id, AssetId(id))(cfg)
-                .flatMap { _ =>
-                  env.dataStore.assetRepo.forTenant(ctx.tenant).deleteById(id)
-                    .map(_ => Ok(Json.obj("done" -> true)))
-                }
+            env.assetsStore
+              .deleteTenantAsset(ctx.tenant.id, AssetId(id))(cfg)
+              .flatMap { _ =>
+                env.dataStore.assetRepo
+                  .forTenant(ctx.tenant)
+                  .deleteById(id)
+                  .map(_ => Ok(Json.obj("done" -> true)))
+              }
           })
     }
   }
@@ -608,10 +685,14 @@ class TenantAssetsController(
           FastFuture.successful(
             NotFound(Json.obj("error" -> "No bucket config found !"))
           )
-        case Some(cfg) => env.dataStore.assetRepo.forTenant(ctx.tenant).findOne(Json.obj("slug" -> slug)).map {
-          case Some(_) => NoContent
-          case None => NotFound
-        }
+        case Some(cfg) =>
+          env.dataStore.assetRepo
+            .forTenant(ctx.tenant)
+            .findOne(Json.obj("slug" -> slug))
+            .map {
+              case Some(_) => NoContent
+              case None    => NotFound
+            }
       }
     }
   }
@@ -627,11 +708,20 @@ class TenantAssetsController(
           val download = ctx.request.getQueryString("download").contains("true")
           val redirect = ctx.request.getQueryString("redirect").contains("true")
 
-          env.dataStore.assetRepo.forTenant(ctx.tenant)
+          env.dataStore.assetRepo
+            .forTenant(ctx.tenant)
             .findOne(Json.obj("slug" -> assetId))
             .map {
-              case Some(asset) => env.assetsStore.getTenantAssetPresignedUrl(ctx.tenant.id, asset.id)(cfg)
-              case None => env.assetsStore.getTenantAssetPresignedUrl(ctx.tenant.id, AssetId(assetId))(cfg)
+              case Some(asset) =>
+                env.assetsStore.getTenantAssetPresignedUrl(
+                  ctx.tenant.id,
+                  asset.id
+                )(cfg)
+              case None =>
+                env.assetsStore.getTenantAssetPresignedUrl(
+                  ctx.tenant.id,
+                  AssetId(assetId)
+                )(cfg)
             }
             .flatMap {
               case None =>
@@ -643,7 +733,8 @@ class TenantAssetsController(
                 env.assetsStore
                   .getTenantAsset(ctx.tenant.id, AssetId(assetId))(cfg)
                   .map {
-                    case None => NotFound(Json.obj("error" -> "Asset not found!"))
+                    case None =>
+                      NotFound(Json.obj("error" -> "Asset not found!"))
                     case Some((source, meta)) =>
                       val filename = meta.metadata
                         .filter(_.name().startsWith("x-amz-meta-"))
@@ -679,14 +770,15 @@ class TenantAssetsController(
                             Option(resp.contentType)
                           )
                         )
-                      case _ => NotFound(Json.obj("error" -> "Asset not found!"))
+                      case _ =>
+                        NotFound(Json.obj("error" -> "Asset not found!"))
                     }
                   })
                   .recover {
                     case err =>
                       InternalServerError(Json.obj("error" -> err.getMessage))
                   }
-          }
+            }
       }
     }
   }

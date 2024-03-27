@@ -2259,7 +2259,9 @@ object json {
           .writes(o.thirdPartyPaymentSettings),
         "display" -> TenantDisplayFormat.writes(o.display),
         "environments" -> JsArray(o.environments.map(JsString.apply).toSeq),
-        "cmsRedirections" -> JsArray(o.cmsRedirections.map(JsString.apply).toSeq)
+        "cmsRedirections" -> JsArray(
+          o.cmsRedirections.map(JsString.apply).toSeq
+        )
       )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
@@ -4456,7 +4458,6 @@ object json {
       }
   }
 
-
   val CmsFileFormat = new Format[CmsFile] {
     override def writes(o: CmsFile): JsValue =
       Json.obj(
@@ -4469,7 +4470,9 @@ object json {
         CmsFile(
           name = (json \ "name").as[String],
           content = (json \ "content").as[String],
-          metadata = (json \ "metadata").asOpt[Map[String, JsValue]].getOrElse(Map.empty))
+          metadata =
+            (json \ "metadata").asOpt[Map[String, JsValue]].getOrElse(Map.empty)
+        )
       } match {
         case Failure(exception) => JsError(exception.getMessage)
         case Success(page)      => JsSuccess(page)
