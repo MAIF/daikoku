@@ -65,11 +65,9 @@ jobs:
 
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps chromium
-    - name: start backend
-      run: |
-        cd daikoku
-        sbt "bgRun -Ddaikoku.mode=test -Dhttp.port=9000 -Ddaikoku.storage=postgres -Ddaikoku.postgres.database=daikoku_test -Ddaikoku.postgres.user=postgres -Ddaikoku.init.data.from=javascript/cypress/cypress-test-export.ndjson"
     - name: Run tests
       run: |
         cd daikoku/javascript
         npx playwright test --project chromium
+      env:
+        CI: true
