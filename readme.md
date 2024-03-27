@@ -1,6 +1,6 @@
 # Daikoku
 
-[![Build](https://github.com/MAIF/daikoku/workflows/Build/badge.svg)](https://github.com/MAIF/daikoku/actions?query=workflow%3ABuild) [![Join the chat at https://gitter.im/MAIF/daikoku](https://badges.gitter.im/MAIF/daikoku.svg)](https://gitter.im/MAIF/daikoku?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [ ![Download](https://img.shields.io/github/release/MAIF/daikoku.svg) ](https://github.com/MAIF/daikoku/releases)
+[![Build](https://github.com/MAIF/daikoku/workflows/Build/badge.svg)](https://github.com/MAIF/daikoku/actions?query=workflow%3ABuild) [ ![Download](https://img.shields.io/github/release/MAIF/daikoku.svg) ](https://github.com/MAIF/daikoku/releases)
 
 **Daikoku** is the missing developer portal for <a href="https://maif.github.io/otoroshi">Otoroshi</a> written in Scala and developped by the <a href="https://maif.github.io" target="_blank">MAIF</a> team .
 
@@ -13,7 +13,7 @@ You can join these groups and chats to discuss and ask daikoku related questions
 
 - Issue tracker: [![github: MAIF/daikoku/issues](https://img.shields.io/github/issues/MAIF/daikoku.svg)](https://github.com/MAIF/daikoku/issues)
 - Pull request: [![github: MAIF/daikoku/pulls](https://img.shields.io/github/issues-pr/MAIF/daikoku.svg)](https://github.com/MAIF/daikoku/pulls)
-- Chat room: [![Join the chat at https://gitter.im/MAIF/daikoku](https://badges.gitter.im/MAIF/daikoku.svg)](https://gitter.im/MAIF/daikoku?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+- Chat room: [![Join the chat on Discord](https://img.shields.io/discord/1089571852940218538?color=f9b000&label=Community&logo=Discord&logoColor=f9b000)](https://discord.gg/dmbwZrfpcQ)
 
 ## Contributing
 
