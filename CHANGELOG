@@ -552,3 +552,18 @@ We'd like to thank all the contributors who worked on this release!
 - subscription customMetadata not present in otoroshi apikey [#638](https://github.com/MAIF/daikoku/issues/638)
 - personal team is created with contact as contact@foo.bar [#636](https://github.com/MAIF/daikoku/issues/636)
 
+## [v17.2.0] - 2024-03-27
+
+## :star: New Features
+
+- stylize the toasts [#637](https://github.com/MAIF/daikoku/issues/637)
+- Propose a CLI to sync a project with a tenant CMS pages [#486](https://github.com/MAIF/daikoku/issues/486)
+
+## :beetle: Bug Fixes
+
+- Error Api name already exists when updating an API with multiple versions [#642](https://github.com/MAIF/daikoku/issues/642)
+- team invitation are broken [#640](https://github.com/MAIF/daikoku/issues/640)
+- error on team members page as team user [#639](https://github.com/MAIF/daikoku/issues/639)
+- personal team is created with contact as contact@foo.bar [#636](https://github.com/MAIF/daikoku/issues/636)
+- [JSON PATCH] - handle unknown attribute [#635](https://github.com/MAIF/daikoku/issues/635)
+
