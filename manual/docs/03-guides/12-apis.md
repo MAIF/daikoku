@@ -11,7 +11,7 @@ https://maif.github.io/daikoku/manual/static/openapi/admin-api-openapi.json
 
 You can read the OpenAPI definition in a more human friendly fashion using `Swagger UI`. The swagger UI documentation of the Daikoku admin API is available at :
 
-https://maif.github.io/daikoku/swagger-ui/index.html
+https://maif.github.io/daikoku/openapi/
 
 Every Daikoku instance provides its own OpenAPI descriptor at :
 

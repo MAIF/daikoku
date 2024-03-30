@@ -1,20 +1,20 @@
 # About Daikoku
 
-While [Otoroshi](https://maif.github.io/otoroshi/) is the perfect tool to manage your webapps in a technical point of view it lacked of business perspective. This is not the case anymore whith **Daikoku**.
+While [Otoroshi](https://maif.github.io/otoroshi/) is the perfect tool to manage your webapps in a technical point of view it lacks of business perspective. This is not the case anymore with **Daikoku**.
 
-While **Otoroshi** is a standalone, Daikoku is a developer portal which stands in front of **Otoroshi** and provides some business feature.
+While **Otoroshi** is a standalone, Daikoku is a developer portal which stands in front of **Otoroshi** and provides some business features.
 
-Whether you want to use **Daikoku** for your public APIs you want to monetize or with your private APIs to provide some documentation, facilitation and self-service feature, it will be the perfect portal for **Otoroshi**.
+Whether you want to use **Daikoku** for your public APIs you want to monetize or for your private APIs to provide some documentation, facilitation and self-service features, it will be the perfect portal for **Otoroshi**.
 
 ## Philosophy 
 
 Every OSS product build at <a href="https://www.maif.fr/" target="_blank">MAIF</a> like <a href="https://maif.github.io/otoroshi/" target="_blank">Otoroshi</a> or <a href="https://maif.github.io/izanami/" target="_blank">Izanami</a> follow a common philosophy. 
 
-* the services or API provided should be technology agnostic.
-* http first: http is the right answer to the previous quote   
-* api First: The UI is just another client of the api. 
-* secured: The services exposed need authentication for both humans or machines  
-* event based: The services should expose a way to get notified of what happened inside. 
+* The services or APIs provided should be technology agnostic.
+* HTTP first: HTTP is the right answer to the previous quote.
+* API First: The UI is just another client of the API. 
+* Secured: The services exposed need authentication for both humans or machines.
+* Event based: The services should expose a way to get notified of what happened inside. 
 
 ## Rights and Permissions in Daikoku
 
