@@ -53,7 +53,7 @@ or
 | name | type | default value  | description |
 | ---- |:----:| -------------- | ----- |
 |`daikoku.init.host`|String|"localhost"|  |
-|`daikoku.init.admin.name`|String|"Super admin"| Daikoku default admin name |
+|`daikoku.init.admin.name`|String|"Daikoku admin"| Daikoku default admin name |
 |`daikoku.init.admin.email`|String| "admin@daikoku.io" | Daikoku default admin email |
 |`daikoku.init.admin.password`|String| |Daikoku default admin password |
 |`daikoku.init.data.from` | string |  | A file path or a URL to a Daikoku export file. If the datastore is empty on startup, this file will be used to import data to the empty DB  |
@@ -127,7 +127,7 @@ daikoku {
   init {
     host = "localhost"
     admin {
-      name = "Super admin"
+      name = "Daikoku admin"
       email = "admin@daikoku.io"
       password = "password"
     }

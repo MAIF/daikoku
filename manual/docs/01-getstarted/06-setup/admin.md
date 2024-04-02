@@ -2,7 +2,7 @@
 
 ## Create an admin user after the first run
 
-After using the default super admin on the first connection to Daikoku, it can be a good idea to create a new super admin.
+After using the default Daikoku Admin on the first connection to Daikoku, it can be a good idea to create a new Daikoku Admin.
 Go to `settings (avatar icon) / Organizations settings`.
 
 Go to the `Users` page, 
@@ -14,7 +14,7 @@ Now, you can create a new user. Provide the informations about the admin user yo
 Activate `Daikoku admin.`
 Click on `Create`.
 
-Now, you can log in with the newly created admin and then delete the initially generated `Super admin`, confirm, and the danger popup will go away.
+Now, you can log in with the newly created admin and then delete the initially generated `Daikoku admin`, confirm, and the danger popup will go away.
 
 ## Delete admin user
 

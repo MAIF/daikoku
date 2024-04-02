@@ -25,11 +25,11 @@ Daikoku -> Tenants -> Teams -> APIs
 
 > Users in Daikoku have a multi-tenant context, which allows them to access multiple tenants without the need for multiple accounts. 
 
-The highest level of access is granted to the Super Admin, who has full control over the entire system. From there, rights and permissions are managed at the team level.
+The highest level of access is granted to the Daikoku Admin, who has full control over the entire system. From there, rights and permissions are managed at the team level.
 
 Here are the different levels of permissions within a team:
 
-- **Super Admin**: Users with this role have both Read (R) and Write (W) permissions, granting them complete control over all entities in the system, including tenants.
+- **Daikoku Admin**: Users with this role have both Read (R) and Write (W) permissions, granting them complete control over all entities in the system, including tenants.
 
 - **Administrator**: Administrators have Read (R) permissions across the entire team, allowing them to view all entities, but they can only Write (W) to specific elements within the team. They cannot modify tenant-related settings.
 
@@ -43,7 +43,7 @@ Please note that the "API keys visibility" option of the team (by default set to
 
 For a more visual representation, you can refer to the following matrix:
 
-|            | Super Admin | Administrator | API Editor | User  |
+|            | Daikoku Admin | Administrator | API Editor | User  |
 |------------|-------------|---------------|------------|-------|
 | Tenant     |      RW     |      R        |     R      |   R   |
 | Team       |      RW     |      RW       |     R      |   R   |
