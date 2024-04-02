@@ -1,3 +1,3 @@
-# Using Daikoku as API producer
+# Using Daikoku as an API producer
 
-Now we will see how to use Daikoku for basic tasks that will be useful for your day to day work with Daikoku.
+Now we will see how to use Daikoku for basic tasks that will be useful for your day-to-day work with Daikoku.

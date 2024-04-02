@@ -77,7 +77,7 @@ export const DocumentationGuidesHub = () => <DocumentationThemeHub list={[
     description: 'How to use integration API',
     link: '/docs/guides/integrations'
   },{
-    title: 'Apis',
+    title: 'APIs',
     description: 'How to use admin APIs',
     link: '/docs/guides/apis'
   },{
