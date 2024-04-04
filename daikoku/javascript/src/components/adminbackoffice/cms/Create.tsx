@@ -6,8 +6,8 @@ import { getApolloContext } from '@apollo/client';
 
 import Sidebar, { SideBarRef } from './Sidebar';
 import Body, { BodyRef } from './Body';
-import { Spinner } from '../..';
 import { ModalContext } from '../../../contexts';
+import { Spinner } from '../../utils/Spinner';
 
 export const Create = (props: any) => {
   const { client } = useContext(getApolloContext());

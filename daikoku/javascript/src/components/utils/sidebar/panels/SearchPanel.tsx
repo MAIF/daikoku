@@ -35,7 +35,7 @@ export const SearchPanel = () => {
         value: 'daikoku',
         label: translate('Daikoku settings'),
         type: 'link',
-        url: `/settings/tenants/${tenant._humanReadableId}`,
+        url: `/settings/tenants`,
       });
 
     const utils = {
@@ -88,7 +88,7 @@ export const SearchPanel = () => {
                         {option.label}
                       </Link>);
                     case 'team':
-                      return (<Link to={`/${option.value}/settings`} className="block__entry__link" key={option.value}>
+                      return (<Link to={`/${option.value}/settings/dashboard`} className="block__entry__link" key={option.value}>
                         {option.label}
                       </Link>);
                     case 'api':

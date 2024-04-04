@@ -5,16 +5,16 @@ import newApiUsagePlan from './resources/test_api_2_usage_plan.json';
 const adminApikeyId = 'admin_key_client_id';
 const adminApikeySecret = 'admin_key_client_secret';
 
-test.beforeEach(async ({ request }) => {
+test.beforeEach(async ({page}) => {
   console.log(`Running ${test.info().title}`);
-  await request.post('http://localhost:9000/admin-api/state/reset', {
+  await fetch('http://localhost:9000/admin-api/state/reset', {
+    method: 'POST',
     headers: {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
     }
   })
-    .then(() => fetch('http://localhost:1080/api/emails', {
-      method: 'DELETE'
-    }))
+  .then(r => r.json())
+  .then(r => console.log({r}));
 })
 
 /**
@@ -315,3 +315,46 @@ test('Cascading deletion', async ({ page, request }) => {
 /**
  * update profil
  */
+
+/**
+ *  follow research link
+ */
+test('do search', async ({ page, request }) => {
+  //login
+  await page.goto('http://localhost:9000/apis');
+  await page.getByRole('img', { name: 'user menu' }).click();
+  await page.getByPlaceholder('Email adress').fill('admin@foo.bar');
+  await page.getByPlaceholder('Password').fill('password');
+  await page.getByPlaceholder('Password').press('Enter');
+  await page.waitForResponse(r => r.url().includes('/api/me/context') && r.status() === 200)
+
+  //search a team
+  await page.locator('.notification-link').first().click();
+  await page.getByPlaceholder('Search for API, team and more').fill('testers');
+  await page.waitForResponse(r => r.url().includes('/api/_search') && r.status() === 200)
+  await expect(page.locator('.navbar-panel.opened .block__entry__link')).toHaveCount(1)
+  await expect(page.getByRole('link', { name: 'Testers' })).toBeVisible();
+  await page.getByRole('link', { name: 'Testers' }).click();
+  await expect(page.getByRole('heading', { name: 'In progress demands' })).toBeVisible();
+
+  //search an API
+  await page.locator('.notification-link').first().click();
+  await page.getByPlaceholder('Search for API, team and more').fill('test API');
+  await page.waitForResponse(r => r.url().includes('/api/_search') && r.status() === 200)
+  // await expect(page.getByRole('link').count()).toBe(2)
+  await expect(page.getByRole('link', { name: 'test API - 1.0.0' })).toBeVisible();
+  await page.getByRole('link', { name: 'test API - 2.0.0' }).click();
+  await expect(page.getByRole('heading', { name: 'test API 2.0.0' })).toBeVisible();
+  await page.locator('.notification-link').first().click();
+
+  //go to profile page
+  await page.getByPlaceholder('Search for API, team and more').fill('');
+  await page.waitForResponse(r => r.url().includes('/api/_search') && r.status() === 200)
+  await page.getByRole('link', { name: 'My profile' }).click();
+  await expect(page.getByLabel('Name')).toHaveValue("Admin"); // expect = admin
+  await page.locator('.notification-link').first().click();
+
+  //go to daikoku settings
+  await page.getByRole('link', { name: 'Daikoku settings' }).click();
+  await page.locator('div').filter({ hasText: /^Evil Corp\.$/ }).first().click();
+});
