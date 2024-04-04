@@ -101,7 +101,7 @@ object InitConfig {
       AdminConfig(
         name = configuration
           .getOptional[String]("daikoku.init.admin.name")
-          .getOrElse("Super admin"),
+          .getOrElse("Daikoku admin"),
         email = configuration
           .getOptional[String]("daikoku.init.admin.email")
           .getOrElse("admin@otoroshi.io"),

@@ -1,66 +1,66 @@
 # Managing APIs
 
 ## Create a new API
-To create a new API, you can click on the `+ API` button in the catalog page or the `Create new API` button in the Team's APIs page in your back offices' team.
+To create a new API, you can click on the `+ API` button in the catalog page or the `Create new API` button in the Team's APIs page in your back office's team.
 After clicking on the button localized in the catalog page, you need to choose a team which is the owner.
 
-### API informations
+### API information
 An API needs a name to be created.
-Then, you can add a small description, which will be displayed in the corresponding catalog's page.
+Then, you can add a small description, which will be displayed on the corresponding catalog's page.
 The API can be published or not. In the latter case, you can consider this as a draft.
-An image can be provide for the "card view" of the Api list page.
-to go further in customization of Daikoku, the header of frontebd page of all APIs can be customized by HTML
-> To keep the title and the description use title and description surrended by double brace in your template. You can add a button with the `btn-edit` classname to add a direct link to API backoffice for your team members.
+An image can be provided for the "card view" of the API list page.
+To go further in the customization of Daikoku, the header of frontend page of all APIs can be customized by HTML
+> To keep the title and the description, use the title and description surrended by a double brace in your template. You can add a button with the `btn-edit` classname to add a direct link to the API backoffice for your team members.
 
 ### Versions and tags
-Versionning your API is supported. You can update the current version of your API.
+Versioning your API is supported. You can update the current version of your API.
 :::warning
-Make sure that your main version is toggle as `use as last version` to be sure the link in the API list redirect to the correct version of your API.
+Make sure that your main version is toggle as `use as last version` to be sure the link in the API list redirects to the correct version of your API.
 :::
 Supported versions are pure information for your users.
-Tags and categories are array of item, mostly used to filter APIs.
+Tags and categories are arrays of items, mostly used to filter APIs.
 
-### Visibililty
+### Visibility
 Visibility can be:
 
 * public: everybody can see the complete API.
-* public with authorization: everybody sees just a part of the API, on the catalog's page (name, tags, categories and small desc.). Everybody can ask access to an admin of owner team.
-* private: Just authorized teams have access to the API.
+* public with authorization: everybody sees just a part of the API, on the catalog's page (name, tags, categories and small desc.). Everybody can ask for access to an admin of owner team.
+* private: Only authorized teams have access to the API.
 
 ### Authorizations
-The teams which have access to the API, in the case of visibility is private.
+The teams that have access to the API, in the case of visibility are private.
 
 ### Description
-API description. Basically it can be written in markdown but you can use HTML.
-The description can be set from team asset.
+API description. Basically, it can be written in MarkDown, but you can also use HTML.
+The description can be set as a team asset.
 
 ### Plans
 An API needs a plan to be subscribed.
-Plan needs a name, possibly a description and an [otoroshi instance](../08-tenantusage/1-otoroshi.md).
+Plan needs a name, possibly a description and an [Otoroshi instance](../08-tenantusage/1-otoroshi.md).
 
-You can define a plan as **default plan** as it's possible to **make it private** (only accessible by the producer team)
-It's possible to **allow multiple API keys** for a plan (by default a team can only have one API key).
+You can define a plan as the **default plan**, as it's possible to **make it private** (only accessible by the producer team).
+It's possible to **allow multiple API keys** for a plan (by default, a team can only have one API key).
 It's possible to **allow API keys aggregation**
 
 It's important to choose a type of plan :
 
 * **free without quotas**: a plan with an unlimited number of calls per day and per month.
 * **free with quotas**: a plan with a limited number of calls per day and per month. Quotas will be set by default and can be overwritten.
-* **quotas with limit**: a priced plan with a limited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost by month can be set. 
-* **quotas without limit**: a priced plan with unlimited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost by month can be set. The cost per additional requests can be set.
-* **pay per use**: a plan priced on usage. A fixed cost by month can be set. The cost per additional requests can be set.
+* **quotas with limits**: a priced plan with a limited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost by month can be set. 
+* **quotas without limit**: a priced plan with an unlimited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost per month can be set. The cost per additional requests can be set.
+* **pay per use**: a plan priced on usage. A fixed cost per month can be set. The cost per additional requests can be set.
 
 The subscription process in Daikoku offers flexibility, allowing users to customize their validation steps. There are three possible types of steps:
 
-  * **Admin Validation**: This step requires an administrator from the AP I's owning team to validate the subscription request. When a request is submitted, all administrators in the team receive a Daikoku notification and an email containing the request details. The first administrator who validates the notification approves the step.
-> it's possible to configure this step to display a specific form when user ask subscription.
-> to parameter the form, we use the json language use by [@maif/react-forms](https://github.com/MAIF/react-forms#maifreact-forms).
-> You can write a formatter to format the form response as a notification sended to admins. it's just a string with a replacement pattern like this `[[label]]`
-> the result of the form is used to automatically generate metadata which will be deleteable or modifiable before validation by the admin
+  * **Admin Validation**: This step requires an administrator from the API's owning team to validate the subscription request. When a request is submitted, all administrators in the team receive a Daikoku notification and an email containing the request details. The first administrator who validates the notification approves the step.
+> It's possible to configure this step to display a specific form when the user asks for a subscription.
+> To parameterize the form, we use the JSON language used by [@maif/react-forms](https://github.com/MAIF/react-forms#maifreact-forms).
+> You can write a formatter to format the form response as a notification sent to admins. It's just a string with a replacement pattern like this `[[label]]`
+> the result of the form is used to automatically generate metadata which will be deletable or modifiable before validation by the admin
 
-  * **HTTP Request**: This step is a semi-automatic step. A http POST is sended to an API with the whole context of the subscription demand
-A json response is awaited with a precise format.
-> a property `accept` as boolean to accept or reject the subscription demand
+  * **HTTP Request**: This step is a semi-automatic step. A HTTP POST is sent to an API with the whole context of the subscription demand.
+A JSON response is awaited with a precise format.
+> A property `accept` as boolean to accept or reject the subscription demand
 > it totally possible to calculate and give some metadata or custom property for the subscription to created
 > ```json
 > {
@@ -77,7 +77,7 @@ A json response is awaited with a precise format.
 >   "customReadOnly": true
 > }
 > ```
-> the body of the call contains lot of data as the context:  the subscription demand with the other step information, the api, the usage plan, the team and the aggragation in case of an aggergated apikey
+> The body of the call contains a lot of data in the context: the subscription demand with the other step information, the API, the usage plan, the team and the aggregation in case of an aggregated apikey
 > ```json
 > {
 >   "demand": {},
@@ -134,38 +134,38 @@ Once the subscription request is validated or declined, notifications and emails
 If your subscription plan is associated with consumption-based pricing, you can also modify certain billing information, such as your name, address, and payment details. The link to the billing information modification page, stored by the payment gateway, can be found on Daikoku's billing page.
 
 #### Otoroshi, billing and security
-Depending on chosen plan type, certain custom properties may be accessibles.
+Depending on the chosen plan type, certain custom properties may be accessible.
 
-- Plan needs an Otoroshi instance to allow users to subscribe. After choosing an instance, a list of Otoroshi service groups and services is accessible to link daikoku api/plan with one or more Otoroshi service group or services.
-- As it's Otoroshi which manages apis, apikey quotas can be define.
-- Daikoku provide, like [Otoroshi](https://maif.github.io/otoroshi/manual/entities/apikeys.html), some apikey parameters.
+- Plan needs an Otoroshi instance to allow users to subscribe. After choosing an instance, a list of Otoroshi service groups and services is accessible to link Daikoku API/plan with one or more Otoroshi service groups or services.
+- As it's Otoroshi which manages APIs, apikey quotas can be defined.
+- Daikoku provides, like [Otoroshi](https://maif.github.io/otoroshi/manual/entities/apikeys.html), some apikey parameters.
 - Daikoku side, billing informations can be filled (billing period, cost per month, currency ...)
-- For security, you can force apikey rotation. it's an Otoroshi feature that will reset clientSecret every month with a grace period of 1 week (during this week both secrets works)
-- You can force the integration process :
-  * ApiKey: subscribers have access to an apikey to call api
-  * Automatic: Subscribers have just access to a token, which link to a real apikey, accessible by admin api. It's a perfect solution to integrate automatically your apikey in your prod environment if rotation is activated.
+- For security, you can force apikey rotation. It's an Otoroshi feature that will reset clientSecret every month with a grace period of 1 week (during this week both secrets work)
+- You can force the integration process:
+  * ApiKey: subscribers have access to an apikey to call API
+  * Automatic: Subscribers have just access to a token, which links to a real apikey, accessible by admin API. It's a perfect solution to integrate automatically your apikey in your prod environment if rotation is activated.
 
 :::note
-As Otoroshi does, it's possible to add metadata on API keys. __Automatic metadata__ will be calculated and added after subscription validation. __Asked metadata__ will switch the plan subscription mode to manual then, on susbcription acceptation, a team admin will have to add the metadata manually. 
+As Otoroshi does, it's possible to add metadata to API keys. __Automatic metadata__ will be calculated and added after subscription validation. __Asked metadata__ will switch the plan subscription mode to manual then, on subscription acceptation, a team admin will have to add the metadata manually. 
 :::
 
 ### OpenAPI definition
-The OpenAPI definition can be provided as a url or just some content paste on the UI.
-an additional configuration allow to 
+The OpenAPI definition can be provided as an URL or just some content pasted on the UI.
+An additional configuration allow to 
 
 ### Testing
 
 You can enable the testing for your API.
 
-> The testing is based on the openAPI definition of your API. Beware of set up the right host of your testing service.
+> The testing is based on the openAPI definition of your API. Beware of set up the right host for your testing service.
 
-Click on the `Generate a dedicated testing key in Otoroshi` to choose an otoroshi instance and and service group or service which is used to receive the testing APIkey. Then, just follow the instruction display on UI?
+Click on the `Generate a dedicated testing key in Otoroshi` to choose an Otoroshi instance and service group or service which is used to receive the testing APIkey. Then, just follow the instructions displayed on UI?
 
 #### Configure your openAPI
 
-Your openAPI have to be configured to accept apikey from Basic authentication header or from the `Otoroshi-Client-Id` and `Otoroshi-Client-Secret` headers.
+Your openAPI has to be configured to accept apikey from Basic authentication header or from the `Otoroshi-Client-Id` and `Otoroshi-Client-Secret` headers.
 
-If you had changed the Otoroshi headers to pass the apikey don't forget to apply the changes on your openAPI.
+If you have changed the Otoroshi headers to pass the apikey don't forget to apply the changes on your openAPI.
 
 ```json
 ...
@@ -202,12 +202,12 @@ Make sure this service descriptor is the right one for testing and not your prod
 :::
 
 ### Documentation
-The documentation tabs allows you to create a paginated documentation. Like description every pages can be written with markdown or set from asset.
+The documentation tabs allow you to create paginated documentation. Like description, every page can be written with MarkDown or set from an asset.
 
 ## Manage subscription
 
-On the team APIs screen on your team back office, it's possible to manage for every APIs its subscriptions by clicking on the `key` button.
+On the team APIs screen in your team back office, it's possible to manage every APIs its subscriptions by clicking on the `key` button.
 You can activate/deactivate API keys or update metadata.
 
-## Api consumptions
-On the team APIs screen on your team back office, it's possible to see for every APIs consumptions by clicking on the `stats` button. Global stats by default but visible by API key or usage plan.
+## API consumptions
+On the team APIs screen in your team's back office, it's possible to see every APIs consumptions by clicking on the `stats` button. Global stats by default but visible by API key or usage plan.

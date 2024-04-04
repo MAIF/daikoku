@@ -3,11 +3,11 @@ import TabItem from '@theme/TabItem';
 
 # Run Daikoku
 
-Now you are ready to run Daikoku. You can run the following command with some tweaks depending on the way you want to configure Daikoku. If you want to pass a custom configuration file, use the `-Dconfig.file=/path/to/file.conf` option in the following commands.
+Now you are ready to run Daikoku. You can run the following command with some tweaks, depending on the way you want to configure Daikoku. If you want to pass a custom configuration file, use the `-Dconfig.file=/path/to/file.conf` option in the following commands.
 
 :::warning
 
-Daikoku needs a database to run. Before run it, think to start your postgres instance and setup a database with right name (cf. [configuration](../05-firstrun/configfile.md#db-configuration))
+Daikoku needs a database to run. Before run it, think to start your Postgres instance and setup a database with the right name (cf. [configuration](../05-firstrun/configfile.md#db-configuration))
 
 :::
 
@@ -31,7 +31,7 @@ Daikoku needs a database to run. Before run it, think to start your postgres ins
     docker run -p "8080:8080" maif/daikoku
     ```
 
-    You can also pass useful args like :
+    You can also pass useful args like:
 
     ```
     docker run -p "8080:8080" daikoku -Dconfig.file=/usr/app/daikoku/conf/daikoku.conf -Dlogger.file=/usr/app/daikoku/conf/daikoku.xml
@@ -39,17 +39,17 @@ Daikoku needs a database to run. Before run it, think to start your postgres ins
 
     If you want to provide your own config file, you can read [the documentation about config files](../05-firstrun/configfile.md).
 
-    You can also provide some ENV variable using the `--env` flag to customize your Daikoku instance.
+    You can also provide some ENV variables using the `--env` flag to customize your Daikoku instance.
 
     The list of possible env variables is available [here](../05-firstrun/env.md).
 
-    You can use a volume to provide configuration like :
+    You can use a volume to provide configuration like:
 
     ```sh
     docker run -p "8080:8080" -v "$(pwd):/usr/app/daikoku/conf" maif/daikoku
     ```
 
-    You can also use a volume if you choose to use exports files :
+    You can also use a volume if you choose to use exports files:
 
     ```sh
     docker run -p "8080:8080" -v "$(pwd):/usr/app/daikoku/imports" maif/daikoku -Ddaikoku.init.data.from=/usr/app/daikoku/imports/export.ndjson

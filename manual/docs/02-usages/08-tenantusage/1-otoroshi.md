@@ -7,11 +7,11 @@ And you should see the list of existing `Otoroshi instances`.
 ## Add a new Otoroshi
 
 Click on the `Create` button.
-A Otoroshi instance is really simple to create. Just fill Otoroshi's url (otoroshi-api URL, not client 😉), the host and credentials (client id and client secret of an API key for Otorshi's admin-api).
+An Otoroshi instance is really simple to create. Just fill Otoroshi's URL (otoroshi-api URL, not client 😉), the host and credentials (client ID and client secret of an API key for Otoroshi's admin-api).
 
 ## Update an existing instance
 
-To update an Otoroshi instance, just click the `Update` button (Pen icon). You can modify the otoroshi url, the host or credentials.
+To update an Otoroshi instance, just click the `Update` button (Pen icon). You can modify the otoroshi URL, the host or credentials.
 
 ## Remove an existing instance
 

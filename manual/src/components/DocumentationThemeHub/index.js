@@ -46,20 +46,20 @@ export const DocumentationGetStartedHub = () => <DocumentationThemeHub list={[
 
 export const DocumentationUsagesHub = () => <DocumentationThemeHub list={[
   {
-    title: 'Tean Admin.',
+    title: 'Daikoku Admin.',
+    description: 'How to manage your instance as administrator',
+    link: '/docs/usages/adminusage'
+  },  
+  {
+    title: 'Tenant Admin.',
     description: 'How to manage your tenant as administrator',
     link: '/docs/usages/tenantusage'
-  },
-  {
-    title: 'Super Admin.',
-    description: 'How to manage your instance as super administrator',
-    link: '/docs/usages/adminusage'
   },{
-    title: 'Producer',
+    title: 'API Producer',
     description: 'Use Daikoku as producer',
     link: '/docs/usages/producerusage'
   },{
-    title: 'Consumer',
+    title: 'API Consumer',
     description: 'Use Daikoku as simple consumer',
     link: '/docs/usages/consumerusage'
   },
@@ -77,7 +77,7 @@ export const DocumentationGuidesHub = () => <DocumentationThemeHub list={[
     description: 'How to use integration API',
     link: '/docs/guides/integrations'
   },{
-    title: 'Apis',
+    title: 'APIs',
     description: 'How to use admin APIs',
     link: '/docs/guides/apis'
   },{
