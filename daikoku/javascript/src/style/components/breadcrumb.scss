@@ -1,7 +1,7 @@
 .steps {
   padding-left: 24px;
   font-weight: 500;
-  color: $aside-text-color;
+  color: $sidebar-text-color;
 
   .step {
     margin-bottom: 8px;
@@ -63,16 +63,16 @@
 .ant-steps {
   .ant-steps-item {
     .ant-steps-item-title{
-      color: $aside-text-color !important;
+      color: $sidebar-text-color !important;
 
     }
     .ant-steps-item-tail::after{
-      background-color: $aside-text-color !important;
+      background-color: $sidebar-text-color !important;
 
     }
 
     .ant-steps-item-container {
-      color: $aside-text-color;
+      color: $sidebar-text-color;
 
       .ant-steps-item-icon {
         .ant-steps-icon-dot {

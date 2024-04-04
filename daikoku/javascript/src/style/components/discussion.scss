@@ -1,6 +1,6 @@
 .messages-sender{
   // width: 25%;
-  background-color: $aside-bg-color;
+  background-color: $sidebar-bg-color;
   height: calc(100vh - 160px);
   overflow: scroll;
   .messages-sender__active {
@@ -71,7 +71,7 @@
       bottom: 10px;
       margin-left: -10px ;
       border:none;
-      border-top: 1px solid $aside-bg-color;
+      border-top: 1px solid $sidebar-bg-color;
     }
   }
 
