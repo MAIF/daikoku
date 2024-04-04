@@ -1,6 +1,6 @@
 # Daikoku
 
-[![Build](https://github.com/MAIF/daikoku/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/MAIF/daikoku/actions/workflows/test.yml) [ ![Download](https://img.shields.io/github/release/MAIF/daikoku.svg) ](https://github.com/MAIF/daikoku/releases)
+[![Build](https://github.com/MAIF/daikoku/actions/workflows/test.yml/badge.svg?branch=master)](https://github.com/MAIF/daikoku/actions/workflows/test.yml) [![Playwright tests](https://github.com/MAIF/daikoku/actions/workflows/front-office-tests.yml/badge.svg)](https://github.com/MAIF/daikoku/actions/workflows/front-office-tests.yml) [ ![Download](https://img.shields.io/github/release/MAIF/daikoku.svg) ](https://github.com/MAIF/daikoku/releases)
 
 **Daikoku** is the missing developer portal for <a href="https://maif.github.io/otoroshi">Otoroshi</a> written in Scala and developped by the <a href="https://maif.github.io" target="_blank">MAIF</a> team .
 
