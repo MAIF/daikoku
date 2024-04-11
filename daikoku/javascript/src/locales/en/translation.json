@@ -1308,6 +1308,7 @@
     "warning.missing.otoroshi": "No Otoroshi instances configured or no entities configured",
     "plan.update.successful": "The plan has been successfully created",
     "plan.creation.successful": "The plan has been successfully modified",
+    "plan.deletion.successful": "The plan has been successfully deleted",
     "plan.payment.setup.successful": "The payment settings of the plan has been successfully updated",
     "api.created": "Created",
     "api.published": "Published",
