@@ -120,7 +120,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             className: { active: currentTab === 'description' },
           },
           pricings: {
-            label: tenant.display === 'environment' ? translate("Environments") : translate({ key: 'Plan', plural: true }),
+            label: tenant.display === 'environment' ? translate("navbar.environments.label") : translate({ key: 'Plan', plural: true }),
             action: () => navigateTo('pricing'),
             className: { active: currentTab === 'pricing' },
           },
@@ -265,7 +265,7 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
             className: { active: currentTab === 'description' },
           },
           pricings: {
-            label: tenant.display === 'environment' ? translate("Environments") : translate({ key: 'Plan', plural: true }),
+            label: tenant.display === 'environment' ? translate("navbar.environments.label") : translate({ key: 'Plan', plural: true }),
             action: () => navigateTo('pricing'),
             className: { active: currentTab === 'pricing' },
           },
@@ -540,7 +540,7 @@ export const useApiGroupBackOffice = (creation: boolean) => {
           plans: {
             order: 3,
             visible: !creation,
-            label: tenant.display === 'environment' ? translate("Environments") : translate({ key: 'Plan', plural: true }),
+            label: tenant.display === 'environment' ? translate("navbar.environments.label") : translate({ key: 'Plan', plural: true }),
             action: () => navigateTo('plans', apiGroup),
             className: { active: currentTab === 'plans' },
           },
