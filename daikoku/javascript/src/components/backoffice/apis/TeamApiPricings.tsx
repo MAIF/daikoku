@@ -1119,7 +1119,7 @@ export const TeamApiPricings = (props: Props) => {
           type: type.string,
           format: format.select,
           label: translate('Type'),
-          help: 'If no type is selected, use daikokuy APIs to get billing informations',
+          help: 'If no type is selected, use Daikoku APIs to get billing informations',
           options: queryFullTenant.data ? (queryFullTenant.data as ITenantFull).thirdPartyPaymentSettings : [],
           transformer: (s: IThirdPartyPaymentSettings) => ({ label: s.name, value: s._id }),
           props: { isClearable: true },

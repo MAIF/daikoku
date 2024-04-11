@@ -228,6 +228,7 @@
     "Webhook Headers": "Webhook Headers",
     "Id": "Id",
     "Enabled": "Enabled",
+    "Disabled": "Disabled",
     "Domain name": "Domain name",
     "Default  language": "Default  language",
     "Logo": "Logo",
@@ -368,6 +369,7 @@
     "importing ...": "importing ...",
     "import state": "Import state",
     "download state": "Download state",
+    "State":"State",
     "Published": "Published",
     "View this api consumption": "View this API consumption",
     "Create a new API": "Create a new API",
@@ -702,6 +704,7 @@
     "Last 30 days": "Last 30 days",
     "Last 7 days": "Last 7 days",
     "Billing period": "Billing period",
+    "Billing period unit":"Billing period unit",
     "Usage": "Usage",
     "Global informations": "Global informations",
     "Hit": {
