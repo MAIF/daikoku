@@ -519,6 +519,7 @@
     "member.new.permission.success": "%s is now %s",
     "not.admin.alert": "You are not an administrator. You can't do that.",
     "member.now.member": "%s is now member of your team",
+    "member.now.invited": "%s has been invited to be part of your team",
     "remove.member.alert": "You can't delete this user, it must remain an admin in a team.",
     "remove.member.confirm": "Are you sure you want to remove this member from the team?",
     "remove.member.success": "%s is no longer member of your team",

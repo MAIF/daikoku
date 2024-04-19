@@ -511,6 +511,7 @@
   "member.new.permission.success": "%s est maintenant %s",
   "not.admin.alert": "Vous n'avez pas les droits d'administration. Vous ne pouvez pas effectuer cette action.",
   "member.now.member": "%s est maintenant membre de votre équipe",
+  "member.now.invited": "%s a été invité à faire partie de votre équipe",
   "remove.member.alert": "Vous ne pouvez pas supprimer cet utilisateur, il doit rester un administrateur dans une équipe.",
   "remove.member.confirm": "Êtes-vous sûr de vouloir supprimer ce membre de l'équipe ?",
   "remove.member.success": "%s n'est plus membre de votre équipe",

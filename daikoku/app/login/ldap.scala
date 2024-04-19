@@ -7,6 +7,7 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
+import org.apache.commons.lang3.StringUtils.stripAccents
 import play.api.Logger
 import play.api.libs.json._
 
@@ -392,7 +393,7 @@ object LdapSupport {
                     }
                 )
               } else if (
-                ldapConfig.groupFilter.forall(_ => usersInGroup.contains(dn))
+                ldapConfig.groupFilter.forall(_ => usersInGroup.map(stripAccents).contains(stripAccents(dn)))
               ) {
                 getInitialDirContext(dn, password, url)
                   .close()
