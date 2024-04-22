@@ -104,17 +104,17 @@ class TeamController(
       }
     }
 
-  def teams() =
+  def teams(teamId: String) =
     DaikokuActionMaybeWithGuest.async { ctx =>
-      DaikokuAdminOnly(
+      TeamAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has accessed the list of teams for current tenant"
         )
-      )(ctx) {
+      )(teamId, ctx) { _ =>
         env.dataStore.teamRepo
           .forTenant(ctx.tenant.id)
           .findAllNotDeleted() map { teams =>
-          Ok(JsArray(teams.map(_.toUiPayload())))
+            Ok(JsArray(teams.map(_.toUiPayload())))
         }
       }
     }

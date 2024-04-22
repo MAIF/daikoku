@@ -38,7 +38,7 @@ export const TeamApiSettings = ({ api, currentTeam }: TeamApiSettingsProps) => {
       type: type.string,
       label: translate('new.owner'),
       format: format.select,
-      optionsFrom: Services.teams()
+      optionsFrom: Services.teams(currentTeam)
         .then((teams) => {
           if (!isError(teams)) {
             return sortBy(teams.filter((team: any) => team._id !== api.team), 'name')

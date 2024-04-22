@@ -289,7 +289,7 @@ export const team = (teamId: string): Promise<ResponseError | ITeamSimple> =>
 export const teamFull = (teamId: string): Promise<ResponseError | ITeamFull> =>
   customFetch(`/api/teams/${teamId}/_full`);
 
-export const teams = (): Promise<ResponseError | Array<ITeamSimple>> => customFetch('/api/teams');
+export const teams = (team: ITeamSimple): Promise<ResponseError | Array<ITeamSimple>> => customFetch(`/api/teams/${team._id}/teams`);
 export const isMaintenanceMode = () => customFetch('/api/state/lock');
 
 export const createTeam = (team: ITeamSimple) =>

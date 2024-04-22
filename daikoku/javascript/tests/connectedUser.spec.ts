@@ -41,7 +41,7 @@ test('Create & manage API', async ({ page }) => {
   //connection with admin
   await page.goto('http://localhost:9000/apis');
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('admin@foo.bar');
+  await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
   await page.getByPlaceholder('Password').press('Enter');
   //create new API
@@ -245,7 +245,7 @@ test('aggregation mode', async ({ page, request }) => {
   //login
   await page.goto('http://localhost:9000/apis');
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('admin@foo.bar');
+  await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
   await page.getByRole('button', { name: 'Login' }).click();
 
@@ -323,7 +323,7 @@ test('do search', async ({ page, request }) => {
   //login
   await page.goto('http://localhost:9000/apis');
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('admin@foo.bar');
+  await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
   await page.getByPlaceholder('Password').press('Enter');
   await page.waitForResponse(r => r.url().includes('/api/me/context') && r.status() === 200)
@@ -357,4 +357,27 @@ test('do search', async ({ page, request }) => {
   //go to daikoku settings
   await page.getByRole('link', { name: 'Daikoku settings' }).click();
   await page.locator('div').filter({ hasText: /^Evil Corp\.$/ }).first().click();
+});
+
+test('API admin can transfer his own API ownership', async ({ page }) => {
+  await page.goto('http://localhost:9000/apis');
+  await page.getByRole('img', { name: 'user menu' }).click();
+  await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
+  await page.getByPlaceholder('Password').fill('password');
+  await page.getByRole('button', { name: 'Login' }).click();
+  await page.getByRole('heading', { name: 'test API' }).click();
+  await page.getByRole('link', { name: 'Configure API' }).click();
+  await page.getByText('Settings').click();
+  await page.locator('.react-form-select__input-container').click();
+  await page.getByText('Consumers', { exact: true }).click();
+  await page.getByLabel('Please type test API to').fill('test API');
+  await page.getByRole('button', { name: 'Transfer' }).click();
+  await expect(page.getByRole('status')).toContainText('Team has been notified. please wait until acceptation');
+  await page.getByRole('link', { name: 'Access to the notifications' }).click();
+  await expect(page.locator('#app')).toContainText('Consumersrequest to transfer the ownership of test APITestera few seconds');
+  await page.getByRole('link', { name: '' }).nth(1).click();
+  await page.getByRole('link', { name: 'Daikoku home' }).click();
+  await page.locator('h3').filter({ hasText: 'test API' }).waitFor({ state: 'visible' })
+  await page.locator('small').filter({ hasText: 'Consumers' }).click();
+  await expect(page.getByRole('main')).toContainText('test API');
 });

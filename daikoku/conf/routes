@@ -209,7 +209,6 @@ GET     /api/teams/:teamId/tenant/otoroshis/:oto/services       fr.maif.otoroshi
 GET     /api/teams/:teamId/tenant/otoroshis/:oto/routes         fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiRoutesFor(teamId, oto)
 GET     /api/tenants/:tenantId/otoroshis/:oto/apikeys           fr.maif.otoroshi.daikoku.ctrls.OtoroshiSettingsController.otoroshiApiKeysForTenant(tenantId, oto)
 
-GET     /api/teams                                      fr.maif.otoroshi.daikoku.ctrls.TeamController.teams()
 POST    /api/teams                                      fr.maif.otoroshi.daikoku.ctrls.TeamController.createTeam()
 GET     /api/teams/admin                                fr.maif.otoroshi.daikoku.ctrls.TeamController.tenantAdminTeam()
 GET     /api/teams/:teamId                              fr.maif.otoroshi.daikoku.ctrls.TeamController.team(teamId)
@@ -217,6 +216,7 @@ PUT     /api/teams/:teamId                              fr.maif.otoroshi.daikoku
 DELETE  /api/teams/:teamId                              fr.maif.otoroshi.daikoku.ctrls.TeamController.deleteTeam(teamId)
 GET     /api/teams/:teamId/_full                        fr.maif.otoroshi.daikoku.ctrls.TeamController.teamFull(teamId)
 POST    /api/teams/:teamId/join                         fr.maif.otoroshi.daikoku.ctrls.TeamController.askForJoinTeam(teamId)
+GET     /api/teams/:teamId/teams                        fr.maif.otoroshi.daikoku.ctrls.TeamController.teams(teamId)
 DELETE  /api/teams/:teamId/members/:userId/invitations  fr.maif.otoroshi.daikoku.ctrls.TeamController.removeInvitation(teamId, userId)
 POST    /api/teams/:teamId/members/_permission          fr.maif.otoroshi.daikoku.ctrls.TeamController.updateTeamMembersPermission(teamId)
 DELETE  /api/teams/:teamId/members/:id                  fr.maif.otoroshi.daikoku.ctrls.TeamController.removeMemberFromTeam(teamId, id)
