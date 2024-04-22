@@ -8,7 +8,7 @@ import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import { IApiWithAuthorization, isError, IState, ITenant, IUsagePlan, IUserSimple } from '../../../types';
 import { ApiList } from './ApiList';
-import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
+import { api as API, CanIDoAction, manage, Spinner, teamGQLToSimple } from '../../utils';
 import { GlobalContext } from '../../../contexts/globalContext';
 
 export const MyHome = () => {
@@ -44,7 +44,7 @@ export const MyHome = () => {
   const redirectToEditPage = (apiWithAutho: IApiWithAuthorization) => {
     const api = apiWithAutho.api
 
-    if (api.team && CanIDoAction(connectedUser, manage, API, api.team, apiCreationPermitted)) {
+    if (api.team && CanIDoAction(connectedUser, manage, API, teamGQLToSimple(api.team), apiCreationPermitted)) {
       const url = api.apis
         ? `/${api.team._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
         : `/${api.team._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;

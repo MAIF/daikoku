@@ -23,7 +23,7 @@ import { ApiCard } from '../api';
 import { toast } from "sonner";
 import { GlobalContext } from "../../../contexts/globalContext";
 import * as Services from "../../../services";
-import { FilterPreview, Spinner, arrayStringToTOps } from "../../utils";
+import { FilterPreview, Spinner, arrayStringToTOps, teamGQLToSimple } from "../../utils";
 
 const GRID = 'GRID';
 const LIST = 'LIST';
@@ -329,7 +329,7 @@ export const ApiList = (props: TApiList) => {
                         user={user}
                         apiWithAutho={sameApis}
                         teamVisible={props.teamVisible}
-                        team={apiWithAuth.api.team}
+                        team={teamGQLToSimple(apiWithAuth.api.team)}
                         myTeams={props.myTeams || []}
                         askForApiAccess={(teams) => askForApiAccess(apiWithAuth, teams)}
                         redirectToApiPage={() => props.redirectToApiPage(apiWithAuth)}

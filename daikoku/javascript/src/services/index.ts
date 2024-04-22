@@ -1433,6 +1433,14 @@ export const graphql = {
               apiKeyVisibility
               apisCreationPermission
               verified
+              users {
+                user {
+                  userId: id
+                  name
+                  email
+                }
+                teamPermission
+              }
             }
             apis {
               api {

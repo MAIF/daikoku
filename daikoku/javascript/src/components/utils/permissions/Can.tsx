@@ -24,6 +24,7 @@ export const CanIDoAction = (
   whichOne?: any,
   currentTenant?: any
 ) => {
+  console.debug("can i manage api for team", team)
   if (what === tenant) {
     return (isTenantAdmin && whichOne._id === currentTenant._id) || user.isDaikokuAdmin;
   }

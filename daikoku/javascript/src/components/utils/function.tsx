@@ -1,4 +1,4 @@
-import { IApi, IFastApi, IFastPlan, IUsagePlan, TOption, TOptions } from "../../types";
+import { IApi, IFastApi, IFastPlan, ITeamFull, ITeamFullGql, ITeamSimple, IUsagePlan, TOption, TOptions } from "../../types";
 import React, { useContext } from "react";
 import { I18nContext } from "../../contexts/i18n-context";
 
@@ -108,4 +108,12 @@ export const isSubscriptionProcessIsAutomatic = (plan: IUsagePlan | IFastPlan) =
 
 export const isPublish = (api: IApi) => {
   return api.state === 'published'
+}
+
+export const teamGQLToSimple = (team: ITeamFullGql): ITeamSimple => {
+  return ({
+    ...team,
+    _tenant: team.tenant._id,
+    users: team.users.map(({ user: { userId }, teamPermission }) => ({ userId, teamPermission }))
+  })
 }
