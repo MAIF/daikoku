@@ -108,6 +108,7 @@ export const I18nProvider = ({
       .map((lng: any) => lng[i18nkey]);
 
     const resultFromConf = maybeTranslationFromConf.getOrElse(defaultTranslation || i18nkey);
+    console.debug({resultFromConf, i18nkey, defaultTranslation, replacements})
     const resultWithExtra = maybeExtraTranslation.getOrElse(resultFromConf);
 
     const replaceChar = (value: any, replacements: Array<string> = []) => {
