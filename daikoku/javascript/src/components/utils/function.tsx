@@ -114,6 +114,6 @@ export const teamGQLToSimple = (team: ITeamFullGql): ITeamSimple => {
   return ({
     ...team,
     _tenant: team.tenant._id,
-    users: team.users.map(({ user: { userId }, teamPermission }) => ({ userId, teamPermission }))
+    users: team.users.map(({ user, teamPermission }) => ({ userId: user?.userId, teamPermission }))
   })
 }
