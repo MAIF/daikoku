@@ -84,22 +84,28 @@ or
 
 As Daikoku is a [Play app](https://www.playframework.com/), you should take a look at [Play configuration documentation](https://www.playframework.com/documentation/2.6.x/Configuration) to tune its internal configuration
 
-| name | type | default value  | description |
-| ---- |:----:| -------------- | ----- |
-| `http.port` | number | 8080 | the http port used by Daikoku. You can use 'disabled' as value if you don't want to use http |
-| `https.port` | number | disabled | the https port used by Daikoku. You can use 'disabled' as value if you don't want to use https |
-| `play.http.secret.key` | string | "secret" | the secret used to sign Daikoku session cookie |
-| `play.http.session.secure` | boolean | false | whether or not the Daikoku backoffice session will be served over https only |
-| `play.http.session.httpOnly` | boolean | true | whether or not the Daikoku backoffice session will be accessible from Javascript |
-| `play.http.session.maxAge` | number | 259200000 | the number of seconds before Daikoku backoffice session expired |
-| `play.http.session.domain` | string | null | the domain on which the Daikoku backoffice session is authorized |
-| `play.http.session.cookieName` |  string | "daikoku-session" | the name of the Daikoku backoffice session |
-| `server.https.keyStore.path` |  string |  | the path to the keyStore containing the private key and certificate, if not provided generates a keystore for you |
-| `server.https.keyStore.type` |  string | "JKS" | the keyStore type |
-| `server.https.keyStore.password` |  string | "" | the password |
-| `server.https.keyStore.algorithm` |  string |  | The keyStore algorithm, defaults to the platforms default algorithm |
+| name                              |  type   | default value     | description                                                                                                       |
+|-----------------------------------|:-------:|-------------------|-------------------------------------------------------------------------------------------------------------------|
+| `http.port`                       | number  | 8080              | the http port used by Daikoku. You can use 'disabled' as value if you don't want to use http                      |
+| `https.port`                      | number  | disabled          | the https port used by Daikoku. You can use 'disabled' as value if you don't want to use https                    |
+| `play.http.secret.key`            | string  | "secret"          | the secret used to sign Daikoku session cookie                                                                    |
+| `play.http.session.secure`        | boolean | false             | whether or not the Daikoku backoffice session will be served over https only                                      |
+| `play.http.session.httpOnly`      | boolean | true              | whether or not the Daikoku backoffice session will be accessible from Javascript                                  |
+| `play.http.session.maxAge`        | number  | 259200000         | the number of seconds before Daikoku backoffice session expired                                                   |
+| `play.http.session.domain`        | string  | null              | the domain on which the Daikoku backoffice session is authorized                                                  |
+| `play.http.session.cookieName`    | string  | "daikoku-session" | the name of the Daikoku backoffice session                                                                        |
+| `server.https.keyStore.path`      | string  |                   | the path to the keyStore containing the private key and certificate, if not provided generates a keystore for you |
+| `server.https.keyStore.type`      | string  | "JKS"             | the keyStore type                                                                                                 |
+| `server.https.keyStore.password`  | string  | ""                | the password                                                                                                      |
+| `server.https.keyStore.algorithm` | string  |                   | The keyStore algorithm, defaults to the platforms default algorithm                                               |
 
+## Anonymous reporting
 
+| name                                  |  type   | default value | description                                                                                                           |
+|---------------------------------------|:-------:|---------------|-----------------------------------------------------------------------------------------------------------------------|
+| `daikoku.anonymous-reporting.enabled` | boolean | true          | Enabling or not the anonymous reporting. If it's set to true and in the frontend to false, no reporting will be sent. |
+| `daikoku.anonymous-reporting.timeout` | number  | 60000         | The request timeout for sending data to our anonymous reporting database.                                             |
+| `daikoku.containerized`               | boolean | false         | This is to know if you are running daikoku with docker or not (only used for the anonymous reporting)                 |
 
 ## More config. options
 
@@ -182,6 +188,17 @@ daikoku {
       interval = 1hour
       max.date = 60days
     }
+  }
+
+  containerized = false
+  containerized = ${?IS_CONTAINERIZED}
+
+  anonymous-reporting {
+    enabled = true
+    enabled = ${?DAIKOKU_ANONYMOUS_REPORTING_ENABLED}
+    url = "https://reporting.otoroshi.io/daikoku/ingest"
+    timeout = 60000
+    timeout = ${?DAIKOKU_ANONYMOUS_REPORTING_TIMEOUT}
   }
 }
 

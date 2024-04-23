@@ -52,7 +52,7 @@ export const MyHome = () => {
 
   useEffect(() => {
     if(isAnonEnabled === false && connectedUser.isDaikokuAdmin && daikokuId && (!lastResponseDate || new Date(lastResponseDate) < sixMonthsAgo)) {
-      confirm({title: translate('Enable Anonymous reporting'), message: translate('Enable Anonymous reporting for helping us ? This will help us a lot. More info at (url Doc)'), okLabel: translate('Yes') }) //TODO lien vers la doc
+      confirm({title: translate('anonymous.reporting.enable'), message: <div>{translate('anonymous.reporting.popup.info')}<a href="https://maif.github.io/daikoku/docs/getstarted/setup/reporting" target="_blank" rel="noopener noreferrer"> Daikoku documentation</a></div>, okLabel: translate('Yes') })
         .then((ok) => {
           if (ok) {
             Services.updateAnonymousState(daikokuId, true, currentDate.getTime()).then(() => {

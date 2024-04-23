@@ -40,11 +40,14 @@ export const AnonymousReporting = () => {
           </h1>
           <div className="section p-3">
             <div className="d-flex justify-content-start align-items-center mt-2">
-              <label className="me-3">{translate('Enable anonymous reporting')}</label>
+              <label className="me-3">{translate('anonymous.reporting.enable')}</label>
               <BooleanInput onChange={changeValue} value={isAnonEnabled}/>
             </div>
           </div>
+          <div>
+            More information at<a href="https://maif.github.io/daikoku/docs/getstarted/setup/reporting" target="_blank" rel="noopener noreferrer"> Daikoku documentation</a>
           </div>
+        </div>
       </div>
     </Can>
   )

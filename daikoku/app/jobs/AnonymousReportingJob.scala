@@ -59,6 +59,7 @@ class AnonymousReportingJob(env: Env) {
 
   private val wSRequest: WSRequest = env.wsClient.url(ev.config.anonymousReportingUrl)
   private val enabled: Boolean = ev.config.anonymousReportingEnabled
+  private val containerized: Boolean = ev.config.containerized
   private val dataStore = ev.dataStore
 
   def start(): Unit = {
@@ -197,12 +198,13 @@ class AnonymousReportingJob(env: Env) {
             "daikoku_version" -> data.daikokuVersion,
             "java_version" -> data.javaVersion,
             "os" -> data.os,
+            "containerized" -> containerized,
           )
           _ <- wSRequest.withRequestTimeout(ev.config.anonymousReportingTimeout.millis).post(post).map { resp =>
               if (resp.status != 200 && resp.status != 201 && resp.status != 204) {
                 logger.error(s"error while sending anonymous reports: ${resp.status} - ${resp.body}")
               } else {
-                logger.info("Thank you for having anonymous reporting enabled, Data sent ! For more info see (url vers la doc)") //TODO Faire la doc et rjaouter l'URL
+                logger.info("Thank you for having anonymous reporting enabled, Data sent ! For more info see (https://maif.github.io/daikoku/docs/getstarted/setup/reporting)")
               }
             }
             .recover { case e: Throwable =>
@@ -212,7 +214,7 @@ class AnonymousReportingJob(env: Env) {
         } yield Done
       } else {
 
-        logger.info("Anonymous reporting is disabled if you want to activate it for helping us, see (url vers la doc)") //TODO tout pareil
+        logger.info("Anonymous reporting is disabled if you want to activate it for helping us, see (https://maif.github.io/daikoku/docs/getstarted/setup/reporting)")
         FastFuture.successful(Done)
       }
     }).flatten

@@ -1380,6 +1380,7 @@
   "anonymous.reporting.success.enabled" : "Rapports anonymes activés.",
   "anonymous.reporting.success.disabled" : "Rapports anonymes désactivés.",
   "anonymous.reporting.error": "Erreur lors du changement de valeur.",
-  "anonymous.reporting.popup.info": "Activer les rapports anonymes pour nous aider ? Cela nous aidera beaucoup. Plus d'info ici : (url Doc).",
-  "anonymous.reporting.popup.no": "Rapports anonymes non acceptés."
+  "anonymous.reporting.popup.info": "Activer les rapports anonymes pour nous aider ? Cela nous aidera beaucoup. Pour plus d'informations, cliquez sur : ",
+  "anonymous.reporting.popup.no": "Rapports anonymes non acceptés.",
+  "anonymous.reporting.enable": "Activer les rapports anonymes"
 }

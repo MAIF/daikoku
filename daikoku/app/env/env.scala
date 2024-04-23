@@ -246,6 +246,7 @@ class Config(val underlying: Configuration) {
   lazy val anonymousReportingUrl: String = underlying.get[String]("daikoku.anonymous-reporting.url")
   lazy val anonymousReportingTimeout: Int = underlying.get[Int]("daikoku.anonymous-reporting.timeout")
   lazy val anonymousReportingEnabled: Boolean = underlying.get[Boolean]("daikoku.anonymous-reporting.enabled")
+  lazy val containerized: Boolean = underlying.get[Boolean]("daikoku.containerized")
 }
 
 sealed trait Env {
