@@ -692,8 +692,8 @@ const ApiKeyCard = ({
                           className={`nav-link ${activeTab === "basicAuth" ? "active" : ""}`}
                           onClick={() => setActiveTab("basicAuth")}
                         >
-                          <Translation i18nkey="Basic Authentication">
-                            Basic Auth
+                          <Translation i18nkey="Basic auth">
+                            Basic auth
                           </Translation>
                         </span>
                       </li>
@@ -780,8 +780,8 @@ const ApiKeyCard = ({
                   <>
                     <div className="mb-3">
                       <label htmlFor={`basicAuth-${_id}`} className="">
-                        <Translation i18nkey="Basic Authentication">
-                          Basic Authentication
+                        <Translation i18nkey="Basic authentication">
+                          Basic authentication
                         </Translation>
                       </label>
                       <div className="">

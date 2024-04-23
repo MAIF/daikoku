@@ -609,6 +609,8 @@
   "Force apikey auto-rotation": "Forcer la rotation auto. des secrets",
   "ApiKey": "Clé d'API",
   "Integration token": "Jeton d'intégration",
+  "Basic authentication" : "Authentification basique",
+  "Basic auth" : "Auth basique",
   "Security": "Sécurité",
   "Team with id or name already exist": "Désolé, une équipe avec ce nom existe déjà.",
   "Create team": "Créer une équipe",
