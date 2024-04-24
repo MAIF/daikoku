@@ -291,7 +291,7 @@ export const DaikokuApp = () => {
                   <Route
                     path="/settings/teams/:teamSettingId/members"
                     element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate('Team members')}`}>
+                      <RouteWithTitle title={`${tenant.title} - ${translate({key: "Member", plural: true})}`}>
                         <TeamMembersForAdmin />
                       </RouteWithTitle>
                     }

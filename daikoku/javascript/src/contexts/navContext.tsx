@@ -677,7 +677,7 @@ export const useTeamBackOffice = () => {
                 className: { active: currentTab === 'edition' },
               },
               assets: {
-                label: translate('Assets'),
+                label: translate({key: 'Asset', plural: true}),
                 action: () => navigateTo('assets'),
                 className: { active: currentTab === 'assets' },
               },
