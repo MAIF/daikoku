@@ -1,0 +1,51 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Authentication
+
+Authentication in daikoku can be tricky. It's a tenant configuration, we are here to setup some examples.
+
+<Tabs>
+  <TabItem value="ldap" label="LDAP">
+    For this tutorial, we use ldap with a docker by using the ghcr.io/rroemhild/docker-test-openldap:master docker Image you can find all documention on the [github repo](https://github.com/rroemhild/docker-test-openldap)._createMdxContent
+
+
+    first, pull and run your ldap.
+    ```
+    docker pull ghcr.io/rroemhild/docker-test-openldap:master
+    docker run --rm -p 10389:10389 -p 10636:10636 ghcr.io/rroemhild/docker-test-openldap:master
+
+    ```
+
+    TouchEvent, go to tenant configuration page and fill the ldap configuration in the authentication panel:
+      - server url: ldap://locahost:10389
+      - search base: dc=planetexpress,dc=com
+      - user search base: ou=people
+      - simple user filter: cn=ship_crew
+      - tenant admin filter: cn=admin_staff
+      - search filter: (mail=${username})
+      - admin username:cn=admin,dc=planetexpress,dc=com
+      - admin password: GoodNewsEveryone
+      - name field:
+        - givenName
+        - sn
+      - email field name: mail
+
+    With this configuration, all ldap users with cn `admin_staff` will be Daikoku admin otherwise, with cn `ship_crew` he will be a simple user.
+
+    {/* TODO: add information about search filter and user addable for team member 
+    search filter: (|(uid=${username})(mail=${username}))
+    */}
+
+  </TabItem>
+  <TabItem value="local" label="Local" default>
+    this is the default authentication mode. Every user can create an account in your Daikoku instance, the user profil is saved in database.
+    There is no needed configuration for this mode
+  </TabItem>
+  <TabItem value="otoroshi" label="Otoroshi" default>
+    For this mode, we will use Otoroshi as SSO.
+  </TabItem>
+  <TabItem value="oauth2" label="OAuth2" default>
+  </TabItem>
+</Tabs>
+
