@@ -1381,5 +1381,11 @@
     "N/A": "N/A",
     "semver.error.message": "Can't create a version with special characters : %s",
     "version.creation.success.message": "New version of API created successfully",
-    "error.message.creation.security.enabled": "You're not authorized to create an API, please contact your administrator."
+    "error.message.creation.security.enabled": "You're not authorized to create an API, please contact your administrator.",
+    "anonymous.reporting.success.enabled" : "Anonymous reporting enabled.",
+    "anonymous.reporting.success.disabled" : "Anonymous reporting disabled.",
+    "anonymous.reporting.error": "Error while changing value.",
+    "anonymous.reporting.popup.info": "Enable Anonymous reporting for helping us ? This will help us a lot. More info in ",
+    "anonymous.reporting.popup.no": "Anonymous Reporting not accepted.",
+    "anonymous.reporting.enable": "Enable anonymous reporting"
 }

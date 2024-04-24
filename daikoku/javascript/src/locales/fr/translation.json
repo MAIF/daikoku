@@ -231,7 +231,7 @@
   "Webhook Headers": "Webhook Headers",
   "Id": "Id",
   "Enabled": "Activé",
-  "Disabled": "Désactivé",  
+  "Disabled": "Désactivé",
   "Domain name": "Nom de domaine",
   "Default  language": "Langue par défaut",
   "Logo": "Logo",
@@ -1385,5 +1385,11 @@
   "N/A": "N/A",
   "semver.error.message": "Une version ne peut pas être créée avec des caractères spéciaux : %s",
   "version.creation.success.message": "La nouvelle version de l'API a été créée avec succès",
-  "error.message.creation.security.enabled": "Vous n'êtes pas autorisé a créer d'API, merci de contacter votre administrateur."
+  "error.message.creation.security.enabled": "Vous n'êtes pas autorisé a créer d'API, merci de contacter votre administrateur.",
+  "anonymous.reporting.success.enabled" : "Rapports anonymes activés.",
+  "anonymous.reporting.success.disabled" : "Rapports anonymes désactivés.",
+  "anonymous.reporting.error": "Erreur lors du changement de valeur.",
+  "anonymous.reporting.popup.info": "Activer les rapports anonymes pour nous aider ? Cela nous aidera beaucoup. Pour plus d'informations, cliquez sur : ",
+  "anonymous.reporting.popup.no": "Rapports anonymes non acceptés.",
+  "anonymous.reporting.enable": "Activer les rapports anonymes"
 }

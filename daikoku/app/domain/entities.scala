@@ -153,3 +153,11 @@ case class Evolution(
 ) extends CanJson[Evolution] {
   override def asJson: JsValue = json.EvolutionFormat.writes(this)
 }
+
+case class ReportsInfo(
+                        id: DatastoreId,
+                        activated: Boolean,
+                        date: Option[Double] = None,
+  ) extends CanJson[ReportsInfo] {
+  override def asJson: JsValue = json.ReportsInfoFormat.writes(this)
+}
