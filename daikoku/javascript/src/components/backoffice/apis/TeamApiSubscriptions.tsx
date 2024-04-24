@@ -8,7 +8,7 @@ import {ModalContext} from '../../../contexts';
 import {CustomSubscriptionData} from '../../../contexts/modals/SubscriptionMetadataModal';
 import {I18nContext} from '../../../contexts';
 import * as Services from '../../../services';
-import {IApi, isError, IState, ISubscriptionCustomization, ITeamSimple, IUsagePlan} from "../../../types";
+import {IApi, isError, IState, ISubscriptionCustomization, ITeamSimple, IUsagePlan, ResponseError} from "../../../types";
 import {SwitchButton, Table, TableRef} from '../../inputs';
 import {
   api as API,
@@ -20,7 +20,7 @@ import {
   Option,
   Spinner,
 } from '../../utils';
-import {useQuery, useQueryClient} from "@tanstack/react-query";
+import {useQuery, useQueryClient, useMutation} from "@tanstack/react-query";
 
 type TeamApiSubscriptionsProps = {
   api: IApi,
@@ -302,46 +302,68 @@ export const TeamApiSubscriptions = ({ api, currentTeam }: TeamApiSubscriptionsP
       .find(p => sub.plan._id === p._id)!
   });
 
+  const regenerateApiKeySecret = useMutation({
+    mutationFn: (sub: IApiSubscriptionGql) =>
+        Services.regenerateApiKeySecret(currentTeam._id, sub._id),
+    onSuccess: () => {
+      toast.success(translate("secret.refresh.success"));
+      tableRef.current?.update();
+      queryClient.invalidateQueries({queryKey: ["subscriptions"]});
+    },
+    onError: (e: ResponseError) => {
+      toast.error(translate(e.error));
+    },
+  });
+
   const regenerateSecret = (sub: IApiSubscriptionGql) => {
 
     const plan = sub.plan
 
     confirm({
-      message: translate({ key: 'secret.refresh.confirm', replacements: [sub.team.name, plan.customName ? plan.customName : plan.type] }),
+      message: translate({
+        key: 'secret.refresh.confirm',
+        replacements: [sub.team.name, plan.customName ? plan.customName : plan.type]
+      }),
       okLabel: translate('Yes'),
       cancelLabel: translate('No'),
     })
-      .then((ok) => {
-        if (ok) {
-          Services.regenerateApiKeySecret(currentTeam._id, sub._id).then(() => {
-            toast.success(translate('secret.refresh.success'));
-            tableRef.current?.update();
-          });
-        }
-      });
+        .then((ok) => {
+          if (ok) {
+            regenerateApiKeySecret.mutate(sub)
+          }
+        });
   };
 
+  const deleteApiSubscription = useMutation({
+    mutationFn: (sub: IApiSubscriptionGql) =>
+        Services.deleteApiSubscription(sub.team._id, sub._id),
+    onSuccess: () => {
+      toast.success(translate("api.delete.subscription.deleted"));
+      tableRef.current?.update();
+      queryClient.invalidateQueries({queryKey: ["subscriptions"]});
+    },
+    onError: (e: ResponseError) => {
+      toast.error(translate(e.error));
+    },
+  });
   const deleteSubscription = (sub: IApiSubscriptionGql) => {
     confirm({
-      title: translate('api.delete.subscription.form.title'),
-      message: translate({ key: 'api.delete.subscription.message', replacements: [sub.team.name, sub.plan.customName ? sub.plan.customName : sub.plan.type] }),
-      okLabel: translate('Yes'),
-      cancelLabel: translate('No'),
+      title: translate("api.delete.subscription.form.title"),
+      message: translate({
+        key: "api.delete.subscription.message",
+        replacements: [
+          sub.team.name,
+          sub.plan.customName ? sub.plan.customName : sub.plan.type,
+        ],
+      }),
+      okLabel: translate("Yes"),
+      cancelLabel: translate("No"),
     }).then((ok) => {
       if (ok) {
-        Services.deleteApiSubscription(sub.team._id, sub._id)
-          .then((res) => {
-            if (!isError(res)) {
-              toast.success(translate('api.delete.subscription.deleted'));
-              tableRef.current?.update();
-            } else {
-              toast.error(res.error)
-            }
-          })
+        deleteApiSubscription.mutate(sub);
       }
-    })
-  }
-
+    });
+  };
 
   if (plansQuery.isLoading) {
     return (<Spinner />)
