@@ -1,31 +1,34 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.apache.pekko.util.ByteString
 import fr.maif.otoroshi.daikoku.actions.{
   DaikokuAction,
+  DaikokuActionContext,
   DaikokuActionMaybeWithGuest,
   DaikokuTenantAction
 }
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.AssetId
+import fr.maif.otoroshi.daikoku.domain.{Asset, AssetId}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import org.apache.pekko.stream.connectors.s3.ObjectMetadata
 import play.api.http.HttpEntity
-import play.api.libs.json.{JsArray, Json}
+import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.libs.streams.Accumulator
 import play.api.mvc.{
   AbstractController,
   Action,
+  AnyContent,
   BodyParser,
   ControllerComponents
 }
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
 import scala.jdk.CollectionConverters._
 
@@ -203,8 +206,23 @@ class TeamAssetsController(
                       contentType,
                       ctx.request.body
                     )(cfg)
-                    .map { res =>
-                      Ok(Json.obj("done" -> true, "id" -> assetId))
+                    .flatMap { _ =>
+                      val slug = filename.slugify
+                      env.dataStore.assetRepo
+                        .forTenant(ctx.tenant)
+                        .deleteById(assetId)
+                        .flatMap(_ =>
+                          env.dataStore.assetRepo
+                            .forTenant(ctx.tenant)
+                            .save(
+                              Asset(
+                                AssetId(assetId),
+                                tenant = ctx.tenant.id,
+                                slug
+                              )
+                            )
+                        )
+                        .map(_ => Ok(Json.obj("done" -> true, "id" -> assetId)))
                     } recover {
                     case e =>
                       AppLogger.error(
@@ -346,6 +364,85 @@ class TenantAssetsController(
       Accumulator.source[ByteString].map(Right.apply)
     }
 
+  def storeAssets() =
+    DaikokuAction.async(bodyParser) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} syncs assets")
+      )(ctx.tenant.id.value, ctx) { (_, _) =>
+        ctx.tenant.bucketSettings match {
+          case None =>
+            FastFuture.successful(
+              NotFound(Json.obj("error" -> "No bucket config found !"))
+            )
+          case Some(cfg) =>
+            ctx.request.body
+              .runWith(Sink.reduce[ByteString](_ ++ _))(env.defaultMaterializer)
+              .map(str => str.utf8String)
+              .map(Json.parse)
+              .flatMap(items =>
+                Future.sequence(
+                  items
+                    .as[JsArray]
+                    .value
+                    .map(item => {
+                      val filename = (item \ "filename").as[String]
+                      val assetId = AssetId(IdGenerator.uuid)
+                      val slug = filename.slugify
+
+                      env.assetsStore
+                        .storeTenantAsset(
+                          ctx.tenant.id,
+                          assetId,
+                          name = filename,
+                          title = filename,
+                          desc = filename,
+                          contentType = "application/octet-stream",
+                          content = Source
+                            .single((item \ "content").get)
+                            .map(Json.stringify)
+                            .map(ByteString.apply)
+                        )(cfg)
+                        .flatMap { _ =>
+                          internalDeleteAsset(slug, ctx)
+                            .map(_ =>
+                              env.dataStore.assetRepo
+                                .forTenant(ctx.tenant)
+                                .save(
+                                  Asset(
+                                    assetId,
+                                    tenant = ctx.tenant.id,
+                                    slug = slug
+                                  )
+                                )
+                            )
+                            .map(_ =>
+                              Json.obj(
+                                "done" -> true,
+                                "id" -> assetId.value,
+                                "slug" -> slug
+                              )
+                            )
+                        } recover {
+                        case e =>
+                          AppLogger.error(
+                            s"Error during tenant asset storage: $filename",
+                            e
+                          )
+                          Json
+                            .obj("id" -> assetId.value, "error" -> ec.toString)
+                      }
+                    })
+                )
+              )
+              .map(results => Ok(Json.arr(results)))
+              .recover {
+                case e: Throwable =>
+                  BadRequest(Json.obj("error" -> e.getMessage))
+              }
+        }
+      }
+    }
+
   def storeAsset() =
     DaikokuAction.async(bodyParser) { ctx =>
       TenantAdminOnly(
@@ -363,7 +460,11 @@ class TenantAssetsController(
         val title =
           normalize(ctx.request.getQueryString("title").getOrElse("--"))
         val desc = ctx.request.getQueryString("desc").getOrElse("--")
+        val querySlug: Option[String] = ctx.request
+          .getQueryString("slug")
+          .flatMap(slug => if (slug.isEmpty) None else Some(slug))
         val assetId = AssetId(IdGenerator.uuid)
+
         ctx.tenant.bucketSettings match {
           case None =>
             FastFuture.successful(
@@ -380,8 +481,22 @@ class TenantAssetsController(
                 contentType,
                 ctx.request.body
               )(cfg)
-              .map { _ =>
-                Ok(Json.obj("done" -> true, "id" -> assetId.value))
+              .flatMap { _ =>
+                val slug = querySlug.map(_.slugify).getOrElse(filename.slugify)
+
+                env.dataStore.assetRepo
+                  .forTenant(ctx.tenant)
+                  .save(Asset(assetId, tenant = ctx.tenant.id, slug = slug))
+                  .map(_ =>
+                    Ok(
+                      Json.obj(
+                        "done" -> true,
+                        "id" -> assetId.value,
+                        "slug" -> slug
+                      )
+                    )
+                  )
+
               } recover {
               case e =>
                 AppLogger.error(
@@ -442,8 +557,23 @@ class TenantAssetsController(
                       contentType,
                       ctx.request.body
                     )(cfg)
-                    .map { res =>
-                      Ok(Json.obj("done" -> true, "id" -> assetId))
+                    .flatMap { _ =>
+                      val slug = filename.slugify
+                      env.dataStore.assetRepo
+                        .forTenant(ctx.tenant)
+                        .deleteById(assetId)
+                        .flatMap(_ =>
+                          env.dataStore.assetRepo
+                            .forTenant(ctx.tenant)
+                            .save(
+                              Asset(
+                                AssetId(assetId),
+                                tenant = ctx.tenant.id,
+                                slug
+                              )
+                            )
+                        )
+                        .map(_ => Ok(Json.obj("done" -> true, "id" -> assetId)))
                     } recover {
                     case e =>
                       AppLogger
@@ -496,26 +626,76 @@ class TenantAssetsController(
       }
     }
 
+  def slugifiedAssets() =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} access to slugified assets")
+      )(ctx.tenant.id.value, ctx) { (_, _) =>
+        env.dataStore.assetRepo.forTenant(ctx.tenant).findAllNotDeleted().map {
+          res => Ok(JsArray(res.map(_.asJson)))
+        }
+      }
+    }
+
   def deleteAsset(assetId: String) =
     DaikokuAction.async { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(s"@{user.name} deleted asset @{assetId} of @{team.id}")
       )(ctx.tenant.id.value, ctx) { (_, _) =>
         ctx.setCtxValue("assetId", assetId)
-        ctx.tenant.bucketSettings match {
-          case None =>
-            FastFuture.successful(
-              NotFound(Json.obj("error" -> "No bucket config found !"))
-            )
-          case Some(cfg) =>
-            env.assetsStore
-              .deleteTenantAsset(ctx.tenant.id, AssetId(assetId))(cfg)
-              .map { _ =>
-                Ok(Json.obj("done" -> true))
-              }
-        }
+        internalDeleteAsset(assetId, ctx)
       }
     }
+
+  private def internalDeleteAsset[T](
+      assetId: String,
+      ctx: DaikokuActionContext[T]
+  ) = {
+    ctx.tenant.bucketSettings match {
+      case None =>
+        FastFuture.successful(
+          NotFound(Json.obj("error" -> "No bucket config found !"))
+        )
+      case Some(cfg) =>
+        env.dataStore.assetRepo
+          .forTenant(ctx.tenant)
+          .findOne(Json.obj("slug" -> assetId))
+          .map(_.map(_.id.value))
+          .map {
+            case None     => assetId
+            case Some(id) => id
+          }
+          .flatMap(id => {
+            env.assetsStore
+              .deleteTenantAsset(ctx.tenant.id, AssetId(id))(cfg)
+              .flatMap { _ =>
+                env.dataStore.assetRepo
+                  .forTenant(ctx.tenant)
+                  .deleteById(id)
+                  .map(_ => Ok(Json.obj("done" -> true)))
+              }
+          })
+    }
+  }
+
+  def doesAssetExists(slug: String) = {
+    DaikokuTenantAction.async { ctx =>
+      ctx.tenant.bucketSettings match {
+        case None =>
+          FastFuture.successful(
+            NotFound(Json.obj("error" -> "No bucket config found !"))
+          )
+        case Some(cfg) =>
+          env.dataStore.assetRepo
+            .forTenant(ctx.tenant)
+            .findOne(Json.obj("slug" -> slug))
+            .map {
+              case Some(_) => NoContent
+              case None    => NotFound
+            }
+      }
+    }
+  }
 
   def getAsset(assetId: String) = {
     DaikokuTenantAction.async { ctx =>
@@ -528,64 +708,77 @@ class TenantAssetsController(
           val download = ctx.request.getQueryString("download").contains("true")
           val redirect = ctx.request.getQueryString("redirect").contains("true")
 
-          env.assetsStore.getTenantAssetPresignedUrl(
-            ctx.tenant.id,
-            AssetId(assetId)
-          )(cfg) match {
-            case None =>
-              FastFuture.successful(
-                NotFound(Json.obj("error" -> "Asset not found!"))
-              )
-            case Some(url) if redirect => FastFuture.successful(Redirect(url))
-            case Some(_) if download =>
-              env.assetsStore
-                .getTenantAsset(ctx.tenant.id, AssetId(assetId))(cfg)
-                .map {
-                  case None => NotFound(Json.obj("error" -> "Asset not found!"))
-                  case Some((source, meta)) =>
-                    val filename = meta.metadata
-                      .filter(_.name().startsWith("x-amz-meta-"))
-                      .find(_.name() == "x-amz-meta-filename")
-                      .map(_.value())
-                      .getOrElse("asset.txt")
+          env.dataStore.assetRepo
+            .forTenant(ctx.tenant)
+            .findOne(Json.obj("slug" -> assetId))
+            .map {
+              case Some(asset) =>
+                env.assetsStore.getTenantAssetPresignedUrl(
+                  ctx.tenant.id,
+                  asset.id
+                )(cfg)
+              case None =>
+                env.assetsStore.getTenantAssetPresignedUrl(
+                  ctx.tenant.id,
+                  AssetId(assetId)
+                )(cfg)
+            }
+            .flatMap {
+              case None =>
+                FastFuture.successful(
+                  NotFound(Json.obj("error" -> "Asset not found!"))
+                )
+              case Some(url) if redirect => FastFuture.successful(Redirect(url))
+              case Some(_) if download =>
+                env.assetsStore
+                  .getTenantAsset(ctx.tenant.id, AssetId(assetId))(cfg)
+                  .map {
+                    case None =>
+                      NotFound(Json.obj("error" -> "Asset not found!"))
+                    case Some((source, meta)) =>
+                      val filename = meta.metadata
+                        .filter(_.name().startsWith("x-amz-meta-"))
+                        .find(_.name() == "x-amz-meta-filename")
+                        .map(_.value())
+                        .getOrElse("asset.txt")
 
-                    Ok.sendEntity(
-                        HttpEntity.Streamed(
-                          source,
-                          None,
-                          meta.contentType
-                            .map(Some.apply)
-                            .getOrElse(Some("application/octet-stream"))
-                        )
-                      )
-                      .withHeaders(
-                        "Content-Disposition" -> s"""attachment; filename="$filename""""
-                      )
-                }
-            case Some(url) =>
-              env.wsClient
-                .url(url)
-                .withRequestTimeout(10.minutes)
-                .get()
-                .map(resp => {
-                  resp.status match {
-                    case 200 =>
                       Ok.sendEntity(
-                        HttpEntity.Streamed(
-                          resp.bodyAsSource,
-                          None,
-                          Option(resp.contentType)
+                          HttpEntity.Streamed(
+                            source,
+                            None,
+                            meta.contentType
+                              .map(Some.apply)
+                              .getOrElse(Some("application/octet-stream"))
+                          )
                         )
-                      )
-                    case _ => NotFound(Json.obj("error" -> "Asset not found!"))
+                        .withHeaders(
+                          "Content-Disposition" -> s"""attachment; filename="$filename""""
+                        )
                   }
-                })
-                .recover {
-                  case err =>
-                    InternalServerError(Json.obj("error" -> err.getMessage))
-                }
-
-          }
+              case Some(url) =>
+                env.wsClient
+                  .url(url)
+                  .withRequestTimeout(10.minutes)
+                  .get()
+                  .map(resp => {
+                    resp.status match {
+                      case 200 =>
+                        Ok.sendEntity(
+                          HttpEntity.Streamed(
+                            resp.bodyAsSource,
+                            None,
+                            Option(resp.contentType)
+                          )
+                        )
+                      case _ =>
+                        NotFound(Json.obj("error" -> "Asset not found!"))
+                    }
+                  })
+                  .recover {
+                    case err =>
+                      InternalServerError(Json.obj("error" -> err.getMessage))
+                  }
+            }
       }
     }
   }

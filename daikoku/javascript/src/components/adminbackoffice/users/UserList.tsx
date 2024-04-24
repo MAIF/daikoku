@@ -1,17 +1,17 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
 import sortBy from 'lodash/sortBy';
-import { toastr } from 'react-redux-toastr';
+import { useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
-import * as Services from '../../../services';
-import { PaginatedComponent, AvatarWithAction, Can, manage, daikoku } from '../../utils';
-import { I18nContext } from '../../../contexts/i18n-context';
 import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
-import { isError, IState, IUser, IUserSimple } from '../../../types';
+import { I18nContext } from '../../../contexts/i18n-context';
+import { GlobalContext } from '../../../contexts/globalContext';
+import * as Services from '../../../services';
+import { IUserSimple, isError } from '../../../types';
+import { AvatarWithAction, Can, PaginatedComponent, daikoku, manage } from '../../utils';
 
 export const UserList = () => {
-  const connectedUser = useSelector<IState, IUserSimple>((s) => s.context.connectedUser);
+  const { connectedUser } = useContext(GlobalContext);
   useDaikokuBackOffice();
 
   const { alert, confirm } = useContext(ModalContext);
@@ -41,9 +41,7 @@ export const UserList = () => {
         if (ok) {
           Services.deleteUserById(user._id)
             .then(() => {
-              toastr.info(
-                translate('Info'),
-                translate({ key: 'remove.user.success', replacements: [user.name] }));
+              toast.info(translate({ key: 'remove.user.success', replacements: [user.name] }));
               updateUsers();
             });
         }

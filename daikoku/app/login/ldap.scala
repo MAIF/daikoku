@@ -7,6 +7,7 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import fr.maif.otoroshi.daikoku.utils.StringImplicits._
+import org.apache.commons.lang3.StringUtils.stripAccents
 import play.api.Logger
 import play.api.libs.json._
 
@@ -213,7 +214,8 @@ object LdapSupport {
   private def getPersonalTeam(
       tenantId: TenantId,
       name: String,
-      userId: UserId
+      userId: UserId,
+      email: String
   ) =
     Team(
       id = TeamId(IdGenerator.token(32)),
@@ -222,7 +224,8 @@ object LdapSupport {
       name = s"$name",
       description = s"The personal team of $name",
       users = Set(UserWithPermission(userId, Administrator)),
-      authorizedOtoroshiEntities = None
+      authorizedOtoroshiEntities = None,
+      contact = email
     )
 
   private def getUser(
@@ -368,7 +371,8 @@ object LdapSupport {
                         }
                       case None =>
                         val userId = UserId(IdGenerator.token(32))
-                        val team = getPersonalTeam(tenant.id, name, userId)
+                        val team =
+                          getPersonalTeam(tenant.id, name, userId, email)
                         val user = getUser(
                           userId,
                           tenant.id,
@@ -389,7 +393,7 @@ object LdapSupport {
                     }
                 )
               } else if (
-                ldapConfig.groupFilter.forall(_ => usersInGroup.contains(dn))
+                ldapConfig.groupFilter.forall(_ => usersInGroup.map(stripAccents).contains(stripAccents(dn)))
               ) {
                 getInitialDirContext(dn, password, url)
                   .close()
@@ -424,7 +428,8 @@ object LdapSupport {
                         }
                       case None =>
                         val userId = UserId(IdGenerator.token(32))
-                        val team = getPersonalTeam(tenant.id, name, userId)
+                        val team =
+                          getPersonalTeam(tenant.id, name, userId, email)
                         val user = getUser(
                           userId,
                           tenant.id,

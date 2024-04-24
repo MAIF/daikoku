@@ -168,7 +168,7 @@ trait Repo[Of, Id <: ValueType] {
 
   def findByIdOrHrIdNotDeleted(
       idOrHrid: String
-  )(implicit ec: ExecutionContext): Future[Option[Of]] =
+  )(implicit ec: ExecutionContext): Future[Option[Of]] = {
     findOneNotDeleted(
       Json.obj(
         "_deleted" -> false,
@@ -178,6 +178,7 @@ trait Repo[Of, Id <: ValueType] {
         )
       )
     )
+  }
 
   def findByIdOrHrIdRaw(id: String, hrid: String)(implicit
       ec: ExecutionContext
@@ -320,7 +321,12 @@ trait Repo[Of, Id <: ValueType] {
   def deleteAllLogically()(implicit ec: ExecutionContext): Future[Boolean]
 
   def findAllNotDeleted()(implicit ec: ExecutionContext): Future[Seq[Of]] =
-    find(Json.obj("_deleted" -> false))
+    find(
+      Json.obj(
+        "$or" -> Json
+          .arr(Json.obj("_deleted" -> false), Json.obj("_deleted" -> JsNull))
+      )
+    )
 
   def findNotDeleted(
       query: JsObject,
@@ -480,6 +486,8 @@ trait MessageRepo extends TenantCapableRepo[Message, DatastoreId]
 
 trait CmsPageRepo extends TenantCapableRepo[CmsPage, CmsPageId]
 
+trait AssetRepo extends TenantCapableRepo[Asset, AssetId]
+
 trait OperationRepo extends TenantCapableRepo[Operation, DatastoreId]
 
 trait SubscriptionDemandRepo
@@ -547,6 +555,8 @@ trait DataStore {
 
   def cmsRepo: CmsPageRepo
 
+  def assetRepo: AssetRepo
+
   def operationRepo: OperationRepo
 
   def emailVerificationRepo: EmailVerificationRepo
@@ -568,4 +578,6 @@ trait DataStore {
   ): Source[ByteString, _]
 
   def importFromStream(source: Source[ByteString, _]): Future[Unit]
+
+  def clear(): Future[Unit]
 }

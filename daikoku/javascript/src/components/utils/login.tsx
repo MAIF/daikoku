@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import * as Services from '../../services/index';
-import { I18nContext } from '../../core';
+import { I18nContext } from '../../contexts';
 
 export function LoginPage(props: any) {
   const { Translation, translate } = useContext(I18nContext);
@@ -24,7 +24,7 @@ export function LoginPage(props: any) {
     e.preventDefault();
     const { username, password } = state;
 
-    Services.login(username, password, props.action).then((res) => {
+    Services.login(username, password, props.action, props.redirect).then((res) => {
       if (res.status === 400)
         setState({
           ...state,

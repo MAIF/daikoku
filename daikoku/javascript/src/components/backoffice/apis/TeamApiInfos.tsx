@@ -1,5 +1,5 @@
 import React, { useContext, useEffect } from 'react';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import { IMultistepsformStep, MultiStepForm } from '../../utils';
 
 import { teamApiInfoForm, teamApiDescriptionForm, TeamApiSwagger, TeamApiTesting } from '.';

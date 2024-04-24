@@ -1,16 +1,14 @@
 import { Form, FormRef, format, type } from '@maif/react-forms';
 import { nanoid } from 'nanoid';
 import { MutableRefObject, useContext } from 'react';
-import { useSelector } from 'react-redux';
 
-import { useDispatch } from 'react-redux';
-import { ModalContext } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
-import { IApi, IState, ITeamSimple, ITesting, ITestingConfig, IUsagePlan, IWithTesting, isApi, isUsagePlan } from '../../../types';
+import { IApi, ITeamSimple, ITesting, ITestingConfig, IUsagePlan, IWithTesting, isUsagePlan } from '../../../types';
 import { Option } from '../../utils';
 
 interface TeamApiTestingProps<T extends IWithTesting> {
+  currentTeam: ITeamSimple;
   value: T
   onChange: (s: T) => void
   reference?: MutableRefObject<FormRef | undefined>
@@ -21,7 +19,6 @@ interface TeamApiTestingProps<T extends IWithTesting> {
 
 export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProps<T>) => {
   const testing = props.value.testing;
-  const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
   const { translate, Translation } = useContext(I18nContext);
   const { confirm, openTestingApikeyModal, openSubMetadataModal } = useContext(ModalContext);
 
@@ -41,7 +38,7 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
       save: (metadata) => {
         openTestingApikeyModal({
           metadata,
-          teamId: currentTeam._id,
+          teamId: props.currentTeam._id,
           config: newConfig,
           update: !!testing?.config && !!testing.config.otoroshiSettings,
           title: translate('Otoroshi settings'),
@@ -74,7 +71,7 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
     confirm({ message: translate('otoroshi.testing.delete.confirm') })
       .then((ok) => {
         if (ok)
-          Services.deleteTestingApiKey(currentTeam._id, {
+          Services.deleteTestingApiKey(props.currentTeam._id, {
             otoroshiSettings: testing!.config!.otoroshiSettings,
             authorizedEntities: testing!.config!.authorizedEntities,
             clientId: testing!.username,

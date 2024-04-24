@@ -2,10 +2,10 @@ import { getApolloContext } from '@apollo/client';
 import { useQuery } from '@tanstack/react-query';
 import { useContext } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useSelector } from 'react-redux';
 
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
-import { IApiWithAuthorization, isError, IState, IStateContext, ITeamSimple } from '../../../types';
+import { IApiWithAuthorization, isError, ITeamSimple } from '../../../types';
 import { Can, read, Spinner, team as TEAM } from '../../utils';
 import { ApiList } from './ApiList';
 
@@ -13,7 +13,7 @@ export const TeamHome = () => {
   const navigate = useNavigate();
   const params = useParams();
 
-  const { connectedUser, tenant } = useSelector<IState, IStateContext>(s => s.context);
+  const { tenant } = useContext(GlobalContext);
 
   const { client } = useContext(getApolloContext());
 

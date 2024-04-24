@@ -2,7 +2,7 @@ import { constraints, Form, format, type } from '@maif/react-forms';
 import { md5 } from 'js-md5';
 import queryString from 'query-string';
 import { useContext, useEffect, useState } from 'react';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-router-dom';
 
 import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/frontend/unauthenticated';
@@ -89,7 +89,7 @@ export const Signup = () => {
         constraints.required(translate('constraints.required.password')),
         constraints.matches(
           /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/,
-          translate('constraint.matches.password')
+          translate('constraints.matches.password')
         ),
       ],
     },
@@ -101,7 +101,7 @@ export const Signup = () => {
         constraints.required(translate('constraints.required.confirmPassword')),
         constraints.oneOf(
           [constraints.ref('password')],
-          translate('constraint.oneof.confirm.password')
+          translate('constraints.oneof.confirm.password')
         ),
       ],
     },
@@ -329,9 +329,9 @@ export const TwoFactorAuthentication = ({
   function reset2faAccess() {
     Services.reset2faAccess(backupCode).then((res) => {
       if (res.error) {
-        toastr.error(translate('Error'), res.error);
+        toast.error(res.error);
       } else {
-        toastr.success(translate('Success'), translate('2fa.successfully_disabled'));
+        toast.success(translate('2fa.successfully_disabled'));
         window.location.replace('/');
       }
     });

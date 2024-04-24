@@ -1,22 +1,20 @@
 import { getApolloContext } from '@apollo/client';
-import React, { useContext, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { updateTeam } from '../../../core';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import {IApiWithAuthorization, IState, IStateContext, ITeamSimple} from '../../../types';
-import { ApiList } from '../team';
+import { IApiWithAuthorization, ITeamSimple } from '../../../types';
 import { api as API, CanIDoAction, manage } from '../../utils';
+import { ApiList } from '../team';
 
 export const ApiGroupApis = ({
   apiGroup
 }: any) => {
   const navigate = useNavigate();
 
-  const { connectedUser, apiCreationPermitted } = useSelector<IState, IStateContext>((s) => s.context);
-  const dispatch = useDispatch();
+  const { connectedUser, apiCreationPermitted } = useContext(GlobalContext);
 
   const [myTeams, setMyTeams] = useState<Array<ITeamSimple>>([]);
 
@@ -30,7 +28,7 @@ export const ApiGroupApis = ({
       client.query<{ myTeams: Array<ITeamSimple> }>({
         query: Services.graphql.myTeams,
       }),
-    ]).then(([ { data }]) => {
+    ]).then(([{ data }]) => {
       setMyTeams(
         data.myTeams.map(({
           users,
@@ -53,15 +51,10 @@ export const ApiGroupApis = ({
 
 
   const redirectToEditPage = (apiWithAuthorization: IApiWithAuthorization) => {
-    if (CanIDoAction(connectedUser, manage, API, apiWithAuthorization.api.team, apiCreationPermitted)) {
-      Promise.resolve(dispatch(updateTeam(apiWithAuthorization.api.team)))
-        .then(() => {
-          const url = apiWithAuthorization.api.apis
-            ? `/${apiWithAuthorization.api.team._humanReadableId}/settings/apigroups/${apiWithAuthorization.api._humanReadableId}/infos`
-            : `/${apiWithAuthorization.api.team._humanReadableId}/settings/apis/${apiWithAuthorization.api._humanReadableId}/${apiWithAuthorization.api.currentVersion}/infos`;
-          navigate(url);
-        });
-    }
+    const url = apiWithAuthorization.api.apis
+      ? `/${apiWithAuthorization.api.team._humanReadableId}/settings/apigroups/${apiWithAuthorization.api._humanReadableId}/infos`
+      : `/${apiWithAuthorization.api.team._humanReadableId}/settings/apis/${apiWithAuthorization.api._humanReadableId}/${apiWithAuthorization.api.currentVersion}/infos`;
+    navigate(url);
   };
 
   return (

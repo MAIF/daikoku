@@ -3,7 +3,7 @@ import { useContext } from 'react';
 import { UseMutationResult } from '@tanstack/react-query';
 
 
-import { I18nContext } from '../../../../core';
+import { I18nContext } from '../../../../contexts';
 import { IBucketSettings, ITenantFull } from '../../../../types';
 
 export const BucketForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {

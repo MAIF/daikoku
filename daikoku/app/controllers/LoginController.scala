@@ -1,7 +1,16 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
+import cats.data.EitherT
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest,
+  DaikokuTenantAction,
+  DaikokuTenantActionContext
+}
+import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.{
   DaikokuAction,
   DaikokuActionMaybeWithGuest,
@@ -44,6 +53,70 @@ class LoginController(
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
   implicit val tr: Translator = translator
+
+  def redirectToLoginPage() =
+    DaikokuTenantAction.async { ctx =>
+      {
+        val user = ctx.request.attrs.get(IdentityAttrs.UserKey)
+        val redirect =
+          ctx.request.queryString.get("redirect").flatMap(_.headOption)
+
+        val hasUserAndRedirect =
+          redirect.isDefined && user.exists(u => !u.isGuest)
+
+        println(hasUserAndRedirect, ctx.tenant.cmsRedirections)
+
+        if (
+          hasUserAndRedirect && (ctx.tenant.cmsRedirections.isEmpty || !ctx.tenant.cmsRedirections
+            .contains(redirect.get))
+        ) {
+          FastFuture.successful(
+            BadRequest(Json.obj("error" -> "application not authorized"))
+          )
+        } else {
+          if (hasUserAndRedirect) {
+            FastFuture.successful(Redirect(redirect.get))
+          } else {
+            ctx.tenant.authProvider match {
+              case Otoroshi => FastFuture.successful(Redirect("/"))
+              case OAuth2 =>
+                val authConfig = OAuth2Config
+                  .fromJson(ctx.tenant.authProviderSettings)
+                  .toOption
+                  .get
+                val clientId = authConfig.clientId
+                val responseType = "code"
+                val scope = authConfig.scope // "openid profile email name"
+                val redirectUri = authConfig.callbackUrl
+
+                FastFuture.successful(
+                  Redirect(
+                    s"${authConfig.loginUrl}?scope=$scope&client_id=$clientId&response_type=$responseType&redirect_uri=$redirectUri"
+                  ).addingToSession(
+                    s"redirect" -> ctx.request
+                      .getQueryString("redirect")
+                      .getOrElse("/")
+                  )(ctx.request)
+                )
+              case _ =>
+                FastFuture.successful(
+                  Ok(
+                    views.html.login(
+                      ctx.tenant.authProvider,
+                      ctx.tenant,
+                      ctx.request.domain,
+                      env,
+                      ctx.request.queryString
+                        .get("redirect")
+                        .flatMap(_.headOption)
+                    )
+                  )
+                )
+            }
+          }
+        }
+      }
+    }
 
   def loginPage(provider: String) =
     DaikokuTenantAction.async { ctx =>
@@ -171,7 +244,9 @@ class LoginController(
             AuthorizationLevel.AuthorizedSelf
           )
 
-          val redirectUri = request.session.get("redirect").getOrElse("/")
+          val redirectUri = request.session
+            .get("redirect")
+            .getOrElse(request.getQueryString("redirect").getOrElse("/"))
 
           Redirect(if (redirectUri.startsWith("/api/")) "/" else redirectUri)
             .withSession("sessionId" -> session.sessionId.value)
@@ -445,10 +520,10 @@ class LoginController(
       val body = ctx.request.body.as[JsObject]
       val email = (body \ "email").as[String]
       val name = (body \ "name").as[String]
-      val avatar =
-        (body \ "avatar").asOpt[String].getOrElse(User.DEFAULT_IMAGE)
+      val avatar = (body \ "avatar").asOpt[String].getOrElse(User.DEFAULT_IMAGE)
       val password = (body \ "password").as[String]
       val confirmPawword = (body \ "confirmPassword").as[String]
+
       env.dataStore.userRepo.findOne(Json.obj("email" -> email)).flatMap {
         case Some(user)
             if user.invitation.isEmpty || user.invitation.get.registered =>
@@ -464,7 +539,7 @@ class LoginController(
           ) match {
             case Left(msg) =>
               FastFuture.successful(BadRequest(Json.obj("error" -> msg)))
-            case Right(_) => {
+            case Right(_) =>
               val randomId = IdGenerator.token(128)
               env.dataStore.accountCreationRepo
                 .save(
@@ -497,7 +572,7 @@ class LoginController(
                       ctx.tenant,
                       Map(
                         "tenant" -> ctx.tenant.name,
-                        "link" -> s"${ctx.request.theProtocol}://${host}/account/validate?id=${randomId}"
+                        "link" -> s"${ctx.request.theProtocol}://$host/account/validate?id=$randomId"
                       )
                     )
                   } yield {
@@ -508,7 +583,6 @@ class LoginController(
                       }
                   }).flatten
                 }
-            }
           }
       }
     }
@@ -528,15 +602,14 @@ class LoginController(
             .findOneNotDeleted(Json.obj("randomId" -> id))
             .flatMap {
               case Some(accountCreation)
-                  if accountCreation.validUntil.isBefore(DateTime.now()) => {
+                  if accountCreation.validUntil.isBefore(DateTime.now()) =>
                 env.dataStore.accountCreationRepo
                   .deleteByIdLogically(accountCreation.id.value)
                   .map { _ =>
                     Redirect("/signup?error=not.valid.anymore")
                   }
-              }
               case Some(accountCreation)
-                  if accountCreation.validUntil.isAfter(DateTime.now()) => {
+                  if accountCreation.validUntil.isAfter(DateTime.now()) =>
                 env.dataStore.userRepo
                   .findOne(Json.obj("email" -> accountCreation.email))
                   .flatMap {
@@ -559,7 +632,8 @@ class LoginController(
                         name = s"${accountCreation.name}",
                         description = s"Team of ${accountCreation.name}",
                         users = Set(UserWithPermission(userId, Administrator)),
-                        authorizedOtoroshiEntities = None
+                        authorizedOtoroshiEntities = None,
+                        contact = accountCreation.email
                       )
                       def getUser() =
                         User(
@@ -569,7 +643,6 @@ class LoginController(
                           name = accountCreation.name,
                           email = accountCreation.email,
                           picture = accountCreation.avatar,
-                          isDaikokuAdmin = false,
                           lastTenant = Some(ctx.tenant.id),
                           password = Some(accountCreation.password),
                           personalToken = Some(IdGenerator.token(32)),
@@ -594,13 +667,12 @@ class LoginController(
                           env.dataStore.accountCreationRepo
                             .deleteByIdLogically(accountCreation.id.value)
                       } yield ()
-                      userCreation.map { user =>
+                      userCreation.map { _ =>
                         Status(302)(
                           Json.obj("Location" -> "/?userCreated=true")
                         ).withHeaders("Location" -> "/?userCreated=true")
                       }
                   }
-              }
               case _ =>
                 Errors.craftResponseResult(
                   "Your link is invalid",

@@ -104,8 +104,8 @@ a.nav-link.active {
 }
 
 .additionalContent {
-  background-color: $aside-bg-color;
-  color: $aside-text-color;
+  background-color: $sidebar-bg-color;
+  color: $sidebar-text-color;
 }
 
 .navDocumentation {
@@ -192,9 +192,9 @@ img:hover + .changePicture,
 }
 
 .swagger-ui {
-  color: $aside-text-color;
+  color: $sidebar-text-color;
   .btn {
-    color: $aside-text-color;
+    color: $sidebar-text-color;
   }
 }
 
@@ -202,7 +202,7 @@ img:hover + .changePicture,
   hgroup h4,
   .errors h4,
   .errors small {
-    color: $aside-text-color;
+    color: $sidebar-text-color;
   }
 }
 

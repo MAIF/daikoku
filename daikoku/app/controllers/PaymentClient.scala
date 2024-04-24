@@ -107,7 +107,7 @@ class PaymentClient(
               .post(Map("active" -> "false"))
               .map {
                 case response if response.status >= 400 =>
-                  Left(AppError.PaymentError(response.json.as[JsObject]))
+                  Left(AppError.PaymentError((response.json.as[JsObject] \ "error" \ "message").as[String]))
                 case response => Right(response.json)
               }
           )
@@ -119,7 +119,7 @@ class PaymentClient(
                   .map {
                     case response if response.status >= 400 =>
                       Left[AppError, JsValue](
-                        AppError.PaymentError(response.json.as[JsObject])
+                        AppError.PaymentError((response.json.as[JsObject] \ "error" \ "message").as[String])
                       )
                     case response => Right[AppError, JsValue](response.json)
                   }
@@ -148,7 +148,7 @@ class PaymentClient(
               .map {
                 case response if response.status >= 400 =>
                   Left[AppError, JsValue](
-                    AppError.PaymentError(response.json.as[JsObject])
+                    AppError.PaymentError((response.json.as[JsObject] \ "error" \ "message").as[String])
                   )
                 case response => Right[AppError, JsValue](response.json)
               }
@@ -383,7 +383,7 @@ class PaymentClient(
           createStripePrice(plan, productId)
         } else {
           EitherT.leftT[Future, PaymentSettings](
-            AppError.OtoroshiError(res.json.as[JsObject])
+            AppError.PaymentError((res.json.as[JsObject] \ "error" \ "message").as[String])
           )
         }
       })
@@ -681,16 +681,14 @@ class PaymentClient(
         env.dataStore.tenantRepo.findByIdNotDeleted(apiSubscription.tenant),
         AppError.TenantNotFound
       )
-      settings <- EitherT.fromOption[Future](
-        plan.paymentSettings.flatMap(s =>
-          tenant.thirdPartyPaymentSettings
-            .find(_.id == s.thirdPartyPaymentSettingsId)
-        ),
-        AppError.EntityNotFound("payment settings")
+      settings = plan.paymentSettings.flatMap(s =>
+        tenant.thirdPartyPaymentSettings
+          .find(_.id == s.thirdPartyPaymentSettingsId)
       )
       value <- settings match {
-        case p: StripeSettings =>
+        case Some(p: StripeSettings) =>
           toggleStateStripeSubscription(apiSubscription)(p)
+        case None => EitherT.pure[Future, AppError](apiSubscription.asJson)
       }
     } yield value
   }

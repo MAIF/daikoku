@@ -2,12 +2,11 @@ import {getApolloContext} from "@apollo/client";
 import {format, type} from "@maif/react-forms";
 import {createColumnHelper} from '@tanstack/react-table';
 import {useContext, useEffect, useRef, useState} from 'react';
-import {useSelector} from 'react-redux';
-import {toastr} from 'react-redux-toastr';
+import {toast} from 'sonner';
 
 import {ModalContext} from '../../../contexts';
 import {CustomSubscriptionData} from '../../../contexts/modals/SubscriptionMetadataModal';
-import {I18nContext} from '../../../core';
+import {I18nContext} from '../../../contexts';
 import * as Services from '../../../services';
 import {IApi, isError, IState, ISubscriptionCustomization, ITeamSimple, IUsagePlan} from "../../../types";
 import {SwitchButton, Table, TableRef} from '../../inputs';
@@ -19,13 +18,13 @@ import {
   formatPlanType,
   manage,
   Option,
-  queryClient,
   Spinner,
 } from '../../utils';
-import {useQuery} from "@tanstack/react-query";
+import {useQuery, useQueryClient} from "@tanstack/react-query";
 
 type TeamApiSubscriptionsProps = {
   api: IApi,
+  currentTeam: ITeamSimple
 }
 type SubscriptionsFilter = {
   metadata: Array<{ key: string, value: string }>,
@@ -84,10 +83,10 @@ interface IApiSubscriptionGqlWithUsage extends IApiSubscriptionGql {
   lastUsage?: number
 }
 
-export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
-  const currentTeam = useSelector<IState, ITeamSimple>((s) => s.context.currentTeam);
+export const TeamApiSubscriptions = ({ api, currentTeam }: TeamApiSubscriptionsProps) => {
 
   const { client } = useContext(getApolloContext());
+  const queryClient = useQueryClient();
 
   const [filters, setFilters] = useState<SubscriptionsFilter>()
   const tableRef = useRef<TableRef>()
@@ -315,7 +314,7 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
       .then((ok) => {
         if (ok) {
           Services.regenerateApiKeySecret(currentTeam._id, sub._id).then(() => {
-            toastr.success(translate('Success'), translate('secret.refresh.success'));
+            toast.success(translate('secret.refresh.success'));
             tableRef.current?.update();
           });
         }
@@ -333,13 +332,10 @@ export const TeamApiSubscriptions = ({ api }: TeamApiSubscriptionsProps) => {
         Services.deleteApiSubscription(sub.team._id, sub._id)
           .then((res) => {
             if (!isError(res)) {
-              toastr.success(translate('deletion successful'), translate('api.delete.subscription.deleted'));
+              toast.success(translate('api.delete.subscription.deleted'));
               tableRef.current?.update();
             } else {
-              toastr.error(
-                translate('Error'),
-                res.error
-              )
+              toast.error(res.error)
             }
           })
       }

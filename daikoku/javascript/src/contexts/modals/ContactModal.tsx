@@ -1,9 +1,8 @@
 import { useContext, useEffect, useState } from 'react';
 
-import { useSelector } from 'react-redux';
-import { I18nContext } from '../../core';
+import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
-import { IState, ITenant } from '../../types';
+import { GlobalContext } from '../globalContext';
 import { IBaseModalProps, IContactModalComponentProps } from './types';
 
 export const ContactModal = (props: IContactModalComponentProps & IBaseModalProps) => {
@@ -15,7 +14,7 @@ export const ContactModal = (props: IContactModalComponentProps & IBaseModalProp
   const [formRef, setFormRef] = useState<HTMLFormElement | null>(null);
   const [validity, setValidity] = useState(false);
 
-  const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
+  const { tenant } = useContext(GlobalContext)
 
   const { translate, Translation, language } = useContext(I18nContext);
 

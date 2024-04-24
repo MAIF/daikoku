@@ -1,7 +1,7 @@
 import { getApolloContext, gql } from '@apollo/client';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import { Can, manage, tenant } from '../../utils';
 import { Create } from './Create';
 import { Pages } from './Pages';
@@ -17,6 +17,7 @@ export interface IPage {
   path: string
   contentType: string
   lastPublishedDate: string
+  metadata: any
 }
 
 const getAllPages = () => ({
@@ -28,6 +29,7 @@ const getAllPages = () => ({
         path
         contentType
         lastPublishedDate
+        metadata
       }
     }
   `,

@@ -2,26 +2,26 @@ import { string } from 'prop-types';
 import { ITeamSimple, IUser, IUserSimple } from './team';
 import { Language } from './types';
 
-enum TenanMode {
+export enum TenanMode {
   maintenance = 'Maintenance',
   construction = 'Construction',
   translation = 'Translation',
   default = 'Default',
 }
 
-enum Display {
+export enum Display {
   default = 'default',
   environment = 'environment',
 }
 
-enum AuthProvider {
+export enum AuthProvider {
   otoroshi = 'Otoroshi',
   LDAP = 'LDAP',
   OAuth2 = 'OAuth2',
   local = 'Local',
 }
 
-enum DaikokuMode {
+export enum DaikokuMode {
   dev = 'Dev',
   prod = 'Prod',
 }
@@ -182,6 +182,7 @@ export interface ITenant {
   tenantMode: TenanMode;
   display: Display;
   environments: Array<string>;
+  loginProvider: string;
 }
 
 export interface ITenantFull extends ITenant {
@@ -281,6 +282,12 @@ export interface ISession {
   impersonatorName?: string;
   impersonatorEmail?: string;
   impersonatorSessionId?: string;
+  created: number;
+  expires: number;
+  ttl: number;
+}
+
+export interface ISimpleSession {
   created: number;
   expires: number;
   ttl: number;

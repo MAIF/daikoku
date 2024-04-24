@@ -68,7 +68,8 @@ class EntitiesController(
             `type` = TeamType.Organization,
             name = "New Team",
             description = "A new team",
-            apiKeyVisibility = env.config.defaultApiKeyVisibility.some
+            apiKeyVisibility = env.config.defaultApiKeyVisibility.some,
+            contact = "contact@foo.bar"
           ).asJson
         )
       }

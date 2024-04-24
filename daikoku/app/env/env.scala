@@ -15,6 +15,7 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._
 import io.vertx.pgclient.PgPool
+import org.apache.pekko.Done
 import org.joda.time.DateTime
 import play.api.ApplicationLoader.Context
 import play.api.i18n.MessagesApi
@@ -41,6 +42,9 @@ object DaikokuMode {
 
   case object Dev extends DaikokuMode {
     def name = "Dev"
+  }
+  case object Test extends DaikokuMode {
+    def name = "Test"
   }
 
 }
@@ -97,7 +101,7 @@ object InitConfig {
       AdminConfig(
         name = configuration
           .getOptional[String]("daikoku.init.admin.name")
-          .getOrElse("Super admin"),
+          .getOrElse("Daikoku admin"),
         email = configuration
           .getOptional[String]("daikoku.init.admin.email")
           .getOrElse("admin@otoroshi.io"),
@@ -153,8 +157,9 @@ class Config(val underlying: Configuration) {
 
   lazy val mode: DaikokuMode =
     underlying.getOptional[String]("daikoku.mode").map(_.toLowerCase) match {
-      case Some("dev") => DaikokuMode.Dev
-      case _           => DaikokuMode.Prod
+      case Some("dev")  => DaikokuMode.Dev
+      case Some("test") => DaikokuMode.Test
+      case _            => DaikokuMode.Prod
     }
 
   lazy val secret: String = underlying
@@ -175,7 +180,8 @@ class Config(val underlying: Configuration) {
   lazy val tenantJwtVerifier: JWTVerifier =
     JWT.require(tenantJwtAlgo).acceptLeeway(10).build()
 
-  lazy val isProd: Boolean = mode == DaikokuMode.Prod
+  lazy val isProd: Boolean =
+    mode == DaikokuMode.Prod || mode == DaikokuMode.Test
   lazy val isDev: Boolean = mode == DaikokuMode.Dev
   lazy val tenantProvider: TenantProvider = underlying
     .getOptional[String]("daikoku.tenants.provider")
@@ -289,6 +295,8 @@ sealed trait Env {
   ): Seq[EssentialFilter]
 
   def getDaikokuUrl(tenant: Tenant, path: String): String
+
+  def initDatastore()(implicit ec: ExecutionContext): Future[Done]
 }
 
 class DaikokuEnv(
@@ -358,206 +366,215 @@ class DaikokuEnv(
       }
   }
 
+  override def initDatastore()(implicit ec: ExecutionContext): Future[Done] = {
+    def run(isEmpty: Boolean): Future[Unit] = {
+      if (isEmpty) {
+        (dataStore match {
+          case store: PostgresDataStore => store.checkDatabase()
+          case _                        => FastFuture.successful(None)
+        }).map { _ =>
+          config.init.data.from match {
+            case Some(path)
+                if path.startsWith("http://") || path
+                  .startsWith("https://") =>
+              AppLogger.warn(
+                s"Main dataStore seems to be empty, importing from $path ..."
+              )
+              implicit val ec: ExecutionContext = defaultExecutionContext
+              implicit val env: DaikokuEnv = this
+              val initialDataFu = wsClient
+                .url(path)
+                .withHttpHeaders(config.init.data.headers.toSeq: _*)
+                .withMethod("GET")
+                .withRequestTimeout(10.seconds)
+                .get()
+                .flatMap {
+                  case resp if resp.status == 200 =>
+                    dataStore.importFromStream(resp.bodyAsSource)
+                  case resp =>
+                    FastFuture.failed(
+                      new RuntimeException(
+                        s"Bad response from $path: ${resp.status} - ${resp.body}"
+                      )
+                    )
+                }
+              Await.result(initialDataFu, 10 seconds)
+            case Some(path) =>
+              AppLogger.warn(
+                s"Main dataStore seems to be empty, importing from $path ..."
+              )
+              implicit val ec: ExecutionContext = defaultExecutionContext
+              implicit val env: DaikokuEnv = this
+              val initialDataFu =
+                dataStore.importFromStream(FileIO.fromPath(Paths.get(path)))
+              Await.result(initialDataFu, 10 seconds)
+            case _ =>
+              import fr.maif.otoroshi.daikoku.domain._
+              import fr.maif.otoroshi.daikoku.login._
+              import fr.maif.otoroshi.daikoku.utils.StringImplicits._
+              import org.mindrot.jbcrypt.BCrypt
+              import play.api.libs.json._
+
+              import scala.concurrent._
+
+              AppLogger.warn("")
+              AppLogger.warn(
+                "Main dataStore seems to be empty, generating initial data ..."
+              )
+              val userId = UserId(IdGenerator.token(32))
+              val administrationTeamId = TeamId("administration")
+              val adminApiDefaultTenantId =
+                ApiId(s"admin-api-tenant-${Tenant.Default.value}")
+              val defaultAdminTeam = Team(
+                id = TeamId(IdGenerator.token),
+                tenant = Tenant.Default,
+                `type` = TeamType.Admin,
+                name = s"default-admin-team",
+                description = s"The admin team for the default tenant",
+                avatar = Some(
+                  s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"
+                ),
+                users = Set(UserWithPermission(userId, Administrator)),
+                authorizedOtoroshiEntities = None,
+                contact = "no-replay@daikoku.io"
+              )
+              val adminApiDefaultPlan = FreeWithoutQuotas(
+                id = UsagePlanId(IdGenerator.token),
+                tenant = Tenant.Default,
+                billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+                currency = Currency("EUR"),
+                customName = Some("admin"),
+                customDescription = None,
+                otoroshiTarget = None,
+                allowMultipleKeys = Some(true),
+                autoRotation = None,
+                subscriptionProcess = Seq.empty,
+                integrationProcess = IntegrationProcess.ApiKey
+              )
+
+              val adminApiDefaultTenant = Api(
+                id = adminApiDefaultTenantId,
+                tenant = Tenant.Default,
+                team = defaultAdminTeam.id,
+                name = s"admin-api-tenant-${Tenant.Default.value}",
+                lastUpdate = DateTime.now(),
+                smallDescription = "admin api",
+                description = "admin api",
+                currentVersion = Version("1.0.0"),
+                documentation = ApiDocumentation(
+                  id = ApiDocumentationId(IdGenerator.token(32)),
+                  tenant = Tenant.Default,
+                  pages = Seq.empty[ApiDocumentationDetailPage],
+                  lastModificationAt = DateTime.now()
+                ),
+                swagger =
+                  Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
+                possibleUsagePlans = Seq(adminApiDefaultPlan.id),
+                visibility = ApiVisibility.AdminOnly,
+                defaultUsagePlan = adminApiDefaultPlan.id.some,
+                authorizedTeams = Seq.empty,
+                state = ApiState.Published
+              )
+              val tenant = Tenant(
+                id = Tenant.Default,
+                name = "Daikoku Default Tenant",
+                domain = config.init.host,
+                defaultLanguage = Some("En"),
+                style = Some(
+                  DaikokuStyle(
+                    title = "Daikoku Default Tenant"
+                  )
+                ),
+                contact = "contact@foo.bar",
+                mailerSettings = Some(ConsoleMailerSettings()),
+                authProvider = AuthProvider.Local,
+                authProviderSettings = Json.obj(
+                  "sessionMaxAge" -> 86400
+                ),
+                bucketSettings = None,
+                otoroshiSettings = Set(),
+                adminApi = adminApiDefaultTenantId
+              )
+              val team = Team(
+                id = TeamId(IdGenerator.token(32)),
+                tenant = tenant.id,
+                `type` = TeamType.Personal,
+                name = s"${config.init.admin.name}",
+                description = s"${config.init.admin.name}'s team",
+                users = Set(UserWithPermission(userId, Administrator)),
+                authorizedOtoroshiEntities = None,
+                contact = "admin@daikoku.io"
+              )
+              val user = User(
+                id = userId,
+                tenants = Set(tenant.id),
+                origins = Set(AuthProvider.Otoroshi),
+                name = config.init.admin.name,
+                email = config.init.admin.email,
+                picture = config.init.admin.email.gravatar,
+                isDaikokuAdmin = true,
+                lastTenant = Some(tenant.id),
+                password = Some(
+                  BCrypt.hashpw(config.init.admin.password, BCrypt.gensalt())
+                ),
+                personalToken = Some(IdGenerator.token(32)),
+                defaultLanguage = None
+              )
+              val initialDataFu = for {
+                _ <- dataStore.tenantRepo.save(tenant)
+                _ <- dataStore.teamRepo.forTenant(tenant.id).save(team)
+                _ <-
+                  dataStore.teamRepo
+                    .forTenant(tenant.id)
+                    .save(defaultAdminTeam)
+                _ <-
+                  dataStore.apiRepo
+                    .forTenant(tenant.id)
+                    .save(adminApiDefaultTenant)
+                _ <- dataStore.userRepo.save(user)
+              } yield ()
+
+              Await.result(initialDataFu, 10 seconds)
+              AppLogger.warn("")
+              AppLogger.warn(
+                s"You can log in with admin@daikoku.io / ${config.init.admin.password}"
+              )
+              AppLogger.warn("")
+              AppLogger.warn(
+                "Please avoid using the default tenant for anything else than configuring Daikoku"
+              )
+              AppLogger.warn("")
+          }
+        }
+      } else {
+        dataStore match {
+          case store: PostgresDataStore => store.checkDatabase()
+          case _                        => FastFuture.successful(None)
+        }
+      }
+    }
+
+    for {
+      isEmpty <- dataStore.isEmpty()
+      _ <- run(isEmpty)
+      done <- evolutions.run(dataStore, new OtoroshiClient(this))
+    } yield {
+      done
+    }
+  }
+
   override def onStartup(): Unit = {
 
     implicit val ec: ExecutionContext = defaultExecutionContext
-
-    def tryToInitDatastore(): Future[Unit] = {
-      dataStore.isEmpty().map {
-        case true =>
-          (dataStore match {
-            case store: PostgresDataStore => store.checkDatabase()
-            case _                        => FastFuture.successful(None)
-          }).map { _ =>
-            config.init.data.from match {
-              case Some(path)
-                  if path.startsWith("http://") || path
-                    .startsWith("https://") =>
-                AppLogger.warn(
-                  s"Main dataStore seems to be empty, importing from $path ..."
-                )
-                implicit val ec: ExecutionContext = defaultExecutionContext
-                implicit val env: DaikokuEnv = this
-                val initialDataFu = wsClient
-                  .url(path)
-                  .withHttpHeaders(config.init.data.headers.toSeq: _*)
-                  .withMethod("GET")
-                  .withRequestTimeout(10.seconds)
-                  .get()
-                  .flatMap {
-                    case resp if resp.status == 200 =>
-                      dataStore.importFromStream(resp.bodyAsSource)
-                    case resp =>
-                      FastFuture.failed(
-                        new RuntimeException(
-                          s"Bad response from $path: ${resp.status} - ${resp.body}"
-                        )
-                      )
-                  }
-                Await.result(initialDataFu, 10 seconds)
-              case Some(path) =>
-                AppLogger.warn(
-                  s"Main dataStore seems to be empty, importing from $path ..."
-                )
-                implicit val ec: ExecutionContext = defaultExecutionContext
-                implicit val env: DaikokuEnv = this
-                val initialDataFu =
-                  dataStore.importFromStream(FileIO.fromPath(Paths.get(path)))
-                Await.result(initialDataFu, 10 seconds)
-              case _ =>
-                import fr.maif.otoroshi.daikoku.domain._
-                import fr.maif.otoroshi.daikoku.login._
-                import fr.maif.otoroshi.daikoku.utils.StringImplicits._
-                import org.mindrot.jbcrypt.BCrypt
-                import play.api.libs.json._
-
-                import scala.concurrent._
-
-                AppLogger.warn("")
-                AppLogger.warn(
-                  "Main dataStore seems to be empty, generating initial data ..."
-                )
-                val userId = UserId(IdGenerator.token(32))
-                val administrationTeamId = TeamId("administration")
-                val adminApiDefaultTenantId =
-                  ApiId(s"admin-api-tenant-${Tenant.Default.value}")
-                val defaultAdminTeam = Team(
-                  id = TeamId(IdGenerator.token),
-                  tenant = Tenant.Default,
-                  `type` = TeamType.Admin,
-                  name = s"default-admin-team",
-                  description = s"The admin team for the default tenant",
-                  avatar = Some(
-                    s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"
-                  ),
-                  users = Set(UserWithPermission(userId, Administrator)),
-                  authorizedOtoroshiEntities = None
-                )
-                val adminApiDefaultPlan = FreeWithoutQuotas(
-                  id = UsagePlanId(IdGenerator.token),
-                  tenant = Tenant.Default,
-                  billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-                  currency = Currency("EUR"),
-                  customName = Some("admin"),
-                  customDescription = None,
-                  otoroshiTarget = None,
-                  allowMultipleKeys = Some(true),
-                  autoRotation = None,
-                  subscriptionProcess = Seq.empty,
-                  integrationProcess = IntegrationProcess.ApiKey
-                )
-
-                val adminApiDefaultTenant = Api(
-                  id = adminApiDefaultTenantId,
-                  tenant = Tenant.Default,
-                  team = defaultAdminTeam.id,
-                  name = s"admin-api-tenant-${Tenant.Default.value}",
-                  lastUpdate = DateTime.now(),
-                  smallDescription = "admin api",
-                  description = "admin api",
-                  currentVersion = Version("1.0.0"),
-                  documentation = ApiDocumentation(
-                    id = ApiDocumentationId(IdGenerator.token(32)),
-                    tenant = Tenant.Default,
-                    pages = Seq.empty[ApiDocumentationDetailPage],
-                    lastModificationAt = DateTime.now()
-                  ),
-                  swagger =
-                    Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
-                  possibleUsagePlans = Seq(adminApiDefaultPlan.id),
-                  visibility = ApiVisibility.AdminOnly,
-                  defaultUsagePlan = adminApiDefaultPlan.id.some,
-                  authorizedTeams = Seq.empty,
-                  state = ApiState.Published
-                )
-                val tenant = Tenant(
-                  id = Tenant.Default,
-                  name = "Daikoku Default Tenant",
-                  domain = config.init.host,
-                  defaultLanguage = Some("En"),
-                  style = Some(
-                    DaikokuStyle(
-                      title = "Daikoku Default Tenant"
-                    )
-                  ),
-                  contact = "contact@foo.bar",
-                  mailerSettings = Some(ConsoleMailerSettings()),
-                  authProvider = AuthProvider.Local,
-                  authProviderSettings = Json.obj(
-                    "sessionMaxAge" -> 86400
-                  ),
-                  bucketSettings = None,
-                  otoroshiSettings = Set(),
-                  adminApi = adminApiDefaultTenantId
-                )
-                val team = Team(
-                  id = TeamId(IdGenerator.token(32)),
-                  tenant = tenant.id,
-                  `type` = TeamType.Personal,
-                  name = s"${config.init.admin.name}",
-                  description = s"${config.init.admin.name}'s team",
-                  users = Set(UserWithPermission(userId, Administrator)),
-                  authorizedOtoroshiEntities = None
-                )
-                val user = User(
-                  id = userId,
-                  tenants = Set(tenant.id),
-                  origins = Set(AuthProvider.Otoroshi),
-                  name = config.init.admin.name,
-                  email = config.init.admin.email,
-                  picture = config.init.admin.email.gravatar,
-                  isDaikokuAdmin = true,
-                  lastTenant = Some(tenant.id),
-                  password = Some(
-                    BCrypt.hashpw(config.init.admin.password, BCrypt.gensalt())
-                  ),
-                  personalToken = Some(IdGenerator.token(32)),
-                  defaultLanguage = None
-                )
-                val initialDataFu = for {
-                  _ <- dataStore.tenantRepo.save(tenant)
-                  _ <- dataStore.teamRepo.forTenant(tenant.id).save(team)
-                  _ <-
-                    dataStore.teamRepo
-                      .forTenant(tenant.id)
-                      .save(defaultAdminTeam)
-                  _ <-
-                    dataStore.apiRepo
-                      .forTenant(tenant.id)
-                      .save(adminApiDefaultTenant)
-                  _ <- dataStore.userRepo.save(user)
-                } yield ()
-
-                Await.result(initialDataFu, 10 seconds)
-                AppLogger.warn("")
-                AppLogger.warn(
-                  s"You can log in with admin@daikoku.io / ${config.init.admin.password}"
-                )
-                AppLogger.warn("")
-                AppLogger.warn(
-                  "Please avoid using the default tenant for anything else than configuring Daikoku"
-                )
-                AppLogger.warn("")
-            }
-          }
-        case false =>
-          (dataStore match {
-            case store: PostgresDataStore => store.checkDatabase()
-            case _                        => FastFuture.successful(None)
-          }).flatMap { _ =>
-            evolutions.run(dataStore, new OtoroshiClient(this))
-          }
-      }
-    }
 
     dataStore.start()
 
     Source
       .tick(1.second, 5.seconds, ())
       .mapAsync(1) { _ =>
-        tryToInitDatastore().transform {
+        initDatastore().transform {
           case Success(_) => Success(true)
-          case Failure(e) => Success(false)
+          case Failure(_) => Success(false)
         }
       }
       .filter(v => v)

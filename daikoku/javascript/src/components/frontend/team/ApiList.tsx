@@ -1,32 +1,29 @@
 import { getApolloContext } from "@apollo/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import classNames from 'classnames';
 import debounce from "lodash/debounce";
 import sortBy from 'lodash/sortBy';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { Grid, List } from 'react-feather';
 import Pagination from 'react-paginate';
-import { useDispatch, useSelector } from 'react-redux';
-import { toastr } from "react-redux-toastr";
 import { useLocation, useNavigate } from 'react-router-dom';
 import Select, { SingleValue } from 'react-select';
 
-import { I18nContext, updateUser } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import {
   IApiAuthoWithCount,
   IApiWithAuthorization,
-  IState,
   ITeamSimple,
-  IUserSimple,
   TOption,
   TOptions,
   isError
 } from '../../../types';
 import { ApiCard } from '../api';
 
+import { toast } from "sonner";
+import { GlobalContext } from "../../../contexts/globalContext";
 import * as Services from "../../../services";
-import { FilterPreview, Spinner, arrayStringToTOps } from "../../utils";
-import queryClient from "../../utils/queryClient";
+import { FilterPreview, Spinner, arrayStringToTOps, teamGQLToSimple } from "../../utils";
 
 const GRID = 'GRID';
 const LIST = 'LIST';
@@ -46,16 +43,15 @@ type TApiList = {
 export const ApiList = (props: TApiList) => {
 
   const { client } = useContext(getApolloContext());
+  const queryClient = useQueryClient();
 
   const { translate } = useContext(I18nContext);
   const navigate = useNavigate();
 
 
 
-  const connectedUser = useSelector<IState, IUserSimple>((state) => state.context.connectedUser);
+  const { connectedUser, reloadContext } = useContext(GlobalContext);
   const location = useLocation();
-
-  const dispatch = useDispatch();
 
   const [searched, setSearched] = useState("");
   const [inputVal, setInputVal] = useState("")
@@ -74,7 +70,6 @@ export const ApiList = (props: TApiList) => {
 
   const [view, setView] = useState<'LIST' | 'GRID'>(LIST);
   const pageNumber = view === GRID ? 12 : 10;
-
 
 
   const dataRequest = useQuery({
@@ -163,7 +158,7 @@ export const ApiList = (props: TApiList) => {
   const askForApiAccess = (apiWithAuth: IApiWithAuthorization, teams: string[]) =>
     Services.askForApiAccess(teams, apiWithAuth.api._id)
       .then(() => {
-        toastr.info(translate('Info'), translate({ key: 'ask.api.access.info', replacements: [apiWithAuth.api.name] }));
+        toast.info(translate({ key: 'ask.api.access.info', replacements: [apiWithAuth.api.name] }));
         if (dataRequest.data) {
           queryClient.invalidateQueries({ queryKey: ['data'] })
         }
@@ -192,7 +187,7 @@ export const ApiList = (props: TApiList) => {
   }, [dataRequest.data]);
 
   const redirectToTeam = (team: ITeamSimple) => {
-    navigate(`/${team._humanReadableId}/settings`);
+    navigate(`/${team._humanReadableId}/settings/dashboard`);
   };
 
   const clearFilter = () => {
@@ -224,26 +219,11 @@ export const ApiList = (props: TApiList) => {
   const user = connectedUser;
 
   const toggleStar = (apiWithAuthorization: IApiWithAuthorization) => {
-    Services.toggleStar(apiWithAuthorization.api._id).then((res) => {
-      if (!isError(res)) {
-        const alreadyStarred = connectedUser.starredApis.includes(apiWithAuthorization.api._id);
-
-        setApisWithAuth(
-          apisWithAuth!.map((apiWithAuth) => {
-
-            if (apiWithAuth.api._id === apiWithAuthorization.api._id) apiWithAuth.api.stars += alreadyStarred ? -1 : 1;
-            return apiWithAuth;
-          }),
-        );
-
-        dispatch(updateUser({
-          ...connectedUser,
-          starredApis: alreadyStarred
-            ? connectedUser.starredApis.filter((id: any) => id !== apiWithAuthorization.api._id)
-            : [...connectedUser.starredApis, apiWithAuthorization.api._id],
-        }));
-      }
-    });
+    Services.toggleStar(apiWithAuthorization.api._id)
+      .then(() => {
+        queryClient.invalidateQueries({queryKey: ['data']})
+        reloadContext()
+      }); 
   };
 
   return (
@@ -349,7 +329,7 @@ export const ApiList = (props: TApiList) => {
                         user={user}
                         apiWithAutho={sameApis}
                         teamVisible={props.teamVisible}
-                        team={apiWithAuth.api.team}
+                        team={teamGQLToSimple(apiWithAuth.api.team)}
                         myTeams={props.myTeams || []}
                         askForApiAccess={(teams) => askForApiAccess(apiWithAuth, teams)}
                         redirectToApiPage={() => props.redirectToApiPage(apiWithAuth)}

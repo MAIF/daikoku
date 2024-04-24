@@ -5,7 +5,7 @@ import React, { useContext, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { IPage } from '..';
 import { ModalContext } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { Table, TableRef } from '../../inputs';
 
@@ -84,6 +84,12 @@ export const Pages = ({
       enableSorting: false,
       cell: (info) => {
         const value = info.row.original;
+        let isCreatedFromCLI = false;
+
+        try {
+          isCreatedFromCLI = JSON.parse(info.row.original.metadata).from
+        } catch (_) { }
+
         return (
           <div className="d-flex justify-content-center align-items-center">
             <Link
@@ -94,7 +100,7 @@ export const Pages = ({
               </button>
             </Link>
             <Link
-              className={classNames({link__disabled: !value.path})}
+              className={classNames({ link__disabled: !value.path })}
               to={value.path ? `/_${value.path}` : '#'}
               target="_blank"
               rel="noopener noreferrer"
@@ -106,7 +112,7 @@ export const Pages = ({
                 <i className="fas fa-eye" />
               </button>
             </Link>
-            <button
+            {!isCreatedFromCLI && <button
               className="m-1 btn btn-outline-danger"
               onClick={(e) => {
                 e.stopPropagation();
@@ -124,7 +130,7 @@ export const Pages = ({
               }}
             >
               <i className="fas fa-trash" />
-            </button>
+            </button>}
           </div>
         );
       },

@@ -1,14 +1,16 @@
 import { gql } from '@apollo/client';
 import {
-  IFastApiSubscription,
+  I2FAQrCode,
   IAsset,
   IAuditTrail,
+  IFastApiSubscription,
   IMailingTranslation,
   INotification,
   IOtoroshiSettings,
   IQuotas,
   ISafeSubscription,
   ISession,
+  IStateContext,
   ISubscriptionInformation,
   ITeamFull,
   ITeamSimple,
@@ -22,27 +24,24 @@ import {
   IAnonymousState,
 } from '../types';
 import {
-  ResponseError,
   IApi,
+  IApiExtended,
+  IApiPost,
+  IConsumption,
   IDocDetail,
   IDocPage,
-  ISubscription,
-  ResponseDone,
-  IApiPost,
-  ISubscriptionWithApiInfo,
-  IUsagePlan,
-  ISubscriptionDemand,
-  IConsumption,
-  ISubscriptionExtended,
-  IApiExtended,
   IDocumentation,
   IImportingDocumentation,
-  ITestingConfig,
-  IApiKey,
   IOtoroshiApiKey,
+  ISubscription,
+  ISubscriptionDemand,
+  ISubscriptionExtended,
+  ISubscriptionWithApiInfo,
+  ITestingConfig,
+  IUsagePlan,
+  ResponseDone,
+  ResponseError,
 } from '../types/api';
-
-import { Option } from '../components/utils/Option';
 
 const HEADERS = {
   Accept: 'application/json',
@@ -55,9 +54,10 @@ const customFetch = <T>(
   { headers = HEADERS, method = 'GET', body, ...props }: any = {}
 ) => fetch(url, { headers, method, body, ...props }).then((r) => r.json());
 
-export const me = () => customFetch('/api/me');
+export const me = (): PromiseWithError<IUser> => customFetch('/api/me');
 export const myOwnTeam = () => customFetch('/api/me/teams/own');
 export const oneOfMyTeam = (id: any) => customFetch(`/api/me/teams/${id}`);
+export const getUserContext = (): PromiseWithError<IStateContext> => customFetch('/api/me/context');
 
 export const getVisibleApiWithId = (id: string): PromiseWithError<IApi> =>
   customFetch(`/api/me/visible-apis/${id}`);
@@ -100,11 +100,13 @@ export const myNotifications = (
 ): Promise<{ notifications: Array<INotification>; count: number }> =>
   customFetch(`/api/me/notifications?page=${page}&pageSize=${pageSize}`);
 
-export const myUnreadNotificationsCount = () =>
-  fetch('/api/me/notifications/unread-count').then(
-    (r) => (r.status === 200 ? r.json() : { count: 0 }),
-    () => ({ count: 0 })
-  );
+export const myUnreadNotificationsCount = (): Promise<{ count: number }> =>
+  fetch('/api/me/notifications/unread-count')
+    .then(
+      (r) => (r.status === 200 ? r.json() : { count: 0 }),
+      () => ({ count: 0 })
+    )
+    .catch(() => ({ count: 0 }));
 
 export const acceptNotificationOfTeam = (
   NotificationId: string,
@@ -288,7 +290,7 @@ export const team = (teamId: string): Promise<ResponseError | ITeamSimple> =>
 export const teamFull = (teamId: string): Promise<ResponseError | ITeamFull> =>
   customFetch(`/api/teams/${teamId}/_full`);
 
-export const teams = (): Promise<ResponseError | Array<ITeamSimple>> => customFetch('/api/teams');
+export const teams = (team: ITeamSimple): Promise<ResponseError | Array<ITeamSimple>> => customFetch(`/api/teams/${team._id}/teams`);
 export const isMaintenanceMode = () => customFetch('/api/state/lock');
 
 export const createTeam = (team: ITeamSimple) =>
@@ -1001,12 +1003,24 @@ export const checkConnection = (config: any, user?: any) =>
     body: user ? JSON.stringify({ config, user }) : JSON.stringify(config),
   });
 
-export const login = (username: any, password: any, action: any) => {
+function updateQueryStringParameter(uri, key, value) {
+  const re = new RegExp('([?&])' + key + '=.*?(&|$)', 'i');
+  const separator = uri.indexOf('?') !== -1 ? '&' : '?';
+  if (uri.match(re)) {
+    return uri.replace(re, '$1' + key + '=' + value + '$2');
+  } else {
+    return uri + separator + key + '=' + value;
+  }
+}
+
+export const login = (username: string, password: string, action: string, redirect?: string) => {
   const body = new URLSearchParams();
   body.append('username', username);
   body.append('password', password);
 
-  return fetch(action, {
+  const url = redirect ? updateQueryStringParameter(action, 'redirect', redirect) : action;
+
+  return fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
@@ -1094,7 +1108,7 @@ export const updateIssue = (apiId: any, teamId: any, issueId: any, issue: any) =
     }),
   });
 
-export const getQRCode = () => customFetch('/api/me/_2fa');
+export const getQRCode = (): PromiseWithError<I2FAQrCode> => customFetch('/api/me/_2fa');
 
 export const verify2faCode = (token: any, code: any) =>
   fetch(`/api/2fa?token=${token}&code=${code}`);
@@ -1110,15 +1124,18 @@ export const reset2faAccess = (backupCodes: any) =>
     body: JSON.stringify({ backupCodes }),
   });
 
-export const selfVerify2faCode = (code: any) => customFetch(`/api/me/_2fa/enable?code=${code}`);
+export const selfVerify2faCode = (code: string) => customFetch(`/api/me/_2fa/enable?code=${code}`);
 
-export const validateInvitationToken = (token: any) =>
+export const validateInvitationToken = (
+  token?: string | null
+): PromiseWithError<{ team: string; notificationId: string; user: string }> =>
   customFetch('/api/me/invitation/_check', {
     method: 'POST',
     body: JSON.stringify({ token }),
   });
 
-export const removeTeamInvitation = () => customFetch('/api/me/invitation', { method: 'DELETE' });
+export const declineMyTeamInvitation = (token: string): PromiseWithError<ResponseDone> =>
+  customFetch(`/api/me/invitation?token=${token}`, { method: 'DELETE' });
 
 export const createNewApiVersion = (apiId: string, teamId: string, version: string) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/versions`, {
@@ -1423,6 +1440,14 @@ export const graphql = {
               apiKeyVisibility
               apisCreationPermission
               verified
+              users {
+                user {
+                  userId: id
+                  name
+                  email
+                }
+                teamPermission
+              }
             }
             apis {
               api {

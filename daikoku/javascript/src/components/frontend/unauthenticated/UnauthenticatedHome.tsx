@@ -1,17 +1,16 @@
-import React, { useContext, useEffect } from 'react';
+import React, { PropsWithChildren, useContext, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import hljs from 'highlight.js';
-import { useSelector } from 'react-redux';
 
 import { converter } from '../../../services/showdown';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 
-export function UnauthenticatedHome({children}: {children?: JSX.Element}) {
+export function UnauthenticatedHome({ children }: PropsWithChildren) {
   const { Translation } = useContext(I18nContext);
   const location = useLocation();
 
-  const tenant = useSelector((s: any) => s.context.tenant)
-
+  const { tenant } = useContext(GlobalContext)
   const content = tenant.unloggedHome || '';
   const pathname = location ? location.pathname : '';
   const displayInformation = pathname !== '/2fa' && pathname !== '/signup';

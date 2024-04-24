@@ -163,7 +163,7 @@ a.navbar-brand, #teamSelector:hover {
         .block__entry__link {
           cursor: pointer;
           font-size: 14px;
-          color: $aside-text-color;
+          color: $sidebar-text-color;
           margin-bottom: 5px;
           line-height: 40px;
           border-radius: 4px;
@@ -182,7 +182,7 @@ a.navbar-brand, #teamSelector:hover {
 
 .navbar-companion {
   z-index: 10;
-  background-color: $aside-bg-color;
+  background-color: $sidebar-bg-color;
   height: 100vh;
   position: relative;
   min-width: 20px;
@@ -216,7 +216,7 @@ a.navbar-brand, #teamSelector:hover {
       text-overflow: ellipsis;
       white-space: nowrap;
       line-height: 1.14286;
-      color: $aside-text-color;
+      color: $sidebar-text-color;
       font-weight: 600;
 
       h3{
@@ -234,7 +234,7 @@ a.navbar-brand, #teamSelector:hover {
           .block__entry__link {
             cursor: pointer;
             font-size: 14px;
-            color: $aside-text-color;
+            color: $sidebar-text-color;
             margin-bottom: 5px;
             line-height: 40px;
             border-radius: 4px;
@@ -258,7 +258,7 @@ a.navbar-brand, #teamSelector:hover {
           .submenu__entry__link {
             cursor: pointer;
             font-size: 14px;
-            color: $aside-text-color;
+            color: $sidebar-text-color;
             margin-bottom: 4px;
             line-height: 35px;
             padding-left: .5rem;
@@ -326,7 +326,7 @@ a.navbar-brand, #teamSelector:hover {
 .page__menu__entry{
   cursor: pointer;
   font-size: 14px;
-  color: $aside-text-color;
+  color: $sidebar-text-color;
   margin-bottom: 5px;
   line-height: 40px;
   border-radius: 4px;

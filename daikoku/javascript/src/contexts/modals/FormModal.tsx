@@ -1,7 +1,7 @@
 import React, { useContext, useRef } from 'react';
 import { Flow, Form, FormRef, Schema, Option, TBaseObject } from '@maif/react-forms';
 
-import { I18nContext } from '../../core';
+import { I18nContext } from '../../contexts';
 import { IBaseModalProps, IFormModalProps } from './types';
 
 export const FormModal = <T extends TBaseObject>({

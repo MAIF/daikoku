@@ -5,7 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import Select, { SingleValue } from 'react-select';
 import { ModalContext } from '../../../contexts';
 
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import Editor from './Editor';
 import Helpers from './helpers.json';
 
@@ -219,7 +219,8 @@ export const ContentSideView = ({
   onChange,
   pages,
   publish,
-  contentType
+  contentType,
+  editable
 }: any) => {
   const { translate } = useContext(I18nContext);
   const [sideView, setSideView] = useState(false);
@@ -274,33 +275,7 @@ export const ContentSideView = ({
   //@ts-ignore //FIXME???
   window.pages = pages;
 
-  const onMouseDown = () => {
-    if (editorRef.current) {
-      setTimeout(() => {
-        const pos = editorRef.current.getCursorPosition();
-        const token = editorRef.current.session.getTokenAt(pos.row, pos.column);
-
-        const value = token ? token.value.trim() : '';
-        try {
-          const id = value.match(/(?:"[^"]*"|^[^"]*$)/)[0].replace(/"/g, ''); //@ts-ignore //FIXME???
-          const page = window.pages.find((p: any) => p.id === id);
-          setSelectedPage({
-            ...editorRef.current.renderer.$cursorLayer.getPixelPosition(),
-            pageName: page.name,
-            id,
-          });
-        } catch (err) {
-          setSelectedPage({ top: 0, left: 0, pageName: undefined });
-        }
-      }, 10);
-    }
-  };
-
-  // useEffect(() => {
-  //   if (editorRef.current) {
-  //     editorRef.current.on('mousedown', onMouseDown);
-  //   }
-  // }, [editorRef.current]);
+  const navigate = useNavigate()
 
   const filterHelpers = (value: any) => {
     const term = value.toLowerCase().replace(/[\[\]&]+/g, '');
@@ -321,16 +296,22 @@ export const ContentSideView = ({
 
   return (<div className="d-flex flex-column" style={{
     position: 'relative',
-    marginTop: '52px',
+    marginTop: editable ? '52px' : 0,
     flex: 1,
   }}>
-    <TopActions setSideView={setSideView} publish={publish} setSelector={setSelector} />
-    <span style={{
-      fontStyle: 'italic',
-      fontSize: '13px',
-    }}>
-      {translate('cms.body.drag_and_drop_advice')}
-    </span>
+    <button className="btn btn-sm btn-outline-primary m-1" type="button" style={{ maxWidth: 200 }}
+      onClick={() => navigate('/settings/pages', { state: { reload: true } })}>
+      {translate('cms.create.back_to_pages')}
+    </button>
+    {editable && <>
+      <TopActions setSideView={setSideView} publish={publish} setSelector={setSelector} />
+      <span style={{
+        fontStyle: 'italic',
+        fontSize: '13px',
+      }}>
+        {translate('cms.body.drag_and_drop_advice')}
+      </span>
+    </>}
     <div style={{
       position: 'relative',
       border: '1px solid rgba(225,225,225,.5)',
@@ -352,7 +333,7 @@ export const ContentSideView = ({
           onClick={() => setSelectedPage({ pageName: undefined })}>
           {`${translate('cms.content_side_view.edit')} ${selectedPage.pageName}`}
         </Link>)}
-      <Editor value={value} onChange={onChange} setRef={(editorInstance: any) => {
+      <Editor value={value} onChange={onChange} readOnly={!editable} setRef={(editorInstance: any) => {
         editorRef.current = editorInstance
         // editorInstance.container.style.resize = 'both';
         // document.addEventListener('mouseup', (e) => editorInstance.resize());

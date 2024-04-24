@@ -1,16 +1,16 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { Link, useNavigate, useParams, useLocation } from 'react-router-dom';
-import { useSelector } from 'react-redux';
-import { Form, type, constraints } from '@maif/react-forms'
+import { Form, type } from '@maif/react-forms';
+import { useContext, useEffect, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
-import * as Services from '../../../services';
-import { Can, manage, tenant as TENANT, Spinner } from '../../utils';
-import { toastr } from 'react-redux-toastr';
-import { I18nContext } from '../../../contexts/i18n-context';
+import { toast } from 'sonner';
 import { useTenantBackOffice } from '../../../contexts';
+import { I18nContext } from '../../../contexts/i18n-context';
+import { GlobalContext } from '../../../contexts/globalContext';
+import * as Services from '../../../services';
+import { Can, tenant as TENANT, manage } from '../../utils';
 
 export const TenantOtoroshi = () => {
-  const { tenant } = useSelector((s) => (s as any).context);
+  const { tenant } = useContext(GlobalContext);
   useTenantBackOffice();
 
   const { translate, Translation } = useContext(I18nContext);
@@ -57,9 +57,9 @@ export const TenantOtoroshi = () => {
       Services.createOtoroshiSettings(tenant._id, data)
         .then((result) => {
           if (result.error) {
-            toastr.error('Failure', result.error);
+            toast.error(result.error);
           } else {
-            toastr.success(translate('Success'), translate('otoroshi.settings.created.success'));
+            toast.success(translate('otoroshi.settings.created.success'));
             navigate('/settings/otoroshis')
           }
         });
@@ -67,9 +67,9 @@ export const TenantOtoroshi = () => {
       Services.saveOtoroshiSettings(tenant._id, data)
         .then((result) => {
           if (result.error) {
-            toastr.error('Failure', result.error);
+            toast.error(result.error);
           } else {
-            toastr.success(translate('Success'), translate('otoroshi.settings.updated.success'));
+            toast.success(translate('otoroshi.settings.updated.success'));
             navigate('/settings/otoroshis')
           }
         });

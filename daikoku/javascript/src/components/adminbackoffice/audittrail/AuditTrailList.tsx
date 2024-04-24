@@ -5,7 +5,7 @@ import moment from 'moment';
 import { useContext, useEffect, useRef, useState } from 'react';
 
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IAuditTrailEvent, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';

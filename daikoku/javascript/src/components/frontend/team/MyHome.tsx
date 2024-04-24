@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 
-import { I18nContext, updateTeam } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import {
@@ -15,17 +15,15 @@ import {
   IUserSimple
 } from '../../../types';
 import { ApiList } from './ApiList';
-import { api as API, CanIDoAction, manage, Spinner } from '../../utils';
+import { api as API, CanIDoAction, manage, Spinner, teamGQLToSimple } from '../../utils';
+import { GlobalContext } from '../../../contexts/globalContext';
 import {toastr} from "react-redux-toastr";
 import {ModalContext} from "../../../contexts";
 
 export const MyHome = () => {
 
 
-  const dispatch = useDispatch();
-  const connectedUser = useSelector<IState, IUserSimple>(s => s.context.connectedUser)
-  const tenant = useSelector<IState, ITenant>(s => s.context.tenant)
-  const apiCreationPermitted = useSelector<IState, boolean>(s => s.context.apiCreationPermitted)
+  const { connectedUser, tenant, apiCreationPermitted } = useContext(GlobalContext)
 
   const myTeamsRequest = useQuery({ queryKey: ['myTeams'], queryFn: () => Services.myTeams() })
 
@@ -87,18 +85,13 @@ export const MyHome = () => {
   const redirectToEditPage = (apiWithAutho: IApiWithAuthorization) => {
     const api = apiWithAutho.api
 
-    if (api.team && CanIDoAction(connectedUser, manage, API, api.team, apiCreationPermitted)) {
-      Promise.resolve(dispatch(updateTeam(api.team)))
-        .then(() => {
-          const url = api.apis
-            ? `/${api.team._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
-            : `/${api.team._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
-          navigate(url);
-        });
+    if (api.team && CanIDoAction(connectedUser, manage, API, teamGQLToSimple(api.team), apiCreationPermitted)) {
+      const url = api.apis
+        ? `/${api.team._humanReadableId}/settings/apigroups/${api._humanReadableId}/infos`
+        : `/${api.team._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/infos`;
+      navigate(url);
     }
   };
-
-
 
   if (myTeamsRequest.isLoading) {
     return (

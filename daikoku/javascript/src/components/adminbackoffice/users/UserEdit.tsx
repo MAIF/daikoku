@@ -3,15 +3,14 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { md5 } from 'js-md5';
 import { nanoid } from 'nanoid';
 import React, { useContext, useRef, useState } from 'react';
-import { useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
 import { useNavigate, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
-import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
-import { I18nContext } from '../../../core';
+import { I18nContext, ModalContext, useDaikokuBackOffice } from '../../../contexts';
 import * as Services from '../../../services';
 import { IState, ITenant, IUser } from '../../../types';
 import { Can, daikoku, manage, Spinner } from '../../utils';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 const Avatar = ({
   setValue,
@@ -30,7 +29,7 @@ const Avatar = ({
   defaultValue?: any;
   tenant: ITenant
 }) => {
-  const { Translation, translate } = useContext(I18nContext);
+  const { Translation } = useContext(I18nContext);
 
   const setFiles = (files: FileList | null) => {
     const file = files && files[0];
@@ -42,7 +41,7 @@ const Avatar = ({
       return Services.storeUserAvatar(filename, contentType, file)
         .then((res) => {
           if (res.error) {
-            toastr.error(translate('Error'), res.error);
+            toast.error(res.error);
           } else {
             setValue!('pictureFromProvider', false);
             onChange!(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
@@ -168,7 +167,7 @@ const PictureUpload = (props: { setFiles: (l: FileList | null) => void }) => {
 };
 
 export const UserEdit = () => {
-  const tenant = useSelector<IState, ITenant>((s) => s.context.tenant);
+  const { tenant } = useContext(GlobalContext);
   useDaikokuBackOffice();
   const { translate, Translation } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
@@ -243,7 +242,7 @@ export const UserEdit = () => {
         if (ok) {
           Services.deleteUserById(user._id)
             .then(() => {
-              toastr.success(translate('Success'), translate({ key: 'remove.user.success', replacements: [user.name] }));
+              toast.success(translate({ key: 'remove.user.success', replacements: [user.name] }));
               navigate('/settings/users');
             });
         }
@@ -253,11 +252,11 @@ export const UserEdit = () => {
   const save = (u: IUser) => {
     Services.updateUserById(u)
       .then((updatedUser) => {
-        toastr.success(translate('Success'), translate({ key: 'user.updated.success', replacements: [u.name] }));
+        toast.success(translate({ key: 'user.updated.success', replacements: [u.name] }));
         if (u.email !== queryUser.data?.email) {
           navigate(`/settings/users/${updatedUser._humanReadableId}`)
         } else {
-          queryClient.invalidateQueries({queryKey: ['user-infos']})
+          queryClient.invalidateQueries({ queryKey: ['user-infos'] })
 
         }
       });

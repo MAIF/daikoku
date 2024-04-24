@@ -334,6 +334,9 @@ class LoginFilter(env: Env)(implicit
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case ("get", path) if path.startsWith("/robots.txt") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
+                  case ("get", path)
+                      if path.startsWith("/api/versions/_daikoku") =>
+                    nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case (_, r"/account") =>
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))
                   case (_, r"/account/.*") =>

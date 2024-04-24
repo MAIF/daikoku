@@ -2,13 +2,13 @@ import { Form, constraints, format, type } from '@maif/react-forms';
 import { createColumnHelper } from '@tanstack/react-table';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useRef, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
 import { Link, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IMailingTranslation, ITenantFull, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
@@ -39,7 +39,7 @@ const EditMailtemplate = ({
       .then((tenant) => {
         if (!isError(tenant)) {
           setTenant(tenant);
-  
+
           Promise.all([
             Services.getTranslationLanguages(),
             Services.getMailTranslations(KEY_MAIL_TEMPLATE)
@@ -91,9 +91,9 @@ const EditMailtemplate = ({
 
   const manageError = (res: any) => {
     if (res.error) {
-      toastr.error(translate('Error'), res.error);
+      toast.error(res.error);
     } else {
-      toastr.success(translate('Success'), translate('mailing_internalization.translation_updated'));
+      toast.success(translate('mailing_internalization.translation_updated'));
     }
   };
 
@@ -162,10 +162,9 @@ const EditMailtemplate = ({
 export const MailingInternalization = () => {
   useTenantBackOffice();
   const table = useRef<TableRef>();
-  const { tenant } = useSelector((s: any) => s.context);
+  const { tenant } = useContext(GlobalContext);
 
   const { domain } = useParams();
-  const dispatch = useDispatch();
 
   const { translate, Translation } = useContext(I18nContext);
   const { openFormModal } = useContext(ModalContext);
@@ -174,9 +173,9 @@ export const MailingInternalization = () => {
     Services.saveTranslation(translation)
       .then((res) => {
         if (res.error)
-          toastr.error(translate('Error'), translate('mailing_internalization.failed_translation_update'));
+          toast.error(translate('mailing_internalization.failed_translation_update'));
         else {
-          toastr.success(translate('Error'), translate('mailing_internalization.translation_updated'));
+          toast.success(translate('mailing_internalization.translation_updated'));
           table.current?.update();
         }
       });

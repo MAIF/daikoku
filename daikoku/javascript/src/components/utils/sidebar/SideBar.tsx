@@ -1,22 +1,19 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
 import classNames from 'classnames';
-import Search from 'react-feather/dist/icons/search'
-import Plus from 'react-feather/dist/icons/plus'
-import MessageSquare from 'react-feather/dist/icons/message-square'
-import ArrowLeft from 'react-feather/dist/icons/arrow-left'
-import Zap from 'react-feather/dist/icons/zap'
-import Bell from 'react-feather/dist/icons/bell'
+import { useContext, useEffect, useState } from 'react';
+import ArrowLeft from 'react-feather/dist/icons/arrow-left';
+import Bell from 'react-feather/dist/icons/bell';
+import MessageSquare from 'react-feather/dist/icons/message-square';
+import Plus from 'react-feather/dist/icons/plus';
+import Search from 'react-feather/dist/icons/search';
+import Zap from 'react-feather/dist/icons/zap';
+import { Link, useLocation } from 'react-router-dom';
 
-import * as Services from '../../../services';
-import { updateNotifications } from '../../../core';
 import { I18nContext } from '../../../contexts/i18n-context';
+import { GlobalContext } from '../../../contexts/globalContext';
+import * as Services from '../../../services';
 import { MessagesContext } from '../../backoffice';
-
-import { AddPanel, GuestPanel, SearchPanel, SettingsPanel, MessagePanel, DarkModeActivator } from './panels';
 import { Companion } from './companions';
-import { IState, IStateContext } from '../../../types';
+import { AddPanel, DarkModeActivator, GuestPanel, MessagePanel, SearchPanel, SettingsPanel } from './panels';
 
 
 export const state = {
@@ -28,8 +25,7 @@ export const SideBar = () => {
   const [panelState, setPanelState] = useState(state.closed);
   const [panelContent, setPanelContent] = useState<JSX.Element>();
 
-  const { tenant, connectedUser, impersonator, unreadNotificationsCount, isTenantAdmin } = useSelector<IState, IStateContext>((state) => state.context);
-  const dispatch = useDispatch();
+  const { tenant, connectedUser, impersonator, isTenantAdmin, unreadNotificationsCount } = useContext(GlobalContext);
   const location = useLocation();
 
   const { totalUnread } = useContext(MessagesContext);
@@ -38,14 +34,6 @@ export const SideBar = () => {
   useEffect(() => {
     setPanelState(state.closed);
   }, [location]);
-
-  useEffect(() => {
-    Services.myUnreadNotificationsCount()
-      .then((notifCount) => {
-        dispatch(updateNotifications(notifCount.count));
-      }
-      );
-  }, []);
 
   const closeOnEsc = (e: any) => {
     if (e.key == 'Escape' || e.key == 'Esc') {
@@ -96,6 +84,7 @@ export const SideBar = () => {
               <div className="nav_item mb-3 cursor-pointer">
                 <Plus
                   className="notification-link"
+                  aria-label="create"
                   onClick={() => {
                     setPanelState(state.opened);
                     setPanelContent(<AddPanel />);

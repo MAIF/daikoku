@@ -4,10 +4,10 @@ import React, { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 import * as Services from '../../../../services/index';
-import { I18nContext } from '../../../../core';
+import { I18nContext } from '../../../../contexts';
 import { ApiFilter } from './ApiFilter';
-import { useSelector } from 'react-redux';
 import {BeautifulTitle, getColorByBgColor} from '../../..';
+import { GlobalContext } from '../../../../contexts/globalContext';
 
 export function ApiIssues({
   filter,
@@ -19,7 +19,7 @@ export function ApiIssues({
 }: any) {
   const [issues, setIssues] = useState([]);
   const { versionId } = useParams();
-  const { connectedUser } = useSelector(state => (state as any).context);
+  const { connectedUser } = useContext(GlobalContext);
 
     const { translate } = useContext(I18nContext);
 
@@ -46,7 +46,7 @@ export function ApiIssues({
   const basePath = `/${ownerTeam._humanReadableId}/${api ? api._humanReadableId : ''}/${versionId}`;
     return (
       <div>
-        <ApiFilter pathname={basePath} tags={api.issuesTags} handleFilter={(value: any) => setFilter(value)} filter={filter} connectedUser={connectedUser} api={api} team={ownerTeam._id} ownerTeam={ownerTeam} selectedVersion={selectedVersion} setSelectedVersion={setSelectedVersion} refresh={refresh} basePath={basePath}/>
+        <ApiFilter handleFilter={(value: any) => setFilter(value)} filter={filter} connectedUser={connectedUser} api={api} team={ownerTeam._id} ownerTeam={ownerTeam} selectedVersion={selectedVersion} setSelectedVersion={setSelectedVersion} refresh={refresh} basePath={basePath}/>
         <div className="d-flex flex-column pt-3 mt-3">
           { filteredIssues.map(({ seqId, title, tags, by, createdDate, closedDate, open, apiVersion, _id, comments }) => (
             <Link to={`${_id}`} className="me-2">

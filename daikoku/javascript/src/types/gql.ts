@@ -1,3 +1,4 @@
+import { IAuthorizedEntities } from './api';
 import { IUser, TeamPermission, TeamUser } from './team';
 import { ITenant } from './tenant';
 
@@ -16,4 +17,8 @@ export interface ITeamFullGql {
   apisCreationPermission?: boolean;
   verified: boolean;
   metadata: object;
+  authorizedOtoroshiEntities: Array<{
+    otoroshiSettingsId: string;
+    authorizedEntities: IAuthorizedEntities;
+  }>;
 }

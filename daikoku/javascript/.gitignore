@@ -2,3 +2,7 @@ dist
 dist2
 node_modules
 .cache
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/

@@ -3,7 +3,7 @@ import { Form, Schema, type } from '@maif/react-forms';
 import { UseMutationResult } from '@tanstack/react-query';
 
 
-import { I18nContext } from '../../../../core';
+import { I18nContext } from '../../../../contexts';
 import { ITenantFull } from '../../../../types';
 import { ModalContext } from '../../../../contexts';
 
@@ -40,6 +40,12 @@ export const SecurityForm = (props: { tenant?: ITenantFull, updateTenant: UseMut
       type: type.bool,
       label: translate('API reference visibility'),
       help: translate('api.reference.visibility.help'),
+    },
+    cmsRedirections: {
+      type: type.string,
+      array: true,
+      label: translate('CMS Redirections Domains'),
+      help: translate('cms.redirections.domains'),
     }
   }
 

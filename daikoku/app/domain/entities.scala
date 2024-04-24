@@ -60,9 +60,7 @@ case class Version(value: String) extends ValueType with CanJson[Version] {
 case class TenantId(value: String) extends ValueType with CanJson[TenantId] {
   def asJson: JsValue = JsString(value)
 }
-case class AssetId(value: String) extends ValueType with CanJson[AssetId] {
-  def asJson: JsValue = JsString(value)
-}
+
 case class OtoroshiGroup(value: String)
     extends ValueType
     with CanJson[OtoroshiGroup] {
@@ -106,6 +104,10 @@ case class ApiIssueTagId(value: String)
 }
 
 case class CmsPageId(value: String) extends ValueType with CanJson[CmsPageId] {
+  def asJson: JsValue = JsString(value)
+}
+
+case class AssetId(value: String) extends ValueType with CanJson[AssetId] {
   def asJson: JsValue = JsString(value)
 }
 

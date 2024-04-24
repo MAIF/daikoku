@@ -1,21 +1,21 @@
-import React, { useContext } from 'react';
-import { useNavigate, useMatch, PathMatch, Params } from 'react-router-dom';
-import { useSelector, useDispatch } from 'react-redux';
+import { useContext } from 'react';
+import { useMatch, useNavigate } from 'react-router-dom';
 
-import * as Services from '../../../../services';
-import { manage, CanIDoAction, api as API, Option, Spinner } from '../..';
-import { I18nContext } from '../../../../contexts/i18n-context';
-import { teamSchema } from '../../../backoffice/teams/TeamEdit'
-import { toastr } from 'react-redux-toastr';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { isError, IState, IStateContext, ITeamSimple } from '../../../../types';
+import { toast } from 'sonner';
+import { api as API, CanIDoAction, Option, Spinner, manage } from '../..';
 import { ModalContext } from '../../../../contexts';
+import { I18nContext } from '../../../../contexts/i18n-context';
+import { GlobalContext } from '../../../../contexts/globalContext';
+import * as Services from '../../../../services';
+import { isError } from '../../../../types';
+import { teamSchema } from '../../../backoffice/teams/TeamEdit';
 
 export const AddPanel = () => {
   const { translate } = useContext(I18nContext);
   const { openFormModal, openTeamSelectorModal } = useContext(ModalContext);
 
-  const { tenant, connectedUser, apiCreationPermitted } = useSelector<IState, IStateContext>((state) => state.context);
+  const { tenant, connectedUser, apiCreationPermitted } = useContext(GlobalContext);
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/*');
   const queryClient = useQueryClient();
@@ -30,14 +30,12 @@ export const AddPanel = () => {
         onSubmit: (data) => Services.createTeam(data)
           .then(r => {
             if (r.error) {
-              toastr.error(translate('Error'), r.error)
+              toast.error(r.error)
             } else {
               queryClient.invalidateQueries({ queryKey: ['teams'] })
               queryClient.invalidateQueries({ queryKey: ['myTeams'] })
-              toastr.info(
-                translate("mailValidation.sent.title"),
-                translate("mailValidation.sent.body"))
-              toastr.success(translate('Success'), translate({ key: "Team %s created successfully", replacements: [data.name] }))
+              toast.info(translate("mailValidation.sent.body"))
+              toast.success(translate({ key: "Team %s created successfully", replacements: [data.name] }))
             }
           }),
         actionLabel: translate('Create'),

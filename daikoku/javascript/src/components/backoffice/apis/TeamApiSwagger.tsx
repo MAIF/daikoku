@@ -3,7 +3,7 @@ import React, { useEffect, useContext, MutableRefObject } from 'react';
 import SwaggerEditor, { plugins } from 'swagger-editor';
 import { Form, type, format, constraints, FormRef } from '@maif/react-forms';
 
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 
 import 'swagger-editor/dist/swagger-editor.css';
 import { IApi, ISwagger, IWithSwagger } from '../../../types';

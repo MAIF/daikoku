@@ -2,14 +2,14 @@
 @import fr.maif.otoroshi.daikoku.domain.Tenant
 @import fr.maif.otoroshi.daikoku.login.AuthProvider
 
-@(provider: AuthProvider, tenant: Tenant, host: String, env: Env)
+@(provider: AuthProvider, tenant: Tenant, host: String, env: Env, redirect: Option[String] = None)
 
 @customStyle = {
 @(tenant.colorTheme())
-@if(env.config.mode == DaikokuMode.Dev) {
+@if(env.config.isDev) {
     <link rel="stylesheet" media="screen" href="http://@host:3000/daikoku.css">
 }
-@if(env.config.mode == DaikokuMode.Prod) {
+@if(env.config.isProd) {
     <link rel="stylesheet" media="screen" href="/assets/react-app/daikoku.login.min.css">
 }
 @(tenant.moareStyle())
@@ -23,10 +23,10 @@
     <div class="container login">
       <div id="app"></div>
     </div>
-    @if(env.config.mode == DaikokuMode.Dev) {
+    @if(env.config.isDev) {
         <script type="text/javascript" src="http://@host:3000/daikoku.js"></script>
     }
-    @if(env.config.mode == DaikokuMode.Prod) {
+    @if(env.config.isProd) {
         <script type="text/javascript" src="/assets/react-app/daikoku.login.min.js"></script>
     }
     <script>
@@ -34,6 +34,7 @@
           '@(provider.name)',
           '@(fr.maif.otoroshi.daikoku.ctrls.routes.LoginController.login(provider.name).url)',
           @Html(play.api.libs.json.Json.prettyPrint(tenant.toUiPayload(env))),
+          '@(redirect)'
         )
     </script>
 }

@@ -4,7 +4,7 @@ import { useContext, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 
 import { Option, Spinner } from '../../components/utils';
-import { I18nContext } from '../../core';
+import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
 import { IApi, isError, IUsagePlan, IWithTesting } from '../../types';
 import { IBaseModalProps, SubscriptionMetadataModalProps } from './types';

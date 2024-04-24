@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { type, constraints, format, Schema } from '@maif/react-forms';
 import * as Services from '../../../services';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import { ITeamSimple } from '../../../types';
 
@@ -132,10 +132,10 @@ export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
       format: format.buttonsSelect,
       label: translate('State'),
       options: [
-        {label: translate('Created'), value: 'created'}, 
-        {label: translate('Published'), value: 'published'}, 
-        {label: translate('Deprecated'), value: 'deprecated'}, 
-        {label: translate('Blocked'), value: 'blocked'}],
+        {label: translate('api.created'), value: 'created'}, 
+        {label: translate('api.published'), value: 'published'}, 
+        {label: translate('api.deprecated'), value: 'deprecated'}, 
+        {label: translate('api.blocked'), value: 'blocked'}],
       defaultValue: 'created',
     },
     testable: {

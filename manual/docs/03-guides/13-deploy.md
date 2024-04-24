@@ -36,4 +36,4 @@ docker run -p "8080:8080" -v "$(pwd):/usr/app/daikoku/imports" maif/daikoku -Dda
 
 ## Deploy manually
 
-As Daikoku is a PlayFramwork application, you can follow the [PlayFramework documentation](https://www.playframework.com/documentation/2.6.x/Production) to deploy your application.
+As Daikoku is a PlayFramework application, you can follow the [PlayFramework documentation](https://www.playframework.com/documentation/2.6.x/Production) to deploy your application.

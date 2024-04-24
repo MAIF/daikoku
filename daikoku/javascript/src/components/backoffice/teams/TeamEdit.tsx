@@ -1,15 +1,14 @@
-import { constraints, Form, format, type } from '@maif/react-forms';
+import { constraints, Form, format, Schema, type } from '@maif/react-forms';
 import { md5 } from 'js-md5';
 import { useContext, useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { toastr } from 'react-redux-toastr';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 
-import { ModalContext, useTeamBackOffice } from '../../../contexts';
+import { I18nContext, ModalContext, TranslateParams, useTeamBackOffice } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
-import { I18nContext, TranslateParams, updateTeam } from '../../../core';
 import * as Services from '../../../services';
-import { isError, IState, ITeamSimple } from '../../../types';
+import { isError, ITeamSimple } from '../../../types';
+import { Spinner } from '../../utils';
 
 
 type AvatarProps = {
@@ -76,7 +75,7 @@ const Avatar = ({
   );
 };
 
-export const teamSchema = (team: ITeamSimple, translate: (props: string | TranslateParams) => string) => ({
+export const teamSchema = (team: ITeamSimple, translate: (props: string | TranslateParams) => string): Schema => ({
   name: {
     type: type.string,
     label: translate('Name'),
@@ -153,10 +152,10 @@ export const TeamEditForm = ({
         Services.deleteTeam(team._id)
           .then((r) => {
             if (isError(r)) {
-              toastr.error(translate("Error"), r.error)
+              toast.error(r.error)
             } else {
               navigate("/apis")
-              toastr.success(translate("Success"), translate({ key: 'team.deleted.success', replacements: [team.name] }))
+              toast.success(translate({ key: 'team.deleted.success', replacements: [team.name] }))
             }
           })
       }
@@ -185,12 +184,9 @@ export const TeamEditForm = ({
 
 export const TeamEdit = () => {
   const navigate = useNavigate();
-  const currentTeam = useSelector<IState, ITeamSimple>(s => s.context.currentTeam)
-  const [contact, setContact] = useState(currentTeam.contact)
-  const [alreadyClicked, setAlreadyClicked] = useState(false)
-  const dispatch = useDispatch();
+  const { isLoading, currentTeam, reloadCurrentTeam, error } = useTeamBackOffice()
 
-  useTeamBackOffice(currentTeam);
+  const [alreadyClicked, setAlreadyClicked] = useState(false)
 
   const { search } = useLocation();
   const { translate } = useContext(I18nContext);
@@ -198,17 +194,18 @@ export const TeamEdit = () => {
   useEffect(() => {
     const params = new URLSearchParams(search);
     if (params.get("teamVerified") === "true") {
-      toastr.success(translate('Success'), translate('team.validated.success'))
+      toast.success(translate('team.validated.success'))
     } else if (params.get("error") === "2") {
-      toastr.error(translate('Error'), translate('team.email.alreadyVerified'))
+      toast.error(translate('team.email.alreadyVerified'))
     } else if (params.get("error") === "3") {
-      toastr.error(translate('Error'), translate('token.missing'))
+      toast.error(translate('token.missing'))
     } else if (params.get("error") === "4") {
-      toastr.error(translate('Error'), translate('token.notFound'))
+      toast.error(translate('token.notFound'))
     } else if (params.get("error") === "5") {
-      toastr.error(translate('Error'), translate('token.expired'))
+      toast.error(translate('token.expired'))
     }
   }, []);
+
   const save = (data: ITeamSimple, contact: string) => {
     Services.updateTeam(data)
       .then((updatedTeam: ITeamSimple) => {
@@ -216,46 +213,45 @@ export const TeamEdit = () => {
           navigate(`/${updatedTeam._humanReadableId}/settings/edition`);
         }
         if (contact !== updatedTeam.contact) {
-          setContact(updatedTeam.contact)
-          toastr.info(
-            translate("mailValidation.sent.title"),
-            translate("mailValidation.sent.body")
-          )
+          toast.info(translate("mailValidation.sent.body"))
           setAlreadyClicked(false)
         }
-        dispatch(updateTeam(updatedTeam))
-        toastr.success(
-          translate('Success'),
-          translate({ key: 'team.updated.success', replacements: [updatedTeam.name] })
-        );
-      });
+      })
+      .then(() => reloadCurrentTeam())
+      .then(() => toast.success(translate({ key: 'team.updated.success', replacements: [data.name] })));
   };
 
-  return (
-    <div>
-      {!currentTeam.verified && !alreadyClicked &&
-        <div className="alert alert-warning" role="alert">
-          {translate('team.email.notVerified.info')}
-          <button className="btn btn-outline-warning d-flex align-items-end" onClick={() => {
-            Services.sendEmailVerification(currentTeam._id)
-              .then((r) => {
-                if (isError(r)) {
-                  toastr.success(translate("Error"), r.error)
-                } else {
-                  setAlreadyClicked(true)
-                  toastr.success(
-                    translate("Success"),
-                    translate({ key: 'team.email.verification.send', replacements: [currentTeam.contact] })
-                  )
-                }
-              })
-          }}>{translate('team.email.notVerified')}</button>
-        </div>}
-      {!currentTeam.verified && alreadyClicked &&
-        <div className="alert alert-success" role="alert">
-          {translate('mail.sent')}
-        </div>}
-      <TeamEditForm team={currentTeam} updateTeam={(team) => save(team, contact)} />
-    </div>
-  );
+  if (isLoading) {
+    return <Spinner />
+  } else if (currentTeam && !isError(currentTeam)) {
+    return (
+      <div>
+        {!currentTeam.verified && !alreadyClicked &&
+          <div className="alert alert-warning" role="alert">
+            {translate('team.email.notVerified.info')}
+            <button className="btn btn-outline-warning d-flex align-items-end" onClick={() => {
+              Services.sendEmailVerification(currentTeam._id)
+                .then((r) => {
+                  if (isError(r)) {
+                    toast.success(r.error)
+                  } else {
+                    setAlreadyClicked(true)
+                    toast.success(translate({ key: 'team.email.verification.send', replacements: [currentTeam.contact] }))
+                  }
+                })
+            }}>{translate('team.email.notVerified')}</button>
+          </div>}
+        {!currentTeam.verified && alreadyClicked &&
+          <div className="alert alert-success" role="alert">
+            {translate('mail.sent')}
+          </div>}
+        <TeamEditForm team={currentTeam} updateTeam={(team) => save(team, currentTeam.contact)} />
+      </div>
+    )
+  } else {
+    toast.error(error?.message || currentTeam?.error)
+    return <></>
+  }
+
+
 };

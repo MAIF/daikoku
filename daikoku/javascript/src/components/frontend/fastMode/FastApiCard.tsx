@@ -1,14 +1,13 @@
-import { useQueryClient } from "@tanstack/react-query";
-import React, { useContext, useEffect, useState } from "react";
-import { toastr } from "react-redux-toastr";
-import { constraints, format, type as formType } from "@maif/react-forms";
-import Select from "react-select";
 import { getApolloContext } from "@apollo/client";
+import { useQueryClient } from "@tanstack/react-query";
+import { useContext, useEffect, useState } from "react";
+import Select from "react-select";
+import { toast } from "sonner";
 
-import { IApi, IFastApi, IFastPlan, IFastSubscription, isError, ISubscription, ISubscriptionWithApiInfo, isValidationStepTeamAdmin, ITeamSimple, IUsagePlan } from "../../../types";
+import { ModalContext } from "../../../contexts";
 import { I18nContext } from "../../../contexts/i18n-context";
 import * as Services from "../../../services";
-import { ModalContext } from "../../../contexts";
+import { IFastApi, IFastPlan, IFastSubscription, isError, ISubscription, ISubscriptionWithApiInfo, isValidationStepTeamAdmin, ITeamSimple } from "../../../types";
 import { isSubscriptionProcessIsAutomatic, Option } from '../../utils';
 
 type FastApiCardProps = {
@@ -53,14 +52,9 @@ export const FastApiCard = (props: FastApiCardProps) => {
           apiKeyDemand(motivation)
             .then((response) => {
               if (isError(response)) {
-                toastr.error(
-                  translate('Error'),
-                  response.error
-                )
+                toast.error(response.error)
               } else {
-                toastr.info(
-                  translate('Done'),
-                  translate(
+                toast.info(translate(
                     {
                       key: 'subscription.plan.waiting',
                       replacements: [
@@ -80,14 +74,9 @@ export const FastApiCard = (props: FastApiCardProps) => {
       apiKeyDemand()
         .then((response) => {
           if (isError(response)) {
-            toastr.error(
-              translate('Error'),
-              response.error
-            )
+            toast.error(response.error)
           } else {
-            toastr.success(
-              translate('Done'),
-              translate(
+            toast.success(translate(
                 {
                   key: 'subscription.plan.accepted',
                   replacements: [

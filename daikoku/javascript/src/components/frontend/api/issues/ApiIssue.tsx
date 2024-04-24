@@ -1,13 +1,13 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Routes, useParams, Route, Navigate } from 'react-router-dom';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 
 import { ApiIssues } from './ApiIssues';
 import { ApiTimelineIssue } from './ApiTimelineIssue';
 import { TeamApiIssueTags } from './TeamApiIssueTags';
 import * as Services from '../../../../services';
 import { Can, manage, api as API } from '../../../utils';
-import { I18nContext } from '../../../../core';
+import { I18nContext } from '../../../../contexts';
 import { IApi, isError } from '../../../../types';
 
 export function ApiIssue({
@@ -38,7 +38,7 @@ export function ApiIssue({
           setRootApi(res)
         }
       })
-      .then(() => toastr.success(translate('Success'), translate('Api saved')));
+      .then(() => toast.success(translate('Api saved')));
   };
 
   const basePath = `/${ownerTeam._humanReadableId}/${api ? (api as any)._humanReadableId : ''}/${versionId}`;

@@ -1,15 +1,14 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { Link, useMatch } from 'react-router-dom';
-import moment from 'moment';
-import { useSelector } from 'react-redux';
-
-import * as Services from '../../../services';
-import { OtoroshiStatsVizualization, Spinner } from '../../utils';
-import { I18nContext } from '../../../core';
-import { IApi, isError, IState, ITeamSimple, IUsagePlan } from '../../../types';
-import { Moment } from "moment/moment";
 import { getApolloContext } from "@apollo/client";
 import { useQuery } from '@tanstack/react-query';
+import moment from 'moment';
+import { Moment } from "moment/moment";
+import { useContext, useEffect } from 'react';
+import { useMatch } from 'react-router-dom';
+
+import { I18nContext, useTeamBackOffice } from '../../../contexts';
+import * as Services from '../../../services';
+import { IApi, ITeamSimple, isError } from '../../../types';
+import { OtoroshiStatsVizualization, Spinner } from '../../utils';
 
 type IGlobalInformations = {
   avgDuration?: number,
@@ -47,10 +46,14 @@ type IgqlConsumption = {
 
 
 }
-export const TeamPlanConsumption = (props: { apiGroup?: boolean }) => {
-  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
-  const { translate } = useContext(I18nContext);
 
+type TeamPlanConsumptionProps = {
+  apiGroup?: boolean,
+  currentTeam: ITeamSimple,
+  api: IApi
+}
+export const TeamPlanConsumption = (props: TeamPlanConsumptionProps) => {
+  const { translate } = useContext(I18nContext);
   const { client } = useContext(getApolloContext());
 
   const urlMatching = !!props.apiGroup
@@ -115,8 +118,8 @@ export const TeamPlanConsumption = (props: { apiGroup?: boolean }) => {
   };
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${translate('Plan consumption')}`;
-  }, []);
+    document.title = `${props.currentTeam.name} - ${translate('Plan consumption')}`;
+  }, [props.currentTeam]);
 
   return (
     <div>
@@ -124,20 +127,21 @@ export const TeamPlanConsumption = (props: { apiGroup?: boolean }) => {
         <div className="col">
           <h1>Api Consumption</h1>
           <PlanInformations
-            apiId={match?.params.apiId!}
+            api={props.api}
             version={match?.params.version!}
-            planId={match?.params.planId!} />
+            planId={match?.params.planId!}
+            currentTeam={props.currentTeam} />
         </div>
       </div>
       <OtoroshiStatsVizualization
-        sync={() => Services.syncApiConsumption(match?.params.apiId, currentTeam._id)}
+        sync={() => Services.syncApiConsumption(match?.params.apiId, props.currentTeam._id)}
         fetchData={(from: Moment, to: Moment) =>
           client!.query<{ apiConsumptions: Array<IgqlConsumption> }>({
             query: Services.graphql.getApiConsumptions,
             fetchPolicy: "no-cache",
             variables: {
               apiId: match?.params.apiId,
-              teamId: currentTeam._id,
+              teamId: props.currentTeam._id,
               from: from.valueOf(),
               to: to.from.valueOf(),
               planId: match?.params.planId
@@ -153,25 +157,22 @@ export const TeamPlanConsumption = (props: { apiGroup?: boolean }) => {
 };
 
 type PlanInformationsProps = {
-  apiId: string
+  api: IApi
   version: string
   planId: string
+  currentTeam: ITeamSimple
 }
 
 const PlanInformations = (props: PlanInformationsProps) => {
-  const currentTeam = useSelector<IState, ITeamSimple>((state) => state.context.currentTeam);
+  const planRequest = useQuery({ queryKey: ['plan'], queryFn: () => Services.planOfApi(props.currentTeam._id, props.api._id, props.version, props.planId) })
 
-  const apiRequest = useQuery({ queryKey: ['api'], queryFn: () => Services.teamApi(currentTeam._id, props.apiId, props.version) })
-  const planRequest = useQuery({ queryKey: ['plan'], queryFn: () => Services.planOfApi(currentTeam._id, props.apiId, props.version, props.planId) })
-
-  if (apiRequest.isLoading || planRequest.isLoading) {
+  if (planRequest.isLoading) {
     return <Spinner width="50" height="50" />;
-  } else if (apiRequest.data && !isError(apiRequest.data) && planRequest.data && !isError(planRequest.data)) {
-    const api = apiRequest.data
+  } else if (planRequest.data && !isError(planRequest.data)) {
     const plan = planRequest.data
 
     return (<h3>
-      {api.name} - {plan.customName || plan.type}
+      {props.api.name} - {plan.customName || plan.type}
     </h3>);
   } else {
     return <div>Error while fetching usage plan</div>

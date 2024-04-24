@@ -40,7 +40,7 @@ object AppError {
   case object ApiNotLinked extends AppError
   case class UserNotTeamAdmin(userId: String, teamId: String) extends AppError
   case class OtoroshiError(message: JsObject) extends AppError
-  case class PaymentError(message: JsObject) extends AppError
+  case class PaymentError(message: String) extends AppError
   case object SubscriptionConflict extends AppError
   case object ApiKeyRotationConflict extends AppError
   case class EntityConflict(entityName: String) extends AppError
@@ -94,7 +94,7 @@ object AppError {
       case UserNotTeamAdmin(userId, teamId) =>
         play.api.mvc.Results.Unauthorized(toJson(error))
       case OtoroshiError(e)                        => BadRequest(e)
-      case PaymentError(e)                         => BadRequest(e)
+      case PaymentError(_)                         => BadRequest(toJson(error))
       case SubscriptionConflict                    => Conflict(toJson(error))
       case ApiKeyRotationConflict                  => Conflict(toJson(error))
       case EntityConflict(_)                       => Conflict(toJson(error))
@@ -123,8 +123,8 @@ object AppError {
   def getErrorMessage(error: AppError) =
     error match {
       case OtoroshiError(e)           => Json.stringify(e) //todo: ???
-      case PaymentError(e)            => Json.stringify(e) //todo: ???
       case ApiKeyRotationError(e)     => Json.stringify(e) //todo: ???
+      case PaymentError(e)            => e
       case ParsingPayloadError(msg)   => s"Error while parsing payload: $msg"
       case ApiVersionConflict         => "This version already existed"
       case TeamNameAlreadyExists      => "The name of this team already exists"
@@ -183,7 +183,6 @@ object AppError {
   def toJson(error: AppError) = {
     error match {
       case OtoroshiError(e)       => e
-      case PaymentError(e)        => e
       case ApiKeyRotationError(e) => e
       case ParsingPayloadError(msg) =>
         Json.obj("error" -> "Error while parsing payload", "msg" -> msg)

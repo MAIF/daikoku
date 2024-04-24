@@ -473,7 +473,8 @@ object utils {
                     name = user.name,
                     description = s"The personal team of ${user.name}",
                     users = Set(UserWithPermission(user.id, Administrator)),
-                    authorizedOtoroshiEntities = None
+                    authorizedOtoroshiEntities = None,
+                    contact = user.email
                   )
                 case Some(team) => team
               }
@@ -769,7 +770,8 @@ object utils {
         UserWithPermission(userTeamAdminId, Administrator),
         UserWithPermission(userApiEditorId, ApiEditor),
         UserWithPermission(userTeamUserId, TeamUser)
-      )
+      ),
+      contact = "owner@foo.test"
     )
     val teamConsumer = Team(
       id = teamConsumerId,
@@ -781,7 +783,8 @@ object utils {
         UserWithPermission(userTeamAdminId, Administrator),
         UserWithPermission(userApiEditorId, ApiEditor),
         UserWithPermission(userTeamUserId, TeamUser)
-      )
+      ),
+      contact = "consumer@foo.test"
     )
     val daikokuAdmin = User(
       id = daikokuAdminId,
@@ -848,7 +851,8 @@ object utils {
       description = s"The admin team for the default tenant",
       avatar = None,
       users = Set(UserWithPermission(tenantAdminId, Administrator)),
-      authorizedOtoroshiEntities = None
+      authorizedOtoroshiEntities = None,
+      contact = "admin@daikoku.io"
     )
     val tenant2AdminTeam = Team(
       id = TeamId(IdGenerator.token),
@@ -858,7 +862,8 @@ object utils {
       description = s"The admin team for the tenant II",
       avatar = None,
       users = Set(UserWithPermission(user.id, Administrator)),
-      authorizedOtoroshiEntities = None
+      authorizedOtoroshiEntities = None,
+      contact = "admin@daikoku.io"
     )
     val adminApiPlan = Admin(
       id = UsagePlanId("admin"),

@@ -104,7 +104,7 @@ case class Team(
     `type`: TeamType,
     name: String,
     description: String,
-    contact: String = "contact@foo.bar",
+    contact: String,
     avatar: Option[String] = Some("/assets/images/daikoku.svg"),
     users: Set[UserWithPermission] = Set.empty,
     authorizedOtoroshiEntities: Option[Seq[TeamAuthorizedEntities]] = None,

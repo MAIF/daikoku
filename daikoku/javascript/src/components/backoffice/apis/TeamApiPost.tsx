@@ -1,11 +1,11 @@
 import React, { useContext, useEffect, useState, useRef } from 'react';
-import { toastr } from 'react-redux-toastr';
+import { toast } from 'sonner';
 import { useLocation, useParams } from 'react-router-dom';
 import { constraints, type, format } from "@maif/react-forms";
 import moment from 'moment';
 
 import { Table, TableRef } from '../../inputs';
-import { I18nContext } from '../../../core';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services/index';
 import { ModalContext } from '../../../contexts';
 import { createColumnHelper } from '@tanstack/react-table';
@@ -81,9 +81,9 @@ export function TeamApiPost({
     Services.savePost(api._id, team._id, post._id, post)
       .then((res) => {
         if (res.error) {
-          toastr.error(translate('Error'), translate('team_api_post.failed'));
+          toast.error(translate('team_api_post.failed'));
         } else {
-          toastr.success(translate('Success'), translate('team_api_post.saved'));
+          toast.success(translate('team_api_post.saved'));
           table.current?.update();
         }
       });
@@ -95,9 +95,9 @@ export function TeamApiPost({
       _id: '',
     }).then((res) => {
       if (res.error) {
-        toastr.error(translate('Error'), translate('team_api_post.failed'));
+        toast.error(translate('team_api_post.failed'));
       } else {
-        toastr.success(translate('success'), translate('team_api_post.saved'));
+        toast.success(translate('team_api_post.saved'));
         table.current?.update()
       }
     });
@@ -110,10 +110,10 @@ export function TeamApiPost({
           Services.removePost(api._id, team._id, postId)
             .then((res) => {
               if (res.error) {
-                toastr.error(translate('Error'), translate('team_api_post.failed'));
+                toast.error(translate('team_api_post.failed'));
               }
               else {
-                toastr.success(translate('Success'), translate('team_api_post.saved'));
+                toast.success(translate('team_api_post.saved'));
                 table.current?.update();
               }
             });
