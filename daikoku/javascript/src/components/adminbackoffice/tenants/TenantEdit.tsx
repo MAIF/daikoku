@@ -29,6 +29,8 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
   const updateTenant = useMutation({
     mutationFn: (tenant: ITenantFull) => Services.saveTenant(tenant).then(r => isError(r) ? Promise.reject(r) : r),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["full-tenant"] });
+      queryClient.invalidateQueries({ queryKey: ["context"] });
       toast.success(translate('Tenant updated successfully'))
     },
     onError: (e: ResponseError) => {
