@@ -69,11 +69,13 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     const askForApikeys = (team: string, plan: IUsagePlan, apiKey?: ISubscription) => {
       const adminStep = plan.subscriptionProcess.find(s => isValidationStepTeamAdmin(s))
       if (adminStep && isValidationStepTeamAdmin(adminStep)) {
+        console.debug({apiKey, value: apiKey?.metadata})
         openFormModal<any>({
           title: translate('motivations.modal.title'),
           schema: adminStep.schema,
           onSubmit: (motivation: object) => props.askForApikeys({ team, plan, apiKey, motivation }),
-          actionLabel: translate('Send')
+          actionLabel: translate('Send'),
+          value: apiKey?.customMetadata
         })
       } else {
         props.askForApikeys({ team, plan: plan, apiKey })

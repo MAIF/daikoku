@@ -2135,10 +2135,10 @@
   dependencies:
     "@lezer/lr" "^0.15.0"
 
-"@maif/react-forms@^1.6.3":
-  version "1.6.3"
-  resolved "https://registry.npmjs.org/@maif/react-forms/-/react-forms-1.6.3.tgz"
-  integrity sha512-dMEuffnbPS7m7YM0bJVGajmpTSdHzrngdF8pM/RIPst//X0hjD/1HWveG9qAW5/MC2JIKlBrN7w6IpOdJmTBIg==
+"@maif/react-forms@^1.6.4":
+  version "1.6.4"
+  resolved "https://registry.npmjs.org/@maif/react-forms/-/react-forms-1.6.4.tgz"
+  integrity sha512-/NRHLltj6mVjWv17dg6SfalvswDW+JA+67DBCEGf7lQOUypFlJ8Cs7zVuXpavSk9Pu5usfeuW0T69yajbd2vOg==
   dependencies:
     "@codemirror/basic-setup" "^0.19.1"
     "@codemirror/lang-html" "^0.19.4"
@@ -6581,6 +6581,11 @@ fs.realpath@^1.0.0:
   version "1.0.0"
   resolved "https://registry.npmjs.org/fs.realpath/-/fs.realpath-1.0.0.tgz"
   integrity sha512-OO0pH2lK6a0hZnAdau5ItzHPI6pUlvI7jMVnxUQRtw4owF2wk8lOSabtGDCTP4Ggrg2MbGnWO9X8K1t4+fGMDw==
+
+fsevents@~2.3.2, fsevents@2.3.2:
+  version "2.3.2"
+  resolved "https://registry.npmjs.org/fsevents/-/fsevents-2.3.2.tgz"
+  integrity sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==
 
 function-bind@^1.1.1, function-bind@^1.1.2:
   version "1.1.2"
