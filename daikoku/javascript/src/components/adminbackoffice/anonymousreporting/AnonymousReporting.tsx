@@ -4,7 +4,7 @@ import {I18nContext} from "../../../contexts/i18n-context";
 import {Can, daikoku, manage} from "../../utils";
 import {BooleanInput} from "@maif/react-forms";
 import * as Services from '../../../services';
-import {toastr} from "react-redux-toastr";
+import {toast} from "sonner";
 
 export const AnonymousReporting = () => {
   useDaikokuBackOffice();
@@ -22,10 +22,10 @@ export const AnonymousReporting = () => {
     if (daikokuId) {
       Services.updateAnonymousState(daikokuId, value).then(() => {
         setIsAnonEnabled(value)
-        toastr.success(translate('Success'), translate(value ? "anonymous.reporting.success.enabled" : "anonymous.reporting.success.disabled" ))
+        toast.success(translate(value ? "anonymous.reporting.success.enabled" : "anonymous.reporting.success.disabled" ))
       })
   } else {
-      toastr.error(translate('Error'), translate("anonymous.reporting.error"))
+      toast.error(translate("anonymous.reporting.error"))
       setIsAnonEnabled(!value)
 
     }

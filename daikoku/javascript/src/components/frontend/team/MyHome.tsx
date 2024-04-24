@@ -1,24 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
-import {useContext, useEffect, useState} from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 
-import { I18nContext } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import {
   IApiWithAuthorization,
-  isError,
-  IState,
-  ITenant,
-  IUserSimple
+  isError
 } from '../../../types';
-import { ApiList } from './ApiList';
 import { api as API, CanIDoAction, manage, Spinner, teamGQLToSimple } from '../../utils';
-import { GlobalContext } from '../../../contexts/globalContext';
-import {toastr} from "react-redux-toastr";
-import {ModalContext} from "../../../contexts";
+import { ApiList } from './ApiList';
+import { toast } from 'sonner';
 
 export const MyHome = () => {
 
@@ -54,11 +49,11 @@ export const MyHome = () => {
         .then((ok) => {
           if (ok) {
             Services.updateAnonymousState(daikokuId, true, currentDate.getTime()).then(() => {
-              toastr.success(translate('Success'), translate("anonymous.reporting.success.enabled"))
+              toast.success(translate("anonymous.reporting.success.enabled"))
             })
           } else {
             Services.updateAnonymousState(daikokuId, false, currentDate.getTime()).then(() => {
-              toastr.info(translate('Info'), translate("anonymous.reporting.popup.no"))
+              toast.info(translate("anonymous.reporting.popup.no"))
             })
           }
         });
