@@ -606,6 +606,8 @@
     "Force apikey auto-rotation": "Force API key auto-rotation",
     "ApiKey": "API key",
     "Integration token": "Integration token",
+    "Basic authentication": "Basic authentication",
+    "Basic auth": "Basic auth",
     "Security": "Security",
     "Team with id or name already exist": "Sorry, a team with this name already exists.",
     "Create team": "Create team",
