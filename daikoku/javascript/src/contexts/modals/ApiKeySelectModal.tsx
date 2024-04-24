@@ -128,6 +128,7 @@ const SelectOrCreateApiKey = (props: SelectOrCreateApiKeyProps) => {
     </button>
   );
 
+  //todo: translate values
   return (
     <div className="d-flex justify-content-center">
       <Button onClick={() => props.create(true)} message="Subscribe with a new api key" icon="plus" />

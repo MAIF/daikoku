@@ -250,7 +250,7 @@ export const TeamList = () => {
       {
         action: () => navigate(`/settings/teams/${team._humanReadableId}/members`),
         iconClass: 'fas fa-users',
-        tooltip: translate('Team members'),
+        tooltip: translate({key: "Member", plural: true}),
       },
     ];
   };
