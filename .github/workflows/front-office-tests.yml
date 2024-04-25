@@ -64,7 +64,9 @@ jobs:
         NODE_OPTIONS: --max_old_space_size=4096
 
     - name: Install Playwright Browsers
-      run: npx playwright install --with-deps chromium
+      run: |
+        npm install @playwright/test
+        npx playwright install --with-deps chromium
     - name: Run tests
       run: |
         cd daikoku/javascript
