@@ -115,8 +115,13 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
   <TabItem value="otoroshi" label="Otoroshi" default>
   :::info  
     To get otoroshi as Authentication mode, Daikoku need to be exposed by Otoroshi 
+
+    Daikoku will be accessible with url proxified by Otoroshi and base url of Daikoku. You betterto follow this tutorial to expose Daikoku with Otoroshi
   :::
     ## Before starting
+
+
+
 
     If you already have an up and running Daikoku instance, you can skip the following instructions and log in to your instance.
 
@@ -127,6 +132,13 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
     ## Running an otoroshi server
     
     Otoroshi have his own manual to this part let's [get](https://maif.github.io/otoroshi/manual/install/get-otoroshi.html) as [run](https://maif.github.io/otoroshi/manual/install/run-otoroshi.html) your Otoroshi.
+
+    ## Create an authentication module
+
+    ## Expose your daikoku by Otoroshi
+  :::warning
+    before exposing your daikoku instance with otoroshi, you need to setup exposing mode to Otoroshi. read this following [tutorial](./15-otoroshi-exposition) before continue.
+  :::
 
     ## Create an Authentication configuration
 
