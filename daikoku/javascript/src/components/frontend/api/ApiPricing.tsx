@@ -379,28 +379,28 @@ export const ApiPricing = (props: ApiPricingProps) => {
       return (
         <div>
           <div className="d-flex flex-row">
-            <Link to="../.." relative='path'>
+            <Link to={`../../${props.api.currentVersion}/pricing`} relative='path'>
               <i className="fa-regular fa-circle-left fa-lg cursor-pointer" />
             </Link>
             <h5 className='ms-3'>{plan.customName}</h5>
           </div>
           <div className='d-flex flex-row justify-content-around mb-2'>
             <Link
-              to={`../../${plan.customName}/swagger`} relative='path'
+              to={`../../${props.api.currentVersion}/pricing/${plan.customName}/swagger`} relative='path'
               className={classNames("btn btn-sm btn-access-negative mb-1",
                 {
                   link__disabled: !plan.swagger?.content && !plan.swagger?.url,
                   disabled: !plan.swagger?.content && !plan.swagger?.url
                 })}>swagger</Link>
             <Link
-              to={`../../${plan.customName}/testing`} relative='path'
+              to={`../../${props.api.currentVersion}/pricing/${plan.customName}/testing`} relative='path'
               className={classNames("btn btn-sm btn-access-negative mb-1",
                 {
                   link__disabled: !plan.testing || !plan.testing.enabled,
                   disabled: !plan.testing || !plan.testing.enabled,
                 })}>test</Link>
             <Link
-              to={`../../${plan.customName}/documentation`} relative='path'
+              to={`../../${props.api.currentVersion}/pricing/${plan.customName}/documentation`} relative='path'
               className={classNames("btn btn-sm btn-access-negative",
                 {
                   link__disabled: !plan.documentation || !plan.documentation?.pages.length,
