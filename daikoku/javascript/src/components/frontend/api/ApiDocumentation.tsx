@@ -140,11 +140,11 @@ export const ApiDocumentation = (props: ApiDocumentationProps) => {
         'justify-content-between': !!prev,
         'justify-content-end': !prev,
       })}>
-        {prev && (<button className='btn btn-sm btn-outline-secondary' onClick={() => setPageId(prev)}>
+        {prev && (<button className='btn btn-sm btn-access-negative' onClick={() => setPageId(prev)}>
           <i className="fas fa-chevron-left me-1" />
           <Translation i18nkey="Previous page">Previous page</Translation>
         </button>)}
-        {next && (<button className='btn btn-sm btn-outline-secondary' onClick={() => setPageId(next)}>
+        {next && (<button className='btn btn-sm btn-access-negative' onClick={() => setPageId(next)}>
           <Translation i18nkey="Next page">Next page</Translation>
           <i className="fas fa-chevron-right ms-1" />
         </button>)}

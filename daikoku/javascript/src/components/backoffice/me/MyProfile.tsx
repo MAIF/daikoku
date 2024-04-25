@@ -292,7 +292,7 @@ const PictureUpload = (props: PictureUploadProps) => {
             />
             <button
                 type="button"
-                className="btn btn-outline-secondary"
+                className="btn btn-access-negative"
                 disabled={uploading}
                 onClick={trigger}
                 style={{width: 100, height: 100, borderRadius: '50%'}}

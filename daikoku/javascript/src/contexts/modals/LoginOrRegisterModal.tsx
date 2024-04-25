@@ -39,7 +39,7 @@ export const LoginOrRegisterModal = (props: ILoginOrRegisterModalProps & IBaseMo
         </a>
         <a
           href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
-          className="btn btn-success register-button"
+          className="btn btn-outline-success register-button"
         >
           {translate('Register')}
         </a>

@@ -192,7 +192,7 @@ const HelperView = ({
       )}
       {content.link && (
         <a
-          className="btn btn-sm btn-outline-info my-2"
+          className="btn btn-sm btn-outline-primary my-2"
           href={`https://maif.github.io/daikoku/swagger-ui/index.html${content.link}`}
           target="_blank"
           rel="noreferrer noopener"

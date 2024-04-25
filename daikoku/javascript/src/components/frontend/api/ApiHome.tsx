@@ -309,7 +309,7 @@ export const ApiHome = ({
         (pendingTeams.includes(teams[0]._id) || authorizedTeams.includes(teams[0]._id))) ||
         showAccessModal.api.authorizations.every((auth: any) => auth.pending && !auth.authorized) ? (<>
           <h2 className="text-center my-3">{translate('request_already_pending')}</h2>
-          <button className="btn btn-outline-info mx-auto" style={{ width: 'fit-content' }} onClick={() => navigate(-1)}>
+          <button className="btn btn-outline-primary mx-auto" style={{ width: 'fit-content' }} onClick={() => navigate(-1)}>
             {translate('go_back')}
           </button>
         </>) : (<>
@@ -327,7 +327,7 @@ export const ApiHome = ({
                 updateSubscriptions(showAccessModal.api._id);
               });
             }}>
-            <button className="btn btn-success mx-auto" style={{ width: 'fit-content' }}>
+            <button className="btn btn-outline-success mx-auto" style={{ width: 'fit-content' }}>
               {translate({ key: 'notif.api.access', replacements: [params.apiId] })}
             </button>
           </ActionWithTeamSelector>

@@ -61,7 +61,7 @@ export const ApiCard = (props: {
           allTeamSelector={true}
         >
           {isPending ? (
-            <button className="btn btn-sm btn-outline-secondary disabled me-1">
+            <button className="btn btn-sm btn-access-negative disabled me-1">
               <Translation i18nkey="Pending request">Pending request</Translation>
             </button>
           ) : (
@@ -132,7 +132,7 @@ export const ApiCard = (props: {
             <Can I={manage} a={API} team={team}>
               <button
                 type="button"
-                className="btn btn-sm btn-outline-secondary me-1 mb-1"
+                className="btn btn-sm btn-access-negative me-1 mb-1"
                 onClick={props.redirectToEditPage}
               >
                 <i className="fas fa-cog" />

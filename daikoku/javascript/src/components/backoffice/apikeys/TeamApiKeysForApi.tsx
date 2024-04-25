@@ -824,7 +824,7 @@ const ApiKeyCard = ({
                       </div>
                     )}
                     <button
-                      className={`btn btn-sm btn-outline-info mx-auto d-flex ${
+                      className={`btn btn-sm btn-outline-primary mx-auto d-flex ${
                         showAggregatePlan ? "mt-3" : ""
                       }`}
                       onClick={() => setAggregatePlan(!showAggregatePlan)}
