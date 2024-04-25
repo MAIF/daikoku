@@ -19,7 +19,7 @@
 
   --error-bg: #{$error-hover-color};
   --error-border: #{$error-hover-color};
-  --error-text: #{$error-color};
+  --error-text: #000;
 }
 
 [data-sonner-toaster][data-theme='dark'] {
