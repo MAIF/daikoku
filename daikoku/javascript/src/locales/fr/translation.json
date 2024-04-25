@@ -1381,5 +1381,6 @@
   "anonymous.reporting.enable": "Activer les rapports anonymes",
   "aggregation.button.subscription.usual.label": "Souscrire avec une nouvelle clé d'API",
   "aggregation.button.subscription.disable.label": "Aucune clé d'API",
-  "aggregation.button.subscription.enable.label": "Souscrire en étendant une clé d'API existante"
+  "aggregation.button.subscription.enable.label": "Souscrire en étendant une clé d'API existante",
+  "documentation.not.setted.message":"Il semble qu'aucune documentation ne soit définie pour ce plan"
 }

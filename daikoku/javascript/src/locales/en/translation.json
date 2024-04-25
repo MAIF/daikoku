@@ -1381,5 +1381,6 @@
     "anonymous.reporting.enable": "Enable anonymous reporting",
     "aggregation.button.subscription.usual.label": "Subscribe with a new api key",
     "aggregation.button.subscription.disable.label": "No api keys are present in your team",
-    "aggregation.button.subscription.enable.label": "Subscribe using an existing api key"
+    "aggregation.button.subscription.enable.label": "Subscribe using an existing api key",
+    "documentation.not.setted.message":"it's seems that this plan has no documentation setted"
 }

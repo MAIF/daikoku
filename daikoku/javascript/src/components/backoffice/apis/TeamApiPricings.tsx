@@ -1902,7 +1902,7 @@ const TeamApiPricingDocumentation = (props: TeamApiPricingDocumentationProps) =>
   if (!props.planForEdition.documentation) {
     return (
       <div>
-        <div>it's seems that this plan has no documentation setted</div>
+        <div className='alert alert-warning' role="alert">{translate('documentation.not.setted.message')}</div>
         <button type='button' className='btn btn-outline-primary' onClick={createPlanDoc}>{translate('documentation.add.button.label')}</button>
       </div>
     )
