@@ -7,43 +7,147 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
 
 <Tabs>
   <TabItem value="ldap" label="LDAP">
-    For this tutorial, we use ldap with a docker by using the ghcr.io/rroemhild/docker-test-openldap:master docker Image you can find all documention on the [github repo](https://github.com/rroemhild/docker-test-openldap)._createMdxContent
+
+    ## Before starting
+
+    If you already have an up and running Daikoku instance, you can skip the following instructions and log in to your instance.
+
+    Let’s start by [downloading the latest Daikoku](../01-getstarted/04-getdaikoku/index.mdx) and [run it](../01-getstarted/05-firstrun/run.mdx)
+    
+    Once Daikoku is started you can log in to your brand new instance.
+
+    ## Running an openldap server
+    
+    Run  ghcr.io/rroemhild/docker-test-openldap:master docker Image
+
+  :::note 
+    _you can find all documention on the [github repo](https://github.com/rroemhild/docker-test-openldap)_
+  :::
 
 
-    first, pull and run your ldap.
-    ```
+    first, pull and run your ldap. This openldap is already initialized with data based on futurama tv show.
+    ```bash
     docker pull ghcr.io/rroemhild/docker-test-openldap:master
     docker run --rm -p 10389:10389 -p 10636:10636 ghcr.io/rroemhild/docker-test-openldap:master
 
     ```
 
-    TouchEvent, go to tenant configuration page and fill the ldap configuration in the authentication panel:
-      - server url: ldap://locahost:10389
-      - search base: dc=planetexpress,dc=com
-      - user search base: ou=people
-      - simple user filter: cn=ship_crew
-      - tenant admin filter: cn=admin_staff
-      - search filter: (mail=${username})
-      - admin username:cn=admin,dc=planetexpress,dc=com
-      - admin password: GoodNewsEveryone
-      - name field:
-        - givenName
-        - sn
-      - email field name: mail
+    Let’s make the first search in our LDAP container :
+    ```bash
+    # List all Users
+    ldapsearch -H ldap://localhost:10389 -x -b "ou=people,dc=planetexpress,dc=com" -D "cn=admin,dc=planetexpress,dc=com" -w GoodNewsEveryone "(objectClass=inetOrgPerson)"
+    ```
+
+    the response is very long due to image but at the end you shoulf have the following output:
+    ```Bash
+      ...
+      ...
+      # admin_staff, people, planetexpress.com
+      dn: cn=admin_staff,ou=people,dc=planetexpress,dc=com
+      objectClass: Group
+      objectClass: top
+      groupType: 2147483650
+      cn: admin_staff
+      member: cn=Hubert J. Farnsworth,ou=people,dc=planetexpress,dc=com
+      member: cn=Hermes Conrad,ou=people,dc=planetexpress,dc=com
+
+      # ship_crew, people, planetexpress.com
+      dn: cn=ship_crew,ou=people,dc=planetexpress,dc=com
+      objectClass: Group
+      objectClass: top
+      groupType: 2147483650
+      cn: ship_crew
+      member: cn=Philip J. Fry,ou=people,dc=planetexpress,dc=com
+      member: cn=Turanga Leela,ou=people,dc=planetexpress,dc=com
+      member:: Y249QmVuZGVyIEJlbmRpbmcgUm9kcsOtZ3VleixvdT1wZW9wbGUsZGM9cGxhbmV0ZXhwc
+      mVzcyxkYz1jb20=
+
+      # search result
+      search: 2
+      result: 0 Success
+
+      # numResponses: 11
+      # numEntries: 10
+    ```
+
+    ## Create an Authentication configuration
+
+    - Go ahead and navigate to your Daikoku home page
+    - Click on the your avatar on bottom left of the screen
+    - Then `<your-tenant-name> settings` 
+    - Then `Authentication` on left panel
+    - You must be on `<your-domaain>/settings/settings/authentication`
+    - This page show the settings for the current authentication mode (by default `Local`)
+    - Click on `Authentication type` on the top and choose `LDAP` then click `next`
+    - Add a `LDAP Server URL` with value `ldap://localhost:10389` and `dc=planetexpress,dc=com` as `Search base`
+    - Set `ou=people` as `Users search base`
+    - Set `cn=ship_crew` as `Simple user filter`
+    - Set `cn=admin_staff` as `Daikoku admin filter`
+    - Set `(mail=${username})` as `Search filter`
+    - Set `cn=admin,dc=planetexpress,dc=com` as `Admin username (bind DN)`
+    - Set `GoodNewsEveryone` as `Admin password`
+    - `Name fields name` can be `givenName` and `sn`
+    - Set `mail` as `Email field name`
 
     With this configuration, all ldap users with cn `admin_staff` will be Daikoku admin otherwise, with cn `ship_crew` he will be a simple user.
 
-    {/* TODO: add information about search filter and user addable for team member 
-    search filter: (|(uid=${username})(mail=${username}))
-    */}
+    ## Testing your configuration
+
+    Disconnect from your instance
+    Then click on the Login button (or navigate to `<your-daikoku-domain>/login`)
+    Set fry@planetexpress.com/fry as credentials for a simple user and professor@planetexpress.com/professor for a Daikoku admin.
+
+    A fallback solution is always available in the event of a bad authentication configuration. 
+    By going to `<your-daikoku-domain>.login`, the previous local administrators will be able to login.
+
+  :::warning
+    In one case, your search filter can be annoying. 
+    if instead of mail, you've choose to log user by uid, when team admins will wants to invite a collaborator, they will be required to know the user uid.
+    
+    In this case you can replace `Search filter` by `(|(uid=${username})(mail=${username}))` both `uid` and `mail` will be auhtorized to log in (and search collaborator)
+  :::
 
   </TabItem>
   <TabItem value="local" label="Local" default>
     this is the default authentication mode. Every user can create an account in your Daikoku instance, the user profil is saved in database.
-    There is no needed configuration for this mode
+    There is no needed configuration for this mode.
   </TabItem>
   <TabItem value="otoroshi" label="Otoroshi" default>
-    For this mode, we will use Otoroshi as SSO.
+  :::info  
+    To get otoroshi as Authentication mode, Daikoku need to be exposed by Otoroshi 
+  :::
+    ## Before starting
+
+    If you already have an up and running Daikoku instance, you can skip the following instructions and log in to your instance.
+
+    Let’s start by [downloading the latest Daikoku](../01-getstarted/04-getdaikoku/index.mdx) and [run it](../01-getstarted/05-firstrun/run.mdx)
+    
+    Once Daikoku is started you can log in to your brand new instance.
+
+    ## Running an otoroshi server
+    
+    Otoroshi have his own manual to this part let's [get](https://maif.github.io/otoroshi/manual/install/get-otoroshi.html) as [run](https://maif.github.io/otoroshi/manual/install/run-otoroshi.html) your Otoroshi.
+
+    ## Create an Authentication configuration
+
+    Before setup your authentication in Daikoku, create your authentication module in your otoroshi and use it
+
+    - Go ahead and navigate to your Daikoku home page
+    - Click on the your avatar on bottom left of the screen
+    - Then `<your-tenant-name> settings` 
+    - Then `Authentication` on left panel
+    - You must be on `<your-domaain>/settings/settings/authentication`
+    - This page show the settings for the current authentication mode (by default `Local`)
+    - Click on `Authentication type` on the top and choose `LDAP` then click `next`
+    - Add a `LDAP Server URL` with value `ldap://localhost:10389` and `dc=planetexpress,dc=com` as `Search base`
+    - Set `ou=people` as `Users search base`
+    - Set `cn=ship_crew` as `Simple user filter`
+    - Set `cn=admin_staff` as `Daikoku admin filter`
+    - Set `(mail=${username})` as `Search filter`
+    - Set `cn=admin,dc=planetexpress,dc=com` as `Admin username (bind DN)`
+    - Set `GoodNewsEveryone` as `Admin password`
+    - `Name fields name` can be `givenName` and `sn`
+    - Set `mail` as `Email field name`
   </TabItem>
   <TabItem value="oauth2" label="OAuth2" default>
   </TabItem>
