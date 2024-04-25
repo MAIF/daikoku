@@ -43,7 +43,7 @@ export const TeamHome = () => {
   };
 
   const redirectToTeamSettings = (team: ITeamSimple) => {
-    navigate(`/${team._humanReadableId}/settings`);
+    navigate(`/${team._humanReadableId}/settings/dashboard`);
   };
 
   if (queryMyTeams.isLoading || queryTeam.isLoading) {
