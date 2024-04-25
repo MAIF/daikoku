@@ -419,7 +419,7 @@
   "Apikey tags": "Clé d'API tags",
   "Enable restrictions": "Activer les restrictions",
   "Allow at last": "Chemin autorisé en dernier",
-  "allow.last.help": "Le chemin autorisé sera évalué en dernier",
+  "allow.least.help": "Le chemin autorisé sera évalué en dernier",
   "Allowed pathes": "Chemins autorisés",
   "Forbidden pathes": "Chemins interdits",
   "Not found pathes": "Chemins non trouvés",
