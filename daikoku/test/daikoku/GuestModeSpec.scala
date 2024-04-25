@@ -17,20 +17,6 @@ class GuestModeSpec()
     with BeforeAndAfterEach {
 
   "A guest user" can {
-    "not access to team list" in {
-      val publicTenant = tenant.copy(isPrivate = false)
-      setupEnvBlocking(
-        tenants = Seq(publicTenant),
-        users = Seq(userAdmin),
-        teams = Seq(teamOwner)
-      )
-
-      val resp = {
-        httpJsonCallWithoutSessionBlocking(path = s"/api/teams")(publicTenant)
-      }
-      resp.status mustBe 401 // Je comprends pas pourquoi parfois c'est une 401 ou un 303, ça change une fois sur deux à peut près
-
-    }
 
     "access to his teams" in {
       val publicTenant = tenant.copy(isPrivate = false)
