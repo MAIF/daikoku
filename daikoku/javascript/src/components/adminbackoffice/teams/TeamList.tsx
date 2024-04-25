@@ -43,6 +43,7 @@ export const TeamList = () => {
               _humanReadableId
               name
               avatar
+              type
             }
             total
           }
@@ -193,6 +194,7 @@ export const TeamList = () => {
   }, []);
 
   const actions = (team: ITeamFullGql) => {
+    console.debug({team})
     const basicActions = [
       {
         action: () => deleteTeam(team._id),
