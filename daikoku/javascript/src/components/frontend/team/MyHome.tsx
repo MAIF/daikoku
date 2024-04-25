@@ -1,15 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
-import { useContext } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 
-import { I18nContext } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { IApiWithAuthorization, isError, IState, ITenant, IUsagePlan, IUserSimple } from '../../../types';
-import { ApiList } from './ApiList';
+import {
+  IApiWithAuthorization,
+  isError
+} from '../../../types';
 import { api as API, CanIDoAction, manage, Spinner, teamGQLToSimple } from '../../utils';
-import { GlobalContext } from '../../../contexts/globalContext';
+import { ApiList } from './ApiList';
+import { toast } from 'sonner';
 
 export const MyHome = () => {
 
@@ -21,8 +25,40 @@ export const MyHome = () => {
   const navigate = useNavigate();
 
   const { translate } = useContext(I18nContext);
+  const { confirm } = useContext(ModalContext);
+
+  const [isAnonEnabled, setIsAnonEnabled] = useState<boolean>()
+  const [daikokuId, setDaikokuId] = useState<string>()
+  const [lastResponseDate, setLastResponseDate] = useState<number>()
+  const currentDate = new Date();
+  const sixMonthsAgo = new Date(new Date().setMonth(currentDate.getMonth() - 6));
 
 
+
+  useEffect(() => {
+    Services.getAnonymousState().then(res =>{
+      setIsAnonEnabled(res.activated)
+      setDaikokuId(res.id)
+      setLastResponseDate(res.date)
+    })
+  }, []);
+
+  useEffect(() => {
+    if(isAnonEnabled === false && connectedUser.isDaikokuAdmin && daikokuId && (!lastResponseDate || new Date(lastResponseDate) < sixMonthsAgo)) {
+      confirm({title: translate('anonymous.reporting.enable'), message: <div>{translate('anonymous.reporting.popup.info')}<a href="https://maif.github.io/daikoku/docs/getstarted/setup/reporting" target="_blank" rel="noopener noreferrer"> Daikoku documentation</a></div>, okLabel: translate('Yes') })
+        .then((ok) => {
+          if (ok) {
+            Services.updateAnonymousState(daikokuId, true, currentDate.getTime()).then(() => {
+              toast.success(translate("anonymous.reporting.success.enabled"))
+            })
+          } else {
+            Services.updateAnonymousState(daikokuId, false, currentDate.getTime()).then(() => {
+              toast.info(translate("anonymous.reporting.popup.no"))
+            })
+          }
+        });
+    }
+  }, [isAnonEnabled]);
 
 
   const redirectToApiPage = (apiWithAutho: IApiWithAuthorization) => {

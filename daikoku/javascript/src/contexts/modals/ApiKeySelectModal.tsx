@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import { I18nContext } from '../../contexts';
 import { IApiKey, IFastPlan, ISubscription, ISubscriptionWithApiInfo, IUsagePlan } from '../../types';
 import { IBaseModalProps } from './types';
+import classNames from 'classnames';
 
 export interface IApiKeySelectModalProps {
   onSubscribe: () => void,
@@ -103,18 +104,11 @@ const SelectOrCreateApiKey = (props: SelectOrCreateApiKeyProps) => {
     <button
       type="button"
       className="btn"
-      style={{ maxWidth: '200px' }}
+      style={{ maxWidth: '200px', border: 'none' }}
       onClick={onClick}
       disabled={disabled}
     >
-      <div
-        className="d-flex flex-column p-2"
-        style={{
-          border: '1px solid rgb(222, 226, 230)',
-          minHeight: '196px',
-          borderRadius: '8px',
-        }}
-      >
+      <div className={classNames("d-flex flex-column p-2 aggregation-button", {disabled})}>
         <div
           style={{ flex: 1, minHeight: '100px' }}
           className="d-flex align-items-center justify-content-center"
@@ -128,18 +122,19 @@ const SelectOrCreateApiKey = (props: SelectOrCreateApiKeyProps) => {
     </button>
   );
 
-  //todo: translate values
+  const { translate } = useContext(I18nContext);
+
   return (
     <div className="d-flex justify-content-center">
-      <Button onClick={() => props.create(true)} message="Subscribe with a new api key" icon="plus" />
+      <Button onClick={() => props.create(true)} message={translate("aggregation.button.subscription.usual.label")} icon="plus" />
       {props.aggregationApiKeysSecurity && (
         <Button
           onClick={() => props.create(false)}
           disabled={props.disableExtendButton}
           message={
             props.disableExtendButton
-              ? 'No api keys are present in your team'
-              : 'Subscribe using an existing api key'
+              ? translate('aggregation.button.subscription.disable.label')
+              : translate('aggregation.button.subscription.enable.label')
           }
           icon="key"
         />

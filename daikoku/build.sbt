@@ -173,6 +173,7 @@ dockerCommands := dockerCommands.value.filterNot {
 Docker / dockerPackageMappings += (baseDirectory.value / "docker" / "start.sh") -> "/opt/docker/bin/start.sh"
 dockerEntrypoint := Seq("/opt/docker/bin/start.sh")
 dockerUpdateLatest := true
+dockerEnvVars :=  Map("daikoku.containerized"-> "true")
 
 import sbtrelease.ReleasePlugin.autoImport.ReleaseTransformations._
 

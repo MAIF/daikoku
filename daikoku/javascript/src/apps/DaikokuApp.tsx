@@ -50,6 +50,8 @@ import { I18nContext } from '../contexts/i18n-context';
 import { SessionModal } from '../contexts/modals/SessionModal';
 import { MessagesEvents } from '../services/messages';
 import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
+import { ISession, IState, ITeamSimple, ITenant, IUserSimple } from '../types';
+import {AnonymousReporting} from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
 
 export const DaikokuApp = () => {
   const { connectedUser, session, tenant} = useContext(GlobalContext)
@@ -127,14 +129,6 @@ export const DaikokuApp = () => {
                     element={
                       <UnauthenticatedRoute title={`${tenant.title} - ${translate('Reset password')}`}>
                         <ResetPassword />
-                      </UnauthenticatedRoute>
-                    }
-                  />
-                  <Route
-                    path="/signup"
-                    element={
-                      <UnauthenticatedRoute title={`${tenant.title} - ${translate('Signup')}`} >
-                        <Signup />
                       </UnauthenticatedRoute>
                     }
                   />
@@ -289,6 +283,16 @@ export const DaikokuApp = () => {
                     }
                   />
                   <Route
+                    path="/settings/anonymous-reports"
+                    element={
+                      <RouteWithTitle
+                        title={`${tenant.title} - ${translate('Anonymous reporting')}`}
+                      >
+                        <AnonymousReporting/>
+                      </RouteWithTitle>
+                    }
+                  />
+                  <Route
                     path="/settings/teams/:teamSettingId/members"
                     element={
                       <RouteWithTitle title={`${tenant.title} - ${translate({key: "Member", plural: true})}`}>
@@ -329,7 +333,7 @@ export const DaikokuApp = () => {
                           key: "fastMode.title.page",
                           replacements: [tenant.title || tenant.name]
                         })}>
-                        <FastMode />
+                        <FastMode/>
                       </RouteWithTitle>
                     }
                   />
