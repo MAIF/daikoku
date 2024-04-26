@@ -59,6 +59,8 @@ export const ApiList = (props: TApiList) => {
   const [offset, setOffset] = useState(0);
   const [apisWithAuth, setApisWithAuth] = useState<IApiWithAuthorization[]>()
 
+  const [producers, setProducers] = useState<Array<TOption>>();
+  const [selectedProducer, setSelectedProducer] = useState<TOption | undefined>();
   const [selectedTag, setSelectedTag] = useState<TOption | undefined>(undefined);
   const [selectedCategory, setSelectedCategory] = useState<TOption | undefined>(undefined);
 
@@ -81,6 +83,7 @@ export const ApiList = (props: TApiList) => {
       pageNumber,
       offset,
       props.apiGroupId,
+      selectedProducer?.value,
       connectedUser._id,
       location.pathname],
     queryFn: ({ queryKey }) => {
@@ -94,10 +97,12 @@ export const ApiList = (props: TApiList) => {
           selectedCategory: queryKey[4],
           limit: queryKey[5],
           offset: queryKey[6],
-          groupId: queryKey[7]
+          groupId: queryKey[7],
+          selectedTeam : queryKey[8]
         }
       }).then(({ data: { visibleApis } }) => {
         setApisWithAuth(visibleApis.apis)
+        setProducers(visibleApis.producers.map(p => ({label: p.name, value: p._id})))
         return visibleApis
       }
       )
@@ -193,6 +198,7 @@ export const ApiList = (props: TApiList) => {
   const clearFilter = () => {
     setSelectedTag(undefined);
     setSelectedCategory(undefined);
+    setSelectedProducer(undefined);
     setInputVal('')
     setSearched('');
     setPage(0)
@@ -244,6 +250,21 @@ export const ApiList = (props: TApiList) => {
             }}
           />
         </div>
+        <Select
+          name="team-selector"
+          className="team__selector filter__select reactSelect col-6 col-sm mb-2"
+          value={selectedProducer ? selectedProducer : null}
+          placeholder={translate('apiList.team.search')}
+          isClearable={true}
+          options={producers || []}
+          onChange={(e: SingleValue<TOption>) => {
+            setSelectedProducer(e || undefined);
+            setPage(0)
+            setOffset(0)
+
+          }}
+          classNamePrefix="reactSelect"
+        />
         <Select
           name="tag-selector"
           className="tag__selector filter__select reactSelect col-6 col-sm mb-2"
@@ -319,7 +340,7 @@ export const ApiList = (props: TApiList) => {
                   row: view === GRID,
                 })}
               >
-                <FilterPreview count={dataRequest.data.total} clearFilter={clearFilter} searched={searched} selectedTag={selectedTag} selectedCategory={selectedCategory} />
+                <FilterPreview count={dataRequest.data.total} clearFilter={clearFilter} searched={searched} selectedTag={selectedTag} selectedProducer={selectedProducer} selectedCategory={selectedCategory} />
 
                 {apisWithAuth.map((apiWithAuth) => {
                   const sameApis = apisWithAuth.filter(((apiWithAuth2) => apiWithAuth2.api._humanReadableId === apiWithAuth.api._humanReadableId))
