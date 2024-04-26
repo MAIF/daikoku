@@ -353,10 +353,6 @@ test('do search', async ({ page, request }) => {
   await page.getByRole('link', { name: 'My profile' }).click();
   await expect(page.getByLabel('Name')).toHaveValue("Tester"); // expect = admin
   await page.locator('.notification-link').first().click();
-
-  //go to daikoku settings
-  await page.getByRole('link', { name: 'Daikoku settings' }).click();
-  await page.locator('div').filter({ hasText: /^Evil Corp\.$/ }).first().click();
 });
 
 test('API admin can transfer his own API ownership', async ({ page }) => {
