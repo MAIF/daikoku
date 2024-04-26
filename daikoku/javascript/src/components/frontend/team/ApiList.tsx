@@ -59,7 +59,7 @@ export const ApiList = (props: TApiList) => {
   const [offset, setOffset] = useState(0);
   const [apisWithAuth, setApisWithAuth] = useState<IApiWithAuthorization[]>()
 
-  const [producers, setProducers] = useState<Array<TOption>>();
+  const [producers, setProducers] = useState<Array<TOption>>([]);
   const [selectedProducer, setSelectedProducer] = useState<TOption | undefined>();
   const [selectedTag, setSelectedTag] = useState<TOption | undefined>(undefined);
   const [selectedCategory, setSelectedCategory] = useState<TOption | undefined>(undefined);
@@ -229,7 +229,7 @@ export const ApiList = (props: TApiList) => {
       .then(() => {
         queryClient.invalidateQueries({queryKey: ['data']})
         reloadContext()
-      }); 
+      });
   };
 
   return (
@@ -250,21 +250,21 @@ export const ApiList = (props: TApiList) => {
             }}
           />
         </div>
-        <Select
-          name="team-selector"
-          className="team__selector filter__select reactSelect col-6 col-sm mb-2"
-          value={selectedProducer ? selectedProducer : null}
-          placeholder={translate('apiList.team.search')}
-          isClearable={true}
-          options={producers || []}
-          onChange={(e: SingleValue<TOption>) => {
-            setSelectedProducer(e || undefined);
-            setPage(0)
-            setOffset(0)
+        {(producers.length > 1 || !!selectedProducer) && <Select
+            name="team-selector"
+            className="team__selector filter__select reactSelect col-6 col-sm mb-2"
+            value={selectedProducer ? selectedProducer : null}
+            placeholder={translate('apiList.team.search')}
+            isClearable={true}
+            options={producers || []}
+            onChange={(e: SingleValue<TOption>) => {
+              setSelectedProducer(e || undefined);
+              setPage(0)
+              setOffset(0)
 
-          }}
-          classNamePrefix="reactSelect"
-        />
+            }}
+            classNamePrefix="reactSelect"
+        />}
         <Select
           name="tag-selector"
           className="tag__selector filter__select reactSelect col-6 col-sm mb-2"
@@ -356,6 +356,7 @@ export const ApiList = (props: TApiList) => {
                         redirectToApiPage={() => props.redirectToApiPage(apiWithAuth)}
                         redirectToEditPage={() => props.redirectToEditPage(apiWithAuth)}
                         handleTagSelect={(tag) => setSelectedTag(tags.find((t) => t.value === tag))}
+                        handleTeamSelect={(team) => (producers.length > 1 || !!selectedProducer) ? setSelectedProducer( {label: team.name, value: team._id} ) : {}}
                         toggleStar={() => toggleStar(apiWithAuth)}
                         handleCategorySelect={(category) => setSelectedCategory(categories.find((c) => c.value === category))}
                         view={view}
