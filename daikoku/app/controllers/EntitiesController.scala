@@ -154,7 +154,7 @@ class EntitiesController(
             id = ApiId(IdGenerator.token(32)),
             tenant = ctx.tenant.id,
             team = TeamId("none"),
-            name = "New API",
+            name = "New API group",
             apis = Some(Set.empty),
             smallDescription = "A new API group",
             description = "A new API group",
