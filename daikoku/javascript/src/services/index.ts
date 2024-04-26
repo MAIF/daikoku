@@ -1398,8 +1398,8 @@ export const graphql = {
       }
     `),
   myVisibleApis: gql(`
-    query AllVisibleApis ($teamId: String, $research: String, $selectedTag: String, $selectedCategory: String, $limit: Int, $offset: Int, $groupId: String) {
-      visibleApis (teamId: $teamId, research: $research, selectedTag: $selectedTag, selectedCategory: $selectedCategory, limit: $limit, offset: $offset, groupId: $groupId) {
+    query AllVisibleApis ($teamId: String, $research: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $limit: Int, $offset: Int, $groupId: String) {
+      visibleApis (teamId: $teamId, research: $research, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, limit: $limit, offset: $offset, groupId: $groupId) {
         apis {
           api {
             name
@@ -1462,6 +1462,10 @@ export const graphql = {
             authorized
             pending
           }
+        }
+        producers {
+          _id
+          name
         }
         total
       }

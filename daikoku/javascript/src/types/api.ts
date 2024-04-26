@@ -87,6 +87,7 @@ export interface IApiExtended extends IApi {
 
 export interface IApiAuthoWithCount {
   apis: Array<IApiWithAuthorization>;
+  producers: Array<ITeamSimple>;
   total: number;
 }
 

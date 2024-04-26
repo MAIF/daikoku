@@ -47,6 +47,7 @@ interface FilterType {
   count: number
   selectedCategory?: TOption | undefined
   selectedTag?: TOption | undefined
+  selectedProducer?: TOption | undefined
   searched: string
   clearFilter: any
   filterPlan?: string
@@ -57,7 +58,7 @@ export const FilterPreview = (props: FilterType) => {
   const { translate, Translation } = useContext(I18nContext);
 
 
-  if (!props.searched && !props.filterPlan && !props.seeOnlySubs) {
+  if (!props.searched && !props.selectedTag && !props.selectedCategory && !props.selectedProducer && !props.filterPlan && !props.seeOnlySubs) {
     return null;
   }
 
@@ -68,19 +69,25 @@ export const FilterPreview = (props: FilterType) => {
         &nbsp;
         {!!props.searched && (
           <span>
-            {translate('matching')} <strong>{props.searched}</strong>&nbsp;
+            {translate('filter.preview.match')} <strong>{props.searched}</strong>&nbsp;
           </span>
         )}
         {props.selectedCategory?.value && (
           <span>
-            {translate('categorised in')} <strong>{props.selectedCategory?.value}</strong>
+            {translate('filter.preview.category')} <strong>{props.selectedCategory?.value}</strong>
             &nbsp;
           </span>
         )}
         {!!props.selectedTag?.value && (
           <span>
-            {translate('tagged')} <strong>{props.selectedTag?.value}</strong>
+            {translate('filter.preview.tag')} <strong>{props.selectedTag?.value}</strong>
             &nbsp;
+          </span>
+        )}
+        {!!props.selectedProducer?.value && (
+            <span>
+            {translate('filter.preview.team')} <strong>{props.selectedProducer?.label}</strong>
+              &nbsp;
           </span>
         )}
         {props.seeOnlySubs === true && (
