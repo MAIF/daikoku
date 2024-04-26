@@ -7,11 +7,12 @@ const StarsButton = ({ stars, toggleStar, starred, connectedUser }: any) => (
         <button
           className="btn flex-row align-items-center pe-2"
           style={{ color: 'var(--btn-bg-color, "#000")', padding: "0" }}
+          aria-label="star"
           onClick={toggleStar}
         >
           <i className={`${starred ? "fas" : "far"} fa-star ps-2`} />
         </button>
-          <span className="btn btn-sm btn-access-negative">{stars}</span>
+        <span className="btn btn-sm btn-access-negative">{stars}</span>
       </>
     ) : (
       stars > 0 && (

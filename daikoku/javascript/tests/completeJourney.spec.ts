@@ -113,10 +113,14 @@ test('test a complete user journey', async ({ page }) => {
   await expect(page.getByRole('main')).toContainText('0 Result');
   await page.getByRole('link', { name: 'Daikoku home' }).click();
   await expect(page.getByRole('main')).toContainText('second test api');
-  await page.locator('div').filter({ hasText: /^second test api0$/ }).getByRole('button').click();
-  await expect(page.getByRole('main')).toContainText('1');
-  await page.locator('div').filter({ hasText: /^second test api1$/ }).getByRole('button').click();
-  await expect(page.getByRole('main')).toContainText('0');
+
+  
+  await page.locator('div').filter({ hasText: /^second test api/ }).getByLabel('star').click();
+  await expect(page.locator('div').filter({ hasText: /^second test api/ }).locator('.star-button')).toContainText('1')
+  await page.locator('div').filter({ hasText: /^second test api/ }).getByLabel('star').click();
+  await expect(page.locator('div').filter({ hasText: /^second test api/ }).locator('.star-button')).toContainText('0')
+
+
   await page.getByRole('heading', { name: 'second test api' }).click();
   await expect(page.locator('section')).toContainText('second test api');
   await expect(page.locator('#a-new-test-api')).toContainText('A new test API');
