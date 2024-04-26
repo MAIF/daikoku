@@ -351,7 +351,7 @@ test('do search', async ({ page, request }) => {
   await page.getByPlaceholder('Search for API, team and more').fill('');
   await page.waitForResponse(r => r.url().includes('/api/_search') && r.status() === 200)
   await page.getByRole('link', { name: 'My profile' }).click();
-  await expect(page.getByLabel('Name')).toHaveValue("Admin"); // expect = admin
+  await expect(page.getByLabel('Name')).toHaveValue("Tester"); // expect = admin
   await page.locator('.notification-link').first().click();
 
   //go to daikoku settings
