@@ -19,15 +19,14 @@ mail.apikey.refresh.title=Votre clé d''api a été modifiée
 mail.apikey.refresh.body=Le secret de votre clé d''api pour l''api [apiName] et le plan [planName] a été modifié suite à une demande de régénération.\
   Si vous ne travaillez pas avec un système d'intégration automatique des secrets, pensez à le modifier.
 mail.apikey.demand.title=Demande de clé d''API
-mail.apikey.demand.body=[user] demande une clé d''api pour l''api [apiName].\
-  Vous recevez ce message car vous êtes administrateur de l''équipe propriétaire.\
+mail.apikey.demand.body= Une demande de souscription à l''API [apiName] a été soumise par [user] de l''équipe [team].\
   </br>\
-  <a href="[link]">Accepter/rejeter la demande</a>
+  Vous pouvez vous connecter et accéder à vos notifications pour <a href="[link]" target="_blank">accepter ou rejeter cette demande</a>
 mail.api.access.title=Demande d''accès à une API
 mail.api.access.body=[user] veut accéder a votre API [apiName] pour l''équipe [teamName]. \
   Vous recevez ce message car vous êtes administrateur de l''équipe propriétaire.\
   </br>\
-  <a href="[link]">Accepter/rejeter la demande</a>
+  vous pouvez vous connecter et accéder à vos notifications pour <a href="[link]" target="_blank">accepter ou rejeter cette demande</a>
 mail.team.access.title=Quelqu''un veut rejoindre votre équipe
 mail.team.access.body=[user] veut rejoindre votre équipe [teamName]. \
    Vous recevez ce message car vous êtes administrateur de cette équipe. \
@@ -36,7 +35,7 @@ mail.team.access.body=[user] veut rejoindre votre équipe [teamName]. \
 mail.team.invitation.title=Quelqu''un vous invite à rejoindre son équipe
 mail.team.invitation.body=[user], en tant qu''administrateur de l''équipe [teamName], veut que vous rejoigniez son équipe. \
   </br>\
-  vous pouvez vous connecter et accéder à vos notifications pour <a href="[link]">accepter/rejeter la demande</a>
+  Vous pouvez vous connecter et accéder à vos notifications pour <a href="[link]" target="_blank">accepter ou rejeter cette demande</a>
 unrecognized.api= API inconnue
 unrecognized.team= Équipe inconnue
 unrecognized.user=Utilisateur innconnu
@@ -44,15 +43,16 @@ mail.rejection.title=Votre demande a été rejetée.
 mail.acceptation.title=Votre demande a été acceptée.
 mail.api.access.rejection.body=Votre demande d''accès à l''API [apiName] a été rejetée.
 mail.api.access.acceptation.body=La demande d''accès à l''API [apiName] par [user] a été acceptée.
-mail.api.subscription.rejection.body=Votre demande de clé d''API pour [apiName] a été rejetée. \
-raison: [message]
-mail.api.subscription.acceptation.body=La demande de [user] de souscription à l''API [apiName] a été acceptée.
+mail.api.subscription.rejection.body= Nous regrettons de vous informer que votre demande de souscription à l''API [apiName], par l''utilisateur [user], pour l''équipe [team] a été refusée en raison de: <br /> \
+ [message].
+mail.api.subscription.acceptation.body=Nous avons le plaisir de vous informer que votre demande de souscription à l''API [apiName] pour l'équipe [team] a été acceptée. <br />\
+    Vous pouvez dès maintenant vous connecter pour retrouver votre clé d'API <a href="[link] target="_blank">ici</href>.
 mail.team.access.rejection.body=Votre demande d''accès à l''équipe [teamName] a été rejetée.
 mail.team.access.acceptation.body=Votre demande d''accès à l''équipe [teamName] a été acceptée.
 mail.user.invitation.rejection.body=Votre invitation à [teamName] dans votre équipe [user] a été rejetée.
 mail.user.invitation.acceptation.body=[user] a accepté de rejoindre votre équipe [teamName].
 mail.api.transfer.ownership.rejection.body=Votre demande de trasfert de priopriété de l''API [apiName] à l''équipe [teamName] a été rejetée.
-mail.api.transfer.ownership.acceptation.body=Votre demande de trasfert de priopriété de l''API [apiName] à l''équipe [teamName] a été acceptée.
+mail.api.transfer.ownership.acceptation.body=Votre demande de transfert de priopriété de l''API [apiName] à l''équipe [teamName] a été acceptée.
 mail.new.message.title=Nouveau message de [user].
 mail.new.issue.title=Nouveau problème relevé.
 mail.new.issue.body=Un Nouveau problème a été relevé sur l''API [apiName]. Cliquez sur le lien pour voir le nouveau problème.

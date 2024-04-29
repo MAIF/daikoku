@@ -1304,6 +1304,12 @@ class ApiService(
           .findByIdNotDeleted(api.team),
         AppError.TeamNotFound
       )
+      demandTeam <- EitherT.fromOptionF(
+        env.dataStore.teamRepo
+          .forTenant(tenant.id)
+          .findByIdNotDeleted(demand.team),
+        AppError.TeamNotFound
+      )
       admins <- EitherT.liftF(
         env.dataStore.userRepo
           .findNotDeleted(
@@ -1325,7 +1331,8 @@ class ApiService(
             Map(
               "user" -> user.name,
               "apiName" -> api.name,
-              "link" -> notificationUrl
+              "link" -> notificationUrl,
+              "team" -> demandTeam.name
             )
           )
         } yield {
@@ -1819,6 +1826,10 @@ class ApiService(
                 .forTenant(tenant)
                 .save(newNotification)
             )
+            demandTeam <- EitherT.fromOptionF[Future, AppError, Team](
+              env.dataStore.teamRepo
+                .forTenant(tenant.id)
+                .findByIdNotDeleted(demand.team), AppError.TeamNotFound)
             _ <- EitherT.liftF(
               Future.sequence((administrators ++ Seq(from)).map(admin => {
                 implicit val language: String = admin.defaultLanguage
@@ -1829,7 +1840,12 @@ class ApiService(
                   body <- translator.translate(
                     "mail.api.subscription.acceptation.body",
                     tenant,
-                    Map("user" -> from.name, "apiName" -> api.name)
+                    Map(
+                      "user" -> from.name,
+                      "apiName" -> api.name,
+                      "link" -> env.getDaikokuUrl(tenant, s"/${team.humanReadableId}/settings/apikeys/${api.humanReadableId}/${api.currentVersion.value}"), //todo => better url
+                      "team" -> demandTeam.name
+                    )
                   )
                 } yield {
                   tenant.mailer.send(title, Seq(admin.email), body, tenant)

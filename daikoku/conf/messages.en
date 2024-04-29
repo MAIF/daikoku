@@ -19,10 +19,9 @@ mail.apikey.refresh.title=Your apikey have been updated
 mail.apikey.refresh.body=Your apikey for api [apiName] and plan [planName] have been updated.\
   If you don''t work with an integration system, please update its usage.
 mail.apikey.demand.title=Somebody want an apikey
-mail.apikey.demand.body=[user] want an apikey for [apiName]. \
-  You receive this mail because you are a team admin.\
+mail.apikey.demand.body=A subscription request for API [apiName] was submitted by [user] of team [team]. \
   </br>\
-  <a href="[link]">Accept or reject request</a>
+  You can login and see your notifications to <a href="[link]">accept or reject this request</a>
 mail.api.access.title=Somebody want to access your api
 mail.api.access.body=[user] want to join your team [teamName]. \
   you receive this mail because you are admin of this team. \
@@ -44,9 +43,10 @@ mail.rejection.title=Your Daikoku request has been rejected.
 mail.acceptation.title=Your Daikoku request has been accepted.
 mail.api.access.rejection.body=Your request to access to api [apiName] has been rejected.
 mail.api.access.acceptation.body=The request to access to api [apiName] by [user] has been accepted.
-mail.api.subscription.rejection.body=Your request for an apikey for [apiName] has been rejected. \
-reason: [message]
-mail.api.subscription.acceptation.body=The request of [user] for an apikey for [apiName] has been accepted.
+mail.api.subscription.rejection.body=The request of [user] for an apikey for [apiName] for team [team] has been rejected. \
+    reason: [message]
+mail.api.subscription.acceptation.body=The request of [user] for an apikey for [apiName] for team [team] has been accepted. \
+    You can now log in and get you APIkey <a href="[link]">here</href>
 mail.team.access.rejection.body=Your request to join the team [teamName] has been rejected.
 mail.team.access.acceptation.body=Your request to access to team [teamName] has been accepted.
 mail.user.invitation.rejection.body=[user] rejected your request to join your team [teamName].
