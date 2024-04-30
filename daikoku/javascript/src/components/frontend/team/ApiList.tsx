@@ -484,7 +484,7 @@ const YourTeams = ({
           .map((team) => {
             return (
               <span
-                className="p-1 cursor-pointer underline-on-hover text-break"
+                className="p-1 cursor-pointer underline-on-hover text-break a-fake"
                 key={team._id}
                 onClick={() => redirectToTeam(team)}
               >
