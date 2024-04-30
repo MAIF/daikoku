@@ -1553,7 +1553,7 @@ class ApiController(
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.stepValidatorRepo
           .forTenant(tenant)
-          .deleteById(validator.id)
+          .delete(Json.obj("step" -> validator.step.value))
       )
     } yield result
   }
@@ -1587,6 +1587,11 @@ class ApiController(
           (validator.metadata \ "email").as[String],
           None
         )
+      )
+      _ <- EitherT.liftF[Future, AppError, Boolean](
+        env.dataStore.stepValidatorRepo
+          .forTenant(tenant)
+          .delete(Json.obj("step" -> validator.step.value))
       )
     } yield ()
   }
