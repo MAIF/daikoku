@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import {useContext, useEffect, useState} from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 
@@ -9,16 +8,14 @@ import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import {
   IApiWithAuthorization,
-  isError,
-  IState,
-  ITenant,
-  IUserSimple
+  isError
 } from '../../../types';
 import { ApiList } from './ApiList';
 import { api as API, CanIDoAction, manage, Spinner, teamGQLToSimple } from '../../utils';
 import { GlobalContext } from '../../../contexts/globalContext';
-import {toastr} from "react-redux-toastr";
 import {ModalContext} from "../../../contexts";
+import {toast} from "sonner";
+import {subMonths} from 'date-fns'
 
 export const MyHome = () => {
 
@@ -36,8 +33,7 @@ export const MyHome = () => {
   const [daikokuId, setDaikokuId] = useState<string>()
   const [lastResponseDate, setLastResponseDate] = useState<number>()
   const currentDate = new Date();
-  const sixMonthsAgo = new Date(new Date().setMonth(currentDate.getMonth() - 6));
-
+  const sixMonthAgo = subMonths(currentDate, 6);
 
 
   useEffect(() => {
@@ -49,16 +45,16 @@ export const MyHome = () => {
   }, []);
 
   useEffect(() => {
-    if(isAnonEnabled === false && connectedUser.isDaikokuAdmin && daikokuId && (!lastResponseDate || new Date(lastResponseDate) < sixMonthsAgo)) {
+    if(isAnonEnabled === false && connectedUser.isDaikokuAdmin && daikokuId && (!lastResponseDate || new Date(lastResponseDate) < sixMonthAgo)) {
       confirm({title: translate('anonymous.reporting.enable'), message: <div>{translate('anonymous.reporting.popup.info')}<a href="https://maif.github.io/daikoku/docs/getstarted/setup/reporting" target="_blank" rel="noopener noreferrer"> Daikoku documentation</a></div>, okLabel: translate('Yes') })
         .then((ok) => {
           if (ok) {
             Services.updateAnonymousState(daikokuId, true, currentDate.getTime()).then(() => {
-              toastr.success(translate('Success'), translate("anonymous.reporting.success.enabled"))
+              toast.success(translate("anonymous.reporting.success.enabled"))
             })
           } else {
             Services.updateAnonymousState(daikokuId, false, currentDate.getTime()).then(() => {
-              toastr.info(translate('Info'), translate("anonymous.reporting.popup.no"))
+              toast.info(translate("anonymous.reporting.popup.no"))
             })
           }
         });
