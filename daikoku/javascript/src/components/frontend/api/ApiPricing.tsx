@@ -69,11 +69,13 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     const askForApikeys = (team: string, plan: IUsagePlan, apiKey?: ISubscription) => {
       const adminStep = plan.subscriptionProcess.find(s => isValidationStepTeamAdmin(s))
       if (adminStep && isValidationStepTeamAdmin(adminStep)) {
+        console.debug({apiKey, value: apiKey?.metadata})
         openFormModal<any>({
           title: translate('motivations.modal.title'),
           schema: adminStep.schema,
           onSubmit: (motivation: object) => props.askForApikeys({ team, plan, apiKey, motivation }),
-          actionLabel: translate('Send')
+          actionLabel: translate('Send'),
+          value: apiKey?.customMetadata
         })
       } else {
         props.askForApikeys({ team, plan: plan, apiKey })
@@ -314,13 +316,13 @@ const TeamSelector = (props: ITeamSelector) => {
                   >
                     {
                       props.pendingTeams.includes(team._id) &&
-                      <button type="button" className="btn btn-sm btn-outline-secondary disabled">
+                      <button type="button" className="btn btn-sm btn-access-negative disabled">
                         {translate("Request in progress")}
                       </button>
                     }
                     {
                       displayVerifiedBtn && !team.verified &&
-                      <button type="button" className="btn btn-sm btn-outline-warning" onClick={() => {
+                      <button type="button" className="btn btn-sm btn-danger-negative" onClick={() => {
                         close()
                         navigate(`/${team._humanReadableId}/settings/edition`)
                       }}>
@@ -377,29 +379,29 @@ export const ApiPricing = (props: ApiPricingProps) => {
       return (
         <div>
           <div className="d-flex flex-row">
-            <Link to="../.." relative='path'>
+            <Link to={`../../${props.api.currentVersion}/pricing`} relative='path'>
               <i className="fa-regular fa-circle-left fa-lg cursor-pointer" />
             </Link>
             <h5 className='ms-3'>{plan.customName}</h5>
           </div>
           <div className='d-flex flex-row justify-content-around mb-2'>
             <Link
-              to={`../../${plan.customName}/swagger`} relative='path'
-              className={classNames("btn btn-sm btn-outline-secondary mb-1",
+              to={`../../${props.api.currentVersion}/pricing/${plan.customName}/swagger`} relative='path'
+              className={classNames("btn btn-sm btn-access-negative mb-1",
                 {
                   link__disabled: !plan.swagger?.content && !plan.swagger?.url,
                   disabled: !plan.swagger?.content && !plan.swagger?.url
                 })}>swagger</Link>
             <Link
-              to={`../../${plan.customName}/testing`} relative='path'
-              className={classNames("btn btn-sm btn-outline-secondary mb-1",
+              to={`../../${props.api.currentVersion}/pricing/${plan.customName}/testing`} relative='path'
+              className={classNames("btn btn-sm btn-access-negative mb-1",
                 {
                   link__disabled: !plan.testing || !plan.testing.enabled,
                   disabled: !plan.testing || !plan.testing.enabled,
                 })}>test</Link>
             <Link
-              to={`../../${plan.customName}/documentation`} relative='path'
-              className={classNames("btn btn-sm btn-outline-secondary",
+              to={`../../${props.api.currentVersion}/pricing/${plan.customName}/documentation`} relative='path'
+              className={classNames("btn btn-sm btn-access-negative",
                 {
                   link__disabled: !plan.documentation || !plan.documentation?.pages.length,
                   disabled: !plan.documentation || !plan.documentation?.pages.length,

@@ -128,7 +128,7 @@ export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: 
     //     <div className="mb-3 row">
     //       <label className="col-xs-12 col-sm-2 col-form-label" />
     //       <div className="col-sm-10">
-    //         <button type="button" className="btn btn-success" onClick={fetchConfig}>
+    //         <button type="button" className="btn btn-outline-success" onClick={fetchConfig}>
     //           <Translation i18nkey="Get from OIDC config 2">Get from OIDC config 2</Translation>
     //         </button>
     //       </div>

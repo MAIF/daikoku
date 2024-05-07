@@ -1646,7 +1646,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
     return (
       <div className='d-flex flex-column align-items-center'>
         <div> {translate('api.pricings.no.step.explanation')}</div>
-        <button className='btn btn-outline-secondary my-2' onClick={() => addProcess(0)}>
+        <button className='btn btn-access-negative my-2' onClick={() => addProcess(0)}>
           {translate('api.pricings.add.first.step.btn.label')}
         </button>
       </div>
@@ -1655,7 +1655,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
 
   return (
     <div className='d-flex flex-row align-items-center'>
-      <button className='btn btn-outline-secondary sortable-list-btn' onClick={() => addProcess(0)}><Plus /></button>
+      <button className='btn btn-access-negative sortable-list-btn' onClick={() => addProcess(0)}><Plus /></button>
       <SortableList
         items={props.value.subscriptionProcess}
         onChange={subscriptionProcess => props.savePlan({ ...props.value, subscriptionProcess })}
@@ -1703,7 +1703,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
                     step={item}
                     tenant={props.tenant} />
                 </SortableItem>
-                <button className='btn btn-outline-secondary sortable-list-btn' onClick={() => addProcess(idx + 1)}><Plus /></button>
+                <button className='btn btn-access-negative sortable-list-btn' onClick={() => addProcess(idx + 1)}><Plus /></button>
               </>
             )
           }
@@ -1902,7 +1902,7 @@ const TeamApiPricingDocumentation = (props: TeamApiPricingDocumentationProps) =>
   if (!props.planForEdition.documentation) {
     return (
       <div>
-        <div>it's seems that this plan has no documentation setted</div>
+        <div className='alert alert-warning' role="alert">{translate('documentation.not.setted.message')}</div>
         <button type='button' className='btn btn-outline-primary' onClick={createPlanDoc}>{translate('documentation.add.button.label')}</button>
       </div>
     )

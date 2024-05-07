@@ -5,7 +5,6 @@ import { Can, manage, api as API, ActionWithTeamSelector } from '../../utils';
 import StarsButton from './StarsButton';
 import { I18nContext } from '../../../contexts';
 import { IApiWithAuthorization, ITeamSimple, IUserSimple } from '../../../types';
-import { useNavigate } from "react-router-dom";
 
 export const ApiCard = (props: {
   user: IUserSimple
@@ -17,6 +16,7 @@ export const ApiCard = (props: {
   redirectToApiPage: () => void
   redirectToEditPage: () => void
   handleTagSelect: (tag: string) => void
+  handleTeamSelect : (team:  ITeamSimple ) => void
   toggleStar: () => void
   handleCategorySelect: (category: string) => void
   view: 'LIST' | 'GRID'
@@ -35,11 +35,6 @@ export const ApiCard = (props: {
   const team = props.team;
 
   const { translate, Translation } = useContext(I18nContext);
-  const navigate = useNavigate();
-
-  const redirectToTeamPage = (team: ITeamSimple) => {
-    navigate(`/${team._humanReadableId}`);
-  };
 
   const accessButton = () => {
     if (
@@ -61,7 +56,7 @@ export const ApiCard = (props: {
           allTeamSelector={true}
         >
           {isPending ? (
-            <button className="btn btn-sm btn-outline-secondary disabled me-1">
+            <button className="btn btn-sm btn-access-negative disabled me-1">
               <Translation i18nkey="Pending request">Pending request</Translation>
             </button>
           ) : (
@@ -109,7 +104,7 @@ export const ApiCard = (props: {
             {props.teamVisible && team && (
               <small
                 className="cursor-pointer underline-on-hover a-fake d-flex align-items-baseline justify-content-end"
-                onClick={() => redirectToTeamPage(team)}
+                onClick={() => props.handleTeamSelect(team)}
               >
                 <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />
                 {team.name}
@@ -132,7 +127,7 @@ export const ApiCard = (props: {
             <Can I={manage} a={API} team={team}>
               <button
                 type="button"
-                className="btn btn-sm btn-outline-secondary me-1 mb-1"
+                className="btn btn-sm btn-access-negative me-1 mb-1"
                 onClick={props.redirectToEditPage}
               >
                 <i className="fas fa-cog" />
@@ -187,7 +182,7 @@ export const ApiCard = (props: {
         {props.teamVisible && team && (
           <small
             className="cursor-pointer underline-on-hover a-fake d-flex align-items-baseline"
-            onClick={() => redirectToTeamPage(team)}
+            onClick={() => props.handleTeamSelect(team)}
           >
             <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />
             {team.name}

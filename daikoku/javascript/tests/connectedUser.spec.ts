@@ -351,12 +351,8 @@ test('do search', async ({ page, request }) => {
   await page.getByPlaceholder('Search for API, team and more').fill('');
   await page.waitForResponse(r => r.url().includes('/api/_search') && r.status() === 200)
   await page.getByRole('link', { name: 'My profile' }).click();
-  await expect(page.getByLabel('Name')).toHaveValue("Admin"); // expect = admin
+  await expect(page.getByLabel('Name')).toHaveValue("Tester"); // expect = admin
   await page.locator('.notification-link').first().click();
-
-  //go to daikoku settings
-  await page.getByRole('link', { name: 'Daikoku settings' }).click();
-  await page.locator('div').filter({ hasText: /^Evil Corp\.$/ }).first().click();
 });
 
 test('API admin can transfer his own API ownership', async ({ page }) => {
@@ -379,5 +375,81 @@ test('API admin can transfer his own API ownership', async ({ page }) => {
   await page.getByRole('link', { name: 'Daikoku home' }).click();
   await page.locator('h3').filter({ hasText: 'test API' }).waitFor({ state: 'visible' })
   await page.locator('small').filter({ hasText: 'Consumers' }).click();
-  await expect(page.getByRole('main')).toContainText('test API');
+  await expect(page.locator('.preview')).toContainText('test API');
 });
+
+test('Filter API List', async ({page, request}) => {
+  await request.post('http://localhost:9000/admin-api/usage-plans', {
+    headers: {
+      "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
+    },
+    data: newApiUsagePlan
+  })
+      .then(r => r.json())
+      .then(r => console.log({r}));
+
+
+  await request.post('http://localhost:9000/admin-api/apis', {
+    headers: {
+      "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
+    },
+    data: {...newApi, team: "5ffd5f7e260100461a3cc845", tags: ["dev"], categories: ["external"]}
+  })
+      .then(r => r.json())
+      .then(r => console.log({r}));
+
+  await page.goto('http://localhost:9000/apis');
+  await page.getByRole('img', { name: 'user menu' }).click();
+  await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
+  await page.getByPlaceholder('Password').fill('password');
+  await page.getByRole('button', { name: 'Login' }).click();
+  await page.waitForResponse(r => r.url().includes('/api/me/context') && r.status() === 200)
+  // await page.waitForResponse(r => r.url().includes('/api/search') && r.status() === 200)
+  await page.waitForSelector('.apis__pagination')
+  await page.locator('small').filter({ hasText: 'Consumers' }).click();
+  await expect(page.locator('.preview')).toContainText('1 result produced by Consumers'); 
+  
+  await expect(page.getByRole('heading', { name: 'test API' })).toBeVisible(); //FIXME: verifier qu'il n'y a qu'une seul API dans la liste
+  
+  await page.getByText('result produced by Consumers').click();
+  await expect(page.locator('.preview')).toContainText('1 result produced by Consumers');
+  await page.getByText('clear filter').click();
+  await page.waitForSelector('.apis__pagination')
+
+  await page.locator('.team__selector > .reactSelect__control > .reactSelect__value-container > .reactSelect__input-container').click();
+  await page.getByRole('option', { name: 'Testers' }).click();
+  await expect(page.locator('.preview')).toContainText('2 results produced by Testers');
+  await page.getByText('clear filter').click();
+  await page.locator('.tag__selector > .reactSelect__control > .reactSelect__value-container > .reactSelect__input-container').click();
+  await page.getByRole('option', { name: 'test' }).click();
+  await expect(page.locator('.preview')).toContainText('2 results tagged test');
+  await page.getByText('clear filter').click();
+  await page.locator('.category__selector > .reactSelect__control > .reactSelect__value-container > .reactSelect__input-container').click();
+  await page.getByRole('option', { name: 'external' }).click();
+  await expect(page.locator('.preview')).toContainText('1 result categorized in external');
+  await page.getByText('clear filter').click();
+  await page.getByPlaceholder('Search your API...').fill('test');
+  await expect(page.locator('.preview')).toContainText('2 results matching test');
+  await page.locator('.reactSelect__indicator').first().click();
+  await page.getByRole('option', { name: 'Testers' }).click();
+  await page.locator('div').filter({ hasText: /^option Testers, selected\.TestersSearch a tagSearch a category$/ }).locator('svg').nth(2).click();
+  await page.getByRole('option', { name: 'test' }).click();
+  await page.locator('div').filter({ hasText: /^Testersoption test, selected\.testSearch a category$/ }).locator('svg').nth(4).click();
+  await page.getByRole('option', { name: 'internal' }).click();
+  await expect(page.locator('.preview')).toContainText('1 result matching test categorized in internal tagged test produced by Testers');
+  await page.locator('.category__selector > .reactSelect__control > .reactSelect__indicators > div:nth-child(3) > .css-tj5bde-Svg').click();
+  await page.getByRole('option', { name: 'external' }).click();
+  await expect(page.locator('.preview')).toContainText('0 result matching test categorized in external tagged test produced by Testers');
+  await page.getByText('clear filter').click();
+  await page.getByText('test', { exact: true }).nth(2).click();
+  await expect(page.locator('.preview')).toContainText('2 results tagged test');
+  await page.getByText('clear filter').click();
+  await page.locator('span').filter({ hasText: 'external' }).click();
+  await expect(page.locator('.preview')).toContainText('1 result categorized in external');
+  await page.getByText('clear filter').click();
+  await page.getByText('test', { exact: true }).first().click();
+  await expect(page.locator('.preview')).toContainText('2 results tagged test');
+  await page.getByText('clear filter').click();
+  await page.locator('small').filter({ hasText: 'external' }).click();
+  await expect(page.locator('.preview')).toContainText('1 result categorized in external');
+})

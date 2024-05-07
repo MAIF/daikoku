@@ -54,7 +54,7 @@ export function ApiPost({
       </div>
       <div className="api-post" dangerouslySetInnerHTML={{ __html: converter.makeHtml((post as any).content) }} />
     </div>))}
-    {posts.length < pagination.total && (<button className="btn btn-outline-info" onClick={() => {
+    {posts.length < pagination.total && (<button className="btn btn-outline-primary" onClick={() => {
       setPagination({
         limit: 1,
         offset: pagination.offset + 1,

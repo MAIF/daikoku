@@ -93,7 +93,7 @@ export function LoginPage(props: any) {
             />
           </div>
           <div className="mb-3 d-grid gap-1">
-            <button type="submit" className="btn btn-success">
+            <button type="submit" className="btn btn-outline-success">
               <Translation i18nkey="login.btn.label">Login</Translation>
             </button>
           </div>

@@ -2507,6 +2507,7 @@ object SchemaDefinition {
           resolve = _.value.apis
         )
       ),
+      ReplaceField("producers", Field("producers", ListType(TeamObjectType), resolve = _.value.producers)),
       ReplaceField("total", Field("total", LongType, resolve = _.value.total))
     )
 
@@ -3903,6 +3904,11 @@ object SchemaDefinition {
       OptionInputType(StringType),
       description = "A tag of an Api"
     )
+    val SELECTED_TEAM = Argument(
+      "selectedTeam",
+      OptionInputType(StringType),
+      description = "An API owner"
+    )
     val SELECTED_CAT = Argument(
       "selectedCategory",
       OptionInputType(StringType),
@@ -4118,6 +4124,7 @@ object SchemaDefinition {
         ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
         teamId: Option[String] = None,
         research: String,
+        selectedTeam: Option[String] = None,
         selectedTag: Option[String] = None,
         selectedCat: Option[String] = None,
         limit: Int,
@@ -4128,6 +4135,7 @@ object SchemaDefinition {
         .getVisibleApis(
           teamId,
           research,
+          selectedTeam,
           selectedTag,
           selectedCat,
           limit,
@@ -4147,12 +4155,13 @@ object SchemaDefinition {
           "visibleApis",
           ApiWithCountType,
           arguments =
-            TEAM_ID :: RESEARCH :: SELECTED_TAG :: SELECTED_CAT :: LIMIT :: OFFSET :: GROUP_ID :: Nil,
+            TEAM_ID :: RESEARCH :: SELECTED_TEAM :: SELECTED_TAG :: SELECTED_CAT :: LIMIT :: OFFSET :: GROUP_ID :: Nil,
           resolve = ctx => {
             getVisibleApis(
               ctx,
               ctx.arg(TEAM_ID),
               ctx.arg(RESEARCH),
+              ctx.arg(SELECTED_TEAM),
               ctx.arg(SELECTED_TAG),
               ctx.arg(SELECTED_CAT),
               ctx.arg(LIMIT),

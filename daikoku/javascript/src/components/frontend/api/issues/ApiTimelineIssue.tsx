@@ -229,14 +229,14 @@ export function ApiTimelineIssue({
       {connectedUser && !connectedUser.isGuest && (<Can I={manage} a={API} team={team}>
         <div className="d-flex">
           {editionMode ? (<div className="d-flex ms-3">
-            <button className="btn btn-success me-1" onClick={() => updateIssue(issue)}>
+            <button className="btn btn-outline-success me-1" onClick={() => updateIssue(issue)}>
               {translate('Save')}
             </button>
-            <button className="btn btn-outline-secondary" onClick={() => handleEdition(false)}>
+            <button className="btn btn-access-negative" onClick={() => handleEdition(false)}>
               {translate('Cancel')}
             </button>
           </div>) : (<>
-            <button className="btn btn-outline-secondary me-1" onClick={() => handleEdition(true)}>
+            <button className="btn btn-access-negative me-1" onClick={() => handleEdition(true)}>
               {translate('Edit')}
             </button>
           </>)}
@@ -337,7 +337,7 @@ function Comment({
             <>
               {showActions ? (
                 <div className="ml-auto">
-                  <button className="btn btn-xs btn-outline-secondary me-1" onClick={editComment}>
+                  <button className="btn btn-xs btn-access-negative me-1" onClick={editComment}>
                     <i className="fas fa-pen align-self-center" />
                   </button>
                   {i !== 0 && (
@@ -453,7 +453,7 @@ function NewComment({
                       )}
                     </>
                   </Can>
-                  <button type="button" className="btn btn-success" onClick={valid}>
+                  <button type="button" className="btn btn-outline-success" onClick={valid}>
                     {translate('issues.actions.comment')}
                   </button>
                 </div>

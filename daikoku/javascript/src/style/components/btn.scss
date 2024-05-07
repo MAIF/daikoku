@@ -1,3 +1,5 @@
+@use 'sass:color';
+
 button {
   background-color: #fff;
 }
@@ -189,11 +191,25 @@ button {
 .new-team-button {
   .avatar__container {
     &:hover {
-      background-color: rgba(0,0,0,0.1);
+      background-color: rgba(0, 0, 0, 0.1);
 
       // svg {
       //   color: $btn-bg-color
       // }
     }
+  }
+}
+
+.aggregation-button {
+  border: 1px solid $pagination-border-color;
+  min-height: 196px;
+  border-radius: 8px;
+  color: $menu-text-color;
+
+
+  &:hover {
+    background-color: $menu-text-hover-bg-color;
+    color: $menu-text-hover-color;
+    border-color: $menu-text-hover-bg-color;
   }
 }

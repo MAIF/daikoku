@@ -199,7 +199,7 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
   return <>
     <div className="container-fluid" style={{ position: 'relative' }}>
       <Can I={manage} a={team} team={currentTeam}>
-        <button className="btn btn-success" type="button" onClick={() => {
+        <button className="btn btn-outline-success" type="button" onClick={() => {
           openInvitationTeamModal({
             team: currentTeam,
             searchLdapMember: searchLdapMember,

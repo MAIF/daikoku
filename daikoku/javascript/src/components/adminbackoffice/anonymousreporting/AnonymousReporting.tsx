@@ -5,6 +5,7 @@ import {toast} from "sonner";
 import {Can, daikoku, manage} from "../../utils";
 import {BooleanInput} from "@maif/react-forms";
 import * as Services from '../../../services';
+import {toast} from "sonner";
 
 export const AnonymousReporting = () => {
   useDaikokuBackOffice();

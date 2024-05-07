@@ -149,7 +149,7 @@ export default ({ }) => {
                     {item.value.user && (<div style={{ fontStyle: 'italic', fontWeight: 'bold' }}>
                       <span>{item.value.user.name}</span>
                     </div>)}
-                    {!isCurrentVersion && isSelected && (<button className="btn btn-sm btn-outline-info mt-2" onClick={() => {
+                    {!isCurrentVersion && isSelected && (<button className="btn btn-sm btn-outline-primary mt-2" onClick={() => {
                       confirm({ message: translate('cms.revisions.delete_sentence') })
                         .then((ok) => {
                           if (ok) {

@@ -59,7 +59,7 @@ export const TeamApiKeys = () => {
                 className="btn btn-sm btn-access-negative"
               >
                 <i className="fas fa-eye me-1" />
-                <Translation i18nkey="Api keys">Api keys</Translation>
+                <Translation i18nkey="Api key" plural={true}>Api keys</Translation>
               </Link>
             </div>
           )
