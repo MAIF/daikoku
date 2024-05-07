@@ -13,8 +13,6 @@ import {
   isError
 } from '../../../types';
 import { api as API, CanIDoAction, manage, Spinner, teamGQLToSimple } from '../../utils';
-import { GlobalContext } from '../../../contexts/globalContext';
-import { ModalContext } from "../../../contexts";
 import { ApiList } from './ApiList';
 
 export const MyHome = () => {
