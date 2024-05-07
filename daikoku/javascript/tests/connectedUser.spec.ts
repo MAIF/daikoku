@@ -437,7 +437,7 @@ test('Filter API List', async ({page, request}) => {
   await page.locator('div').filter({ hasText: /^Testersoption test, selected\.testSearch a category$/ }).locator('svg').nth(4).click();
   await page.getByRole('option', { name: 'internal' }).click();
   await expect(page.locator('.preview')).toContainText('1 result matching test categorized in internal tagged test produced by Testers');
-  await page.locator('.category__selector > .reactSelect__control > .reactSelect__indicators > div:nth-child(3) > .css-tj5bde-Svg').click();
+  await page.locator('.category__selector > .reactSelect__control > .reactSelect__value-container > .reactSelect__input-container').click();
   await page.getByRole('option', { name: 'external' }).click();
   await expect(page.locator('.preview')).toContainText('0 result matching test categorized in external tagged test produced by Testers');
   await page.getByText('clear filter').click();
