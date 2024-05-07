@@ -1,6 +1,7 @@
 import React, {useContext, useEffect, useState} from 'react';
 import { useDaikokuBackOffice } from '../../../contexts';
 import {I18nContext} from "../../../contexts/i18n-context";
+import {toast} from "sonner";
 import {Can, daikoku, manage} from "../../utils";
 import {BooleanInput} from "@maif/react-forms";
 import * as Services from '../../../services';
@@ -27,7 +28,6 @@ export const AnonymousReporting = () => {
   } else {
       toast.error(translate("anonymous.reporting.error"))
       setIsAnonEnabled(!value)
-
     }
   }
 
