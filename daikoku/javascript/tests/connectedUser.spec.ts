@@ -175,7 +175,6 @@ test('Create & manage API', async ({ page }) => {
   await page.getByRole('button', { name: 'Accept' }).click();
   await page.waitForResponse(r => r.url().includes('/accept') && r.status() === 200)
   // await page.goto('http://localhost:9000/notifications#');
-  //FIXME ???
   await page.goto('http://localhost:1080/');
 
   await page.locator('div').filter({ hasText: /^validation@foo\.bar$/ }).waitFor({ state: 'visible' })
