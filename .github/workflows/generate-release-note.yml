@@ -16,7 +16,7 @@ jobs:
           OUTPUT_FOLDER: temp_release_notes
           USE_MILESTONE_TITLE: "true"
       - name: text replace
-        uses: BjornLuG/substitute-string-action@v1
+        uses: bluwy/substitute-string-action@v3
         id: sub
         with:
           _input-file: temp_release_notes/${{ github.event.milestone.title }}.md
