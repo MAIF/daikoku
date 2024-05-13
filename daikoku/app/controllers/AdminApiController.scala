@@ -144,38 +144,58 @@ class StateController(
         }
       }
     }
-  def getAnonymousState: Action[AnyContent] = DaikokuAction.async { ctx =>
-    DaikokuAdminOnly(
-      AuditTrailEvent(s"@{user.name} has accessed state of anonymous reporting")
-    )(ctx) {
-      env.dataStore.reportsInfoRepo.findAll()
-        .map(info => {
-          val date: Long = info.headOption.flatMap(_.date).getOrElse(DateTime.now().getMillis)
-          Ok(Json.obj(
-            "activated" -> info.headOption.exists(_.activated),
-            "id" -> info.headOption.map(_.id.asJson).getOrElse(JsNull).as[JsValue],
-            "date" -> date,
-            "message" -> "info fetched correctly"
-          ))
-        }
-      )
+  def getAnonymousState: Action[AnyContent] =
+    DaikokuAction.async { ctx =>
+      DaikokuAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has accessed state of anonymous reporting"
+        )
+      )(ctx) {
+        env.dataStore.reportsInfoRepo
+          .findAll()
+          .map(info => {
+            val date: Long = info.headOption
+              .flatMap(_.date)
+              .getOrElse(DateTime.now().getMillis)
+            Ok(
+              Json.obj(
+                "activated" -> info.headOption.exists(_.activated),
+                "id" -> info.headOption
+                  .map(_.id.asJson)
+                  .getOrElse(JsNull)
+                  .as[JsValue],
+                "date" -> date,
+                "message" -> "info fetched correctly"
+              )
+            )
+          })
+      }
     }
-  }
 
-  def updateAnonymousState(): Action[JsValue] = DaikokuAction.async(parse.json) { ctx =>
-    DaikokuAdminOnly(
-      AuditTrailEvent(s"@{user.name} has set anonymous reporting to ${ctx.request.body}")
-    )(ctx) {
-      val body = ctx.request.body.as[JsObject]
-      for {
-        maybeDate <- env.dataStore.reportsInfoRepo.findAll().map(info => info.head.date)
-        _ <- env.dataStore.reportsInfoRepo.save(ReportsInfo(DatastoreId((body \ "id").as[String]), (body \ "value").as[Boolean], (body \ "currentDate").asOpt[Long] match {
-          case Some(value) => Some(value)
-          case None => maybeDate
-        }))
-      } yield (Ok(Json.obj("message" -> "anonymous reporting updated")))
+  def updateAnonymousState(): Action[JsValue] =
+    DaikokuAction.async(parse.json) { ctx =>
+      DaikokuAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has set anonymous reporting to ${ctx.request.body}"
+        )
+      )(ctx) {
+        val body = ctx.request.body.as[JsObject]
+        for {
+          maybeDate <-
+            env.dataStore.reportsInfoRepo.findAll().map(info => info.head.date)
+          _ <- env.dataStore.reportsInfoRepo.save(
+            ReportsInfo(
+              DatastoreId((body \ "id").as[String]),
+              (body \ "value").as[Boolean],
+              (body \ "currentDate").asOpt[Long] match {
+                case Some(value) => Some(value)
+                case None        => maybeDate
+              }
+            )
+          )
+        } yield (Ok(Json.obj("message" -> "anonymous reporting updated")))
+      }
     }
-  }
 
   private def removeAllUserSessions(ctx: DaikokuActionContext[AnyContent]) = {
     env.dataStore.userSessionRepo

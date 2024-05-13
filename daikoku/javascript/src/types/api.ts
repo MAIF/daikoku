@@ -53,9 +53,8 @@ export interface IIssuesTag {
   color: string;
 }
 
-
 export interface IApiWithTeam extends IBaseApi {
-  team: ITeamFullGql
+  team: ITeamFullGql;
 }
 
 export interface IApi extends IBaseApi, IWithSwagger {
@@ -70,7 +69,8 @@ export interface IApi extends IBaseApi, IWithSwagger {
   }>;
 }*/
 
-export interface IApiWithAuthorization {  api: IApiWithTeam;
+export interface IApiWithAuthorization {
+  api: IApiWithTeam;
   authorizations: Array<{
     team: string;
     authorized: boolean;

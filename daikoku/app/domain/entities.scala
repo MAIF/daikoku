@@ -155,9 +155,9 @@ case class Evolution(
 }
 
 case class ReportsInfo(
-                        id: DatastoreId,
-                        activated: Boolean,
-                        date: Option[Long] = None,
-  ) extends CanJson[ReportsInfo] {
+    id: DatastoreId,
+    activated: Boolean,
+    date: Option[Long] = None
+) extends CanJson[ReportsInfo] {
   override def asJson: JsValue = json.ReportsInfoFormat.writes(this)
 }

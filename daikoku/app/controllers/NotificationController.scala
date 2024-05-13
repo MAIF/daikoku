@@ -5,7 +5,11 @@ import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
@@ -15,7 +19,12 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{ApiService, Translator}
 import play.api.i18n.I18nSupport
 import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
-import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Result}
+import play.api.mvc.{
+  AbstractController,
+  AnyContent,
+  ControllerComponents,
+  Result
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -476,27 +485,41 @@ class NotificationController(
               }
           case ApiSubscriptionDemand(api, _, team, demand, step, _, _) =>
             for {
-              _ <- apiService.declineSubscriptionDemand(
+              _ <-
+                apiService
+                  .declineSubscriptionDemand(
                     ctx.tenant,
                     demand,
                     step,
                     ctx.user.asNotificationSender,
                     maybeMessage
-                  ).value
-              team <- env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(team)
-              maybeApi <- env.dataStore.apiRepo
+                  )
+                  .value
+              team <-
+                env.dataStore.teamRepo
+                  .forTenant(ctx.tenant)
+                  .findByIdNotDeleted(team)
+              maybeApi <-
+                env.dataStore.apiRepo
                   .forTenant(ctx.tenant.id)
                   .findByIdNotDeleted(api)
-              maybeDemand <- env.dataStore.subscriptionDemandRepo
-                .forTenant(ctx.tenant)
-                .findByIdNotDeleted(demand)
-              unknownUser <- translator.translate("unrecognized.team", ctx.tenant)
+              maybeDemand <-
+                env.dataStore.subscriptionDemandRepo
+                  .forTenant(ctx.tenant)
+                  .findByIdNotDeleted(demand)
+              unknownUser <-
+                translator.translate("unrecognized.team", ctx.tenant)
               maybeUser <- maybeDemand match {
-                case Some(d) => env.dataStore.userRepo.findByIdNotDeleted(d.from).map(_.map(_.name))
+                case Some(d) =>
+                  env.dataStore.userRepo
+                    .findByIdNotDeleted(d.from)
+                    .map(_.map(_.name))
                 case None => FastFuture.successful(Some(unknownUser))
               }
-              unrecognizedApi <- translator.translate("unrecognized.api", ctx.tenant)
-              unrecognizedTeam <- translator.translate("unrecognized.team", ctx.tenant)
+              unrecognizedApi <-
+                translator.translate("unrecognized.api", ctx.tenant)
+              unrecognizedTeam <-
+                translator.translate("unrecognized.team", ctx.tenant)
               body <- translator.translate(
                 "mail.api.subscription.rejection.body",
                 ctx.tenant,

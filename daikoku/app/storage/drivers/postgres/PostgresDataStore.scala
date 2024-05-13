@@ -960,8 +960,8 @@ class PostgresPasswordResetRepo(env: Env, reactivePg: ReactivePg)
   override def extractId(value: PasswordReset): String = value.id.value
 }
 class PostgresReportsInfoRepo(env: Env, reactivePg: ReactivePg)
-  extends PostgresRepo[ReportsInfo, DatastoreId](env, reactivePg)
-  with ReportsInfoRepo {
+    extends PostgresRepo[ReportsInfo, DatastoreId](env, reactivePg)
+    with ReportsInfoRepo {
   override def tableName: String = "reports_info"
 
   override def format: Format[ReportsInfo] = json.ReportsInfoFormat

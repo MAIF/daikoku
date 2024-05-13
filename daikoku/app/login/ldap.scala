@@ -393,7 +393,9 @@ object LdapSupport {
                     }
                 )
               } else if (
-                ldapConfig.groupFilter.forall(_ => usersInGroup.map(stripAccents).contains(stripAccents(dn)))
+                ldapConfig.groupFilter.forall(_ =>
+                  usersInGroup.map(stripAccents).contains(stripAccents(dn))
+                )
               ) {
                 getInitialDirContext(dn, password, url)
                   .close()

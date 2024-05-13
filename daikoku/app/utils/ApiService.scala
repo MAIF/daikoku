@@ -1829,7 +1829,9 @@ class ApiService(
             demandTeam <- EitherT.fromOptionF[Future, AppError, Team](
               env.dataStore.teamRepo
                 .forTenant(tenant.id)
-                .findByIdNotDeleted(demand.team), AppError.TeamNotFound)
+                .findByIdNotDeleted(demand.team),
+              AppError.TeamNotFound
+            )
             _ <- EitherT.liftF(
               Future.sequence((administrators ++ Seq(from)).map(admin => {
                 implicit val language: String = admin.defaultLanguage
@@ -1843,7 +1845,10 @@ class ApiService(
                     Map(
                       "user" -> from.name,
                       "apiName" -> api.name,
-                      "link" -> env.getDaikokuUrl(tenant, s"/${team.humanReadableId}/settings/apikeys/${api.humanReadableId}/${api.currentVersion.value}"), //todo => better url
+                      "link" -> env.getDaikokuUrl(
+                        tenant,
+                        s"/${team.humanReadableId}/settings/apikeys/${api.humanReadableId}/${api.currentVersion.value}"
+                      ), //todo => better url
                       "team" -> demandTeam.name
                     )
                   )
@@ -2202,8 +2207,7 @@ class ApiService(
           implicit val language: String = admin.defaultLanguage
             .getOrElse(tenant.defaultLanguage.getOrElse("en"))
           (for {
-            title <-
-              translator.translate("mail.rejection.title", tenant)
+            title <- translator.translate("mail.rejection.title", tenant)
             body <- translator.translate(
               "mail.api.subscription.rejection.body",
               tenant,
@@ -2211,7 +2215,7 @@ class ApiService(
                 "user" -> from.name,
                 "apiName" -> api.name,
                 "team" -> team.name,
-                "message" -> maybeMessage.getOrElse(""),
+                "message" -> maybeMessage.getOrElse("")
               )
             )
           } yield {

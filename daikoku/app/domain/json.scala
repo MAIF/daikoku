@@ -4340,11 +4340,13 @@ object json {
     new Format[ReportsInfo] {
       override def reads(json: JsValue): JsResult[ReportsInfo] =
         Try {
-          JsSuccess(ReportsInfo(
-            (json \ "_id").as(DatastoreIdFormat),
-            (json \ "activated").as[Boolean],
-            (json \ "date").asOpt[Long]
-          ))
+          JsSuccess(
+            ReportsInfo(
+              (json \ "_id").as(DatastoreIdFormat),
+              (json \ "activated").as[Boolean],
+              (json \ "date").asOpt[Long]
+            )
+          )
         } recover {
           case e => JsError(e.getMessage)
         } get

@@ -170,7 +170,14 @@ class HomeController(
           Ok.withHeaders(
             "Otoroshi-Health-Check-Logic-Test-Result" -> (value.toLong + 42L).toString
           )
-        case None => Ok(Json.obj("tenantMode" -> ctx.tenant.tenantMode.getOrElse(TenantMode.Default).name))
+        case None =>
+          Ok(
+            Json.obj(
+              "tenantMode" -> ctx.tenant.tenantMode
+                .getOrElse(TenantMode.Default)
+                .name
+            )
+          )
       }
     }
 
