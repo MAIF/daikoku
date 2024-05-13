@@ -4343,7 +4343,7 @@ object json {
           JsSuccess(ReportsInfo(
             (json \ "_id").as(DatastoreIdFormat),
             (json \ "activated").as[Boolean],
-            (json \ "date").asOpt[Double]
+            (json \ "date").asOpt[Long]
           ))
         } recover {
           case e => JsError(e.getMessage)

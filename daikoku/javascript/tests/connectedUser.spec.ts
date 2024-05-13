@@ -374,7 +374,7 @@ test('API admin can transfer his own API ownership', async ({ page }) => {
   await page.getByRole('link', { name: 'Daikoku home' }).click();
   await page.locator('h3').filter({ hasText: 'test API' }).waitFor({ state: 'visible' })
   await page.locator('small').filter({ hasText: 'Consumers' }).click();
-  await expect(page.locator('.preview')).toContainText('test API');
+  await expect(page.locator('h3')).toContainText('test API');
 });
 
 test('Filter API List', async ({page, request}) => {

@@ -18,6 +18,7 @@ import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
+import org.joda.time.DateTime
 import play.api.http.HttpEntity
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
@@ -148,7 +149,15 @@ class StateController(
       AuditTrailEvent(s"@{user.name} has accessed state of anonymous reporting")
     )(ctx) {
       env.dataStore.reportsInfoRepo.findAll()
-        .map(info => Ok(Json.obj("activated" -> info.head.activated, "id" -> info.head.id.value, "date" -> info.head.date, "message" -> "info fetched correctly"))
+        .map(info => {
+          val date: Long = info.headOption.flatMap(_.date).getOrElse(DateTime.now().getMillis)
+          Ok(Json.obj(
+            "activated" -> info.headOption.exists(_.activated),
+            "id" -> info.headOption.map(_.id.asJson).getOrElse(JsNull).as[JsValue],
+            "date" -> date,
+            "message" -> "info fetched correctly"
+          ))
+        }
       )
     }
   }
@@ -160,7 +169,7 @@ class StateController(
       val body = ctx.request.body.as[JsObject]
       for {
         maybeDate <- env.dataStore.reportsInfoRepo.findAll().map(info => info.head.date)
-        _ <- env.dataStore.reportsInfoRepo.save(ReportsInfo(DatastoreId((body \ "id").as[String]), (body \ "value").as[Boolean], (body \ "currentDate").asOpt[Double] match {
+        _ <- env.dataStore.reportsInfoRepo.save(ReportsInfo(DatastoreId((body \ "id").as[String]), (body \ "value").as[Boolean], (body \ "currentDate").asOpt[Long] match {
           case Some(value) => Some(value)
           case None => maybeDate
         }))
