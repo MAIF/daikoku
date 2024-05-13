@@ -31,9 +31,9 @@ Here are the different levels of permissions within a team:
 
 - **Daikoku Admin**: Users with this role have both Read (R) and Write (W) permissions, granting them complete control over all entities in the system, including tenants.
 
-- **Administrator**: Administrators have Read (R) permissions across the entire team, allowing them to view all entities, but they can only Write (W) to specific elements within the team. They cannot modify tenant-related settings.
+- **Administrator**: Administrators have Read (R) and Writes (W) permissions across their entire team, allowing them to view and write everything on that team.
 
-- **API Editor**: Users with this role have Read (R) permissions for all entities within the team, but they can only Write (W) to APIs. They cannot modify tenant settings or perform actions on subscriptions.
+- **API Editor**: Users with this role have Read (R) permissions for all entities within the team, but they can only Write (W) to APIs.
 
 - **User**: Users with this role have Read (R) permissions, which enable them to access certain functionalities like requesting subscriptions, viewing APIs, and checking their subscription details. However, they do not have Write (W) permissions and are restricted from performing any modifications.
 
@@ -48,6 +48,6 @@ For a more visual representation, you can refer to the following matrix:
 | Tenant     |      RW     |      R        |     R      |   R   |
 | Team       |      RW     |      RW       |     R      |   R   |
 | API        |      RW     |      RW       |     RW     |   R   |
-| Subscription |    RW     |      RW       |     -      |   R   |
+| Subscription |    RW     |      RW       |     R      |   R   |
 
 ---
