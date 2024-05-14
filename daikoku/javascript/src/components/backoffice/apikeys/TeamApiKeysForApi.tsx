@@ -373,7 +373,7 @@ const ApiKeyCard = ({
     "apikey"
   );
   const apiKeyValues = {
-    apikey: subscription.apiKey?.clientSecret,
+    apikey: `${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`,
     token: subscription.integrationToken,
     basicAuth: `Basic ${btoa(`${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`)}`,
   };
@@ -712,7 +712,7 @@ const ApiKeyCard = ({
                           disabled={!subscription.enabled}
                           className="form-control input-sm"
                           id={`client-id-${_id}`}
-                          value={apiKeyValues[activeTab]}
+                          value={subscription.apiKey?.clientId}
                         />
                       </div>
                     </div>
