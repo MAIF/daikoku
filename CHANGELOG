@@ -597,3 +597,9 @@ We'd like to thank all the contributors who worked on this release!
 
 - Documentation about team admin rights could be fuzzy [#676](https://github.com/MAIF/daikoku/issues/676)
 
+## [v17.3.1] - 2024-05-15
+
+## :beetle: Bug Fixes
+
+- can't copy clientId from apiKey card [#695](https://github.com/MAIF/daikoku/issues/695)
+
