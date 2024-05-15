@@ -1,16 +1,15 @@
-import React, { useContext, useEffect, useState } from 'react';
+import { useQuery } from "@tanstack/react-query";
 import { Progress } from 'antd';
 import moment from 'moment';
+import { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
-
-import * as Services from '../../../services';
-import { BeautifulTitle, OtoroshiStatsVizualization } from '../..';
-import { Spinner, Can, read, stat } from '../../utils';
-import { I18nContext } from '../../../contexts';
-import { useTeamBackOffice } from '../../../contexts';
-import { useQuery } from "@tanstack/react-query";
-import { IState, ITeamSimple, ResponseError, isError } from "../../../types";
 import { toast } from 'sonner';
+
+import { BeautifulTitle, OtoroshiStatsVizualization } from '../..';
+import { I18nContext, useTeamBackOffice } from '../../../contexts';
+import * as Services from '../../../services';
+import { ITeamSimple, ResponseError, isError } from "../../../types";
+import { Can, Spinner, read, stat } from '../../utils';
 
 type QuotasProps = {
   currentTeam?: ITeamSimple | ResponseError,
@@ -52,31 +51,31 @@ const Quotas = (props: QuotasProps) => {
     return (
       <div className="col-12">
         <h5>{translate('Daily quotas consumed')}</h5>
-        <BeautifulTitle
+        {/* <BeautifulTitle
           title={translate({
             key: "daily.quotas.consumed.title",
             replacements: [(queryQuotas.data.authorizedCallsPerDay - queryQuotas.data.remainingCallsPerDay).toString(), queryQuotas.data.authorizedCallsPerDay.toString()]
-          })}>
+          })}> */}
           <Progress
             strokeColor={colorDaily}
             percent={Math.round(percentDaily)}
             status="active"
           />
-        </BeautifulTitle>
+        {/* </BeautifulTitle> */}
         <h5>
           {translate("Monthly quotas consumed")}
         </h5>
-        <BeautifulTitle
+        {/* <BeautifulTitle
           title={translate({
             key: "monthly.quotas.consumed.title",
             replacements: [(queryQuotas.data.authorizedCallsPerMonth - queryQuotas.data.remainingCallsPerMonth).toString(), queryQuotas.data.authorizedCallsPerMonth.toString()]
-          })}>
+          })}> */}
           <Progress
             strokeColor={colorMonthly}
             percent={Math.round(percentMontly)}
             status="active"
           />
-        </BeautifulTitle>
+        {/* </BeautifulTitle> */}
       </div>
     )
   } else {
@@ -200,7 +199,7 @@ export const TeamApiKeyConsumption = () => {
     return <></>;
   }
 
-  
+
 }
 
 const PlanInformations = (props: any) => {
