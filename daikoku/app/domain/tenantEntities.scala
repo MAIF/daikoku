@@ -60,7 +60,7 @@ case class DaikokuStyle(
   --body-bg-color: #fff;
   --body-text-color: #212529;
   --navbar-bg-color: #7f96af;
-  --navbar-brand-color: #fff;
+  --navbar-brand-color: #aaa;
   --menu-bg-color: #fff;
   --menu-text-color: #212529;
   --menu-text-hover-bg-color: #9bb0c5;
@@ -71,13 +71,15 @@ case class DaikokuStyle(
   --addContent-bg-color: #e9ecef;
   --addContent-text-color: #000;
   --sidebar-bg-color: #f8f9fa;
+  --sidebar-text-color: #aaa;
+
 
   --btn-bg-color: #fff;
   --btn-text-color: #495057;
   --btn-border-color: #97b0c7;
 
   --badge-tags-bg-color: #ffc107;
-  --badge-tags-bg-color: #ffe1a7;
+  --badge-tags-bg-hover-color: #ffe1a7;
   --badge-tags-text-color: #212529;
 
   --pagination-text-color: #586069;
