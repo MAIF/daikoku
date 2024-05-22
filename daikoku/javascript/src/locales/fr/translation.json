@@ -458,7 +458,7 @@
   "Delete plan": "Supprimer le plan",
   "Headers": "Headers",
   "Use swagger content": "Rédiger le contenu OpenAPI",
-  "swagger.additional.conf.label": "Configuration UI",
+  "swagger.additional.conf.label": "Configuration d'affichage de la specification d'API",
   "swagger.additional.conf.help": "Valeur optionnelle. voir https://redocly.com/docs/redoc/deployment/react/#optional---pass-options",
   "Auth. name": "Nom Auth.",
   "The auth. name in api swagger": "Le nom auth. dans le swagger API",

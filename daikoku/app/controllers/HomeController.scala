@@ -2,25 +2,14 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import com.github.blemale.scaffeine.{Cache, Scaffeine}
 import com.nimbusds.jose.util.StandardCharset
+import controllers.Assets
 import daikoku.BuildInfo
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuActionMaybeWithoutUserContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  DaikokuAdminOrSelf,
-  TenantAdminOnly
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{DaikokuAdminOrSelf, TenantAdminOnly}
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.sync.TeamMemberOnly
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  CmsFileFormat,
-  CmsPageFormat,
-  CmsRequestRenderingFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{CmsFileFormat, CmsPageFormat, CmsRequestRenderingFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator, diff_match_patch}
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -41,7 +30,8 @@ class HomeController(
     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
     DaikokuAction: DaikokuAction,
     env: Env,
-    cc: ControllerComponents
+    cc: ControllerComponents,
+    assets: Assets
 ) extends AbstractController(cc)
     with I18nSupport {
 
@@ -154,12 +144,12 @@ class HomeController(
 
   def index() =
     DaikokuActionMaybeWithoutUser.async { ctx =>
-      actualIndex(ctx)
+      assets.at("index.html").apply(ctx.request)
     }
 
   def indexWithPath(path: String) =
     DaikokuActionMaybeWithoutUser.async { ctx =>
-      actualIndex(ctx)
+      assets.at("index.html").apply(ctx.request)
     }
 
   def health() =

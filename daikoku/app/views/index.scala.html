@@ -13,7 +13,7 @@
     <link rel="stylesheet" media="screen" href="http://@host:3000/daikoku.css">
   } 
   @if(env.config.isProd) {
-    <link rel="stylesheet" media="screen" href="/assets/react-app/daikoku.min.css">
+    <link rel="stylesheet" href="/assets/javascripts/bundle/client.min.css">
   }
   @(tenant.moareStyle())
 }
@@ -29,17 +29,6 @@
     <script type="text/javascript" src="http://@host:3000/daikoku.js"></script>
   } 
   @if(env.config.isProd) {
-    <script type="text/javascript" src="/assets/react-app/daikoku.min.js"></script>
+    <script type="text/javascript" src="/assets/javascripts/bundle/client.min.js"></script>
   }
-  <script>
-    Daikoku.init(
-      @Html(play.api.libs.json.Json.prettyPrint(user.toUiPayload())),
-      @Html(play.api.libs.json.Json.prettyPrint(tenant.toUiPayload(env))),
-      @Html(play.api.libs.json.Json.prettyPrint(session.impersonatorJson())),
-      @Html(play.api.libs.json.Json.prettyPrint(session.asSimpleJson)),
-      '@(fr.maif.otoroshi.daikoku.ctrls.routes.LoginController.login(tenant.authProvider.name).url)',
-      @(isTenantAdmin),
-      @(apiCreationPermitted)
-    )
-  </script>
 }
