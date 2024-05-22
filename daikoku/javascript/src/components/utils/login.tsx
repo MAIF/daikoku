@@ -36,6 +36,8 @@ export function LoginPage(props: any) {
 
   const { loginError } = state;
 
+  console.debug("c'est la page de login")
+
   return (
     <div>
       <div className="login__container text-center">

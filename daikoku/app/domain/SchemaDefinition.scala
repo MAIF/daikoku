@@ -1709,6 +1709,10 @@ object SchemaDefinition {
           OptionType(JsonType),
           resolve = _.value.additionalConf
         )
+      ),
+      ReplaceField(
+        "specificationType",
+        Field("specificationType", StringType, resolve = _.value.specificationType.name)
       )
     )
     lazy val ApiDocumentationPageType = deriveObjectType[

@@ -3,7 +3,7 @@ import { RedocStandalone, SideNavStyleEnum } from 'redoc';
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
-import { ISwagger } from '../../../types';
+import { ISwagger, SpecificationType } from '../../../types';
 import { Option } from '../../utils/Option';
 
 type ApiRedocProps = {
@@ -34,6 +34,27 @@ export function ApiRedoc(props: ApiRedocProps) {
     })
     .getOrElse("openAPI")
 
+  const schema = `
+    asyncapi: '2.0.0'
+info:
+  title: Example
+  version: '0.1.0'
+channels:
+  example-channel:
+    subscribe:
+      message:
+        payload:
+          type: object
+          properties:
+            exampleField:
+              type: string
+            exampleNumber:
+              type: number
+            exampleDate:
+              type: string
+              format: date-time
+    `
+
   if (connectedUser.isGuest && tenant.apiReferenceHideForGuest) {
     openLoginOrRegisterModal({
       tenant,
@@ -41,7 +62,9 @@ export function ApiRedoc(props: ApiRedocProps) {
       message: translate('api_redoc.guest_user')
     })
     return <></>
-  } else {
+  } else if (!props.swaggerConf) {
+    return <></>
+  } else if (props.swaggerConf.specificationType === SpecificationType.openapi) {
     return <RedocStandalone specUrl={props.swaggerUrl} options={{ downloadFileName, pathInMiddlePanel: true, sideNavStyle: SideNavStyleEnum.PathOnly, ...(props.swaggerConf?.additionalConf || {}) }} />
   }
 }

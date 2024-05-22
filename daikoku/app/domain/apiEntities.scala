@@ -771,11 +771,25 @@ case class OtoroshiApiKey(
   override def asJson: JsValue = json.OtoroshiApiKeyFormat.writes(this)
 }
 
+sealed trait SpecificationType {
+  def name: String
+}
+
+object SpecificationType {
+  case object OpenApi extends SpecificationType {
+    def name: String = "openapi"
+  }
+  case object AsyncApi extends SpecificationType {
+    def name: String = "asyncapi"
+  }
+}
+
 case class SwaggerAccess(
     url: Option[String],
     content: Option[String] = None,
     headers: Map[String, String] = Map.empty[String, String],
-    additionalConf: Option[JsObject] = None
+    additionalConf: Option[JsObject] = None,
+    specificationType: SpecificationType = SpecificationType.OpenApi
 ) {
   def swaggerContent()(implicit
       ec: ExecutionContext,

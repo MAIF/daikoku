@@ -375,7 +375,7 @@
         "s": "Otoroshi",
         "p": "Otoroshis"
     },
-    "Swagger": "OpenAPI",
+    "Swagger": "Specification",
     "Testing": "Testing",
     "Small desc.": "Small desc.",
     "Current version": "Current version",
@@ -458,7 +458,7 @@
     "Delete plan": "Delete plan",
     "Headers": "Headers",
     "Use swagger content": "Write OpenAPI definition",
-    "swagger.additional.conf.label": "Redoc configuration",
+    "swagger.additional.conf.label": "UI configuration",
     "swagger.additional.conf.help": "Optional value. see https://redocly.com/docs/redoc/deployment/react/#optional---pass-options",
     "Auth. name": "Auth. name",
     "The auth. name in api swagger": "The auth. name in API swagger",

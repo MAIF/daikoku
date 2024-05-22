@@ -187,6 +187,17 @@ object json {
       )
   }
 
+  val SpecificationTypeFormat = new Format[SpecificationType] {
+    override def reads(json: JsValue): JsResult[SpecificationType] =
+      json.as[String] match {
+        case "openapi"  => JsSuccess(SpecificationType.OpenApi)
+        case "asyncapi"    => JsSuccess(SpecificationType.AsyncApi)
+        case str        => JsError(s"Bad specification type value: $str")
+      }
+
+    override def writes(o: SpecificationType): JsValue = JsString(o.name)
+  }
+
   val TestingFormat = new Format[Testing] {
     override def reads(json: JsValue): JsResult[Testing] =
       Try {
@@ -1801,7 +1812,10 @@ object json {
             headers = (json \ "headers")
               .asOpt[Map[String, String]]
               .getOrElse(Map.empty[String, String]),
-            additionalConf = (json \ "additionalConf").asOpt[JsObject]
+            additionalConf = (json \ "additionalConf").asOpt[JsObject],
+            specificationType = (json \ "specificationType")
+              .asOpt(SpecificationTypeFormat)
+              .getOrElse(SpecificationType.OpenApi)
           )
         )
       } recover {
@@ -1815,7 +1829,8 @@ object json {
         "url" -> o.url,
         "content" -> o.content,
         "headers" -> o.headers,
-        "additionalConf" -> o.additionalConf.getOrElse(JsNull).as[JsValue]
+        "additionalConf" -> o.additionalConf.getOrElse(JsNull).as[JsValue],
+        "specificationType" -> o.specificationType.name
       )
   }
   val ApiDocumentationPageFormat = new Format[ApiDocumentationPage] {
