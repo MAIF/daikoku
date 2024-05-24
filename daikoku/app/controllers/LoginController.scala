@@ -3,20 +3,8 @@ package fr.maif.otoroshi.daikoku.ctrls
 import cats.data.EitherT
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest,
-  DaikokuTenantAction,
-  DaikokuTenantActionContext
-}
-import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuTenantAction,
-  DaikokuTenantActionContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuTenantAction, DaikokuTenantActionContext}
+import controllers.{AppError, Assets}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
@@ -44,11 +32,12 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class LoginController(
     DaikokuAction: DaikokuAction,
-    DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+    DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
     DaikokuTenantAction: DaikokuTenantAction,
     env: Env,
     cc: ControllerComponents,
-    translator: Translator
+    translator: Translator,
+    assets: Assets
 ) extends AbstractController(cc) {
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
@@ -99,24 +88,38 @@ class LoginController(
                   )(ctx.request)
                 )
               case _ =>
-                FastFuture.successful(
-                  Ok(
-                    views.html.login(
-                      ctx.tenant.authProvider,
-                      ctx.tenant,
-                      ctx.request.domain,
-                      env,
-                      ctx.request.queryString
-                        .get("redirect")
-                        .flatMap(_.headOption)
-                    )
-                  )
-                )
+//                FastFuture.successful(
+//                  Ok(
+//                    views.html.login(
+//                      ctx.tenant.authProvider,
+//                      ctx.tenant,
+//                      ctx.request.domain,
+//                      env,
+//                      ctx.request.queryString
+//                        .get("redirect")
+//                        .flatMap(_.headOption)
+//                    )
+//                  )
+//                )
+
+                //FIXME: add query param with redirect
+
+                assets.at("index.html").apply(ctx.request)
             }
           }
         }
       }
     }
+
+  def loginContext(provider: String) =
+    DaikokuActionMaybeWithoutUser { _ =>
+      Ok(
+        Json.obj(
+          "action" -> fr.maif.otoroshi.daikoku.ctrls.routes.LoginController.login(provider).url
+        )
+      )
+    }
+
 
   def loginPage(provider: String) =
     DaikokuTenantAction.async { ctx =>
@@ -163,10 +166,8 @@ class LoginController(
                   s"redirect" -> redirect.getOrElse("/")
                 )
               )
-            case _ =>
-              FastFuture.successful(
-                Ok(views.html.login(p, ctx.tenant, ctx.request.domain, env))
-              )
+            case _ if env.config.isDev => FastFuture.successful(Redirect(s"${ctx.request.theProtocol}://${ctx.tenant.domain}:${env.config.exposedPort}/auth/${p.name}/login"))
+            case _ => assets.at("index.html").apply(ctx.request)
           }
       }
     }
@@ -422,7 +423,7 @@ class LoginController(
         .getOrElse(ctx.request.host)
       val redirect = ctx.request
         .getQueryString("redirect")
-        .getOrElse(s"${ctx.request.theProtocol}://$host/")
+        .getOrElse(s"${ctx.request.theProtocol}://${ctx.tenant.domain}:${env.config.exposedPort}/")
 
       AuthProvider(ctx.tenant.authProvider.name) match {
         case Some(AuthProvider.Otoroshi) =>
@@ -595,7 +596,8 @@ class LoginController(
             "The user creation has failed.",
             Results.BadRequest,
             ctx.request,
-            env = env
+            env = env,
+            tenant = ctx.tenant
           )
         case Some(id) =>
           env.dataStore.accountCreationRepo

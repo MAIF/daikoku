@@ -16,13 +16,10 @@ test.beforeEach(async () => {
     .then(() => fetch('http://localhost:1080/api/emails', {
       method: 'DELETE'
     }))
-})
+}) 
 
-//anonymous user - public tenant
-//follow invitation link
-//create account
 test('join a team as external user', async ({ page }) => {
-  await page.goto('http://localhost:9000/apis');
+  await page.goto('http://localhost:5173/apis');
   await expect(page.getByRole('heading', { name: 'public with permissions API' })).toBeHidden();
   await expect(page.getByRole('heading', { name: 'admin-api-tenant-default' })).toBeHidden();
   await expect(page.getByRole('heading', { name: 'test API' })).toBeVisible();
@@ -87,8 +84,8 @@ test('[Private tenant] - anonymous user automatically redirected', async ({ page
     ]
   })
 
-  await page.goto('http://localhost:9000/apis');
-  await page.waitForURL("http://localhost:9000/auth/Local/login");
+  await page.goto('http://localhost:5173/apis');
+  await page.waitForURL("http://localhost:5173/auth/Local/login");
   await expect(page.getByRole('heading', { name: 'Login to Evil Corp.' })).toBeVisible();
 
 })

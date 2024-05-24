@@ -82,6 +82,8 @@ export const GlobalContextProvider = (props: PropsWithChildren) => {
     return <Spinner /> //todo: get a real better loader who block & mask all the window
   }
 
+  console.debug({currentUserQuery})
+
   //todo: get a real better error displaying
   if (currentUserQuery.isError || isError(currentUserQuery.data) || !currentUserQuery.data) {
     return <div>Something's happened when fetching user informations</div>

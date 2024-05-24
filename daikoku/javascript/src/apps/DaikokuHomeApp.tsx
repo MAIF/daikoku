@@ -5,7 +5,6 @@ import { useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-router-dom';
 
-import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/frontend/unauthenticated';
 import { I18nContext } from '../contexts/i18n-context';
 import * as Services from '../services';
 import { IUserSimple } from '../types';
@@ -185,6 +184,8 @@ export const ResetPassword = () => {
   const [state, setState] = useState<'creation' | 'error' | 'done'>('creation');
   const [error, setError] = useState<string>();
 
+  const navigate = useNavigate();
+
   const schema = {
     email: {
       type: type.string,
@@ -284,8 +285,8 @@ export const ResetPassword = () => {
         footer={({ reset, valid }) => {
           return (
             <div className="d-flex justify-content-end">
-              <button className="btn btn-outline-danger m-3" onClick={reset}>
-                Cancel
+              <button className="btn btn-outline-danger m-3" onClick={() => navigate(-1)}>
+                {translate('Cancel')}
               </button>
               <button className="btn btn-outline-success m-3" onClick={valid}>
                 <span>
@@ -400,43 +401,5 @@ export const TwoFactorAuthentication = ({
         </>
       )}
     </div>
-  );
-};
-
-export const DaikokuHomeApp = (props: any) => {
-  const tenant = props.tenant;
-  const { translate } = useContext(I18nContext);
-
-  // FIXME: is there any usage of UnauthenticatedTopBar ?????????????
-  return (
-    <Router>
-      <div role="root-container" className="container-fluid">
-        <Routes>
-          <Route
-            path="*"
-            element={
-              <>
-                <UnauthenticatedTopBar />
-              </>
-            }
-          />
-        </Routes>
-        <Routes>
-          <Route path="/" element={<UnauthenticatedHome />} />
-        </Routes>
-        <Routes>
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/reset" element={<ResetPassword />} />
-          <Route
-            path="/2fa"
-            element={
-              <TwoFactorAuthentication
-                title={`${tenant.name} - ${translate('Verification code')}`}
-              />
-            }
-          />
-        </Routes>
-      </div>
-    </Router>
   );
 };

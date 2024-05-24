@@ -3,7 +3,7 @@ import { Navigate } from 'react-router';
 import { BrowserRouter, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
-import { Footer, SideBar } from '../components/utils';
+import { Footer, LoginPage, SideBar } from '../components/utils';
 import { ModalProvider, NavProvider } from '../contexts';
 
 import {
@@ -13,10 +13,7 @@ import {
   JoinTeam,
   MaybeHomePage,
   MyHome,
-  TeamHome,
-  UnauthenticatedFooter,
-  UnauthenticatedHome,
-  UnauthenticatedTopBar,
+  TeamHome
 } from '../components/frontend';
 
 import { MessagesProvider, MyProfile, NotificationList } from '../components/backoffice';
@@ -47,25 +44,22 @@ import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets
 import { FastMode } from "../components/frontend/fastMode/FastMode";
 import { GlobalContext } from '../contexts/globalContext';
 import { I18nContext } from '../contexts/i18n-context';
-import { SessionModal } from '../contexts/modals/SessionModal';
 import { MessagesEvents } from '../services/messages';
 import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
-import { ISession, IState, ITeamSimple, ITenant, IUserSimple } from '../types';
-import {AnonymousReporting} from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
+import { AnonymousReporting } from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
 
 export const DaikokuApp = () => {
-  const { connectedUser, session, tenant} = useContext(GlobalContext)
+  const { connectedUser, tenant } = useContext(GlobalContext)
+  const { translate } = useContext(I18nContext);
 
   useEffect(() => {
-    if (!connectedUser.isGuest) {
+    if (connectedUser && !connectedUser.isGuest) {
       MessagesEvents.start();
       return () => {
         MessagesEvents.stop();
       };
     }
   }, [connectedUser]);
-
-  const { translate } = useContext(I18nContext);
 
   if (!connectedUser) {
     return (
@@ -81,18 +75,29 @@ export const DaikokuApp = () => {
         >
           <Routes>
             <Route
-              path="/"
+              path="/auth/:provider/login"
               element={
-                <>
-                  <UnauthenticatedTopBar />
-                  <UnauthenticatedHome />
-                  <UnauthenticatedFooter />
-                </>
+                <LoginPage />
+              }
+            />
+            <Route
+              path="/reset"
+              element={
+                <UnauthenticatedRoute title={`${tenant.title} - ${translate('Reset password')}`}>
+                  <ResetPassword />
+                </UnauthenticatedRoute>
+              }
+            />
+            <Route
+              path="/signup"
+              element={
+                <UnauthenticatedRoute title={`${tenant.title} - ${translate('Signup')}`} >
+                  <Signup />
+                </UnauthenticatedRoute>
               }
             />
           </Routes>
         </div>
-        <SessionModal session={session} />
       </Router>
     );
   }
@@ -138,6 +143,12 @@ export const DaikokuApp = () => {
                       <UnauthenticatedRoute title={`${tenant.title} - ${translate('Signup')}`} >
                         <Signup />
                       </UnauthenticatedRoute>
+                    }
+                  />
+                  <Route
+                    path="/auth/:provider/login"
+                    element={
+                      <LoginPage />
                     }
                   />
                   <Route
@@ -288,14 +299,14 @@ export const DaikokuApp = () => {
                       <RouteWithTitle
                         title={`${tenant.title} - ${translate('Anonymous reporting')}`}
                       >
-                        <AnonymousReporting/>
+                        <AnonymousReporting />
                       </RouteWithTitle>
                     }
                   />
                   <Route
                     path="/settings/teams/:teamSettingId/members"
                     element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate({key: "Member", plural: true})}`}>
+                      <RouteWithTitle title={`${tenant.title} - ${translate({ key: "Member", plural: true })}`}>
                         <TeamMembersForAdmin />
                       </RouteWithTitle>
                     }
@@ -333,7 +344,7 @@ export const DaikokuApp = () => {
                           key: "fastMode.title.page",
                           replacements: [tenant.title || tenant.name]
                         })}>
-                        <FastMode/>
+                        <FastMode />
                       </RouteWithTitle>
                     }
                   />
@@ -431,7 +442,7 @@ const RouteWithTitle = (props: { title?: string, children: JSX.Element }) => {
 
 const UnauthenticatedRoute = (props: { children: JSX.Element, title: string }) => {
   const { connectedUser } = useContext(GlobalContext)
-  if (connectedUser._humanReadableId) {
+  if (connectedUser && connectedUser._humanReadableId) {
     return <Navigate to="/" />;
   }
 

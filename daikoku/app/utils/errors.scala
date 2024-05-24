@@ -1,12 +1,14 @@
 package fr.maif.otoroshi.daikoku.utils
 
+import diffson.PatchOps
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.login._
+import fr.maif.otoroshi.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import play.api.libs.json.Json
-import play.api.mvc.Results.Status
-import play.api.mvc.{RequestHeader, Result}
+import play.api.mvc.Results.{Redirect, Status}
+import play.api.mvc.{Request, RequestHeader, Result}
 
 import scala.concurrent.Future
 
@@ -43,25 +45,14 @@ object Errors {
       req: RequestHeader,
       maybeCauseId: Option[String] = None,
       env: Env,
-      tenant: Tenant = defaultTenant
+      tenant: Tenant
   ): Future[Result] = {
 
-    val accept =
-      req.headers.get("Accept").getOrElse("text/html").split(",").toSeq
+    val accept = req.headers.get("Accept").getOrElse("text/html").split(",").toSeq
 
-    if (accept.contains("text/html")) { // in a browser
+    if (accept.contains("text/html") && env.config.isDev) {
       FastFuture.successful(
-        status
-          .apply(
-            views.html.error(
-              message = message,
-              req.domain,
-              _env = env,
-              tenant = tenant,
-              loginLink = s"/auth/${tenant.authProvider}/login",
-              req.path
-            )
-          )
+        Redirect(s"${req.theProtocol}://${tenant.domain}:${env.config.exposedPort}/")
           .withHeaders(
             "x-error" -> "true",
             "x-error-msg" -> message
@@ -71,7 +62,12 @@ object Errors {
             //   .getOrElse("--")
           )
       )
-    } else {
+    } else if (accept.contains("text/html") && env.config.isProd) {
+      assets.at("index.html")
+        .apply(req)
+    }
+
+    else {
       FastFuture.successful(
         status
           .apply(Json.obj("error" -> message))

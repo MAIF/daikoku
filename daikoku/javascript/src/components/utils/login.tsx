@@ -1,9 +1,16 @@
-import React, { useContext, useState } from 'react';
+import React, { FormEvent, useContext, useEffect, useState } from 'react';
 import * as Services from '../../services/index';
 import { I18nContext } from '../../contexts';
+import { useParams, useSearchParams } from 'react-router-dom';
+import { GlobalContext } from '../../contexts/globalContext';
+import { isError } from '../../types';
 
-export function LoginPage(props: any) {
+export function LoginPage(props: {}) {
   const { Translation, translate } = useContext(I18nContext);
+  const { tenant } = useContext(GlobalContext);
+
+  const { provider } = useParams()
+  const [searchParams] = useSearchParams();
 
   const [state, setState] = useState<any>({
     username: '',
@@ -12,7 +19,9 @@ export function LoginPage(props: any) {
     loginError: null,
   });
 
-  const onChange = (e: any) => {
+  const [action, setAction] = useState<string>();
+
+  const onChange = (e) => {
     setState({
       ...state,
       [e.target.name]: e.target.value,
@@ -20,23 +29,33 @@ export function LoginPage(props: any) {
     });
   };
 
-  const submit = (e: any) => {
+  useEffect(() => {
+    Services.getAuthContext(provider!)
+      .then(context => {
+        if (!isError(context)) {
+          setAction(context.action)
+        }
+      })
+  }, [])
+
+
+  const submit = (e: FormEvent<HTMLElement>) => {
     e.preventDefault();
     const { username, password } = state;
 
-    Services.login(username, password, props.action, props.redirect).then((res) => {
-      if (res.status === 400)
-        setState({
-          ...state,
-          loginError: true,
+    if (action)
+      Services.login(username, password, action, searchParams.get('redirect'))
+        .then((res) => {
+          if (res.status === 400)
+            setState({
+              ...state,
+              loginError: true,
+            });
+          else if (res.redirected) window.location.href = res.url;
         });
-      else if (res.redirected) window.location.href = res.url;
-    });
   };
 
   const { loginError } = state;
-
-  console.debug("c'est la page de login")
 
   return (
     <div>
@@ -45,24 +64,24 @@ export function LoginPage(props: any) {
           <div className="col-sm-4">
             <img
               className="organisation__avatar"
-              src={props.tenant.logo || '/assets/images/daikoku.svg'}
+              src={tenant.logo || '/assets/images/daikoku.svg'}
               alt="avatar"
             />
           </div>
           <h3>
-            <Translation i18nkey="login.to.tenant" replacements={[props.tenant.name]}>
-              Login to {props.tenant.name}
+            <Translation i18nkey="login.to.tenant" replacements={[tenant.name]}>
+              Login to {tenant.name}
             </Translation>
           </h3>
         </div>
 
         <form
           className="form-horizontal text-start mx-auto"
-          method={props.method}
-          onSubmit={submit}
+          method="POST"
+          onSubmit={e => submit(e)}
           style={{ maxWidth: '448px' }}
         >
-          <input type="hidden" name="token" className="form-control" value={props.token} />
+          {/* <input type="hidden" name="token" className="form-control" value={props.token} /> */}
           {loginError && (
             <span className="alert alert-danger d-flex justify-content-center">
               <Translation i18nkey="login.failed">
@@ -78,7 +97,7 @@ export function LoginPage(props: any) {
               type="text"
               name="username"
               className="form-control"
-              value={props.username}
+              value={state.username}
               onChange={onChange}
             />
           </div>
@@ -90,7 +109,7 @@ export function LoginPage(props: any) {
               type="password"
               name="password"
               className="form-control"
-              value={props.password}
+              value={state.password}
               onChange={onChange}
             />
           </div>
@@ -99,7 +118,7 @@ export function LoginPage(props: any) {
               <Translation i18nkey="login.btn.label">Login</Translation>
             </button>
           </div>
-          {props.provider == 'Local' && (
+          {provider == 'Local' && (
             <div
               className="mb-3 p-3 text-center"
               style={{
@@ -109,9 +128,9 @@ export function LoginPage(props: any) {
             >
               <Translation
                 i18nkey="login_page.register_message"
-                replacements={[props.tenant.name]}
+                replacements={[tenant.name]}
               />
-              <a href="/signup">{' '}Create an account.</a>
+              <a href="/signup">Create an account.</a>
             </div>
           )}
           <div className="mb-3">

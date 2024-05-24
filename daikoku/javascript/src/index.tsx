@@ -1,15 +1,12 @@
-import { useContext } from 'react';
-
 import { ApolloClient, ApolloProvider, InMemoryCache } from '@apollo/client';
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import jQuery from 'jquery';
-import ReactDOM from 'react-dom';
+import { useContext } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Toaster } from 'sonner';
 
-import { DaikokuApp, DaikokuHomeApp } from './apps';
-import { LoginPage } from './components';
-import { GlobalContextProvider, GlobalContext } from './contexts/globalContext';
+import { DaikokuApp } from './apps';
+import { GlobalContext, GlobalContextProvider } from './contexts/globalContext';
 import { I18nProvider } from './contexts/i18n-context';
 
 import '@maif/react-forms/lib/index.css';
