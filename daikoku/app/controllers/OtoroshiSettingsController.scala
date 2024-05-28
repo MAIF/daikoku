@@ -269,7 +269,8 @@ class OtoroshiSettingsController(
               .getServiceGroups()(settings)
               .map { groups =>
                 team.authorizedOtoroshiEntities match {
-                  case Some(authorizedEntities) if authorizedEntities.nonEmpty =>
+                  case Some(authorizedEntities)
+                      if authorizedEntities.nonEmpty =>
                     authorizedEntities
                       .find(x => x.otoroshiSettingsId.value == oto) match {
                       case Some(entities) =>
@@ -333,7 +334,8 @@ class OtoroshiSettingsController(
               .getServices()(settings)
               .map { services =>
                 team.authorizedOtoroshiEntities match {
-                  case Some(authorizedEntities) if authorizedEntities.nonEmpty =>
+                  case Some(authorizedEntities)
+                      if authorizedEntities.nonEmpty =>
                     authorizedEntities
                       .find(x => x.otoroshiSettingsId.value == oto) match {
                       case Some(entities) =>
@@ -374,7 +376,8 @@ class OtoroshiSettingsController(
               .getRoutes()(settings)
               .map { routes =>
                 team.authorizedOtoroshiEntities match {
-                  case Some(authorizedEntities) if authorizedEntities.nonEmpty =>
+                  case Some(authorizedEntities)
+                      if authorizedEntities.nonEmpty =>
                     authorizedEntities
                       .find(x => x.otoroshiSettingsId.value == oto) match {
                       case Some(entities) =>
