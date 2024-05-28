@@ -80,7 +80,7 @@ class OtoroshiSettingsController(
             )
           )(team, ctx) { team =>
             team.authorizedOtoroshiEntities match {
-              case Some(authorizedEntities) =>
+              case Some(authorizedEntities) if authorizedEntities.nonEmpty =>
                 Ok(
                   JsArray(
                     ctx.tenant.otoroshiSettings
@@ -93,7 +93,7 @@ class OtoroshiSettingsController(
                       .toSeq
                   )
                 ).future
-              case None =>
+              case _ =>
                 Ok(
                   JsArray(
                     ctx.tenant.otoroshiSettings.map(_.toUiPayload()).toSeq
@@ -269,7 +269,7 @@ class OtoroshiSettingsController(
               .getServiceGroups()(settings)
               .map { groups =>
                 team.authorizedOtoroshiEntities match {
-                  case Some(authorizedEntities) =>
+                  case Some(authorizedEntities) if authorizedEntities.nonEmpty =>
                     authorizedEntities
                       .find(x => x.otoroshiSettingsId.value == oto) match {
                       case Some(entities) =>
@@ -283,7 +283,7 @@ class OtoroshiSettingsController(
                           Json.obj("error" -> s"Settings $oto not found")
                         )
                     }
-                  case None => Ok(groups)
+                  case _ => Ok(groups)
                 }
               }
               .recover {
@@ -333,7 +333,7 @@ class OtoroshiSettingsController(
               .getServices()(settings)
               .map { services =>
                 team.authorizedOtoroshiEntities match {
-                  case Some(authorizedEntities) =>
+                  case Some(authorizedEntities) if authorizedEntities.nonEmpty =>
                     authorizedEntities
                       .find(x => x.otoroshiSettingsId.value == oto) match {
                       case Some(entities) =>
@@ -347,7 +347,7 @@ class OtoroshiSettingsController(
                           Json.obj("error" -> s"Settings $oto not found")
                         )
                     }
-                  case None => Ok(services)
+                  case _ => Ok(services)
                 }
               }
               .recover {
@@ -374,7 +374,7 @@ class OtoroshiSettingsController(
               .getRoutes()(settings)
               .map { routes =>
                 team.authorizedOtoroshiEntities match {
-                  case Some(authorizedEntities) =>
+                  case Some(authorizedEntities) if authorizedEntities.nonEmpty =>
                     authorizedEntities
                       .find(x => x.otoroshiSettingsId.value == oto) match {
                       case Some(entities) =>
@@ -388,7 +388,7 @@ class OtoroshiSettingsController(
                           Json.obj("error" -> s"Settings $oto not found")
                         )
                     }
-                  case None => Ok(routes)
+                  case _ => Ok(routes)
                 }
               }
               .recover {

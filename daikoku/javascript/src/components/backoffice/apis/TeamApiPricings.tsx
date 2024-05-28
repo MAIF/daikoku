@@ -918,6 +918,7 @@ export const TeamApiPricings = (props: Props) => {
               disabled: !creation && !!planForEdition?.otoroshiTarget?.otoroshiSettings,
               label: translate('Otoroshi instances'),
               optionsFrom: Services.allSimpleOtoroshis(props.tenant._id, props.currentTeam)
+                .then(r => {console.log({r}); return r})
                 .then(r => isError(r) ? [] : r),
               transformer: (s: IOtoroshiSettings) => ({
                 label: s.url,
@@ -1346,6 +1347,7 @@ export const TeamApiPricings = (props: Props) => {
               initial="info"
               creation={creation}
               save={savePlan}
+              currentTeam={props.currentTeam}
               labels={{
                 previous: translate('Previous'),
                 skip: translate('Skip'),

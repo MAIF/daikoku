@@ -77,6 +77,7 @@ export const TeamApiInfos = ({
         initial="info"
         creation={creation}
         save={save}
+        currentTeam={team}
         labels={{
           previous: translate('Previous'),
           skip: translate('Skip'),
@@ -93,6 +94,7 @@ export const TeamApiInfos = ({
       initial="info"
       creation={creation}
       save={save}
+      currentTeam={team}
       labels={{
         previous: translate('Previous'),
         skip: translate('Skip'),

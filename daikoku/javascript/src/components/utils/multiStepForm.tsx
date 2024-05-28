@@ -8,6 +8,7 @@ import { assign, createMachine } from 'xstate';
 const { Step } = Steps;
 
 import { Option, Spinner } from '../utils';
+import { ITeamSimple } from '../../types';
 
 const customDot = (dot, {
   status,
@@ -41,7 +42,8 @@ export const MultiStepForm = <T extends object>({
   creation = false,
   getBreadcrumb,
   save,
-  labels
+  labels,
+  currentTeam
 }: {
   value?: T,
   steps: Array<IMultistepsformStep<T>>,
@@ -49,7 +51,8 @@ export const MultiStepForm = <T extends object>({
   creation: boolean,
   getBreadcrumb?: (value?: T, element?: JSX.Element) => any,
   save: (x: T) => Promise<any>,
-  labels: any
+  labels: any,
+  currentTeam?: ITeamSimple
 }) => {
   const ref = useRef<FormRef>();
 
@@ -246,6 +249,7 @@ export const MultiStepForm = <T extends object>({
               send('NEXT', { value })
             }}
             component={step.component}
+            currentTeam={currentTeam}
           />
         )}
         {step.schema && (
@@ -305,7 +309,8 @@ const ComponentedForm = ({
   value,
   valid,
   component,
-  reference
+  reference,
+  currentTeam
 }) => {
   return (
     <div className="d-flex flex-column flex-grow-1">
@@ -313,6 +318,7 @@ const ComponentedForm = ({
         value,
         onChange: (x) => valid(x),
         reference,
+        currentTeam
       })}
     </div>
   );
