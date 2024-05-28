@@ -603,3 +603,9 @@ We'd like to thank all the contributors who worked on this release!
 
 - can't copy clientId from apiKey card [#695](https://github.com/MAIF/daikoku/issues/695)
 
+## [v17.3.2] - 2024-05-28
+
+## :beetle: Bug Fixes
+
+- Create testing key with otorshi is broken [#698](https://github.com/MAIF/daikoku/issues/698)
+
