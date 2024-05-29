@@ -25,6 +25,17 @@ exports.default = (0, vite_1.defineConfig)({
             plugins: [(0, rollup_plugin_visualizer_1.visualizer)()],
             input: {
                 index: (0, path_1.resolve)(__dirname, 'index.html'),
+            },
+            output: {
+                assetFileNames: (assetInfo) => {
+                    let extType = assetInfo.name.split('.').at(1);
+                    if (/png|jpe?g|svg|gif|tiff|bmp|ico/i.test(extType)) {
+                        extType = 'img';
+                    }
+                    return `assets/assets/[name]-[hash][extname]`;
+                },
+                chunkFileNames: 'assets/assets/[name]-[hash].js',
+                entryFileNames: 'assets/assets/[name]-[hash].js',
             }
         },
         minify: "terser",

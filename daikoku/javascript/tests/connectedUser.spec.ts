@@ -124,8 +124,6 @@ const newApiUsagePlan = {
 
 const exposedPort = process.env.EXPOSED_PORT || 5173
 
-console.log(exposedPort)
-
 const adminApikeyId = 'admin_key_client_id';
 const adminApikeySecret = 'admin_key_client_secret';
 
@@ -163,7 +161,7 @@ test('Create & manage API', async ({ page }) => {
     height: 1080,
   });
   //connection with admin
-  await page.goto('http://localhost:${exposedPort}/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');

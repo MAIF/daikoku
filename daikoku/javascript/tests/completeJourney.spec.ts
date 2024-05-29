@@ -15,9 +15,11 @@ test.beforeEach(async ({page}) => {
   .then(r => console.log({r}));
 })
 
+const exposedPort = process.env.EXPOSED_PORT || 5173
+
 test('test a complete user journey', async ({ page }) => {
   //connection
-  await page.goto('http://localhost:5173/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('user@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -131,7 +133,7 @@ test('test a complete user journey', async ({ page }) => {
   //todo: wait subscription ok
   await page.waitForResponse(r => r.url().includes('/_subscribe') && r.status() === 200)
  
-  await page.goto('http://localhost:5173/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('heading', { name: 'second test api' }).click();
   // await page.getByText('Documentation').click();
   // await expect(page.getByRole('listitem')).toContainText('Usage');

@@ -29,3 +29,6 @@ cli/cms
 cli/cms2
 cli/testcms
 cli/coucou
+/public/assets/
+/public/index.html
+stats.html

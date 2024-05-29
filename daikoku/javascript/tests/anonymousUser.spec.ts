@@ -3,6 +3,8 @@ import { test, expect } from '@playwright/test';
 const adminApikeyId = 'admin_key_client_id';
 const adminApikeySecret = 'admin_key_client_secret';
 
+const exposedPort = process.env.EXPOSED_PORT || 5173
+
 test.beforeEach(async () => {
   console.log(`Running ${test.info().title}`);
   await fetch('http://localhost:9000/admin-api/state/reset', {
@@ -19,7 +21,7 @@ test.beforeEach(async () => {
 }) 
 
 test('join a team as external user', async ({ page }) => {
-  await page.goto('http://localhost:5173/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await expect(page.getByRole('heading', { name: 'public with permissions API' })).toBeHidden();
   await expect(page.getByRole('heading', { name: 'admin-api-tenant-default' })).toBeHidden();
   await expect(page.getByRole('heading', { name: 'test API' })).toBeVisible();
@@ -84,8 +86,8 @@ test('[Private tenant] - anonymous user automatically redirected', async ({ page
     ]
   })
 
-  await page.goto('http://localhost:5173/apis');
-  await page.waitForURL("http://localhost:5173/auth/Local/login");
+  await page.goto(`http://localhost:${exposedPort}/apis`);
+  await page.waitForURL(`http://localhost:${exposedPort}/auth/Local/login`);
   await expect(page.getByRole('heading', { name: 'Login to Evil Corp.' })).toBeVisible();
 
 })
