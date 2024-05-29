@@ -27,11 +27,11 @@ export const TenantStyleEdit = () => {
 
   const [state, setState] = useState<any>({
     tenant: null,
-    style: [...styleVariables.matchAll(regexp)].map((item) => ({
-      value: item[1],
-      defaultColor: item[2],
-      group: item[3],
-    })),
+    // style: [...styleVariables.matchAll(regexp)].map((item) => ({
+    //   value: item[1],
+    //   defaultColor: item[2],
+    //   group: item[3],
+    // })),
     preview: false,
   });
 

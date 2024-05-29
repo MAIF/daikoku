@@ -180,7 +180,7 @@ export const AdminMessages = () => {
         const maxDate = Option(maxMessage)
           .map((m: any) => moment(m.date))
           .getOrElse(moment());
-        const unreadCount = messages.filter((m: any) => !m.readBy.includes(connectedUser._id)).length;
+        const unreadCount = messages.filter((m: any) => !m.readBy.includes(connectedUser?._id)).length;
         return { chat, user, messages, unreadCount, maxDate };
       }), ['unreadCount', 'maxDate', 'user.name'], ['desc', 'desc', 'asc']) //todo: maybe order
         .map(({ chat, user, messages, unreadCount, maxDate }, idx) => {
