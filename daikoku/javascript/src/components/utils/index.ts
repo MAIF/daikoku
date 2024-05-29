@@ -15,3 +15,4 @@ export * from './entities';
 export * from './function';
 export * from './multiStepForm';
 export * from './sidebar';
+export * from './Error';

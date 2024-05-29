@@ -71,7 +71,7 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: 'cd .. && sbt run -Ddaikoku.mode=test -Dhttp.port=9000 -Ddaikoku.storage=postgres -Ddaikoku.postgres.database=daikoku_test -Ddaikoku.postgres.user=postgres -Ddaikoku.init.data.from=javascript/tests/resources/daikoku-test-export.ndjson',
-    url: 'http://localhost:5173',
+    url: 'http://localhost:9000',
     reuseExistingServer: !process.env.CI,
   },
 });

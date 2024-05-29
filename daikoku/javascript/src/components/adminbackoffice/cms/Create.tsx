@@ -127,7 +127,6 @@ export const Create = (props: any) => {
     <div
       style={{
         height: '42px',
-        backgroundColor: '#fff',
         display: 'flex',
         alignItems: 'center',
         boxShadow: selected ? '0 1px 3px rgba(25,25,25,.5)' : 'none', //@ts-ignore //FIXME

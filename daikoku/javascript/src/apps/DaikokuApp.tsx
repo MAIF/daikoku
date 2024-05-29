@@ -1,6 +1,6 @@
 import { useContext, useEffect } from 'react';
 import { Navigate } from 'react-router';
-import { BrowserRouter, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, BrowserRouter as Router, Routes, createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
 import { Footer, LoginPage, SideBar } from '../components/utils';
@@ -39,7 +39,7 @@ import {
   UserEdit,
   UserList,
 } from '../components/adminbackoffice';
-
+import { Error } from '../components/utils';
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
 import { FastMode } from "../components/frontend/fastMode/FastMode";
 import { GlobalContext } from '../contexts/globalContext';
@@ -62,6 +62,29 @@ export const DaikokuApp = () => {
   }, [connectedUser]);
 
   if (!connectedUser) {
+    // const router = createBrowserRouter([
+    //   {
+    //     path: "/auth/:provider/login",
+    //     element: <UnauthenticatedRoute title={`${tenant.title} - ${translate('Login')}`}>
+    //       <LoginPage />
+    //     </UnauthenticatedRoute >
+    //   },
+    //   {
+    //     path: "/signup",
+    //     element: < UnauthenticatedRoute title={`${tenant.title} - ${translate('Signup')}`} >
+    //       <Signup />
+    //     </UnauthenticatedRoute >
+    //   },
+    //   {
+    //     path: '/error',
+    //     element: < Error />
+    //   }
+    // ])
+
+    // return <RouterProvider router={router} />
+
+
+
     return (
       <Router>
         <div
@@ -95,6 +118,16 @@ export const DaikokuApp = () => {
                   <Signup />
                 </UnauthenticatedRoute>
               }
+            />
+            <Route
+              path='/error'
+              element={
+                <Error />
+              }
+            />
+            <Route
+              path='*'
+              element={<Navigate to={`/auth/${tenant.authProvider}/login`} replace />}
             />
           </Routes>
         </div>

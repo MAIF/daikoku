@@ -39,7 +39,7 @@ test('Create & manage API', async ({ page }) => {
     height: 1080,
   });
   //connection with admin
-  await page.goto('http://localhost:9000/apis');
+  await page.goto('http://localhost:5173/apis');
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -242,7 +242,7 @@ test('aggregation mode', async ({ page, request }) => {
   })
 
   //login
-  await page.goto('http://localhost:9000/apis');
+  await page.goto('http://localhost:5173/apis');
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -320,7 +320,7 @@ test('Cascading deletion', async ({ page, request }) => {
  */
 test('do search', async ({ page, request }) => {
   //login
-  await page.goto('http://localhost:9000/apis');
+  await page.goto('http://localhost:5173/apis');
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -355,7 +355,7 @@ test('do search', async ({ page, request }) => {
 });
 
 test('API admin can transfer his own API ownership', async ({ page }) => {
-  await page.goto('http://localhost:9000/apis');
+  await page.goto('http://localhost:5173/apis');
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -397,7 +397,7 @@ test('Filter API List', async ({page, request}) => {
       .then(r => r.json())
       .then(r => console.log({r}));
 
-  await page.goto('http://localhost:9000/apis');
+  await page.goto('http://localhost:5173/apis');
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
