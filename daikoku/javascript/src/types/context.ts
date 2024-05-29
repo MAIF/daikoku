@@ -19,7 +19,7 @@ export interface IAuthContext {
 
 export interface IStateContext {
   impersonator?: IUserSimple;
-  connectedUser?: IUserSimple;
+  connectedUser: IUserSimple;
   tenant: ITenant;
   isTenantAdmin: boolean;
   apiCreationPermitted: boolean;

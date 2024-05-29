@@ -1,6 +1,130 @@
 import { test, expect } from '@playwright/test';
-import newApi from './resources/test_api_2.json';
-import newApiUsagePlan from './resources/test_api_2_usage_plan.json';
+
+const newApi = {
+  "_id": "Sn3qHxAzKHTgWstL5FatDAu8",
+  "_humanReadableId": "test-api-2",
+  "_tenant": "default",
+  "team": "5ffd5d30260100461a3cc730",
+  "_deleted": false,
+  "lastUpdate": 1610440269091,
+  "name": "test API 2",
+  "smallDescription": "A new test API for test",
+  "header": null,
+  "image": null,
+  "description": "# Title\n\n## subtitle\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.",
+  "currentVersion": "1.0.0",
+  "supportedVersions": [
+    "1.0.0"
+  ],
+  "testing": {
+    "enabled": true,
+    "auth": "Basic",
+    "name": "test auth",
+    "username": "client-id",
+    "password": "client-secret",
+    "config": null
+  },
+  "documentation": {
+    "_id": "5ffd5e4d260100461a3cc7b7",
+    "_tenant": "default",
+    "pages": [],
+    "lastModificationAt": 1610440269091
+  },
+  "swagger": {
+    "url": "/assets/swaggers/petstore.json",
+    "content": null,
+    "headers": {},
+    "additionalConf": null
+  },
+  "tags": [
+    "test"
+  ],
+  "categories": [
+    "internal"
+  ],
+  "visibility": "Public",
+  "possibleUsagePlans": [
+    "CXssdGGN875vZzpHLgkpaQ8v"
+  ],
+  "defaultUsagePlan": "CXssdGGN875vZzpHLgkpaQ8v",
+  "authorizedTeams": [],
+  "posts": [],
+  "issues": [],
+  "issuesTags": [],
+  "stars": 0,
+  "parent": null,
+  "isDefault": true,
+  "apis": null,
+  "state": "published"
+}
+
+const newApiUsagePlan = {
+  "_id": "CXssdGGN875vZzpHLgkpaQ8v",
+  "_tenant": "default",
+  "_deleted": false,
+  "maxPerSecond": 10,
+  "maxPerDay": 500,
+  "maxPerMonth": 10000,
+  "currency": {
+    "code": "EUR"
+  },
+  "billingDuration": {
+    "value": 1,
+    "unit": "Month"
+  },
+  "customName": "test plan",
+  "customDescription": "Free plan with limited number of calls per day and per month",
+  "otoroshiTarget": {
+    "otoroshiSettings": "default",
+    "authorizedEntities": {
+      "groups": [],
+      "services": [],
+      "routes": ["r_12346"]
+    },
+    "apikeyCustomization": {
+      "clientIdOnly": false,
+      "constrainedServicesOnly": false,
+      "readOnly": false,
+      "metadata": {},
+      "customMetadata": [],
+      "tags": [],
+      "restrictions": {
+        "enabled": false,
+        "allowLast": true,
+        "allowed": [],
+        "forbidden": [],
+        "notFound": []
+      }
+    }
+  },
+  "allowMultipleKeys": false,
+  "visibility": "Public",
+  "authorizedTeams": [],
+  "autoRotation": false,
+  "subscriptionProcess": [],
+  "integrationProcess": "ApiKey",
+  "aggregationApiKeysSecurity": true,
+  "testing": {
+    "enabled": false,
+    "auth": "Basic",
+    "name": null,
+    "username": null,
+    "password": null,
+    "config": null
+  },
+  "documentation": null,
+  "swagger": {
+    "url": null,
+    "content": null,
+    "headers": {},
+    "additionalConf": null
+  },
+  "type": "FreeWithQuotas"
+}
+
+const exposedPort = process.env.EXPOSED_PORT || 5173
+
+console.log(exposedPort)
 
 const adminApikeyId = 'admin_key_client_id';
 const adminApikeySecret = 'admin_key_client_secret';
@@ -39,7 +163,7 @@ test('Create & manage API', async ({ page }) => {
     height: 1080,
   });
   //connection with admin
-  await page.goto('http://localhost:5173/apis');
+  await page.goto('http://localhost:${exposedPort}/apis');
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -242,7 +366,7 @@ test('aggregation mode', async ({ page, request }) => {
   })
 
   //login
-  await page.goto('http://localhost:5173/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -320,7 +444,7 @@ test('Cascading deletion', async ({ page, request }) => {
  */
 test('do search', async ({ page, request }) => {
   //login
-  await page.goto('http://localhost:5173/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -355,7 +479,7 @@ test('do search', async ({ page, request }) => {
 });
 
 test('API admin can transfer his own API ownership', async ({ page }) => {
-  await page.goto('http://localhost:5173/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -397,7 +521,7 @@ test('Filter API List', async ({page, request}) => {
       .then(r => r.json())
       .then(r => console.log({r}));
 
-  await page.goto('http://localhost:5173/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
