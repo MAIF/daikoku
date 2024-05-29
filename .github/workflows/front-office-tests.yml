@@ -71,3 +71,4 @@ jobs:
         npx playwright test --project chromium
       env:
         CI: true
+        EXPOSED_PORT: 9000

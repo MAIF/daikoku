@@ -10,7 +10,7 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
     "lint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix",
     "dev": "vite",
-    "build": "tsc && vite build && mkdir -p ../public/assets && rm -rf ../public/assets/* && rm ../public/index.html &&  cp -r ./dist/* ../public/",
+    "build": "tsc && vite build && mkdir -p ../public/assets && rm -rf ../public/assets/* && rm ../public/index.html &&  cp -r ./dist/assets/* ../public/ && cp ./dist/index.html ../public/",
     "preview": "vite preview",
     "test": "playwright test --workers 1 --trace on"
   },
