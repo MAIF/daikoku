@@ -103,8 +103,7 @@ object TenantHelper {
               Results.NotFound,
               request,
               None,
-              env,
-              tenant
+              env
             )
           case Some(tenant) => f(tenant)
         }
@@ -143,8 +142,7 @@ object TenantHelper {
                 Results.NotFound,
                 request,
                 None,
-                env,
-                tenant
+                env
               )
             case Some(tenant) => f(tenant)
           }
@@ -188,7 +186,8 @@ object TenantHelper {
                 Results.NotFound,
                 request,
                 None,
-                env
+                env,
+
               )
             case Some(tenant) if !tenant.enabled =>
               Errors.craftResponseResult(
@@ -196,8 +195,7 @@ object TenantHelper {
                 Results.NotFound,
                 request,
                 None,
-                env,
-                tenant
+                env
               )
             case Some(tenant) => f(tenant)
           }

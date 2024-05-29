@@ -9,6 +9,7 @@ import play.api.libs.json.Json
 import play.api.mvc.Results.{Redirect, Status}
 import play.api.mvc.{RequestHeader, Result}
 
+import java.util.Base64
 import scala.concurrent.Future
 
 object Errors {
@@ -22,15 +23,15 @@ object Errors {
       status: Status,
       req: RequestHeader,
       maybeCauseId: Option[String] = None,
-      env: Env,
-      tenant: Tenant
+      env: Env
   ): Future[Result] = {
 
     val accept = req.headers.get("Accept").getOrElse("text/html").split(",").toSeq
 
     if (accept.contains("text/html")) {
+      val msg = Base64.getEncoder.encodeToString(message.getBytes)
       FastFuture.successful(
-        Redirect(s"${req.theProtocol}://${tenant.domain}:${env.config.exposedPort}/error")
+        Redirect(s"${req.theProtocol}://${req.domain}:${env.config.exposedPort}/error#$msg")
           .withHeaders(
             "x-error" -> "true",
             "x-error-msg" -> message

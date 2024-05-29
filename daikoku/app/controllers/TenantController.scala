@@ -173,8 +173,7 @@ class TenantController(
               "Tenant not found",
               Results.NotFound,
               ctx.request,
-              env = env,
-              tenant = ctx.tenant
+              env = env
             )
         }
       }

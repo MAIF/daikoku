@@ -136,8 +136,7 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
           Results.ServiceUnavailable,
           request,
           None,
-          env,
-          tenant
+          env
         )
       case (
             Some(tenant),
@@ -208,8 +207,7 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
           Results.ServiceUnavailable,
           request,
           None,
-          env,
-          tenant
+          env
         )
       case (
             Some(tenant),
@@ -314,8 +312,7 @@ class DaikokuActionMaybeWithoutUser(
           Results.ServiceUnavailable,
           request,
           None,
-          env,
-          tenant
+          env
         )
       case (
             Some(tenant),

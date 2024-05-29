@@ -70,8 +70,7 @@ object OtoroshiIdentityFilter {
           Results.Unauthorized,
           request,
           None,
-          env,
-          tenant
+          env
         )
       case Some(claim) =>
         val jwt = otoroshiJwtVerifier.verify(claim)
@@ -82,8 +81,7 @@ object OtoroshiIdentityFilter {
               Results.BadRequest,
               request,
               None,
-              env,
-              tenant
+              env
             )
           case Some(email) =>
             val name: String = Option(jwt.getClaim("name"))

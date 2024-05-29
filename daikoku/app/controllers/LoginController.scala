@@ -130,8 +130,7 @@ class LoginController(
             Results.BadRequest,
             ctx.request,
             None,
-            env,
-            ctx.tenant
+            env
           )
         case Some(p)
             if ctx.tenant.authProvider != p && p != AuthProvider.Local =>
@@ -140,8 +139,7 @@ class LoginController(
             Results.BadRequest,
             ctx.request,
             None,
-            env,
-            ctx.tenant
+            env
           )
         case Some(p) =>
           p match {
@@ -267,8 +265,7 @@ class LoginController(
           Results.BadRequest,
           ctx.request,
           None,
-          env,
-          ctx.tenant
+          env
         )
       case Some(p) if ctx.tenant.authProvider != p && p != AuthProvider.Local =>
         Errors.craftResponseResult(
@@ -276,8 +273,7 @@ class LoginController(
           Results.BadRequest,
           ctx.request,
           None,
-          env,
-          ctx.tenant
+          env
         )
       case Some(p) if p == AuthProvider.OAuth2 =>
         val maybeOAuth2Config =
@@ -300,8 +296,7 @@ class LoginController(
               Results.BadRequest,
               ctx.request,
               None,
-              env,
-              ctx.tenant
+              env
             )
         }
       case Some(p) =>
@@ -312,8 +307,7 @@ class LoginController(
               Results.BadRequest,
               ctx.request,
               None,
-              env,
-              ctx.tenant
+              env
             )
           case Some(form) =>
             (
@@ -387,8 +381,7 @@ class LoginController(
                       Results.BadRequest,
                       ctx.request,
                       None,
-                      env,
-                      ctx.tenant
+                      env
                     )
                 }
               case _ =>
@@ -397,8 +390,7 @@ class LoginController(
                   Results.BadRequest,
                   ctx.request,
                   None,
-                  env,
-                  ctx.tenant
+                  env
                 )
             }
         }
@@ -596,8 +588,7 @@ class LoginController(
             "The user creation has failed.",
             Results.BadRequest,
             ctx.request,
-            env = env,
-            tenant = ctx.tenant
+            env = env
           )
         case Some(id) =>
           env.dataStore.accountCreationRepo
