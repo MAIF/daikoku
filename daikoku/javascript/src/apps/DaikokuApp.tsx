@@ -3,7 +3,7 @@ import { Navigate } from 'react-router';
 import { BrowserRouter, Route, BrowserRouter as Router, Routes, createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
-import { Footer, LoginPage, SideBar } from '../components/utils';
+import { Footer, LoginPage, SideBar, tenant } from '../components/utils';
 import { ModalProvider, NavProvider } from '../contexts';
 
 import {
@@ -62,29 +62,6 @@ export const DaikokuApp = () => {
   }, [connectedUser]);
 
   if (!connectedUser) {
-    // const router = createBrowserRouter([
-    //   {
-    //     path: "/auth/:provider/login",
-    //     element: <UnauthenticatedRoute title={`${tenant.title} - ${translate('Login')}`}>
-    //       <LoginPage />
-    //     </UnauthenticatedRoute >
-    //   },
-    //   {
-    //     path: "/signup",
-    //     element: < UnauthenticatedRoute title={`${tenant.title} - ${translate('Signup')}`} >
-    //       <Signup />
-    //     </UnauthenticatedRoute >
-    //   },
-    //   {
-    //     path: '/error',
-    //     element: < Error />
-    //   }
-    // ])
-
-    // return <RouterProvider router={router} />
-
-
-
     return (
       <Router>
         <div
@@ -100,13 +77,15 @@ export const DaikokuApp = () => {
             <Route
               path="/auth/:provider/login"
               element={
-                <LoginPage />
+                <UnauthenticatedRoute title={translate('Login')} header={`${translate({ key: 'login.to.tenant', replacements: [tenant.title || translate('Tenant')]})}`} >
+                  <LoginPage />
+                </UnauthenticatedRoute>
               }
             />
             <Route
               path="/reset"
               element={
-                <UnauthenticatedRoute title={`${tenant.title} - ${translate('Reset password')}`}>
+                <UnauthenticatedRoute title={translate('Reset')} header={translate('Reset your password')}>
                   <ResetPassword />
                 </UnauthenticatedRoute>
               }
@@ -114,7 +93,7 @@ export const DaikokuApp = () => {
             <Route
               path="/signup"
               element={
-                <UnauthenticatedRoute title={`${tenant.title} - ${translate('Signup')}`} >
+                <UnauthenticatedRoute title={translate('Signup')} header={`${translate({ key: 'signup.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
                   <Signup />
                 </UnauthenticatedRoute>
               }
@@ -155,7 +134,7 @@ export const DaikokuApp = () => {
                   <Route
                     path="/2fa"
                     element={
-                      <UnauthenticatedRoute title={`${tenant.title} - ${translate('Verification code')}`} >
+                      <UnauthenticatedRoute title={translate('Verification code')} header={translate('Verification code')} >
                         <TwoFactorAuthentication
                           title={`${tenant.title} - ${translate('Verification code')}`}
                         />
@@ -165,7 +144,7 @@ export const DaikokuApp = () => {
                   <Route
                     path="/reset"
                     element={
-                      <UnauthenticatedRoute title={`${tenant.title} - ${translate('Reset password')}`}>
+                      <UnauthenticatedRoute title={translate('Reset your password')} header={translate('Reset your password')}>
                         <ResetPassword />
                       </UnauthenticatedRoute>
                     }
@@ -173,7 +152,7 @@ export const DaikokuApp = () => {
                   <Route
                     path="/signup"
                     element={
-                      <UnauthenticatedRoute title={`${tenant.title} - ${translate('Signup')}`} >
+                      <UnauthenticatedRoute title={translate('Signup')} header={`${translate({ key: 'signup.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
                         <Signup />
                       </UnauthenticatedRoute>
                     }
@@ -464,6 +443,8 @@ const FrontOfficeRoute = (props: { title?: string, children: JSX.Element }) => {
 };
 
 const RouteWithTitle = (props: { title?: string, children: JSX.Element }) => {
+  const { tenant } = useContext(GlobalContext)
+
   useEffect(() => {
     if (props.title) {
       document.title = props.title;
@@ -473,11 +454,27 @@ const RouteWithTitle = (props: { title?: string, children: JSX.Element }) => {
   return props.children;
 };
 
-const UnauthenticatedRoute = (props: { children: JSX.Element, title: string }) => {
-  const { connectedUser } = useContext(GlobalContext)
+const UnauthenticatedRoute = (props: { children: JSX.Element, title: string, header: string }) => {
+  const { connectedUser, tenant } = useContext(GlobalContext)
   if (connectedUser && connectedUser._humanReadableId) {
     return <Navigate to="/" />;
   }
 
-  return <RouteWithTitle title={props.title}>{props.children}</RouteWithTitle>;
+  return <RouteWithTitle title={`${tenant.title} - ${props.title}`}>
+    <>
+      <div className="organisation__header d-flex align-items-center justify-content-center mb-3 py-2">
+        <div className="me-5">
+          <img
+            className="organisation__avatar"
+            src={tenant.logo || '/assets/images/daikoku.svg'}
+            alt="avatar"
+          />
+        </div>
+        <h3>
+          {props.header}
+        </h3>
+      </div>
+      {props.children}
+    </>
+  </RouteWithTitle>;
 };

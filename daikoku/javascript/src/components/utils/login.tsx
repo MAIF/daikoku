@@ -1,7 +1,7 @@
 import React, { FormEvent, useContext, useEffect, useState } from 'react';
 import * as Services from '../../services/index';
 import { I18nContext } from '../../contexts';
-import { useParams, useSearchParams } from 'react-router-dom';
+import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { GlobalContext } from '../../contexts/globalContext';
 import { isError } from '../../types';
 
@@ -60,21 +60,6 @@ export function LoginPage(props: {}) {
   return (
     <div>
       <div className="login__container text-center">
-        <div className="organisation__header d-flex align-items-center">
-          <div className="col-sm-4">
-            <img
-              className="organisation__avatar"
-              src={tenant.logo || '/assets/images/daikoku.svg'}
-              alt="avatar"
-            />
-          </div>
-          <h3>
-            <Translation i18nkey="login.to.tenant" replacements={[tenant.name]}>
-              Login to {tenant.name}
-            </Translation>
-          </h3>
-        </div>
-
         <form
           className="form-horizontal text-start mx-auto"
           method="POST"
@@ -118,26 +103,19 @@ export function LoginPage(props: {}) {
               <Translation i18nkey="login.btn.label">Login</Translation>
             </button>
           </div>
-          {provider == 'Local' && (
-            <div
-              className="mb-3 p-3 text-center"
-              style={{
-                border: '1px solid var(--form-border-color, #586069)',
-                borderRadius: '6px',
-              }}
-            >
-              <Translation
-                i18nkey="login_page.register_message"
-                replacements={[tenant.name]}
-              />
-              <a href="/signup">Create an account.</a>
+          <div className='d-flex justify-content-between'>
+            <div className="mb-3">
+              <Link to="/reset">
+                <Translation i18nkey="Forgot your password ?">Forgot your password ?</Translation>
+              </Link>
             </div>
-          )}
-          <div className="mb-3">
-            <a href="/reset">
-              <Translation i18nkey="Forgot your password ?">Forgot your password ?</Translation>
-            </a>
+            {provider === 'Local' && (
+              <Link to="/signup">
+                {translate('Create your account')}
+              </Link>
+            )}
           </div>
+
         </form>
       </div>
     </div>

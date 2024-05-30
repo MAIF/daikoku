@@ -555,6 +555,7 @@
     "error.replace.files.content.type": "You cannot replace a file with another of a different content-type",
     "Email address does not exist": "Email address does not exist",
     "login.to.tenant": "Login to %s",
+    "signup.to.tenant": "Signup to %s",
     "api.creation.title.modal": "Select the team for which to create new API",
     "api.creation.description.modal": "You are going to create an API. For which team do you want to create it?",
     "apigroup.creation.title.modal": "Select the team for which to create new APIs group",
