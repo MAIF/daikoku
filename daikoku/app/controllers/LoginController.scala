@@ -13,6 +13,7 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider._
 import fr.maif.otoroshi.daikoku.login._
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
+import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator, Translator}
 import org.apache.commons.codec.binary.Base32
 import org.joda.time.DateTime
@@ -164,7 +165,7 @@ class LoginController(
                   s"redirect" -> redirect.getOrElse("/")
                 )
               )
-            case _ if env.config.isDev => FastFuture.successful(Redirect(s"${ctx.request.theProtocol}://${ctx.tenant.domain}:${env.config.exposedPort}/auth/${p.name}/login"))
+            case _ if env.config.isDev => FastFuture.successful(Redirect(env.getDaikokuUrl(ctx.tenant, s"/auth/${p.name}/login")))
             case _ => assets.at("index.html").apply(ctx.request)
           }
       }
@@ -415,7 +416,7 @@ class LoginController(
         .getOrElse(ctx.request.host)
       val redirect = ctx.request
         .getQueryString("redirect")
-        .getOrElse(s"${ctx.request.theProtocol}://${ctx.tenant.domain}:${env.config.exposedPort}/")
+        .getOrElse(env.getDaikokuUrl(ctx.tenant, "/"))
 
       AuthProvider(ctx.tenant.authProvider.name) match {
         case Some(AuthProvider.Otoroshi) =>
@@ -565,7 +566,7 @@ class LoginController(
                       ctx.tenant,
                       Map(
                         "tenant" -> ctx.tenant.name,
-                        "link" -> s"${ctx.request.theProtocol}://$host/account/validate?id=$randomId"
+                        "link" -> env.getDaikokuUrl(ctx.tenant, s"/account/validate?id=$randomId")
                       )
                     )
                   } yield {
@@ -719,7 +720,8 @@ class LoginController(
                 ctx.tenant.defaultLanguage.getOrElse("en")
               implicit val language: String =
                 user.defaultLanguage.getOrElse(tenantLanguage)
-              ctx.tenant.mailer
+              val link = env.getDaikokuUrl(ctx.tenant, s"/account/reset?id=$randomId")
+                ctx.tenant.mailer
                 .send(
                   s"Reset your ${ctx.tenant.name} account password",
                   Seq(email),
@@ -728,7 +730,7 @@ class LoginController(
                 |
                 |<p>If it was you, please click on the following link to finalize the password resset process</p>
                 |
-                |<a href="${ctx.request.theProtocol}://${host}/account/reset?id=$randomId">Reset</a>
+                |<a href="$link">Reset</a>
                 |<p>If not, just ignore this email</p>
                 |
                 |<p>The ${ctx.tenant.name} team</p>
@@ -751,21 +753,21 @@ class LoginController(
     DaikokuTenantAction.async { ctx =>
       ctx.request.getQueryString("id") match {
         case None =>
-          FastFuture.successful(BadRequest(Json.obj("error" -> "Id not found")))
+          FastFuture.successful(
+            Redirect(env.getDaikokuUrl(ctx.tenant, "/reset?error=bad.creation.id")))
         case Some(id) => {
           env.dataStore.passwordResetRepo
             .findOneNotDeleted(Json.obj("randomId" -> id))
             .flatMap {
               case Some(pwdReset)
-                  if pwdReset.validUntil.isBefore(DateTime.now()) => {
+                  if pwdReset.validUntil.isBefore(DateTime.now()) =>
                 env.dataStore.passwordResetRepo
                   .deleteByIdLogically(pwdReset.id.value)
                   .map { _ =>
-                    Redirect("/reset?error=not.valid.anymore")
+                    Redirect(env.getDaikokuUrl(ctx.tenant, "/reset?error=not.valid.anymore"))
                   }
-              }
               case Some(pwdReset)
-                  if pwdReset.validUntil.isAfter(DateTime.now()) => {
+                  if pwdReset.validUntil.isAfter(DateTime.now()) =>
                 env.dataStore.userRepo
                   .findOneNotDeleted(
                     Json.obj(
@@ -776,23 +778,21 @@ class LoginController(
                   .flatMap {
                     case None =>
                       FastFuture.successful(
-                        NotFound(Json.obj("error" -> "User not found"))
-                      )
-                    case Some(user) => {
+                        Redirect(env.getDaikokuUrl(ctx.tenant, "/reset?error=user.not.found")))
+                    case Some(user) =>
                       env.dataStore.userRepo
                         .save(user.copy(password = Some(pwdReset.password)))
                         .flatMap { _ =>
                           env.dataStore.passwordResetRepo
                             .deleteByIdLogically(pwdReset.id.value)
                             .map { _ =>
-                              Redirect("/")
+                              Redirect(env.getDaikokuUrl(ctx.tenant, "/"))
                             }
                         }
-                    }
                   }
-              }
               case _ =>
-                FastFuture.successful(Redirect("/reset?error=bad.creation.id"))
+                FastFuture.successful(
+                  Redirect(env.getDaikokuUrl(ctx.tenant, "/reset?error=bad.creation.id")))
             }
         }
       }

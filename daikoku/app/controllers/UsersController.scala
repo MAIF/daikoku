@@ -470,7 +470,7 @@ class UsersController(
         env.dataStore.userRepo
           .save(ctx.user.copy(twoFactorAuthentication = None))
           .map {
-            case true => NoContent
+            case true => Ok(Json.obj("done" -> true))
             case false =>
               BadRequest(
                 Json.obj("error" -> "Something happens when updating user")

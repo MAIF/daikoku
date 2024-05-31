@@ -2,12 +2,10 @@ import React, { FormEvent, useContext, useEffect, useState } from 'react';
 import * as Services from '../../services/index';
 import { I18nContext } from '../../contexts';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
-import { GlobalContext } from '../../contexts/globalContext';
 import { isError } from '../../types';
 
 export function LoginPage(props: {}) {
   const { Translation, translate } = useContext(I18nContext);
-  const { tenant } = useContext(GlobalContext);
 
   const { provider } = useParams()
   const [searchParams] = useSearchParams();

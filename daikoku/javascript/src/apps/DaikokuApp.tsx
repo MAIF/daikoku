@@ -39,7 +39,7 @@ import {
   UserEdit,
   UserList,
 } from '../components/adminbackoffice';
-import { Error } from '../components/utils';
+import { Error, Response } from '../components/utils';
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
 import { FastMode } from "../components/frontend/fastMode/FastMode";
 import { GlobalContext } from '../contexts/globalContext';
@@ -77,7 +77,7 @@ export const DaikokuApp = () => {
             <Route
               path="/auth/:provider/login"
               element={
-                <UnauthenticatedRoute title={translate('Login')} header={`${translate({ key: 'login.to.tenant', replacements: [tenant.title || translate('Tenant')]})}`} >
+                <UnauthenticatedRoute title={translate('Login')} header={`${translate({ key: 'login.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
                   <LoginPage />
                 </UnauthenticatedRoute>
               }
@@ -99,9 +99,35 @@ export const DaikokuApp = () => {
               }
             />
             <Route
+              path="/2fa"
+              element={
+                <UnauthenticatedRoute title={translate('Verification code')} header={translate('Verification code')} >
+                  <TwoFactorAuthentication />
+                </UnauthenticatedRoute>
+              }
+            />
+            <Route
               path='/error'
               element={
-                <Error />
+                <UnauthenticatedRoute title={translate('Error')} header={translate('Error')} >
+                  <Error />
+                </UnauthenticatedRoute>
+              }
+            />
+            <Route
+              path='/response'
+              element={
+                <UnauthenticatedRoute title={translate('Error')} header={translate('Error')} >
+                  <Response />
+                </UnauthenticatedRoute>
+              }
+            />
+            <Route
+                    path="/join"
+              element={
+                <FrontOfficeRoute title={`${tenant.title} - ${translate('Join team')}`}>
+                  <JoinTeam />
+                </FrontOfficeRoute>
               }
             />
             <Route
@@ -124,6 +150,18 @@ export const DaikokuApp = () => {
               <div className="wrapper flex-grow-1">
                 <Routes>
                   <Route
+                    path='/error'
+                    element={
+                        <Error />
+                    }
+                  />
+                  <Route
+                    path='/response'
+                    element={
+                        <Response />
+                    }
+                  />
+                  <Route
                     path="/me"
                     element={
                       <RouteWithTitle title={`${tenant.title} - ${translate('My profile')}`}>
@@ -135,9 +173,7 @@ export const DaikokuApp = () => {
                     path="/2fa"
                     element={
                       <UnauthenticatedRoute title={translate('Verification code')} header={translate('Verification code')} >
-                        <TwoFactorAuthentication
-                          title={`${tenant.title} - ${translate('Verification code')}`}
-                        />
+                        <TwoFactorAuthentication />
                       </UnauthenticatedRoute>
                     }
                   />

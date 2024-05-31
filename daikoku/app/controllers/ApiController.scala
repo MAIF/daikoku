@@ -10,18 +10,11 @@ import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.audit.config.ElasticAnalyticsConfig
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Private
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
@@ -31,6 +24,7 @@ import fr.maif.otoroshi.daikoku.utils.Cypher.decrypt
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils._
+import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
 import play.api.Logger
@@ -46,6 +40,7 @@ import scala.util.{Failure, Success, Try}
 class ApiController(
     DaikokuAction: DaikokuAction,
     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+    DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
     apiService: ApiService,
     apiKeyStatsJob: ApiKeyStatsJob,
     env: Env,
@@ -893,7 +888,7 @@ class ApiController(
                             .get("Otoroshi-Proxied-Host")
                             .orElse(ctx.request.headers.get("X-Forwarded-Host"))
                             .getOrElse(ctx.request.host)
-                          url = s"${ctx.request.theProtocol}://${host}$url"
+                          url = env.getDaikokuUrl(ctx.tenant, s"$url")
                         }
                         if (url.contains("?")) {
                           url = s"$url&sessionId=${ctx.session.sessionId.value}"
@@ -1278,15 +1273,10 @@ class ApiController(
     }
 
   def validateProcess() =
-    DaikokuActionMaybeWithGuest.async { ctx =>
-      UberPublicUserAccess(
-        AuditTrailEvent(
-          s"Subscription process has been validated by @{validator.name}"
-        )
-      )(ctx) {
+    DaikokuActionMaybeWithoutUser.async { ctx =>
         import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
         implicit val language: String = ctx.request.getLanguage(ctx.tenant)
-        implicit val currentUser: User = ctx.user
+        implicit val currentUser: User = ctx.user.getOrElse(GuestUser(ctx.tenant.id))
 
         val maybeSessionId = ctx.request.getQueryString("session_id")
 
@@ -1311,22 +1301,22 @@ class ApiController(
             maybeSessionId
           )
         } yield
-          if (ctx.user.isGuest)
-            Ok(views.html.response(None, ctx.request.domain, env, ctx.tenant))
-          else Redirect(s"/apis"))
+          if (ctx.user.isEmpty) {
+            Redirect(env.getDaikokuUrl(ctx.tenant, "/response")).future
+          } else {
+            Redirect(env.getDaikokuUrl(ctx.tenant, "/apis")).future
+          })
           .leftMap(error =>
-            Ok(
-              views.html.response(
-                error.getErrorMessage().some,
-                ctx.request.domain,
-                env,
-                ctx.tenant
-              )
+            Errors.craftResponseResult(
+              message = error.getErrorMessage(),
+              status = Results.Ok,
+              req = ctx.request,
+              env = env
             )
           )
           .merge
+          .flatten
       }
-    }
 
   def abortProcess() =
     DaikokuAction.async { ctx =>
@@ -1385,19 +1375,17 @@ class ApiController(
             AppError.EntityNotFound("token")
           )
           _ <- declineProcessWithStepValidator(validator, ctx.tenant)
-        } yield Ok(
-          views.html.response(None, ctx.request.domain, env, ctx.tenant)
-        )).leftMap(error =>
-            Ok(
-              views.html.response(
-                error.getErrorMessage().some,
-                ctx.request.domain,
-                env,
-                ctx.tenant
-              )
+        } yield Redirect(env.getDaikokuUrl(ctx.tenant, "/response")).future
+        ).leftMap(error =>
+            Errors.craftResponseResult(
+              message = error.getErrorMessage(),
+              status = Results.Ok,
+              req = ctx.request,
+              env = env
             )
           )
           .merge
+          .flatten
       }
     }
 

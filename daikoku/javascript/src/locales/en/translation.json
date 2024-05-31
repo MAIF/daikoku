@@ -534,6 +534,7 @@
     "Reset password": "Reset password",
     "account.reset.error.not.valid.anymore": "Your password reset request is not valid anymore (it's only valid for 15 minutes). Please creates a new request.",
     "account.reset.error.bad.creation.id": "Your password reset request is not valid. Please create a new request.",
+    "account.reset.error.user.not.found": "Your account is not found. Please create a new one.",
     "password.reset.done": "You will receive an email at %s to finish your passsword reset process. You will have 15 minutes from now to finish your password reset process.",
     "Create your account": "Create your account",
     "Reset your password": "Reset your password",

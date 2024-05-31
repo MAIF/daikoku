@@ -5,6 +5,7 @@ import * as Services from '../../../../services';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { NavContext } from '../../../../contexts';
 import { GlobalContext } from '../../../../contexts/globalContext';
+import { Link } from 'react-router-dom';
 
 export const GuestPanel = () => {
   const { translate, Translation } = useContext(I18nContext);
@@ -79,13 +80,13 @@ export const GuestPanel = () => {
               />
               <div className="d-flex flex-row justify-content-between mt-3">
                 {tenant.loginProvider == 'Local' && (
-                  <a className="text-center" href="/signup">
+                  <Link className="text-center" to="/signup">
                     <Translation i18nkey="create.account.link.label" />
-                  </a>
+                  </Link>
                 )}
-                <a className="text-center" href="/reset">
+                <Link className="text-center" to="/reset">
                   <Translation i18nkey="Forgot your password ?">Forgot your password ?</Translation>
-                </a>
+                </Link>
               </div>
             </div>
           )}

@@ -4,7 +4,6 @@ const adminApikeyId = 'admin_key_client_id';
 const adminApikeySecret = 'admin_key_client_secret';
 
 const exposedPort = process.env.EXPOSED_PORT || 5173
-console.log(exposedPort)
 
 test.beforeAll(async () => {
   console.log(`Running ${test.info().title}`);

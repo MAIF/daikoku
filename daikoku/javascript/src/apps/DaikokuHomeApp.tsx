@@ -158,6 +158,7 @@ export const Signup = () => {
         flow={flow}
         onSubmit={createAccount}
         value={user}
+        className='signup-form'
         options={{
           actions: {
             cancel: {
@@ -296,9 +297,7 @@ export const ResetPassword = () => {
   );
 };
 
-export const TwoFactorAuthentication = ({
-  title
-}: any) => {
+export const TwoFactorAuthentication = () => {
   const [code, setCode] = useState<string>('');
   const [token, setToken] = useState<string>('');
   const [error, setError] = useState<string>();
@@ -349,7 +348,6 @@ export const TwoFactorAuthentication = ({
 
   return (
     <div className="d-flex flex-column mx-auto my-3" style={{ maxWidth: '350px' }}>
-      <h3>{title}</h3>
       {showBackupCodes ? (
         <>
           <input

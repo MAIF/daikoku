@@ -847,7 +847,9 @@ class TeamController(
                     case true =>
                       implicit val language: String =
                         tenant.defaultLanguage.getOrElse("en")
-                      tenant.mailer
+
+                      val link = env.getDaikokuUrl(ctx.tenant, s"/join?token=${invitedUser.invitation.get.token}")
+                        tenant.mailer
                         .send(
                           s"Join ${team.name}",
                           Seq(email),
@@ -856,7 +858,7 @@ class TeamController(
                              |
                              |<p>Please click on the following link to join this team.</p>
                              |
-                             |<a href="${ctx.request.theProtocol}://${ctx.request.theDomain}:${env.config.exposedPort}/join?token=${invitedUser.invitation.get.token}">Click to join the team</a>
+                             |<a href="$link">Click to join the team</a>
                              |
                           """.stripMargin,
                           tenant
