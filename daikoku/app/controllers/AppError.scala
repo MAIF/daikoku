@@ -62,6 +62,7 @@ object AppError {
   case class SecurityError(security: String) extends AppError
   case object UnexpectedError extends AppError
   case class InternalServerError(message: String) extends AppError
+  case class BadRequestError(message: String) extends AppError
 
   def renderF(error: AppError): Future[mvc.Result] =
     FastFuture.successful(render(error))
@@ -118,6 +119,7 @@ object AppError {
       case UnexpectedError     => BadRequest(toJson(error))
       case InternalServerError(message) =>
         play.api.mvc.Results.InternalServerError(toJson(error))
+      case BadRequestError(message) => BadRequest(toJson(error))
     }
 
   def getErrorMessage(error: AppError) =
@@ -126,6 +128,7 @@ object AppError {
       case ApiKeyRotationError(e)     => Json.stringify(e) //todo: ???
       case PaymentError(e)            => e
       case ParsingPayloadError(msg)   => s"Error while parsing payload: $msg"
+      case BadRequestError(e)         => e
       case ApiVersionConflict         => "This version already existed"
       case TeamNameAlreadyExists      => "The name of this team already exists"
       case ApiNotFound                => "API not found"

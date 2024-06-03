@@ -183,6 +183,7 @@ const useModal = () => {
   const [modalContent, setModalContent] = useState<JSX.Element>();
 
   const open = (content: JSX.Element) => {
+    console.debug('open modal')
     setModal(true)
     setModalContent(<ModalWrapper closeModal={close}>{content}</ModalWrapper>)
   };

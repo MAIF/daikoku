@@ -63,80 +63,81 @@ export const DaikokuApp = () => {
 
   if (!connectedUser) {
     return (
-      <Router>
-        <div
-          role="root-container"
-          className="container-fluid"
-          style={{
-            minHeight: '100vh',
-            position: 'relative',
-            paddingBottom: '6rem',
-          }}
-        >
-          <Routes>
-            <Route
-              path="/auth/:provider/login"
-              element={
-                <UnauthenticatedRoute title={translate('Login')} header={`${translate({ key: 'login.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
-                  <LoginPage />
-                </UnauthenticatedRoute>
-              }
-            />
-            <Route
-              path="/reset"
-              element={
-                <UnauthenticatedRoute title={translate('Reset')} header={translate('Reset your password')}>
-                  <ResetPassword />
-                </UnauthenticatedRoute>
-              }
-            />
-            <Route
-              path="/signup"
-              element={
-                <UnauthenticatedRoute title={translate('Signup')} header={`${translate({ key: 'signup.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
-                  <Signup />
-                </UnauthenticatedRoute>
-              }
-            />
-            <Route
-              path="/2fa"
-              element={
-                <UnauthenticatedRoute title={translate('Verification code')} header={translate('Verification code')} >
-                  <TwoFactorAuthentication />
-                </UnauthenticatedRoute>
-              }
-            />
-            <Route
-              path='/error'
-              element={
-                <UnauthenticatedRoute title={translate('Error')} header={translate('Error')} >
-                  <Error />
-                </UnauthenticatedRoute>
-              }
-            />
-            <Route
-              path='/response'
-              element={
-                <UnauthenticatedRoute title={translate('Error')} header={translate('Error')} >
-                  <Response />
-                </UnauthenticatedRoute>
-              }
-            />
-            <Route
-                    path="/join"
-              element={
-                <FrontOfficeRoute title={`${tenant.title} - ${translate('Join team')}`}>
-                  <JoinTeam />
-                </FrontOfficeRoute>
-              }
-            />
-            <Route
-              path='*'
-              element={<Navigate to={`/auth/${tenant.authProvider}/login`} replace />}
-            />
-          </Routes>
-        </div>
-      </Router>
+      <BrowserRouter>
+        <ModalProvider>
+          <div
+            role="root-container"
+            className="container-fluid"
+            style={{
+              minHeight: '100vh',
+              position: 'relative',
+              paddingBottom: '6rem',
+            }}>
+            <Routes>
+              <Route
+                path="/auth/:provider/login"
+                element={
+                  <UnauthenticatedRoute title={translate('Login')} header={`${translate({ key: 'login.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
+                    <LoginPage />
+                  </UnauthenticatedRoute>
+                }
+              />
+              <Route
+                path="/reset"
+                element={
+                  <UnauthenticatedRoute title={translate('Reset')} header={translate('Reset your password')}>
+                    <ResetPassword />
+                  </UnauthenticatedRoute>
+                }
+              />
+              <Route
+                path="/signup"
+                element={
+                  <UnauthenticatedRoute title={translate('Signup')} header={`${translate({ key: 'signup.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
+                    <Signup />
+                  </UnauthenticatedRoute>
+                }
+              />
+              <Route
+                path="/2fa"
+                element={
+                  <UnauthenticatedRoute title={translate('Verification code')} header={translate('Verification code')} >
+                    <TwoFactorAuthentication />
+                  </UnauthenticatedRoute>
+                }
+              />
+              <Route
+                path='/error'
+                element={
+                  <UnauthenticatedRoute title={translate('Error')} header={translate('Error')} >
+                    <Error />
+                  </UnauthenticatedRoute>
+                }
+              />
+              <Route
+                path='/response'
+                element={
+                  <UnauthenticatedRoute title={translate('Error')} header={translate('Error')} >
+                    <Response />
+                  </UnauthenticatedRoute>
+                }
+              />
+              <Route
+                path="/join"
+                element={
+                  <FrontOfficeRoute title={`${tenant.title} - ${translate('Join team')}`}>
+                    <JoinTeam />
+                  </FrontOfficeRoute>
+                }
+              />
+              <Route
+                path='*'
+                element={<Navigate to={`/auth/${tenant.authProvider}/login`} replace />}
+              />
+            </Routes>
+          </div>
+        </ModalProvider>
+      </BrowserRouter>
     );
   }
 
@@ -152,13 +153,13 @@ export const DaikokuApp = () => {
                   <Route
                     path='/error'
                     element={
-                        <Error />
+                      <Error />
                     }
                   />
                   <Route
                     path='/response'
                     element={
-                        <Response />
+                      <Response />
                     }
                   />
                   <Route
