@@ -89,22 +89,6 @@ class LoginController(
                   )(ctx.request)
                 )
               case _ =>
-//                FastFuture.successful(
-//                  Ok(
-//                    views.html.login(
-//                      ctx.tenant.authProvider,
-//                      ctx.tenant,
-//                      ctx.request.domain,
-//                      env,
-//                      ctx.request.queryString
-//                        .get("redirect")
-//                        .flatMap(_.headOption)
-//                    )
-//                  )
-//                )
-
-                //FIXME: add query param with redirect
-
                 assets.at("index.html").apply(ctx.request)
             }
           }
