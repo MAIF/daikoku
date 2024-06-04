@@ -1,71 +1,36 @@
-.api--forbidden {
-  cursor: not-allowed;
-  color: #bbb;
-}
-
-/* cards */
-.apicard__container {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: space-between;
-}
 .card {
-  background-color: $sidebar-bg-color;
-}
-.card-body {
-  border : none !important;
-}
-
-.card-text {
-  height: 100px;
-  overflow: hidden;
-}
-
-.cardAble .card-header {
-  background-color: #9bb0c5;
-}
-
-.cardDisable .card-header {
-  background-color: #858585;
+  background-color:$card-bg-color;
+  color: $card-text-color;
+  .card-body {
+    border : none !important;
+    .a-fake, a {
+      color: $card-link-color;
+      &:hover{
+        color:$card-link-hover-color;
+      }
+    }
+    .card-text {
+      height: 100px;
+      overflow: hidden;
+    }
+  }
 }
 
-.cardAble {
-  transform: none;
-  transition-duration: .2s;
-}
-
-.cardAble:hover {
-  transform: scale(1.02);
-}
-
-.cardDisable a {
-  cursor: default;
-}
-
-.cardDisable a:hover, .cardAble a:hover {
-  text-decoration: none;
-  color: #6c757d;
-}
-
-.cardDisable a, .cardAble a {
-  color: #6c757d;
-}
-
-.card-skin {
+.card-header {
   height: 175px;
   width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  color: $body-text-color;
-  background-color: $navbar-bg-color;
+  background-color:$card-header-bg-color;
+  color: $card-header-text-color;
   font-family: Arial, Helvetica, "Open Sans", sans-serif, monospace;
   font-size: 25pt;
   text-align: center;
   position: relative;
   overflow: hidden;
 }
+
 
 .plan-name {
   font-size: 1.75rem;
@@ -78,7 +43,7 @@
 
 .card .plan-body {
   border: none;
-  background-color: $menu-bg-color;
+  // background-color: $companion_bg-color;
   margin: 0;
   border-radius:0;
   border-bottom-left-radius: 5px ;
@@ -99,15 +64,17 @@ a.card-link:hover, a.card-link:visited, a.card-link:link, a.card-link:active {
   }
 }
 
-.view-selectors {
-  .active {
-    color: $link-hover-color;;
-  }
-}
+// .view-selectors {
+//   // .active, .btn.active, :not(.btn-check) + .btn:active {
+//   //   color: $btn-bg-color;
+//   //   background-color: $btn-border-color;
+//   //   border-color: $btn-border-color;
+//   // }
+// }
 
 .card {
   #dropdownMenuButton {
-    color: $menu-text-color;
+    color: $card-link-color;
   }
 }
 

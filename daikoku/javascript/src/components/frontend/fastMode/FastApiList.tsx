@@ -178,7 +178,7 @@ export const FastApiList = (props: FastApiListProps) => {
                 onChange={(e) => setPlanResearch(e.target.value)}
               />
             </div>
-            <button onClick={() => changeSeeOnlySubscribedApis(!seeApiSubscribed)} className="btn btn-sm btn-outline-primary">
+            <button onClick={() => changeSeeOnlySubscribedApis(!seeApiSubscribed)} className="btn btn-sm btn-outline-info">
               {seeApiSubscribed ? translate('fastMode.button.show.all.apis') : translate('fastMode.button.show.subs.apis')}
             </button>
           </div>

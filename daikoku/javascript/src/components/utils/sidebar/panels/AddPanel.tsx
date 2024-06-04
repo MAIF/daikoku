@@ -140,7 +140,7 @@ export const AddPanel = () => {
                   className="block__entry__link d-flex align-items-center justify-content-between"
                   onClick={createTenant}>
                   <span>{translate('Tenant')}</span>
-                  <button className="btn btn-sm btn-access-negative me-1">
+                  <button className="btn btn-sm btn-outline-primary me-1">
                     <i className="fas fa-plus-circle" />
                   </button>
                 </span>
@@ -150,7 +150,7 @@ export const AddPanel = () => {
                 onClick={createTeam}
               >
                 <span>{translate('Team')}</span>
-                <button className="btn btn-sm btn-access-negative me-1">
+                <button className="btn btn-sm btn-outline-primary me-1">
                   <i className="fas fa-plus-circle" />
                 </button>
               </span>
@@ -159,7 +159,7 @@ export const AddPanel = () => {
                 onClick={() => createApi(maybeTeam)}
               >
                 <span>{translate('API')}</span>
-                <button className="btn btn-sm btn-access-negative me-1">
+                <button className="btn btn-sm btn-outline-primary me-1">
                   <i className="fas fa-plus-circle" />
                 </button>
               </span>
@@ -168,7 +168,7 @@ export const AddPanel = () => {
                 onClick={() => createApiGroup(maybeTeam)}
               >
                 <span>{translate('API group')}</span>
-                <button className="btn btn-sm btn-access-negative me-1">
+                <button className="btn btn-sm btn-outline-primary me-1">
                   <i className="fas fa-plus-circle" />
                 </button>
               </span>

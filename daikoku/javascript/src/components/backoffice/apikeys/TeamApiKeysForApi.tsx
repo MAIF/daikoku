@@ -489,10 +489,10 @@ const ApiKeyCard = ({
       <div className="col-12 col-sm-6 col-md-4 mb-2">
         <div className="card">
           <div className="card-header" style={{ position: "relative" }}>
-            <div className="d-flex align-items-center justify-content-between">
+            <div className="d-flex align-items-center justify-content-between flex-column">
               {!settingMode &&
                 (!editMode ? (
-                  <>
+                  <div className="d-flex align-items-center justify-content-between">
                     <BeautifulTitle
                       title={customName || ""}
                       style={{
@@ -510,12 +510,12 @@ const ApiKeyCard = ({
                     <button
                       disabled={!subscription.enabled}
                       type="button"
-                      className="btn btn-sm btn-access-negative ms-2"
+                      className="btn btn-sm btn-outline-primary ms-2"
                       onClick={() => setEditMode(true)}
                     >
                       <i className="fas fa-pen cursor-pointer a-fake" />
                     </button>
-                  </>
+                  </div>
                 ) : (
                   <div className="input-group">
                     <input
@@ -547,16 +547,12 @@ const ApiKeyCard = ({
                   </Translation>
                 </h3>
               ) : (
-                <span
+                <div
                   className="badge bg-secondary"
-                  style={{
-                    position: "absolute",
-                    left: "1.25rem",
-                    bottom: "-8px",
-                  }}
+                  style={{ fontSize: "12px" }}
                 >
-                  {formatPlanType(plan, translate)}
-                </span>
+                  Type : {formatPlanType(plan, translate)}
+                </div>
               )}
             </div>
           </div>
@@ -583,7 +579,7 @@ const ApiKeyCard = ({
                       >
                         <Link
                           to={statsLink}
-                          className="btn btn-sm btn-access-negative ms-1"
+                          className="btn btn-sm btn-outline-primary ms-1"
                         >
                           <i className="fas fa-chart-bar" />
                         </Link>
@@ -593,7 +589,7 @@ const ApiKeyCard = ({
                       <button
                         type="button"
                         disabled={!subscription.enabled}
-                        className="btn btn-sm btn-access-negative ms-1"
+                        className="btn btn-sm btn-outline-primary ms-1"
                         onClick={() => {
                           let credentials = apiKeyValues[activeTab];
                           navigator.clipboard
@@ -613,7 +609,7 @@ const ApiKeyCard = ({
                       <BeautifulTitle title={translate("Setup rotation")}>
                         <button
                           type="button"
-                          className="btn btn-sm btn-access-negative ms-1"
+                          className="btn btn-sm btn-outline-primary ms-1"
                           onClick={() => setSettingMode(true)}
                         >
                           <i className="fas fa-history" />
@@ -824,7 +820,7 @@ const ApiKeyCard = ({
                       </div>
                     )}
                     <button
-                      className={`btn btn-sm btn-outline-primary mx-auto d-flex ${
+                      className={`btn btn-sm btn-outline-info mx-auto d-flex ${
                         showAggregatePlan ? "mt-3" : ""
                       }`}
                       onClick={() => setAggregatePlan(!showAggregatePlan)}

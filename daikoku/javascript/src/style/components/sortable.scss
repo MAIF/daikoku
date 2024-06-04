@@ -114,11 +114,11 @@
   }
 
   &.over {
-    box-shadow: inset $navbar-bg-color 0 0 0 3px, rgba(201, 211, 219, 0.5) 20px 14px 24px;
+    box-shadow: inset $level3_bg-color 0 0 0 3px, rgba(201, 211, 219, 0.5) 20px 14px 24px;
 
     >svg {
       opacity: 1;
-      color: $navbar-bg-color;
+      color: $level3_bg-color;
     }
 
     &.dropped {
@@ -157,7 +157,7 @@
 //**************
 
 .validation-step__type {
-  border: 2px solid $navbar-bg-color;
+  border: 2px solid $level3_bg-color;
   position: absolute;
   display: flex;
   justify-content: center;
@@ -167,12 +167,12 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background-color: $navbar-bg-color;
-  color: $navbar-brand-color
+  background-color: $level3_bg-color;
+  color: $level3_text-color
 }
 
 .sortable-item {
-  border: 2px solid $navbar-bg-color;
+  border: 2px solid $level3_bg-color;
   height: 200px;
   width: 120px
 }

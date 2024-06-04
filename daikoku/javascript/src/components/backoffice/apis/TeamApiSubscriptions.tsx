@@ -190,7 +190,7 @@ export const TeamApiSubscriptions = ({ api, currentTeam }: TeamApiSubscriptionsP
               <span>{info.getValue()}</span>
               <BeautifulTitle title={title} html>
 
-                <div className="badge iconized">A</div>
+                <div className="badge badge-custom">A</div>
               </BeautifulTitle>
             </div>
           );
@@ -267,17 +267,17 @@ export const TeamApiSubscriptions = ({ api, currentTeam }: TeamApiSubscriptionsP
         const sub = info.row.original;
         return (<div className="btn-group">
           <BeautifulTitle title={translate('Update metadata')}>
-            <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-access-negative me-1" onClick={() => updateMeta(sub)}>
+            <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-outline-primary me-1" onClick={() => updateMeta(sub)}>
               <i className="fas fa-pen" />
             </button>
           </BeautifulTitle>
           <BeautifulTitle title={translate('Refresh secret')}>
-            <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-access-negative btn-outline-danger me-1" onClick={() => regenerateSecret(sub)}>
+            <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-outline-primary btn-outline-danger me-1" onClick={() => regenerateSecret(sub)}>
               <i className="fas fa-sync" />
             </button>
           </BeautifulTitle>
           <BeautifulTitle title={translate('api.delete.subscription')}>
-            <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-access-negative btn-outline-danger" onClick={() => deleteSubscription(sub)}>
+            <button key={`edit-meta-${sub._id}`} type="button" className="btn btn-sm btn-outline-primary btn-outline-danger" onClick={() => deleteSubscription(sub)}>
               <i className="fas fa-trash-alt"></i>
             </button>
           </BeautifulTitle>
@@ -381,7 +381,7 @@ export const TeamApiSubscriptions = ({ api, currentTeam }: TeamApiSubscriptionsP
       <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
         <div className="px-2">
           <div className='d-flex flex-row justify-content-start align-items-center mb-2'>
-            <button className='btn btn-sm btn-outline-primary' onClick={() => openFormModal({
+            <button className='btn btn-sm btn-outline-info' onClick={() => openFormModal({
               actionLabel: translate("Filter"),
               onSubmit: data => {
                 setFilters(data)

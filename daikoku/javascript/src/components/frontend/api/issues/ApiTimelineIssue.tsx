@@ -19,7 +19,7 @@ import { ModalContext } from '../../../../contexts';
 
 const styles = {
   commentHeader: {
-    backgroundColor: 'var(--body-bg-color, #fff)',
+    backgroundColor: 'var(--body_bg-color, #fff)',
     borderTopLeftRadius: '8px',
     borderTopRightRadius: '8px',
   },
@@ -35,10 +35,10 @@ const styles = {
     color: '#fff'
   }),
   commentBody: {
-    border: '1px solid var(--body-bg-color, #f8f9fa)',
+    border: '1px solid var(--body_bg-color, #f8f9fa)',
     borderBottomLeftRadius: '8px',
     borderBottomRightRadius: '8px',
-    backgroundColor: 'var(--section-bg-color, #f8f9fa)',
+    backgroundColor: 'var(--level2_bg-color, #f8f9fa)',
   },
 };
 
@@ -232,11 +232,11 @@ export function ApiTimelineIssue({
             <button className="btn btn-outline-success me-1" onClick={() => updateIssue(issue)}>
               {translate('Save')}
             </button>
-            <button className="btn btn-access-negative" onClick={() => handleEdition(false)}>
+            <button className="btn btn-outline-primary" onClick={() => handleEdition(false)}>
               {translate('Cancel')}
             </button>
           </div>) : (<>
-            <button className="btn btn-access-negative me-1" onClick={() => handleEdition(true)}>
+            <button className="btn btn-outline-primary me-1" onClick={() => handleEdition(true)}>
               {translate('Edit')}
             </button>
           </>)}
@@ -337,7 +337,7 @@ function Comment({
             <>
               {showActions ? (
                 <div className="ml-auto">
-                  <button className="btn btn-xs btn-access-negative me-1" onClick={editComment}>
+                  <button className="btn btn-xs btn-outline-primary me-1" onClick={editComment}>
                     <i className="fas fa-pen align-self-center" />
                   </button>
                   {i !== 0 && (

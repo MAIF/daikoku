@@ -7,9 +7,9 @@
   display: flex;
   align-items: center;
   padding: var(--vertical-padding) 10px;
-  background-color: #fff;
+  background-color: $level3_bg-color;
   border: 1px solid #dedede;
-  color: #222;
+  color: $level3_text-color;
   box-sizing: border-box;
 
   margin-top: 5px;

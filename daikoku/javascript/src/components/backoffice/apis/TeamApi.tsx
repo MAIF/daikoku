@@ -69,7 +69,7 @@ const CreateNewVersionButton = ({
   };
 
   return (
-    <button onClick={promptVersion} className="btn btn-sm btn-outline-primary ms-1">
+    <button onClick={promptVersion} className="btn btn-sm btn-outline-info ms-1">
       <Plus />
     </button>
   );
@@ -206,7 +206,7 @@ export const TeamApi = (props: { creation: boolean }) => {
     if (currentTeam && api) {
       const backButton = (
         <Link
-          className="d-flex justify-content-around mt-3 align-items-center"
+          className="d-flex justify-content-around mt-3 align-items-center companion-link"
           style={{
             border: 0,
             background: 'transparent',
@@ -239,7 +239,7 @@ export const TeamApi = (props: { creation: boolean }) => {
                   component: (
                     <Link
                       to={`/${currentTeam._humanReadableId}/${params.apiId}/${params.versionId}/description`}
-                      className="btn btn-sm btn-access-negative mb-2">
+                      className="btn btn-sm btn-outline-primary mb-2">
                       {translate('View this Api')}
                     </Link>
                   ),
@@ -271,14 +271,14 @@ export const TeamApi = (props: { creation: boolean }) => {
           {props.creation ? (<h2>{_api.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
             <h2 className="me-2">{_api.name} {additionalHeader ? ` - ${additionalHeader}` : ''}</h2>
           </div>)}
-          <button onClick={() => toggleExpertMode()} className="btn btn-sm btn-outline-primary">
+          <button onClick={() => toggleExpertMode()} className="btn btn-sm btn-outline-info">
             {expertMode && translate('Standard mode')}
             {!expertMode && translate('Expert mode')}
           </button>
         </div>
         <div className="row">
           <div className="section col container-api">
-            <div className="mt-2">
+            <div className="my-2">
               {tab === 'documentation' && (
                 <TeamApiDocumentation
                   creationInProgress={props.creation}

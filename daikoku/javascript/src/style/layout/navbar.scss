@@ -4,16 +4,16 @@
 }
 
 a.navbar-brand, #teamSelector:hover {
-  color:$navbar-brand-color;
-}
+  color:$sidebar-text-color;
+} 
 
 .navbar .Select.has-value.Select--single > .Select-control .Select-value .Select-value-label, .Select.has-value.is-pseudo-focused.Select--single > .Select-control .Select-value .Select-value-label {
   color: #fff;
 }
 
 .navbar {
-  background-color: $navbar-bg-color;
-  padding: .5rem 1rem;
+  background-color: $sidebar-bg-color;
+  // padding: .5rem 1rem;
 }
 
 .logo-anonymous {
@@ -24,17 +24,18 @@ a.navbar-brand, #teamSelector:hover {
 }
 
 .dropdown-menu {
-  background-color: $menu-bg-color;
+  background-color: $level3_bg-color;
 }
 .dropdown-item {
-  color:$menu-text-color;
+  color:$level3_link-color;
   &:hover {
-    background-color: $menu-text-hover-bg-color;
-    color: $menu-text-hover-color
+    background-color: $level3_link-hover-bg-color;
+    color: $level3_link-hover-color
   }
 }
 .dropdown-divider{
-  border-color: $menu-divider-color;
+  border-color:  $level3_link-color;
+
 }
 .add-member-select, .general-search{
   width: 400px;
@@ -66,12 +67,12 @@ a.navbar-brand, #teamSelector:hover {
   }
 }
 
-.darkmode {
-  color: $navbar-text-color;
-  &:hover{
-    color:$navbar-text-hover-color;
-  }
-}
+// .darkmode {
+//   color: $navbar-text-color;
+//   &:hover{
+//     color:$navbar-text-hover-color;
+//   }
+// }
 
 
 
@@ -101,9 +102,9 @@ a.navbar-brand, #teamSelector:hover {
   z-index: 1000;
   top: 0;
   left: 55px;
-  background-color: $body-bg-color;
-  color: $body-text-color;
-
+  background-color: $companion_bg-color;
+  color: $companion_text-color;
+  filter: brightness(105%);
   transition: width .2s ease-in-out;
 
   &.opened {
@@ -119,8 +120,8 @@ a.navbar-brand, #teamSelector:hover {
     width: 40px;
     &:hover {
       border-radius: 50%;
-      background-color: $section-bg-color;
-      color: $section-text-color;
+      background-color:   $companion_text-hover-bg-color;  
+      color: var( --companion-link-hover-text-color);
     }
   }
 }
@@ -151,26 +152,23 @@ a.navbar-brand, #teamSelector:hover {
   .blocks {
     .block {
       .block__category {
-        color: gray;
+        color: $companion_text-color;
         text-transform: capitalize;
         font-weight: 600;
         font-size: 12px;
-      }
-      .block__border {
-        border-left: 1px solid var(--navbar-bg-color, #7f96af);
       }
       .block__entries {
         .block__entry__link {
           cursor: pointer;
           font-size: 14px;
-          color: $sidebar-text-color;
+          color: $companion_link-color;
           margin-bottom: 5px;
           line-height: 40px;
           border-radius: 4px;
           padding-left: .5rem;
           &:hover {
-            background-color: var(--menu-text-hover-bg-color, #9bb0c5);
-            color: var(--menu-text-hover-color, #fff);
+            background-color: $companion_text-hover-bg-color;
+            color: $companion_text-hover-color;
           }
         }
       }
@@ -182,7 +180,9 @@ a.navbar-brand, #teamSelector:hover {
 
 .navbar-companion {
   z-index: 10;
-  background-color: $sidebar-bg-color;
+  background-color: $companion_bg-color;
+  // color: $level1_text-color;
+  filter: brightness(105%);
   height: 100vh;
   position: relative;
   min-width: 20px;
@@ -216,7 +216,7 @@ a.navbar-brand, #teamSelector:hover {
       text-overflow: ellipsis;
       white-space: nowrap;
       line-height: 1.14286;
-      color: $sidebar-text-color;
+      color: $companion_text-color;
       font-weight: 600;
 
       h3{
@@ -234,14 +234,14 @@ a.navbar-brand, #teamSelector:hover {
           .block__entry__link {
             cursor: pointer;
             font-size: 14px;
-            color: $sidebar-text-color;
+            color: $companion_link-color;
             margin-bottom: 5px;
             line-height: 40px;
             border-radius: 4px;
             padding-left: .5rem;
             &.active {
-              background-color: $menu-text-hover-bg-color;
-              color: $menu-text-hover-color;
+              background-color: $companion_text-hover-bg-color;
+              color:$companion_text-hover-color;
             }
 
             &.disabled {
@@ -250,15 +250,15 @@ a.navbar-brand, #teamSelector:hover {
             }
 
             &:not(.disabled):hover {
-              background-color: $menu-text-hover-bg-color;
-              color: var(--menu-text-hover-color, #fff);
+              background-color: $companion_text-hover-bg-color;
+              color: $companion_text-hover-color;
             }
           }
 
           .submenu__entry__link {
             cursor: pointer;
             font-size: 14px;
-            color: $sidebar-text-color;
+            color: $companion_link-color;
             margin-bottom: 4px;
             line-height: 35px;
             padding-left: .5rem;
@@ -266,8 +266,10 @@ a.navbar-brand, #teamSelector:hover {
             height: 35px;
 
             &.active {
-              border-bottom: 1px solid $menu-text-hover-bg-color;
-              // color: $menu-text-hover-color;
+              // border-bottom: 1px solid $companion_text-hover-bg-color;
+              // color: $companion_text-hover-color;
+              background-color: $companion_text-hover-bg-color;
+              color: $companion_text-hover-color;
             }
             
             &.disabled {
@@ -276,7 +278,9 @@ a.navbar-brand, #teamSelector:hover {
             }
             
             &:hover {
-              border-bottom: 1px solid $menu-text-hover-bg-color;
+              // border-bottom: 1px solid $companion_text-hover-bg-color;
+              background-color: $companion_text-hover-bg-color;
+              color: $companion_text-hover-color;
             }
           }
 
@@ -306,7 +310,7 @@ a.navbar-brand, #teamSelector:hover {
     }
 
     &:hover {
-      background-color: $navbar-bg-color;
+      // background-color: $navbar-bg-color;
       color: #fff;
       border: 1px solid rgba(0, 0, 0, .1);
     }
@@ -332,8 +336,8 @@ a.navbar-brand, #teamSelector:hover {
   border-radius: 4px;
   padding-left: .5rem;
   &.active {
-    background-color: $menu-text-hover-bg-color;
-    color: $menu-text-hover-color;
+    background-color: $companion_text-hover-bg-color;
+    color: $companion_text-hover-color;
   }
 
   &.disabled {
@@ -342,7 +346,7 @@ a.navbar-brand, #teamSelector:hover {
   }
 
   &:hover {
-    background-color: $menu-text-hover-bg-color;
+    background-color: $companion_text-hover-bg-color;
     color: var(--menu-text-hover-color, #fff);
   }
 }

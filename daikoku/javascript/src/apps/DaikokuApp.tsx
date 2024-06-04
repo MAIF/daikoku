@@ -17,6 +17,7 @@ import {
   UnauthenticatedFooter,
   UnauthenticatedHome,
   UnauthenticatedTopBar,
+  AtomicDesign
 } from '../components/frontend';
 
 import { MessagesProvider, MyProfile, NotificationList } from '../components/backoffice';
@@ -145,6 +146,14 @@ export const DaikokuApp = () => {
                     element={
                       <RouteWithTitle title={`${tenant.title} - ${translate('Notifications')}`}>
                         <NotificationList />
+                      </RouteWithTitle>
+                    }
+                  />
+                  <Route
+                    path="/atomicDesign"
+                    element={
+                      <RouteWithTitle title={`${tenant.title} - ${translate('Notifications')}`}>
+                        <AtomicDesign />
                       </RouteWithTitle>
                     }
                   />
@@ -401,7 +410,7 @@ export const DaikokuApp = () => {
               {['/settings', '/notifications', '/me', '/:teamId/settings'].map((r) => (
                 <Route key={r} path={r} element={<></>} />
               ))}
-              <Route path="/" element={<Footer isBackOffice={false} />} />
+              <Route path="*" element={<Footer isBackOffice={false} />} />
             </Routes>
           </ModalProvider>
 

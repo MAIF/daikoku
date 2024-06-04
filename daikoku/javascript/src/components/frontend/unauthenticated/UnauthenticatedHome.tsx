@@ -57,19 +57,19 @@ export function UnauthenticatedHome({ children }: PropsWithChildren) {
                 )}
                 <p>
                   {tenant.authProvider === 'Local' && (
-                    <a className="btn btn-access-negative my-2 ms-2" href={'/signup'}>
+                    <a className="btn btn-outline-primary my-2 ms-2" href={'/signup'}>
                       <i className="fas fa-plus-square me-1" />
                       <Translation i18nkey="Create your account">Create your account</Translation>
                     </a>
                   )}
                   {false && tenant.authProvider === 'Local' && (
-                    <a className="btn btn-access-negative my-2 ms-2" href={'/reset'}>
+                    <a className="btn btn-outline-primary my-2 ms-2" href={'/reset'}>
                       <i className="fas fa-bomb me-1" />
                       <Translation i18nkey="Reset your password">Reset your password</Translation>
                     </a>
                   )}
 
-                  <a className="btn btn-access-negative my-2 ms-2" href={`/auth/Local/login`}>
+                  <a className="btn btn-outline-primary my-2 ms-2" href={`/auth/Local/login`}>
                     <i className="fas fa-user me-1" />
                     <Translation i18nkey="Connect to your account">
                       Connect to your account
@@ -77,7 +77,7 @@ export function UnauthenticatedHome({ children }: PropsWithChildren) {
                   </a>
                   {tenant.authProvider !== 'Local' && (
                     <a
-                      className="btn btn-access-negative my-2 ms-2"
+                      className="btn btn-outline-primary my-2 ms-2"
                       href={`/auth/${tenant.authProvider}/login`}
                     >
                       <i className="fas fa-user me-1" />

@@ -187,7 +187,7 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
       />
       <button
         type="button"
-        className="ms-3 btn btn-sm btn-access-negative float-right"
+        className="ms-3 btn btn-sm btn-outline-primary float-right"
         title={translate('Reload the table content')}
         onClick={update}
       >

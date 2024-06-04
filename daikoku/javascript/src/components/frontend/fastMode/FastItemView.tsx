@@ -41,7 +41,7 @@ export const FastItemView = (props: FastItemViewProps) => {
     <div className="section p-3 mb-2 text-center">
       {props.viewMode === 'PLAN' && props.planInfo &&
         <div className="card shadow-sm">
-          <div className="card-img-top card-link card-skin" data-holder-rendered="true">
+          <div className="card-img-top card-link card-header" data-holder-rendered="true">
             <span>{props.planInfo.customName || formatPlanType(props.planInfo, translate)}</span>
           </div>
           <div className="card-body plan-body d-flex flex-column">
@@ -67,29 +67,12 @@ export const FastItemView = (props: FastItemViewProps) => {
       }
       {props.viewMode === 'APIKEY' && props.planInfo && props.subscriptions &&
         <div className="card">
-          <div className="card-header" style={{ position: 'relative' }}>
-            <div className="d-flex align-items-center justify-content-between">
-              <BeautifulTitle
-                title={props.planInfo.customName || ''}
-                style={{
-                  wordBreak: 'break-all',
-                  marginBlockEnd: '0',
-                  whiteSpace: 'nowrap',
-                  maxWidth: '85%',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  fontSize: '1.5rem'
-                }}
-                className="plan-name"
-              >
+          <div className="card-header flex-column">         
                 {props.planInfo.customName}
-              </BeautifulTitle>
-            </div>
             <span
-              className="badge bg-secondary"
-              style={{ position: 'absolute', left: '1.25rem', bottom: '-8px' }}
+              className="badge bg-secondary" style={{fontSize:"12px"}}
             >
-              {formatPlanType(props.planInfo, translate)}
+              Type : {formatPlanType(props.planInfo, translate)}
             </span>
           </div>
           <div className="card-body" style={{ margin: 0 }}>

@@ -309,7 +309,7 @@ export const ApiHome = ({
         (pendingTeams.includes(teams[0]._id) || authorizedTeams.includes(teams[0]._id))) ||
         showAccessModal.api.authorizations.every((auth: any) => auth.pending && !auth.authorized) ? (<>
           <h2 className="text-center my-3">{translate('request_already_pending')}</h2>
-          <button className="btn btn-outline-primary mx-auto" style={{ width: 'fit-content' }} onClick={() => navigate(-1)}>
+          <button className="btn btn-outline-info mx-auto" style={{ width: 'fit-content' }} onClick={() => navigate(-1)}>
             {translate('go_back')}
           </button>
         </>) : (<>
@@ -344,7 +344,7 @@ export const ApiHome = ({
 
   return (<main role="main">
     <ApiHeader api={api} ownerTeam={ownerTeam} connectedUser={connectedUser} toggleStar={toggleStar} tab={params.tab} />
-    <div className="album py-2 col-12 min-vh-100">
+    <div className="album py-2 me-4 min-vh-100">
       <div className={classNames({
         'container-fluid': params.tab === 'swagger',
         container: params.tab !== 'swagger'

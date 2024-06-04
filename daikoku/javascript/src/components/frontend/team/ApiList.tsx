@@ -301,7 +301,7 @@ export const ApiList = (props: TApiList) => {
       <div className="row mb-2 view-selectors">
         <div className="col-12 col-sm-9 d-flex justify-content-end">
           <button
-            className={classNames('btn btn-sm btn-access-negative me-2', { active: view === LIST })}
+            className={classNames('btn btn-sm btn-outline-primary me-2', { active: view === LIST })}
             onClick={() => {
               setView(LIST)
               setPage(0)
@@ -312,7 +312,7 @@ export const ApiList = (props: TApiList) => {
             <List />
           </button>
           <button
-            className={classNames('btn btn-sm btn-access-negative', { active: view === GRID })}
+            className={classNames('btn btn-sm btn-outline-primary', { active: view === GRID })}
             onClick={() => {
               setView(GRID)
               setPage(0)
@@ -484,7 +484,7 @@ const YourTeams = ({
           .map((team) => {
             return (
               <span
-                className="p-1 cursor-pointer underline-on-hover text-break"
+                className="p-1 cursor-pointer underline-on-hover text-break level2-link"
                 key={team._id}
                 onClick={() => redirectToTeam(team)}
               >

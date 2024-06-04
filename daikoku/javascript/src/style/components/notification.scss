@@ -1,17 +1,20 @@
-.notification-link, .messages-link {
-  color: $navbar-text-color;
+.notification-link,
+.messages-link {
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
 
-  &:hover {
-    color: $navbar-text-hover-color;
-    text-decoration: none;
+  &-color {
+    color: $sidebar-text-color;
+    &:hover {
+      color: $sidebar-text-hover-color;
+      text-decoration: none;
 
-    &::before{
-      border-color: $navbar-text-hover-color;
-    } 
+      &::before {
+        border-color: $sidebar-text-hover-color;
+      }
+    }
   }
 }
 
@@ -25,7 +28,7 @@
   right: 3px;
   background-color: $danger-color;
   border-radius: 50%;
-  border: 2px solid $navbar-text-color;
+  // border: 2px solid $navbar-text-color;
   box-sizing: content-box;
   z-index: 1;
 }

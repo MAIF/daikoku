@@ -59,8 +59,7 @@ case class DaikokuStyle(
 
   --body-bg-color: #fff;
   --body-text-color: #212529;
-  --navbar-bg-color: #7f96af;
-  --navbar-brand-color: #aaa;
+  
   --menu-bg-color: #fff;
   --menu-text-color: #212529;
   --menu-text-hover-bg-color: #9bb0c5;

@@ -1,4 +1,4 @@
-@import '../variables.scss';
+@import "../variables.scss";
 
 .month__and__total {
   width: 100%;
@@ -13,8 +13,8 @@
   display: flex;
   justify-content: space-between;
   //border: 1px solid #bbc9d8;
-  background-color: $sidebar-bg-color;
-
+  background-color: $level3_bg-color;
+  color: $level3_text-color;
   .title__container__bloc {
     display: flex;
     align-items: center;
@@ -36,13 +36,13 @@
 }
 
 .api__billing__card__container {
- // background-color: #ececec;
+  // background-color: #ececec;
   margin-left: 6px;
   margin-top: 10px;
 
   .api__billing__card {
     cursor: pointer;
-    background-color: $sidebar-bg-color;
+    background-color: $level3_bg-color;
     //border: 1px solid #e8e8e8;
     padding: 10px;
     width: 160px;
@@ -57,13 +57,13 @@
 
 .currency__total {
   font-size: 24px;
-  color: #007bff;
+  color: $level3_text-color;
   margin-left: 8px;
 }
 
 .currency {
   font-size: 24px;
-  color: #007bff;
+  color: $level3_text-color;
 
   .unit {
     margin-left: 10px;
@@ -88,31 +88,32 @@
 
   .price__cartridge__total {
     font-size: 18px;
-    color: #007bff;
+    color: $level3_text-color;
   }
 }
 
 .apikeys {
   text-align: center;
   margin-top: 40px;
-
+  .api-plans-consumptions {
+    background-color: $level3_bg-color;
+  }
   @media screen and (max-width: 768px) {
-        position: absolute;
-        top:120px;
+    position: absolute;
+    top: 120px;
 
-      .api-plans-consumptions{
-        background-color: hsla(0, 0%, 83%, 1);
-        padding-bottom: 20px;
-        border: 1px solid #7f96af;
-        // min-height: 200px;
-      }
+    .api-plans-consumptions {
+      padding-bottom: 20px;
+      border: 1px solid #7f96af;
+      // min-height: 200px;
+    }
   }
 
   .api__plans__consumption__header {
     display: flex;
     justify-content: space-between;
     font-size: 20px;
-    color: $link-color;
+    color: $level3_text-color;
     padding: 15px 5px;
 
     i.quit {
@@ -140,7 +141,7 @@
     font-size: 14px;
   }
 }
-.no-data__container{
+.no-data__container {
   display: flex;
   justify-content: center;
   margin: 10px;

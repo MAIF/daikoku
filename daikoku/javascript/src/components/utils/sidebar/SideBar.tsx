@@ -74,7 +74,7 @@ export const SideBar = () => {
             <>
               <div className="nav_item mb-3 cursor-pointer">
                 <Search
-                  className="notification-link"
+                  className="notification-link notification-link-color"
                   onClick={() => {
                     setPanelState(state.opened);
                     setPanelContent(<SearchPanel />);
@@ -83,7 +83,7 @@ export const SideBar = () => {
               </div>
               <div className="nav_item mb-3 cursor-pointer">
                 <Plus
-                  className="notification-link"
+                  className="notification-link notification-link-color"
                   aria-label="create"
                   onClick={() => {
                     setPanelState(state.opened);
@@ -102,7 +102,7 @@ export const SideBar = () => {
               title={translate('fastMode.access')}
             >
               <Zap
-                className="notification-link" />
+                className="notification-link notification-link-color" />
             </Link>
           )}
         </div>
@@ -112,7 +112,7 @@ export const SideBar = () => {
             <Link
               to="/settings/messages"
               className={classNames(
-                'nav-item mb-3 notification-link messages-link cursor-pointer',
+                'nav-item mb-3 notification-link  notification-link-color messages-link cursor-pointer',
                 {
                   'unread-notifications': totalUnread > 0,
                 }
@@ -125,7 +125,7 @@ export const SideBar = () => {
           {!connectedUser.isGuest && !isAdmin && (
             <div
               className={classNames(
-                'nav-item mb-3 notification-link messages-link cursor-pointer',
+                'nav-item mb-3 notification-link notification-link-color messages-link cursor-pointer',
                 {
                   'unread-notifications': totalUnread > 0,
                 }
@@ -143,7 +143,7 @@ export const SideBar = () => {
             <div className="nav_item mb-3">
               <Link
                 className={classNames({
-                  'notification-link': true,
+                  'notification-link notification-link-color': true,
                   'unread-notifications': !!unreadNotificationsCount,
                 })}
                 to="/notifications"
@@ -154,7 +154,7 @@ export const SideBar = () => {
             </div>
           )}
           <div className="nav_item mb-3">
-            <DarkModeActivator className="notification-link" />
+            <DarkModeActivator className="notification-link notification-link-color" />
           </div>
 
           <div className="nav_item mb-3" style={{ color: '#fff' }}>
@@ -191,7 +191,7 @@ export const SideBar = () => {
         })}
       >
         <div className="mt-2 ms-2 ">
-          <div className="cursor-pointer navbar-panel__back d-flex align-items-center justify-content-center">
+          <div className="cursor-pointer navbar-panel__back d-flex align-items-center justify-content-center companion-link">
             <ArrowLeft className="" onClick={() => setPanelState(state.closed)} />
           </div>
         </div>

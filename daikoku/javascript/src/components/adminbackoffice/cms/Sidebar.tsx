@@ -151,7 +151,7 @@ export default React.memo(React.forwardRef<SideBarRef, any>(({ setFinalValue, up
             </span>
           </div>)}
           <div className="d-flex mt-3">
-            <button className="btn btn-sm btn-outline-primary me-1" style={{ flex: 1 }} type="button" onClick={() => navigate('/settings/pages', { state: { reload: true } })}>
+            <button className="btn btn-sm btn-outline-info me-1" style={{ flex: 1 }} type="button" onClick={() => navigate('/settings/pages', { state: { reload: true } })}>
               {translate('cms.create.back_to_pages')}
             </button>
             <button className="btn btn-sm btn-outline-success" style={{ flex: 1 }} type="button" onClick={updatePage}>

@@ -142,7 +142,7 @@ export function TeamApiPost({
         return (
           <div>
             <button
-              className='btn btn-sm btn-outline-primary me-2'
+              className='btn btn-sm btn-outline-info me-2'
               onClick={() => openFormModal({
                 title: translate('team_api_post.update'),
                 schema,

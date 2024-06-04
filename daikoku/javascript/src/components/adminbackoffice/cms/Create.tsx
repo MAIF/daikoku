@@ -127,15 +127,17 @@ export const Create = (props: any) => {
     <div
       style={{
         height: '42px',
-        backgroundColor: '#fff',
+        // backgroundColor: '#fff',
         display: 'flex',
         alignItems: 'center',
-        boxShadow: selected ? '0 1px 3px rgba(25,25,25,.5)' : 'none', //@ts-ignore //FIXME
-        backgroundColor: 'var(--sidebar-bg-color, #f8f9fa)',
+        // boxShadow: selected ? '0 1px 3px rgba(25,25,25,.5)' : 'none', //@ts-ignore //FIXME
+        // backgroundColor: 'var(--sidebar-bg-color, #f8f9fa)',
         zIndex: selected ? 2 : 0,
+        borderTopLeftRadius: "4px",
+        borderTopRightRadius:"4px"
       }}
       onClick={onClick}
-      className="px-3"
+      className={`px-3 level2-link__with-bg ${selected ? 'level2-link__active-bg' : ''}`}
     >
       <button className="btn btn-sm" type="button">
         {title}
@@ -160,7 +162,7 @@ export const Create = (props: any) => {
         pages={props.pages}
         setContentType={setContentType}
         inValue={inValue.side} />}
-      <div className="p-2 d-flex flex-column" style={{ flex: 1, overflow: 'hidden' }}>
+      <div className="p-2 d-flex flex-column level2" style={{ flex: 1, overflow: 'hidden' }}>
         {editable && <div className="d-flex align-items-center mt-2">
           {[
             { title: translate('cms.create.draft'), id: 0, showPreview: () => setTab(0) },

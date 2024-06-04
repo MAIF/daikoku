@@ -1,7 +1,7 @@
 body {
   font-family: Custom, Raleway, Helvetica, sans-serif;
-  background-color: $body-bg-color;
-  color: $body-text-color;
+  background-color: $level1_bg-color;
+  color: $level1_text-color;
   font-size: 1rem;
 }
 
@@ -12,7 +12,7 @@ body {
 
 .a-fake,
 a {
-  color: $link-color;
+  color: $level1_link-color;
 }
 
 .a-fake {
@@ -21,7 +21,7 @@ a {
 
 .a-fake:hover,
 a:hover {
-  color: $link-hover-color;
+  color: $level1_link-hover-color;
 }
 
 .cursor-pointer {
@@ -57,7 +57,7 @@ hr {
 }
 
 main {
-  background-color: $body-bg-color;
+  background-color: $level1_bg-color;
 
   // .jumbotron {
   //   background-color: #fff;
@@ -95,8 +95,8 @@ a.nav-link.active {
 
 .section,
 .album {
-  background-color: $section-bg-color;
-  color: $section-text-color;
+  background-color: $level2_bg-color;
+  color: $level2_text-color;
 }
 
 .underline-on-hover:hover {
@@ -104,12 +104,12 @@ a.nav-link.active {
 }
 
 .additionalContent {
-  background-color: $sidebar-bg-color;
-  color: $sidebar-text-color;
+  background-color: $level2_bg-color;
+  color: $level2_text-color;
 }
 
 .navDocumentation {
-  border-right: 1px solid $link-color;
+  border-right: 1px solid $level2_link-color;
 
   ul {
     list-style: none;
@@ -124,17 +124,17 @@ a.nav-link.active {
       padding: 0 0.5rem;
       display: block;
       width: 100%;
-      color: $menu-text-color;
+      color: $companion_text-color;
       margin-bottom: 0.3rem;
 
       &:hover {
-        background-color: $menu-text-hover-bg-color;
-        color: $menu-text-hover-color;
+        background-color: $companion_text-hover-bg-color;
+        color: $companion_text-hover-color;
       }
 
       &.active {
-        background-color: $menu-text-hover-bg-color;
-        color: $menu-text-hover-color;
+        background-color: $companion_text-hover-bg-color;
+        color: $companion_text-hover-color;
       }
     }
   }
@@ -220,8 +220,8 @@ img:hover + .changePicture,
   .nav-link:hover,
   .nav-link:focus {
     cursor: pointer;
-    background-color: $btn-bg-hover-color;
-    color: $btn-text-hover-color;
+    background-color: $btn-border-color;
+    color: $btn-bg-color;
   }
 
   .nav-link.active,
@@ -311,9 +311,9 @@ img:hover + .changePicture,
 .wrapper:not(.information-container) {
   height: 100vh;
   overflow: scroll;
-  padding-top: 10px;
-  padding-left: 5px;
-  padding-right: 20px;
+  // padding-top: 10px;
+  // padding-left: 5px;
+  // padding-right: 20px;
 }
 
 a {
@@ -331,5 +331,53 @@ a {
 
   img {
     width: 100%;
+  }
+}
+
+.companion-link {
+  color: $companion_link-color;
+  &:hover {
+    background-color: $companion_text-hover-bg-color;
+    color: $companion_text-hover-color;
+  }
+}
+
+.level1-link {
+  color: $level1_link-color;
+  &:hover {
+    color: $level1_link-hover-color;
+  }
+}
+
+.level1{
+  background-color: $level1_bg-color;
+  color: $level1_text-color;
+}
+.level2 {
+  background-color: $level2_bg-color;
+  color: $level2_text-color;
+}
+.level3 {
+  background-color: $level3_bg-color;
+  color: $level3_text-color;
+}
+.level3-link {
+  color: $level3_link-color;
+  &:hover {
+    color: $level3_link-hover-color;
+    background-color: $level3_link-hover-bg-color;
+  }
+}
+
+.level2-link {
+  color: $level2_link-color;
+  &:hover {
+    color: $level2_link-hover-color;
+  }
+  &__with-bg:hover,
+  &__active-bg {
+    color: var(--btn-text-color);
+    background-color: var(--btn-bg-color);
+    border-color: var(--btn-border-color);
   }
 }

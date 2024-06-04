@@ -74,7 +74,7 @@ export const MessagePanel = () => {
         />
         <button
           disabled={loading ? true : undefined}
-          className="ms-2 btn btn-outline-primary"
+          className="ms-2 btn btn-outline-info"
           onClick={sendMessage}
         >
           <Send />
@@ -127,7 +127,7 @@ export const MessagePanel = () => {
                   <div className="d-flex flex-row justify-content-center my-1">
                     <button
                       disabled={loading ? true : undefined}
-                      className="btn btn-sm btn-outline-primary"
+                      className="btn btn-sm btn-outline-info"
                       onClick={() => getPreviousMessages(connectedUser._id)}
                     >
                       <Translation i18nkey="Load previous messages">

@@ -338,7 +338,7 @@ export const NotificationList = () => {
             })}
           </div>
           {(state as any).nextIsPending && <Spinner />}
-          {!(state as any).nextIsPending && moreBtnIsDisplay() && (<button className="btn btn-access-negative my-2 ms-2" onClick={() => getMoreNotifications()}>
+          {!(state as any).nextIsPending && moreBtnIsDisplay() && (<button className="btn btn-outline-primary my-2 ms-2" onClick={() => getMoreNotifications()}>
             <Translation i18nkey="more">more</Translation>
           </button>)}
         </div>

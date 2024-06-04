@@ -106,21 +106,21 @@ export function ApiFilter({
     <div className="d-flex flex-row justify-content-between">
       <div className="d-flex align-items-center">
         <button
-          className={classNames(`btn btn-outline-primary`, { active: filter === 'all' })}
+          className={classNames(`btn btn-outline-info`, { active: filter === 'all' })}
           style={{ borderTopRightRadius: 0, borderBottomRightRadius: 0 }}
           onClick={() => handleFilter('all')}
         >
           {translate('All')}
         </button>
         <button
-          className={classNames(`btn btn-outline-primary`, { active: filter === 'open' })}
+          className={classNames(`btn btn-outline-info`, { active: filter === 'open' })}
           style={{ borderRadius: 0 }}
           onClick={() => handleFilter('open')}
         >
           {translate('issues.open')}
         </button>
         <button
-          className={classNames(`btn btn-outline-primary`, { active: filter === 'closed' })}
+          className={classNames(`btn btn-outline-info`, { active: filter === 'closed' })}
           style={{ borderLeft: 0, borderTopLeftRadius: 0, borderBottomLeftRadius: 0 }}
           onClick={() => handleFilter('closed')}
         >
@@ -146,7 +146,7 @@ export function ApiFilter({
       {connectedUser && !connectedUser.isGuest && (
         <div>
           <Can I={manage} a={API} team={ownerTeam}>
-            <Link to={`${basePath}/labels`} className="btn btn-outline-primary">
+            <Link to={`${basePath}/labels`} className="btn btn-outline-info">
               <i className="fa fa-tag me-1" />
               {translate('issues.tags')}
             </Link>
