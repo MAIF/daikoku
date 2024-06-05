@@ -1388,5 +1388,9 @@
   "aggregation.button.subscription.usual.label": "Souscrire avec une nouvelle clé d'API",
   "aggregation.button.subscription.disable.label": "Aucune clé d'API",
   "aggregation.button.subscription.enable.label": "Souscrire en étendant une clé d'API existante",
-  "documentation.not.setted.message":"Il semble qu'aucune documentation ne soit définie pour ce plan"
+  "documentation.not.setted.message":"Il semble qu'aucune documentation ne soit définie pour ce plan",
+  "profile.cmscli.reset.title": "CMS CLI",
+  "profile.cmscli.reset.token": "Renouveler le jeton",
+  "profile.cmscli.copy.token": "Copier",
+  "profile.cmscli.paste.token": "Copié"
 }

@@ -323,8 +323,6 @@ export const MyProfile = () => {
   const { translate, setLanguage, language, Translation, languages } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
 
-  console.debug({ languages, defaultValue: languages.find((l) => l.value === tenant.defaultLanguage) })
-
   const formSchema: Schema = {
     name: {
       type: type.string,
@@ -456,9 +454,10 @@ export const MyProfile = () => {
     return <Spinner />
   }
 
-  const resetToken = (copy) => {
-    let rawUser: any = user;
-    fetch(`/api/users/${rawUser._id as string}/session`, {
+  const resetToken = (copy?: boolean) => {
+    let rawUser: IUser = user;
+
+    fetch(`/api/users/${rawUser._id}/session`, {
       credentials: 'include'
     })
       .then(r => r.json())
@@ -475,7 +474,6 @@ export const MyProfile = () => {
       navigator.clipboard.writeText(`daikokucli login --token=${token}`);
 
       setCopiedTimeout(setTimeout(() => {
-        console.log('here')
         setCopiedTimeout(null)
       }, 1500))
     }
@@ -505,7 +503,7 @@ export const MyProfile = () => {
             <span
               className={`nav-link cursor-pointer ${tab === 'cms_cli' ? 'active' : ''}`}
               onClick={() => {
-                resetToken(undefined)
+                resetToken()
                 setTab('cms_cli')
               }}
             >
@@ -598,24 +596,17 @@ export const MyProfile = () => {
           <div className='d-flex align-items-center mt-3' style={{ gap: '.25rem' }}>
             <button
               type="button"
-              className="btn btn-sm btn-access-negative m-1"
-              onClick={resetToken}
-            >
-              Reset token
-            </button>
-            <button
-              type="button"
               disabled={copiedTimeout}
               className="btn btn-sm btn-access-negative m-1"
               onClick={copyToken}
             >
               {copiedTimeout ? <span>
-                <Translation i18nkey="profile.cmscli.paste">
+                <Translation i18nkey="profile.cmscli.paste.token">
                   Copied
                 </Translation>
                 <i className='fas fa-paste ms-1' />
               </span> : <span>
-                <Translation i18nkey="profile.cmscli.copy">
+                <Translation i18nkey="profile.cmscli.copy.token">
                   Copy
                 </Translation>
                 <i className='fas fa-copy ms-1' />
