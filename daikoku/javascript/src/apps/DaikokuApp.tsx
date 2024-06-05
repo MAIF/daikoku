@@ -346,7 +346,7 @@ export const DaikokuApp = () => {
                     path="/settings/anonymous-reports"
                     element={
                       <RouteWithTitle
-                        title={`${tenant.title} - ${translate('Anonymous reporting')}`}
+                        title={`${tenant.title} - ${translate('anonymous.reporting.title')}`}
                       >
                         <AnonymousReporting />
                       </RouteWithTitle>
