@@ -358,7 +358,7 @@ export const ApiHome = ({
             testing={api.testing}
             swagger={api.swagger}
             swaggerUrl={`/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger`}
-            callUrl={`/api/teams/${teamId}/testing/${api._id}/call`}
+            callUrl={`/api/teams/${ownerTeam._id}/testing/${api._id}/call`}
           />)}
           {params.tab === 'swagger' && (<ApiRedoc
             swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`} swaggerConf={api.swagger}/>)}

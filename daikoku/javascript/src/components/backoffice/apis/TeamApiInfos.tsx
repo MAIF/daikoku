@@ -58,7 +58,10 @@ export const TeamApiInfos = ({
       label: translate('Testing'), //@ts-ignore
       component: TeamApiTesting,
       skipTo: 'save',
-      disabled: tenant.display === 'environment'
+      disabled: tenant.display === 'environment',
+      props: {
+        currentTeam: team
+      }
     },
   ];
 
