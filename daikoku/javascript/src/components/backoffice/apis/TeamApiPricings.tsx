@@ -1377,7 +1377,6 @@ export const TeamApiPricings = (props: Props) => {
               />
             )}
             {queryPlans.data && selectedTab === 'testing' && (
-              //FIXME: inaccessible si pas de swagger
               <TeamApiTesting
                 currentTeam={props.currentTeam}
                 value={planForEdition}

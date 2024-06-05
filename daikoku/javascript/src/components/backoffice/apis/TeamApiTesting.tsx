@@ -22,6 +22,8 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
   const { translate, Translation } = useContext(I18nContext);
   const { confirm, openTestingApikeyModal, openSubMetadataModal } = useContext(ModalContext);
 
+  console.debug({props})
+
   const handleOtoroshiUsage = () => {
     const random = nanoid(16);
     const newConfig =

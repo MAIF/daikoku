@@ -62,8 +62,8 @@
     "set-value": "4.1.0",
     "showdown": "2.1.0",
     "sonner": "^1.4.0",
-    "swagger-editor": "4.12.1",
-    "swagger-ui-dist": "5.11.6",
+    "swagger-editor": "^4.12.2",
+    "swagger-ui-dist": "5.17.12",
     "xstate": "^4.38.3"
   },
   "devDependencies": {

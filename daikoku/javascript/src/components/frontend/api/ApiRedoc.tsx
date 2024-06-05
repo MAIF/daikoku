@@ -1,10 +1,11 @@
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
 import { RedocStandalone, SideNavStyleEnum } from 'redoc';
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { ISwagger, SpecificationType } from '../../../types';
 import { Option } from '../../utils/Option';
+
 
 type ApiRedocProps = {
   swaggerUrl: string,

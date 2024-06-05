@@ -5,7 +5,6 @@ import { Form, type, format, constraints, FormRef } from '@maif/react-forms';
 
 import { I18nContext } from '../../../contexts';
 
-import 'swagger-editor/dist/swagger-editor.css';
 import { IApi, ISwagger, IWithSwagger } from '../../../types';
 
 const defaultSwaggerContent = {

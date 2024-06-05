@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, splitVendorChunkPlugin } from 'vite';
 import { resolve } from 'path';
 import react from "@vitejs/plugin-react";
 import { visualizer } from "rollup-plugin-visualizer";
@@ -13,6 +13,7 @@ export default defineConfig({
       "/auth/Local/callback": "http://localhost:9000",
       "/logout": "http://localhost:9000",
       "/assets": "http://localhost:9000",
+      "/robots.txt": "http://localhost:9000"
     },
   },
   plugins: [react()],

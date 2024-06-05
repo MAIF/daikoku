@@ -18,7 +18,7 @@ GET     /api/users/:userId/session                      fr.maif.otoroshi.daikoku
 POST    /api/cms/sync                                   fr.maif.otoroshi.daikoku.ctrls.HomeController.sync()
 
 GET     /                                               fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
-GET     /robots.txt                                     fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
+GET     /robots.txt                                     fr.maif.otoroshi.daikoku.ctrls.HomeController.indexForRobots()
 GET     /signup                                         fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
 GET     /reset                                          fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
 GET     /teams                                          fr.maif.otoroshi.daikoku.ctrls.HomeController.index()

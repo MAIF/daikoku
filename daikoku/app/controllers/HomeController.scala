@@ -70,6 +70,18 @@ class HomeController(
       assets.at("index.html").apply(ctx.request)
     }
 
+  def indexForRobots() =
+    DaikokuActionMaybeWithoutUser.async { ctx =>
+      ctx.tenant.robotTxt match {
+        case Some(robotTxt) =>
+          FastFuture.successful(Ok(views.txt.robot.render(robotTxt)))
+        case None =>
+          FastFuture.successful(
+            NotFound(Json.obj("error" -> "robots.txt not found"))
+          )
+      }
+    }
+
   def indexWithPath(path: String) =
     DaikokuActionMaybeWithoutUser.async { ctx =>
       assets.at("index.html").apply(ctx.request)
