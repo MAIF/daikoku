@@ -1,6 +1,6 @@
-import { Form, Schema, SchemaRenderType, constraints, format, type } from '@maif/react-forms';
+import { Form, Schema, constraints, format, type } from '@maif/react-forms';
 import { md5 } from 'js-md5';
-import { ChangeEvent, useContext, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
 import { I18nContext, ModalContext, useUserBackOffice } from '../../../contexts';

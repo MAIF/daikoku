@@ -262,10 +262,8 @@ export const ApiHome = ({
               color: 'inherit',
               backgroundColor: 'inherit'
             },
-            action: {
-              label: <Navigation />,
-              onClick: () => navigate(`/${result.subscription.team}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`)
-            }
+            action: <Navigation size='1.5rem' className="cursor-pointer" onClick={() => navigate(`/${result.subscription.team}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`)} />,
+            
           });
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
