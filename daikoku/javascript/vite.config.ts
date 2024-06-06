@@ -30,5 +30,12 @@ export default defineConfig({
         keep_quoted_props: true
       }
     }
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      define: {
+        global: 'globalThis'
+      },
+    }
   }
 });

@@ -103,11 +103,11 @@ export const TeamApiSwagger = <T extends IWithSwagger>({
   const swagger = value.swagger;
 
   const schema = {
-    specificationType: {
-      type: type.string,
-      format: format.buttonsSelect,
-      options: [{label: 'OpenAPI', value: 'openapi'}, {label: 'AsyncAPI', value: 'async'}]
-    },
+    // specificationType: {
+    //   type: type.string,
+    //   format: format.buttonsSelect,
+    //   options: [{label: 'OpenAPI', value: 'openapi'}, {label: 'AsyncAPI', value: 'async'}]
+    // },
     useContent: {
       type: type.bool,
       label: translate('Use swagger content'),

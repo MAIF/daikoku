@@ -18,7 +18,6 @@ export function ApiRedoc(props: ApiRedocProps) {
   const { translate } = useContext(I18nContext);
   const { openLoginOrRegisterModal } = useContext(ModalContext);
 
-
   const downloadFileName = Option<string>(props.swaggerConf?.url)
     .map(url => url.substring(url.lastIndexOf('/') + 1))
     .orElse(props.swaggerConf?.content)
@@ -34,27 +33,6 @@ export function ApiRedoc(props: ApiRedocProps) {
       }
     })
     .getOrElse("openAPI")
-
-  const schema = `
-    asyncapi: '2.0.0'
-info:
-  title: Example
-  version: '0.1.0'
-channels:
-  example-channel:
-    subscribe:
-      message:
-        payload:
-          type: object
-          properties:
-            exampleField:
-              type: string
-            exampleNumber:
-              type: number
-            exampleDate:
-              type: string
-              format: date-time
-    `
 
   if (connectedUser.isGuest && tenant.apiReferenceHideForGuest) {
     openLoginOrRegisterModal({

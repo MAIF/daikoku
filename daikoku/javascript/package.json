@@ -5,6 +5,7 @@
   "main": "src/index.js",
   "license": "MIT",
   "private": true,
+  "type": "module",
   "scripts": {
     "prettier": "prettier --write --single-quote --trailing-comma es5 --print-width 100 --tab-width 2 --jsx-bracket-same-line \"src/**/*.{ts, tsx}\"",
     "lint": "eslint \"src/**/*.{ts,tsx}\"",
@@ -86,8 +87,8 @@
     "rollup-plugin-visualizer": "^5.12.0",
     "sass": "^1.70.0",
     "sass-loader": "14.1.0",
-    "typescript": "^5.3.3",
-    "vite": "^5.2.11",
+    "typescript": "^5.2.2",
+    "vite": "^5.2.0",
     "vite-plugin-simple-html": "^0.1.2"
   }
 }
