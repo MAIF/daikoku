@@ -11,6 +11,7 @@ export default defineConfig({
       "/api/": "http://localhost:9000",
       "/account": "http://localhost:9000",
       "/auth/Local/callback": "http://localhost:9000",
+      "/auth/LDAP/callback": "http://localhost:9000",
       "/logout": "http://localhost:9000",
       "/assets": "http://localhost:9000",
       "/robots.txt": "http://localhost:9000"
