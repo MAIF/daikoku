@@ -119,10 +119,6 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
     Daikoku will be accessible with url proxified by Otoroshi and base url of Daikoku. You betterto follow this tutorial to expose Daikoku with Otoroshi
   :::
     ## Before starting
-
-
-
-
     If you already have an up and running Daikoku instance, you can skip the following instructions and log in to your instance.
 
     Let’s start by [downloading the latest Daikoku](../01-getstarted/04-getdaikoku/index.mdx) and [run it](../01-getstarted/05-firstrun/run.mdx)
@@ -134,15 +130,19 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
     Otoroshi have his own manual to this part let's [get](https://maif.github.io/otoroshi/manual/install/get-otoroshi.html) as [run](https://maif.github.io/otoroshi/manual/install/run-otoroshi.html) your Otoroshi.
 
     ## Create an authentication module
+    Like the previous section, you can follow instructions in [here](https://maif.github.io/otoroshi/manual/how-to-s/secure-app-with-auth0.html) to create a new Auth plugin in Otoroshi.
+    You can find many possibility to secure Daikoku with Otoroshi in the documentation.
 
     ## Expose your daikoku by Otoroshi
   :::warning
     before exposing your daikoku instance with otoroshi, you need to setup exposing mode to Otoroshi. read this following [tutorial](./15-otoroshi-exposition) before continue.
   :::
 
-    ## Create an Authentication configuration
+    You ultimately have to add some plugins along the route to make this work :
+    - Authentication, select the created Auth module in configuration to use it
+    - Otorshi info. token, you can configure the name of the header in which the authentication token will be passed and the secert to signe this token.
 
-    Before setup your authentication in Daikoku, create your authentication module in your otoroshi and use it
+    ## Create an Authentication configuration
 
     - Go ahead and navigate to your Daikoku home page
     - Click on the your avatar on bottom left of the screen
@@ -150,16 +150,35 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
     - Then `Authentication` on left panel
     - You must be on `<your-domaain>/settings/settings/authentication`
     - This page show the settings for the current authentication mode (by default `Local`)
-    - Click on `Authentication type` on the top and choose `LDAP` then click `next`
-    - Add a `LDAP Server URL` with value `ldap://localhost:10389` and `dc=planetexpress,dc=com` as `Search base`
-    - Set `ou=people` as `Users search base`
-    - Set `cn=ship_crew` as `Simple user filter`
-    - Set `cn=admin_staff` as `Daikoku admin filter`
-    - Set `(mail=${username})` as `Search filter`
-    - Set `cn=admin,dc=planetexpress,dc=com` as `Admin username (bind DN)`
-    - Set `GoodNewsEveryone` as `Admin password`
-    - `Name fields name` can be `givenName` and `sn`
-    - Set `mail` as `Email field name`
+    - Click on `Authentication type` on the top and choose `Otoroshi` then click `next`
+    - Fill the header name previously setup
+    - Fill the secret previously setup
+
+    ## Testing your configuration
+
+    Disconnect from your instance
+    Then click on the Login button (or navigate to `<your-daikoku-domain>/login`)
+    You can now login with a user setup with the auth module.
+
+  :::warning
+    To be daikoku admin, a user need to have a `daikokuAdmin` property in his definition setup to true. You can get it with Otoroshi be filling the right `Otoroshi metadata field name`.
+
+    In the Auth0 case, Here are the steps to follow :
+    - add app metadata to to a user ({"daikokuAdmin": true})
+    - create a new custom action in auth0 :
+    ```js
+    exports.onExecutePostLogin = async (event, api) => {
+      const { daikokuAdmin } = event.user.app_metadata;
+    
+      if (event.authorization) {
+        api.idToken.setCustomClaim(`daikokuAdmin`, daikokuAdmin);
+      }
+    };
+    ``` 
+    - retrieve the value by setup `Otoroshi metadata field name` in your auth module with `daikokuAdmin`
+
+    with this method, otoroshi will add the daikokuAdmin value to the claim
+  :::
   </TabItem>
   <TabItem value="oauth2" label="OAuth2" default>
   </TabItem>
