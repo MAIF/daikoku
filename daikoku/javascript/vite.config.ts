@@ -12,6 +12,10 @@ export default defineConfig({
       "/account": "http://localhost:9000",
       "/auth/Local/callback": "http://localhost:9000",
       "/auth/LDAP/callback": "http://localhost:9000",
+      "/auth/oauth2/callback": "http://localhost:9000",
+      "/login/oauth2/callback": "http://localhost:9000",
+      "/auth/oauth2/login": "http://localhost:9000",
+      "/auth/OAuth2/login": "http://localhost:9000",
       "/logout": "http://localhost:9000",
       "/assets": "http://localhost:9000",
       "/robots.txt": "http://localhost:9000"
