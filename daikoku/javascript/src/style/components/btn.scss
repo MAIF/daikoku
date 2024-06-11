@@ -5,19 +5,19 @@ button {
 }
 
 .btn-outline {
-  color: $btn-bg-color;
-  background-color: $btn-text-color;
-  border-color: $btn-bg-color;
+  color: $btn-bg-color !important; 
+  background-color: $btn-text-color !important; 
+  border-color: $btn-bg-color !important; 
 
   &:hover {
-    color: $btn-bg-color;
-    background-color: $btn-text-color;
+    color: $btn-bg-color !important; 
+    background-color: $btn-text-color !important; 
   }
 
   &-primary {
-    color: $btn-text-color;
-    border-color: $btn-border-color;
-    background-color: $btn-bg-color;
+    color: $btn-text-color !important; 
+    border-color: $btn-border-color !important; 
+    background-color: $btn-bg-color !important; 
 
     // , :not(.btn-check) + .btn:active
     &.active,&:active{
@@ -27,9 +27,9 @@ button {
     }
 
     &:hover {
-      color: $btn-bg-color;
-      background-color: $btn-border-color;
-    border-color: $btn-border-color;
+      color: $btn-bg-color !important; 
+      background-color: $btn-border-color !important; 
+    border-color: $btn-border-color !important; 
 
     }
   }

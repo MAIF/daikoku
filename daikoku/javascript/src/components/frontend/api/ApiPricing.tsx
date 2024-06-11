@@ -198,13 +198,13 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             <div className='flex-shrink-1 d-flex flex-column'>
               <Link
                 to={`./${props.plan.customName}/swagger`} relative='path'
-                className={classNames("btn btn-sm btn-outline-info mb-1", { 'link__disabled': !props.plan.swagger?.url && !props.plan.swagger?.content })}>swagger</Link>
+                className={classNames("btn btn-sm btn-outline-primary mb-1", { 'link__disabled': !props.plan.swagger?.url && !props.plan.swagger?.content })}>swagger</Link>
               <Link
                 to={`./${props.plan.customName}/testing`} relative='path'
-                className={classNames("btn btn-sm btn-outline-info mb-1", { 'link__disabled': !props.plan.testing?.enabled })}>test</Link>
+                className={classNames("btn btn-sm btn-outline-primary mb-1", { 'link__disabled': !props.plan.testing?.enabled })}>test</Link>
               <Link
                 to={`./${props.plan.customName}/documentation`} relative='path'
-                className={classNames("btn btn-sm btn-outline-info", { 'link__disabled': !props.plan.documentation?.pages.length })}>Documentation</Link>
+                className={classNames("btn btn-sm btn-outline-primary", { 'link__disabled': !props.plan.documentation?.pages.length })}>Documentation</Link>
             </div>
           )}
         </div>
