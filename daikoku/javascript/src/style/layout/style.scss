@@ -184,7 +184,7 @@ img:hover + .changePicture,
 
 .wrapper:not(.information-container) {
   height: 100vh;
-  overflow: scroll;
+  overflow: auto;
 }
 
 .companion-link {
@@ -210,6 +210,24 @@ img:hover + .changePicture,
   background-color: $level2_bg-color;
   color: $level2_text-color;
 }
+.level2-link {
+  color: $level2_link-color;
+  &:hover {
+    color: $level2_link-hover-color;
+  }
+  &__with-bg:hover{
+      cursor: pointer;
+      background-color: $btn-border-color;
+      color:  $btn-bg-color;
+  }
+  &__active-bg {
+    color: $btn-text-color;
+    background-color: $btn-bg-color;
+    border: 1px solid $btn-border-color;
+  }
+}
+
+
 .level3 {
   background-color: $level3_bg-color;
   color: $level3_text-color;
@@ -222,15 +240,3 @@ img:hover + .changePicture,
   }
 }
 
-.level2-link {
-  color: $level2_link-color;
-  &:hover {
-    color: $level2_link-hover-color;
-  }
-  &__with-bg:hover,
-  &__active-bg {
-    color: var(--btn-text-color);
-    background-color: var(--btn-bg-color);
-    border-color: var(--btn-border-color);
-  }
-}

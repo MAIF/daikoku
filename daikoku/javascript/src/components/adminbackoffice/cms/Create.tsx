@@ -127,11 +127,8 @@ export const Create = (props: any) => {
     <div
       style={{
         height: '42px',
-        // backgroundColor: '#fff',
         display: 'flex',
         alignItems: 'center',
-        // boxShadow: selected ? '0 1px 3px rgba(25,25,25,.5)' : 'none', //@ts-ignore //FIXME
-        // backgroundColor: 'var(--sidebar-bg-color, #f8f9fa)',
         zIndex: selected ? 2 : 0,
         borderTopLeftRadius: "4px",
         borderTopRightRadius:"4px"
@@ -139,7 +136,7 @@ export const Create = (props: any) => {
       onClick={onClick}
       className={`px-3 level2-link__with-bg ${selected ? 'level2-link__active-bg' : ''}`}
     >
-      <button className="btn btn-sm" type="button">
+      <button className="btn btn-sm level2-link" type="button">
         {title}
       </button>
       {onClose && <i className="fas fa-times" />}
