@@ -1,5 +1,3 @@
-@import '../variables';
-
 .modal-header, .modal-content, .modal-body, .modal-footer{
   background-color: $level1_bg-color;
   color: $level1_text-color;
@@ -113,9 +111,6 @@
 	overflow: hidden;
 	width: 6vw;
   height: 6vw;
-  &.selected {
-
-  }
 
 	img {
 		width: 100%;

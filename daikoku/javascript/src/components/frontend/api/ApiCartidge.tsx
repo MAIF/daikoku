@@ -19,7 +19,7 @@ export function ApiCartidge(props: any) {
     .filter((team: any) => props.subscriptions.some((sub: any) => sub.team === team._id));
 
   return (
-    <div className="d-flex col-12 col-sm-3 col-md-2 text-muted flex-column p-3 additionalContent">
+    <div className="d-flex col-12 col-sm-3 col-md-2 text-muted flex-column p-3 album">
       <span>
         <Translation i18nkey="API by">API by</Translation>
       </span>

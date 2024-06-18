@@ -44,7 +44,7 @@ export const ApiDocumentationCartidge = (props: ApiDocumentationCartidgeProps) =
 
 
   return (
-    <div className="d-flex col-12 col-sm-3 col-md-2 flex-column p-3 text-muted navDocumentation additionalContent">
+    <div className="d-flex col-12 col-sm-3 col-md-2 flex-column p-3 text-muted navDocumentation album">
       {renderLinks(props.documentation?.pages)}
     </div>
   );

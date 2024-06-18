@@ -81,9 +81,9 @@ button {
 .btn-outline-info.disabled,
 .btn-outline-info.link__disabled,
 .btn-outline-info:disabled {
-  background-color: #fff;
-  border-color: #9e9e9e;
-  color: #9e9e9e;
+  background-color: #fff !important;
+  border-color: #9e9e9e !important;
+  color: #9e9e9e !important;
 
   &:hover,
   &.active {

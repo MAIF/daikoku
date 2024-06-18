@@ -249,7 +249,7 @@ export const TeamApiGroup = () => {
           </button>
         </div>
         <div className="row">
-          <div className="section col container-api">
+          <div className="section colcontainer-api">
             <div className="my-2">
               {params.tab === 'infos' && (<div>
                 <Form

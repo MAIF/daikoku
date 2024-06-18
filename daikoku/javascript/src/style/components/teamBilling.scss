@@ -149,3 +149,8 @@
 .badge.no-data {
   font-size: 20px;
 }
+
+
+.month__selector .ant-calendar-picker:hover .ant-calendar-picker-clear {
+  opacity: 0;
+}

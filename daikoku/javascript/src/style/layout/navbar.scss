@@ -350,3 +350,12 @@ a.navbar-brand, #teamSelector:hover {
     color: var(--menu-text-hover-color, #fff);
   }
 }
+
+.navbar_top .brand {
+  height: 39px;
+  width: 39px;
+
+  img {
+    width: 100%;
+  }
+}

@@ -277,7 +277,7 @@ export const TeamApi = (props: { creation: boolean }) => {
           </button>
         </div>
         <div className="row">
-          <div className="section col container-api">
+          <div className="section col">
             <div className="my-2">
               {tab === 'documentation' && (
                 <TeamApiDocumentation

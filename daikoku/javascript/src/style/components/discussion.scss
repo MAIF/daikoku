@@ -1,17 +1,6 @@
 .messages-sender-container{
-  // width: 25%;
- // background-color: $level2_bg-color;
   height: calc(100vh - 160px);
   overflow: scroll;
-  // .messages-sender{
-  //   color:$level2_link-color;
-
-  // }
-  // .messages-sender__active, .messages-sender:hover {
-  //   background-color:var(--level2-link-hover-bg-color);
-  //   // border-left: 2px solid $danger-color;
-  //   color:var(--level2-link-hover-text-color);
-  // }
 
   .user-avatar {
     border-radius: 50%;
@@ -19,7 +8,6 @@
   }
 }
 .messages-content{
-  // width: 75%;
   overflow: scroll;
   height: calc(100vh - 240px);
 }

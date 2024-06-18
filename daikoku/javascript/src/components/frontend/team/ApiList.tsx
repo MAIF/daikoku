@@ -395,7 +395,7 @@ export const ApiList = (props: TApiList) => {
             )}
             {!!bestTags.data && !!bestTags.data.length && (
               <Top
-                className="p-3 rounded additionalContent mb-2"
+                className="p-3 rounded album mb-2"
                 title="Top tags"
                 icon="fas fa-tag me-2"
                 list={bestTags.data}
@@ -405,7 +405,7 @@ export const ApiList = (props: TApiList) => {
             )}
             {!!bestCategories.data && !!bestCategories.data.length && (
               <Top
-                className="p-3 rounded additionalContent"
+                className="p-3 rounded album"
                 title="Top categories"
                 icon="fas fa-folder me-2"
                 list={bestCategories.data}
@@ -466,7 +466,7 @@ const YourTeams = ({
     ? teams.filter((team) => team.name.toLowerCase().includes(searchedTeam))
     : teams;
   return (
-    <div className={'top__container p-3 rounded additionalContent mb-2'}>
+    <div className={'top__container p-3 rounded album mb-2'}>
       <div>
         <h5>
           <i className="fas fa-users me-2" />

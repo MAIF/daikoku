@@ -5,9 +5,35 @@ body {
   font-size: 1rem;
 }
 
+main {
+  background-color: $level1_bg-color;
+}
+
+[role="root-container"] {
+  padding-top: 130px;
+
+  @media screen and (min-width: 576px) {
+    padding-top: 90px;
+  }
+
+  @media screen and (min-width: 768px) {
+    padding-top: 60px;
+  }
+}
+
+.section,
+.album {
+  background-color: $level2_bg-color;
+  color: $level2_text-color;
+}
+
 //remove blue border on chrome
 *:focus {
   outline: 0;
+}
+
+a {
+  text-decoration: none;
 }
 
 .a-fake,
@@ -22,6 +48,19 @@ a {
 .a-fake:hover,
 a:hover {
   color: $level1_link-hover-color;
+}
+
+.underline-on-hover:hover {
+  text-decoration: underline;
+}
+
+a.nav-link.active {
+  background-color: rgb(233, 236, 239);
+}
+
+.link__disabled {
+  cursor: not-allowed;
+  pointer-events: none;
 }
 
 .cursor-pointer {
@@ -52,18 +91,6 @@ hr {
   background-color: white;
 }
 
-.month__selector .ant-calendar-picker:hover .ant-calendar-picker-clear {
-  opacity: 0;
-}
-
-main {
-  background-color: $level1_bg-color;
-
-  // .jumbotron {
-  //   background-color: #fff;
-  // }
-}
-
 .fa-xxs {
   font-size: 0.5em;
 }
@@ -77,102 +104,12 @@ main {
   white-space: pre-wrap;
 }
 
-a.nav-link.active {
-  background-color: rgb(233, 236, 239);
-}
-
-[role="root-container"] {
-  padding-top: 130px;
-
-  @media screen and (min-width: 576px) {
-    padding-top: 90px;
-  }
-
-  @media screen and (min-width: 768px) {
-    padding-top: 60px;
-  }
-}
-
-.section,
-.album {
-  background-color: $level2_bg-color;
-  color: $level2_text-color;
-}
-
-.underline-on-hover:hover {
-  text-decoration: underline;
-}
-
-.additionalContent {
-  background-color: $level2_bg-color;
-  color: $level2_text-color;
-}
-
-.navDocumentation {
-  border-right: 1px solid $level2_link-color;
-
-  ul {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-    font-weight: bold;
-    font-size: 0.9 rem;
-
-    .api-doc-cartridge-link a {
-      line-height: 2rem;
-      border-radius: 4px;
-      padding: 0 0.5rem;
-      display: block;
-      width: 100%;
-      color: $companion_text-color;
-      margin-bottom: 0.3rem;
-
-      &:hover {
-        background-color: $companion_text-hover-bg-color;
-        color: $companion_text-hover-color;
-      }
-
-      &.active {
-        background-color: $companion_text-hover-bg-color;
-        color: $companion_text-hover-color;
-      }
-    }
-  }
-}
-
-// .navDocumentation li::before {
-//   color: #6c757d;
-// }
-
 .hr-apidescription {
   width: 100%;
   border-bottom: 1px solid #bbbbbb;
   border-top: 0;
   margin-top: 5px;
   margin-bottom: 5px;
-}
-
-.container-api {
-  margin-bottom: 60px;
-}
-
-.form-back-fixedBtns {
-  justify-content: flex-end;
-  bottom: 0;
-  height: 60px;
-  width: 100%;
-  left: 1px;
-  padding-top: 10px;
-  padding-bottom: 10px;
-  z-index: 5;
-}
-
-.tenantLogo {
-  width: 290px;
-}
-
-.mediumAssetChooser {
-  width: 200px;
 }
 
 .changePicture {
@@ -187,69 +124,6 @@ img:hover + .changePicture,
   opacity: 0.5;
 }
 
-.swagger-ui .info hgroup.main a {
-  word-break: break-all;
-}
-
-.swagger-ui {
-  color: $sidebar-text-color;
-  .btn {
-    color: $sidebar-text-color;
-  }
-}
-
-.swagger-ui .errors-wrapper {
-  hgroup h4,
-  .errors h4,
-  .errors small {
-    color: $sidebar-text-color;
-  }
-}
-
-.language-selector {
-  width: 150px;
-}
-
-.nav-tabs {
-  border-color: $btn-border-color;
-
-  .nav-link {
-    color: $btn-text-color;
-  }
-
-  .nav-link:hover,
-  .nav-link:focus {
-    cursor: pointer;
-    background-color: $btn-border-color;
-    color: $btn-bg-color;
-  }
-
-  .nav-link.active,
-  .nav-item.show .nav-link {
-    color: $btn-text-color;
-    background-color: $btn-bg-color;
-    border-color: $btn-border-color;
-  }
-}
-
-.beautiful-popover {
-  z-index: 100;
-  max-width: 250px;
-}
-
-.Popover-body {
-  display: flex;
-  padding: 5px 10px;
-  background: hsl(0, 0%, 27%);
-  color: white;
-  border-radius: 4px;
-  justify-content: center;
-  align-items: center;
-}
-
-.Popover-tipShape {
-  fill: hsl(0, 0%, 27%);
-}
 
 /* rwd */
 @media screen and (min-width: 576px) {
@@ -311,27 +185,6 @@ img:hover + .changePicture,
 .wrapper:not(.information-container) {
   height: 100vh;
   overflow: scroll;
-  // padding-top: 10px;
-  // padding-left: 5px;
-  // padding-right: 20px;
-}
-
-a {
-  text-decoration: none;
-}
-
-.link__disabled {
-  cursor: not-allowed;
-  pointer-events: none;
-}
-
-.navbar_top .brand {
-  height: 39px;
-  width: 39px;
-
-  img {
-    width: 100%;
-  }
 }
 
 .companion-link {
