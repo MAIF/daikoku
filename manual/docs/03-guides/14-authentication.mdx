@@ -181,6 +181,38 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
   :::
   </TabItem>
   <TabItem value="oauth2" label="OAuth2" default>
+  :::info
+    For this tutorial, we'll use [Auth0](https://manage.auth0.com)
+  :::
+    ## Before starting
+
+    If you already have an up and running Daikoku instance, you can skip the following instructions and log in to your instance.
+
+    Let’s start by [downloading the latest Daikoku](../01-getstarted/04-getdaikoku/index.mdx) and [run it](../01-getstarted/05-firstrun/run.mdx)
+    
+    Once Daikoku is started you can log in to your brand new instance.
+
+    ## Configure an Auth0 client
+
+    The first step of this tutorial is to setup an Auth0 application with the information of the instance of our Otoroshi.
+
+    Navigate to https://manage.auth0.com (create an account if it’s not already done).
+
+    Let’s create an application when clicking on the Applications button on the sidebar. Then click on the Create application button on the top right.
+
+    Choose `Regular Web Applications` as Application type
+    Then set for example `daikoku-client` as Name, and confirm the creation
+    Jump to the Settings tab
+    Scroll to the Application URLs section and add the following url as Allowed Callback URLs : http://localhost:9000/auth/oauth2/callback
+    Set http://localhost:9000 as Allowed Logout URLs
+    Set http://localhost:9000 as Allowed Web Origins
+    Save changes at the bottom of the page.
+
+    Once done, we have a full setup, with a client ID and secret at the top of the page, which authorizes our Otoroshi and redirects the user to the callback url when they log into Auth0.
+
+    ## Create authentication configuration
+
+    
   </TabItem>
 </Tabs>
 
