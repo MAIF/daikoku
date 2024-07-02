@@ -160,25 +160,7 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
     Then click on the Login button (or navigate to `<your-daikoku-domain>/login`)
     You can now login with a user setup with the auth module.
 
-  :::warning
-    To be daikoku admin, a user need to have a `daikokuAdmin` property in his definition setup to true. You can get it with Otoroshi be filling the right `Otoroshi metadata field name`.
-
-    In the Auth0 case, Here are the steps to follow :
-    - add app metadata to to a user ({"daikokuAdmin": true})
-    - create a new custom action in auth0 :
-    ```js
-    exports.onExecutePostLogin = async (event, api) => {
-      const { daikokuAdmin } = event.user.app_metadata;
-    
-      if (event.authorization) {
-        api.idToken.setCustomClaim(`daikokuAdmin`, daikokuAdmin);
-      }
-    };
-    ``` 
-    - retrieve the value by setup `Otoroshi metadata field name` in your auth module with `daikokuAdmin`
-
-    with this method, otoroshi will add the daikokuAdmin value to the claim
-  :::
+  
   </TabItem>
   <TabItem value="oauth2" label="OAuth2" default>
   :::info
@@ -209,6 +191,26 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
     Save changes at the bottom of the page.
 
     Once done, we have a full setup, with a client ID and secret at the top of the page, which authorizes our Otoroshi and redirects the user to the callback url when they log into Auth0.
+
+    :::warning
+    To be daikoku admin, a user need to have a `daikokuAdmin` property in his definition setup to true. You can get it with Otoroshi be filling the right `Otoroshi metadata field name`.
+
+    In the Auth0 case, Here are the steps to follow :
+    - add app metadata to to a user `daikokuAdmin` with `true` as value
+    - create a new custom action in auth0 :
+    ```js
+    exports.onExecutePostLogin = async (event, api) => {
+      const { daikokuAdmin } = event.user.app_metadata;
+    
+      if (event.authorization) {
+        api.idToken.setCustomClaim(`daikokuAdmin`, daikokuAdmin);
+      }
+    };
+    ``` 
+    - retrieve the value by setup `Otoroshi metadata field name` in your auth module with `daikokuAdmin`
+
+    with this method, otoroshi will add the daikokuAdmin value to the claim
+  :::
 
     ## Create authentication configuration
 
