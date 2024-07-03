@@ -13,7 +13,7 @@ type Props = {
 export const FormWithChoice = (props: Props) => {
   const [selector, setSelector] = useState((props.value || {})[props.selectorName] || props.defaultSelector)
 
-  const getAuthSchema = () => {
+  const getSubSchema = () => {
     return props.schemas.find(s => s.key === selector)?.schema
   }
 
@@ -42,7 +42,7 @@ export const FormWithChoice = (props: Props) => {
       />
 
       <Form
-        schema={getAuthSchema()!}
+        schema={getSubSchema()!}
         onSubmit={data => props.onsubmit({ ...data, [props.selectorName]: selector })}
         options={{ autosubmit: !!props.autoSubmit, actions: { submit: { display: !props.autoSubmit } } }}
         value={props.value}

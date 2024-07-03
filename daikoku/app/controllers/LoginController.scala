@@ -1,10 +1,8 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import cats.data.EitherT
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuTenantAction, DaikokuTenantActionContext}
-import controllers.{AppError, Assets}
+import controllers.Assets
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithoutUser, DaikokuTenantAction, DaikokuTenantActionContext}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
@@ -12,10 +10,9 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider._
 import fr.maif.otoroshi.daikoku.login._
-import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
-import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator, Translator}
 import org.apache.commons.codec.binary.Base32
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json.{JsObject, JsValue, Json}
@@ -401,8 +398,6 @@ class LoginController(
       val redirect = ctx.request
         .getQueryString("redirect")
         .getOrElse(env.getDaikokuUrl(ctx.tenant, "/"))
-
-      AppLogger.warn(redirect)
 
       AuthProvider(ctx.tenant.authProvider.name) match {
         case Some(AuthProvider.Otoroshi) =>
