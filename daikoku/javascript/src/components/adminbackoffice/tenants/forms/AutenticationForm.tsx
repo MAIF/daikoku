@@ -5,22 +5,130 @@ import { UseMutationResult } from '@tanstack/react-query';
 
 import { I18nContext } from '../../../../contexts';
 import { ITenantFull } from '../../../../types';
-import { IMultistepsformStep, MultiStepForm } from '../../../utils';
+import { FormWithChoice } from '../../../utils/FormWithChoice';
 
-export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
+export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translate } = useContext(I18nContext)
 
-  const authProviderSettingsShema = (subschema: Schema, data?: ITenantFull, ) => {
-    return {
-      authProviderSettings: {
-        type: type.object,
-        format: format.form,
-        label: data?.authProvider,
-        schema: {
-          ...subschema
-        }
-      }
+  const hmacSchema: Schema = {
+    shaSize: {
+      type: type.number,
+      label: 'SHA size',
+      format: format.buttonsSelect,
+      options: [256, 384, 512],
+      defaultValue: 512,
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
+    },
+    hmacSecret: {
+      type: type.string,
+      placeholder: 'secret',
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
+    },
+    base64: {
+      type: type.bool,
+      label: 'Base64 encoded secret',
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
     }
+  }
+  const rsaSchema: Schema = {
+    shaSize: {
+      type: type.number,
+      label: 'SHA size',
+      format: format.buttonsSelect,
+      options: [256, 384, 512],
+      defaultValue: 512,
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
+    },
+    publicKey: {
+      type: type.string,
+      format: format.text,
+      label: 'public key',
+      placeholder: `-----BEGIN PUBLIC KEY----- 
+    xxxxxxxx 
+    -----END PUBLIC KEY-----`,
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
+    },
+    privateKey: {
+      type: type.string,
+      format: format.text,
+      label: 'private key',
+      placeholder: `-----BEGIN PRIVATE KEY----- 
+    xxxxxxxx 
+    -----END PRIVATE KEY-----`,
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
+    },
+  }
+  const jwksSchema: Schema = {
+    url: {
+      type: type.string,
+      label: translate('URL'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
+    },
+    headers: {
+      type: type.object,
+      label: translate('Headers')
+    },
+    timeout: {
+      type: type.number,
+      label: translate('HTTP call timeout'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
+    },
+    ttl: {
+      type: type.number,
+      label: translate('TTL'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
+    },
+    kty: {
+      type: type.string,
+      label: translate('Key type'),
+      format: format.buttonsSelect,
+      options: ['RSA', 'EC'],
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
+    }
+  }
+
+  const JwtVerifierForm = ({
+    onChange,
+    value,
+    rawValues,
+    ...rest
+  }: any) => {
+    return (
+      <FormWithChoice
+        defaultSelector="HSAlgoSettings"
+        selectorName="type"
+        schemas={[
+          { key: "HSAlgoSettings", schema: hmacSchema },
+          { key: "RSAlgoSettings", schema: rsaSchema },
+          { key: "JWKSAlgoSettings", schema: jwksSchema },
+        ]}
+        autoSubmit
+        onsubmit={(data: any) => {
+          console.debug({data})
+          onChange(data)
+        }}
+        value={value}
+      />)
   }
 
   const localSchema: Schema = {
@@ -30,7 +138,6 @@ export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: 
       defaultValue: 86400
     },
   }
-
   const otoroshiSchema: Schema = {
     sessionMaxAge: {
       type: type.number,
@@ -40,11 +147,17 @@ export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: 
     claimHeaderName: {
       type: type.string,
       label: translate('Claim header name'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
 
     },
     claimSecret: {
       type: type.string,
       label: translate('Claim Secret'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
     },
 
   }
@@ -62,6 +175,10 @@ export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: 
     connectTimeout: {
       type: type.number,
       label: translate('Connect timeout (s)'),
+      defaultValue: 2000,
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
     },
     searchBase: {
       type: type.string,
@@ -101,21 +218,6 @@ export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: 
       type: type.string,
       label: translate('Email field name'),
     },
-    // testing: {
-    //   type: CheckingAdminConnection,
-    //   props: {
-    //     label: translate('Testing connection'),
-    //     checkConnection: () => checkConnection(),
-    //   },
-    // },
-    // testingWithUser: {
-    //   type: CheckingUserConnection,
-    //   props: {
-    //     label: translate('Testing user'),
-    //     checkConnection: (username, password) => checkConnection({ username, password }),
-    //   },
-    // },
-
   }
   const OAuth2Schema: Schema = {
     sessionMaxAge: {
@@ -146,56 +248,95 @@ export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: 
     scope: {
       type: type.string,
       label: translate('Token scope'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
     },
     clientId: {
       type: type.string,
       label: translate('Client Id'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
     },
     clientSecret: {
       type: type.string,
       label: translate('Client secret'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
     },
     authorizeUrl: {
       type: type.string,
       label: translate('Authorize URL'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
     },
     tokenUrl: {
       type: type.string,
       label: translate('Token URL'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
     },
     userInfoUrl: {
       type: type.string,
       label: translate('Userinfo URL'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
     },
     loginUrl: {
       type: type.string,
       props: {
         label: translate('Login URL'),
+        constraints: [
+          constraints.required(translate("constraints.required.value"))
+        ]
       },
     },
     logoutUrl: {
       type: type.string,
       label: translate('Logout URL'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
     },
     callbackUrl: {
       type: type.string,
       label: translate('Callback URL'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
     },
     accessTokenField: {
       type: type.string,
       label: translate('Access token field name'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
     },
     nameField: {
       type: type.string,
       label: translate('Name field name'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
     },
     emailField: {
       type: type.string,
       label: translate('Email field name'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
     },
     pictureField: {
       type: type.string,
       label: translate('Picture field name'),
+      constraints: [
+        constraints.required(translate("constraints.required.value"))
+      ]
     },
     daikokuAdmins: {
       type: type.string,
@@ -204,63 +345,22 @@ export const AuthenticationForm = (props: { tenant?: ITenantFull, updateTenant: 
     },
     jwtVerifier: {
       type: type.object,
-      //todo: add algo setting if jwt is enabled
+      render: JwtVerifierForm
     },
   }
 
-  const steps: Array<IMultistepsformStep<ITenantFull>> = [
-    {
-      id: 'authProvider',
-      label: translate('Authentication type'),
-      schema: {
-        authProvider: {
-          type: type.string,
-          format: format.buttonsSelect,
-          label: translate('Authentication type'),
-          options: [
-            { label: 'Local', value: 'Local' },
-            { label: 'LDAP', value: 'LDAP' },
-            { label: 'OAuth2', value: 'OAuth2' },
-            { label: 'Otoroshi', value: 'Otoroshi' },
-          ],
-          constraints: [
-            constraints.required()
-          ]
-        }
-      }
-    },
-    {
-      id: 'params',
-      label: 'config',
-      schema: (data) => {
-        switch (data?.authProvider) {
-          case 'LDAP':
-            return authProviderSettingsShema(ldapSchema, data);
-          case 'OAuth2':
-            return authProviderSettingsShema(OAuth2Schema, data);
-          case 'Otoroshi':
-            return authProviderSettingsShema(otoroshiSchema, data);
-          case 'Local':
-            return authProviderSettingsShema(localSchema, data);
-          default:
-            return authProviderSettingsShema(localSchema);
-        }
-      }
-    }
-  ]
-
   return (
-    <MultiStepForm
-      value={props.tenant}
-      steps={steps}
-      initial={props.tenant?.authProvider ? "params" : "authProvider"}
-      creation={false}
-      save={(d) => props.updateTenant.mutateAsync(d)}
-      labels={{
-        previous: translate('Previous'),
-        skip: translate('Skip'),
-        next: translate('Next'),
-        save: translate('Save'),
-      }} />
+    <FormWithChoice
+      defaultSelector="Local"
+      selectorName="authProvider"
+      schemas={[
+        { key: "Local", schema: localSchema },
+        { key: "Otoroshi", schema: otoroshiSchema },
+        { key: "LDAP", schema: ldapSchema },
+        { key: "OAuth2", schema: OAuth2Schema },
+      ]}
+      onsubmit={authProviderSettings => props.updateTenant.mutateAsync({ ...props.tenant, authProviderSettings })}
+      value={{ ...props.tenant.authProviderSettings, authProvider: props.tenant.authProvider }}
+    />
   )
 }

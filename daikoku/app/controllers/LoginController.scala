@@ -81,7 +81,7 @@ class LoginController(
 
                 FastFuture.successful(
                   Redirect(
-                    s"${authConfig.loginUrl}?scope=$scope&client_id=$clientId&response_type=$responseType&redirect_uri=$redirectUri"
+                    s"${authConfig.loginUrl}?scope=${scope}&client_id=$clientId&response_type=$responseType&redirect_uri=$redirectUri"
                   ).addingToSession(
                     s"redirect" -> ctx.request
                       .getQueryString("redirect")
@@ -401,6 +401,8 @@ class LoginController(
       val redirect = ctx.request
         .getQueryString("redirect")
         .getOrElse(env.getDaikokuUrl(ctx.tenant, "/"))
+
+      AppLogger.warn(redirect)
 
       AuthProvider(ctx.tenant.authProvider.name) match {
         case Some(AuthProvider.Otoroshi) =>

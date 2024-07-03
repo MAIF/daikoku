@@ -250,8 +250,9 @@ object OAuth2Support {
                   .getOrElse("no.name@foo.bar")
                 val picture =
                   (userFromOauth \ authConfig.pictureField).asOpt[String]
+                val maybeDaikokuAdmin = (userFromOauth \ "daikokuAdmin").asOpt[Boolean]
 
-                val isDaikokuAdmin = authConfig.daikokuAdmins.contains(email)
+                val isDaikokuAdmin = maybeDaikokuAdmin.getOrElse(authConfig.daikokuAdmins.contains(email))
 
                 _env.dataStore.userRepo
                   .findOne(Json.obj("_deleted" -> false, "email" -> email))
