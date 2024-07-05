@@ -3018,19 +3018,19 @@ object json {
                     case r"group_.*" =>
                       entities.copy(
                         groups = entities.groups + OtoroshiServiceGroupId(
-                          value.replace("group_", "")
+                          value.replaceFirst("group_", "")
                         )
                       )
                     case r"route_.*" =>
                       entities.copy(routes =
                         entities.routes + OtoroshiRouteId(
-                          value.replace("route_", "")
+                          value.replaceFirst("route_", "")
                         )
                       )
                     case r"service_.*" =>
                       entities.copy(
                         services = entities.services + OtoroshiServiceId(
-                          value.replace("service_", "")
+                          value.replaceFirst("service_", "")
                         )
                       )
                   }
