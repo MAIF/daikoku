@@ -290,18 +290,11 @@ class OtoroshiClient(env: Env) {
 
   def deleteApiKey(
       clientId: String
-  )(implicit otoroshiSettings: OtoroshiSettings): Future[Unit] = {
-    client(s"/api/apikeys/$clientId").delete().flatMap { resp =>
-      if (resp.status == 200) {
-        Future.successful(())
-      } else {
-        Future.failed(
-          new RuntimeException(
-            s"Error while deleting otoroshi apikey: ${resp.status} - ${resp.body}"
-          )
-        )
-      }
-    }
+  )(implicit otoroshiSettings: OtoroshiSettings): EitherT[Future, AppError, Unit] = {
+    for {
+      resp <- EitherT.liftF(client(s"/api/apikeys/$clientId").delete())
+      _ <- EitherT.cond[Future][AppError, Unit](resp.status == 200, (), AppError.OtoroshiError(Json.obj("error" -> s"Error while deleting otoroshi apikey: ${resp.status} - ${resp.body}")))
+    } yield ()
   }
 
   def getServiceConsumption(service: String, from: String, to: String)(implicit

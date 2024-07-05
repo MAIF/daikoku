@@ -583,11 +583,8 @@ class OtoroshiSettingsController(
         ): EitherT[Future, AppError, ActualOtoroshiApiKey] = {
           if (previousSettings != actualSettings) {
             for {
-              _ <- EitherT.liftF(
-                otoroshiClient.deleteApiKey(key.clientId)(previousSettings)
-              )
-              newKey <-
-                EitherT(otoroshiClient.createApiKey(key)(actualSettings))
+              _ <- otoroshiClient.deleteApiKey(key.clientId)(previousSettings)
+              newKey <-EitherT(otoroshiClient.createApiKey(key)(actualSettings))
             } yield newKey
           } else {
             EitherT(otoroshiClient.updateApiKey(key)(previousSettings))
@@ -663,30 +660,20 @@ class OtoroshiSettingsController(
       )(teamId, ctx) { _ =>
         val otoroshiSettingsOpt =
           (ctx.request.body \ "otoroshiSettings").asOpt[String]
+
+
         val clientIdOpt = (ctx.request.body \ "clientId").asOpt[String]
-        (otoroshiSettingsOpt, clientIdOpt) match {
-          case (
-                Some(otoroshiSettings),
-                Some(clientId)
-              ) =>
-            ctx.tenant.otoroshiSettings
-              .find(s => s.id.value == otoroshiSettings) match {
-              case None =>
-                FastFuture.successful(
-                  NotFound(
-                    Json.obj("error" -> s"Settings $otoroshiSettings not found")
-                  )
-                )
-              case Some(settings) =>
-                otoroshiClient
-                  .deleteApiKey(clientId)(settings)
-                  .map(_ => Ok(Json.obj("done" -> true)))
-            }
-          case _ =>
-            FastFuture.successful(
-              BadRequest(Json.obj("error" -> "Bad request"))
-            )
-        }
+
+        (for {
+          otoroshiSettingsId <- EitherT.fromOption[Future](otoroshiSettingsOpt, AppError.EntityNotFound("Otoroshi settings"))
+          clientId <- EitherT.fromOption[Future](clientIdOpt, AppError.EntityNotFound("clientId settings"))
+          otoroshiSettings <- EitherT.fromOption[Future](ctx.tenant.otoroshiSettings
+            .find(s => s.id.value == otoroshiSettingsId), AppError.EntityNotFound("Otoroshi settings"))
+          _ <- otoroshiClient
+            .deleteApiKey(clientId)(otoroshiSettings)
+        } yield Ok(Json.obj("done" -> true)))
+          .leftMap(_.render())
+          .merge
       }
     }
 
