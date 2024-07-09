@@ -255,6 +255,7 @@ export const ApiList = (props: TApiList) => {
             className="team__selector filter__select reactSelect col-6 col-sm mb-2"
             value={selectedProducer ? selectedProducer : null}
             placeholder={translate('apiList.team.search')}
+            aria-label={translate('apiList.team.search')}
             isClearable={true}
             options={producers || []}
             onChange={(e: SingleValue<TOption>) => {
@@ -270,6 +271,7 @@ export const ApiList = (props: TApiList) => {
           className="tag__selector filter__select reactSelect col-6 col-sm mb-2"
           value={selectedTag ? selectedTag : null}
           placeholder={translate('apiList.tag.search')}
+          aria-label={translate('apiList.tag.search')}
           isClearable={true}
           options={dataTags.data ? [...dataTags.data] : []}
           onChange={(e: SingleValue<TOption>) => {
@@ -286,6 +288,7 @@ export const ApiList = (props: TApiList) => {
           className="category__selector filter__select reactSelect col-6 col-sm mb-2"
           value={selectedCategory ? selectedCategory : null}
           placeholder={translate('apiList.category.search')}
+          aria-label={translate('apiList.category.search')}
           isClearable={true}
           options={dataCategories.data ? [...dataCategories.data] : []}
           onChange={(e: SingleValue<TOption>) => {
