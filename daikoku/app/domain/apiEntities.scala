@@ -1091,7 +1091,11 @@ case class ApiWithAuthorizations(
     plans: Seq[UsagePlan],
     authorizations: Seq[AuthorizationApi] = Seq.empty
 )
-case class ApiWithCount(apis: Seq[ApiWithAuthorizations], producers: Seq[Team], total: Long)
+case class ApiWithCount(
+    apis: Seq[ApiWithAuthorizations],
+    producers: Seq[Team],
+    total: Long
+)
 case class NotificationWithCount(notifications: Seq[Notification], total: Long)
 case class TeamWithCount(teams: Seq[Team], total: Long)
 case class SubscriptionsWithPlan(

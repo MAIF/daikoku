@@ -138,7 +138,7 @@ export const TeamIncome = () => {
         <div className="row">
           <div className="col">
             <h1>
-              <Translation i18nkey="Team Income">Income</Translation>
+              <Translation i18nkey="Income">Income</Translation>
             </h1>
             {state.loading && <Spinner />}
             {!state.loading && (<div className="row">

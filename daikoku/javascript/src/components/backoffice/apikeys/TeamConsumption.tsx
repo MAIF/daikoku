@@ -55,7 +55,7 @@ export const TeamConsumption = () => {
     return (
       <div className="row">
         <div className="col">
-          <h1>Consumption</h1>
+          <h1>{translate('Global stats')}</h1>
           <OtoroshiStatsVizualization
             sync={() => Services.syncTeamBilling(currentTeam._id)}
             fetchData={(from: any, to: any) =>

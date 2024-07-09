@@ -114,7 +114,7 @@ class TeamController(
         env.dataStore.teamRepo
           .forTenant(ctx.tenant.id)
           .findAllNotDeleted() map { teams =>
-            Ok(JsArray(teams.map(_.toUiPayload())))
+          Ok(JsArray(teams.map(_.toUiPayload())))
         }
       }
     }

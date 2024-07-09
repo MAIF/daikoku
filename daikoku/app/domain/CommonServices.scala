@@ -435,12 +435,24 @@ object CommonServices {
                   .map(_.get)
               )
             )
-            producerTeams <- apiRepo.find(visibilityFilter ++ Json.obj(
-                "name" -> Json.obj("$regex" -> research),
-                "_deleted" -> false
-              ) ++ ownerTeamFilter ++ tagFilter ++ catFilter ++ groupFilter ++ parentFilter)
-              .map(apis => apis.map(_.team))
-              .flatMap(ids => env.dataStore.teamRepo.forTenant(tenant).find(Json.obj("_id" -> Json.obj("$in" -> JsArray(ids.map(_.asJson))))))
+            producerTeams <-
+              apiRepo
+                .find(
+                  visibilityFilter ++ Json.obj(
+                    "name" -> Json.obj("$regex" -> research),
+                    "_deleted" -> false
+                  ) ++ ownerTeamFilter ++ tagFilter ++ catFilter ++ groupFilter ++ parentFilter
+                )
+                .map(apis => apis.map(_.team))
+                .flatMap(ids =>
+                  env.dataStore.teamRepo
+                    .forTenant(tenant)
+                    .find(
+                      Json.obj(
+                        "_id" -> Json.obj("$in" -> JsArray(ids.map(_.asJson)))
+                      )
+                    )
+                )
 
             paginateApis <- apiRepo.findWithPagination(
               visibilityFilter ++ Json.obj(

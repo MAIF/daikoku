@@ -31,7 +31,7 @@ export interface IStateError {
 }
 
 export interface IAnonymousState {
-  activated: boolean
-  id: string
-  date?: number
+  activated: boolean;
+  id: string;
+  date?: number;
 }

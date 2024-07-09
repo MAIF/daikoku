@@ -175,7 +175,6 @@ test('Create & manage API', async ({ page }) => {
   await page.getByRole('button', { name: 'Accept' }).click();
   await page.waitForResponse(r => r.url().includes('/accept') && r.status() === 200)
   // await page.goto('http://localhost:9000/notifications#');
-  //FIXME ???
   await page.goto('http://localhost:1080/');
 
   await page.locator('div').filter({ hasText: /^validation@foo\.bar$/ }).waitFor({ state: 'visible' })
@@ -375,7 +374,7 @@ test('API admin can transfer his own API ownership', async ({ page }) => {
   await page.getByRole('link', { name: 'Daikoku home' }).click();
   await page.locator('h3').filter({ hasText: 'test API' }).waitFor({ state: 'visible' })
   await page.locator('small').filter({ hasText: 'Consumers' }).click();
-  await expect(page.locator('.preview')).toContainText('test API');
+  await expect(page.locator('h3')).toContainText('test API');
 });
 
 test('Filter API List', async ({page, request}) => {
@@ -437,7 +436,7 @@ test('Filter API List', async ({page, request}) => {
   await page.locator('div').filter({ hasText: /^Testersoption test, selected\.testSearch a category$/ }).locator('svg').nth(4).click();
   await page.getByRole('option', { name: 'internal' }).click();
   await expect(page.locator('.preview')).toContainText('1 result matching test categorized in internal tagged test produced by Testers');
-  await page.locator('.category__selector > .reactSelect__control > .reactSelect__indicators > div:nth-child(3) > .css-tj5bde-Svg').click();
+  await page.locator('.category__selector > .reactSelect__control > .reactSelect__value-container > .reactSelect__input-container').click();
   await page.getByRole('option', { name: 'external' }).click();
   await expect(page.locator('.preview')).toContainText('0 result matching test categorized in external tagged test produced by Testers');
   await page.getByText('clear filter').click();

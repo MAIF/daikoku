@@ -567,3 +567,45 @@ We'd like to thank all the contributors who worked on this release!
 - personal team is created with contact as contact@foo.bar [#636](https://github.com/MAIF/daikoku/issues/636)
 - [JSON PATCH] - handle unknown attribute [#635](https://github.com/MAIF/daikoku/issues/635)
 
+## [v17.3.0] - 2024-05-13
+
+## :star: New Features
+
+- make endpoint/health accessible to all [#677](https://github.com/MAIF/daikoku/issues/677)
+- Enhance mail body for invitation [#675](https://github.com/MAIF/daikoku/issues/675)
+- Enhance mail body for api subscription demand, acception & refusal [#674](https://github.com/MAIF/daikoku/issues/674)
+- Filter Home page API list by owner [#669](https://github.com/MAIF/daikoku/issues/669)
+- Add the aggregated apikey metadata to default value of the motivation form & a way to prohibit the overwriting [#668](https://github.com/MAIF/daikoku/issues/668)
+- add a button to get apikey as Basic Authorization header value [#667](https://github.com/MAIF/daikoku/issues/667)
+
+## :beetle: Bug Fixes
+
+- Lack of translation [#692](https://github.com/MAIF/daikoku/issues/692)
+- Lack of translation [#686](https://github.com/MAIF/daikoku/issues/686)
+- White page on Team members [#685](https://github.com/MAIF/daikoku/issues/685)
+- Blank page for Teams setting [#680](https://github.com/MAIF/daikoku/issues/680)
+- Cog doesn't appear in apiList even if user is teamAdmin [#678](https://github.com/MAIF/daikoku/issues/678)
+- A API producer cannot transfer an API to another team [#673](https://github.com/MAIF/daikoku/issues/673)
+- [subscriptions as admin] - refresh values after deletion or update subscriptions as admin [#671](https://github.com/MAIF/daikoku/issues/671)
+- Filter doesn't work in apikeys list [#670](https://github.com/MAIF/daikoku/issues/670)
+- resultWithExtra is undefined [#666](https://github.com/MAIF/daikoku/issues/666)
+- 404 collections [#665](https://github.com/MAIF/daikoku/issues/665)
+- Reload mandatoty after switch and add an Environment [#663](https://github.com/MAIF/daikoku/issues/663)
+- Delete all unused step validator after step validation [#649](https://github.com/MAIF/daikoku/issues/649)
+
+## :notebook_with_decorative_cover: Documentation
+
+- Documentation about team admin rights could be fuzzy [#676](https://github.com/MAIF/daikoku/issues/676)
+
+## [v17.3.1] - 2024-05-15
+
+## :beetle: Bug Fixes
+
+- can't copy clientId from apiKey card [#695](https://github.com/MAIF/daikoku/issues/695)
+
+## [v17.3.2] - 2024-05-28
+
+## :beetle: Bug Fixes
+
+- Create testing key with otorshi is broken [#698](https://github.com/MAIF/daikoku/issues/698)
+

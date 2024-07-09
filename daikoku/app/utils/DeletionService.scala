@@ -88,24 +88,11 @@ class DeletionService(
         plan: UsagePlan,
         tenant: Tenant
     ): EitherT[Future, AppError, Unit] = {
-      val error: EitherT[Future, AppError, Unit] = EitherT.leftT[Future, Unit](
-        AppError.EntityNotFound("Otoroshi settings")
-      )
-      plan.otoroshiTarget match {
-        case Some(target) =>
-          tenant.otoroshiSettings.find(s =>
-            s.id == target.otoroshiSettings
-          ) match {
-            case Some(otoroshiSettings) => {
-              implicit val s: OtoroshiSettings = otoroshiSettings
-              EitherT.liftF(
-                otoroshiClient.deleteApiKey(apiSubscription.apiKey.clientId)
-              )
-            }
-            case None => error
-          }
-        case None => error
-      }
+      for {
+        target <- EitherT.fromOption[Future](plan.otoroshiTarget, AppError.EntityNotFound("Otoroshi settings"))
+        settings <- EitherT.fromOption[Future](tenant.otoroshiSettings.find(s => s.id == target.otoroshiSettings), AppError.EntityNotFound("Otoroshi settings"))
+        _ <- otoroshiClient.deleteApiKey(apiSubscription.apiKey.clientId)(settings)
+      } yield ()
     }
 
     for {
@@ -321,7 +308,7 @@ class DeletionService(
       otherTeams <- EitherT.liftF(
         env.dataStore.teamRepo
           .forAllTenant()
-          .find(
+          .findNotDeleted(
             Json.obj(
               "type" -> TeamType.Personal.name,
               "users.userId" -> user.id.asJson
@@ -405,13 +392,13 @@ class DeletionService(
       apis <- EitherT.liftF(
         env.dataStore.apiRepo
           .forTenant(tenant)
-          .find(Json.obj("team" -> team.id.asJson))
+          .findNotDeleted(Json.obj("team" -> team.id.asJson))
       )
       //just subscriptions to other apis than the team apis
       teamSubscriptions <- EitherT.liftF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .find(
+          .findNotDeleted(
             Json.obj(
               "team" -> team.id.asJson,
               "api" -> Json.obj("$nin" -> JsArray(apis.map(_.id.asJson)))
@@ -449,7 +436,7 @@ class DeletionService(
       subscriptions <- EitherT.liftF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
-          .find(Json.obj("api" -> api.id.asJson))
+          .findNotDeleted(Json.obj("api" -> api.id.asJson))
       )
       _ <- deleteSubscriptions(subscriptions, tenant, user)
       _ <- deleteApis(Seq(api), tenant, user)

@@ -10,7 +10,12 @@ import com.auth0.jwt.{JWT, JWTVerifier}
 import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
-import fr.maif.otoroshi.daikoku.domain.{DatastoreId, ReportsInfo, TeamApiKeyVisibility, Tenant}
+import fr.maif.otoroshi.daikoku.domain.{
+  DatastoreId,
+  ReportsInfo,
+  TeamApiKeyVisibility,
+  Tenant
+}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._
@@ -249,10 +254,14 @@ class Config(val underlying: Configuration) {
 
   lazy val adminApiConfig: AdminApiConfig = AdminApiConfig(underlying)
 
-  lazy val anonymousReportingUrl: String = underlying.get[String]("daikoku.anonymous-reporting.url")
-  lazy val anonymousReportingTimeout: Int = underlying.get[Int]("daikoku.anonymous-reporting.timeout")
-  lazy val anonymousReportingEnabled: Boolean = underlying.get[Boolean]("daikoku.anonymous-reporting.enabled")
-  lazy val containerized: Boolean = underlying.get[Boolean]("daikoku.containerized")
+  lazy val anonymousReportingUrl: String =
+    underlying.get[String]("daikoku.anonymous-reporting.url")
+  lazy val anonymousReportingTimeout: Int =
+    underlying.get[Int]("daikoku.anonymous-reporting.timeout")
+  lazy val anonymousReportingEnabled: Boolean =
+    underlying.get[Boolean]("daikoku.anonymous-reporting.enabled")
+  lazy val containerized: Boolean =
+    underlying.get[Boolean]("daikoku.containerized")
 }
 
 sealed trait Env {
@@ -580,9 +589,13 @@ class DaikokuEnv(
       .filter(v => v)
       .take(1)
       .toMat(Sink.ignore)(Keep.right)
-      .run()(materializer).map(_ => {
+      .run()(materializer)
+      .map(_ => {
         dataStore.reportsInfoRepo.count().map {
-          case 0 => dataStore.reportsInfoRepo.save(ReportsInfo(id = DatastoreId(IdGenerator.uuid), activated = false))
+          case 0 =>
+            dataStore.reportsInfoRepo.save(
+              ReportsInfo(id = DatastoreId(IdGenerator.uuid), activated = false)
+            )
         }
       })
   }

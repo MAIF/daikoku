@@ -534,42 +534,39 @@ class QueueJob(
   }
 
   def deleteFirstOperation(): Future[Unit] = {
-    env.dataStore.operationRepo
-      .forAllTenant()
-      .findOne(
-        Json.obj(
-          "$and" -> Json.arr(
-            Json.obj("status" -> Json.obj("$ne" -> OperationStatus.Error.name)),
-            Json.obj("status" -> OperationStatus.Idle.name)
-          )
-        )
-      )
-      .flatMap {
-        case Some(operation) =>
-          ((operation.itemType, operation.action) match {
-            case (ItemType.Subscription, OperationAction.Delete) =>
-              deleteSubscription(operation)
-            case (ItemType.Api, OperationAction.Delete) => deleteApi(operation)
-            case (ItemType.Team, OperationAction.Delete) =>
-              deleteTeam(operation)
-            case (ItemType.User, OperationAction.Delete) =>
-              deleteUser(operation)
-            case (ItemType.ThirdPartySubscription, OperationAction.Delete) =>
-              deleteThirdPartySubscription(operation)
-            case (ItemType.ThirdPartyProduct, OperationAction.Delete) =>
-              deleteThirdPartyProduct(operation)
-            case (ItemType.ApiKeyConsumption, OperationAction.Sync) =>
-              syncConsumption(operation)
-            case (_, _) => FastFuture.successful(())
-          }).flatMap(_ =>
-              awaitF(1.second)(
-                env.defaultActorSystem,
-                env.defaultExecutionContext
-              )
+
+    val value: EitherT[Future, Unit, Unit] = for {
+      alreadyRunning <- EitherT.liftF(env.dataStore.operationRepo.forAllTenant()
+        .exists(Json.obj("Status" -> OperationStatus.InProgress.name)))
+      _ <- EitherT.cond[Future][Unit, Unit](!alreadyRunning, (), ())
+      firstOperation <- EitherT.fromOptionF[Future, Unit, Operation](env.dataStore.operationRepo
+        .forAllTenant()
+        .findOne(
+          Json.obj(
+            "$and" -> Json.arr(
+              Json.obj("status" -> Json.obj("$ne" -> OperationStatus.Error.name)),
+              Json.obj("status" -> OperationStatus.Idle.name)
             )
-            .flatMap(_ => deleteFirstOperation())
-        case None =>
-          FastFuture.successful(())
-      }
+          )
+        ), ())
+      _ <- EitherT.liftF((firstOperation.itemType, firstOperation.action) match {
+            case (ItemType.Subscription, OperationAction.Delete) =>
+              deleteSubscription(firstOperation)
+            case (ItemType.Api, OperationAction.Delete) => deleteApi(firstOperation)
+            case (ItemType.Team, OperationAction.Delete) =>
+              deleteTeam(firstOperation)
+            case (ItemType.User, OperationAction.Delete) =>
+              deleteUser(firstOperation)
+            case (ItemType.ThirdPartySubscription, OperationAction.Delete) =>
+              deleteThirdPartySubscription(firstOperation)
+            case (ItemType.ThirdPartyProduct, OperationAction.Delete) =>
+              deleteThirdPartyProduct(firstOperation)
+            case (ItemType.ApiKeyConsumption, OperationAction.Sync) =>
+              syncConsumption(firstOperation)
+            case (_, _) => FastFuture.successful(())
+          })
+      _ <- EitherT.liftF(deleteFirstOperation())
+    } yield ()
+    value.merge
   }
 }

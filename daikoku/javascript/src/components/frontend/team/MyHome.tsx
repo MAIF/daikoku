@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
+import { subMonths } from 'date-fns';
+import { toast } from 'sonner';
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
@@ -13,7 +14,6 @@ import {
 } from '../../../types';
 import { api as API, CanIDoAction, manage, Spinner, teamGQLToSimple } from '../../utils';
 import { ApiList } from './ApiList';
-import { toast } from 'sonner';
 
 export const MyHome = () => {
 
@@ -31,8 +31,7 @@ export const MyHome = () => {
   const [daikokuId, setDaikokuId] = useState<string>()
   const [lastResponseDate, setLastResponseDate] = useState<number>()
   const currentDate = new Date();
-  const sixMonthsAgo = new Date(new Date().setMonth(currentDate.getMonth() - 6));
-
+  const sixMonthAgo = subMonths(currentDate, 6);
 
 
   useEffect(() => {
@@ -44,7 +43,7 @@ export const MyHome = () => {
   }, []);
 
   useEffect(() => {
-    if(isAnonEnabled === false && connectedUser.isDaikokuAdmin && daikokuId && (!lastResponseDate || new Date(lastResponseDate) < sixMonthsAgo)) {
+    if(isAnonEnabled === false && connectedUser.isDaikokuAdmin && daikokuId && (!lastResponseDate || new Date(lastResponseDate) < sixMonthAgo)) {
       confirm({title: translate('anonymous.reporting.enable'), message: <div>{translate('anonymous.reporting.popup.info')}<a href="https://maif.github.io/daikoku/docs/getstarted/setup/reporting" target="_blank" rel="noopener noreferrer"> Daikoku documentation</a></div>, okLabel: translate('Yes') })
         .then((ok) => {
           if (ok) {

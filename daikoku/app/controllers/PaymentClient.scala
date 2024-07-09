@@ -107,7 +107,12 @@ class PaymentClient(
               .post(Map("active" -> "false"))
               .map {
                 case response if response.status >= 400 =>
-                  Left(AppError.PaymentError((response.json.as[JsObject] \ "error" \ "message").as[String]))
+                  Left(
+                    AppError.PaymentError(
+                      (response.json.as[JsObject] \ "error" \ "message")
+                        .as[String]
+                    )
+                  )
                 case response => Right(response.json)
               }
           )
@@ -119,7 +124,10 @@ class PaymentClient(
                   .map {
                     case response if response.status >= 400 =>
                       Left[AppError, JsValue](
-                        AppError.PaymentError((response.json.as[JsObject] \ "error" \ "message").as[String])
+                        AppError.PaymentError(
+                          (response.json.as[JsObject] \ "error" \ "message")
+                            .as[String]
+                        )
                       )
                     case response => Right[AppError, JsValue](response.json)
                   }
@@ -148,7 +156,10 @@ class PaymentClient(
               .map {
                 case response if response.status >= 400 =>
                   Left[AppError, JsValue](
-                    AppError.PaymentError((response.json.as[JsObject] \ "error" \ "message").as[String])
+                    AppError.PaymentError(
+                      (response.json.as[JsObject] \ "error" \ "message")
+                        .as[String]
+                    )
                   )
                 case response => Right[AppError, JsValue](response.json)
               }
@@ -383,7 +394,9 @@ class PaymentClient(
           createStripePrice(plan, productId)
         } else {
           EitherT.leftT[Future, PaymentSettings](
-            AppError.PaymentError((res.json.as[JsObject] \ "error" \ "message").as[String])
+            AppError.PaymentError(
+              (res.json.as[JsObject] \ "error" \ "message").as[String]
+            )
           )
         }
       })

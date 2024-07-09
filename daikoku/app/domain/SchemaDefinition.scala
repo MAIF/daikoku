@@ -2507,7 +2507,14 @@ object SchemaDefinition {
           resolve = _.value.apis
         )
       ),
-      ReplaceField("producers", Field("producers", ListType(TeamObjectType), resolve = _.value.producers)),
+      ReplaceField(
+        "producers",
+        Field(
+          "producers",
+          ListType(TeamObjectType),
+          resolve = _.value.producers
+        )
+      ),
       ReplaceField("total", Field("total", LongType, resolve = _.value.total))
     )
 
