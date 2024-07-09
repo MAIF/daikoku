@@ -307,6 +307,7 @@ export const ApiList = (props: TApiList) => {
               setPage(0)
               setOffset(0)
             }}
+            aria-label={translate('view.list')}
 
           >
             <List />
@@ -318,6 +319,7 @@ export const ApiList = (props: TApiList) => {
               setPage(0)
               setOffset(0)
             }}
+            aria-label={translate('view.grid')}
           >
             <Grid />
           </button>
