@@ -29,8 +29,8 @@
         border: 1px solid $btn-border-color;
       }
       &:hover{
-        background-color: $btn-bg-hover-color;
-        color: $btn-text-hover-color;
+        background-color: $btn-border-color;
+        color: $btn-bg-color;
       }
 
       .ant-progress-outer {
@@ -83,8 +83,8 @@
     justify-content: center;
     align-items: flex-start;
 
-    color: $section-text-color;
-    background-color: $section-bg-color;
+    color: $level2_text-color;
+    background-color: $level2_bg-color;
     font-family: Arial, Helvetica, "Open Sans", sans-serif, monospace;
     //font-size: 25pt;
     text-align: center;
@@ -95,7 +95,7 @@
 
   .card-body {
     border: none;
-    background-color: $body-bg-color;
+    background-color: $level1_bg-color;
     margin: 0;
     height: 250px;
     overflow: scroll;

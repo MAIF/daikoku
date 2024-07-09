@@ -4,24 +4,33 @@ button {
   background-color: #fff;
 }
 
-.btn-access {
-  color: $btn-bg-color;
-  background-color: $btn-text-color;
-  border-color: $btn-bg-color;
+.btn-outline {
+  color: $btn-bg-color !important; 
+  background-color: $btn-text-color !important; 
+  border-color: $btn-bg-color !important; 
 
   &:hover {
-    color: $btn-bg-color;
-    background-color: $btn-text-color;
+    color: $btn-bg-color !important; 
+    background-color: $btn-text-color !important; 
   }
 
-  &-negative {
-    color: $btn-text-color;
-    border-color: $btn-border-color;
-    background-color: $btn-bg-color;
+  &-primary {
+    color: $btn-text-color !important; 
+    border-color: $btn-border-color !important; 
+    background-color: $btn-bg-color !important; 
+
+    // , :not(.btn-check) + .btn:active
+    &.active,&:active{
+      color: $btn-bg-color !important;
+      background-color: $btn-border-color !important;
+      border-color: $btn-border-color !important;
+    }
 
     &:hover {
-      color: $btn-bg-color;
-      background-color: $btn-border-color;
+      color: $btn-bg-color !important; 
+      background-color: $btn-border-color !important; 
+    border-color: $btn-border-color !important; 
+
     }
   }
 }
@@ -56,22 +65,25 @@ button {
   border-radius: 0.2rem;
 }
 
-.btn-outline-primary:hover,
+.btn-outline-info:hover,
 .btn-outline-danger:hover,
 .btn-outline-success:hover,
 .btn.btn-danger:hover {
   color: #fff;
 }
 
+.btn-outline-primary.disabled,
+.btn-outline-primary.link__disabled,
+.btn-outline-primary:disabled,
 .btn-outline-success.disabled,
 .btn-outline-success.link__disabled,
 .btn-outline-success:disabled,
-.btn-outline-primary.disabled,
-.btn-outline-primary.link__disabled,
-.btn-outline-primary:disabled {
-  background-color: #fff;
-  border-color: #9e9e9e;
-  color: #9e9e9e;
+.btn-outline-info.disabled,
+.btn-outline-info.link__disabled,
+.btn-outline-info:disabled {
+  background-color: #fff !important;
+  border-color: #9e9e9e !important;
+  color: #9e9e9e !important;
 
   &:hover,
   &.active {
@@ -107,8 +119,8 @@ button {
   }
 }
 
-.btn-outline-primary,
-.btn-outline-primary:focus {
+.btn-outline-info,
+.btn-outline-info:focus {
   background-color: #fff;
   color: $info-color;
   border-color: $info-color;
@@ -121,9 +133,9 @@ button {
   }
 }
 
-.btn-outline-primary:not(:disabled):not(.disabled):active,
-.btn-outline-primary:not(:disabled):not(.disabled).active,
-.show>.btn-outline-primary.dropdown-toggle {
+.btn-outline-info:not(:disabled):not(.disabled):active,
+.btn-outline-info:not(:disabled):not(.disabled).active,
+.show>.btn-outline-info.dropdown-toggle {
   color: #fff;
   border-color: $info-color;
   background-color: $info-color;
@@ -201,15 +213,15 @@ button {
 }
 
 .aggregation-button {
-  border: 1px solid $pagination-border-color;
+  border: 1px solid $level3_bg-color;
   min-height: 196px;
   border-radius: 8px;
-  color: $menu-text-color;
+  color: $companion_text-color;
 
 
   &:hover {
-    background-color: $menu-text-hover-bg-color;
-    color: $menu-text-hover-color;
-    border-color: $menu-text-hover-bg-color;
+    background-color: $companion_text-hover-bg-color;
+    color: $companion_text-hover-color;
+    border-color: $companion_text-hover-bg-color;
   }
 }

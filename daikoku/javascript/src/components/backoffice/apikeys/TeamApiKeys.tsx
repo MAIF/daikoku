@@ -56,7 +56,7 @@ export const TeamApiKeys = () => {
             <div style={{ minWidth: 100 }}>
               <Link
                 to={`/${currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
-                className="btn btn-sm btn-access-negative"
+                className="btn btn-sm btn-outline-primary"
               >
                 <i className="fas fa-eye me-1" />
                 <Translation i18nkey="Api key" plural={true}>Api keys</Translation>
@@ -90,7 +90,7 @@ export const TeamApiKeys = () => {
             </h1>
             <Link
               to={`/${currentTeam._humanReadableId}/settings/consumption`}
-              className="btn btn-sm btn-access-negative mb-2"
+              className="btn btn-sm btn-outline-primary mb-2"
             >
               <i className="fas fa-chart-bar me-1" />
               <Translation i18nkey="See Stats">See Stats</Translation>
@@ -102,7 +102,7 @@ export const TeamApiKeys = () => {
                 fetchItems={() => Services.subscribedApis(currentTeam._id)}
                 ref={tableRef}
               />
-              <button className="btn btn-sm btn-danger-negative mt-1" onClick={() => cleanSubs(currentTeam)}>
+              <button className="btn btn-sm btn-outline-danger mt-1" onClick={() => cleanSubs(currentTeam)}>
                 <Translation i18nkey="clean archived apikeys">clean archived apikeys</Translation>
               </button>
             </div>

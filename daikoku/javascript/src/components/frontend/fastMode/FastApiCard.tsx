@@ -202,7 +202,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
                     {((!subscriptionsCount && !isPending) || plan.allowMultipleKeys) &&
                       <button
                         style={{ whiteSpace: "nowrap" }}
-                        className={"btn btn-sm btn-outline-primary"}
+                        className={"btn btn-sm btn-outline-info"}
                         onClick={() => subscribeOrExtends(
                           selectedApi.api._id,
                           props.team,
@@ -212,7 +212,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
                       </button>}
                     {isPending &&
                       <button style={{ whiteSpace: "nowrap" }} disabled={true}
-                        className={"btn btn-sm btn-outline-primary disabled"}>
+                        className={"btn btn-sm btn-outline-info disabled"}>
                         {translate('fastMode.button.pending')}
                       </button>}
                   </div>

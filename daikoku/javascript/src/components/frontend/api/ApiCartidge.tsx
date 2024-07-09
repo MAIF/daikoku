@@ -19,7 +19,7 @@ export function ApiCartidge(props: any) {
     .filter((team: any) => props.subscriptions.some((sub: any) => sub.team === team._id));
 
   return (
-    <div className="d-flex col-12 col-sm-3 col-md-2 text-muted flex-column p-3 additionalContent">
+    <div className="d-flex col-12 col-sm-3 col-md-2 text-muted flex-column p-3 album">
       <span>
         <Translation i18nkey="API by">API by</Translation>
       </span>
@@ -27,7 +27,7 @@ export function ApiCartidge(props: any) {
         <Link to={`/${ownerTeam._humanReadableId}`}>{ownerTeam.name}</Link>
       </small>
       <div>
-        <button className="btn btn-xs btn-access-negative" onClick={props.openContactModal}>
+        <button className="btn btn-xs btn-outline-primary" onClick={props.openContactModal}>
           <i className="far fa-envelope me-1" />
           <Translation i18nkey="Contact us">Contact us</Translation>
         </button>
@@ -91,7 +91,7 @@ export function ApiCartidge(props: any) {
             actionLabel={translate('View your api keys')}
             allTeamSelector={false}
           >
-            <button className="btn btn-sm btn-access-negative mt-2">
+            <button className="btn btn-sm btn-outline-primary mt-2">
               <Translation i18nkey="View your api keys">View your api keys</Translation>
             </button>
           </ActionWithTeamSelector>

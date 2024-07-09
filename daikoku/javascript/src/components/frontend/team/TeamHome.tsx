@@ -71,7 +71,7 @@ export const TeamHome = () => {
               <div className="col-sm-1 d-flex flex-column">
                 <Can I={read} a={TEAM} team={team}>
                   <div>
-                    <a href="#" className="float-right team__settings btn btn-sm btn-access-negative" onClick={() => redirectToTeamSettings(team)}>
+                    <a href="#" className="float-right team__settings btn btn-sm btn-outline-primary" onClick={() => redirectToTeamSettings(team)}>
                       <i className="fas fa-cogs" />
                     </a>
                   </div>

@@ -1,34 +1,3 @@
-@import "../variables";
-
-.back-office-overlay {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  // background-color: rgba(0,0,0,0.5);
-  z-index: 2;
-  cursor: pointer;
-
-  &.active {
-    display: block;
-  }
-
-  &:not(.active) {
-    display: none;
-  }
-}
-
-// ************************
-// *** TEAM BACK OFFICE ***
-// ************************
-
-// *****************
-// *** DASHBOARD ***
-// *****************
-
 .tbo__dasboard {
   display: flex;
   flex-direction: row;
@@ -36,41 +5,42 @@
   justify-content: start;
 
   .widget {
-
     height: 300px;
-    overflow-y: scroll;
+    // overflow-y: scroll;
     border-radius: 4px;
-    background-color: $sidebar-bg-color;
-    color: $sidebar-text-color;
+    background-color: $level2_bg-color;
+    color: $level2_text-color;
   }
 
-  .small{
+  .small {
     width: calc(30% - 20px);
   }
-  .medium {    width: calc(60% - 20px);
-
+  .medium {
+    width: calc(60% - 20px);
   }
-  .large {    width: calc(90% - 20px);
-
+  .large {
+    width: calc(90% - 20px);
   }
-  .widget-body {
-    overflow-y: scroll;
-  }
+  // .widget-body {
+  //   overflow-y: scroll;
+  // }
 
   .widget-title {
     padding: 0.5rem 1rem;
-    border: 0.1rem solid;
-    border-bottom: 0.5rem solid;
-    border-color: $btn-border-color;
-    background-color: $btn-bg-color;
-    color: $btn-text-color;
+    // border: 0.1rem solid;
+    // border-bottom: 0.5rem solid;
+    // border-color: $btn-border-color;
+    // background-color: $btn-bg-color;
+    // color: $btn-text-color;
+    background-color: $level2_bg-color;
+    color: $level2_text-color;
     text-align: center;
   }
 
   .widget-list-default-item,
   .widget-list-item {
-    background-color: $btn-bg-color;
-    color: $btn-text-color;
+    background-color: $level3_bg-color;
+    color: $level3_text-color;
     margin: 10px;
     border-left: 2px solid #fff;
     min-height: 30px;
@@ -87,7 +57,7 @@
   .revenus .percent {
     &.high {
       color: green;
-      i{
+      i {
         rotate: 325deg;
       }
     }
@@ -95,7 +65,7 @@
     &.low {
       color: red;
     }
-    i{
+    i {
       rotate: 45deg;
     }
   }

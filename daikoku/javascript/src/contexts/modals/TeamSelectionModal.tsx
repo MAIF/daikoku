@@ -33,7 +33,7 @@ export const TeamSelectorModal = ({ title, description, teams, pendingTeams = []
   const getButton = (team: ITeamSimple) => {
     if (!allowMultipleDemand && pendingTeams.includes(team._id)) {
       return (
-        <button type="button" className="btn btn-sm btn-access disabled">
+        <button type="button" className="btn btn-sm btn-outline-primary disabled">
           <Translation i18nkey="Request in progress" />
         </button>
       );

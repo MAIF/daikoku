@@ -301,7 +301,7 @@ export const ApiList = (props: TApiList) => {
       <div className="row mb-2 view-selectors">
         <div className="col-12 col-sm-9 d-flex justify-content-end">
           <button
-            className={classNames('btn btn-sm btn-access-negative me-2', { active: view === LIST })}
+            className={classNames('btn btn-sm btn-outline-primary me-2', { active: view === LIST })}
             onClick={() => {
               setView(LIST)
               setPage(0)
@@ -312,7 +312,7 @@ export const ApiList = (props: TApiList) => {
             <List />
           </button>
           <button
-            className={classNames('btn btn-sm btn-access-negative', { active: view === GRID })}
+            className={classNames('btn btn-sm btn-outline-primary', { active: view === GRID })}
             onClick={() => {
               setView(GRID)
               setPage(0)
@@ -395,7 +395,7 @@ export const ApiList = (props: TApiList) => {
             )}
             {!!bestTags.data && !!bestTags.data.length && (
               <Top
-                className="p-3 rounded additionalContent mb-2"
+                className="p-3 rounded album mb-2"
                 title="Top tags"
                 icon="fas fa-tag me-2"
                 list={bestTags.data}
@@ -405,7 +405,7 @@ export const ApiList = (props: TApiList) => {
             )}
             {!!bestCategories.data && !!bestCategories.data.length && (
               <Top
-                className="p-3 rounded additionalContent"
+                className="p-3 rounded album"
                 title="Top categories"
                 icon="fas fa-folder me-2"
                 list={bestCategories.data}
@@ -466,7 +466,7 @@ const YourTeams = ({
     ? teams.filter((team) => team.name.toLowerCase().includes(searchedTeam))
     : teams;
   return (
-    <div className={'top__container p-3 rounded additionalContent mb-2'}>
+    <div className={'top__container p-3 rounded album mb-2'}>
       <div>
         <h5>
           <i className="fas fa-users me-2" />
@@ -484,7 +484,7 @@ const YourTeams = ({
           .map((team) => {
             return (
               <span
-                className="p-1 cursor-pointer underline-on-hover text-break a-fake"
+                className="p-1 cursor-pointer underline-on-hover text-break level2-link"
                 key={team._id}
                 onClick={() => redirectToTeam(team)}
               >

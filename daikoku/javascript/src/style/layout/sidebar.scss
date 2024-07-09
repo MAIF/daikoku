@@ -56,12 +56,12 @@
 }
 
 .sidebar .nav-link.active,.sidebar .nav-link.active .fas  {
-  color: $menu-text-hover-color;
-  background-color: $menu-text-hover-bg-color;
+  color: $companion_text-hover-color;
+  background-color: $companion_text-hover-bg-color;
 }
 
 .sidebar .nav-link.active .nav-icon {
-  fill: $link-color;
+  fill: $level2_link-color;
 }
 
 .sidebar .nav-link:hover .feather,.sidebar .nav-link:hover .fas,

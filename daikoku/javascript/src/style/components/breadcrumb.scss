@@ -10,7 +10,7 @@
 
     &::after {
       content: '';
-      background: $pagination-border-color;
+      background: $level3_bg-color;
       top: 6px;
       position: absolute;
       left: -24px;
@@ -28,7 +28,7 @@
         margin-top: 22px;
         width: 1px;
         height: 18px;
-        background: $pagination-border-color;
+        background: $level3_bg-color;
       }
 
     }
@@ -63,16 +63,16 @@
 .ant-steps {
   .ant-steps-item {
     .ant-steps-item-title{
-      color: $sidebar-text-color !important;
+      color: $level2_text-color !important;
 
     }
     .ant-steps-item-tail::after{
-      background-color: $sidebar-text-color !important;
+      background-color: $level2_text-color !important;
 
     }
 
     .ant-steps-item-container {
-      color: $sidebar-text-color;
+      color: $level2_text-color;
 
       .ant-steps-item-icon {
         .ant-steps-icon-dot {
@@ -84,7 +84,7 @@
     &.ant-steps-item-disabled {
       .ant-steps-item-icon {
         .ant-steps-icon-dot {
-          background: $pagination-border-color;
+          background: $level3_bg-color;
         }
       }
     }

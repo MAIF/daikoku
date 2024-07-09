@@ -287,7 +287,7 @@ export function OtoroshiStatsVizualization(props: Iprops) {
         />
 
         <span className="col ms-2 period-display">{state.period.format(state.consumptions)}</span>
-          <button className="btn btn-access-negative" onClick={sync}>
+          <button className="btn btn-outline-primary" onClick={sync}>
             <i className="fas fa-sync-alt" />
           </button>
 

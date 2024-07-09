@@ -185,7 +185,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
   return (
     <div className="col-md-4 card mb-4 shadow-sm usage-plan__card" data-usage-plan={plan.customName}>
-      <div className="card-img-top card-link card-skin" data-holder-rendered="true">
+      <div className="card-img-top card-link card-header" data-holder-rendered="true">
         <span>{plan.customName || formatPlanType(plan, translate)}</span>
       </div>
       <div className="card-body plan-body d-flex flex-column">
@@ -230,7 +230,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             </Translation>
           </span>
         </div>
-        <div className="d-flex justify-content-between align-items-center">
+        <div className="d-flex justify-content-between align-items-center flex-wrap">
           {!otoroshiTargetIsDefined && props.api.visibility !== 'AdminOnly' && (
             <span className="badge bg-danger m-1">{translate('otoroshi.missing.target')}</span>
           )}
@@ -249,7 +249,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
               >
                 {(props.api.visibility === 'AdminOnly' ||
                   (plan.otoroshiTarget && !isAccepted)) && (
-                    <button type="button" className="btn btn-sm btn-access-negative col-12" onClick={openTeamSelectorModal}>
+                    <button type="button" className="btn btn-sm btn-outline-primary col-12" onClick={openTeamSelectorModal}>
                       <Translation
                         i18nkey={
                           isAutomaticProcess ? 'Get API key' : 'Request API key'
@@ -264,7 +264,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           {connectedUser.isGuest && (
             <button
               type="button"
-              className="btn btn-sm btn-access-negative mx-auto mt-3"
+              className="btn btn-sm btn-outline-primary mx-auto mt-3"
               onClick={() => openLoginOrRegisterModal({ tenant })}
             >
               <Translation i18nkey="Get API key">Get API key</Translation>
@@ -316,13 +316,13 @@ const TeamSelector = (props: ITeamSelector) => {
                   >
                     {
                       props.pendingTeams.includes(team._id) &&
-                      <button type="button" className="btn btn-sm btn-access-negative disabled">
+                      <button type="button" className="btn btn-sm btn-outline-primary disabled">
                         {translate("Request in progress")}
                       </button>
                     }
                     {
                       displayVerifiedBtn && !team.verified &&
-                      <button type="button" className="btn btn-sm btn-danger-negative" onClick={() => {
+                      <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => {
                         close()
                         navigate(`/${team._humanReadableId}/settings/edition`)
                       }}>
@@ -380,28 +380,28 @@ export const ApiPricing = (props: ApiPricingProps) => {
         <div>
           <div className="d-flex flex-row">
             <Link to={`../../${props.api.currentVersion}/pricing`} relative='path'>
-              <i className="fa-regular fa-circle-left fa-lg cursor-pointer" />
+              <i className="fa-regular fa-circle-left fa-lg cursor-pointer a-fake" />
             </Link>
             <h5 className='ms-3'>{plan.customName}</h5>
           </div>
           <div className='d-flex flex-row justify-content-around mb-2'>
             <Link
               to={`../../${props.api.currentVersion}/pricing/${plan.customName}/swagger`} relative='path'
-              className={classNames("btn btn-sm btn-access-negative mb-1",
+              className={classNames("btn btn-sm btn-outline-primary mb-1",
                 {
                   link__disabled: !plan.swagger?.content && !plan.swagger?.url,
                   disabled: !plan.swagger?.content && !plan.swagger?.url
                 })}>swagger</Link>
             <Link
               to={`../../${props.api.currentVersion}/pricing/${plan.customName}/testing`} relative='path'
-              className={classNames("btn btn-sm btn-access-negative mb-1",
+              className={classNames("btn btn-sm btn-outline-primary mb-1",
                 {
                   link__disabled: !plan.testing || !plan.testing.enabled,
                   disabled: !plan.testing || !plan.testing.enabled,
                 })}>test</Link>
             <Link
               to={`../../${props.api.currentVersion}/pricing/${plan.customName}/documentation`} relative='path'
-              className={classNames("btn btn-sm btn-access-negative",
+              className={classNames("btn btn-sm btn-outline-primary",
                 {
                   link__disabled: !plan.documentation || !plan.documentation?.pages.length,
                   disabled: !plan.documentation || !plan.documentation?.pages.length,

@@ -1,0 +1,22 @@
+
+.nav-tabs {
+    border-color: $btn-border-color;
+  
+    .nav-link {
+      color: $level2_text-color;
+    }
+  
+    .nav-link:hover,
+    .nav-link:focus {
+      cursor: pointer;
+      background-color: $btn-border-color;
+      color: $btn-bg-color;
+    }
+  
+    .nav-link.active,
+    .nav-item.show .nav-link {
+      color: $btn-text-color;
+      background-color: $btn-bg-color;
+      border-color: $btn-border-color;
+    }
+  }

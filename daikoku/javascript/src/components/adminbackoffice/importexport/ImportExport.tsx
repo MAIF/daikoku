@@ -64,7 +64,7 @@ export const ImportExport = () => {
             <a
               href={`/api/state/export?download=true&export-audit-trail=${!!exportAuditTrail}`}
               target="_blank"
-              className="btn btn-outline-primary"
+              className="btn btn-outline-info"
             >
               <i className="fas fa-download me-1" />
               <Translation i18nkey="download state">download state</Translation>
@@ -73,7 +73,7 @@ export const ImportExport = () => {
               type="button"
               style={{ marginLeft: 10 }}
               onClick={importState}
-              className="btn btn-outline-primary"
+              className="btn btn-outline-info"
             >
               <i className="fas fa-upload me-1" />
               {uploading ? translate('importing ...') : translate('import state')}
@@ -93,7 +93,7 @@ export const ImportExport = () => {
             <Translation i18nkey="Mongo migration">Mongo migration</Translation>
           </h2>
           <div className="section p-3">
-            <button type="button" onClick={migrate} className="btn btn-outline-primary">
+            <button type="button" onClick={migrate} className="btn btn-outline-info">
               <i className="fas fa-database me-1" />
               {processing
                 ? translate('migration in progress ...')

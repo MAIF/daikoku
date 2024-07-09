@@ -289,7 +289,7 @@ const CustomMetadataInput = (props: {
     <div>
       {!props.value?.length && (
         <div className="col-sm-10">
-          <button type="button" className="btn btn-outline-primary" onClick={e => addFirst(e)}>
+          <button type="button" className="btn btn-outline-info" onClick={e => addFirst(e)}>
             <i className="fas fa-plus" />{' '}
           </button>
         </div>
@@ -333,7 +333,7 @@ const CustomMetadataInput = (props: {
             {idx === (props.value?.length || 0) - 1 && (
               <button
                 type="button"
-                className="input-group-text btn btn-outline-primary"
+                className="input-group-text btn btn-outline-info"
                 onClick={addNext}
               >
                 <i className="fas fa-plus" />{' '}
@@ -408,10 +408,10 @@ const Card = ({
         zIndex: '100',
       }}>
         {plan.visibility === PRIVATE && (
-          <i className="fas fa-lock" />
+          <i className="fas fa-lock" style={{ color: "$card-header-text-color" }} />
         )}
         {isDefault && (
-          <i className="fas fa-star" />
+          <i className="fas fa-star" style={{ color: "$card-header-text-color" }}/>
         )}
       </div>
       {!creation && (
@@ -451,7 +451,7 @@ const Card = ({
             </span>
             <div className="dropdown-divider" />
             <span
-              className="dropdown-item cursor-pointer btn-danger-negative"
+              className="dropdown-item cursor-pointer btn-outline-danger"
               onClick={deleteWithConfirm}
             >
               {tenant.display === 'environment' ? translate('pricing.delete.env.btn.label') : translate('Delete plan')}
@@ -459,7 +459,7 @@ const Card = ({
           </div>
         </div>
       )}
-      <div className="card-img-top card-link card-skin" data-holder-rendered="true">
+      <div className="card-img-top card-link card-header" data-holder-rendered="true">
         <span>{plan.customName || formatPlanType(plan, translate)}</span>
       </div>
       <div className="card-body plan-body d-flex flex-column">
@@ -918,6 +918,7 @@ export const TeamApiPricings = (props: Props) => {
               disabled: !creation && !!planForEdition?.otoroshiTarget?.otoroshiSettings,
               label: translate('Otoroshi instances'),
               optionsFrom: Services.allSimpleOtoroshis(props.tenant._id, props.currentTeam)
+                .then(r => {console.log({r}); return r})
                 .then(r => isError(r) ? [] : r),
               transformer: (s: IOtoroshiSettings) => ({
                 label: s.url,
@@ -1324,7 +1325,7 @@ export const TeamApiPricings = (props: Props) => {
   const availablePlans = queryPlans.data && !isError(queryPlans.data) && tenant.environments.filter(e => (queryPlans.data as Array<IUsagePlan>).every(p => p.customName !== e))
   return (<div className="d-flex col flex-column pricing-content">
     <div className="album">
-      {planForEdition && mode !== possibleMode.list && <i onClick={cancelEdition} className="fa-regular fa-circle-left fa-lg cursor-pointer" style={{ marginTop: 0 }} />}
+      {planForEdition && mode !== possibleMode.list && <i onClick={cancelEdition} className="fa-regular fa-circle-left fa-lg cursor-pointer a-fake" style={{ marginTop: 0 }} />}
       <div className="container">
         <div className="d-flex mb-3">
           {!planForEdition && <button
@@ -1334,7 +1335,7 @@ export const TeamApiPricings = (props: Props) => {
             className="btn btn-outline-success btn-sm me-1">
             {tenant.display === 'environment' ? translate('pricing.add.new.env.btn.label') : translate('add a new plan')}
           </button>}
-          {!planForEdition && !!props.api.parent && (<button onClick={importPlan} type="button" className="btn btn-outline-primary me-1" style={{ marginTop: 0 }}>
+          {!planForEdition && !!props.api.parent && (<button onClick={importPlan} type="button" className="btn btn-outline-info me-1" style={{ marginTop: 0 }}>
             {tenant.display === 'environment' ? translate('pricing.import.env.btn.label') : translate('import a plan')}
           </button>)}
         </div>
@@ -1346,6 +1347,7 @@ export const TeamApiPricings = (props: Props) => {
               initial="info"
               creation={creation}
               save={savePlan}
+              currentTeam={props.currentTeam}
               labels={{
                 previous: translate('Previous'),
                 skip: translate('Skip'),
@@ -1645,7 +1647,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
     return (
       <div className='d-flex flex-column align-items-center'>
         <div> {translate('api.pricings.no.step.explanation')}</div>
-        <button className='btn btn-access-negative my-2' onClick={() => addProcess(0)}>
+        <button className='btn btn-outline-primary my-2' onClick={() => addProcess(0)}>
           {translate('api.pricings.add.first.step.btn.label')}
         </button>
       </div>
@@ -1654,7 +1656,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
 
   return (
     <div className='d-flex flex-row align-items-center'>
-      <button className='btn btn-access-negative sortable-list-btn' onClick={() => addProcess(0)}><Plus /></button>
+      <button className='btn btn-outline-primary sortable-list-btn' onClick={() => addProcess(0)}><Plus /></button>
       <SortableList
         items={props.value.subscriptionProcess}
         onChange={subscriptionProcess => props.savePlan({ ...props.value, subscriptionProcess })}
@@ -1679,11 +1681,11 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
                       'justify-content-between': !isValidationStepPayment(item),
                       'justify-content-end': isValidationStepPayment(item),
                     })}>
-                      {isValidationStepEmail(item) ? <button className='btn btn-sm btn-outline-primary' onClick={() => editMailStep(item)}><Settings size={15} /></button> : <></>}
-                      {isValidationStepHttpRequest(item) ? <button className='btn btn-sm btn-outline-primary' onClick={() => editHttpRequestStep(item)}><Settings size={15} /></button> : <></>}
+                      {isValidationStepEmail(item) ? <button className='btn btn-sm btn-outline-info' onClick={() => editMailStep(item)}><Settings size={15} /></button> : <></>}
+                      {isValidationStepHttpRequest(item) ? <button className='btn btn-sm btn-outline-info' onClick={() => editHttpRequestStep(item)}><Settings size={15} /></button> : <></>}
                       {isValidationStepTeamAdmin(item) ?
                         <button
-                          className='btn btn-sm btn-outline-primary'
+                          className='btn btn-sm btn-outline-info'
                           onClick={() => openCustomModal({
                             title: translate('motivation.form.modal.title'),
                             content: <MotivationForm value={item} saveMotivation={({ schema, formatter }) => {
@@ -1702,7 +1704,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
                     step={item}
                     tenant={props.tenant} />
                 </SortableItem>
-                <button className='btn btn-access-negative sortable-list-btn' onClick={() => addProcess(idx + 1)}><Plus /></button>
+                <button className='btn btn-outline-primary sortable-list-btn' onClick={() => addProcess(idx + 1)}><Plus /></button>
               </>
             )
           }
@@ -1902,7 +1904,7 @@ const TeamApiPricingDocumentation = (props: TeamApiPricingDocumentationProps) =>
     return (
       <div>
         <div className='alert alert-warning' role="alert">{translate('documentation.not.setted.message')}</div>
-        <button type='button' className='btn btn-outline-primary' onClick={createPlanDoc}>{translate('documentation.add.button.label')}</button>
+        <button type='button' className='btn btn-outline-info' onClick={createPlanDoc}>{translate('documentation.add.button.label')}</button>
       </div>
     )
   } else {

@@ -2,13 +2,13 @@
     color: $error-color;
 
     &:hover {
-        color: $error-hover-color;
+        color: $error-color;
     }
 }
 
 .accept {
     color: $success-color;
     &:hover {
-        color: $success-hover-color;
+        color: $success-color;
     }
 }

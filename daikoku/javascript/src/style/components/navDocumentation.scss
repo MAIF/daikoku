@@ -1,0 +1,31 @@
+.navDocumentation {
+    border-right: 1px solid $level2_link-color;
+  
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-weight: bold;
+      font-size: 0.9 rem;
+  
+      .api-doc-cartridge-link a {
+        line-height: 2rem;
+        border-radius: 4px;
+        padding: 0 0.5rem;
+        display: block;
+        width: 100%;
+        color: $companion_text-color;
+        margin-bottom: 0.3rem;
+  
+        &:hover {
+          background-color: $companion_text-hover-bg-color;
+          color: $companion_text-hover-color;
+        }
+  
+        &.active {
+          background-color: $companion_text-hover-bg-color;
+          color: $companion_text-hover-color;
+        }
+      }
+    }
+  }

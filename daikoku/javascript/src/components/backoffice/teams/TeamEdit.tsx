@@ -57,7 +57,7 @@ const Avatar = ({
           onChange={(e) => onChange(e.target.value)}
         />
         <div className='d-flex justify-content-end'>
-          <button type="button" className="btn btn-outline-primary me-1" onClick={setGravatarLink} disabled={!rawValues.contact}>
+          <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink} disabled={!rawValues.contact}>
             <i className="fas fa-user-circle me-1" />
             <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
           </button>
@@ -229,7 +229,7 @@ export const TeamEdit = () => {
         {!currentTeam.verified && !alreadyClicked &&
           <div className="alert alert-warning" role="alert">
             {translate('team.email.notVerified.info')}
-            <button className="btn btn-outline-warning d-flex align-items-end" onClick={() => {
+            <button className="btn btn-outline-danger d-flex align-items-end" onClick={() => {
               Services.sendEmailVerification(currentTeam._id)
                 .then((r) => {
                   if (isError(r)) {

@@ -203,7 +203,7 @@ export const ApiGroupHome = () => {
           tab={params.tab}
         />
       )}
-      <div className="album py-2 col-12 min-vh-100">
+      <div className="album py-2 me-4 min-vh-100">
         <div className={classNames({
           container: params.tab !== 'apis',
           'container-fluid': params.tab === 'apis'

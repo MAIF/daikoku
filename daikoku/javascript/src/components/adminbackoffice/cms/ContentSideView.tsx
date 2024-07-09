@@ -140,12 +140,12 @@ const TopActions = ({
       }}
       id="content_sideview_parent"
     >
-      <button className="btn btn-sm btn-outline-primary me-1" type="button" onClick={select}>
+      <button className="btn btn-sm btn-outline-info me-1" type="button" onClick={select}>
         <i className="fas fa-plus pe-1" />
         {translate('cms.content_side.new_action')}
       </button>
       <div className="d-flex">
-        <button className="btn btn-sm btn-outline-primary" onClick={() => navigate('revisions')}>
+        <button className="btn btn-sm btn-outline-info" onClick={() => navigate('revisions')}>
           Révisions
         </button>
         <button
@@ -192,7 +192,7 @@ const HelperView = ({
       )}
       {content.link && (
         <a
-          className="btn btn-sm btn-outline-primary my-2"
+          className="btn btn-sm btn-outline-info my-2"
           href={`https://maif.github.io/daikoku/swagger-ui/index.html${content.link}`}
           target="_blank"
           rel="noreferrer noopener"
@@ -299,7 +299,7 @@ export const ContentSideView = ({
     marginTop: editable ? '52px' : 0,
     flex: 1,
   }}>
-    <button className="btn btn-sm btn-outline-primary m-1" type="button" style={{ maxWidth: 200 }}
+    <button className="btn btn-sm btn-outline-info m-1" type="button" style={{ maxWidth: 200 }}
       onClick={() => navigate('/settings/pages', { state: { reload: true } })}>
       {translate('cms.create.back_to_pages')}
     </button>

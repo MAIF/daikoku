@@ -182,7 +182,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
               <Can I={manage} a={API} team={team}>
                 <Link
                   to={`/${team?._humanReadableId}/settings/apis/${api?._humanReadableId}/${api?.currentVersion}/infos`}
-                  className="btn btn-sm btn-access-negative mb-2"
+                  className="btn btn-sm btn-outline-primary mb-2"
                 >
                   {translate('api.configuration.btn.label')}
                 </Link>
@@ -192,7 +192,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
           contact: {
             component: (
               <button
-                className="btn btn-sm btn-access-negative mb-2"
+                className="btn btn-sm btn-outline-primary mb-2"
                 onClick={() =>
                   openContactModal({
                     name: connectedUser.name,
@@ -304,7 +304,7 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
               <Can I={manage} a={API} team={team}>
                 <Link
                   to={`/${team?._humanReadableId}/settings/apigroups/${apigroup?._humanReadableId}/infos`}
-                  className="btn btn-sm btn-access-negative mb-2"
+                  className="btn btn-sm btn-outline-primary mb-2"
                 >
                   {translate('apis.group.configuration.btn.label')}
                 </Link>
@@ -315,7 +315,7 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
             label: translate('contact'),
             component: (
               <button
-                className="btn btn-sm btn-access-negative mb-2"
+                className="btn btn-sm btn-outline-primary mb-2"
                 onClick={() =>
                   openContactModal({
                     name: connectedUser.name,
@@ -573,7 +573,7 @@ export const useApiGroupBackOffice = (creation: boolean) => {
             component: (
               <Link
                 to={`/${(queries[0].data as ITeamSimple)._humanReadableId}/apigroups/${apiGroup?._humanReadableId}/apis`}
-                className="btn btn-sm btn-access-negative mb-2"
+                className="btn btn-sm btn-outline-primary mb-2"
               >
                 {translate('View this APIs Group')}
               </Link>

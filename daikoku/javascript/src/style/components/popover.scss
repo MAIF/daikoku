@@ -209,3 +209,17 @@
 .ant-popover-placement-leftBottom > .ant-popover-content > .ant-popover-arrow {
   bottom: 12px;
 }
+
+.Popover-body {
+  display: flex;
+  padding: 5px 10px;
+  background: hsl(0, 0%, 27%);
+  color: white;
+  border-radius: 4px;
+  justify-content: center;
+  align-items: center;
+}
+
+.Popover-tipShape {
+  fill: hsl(0, 0%, 27%);
+}

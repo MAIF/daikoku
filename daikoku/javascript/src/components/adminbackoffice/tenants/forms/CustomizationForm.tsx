@@ -134,7 +134,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       format: format.code,
       label: () => <div className='d-flex flex-row align-items-center'>
         <div>{translate('CSS color theme')}</div>
-        <button type="button" className="btn btn-outline-primary ms-1" onClick={() => {
+        <button type="button" className="btn btn-outline-info ms-1" onClick={() => {
           const RedirectToUI = () => navigate(`/settings/tenants/${tenant?._id}/style`);
           if (Object.keys(formRef.current?.methods.formState.dirtyFields || {}).length) {
             openSaveOrCancelModal({

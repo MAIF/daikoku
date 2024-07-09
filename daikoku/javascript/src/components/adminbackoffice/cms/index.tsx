@@ -77,7 +77,7 @@ export const CMSOffice = () => {
         <h1 className="mb-0">Pages</h1>
         <div>
           <div className="btn-group dropstart">
-            <button type="button" className="btn btn-sm me-1 btn-access" data-bs-toggle="dropdown" aria-expanded="false">
+            <button type="button" className="btn btn-sm me-1 btn-outline-primary" data-bs-toggle="dropdown" aria-expanded="false">
               <i className="fas fa-cog"></i>
             </button>
             <ul className="dropdown-menu">

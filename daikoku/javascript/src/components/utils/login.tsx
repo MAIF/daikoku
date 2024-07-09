@@ -11,8 +11,8 @@ export function LoginPage(props: {}) {
   const [searchParams] = useSearchParams();
 
   const [state, setState] = useState<any>({
-    username: '',
-    password: '',
+    username: "",
+    password: "",
     message: null,
     loginError: null,
   });

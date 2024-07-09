@@ -168,7 +168,7 @@ export const AssetChooserByModal = (props: AssetChooserProps) => {
     return (
       <button
         type="button"
-        className={props.classNames ? props.classNames : classNames('btn btn-access-negative ms-1', { disabled: !assets.length })}
+        className={props.classNames ? props.classNames : classNames('btn btn-outline-primary ms-1', { disabled: !assets.length })}
         onClick={() => assets.length &&
           openAssetSelectorModal({
             assets,
@@ -193,7 +193,7 @@ export const AssetChooserByModal = (props: AssetChooserProps) => {
     );
   } else {
     return (<BeautifulTitle title={(assetsRequest.error ?? '') as string}>
-      <button type="button" className="btn btn-outline-primary ms-1 cursor-help" disabled>
+      <button type="button" className="btn btn-outline-info ms-1 cursor-help" disabled>
         <i className={classNames('fas', {
           'fa-user-circle me-1': !!props.onlyPreview,
           'fa-file me-1': !props.onlyPreview,

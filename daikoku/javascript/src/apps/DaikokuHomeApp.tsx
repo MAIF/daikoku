@@ -31,7 +31,7 @@ const AvatarInput = ({
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
-        <button type="button" className="btn btn-access btn-block" onClick={setGravatarLink}>
+        <button type="button" className="btn btn-outline-primary btn-block" onClick={setGravatarLink}>
           <i className="fas fa-user-circle me-1" />
           <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
         </button>

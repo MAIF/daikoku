@@ -80,7 +80,7 @@ class OtoroshiSettingsController(
             )
           )(team, ctx) { team =>
             team.authorizedOtoroshiEntities match {
-              case Some(authorizedEntities) =>
+              case Some(authorizedEntities) if authorizedEntities.nonEmpty =>
                 Ok(
                   JsArray(
                     ctx.tenant.otoroshiSettings
@@ -93,7 +93,7 @@ class OtoroshiSettingsController(
                       .toSeq
                   )
                 ).future
-              case None =>
+              case _ =>
                 Ok(
                   JsArray(
                     ctx.tenant.otoroshiSettings.map(_.toUiPayload()).toSeq
@@ -269,7 +269,8 @@ class OtoroshiSettingsController(
               .getServiceGroups()(settings)
               .map { groups =>
                 team.authorizedOtoroshiEntities match {
-                  case Some(authorizedEntities) =>
+                  case Some(authorizedEntities)
+                      if authorizedEntities.nonEmpty =>
                     authorizedEntities
                       .find(x => x.otoroshiSettingsId.value == oto) match {
                       case Some(entities) =>
@@ -283,7 +284,7 @@ class OtoroshiSettingsController(
                           Json.obj("error" -> s"Settings $oto not found")
                         )
                     }
-                  case None => Ok(groups)
+                  case _ => Ok(groups)
                 }
               }
               .recover {
@@ -333,7 +334,8 @@ class OtoroshiSettingsController(
               .getServices()(settings)
               .map { services =>
                 team.authorizedOtoroshiEntities match {
-                  case Some(authorizedEntities) =>
+                  case Some(authorizedEntities)
+                      if authorizedEntities.nonEmpty =>
                     authorizedEntities
                       .find(x => x.otoroshiSettingsId.value == oto) match {
                       case Some(entities) =>
@@ -347,7 +349,7 @@ class OtoroshiSettingsController(
                           Json.obj("error" -> s"Settings $oto not found")
                         )
                     }
-                  case None => Ok(services)
+                  case _ => Ok(services)
                 }
               }
               .recover {
@@ -374,7 +376,8 @@ class OtoroshiSettingsController(
               .getRoutes()(settings)
               .map { routes =>
                 team.authorizedOtoroshiEntities match {
-                  case Some(authorizedEntities) =>
+                  case Some(authorizedEntities)
+                      if authorizedEntities.nonEmpty =>
                     authorizedEntities
                       .find(x => x.otoroshiSettingsId.value == oto) match {
                       case Some(entities) =>
@@ -388,7 +391,7 @@ class OtoroshiSettingsController(
                           Json.obj("error" -> s"Settings $oto not found")
                         )
                     }
-                  case None => Ok(routes)
+                  case _ => Ok(routes)
                 }
               }
               .recover {
@@ -580,11 +583,8 @@ class OtoroshiSettingsController(
         ): EitherT[Future, AppError, ActualOtoroshiApiKey] = {
           if (previousSettings != actualSettings) {
             for {
-              _ <- EitherT.liftF(
-                otoroshiClient.deleteApiKey(key.clientId)(previousSettings)
-              )
-              newKey <-
-                EitherT(otoroshiClient.createApiKey(key)(actualSettings))
+              _ <- otoroshiClient.deleteApiKey(key.clientId)(previousSettings)
+              newKey <-EitherT(otoroshiClient.createApiKey(key)(actualSettings))
             } yield newKey
           } else {
             EitherT(otoroshiClient.updateApiKey(key)(previousSettings))
@@ -660,30 +660,20 @@ class OtoroshiSettingsController(
       )(teamId, ctx) { _ =>
         val otoroshiSettingsOpt =
           (ctx.request.body \ "otoroshiSettings").asOpt[String]
+
+
         val clientIdOpt = (ctx.request.body \ "clientId").asOpt[String]
-        (otoroshiSettingsOpt, clientIdOpt) match {
-          case (
-                Some(otoroshiSettings),
-                Some(clientId)
-              ) =>
-            ctx.tenant.otoroshiSettings
-              .find(s => s.id.value == otoroshiSettings) match {
-              case None =>
-                FastFuture.successful(
-                  NotFound(
-                    Json.obj("error" -> s"Settings $otoroshiSettings not found")
-                  )
-                )
-              case Some(settings) =>
-                otoroshiClient
-                  .deleteApiKey(clientId)(settings)
-                  .map(_ => Ok(Json.obj("done" -> true)))
-            }
-          case _ =>
-            FastFuture.successful(
-              BadRequest(Json.obj("error" -> "Bad request"))
-            )
-        }
+
+        (for {
+          otoroshiSettingsId <- EitherT.fromOption[Future](otoroshiSettingsOpt, AppError.EntityNotFound("Otoroshi settings"))
+          clientId <- EitherT.fromOption[Future](clientIdOpt, AppError.EntityNotFound("clientId settings"))
+          otoroshiSettings <- EitherT.fromOption[Future](ctx.tenant.otoroshiSettings
+            .find(s => s.id.value == otoroshiSettingsId), AppError.EntityNotFound("Otoroshi settings"))
+          _ <- otoroshiClient
+            .deleteApiKey(clientId)(otoroshiSettings)
+        } yield Ok(Json.obj("done" -> true)))
+          .leftMap(_.render())
+          .merge
       }
     }
 

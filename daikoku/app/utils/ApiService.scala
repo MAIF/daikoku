@@ -488,9 +488,7 @@ class ApiService(
       import cats.implicits._
 
       val r: EitherT[Future, AppError, JsObject] = for {
-        _ <- EitherT.liftF(
-          otoroshiClient.deleteApiKey(subscription.apiKey.clientId)
-        )
+        _ <- otoroshiClient.deleteApiKey(subscription.apiKey.clientId)
         _ <- EitherT.liftF(
           env.dataStore.apiSubscriptionRepo
             .forTenant(tenant.id)

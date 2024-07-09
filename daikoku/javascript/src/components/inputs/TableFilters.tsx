@@ -42,7 +42,7 @@ export const BooleanColumnFilter = ({
         checked={filterValue || false}
       />
       {filterValue !== undefined && (
-        <span className="btn btn-sm btn-danger-negative table-filter-suppress">
+        <span className="btn btn-sm btn-outline-danger table-filter-suppress">
           <Sliders onClick={() => setFilter(undefined)} />
         </span>
       )}

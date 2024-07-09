@@ -369,7 +369,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
                   <button
                     onClick={props.importPage}
                     type="button"
-                    className="btn btn-sm btn-outline-primary">
+                    className="btn btn-sm btn-outline-info">
                     <i className="fas fa-download" />
                   </button>
                 }

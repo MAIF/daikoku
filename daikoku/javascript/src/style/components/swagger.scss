@@ -1,0 +1,18 @@
+.swagger-ui .info hgroup.main a {
+    word-break: break-all;
+  }
+  
+  .swagger-ui {
+    color: $sidebar-text-color;
+    .btn {
+      color: $sidebar-text-color;
+    }
+  }
+  
+  .swagger-ui .errors-wrapper {
+    hgroup h4,
+    .errors h4,
+    .errors small {
+      color: $sidebar-text-color;
+    }
+  }

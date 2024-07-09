@@ -1,15 +1,13 @@
 .tree-item {
-  --vertical-padding: 10px;
 
   border-radius: 4px;
-
   position: relative;
   display: flex;
   align-items: center;
-  padding: var(--vertical-padding) 10px;
-  background-color: #fff;
+  padding: 10px 10px;
+  background-color: $level3_bg-color;
   border: 1px solid #dedede;
-  color: #222;
+  color: $level3_text-color;
   box-sizing: border-box;
 
   margin-top: 5px;
@@ -18,10 +16,6 @@
     position: absolute;
     top: -10px;
     right: -10px;
-    // color: $danger-color;
-    // &:hover {
-    //   background-color: $danger-color;
-    // }
   }
 
   &:hover {
