@@ -311,7 +311,6 @@ const ComponentedForm = ({
   value,
   valid,
   component,
-  reference,
   currentTeam,
   reference,
   props
@@ -322,7 +321,7 @@ const ComponentedForm = ({
         value,
         onChange: (x) => valid(x),
         reference,
-        currentTeam
+        currentTeam,
         ...props
       })}
     </div>
