@@ -37,7 +37,7 @@ export const TeamApis = () => {
           return (
             <div className="d-flex flex-row justify-content-between">
               <span>{info.getValue()}</span>
-              <div className="badge iconized">API Group</div>
+              <div className="badge badge-custom">API Group</div>
             </div>
           );
         }
@@ -70,7 +70,7 @@ export const TeamApis = () => {
             <Link
               rel="noopener"
               to={viewUrl}
-              className="btn btn-sm btn-outline-primary me-1"
+              className="btn btn-sm btn-outline-info me-1"
               title="View this Api"
             >
               <i className="fas fa-eye" />
@@ -79,7 +79,7 @@ export const TeamApis = () => {
               <Link
                 key={`edit-${api._humanReadableId}`}
                 to={editUrl}
-                className="btn btn-sm btn-outline-primary me-1"
+                className="btn btn-sm btn-outline-info me-1"
                 title="Edit this Api"
               >
                 <i className="fas fa-pen" />

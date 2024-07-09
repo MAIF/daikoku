@@ -54,7 +54,7 @@ export const TenantOtoroshis = () => {
               <Link to={`/settings/otoroshis/${otoroshi._id}`}>
                 <button
                   type="button"
-                  className="btn btn-outline-primary me-1"
+                  className="btn btn-outline-info me-1"
                   title={translate('Edit this settings')}
                 >
                   <i className="fas fa-pen" />
@@ -106,7 +106,7 @@ export const TenantOtoroshis = () => {
       <div>
         <button
           type="button"
-          className="btn btn-sm btn-outline-success mb-1 ms-1"
+          className="btn btn-sm btn-outline-success my-1 ms-1"
           title={translate('otoroshi.list.add.label')}
           onClick={(e) => {
             createNewSettings();

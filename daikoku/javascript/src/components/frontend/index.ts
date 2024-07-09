@@ -4,3 +4,4 @@ export * from './unauthenticated';
 export * from './FrontOffice';
 export * from './MaybeHomePage';
 export * from './JoinTeam';
+export * from './AtomicDesign';

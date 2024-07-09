@@ -236,14 +236,14 @@ const Avatar = ({
                     onChange={(e) => changePicture(e.target.value)}
                 />
                 <div className="d-flex mt-1 justify-content-end">
-                    <button type="button" className="btn btn-outline-primary me-1" onClick={setGravatarLink}>
+                    <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink}>
                         <i className="fas fa-user-circle me-1"/>
                         <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
                     </button>
                     {isOtherOriginThanLocal && (
                         <button
                             type="button"
-                            className="btn btn-outline-primary"
+                            className="btn btn-outline-info"
                             onClick={setPictureFromProvider}
                             disabled={rawValues.pictureFromProvider}
                         >
@@ -292,7 +292,7 @@ const PictureUpload = (props: PictureUploadProps) => {
             />
             <button
                 type="button"
-                className="btn btn-access-negative"
+                className="btn btn-outline-primary"
                 disabled={uploading}
                 onClick={trigger}
                 style={{width: 100, height: 100, borderRadius: '50%'}}
@@ -597,7 +597,7 @@ export const MyProfile = () => {
                   <div className='d-flex align-items-center mt-3' style={{gap: '.25rem'}}>
                     <button
                         type="button"
-                        className="btn btn-sm btn-access-negative m-1"
+                        className="btn btn-sm btn-outline-primary m-1"
                         onClick={resetToken}
                     >
                       Reset token
@@ -605,7 +605,7 @@ export const MyProfile = () => {
                     <button
                         type="button"
                         disabled={copiedTimeout}
-                        className="btn btn-sm btn-access-negative m-1"
+                        className="btn btn-sm btn-outline-primary m-1"
                         onClick={copyToken}
                     >
                         {copiedTimeout ? <span>

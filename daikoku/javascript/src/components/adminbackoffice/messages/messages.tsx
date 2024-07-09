@@ -149,7 +149,7 @@ export const AdminMessages = () => {
   });
 
   return (<div className="d-flex flex-row messages-container">
-    <div className="d-flex flex-column col-12 col-md-3 messages-sender">
+    <div className="d-flex flex-column col-12 col-md-3 pt-2 messages-sender-container level2">
       <Select
         placeholder={translate('Start new conversation')}
         className="mx-2 mb-2 reactSelect"
@@ -185,8 +185,8 @@ export const AdminMessages = () => {
       }), ['unreadCount', 'maxDate', 'user.name'], ['desc', 'desc', 'asc']) //todo: maybe order
         .map(({ chat, user, messages, unreadCount, maxDate }, idx) => {
           const lastMessageDateDisplayed = moment().diff(maxDate, 'days') > 1 ? maxDate.format('D MMM.') : maxDate.fromNow(true);
-          return (<div key={idx} className={classNames('p-3 cursor-pointer d-flex flex-row', {
-            'messages-sender__active': selectedChat === chat,
+          return (<div key={idx} className={classNames('p-3 cursor-pointer d-flex flex-row messages-sender level2-link__with-bg', {
+            'level2-link__active-bg': selectedChat === chat,
           })} onClick={() => setSelectedChat(chat)}>
             <div className="col-4">
               <img className="user-avatar" src={user.picture} alt="user-avatar" style={{ width: '100%' }} />
@@ -213,7 +213,7 @@ export const AdminMessages = () => {
     </div>
     <div className="col-12 col-sm-9">
       <div className="d-flex d-sm-none justify-content-end">
-        <button className="btn btn-sm btn-access-negative ">
+        <button className="btn btn-sm btn-outline-primary ">
           <ChevronLeft />
         </button>
       </div>
@@ -227,7 +227,7 @@ export const AdminMessages = () => {
               const sender = Option(users.find((u) => u._id === m.sender))
                 .map((u: any) => u.name)
                 .getOrElse(translate('Unknown user'));
-              return (<div key={`discussion-message-${idx}`} className="discussion-message d-flex flex-column">
+              return (<div key={`discussion-message-${idx}`} className="discussion-message d-flex flex-column level2">
                 <span className="sender">{sender}</span>
                 <span className="message">{m.message}</span>
                 <span className="info">
@@ -238,7 +238,7 @@ export const AdminMessages = () => {
           </div>);
         })}
         {selectedChat && lastClosedDates.find((x) => x.chat === selectedChat).date ? (<div className="d-flex flex-row justify-content-center my-1">
-          <button className="btn btn-sm btn-outline-primary" disabled={loading} onClick={() => getPreviousMessages(selectedChat)}>
+          <button className="btn btn-sm btn-outline-info" disabled={loading} onClick={() => getPreviousMessages(selectedChat)}>
             <Translation i18nkey="Load previous messages">Load previous messages</Translation>
           </button>
         </div>) : <></>}

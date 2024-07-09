@@ -19,10 +19,10 @@ export const SelectionStepStep = (props: any) => {
   const { Translation } = useContext(I18nContext);
   return (
     <div className="d-flex">
-      <button className="btn btn-outline-primary me-2" onClick={() => props.goToServices()}>
+      <button className="btn btn-outline-info me-2" onClick={() => props.goToServices()}>
         <Translation i18nkey="Import Otoroshi services">Import Otoroshi Services</Translation>
       </button>
-      <button className="btn btn-outline-primary" onClick={() => props.goToApikeys()}>
+      <button className="btn btn-outline-info" onClick={() => props.goToApikeys()}>
         <Translation i18nkey="Import Otoroshi apikeys">Import Otoroshi Apikeys</Translation>
       </button>
     </div>
@@ -107,7 +107,7 @@ export const RecapServiceStep = (props: any) => {
           })}
       </ul>
       <div className="d-flex justify-content-end">
-        <button className="btn btn-outline-primary me-1" onClick={() => props.goBackToServices()}>
+        <button className="btn btn-outline-info me-1" onClick={() => props.goBackToServices()}>
           <i className="fas fa-chevron-left me-1"></i>
           <Translation i18nkey="Back">Back</Translation>
         </button>
@@ -167,7 +167,7 @@ export const RecapSubsStep = (props: any) => {
           })}
       </ul>
       <div className="d-flex justify-content-end">
-        <button className="btn btn-outline-primary me-1" onClick={() => props.goBackToServices()}>
+        <button className="btn btn-outline-info me-1" onClick={() => props.goBackToServices()}>
           <i className="fas fa-chevron-left me-1"></i>
           <Translation i18nkey="Back">Back</Translation>
         </button>
@@ -353,10 +353,10 @@ export const ServicesStep = (props: any) => {
     <div className="d-flex justify-content-between col-12 mt-5">
       <div />
       <div>
-        <button className="btn btn-access" disabled={props.currentStep === 1} onClick={() => props.goToStep(1)}>
+        <button className="btn btn-outline-primary" disabled={props.currentStep === 1} onClick={() => props.goToStep(1)}>
           <i className="fas fa-angle-double-left" />
         </button>
-        <button className="btn btn-access me-2" disabled={props.currentStep === 1} onClick={props.previousStep}>
+        <button className="btn btn-outline-primary me-2" disabled={props.currentStep === 1} onClick={props.previousStep}>
           <i className="fas fa-angle-left" />
         </button>
         {props.maybeCreatedApi.isDefined && (<button className="btn btn-outline-success" onClick={reset}>
@@ -368,10 +368,10 @@ export const ServicesStep = (props: any) => {
         {!props.maybeCreatedApi.isDefined && (<button className="btn btn-outline-success me-2" disabled={!selectedTeam || !!error?.name} onClick={getIt}>
           <Translation i18nkey="Import">Import this service</Translation>
         </button>)}
-        <button className="btn btn-access ms-2" onClick={nextStep}>
+        <button className="btn btn-outline-primary ms-2" onClick={nextStep}>
           <i className="fas fa-angle-right" />
         </button>
-        <button className="btn btn-access" disabled={props.currentStep === props.totalSteps} onClick={() => props.goToStep(props.totalSteps)}>
+        <button className="btn btn-outline-primary" disabled={props.currentStep === props.totalSteps} onClick={() => props.goToStep(props.totalSteps)}>
           <i className="fas fa-angle-double-right" />
         </button>
       </div>

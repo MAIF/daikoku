@@ -59,7 +59,7 @@ export const TenantList = () => {
             <Translation i18nkey="Tenant" isPlural>
               Tenants
             </Translation>
-            <a className="btn btn-sm btn-access-negative mb-1 ms-1" title={translate('Create a new tenant')} href="#" onClick={(e) => {
+            <a className="btn btn-sm btn-outline-primary mb-1 ms-1" title={translate('Create a new tenant')} href="#" onClick={(e) => {
               e.preventDefault();
               createNewTenant();
             }}>

@@ -243,14 +243,14 @@ export const TeamApiGroup = () => {
           {creation ? (<h2>{_apiGroup.name}</h2>) : (<div className="d-flex align-items-center justify-content-between" style={{ flex: 1 }}>
             <h2 className="me-2">{_apiGroup.name}{additionalHeader ? ` - ${additionalHeader}` : ''}</h2>
           </div>)}
-          <button onClick={() => toggleExpertMode()} className="btn btn-sm btn-outline-primary">
+          <button onClick={() => toggleExpertMode()} className="btn btn-sm btn-outline-info">
             {expertMode && translate('Standard mode')}
             {!expertMode && translate('Expert mode')}
           </button>
         </div>
         <div className="row">
-          <div className="section col container-api">
-            <div className="mt-2">
+          <div className="section colcontainer-api">
+            <div className="my-2">
               {params.tab === 'infos' && (<div>
                 <Form
                   schema={schema(_apiGroup, currentTeam)}

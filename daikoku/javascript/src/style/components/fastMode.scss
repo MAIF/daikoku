@@ -1,12 +1,12 @@
 @import '../variables.scss';
 /* fast cards*/
 .fast__hover:hover {
-  background-color: $menu-text-hover-bg-color;
-  color: $menu-text-hover-color;
+  background-color: $companion_text-hover-bg-color;
+  color: $companion_text-hover-color;
 }
 
 .explain__text {
-  border: 1px solid $body-text-color;
+  border: 1px solid $level1_text-color;
   padding: 10px;
   border-radius: 4px;
   text-align: justify;

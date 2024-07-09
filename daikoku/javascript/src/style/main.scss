@@ -1,13 +1,11 @@
 @import 'variables';
 
-@import 'layout/mixins';
 @import 'layout/home';
 @import 'layout/style';
 @import 'layout/sidebar';
 @import 'layout/navbar';
 @import 'layout/login';
-@import 'layout/teamBilling';
-@import 'layout/darkmode';
+@import 'layout/footer.scss';
 
 @import "components/antCalandar";
 @import 'components/avatarWithAction';
@@ -21,17 +19,14 @@
 @import 'components/pagination';
 @import 'components/popover';
 @import 'components/reactTable';
-@import 'components/tableApi';
 @import 'components/tiles';
 @import 'components/toastr';
 @import 'components/input';
 @import 'components/backOffice.scss';
-@import 'components/error.scss';
 @import 'components/switch.scss';
 @import 'components/consumptions.scss';
 @import 'swagger';
 @import "components/recharts.scss";
-@import 'components/footer.scss';
 @import 'components/discussion.scss';
 @import 'components/messages.scss';
 @import 'components/breadcrumb.scss';
@@ -39,3 +34,8 @@
 @import 'components/fastMode.scss';
 @import 'components/reactSelect.scss';
 @import 'components/sortable.scss';
+@import 'components/redoc.scss';
+@import 'components/teamBilling';
+@import 'components/navDocumentation';
+@import 'components/swagger';
+@import 'components/tabs';

@@ -1,67 +1,64 @@
+$level1_text-color: #{"var(--body_text-color, #212529)"}; //body
+$level1_bg-color: #{"var(--body_bg-color, #FFDB58)"}; //body
+$level1_link-color: #{"var(--body_link-color)"};
+$level1_link-hover-color: #{"var(--body_link-hover-color)"};
 
-$body-text-color:#{"var(--body-text-color, #212529)"};//body
-$body-bg-color:#{"var(--body-bg-color, #fff)"};//body
+$level2_bg-color: #{"var(--level2_bg-color, #f8f9fa)"}; //body
+$level2_text-color: #{"var(--level2_text-color, #6c757d)"}; //body
+$level2_link-color: #{"var(--level2_link-color, #7f96af)"}; //link
+$level2_link-hover-color: #{"var(--level2_link-hover-color, #8fa6bf)"}; //link
 
-$link-color: #{"var(--link-color, #7f96af)"};//link
-$link-hover-color: #{"var(--link--hover-color, #8fa6bf)"};//link
+$level3_bg-color: #{"var(--level3_bg-color, #f8f9fa)"}; //body
+$level3_text-color: #{"var(--level3_text-color, #6c757d)"}; //body
+$level3_link-color: #{"var(--level3_link-color, brown)"}; //link
+$level3_link-hover-color: #{"var(--level3_link-hover-color, grey)"}; //link
+$level3_link-hover-bg-color: #{"var(--level3_link-hover-bg-color, grey)"};
 
-$navbar-text-color: #{"var(--navbar-text-color, #fff)"};//navbar
-$navbar-text-hover-color: #{"var(--navbar-text-hover-color, #ccc)"};//navbar
-$navbar-bg-color: #{"var(--navbar-bg-color, #7f96af)"};//navbar
-$navbar-brand-color: #{"var(--navbar-brand-color, #fff)"};//navbar
-
-$footer-text-color: #{"var(--footer-text-color, #fff)"};//footer
-$footer-bg-color: #{"var(--footer-bg-color, #7f96af)"};//footer
-
-$sidebar-text-color:#{"var(--sidebar-text-color, #000)"};//sidebar
-$sidebar-bg-color: #{"var(--sidebar-bg-color, #f8f9fa)"};//sidebar
-
-$menu-bg-color:#{"var(--menu-bg-color, #fff)"};//menu
-$menu-text-color:#{"var(--menu-text-color, #212529)"};//menu
-$menu-text-hover-bg-color:#{"var(--menu-text-hover-bg-color, #9bb0c5)"};//menu
-$menu-text-hover-color:#{"var(--menu-text-hover-color, #fff)"};//menu
-$menu-divider-color:#{"var(--menu-divider-color, #e9ecef)"};//menu
-
-$btn-bg-color: #{"var(--btn-bg-color, #fff)"};//button
-$btn-bg-hover-color: #{"var(--btn-bg-hover-color, #fff)"};//button
-$btn-text-color: #{"var(--btn-text-color, #495057)"};//button
-$btn-text-hover-color: #{"var(--btn-text-hover-color, #495057)"};//button
-$btn-border-color: #{"var(--btn-border-color, #97b0c7)"};//button
+$footer-text-color: #{"var(--footer-text-color, #fff)"}; //footer
+$footer-bg-color: #{"var(--footer-bg-color, #7f96af)"}; //footer
 
 
-$section-bg-color:  #{"var(--section-bg-color, #f8f9fa)"};//body
-$section-text-color:#{"var(--section-text-color, #6c757d)"};//body
-$section-bottom-color:  #{"var(--section-bottom-color, #eee)"};//body
+$sidebar-text-color: #{"var(--sidebar-text-color, #000)"}; //sidebar
+$sidebar-text-hover-color: #{"var(--sidebar-text-hover-color, #000)"}; //sidebar
+$sidebar-bg-color: #{"var(--sidebar-bg-color, red)"}; //sidebar
 
-$form-text-color:#{"var(--form-text-color, #000)"};//form
-$form-border-color:#{"var(--form-border-color, #586069)"};//form
-$form-bg-color:#{"var(--form-bg-color, #fff)"};//form
+$companion_bg-color: #{"var(--menu-bg-color, #fff)"}; //menu
+$companion_text-color: #{"var(--menu-text-color, #212529)"}; //menu
+$companion_text-hover-bg-color: #{"var(--menu-text-hover-bg-color, #9bb0c5)"}; //menu
+$companion_text-hover-color: #{"var(--menu-text-hover-color, #fff)"}; //menu
+$companion_link-color: #{"var(--menu-link-color, grey)"}; //menu
 
-$form-select-focused-color:#{"var(--form-select-focused-color, #fff)"};//form
-$form-select-focused-text-color:#{"var(--form-select-focused-text-color, #ddd)"};//form
-$form-select-heading-color:#{"var(--form-select-heading-color, #3b4151)"};//form
-$form-select-hover-color:#{"var(--form-select-hover-color, #ccc)"};//form
-$form-select-hover-text-color:#{"var(--form-select-hover-text-color, #000)"};//form
+$btn-bg-color: #{"var(--btn-bg-color, #fff)"}; //button
+$btn-text-color: #{"var(--btn-text-color, #495057)"}; //button
+$btn-border-color: #{"var(--btn-border-color, #97b0c7)"}; //button
 
-$badge-tags-bg-color:#{"var(--badge-tags-bg-color, #ffc107)"};//components
-$badge-tags-bg-hover-color:#{"var(--badge-tags-bg-hover-color, #ffe1a7)"};//components
-$badge-tags-text-color:#{"var(--badge-tags-text-color, #212529)"};//components
+$form-text-color: #{"var(--form-text-color, #000)"}; //form
+$form-border-color: #{"var(--form-border-color, #586069)"}; //form
+$form-bg-color: #{"var(--form-bg-color, #fff)"}; //form
+
+$form-select-focused-color: #{"var(--form-select-focused-color, red)"}; //form
+$form-select-focused-text-color: #{"var(--form-select-focused-text-color, green)"}; //form
+$form-select-heading-color: #{"var(--form-select-heading-color, yellow)"}; //form
+$form-select-hover-color: #{"var(--form-select-hover-color, black)"}; //form
+$form-select-hover-text-color: #{"var(--form-select-hover-text-color, brown)"}; //form
+
+$badge-tags-bg-color: #{"var(--badge-tags-bg-color, #ffc107)"}; //components
+$badge-tags-bg-hover-color: #{"var(--badge-tags-bg-hover-color, #ffe1a7)"}; //components
+$badge-tags-text-color: #{"var(--badge-tags-text-color, #212529)"}; //components
+
+$error-color: #{"var(--error-color, #ff6347)"}; //status
+$success-color: #{"var(--success-color, #65B741)"}; //status
+$info-color: #{"var(--info-color, #17a2b8)"}; //status
+$warning-color: #{"var(--warning-color, #ffc107)"}; //status
+$danger-color: #{"var(--danger-color, #dc3545)"}; //status
 
 
-$error-color: #{"var(--error-color, #ff6347)"};//status
-$error-hover-color: #{"var(--error--hover-color, #ffa494)"};//status
-$success-color: #{"var(--success-color, #65B741)"};//status
-$success-hover-color: #{"var(--success-hover-color, #C1F2B0)"};//status
-$info-color: #{"var(--info-color, #17a2b8)"};//status
-$warning-color: #{"var(--warning-color, #ffc107)"};//status
-$danger-color: #{"var(--danger-color, #dc3545)"};//status
-
-$pagination-text-color:#{"var(--pagination-text-color, #586069)"};//pagination
-$pagination-border-color:#{"var(--pagination-border-color, #586069)"};//pagination
-
-$table-bg-color:#{"var(--table-bg-color, #f8f9fa)"};//components
-
-$modal-selection-bg-color: #{"var(--modal-selection-bg-color, #4F5657)"};//components
+$card-header-bg-color : #{"var(--card_header-bg-color, #aaa)"};
+$card-header-text-color : #{"var(--card-header-text-color, #fff)"};
+$card-bg-color:  #{"var(--card_bg-color, #ebecee)"};
+$card-text-color: #{"var(--card_text-color, #000)"};
+$card-link-color: #{"var(--card_level2_link-color, #7f96af)"};
+$card-link-hover-color:  #{"var(--card_link-hover-color, #8fa6bf)"};
 
 :export {
   successColor: $success-color;

@@ -149,7 +149,7 @@ export const TeamIncome = () => {
                       setDate(date);
                       getBillingData(date);
                     }} value={date} />
-                    <button className="btn btn-sm btn-access-negative ms-1" onClick={sync}>
+                    <button className="btn btn-sm btn-outline-primary ms-1" onClick={sync}>
                       <i className="fas fa-sync-alt" />
                     </button>
                     {lastDate ? (<i className="ms-1">

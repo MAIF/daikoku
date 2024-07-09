@@ -279,7 +279,7 @@ export const MultiStepForm = <T extends object>({
         <div className="flex-grow-1 d-flex justify-content-end my-3">
           {steps.findIndex((s) => s.id === step.id) !== steps.length - 1 && !!step.skipTo && (
             <button
-              className="btn btn-outline-primary me-1"
+              className="btn btn-outline-info me-1"
               disabled={!!creation || !step.skipTo}
               onClick={() => send('SKIP')}
             >

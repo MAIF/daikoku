@@ -95,7 +95,7 @@ export const Pages = ({
             <Link
               to={`/settings/pages/edit/${value.id}`}
               onClick={(e) => e.stopPropagation()}>
-              <button className="btn btn-outline-primary me-1" >
+              <button className="btn btn-outline-info me-1" >
                 <i className="fas fa-pen" />
               </button>
             </Link>
@@ -106,7 +106,7 @@ export const Pages = ({
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}>
               <button
-                className="btn btn-outline-primary me-1"
+                className="btn btn-outline-info me-1"
                 disabled={!value.path}
               >
                 <i className="fas fa-eye" />

@@ -1,10 +1,10 @@
-// .bg-warning {
-//   background-color: $badge-tags-bg-color;
-//   color:$badge-tags-text-color;
-//   &:hover{
-//     background-color: $badge-tags-bg-hover-color;
-//   }
-// }
+.badge-custom {
+  background-color: $badge-tags-bg-color;
+  color:$badge-tags-text-color;
+  &:hover{
+    background-color: $badge-tags-bg-hover-color;
+  }
+}
 
 .issue__tag {
   border-radius: 7px;

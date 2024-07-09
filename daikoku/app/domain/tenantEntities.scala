@@ -49,45 +49,124 @@ case class DaikokuStyle(
     js: String = "",
     css: String = "",
     colorTheme: String = s""":root {
-  --error-color: #ff6347;
-  --error-color: #ffa494;
-  --success-color: #4F8A10;
-  --success-color: #76cf18;
 
-  --link-color: #7f96af;
-  --link--hover-color: #8fa6bf;
-
-  --body-bg-color: #fff;
-  --body-text-color: #212529;
-  --navbar-bg-color: #7f96af;
-  --navbar-brand-color: #fff;
+  --body_bg-color: #f1f3f6;
+  --body_text-color: #8a8a8a;
+  --body_link-color:#4c4c4d;
+  --body_link-hover-color:orange;
+  
+  --level2_bg-color: #e5e7ea;
+  --level2_text-color: #4c4c4d;
+  --level2_link-color: #605c5c;
+  --level2_link-hover-color: #fff;
+  
+  --level3_bg-color : #fff;
+  --level3_text-color : #222;
+  --level3_link-color: #4c4c4d;
+  --level3_link-hover-color : #000;
+  --level3_link-hover-bg-color, grey;
+  
+  --sidebar-bg-color: #e5e7ea;
+  --sidebar-text-color: #4c4c4d;
+  --sidebar-text-hover-color:orange;
+  
   --menu-bg-color: #fff;
-  --menu-text-color: #212529;
-  --menu-text-hover-bg-color: #9bb0c5;
+  --menu-text-color: #aaa;
+  --menu-text-hover-bg-color: #444;
   --menu-text-hover-color: #fff;
-  --section-bg-color: #f8f9fa;
-  --section-text-color: #6c757d;
-  --section-bottom-color: #eee;
-  --addContent-bg-color: #e9ecef;
-  --addContent-text-color: #000;
-  --sidebar-bg-color: #f8f9fa;
+  --menu-link-color: #666;   
 
+  --card_header-bg-color : #404040;
+  --card_header-text-color: #fff;
+  --card_bg-color: #282828;
+  --card_text-color: #fff;
+  --card_link-color: #b3b3b3;
+  --card_link-hover-color : orange;
+
+  --btn-bg-color: #fff;
+  --btn-text-color: #495057;
+  --btn-border-color: #97b0c7;
+
+  --error-color:#dc3545;
+  --info-color: #17a2b8;
+  --success-color: #65B741;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+
+  --badge-tags-bg-color: #ffc107;
+  --badge-tags-bg-hover-color: #ffe1a7;
+  --badge-tags-text-color: #212529;
+    
+  --form-text-color: #000;
+  --form-border-color: #586069;
+  --form-bg-color: #fff;
+
+  --form-select-focused-color: lightgrey;
+  --form-select-focused-text-color: white;
+  --form-select-heading-color: yellow;
+  --form-select-hover-color: lightgrey;
+  --form-select-hover-text-color: white;
+}
+
+
+:root[data-theme="DARK"] {
+  --body_bg-color: #000;
+  --body_text-color: #b3b3b3;
+  --body_link-color:#b3b3b3;
+  --body_link-hover-color:orange;
+  
+  --level2_bg-color: #121212;
+  --level2_text-color: #b3b3b3;
+  --level2_link-color: #9f9e9e;
+  --level2_link-hover-color: #fff;
+
+  --level3_bg-color : #242424;
+  --level3_text-color : #e8e8e8;
+  --level3_link-color: #9f9e9e;
+  --level3_link-hover-color : #fff;
+  --level3_link-hover-bg-color : grey;
+  
+  --sidebar-bg-color: #121212;
+  --sidebar-text-color: #b3b3b3;
+  --sidebar-text-hover-color:orange;
+  
+  --menu-bg-color: #242424;
+  --menu-text-color: #fff;
+  --menu-text-hover-bg-color: #121212;
+  --menu-text-hover-color: #fff;
+  --menu-link-color: #b3b3b3;
+  
+  --card_header-bg-color : #404040;
+  --card_header-text-color: #fff;
+  --card_bg-color: #282828;
+  --card_text-color: #fff;
+  --card_link-color: #b3b3b3;
+  --card_link-hover-color : orange;
+  
   --btn-bg-color: #fff;
   --btn-text-color: #495057;
   --btn-border-color: #97b0c7;
 
+  --error-color:#dc3545;
+  --info-color: #17a2b8;
+  --success-color: #65B741;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+
   --badge-tags-bg-color: #ffc107;
-  --badge-tags-bg-color: #ffe1a7;
+  --badge-tags-bg-hover-color: #ffe1a7;
   --badge-tags-text-color: #212529;
 
-  --pagination-text-color: #586069;
-  --pagination-border-color: #586069;
+  --form-text-color: #000;
+  --form-border-color: #586069;
+  --form-bg-color: #fff;
 
-  --table-bg-color: #f8f9fa;
+  --form-select-focused-color: lightgrey;
+  --form-select-focused-text-color: white;
+  --form-select-heading-color: yellow;
+  --form-select-hover-color: lightgrey;
+  --form-select-hover-text-color: white;
 
-  --apicard-visibility-color: #586069;
-  --apicard-visibility-border-color: rgba(27,31,35,.15);
-  --modal-selection-bg-color: rgba(27,31,35,.15);
 }""",
     jsUrl: Option[String] = None,
     cssUrl: Option[String] = None,

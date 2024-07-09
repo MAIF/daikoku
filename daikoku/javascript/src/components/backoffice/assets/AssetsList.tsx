@@ -117,7 +117,7 @@ const ReplaceButton = (props: any) => {
 
   return (
     <>
-      <button type="button" onClick={trigger} className="btn btn-sm btn-outline-primary">
+      <button type="button" onClick={trigger} className="btn btn-sm btn-outline-info">
         <i className="fas fa-retweet" />
       </button>
       <input
@@ -269,7 +269,7 @@ export const AssetsList = ({
               <button
                 type="button"
                 onClick={() => readAndUpdate(item)}
-                className="btn btn-sm btn-outline-primary"
+                className="btn btn-sm btn-outline-info"
               >
                 <i className="fas fa-pen" />
               </button>
@@ -283,7 +283,7 @@ export const AssetsList = ({
             />
             <a href={assetLink(item.meta.asset, false)} target="_blank" rel="noreferrer noopener">
               <button
-                className="btn btn-sm btn-outline-primary"
+                className="btn btn-sm btn-outline-info"
                 style={{ borderRadius: '0px', marginLeft: '0.15rem' }}
               >
                 <i className="fas fa-eye" />
@@ -291,7 +291,7 @@ export const AssetsList = ({
             </a>
             <a href={assetLink(item.meta.asset, true)} target="_blank" rel="noreferrer noopener">
               <button
-                className="btn btn-sm btn-outline-primary me-1"
+                className="btn btn-sm btn-outline-info me-1"
                 style={{ borderRadius: '0px', marginLeft: '0.15rem' }}
               >
                 <i className="fas fa-download" />
@@ -430,7 +430,7 @@ export const AssetsList = ({
       <div className="row">
         <div className="col-12 mb-3 d-flex justify-content-end">
           <button
-            className='btn btn-outline-success'
+            className='btn mt-1 me-2 btn-outline-success'
             onClick={() => openFormModal({
               title: translate("Add asset"),
               schema,

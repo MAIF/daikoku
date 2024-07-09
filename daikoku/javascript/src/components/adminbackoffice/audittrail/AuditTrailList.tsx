@@ -60,10 +60,10 @@ export const AuditTrailList = () => {
         return (
           <button
             type="button"
-            className="btn btn-sm btn-outline-primary"
+            className="btn btn-sm btn-outline-info"
             onClick={() => alert({
               title: translate('Event.details.modal.title'),
-              message: <pre style={{ backgroundColor: '#{"var(--section-bg-color, #f8f9fa)"}', color:'#{"var(--section-text-color, #6c757d)"}', padding: 10 }}>
+              message: <pre style={{ backgroundColor: '#{"var(--level2_bg-color, #f8f9fa)"}', color:'#{"var(--level2_text-color, #6c757d)"}', padding: 10 }}>
                 {JSON.stringify(value, null, 2)}
               </pre>
             })}

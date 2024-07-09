@@ -46,12 +46,12 @@ export function TeamCard(props: Props) {
                         <div className="ms-2">
                             <div className="btn_group">
                 {team.canJoin && !team.alreadyJoin && (
-                                    <button className="btn btn-sm btn-access-negative me-2" onClick={props.askToJoin}>
+                                    <button className="btn btn-sm btn-outline-primary me-2" onClick={props.askToJoin}>
                                         <Translation i18nkey="Join">Join</Translation>
                   </button>
                 )}
                 {team.canJoin && team.alreadyJoin && (
-                                    <button className="btn btn-sm btn-access-negative me-2">
+                                    <button className="btn btn-sm btn-outline-primary me-2">
                                         <Translation i18nkey="Pending request">Pending request</Translation>
                   </button>
                 )}

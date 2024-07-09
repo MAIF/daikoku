@@ -123,7 +123,7 @@ export function RoundChart(props: any) {
       <text
         x={x}
         y={y}
-        fill="var(--section-text-color)"
+        fill="var(--level2_text-color)"
         textAnchor={x > cx ? 'start' : 'end'}
         dominantBaseline="central"
         style={{ padding: 5 }}

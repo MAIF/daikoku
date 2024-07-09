@@ -5,9 +5,9 @@
   --normal-border: var(--gray4);
   --normal-text: var(--gray12);
 
-  --success-bg: #{$success-hover-color};
-  --success-border: #{$success-hover-color};
-  --success-text: #{$success-color};
+  --success-bg: #{$success-color};
+  --success-border: #{$success-color};
+  --success-text: #FFF;
 
   --info-bg: hsl(208, 100%, 97%);
   --info-border: hsl(221, 91%, 91%);
@@ -17,9 +17,9 @@
   --warning-border: hsl(49, 91%, 91%);
   --warning-text: hsl(31, 92%, 45%);
 
-  --error-bg: #{$error-hover-color};
-  --error-border: #{$error-hover-color};
-  --error-text: #000;
+  --error-bg: #{$error-color};
+  --error-border: #{$error-color};
+  --error-text: #FFF;
 }
 
 [data-sonner-toaster][data-theme='dark'] {

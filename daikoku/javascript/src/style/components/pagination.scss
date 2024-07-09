@@ -8,7 +8,7 @@
   margin-top: 16px;
 
   li, li:not(.next,.previous) a {
-    color: $pagination-text-color;
+    color:$level2_link-color;
   }
 
   li.page-selector {
@@ -18,22 +18,23 @@
     align-items: center;
     justify-content: center;
     transition: color .35s ease-in-out;
-    border: 1px solid $pagination-border-color;
+    border: 1px solid $level3_bg-color;
     margin-left: -1px;
+    color:$level2_link-color;
     &:hover {
-      color:$menu-text-color;
+      color:$level2_link-hover-color;
       cursor: pointer;
     }
 
     &.active {
-      background-color: $menu-text-hover-bg-color;
+      background-color: $level3_bg-color;
       a {
-        color:$menu-text-hover-color;
+        color:$level3_link-color;
       }
     }
 
     a {
-      color: $pagination-text-color;
+      color:$level2_link-color;
       display: flex;
       width: 100%;
       height: 100%;
@@ -48,13 +49,19 @@
 
   li.next, li.previous {
     padding: 0.5rem;
-    border: 1px solid $pagination-border-color;
+    border: 1px solid $level3_bg-color;
     min-width: 30px;
         height: 30px;
     cursor: pointer;
     display: flex;
     align-items: center;
     justify-content: center;
+    a {
+      color:$level2_link-color;
+      &:hover {
+        color:$level2_link-hover-color;
+      }
+    }
     &.disabled {
       cursor: not-allowed;
       a {

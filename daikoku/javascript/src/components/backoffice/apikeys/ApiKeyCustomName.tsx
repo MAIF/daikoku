@@ -30,7 +30,7 @@ export const ApiKeyCustomName = ({
       {changes && (
                 <div className="input-group-append">
                     <button
-            className="btn btn-access-negative"
+            className="btn btn-outline-primary"
             type="button"
             onClick={() => updateCustomName(customName)}
           >

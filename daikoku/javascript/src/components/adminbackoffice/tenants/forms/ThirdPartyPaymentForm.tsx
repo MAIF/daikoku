@@ -87,7 +87,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
           <div >
             <button
               type="button"
-              className="btn btn-outline-primary me-1"
+              className="btn btn-outline-info me-1"
               title={translate('Edit')}
               onClick={() => editSettings(settings.type, settings)}
             >
@@ -198,7 +198,7 @@ export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant
       <div>
         <button
           type="button"
-          className="btn btn-sm btn-outline-success mb-1 ms-1"
+          className="btn btn-sm btn-outline-success my-1 ms-1"
           title={translate('third-party.payment.list.add.label')}
           onClick={() => {
             openFormModal({
