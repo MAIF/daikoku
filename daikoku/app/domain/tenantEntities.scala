@@ -459,22 +459,35 @@ case class Tenant(
       "display" -> display.name,
       "environments" -> JsArray(environments.map(JsString.apply).toSeq),
       "loginProvider" -> authProvider.name,
-      "cmsRedirections" -> JsArray(cmsRedirections.map(JsString.apply).toSeq)
+      "cmsRedirections" -> JsArray(cmsRedirections.map(JsString.apply).toSeq),
+      "colorTheme" -> style.map(_.colorTheme).map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "css" -> style.map(_.css).map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "cssUrl" -> style.flatMap(_.cssUrl).map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "jsUrl" -> style.flatMap(_.jsUrl).map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "js" -> style.map(_.js).map(JsString.apply).getOrElse(JsNull).as[JsValue],
+//      "css" -> tenantStyle().map(JsString.apply).getOrElse(JsNull).as[JsValue],
+//      "js" -> tenantScript().map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "faviconUrl" -> favicon(),
+      "fontFamilyUrl" -> style.flatMap(_.fontFamilyUrl).map(JsString.apply).getOrElse(JsNull).as[JsValue],
+
     )
   }
-  def colorTheme(): Html = {
+  def colorTheme(): String = {
     style.map { s =>
-      Html(s"""<style>${s.colorTheme}</style>""")
-    } getOrElse Html("")
+      s"""<style>${s.colorTheme}</style>"""
+    } getOrElse ""
   }
-  def moareStyle(): Html = {
+
+
+  def tenantStyle(): Option[String] = {
     style.map { s =>
       val moreCss = s.cssUrl
-        .map(u => s"""<link rel="stylesheet" media="screen" href="${u}">""")
+        .map(u => s"""<link rel="stylesheet" media="screen" href="$u">""")
         .getOrElse("")
 
       val moreFontFamily = s.fontFamilyUrl
-        .map(u => s"""<style>
+        .map(u =>
+          s"""<style>
              |@font-face{
              |font-family: "Custom";
              |src: url("$u")
@@ -483,30 +496,28 @@ case class Tenant(
         .getOrElse("")
 
       if (s.css.startsWith("http")) {
-        Html(
-          s"""<link rel="stylesheet" media="screen" href="${s.css}">\n$moreCss\n$moreFontFamily"""
-        )
+        s"""${colorTheme()}<link rel="stylesheet" media="screen" href="${s.css}">\n$moreCss\n$moreFontFamily"""
       } else if (s.css.startsWith("/")) {
-        Html(
-          s"""<link rel="stylesheet" media="screen" href="${s.css}">\n$moreCss\n$moreFontFamily"""
-        )
+        s"""${colorTheme()}<link rel="stylesheet" media="screen" href="${s.css}">\n$moreCss\n$moreFontFamily"""
       } else {
-        Html(s"""<style>${s.css}</style>\n$moreCss\n$moreFontFamily""")
+        s"""${colorTheme()}<style>${s.css}</style>\n$moreCss\n$moreFontFamily"""
       }
-    } getOrElse Html("")
+    }
   }
-  def moareJs(): Html = {
+
+
+  def tenantScript(): Option[String] = {
     style.map { s =>
       val moreJs =
-        s.jsUrl.map(u => s"""<script" src="${u}"></script>""").getOrElse("")
+        s.jsUrl.map(u => s"""<script" src="$u"></script>""").getOrElse("")
       if (s.js.startsWith("http")) {
-        Html(s"""<script" src="${s.js}"></script>\n$moreJs""")
+        s"""<script" src="${s.js}"></script>\n$moreJs"""
       } else if (s.js.startsWith("<script")) {
-        Html(s"""${s.js}\n$moreJs""")
+        s"""${s.js}\n$moreJs"""
       } else {
-        Html(s"""<script>${s.js}</script>\n$moreJs""")
+        s"""<script>${s.js}</script>\n$moreJs"""
       }
-    } getOrElse Html("")
+    }
   }
   def favicon(): String = {
     style.flatMap(_.faviconUrl).getOrElse("/assets/images/daikoku.svg")

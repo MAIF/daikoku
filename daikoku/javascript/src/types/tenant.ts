@@ -183,6 +183,14 @@ export interface ITenant {
   display: Display;
   environments: Array<string>;
   loginProvider: string;
+  colorTheme?: string;
+  css?: string;
+  cssUrl?: string;
+  js?: string;
+  jsUrl?: string;
+  faviconUrl?: string;
+  fontFamilyUrl?: string;
+
 }
 
 export interface ITenantFull extends ITenant {
