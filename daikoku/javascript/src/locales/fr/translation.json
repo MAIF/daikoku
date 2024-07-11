@@ -1392,5 +1392,11 @@
   "profile.cmscli.reset.title": "CMS CLI",
   "profile.cmscli.reset.token": "Renouveler le jeton",
   "profile.cmscli.copy.token": "Copier",
-  "profile.cmscli.paste.token": "Copié"
+  "profile.cmscli.paste.token": "Copié",
+  "authentication.form.jwtverifier.label": "JWT verfier",
+  "authentication.form.jwtverifier.sha.size.label": "SHA size",
+  "authentication.form.jwtverifier.hmacsecret.label": "Hmac secret",
+  "authentication.form.jwtverifier.base64.label": "Secret encodé en Base64",
+  "authentication.form.jwtverifier.public.key.label": "Clé Public",
+  "authentication.form.jwtverifier.private.key.label": "Clé Private"
 }

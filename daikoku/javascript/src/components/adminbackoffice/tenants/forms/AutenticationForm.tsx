@@ -10,66 +10,7 @@ import { FormWithChoice } from '../../../utils/FormWithChoice';
 export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translate } = useContext(I18nContext)
 
-  const hmacSchema: Schema = {
-    shaSize: {
-      type: type.number,
-      label: 'SHA size',
-      format: format.buttonsSelect,
-      options: [256, 384, 512],
-      defaultValue: 512,
-      constraints: [
-        constraints.required(translate("constraints.required.value"))
-      ]
-    },
-    hmacSecret: {
-      type: type.string,
-      placeholder: 'secret',
-      constraints: [
-        constraints.required(translate("constraints.required.value"))
-      ]
-    },
-    base64: {
-      type: type.bool,
-      label: 'Base64 encoded secret',
-      constraints: [
-        constraints.required(translate("constraints.required.value"))
-      ]
-    }
-  }
-  const rsaSchema: Schema = {
-    shaSize: {
-      type: type.number,
-      label: 'SHA size',
-      format: format.buttonsSelect,
-      options: [256, 384, 512],
-      defaultValue: 512,
-      constraints: [
-        constraints.required(translate("constraints.required.value"))
-      ]
-    },
-    publicKey: {
-      type: type.string,
-      format: format.text,
-      label: 'public key',
-      placeholder: `-----BEGIN PUBLIC KEY----- 
-    xxxxxxxx 
-    -----END PUBLIC KEY-----`,
-      constraints: [
-        constraints.required(translate("constraints.required.value"))
-      ]
-    },
-    privateKey: {
-      type: type.string,
-      format: format.text,
-      label: 'private key',
-      placeholder: `-----BEGIN PRIVATE KEY----- 
-    xxxxxxxx 
-    -----END PRIVATE KEY-----`,
-      constraints: [
-        constraints.required(translate("constraints.required.value"))
-      ]
-    },
-  }
+  
   const jwksSchema: Schema = {
     url: {
       type: type.string,
@@ -344,8 +285,82 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
       label: translate('Email of Daikoku Admins'),
     },
     jwtVerifier: {
+      label: translate("jwt verifier"),
       type: type.object,
-      render: JwtVerifierForm
+      format: format.form,
+      optional: true,
+      schema: {
+        type: {
+          type: type.string,
+          label: translate('Type'),
+          format: format.buttonsSelect,
+          options: ['HSAlgoSettings', 'RSAlgoSettings', 'JWKSAlgoSettings'],
+          // defaultValue: 'RSAlgoSettings'
+        },
+        shaSize: {
+          type: type.number,
+          label: translate('authentication.form.jwtverifier.sha.size.label'),
+          format: format.buttonsSelect,
+          options: [256, 384, 512],
+          // defaultValue: 512,
+          visible: (props => props.rawValues.jwtVerifier.type === 'HSAlgoSettings' || props.rawValues.jwtVerifier.type === 'RSAlgoSettings'),
+        },
+        hmacSecret: {
+          type: type.string,
+          label: translate('authentication.form.jwtverifier.hmacsecret.label'),
+          visible: (props => props.rawValues.jwtVerifier.type === 'HSAlgoSettings'),
+        },
+        base64: {
+          type: type.bool,
+          label: translate('authentication.form.jwtverifier.base64.label'),
+          visible: (props => props.rawValues.jwtVerifier.type === 'HSAlgoSettings'),
+        },
+        publicKey: {
+          type: type.string,
+          format: format.text,
+          label: translate('authentication.form.jwtverifier.public.key.label'),
+          placeholder: `-----BEGIN PUBLIC KEY----- 
+          xxxxxxxx 
+          -----END PUBLIC KEY-----`,
+          visible: (props => props.rawValues.jwtVerifier.type === 'RSAlgoSettings'),
+        },
+        privateKey: {
+          type: type.string,
+          format: format.text,
+          label: translate('authentication.form.jwtverifier.private.key.label'),
+          placeholder: `-----BEGIN PRIVATE KEY----- 
+          xxxxxxxx 
+          -----END PRIVATE KEY-----`,
+          visible: (props => props.rawValues.jwtVerifier.type === 'RSAlgoSettings'),
+        },
+        url: {
+          type: type.string,
+          label: translate('URL'),
+          visible: (props => props.rawValues.jwtVerifier.type === 'JWKSAlgoSettings'),
+        },
+        headers: {
+          type: type.object,
+          label: translate('Headers'),
+          visible: (props => props.rawValues.jwtVerifier.type === 'JWKSAlgoSettings'),
+        },
+        timeout: {
+          type: type.number,
+          label: translate('HTTP call timeout'),
+          visible: (props => props.rawValues.jwtVerifier.type === 'JWKSAlgoSettings'),
+        },
+        ttl: {
+          type: type.number,
+          label: translate('TTL'),
+          visible: (props => props.rawValues.jwtVerifier.type === 'JWKSAlgoSettings'),
+        },
+        kty: {
+          type: type.string,
+          label: translate('Key type'),
+          format: format.buttonsSelect,
+          options: ['RSA', 'EC'],
+          visible: (props => props.rawValues.jwtVerifier.type === 'JWKSAlgoSettings'),
+        }
+      }
     },
   }
 
@@ -359,7 +374,9 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
         { key: "LDAP", schema: ldapSchema },
         { key: "OAuth2", schema: OAuth2Schema },
       ]}
-      onsubmit={authProviderSettings => props.updateTenant.mutateAsync({ ...props.tenant, authProviderSettings })}
+      onsubmit={authProviderSettings => {
+        props.updateTenant.mutateAsync({ ...props.tenant, authProviderSettings, authProvider: authProviderSettings.authProvider })
+      }}
       value={{ ...props.tenant.authProviderSettings, authProvider: props.tenant.authProvider }}
     />
   )

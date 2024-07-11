@@ -465,59 +465,10 @@ case class Tenant(
       "cssUrl" -> style.flatMap(_.cssUrl).map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "jsUrl" -> style.flatMap(_.jsUrl).map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "js" -> style.map(_.js).map(JsString.apply).getOrElse(JsNull).as[JsValue],
-//      "css" -> tenantStyle().map(JsString.apply).getOrElse(JsNull).as[JsValue],
-//      "js" -> tenantScript().map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "faviconUrl" -> favicon(),
       "fontFamilyUrl" -> style.flatMap(_.fontFamilyUrl).map(JsString.apply).getOrElse(JsNull).as[JsValue],
 
     )
-  }
-  def colorTheme(): String = {
-    style.map { s =>
-      s"""<style>${s.colorTheme}</style>"""
-    } getOrElse ""
-  }
-
-
-  def tenantStyle(): Option[String] = {
-    style.map { s =>
-      val moreCss = s.cssUrl
-        .map(u => s"""<link rel="stylesheet" media="screen" href="$u">""")
-        .getOrElse("")
-
-      val moreFontFamily = s.fontFamilyUrl
-        .map(u =>
-          s"""<style>
-             |@font-face{
-             |font-family: "Custom";
-             |src: url("$u")
-             |}
-             |</style>""".stripMargin)
-        .getOrElse("")
-
-      if (s.css.startsWith("http")) {
-        s"""${colorTheme()}<link rel="stylesheet" media="screen" href="${s.css}">\n$moreCss\n$moreFontFamily"""
-      } else if (s.css.startsWith("/")) {
-        s"""${colorTheme()}<link rel="stylesheet" media="screen" href="${s.css}">\n$moreCss\n$moreFontFamily"""
-      } else {
-        s"""${colorTheme()}<style>${s.css}</style>\n$moreCss\n$moreFontFamily"""
-      }
-    }
-  }
-
-
-  def tenantScript(): Option[String] = {
-    style.map { s =>
-      val moreJs =
-        s.jsUrl.map(u => s"""<script" src="$u"></script>""").getOrElse("")
-      if (s.js.startsWith("http")) {
-        s"""<script" src="${s.js}"></script>\n$moreJs"""
-      } else if (s.js.startsWith("<script")) {
-        s"""${s.js}\n$moreJs"""
-      } else {
-        s"""<script>${s.js}</script>\n$moreJs"""
-      }
-    }
   }
   def favicon(): String = {
     style.flatMap(_.faviconUrl).getOrElse("/assets/images/daikoku.svg")
