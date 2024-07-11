@@ -10,68 +10,6 @@ import { FormWithChoice } from '../../../utils/FormWithChoice';
 export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translate } = useContext(I18nContext)
 
-  
-  const jwksSchema: Schema = {
-    url: {
-      type: type.string,
-      label: translate('URL'),
-      constraints: [
-        constraints.required(translate("constraints.required.value"))
-      ]
-    },
-    headers: {
-      type: type.object,
-      label: translate('Headers')
-    },
-    timeout: {
-      type: type.number,
-      label: translate('HTTP call timeout'),
-      constraints: [
-        constraints.required(translate("constraints.required.value"))
-      ]
-    },
-    ttl: {
-      type: type.number,
-      label: translate('TTL'),
-      constraints: [
-        constraints.required(translate("constraints.required.value"))
-      ]
-    },
-    kty: {
-      type: type.string,
-      label: translate('Key type'),
-      format: format.buttonsSelect,
-      options: ['RSA', 'EC'],
-      constraints: [
-        constraints.required(translate("constraints.required.value"))
-      ]
-    }
-  }
-
-  const JwtVerifierForm = ({
-    onChange,
-    value,
-    rawValues,
-    ...rest
-  }: any) => {
-    return (
-      <FormWithChoice
-        defaultSelector="HSAlgoSettings"
-        selectorName="type"
-        schemas={[
-          { key: "HSAlgoSettings", schema: hmacSchema },
-          { key: "RSAlgoSettings", schema: rsaSchema },
-          { key: "JWKSAlgoSettings", schema: jwksSchema },
-        ]}
-        autoSubmit
-        onsubmit={(data: any) => {
-          console.debug({data})
-          onChange(data)
-        }}
-        value={value}
-      />)
-  }
-
   const localSchema: Schema = {
     sessionMaxAge: {
       type: type.number,
