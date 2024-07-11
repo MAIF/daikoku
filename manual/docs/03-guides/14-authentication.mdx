@@ -6,6 +6,10 @@ import TabItem from '@theme/TabItem';
 Authentication in daikoku can be tricky. It's a tenant configuration, we are here to setup some examples.
 
 <Tabs>
+  <TabItem value="local" label="Local" default>
+    this is the default authentication mode. Every user can create an account in your Daikoku instance, the user profil is saved in database.
+    There is no needed configuration for this mode.
+  </TabItem>
   <TabItem value="ldap" label="LDAP">
 
     ## Before starting
@@ -76,9 +80,9 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
     - Click on the your avatar on bottom left of the screen
     - Then `<your-tenant-name> settings` 
     - Then `Authentication` on left panel
-    - You must be on `<your-domaain>/settings/settings/authentication`
+    - You must be on `<your-domain>/settings/settings/authentication`
     - This page show the settings for the current authentication mode (by default `Local`)
-    - Click on `Authentication type` on the top and choose `LDAP` then click `next`
+    - Click on `LDAP` at the top of the form
     - Add a `LDAP Server URL` with value `ldap://localhost:10389` and `dc=planetexpress,dc=com` as `Search base`
     - Set `ou=people` as `Users search base`
     - Set `cn=ship_crew` as `Simple user filter`
@@ -108,16 +112,7 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
   :::
 
   </TabItem>
-  <TabItem value="local" label="Local" default>
-    this is the default authentication mode. Every user can create an account in your Daikoku instance, the user profil is saved in database.
-    There is no needed configuration for this mode.
-  </TabItem>
   <TabItem value="otoroshi" label="Otoroshi" default>
-  :::info  
-    To get otoroshi as Authentication mode, Daikoku need to be exposed by Otoroshi 
-
-    Daikoku will be accessible with url proxified by Otoroshi and base url of Daikoku. You betterto follow this tutorial to expose Daikoku with Otoroshi
-  :::
     ## Before starting
     If you already have an up and running Daikoku instance, you can skip the following instructions and log in to your instance.
 
@@ -135,12 +130,12 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
 
     ## Expose your daikoku by Otoroshi
   :::warning
-    before exposing your daikoku instance with otoroshi, you need to setup exposing mode to Otoroshi. read this following [tutorial](./15-otoroshi-exposition) before continue.
+    before exposing your daikoku instance with otoroshi, you need to setup exposing mode to Otoroshi.
   :::
 
     You ultimately have to add some plugins along the route to make this work :
     - Authentication, select the created Auth module in configuration to use it
-    - Otorshi info. token, you can configure the name of the header in which the authentication token will be passed and the secert to signe this token.
+    - Otoroshi info. token, you can configure the name of the header in which the authentication token will be passed and the secert to signe this token.
 
     ## Create an Authentication configuration
 
@@ -148,9 +143,9 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
     - Click on the your avatar on bottom left of the screen
     - Then `<your-tenant-name> settings` 
     - Then `Authentication` on left panel
-    - You must be on `<your-domaain>/settings/settings/authentication`
+    - You must be on `<your-domain>/settings/settings/authentication`
     - This page show the settings for the current authentication mode (by default `Local`)
-    - Click on `Authentication type` on the top and choose `Otoroshi` then click `next`
+    - Click on `Otoroshi` at the top of the form
     - Fill the header name previously setup
     - Fill the secret previously setup
 
@@ -159,6 +154,15 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
     Disconnect from your instance
     Then click on the Login button (or navigate to `<your-daikoku-domain>/login`)
     You can now login with a user setup with the auth module.
+
+    :::warning
+    To be daikoku admin, a user need to have a `daikokuAdmin` property in his definition setup to true. 
+    You can cerate a Daikoku admin by adding a metadata in the user definition in the Auth. plugin :
+
+    ```json
+    {daikokuAdmin: true}
+    ```
+  :::
 
   
   </TabItem>
@@ -185,18 +189,19 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
     Choose `Regular Web Applications` as Application type
     Then set for example `daikoku-client` as Name, and confirm the creation
     Jump to the Settings tab
-    Scroll to the Application URLs section and add the following url as Allowed Callback URLs : http://localhost:9000/auth/oauth2/callback
-    Set http://localhost:9000 as Allowed Logout URLs
-    Set http://localhost:9000 as Allowed Web Origins
+    Scroll to the Application URLs section and add the following urls 
+      - http://localhost:9000/auth/oauth2/callback as Allowed Callback URLs 
+      - http://localhost:9000 as Allowed Logout URLs
+      - http://localhost:9000 as Allowed Web Origins
     Save changes at the bottom of the page.
 
-    Once done, we have a full setup, with a client ID and secret at the top of the page, which authorizes our Otoroshi and redirects the user to the callback url when they log into Auth0.
+    Once done, we have a full setup, with a client ID and secret at the top of the page, which authorizes our Daikoku and redirects the user to the callback url when they log into Auth0.
 
     :::warning
-    To be daikoku admin, a user need to have a `daikokuAdmin` property in his definition setup to true. You can get it with Otoroshi be filling the right `Otoroshi metadata field name`.
+    To be daikoku admin, a user need to have a `daikokuAdmin` property in his definition setup to true. Daikoku get this information in the metadata of user.
 
-    In the Auth0 case, Here are the steps to follow :
-    - add app metadata to to a user `daikokuAdmin` with `true` as value
+    In the Auth0 case, here are the steps to follow :
+    - add app metadata to a user `daikokuAdmin` with `true` as value
     - create a new custom action in auth0 :
     ```js
     exports.onExecutePostLogin = async (event, api) => {
@@ -207,14 +212,61 @@ Authentication in daikoku can be tricky. It's a tenant configuration, we are her
       }
     };
     ``` 
-    - retrieve the value by setup `Otoroshi metadata field name` in your auth module with `daikokuAdmin`
-
-    with this method, otoroshi will add the daikokuAdmin value to the claim
+    - deploy it
   :::
 
     ## Create authentication configuration
 
+    - Go ahead and navigate to your Daikoku home page
+    - Click on the your avatar on bottom left of the screen
+    - Then `<your-tenant-name> settings` 
+    - Then `Authentication` on left panel
+    - You must be on `<your-domain>/settings/settings/authentication`
+    - This page show the settings for the current authentication mode (by default `Local`)
+    - Click on `OAuth2` at the top of the form
+    - Enable `Read profile from JWT token` 
+    - Fill `Token scope` with `openid profile name email picture`
+    - Fill `Client Id` with the clietn ID provided by Auth0
+    - Fill `Client Secret` with the client secret provided by Auth0
+    - Fill `Authorize URL` with `https://<your-auth0-tenant>.eu.auth0.com/authorize`
+    - Fill `Token URL` with `https://<your-auth0-tenant>.eu.auth0.com/oauth/token`
+    - Fill `Userinfo URL` with `https://<your-auth0-tenant>.eu.auth0.com/userinfo`
+    - Fill `Login URL` with `https://<your-auth0-tenant>.eu.auth0.com/authorize`
+    - Fill `Logout URL` with `https://<your-auth0-tenant>.eu.auth0.com/oidc/logout?redirectTo=${redirect}&client_id=${clientId}`
+    - Fill `Callback URL` with `http://localhost:9000/auth/oauth2/callback`
+    - Fill `Access token field name` with `access_token`
+    - Fill `Name field name` with `name`
+    - Fill `Email field name` with `email`
+    - Fill `Picture field name` with `picture`
     
+    Two optional fields can be filled :
+
+    - `Email of Daikoku Admins` is a white list of Daikoku admins if you don't want use user metadata to setup admins
+    - `jwt verifier` can be use to verify the JWT token received by Daikoku. According to the selected algorithm, the validation form will change.
+
+      - mac + SHA
+        - SHA Size: Word size for the SHA-2 hash function used
+        - Hmac secret: used to verify the token
+        - Base64 encoded secret: if enabled, the extracted token will be base64 decoded before it is verifier
+
+      - RSASSA-PKCS1 + SHA
+        - SHA Size: Word size for the SHA-2 hash function used
+        - Public key: the RSA public key
+        - Private key: the RSA private key that can be empty if not used for JWT token signing
+
+      - JWK Set (only for verification)
+        - URL: the JWK set URL where the public keys are exposed
+        - HTTP call timeout: timeout for fetching the keyset
+        - TTL: cache TTL for the keyset
+        - HTTP Headers: the HTTP headers passed
+        - Key type: type of the key searched in the jwks
+
+
+      ## Testing your configuration
+
+      Disconnect from your instance
+      Then click on the Login button (or navigate to `<your-daikoku-domain>/login`)
+      You can now login with a user setup with the auth module.
   </TabItem>
 </Tabs>
 

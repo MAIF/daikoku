@@ -151,13 +151,6 @@ object OAuth2Support {
           case None => Left("No code :(").asFuture
           case Some(code) =>
             val builder = _env.wsClient.url(authConfig.tokenUrl)
-            println(Json.prettyPrint(Json.obj(
-              "code" -> code,
-              "grant_type" -> "authorization_code",
-              "client_id" -> clientId,
-              "client_secret" -> clientSecret,
-              "redirect_uri" -> redirectUri
-            )))
             val future1 = if (authConfig.useJson) {
               builder.post(
                 Json.obj(
@@ -181,8 +174,6 @@ object OAuth2Support {
             }
             future1
               .flatMap { resp =>
-
-                println(Json.prettyPrint(resp.json))
                 val accessToken =
                   (resp.json \ authConfig.accessTokenField).as[String]
                 if (
