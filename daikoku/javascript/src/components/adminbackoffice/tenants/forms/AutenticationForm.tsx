@@ -135,7 +135,7 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
     },
     adminGroupFilter: {
       type: type.string,
-      label: translate('Tenants admin filter'),
+      label: translate('Daikoku admin filter'),
     },
     searchFilter: {
       type: type.string,

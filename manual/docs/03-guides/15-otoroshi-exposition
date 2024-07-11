@@ -1,0 +1,10 @@
+
+
+- create a route in otoroshi (expose dk.oto.tools)
+- add challenge plugin
+- update tenant settings and change domain
+- shut down daikoku and add env variable to run daikoku exposed by oto (state header ....)
+- by the way setup tenant provider
+- configure authentication by otoroshi
+- configure api admin plan to get otoroshi apikey
+- setup auth module to bypass with apikey
