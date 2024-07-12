@@ -12,10 +12,11 @@
 }
 
 .reactSelect__option--is-focused{
-  background-color: $form-select-hover-color !important;
-  color:$form-select-hover-text-color !important;
+  background-color: $form-select-focused-color !important;
+  color:$form-select-focused-text-color !important;
 }
 
+.react-form-select__option--is-selected,
 .reactSelect__option--is-selected{
   background-color: $form-select-focused-color !important;
   color:$form-select-focused-text-color !important;

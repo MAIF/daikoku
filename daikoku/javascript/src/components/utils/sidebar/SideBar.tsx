@@ -67,6 +67,7 @@ export const SideBar = () => {
           >
             <img
               src={tenant.logo}
+              alt={translate('tenant.logo')}
             />
           </Link>
 

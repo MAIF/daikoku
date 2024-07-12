@@ -1400,5 +1400,8 @@
   "authentication.form.jwtverifier.hmacsecret.label": "Hmac secret",
   "authentication.form.jwtverifier.base64.label": "Secret encodé en Base64",
   "authentication.form.jwtverifier.public.key.label": "Clé Public",
-  "authentication.form.jwtverifier.private.key.label": "Clé Private"
+  "authentication.form.jwtverifier.private.key.label": "Clé Private",
+  "view.grid":"Vue grille",
+  "view.list":"Vue liste",
+  "tenant.logo":"Logo du tenant"
 }

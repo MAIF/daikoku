@@ -126,8 +126,8 @@ export const ApiCard = (props: {
           <div className="btn_group d-flex align-items-start">
             <Can I={manage} a={API} team={team}>
               <button
-                type="button"
                 className="btn btn-sm btn-outline-primary me-1 mb-1"
+                aria-label={translate("settings")}
                 onClick={props.redirectToEditPage}
               >
                 <i className="fas fa-cog" />
