@@ -519,7 +519,7 @@
     "session.expire.info": "Your session is about to expire in less than 2 minutes. Do you want to extend it?",
     "session.extend": "Yes, extend my session",
     "Private tenant": "Private tenant",
-    "Tenant created successfully": "Tenant %s created successfully",
+    "tenant.created.success": "Tenant %s created successfully",
     "Tenant updated successfully": "Tenant updated successfully",
     "Confirm password": "Confirm password",
     "Create account": "Create account",

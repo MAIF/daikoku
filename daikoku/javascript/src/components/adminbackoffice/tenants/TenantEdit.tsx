@@ -43,7 +43,7 @@ export const TenantEditComponent = ({ tenantId, fromDaikokuAdmin }: { tenantId: 
     onSuccess: (createdTenant) => {
       navigate(`/settings/tenants/${createdTenant._humanReadableId}/general`)
       queryClient.invalidateQueries({ queryKey: ['tenant'] })
-      toast.success(translate({ key: 'Tenant created successfully', replacements:[`${createdTenant.name}`]}))
+      toast.success(translate({ key: 'tenant.created.success', replacements:[`${createdTenant.name}`]}))
 
     },
     onError: () => { toast.error(translate('Error')) }
