@@ -31,4 +31,6 @@ cli/testcms
 cli/coucou
 daikoku/public/assets/
 daikoku/public/index.html
+daikoku/public/index*
+daikoku/public/fa-*
 stats.html

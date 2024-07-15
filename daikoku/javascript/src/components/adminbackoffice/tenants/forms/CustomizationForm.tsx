@@ -132,26 +132,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
     colorTheme: {
       type: type.string,
       format: format.code,
-      label: () => <div className='d-flex flex-row align-items-center'>
-        <div>{translate('CSS color theme')}</div>
-        <button type="button" className="btn btn-outline-info ms-1" onClick={() => {
-          const RedirectToUI = () => navigate(`/settings/tenants/${tenant?._id}/style`);
-          if (Object.keys(formRef.current?.methods.formState.dirtyFields || {}).length) {
-            openSaveOrCancelModal({
-              dontsave: () => RedirectToUI(),
-              save: () => {
-                formRef.current?.handleSubmit();
-                RedirectToUI();
-              },
-              title: translate('unsaved.modifications.title'),
-              message: translate('unsaved.modifications.message'),
-
-            });
-          } else {
-            RedirectToUI();
-          }
-        }}><Settings /></button>
-      </div>,
+      label: translate('CSS color theme'),
     },
     jsUrl: urlWithAssetButton(translate('Js URL'), translate({ key: 'set.from.assets', replacements: [translate('set.js')] }), MimeTypeFilter.javascript),
     js: {

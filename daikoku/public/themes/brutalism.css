@@ -1,0 +1,70 @@
+:root {
+  /* colors*/
+    --error-color: #dc3545;
+    --info-color: #17a2b8;
+    --success-color: #65B741;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+
+  /*level 1*/
+
+  --body_bg-color: FireBrick;
+  --body_text-color: DarkTurquoise;
+  --body_link-color: Cyan;
+  --body_link-hover-color: LightCyan;
+
+  /*level 2*/
+  --level2_bg-color: SandyBrown;
+  --level2_text-color: Wheat;
+  --level2_link-color: Sienna;
+  --level2_link-hover-color: Brown;
+
+  /*level 3*/
+  --level3_bg-color: BlanchedAlmond;
+  --level3_text-color: SandyBrown;
+  --level3_link-color: #4c4c4d;
+  --level3_link-hover-color: grey;
+  --level3_link-hover-bg-color: white;
+
+  /*sidebar*/
+  --sidebar-bg-color: PeachPuff;
+  --sidebar-text-color: DarkKhaki;
+  --sidebar-text-hover-color: PaleGoldenrod;
+
+  /*companion*/
+  --menu-bg-color: DarkOrange;
+  --menu-text-color: OrangeRed;
+  --menu-text-hover-bg-color: SlateGray;
+  --menu-text-hover-color: white;
+  --menu-link-color: DimGray;
+
+
+  /* NEW cards */
+  --card_header-bg-color: DarkGreen;
+  --card_header-text-color: white;
+  --card_bg-color: YellowGreen;
+  --card_text-color: white;
+  --card_link-color: olive;
+  --card_link-hover-color: orange;
+
+  /*btns*/
+  --btn-bg-color: MediumPurple;
+  --btn-text-color: Yellow;
+  --btn-border-color: Violet;
+
+  /*badge*/
+  --badge-tags-bg-color: #ffc107;
+  --badge-tags-bg-hover-color: #ffe1a7;
+  --badge-tags-text-color: #212529;
+
+  /*form*/
+  --form-text-color: white;
+  --form-border-color: white;
+  --form-bg-color: black;
+
+  --form-select-focused-color: red;
+  --form-select-focused-text-color: green;
+  --form-select-heading-color: yellow;
+  --form-select-hover-color: black;
+  --form-select-hover-text-color: brown;
+}

@@ -36,7 +36,6 @@ import {
   TenantList,
   TenantOtoroshi,
   TenantOtoroshis,
-  TenantStyleEdit,
   UserEdit,
   UserList,
 } from '../components/adminbackoffice';
@@ -282,14 +281,6 @@ export const DaikokuApp = () => {
                     element={
                       <RouteWithTitle title={`${tenant.title} - ${translate('Tenant edit')}`}>
                         <TenantEditForAdmin />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/tenants/:tenantId/style"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate('Style')}`}>
-                        <TenantStyleEdit />
                       </RouteWithTitle>
                     }
                   />
