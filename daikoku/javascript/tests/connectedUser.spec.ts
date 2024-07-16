@@ -259,6 +259,7 @@ test('Create & manage API', async ({ page }) => {
   await page.getByPlaceholder('Max. requests per month').fill('1000');
   await page.getByRole('button', { name: 'Save' }).click();
   await page.getByRole('main').locator('i').click();
+  await expect(page.locator('.card-header').filter({ hasText: 'private & automatic' })).toBeVisible()
   await page.locator('#dropdownMenuButton').first().click();
   await page.getByText('Make it private').first().click();
   //FIXME -> wants to see locker
@@ -283,6 +284,7 @@ test('Create & manage API', async ({ page }) => {
   // await page.getByLabel('why').fill('because');
   await page.getByLabel('motivation').fill('because');
   await page.getByRole('button', { name: 'Send' }).click();
+  await page.waitForResponse(r => r.url().includes('/_subscribe') && r.status() === 200)
   await expect(page.getByText('The API key request for Free')).toBeVisible();
   await expect(page.getByText('private & automatic')).toBeVisible();
   await page.locator('#usage-plans__list div').filter({ hasText: 'private & automaticFree plan' }).getByRole('button').click();
@@ -304,7 +306,7 @@ test('Create & manage API', async ({ page }) => {
   await page.getByText('Validate a subscription', { exact: true }).click();
   await page.getByRole('link', { name: 'Accept' }).click();
   await page.getByRole('link', { name: 'Access to the notifications' }).click();
-  await page.getByRole('link', { name: 'Daikoku home' }).click();
+  await page.getByRole('link', { name: 'Go home' }).click();
   await page.getByText('Consumers').click();
   await page.getByText('API keys').click();
   await page.getByRole('row', { name: 'test API 2 1.0.0  API keys' }).getByRole('link').click();
@@ -375,8 +377,8 @@ test('aggregation mode', async ({ page, request }) => {
   await page.getByText('Plans').click();
   await page.locator('.usage-plan__card').filter({ hasText: 'not test plan' }).getByRole('button').click();
   await page.locator('div').filter({ hasText: /^Consumers$/ }).click();
-  await page.getByRole('button', { name: '+ Subscribe with a new api key' }).click();
-  await page.getByRole('link', { name: 'Daikoku home' }).click();
+  await page.getByRole('button', { name: 'Subscribe with a new api key' }).click();
+  await page.getByRole('link', { name: 'Go home' }).click();
 
   //subscribe second api with aggregation
   await page.getByRole('heading', { name: 'test API 2' }).click();
@@ -387,7 +389,7 @@ test('aggregation mode', async ({ page, request }) => {
   await page.getByText('test API/not test plan').click();
 
   //go to subscriptions
-  await page.getByRole('link', { name: 'Daikoku home' }).click();
+  await page.getByRole('link', { name: 'Go home' }).click();
   await page.locator('.top__container').filter({ hasText: 'Your teams' })
     .getByText('Consumers').click()
   // await page.getByLabel('Notifications alt+T').getByRole('button').click();
@@ -493,7 +495,7 @@ test('API admin can transfer his own API ownership', async ({ page }) => {
   await page.getByRole('link', { name: 'Access to the notifications' }).click();
   await expect(page.locator('#app')).toContainText('Consumersrequest to transfer the ownership of test APITestera few seconds');
   await page.getByRole('link', { name: '' }).nth(1).click();
-  await page.getByRole('link', { name: 'Daikoku home' }).click();
+  await page.getByRole('link', { name: 'Go home' }).click();
   await page.locator('h3').filter({ hasText: 'test API' }).waitFor({ state: 'visible' })
   await page.locator('small').filter({ hasText: 'Consumers' }).click();
   await expect(page.locator('h3')).toContainText('test API');

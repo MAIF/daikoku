@@ -63,6 +63,7 @@ export const SideBar = () => {
           <Link
             to="/apis"
             title="Daikoku home"
+            aria-label='Go home'
             className="mb-3 brand"
           >
             <img

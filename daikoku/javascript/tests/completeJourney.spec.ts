@@ -113,7 +113,7 @@ test('test a complete user journey', async ({ page }) => {
   //subscribe
   await page.getByText('Subscriptions').click();
   await expect(page.getByRole('main')).toContainText('0 Result');
-  await page.getByRole('link', { name: 'Daikoku home' }).click();
+  await page.getByRole('link', { name: 'Go home' }).click();
   await expect(page.getByRole('main')).toContainText('second test api');
 
   
@@ -140,7 +140,7 @@ test('test a complete user journey', async ({ page }) => {
   // await expect(page.getByRole('main')).toContainText('Lorem ipsum');
   // await page.getByText('News').click();
   // await expect(page.getByRole('main')).toContainText('Our API is alive');
-  await page.getByRole('link', { name: 'Daikoku home' }).click();
+  await page.getByRole('link', { name: 'Go home' }).click();
   await page.locator('span').filter({ hasText: 'The A team' }).click();
   await page.getByText('API keys').click();
   await expect(page.getByRole('main')).toContainText('1 Result');

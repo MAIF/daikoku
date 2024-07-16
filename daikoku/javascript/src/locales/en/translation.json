@@ -1404,5 +1404,7 @@
     "authentication.form.jwtverifier.private.key.label": "Private key",
     "view.grid":"View grid",
     "view.list":"View list",
-    "tenant.logo":"Tenant logo"
+    "tenant.logo":"Tenant logo",
+    "home.message.subscription.validation.successfull": "The subscription has been successfully accepted",
+    "home.message.subscription.refusal.successfull": "The subscription has been successfully declined"
 }

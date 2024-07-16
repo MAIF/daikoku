@@ -1304,7 +1304,7 @@ class ApiController(
           if (ctx.user.isEmpty) {
             Redirect(env.getDaikokuUrl(ctx.tenant, "/response")).future
           } else {
-            Redirect(env.getDaikokuUrl(ctx.tenant, "/apis")).future
+            Redirect(env.getDaikokuUrl(ctx.tenant, "/apis?status=1")).future
           })
           .leftMap(error =>
             Errors.craftResponseResult(

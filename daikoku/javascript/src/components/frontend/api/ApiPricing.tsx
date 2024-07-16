@@ -312,7 +312,9 @@ const TeamSelector = (props: ITeamSelector) => {
                       selectable: allowed,
                       'cursor-forbidden': !allowed,
                     })}
-                    onClick={() => allowed ? props.showApiKeySelectModal(team._id) : () => { }}
+                    onClick={() => {
+                      return allowed ? props.showApiKeySelectModal(team._id) : () => { }}
+                    }
                   >
                     {
                       props.pendingTeams.includes(team._id) &&

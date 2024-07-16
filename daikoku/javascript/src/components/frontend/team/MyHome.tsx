@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { subMonths } from 'date-fns';
 import { toast } from 'sonner';
 
@@ -23,6 +23,8 @@ export const MyHome = () => {
   const myTeamsRequest = useQuery({ queryKey: ['myTeams'], queryFn: () => Services.myTeams() })
 
   const navigate = useNavigate();
+
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
@@ -58,6 +60,21 @@ export const MyHome = () => {
         });
     }
   }, [isAnonEnabled]);
+
+  useEffect(() => {
+    const status = searchParams.get("status")
+    switch (status) {
+      case '1':
+        toast.success(translate('home.message.subscription.validation.successfull'))
+        break;
+      case '2':
+        toast.success(translate('home.message.subscription.refusal.successfull'))
+        break;
+      default:
+        break;
+    }
+  }, [searchParams])
+  
 
 
   const redirectToApiPage = (apiWithAutho: IApiWithAuthorization) => {
