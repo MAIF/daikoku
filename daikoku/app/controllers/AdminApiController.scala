@@ -565,7 +565,9 @@ class ApiAdminApiController(
               .map {
                 case None =>
                   Right(())
-                case Some(_) =>
+                case Some(api) if entity.parent.contains(api.id) => Right(())
+                case Some(api) =>
+                  logger.warn(s"${entity.parent} == ??? == ${api.id}")
                   Left(AppError.ParsingPayloadError("Api name already exists"))
               }
           )

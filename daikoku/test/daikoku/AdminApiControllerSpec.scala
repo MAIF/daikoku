@@ -3,7 +3,6 @@ package fr.maif.otoroshi.daikoku.tests
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.{FreeWithoutQuotas, PayPerUse}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
@@ -1113,6 +1112,7 @@ class AdminApiControllerSpec
           teams = Seq(teamOwner),
           users = Seq(userAdmin)
         )
+        //PATCH an api is OK (child)
         val respChildPatch = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${childApiId.value}",
           method = "PATCH",
@@ -1130,6 +1130,7 @@ class AdminApiControllerSpec
 
         respChildPatch.status mustBe 204
 
+        //update (PUT) an api is OK (child)
         val respChildPut = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${childApiId.value}",
           method = "PUT",
@@ -1139,6 +1140,7 @@ class AdminApiControllerSpec
 
         respChildPut.status mustBe 204
 
+        //PATCH a parent is OK
         val respParentPatch = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
           method = "PATCH",
@@ -1155,6 +1157,7 @@ class AdminApiControllerSpec
         )(tenant)
         respParentPatch.status mustBe 204
 
+        //put parent is OK
         val respParentPut = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
           method = "PUT",
@@ -1163,6 +1166,7 @@ class AdminApiControllerSpec
         )(tenant)
         respParentPut.status mustBe 204
 
+        //PATCH an API with same name other api ==> KO
         val respOtherPatch = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${otherApiId.value}",
           method = "PATCH",
@@ -1180,6 +1184,7 @@ class AdminApiControllerSpec
 
         respOtherPatch.status mustBe 400
 
+        //PUT an API with same name other api ==> KO
         val respOtherPut = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${otherApiId.value}",
           method = "PUT",
@@ -1189,6 +1194,7 @@ class AdminApiControllerSpec
 
         respOtherPut.status mustBe 400
 
+        //PATCH an API with random name
         val respOtherOkPatch = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${otherApiId.value}",
           method = "PATCH",
@@ -1206,6 +1212,7 @@ class AdminApiControllerSpec
 
         respOtherOkPatch.status mustBe 204
 
+        //PATCH an API with random name
         val respOtherOkPut = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${otherApiId.value}",
           method = "PUT",
@@ -1215,6 +1222,7 @@ class AdminApiControllerSpec
 
         respOtherOkPut.status mustBe 204
 
+        //create a new API with same name
         val respCreateKo = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
@@ -1227,6 +1235,23 @@ class AdminApiControllerSpec
 
         respCreateKo.status mustBe 400
 
+        val some = defaultApi.api
+          .copy(id = ApiId(IdGenerator.token), parent = defaultApi.api.id.some)
+          .asJson
+          .some
+
+        //create a new version fo API (with same name)
+        val respCreateVersionOK = httpJsonCallWithoutSessionBlocking(
+          path = s"/admin-api/apis",
+          method = "POST",
+          headers = getAdminApiHeader(adminApiSubscription),
+          body = some
+        )(tenant)
+
+        logger.warn(Json.prettyPrint(respCreateVersionOK.json))
+        respCreateVersionOK.status mustBe 201
+
+        //create a new API with other name
         val respCreateOk = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
@@ -4145,7 +4170,6 @@ class AdminApiControllerSpec
           body = issue.copy(tenant = TenantId("unkown")).asJson.some
         )(tenant)
 
-        logger.info(Json.stringify(resp.json))
         resp.status mustBe 400
         getMsg(resp) mustBe "Tenant not found"
 
@@ -4338,7 +4362,6 @@ class AdminApiControllerSpec
           headers = getAdminApiHeader(adminApiSubscription)
         )(tenant)
 
-        logger.info(Json.prettyPrint(verif.json))
         verif.status mustBe 200
         verif.json.as(json.ApiIssueFormat) mustBe updated
       }
@@ -4775,7 +4798,6 @@ class AdminApiControllerSpec
           body = page.copy(tenant = TenantId("unkown")).asJson.some
         )(tenant)
 
-        logger.info(Json.stringify(resp.json))
         resp.status mustBe 400
         getMsg(resp) mustBe "Tenant not found"
       }
@@ -5086,7 +5108,6 @@ class AdminApiControllerSpec
           body = translation.copy(tenant = TenantId("unkown")).asJson.some
         )(tenant)
 
-        logger.info(Json.stringify(resp.json))
         resp.status mustBe 400
         getMsg(resp) mustBe "Tenant not found"
       }
@@ -5352,7 +5373,6 @@ class AdminApiControllerSpec
           body = plan.copy(tenant = TenantId("unkown")).asJson.some
         )(tenant)
 
-        logger.info(Json.stringify(resp.json))
         resp.status mustBe 400
         getMsg(resp) mustBe "Tenant not found"
 
@@ -5505,8 +5525,6 @@ class AdminApiControllerSpec
           headers = getAdminApiHeader(adminApiSubscription)
         )(tenant)
 
-        logger.info(Json.prettyPrint(resp.json))
-        logger.info(Json.prettyPrint(plan.asJson))
         resp.status mustBe 200
         resp.json.as[JsObject] - "testing" - "swagger" mustBe plan.asJson
           .as[JsObject] - "testing" - "swagger"
@@ -5985,7 +6003,6 @@ class AdminApiControllerSpec
           body = demand.asJson.some
         )(tenant)
 
-        logger.info(Json.stringify(resp.json))
         resp.status mustBe 201
 
         val verif = httpJsonCallWithoutSessionBlocking(
