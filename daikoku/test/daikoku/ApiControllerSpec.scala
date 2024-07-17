@@ -2813,8 +2813,9 @@ class ApiControllerSpec()
       val sessionUser = loginWithBlocking(user, tenant)
 
       val subAdminResp = httpJsonCallBlocking(
-        path = s"/api/me/subscriptions/${defaultApi.api.id.value}"
+        path = s"/api/me/subscriptions/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}"
       )(tenant, sessionAdmin)
+      logger.warn(Json.prettyPrint(subAdminResp.json))
       subAdminResp.status mustBe 200
 
       val subUserResp = httpJsonCallBlocking(
