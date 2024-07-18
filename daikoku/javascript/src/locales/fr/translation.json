@@ -536,6 +536,7 @@
   "account.reset.error.bad.creation.id": "Votre demande de réinitialisation de mot de passe n'est pas valide. Merci de créer une nouvelle demande.",
   "account.reset.error.user.not.found": "Votre compte n'existe plus. Merci d'en créer un nouveau.",
   "password.reset.done": "Vous recevrez un courrier électronique à l'adresse %s pour terminer le processus de réinitialisation de votre mot de passe. Vous aurez 15 minutes à partir de maintenant pour terminer votre processus de réinitialisation de mot de passe.",
+  "password.reset.successfull": "Votre mot de passe a été réinitialisé avec succès. Vous pouvez maintenant vous connecter.",
   "Create your account": "Créer un compte",
   "Reset your password": "Réinitialisation votre mot de passe",
   "Connect to your account": "Se connecter",
@@ -1405,5 +1406,6 @@
   "view.list": "Vue liste",
   "tenant.logo": "Logo du tenant",
   "home.message.subscription.validation.successfull": "La souscription a bien été acceptée",
-  "home.message.subscription.refused.successfull": "La souscription a bien été refusée"
+  "home.message.subscription.refused.successfull": "La souscription a bien été refusée",
+  "response.default.message": "Merci pour votre réponse"
 }

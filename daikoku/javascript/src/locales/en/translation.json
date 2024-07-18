@@ -536,6 +536,7 @@
     "account.reset.error.bad.creation.id": "Your password reset request is not valid. Please create a new request.",
     "account.reset.error.user.not.found": "Your account is not found. Please create a new one.",
     "password.reset.done": "You will receive an email at %s to finish your passsword reset process. You will have 15 minutes from now to finish your password reset process.",
+    "password.reset.successfull": "Your passsword has been successfully reset. You can now login.",
     "Create your account": "Create your account",
     "Reset your password": "Reset your password",
     "Connect to your account": "Connect to your account",
@@ -1406,5 +1407,6 @@
     "view.list":"View list",
     "tenant.logo":"Tenant logo",
     "home.message.subscription.validation.successfull": "The subscription has been successfully accepted",
-    "home.message.subscription.refusal.successfull": "The subscription has been successfully declined"
+    "home.message.subscription.refusal.successfull": "The subscription has been successfully declined",
+    "response.default.message": "Thank you for your response"
 }

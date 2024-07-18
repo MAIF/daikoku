@@ -644,8 +644,8 @@ class LoginController(
                       } yield ()
                       userCreation.map { _ =>
                         Status(302)(
-                          Json.obj("Location" -> "/?userCreated=true")
-                        ).withHeaders("Location" -> "/?userCreated=true")
+                          Json.obj("Location" -> "/?message=user.validated.success")
+                        ).withHeaders("Location" -> "/?message=user.validated.success")
                       }
                   }
               case _ =>
@@ -767,7 +767,7 @@ class LoginController(
                           env.dataStore.passwordResetRepo
                             .deleteByIdLogically(pwdReset.id.value)
                             .map { _ =>
-                              Redirect(env.getDaikokuUrl(ctx.tenant, "/"))
+                              Redirect(env.getDaikokuUrl(ctx.tenant, "/?message=password.reset.successfull"))
                             }
                         }
                   }

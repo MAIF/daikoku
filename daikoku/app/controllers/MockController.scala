@@ -479,7 +479,7 @@ class MockController(
         )
         _ <- EitherT.liftF[Future, AppError, Unit](env.dataStore.clear())
         _ <- EitherT.liftF[Future, AppError, Done](env.initDatastore())
-      } yield Redirect("/"))
+      } yield Redirect("/?message=password.reset.successfull"))
         .leftMap(_.render())
         .merge
     }
