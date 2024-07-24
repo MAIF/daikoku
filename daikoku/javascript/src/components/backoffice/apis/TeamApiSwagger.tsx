@@ -1,169 +1,139 @@
-import React, { useEffect, useContext, MutableRefObject } from 'react';
-//@ts-ignore
-import SwaggerEditor, { plugins } from 'swagger-editor';
-import { Form, type, format, constraints, FormRef } from '@maif/react-forms';
+import { constraints, Form, format, Schema, type } from '@maif/react-forms';
+import { useContext, useState } from 'react';
 
 import { I18nContext } from '../../../contexts';
-
-import { IApi, ISwagger, IWithSwagger } from '../../../types';
-
-const defaultSwaggerContent = {
-  swagger: '2.0',
-  info: {
-    description: 'description',
-    version: '1.0.0',
-    title: 'title',
-    termsOfService: 'terms',
-    contact: {
-      email: 'email@eamil.to',
-    },
-    license: {
-      name: 'Apache 2.0',
-      url: 'http://www.apache.org/licenses/LICENSE-2.0.html',
-    },
-  },
-  host: 'localhost',
-  schemes: ['https', 'http'],
-  paths: {
-    '/': {
-      get: {
-        summary: 'Add a new pet to the store',
-        responses: {
-          405: {
-            description: 'Invalid input',
-          },
-        },
-      },
-    },
-  },
-};
-
-const SwaggerEditorInput = ({
-  setValue,
-  rawValues,
-  value,
-  error,
-  onChange
-}: any) => {
-  let unsubscribe: any;
-
-  useEffect(() => {
-    initSwaggerEditor(value);
-
-    return () => {
-      killSwaggerEditor();
-    };
-  }, []);
-
-  const initSwaggerEditor = (content: any) => {
-    //@ts-ignore //FIXME typing monkey patch ???
-    window.editor = SwaggerEditor({
-      // eslint-disable-line no-undef
-      dom_id: '#swagger-editor',
-      layout: 'EditorLayout',
-      plugins,
-      swagger2GeneratorUrl: 'https://generator.swagger.io/api/swagger.json',
-      oas3GeneratorUrl: 'https://generator3.swagger.io/openapi.json',
-      swagger2ConverterUrl: 'https://converter.swagger.io/api/convert',
-      spec: content || JSON.stringify(defaultSwaggerContent, null, 2),
-    });
-    //@ts-ignore //FIXME typing monkey patch ???
-    window.editor.specActions.updateSpec(content || JSON.stringify(defaultSwaggerContent, null, 2));
-    //@ts-ignore //FIXME typing monkey patch ???
-    unsubscribe = window.editor.getStore().subscribe(() => {
-      //@ts-ignore //FIXME typing monkey patch ???
-      const c = window.editor.specSelectors.specStr();
-      onChange(c);
-    });
-  };
-
-  const killSwaggerEditor = () => {
-    if (unsubscribe) {
-      unsubscribe();
-    }
-    (window as any).editor = null;
-    localStorage.removeItem('swagger-editor-content');
-  };
-
-  return <div id="swagger-editor" style={{ height: window.outerHeight - 60 - 58 }} />;
-};
+import { ISwagger, IWithSwagger } from '../../../types';
 
 interface TeamApiSwaggerProps<T extends IWithSwagger> {
   value: T
-  onChange: (s: T) => void
-  reference?: MutableRefObject<FormRef | undefined>
+  save: (s: T) => void
 }
 
 export const TeamApiSwagger = <T extends IWithSwagger>({
   value,
-  onChange,
-  reference
+  save
 }: TeamApiSwaggerProps<T>) => {
+  const [specificationType, setSpecificationType] = useState(value.swagger?.specificationType || "openapi")
+
   const { translate } = useContext(I18nContext);
   const swagger = value.swagger;
 
-  const schema = {
-    // specificationType: {
-    //   type: type.string,
-    //   format: format.buttonsSelect,
-    //   options: [{label: 'OpenAPI', value: 'openapi'}, {label: 'AsyncAPI', value: 'async'}]
-    // },
-    useContent: {
-      type: type.bool,
-      label: translate('Use swagger content'),
-      defaultValue: !!swagger?.content,
-    },
-    url: {
+  const typeSchema = {
+    type: {
       type: type.string,
-      label: translate('URL'),
-      deps: ['useContent'],
-      visible: ({ rawValues }: any) => !rawValues.useContent,
-      constraints: [
-        constraints.matches(
-          /^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/gm,
-          translate({ key: 'constraints.format.url', replacements: [translate('Url')] })
-        ),
+      format: format.buttonsSelect,
+      label: translate('swagger.specificationtype.selector.label'),
+      options: [
+        { label: translate('swagger.openapi.label'), value: 'openapi' },
+        { label: translate('swagger.asyncapi.label'), value: 'asyncapi' },
       ],
-    },
-    headers: {
-      type: type.object,
-      label: translate('Headers'),
-      deps: ['useContent'],
-      visible: ({ rawValues }: any) => !rawValues.useContent,
-    },
-    
-    content: {
-      type: type.string,
-      format: format.code,
-      label: 'swagger-content',
-      deps: ['useContent'],
-      visible: ({ rawValues }: any) => rawValues.useContent,
-      render: (v: any) => SwaggerEditorInput(v),
-    },
-    additionalConf: {
-      type: type.object,
-      format: format.code,
-      label: translate("swagger.additional.conf.label"),
-      help: translate('swagger.additional.conf.help')
-    },
-  };
+      constraints: [
+        constraints.required()
+      ]
+    }
+  }
+
+  const getSchema = (spectype: string): Schema => {
+    switch (spectype) {
+      case 'openapi':
+        return ({
+          useContent: {
+            type: type.bool,
+            label: translate('swagger.use.openapi.content'),
+            defaultValue: !!swagger?.content,
+          },
+          url: {
+            type: type.string,
+            label: translate('URL'),
+            deps: ['useContent'],
+            visible: ({ rawValues }: any) => !rawValues.useContent,
+            constraints: [
+              constraints.matches(
+                /^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/gm,
+                translate({ key: 'constraints.format.url', replacements: [translate('Url')] })
+              ),
+            ],
+          },
+          headers: {
+            type: type.object,
+            label: translate('Headers'),
+            deps: ['useContent'],
+            visible: ({ rawValues }: any) => !rawValues.useContent,
+          },
+          content: {
+            type: type.string,
+            format: format.code,
+            label: translate('swagger.openapi.content.label'),
+            deps: ['useContent'],
+            visible: ({ rawValues }: any) => rawValues.useContent
+          },
+          additionalConf: {
+            type: type.object,
+            format: format.code,
+            label: translate("swagger.additional.conf.label"),
+            help: translate('swagger.additional.conf.help')
+          },
+        })
+      case 'asyncapi':
+        return ({
+          useContent: {
+            type: type.bool,
+            label: translate('swagger.use.asyncapi.content'),
+            defaultValue: !!swagger?.content,
+          },
+          url: {
+            type: type.string,
+            label: translate('URL'),
+            deps: ['useContent'],
+            visible: ({ rawValues }: any) => !rawValues.useContent,
+            constraints: [
+              constraints.matches(
+                /^(https?:\/\/|\/)(\w+([^\w|^\s])?)([^\s]+$)|(^\.?\/[^\s]*$)/gm,
+                translate({ key: 'constraints.format.url', replacements: [translate('Url')] })
+              ),
+            ],
+          },
+          headers: {
+            type: type.object,
+            label: translate('Headers'),
+            deps: ['useContent'],
+            visible: ({ rawValues }: any) => !rawValues.useContent,
+          },
+          content: {
+            type: type.string,
+            format: format.code,
+            label: translate('swagger.asyncapi.content.label'),
+            deps: ['useContent'],
+            visible: ({ rawValues }: any) => rawValues.useContent,
+          },
+        })
+      default:
+        return ({})
+    }
+  }
+
+  const schema: Schema = getSchema(specificationType)
 
   return (
-    <Form
-      ref={reference}
-      schema={schema}
-      onSubmit={(swagger) => {
-        onChange({ ...value, swagger });
-      }}
-      value={value.swagger}
-      options={{
-        actions: {
-          submit: {
-            display: !reference,
-            label: translate('Save')
+    <div>
+      <Form
+        schema={typeSchema}
+        onSubmit={(data) => setSpecificationType(data.type)}
+        options={{
+          autosubmit: true,
+          actions: {
+            submit: {
+              display: false
+            }
           }
-        }
-      }}
-    />
-  );
+        }}
+        value={{ type: specificationType }}
+      />
+      <Form<ISwagger>
+        schema={schema}
+        value={value.swagger}
+        onSubmit={data => save({...value, swagger: {...data, specificationType}})}
+      />
+    </div>
+  )
 };

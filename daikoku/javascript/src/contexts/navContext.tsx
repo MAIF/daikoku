@@ -6,7 +6,7 @@ import { Link, useLocation, useMatch, useNavigate, useParams } from 'react-route
 import { api as API, Can, manage } from '../components/utils';
 import { I18nContext } from '../contexts';
 import * as Services from '../services/index';
-import { IApi, ITeamSimple, ITenant, isError } from '../types';
+import { IApi, ITeamSimple, ITenant, SpecificationType, isError } from '../types';
 import { GlobalContext } from './globalContext';
 import { ModalContext } from './modalContext';
 import { toast } from 'sonner';
@@ -407,7 +407,6 @@ export const useApiBackOffice = (creation: boolean) => {
 
   const schema = (api: IApi, currentTab?: string) => ({
     title: api?.name,
-
     blocks: {
       links: {
         order: 2,
@@ -417,6 +416,28 @@ export const useApiBackOffice = (creation: boolean) => {
             label: translate('Informations'),
             action: () => navigateTo('infos', api),
             className: { active: currentTab === 'infos' },
+          },
+          specification: {
+            order: 2.1,
+            label: translate('navbar.specification.label'),
+            action: () => navigateTo('specification', api),
+            className: {
+              active: currentTab === 'specification',
+              'd-none': tenant.display === 'environment'
+            },
+          },
+          testing: {
+            order: 2.2,
+            label: translate('navbar.testing.label'),
+            action: () => {
+              if (!!api.swagger?.content || !!api.swagger?.url)
+                navigateTo('testing', api)
+            },
+            className: {
+              active: currentTab === 'testing',
+              disabled: tenant.display === 'environment' || !api.swagger?.content || !api.swagger.url || api.swagger.specificationType === SpecificationType.asyncapi,
+              'd-none': tenant.display === 'environment'
+            },
           },
           plans: {
             order: 3,
@@ -677,7 +698,7 @@ export const useTeamBackOffice = () => {
                 className: { active: currentTab === 'edition' },
               },
               assets: {
-                label: translate({key: 'Asset', plural: true}),
+                label: translate({ key: 'Asset', plural: true }),
                 action: () => navigateTo('assets'),
                 className: { active: currentTab === 'assets' },
               },

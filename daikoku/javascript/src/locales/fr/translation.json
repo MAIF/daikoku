@@ -457,9 +457,15 @@
   "Make it public": "Le rendre public",
   "Delete plan": "Supprimer le plan",
   "Headers": "Headers",
-  "Use swagger content": "Rédiger le contenu OpenAPI",
+  "swagger.specificationtype.selector.label": "Specification type",
+  "swagger.openapi.label": "OpenAPI",
+  "swagger.asyncapi.label": "AsyncAPI",
+  "swagger.use.openapi.content": "Rédiger le contenu OpenAPI",
+  "swagger.use.asyncapi.content": "Rédiger le contenu AsyncAPI",
   "swagger.additional.conf.label": "Configuration d'affichage de la specification d'API",
   "swagger.additional.conf.help": "Valeur optionnelle. voir https://redocly.com/docs/redoc/deployment/react/#optional---pass-options",
+  "swagger.openapi.content.label": "Contenu OpenAPI",
+  "swagger.asyncapi.content.label": "Contenu AsyncAPI",
   "Auth. name": "Nom Auth.",
   "The auth. name in api swagger": "Le nom auth. dans le swagger API",
   "The apikey client id": "Le client id de la clé d'API ",
@@ -1407,5 +1413,7 @@
   "tenant.logo": "Logo du tenant",
   "home.message.subscription.validation.successfull": "La souscription a bien été acceptée",
   "home.message.subscription.refused.successfull": "La souscription a bien été refusée",
-  "response.default.message": "Merci pour votre réponse"
+  "response.default.message": "Merci pour votre réponse",
+  "navbar.specification.label": "Spécification",
+  "navbar.testing.label": "Test"
 }

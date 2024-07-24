@@ -1,22 +1,47 @@
-import { useContext, useEffect } from 'react';
-import { RedocStandalone, SideNavStyleEnum } from 'redoc';
+import { useContext, useEffect, useState } from 'react';
+import { RedocStandalone, SideNavStyleEnum, convertSwagger2OpenAPI } from 'redoc';
+import AsyncApiComponent, { ConfigInterface } from "@asyncapi/react-component";
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { ISwagger, SpecificationType } from '../../../types';
 import { Option } from '../../utils/Option';
 
+import "@asyncapi/react-component/styles/default.min.css";
+import { OpenAPISpec } from 'redoc/typings/types';
+import { Spinner } from '../../utils/Spinner';
 
 type ApiRedocProps = {
   swaggerUrl: string,
   swaggerConf?: ISwagger
 }
 export function ApiRedoc(props: ApiRedocProps) {
+  const [spec, setSpec] = useState<string>()
 
   const { connectedUser, tenant } = useContext(GlobalContext)
-
   const { translate } = useContext(I18nContext);
   const { openLoginOrRegisterModal } = useContext(ModalContext);
+
+  useEffect(() => {
+    if (props.swaggerConf?.specificationType === SpecificationType.asyncapi) {
+      fetch(props.swaggerUrl, {
+        credentials: 'include'
+      })
+        .then(res => res.blob())
+        .then(blob => blob.text())
+        .then(setSpec)
+    }
+  }, [props.swaggerUrl])
+
+
+
+  const config: ConfigInterface = {
+    schemaID: 'custom-spec',
+    show: {
+      operations: true,
+      errors: true,
+    },
+  };
 
   const downloadFileName = Option<string>(props.swaggerConf?.url)
     .map(url => url.substring(url.lastIndexOf('/') + 1))
@@ -41,9 +66,12 @@ export function ApiRedoc(props: ApiRedocProps) {
       message: translate('api_redoc.guest_user')
     })
     return <></>
-  } else if (!props.swaggerConf) {
-    return <></>
-  } else if (props.swaggerConf.specificationType === SpecificationType.openapi) {
+  } else if (props.swaggerConf?.specificationType === SpecificationType.openapi) {
+    console.debug(props.swaggerUrl)
     return <RedocStandalone specUrl={props.swaggerUrl} options={{ downloadFileName, pathInMiddlePanel: true, sideNavStyle: SideNavStyleEnum.PathOnly, ...(props.swaggerConf?.additionalConf || {}) }} />
+  } else if (props.swaggerConf?.specificationType === SpecificationType.asyncapi && spec) {
+    return <AsyncApiComponent schema={spec} config={config} />
+  } else {
+    return <Spinner />
   }
 }

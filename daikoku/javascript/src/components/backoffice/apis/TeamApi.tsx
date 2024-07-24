@@ -12,6 +12,8 @@ import {
   TeamApiPricings,
   TeamApiSettings,
   TeamApiSubscriptions,
+  TeamApiSwagger,
+  TeamApiTesting,
   TeamPlanConsumption
 } from '.';
 import { I18nContext, ModalContext, useApiBackOffice } from '../../../contexts';
@@ -316,21 +318,18 @@ export const TeamApi = (props: { creation: boolean }) => {
                   setHeader={(planName) => setAdditionalHeader(planName)} />)}
               {tab === 'infos' && (
                 <TeamApiInfos
-                  value={_api}
+                  api={_api}
                   team={currentTeam}
                   tenant={tenant}
                   save={save}
                   creation={props.creation}
-                  expertMode={expertMode}
-                  injectSubMenu={(component) => addMenu({
-                    blocks: {
-                      links: { links: { informations: { childs: { menu: { component } } } } },
-                    },
-                  })} />)}
+                  expertMode={expertMode} />)}
+              {tab === 'specification' && <TeamApiSwagger value={_api} save={save}/>}
+              {tab === 'testing' && <TeamApiTesting value={_api} save={save} currentTeam={currentTeam}/>}
               {tab === 'news' && (<TeamApiPost team={currentTeam} api={_api} />)}
               {tab === 'settings' && <TeamApiSettings api={_api} currentTeam={currentTeam} />}
-              {tab === 'stats' && !match && <TeamApiConsumption api={_api} currentTeam={currentTeam}/>}
-              {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={_api} currentTeam={currentTeam}/>)}
+              {tab === 'stats' && !match && <TeamApiConsumption api={_api} currentTeam={currentTeam} />}
+              {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={_api} currentTeam={currentTeam} />)}
               {tab === 'subscriptions' && <TeamApiSubscriptions api={_api} currentTeam={currentTeam} />}
             </div>
           </div>

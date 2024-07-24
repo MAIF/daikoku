@@ -2326,7 +2326,7 @@ object SchemaDefinition {
             ),
             Field("isDefault", BooleanType, resolve = _.value.isDefault),
             Field("lastUpdate", DateTimeUnitype, resolve = _.value.lastUpdate),
-            Field("testing", TestingType, resolve = _.value.testing),
+            Field("testing", OptionType(TestingType), resolve = _.value.testing),
             Field(
               "documentation",
               ApiDocumentationType,

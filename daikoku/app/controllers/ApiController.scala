@@ -85,7 +85,8 @@ class ApiController(
         def fetchSwagger(api: Api): EitherT[Future, AppError, Result] = {
           api.swagger match {
             case Some(SwaggerAccess(_, Some(content), _, _, _)) =>
-              EitherT.pure[Future, AppError](Ok(content).as("application/json"))
+              val contentType = if(content.startsWith("{")) "application/json" else "application/yaml"
+              EitherT.pure[Future, AppError](Ok(content).as(contentType))
             case Some(SwaggerAccess(Some(url), None, headers, _, _)) =>
               val finalUrl =
                 if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url)
@@ -96,11 +97,12 @@ class ApiController(
                   .withHttpHeaders(headers.toSeq: _*)
                   .get()
                   .map { resp =>
+                    val contentType = if(resp.body.startsWith("{")) "application/json" else "application/yaml"
                     Right(
                       Ok(resp.body).as(
                         resp
                           .header("Content-Type")
-                          .getOrElse("application/json")
+                          .getOrElse(contentType)
                       )
                     )
                   }
@@ -4328,7 +4330,7 @@ class ApiController(
                               parent = Some(api.id),
                               currentVersion = Version(newVersion),
                               isDefault = true,
-                              testing = Testing(),
+                              testing = None,
                               documentation = ApiDocumentation(
                                 id = ApiDocumentationId(
                                   IdGenerator.token(32)
@@ -4337,11 +4339,7 @@ class ApiController(
                                 lastModificationAt = DateTime.now(),
                                 pages = Seq.empty
                               ),
-                              swagger = Some(
-                                SwaggerAccess(
-                                  url = "/assets/swaggers/petstore.json".some
-                                )
-                              ),
+                              swagger = None,
                               possibleUsagePlans = Seq.empty,
                               defaultUsagePlan = None,
                               posts = Seq.empty,

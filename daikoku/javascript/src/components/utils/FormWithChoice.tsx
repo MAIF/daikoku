@@ -7,7 +7,7 @@ type Props = {
   schemas: Array<{ key: string, schema: Schema }>
   autoSubmit?: boolean
   onsubmit: any,
-  value: any
+  value?: any
 }
 
 export const FormWithChoice = (props: Props) => {

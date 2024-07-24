@@ -1197,12 +1197,7 @@ object utils {
           pages = docIds,
           lastModificationAt = DateTime.now()
         ),
-        swagger = Some(
-          SwaggerAccess(
-            url = "/assets/swaggers/petstore.json".some,
-            content = None
-          )
-        ),
+        swagger = None,
         possibleUsagePlans = plans.map(_.id),
         defaultUsagePlan = UsagePlanId("1").some
       )

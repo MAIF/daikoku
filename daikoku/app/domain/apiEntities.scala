@@ -998,11 +998,9 @@ case class Api(
     supportedVersions: Set[Version] = Set(Version("1.0.0")),
     isDefault: Boolean = true,
     lastUpdate: DateTime,
-    testing: Testing = Testing(),
+    testing: Option[Testing] = None,
     documentation: ApiDocumentation,
-    swagger: Option[SwaggerAccess] = Some(
-      SwaggerAccess(url = "/assets/swaggers/petstore.json".some)
-    ),
+    swagger: Option[SwaggerAccess] = None,
     tags: Set[String] = Set.empty,
     categories: Set[String] = Set.empty,
     visibility: ApiVisibility,

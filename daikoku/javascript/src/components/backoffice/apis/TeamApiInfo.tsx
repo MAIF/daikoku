@@ -3,7 +3,7 @@ import { type, constraints, format, Schema } from '@maif/react-forms';
 import * as Services from '../../../services';
 import { I18nContext } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
-import { ITeamSimple } from '../../../types';
+import { ITeamSimple, ITenant } from '../../../types';
 
 const Image = ({
   value,
@@ -51,7 +51,7 @@ const getTeams = (): Promise<Array<ITeamSimple>> => new Promise((resolve, reject
 });
 
 const reservedVersionCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
-export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
+export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITenant) => {
   const schema: Schema = {
     isDefault: {
       type: type.bool,
@@ -189,6 +189,11 @@ export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
         value: t._id
       }),
     },
+    description: {
+      type: type.string,
+      format: format.markdown,
+      label: translate('Description'),
+    },
   };
 
   const simpleOrExpertMode = (entry: any, expert: any) => {//@ts-ignore
@@ -215,6 +220,11 @@ export const teamApiInfoForm = (translate: any, team: any, tenant: any) => {
       flow: ['visibility', 'authorizedTeams'].filter((entry) => simpleOrExpertMode(entry, expert)),
       collapsed: true,
     },
+    {
+      label: translate('Description'),
+      flow: ['description'],
+      collapsed: true
+    }
   ];
 
   const adminFlow = ['name', 'smallDescription'];

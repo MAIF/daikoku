@@ -2555,7 +2555,7 @@ object json {
               .map(_.toSet)
               .getOrElse(Set.empty),
             testing =
-              (json \ "testing").asOpt(TestingFormat).getOrElse(Testing()),
+              (json \ "testing").asOpt(TestingFormat),
             documentation = (json \ "documentation")
               .as(ApiDocumentationFormat),
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
@@ -2614,7 +2614,7 @@ object json {
         "description" -> o.description,
         "currentVersion" -> VersionFormat.writes(o.currentVersion),
         "supportedVersions" -> JsArray(o.supportedVersions.map(_.asJson).toSeq),
-        "testing" -> o.testing.asJson,
+        "testing" -> o.testing.map(_.asJson).getOrElse(JsNull).as[JsValue],
         "documentation" -> o.documentation.asJson,
         "swagger" -> o.swagger
           .map(SwaggerAccessFormat.writes)
