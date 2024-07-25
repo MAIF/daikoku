@@ -1375,7 +1375,7 @@ export const TeamApiPricings = (props: Props) => {
             {queryPlans.data && selectedTab === 'swagger' && (
               <TeamApiSwagger
                 value={planForEdition}
-                onChange={savePlan}
+                save={savePlan}
               />
             )}
             {queryPlans.data && selectedTab === 'testing' && (
@@ -1383,8 +1383,7 @@ export const TeamApiPricings = (props: Props) => {
                 currentTeam={props.currentTeam}
                 value={planForEdition}
                 api={props.api}
-                onChange={savePlan}
-                metadata={planForEdition.otoroshiTarget?.apikeyCustomization.metadata || {}} />
+                save={savePlan} />
             )}
             {queryPlans.data && selectedTab === 'documentation' && (
               <TeamApiPricingDocumentation
