@@ -274,6 +274,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
                       style={{ height: '30px' }}
                       href="#"
                       title={translate('Accept')}
+                      aria-label={translate('Accept')}
                       onClick={() =>
                         Services.getSubscriptionDemand(props.notification.team._id, props.notification.action.demand!.id)
                           .then(demand => {
@@ -299,6 +300,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
                       style={{ height: '30px' }}
                       href="#"
                       title={translate('Reject')}
+                      aria-label={translate('Reject') }
                       onClick={() => {
                         openFormModal<{ message: string }>({
                           title: translate('Message'),
@@ -335,6 +337,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
                       // todo: @baudelotphilippe, don't sure it's the best solution
                       style={{ height: '30px' }}
                       title={translate('Accept')}
+                      aria-label={translate('Accept')}
                       onClick={() => props.accept()}
                     >
                       <i className="fas fa-check" />
@@ -368,6 +371,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
                     className="btn btn-outline-success btn-sm me-1"
                     href="#"
                     title={translate('Accept')}
+                    aria-label={translate('Accept')}
                     onClick={() => props.accept()}
                   >
                     <i className="fas fa-check" />
@@ -377,6 +381,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
                       className="btn btn-outline-danger btn-sm"
                       href="#"
                       title={translate('Reject')}
+                      aria-label={translate('Reject')}
                       onClick={() => props.reject()}
                     >
                       <i className="fas fa-times" />

@@ -64,7 +64,7 @@ test('[public tenant] - external user can join a team', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'public with permissions API' })).toBeVisible();
   await page.getByRole('link', { name: 'Access to the notifications' }).click();
   await expect(page.getByText('Admin, as admin of Consumers')).toBeVisible();
-  await page.getByRole('link', { name: '' }).click();
+  await page.getByRole('link', { name: 'Accept' }).click();
   await page.getByRole('link', { name: 'Go home' }).click();
   await expect(page.getByText('Consumers')).toBeVisible();
 })
@@ -122,7 +122,7 @@ test('[private tenant] - external user can join a team', async ({ page, request 
   await expect(page.getByRole('heading', { name: 'public with permissions API' })).toBeVisible();
   await page.getByRole('link', { name: 'Access to the notifications' }).click();
   await expect(page.getByText('Admin, as admin of Consumers')).toBeVisible();
-  await page.getByRole('link', { name: '' }).click();
+  await page.getByRole('link', { name: 'Accept' }).click();
   await page.getByRole('link', { name: 'Go home' }).click();
   await expect(page.getByText('Consumers')).toBeVisible();
 })

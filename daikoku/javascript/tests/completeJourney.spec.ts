@@ -49,11 +49,12 @@ test('test a complete user journey', async ({ page }) => {
   await page.getByPlaceholder('New Api').fill('second test api');
   await page.getByLabel('Small desc.').click();
   await page.getByLabel('Small desc.').fill('A new test API');
-  await page.getByRole('button', { name: 'Next' }).click();
-  await page.getByText('A new API').click();
-  await page.getByRole('textbox').fill('# A new test API\n\n\ndescription...');
-  await page.getByRole('button', { name: 'Next' }).click();
-  await page.getByRole('button', { name: 'Next' }).click();
+  await page.locator('.mrf-collapse_label').filter({ hasText: 'Basic informations' }).click();
+  await page.locator('.mrf-collapse_label').filter({ hasText: 'Description' }).click();
+  await page.locator('.cm-content').click();
+  await page.keyboard.type('# A new test API');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('description...');
   await page.getByRole('button', { name: 'Save' }).click();
 
   //create a simple plan
@@ -125,7 +126,7 @@ test('test a complete user journey', async ({ page }) => {
 
   await page.getByRole('heading', { name: 'second test api' }).click();
   await expect(page.locator('h1.jumbotron-heading')).toContainText('second test api');
-  await expect(page.locator('#a-new-test-api')).toContainText('A new test API');
+  await expect(page.locator('.lead')).toContainText('A new test API');
   await page.getByText('Plans').click();
   await expect(page.locator('#usage-plans__list')).toContainText('dev plan');
   await page.getByRole('button', { name: 'Get API key' }).click();

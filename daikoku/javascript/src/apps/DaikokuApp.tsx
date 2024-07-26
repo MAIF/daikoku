@@ -117,9 +117,7 @@ export const DaikokuApp = () => {
               <Route
                 path='/response'
                 element={
-                  <UnauthenticatedRoute title={translate('Error')} header={translate('Error')} >
-                    <Response />
-                  </UnauthenticatedRoute>
+                  <Response />
                 }
               />
               <Route

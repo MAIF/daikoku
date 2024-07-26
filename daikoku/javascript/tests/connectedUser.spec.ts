@@ -127,7 +127,7 @@ const exposedPort = process.env.EXPOSED_PORT || 5173
 const adminApikeyId = 'admin_key_client_id';
 const adminApikeySecret = 'admin_key_client_secret';
 
-test.beforeEach(async ({page}) => {
+test.beforeEach(async ({ page }) => {
   console.log(`Running ${test.info().title}`);
   await fetch('http://localhost:9000/admin-api/state/reset', {
     method: 'POST',
@@ -135,8 +135,11 @@ test.beforeEach(async ({page}) => {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
     }
   })
-  .then(r => r.json())
-  .then(r => console.log({r}));
+    .then(r => r.json())
+    .then(r => console.log({ r }))
+    .then(() => fetch('http://localhost:1080/api/emails', {
+      method: 'DELETE'
+    }));
 })
 
 /**
@@ -175,11 +178,11 @@ test('Create & manage API', async ({ page }) => {
   await expect(page.getByText('API with this name already')).toBeVisible();
   await page.getByPlaceholder('New Api').fill('test API 2');
   await page.getByLabel('Small desc.').fill('real test API');
-  await page.getByRole('button', { name: 'Next' }).click();
-  await page.locator('label').filter({ hasText: 'Description' }).waitFor({ state: 'visible' })
-  await page.getByRole('textbox').fill('a real test API');
-  await page.getByRole('button', { name: 'Next' }).click();
-  await page.getByRole('button', { name: 'Next' }).click();
+  // await page.getByRole('button', { name: 'Next' }).click();
+  // await page.locator('label').filter({ hasText: 'Description' }).waitFor({ state: 'visible' })
+  // await page.getByRole('textbox').fill('a real test API');
+  // await page.getByRole('button', { name: 'Next' }).click();
+  // await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('API test API 2 created')).toBeVisible();
   //create first plan (public & auto)
@@ -294,7 +297,7 @@ test('Create & manage API', async ({ page }) => {
   await expect(page.getByText('API key to plan Free with')).toBeVisible();
   await page.getByRole('link', { name: 'Access to the notifications' }).click();
   await expect(page.getByText('Request subscription to test API 2 for plan')).toBeVisible();
-  await page.getByRole('link', { name: '' }).nth(1).click();
+  await page.getByRole('link', { name: 'Accept' }).nth(1).click();
   await expect(page.getByRole('textbox').nth(1)).toBeVisible();
   await page.getByRole('button', { name: 'Accept' }).click();
   await page.waitForResponse(r => r.url().includes('/accept') && r.status() === 200)
@@ -494,32 +497,34 @@ test('API admin can transfer his own API ownership', async ({ page }) => {
   await expect(page.getByRole('status')).toContainText('Team has been notified. please wait until acceptation');
   await page.getByRole('link', { name: 'Access to the notifications' }).click();
   await expect(page.locator('#app')).toContainText('Consumersrequest to transfer the ownership of test APITestera few seconds');
-  await page.getByRole('link', { name: '' }).nth(1).click();
+  await page.getByRole('link', { name: 'Accept' }).nth(1).click();
   await page.getByRole('link', { name: 'Go home' }).click();
   await page.locator('h3').filter({ hasText: 'test API' }).waitFor({ state: 'visible' })
-  await page.locator('small').filter({ hasText: 'Consumers' }).click();
+  const consumerSelector = page.locator('small').filter({ hasText: 'Consumers' })
+  // console.log(consumerSelector)
+  await consumerSelector.click();
   await expect(page.locator('h3')).toContainText('test API');
 });
 
-test('Filter API List', async ({page, request}) => {
+test('Filter API List', async ({ page, request }) => {
   await request.post('http://localhost:9000/admin-api/usage-plans', {
     headers: {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
     },
     data: newApiUsagePlan
   })
-      .then(r => r.json())
-      .then(r => console.log({r}));
+    .then(r => r.json())
+    .then(r => console.log({ r }));
 
 
   await request.post('http://localhost:9000/admin-api/apis', {
     headers: {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
     },
-    data: {...newApi, team: "5ffd5f7e260100461a3cc845", tags: ["dev"], categories: ["external"]}
+    data: { ...newApi, team: "5ffd5f7e260100461a3cc845", tags: ["dev"], categories: ["external"] }
   })
-      .then(r => r.json())
-      .then(r => console.log({r}));
+    .then(r => r.json())
+    .then(r => console.log({ r }));
 
   await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
@@ -530,10 +535,10 @@ test('Filter API List', async ({page, request}) => {
   // await page.waitForResponse(r => r.url().includes('/api/search') && r.status() === 200)
   await page.waitForSelector('.apis__pagination')
   await page.locator('small').filter({ hasText: 'Consumers' }).click();
-  await expect(page.locator('.preview')).toContainText('1 result produced by Consumers'); 
-  
+  await expect(page.locator('.preview')).toContainText('1 result produced by Consumers');
+
   await expect(page.getByRole('heading', { name: 'test API' })).toBeVisible(); //FIXME: verifier qu'il n'y a qu'une seul API dans la liste
-  
+
   await page.getByText('result produced by Consumers').click();
   await expect(page.locator('.preview')).toContainText('1 result produced by Consumers');
   await page.getByText('clear filter').click();
