@@ -1236,7 +1236,7 @@ class AdminApiControllerSpec
         respCreateKo.status mustBe 400
 
         val some = defaultApi.api
-          .copy(id = ApiId(IdGenerator.token), parent = defaultApi.api.id.some)
+          .copy(id = ApiId(IdGenerator.token), parent = defaultApi.api.id.some, currentVersion = Version("vTest"))
           .asJson
           .some
 
@@ -1248,7 +1248,6 @@ class AdminApiControllerSpec
           body = some
         )(tenant)
 
-        logger.warn(Json.prettyPrint(respCreateVersionOK.json))
         respCreateVersionOK.status mustBe 201
 
         //create a new API with other name
