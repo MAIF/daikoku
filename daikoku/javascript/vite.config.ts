@@ -2,8 +2,6 @@ import { defineConfig, splitVendorChunkPlugin } from 'vite';
 import { resolve } from 'path';
 import react from "@vitejs/plugin-react";
 import { visualizer } from "rollup-plugin-visualizer";
-import { NodeGlobalsPolyfillPlugin } from '@esbuild-plugins/node-globals-polyfill'
-import nodePolyfills from 'rollup-plugin-polyfill-node'
 
 
 // https://vitejs.dev/config/
@@ -31,9 +29,7 @@ export default defineConfig({
   build: {
     rollupOptions: {
       plugins: [
-        visualizer(),
-        NodeGlobalsPolyfillPlugin(),
-        nodePolyfills()
+        visualizer()
       ],
       input: {
         index: resolve(__dirname, 'index.html'),
