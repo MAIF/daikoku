@@ -40,7 +40,7 @@ export default defineConfig({
           asyncapi: ['@asyncapi/react-component'],
           swagger: ['swagger-ui-dist'],
           asciidoctor: ['asciidoctor'],
-          backofffice: ['@maif/react-forms', 'xstate', '@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities', 'backoffice', 'adminbackoffice']
+          backofffice: ['@maif/react-forms', 'xstate', '@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities']
         },
       }
     },
