@@ -23,7 +23,6 @@ import {
 import { IApiKeySelectModalProps } from './ApiKeySelectModal';
 import { IApiSelectModalProps, IModalProps } from './ApiSelectModal';
 import { CustomSubscriptionData } from './SubscriptionMetadataModal';
-import { string } from 'prop-types';
 
 export interface IBaseModalProps {
   close: () => void;

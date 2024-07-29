@@ -52,10 +52,10 @@ export const Signup = () => {
   const [error, setError] = useState<string>();
 
   useEffect(() => {
-    const query = queryString.parse(window.location.search);
-    if (query.error) {
+    const query = new URLSearchParams(window.location.search);
+    if (query.get('error')) {
       setState('error');
-      setError(translate(`account.creation.error.${query.error}`));
+      setError(translate(`account.creation.error.${query.get('error')}`));
     }
   }, []);
 
@@ -245,10 +245,10 @@ export const ResetPassword = () => {
   };
 
   useEffect(() => {
-    const query = queryString.parse(window.location.search);
-    if (query.error) {
+    const query = new URLSearchParams(window.location.search);
+    if (query.get('error')) {
       setState('error');
-      setError(translate(`account.reset.error.${query.error}`));
+      setError(translate(`account.reset.error.${query.get('error')}`));
     }
   }, []);
 

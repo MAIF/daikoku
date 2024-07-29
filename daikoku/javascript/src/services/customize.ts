@@ -15,15 +15,16 @@ export function customizeFetch(store: any) {
     //       return Promise.reject(error);
     //     });
 
-    const query = queryString.parse(window.location.search);
+    const query = new URLSearchParams(window.location.search);
     const url = args[0];
 
     let newUrl = url;
-    if (!!query.sessionId && (url as any).indexOf('?') > -1) {
-      newUrl = newUrl + '&sessionId=' + query.sessionId;
+    const sessionId = query.get('sessionId');
+    if (!!sessionId && (url as any).indexOf('?') > -1) {
+      newUrl = newUrl + '&sessionId=' + sessionId;
     }
-    if (!!query.sessionId && (url as any).indexOf('?') < 0) {
-      newUrl = newUrl + '?sessionId=' + query.sessionId;
+    if (!!sessionId && (url as any).indexOf('?') < 0) {
+      newUrl = newUrl + '?sessionId=' + sessionId;
     }
     let newArgs = [...args];
     newArgs.shift();

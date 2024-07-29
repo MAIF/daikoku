@@ -1,4 +1,3 @@
-import { string } from 'prop-types';
 import { ITeamSimple, IUser, IUserSimple } from './team';
 import { Language } from './types';
 

@@ -4,7 +4,6 @@ import * as Services from '../services';
 import translationEng from '../locales/en/translation.json';
 import translationFr from '../locales/fr/translation.json';
 import { TOptions } from '../types/types';
-import { string } from 'prop-types';
 import { TranslationItem } from '../types/tenant';
 import { isError } from '../types';
 import { GlobalContext } from './globalContext';
