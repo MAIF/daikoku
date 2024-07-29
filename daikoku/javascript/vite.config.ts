@@ -1,4 +1,4 @@
-import { defineConfig, splitVendorChunkPlugin } from 'vite';
+import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import react from "@vitejs/plugin-react";
 import { visualizer } from "rollup-plugin-visualizer";
@@ -33,6 +33,15 @@ export default defineConfig({
       ],
       input: {
         index: resolve(__dirname, 'index.html'),
+      },
+      output: {
+        manualChunks: {
+          highlight: ['highlight.js'],
+          asyncapi: ['@asyncapi/react-component'],
+          swagger: ['swagger-ui-dist'],
+          asciidoctor: ['asciidoctor'],
+          backofffice: ['@maif/react-forms', 'xstate', '@dnd-kit/core', '@dnd-kit/sortable', '@dnd-kit/utilities', 'backoffice', 'adminbackoffice']
+        },
       }
     },
     minify: "terser",

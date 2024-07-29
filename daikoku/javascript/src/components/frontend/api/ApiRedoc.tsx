@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { RedocStandalone, SideNavStyleEnum, convertSwagger2OpenAPI } from 'redoc';
+import { RedocStandalone, SideNavStyleEnum } from 'redoc';
 import AsyncApiComponent from "@asyncapi/react-component/browser/index.js";
 
 import { I18nContext, ModalContext } from '../../../contexts';
@@ -8,7 +8,6 @@ import { ISwagger, SpecificationType } from '../../../types';
 import { Option } from '../../utils/Option';
 
 import "@asyncapi/react-component/styles/default.min.css";
-import { OpenAPISpec } from 'redoc/typings/types';
 import { Spinner } from '../../utils/Spinner';
 
 type ApiRedocProps = {
@@ -67,7 +66,6 @@ export function ApiRedoc(props: ApiRedocProps) {
     })
     return <></>
   } else if (props.swaggerConf?.specificationType === SpecificationType.openapi) {
-    console.debug(props.swaggerUrl)
     return <RedocStandalone specUrl={props.swaggerUrl} options={{ downloadFileName, pathInMiddlePanel: true, sideNavStyle: SideNavStyleEnum.PathOnly, ...(props.swaggerConf?.additionalConf || {}) }} />
   } else if (props.swaggerConf?.specificationType === SpecificationType.asyncapi && spec) {
     return <AsyncApiComponent schema={spec} config={config} />

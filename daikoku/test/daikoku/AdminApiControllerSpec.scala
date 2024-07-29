@@ -995,7 +995,6 @@ class AdminApiControllerSpec
           body = defaultApi.api.asJson.some
         )(tenant)
 
-        logger.info(Json.stringify(resp.json))
         resp.status mustBe 201
 
         val verif = httpJsonCallWithoutSessionBlocking(

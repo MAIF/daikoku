@@ -123,7 +123,6 @@ test('test a complete user journey', async ({ page }) => {
   await page.locator('div').filter({ hasText: /^second test api/ }).getByLabel('star').click();
   await expect(page.locator('div').filter({ hasText: /^second test api/ }).locator('.star-button')).toContainText('0')
 
-
   await page.getByRole('heading', { name: 'second test api' }).click();
   await expect(page.locator('h1.jumbotron-heading')).toContainText('second test api');
   await expect(page.locator('.lead')).toContainText('A new test API');
