@@ -1,6 +1,5 @@
 import { constraints, Form, format, type } from '@maif/react-forms';
 import { md5 } from 'js-md5';
-import queryString from 'query-string';
 import { useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { BrowserRouter as Router, Route, Routes, useNavigate, Link } from 'react-router-dom';

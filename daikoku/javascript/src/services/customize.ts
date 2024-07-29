@@ -1,4 +1,3 @@
-import queryString from 'query-string';
 import { toast } from 'sonner';
 
 export function customizeFetch(store: any) {
