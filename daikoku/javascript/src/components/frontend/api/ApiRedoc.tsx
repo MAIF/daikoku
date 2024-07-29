@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState } from 'react';
 import { RedocStandalone, SideNavStyleEnum, convertSwagger2OpenAPI } from 'redoc';
-import AsyncApiComponent, { ConfigInterface } from "@asyncapi/react-component";
+import AsyncApiComponent from "@asyncapi/react-component/browser/index.js";
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
@@ -35,7 +35,7 @@ export function ApiRedoc(props: ApiRedocProps) {
 
 
 
-  const config: ConfigInterface = {
+  const config = {
     schemaID: 'custom-spec',
     show: {
       operations: true,
