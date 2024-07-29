@@ -349,8 +349,7 @@ class MockController(
         pages = docPages,
         lastModificationAt = DateTime.now()
       ),
-      swagger =
-        Some(SwaggerAccess("/assets/swaggers/petstore.json".some, None)),
+      swagger = None,
       possibleUsagePlans = plans.map(_.id),
       defaultUsagePlan = plans.head.id.some
     )
@@ -414,12 +413,7 @@ class MockController(
         pages = docPages,
         lastModificationAt = DateTime.now()
       ),
-      swagger = Some(
-        SwaggerAccess(
-          url = "/assets/swaggers/petstore.json".some,
-          content = None
-        )
-      ),
+      swagger = None,
       possibleUsagePlans = plans.map(_.id),
       defaultUsagePlan = plans.head.id.some
     )
@@ -479,7 +473,7 @@ class MockController(
         )
         _ <- EitherT.liftF[Future, AppError, Unit](env.dataStore.clear())
         _ <- EitherT.liftF[Future, AppError, Done](env.initDatastore())
-      } yield Redirect("/"))
+      } yield Redirect("/?message=password.reset.successfull"))
         .leftMap(_.render())
         .merge
     }

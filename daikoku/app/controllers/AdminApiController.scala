@@ -526,27 +526,12 @@ class ApiAdminApiController(
               .findOne(
                 Json.obj(
                   "_id" -> Json.obj("$ne" -> entity.id.asJson),
-                  "$or" -> Seq(
-                    entity.parent.map(p =>
-                      Json.obj(
-                        "_id" -> Json.obj(
-                          "$ne" -> p.asJson
-                        )
-                      )
-                    ),
-                    Json
-                      .obj("parent" -> Json.obj("$ne" -> entity.id.asJson))
-                      .some,
-                    entity.parent.map(p =>
-                      Json.obj(
-                        "parent" -> Json.obj("$ne" -> p.asJson)
-                      )
-                    )
-                  ).filter(_.isDefined).map(_.get),
-                  "name" -> entity.name
-                )
+                  "name" -> entity.name,
+                ) ++ entity.parent.map(p => Json.obj("_id" -> p.asJson)).getOrElse(Json.obj())
               )
               .map {
+                case Some(api) if entity.parent.contains(api.id) || api.parent.contains(entity.id) =>
+                  Right(())
                 case Some(_) =>
                   Left(AppError.ParsingPayloadError("Api name already exists"))
                 case None => Right(())
@@ -560,14 +545,15 @@ class ApiAdminApiController(
                 Json.obj(
                   "_id" -> Json.obj("$ne" -> entity.id.asJson),
                   "name" -> entity.name
-                )
+                ) ++ entity.parent.map(p => Json.obj("_id" -> p.asJson)).getOrElse(Json.obj())
               )
               .map {
                 case None =>
                   Right(())
-                case Some(api) if entity.parent.contains(api.id) => Right(())
-                case Some(api) =>
-                  logger.warn(s"${entity.parent} == ??? == ${api.id}")
+                //case Some(api) if entity.parent == api.parent => Right(())
+                case Some(api) if entity.parent.contains(api.id) =>
+                  Right(())
+                case Some(_) =>
                   Left(AppError.ParsingPayloadError("Api name already exists"))
               }
           )

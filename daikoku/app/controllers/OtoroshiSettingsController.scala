@@ -599,7 +599,7 @@ class OtoroshiSettingsController(
                 env.dataStore.apiRepo
                   .forTenant(ctx.tenant)
                   .findByIdNotDeleted(entityId)
-                  .map(api => api.map(_.testing))
+                  .map(api => api.flatMap(_.testing))
               case "plan" =>
                 env.dataStore.usagePlanRepo
                   .forTenant(ctx.tenant)
@@ -691,123 +691,6 @@ class OtoroshiSettingsController(
       case _                   => true
     }
 
-  def __fakeApiCall(teamId: String, apiId: String) =
-    DaikokuAction.async(parse.json) { ctx =>
-      import scala.concurrent.duration._
-
-      env.dataStore.teamRepo
-        .forTenant(ctx.tenant)
-        .findByIdOrHrId(teamId)
-        .flatMap {
-          case None =>
-            FastFuture.successful(
-              NotFound(Json.obj("error" -> "Team not found"))
-            )
-          case Some(team) => {
-            env.dataStore.apiRepo
-              .forTenant(ctx.tenant)
-              .findByIdOrHrId(apiId)
-              .flatMap {
-                case Some(api) if !api.testing.enabled => ???
-                case Some(api) if api.testing.enabled => {
-                  val url = (ctx.request.body \ "url").as[String]
-                  val headers = (ctx.request.body \ "headers")
-                    .asOpt[Map[String, String]]
-                    .getOrElse(Map.empty[String, String])
-                  val method =
-                    (ctx.request.body \ "method").asOpt[String].getOrElse("GET")
-                  val body = (ctx.request.body \ "body").asOpt[String]
-                  val credentials = (ctx.request.body \ "credentials")
-                    .asOpt[String]
-                    .getOrElse("same-origin")
-                  val uri = Uri(url)
-                  val queryOpt = uri
-                    .query()
-                    .toIndexedSeq
-                    .find(_._2 == s"fake-${api.id.value}")
-                  val headerOpt = headers.find(_._2 == s"fake-${api.id.value}")
-                  val username = api.testing.username.get
-                  val password = api.testing.password.get
-                  val finalUrl = api.testing.auth match {
-                    case TestingAuth.ApiKey if queryOpt.isDefined =>
-                      url
-                        .replace(
-                          s"&${queryOpt.get._1}=fake-${api.id.value}",
-                          s"&${queryOpt.get._1}=${username}"
-                        )
-                        .replace(
-                          s"?${queryOpt.get._1}=fake-${api.id.value}",
-                          s"?${queryOpt.get._1}=${username}"
-                        )
-                    // case TestingAuth.ApiKey if queryOpt.isDefined && url.contains("?") => (url + "&" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
-                    // case TestingAuth.ApiKey if queryOpt.isDefined && !url.contains("?") => (url + "?" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
-                    case _ => url
-                  }
-                  val finalHeaders: Map[String, String] =
-                    api.testing.auth match {
-                      case TestingAuth.ApiKey if headerOpt.isDefined =>
-                        headers - headerOpt.get._1 + (headerOpt.get._1 -> username)
-                      case TestingAuth.Basic =>
-                        headers - "Authorization" + ("Authorization" -> s"Basic ${Base64
-                          .encodeBase64String(s"${username}:${password}".getBytes(Charsets.UTF_8))}")
-                      case _ => headers
-                    }
-                  val builder = env.wsClient
-                    .url(finalUrl)
-                    .withHttpHeaders(finalHeaders.toSeq: _*)
-                    .withFollowRedirects(false)
-                    .withMethod(method)
-                    .withRequestTimeout(30.seconds)
-                  body
-                    .map(b =>
-                      builder
-                        .withBody(play.api.libs.ws.InMemoryBody(ByteString(b)))
-                    )
-                    .getOrElse(builder)
-                    .stream()
-                    .map { res =>
-                      val ctype = res.headers
-                        .get("Content-Type")
-                        .flatMap(_.headOption)
-                        .getOrElse("application/json")
-                      Status(res.status)
-                        .sendEntity(
-                          HttpEntity.Streamed(
-                            Source.lazySource(() => res.bodyAsSource),
-                            res.headers
-                              .get("Content-Length")
-                              .flatMap(_.lastOption)
-                              .map(_.toInt),
-                            res.headers
-                              .get("Content-Type")
-                              .flatMap(_.headOption)
-                          )
-                        )
-                        .withHeaders(
-                          res.headers.view
-                            .mapValues(_.head)
-                            .toSeq
-                            .filter(_._1 != "Content-Type")
-                            .filter(_._1 != "Content-Length")
-                            .filter(_._1 != "Transfer-Encoding"): _*
-                        )
-                        .as(ctype)
-                    }
-                    .recover {
-                      case e =>
-                        InternalServerError(Json.obj("error" -> e.getMessage))
-                    }
-                }
-                case _ =>
-                  FastFuture.successful(
-                    NotFound(Json.obj("error" -> "Api not found"))
-                  )
-
-              }
-          }
-        }
-    }
-
   def fakeApiCall(teamId: String, apiId: String) =
     DaikokuAction.async(parse.json) { ctx =>
       import scala.concurrent.duration._
@@ -829,30 +712,26 @@ class OtoroshiSettingsController(
           .toIndexedSeq
           .find(_._2 == s"fake-${api.id.value}")
         val headerOpt = headers.find(_._2 == s"fake-${api.id.value}")
-        val username = api.testing.username.get
-        val password = api.testing.password.get
-        val finalUrl = api.testing.auth match {
-          case TestingAuth.ApiKey if queryOpt.isDefined =>
+        val finalUrl = api.testing match {
+          case Some(Testing(_, auth, _, username, _, _)) if queryOpt.isDefined && auth.name == TestingAuth.ApiKey.name =>
             url
               .replace(
                 s"&${queryOpt.get._1}=fake-${api.id.value}",
-                s"&${queryOpt.get._1}=${username}"
+                s"&${queryOpt.get._1}=$username"
               )
               .replace(
                 s"?${queryOpt.get._1}=fake-${api.id.value}",
-                s"?${queryOpt.get._1}=${username}"
+                s"?${queryOpt.get._1}=$username"
               )
-          // case TestingAuth.ApiKey if queryOpt.isDefined && url.contains("?") => (url + "&" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
-          // case TestingAuth.ApiKey if queryOpt.isDefined && !url.contains("?") => (url + "?" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
           case _ => url
         }
         val finalHeaders: Map[String, String] =
-          api.testing.auth match {
-            case TestingAuth.ApiKey if headerOpt.isDefined =>
-              headers - headerOpt.get._1 + (headerOpt.get._1 -> username)
-            case TestingAuth.Basic =>
+          api.testing match {
+            case Some(Testing(_, auth, _, username, _, _)) if auth.name == TestingAuth.ApiKey.name && headerOpt.isDefined =>
+              headers - headerOpt.get._1 + (headerOpt.get._1 -> username.getOrElse(""))
+            case Some(Testing(_, auth, _, username, password, _)) if auth.name == TestingAuth.Basic.name =>
               headers - "Authorization" + ("Authorization" -> s"Basic ${Base64
-                .encodeBase64String(s"${username}:${password}".getBytes(Charsets.UTF_8))}")
+                .encodeBase64String(s"${username.getOrElse("")}:$password".getBytes(Charsets.UTF_8))}")
             case _ => headers
           }
         val builder = env.wsClient
@@ -917,7 +796,7 @@ class OtoroshiSettingsController(
           AppError.ApiNotFound
         )
         _ <- EitherT.cond[Future][AppError, Unit](
-          api.testing.enabled,
+          api.testing.exists(_.enabled),
           (),
           AppError.ForbiddenAction
         )

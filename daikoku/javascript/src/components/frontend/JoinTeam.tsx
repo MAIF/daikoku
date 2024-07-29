@@ -4,9 +4,10 @@ import { ModalContext } from '../../contexts';
 export const JoinTeam = () => {
   const { openJoinTeamModal } = useContext(ModalContext);
 
+
   useEffect(() => {
     openJoinTeamModal();
   }, []);
 
-  return null;
+  return <div>hello</div>;
 };

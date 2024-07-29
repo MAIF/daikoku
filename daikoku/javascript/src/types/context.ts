@@ -13,6 +13,10 @@ export interface IStateModal {
   open: boolean;
 }
 
+export interface IAuthContext {
+  action: string
+}
+
 export interface IStateContext {
   impersonator?: IUserSimple;
   connectedUser: IUserSimple;
@@ -21,7 +25,7 @@ export interface IStateContext {
   apiCreationPermitted: boolean;
   expertMode: boolean;
   unreadNotificationsCount: number;
-  session: ISimpleSession;
+  session?: ISimpleSession;
   loginAction: string;
   theme: string;
 }

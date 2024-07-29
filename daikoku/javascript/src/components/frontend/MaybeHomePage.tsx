@@ -17,9 +17,9 @@ export const MaybeHomePage = ({
 
   useEffect(() => {
     const params = new URLSearchParams(search);
-    const created = params.get("userCreated")
-    if (params.get("userCreated") === "true") {
-      toast.success(translate('user.validated.success'))
+    const message = params.get("message")
+    if (message) {
+      toast.success(translate(message))
     }
 
     if (!tenant.homePageVisible || connectedUser?._humanReadableId) {

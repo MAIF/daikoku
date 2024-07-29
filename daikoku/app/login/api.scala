@@ -103,8 +103,7 @@ object TenantHelper {
               Results.NotFound,
               request,
               None,
-              env,
-              tenant
+              env
             )
           case Some(tenant) => f(tenant)
         }
@@ -143,8 +142,7 @@ object TenantHelper {
                 Results.NotFound,
                 request,
                 None,
-                env,
-                tenant
+                env
               )
             case Some(tenant) => f(tenant)
           }
@@ -188,7 +186,8 @@ object TenantHelper {
                 Results.NotFound,
                 request,
                 None,
-                env
+                env,
+
               )
             case Some(tenant) if !tenant.enabled =>
               Errors.craftResponseResult(
@@ -196,8 +195,7 @@ object TenantHelper {
                 Results.NotFound,
                 request,
                 None,
-                env,
-                tenant
+                env
               )
             case Some(tenant) => f(tenant)
           }
@@ -448,18 +446,19 @@ class LoginFilter(env: Env)(implicit
                               }
                           }
                     }
-                  case (_, _) if tenant.isPrivate =>
-                    FastFuture.successful(
-                      Results
-                        .Redirect(
-                          fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
-                            .loginPage(provider.name)
-                        )
-                        .removingFromSession("sessionId")(request)
-                        .withSession(
-                          "redirect" -> cleanupRedirect(request.relativeUri)
-                        )
-                    )
+//                  case (_, _) if tenant.isPrivate =>
+//                    AppLogger.warn("tenant is private (4)")
+//                    FastFuture.successful(
+//                      Results
+//                        .Redirect(
+//                          fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
+//                            .loginPage(provider.name)
+//                        )
+//                        .removingFromSession("sessionId")(request)
+//                        .withSession(
+//                          "redirect" -> cleanupRedirect(request.relativeUri)
+//                        )
+//                    )
                   case (_, _) =>
                     AppLogger.info("no session found")
                     nextFilter(request.addAttr(IdentityAttrs.TenantKey, tenant))

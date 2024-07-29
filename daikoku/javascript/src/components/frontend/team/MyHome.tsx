@@ -59,7 +59,6 @@ export const MyHome = () => {
     }
   }, [isAnonEnabled]);
 
-
   const redirectToApiPage = (apiWithAutho: IApiWithAuthorization) => {
     const api = apiWithAutho.api
     const route = (version: string) => api.apis

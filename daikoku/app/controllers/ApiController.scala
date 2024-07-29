@@ -10,18 +10,11 @@ import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.audit.config.ElasticAnalyticsConfig
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Private
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
@@ -31,6 +24,7 @@ import fr.maif.otoroshi.daikoku.utils.Cypher.decrypt
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils._
+import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
 import org.joda.time.DateTime
 import play.api.Logger
@@ -46,6 +40,7 @@ import scala.util.{Failure, Success, Try}
 class ApiController(
     DaikokuAction: DaikokuAction,
     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+    DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
     apiService: ApiService,
     apiKeyStatsJob: ApiKeyStatsJob,
     env: Env,
@@ -89,9 +84,10 @@ class ApiController(
 
         def fetchSwagger(api: Api): EitherT[Future, AppError, Result] = {
           api.swagger match {
-            case Some(SwaggerAccess(_, Some(content), _, _)) =>
-              EitherT.pure[Future, AppError](Ok(content).as("application/json"))
-            case Some(SwaggerAccess(Some(url), None, headers, _)) =>
+            case Some(SwaggerAccess(_, Some(content), _, _, _)) =>
+              val contentType = if(content.startsWith("{")) "application/json" else "application/yaml"
+              EitherT.pure[Future, AppError](Ok(content).as(contentType))
+            case Some(SwaggerAccess(Some(url), None, headers, _, _)) =>
               val finalUrl =
                 if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url)
                 else url
@@ -101,11 +97,12 @@ class ApiController(
                   .withHttpHeaders(headers.toSeq: _*)
                   .get()
                   .map { resp =>
+                    val contentType = if(resp.body.startsWith("{")) "application/json" else "application/yaml"
                     Right(
                       Ok(resp.body).as(
                         resp
                           .header("Content-Type")
-                          .getOrElse("application/json")
+                          .getOrElse(contentType)
                       )
                     )
                   }
@@ -186,9 +183,9 @@ class ApiController(
 
         def fetchSwagger(plan: UsagePlan): EitherT[Future, AppError, Result] = {
           plan.swagger match {
-            case Some(SwaggerAccess(_, Some(content), _, _)) =>
+            case Some(SwaggerAccess(_, Some(content), _, _, _)) =>
               EitherT.pure[Future, AppError](Ok(content).as("application/json"))
-            case Some(SwaggerAccess(Some(url), None, headers, _)) =>
+            case Some(SwaggerAccess(Some(url), None, headers, _, _)) =>
               val finalUrl =
                 if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url)
                 else url
@@ -893,7 +890,7 @@ class ApiController(
                             .get("Otoroshi-Proxied-Host")
                             .orElse(ctx.request.headers.get("X-Forwarded-Host"))
                             .getOrElse(ctx.request.host)
-                          url = s"${ctx.request.theProtocol}://${host}$url"
+                          url = env.getDaikokuUrl(ctx.tenant, s"$url")
                         }
                         if (url.contains("?")) {
                           url = s"$url&sessionId=${ctx.session.sessionId.value}"
@@ -1278,54 +1275,49 @@ class ApiController(
     }
 
   def validateProcess() =
-    DaikokuActionMaybeWithGuest.async { ctx =>
-      UberPublicUserAccess(
-        AuditTrailEvent(
-          s"Subscription process has been validated by @{validator.name}"
+    DaikokuActionMaybeWithoutUser.async { ctx =>
+      import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
+      implicit val language: String = ctx.request.getLanguage(ctx.tenant)
+      implicit val currentUser: User = ctx.user.getOrElse(GuestUser(ctx.tenant.id))
+
+      val maybeSessionId = ctx.request.getQueryString("session_id")
+
+      (for {
+        encryptedToken <- EitherT.fromOption[Future](
+          ctx.request.getQueryString("token"),
+          AppError.EntityNotFound("token from query")
         )
-      )(ctx) {
-        import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
-        implicit val language: String = ctx.request.getLanguage(ctx.tenant)
-        implicit val currentUser: User = ctx.user
+        token <- EitherT.pure[Future, AppError](
+          decrypt(env.config.cypherSecret, encryptedToken, ctx.tenant)
+        )
+        validator <- EitherT.fromOptionF(
+          env.dataStore.stepValidatorRepo
+            .forTenant(ctx.tenant)
+            .findOneNotDeleted(Json.obj("token" -> token)),
+          AppError.EntityNotFound("token")
+        )
 
-        val maybeSessionId = ctx.request.getQueryString("session_id")
-
-        (for {
-          encryptedToken <- EitherT.fromOption[Future](
-            ctx.request.getQueryString("token"),
-            AppError.EntityNotFound("token from query")
+        _ <- validateProcessWithStepValidator(
+          validator,
+          ctx.tenant,
+          maybeSessionId
+        )
+      } yield
+        if (ctx.user.isEmpty) {
+          Redirect(env.getDaikokuUrl(ctx.tenant, "/response")).future
+        } else {
+          Redirect(env.getDaikokuUrl(ctx.tenant, "/?message=home.message.subscription.validation.successfull")).future
+        })
+        .leftMap(error =>
+          Errors.craftResponseResult(
+            message = error.getErrorMessage(),
+            status = Results.Ok,
+            req = ctx.request,
+            env = env
           )
-          token <- EitherT.pure[Future, AppError](
-            decrypt(env.config.cypherSecret, encryptedToken, ctx.tenant)
-          )
-          validator <- EitherT.fromOptionF(
-            env.dataStore.stepValidatorRepo
-              .forTenant(ctx.tenant)
-              .findOneNotDeleted(Json.obj("token" -> token)),
-            AppError.EntityNotFound("token")
-          )
-
-          _ <- validateProcessWithStepValidator(
-            validator,
-            ctx.tenant,
-            maybeSessionId
-          )
-        } yield
-          if (ctx.user.isGuest)
-            Ok(views.html.response(None, ctx.request.domain, env, ctx.tenant))
-          else Redirect(s"/apis"))
-          .leftMap(error =>
-            Ok(
-              views.html.response(
-                error.getErrorMessage().some,
-                ctx.request.domain,
-                env,
-                ctx.tenant
-              )
-            )
-          )
-          .merge
-      }
+        )
+        .merge
+        .flatten
     }
 
   def abortProcess() =
@@ -1385,19 +1377,18 @@ class ApiController(
             AppError.EntityNotFound("token")
           )
           _ <- declineProcessWithStepValidator(validator, ctx.tenant)
-        } yield Ok(
-          views.html.response(None, ctx.request.domain, env, ctx.tenant)
-        )).leftMap(error =>
-            Ok(
-              views.html.response(
-                error.getErrorMessage().some,
-                ctx.request.domain,
-                env,
-                ctx.tenant
-              )
+        } yield
+          Redirect(env.getDaikokuUrl(ctx.tenant, "/response?message=home.message.subscription.refusal.successfull")).future
+        ).leftMap(error =>
+            Errors.craftResponseResult(
+              message = error.getErrorMessage(),
+              status = Results.Ok,
+              req = ctx.request,
+              env = env
             )
           )
           .merge
+          .flatten
       }
     }
 
@@ -4339,7 +4330,7 @@ class ApiController(
                               parent = Some(api.id),
                               currentVersion = Version(newVersion),
                               isDefault = true,
-                              testing = Testing(),
+                              testing = None,
                               documentation = ApiDocumentation(
                                 id = ApiDocumentationId(
                                   IdGenerator.token(32)
@@ -4348,11 +4339,7 @@ class ApiController(
                                 lastModificationAt = DateTime.now(),
                                 pages = Seq.empty
                               ),
-                              swagger = Some(
-                                SwaggerAccess(
-                                  url = "/assets/swaggers/petstore.json".some
-                                )
-                              ),
+                              swagger = None,
                               possibleUsagePlans = Seq.empty,
                               defaultUsagePlan = None,
                               posts = Seq.empty,

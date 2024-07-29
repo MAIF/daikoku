@@ -1,9 +1,10 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import React, { PropsWithChildren, useState } from "react"
+import React, { PropsWithChildren, useEffect, useLayoutEffect, useState } from "react"
 
-import { Spinner } from "../components/utils/Spinner"
-import * as Services from '../services/index'
-import { AuthProvider, DaikokuMode, Display, IStateContext, TenanMode, isError } from "../types"
+import { Spinner } from "../components/utils/Spinner";
+import { parseAsHtml } from "../components/utils/tenantUtils";
+import * as Services from '../services/index';
+import { AuthProvider, DaikokuMode, Display, IStateContext, TenanMode, isError } from "../types";
 
 
 type TGlobalContext = IStateContext & { reloadContext: () => void, toggleExpertMode: () => void, toggleTheme: () => void,reloadUnreadNotificationsCount: () => void }
@@ -78,6 +79,79 @@ export const GlobalContextProvider = (props: PropsWithChildren) => {
     queryFn: () => Services.myUnreadNotificationsCount(),
   })
 
+  useEffect(() => {
+    if (currentUserQuery?.data && !isError(currentUserQuery?.data)) {
+      if (currentUserQuery.data.tenant.colorTheme) {
+        let style: HTMLStyleElement | null = document.querySelector("style#color-theme");
+        if (!style) {
+          style = document.createElement('style');
+          style.id = 'color-theme';
+          document.head.appendChild(style);
+        }
+        style.innerText = currentUserQuery.data.tenant.colorTheme;
+      }
+      if (currentUserQuery.data.tenant.css) {
+        let style: HTMLStyleElement | null = document.querySelector("style#custom-css");
+        if (!style) {
+          style = document.createElement('style');
+          style.id = 'custom-css';
+          document.head.appendChild(style);
+        }
+        style.innerText = currentUserQuery.data.tenant.css;
+      }
+      if (currentUserQuery.data.tenant.fontFamilyUrl) {
+        let style: HTMLStyleElement | null = document.querySelector("style#custom-font-family");
+        if (!style) {
+          style = document.createElement('style');
+          style.id = 'custom-font-family';
+          document.head.appendChild(style);
+        }
+        style.innerText = `@font-face{
+          font-family: "Custom";
+          src: url("${currentUserQuery.data.tenant.fontFamilyUrl}")
+          }`;
+      }
+      if (currentUserQuery.data.tenant.cssUrl) {
+        let link: HTMLLinkElement | null = document.querySelector("link#custom-css-by-url");
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = "stylesheet"
+          link.media = "screen"
+          link.id = 'custom-css-by-url';
+          document.head.appendChild(link);
+        }
+        link.href = currentUserQuery.data.tenant.cssUrl
+      }
+      if (currentUserQuery.data.tenant.js) {
+        let script: HTMLScriptElement | null = document.querySelector("script#custom-js");
+        if (!script) {
+          script = document.createElement('script');
+          script.id = 'custom-js';
+          document.body.appendChild(script);
+        }
+        script.innerText = currentUserQuery.data.tenant.js
+      }
+      if (currentUserQuery.data.tenant.jsUrl) {
+        let script: HTMLScriptElement | null = document.querySelector("script#custom-js-by-url");
+        if (!script) {
+          script = document.createElement('script');
+          script.id = 'custom-js-by-url';
+          document.body.appendChild(script);
+        }
+        script.src = currentUserQuery.data.tenant.jsUrl
+      }
+      if (currentUserQuery.data.tenant.faviconUrl) {
+        let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.head.appendChild(link);
+        }
+        link.href = currentUserQuery.data.tenant.faviconUrl;
+      }
+    }
+  }, [currentUserQuery.data])
+
   if (currentUserQuery.isLoading) {
     return <Spinner /> //todo: get a real better loader who block & mask all the window
   }
@@ -96,7 +170,6 @@ export const GlobalContextProvider = (props: PropsWithChildren) => {
   };
 
   const toggleTheme = () => {
-    console.log('thm',theme)
     if (theme === 'DARK') {
       document.documentElement.setAttribute('data-theme', 'LIGHT');
       localStorage.setItem('theme', 'LIGHT');

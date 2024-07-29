@@ -2,26 +2,16 @@ package fr.maif.otoroshi.daikoku.ctrls
 
 import com.github.blemale.scaffeine.{Cache, Scaffeine}
 import com.nimbusds.jose.util.StandardCharset
+import controllers.Assets
 import daikoku.BuildInfo
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuActionMaybeWithoutUserContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  DaikokuAdminOrSelf,
-  TenantAdminOnly
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{DaikokuAdminOrSelf, TenantAdminOnly}
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.sync.TeamMemberOnly
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  CmsFileFormat,
-  CmsPageFormat,
-  CmsRequestRenderingFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{CmsFileFormat, CmsPageFormat, CmsRequestRenderingFormat}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator, diff_match_patch}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
@@ -41,7 +31,8 @@ class HomeController(
     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
     DaikokuAction: DaikokuAction,
     env: Env,
-    cc: ControllerComponents
+    cc: ControllerComponents,
+    assets: Assets
 ) extends AbstractController(cc)
     with I18nSupport {
 
@@ -56,79 +47,6 @@ class HomeController(
     .maximumSize(100)
     .build[String, CmsPageCache]()
 
-  def actualIndex[A](
-      ctx: DaikokuActionMaybeWithoutUserContext[A]
-  ): Future[Result] = {
-    ctx.user match {
-      case _ if ctx.request.uri.startsWith("/robots.txt") =>
-        ctx.tenant.robotTxt match {
-          case Some(robotTxt) =>
-            FastFuture.successful(Ok(views.txt.robot.render(robotTxt)))
-          case None =>
-            FastFuture.successful(
-              NotFound(Json.obj("error" -> "robots.txt not found"))
-            )
-        }
-      case Some(_) =>
-        if (ctx.request.uri == "/") {
-          manageCmsHome(
-            ctx,
-            Ok(
-              views.html.index(
-                ctx.user.get,
-                ctx.session.get,
-                ctx.tenant,
-                ctx.request.domain,
-                env,
-                ctx.isTenantAdmin,
-                ctx.apiCreationPermitted
-              )
-            )
-          )
-        } else
-          FastFuture.successful(
-            Ok(
-              views.html.index(
-                ctx.user.get,
-                ctx.session.get,
-                ctx.tenant,
-                ctx.request.domain,
-                env,
-                ctx.isTenantAdmin,
-                ctx.apiCreationPermitted
-              )
-            )
-          )
-      case None if ctx.request.uri.startsWith("/signup") =>
-        FastFuture.successful(
-          Ok(
-            views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env)
-          )
-        )
-      case None if ctx.request.uri.startsWith("/reset") =>
-        FastFuture.successful(
-          Ok(
-            views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env)
-          )
-        )
-      case None if ctx.request.uri.startsWith("/2fa") =>
-        FastFuture.successful(
-          Ok(
-            views.html.unauthenticatedindex(ctx.tenant, ctx.request.domain, env)
-          )
-        )
-      case None if ctx.request.uri == "/" =>
-        manageCmsHome(
-          ctx,
-          Ok(
-            views.html
-              .unauthenticatedindex(ctx.tenant, ctx.request.domain, env)
-          )
-        )
-      case _ => manageCmsHome(ctx, Redirect("/"))
-    }
-  }
-
   private def manageCmsHome[A](
       ctx: DaikokuActionMaybeWithoutUserContext[A],
       redirectTo: Result
@@ -139,14 +57,9 @@ class HomeController(
           case Some(pageId) =>
             if (!ctx.tenant.isPrivate || ctx.user.exists(!_.isGuest))
               cmsPageByIdWithoutAction(ctx, pageId)
-            else
-              FastFuture.successful(
-                Ok(
-                  views.html
-                    .unauthenticatedindex(ctx.tenant, ctx.request.domain, env)
-                )
-              )
-          case _ => FastFuture.successful(redirectTo)
+          case _ =>
+            AppLogger.warn("tenant is private (3)")
+            FastFuture.successful(redirectTo)
         }
       case _ => FastFuture.successful(redirectTo)
     }
@@ -154,12 +67,24 @@ class HomeController(
 
   def index() =
     DaikokuActionMaybeWithoutUser.async { ctx =>
-      actualIndex(ctx)
+      assets.at("index.html").apply(ctx.request)
+    }
+
+  def indexForRobots() =
+    DaikokuActionMaybeWithoutUser.async { ctx =>
+      ctx.tenant.robotTxt match {
+        case Some(robotTxt) =>
+          FastFuture.successful(Ok(views.txt.robot.render(robotTxt)))
+        case None =>
+          FastFuture.successful(
+            NotFound(Json.obj("error" -> "robots.txt not found"))
+          )
+      }
     }
 
   def indexWithPath(path: String) =
     DaikokuActionMaybeWithoutUser.async { ctx =>
-      actualIndex(ctx)
+      assets.at("index.html").apply(ctx.request)
     }
 
   def health() =
@@ -186,13 +111,14 @@ class HomeController(
       Ok(Json.obj("version" -> BuildInfo.version))
     }
 
-  def getConnectedUser() =
+  def getConnectedUser() = {
     DaikokuActionMaybeWithoutUser { ctx =>
+
       Ok(
         Json.obj(
-          "connectedUser" -> ctx.user.get.toUiPayload(),
-          "impersonator" -> ctx.session.get.impersonatorJson(),
-          "session" -> ctx.session.get.asSimpleJson,
+          "connectedUser" -> ctx.user.map(_.toUiPayload()).getOrElse(JsNull).as[JsValue],
+          "impersonator" -> ctx.session.map(_.impersonatorJson()).getOrElse(JsNull).as[JsValue],
+          "session" -> ctx.session.map(_.asSimpleJson).getOrElse(JsNull).as[JsValue],
           "tenant" -> ctx.tenant.toUiPayload(env),
           "isTenantAdmin" -> ctx.isTenantAdmin,
           "apiCreationPermitted" -> ctx.apiCreationPermitted,
@@ -202,6 +128,7 @@ class HomeController(
         )
       )
     }
+  }
 
   private def getMatchingRoutes(
       path: String,

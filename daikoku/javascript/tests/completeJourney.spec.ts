@@ -15,9 +15,11 @@ test.beforeEach(async ({page}) => {
   .then(r => console.log({r}));
 })
 
+const exposedPort = process.env.EXPOSED_PORT || 5173
+
 test('test a complete user journey', async ({ page }) => {
   //connection
-  await page.goto('http://localhost:9000/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('user@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -47,11 +49,12 @@ test('test a complete user journey', async ({ page }) => {
   await page.getByPlaceholder('New Api').fill('second test api');
   await page.getByLabel('Small desc.').click();
   await page.getByLabel('Small desc.').fill('A new test API');
-  await page.getByRole('button', { name: 'Next' }).click();
-  await page.getByText('A new API').click();
-  await page.getByRole('textbox').fill('# A new test API\n\n\ndescription...');
-  await page.getByRole('button', { name: 'Next' }).click();
-  await page.getByRole('button', { name: 'Next' }).click();
+  await page.locator('.mrf-collapse_label').filter({ hasText: 'Basic informations' }).click();
+  await page.locator('.mrf-collapse_label').filter({ hasText: 'Description' }).click();
+  await page.locator('.cm-content').click();
+  await page.keyboard.type('# A new test API');
+  await page.keyboard.press('Enter');
+  await page.keyboard.type('description...');
   await page.getByRole('button', { name: 'Save' }).click();
 
   //create a simple plan
@@ -111,7 +114,7 @@ test('test a complete user journey', async ({ page }) => {
   //subscribe
   await page.getByText('Subscriptions').click();
   await expect(page.getByRole('main')).toContainText('0 Result');
-  await page.getByRole('link', { name: 'Daikoku home' }).click();
+  await page.getByRole('link', { name: 'Go home' }).click();
   await expect(page.getByRole('main')).toContainText('second test api');
 
   
@@ -120,10 +123,9 @@ test('test a complete user journey', async ({ page }) => {
   await page.locator('div').filter({ hasText: /^second test api/ }).getByLabel('star').click();
   await expect(page.locator('div').filter({ hasText: /^second test api/ }).locator('.star-button')).toContainText('0')
 
-
   await page.getByRole('heading', { name: 'second test api' }).click();
   await expect(page.locator('h1.jumbotron-heading')).toContainText('second test api');
-  await expect(page.locator('#a-new-test-api')).toContainText('A new test API');
+  await expect(page.locator('.lead')).toContainText('A new test API');
   await page.getByText('Plans').click();
   await expect(page.locator('#usage-plans__list')).toContainText('dev plan');
   await page.getByRole('button', { name: 'Get API key' }).click();
@@ -131,14 +133,14 @@ test('test a complete user journey', async ({ page }) => {
   //todo: wait subscription ok
   await page.waitForResponse(r => r.url().includes('/_subscribe') && r.status() === 200)
  
-  await page.goto('http://localhost:9000/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('heading', { name: 'second test api' }).click();
   // await page.getByText('Documentation').click();
   // await expect(page.getByRole('listitem')).toContainText('Usage');
   // await expect(page.getByRole('main')).toContainText('Lorem ipsum');
   // await page.getByText('News').click();
   // await expect(page.getByRole('main')).toContainText('Our API is alive');
-  await page.getByRole('link', { name: 'Daikoku home' }).click();
+  await page.getByRole('link', { name: 'Go home' }).click();
   await page.locator('span').filter({ hasText: 'The A team' }).click();
   await page.getByText('API keys').click();
   await expect(page.getByRole('main')).toContainText('1 Result');

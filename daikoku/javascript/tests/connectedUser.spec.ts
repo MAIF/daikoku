@@ -1,11 +1,133 @@
 import { test, expect } from '@playwright/test';
-import newApi from './resources/test_api_2.json';
-import newApiUsagePlan from './resources/test_api_2_usage_plan.json';
+
+const newApi = {
+  "_id": "Sn3qHxAzKHTgWstL5FatDAu8",
+  "_humanReadableId": "test-api-2",
+  "_tenant": "default",
+  "team": "5ffd5d30260100461a3cc730",
+  "_deleted": false,
+  "lastUpdate": 1610440269091,
+  "name": "test API 2",
+  "smallDescription": "A new test API for test",
+  "header": null,
+  "image": null,
+  "description": "# Title\n\n## subtitle\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.",
+  "currentVersion": "1.0.0",
+  "supportedVersions": [
+    "1.0.0"
+  ],
+  "testing": {
+    "enabled": true,
+    "auth": "Basic",
+    "name": "test auth",
+    "username": "client-id",
+    "password": "client-secret",
+    "config": null
+  },
+  "documentation": {
+    "_id": "5ffd5e4d260100461a3cc7b7",
+    "_tenant": "default",
+    "pages": [],
+    "lastModificationAt": 1610440269091
+  },
+  "swagger": {
+    "url": "/assets/swaggers/petstore.json",
+    "content": null,
+    "headers": {},
+    "additionalConf": null
+  },
+  "tags": [
+    "test"
+  ],
+  "categories": [
+    "internal"
+  ],
+  "visibility": "Public",
+  "possibleUsagePlans": [
+    "CXssdGGN875vZzpHLgkpaQ8v"
+  ],
+  "defaultUsagePlan": "CXssdGGN875vZzpHLgkpaQ8v",
+  "authorizedTeams": [],
+  "posts": [],
+  "issues": [],
+  "issuesTags": [],
+  "stars": 0,
+  "parent": null,
+  "isDefault": true,
+  "apis": null,
+  "state": "published"
+}
+
+const newApiUsagePlan = {
+  "_id": "CXssdGGN875vZzpHLgkpaQ8v",
+  "_tenant": "default",
+  "_deleted": false,
+  "maxPerSecond": 10,
+  "maxPerDay": 500,
+  "maxPerMonth": 10000,
+  "currency": {
+    "code": "EUR"
+  },
+  "billingDuration": {
+    "value": 1,
+    "unit": "Month"
+  },
+  "customName": "test plan",
+  "customDescription": "Free plan with limited number of calls per day and per month",
+  "otoroshiTarget": {
+    "otoroshiSettings": "default",
+    "authorizedEntities": {
+      "groups": [],
+      "services": [],
+      "routes": ["r_12346"]
+    },
+    "apikeyCustomization": {
+      "clientIdOnly": false,
+      "constrainedServicesOnly": false,
+      "readOnly": false,
+      "metadata": {},
+      "customMetadata": [],
+      "tags": [],
+      "restrictions": {
+        "enabled": false,
+        "allowLast": true,
+        "allowed": [],
+        "forbidden": [],
+        "notFound": []
+      }
+    }
+  },
+  "allowMultipleKeys": false,
+  "visibility": "Public",
+  "authorizedTeams": [],
+  "autoRotation": false,
+  "subscriptionProcess": [],
+  "integrationProcess": "ApiKey",
+  "aggregationApiKeysSecurity": true,
+  "testing": {
+    "enabled": false,
+    "auth": "Basic",
+    "name": null,
+    "username": null,
+    "password": null,
+    "config": null
+  },
+  "documentation": null,
+  "swagger": {
+    "url": null,
+    "content": null,
+    "headers": {},
+    "additionalConf": null
+  },
+  "type": "FreeWithQuotas"
+}
+
+const exposedPort = process.env.EXPOSED_PORT || 5173
 
 const adminApikeyId = 'admin_key_client_id';
 const adminApikeySecret = 'admin_key_client_secret';
 
-test.beforeEach(async ({page}) => {
+test.beforeEach(async ({ page }) => {
   console.log(`Running ${test.info().title}`);
   await fetch('http://localhost:9000/admin-api/state/reset', {
     method: 'POST',
@@ -13,8 +135,11 @@ test.beforeEach(async ({page}) => {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
     }
   })
-  .then(r => r.json())
-  .then(r => console.log({r}));
+    .then(r => r.json())
+    .then(r => console.log({ r }))
+    .then(() => fetch('http://localhost:1080/api/emails', {
+      method: 'DELETE'
+    }));
 })
 
 /**
@@ -39,7 +164,7 @@ test('Create & manage API', async ({ page }) => {
     height: 1080,
   });
   //connection with admin
-  await page.goto('http://localhost:9000/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -53,11 +178,11 @@ test('Create & manage API', async ({ page }) => {
   await expect(page.getByText('API with this name already')).toBeVisible();
   await page.getByPlaceholder('New Api').fill('test API 2');
   await page.getByLabel('Small desc.').fill('real test API');
-  await page.getByRole('button', { name: 'Next' }).click();
-  await page.locator('label').filter({ hasText: 'Description' }).waitFor({ state: 'visible' })
-  await page.getByRole('textbox').fill('a real test API');
-  await page.getByRole('button', { name: 'Next' }).click();
-  await page.getByRole('button', { name: 'Next' }).click();
+  // await page.getByRole('button', { name: 'Next' }).click();
+  // await page.locator('label').filter({ hasText: 'Description' }).waitFor({ state: 'visible' })
+  // await page.getByRole('textbox').fill('a real test API');
+  // await page.getByRole('button', { name: 'Next' }).click();
+  // await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByText('API test API 2 created')).toBeVisible();
   //create first plan (public & auto)
@@ -137,6 +262,7 @@ test('Create & manage API', async ({ page }) => {
   await page.getByPlaceholder('Max. requests per month').fill('1000');
   await page.getByRole('button', { name: 'Save' }).click();
   await page.getByRole('main').locator('i').click();
+  await expect(page.locator('.card-header').filter({ hasText: 'private & automatic' })).toBeVisible()
   await page.locator('#dropdownMenuButton').first().click();
   await page.getByText('Make it private').first().click();
   //FIXME -> wants to see locker
@@ -161,6 +287,7 @@ test('Create & manage API', async ({ page }) => {
   // await page.getByLabel('why').fill('because');
   await page.getByLabel('motivation').fill('because');
   await page.getByRole('button', { name: 'Send' }).click();
+  await page.waitForResponse(r => r.url().includes('/_subscribe') && r.status() === 200)
   await expect(page.getByText('The API key request for Free')).toBeVisible();
   await expect(page.getByText('private & automatic')).toBeVisible();
   await page.locator('#usage-plans__list div').filter({ hasText: 'private & automaticFree plan' }).getByRole('button').click();
@@ -170,7 +297,7 @@ test('Create & manage API', async ({ page }) => {
   await expect(page.getByText('API key to plan Free with')).toBeVisible();
   await page.getByRole('link', { name: 'Access to the notifications' }).click();
   await expect(page.getByText('Request subscription to test API 2 for plan')).toBeVisible();
-  await page.getByRole('link', { name: '' }).nth(1).click();
+  await page.getByRole('link', { name: 'Accept' }).nth(1).click();
   await expect(page.getByRole('textbox').nth(1)).toBeVisible();
   await page.getByRole('button', { name: 'Accept' }).click();
   await page.waitForResponse(r => r.url().includes('/accept') && r.status() === 200)
@@ -182,7 +309,7 @@ test('Create & manage API', async ({ page }) => {
   await page.getByText('Validate a subscription', { exact: true }).click();
   await page.getByRole('link', { name: 'Accept' }).click();
   await page.getByRole('link', { name: 'Access to the notifications' }).click();
-  await page.getByRole('link', { name: 'Daikoku home' }).click();
+  await page.getByRole('link', { name: 'Go home' }).click();
   await page.getByText('Consumers').click();
   await page.getByText('API keys').click();
   await page.getByRole('row', { name: 'test API 2 1.0.0  API keys' }).getByRole('link').click();
@@ -242,7 +369,7 @@ test('aggregation mode', async ({ page, request }) => {
   })
 
   //login
-  await page.goto('http://localhost:9000/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -253,8 +380,8 @@ test('aggregation mode', async ({ page, request }) => {
   await page.getByText('Plans').click();
   await page.locator('.usage-plan__card').filter({ hasText: 'not test plan' }).getByRole('button').click();
   await page.locator('div').filter({ hasText: /^Consumers$/ }).click();
-  await page.getByRole('button', { name: '+ Subscribe with a new api key' }).click();
-  await page.getByRole('link', { name: 'Daikoku home' }).click();
+  await page.getByRole('button', { name: 'Subscribe with a new api key' }).click();
+  await page.getByRole('link', { name: 'Go home' }).click();
 
   //subscribe second api with aggregation
   await page.getByRole('heading', { name: 'test API 2' }).click();
@@ -265,7 +392,7 @@ test('aggregation mode', async ({ page, request }) => {
   await page.getByText('test API/not test plan').click();
 
   //go to subscriptions
-  await page.getByRole('link', { name: 'Daikoku home' }).click();
+  await page.getByRole('link', { name: 'Go home' }).click();
   await page.locator('.top__container').filter({ hasText: 'Your teams' })
     .getByText('Consumers').click()
   // await page.getByLabel('Notifications alt+T').getByRole('button').click();
@@ -320,7 +447,7 @@ test('Cascading deletion', async ({ page, request }) => {
  */
 test('do search', async ({ page, request }) => {
   //login
-  await page.goto('http://localhost:9000/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -355,7 +482,7 @@ test('do search', async ({ page, request }) => {
 });
 
 test('API admin can transfer his own API ownership', async ({ page }) => {
-  await page.goto('http://localhost:9000/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -370,34 +497,36 @@ test('API admin can transfer his own API ownership', async ({ page }) => {
   await expect(page.getByRole('status')).toContainText('Team has been notified. please wait until acceptation');
   await page.getByRole('link', { name: 'Access to the notifications' }).click();
   await expect(page.locator('#app')).toContainText('Consumersrequest to transfer the ownership of test APITestera few seconds');
-  await page.getByRole('link', { name: '' }).nth(1).click();
-  await page.getByRole('link', { name: 'Daikoku home' }).click();
+  await page.getByRole('link', { name: 'Accept' }).nth(1).click();
+  await page.getByRole('link', { name: 'Go home' }).click();
   await page.locator('h3').filter({ hasText: 'test API' }).waitFor({ state: 'visible' })
-  await page.locator('small').filter({ hasText: 'Consumers' }).click();
+  const consumerSelector = page.locator('small').filter({ hasText: 'Consumers' })
+  // console.log(consumerSelector)
+  await consumerSelector.click();
   await expect(page.locator('h3')).toContainText('test API');
 });
 
-test('Filter API List', async ({page, request}) => {
+test('Filter API List', async ({ page, request }) => {
   await request.post('http://localhost:9000/admin-api/usage-plans', {
     headers: {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
     },
     data: newApiUsagePlan
   })
-      .then(r => r.json())
-      .then(r => console.log({r}));
+    .then(r => r.json())
+    .then(r => console.log({ r }));
 
 
   await request.post('http://localhost:9000/admin-api/apis', {
     headers: {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
     },
-    data: {...newApi, team: "5ffd5f7e260100461a3cc845", tags: ["dev"], categories: ["external"]}
+    data: { ...newApi, team: "5ffd5f7e260100461a3cc845", tags: ["dev"], categories: ["external"] }
   })
-      .then(r => r.json())
-      .then(r => console.log({r}));
+    .then(r => r.json())
+    .then(r => console.log({ r }));
 
-  await page.goto('http://localhost:9000/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -406,10 +535,10 @@ test('Filter API List', async ({page, request}) => {
   // await page.waitForResponse(r => r.url().includes('/api/search') && r.status() === 200)
   await page.waitForSelector('.apis__pagination')
   await page.locator('small').filter({ hasText: 'Consumers' }).click();
-  await expect(page.locator('.preview')).toContainText('1 result produced by Consumers'); 
-  
+  await expect(page.locator('.preview')).toContainText('1 result produced by Consumers');
+
   await expect(page.getByRole('heading', { name: 'test API' })).toBeVisible(); //FIXME: verifier qu'il n'y a qu'une seul API dans la liste
-  
+
   await page.getByText('result produced by Consumers').click();
   await expect(page.locator('.preview')).toContainText('1 result produced by Consumers');
   await page.getByText('clear filter').click();

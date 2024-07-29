@@ -3,9 +3,8 @@ import { md5 } from 'js-md5';
 import queryString from 'query-string';
 import { useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { BrowserRouter as Router, Route, Routes, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useNavigate, Link } from 'react-router-dom';
 
-import { UnauthenticatedHome, UnauthenticatedTopBar } from '../components/frontend/unauthenticated';
 import { I18nContext } from '../contexts/i18n-context';
 import * as Services from '../services';
 import { IUserSimple } from '../types';
@@ -149,9 +148,6 @@ export const Signup = () => {
 
   return (
     <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px' }}>
-      <h1 className="h1-rwd-reduce text-center">
-        <Translation i18nkey="Create account">Create account</Translation>
-      </h1>
       {state === 'error' && error && (
         <div className="alert alert-danger" role="alert">
           {error}
@@ -162,9 +158,11 @@ export const Signup = () => {
         flow={flow}
         onSubmit={createAccount}
         value={user}
+        className='signup-form'
         options={{
           actions: {
             cancel: {
+              display: true,
               label: translate('Cancel'),
               action: () => navigate('/')
             },
@@ -184,6 +182,8 @@ export const ResetPassword = () => {
   const [user, setUser] = useState<IUserSimple>();
   const [state, setState] = useState<'creation' | 'error' | 'done'>('creation');
   const [error, setError] = useState<string>();
+
+  const navigate = useNavigate();
 
   const schema = {
     email: {
@@ -254,24 +254,21 @@ export const ResetPassword = () => {
 
   if (state === 'done' && user) {
     return (
-      <div className="col">
-        <h1 className="h1-rwd-reduce text-center mt-2">
-          <Translation i18nkey="Reset password">Reset password</Translation>
-        </h1>
-        <p className="text-center mt-2">
+      <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px' }}>
+        <div className="alert alert-info" role="alert">
           <Translation i18nkey="password.reset.done" replacements={[user.email]}>
             You will receive an email at <b>{user.email}</b> to finish your passsword reset process.
             You will have 15 minutes from now to finish your password reset process.
           </Translation>
-        </p>
+        </div>
+        <div className="d-flex justify-content-end">
+          <Link className='btn btn-outline-success' to="/">{translate('go_back')}</Link>
+        </div>
       </div>
     );
   }
   return (
     <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px' }}>
-      <h1 className="h1-rwd-reduce text-center mt-2">
-        <Translation i18nkey="Reset password">Reset password</Translation>
-      </h1>
       {state === 'error' && (
         <div className="alert alert-danger" role="alert">
           {error}
@@ -284,8 +281,8 @@ export const ResetPassword = () => {
         footer={({ reset, valid }) => {
           return (
             <div className="d-flex justify-content-end">
-              <button className="btn btn-outline-danger m-3" onClick={reset}>
-                Cancel
+              <button className="btn btn-outline-danger m-3" onClick={() => navigate(-1)}>
+                {translate('Cancel')}
               </button>
               <button className="btn btn-outline-success m-3" onClick={valid}>
                 <span>
@@ -300,9 +297,7 @@ export const ResetPassword = () => {
   );
 };
 
-export const TwoFactorAuthentication = ({
-  title
-}: any) => {
+export const TwoFactorAuthentication = () => {
   const [code, setCode] = useState<string>('');
   const [token, setToken] = useState<string>('');
   const [error, setError] = useState<string>();
@@ -353,7 +348,6 @@ export const TwoFactorAuthentication = ({
 
   return (
     <div className="d-flex flex-column mx-auto my-3" style={{ maxWidth: '350px' }}>
-      <h3>{title}</h3>
       {showBackupCodes ? (
         <>
           <input
@@ -400,43 +394,5 @@ export const TwoFactorAuthentication = ({
         </>
       )}
     </div>
-  );
-};
-
-export const DaikokuHomeApp = (props: any) => {
-  const tenant = props.tenant;
-  const { translate } = useContext(I18nContext);
-
-  // FIXME: is there any usage of UnauthenticatedTopBar ?????????????
-  return (
-    <Router>
-      <div role="root-container" className="container-fluid">
-        <Routes>
-          <Route
-            path="*"
-            element={
-              <>
-                <UnauthenticatedTopBar />
-              </>
-            }
-          />
-        </Routes>
-        <Routes>
-          <Route path="/" element={<UnauthenticatedHome />} />
-        </Routes>
-        <Routes>
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/reset" element={<ResetPassword />} />
-          <Route
-            path="/2fa"
-            element={
-              <TwoFactorAuthentication
-                title={`${tenant.name} - ${translate('Verification code')}`}
-              />
-            }
-          />
-        </Routes>
-      </div>
-    </Router>
   );
 };

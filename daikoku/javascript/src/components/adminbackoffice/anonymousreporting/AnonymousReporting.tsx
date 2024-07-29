@@ -36,7 +36,7 @@ export const AnonymousReporting = () => {
       <div className="row">
         <div className="col">
           <h1>
-            {translate('Anonymous reporting')}
+            {translate('anonymous.reporting.title')}
           </h1>
           <div className="section p-3">
             <div className="d-flex justify-content-start align-items-center mt-2">
@@ -45,7 +45,8 @@ export const AnonymousReporting = () => {
             </div>
           </div>
           <div>
-            More information at<a href="https://maif.github.io/daikoku/docs/getstarted/setup/reporting" target="_blank" rel="noopener noreferrer"> Daikoku documentation</a>
+            {translate('anonymous.reporting.more.info')}
+            <a href="https://maif.github.io/daikoku/docs/getstarted/setup/reporting" target="_blank" rel="noopener noreferrer">{translate("anonymous.reporting.more.info.link")}</a>
           </div>
         </div>
       </div>

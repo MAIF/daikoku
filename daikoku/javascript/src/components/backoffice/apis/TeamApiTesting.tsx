@@ -10,9 +10,9 @@ import { Option } from '../../utils';
 interface TeamApiTestingProps<T extends IWithTesting> {
   currentTeam: ITeamSimple;
   value: T
-  onChange: (s: T) => void
+  save: (s: T) => void
   reference?: MutableRefObject<FormRef | undefined>
-  metadata: object,
+  // metadata: object,
   plan?: IUsagePlan,
   api?: IApi
 }
@@ -21,9 +21,6 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
   const testing = props.value.testing;
   const { translate, Translation } = useContext(I18nContext);
   const { confirm, openTestingApikeyModal, openSubMetadataModal } = useContext(ModalContext);
-
-
-
 
   const handleOtoroshiUsage = () => {
     const random = nanoid(16);
@@ -34,7 +31,7 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
           clientName: `testing-purpose-only-apikey-for-${props.value.name || props.value.customName || props.value._id}`,
           api: props.value._id,
           tag: `daikoku_testing_${random}`,
-          metadata: props.metadata,
+          metadata: {},
         };
 
     openSubMetadataModal({
@@ -47,7 +44,7 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
           title: translate('Otoroshi settings'),
           value: props.value,
           onChange: (apiKey, config) => {
-            props.onChange({
+            props.save({
               ...props.value,
               testing: {
                 config,
@@ -79,7 +76,7 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
             authorizedEntities: testing!.config!.authorizedEntities,
             clientId: testing!.username,
           })
-            .then(() => props.onChange({
+            .then(() => props.save({
               ...props.value,
               testing: {
                 config: {},
@@ -135,7 +132,7 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
       <Form
         ref={props.reference}
         schema={schema}
-        onSubmit={(testing) => props.onChange({ ...props.value, testing })}
+        onSubmit={(testing) => props.save({ ...props.value, testing })}
         value={props.value.testing}
         options={{
           actions: {

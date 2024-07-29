@@ -1,37 +1,18 @@
 package fr.maif.otoroshi.daikoku.utils
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login._
+import fr.maif.otoroshi.daikoku.utils.RequestImplicits.EnhancedRequestHeader
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.libs.json.Json
-import play.api.mvc.Results.Status
+import play.api.mvc.Results.{Redirect, Status}
 import play.api.mvc.{RequestHeader, Result}
 
+import java.util.Base64
 import scala.concurrent.Future
 
 object Errors {
-
-  val defaultTenant = Tenant(
-    id = Tenant.Default,
-    name = "Daikoky",
-    domain = "localhost",
-    defaultLanguage = Some("En"),
-    contact = "contact@foo.bar",
-    style = Some(
-      DaikokuStyle(
-        title = "Daikoku"
-      )
-    ),
-    mailerSettings = Some(ConsoleMailerSettings()),
-    authProvider = AuthProvider.Local,
-    authProviderSettings = Json.obj(
-      "sessionMaxAge" -> 86400
-    ),
-    bucketSettings = None,
-    otoroshiSettings = Set.empty,
-    adminApi = ApiId("no-api")
-  )
 
   val messages = Map(
     404 -> ("The page you're looking for does not exist", "notFound.gif")
@@ -42,26 +23,15 @@ object Errors {
       status: Status,
       req: RequestHeader,
       maybeCauseId: Option[String] = None,
-      env: Env,
-      tenant: Tenant = defaultTenant
+      env: Env
   ): Future[Result] = {
 
-    val accept =
-      req.headers.get("Accept").getOrElse("text/html").split(",").toSeq
+    val accept = req.headers.get("Accept").getOrElse("text/html").split(",").toSeq
 
-    if (accept.contains("text/html")) { // in a browser
+    if (accept.contains("text/html")) {
+      val msg = Base64.getEncoder.encodeToString(message.getBytes)
       FastFuture.successful(
-        status
-          .apply(
-            views.html.error(
-              message = message,
-              req.domain,
-              _env = env,
-              tenant = tenant,
-              loginLink = s"/auth/${tenant.authProvider}/login",
-              req.path
-            )
-          )
+        Redirect(s"${req.theProtocol}://${req.domain}:${env.config.exposedPort}/error#$msg")
           .withHeaders(
             "x-error" -> "true",
             "x-error-msg" -> message

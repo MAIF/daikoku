@@ -13,8 +13,6 @@ import { Spinner } from '../../utils';
 import 'highlight.js/styles/monokai.css';
 import { ParamKeyValuePair, useSearchParams } from 'react-router-dom';
 
-const asciidoctorConverter = asciidoctor();
-
 type ApiDocumentationCartidgeProps = {
   documentation?: IDocumentation
   currentPageId?: string
@@ -226,6 +224,7 @@ function Asciidoc(props: any) {
   if (!props.content && !content) {
     return null;
   }
+  const asciidoctorConverter = asciidoctor();
   return (
     <div
       className="api-description asciidoc"

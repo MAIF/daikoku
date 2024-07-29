@@ -262,10 +262,8 @@ export const ApiHome = ({
               color: 'inherit',
               backgroundColor: 'inherit'
             },
-            action: {
-              label: <Navigation />,
-              onClick: () => navigate(`/${result.subscription.team}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`)
-            }
+            action: <Navigation size='1.5rem' className="cursor-pointer" onClick={() => navigate(`/${result.subscription.team}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`)} />,
+            
           });
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
@@ -358,7 +356,7 @@ export const ApiHome = ({
             testing={api.testing}
             swagger={api.swagger}
             swaggerUrl={`/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger`}
-            callUrl={`/api/teams/${teamId}/testing/${api._id}/call`}
+            callUrl={`/api/teams/${ownerTeam._id}/testing/${api._id}/call`}
           />)}
           {params.tab === 'swagger' && (<ApiRedoc
             swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`} swaggerConf={api.swagger}/>)}

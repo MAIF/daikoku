@@ -50,6 +50,14 @@ object RequestImplicits {
         .getOrElse(requestHeader.host)
     }
 
+    def theDomain: String = {
+      requestHeader.headers
+        .get("Otoroshi-Proxied-Host")
+        .orElse(requestHeader.headers.get("X-Forwarded-Host"))
+        .getOrElse(requestHeader.host)
+        .split(':').head
+    }
+
     def getLanguage(tenant: Tenant): String = {
       requestHeader.headers.toSimpleMap
         .find(test => test._1 == "X-contact-language")

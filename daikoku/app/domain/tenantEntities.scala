@@ -1,38 +1,28 @@
 package fr.maif.otoroshi.daikoku.domain
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.implicits.catsSyntaxOptionId
 import com.github.jknack.handlebars.{Context, Handlebars, Options}
-import controllers.AppError
 import controllers.AppError.toJson
+import controllers.{AppError, Assets}
 import domain.JsonNodeValueResolver
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuActionContext,
-  DaikokuActionMaybeWithoutUserContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, KafkaConfig}
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  _TeamMemberOnly,
-  _UberPublicUserAccess
-}
-import fr.maif.otoroshi.daikoku.domain.json.CmsPageFormat
-import fr.maif.otoroshi.daikoku.env.{DaikokuMode, Env}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
+import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils._
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
 import play.api.libs.json._
 import play.api.mvc.Request
-import play.twirl.api.Html
 import storage.TenantCapableRepo
 
-import java.util
 import java.util.concurrent.Executors
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.{Failure, Success, Try}
 
 object Tenant {
   val Default: TenantId = TenantId("default")
@@ -49,54 +39,55 @@ case class DaikokuStyle(
     js: String = "",
     css: String = "",
     colorTheme: String = s""":root {
-
-  --body_bg-color: #f1f3f6;
-  --body_text-color: #8a8a8a;
-  --body_link-color:#4c4c4d;
-  --body_link-hover-color:orange;
-  
-  --level2_bg-color: #e5e7ea;
-  --level2_text-color: #4c4c4d;
-  --level2_link-color: #605c5c;
-  --level2_link-hover-color: #fff;
-  
-  --level3_bg-color : #fff;
-  --level3_text-color : #222;
-  --level3_link-color: #4c4c4d;
-  --level3_link-hover-color : #000;
-  --level3_link-hover-bg-color, grey;
-  
-  --sidebar-bg-color: #e5e7ea;
-  --sidebar-text-color: #4c4c4d;
-  --sidebar-text-hover-color:orange;
-  
-  --menu-bg-color: #fff;
-  --menu-text-color: #aaa;
-  --menu-text-hover-bg-color: #444;
-  --menu-text-hover-color: #fff;
-  --menu-link-color: #666;   
-
-  --card_header-bg-color : #404040;
-  --card_header-text-color: #fff;
-  --card_bg-color: #282828;
-  --card_text-color: #fff;
-  --card_link-color: #b3b3b3;
-  --card_link-hover-color : orange;
-
-  --btn-bg-color: #fff;
-  --btn-text-color: #495057;
-  --btn-border-color: #97b0c7;
-
-  --error-color:#dc3545;
+  --error-color: #dc3545;
   --info-color: #17a2b8;
   --success-color: #65B741;
   --warning-color: #ffc107;
   --danger-color: #dc3545;
 
+  --body_bg-color: #f1f3f6;
+  --body_text-color: #8a8a8a;
+  --body_link-color: #4c4c4d;
+  --body_link-hover-color: orange;
+
+  --level2_bg-color: #e5e7ea;
+  --level2_text-color: #4c4c4d;
+  --level2_link-color: #605c5c;
+  --level2_link-hover-color: #000;
+
+
+  --level3_bg-color: #fff;
+  --level3_text-color: #222;
+  --level3_link-color: #4c4c4d;
+  --level3_link-hover-color: #000;
+  --level3_link-hover-bg-color: grey;
+
+  --sidebar-bg-color: #e5e7ea;
+  --sidebar-text-color: #4c4c4d;
+  --sidebar-text-hover-color: orange;
+
+  --menu-bg-color: #fff;
+  --menu-text-color: #aaa;
+  --menu-text-hover-bg-color: #444;
+  --menu-text-hover-color: #fff;
+  --menu-link-color: #666;
+
+
+  --card_header-bg-color: #404040;
+  --card_header-text-color: #fff;
+  --card_bg-color: #282828;
+  --card_text-color: #fff;
+  --card_link-color: #b3b3b3;
+  --card_link-hover-color: orange;
+
+  --btn-bg-color: #fff;
+  --btn-text-color: #495057;
+  --btn-border-color: #97b0c7;
+
   --badge-tags-bg-color: #ffc107;
   --badge-tags-bg-hover-color: #ffe1a7;
   --badge-tags-text-color: #212529;
-    
+
   --form-text-color: #000;
   --form-border-color: #586069;
   --form-bg-color: #fff;
@@ -110,48 +101,49 @@ case class DaikokuStyle(
 
 
 :root[data-theme="DARK"] {
+  --error-color: #dc3545;
+  --info-color: #17a2b8;
+  --success-color: #65B741;
+  --warning-color: #ffc107;
+  --danger-color: #dc3545;
+
   --body_bg-color: #000;
   --body_text-color: #b3b3b3;
-  --body_link-color:#b3b3b3;
-  --body_link-hover-color:orange;
-  
+  --body_link-color: #b3b3b3;
+  --body_link-hover-color: orange;
+
   --level2_bg-color: #121212;
   --level2_text-color: #b3b3b3;
   --level2_link-color: #9f9e9e;
   --level2_link-hover-color: #fff;
 
-  --level3_bg-color : #242424;
-  --level3_text-color : #e8e8e8;
+  --level3_bg-color: #242424;
+  --level3_text-color: #e8e8e8;
   --level3_link-color: #9f9e9e;
-  --level3_link-hover-color : #fff;
-  --level3_link-hover-bg-color : grey;
-  
+  --level3_link-hover-color: #fff;
+  --level3_link-hover-bg-color: grey;
+
   --sidebar-bg-color: #121212;
   --sidebar-text-color: #b3b3b3;
-  --sidebar-text-hover-color:orange;
-  
+  --sidebar-text-hover-color: orange;
+
   --menu-bg-color: #242424;
   --menu-text-color: #fff;
   --menu-text-hover-bg-color: #121212;
   --menu-text-hover-color: #fff;
   --menu-link-color: #b3b3b3;
-  
-  --card_header-bg-color : #404040;
+
+  --card_header-bg-color: #404040;
   --card_header-text-color: #fff;
   --card_bg-color: #282828;
   --card_text-color: #fff;
   --card_link-color: #b3b3b3;
-  --card_link-hover-color : orange;
-  
+  --card_link-hover-color: orange;
+
+
   --btn-bg-color: #fff;
   --btn-text-color: #495057;
   --btn-border-color: #97b0c7;
-
-  --error-color:#dc3545;
-  --info-color: #17a2b8;
-  --success-color: #65B741;
-  --warning-color: #ffc107;
-  --danger-color: #dc3545;
 
   --badge-tags-bg-color: #ffc107;
   --badge-tags-bg-hover-color: #ffe1a7;
@@ -161,12 +153,11 @@ case class DaikokuStyle(
   --form-border-color: #586069;
   --form-bg-color: #fff;
 
-  --form-select-focused-color: lightgrey;
+  --form-select-focused-color: grey;
   --form-select-focused-text-color: white;
   --form-select-heading-color: yellow;
-  --form-select-hover-color: lightgrey;
+  --form-select-hover-color: grey;
   --form-select-hover-text-color: white;
-
 }""",
     jsUrl: Option[String] = None,
     cssUrl: Option[String] = None,
@@ -184,7 +175,9 @@ case class DaikokuStyle(
     logo: String = "/assets/images/daikoku.svg",
     footer: Option[String] = None
 ) extends CanJson[DaikokuStyle] {
-  override def asJson: JsValue = json.DaikokuStyleFormat.writes(this)
+  override def asJson: JsValue = {
+    json.DaikokuStyleFormat.writes(this)
+  }
 }
 sealed trait ItemType {
   def name: String
@@ -459,54 +452,16 @@ case class Tenant(
       "display" -> display.name,
       "environments" -> JsArray(environments.map(JsString.apply).toSeq),
       "loginProvider" -> authProvider.name,
-      "cmsRedirections" -> JsArray(cmsRedirections.map(JsString.apply).toSeq)
+      "cmsRedirections" -> JsArray(cmsRedirections.map(JsString.apply).toSeq),
+      "colorTheme" -> style.map(_.colorTheme).map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "css" -> style.map(_.css).map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "cssUrl" -> style.flatMap(_.cssUrl).map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "jsUrl" -> style.flatMap(_.jsUrl).map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "js" -> style.map(_.js).map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "faviconUrl" -> favicon(),
+      "fontFamilyUrl" -> style.flatMap(_.fontFamilyUrl).map(JsString.apply).getOrElse(JsNull).as[JsValue],
+
     )
-  }
-  def colorTheme(): Html = {
-    style.map { s =>
-      Html(s"""<style>${s.colorTheme}</style>""")
-    } getOrElse Html("")
-  }
-  def moareStyle(): Html = {
-    style.map { s =>
-      val moreCss = s.cssUrl
-        .map(u => s"""<link rel="stylesheet" media="screen" href="${u}">""")
-        .getOrElse("")
-
-      val moreFontFamily = s.fontFamilyUrl
-        .map(u => s"""<style>
-             |@font-face{
-             |font-family: "Custom";
-             |src: url("$u")
-             |}
-             |</style>""".stripMargin)
-        .getOrElse("")
-
-      if (s.css.startsWith("http")) {
-        Html(
-          s"""<link rel="stylesheet" media="screen" href="${s.css}">\n$moreCss\n$moreFontFamily"""
-        )
-      } else if (s.css.startsWith("/")) {
-        Html(
-          s"""<link rel="stylesheet" media="screen" href="${s.css}">\n$moreCss\n$moreFontFamily"""
-        )
-      } else {
-        Html(s"""<style>${s.css}</style>\n$moreCss\n$moreFontFamily""")
-      }
-    } getOrElse Html("")
-  }
-  def moareJs(): Html = {
-    style.map { s =>
-      val moreJs =
-        s.jsUrl.map(u => s"""<script" src="${u}"></script>""").getOrElse("")
-      if (s.js.startsWith("http")) {
-        Html(s"""<script" src="${s.js}"></script>\n$moreJs""")
-      } else if (s.js.startsWith("<script")) {
-        Html(s"""${s.js}\n$moreJs""")
-      } else {
-        Html(s"""<script>${s.js}</script>\n$moreJs""")
-      }
-    } getOrElse Html("")
   }
   def favicon(): String = {
     style.flatMap(_.faviconUrl).getOrElse("/assets/images/daikoku.svg")

@@ -1709,6 +1709,10 @@ object SchemaDefinition {
           OptionType(JsonType),
           resolve = _.value.additionalConf
         )
+      ),
+      ReplaceField(
+        "specificationType",
+        Field("specificationType", StringType, resolve = _.value.specificationType.name)
       )
     )
     lazy val ApiDocumentationPageType = deriveObjectType[
@@ -2322,7 +2326,7 @@ object SchemaDefinition {
             ),
             Field("isDefault", BooleanType, resolve = _.value.isDefault),
             Field("lastUpdate", DateTimeUnitype, resolve = _.value.lastUpdate),
-            Field("testing", TestingType, resolve = _.value.testing),
+            Field("testing", OptionType(TestingType), resolve = _.value.testing),
             Field(
               "documentation",
               ApiDocumentationType,

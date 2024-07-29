@@ -187,28 +187,44 @@ object json {
       )
   }
 
+  val SpecificationTypeFormat = new Format[SpecificationType] {
+    override def reads(json: JsValue): JsResult[SpecificationType] =
+      json.as[String] match {
+        case "openapi"  => JsSuccess(SpecificationType.OpenApi)
+        case "asyncapi"    => JsSuccess(SpecificationType.AsyncApi)
+        case str        => JsError(s"Bad specification type value: $str")
+      }
+
+    override def writes(o: SpecificationType): JsValue = JsString(o.name)
+  }
+
   val TestingFormat = new Format[Testing] {
-    override def reads(json: JsValue): JsResult[Testing] =
-      Try {
-        JsSuccess(
-          Testing(
-            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(false),
-            auth = (json \ "auth").asOpt[String].filter(_.trim.nonEmpty) match {
-              case Some("ApiKey") => TestingAuth.ApiKey
-              case Some("Basic")  => TestingAuth.Basic
-              case _              => TestingAuth.Basic
-            },
-            name = (json \ "name").asOpt[String].filter(_.trim.nonEmpty),
-            username =
-              (json \ "username").asOpt[String].filter(_.trim.nonEmpty),
-            password =
-              (json \ "password").asOpt[String].filter(_.trim.nonEmpty),
-            config = (json \ "config").asOpt(TestingConfigFormat)
+    override def reads(json: JsValue): JsResult[Testing] = {
+      json match {
+        case JsObject(_) => Try {
+          JsSuccess(
+            Testing(
+              enabled = (json \ "enabled").asOpt[Boolean].getOrElse(false),
+              auth = (json \ "auth").asOpt[String].filter(_.trim.nonEmpty) match {
+                case Some("ApiKey") => TestingAuth.ApiKey
+                case Some("Basic")  => TestingAuth.Basic
+                case _              => TestingAuth.Basic
+              },
+              name = (json \ "name").asOpt[String].filter(_.trim.nonEmpty),
+              username =
+                (json \ "username").asOpt[String].filter(_.trim.nonEmpty),
+              password =
+                (json \ "password").asOpt[String].filter(_.trim.nonEmpty),
+              config = (json \ "config").asOpt(TestingConfigFormat)
+            )
           )
-        )
-      } recover {
-        case e => JsError(e.getMessage)
-      } get
+        } recover {
+          case e => JsError(e.getMessage)
+        } get
+        case _ => JsError()
+      }
+
+    }
 
     override def writes(o: Testing): JsValue =
       Json.obj(
@@ -1792,30 +1808,39 @@ object json {
       )
   }
   val SwaggerAccessFormat = new Format[SwaggerAccess] {
-    override def reads(json: JsValue): JsResult[SwaggerAccess] =
-      Try {
-        JsSuccess(
-          SwaggerAccess(
-            url = (json \ "url").asOpt[String],
-            content = (json \ "content").asOpt[String],
-            headers = (json \ "headers")
-              .asOpt[Map[String, String]]
-              .getOrElse(Map.empty[String, String]),
-            additionalConf = (json \ "additionalConf").asOpt[JsObject]
+    override def reads(json: JsValue): JsResult[SwaggerAccess] = {
+      json match {
+        case JsObject(_) => Try {
+          JsSuccess(
+            SwaggerAccess(
+              url = (json \ "url").asOpt[String],
+              content = (json \ "content").asOpt[String],
+              headers = (json \ "headers")
+                .asOpt[Map[String, String]]
+                .getOrElse(Map.empty[String, String]),
+              additionalConf = (json \ "additionalConf").asOpt[JsObject],
+              specificationType = (json \ "specificationType")
+                .asOpt(SpecificationTypeFormat)
+                .getOrElse(SpecificationType.OpenApi)
+            )
           )
-        )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
-      } get
+        } recover {
+          case e =>
+            AppLogger.error(e.getMessage, e)
+            JsError(e.getMessage)
+        } get
+        case _ => JsError()
+      }
+
+    }
 
     override def writes(o: SwaggerAccess): JsValue =
       Json.obj(
         "url" -> o.url,
         "content" -> o.content,
         "headers" -> o.headers,
-        "additionalConf" -> o.additionalConf.getOrElse(JsNull).as[JsValue]
+        "additionalConf" -> o.additionalConf.getOrElse(JsNull).as[JsValue],
+        "specificationType" -> o.specificationType.name
       )
   }
   val ApiDocumentationPageFormat = new Format[ApiDocumentationPage] {
@@ -2540,7 +2565,7 @@ object json {
               .map(_.toSet)
               .getOrElse(Set.empty),
             testing =
-              (json \ "testing").asOpt(TestingFormat).getOrElse(Testing()),
+              (json \ "testing").asOpt(TestingFormat),
             documentation = (json \ "documentation")
               .as(ApiDocumentationFormat),
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
@@ -2599,7 +2624,7 @@ object json {
         "description" -> o.description,
         "currentVersion" -> VersionFormat.writes(o.currentVersion),
         "supportedVersions" -> JsArray(o.supportedVersions.map(_.asJson).toSeq),
-        "testing" -> o.testing.asJson,
+        "testing" -> o.testing.map(_.asJson).getOrElse(JsNull).as[JsValue],
         "documentation" -> o.documentation.asJson,
         "swagger" -> o.swagger
           .map(SwaggerAccessFormat.writes)

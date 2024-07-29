@@ -7,6 +7,7 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.{IdentityAttrs, TenantHelper}
 import fr.maif.otoroshi.daikoku.utils.Errors
+import fr.maif.otoroshi.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import play.api.Logger
 import play.api.libs.json.{JsString, JsValue, Json}
 import play.api.mvc._
@@ -136,8 +137,7 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
           Results.ServiceUnavailable,
           request,
           None,
-          env,
-          tenant
+          env
         )
       case (
             Some(tenant),
@@ -167,7 +167,7 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
             s"User ${user.email} is not registered on tenant ${tenant.name}"
           )
           session.invalidate()(ec, env).map { _ =>
-            Results.Redirect("/")
+            Results.Redirect(env.getDaikokuUrl(tenant, "/"))
           }
         }
       case _ =>
@@ -208,8 +208,7 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
           Results.ServiceUnavailable,
           request,
           None,
-          env,
-          tenant
+          env
         )
       case (
             Some(tenant),
@@ -239,7 +238,7 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
             s"User ${user.email} is not registered on tenant ${tenant.name}"
           )
           session.invalidate()(ec, env).map { _ =>
-            Results.Redirect("/")
+            Results.Redirect(env.getDaikokuUrl(tenant, "/"))
           }
         }
       case (Some(tenant), _, _, _, _) if tenant.isPrivate =>
@@ -314,8 +313,7 @@ class DaikokuActionMaybeWithoutUser(
           Results.ServiceUnavailable,
           request,
           None,
-          env,
-          tenant
+          env
         )
       case (
             Some(tenant),
@@ -345,7 +343,7 @@ class DaikokuActionMaybeWithoutUser(
             s"User ${user.email} is not registered on tenant ${tenant.name}"
           )
           session.invalidate()(ec, env).map { _ =>
-            Results.Redirect("/")
+            Results.Redirect(env.getDaikokuUrl(tenant, "/"))
           }
         }
       case (Some(tenant), _, _, _, _) if tenant.isPrivate =>

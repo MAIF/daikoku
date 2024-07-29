@@ -33,6 +33,7 @@ export interface IMultistepsformStep<T> {
   component?: JSX.Element | ((p: T) => JSX.Element)
   skipTo?: string
   disabled?: boolean | ((p: T) => boolean)
+  props?: object
 }
 
 export const MultiStepForm = <T extends object>({
@@ -249,6 +250,7 @@ export const MultiStepForm = <T extends object>({
               send('NEXT', { value })
             }}
             component={step.component}
+            props={step.props}
             currentTeam={currentTeam}
           />
         )}
@@ -309,8 +311,9 @@ const ComponentedForm = ({
   value,
   valid,
   component,
+  currentTeam,
   reference,
-  currentTeam
+  props
 }) => {
   return (
     <div className="d-flex flex-column flex-grow-1">
@@ -318,7 +321,8 @@ const ComponentedForm = ({
         value,
         onChange: (x) => valid(x),
         reference,
-        currentTeam
+        currentTeam,
+        ...props
       })}
     </div>
   );

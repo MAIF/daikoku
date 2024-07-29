@@ -146,10 +146,10 @@ object OAuth2Support {
 
     request.getQueryString("error") match {
       case Some(_) => Left("No code :(").asFuture
-      case None => {
+      case None =>
         request.getQueryString("code") match {
           case None => Left("No code :(").asFuture
-          case Some(code) => {
+          case Some(code) =>
             val builder = _env.wsClient.url(authConfig.tokenUrl)
             val future1 = if (authConfig.useJson) {
               builder.post(
@@ -241,8 +241,9 @@ object OAuth2Support {
                   .getOrElse("no.name@foo.bar")
                 val picture =
                   (userFromOauth \ authConfig.pictureField).asOpt[String]
+                val maybeDaikokuAdmin = (userFromOauth \ "daikokuAdmin").asOpt[Boolean]
 
-                val isDaikokuAdmin = authConfig.daikokuAdmins.contains(email)
+                val isDaikokuAdmin = maybeDaikokuAdmin.getOrElse(authConfig.daikokuAdmins.contains(email))
 
                 _env.dataStore.userRepo
                   .findOne(Json.obj("_deleted" -> false, "email" -> email))
@@ -309,9 +310,7 @@ object OAuth2Support {
                       }
                   }
               }
-          }
         }
-      }
     }
   }
 }

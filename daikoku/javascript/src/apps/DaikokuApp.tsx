@@ -1,9 +1,9 @@
 import { useContext, useEffect } from 'react';
 import { Navigate } from 'react-router';
-import { BrowserRouter, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, BrowserRouter as Router, Routes, createBrowserRouter, RouterProvider } from 'react-router-dom';
 
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
-import { Footer, SideBar } from '../components/utils';
+import { Footer, LoginPage, SideBar, tenant } from '../components/utils';
 import { ModalProvider, NavProvider } from '../contexts';
 
 import {
@@ -14,9 +14,6 @@ import {
   MaybeHomePage,
   MyHome,
   TeamHome,
-  UnauthenticatedFooter,
-  UnauthenticatedHome,
-  UnauthenticatedTopBar,
   AtomicDesign
 } from '../components/frontend';
 
@@ -39,26 +36,24 @@ import {
   TenantList,
   TenantOtoroshi,
   TenantOtoroshis,
-  TenantStyleEdit,
   UserEdit,
   UserList,
 } from '../components/adminbackoffice';
-
+import { Error, Response } from '../components/utils';
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
 import { FastMode } from "../components/frontend/fastMode/FastMode";
 import { GlobalContext } from '../contexts/globalContext';
 import { I18nContext } from '../contexts/i18n-context';
-import { SessionModal } from '../contexts/modals/SessionModal';
 import { MessagesEvents } from '../services/messages';
 import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
-import { ISession, IState, ITeamSimple, ITenant, IUserSimple } from '../types';
-import {AnonymousReporting} from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
+import { AnonymousReporting } from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
 
 export const DaikokuApp = () => {
-  const { connectedUser, session, tenant} = useContext(GlobalContext)
+  const { connectedUser, tenant } = useContext(GlobalContext)
+  const { translate } = useContext(I18nContext);
 
   useEffect(() => {
-    if (!connectedUser.isGuest) {
+    if (connectedUser && !connectedUser.isGuest) {
       MessagesEvents.start();
       return () => {
         MessagesEvents.stop();
@@ -66,35 +61,81 @@ export const DaikokuApp = () => {
     }
   }, [connectedUser]);
 
-  const { translate } = useContext(I18nContext);
-
   if (!connectedUser) {
     return (
-      <Router>
-        <div
-          role="root-container"
-          className="container-fluid"
-          style={{
-            minHeight: '100vh',
-            position: 'relative',
-            paddingBottom: '6rem',
-          }}
-        >
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <>
-                  <UnauthenticatedTopBar />
-                  <UnauthenticatedHome />
-                  <UnauthenticatedFooter />
-                </>
-              }
-            />
-          </Routes>
-        </div>
-        <SessionModal session={session} />
-      </Router>
+      <BrowserRouter>
+        <ModalProvider>
+          <div
+            role="root-container"
+            className="container-fluid"
+            style={{
+              minHeight: '100vh',
+              position: 'relative',
+              paddingBottom: '6rem',
+            }}>
+            <Routes>
+              <Route
+                path="/auth/:provider/login"
+                element={
+                  <UnauthenticatedRoute title={translate('Login')} header={`${translate({ key: 'login.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
+                    <LoginPage />
+                  </UnauthenticatedRoute>
+                }
+              />
+              <Route
+                path="/reset"
+                element={
+                  <UnauthenticatedRoute title={translate('Reset')} header={translate('Reset your password')}>
+                    <ResetPassword />
+                  </UnauthenticatedRoute>
+                }
+              />
+              <Route
+                path="/signup"
+                element={
+                  <UnauthenticatedRoute title={translate('Signup')} header={`${translate({ key: 'signup.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
+                    <Signup />
+                  </UnauthenticatedRoute>
+                }
+              />
+              <Route
+                path="/2fa"
+                element={
+                  <UnauthenticatedRoute title={translate('Verification code')} header={translate('Verification code')} >
+                    <TwoFactorAuthentication />
+                  </UnauthenticatedRoute>
+                }
+              />
+              <Route
+                path='/error'
+                element={
+                  <UnauthenticatedRoute title={translate('Error')} header={translate('Error')} >
+                    <Error />
+                  </UnauthenticatedRoute>
+                }
+              />
+              <Route
+                path='/response'
+                element={
+                  <Response />
+                }
+              />
+              <Route
+                path="/join"
+                element={
+                  <FrontOfficeRoute title={`${tenant.title} - ${translate('Join team')}`}>
+                    <JoinTeam />
+                  </FrontOfficeRoute>
+                }
+              />
+              <Route
+                path='*'
+                element={<Navigate to={`/auth/${tenant.authProvider}/login`} replace />}
+              />
+            </Routes>
+          </div>
+        </ModalProvider>
+      </BrowserRouter>
     );
   }
 
@@ -108,6 +149,18 @@ export const DaikokuApp = () => {
               <div className="wrapper flex-grow-1">
                 <Routes>
                   <Route
+                    path='/error'
+                    element={
+                      <Error />
+                    }
+                  />
+                  <Route
+                    path='/response'
+                    element={
+                      <Response />
+                    }
+                  />
+                  <Route
                     path="/me"
                     element={
                       <RouteWithTitle title={`${tenant.title} - ${translate('My profile')}`}>
@@ -118,17 +171,15 @@ export const DaikokuApp = () => {
                   <Route
                     path="/2fa"
                     element={
-                      <UnauthenticatedRoute title={`${tenant.title} - ${translate('Verification code')}`} >
-                        <TwoFactorAuthentication
-                          title={`${tenant.title} - ${translate('Verification code')}`}
-                        />
+                      <UnauthenticatedRoute title={translate('Verification code')} header={translate('Verification code')} >
+                        <TwoFactorAuthentication />
                       </UnauthenticatedRoute>
                     }
                   />
                   <Route
                     path="/reset"
                     element={
-                      <UnauthenticatedRoute title={`${tenant.title} - ${translate('Reset password')}`}>
+                      <UnauthenticatedRoute title={translate('Reset your password')} header={translate('Reset your password')}>
                         <ResetPassword />
                       </UnauthenticatedRoute>
                     }
@@ -136,9 +187,15 @@ export const DaikokuApp = () => {
                   <Route
                     path="/signup"
                     element={
-                      <UnauthenticatedRoute title={`${tenant.title} - ${translate('Signup')}`} >
+                      <UnauthenticatedRoute title={translate('Signup')} header={`${translate({ key: 'signup.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
                         <Signup />
                       </UnauthenticatedRoute>
+                    }
+                  />
+                  <Route
+                    path="/auth/:provider/login"
+                    element={
+                      <LoginPage />
                     }
                   />
                   <Route
@@ -226,14 +283,6 @@ export const DaikokuApp = () => {
                     }
                   />
                   <Route
-                    path="/settings/tenants/:tenantId/style"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate('Style')}`}>
-                        <TenantStyleEdit />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
                     path="/settings/tenants"
                     element={
                       <RouteWithTitle title={`${tenant.title} - ${translate({ key: 'Tenants', plural: true })}`}>
@@ -295,16 +344,16 @@ export const DaikokuApp = () => {
                     path="/settings/anonymous-reports"
                     element={
                       <RouteWithTitle
-                        title={`${tenant.title} - ${translate('Anonymous reporting')}`}
+                        title={`${tenant.title} - ${translate('anonymous.reporting.title')}`}
                       >
-                        <AnonymousReporting/>
+                        <AnonymousReporting />
                       </RouteWithTitle>
                     }
                   />
                   <Route
                     path="/settings/teams/:teamSettingId/members"
                     element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate({key: "Member", plural: true})}`}>
+                      <RouteWithTitle title={`${tenant.title} - ${translate({ key: "Member", plural: true })}`}>
                         <TeamMembersForAdmin />
                       </RouteWithTitle>
                     }
@@ -342,7 +391,7 @@ export const DaikokuApp = () => {
                           key: "fastMode.title.page",
                           replacements: [tenant.title || tenant.name]
                         })}>
-                        <FastMode/>
+                        <FastMode />
                       </RouteWithTitle>
                     }
                   />
@@ -429,6 +478,8 @@ const FrontOfficeRoute = (props: { title?: string, children: JSX.Element }) => {
 };
 
 const RouteWithTitle = (props: { title?: string, children: JSX.Element }) => {
+  const { tenant } = useContext(GlobalContext)
+
   useEffect(() => {
     if (props.title) {
       document.title = props.title;
@@ -438,11 +489,27 @@ const RouteWithTitle = (props: { title?: string, children: JSX.Element }) => {
   return props.children;
 };
 
-const UnauthenticatedRoute = (props: { children: JSX.Element, title: string }) => {
-  const { connectedUser } = useContext(GlobalContext)
-  if (connectedUser._humanReadableId) {
+const UnauthenticatedRoute = (props: { children: JSX.Element, title: string, header: string }) => {
+  const { connectedUser, tenant } = useContext(GlobalContext)
+  if (connectedUser && connectedUser._humanReadableId) {
     return <Navigate to="/" />;
   }
 
-  return <RouteWithTitle title={props.title}>{props.children}</RouteWithTitle>;
+  return <RouteWithTitle title={`${tenant.title} - ${props.title}`}>
+    <>
+      <div className="organisation__header d-flex align-items-center justify-content-center mb-3 py-2">
+        <div className="me-5">
+          <img
+            className="organisation__avatar"
+            src={tenant.logo || '/assets/images/daikoku.svg'}
+            alt="avatar"
+          />
+        </div>
+        <h3>
+          {props.header}
+        </h3>
+      </div>
+      {props.children}
+    </>
+  </RouteWithTitle>;
 };

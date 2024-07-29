@@ -4,10 +4,7 @@ import cats.data.EitherT
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -20,12 +17,7 @@ import org.apache.commons.codec.binary.Base32
 import org.joda.time.{DateTime, Hours}
 import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json.{JsArray, JsError, JsSuccess, Json}
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  ControllerComponents
-}
+import play.api.mvc.{AbstractController, Action, AnyContent, ControllerComponents}
 
 import java.time.Instant
 import java.util.Base64
@@ -38,6 +30,7 @@ import scala.concurrent.duration.FiniteDuration
 class UsersController(
     DaikokuAction: DaikokuAction,
     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
+    DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
     env: Env,
     cc: ControllerComponents,
     deletionService: DeletionService
@@ -470,7 +463,7 @@ class UsersController(
         env.dataStore.userRepo
           .save(ctx.user.copy(twoFactorAuthentication = None))
           .map {
-            case true => NoContent
+            case true => Ok(Json.obj("done" -> true))
             case false =>
               BadRequest(
                 Json.obj("error" -> "Something happens when updating user")
@@ -480,46 +473,42 @@ class UsersController(
     }
 
   def checkTokenInvitation() =
-    DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
-      UberPublicUserAccess(
-        AuditTrailEvent(
-          "@{user.name} has tried to validate an invitation token"
-        )
-      )(ctx) {
-        val body = ctx.request.body
-        (body \ "token").asOpt[String] match {
-          case Some(token) =>
-            env.dataStore.userRepo
-              .findOneNotDeleted(Json.obj("invitation.token" -> token))
-              .map {
-                case Some(user) =>
-                  user.invitation
-                    .map { invitation =>
-                      Ok(
-                        Json.obj(
-                          "team" -> invitation.team,
-                          "notificationId" -> invitation.notificationId,
-                          "user" -> user.email
-                        )
-                      )
-                    }
-                    .getOrElse(
-                      BadRequest(
-                        Json.obj("error" -> "Missing invitation information")
+    DaikokuActionMaybeWithoutUser.async(parse.json) { ctx =>
+      //todo: log audit trace
+      val body = ctx.request.body
+
+      (body \ "token").asOpt[String] match {
+        case Some(token) =>
+          env.dataStore.userRepo
+            .findOneNotDeleted(Json.obj("invitation.token" -> token))
+            .map {
+              case Some(user) =>
+                user.invitation
+                  .map { invitation =>
+                    Ok(
+                      Json.obj(
+                        "team" -> invitation.team,
+                        "notificationId" -> invitation.notificationId,
+                        "user" -> user.email
                       )
                     )
-                case _ =>
-                  BadRequest(
-                    Json.obj(
-                      "error" -> "You're token is invalid, expired or you are already in the team"
+                  }
+                  .getOrElse(
+                    BadRequest(
+                      Json.obj("error" -> "Missing invitation information")
                     )
                   )
-              }
-          case _ =>
-            FastFuture.successful(
-              BadRequest(Json.obj("error" -> "Can't validate token"))
-            )
-        }
+              case _ =>
+                BadRequest(
+                  Json.obj(
+                    "error" -> "You're token is invalid, expired or you are already in the team"
+                  )
+                )
+            }
+        case _ =>
+          FastFuture.successful(
+            BadRequest(Json.obj("error" -> "Can't validate token"))
+          )
       }
     }
 

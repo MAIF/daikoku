@@ -1,7 +1,7 @@
 import React from 'react';
 import { CodeInput } from '@maif/react-forms';
 
-import 'brace/theme/idle_fingers';
+// import 'brace/theme/idle_fingers';
 
 export default ({
   onChange,

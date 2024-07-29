@@ -3,6 +3,8 @@ import { test, expect } from '@playwright/test';
 const adminApikeyId = 'admin_key_client_id';
 const adminApikeySecret = 'admin_key_client_secret';
 
+const exposedPort = process.env.EXPOSED_PORT || 5173
+
 test.beforeAll(async () => {
   console.log(`Running ${test.info().title}`);
   await fetch('http://localhost:9000/admin-api/state/reset', {
@@ -16,7 +18,7 @@ test.beforeAll(async () => {
 })
 
 test('manage team as admin', async ({ page }) => {
-  await page.goto('http://localhost:9000/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email adress').fill('user@foo.bar');
   await page.getByPlaceholder('Password').fill('password');

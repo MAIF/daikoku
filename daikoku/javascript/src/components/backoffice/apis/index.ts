@@ -1,5 +1,4 @@
 export * from './TeamApi';
-export * from './TeamApiDescription';
 export * from './TeamApiDocumentation';
 export * from './TeamApiInfo';
 export * from './TeamApiSwagger';

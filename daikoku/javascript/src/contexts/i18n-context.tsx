@@ -7,6 +7,7 @@ import { TOptions } from '../types/types';
 import { string } from 'prop-types';
 import { TranslationItem } from '../types/tenant';
 import { isError } from '../types';
+import { GlobalContext } from './globalContext';
 
 const initI8nContext: TI18ncontext = {
   language: 'en',
@@ -62,12 +63,14 @@ const configuration: TranslationConfig = {
 };
 
 export const I18nProvider = ({
-  user,
-  tenant,
   children
 }: any) => {
-  const tenantDefaultLanguage = Option(tenant.defaultLanguage).getOrElse('en');
-  const currentLanguage = Option(user?.defaultLanguage).getOrElse(tenantDefaultLanguage);
+
+  const {connectedUser, tenant} = useContext(GlobalContext);
+
+  //@ts-ignore
+  const tenantDefaultLanguage = Option(tenant.defaultLanguage).getOrElse('En');
+  const currentLanguage = Option(connectedUser?.defaultLanguage).getOrElse(tenantDefaultLanguage);
 
   const [language, setLanguage] = useState(currentLanguage);
   const [loadingConf, setLoadingConf] = useState(true)
