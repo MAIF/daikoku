@@ -43,6 +43,7 @@ import {
   ResponseDone,
   ResponseError,
 } from '../types/api';
+import { IRenderingPage } from '../components/adminbackoffice';
 
 const HEADERS = {
   Accept: 'application/json',
@@ -1242,6 +1243,15 @@ export const getMyTeamsStatusAccess = (
   version: string
 ): PromiseWithError<IApiExtended> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/access`);
+
+export const getCmsPage = (id: any, fields: any) => fetch(`/cms/pages/${id}`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({ fields })
+})
+  .then(r => r.text())
 
 export const createCmsPage = (id: any, cmsPage: any) =>
   customFetch('/api/cms/pages', {

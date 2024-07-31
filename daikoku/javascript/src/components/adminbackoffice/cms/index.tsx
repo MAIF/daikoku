@@ -20,6 +20,12 @@ export interface IPage {
   metadata: any
 }
 
+export interface IRenderingPage {
+  name: string
+  content: string
+  metadata: any
+}
+
 const getAllPages = () => ({
   query: gql`
     query CmsPages {

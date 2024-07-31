@@ -873,6 +873,7 @@ case class ApiDocumentationPage(
     lastModificationAt: DateTime,
     content: String,
     contentType: String = "text/markdown",
+    cmsPage: Option[String] = None,
     remoteContentEnabled: Boolean = false,
     remoteContentUrl: Option[String] = None,
     remoteContentHeaders: Map[String, String] = Map.empty[String, String]
@@ -991,6 +992,7 @@ case class Api(
     team: TeamId,
     name: String,
     smallDescription: String,
+    informationsCmsPage: Option[String] = None,
     header: Option[String] = None,
     image: Option[String] = None,
     description: String,

@@ -329,12 +329,15 @@ class HomeController(
   private def render[A](
       ctx: DaikokuActionMaybeWithoutUserContext[A],
       r: CmsPage,
-      req: Option[CmsRequestRendering] = None
+      req: Option[CmsRequestRendering] = None,
+      skipCache: Boolean = false,
+      fields: Map[String, JsValue] = Map.empty[String, JsValue]
   ) = {
+
     val isDraftRender: Boolean =
       ctx.request.getQueryString("draft").contains("true")
     val forceReloading: Boolean =
-      ctx.request.getQueryString("force_reloading").contains("true")
+      ctx.request.getQueryString("force_reloading").contains("true") || skipCache
 
     val cacheId =
       s"${ctx.user.map(_.id.value).getOrElse("")}-${r.path.getOrElse("")}"
@@ -355,13 +358,13 @@ class HomeController(
       })
 
     if (isDraftRender || forceReloading)
-      r.render(ctx, None, req = req).map(res => Ok(res._1).as(res._2))
+      r.render(ctx, None, req = req, jsonToCombine = fields).map(res => Ok(res._1).as(res._2))
     else
       cache.getIfPresent(cacheId) match {
         case Some(value) =>
           FastFuture.successful(Ok(value.content).as(value.contentType))
         case _ =>
-          r.render(ctx, None, req = req)
+          r.render(ctx, None, req = req, jsonToCombine = fields)
             .map(res => {
               cache.put(
                 cacheId,
@@ -374,7 +377,9 @@ class HomeController(
 
   private def cmsPageByIdWithoutAction[A](
       ctx: DaikokuActionMaybeWithoutUserContext[A],
-      id: String
+      id: String,
+      skipCache: Boolean = false,
+      fields: Map[String, JsValue] = Map.empty
   ) = {
     env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id).flatMap {
       case None                        => cmsPageNotFound(ctx)
@@ -385,13 +390,24 @@ class HomeController(
             s"/auth/${ctx.tenant.authProvider.name}/login?redirect=${ctx.request.path}"
           )
         )
-      case Some(page) => render(ctx, page)
+      case Some(page) =>
+        render(ctx, page, skipCache = skipCache, fields = fields)
     }
   }
 
   def cmsPageById(id: String) =
     DaikokuActionMaybeWithoutUser.async { ctx =>
-      cmsPageByIdWithoutAction(ctx, id)
+      cmsPageByIdWithoutAction(ctx, id, skipCache = true)
+    }
+
+  def advancedRenderCmsPageById(id: String) =
+    DaikokuActionMaybeWithoutUser.async(parse.json) { ctx =>
+      cmsPageByIdWithoutAction(ctx, id,
+        skipCache = true,
+        fields = ctx.request.body
+          .asOpt[JsObject]
+          .flatMap(body => (body \ "fields").asOpt[Map[String, JsValue]])
+          .getOrElse(Map.empty[String, JsValue]))
     }
 
   def getCmsPage(id: String) =

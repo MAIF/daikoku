@@ -5,6 +5,7 @@ GET     /_/                                             fr.maif.otoroshi.daikoku
 GET     /_/*path                                        fr.maif.otoroshi.daikoku.ctrls.HomeController.cmsPageByPath(path)
 POST    /_*path                                         fr.maif.otoroshi.daikoku.ctrls.HomeController.renderCmsPageFromBody(path)
 GET     /cms/pages/:id                                  fr.maif.otoroshi.daikoku.ctrls.HomeController.cmsPageById(id)
+POST    /cms/pages/:id                                  fr.maif.otoroshi.daikoku.ctrls.HomeController.advancedRenderCmsPageById(id)
 GET     /api/cms/pages/:id/diffs/:diffId                fr.maif.otoroshi.daikoku.ctrls.HomeController.cmsDiffById(id, diffId)
 POST    /api/cms/pages/:id/diffs/:diffId                fr.maif.otoroshi.daikoku.ctrls.HomeController.restoreDiff(id, diffId)
 POST    /api/cms/download                               fr.maif.otoroshi.daikoku.ctrls.HomeController.download()

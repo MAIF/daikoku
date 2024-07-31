@@ -7,11 +7,12 @@ import { useContext, useEffect, useState } from 'react';
 
 import { I18nContext } from '../../../contexts';
 import { converter } from '../../../services/showdown';
-import { IDocPage, IDocumentation, IDocumentationPages, ResponseError, isError } from '../../../types';
+import { IApi, IDocPage, IDocumentation, IDocumentationPages, ResponseError, isError } from '../../../types';
 import { Spinner } from '../../utils';
 
 import 'highlight.js/styles/monokai.css';
 import { ParamKeyValuePair, useSearchParams } from 'react-router-dom';
+import { CmsViewer } from '../CmsViewer';
 
 type ApiDocumentationCartidgeProps = {
   documentation?: IDocumentation
@@ -50,6 +51,7 @@ export const ApiDocumentationCartidge = (props: ApiDocumentationCartidgeProps) =
 
 type ApiDocPageProps = {
   pageId?: string,
+  api: IApi,
   getDocPage: (id: string) => Promise<IDocPage | ResponseError>
 }
 const ApiDocPage = (props: ApiDocPageProps) => {
@@ -61,7 +63,6 @@ const ApiDocPage = (props: ApiDocPageProps) => {
       return props.getDocPage(keys.pageId)
     }
   });
-
 
   useEffect(() => {
     if (pageRequest.data && !isError(pageRequest.data)) {
@@ -84,11 +85,17 @@ const ApiDocPage = (props: ApiDocPageProps) => {
       return <span>Error while fetching documentation page: {pageRequest.data.error}</span>
     } else if (pageRequest.data.remoteContentEnabled) {
       return (
-        <AwesomeContentViewer contentType={pageRequest.data.contentType} remoteContent={{ url: pageRequest.data.remoteContentUrl! }} />
+        <AwesomeContentViewer
+          contentType={pageRequest.data.contentType}
+          remoteContent={{ url: pageRequest.data.remoteContentUrl! }} />
       )
     } else {
       return (
-        <AwesomeContentViewer contentType={pageRequest.data.contentType} content={pageRequest.data.content} />
+        <AwesomeContentViewer
+          api={props.api}
+          cmsPage={pageRequest.data.cmsPage}
+          contentType={pageRequest.data.contentType}
+          content={pageRequest.data.content} />
       )
     }
   } else {
@@ -100,6 +107,7 @@ const ApiDocPage = (props: ApiDocPageProps) => {
 
 type ApiDocumentationProps = {
   documentation?: IDocumentation
+  api: IApi,
   getDocPage: (pageId: string) => Promise<IDocPage | ResponseError>
 }
 export const ApiDocumentation = (props: ApiDocumentationProps) => {
@@ -147,7 +155,7 @@ export const ApiDocumentation = (props: ApiDocumentationProps) => {
           <i className="fas fa-chevron-right ms-1" />
         </button>)}
       </div>
-      <ApiDocPage pageId={pageId} getDocPage={props.getDocPage} />
+      <ApiDocPage pageId={pageId} getDocPage={props.getDocPage} api={props.api} />
     </div >
   </div>);
 }
@@ -311,14 +319,27 @@ const mimeTypes = [
     render: (url: any) => <Pdf url={url} />,
   },
   { label: '.webm WEBM video file ', value: 'video/webm', render: (url: any) => <Video url={url} /> },
+  {
+    label: '.cms : Page from CMS', value: 'cms/page', render: (value, ...props) => {
+      console.log(value, props)
+      return value
+    }
+  },
 ];
 
 type AwesomeContentViewerProp = {
   contentType: string
   remoteContent?: { url: string }
   content?: string
+  cmsPage?: string
+  api: IApi,
 }
 const AwesomeContentViewer = (props: AwesomeContentViewerProp) => {
+
+  if (props.cmsPage) {
+    return <CmsViewer pageId={props.cmsPage} fields={{ api: props.api }} />
+  }
+
   const mimeType = mimeTypes.filter((t) => t.value === props.contentType)[0] || {
     render: () => <TypeNotSupportedYet />,
   };

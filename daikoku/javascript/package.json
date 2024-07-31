@@ -43,6 +43,7 @@
     "js-md5": "0.8.3",
     "json5": "2.2.3",
     "lodash": "4.17.21",
+    "mobx": "^6.13.1",
     "moment": "2.30.1",
     "nanoid": "^5.0.7",
     "popper.js": "1.16.1",
@@ -62,6 +63,7 @@
     "set-value": "4.1.0",
     "showdown": "2.1.0",
     "sonner": "^1.5.0",
+    "styled-components": "^6.1.12",
     "swagger-ui-dist": "5.17.14",
     "util": "^0.12.5",
     "xstate": "^4.38.3"

@@ -17,6 +17,7 @@ import { GlobalContext } from '../../../contexts/globalContext';
 const mimeTypes = [
   { label: '.adoc Ascii doctor', value: 'text/asciidoc' },
   { label: '.avi	AVI : Audio Video Interleaved', value: 'video/x-msvideo' },
+  { label: '.cms : Page from CMS', value: 'cms/page' },
   // { label: '.doc	Microsoft Word', value: 'application/msword' },
   // {
   //   label: '.docx	Microsoft Word (OpenXML)',
@@ -108,6 +109,24 @@ type TeamApiDocumentationProps = {
   importAuthorized: boolean
 }
 
+import { getApolloContext, gql } from '@apollo/client';
+import { IPage } from '../../adminbackoffice/cms';
+
+const cmsPagesQuery = () => ({
+  query: gql`
+    query CmsPages {
+      pages {
+        id
+        name
+        path
+        contentType
+        lastPublishedDate
+        metadata
+      }
+    }
+  `,
+})
+
 export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
 
   const { translate } = useContext(I18nContext);
@@ -117,14 +136,21 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
 
   const queryClient = useQueryClient();
 
+  const { client } = useContext(getApolloContext());
+
   const flow: Flow = [
     'title',
     'contentType',
+    'cmsPage',
     'remoteContentEnabled',
     'remoteContentUrl',
     'remoteContentHeaders',
     'content',
   ];
+
+  const getCmsPages = (): Promise<Array<IPage>> =>
+    client!.query(cmsPagesQuery())
+      .then(res => res.data.pages as Array<IPage>)
 
   const schema = (onSubmitAsset: (page: IDocPage) => void): Schema => {
     return {
@@ -140,7 +166,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
         format: format.markdown,
         visible: ({
           rawValues
-        }) => !rawValues.remoteContentEnabled,
+        }) => !rawValues.remoteContentEnabled && rawValues.contentType !== 'cms/page',
         label: translate('Page content'),
         props: {
           height: '800px',
@@ -186,6 +212,9 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
       remoteContentEnabled: {
         type: type.bool,
         label: translate('Remote content'),
+        visible: ({
+          rawValues
+        }) => rawValues.contentType !== 'cms/page',
       },
       contentType: {
         type: type.string,
@@ -197,7 +226,7 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
         type: type.string,
         visible: ({
           rawValues
-        }) => !!rawValues.remoteContentEnabled,
+        }) => !!rawValues.remoteContentEnabled && rawValues.contentType !== 'cms/page',
         label: translate('Content URL'),
         render: ({
           onChange,
@@ -222,11 +251,25 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
           )
         }
       },
+      cmsPage: {
+        type: type.string,
+        format: format.select,
+        label: translate('CMS Page'),
+        props: { isClearable: true },
+        optionsFrom: getCmsPages,
+        transformer: page => ({
+          label: page.name,
+          value: page.id
+        }),
+        visible: ({
+          rawValues
+        }: any) => rawValues.contentType === 'cms/page',
+      },
       remoteContentHeaders: {
         type: type.object,
         visible: ({
           rawValues
-        }: any) => !!rawValues.remoteContentEnabled,
+        }: any) => !!rawValues.remoteContentEnabled && rawValues.contentType !== 'cms/page',
         label: translate('Content headers'),
       },
     }

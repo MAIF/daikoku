@@ -5,6 +5,24 @@ import { teamApiInfoForm } from '.';
 import { I18nContext } from '../../../contexts';
 import { IApi, ITeamSimple, ITenant } from '../../../types';
 
+import { getApolloContext, gql } from '@apollo/client';
+import { IPage } from '../../adminbackoffice/cms';
+
+const cmsPagesQuery = () => ({
+  query: gql`
+    query CmsPages {
+      pages {
+        id
+        name
+        path
+        contentType
+        lastPublishedDate
+        metadata
+      }
+    }
+  `,
+});
+
 export const TeamApiInfos = ({
   api,
   save,
@@ -22,7 +40,13 @@ export const TeamApiInfos = ({
 }) => {
   const { translate } = useContext(I18nContext);
 
-  const informationForm = teamApiInfoForm(translate, team, tenant);
+  const { client } = useContext(getApolloContext());
+
+  const getCmsPages = (): Promise<Array<IPage>> =>
+    client!.query(cmsPagesQuery())
+      .then(res => res.data.pages as Array<IPage>)
+
+  const informationForm = teamApiInfoForm(translate, team, tenant, getCmsPages);
 
   if (api.visibility === 'AdminOnly') {
     return (
@@ -37,7 +61,7 @@ export const TeamApiInfos = ({
 
 
   return (
-    <Form 
+    <Form
       schema={informationForm.schema}
       flow={informationForm.flow(expertMode)}
       onSubmit={save}
