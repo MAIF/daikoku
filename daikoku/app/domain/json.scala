@@ -4190,6 +4190,30 @@ object json {
       )
   }
 
+  val IntlTranslationFormat: Format[IntlTranslation] = new Format[IntlTranslation] {
+    override def reads(json: JsValue): JsResult[IntlTranslation] =
+      Try {
+        JsSuccess(
+          IntlTranslation(
+            id = (json \ "_id").as[String],
+            translations = (json \ "translations").asOpt(SeqTranslationFormat).getOrElse(Seq.empty),
+            content = (json \ "content").asOpt[String].getOrElse("")
+          )
+        )
+      } recover {
+        case e =>
+          AppLogger.warn(e.getMessage)
+          JsError(e.getMessage)
+      } get
+
+    override def writes(o: IntlTranslation): JsValue =
+      Json.obj(
+        "_id" -> o.id,
+        "translations" -> SeqTranslationFormat.writes(o.translations),
+        "content" -> o.content
+      )
+  }
+
   val TeamPermissionFormat = new Format[TeamPermission] {
     override def reads(json: JsValue) =
       json.as[String] match {

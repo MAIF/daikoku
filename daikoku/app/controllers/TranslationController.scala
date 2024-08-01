@@ -4,15 +4,11 @@ import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import controllers.AppError
 import controllers.AppError.TranslationNotFound
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.json._
-import fr.maif.otoroshi.daikoku.domain.{DatastoreId, Translation}
+import fr.maif.otoroshi.daikoku.domain.{DatastoreId, IntlTranslation, Translation}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, Translator}
 import org.joda.time.DateTime
@@ -98,18 +94,15 @@ class TranslationController(
                     }
                   }
                   .groupBy(_.key)
-                  .map(v =>
-                    (
-                      v._1,
-                      v._2.map(TranslationFormat.writes),
-                      defaultTranslations
+                  .map(v => IntlTranslationFormat.writes(IntlTranslation(
+                    id = v._1,
+                    translations = v._2.toSeq,
+                    content = defaultTranslations
                         .find(p => p.key == v._1)
                         .map(_.value)
                         .getOrElse("")
-                    )
-                  )
-              )
-            )
+                  )))
+              ))
           })
       }
     }
