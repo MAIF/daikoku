@@ -86,6 +86,7 @@ const ApiDocPage = (props: ApiDocPageProps) => {
     } else if (pageRequest.data.remoteContentEnabled) {
       return (
         <AwesomeContentViewer
+          api={props.api}
           contentType={pageRequest.data.contentType}
           remoteContent={{ url: pageRequest.data.remoteContentUrl! }} />
       )
