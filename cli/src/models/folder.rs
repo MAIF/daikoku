@@ -113,7 +113,7 @@ fn read_file(file_path: PathBuf, file_name: String, extension: String) -> CmsFil
         .replace("pages/", "/")
         .replace("/page.html", "")
         .replace("/page.css", "");
-    
+
     if formatted_path == "" && file_name == "page.html" {
         formatted_path = "/".to_string();
     }
@@ -183,7 +183,7 @@ impl ToString for SourceExtension {
             SourceExtension::HTML => String::from("html"),
             SourceExtension::CSS => String::from("css"),
             SourceExtension::Javascript => String::from("javascript"),
-            SourceExtension::JSON => String::from("json"),
+            SourceExtension::JSON => String::from("json")
         }
     }
 }
