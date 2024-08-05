@@ -191,7 +191,7 @@ object json {
     override def reads(json: JsValue): JsResult[SpecificationType] =
       json.as[String] match {
         case "openapi"  => JsSuccess(SpecificationType.OpenApi)
-        case "asyncapi"    => JsSuccess(SpecificationType.AsyncApi)
+        case "asyncapi" => JsSuccess(SpecificationType.AsyncApi)
         case str        => JsError(s"Bad specification type value: $str")
       }
 
@@ -201,26 +201,28 @@ object json {
   val TestingFormat = new Format[Testing] {
     override def reads(json: JsValue): JsResult[Testing] = {
       json match {
-        case JsObject(_) => Try {
-          JsSuccess(
-            Testing(
-              enabled = (json \ "enabled").asOpt[Boolean].getOrElse(false),
-              auth = (json \ "auth").asOpt[String].filter(_.trim.nonEmpty) match {
-                case Some("ApiKey") => TestingAuth.ApiKey
-                case Some("Basic")  => TestingAuth.Basic
-                case _              => TestingAuth.Basic
-              },
-              name = (json \ "name").asOpt[String].filter(_.trim.nonEmpty),
-              username =
-                (json \ "username").asOpt[String].filter(_.trim.nonEmpty),
-              password =
-                (json \ "password").asOpt[String].filter(_.trim.nonEmpty),
-              config = (json \ "config").asOpt(TestingConfigFormat)
+        case JsObject(_) =>
+          Try {
+            JsSuccess(
+              Testing(
+                enabled = (json \ "enabled").asOpt[Boolean].getOrElse(false),
+                auth =
+                  (json \ "auth").asOpt[String].filter(_.trim.nonEmpty) match {
+                    case Some("ApiKey") => TestingAuth.ApiKey
+                    case Some("Basic")  => TestingAuth.Basic
+                    case _              => TestingAuth.Basic
+                  },
+                name = (json \ "name").asOpt[String].filter(_.trim.nonEmpty),
+                username =
+                  (json \ "username").asOpt[String].filter(_.trim.nonEmpty),
+                password =
+                  (json \ "password").asOpt[String].filter(_.trim.nonEmpty),
+                config = (json \ "config").asOpt(TestingConfigFormat)
+              )
             )
-          )
-        } recover {
-          case e => JsError(e.getMessage)
-        } get
+          } recover {
+            case e => JsError(e.getMessage)
+          } get
         case _ => JsError()
       }
 
@@ -1810,25 +1812,26 @@ object json {
   val SwaggerAccessFormat = new Format[SwaggerAccess] {
     override def reads(json: JsValue): JsResult[SwaggerAccess] = {
       json match {
-        case JsObject(_) => Try {
-          JsSuccess(
-            SwaggerAccess(
-              url = (json \ "url").asOpt[String],
-              content = (json \ "content").asOpt[String],
-              headers = (json \ "headers")
-                .asOpt[Map[String, String]]
-                .getOrElse(Map.empty[String, String]),
-              additionalConf = (json \ "additionalConf").asOpt[JsObject],
-              specificationType = (json \ "specificationType")
-                .asOpt(SpecificationTypeFormat)
-                .getOrElse(SpecificationType.OpenApi)
+        case JsObject(_) =>
+          Try {
+            JsSuccess(
+              SwaggerAccess(
+                url = (json \ "url").asOpt[String],
+                content = (json \ "content").asOpt[String],
+                headers = (json \ "headers")
+                  .asOpt[Map[String, String]]
+                  .getOrElse(Map.empty[String, String]),
+                additionalConf = (json \ "additionalConf").asOpt[JsObject],
+                specificationType = (json \ "specificationType")
+                  .asOpt(SpecificationTypeFormat)
+                  .getOrElse(SpecificationType.OpenApi)
+              )
             )
-          )
-        } recover {
-          case e =>
-            AppLogger.error(e.getMessage, e)
-            JsError(e.getMessage)
-        } get
+          } recover {
+            case e =>
+              AppLogger.error(e.getMessage, e)
+              JsError(e.getMessage)
+          } get
         case _ => JsError()
       }
 
@@ -2564,8 +2567,7 @@ object json {
               .asOpt(SeqVersionFormat)
               .map(_.toSet)
               .getOrElse(Set.empty),
-            testing =
-              (json \ "testing").asOpt(TestingFormat),
+            testing = (json \ "testing").asOpt(TestingFormat),
             documentation = (json \ "documentation")
               .as(ApiDocumentationFormat),
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),

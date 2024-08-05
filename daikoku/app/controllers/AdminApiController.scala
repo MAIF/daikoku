@@ -526,11 +526,15 @@ class ApiAdminApiController(
               .findOne(
                 Json.obj(
                   "_id" -> Json.obj("$ne" -> entity.id.asJson),
-                  "name" -> entity.name,
-                ) ++ entity.parent.map(p => Json.obj("_id" -> p.asJson)).getOrElse(Json.obj())
+                  "name" -> entity.name
+                ) ++ entity.parent
+                  .map(p => Json.obj("_id" -> p.asJson))
+                  .getOrElse(Json.obj())
               )
               .map {
-                case Some(api) if entity.parent.contains(api.id) || api.parent.contains(entity.id) =>
+                case Some(api)
+                    if entity.parent.contains(api.id) || api.parent
+                      .contains(entity.id) =>
                   Right(())
                 case Some(_) =>
                   Left(AppError.ParsingPayloadError("Api name already exists"))
@@ -545,7 +549,9 @@ class ApiAdminApiController(
                 Json.obj(
                   "_id" -> Json.obj("$ne" -> entity.id.asJson),
                   "name" -> entity.name
-                ) ++ entity.parent.map(p => Json.obj("_id" -> p.asJson)).getOrElse(Json.obj())
+                ) ++ entity.parent
+                  .map(p => Json.obj("_id" -> p.asJson))
+                  .getOrElse(Json.obj())
               )
               .map {
                 case None =>

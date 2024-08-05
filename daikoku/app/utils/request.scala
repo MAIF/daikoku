@@ -55,7 +55,8 @@ object RequestImplicits {
         .get("Otoroshi-Proxied-Host")
         .orElse(requestHeader.headers.get("X-Forwarded-Host"))
         .getOrElse(requestHeader.host)
-        .split(':').head
+        .split(':')
+        .head
     }
 
     def getLanguage(tenant: Tenant): String = {

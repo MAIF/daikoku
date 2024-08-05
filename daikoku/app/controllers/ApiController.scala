@@ -10,11 +10,19 @@ import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest,
+  DaikokuActionMaybeWithoutUser
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.audit.config.ElasticAnalyticsConfig
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Private
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
@@ -85,7 +93,9 @@ class ApiController(
         def fetchSwagger(api: Api): EitherT[Future, AppError, Result] = {
           api.swagger match {
             case Some(SwaggerAccess(_, Some(content), _, _, _)) =>
-              val contentType = if(content.startsWith("{")) "application/json" else "application/yaml"
+              val contentType =
+                if (content.startsWith("{")) "application/json"
+                else "application/yaml"
               EitherT.pure[Future, AppError](Ok(content).as(contentType))
             case Some(SwaggerAccess(Some(url), None, headers, _, _)) =>
               val finalUrl =
@@ -97,7 +107,9 @@ class ApiController(
                   .withHttpHeaders(headers.toSeq: _*)
                   .get()
                   .map { resp =>
-                    val contentType = if(resp.body.startsWith("{")) "application/json" else "application/yaml"
+                    val contentType =
+                      if (resp.body.startsWith("{")) "application/json"
+                      else "application/yaml"
                     Right(
                       Ok(resp.body).as(
                         resp

@@ -14,7 +14,7 @@ export interface IStateModal {
 }
 
 export interface IAuthContext {
-  action: string
+  action: string;
 }
 
 export interface IStateContext {

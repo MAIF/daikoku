@@ -5,10 +5,16 @@ import com.github.jknack.handlebars.{Context, Handlebars, Options}
 import controllers.AppError.toJson
 import controllers.{AppError, Assets}
 import domain.JsonNodeValueResolver
-import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuActionMaybeWithoutUserContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuActionContext,
+  DaikokuActionMaybeWithoutUserContext
+}
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, KafkaConfig}
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
+  _TeamMemberOnly,
+  _UberPublicUserAccess
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
@@ -453,14 +459,33 @@ case class Tenant(
       "environments" -> JsArray(environments.map(JsString.apply).toSeq),
       "loginProvider" -> authProvider.name,
       "cmsRedirections" -> JsArray(cmsRedirections.map(JsString.apply).toSeq),
-      "colorTheme" -> style.map(_.colorTheme).map(JsString.apply).getOrElse(JsNull).as[JsValue],
-      "css" -> style.map(_.css).map(JsString.apply).getOrElse(JsNull).as[JsValue],
-      "cssUrl" -> style.flatMap(_.cssUrl).map(JsString.apply).getOrElse(JsNull).as[JsValue],
-      "jsUrl" -> style.flatMap(_.jsUrl).map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "colorTheme" -> style
+        .map(_.colorTheme)
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "css" -> style
+        .map(_.css)
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "cssUrl" -> style
+        .flatMap(_.cssUrl)
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "jsUrl" -> style
+        .flatMap(_.jsUrl)
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue],
       "js" -> style.map(_.js).map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "faviconUrl" -> favicon(),
-      "fontFamilyUrl" -> style.flatMap(_.fontFamilyUrl).map(JsString.apply).getOrElse(JsNull).as[JsValue],
-
+      "fontFamilyUrl" -> style
+        .flatMap(_.fontFamilyUrl)
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   def favicon(): String = {

@@ -7,7 +7,10 @@ import cats.data.EitherT
 import cats.syntax.option._
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.audit.{ApiKeyRotationEvent, JobEvent}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{OtoroshiSyncApiError, OtoroshiSyncSubscriptionError}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  OtoroshiSyncApiError,
+  OtoroshiSyncSubscriptionError
+}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.ApiSubscriptionyRotationFormat
 import fr.maif.otoroshi.daikoku.env.Env
@@ -93,9 +96,9 @@ class OtoroshiVerifierJob(
   )
 
   def getListFromMeta(
-                       key: String,
-                       metadata: Map[String, String]
-                     ): Set[String] = {
+      key: String,
+      metadata: Map[String, String]
+  ): Set[String] = {
     metadata
       .get(key)
       .map(_.split('|').toSeq.map(_.trim).toSet)
@@ -103,35 +106,35 @@ class OtoroshiVerifierJob(
   }
 
   def mergeMetaValue(
-                      key: String,
-                      meta1: Map[String, String],
-                      meta2: Map[String, String]
-                    ): String = {
+      key: String,
+      meta1: Map[String, String],
+      meta2: Map[String, String]
+  ): String = {
     val list1 = getListFromMeta(key, meta1)
     val list2 = getListFromMeta(key, meta2)
     (list1 ++ list2).mkString(" | ")
   }
 
   case class SyncInformation(
-                              parent: ApiSubscription,
-                              childs: Seq[ApiSubscription],
-                              team: Team,
-                              parentApi: Api,
-                              apk: ActualOtoroshiApiKey,
-                              otoroshiSettings: OtoroshiSettings,
-                              tenant: Tenant,
-                              tenantAdminTeam: Team
-                            )
+      parent: ApiSubscription,
+      childs: Seq[ApiSubscription],
+      team: Team,
+      parentApi: Api,
+      apk: ActualOtoroshiApiKey,
+      otoroshiSettings: OtoroshiSettings,
+      tenant: Tenant,
+      tenantAdminTeam: Team
+  )
 
   case class ComputedInformation(
-                                  parent: ApiSubscription,
-                                  childs: Seq[ApiSubscription],
-                                  apk: ActualOtoroshiApiKey,
-                                  computedApk: ActualOtoroshiApiKey,
-                                  otoroshiSettings: OtoroshiSettings,
-                                  tenant: Tenant,
-                                  tenantAdminTeam: Team
-                                )
+      parent: ApiSubscription,
+      childs: Seq[ApiSubscription],
+      apk: ActualOtoroshiApiKey,
+      computedApk: ActualOtoroshiApiKey,
+      otoroshiSettings: OtoroshiSettings,
+      tenant: Tenant,
+      tenantAdminTeam: Team
+  )
 
   def start(): Unit = {
     if (
@@ -237,8 +240,8 @@ class OtoroshiVerifierJob(
   }
 
   private def computeAPIKey(
-                             infos: SyncInformation
-                           ): Future[ComputedInformation] = {
+      infos: SyncInformation
+  ): Future[ComputedInformation] = {
     (infos.childs :+ infos.parent)
       .map(subscription => {
         for {
@@ -403,12 +406,16 @@ class OtoroshiVerifierJob(
 
         }
       })
-      .foldLeft(infos.apk.copy(
-        authorizedEntities = AuthorizedEntities(),
-        tags = Set.empty,
-        metadata = Map.empty,
-        restrictions = ApiKeyRestrictions(),
-      ).future)((_apikey1, either) => {
+      .foldLeft(
+        infos.apk
+          .copy(
+            authorizedEntities = AuthorizedEntities(),
+            tags = Set.empty,
+            metadata = Map.empty,
+            restrictions = ApiKeyRestrictions()
+          )
+          .future
+      )((_apikey1, either) => {
         either.value.flatMap {
           case Left(_) => _apikey1
           case Right(apikey2) =>
@@ -462,8 +469,8 @@ class OtoroshiVerifierJob(
           otoroshiSettings = infos.otoroshiSettings,
           tenant = infos.tenant,
           tenantAdminTeam = infos.tenantAdminTeam
-        )}
-      )
+        )
+      })
 
   }
 
@@ -564,9 +571,11 @@ class OtoroshiVerifierJob(
             synclogger.error(e.getErrorMessage())
         }
     } else {
-      FastFuture.successful(synclogger.info(
-        s"No need to update api key: ${infos.apk.clientName} on ${infos.otoroshiSettings.host}"
-      ))
+      FastFuture.successful(
+        synclogger.info(
+          s"No need to update api key: ${infos.apk.clientName} on ${infos.otoroshiSettings.host}"
+        )
+      )
     }
   }
 
@@ -704,8 +713,8 @@ class OtoroshiVerifierJob(
     */
 
   private def synchronizeApikeys(
-                                  query: JsObject = Json.obj("parent" -> JsNull)
-                                ): Future[Done] = {
+      query: JsObject = Json.obj("parent" -> JsNull)
+  ): Future[Done] = {
     import cats.implicits._
 
     val r = for {
@@ -747,10 +756,12 @@ class OtoroshiVerifierJob(
 
     } yield subscriptions
 
-    val _allParentSubscriptions = r.leftMap(e => {
-      synclogger.error(e.getErrorMessage())
-      Seq.empty[ApiSubscription]
-    }).merge
+    val _allParentSubscriptions = r
+      .leftMap(e => {
+        synclogger.error(e.getErrorMessage())
+        Seq.empty[ApiSubscription]
+      })
+      .merge
 
     Source
       .futureSource(_allParentSubscriptions.map(Source(_)))
@@ -857,10 +868,8 @@ class OtoroshiVerifierJob(
               sendErrorNotification(
                 NotificationAction.OtoroshiSyncSubscriptionError(
                   subscription,
-                  s"Unable to fetch apikey from otoroshi: ${
-                    Json
-                      .stringify(AppError.toJson(e))
-                  }"
+                  s"Unable to fetch apikey from otoroshi: ${Json
+                    .stringify(AppError.toJson(e))}"
                 ),
                 parentApi.team,
                 parentApi.tenant,

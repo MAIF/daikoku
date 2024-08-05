@@ -290,10 +290,20 @@ class OtoroshiClient(env: Env) {
 
   def deleteApiKey(
       clientId: String
-  )(implicit otoroshiSettings: OtoroshiSettings): EitherT[Future, AppError, Unit] = {
+  )(implicit
+      otoroshiSettings: OtoroshiSettings
+  ): EitherT[Future, AppError, Unit] = {
     for {
       resp <- EitherT.liftF(client(s"/api/apikeys/$clientId").delete())
-      _ <- EitherT.cond[Future][AppError, Unit](resp.status == 200, (), AppError.OtoroshiError(Json.obj("error" -> s"Error while deleting otoroshi apikey: ${resp.status} - ${resp.body}")))
+      _ <- EitherT.cond[Future][AppError, Unit](
+        resp.status == 200,
+        (),
+        AppError.OtoroshiError(
+          Json.obj(
+            "error" -> s"Error while deleting otoroshi apikey: ${resp.status} - ${resp.body}"
+          )
+        )
+      )
     } yield ()
   }
 

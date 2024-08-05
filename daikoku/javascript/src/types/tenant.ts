@@ -189,7 +189,6 @@ export interface ITenant {
   jsUrl?: string;
   faviconUrl?: string;
   fontFamilyUrl?: string;
-
 }
 
 export interface ITenantFull extends ITenant {

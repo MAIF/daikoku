@@ -24,20 +24,24 @@ export const injectFavicon = (src) => {
   var link = document.createElement('link');
   link.id = 'favicon';
   link.rel = 'shortcut icon';
-  link.href = src
+  link.href = src;
   document.head.appendChild(link);
-}
+};
 
 export const injectFontFamily = (ffUrl) => {
-  injectCSS("\
+  injectCSS(
+    "\
   @font-face {\
       font-family:  Custom;\
-      src: url('" + ffUrl + "') format('yourFontFormat');\
+      src: url('" +
+      ffUrl +
+      "') format('yourFontFormat');\
   }\
-");
-}
+"
+  );
+};
 
 export const parseAsHtml = (element: string): DocumentFragment => {
   const parse = Range.prototype.createContextualFragment.bind(document.createRange());
-  return parse(element)
-} 
+  return parse(element);
+};

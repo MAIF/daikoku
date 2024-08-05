@@ -9,13 +9,19 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
 import controllers.AppError.SubscriptionAggregationDisabled
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, SeqApiSubscriptionFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiFormat,
+  SeqApiSubscriptionFormat
+}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
@@ -37,21 +43,26 @@ class ApiControllerSpec()
     extends PlaySpec
     with DaikokuSpecHelper
     with IntegrationPatience
-      with BeforeAndAfterEach
-      with BeforeAndAfter
-      with ForAllTestContainer {
+    with BeforeAndAfterEach
+    with BeforeAndAfter
+    with ForAllTestContainer {
 
   val pwd = System.getProperty("user.dir");
-  lazy val wireMockServer = new WireMockServer(wireMockConfig()
-    .port(stubPort))
+  lazy val wireMockServer = new WireMockServer(
+    wireMockConfig()
+      .port(stubPort)
+  )
 
   override val container = GenericContainer(
     "maif/otoroshi",
     exposedPorts = Seq(8080),
     fileSystemBind = Seq(
-      FileSystemBind(s"$pwd/test/daikoku/otoroshi.json",
-                     "/home/user/otoroshi.json",
-                     BindMode.READ_ONLY)),
+      FileSystemBind(
+        s"$pwd/test/daikoku/otoroshi.json",
+        "/home/user/otoroshi.json",
+        BindMode.READ_ONLY
+      )
+    ),
     env = Map("APP_IMPORT_FROM" -> "/home/user/otoroshi.json")
   )
 
@@ -2818,7 +2829,8 @@ class ApiControllerSpec()
       val sessionUser = loginWithBlocking(user, tenant)
 
       val subAdminResp = httpJsonCallBlocking(
-        path = s"/api/me/subscriptions/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}"
+        path =
+          s"/api/me/subscriptions/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}"
       )(tenant, sessionAdmin)
       logger.warn(Json.prettyPrint(subAdminResp.json))
       subAdminResp.status mustBe 200
@@ -5190,7 +5202,6 @@ class ApiControllerSpec()
         aggregationApiKeysSecurity = Some(true)
       )
 
-
       val parentApi = defaultApi.api.copy(
         id = ApiId("parent-id"),
         name = "parent API",
@@ -5203,7 +5214,7 @@ class ApiControllerSpec()
         name = "child API",
         team = teamOwnerId,
         possibleUsagePlans = Seq(UsagePlanId("child.dev")),
-        defaultUsagePlan = UsagePlanId("child.dev").some,
+        defaultUsagePlan = UsagePlanId("child.dev").some
       )
 
       val parentSub = ApiSubscription(
@@ -5234,25 +5245,28 @@ class ApiControllerSpec()
         parent = Some(parentSub.id)
       )
 
-
       setupEnvBlocking(
-        tenants = Seq(tenant.copy(
-          aggregationApiKeysSecurity = Some(true),
-          otoroshiSettings = Set(
-            OtoroshiSettings(
-              id = containerizedOtoroshi,
-              url = s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-              host = "otoroshi-api.oto.tools",
-              clientSecret = otoroshiAdminApiKey.clientSecret,
-              clientId = otoroshiAdminApiKey.clientId
-            ),
-          ))),
+        tenants = Seq(
+          tenant.copy(
+            aggregationApiKeysSecurity = Some(true),
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = Seq(parentPlan, childPlan),
         apis = Seq(parentApi, childApi),
-        subscriptions = Seq(parentSub, childSub))
-
+        subscriptions = Seq(parentSub, childSub)
+      )
 
 //      AppLogger.info(container.logs)
       val session = loginWithBlocking(userAdmin, tenant)
@@ -5260,9 +5274,12 @@ class ApiControllerSpec()
         path =
           s"/api/teams/${teamOwnerId.value}/subscriptions/${parentSub.id.value}",
         method = "PUT",
-        body = parentSub.copy(
-          customMetadata = Json.obj("foo"-> "bar").some
-        ).asJson.some
+        body = parentSub
+          .copy(
+            customMetadata = Json.obj("foo" -> "bar").some
+          )
+          .asJson
+          .some
       )(tenant, session)
 
       resp.status mustBe 200
@@ -5282,8 +5299,8 @@ class ApiControllerSpec()
       val authorizations = (respVerif.json \ "authorizations").as[JsArray]
       val strings = authorizations.value.map(value => (value \ "id").as[String])
       strings.size mustBe 2
-      strings.contains(childRouteId)  mustBe true
-      strings.contains(parentRouteId)  mustBe true
+      strings.contains(childRouteId) mustBe true
+      strings.contains(parentRouteId) mustBe true
     }
     "update plan in aggregated APIkey do not erase authorizedEntities" in {
       val parentPlan = FreeWithoutQuotas(
@@ -5333,7 +5350,6 @@ class ApiControllerSpec()
         aggregationApiKeysSecurity = Some(true)
       )
 
-
       val parentApi = defaultApi.api.copy(
         id = ApiId("parent-id"),
         name = "parent API",
@@ -5346,7 +5362,7 @@ class ApiControllerSpec()
         name = "child API",
         team = teamOwnerId,
         possibleUsagePlans = Seq(UsagePlanId("child.dev")),
-        defaultUsagePlan = UsagePlanId("child.dev").some,
+        defaultUsagePlan = UsagePlanId("child.dev").some
       )
 
       val parentSub = ApiSubscription(
@@ -5377,35 +5393,38 @@ class ApiControllerSpec()
         parent = Some(parentSub.id)
       )
 
-
       setupEnvBlocking(
-        tenants = Seq(tenant.copy(
-          aggregationApiKeysSecurity = Some(true),
-          otoroshiSettings = Set(
-            OtoroshiSettings(
-              id = containerizedOtoroshi,
-              url = s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-              host = "otoroshi-api.oto.tools",
-              clientSecret = otoroshiAdminApiKey.clientSecret,
-              clientId = otoroshiAdminApiKey.clientId
-            ),
-          ))),
+        tenants = Seq(
+          tenant.copy(
+            aggregationApiKeysSecurity = Some(true),
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
         usagePlans = Seq(parentPlan, childPlan, adminApiPlan),
         apis = Seq(parentApi, childApi, adminApi),
-        subscriptions = Seq(parentSub, childSub))
-
+        subscriptions = Seq(parentSub, childSub)
+      )
 
 //      AppLogger.info(container.logs)
       val session = loginWithBlocking(userAdmin, tenant)
-
 
       val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${parentApi.id.value}/${parentApi.currentVersion.value}/plan/${parentPlan.id.value}",
         method = "PUT",
-        body = parentPlan.copy(
+        body = parentPlan
+          .copy(
             otoroshiTarget = OtoroshiTarget(
               containerizedOtoroshi,
               Some(
@@ -5414,7 +5433,9 @@ class ApiControllerSpec()
                 )
               )
             ).some
-          ).asJson.some
+          )
+          .asJson
+          .some
       )(tenant, session)
 
       resp.status mustBe 200
@@ -5434,24 +5455,29 @@ class ApiControllerSpec()
       val authorizations = (respVerif.json \ "authorizations").as[JsArray]
       val strings = authorizations.value.map(value => (value \ "id").as[String])
       strings.size mustBe 2
-      strings.contains(otherRouteId)  mustBe true
-      strings.contains(childRouteId)  mustBe true
-
+      strings.contains(otherRouteId) mustBe true
+      strings.contains(childRouteId) mustBe true
 
       httpJsonCallBlocking(
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${childApi.id.value}/${childApi.currentVersion.value}/plan/${childPlan.id.value}",
         method = "PUT",
-        body = childPlan.copy(
-          otoroshiTarget = OtoroshiTarget(
-            containerizedOtoroshi,
-            Some(
-              AuthorizedEntities(
-                routes = Set(OtoroshiRouteId(parentRouteId), OtoroshiRouteId(childRouteId))
+        body = childPlan
+          .copy(
+            otoroshiTarget = OtoroshiTarget(
+              containerizedOtoroshi,
+              Some(
+                AuthorizedEntities(
+                  routes = Set(
+                    OtoroshiRouteId(parentRouteId),
+                    OtoroshiRouteId(childRouteId)
+                  )
+                )
               )
-            )
-          ).some
-        ).asJson.some
+            ).some
+          )
+          .asJson
+          .some
       )(tenant, session)
 
       val respVerif2 = httpJsonCallBlocking(
@@ -5467,7 +5493,8 @@ class ApiControllerSpec()
 
       AppLogger.info(Json.prettyPrint(respVerif2.json))
       val authorizations2 = (respVerif2.json \ "authorizations").as[JsArray]
-      val strings2 = authorizations2.value.map(value => (value \ "id").as[String])
+      val strings2 =
+        authorizations2.value.map(value => (value \ "id").as[String])
       strings2.size mustBe 3
     }
   }

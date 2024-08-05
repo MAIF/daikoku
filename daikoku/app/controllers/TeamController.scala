@@ -848,8 +848,11 @@ class TeamController(
                       implicit val language: String =
                         tenant.defaultLanguage.getOrElse("en")
 
-                      val link = env.getDaikokuUrl(ctx.tenant, s"/join?token=${invitedUser.invitation.get.token}")
-                        tenant.mailer
+                      val link = env.getDaikokuUrl(
+                        ctx.tenant,
+                        s"/join?token=${invitedUser.invitation.get.token}"
+                      )
+                      tenant.mailer
                         .send(
                           s"Join ${team.name}",
                           Seq(email),

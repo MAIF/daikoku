@@ -752,11 +752,14 @@ object utils {
     val otoroshiAdminApiKey = OtoroshiApiKey(
       clientName = "Otoroshi Backoffice ApiKey",
       clientId = "admin-api-apikey-id",
-      clientSecret= "admin-api-apikey-secret")
+      clientSecret = "admin-api-apikey-secret"
+    )
     val parentApiKey = OtoroshiApiKey(
       clientName = "daikoku_test_parent_key",
       clientId = "5w24yl2ly3dlnn92",
-      clientSecret= "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db")
+      clientSecret =
+        "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db"
+    )
 
     val parentRouteId = "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
     val childRouteId = "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"

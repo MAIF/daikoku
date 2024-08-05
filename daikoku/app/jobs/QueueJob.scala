@@ -536,35 +536,45 @@ class QueueJob(
   def deleteFirstOperation(): Future[Unit] = {
 
     val value: EitherT[Future, Unit, Unit] = for {
-      alreadyRunning <- EitherT.liftF(env.dataStore.operationRepo.forAllTenant()
-        .exists(Json.obj("Status" -> OperationStatus.InProgress.name)))
+      alreadyRunning <- EitherT.liftF(
+        env.dataStore.operationRepo
+          .forAllTenant()
+          .exists(Json.obj("Status" -> OperationStatus.InProgress.name))
+      )
       _ <- EitherT.cond[Future][Unit, Unit](!alreadyRunning, (), ())
-      firstOperation <- EitherT.fromOptionF[Future, Unit, Operation](env.dataStore.operationRepo
-        .forAllTenant()
-        .findOne(
-          Json.obj(
-            "$and" -> Json.arr(
-              Json.obj("status" -> Json.obj("$ne" -> OperationStatus.Error.name)),
-              Json.obj("status" -> OperationStatus.Idle.name)
+      firstOperation <- EitherT.fromOptionF[Future, Unit, Operation](
+        env.dataStore.operationRepo
+          .forAllTenant()
+          .findOne(
+            Json.obj(
+              "$and" -> Json.arr(
+                Json.obj(
+                  "status" -> Json.obj("$ne" -> OperationStatus.Error.name)
+                ),
+                Json.obj("status" -> OperationStatus.Idle.name)
+              )
             )
-          )
-        ), ())
-      _ <- EitherT.liftF((firstOperation.itemType, firstOperation.action) match {
-            case (ItemType.Subscription, OperationAction.Delete) =>
-              deleteSubscription(firstOperation)
-            case (ItemType.Api, OperationAction.Delete) => deleteApi(firstOperation)
-            case (ItemType.Team, OperationAction.Delete) =>
-              deleteTeam(firstOperation)
-            case (ItemType.User, OperationAction.Delete) =>
-              deleteUser(firstOperation)
-            case (ItemType.ThirdPartySubscription, OperationAction.Delete) =>
-              deleteThirdPartySubscription(firstOperation)
-            case (ItemType.ThirdPartyProduct, OperationAction.Delete) =>
-              deleteThirdPartyProduct(firstOperation)
-            case (ItemType.ApiKeyConsumption, OperationAction.Sync) =>
-              syncConsumption(firstOperation)
-            case (_, _) => FastFuture.successful(())
-          })
+          ),
+        ()
+      )
+      _ <-
+        EitherT.liftF((firstOperation.itemType, firstOperation.action) match {
+          case (ItemType.Subscription, OperationAction.Delete) =>
+            deleteSubscription(firstOperation)
+          case (ItemType.Api, OperationAction.Delete) =>
+            deleteApi(firstOperation)
+          case (ItemType.Team, OperationAction.Delete) =>
+            deleteTeam(firstOperation)
+          case (ItemType.User, OperationAction.Delete) =>
+            deleteUser(firstOperation)
+          case (ItemType.ThirdPartySubscription, OperationAction.Delete) =>
+            deleteThirdPartySubscription(firstOperation)
+          case (ItemType.ThirdPartyProduct, OperationAction.Delete) =>
+            deleteThirdPartyProduct(firstOperation)
+          case (ItemType.ApiKeyConsumption, OperationAction.Sync) =>
+            syncConsumption(firstOperation)
+          case (_, _) => FastFuture.successful(())
+        })
       _ <- EitherT.liftF(deleteFirstOperation())
     } yield ()
     value.merge
