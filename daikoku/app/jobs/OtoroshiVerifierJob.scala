@@ -239,7 +239,6 @@ class OtoroshiVerifierJob(
   private def computeAPIKey(
                              infos: SyncInformation
                            ): Future[ComputedInformation] = {
-    synclogger.info(s"begin apk computing for ${infos.parent.id}/${infos.parent.apiKey.clientName} with ${infos.childs.size} child.s")
     (infos.childs :+ infos.parent)
       .map(subscription => {
         for {
@@ -455,7 +454,6 @@ class OtoroshiVerifierJob(
         }
       })
       .map(computedApk => {
-        synclogger.info(s"apk computing ended for ${computedApk.clientName}")
         ComputedInformation(
           parent = infos.parent,
           childs = infos.childs,
@@ -471,7 +469,6 @@ class OtoroshiVerifierJob(
 
   private def updateOtoroshiApk(infos: ComputedInformation): Future[Unit] = {
     if (infos.apk != infos.computedApk) {
-      synclogger.info(s"update otoroshi APIkey ${infos.computedApk.clientName}")
       client
         .updateApiKey(infos.computedApk)(infos.otoroshiSettings)
         .map {
@@ -711,8 +708,6 @@ class OtoroshiVerifierJob(
                                 ): Future[Done] = {
     import cats.implicits._
 
-    synclogger.info(s"begin APIkeys synchronisation -- query: ${Json.stringify(query)}")
-
     val r = for {
       //Get all "base" subscriptions from provided query
       allSubscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
@@ -720,7 +715,6 @@ class OtoroshiVerifierJob(
           .forAllTenant()
           .findNotDeleted(query)
       )
-      log = logger.info(s"allSubscriptions are $allSubscriptions ")
       //Get admin API
       adminApi <- EitherT.fromOptionF[Future, AppError, Api](
         env.dataStore.apiRepo
@@ -754,7 +748,7 @@ class OtoroshiVerifierJob(
     } yield subscriptions
 
     val _allParentSubscriptions = r.leftMap(e => {
-      logger.error(e.getErrorMessage())
+      synclogger.error(e.getErrorMessage())
       Seq.empty[ApiSubscription]
     }).merge
 
@@ -762,7 +756,6 @@ class OtoroshiVerifierJob(
       .futureSource(_allParentSubscriptions.map(Source(_)))
       .mapAsync(1)(subscription => {
 
-        synclogger.info(s"sync parent sub ${subscription.apiKey.clientName}")
         val either =
           for {
             childs <- EitherT.liftF(
@@ -883,7 +876,6 @@ class OtoroshiVerifierJob(
               ()
             )
           } yield {
-            synclogger.info(s"get sync information ended - ${apk.clientName}")
             SyncInformation(
               parent = subscription,
               childs = childs,
