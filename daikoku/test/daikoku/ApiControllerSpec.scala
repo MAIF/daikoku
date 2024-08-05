@@ -5392,8 +5392,8 @@ class ApiControllerSpec()
           ))),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
-        usagePlans = Seq(parentPlan, childPlan),
-        apis = Seq(parentApi, childApi),
+        usagePlans = Seq(parentPlan, childPlan, adminApiPlan),
+        apis = Seq(parentApi, childApi, adminApi),
         subscriptions = Seq(parentSub, childSub))
 
 

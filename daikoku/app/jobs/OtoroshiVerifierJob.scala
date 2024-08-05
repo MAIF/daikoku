@@ -23,7 +23,7 @@ import play.api.libs.json._
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 object LongExtensions {
@@ -720,6 +720,7 @@ class OtoroshiVerifierJob(
           .forAllTenant()
           .findNotDeleted(query)
       )
+      log = logger.info(s"allSubscriptions are $allSubscriptions ")
       //Get admin API
       adminApi <- EitherT.fromOptionF[Future, AppError, Api](
         env.dataStore.apiRepo
@@ -752,7 +753,10 @@ class OtoroshiVerifierJob(
 
     } yield subscriptions
 
-    val _allParentSubscriptions = r.leftMap(_ => Seq.empty[ApiSubscription]).merge
+    val _allParentSubscriptions = r.leftMap(e => {
+      logger.error(e.getErrorMessage())
+      Seq.empty[ApiSubscription]
+    }).merge
 
     Source
       .futureSource(_allParentSubscriptions.map(Source(_)))
