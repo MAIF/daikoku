@@ -526,6 +526,13 @@ class DaikokuEnv(
                 defaultLanguage = None
               )
               val initialDataFu = for {
+                _ <- Future.sequence(evolutions.list.map(e => dataStore.evolutionRepo.save(
+                  Evolution(
+                    id = DatastoreId(IdGenerator.token(32)),
+                    version = e.version,
+                    applied = true
+                  )
+                )))
                 _ <- dataStore.tenantRepo.save(tenant)
                 _ <- dataStore.teamRepo.forTenant(tenant.id).save(team)
                 _ <-
