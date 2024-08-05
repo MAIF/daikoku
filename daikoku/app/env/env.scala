@@ -543,6 +543,9 @@ class DaikokuEnv(
                   dataStore.apiRepo
                     .forTenant(tenant.id)
                     .save(adminApiDefaultTenant)
+                _ <- dataStore.usagePlanRepo
+                  .forTenant(tenant.id)
+                  .save(adminApiDefaultPlan)
                 _ <- dataStore.userRepo.save(user)
               } yield ()
 
