@@ -425,56 +425,65 @@ class ApiService(
   }
 
   def updateSubscription(
-      tenant: Tenant,
-      subscription: ApiSubscription,
-      plan: UsagePlan
-  ): Future[Either[AppError, JsObject]] = {
+                          tenant: Tenant,
+                          subscription: ApiSubscription,
+                          plan: UsagePlan
+                        ): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
-    plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+    val maybeTarget = plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
       tenant.otoroshiSettings.find(_.id == id)
-    } match {
-      case None => Future.successful(Left(OtoroshiSettingsNotFound))
-      case Some(otoSettings) =>
-        implicit val otoroshiSettings: OtoroshiSettings = otoSettings
-        plan.otoroshiTarget.flatMap(_.authorizedEntities) match {
-          case None => Future.successful(Left(ApiNotLinked))
-          case Some(authorizedEntities) if authorizedEntities.isEmpty =>
-            Future.successful(Left(ApiNotLinked))
-          case Some(authorizedEntities) =>
-            val r: EitherT[Future, AppError, JsObject] = for {
-              apiKey <- EitherT(
-                otoroshiClient.getApikey(subscription.apiKey.clientId)
-              )
-              _ <- EitherT.liftF(
-                otoroshiClient.updateApiKey(
-                  apiKey.copy(
-                    authorizedEntities = authorizedEntities,
-                    throttlingQuota = subscription.customMaxPerSecond
-                      .getOrElse(apiKey.throttlingQuota),
-                    dailyQuota =
-                      subscription.customMaxPerDay.getOrElse(apiKey.dailyQuota),
-                    monthlyQuota = subscription.customMaxPerMonth
-                      .getOrElse(apiKey.monthlyQuota),
-                    metadata = apiKey.metadata ++ subscription.customMetadata
-                      .flatMap(_.asOpt[Map[String, String]])
-                      .getOrElse(Map.empty[String, String]),
-                    readOnly =
-                      subscription.customReadOnly.getOrElse(apiKey.readOnly)
-                  )
-                )
-              )
-              _ <- EitherT.liftF(
-                env.dataStore.apiSubscriptionRepo
-                  .forTenant(tenant.id)
-                  .save(subscription)
-              )
-            } yield subscription.asSafeJson.as[JsObject]
-
-            r.value
-        }
     }
+
+    val r = for {
+      otoSettings <- EitherT.fromOption[Future][AppError, OtoroshiSettings](maybeTarget, AppError.OtoroshiSettingsNotFound)
+      authorizedEntities <- EitherT.fromOption[Future][AppError, AuthorizedEntities](plan.otoroshiTarget.flatMap(_.authorizedEntities), AppError.ApiNotLinked)
+      _ <- EitherT.cond[Future][AppError, Unit](!authorizedEntities.isEmpty, (), AppError.ApiNotLinked)
+      apiKey <- EitherT[Future, AppError, ActualOtoroshiApiKey](otoroshiClient.getApikey(subscription.apiKey.clientId)(otoSettings))
+
+      aggregatedSubs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](env.dataStore.apiSubscriptionRepo.forTenant(tenant)
+        .findNotDeleted(Json.obj("parent" -> subscription.id.asJson)))
+      aggregatedPlan <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](env.dataStore.usagePlanRepo.forTenant(tenant)
+        .findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(aggregatedSubs.map(_.plan.asJson))))))
+      aggregatedAuthorizedEntities <- EitherT.pure[Future, AppError](aggregatedPlan
+        .map(_.otoroshiTarget.flatMap(_.authorizedEntities).getOrElse(AuthorizedEntities())))
+
+      _authorizedEntities = aggregatedAuthorizedEntities.fold(authorizedEntities)((acc, curr) => {
+        AuthorizedEntities(
+          services = acc.services ++ curr.services,
+          groups = acc.groups ++ curr.groups,
+          routes = acc.routes ++ curr.routes
+        )
+      })
+
+      _ <- EitherT[Future, AppError, ActualOtoroshiApiKey](otoroshiClient.updateApiKey(
+        apiKey.copy(
+          authorizedEntities = _authorizedEntities,
+          throttlingQuota = subscription.customMaxPerSecond
+            .getOrElse(apiKey.throttlingQuota),
+          dailyQuota =
+            subscription.customMaxPerDay.getOrElse(apiKey.dailyQuota),
+          monthlyQuota = subscription.customMaxPerMonth
+            .getOrElse(apiKey.monthlyQuota),
+          metadata = apiKey.metadata ++ subscription.customMetadata
+            .flatMap(_.asOpt[Map[String, String]])
+            .getOrElse(Map.empty[String, String]),
+          readOnly =
+            subscription.customReadOnly.getOrElse(apiKey.readOnly)
+        )
+      )(otoSettings)
+      )
+      _ <- EitherT.liftF[Future, AppError, Boolean](
+        env.dataStore.apiSubscriptionRepo
+          .forTenant(tenant.id)
+          .save(subscription)
+      )
+    } yield subscription.asSafeJson.as[JsObject]
+
+    r.value
   }
+
+
 
   def deleteApiKey(
       tenant: Tenant,

@@ -5095,9 +5095,11 @@ class ApiController(
           _ <- EitherT.liftF(
             env.dataStore.usagePlanRepo.forTenant(ctx.tenant).save(updatedPlan)
           )
+          log1 = logger.warn("######### APICONTROLLER ####### SYNC BEGIN")
           _ <- EitherT.liftF(
             otoroshiSynchronisator.verify(Json.obj("api" -> api.id.value))
           )
+          log = logger.warn("######### APICONTROLLER ####### SYNC ENDED ??????")
           _ <- runDemandUpdate(oldPlan, updatedPlan, api)
           //FIXME: attention, peut etre il y en a qui sont blocked de base
           _ <- EitherT.liftF(
