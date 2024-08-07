@@ -7,11 +7,9 @@ import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
 import { ModalContext } from '../../../../contexts';
 import { I18nContext } from '../../../../contexts';
 import { randomColor } from '../../../utils';
+import { nanoid } from 'nanoid';
 
-export function TeamApiIssueTags({
-  value,
-  onChange
-}: any) {
+export function TeamApiIssueTags({ value, onChange }: any) {
   const [api, setApi] = useState(value);
   const [updated, setUpdated] = useState(false);
 
@@ -22,7 +20,7 @@ export function TeamApiIssueTags({
     const updatedApi = {
       ...api,
       issuesTags: [...api.issuesTags.filter((iss: any) => iss.id !== id)],
-    }
+    };
     onChange(updatedApi);
     setApi(updatedApi);
   }
@@ -31,48 +29,70 @@ export function TeamApiIssueTags({
     <div style={{ paddingBottom: '250px' }}>
       <div className="mb-3 row">
         <div className="col-sm-10">
-          <button className='btn btn-outline-success' onClick={() => openFormModal({
-            title: translate('issues.create_tag'),
-            schema: {
-              name: {
-                type: type.string,
-                label: translate('Name'),
-                constraints: [
-                  constraints.required(translate('constraints.required.name'))
-                ]
-              },
-              color: {
-                type: type.string,
-                label: translate('Color'),
-                defaultValue: '#fd0643',
-                render: ({
-                  value,
-                  onChange
-                }: any) => {
-                  return (
-                    <div className='d-flex flex-row'>
-                      <div className='cursor-pointer me-2 d-flex align-items-center justify-content-center'
-                        style={{ borderRadius: '4px', backgroundColor: value, padding: '0 8px' }}
-                        onClick={() => onChange(randomColor())}>
-                        <RefreshCcw />
-                      </div>
-                      <input className='mrf-input' value={value} onChange={e => onChange(e.target.value)} />
-                    </div>
-                  )
+          <button
+            className="btn btn-outline-success"
+            onClick={() =>
+              openFormModal({
+                title: translate('issues.create_tag'),
+                schema: {
+                  name: {
+                    type: type.string,
+                    label: translate('Name'),
+                    constraints: [
+                      constraints.required(
+                        translate('constraints.required.name')
+                      ),
+                    ],
+                  },
+                  color: {
+                    type: type.string,
+                    label: translate('Color'),
+                    defaultValue: '#fd0643',
+                    render: ({ value, onChange }: any) => {
+                      return (
+                        <div className="d-flex flex-row">
+                          <div
+                            className="cursor-pointer me-2 d-flex align-items-center justify-content-center"
+                            style={{
+                              borderRadius: '4px',
+                              backgroundColor: value,
+                              padding: '0 8px',
+                            }}
+                            onClick={() => onChange(randomColor())}
+                          >
+                            <RefreshCcw />
+                          </div>
+                          <input
+                            className="mrf-input"
+                            value={value}
+                            onChange={(e) => onChange(e.target.value)}
+                          />
+                        </div>
+                      );
+                    },
+                    constraints: [
+                      constraints.matches(
+                        /^#(?:[a-fA-F\d]{6}|[a-fA-F\d]{3})$/gm,
+                        translate('color.unavailable')
+                      ),
+                    ],
+                  },
                 },
-                constraints: [
-                  constraints.matches(/^#(?:[a-fA-F\d]{6}|[a-fA-F\d]{3})$/gm, translate('color.unavailable'))
-                ]
-              }
-            },
-            onSubmit: (data: any) => {
-              const updatedApi = { ...api, issuesTags: [...api.issuesTags, data] };
-              onChange(updatedApi);
-              setApi(updatedApi)
-            },
-            value: { color: randomColor() },
-            actionLabel: translate('Create')
-          })}>{translate('issues.new_tag')}</button>
+                onSubmit: (data: any) => {
+                  const updatedApi = {
+                    ...api,
+                    issuesTags: [...api.issuesTags, { ...data, id: nanoid() }],
+                  };
+                  onChange(updatedApi);
+                  setApi(updatedApi);
+                },
+                value: { color: randomColor() },
+                actionLabel: translate('Create'),
+              })
+            }
+          >
+            {translate('issues.new_tag')}
+          </button>
         </div>
       </div>
       <div className="mb-3 row pt-3">
@@ -81,7 +101,10 @@ export function TeamApiIssueTags({
           {api.issuesTags
             .sort((a: any, b: any) => a.name.localeCompare(b.name))
             .map((issueTag: any, i: any) => (
-              <div key={`issueTag${i}`} className="d-flex align-items-center mt-2">
+              <div
+                key={`issueTag${i}`}
+                className="d-flex align-items-center mt-2"
+              >
                 <span
                   className="badge d-flex align-items-center justify-content-center px-3 py-2"
                   style={{
@@ -116,7 +139,7 @@ export function TeamApiIssueTags({
                         if (i === j) issue.color = color;
                         return issue;
                       }),
-                    })
+                    });
                     setUpdated(true);
                   }}
                   presetColors={[]}
@@ -156,7 +179,7 @@ function ColorTag({
   initialColor,
   handleColorChange,
   presetColors,
-  className
+  className,
 }: any) {
   const sketchColorToReadableColor = (c: any) => {
     if (c.r) {
@@ -175,7 +198,7 @@ function ColorTag({
       width: '36px',
       height: '14px',
       borderRadius: '2px',
-      background: `${color}`,
+      background: `${sketchColorToReadableColor(initialColor)}`,
     },
     swatch: {
       padding: '5px',
@@ -217,7 +240,10 @@ function ColorTag({
       </div>
       {displayColorPicker ? (
         <div style={styles.popover}>
-          <div style={styles.cover} onClick={() => setDisplayColorPicker(false)} />
+          <div
+            style={styles.cover}
+            onClick={() => setDisplayColorPicker(false)}
+          />
           {/* @ts-ignore */}
           <SketchPicker
             presetColors={uniq<any>(presetColors).sort()}
