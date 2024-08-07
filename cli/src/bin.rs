@@ -162,6 +162,14 @@ pub enum ProjectCommands {
         token: String,
         #[arg(value_name = "SERVER", short = 's', long = "server")]
         server: String,
+        #[arg(
+            value_name = "DOMAIN", 
+            short = 'd', 
+            long = "domain",
+            value_parser = ["all", "pages", "apis", "mails"], 
+            default_value = "all",
+        )]
+        domain: String,
     },
 }
 
