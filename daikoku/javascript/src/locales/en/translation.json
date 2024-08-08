@@ -609,6 +609,7 @@
     "constraint.apikey.grace.period": "Grace period must be inferior to rotation period",
     "reset.secret.confirm": "Are you sure you want to reset this secret?",
     "View usage statistics": "View usage statistics",
+    "View api": "View API",
     "Copy to clipboard": "Copy to clipboard",
     "Setup rotation": "Setup rotation",
     "Enable/Disable": "Enable/Disable",

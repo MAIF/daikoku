@@ -608,6 +608,7 @@
   "constraint.apikey.grace.period": "La période de tuilage doit être inferieur à la période de rotation",
   "reset.secret.confirm": "Êtes-vous certain de vouloir réinitialiser le secret",
   "View usage statistics": "Voir les statistiques d'usage",
+  "View api": "Voir l'API",
   "Copy to clipboard": "Copier dans le presse-papier",
   "Setup rotation": "Paramètrer la rotation",
   "Enable/Disable": "Activer/Désactiver",
