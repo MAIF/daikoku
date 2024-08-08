@@ -198,7 +198,7 @@ function ColorTag({
       width: '36px',
       height: '14px',
       borderRadius: '2px',
-      background: color,
+      background: `${sketchColorToReadableColor(initialColor)}`,
     },
     swatch: {
       padding: '5px',
