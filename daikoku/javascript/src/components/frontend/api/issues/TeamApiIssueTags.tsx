@@ -193,14 +193,12 @@ function ColorTag({
   const [displayColorPicker, setDisplayColorPicker] = useState(false);
   const [pickerValue, setPickerValue] = useState(null);
 
-  console.debug({ color, t: sketchColorToReadableColor(initialColor) })
-
   const styles = {
     color: {
       width: '36px',
       height: '14px',
       borderRadius: '2px',
-      background: `${sketchColorToReadableColor(initialColor)}`,
+      background: color,
     },
     swatch: {
       padding: '5px',
