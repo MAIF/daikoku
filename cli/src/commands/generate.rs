@@ -1,0 +1,102 @@
+use std::{collections::HashMap, fs::File, io::Write, path::PathBuf, str::FromStr};
+
+use configparser::ini::Ini;
+
+use crate::{
+    commands::projects::create_path_and_file,
+    logging::{
+        error::{DaikokuCliError, DaikokuResult},
+        logger::{self, println},
+    },
+    models::folder::{read_sources, CmsFile, SourceExtension},
+    GenerateCommands,
+};
+
+use super::projects::get_default_project;
+
+pub(crate) async fn run(command: GenerateCommands) -> DaikokuResult<()> {
+    match command {
+        GenerateCommands::Documentation {
+            filename,
+            title,
+            desc,
+        } => generate_documentation_page(filename, title, desc).await,
+    }
+}
+
+fn exists(filename: &String) -> DaikokuResult<()> {
+    let project = get_default_project()?;
+
+    let file_path = PathBuf::from(&project.path).join(filename);
+
+    if file_path.exists() {
+        return Err(DaikokuCliError::CmsCreationFile(
+            "A file with the same name already exists".to_string(),
+        ));
+    }
+
+    Ok(())
+}
+
+async fn generate_documentation_page(
+    filename: String,
+    title: String,
+    desc: String,
+) -> DaikokuResult<()> {
+    logger::loading("<yellow>Generating</> new documentation".to_string());
+
+    exists(&filename)?;
+
+    let project = get_default_project()?;
+
+    logger::done();
+
+    println!("\nThis is the apis list. Write the APIs number");
+
+    let apis_path = PathBuf::from_str(&project.path)
+        .unwrap()
+        .join("src")
+        .join("apis");
+
+    let apis = read_sources(apis_path.clone())?;
+
+    println!("{:?}", apis);
+
+    println!("ID : Name");
+    apis.iter().enumerate().for_each(|(index, api)| {
+        println!(
+            "{} : {:?}",
+            index,
+            api.path().replace("apis/", "").split("/").nth(0).unwrap()
+        )
+    });
+
+    let mut input = String::new();
+    std::io::stdin()
+        .read_line(&mut input)
+        .expect("Error reading input.");
+
+    let index = input.trim().parse::<usize>().unwrap();
+
+    let api_file: CmsFile = apis
+        .into_iter()
+        .nth(index)
+        .ok_or(DaikokuCliError::FileSystem("wrong id".to_string()))?;
+
+    let api_path = api_file.path().clone();
+    let api_name = api_path.split("/").nth(1).unwrap();
+
+    let documentations_path: PathBuf = apis_path.join(api_name).join("documentations");
+
+    create_path_and_file(
+        documentations_path
+            .clone()
+            .join(format!("{}.html", filename)),
+        format!("Documentation page for {}", api_name),
+        api_name.to_string(),
+        HashMap::new(),
+        SourceExtension::HTML,
+    )?;
+
+    Ok(())
+}
