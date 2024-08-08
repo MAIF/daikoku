@@ -208,7 +208,7 @@ class PaymentClient(
       })
       user <- EitherT.fromOptionF(
         env.dataStore.userRepo.findByIdNotDeleted(subscriptionDemand.from),
-        AppError.UserNotFound
+        AppError.UserNotFound()
       )
       settings <- EitherT.fromOption[Future](
         plan.paymentSettings,

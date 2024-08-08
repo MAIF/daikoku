@@ -379,6 +379,63 @@
       "validUntil": null,
       "tags": [],
       "metadata": {}
+    },
+    {
+      "_loc": {
+        "tenant": "default",
+        "teams": [
+          "default"
+        ]
+      },
+      "clientId": "fu283imnfv8jdt4e",
+      "clientSecret": "yaodpdfu283imnfv8jdt4eivaow6ipvh6ta9dwvd3tor9vf9wovxs6i5a2v7ep6m",
+      "clientName": "daikoku_test_parent_key_2_childs",
+      "description": "",
+      "authorizedGroup": null,
+      "authorizedEntities": [
+        "route_route_d74ea8b27-b8be-4177-82d9-c50722416c50",
+        "route_route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d",
+        "route_route_d74ea8b27-b8be-4177-82d9-c50722416c51"
+      ],
+      "authorizations": [
+        {
+          "kind": "route",
+          "id": "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
+        },
+        {
+          "kind": "route",
+          "id": "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"
+        },
+        {
+          "kind": "route",
+          "id": "route_d74ea8b27-b8be-4177-82d9-c50722416c51"
+        }
+      ],
+      "enabled": true,
+      "readOnly": false,
+      "allowClientIdOnly": false,
+      "throttlingQuota": 10000000,
+      "dailyQuota": 10000000,
+      "monthlyQuota": 10000000,
+      "constrainedServicesOnly": false,
+      "restrictions": {
+        "enabled": false,
+        "allowLast": true,
+        "allowed": [],
+        "forbidden": [],
+        "notFound": []
+      },
+      "rotation": {
+        "enabled": false,
+        "rotationEvery": 744,
+        "gracePeriod": 168,
+        "nextSecret": null
+      },
+      "validUntil": null,
+      "tags": [],
+      "metadata": {
+        "foo": "bar"
+      }
     }
   ],
   "serviceDescriptors": [

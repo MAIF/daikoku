@@ -2060,16 +2060,16 @@ class ApiController(
           subscriptionId,
           (_: Api, plan: UsagePlan, subscription: ApiSubscription) => {
             ctx.setCtxValue("subscription", subscription)
-            subscription.parent match {
-              case Some(_) => FastFuture.successful(Left(ForbiddenAction))
-              case None =>
+//            subscription.parent match {
+//              case Some(_) => FastFuture.successful(Left(ForbiddenAction))
+//              case None =>
                 toggleSubscription(
                   plan,
                   subscription,
                   ctx.tenant,
                   enabled.getOrElse(false)
                 )
-            }
+//            }
           }
         )
       }

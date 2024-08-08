@@ -760,6 +760,13 @@ object utils {
       clientSecret =
         "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db"
     )
+    //apikey with child_route & other_route (with parent) as authorized entities & {"foo": "bar"} as metadata
+    val parentApiKeyWith2childs = OtoroshiApiKey(
+      clientName = "daikoku_test_parent_key_2_childs",
+      clientId = "fu283imnfv8jdt4e",
+      clientSecret =
+        "yaodpdfu283imnfv8jdt4eivaow6ipvh6ta9dwvd3tor9vf9wovxs6i5a2v7ep6m"
+    )
 
     val parentRouteId = "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
     val childRouteId = "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"

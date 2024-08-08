@@ -612,6 +612,8 @@
     "Copy to clipboard": "Copy to clipboard",
     "Setup rotation": "Setup rotation",
     "Enable/Disable": "Enable/Disable",
+    "subscription.enable.button.label": "Enable subscription",
+    "subscription.disable.button.label": "Disable subscription",
     "Integration": "Integration",
     "Force apikey auto-rotation": "Force API key auto-rotation",
     "ApiKey": "API key",

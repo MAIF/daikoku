@@ -617,14 +617,14 @@ const ApiKeyCard = ({
                       </BeautifulTitle>
                     )}
                     {!subscription.parent && (
-                      <BeautifulTitle title={translate("Enable/Disable")}>
+                      <BeautifulTitle title={subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}>
                         <button
                           type="button"
                           disabled={
                             subscription.parent ? !subscription.parentUp : false
                           }
                           aria-label={
-                            subscription.enabled ? "disable" : "enable"
+                            subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")
                           }
                           className={classNames("btn btn-sm ms-1", {
                             "btn-outline-danger":

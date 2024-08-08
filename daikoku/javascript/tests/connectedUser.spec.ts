@@ -415,8 +415,8 @@ test('aggregation mode', async ({ page, request }) => {
   await expect(page.getByLabel('Client Id').first()).not.toHaveValue(clientId);
 
   //test archive apikey & clean archive apikeys
-  await page.getByRole('button', { name: 'disable' }).click();
-  await expect(page.getByRole('button', { name: 'enable' })).toBeVisible();
+  await page.getByRole('button', { name: 'Disable subscription' }).click();
+  await expect(page.getByRole('button', { name: 'Enable subscription' })).toBeVisible();
   await page.getByText('API keys', { exact: true }).click();
   await page.getByRole('button', { name: 'clean archived API keys' }).click();
   await expect(page.getByRole('paragraph')).toContainText('Are you sure you want to clean archived API keys?');
