@@ -520,7 +520,7 @@ export const TeamApiSubscriptions = ({
           </div>
           <div className="col-12">
             <Table
-              defaultSort="name"
+              defaultSort="adminCustomName"
               columns={columns(usagePlans)}
               fetchItems={() => {
                 if (subscriptionsQuery.isLoading || subscriptionsQuery.error) {

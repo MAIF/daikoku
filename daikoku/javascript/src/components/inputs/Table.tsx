@@ -68,6 +68,7 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
 
   const { translate } = useContext(I18nContext);
 
+  console.debug({ id: props.columns[0].id!, desc: false, col: props.columns[0] })
   const table = useReactTable({
     data: items,
     columns: props.columns,
@@ -82,6 +83,11 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     getFacetedMinMaxValues: getFacetedMinMaxValues(),
+    initialState: {
+      sorting: [
+        {id: props.defaultSort || "", desc: !!props.defaultSortDesc}
+      ]
+    }
   });
 
 
