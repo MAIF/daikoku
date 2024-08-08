@@ -99,7 +99,7 @@ export function TeamApiIssueTags({ value, onChange }: any) {
         <label className="col-xs-12 col-sm-2">{translate('issues.tags')}</label>
         <div className="col-sm-10">
           {api.issuesTags
-            .sort((a: any, b: any) => a.name.localeCompare(b.name))
+            .sort((a: any, b: any) => a.id.localeCompare(b.id))
             .map((issueTag: any, i: any) => (
               <div
                 key={`issueTag${i}`}
@@ -192,6 +192,8 @@ function ColorTag({
   const [color, setColor] = useState(sketchColorToReadableColor(initialColor));
   const [displayColorPicker, setDisplayColorPicker] = useState(false);
   const [pickerValue, setPickerValue] = useState(null);
+
+  console.debug({ color, t: sketchColorToReadableColor(initialColor) })
 
   const styles = {
     color: {
