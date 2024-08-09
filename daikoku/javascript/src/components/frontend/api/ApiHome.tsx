@@ -341,19 +341,20 @@ export const ApiHome = ({
 
   document.title = `${tenant.title} - ${api ? api.name : 'API'}`;
 
-  if (params.tab === 'description' && api.informationsCmsPage) {
-    return <CmsViewer pageId={api.informationsCmsPage} fields={{ api }} />
-  }
-
   return (<main role="main">
-    <ApiHeader api={api} ownerTeam={ownerTeam} connectedUser={connectedUser} toggleStar={toggleStar} tab={params.tab} />
+
+    {api.customHeaderCmsPage ?
+      <CmsViewer pageId={api.customHeaderCmsPage} fields={{ api }} /> :
+      <ApiHeader api={api} ownerTeam={ownerTeam} connectedUser={connectedUser} toggleStar={toggleStar} tab={params.tab} />}
+
     <div className="album py-2 me-4 min-vh-100">
       <div className={classNames({
         'container-fluid': params.tab === 'swagger',
         container: params.tab !== 'swagger'
       })}>
         <div className="row pt-3">
-          {params.tab === 'description' && (<ApiDescription api={api} />)}
+          {params.tab === 'description' &&
+            api.descriptionCmsPage ? <CmsViewer pageId={api.descriptionCmsPage} fields={{ api }} /> : <ApiDescription api={api} />}
           {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
           {params.tab === 'documentation' && <ApiDocumentation api={api} documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)} />}
           {params.tab === 'testing' && (<ApiSwagger

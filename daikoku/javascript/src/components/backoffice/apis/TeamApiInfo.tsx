@@ -79,17 +79,6 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
       format: format.text,
       label: translate('Small desc.'),
     },
-    informationsCmsPage: {
-      type: type.string,
-      format: format.select,
-      label: translate('CMS Page'),
-      props: { isClearable: true },
-      optionsFrom: getCmsPages,
-      transformer: page => ({
-        label: page.name,
-        value: page.id
-      }),
-    },
     header: {
       type: type.string,
       format: format.markdown,
@@ -103,6 +92,20 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
       props: {
         theme: 'monokai',
       }, //@ts-ignore //FIXME
+      expert: true,
+      visible: ({ rawValues }) => !rawValues.customHeaderCmsPage,
+    },
+    customHeaderCmsPage: {
+      type: type.string,
+      format: format.select,
+      label: translate('CMS Page as Header'),
+      props: { isClearable: true },
+      optionsFrom: getCmsPages,
+      transformer: page => ({
+        label: page.name,
+        value: page.id
+      }),
+      //@ts-ignore //FIXME
       expert: true,
     },
     image: {
@@ -206,7 +209,19 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
       type: type.string,
       format: format.markdown,
       label: translate('Description'),
+      visible: ({ rawValues }) => !rawValues['descriptionCmsPage'],
     },
+    descriptionCmsPage: {
+      type: type.string,
+      format: format.select,
+      label: translate('CMS Page'),
+      props: { isClearable: true },
+      optionsFrom: getCmsPages,
+      transformer: page => ({
+        label: page.name,
+        value: page.id
+      }),
+    }
   };
 
   const simpleOrExpertMode = (entry: any, expert: any) => {//@ts-ignore
@@ -216,7 +231,7 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
   const flow = (expert: any) => [
     {
       label: translate('Basic.informations'),
-      flow: ['state', 'name', 'smallDescription', 'image', 'header', 'informationsCmsPage'].filter((entry) =>
+      flow: ['state', 'name', 'smallDescription', 'image', 'header', 'customHeaderCmsPage'].filter((entry) =>
         simpleOrExpertMode(entry, expert)
       ),
       collapsed: false,
@@ -235,7 +250,7 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
     },
     {
       label: translate('Description'),
-      flow: ['description'],
+      flow: ['description', 'descriptionCmsPage'],
       collapsed: true
     }
   ];

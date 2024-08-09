@@ -82,6 +82,7 @@ GET     /api/apis/:apiId/issues/:issueId/comments               fr.maif.otoroshi
 GET     /api/apis/:apiId/issues/:issueId                        fr.maif.otoroshi.daikoku.ctrls.ApiController.getIssue(apiId, issueId)
 GET     /api/apis/:apiId/default_version                        fr.maif.otoroshi.daikoku.ctrls.ApiController.getDefaultApiVersion(apiId)
 GET     /api/apis/:apiId/:version/doc                           fr.maif.otoroshi.daikoku.ctrls.ApiController.getDocumentationDetails(apiId, version)
+GET     /api/apis                                               fr.maif.otoroshi.daikoku.ctrls.ApiController.getAllApis()
 
 POST    /api/teams/:teamId/subscription/:id/consumption/_sync   fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.syncSubscriptionConsumption(id, teamId)
 POST    /api/teams/:teamId/apis/:apiId/consumption/_sync        fr.maif.otoroshi.daikoku.ctrls.ConsumptionController.syncApiConsumption(apiId, teamId)

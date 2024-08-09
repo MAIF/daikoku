@@ -25,7 +25,8 @@ interface IBaseApi extends IWithSwagger, IWithTesting {
   lastUpdate: string;
   name: string;
   smallDescription: string;
-  informationsCmsPage?: string;
+  descriptionCmsPage?: string;
+  customHeaderCmsPage?: string;
   header?: string;
   image?: string;
   description: string;

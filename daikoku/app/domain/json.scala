@@ -2559,8 +2559,10 @@ object json {
             description = (json \ "description").asOpt[String].getOrElse(""),
             smallDescription =
               (json \ "smallDescription").asOpt[String].getOrElse(""),
-            informationsCmsPage = 
-              (json \ "informationsCmsPage").asOpt[String],
+            customHeaderCmsPage =
+              (json \ "customHeaderCmsPage").asOpt[String],
+            descriptionCmsPage =
+              (json \ "descriptionCmsPage").asOpt[String],
             header = (json \ "header").asOpt[String],
             image = (json \ "image").asOpt[String],
             currentVersion = (json \ "currentVersion").as(VersionFormat),
@@ -2623,7 +2625,8 @@ object json {
         "lastUpdate" -> DateTimeFormat.writes(o.lastUpdate),
         "name" -> o.name,
         "smallDescription" -> o.smallDescription,
-        "informationsCmsPage" -> o.informationsCmsPage,
+        "customHeaderCmsPage" -> o.customHeaderCmsPage,
+        "descriptionCmsPage" ->  o.descriptionCmsPage,
         "header" -> o.header.map(JsString).getOrElse(JsNull).as[JsValue],
         "image" -> o.image.map(JsString).getOrElse(JsNull).as[JsValue],
         "description" -> o.description,
