@@ -1618,6 +1618,7 @@ export const graphql = {
         parent {
           _id
           adminCustomName
+          enabled
           api {
             _id
             name

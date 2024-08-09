@@ -216,24 +216,24 @@ export const TeamApiKeysForApi = () => {
         search === ""
           ? subscriptions
           : subscriptions.filter((subs) => {
-              if (
-                subs.apiKey.clientName
-                  .replace("-", " ")
-                  .toLowerCase()
-                  .includes(search)
-              ) {
-                return true;
-              } else if (
-                subs.customName &&
-                subs.customName.toLowerCase().includes(search)
-              ) {
-                return true;
-              } else {
-                return formatPlanType(subs.planType, translate)
-                  .toLowerCase()
-                  .includes(search);
-              }
-            });
+            if (
+              subs.apiKey.clientName
+                .replace("-", " ")
+                .toLowerCase()
+                .includes(search)
+            ) {
+              return true;
+            } else if (
+              subs.customName &&
+              subs.customName.toLowerCase().includes(search)
+            ) {
+              return true;
+            } else {
+              return formatPlanType(subs.planType, translate)
+                .toLowerCase()
+                .includes(search);
+            }
+          });
 
       const sorted = sortBy(filteredApiKeys, ["plan", "customName", "parent"]);
       const sortedApiKeys = sorted
@@ -242,9 +242,9 @@ export const TeamApiKeysForApi = () => {
           (acc, sub) => {
             return acc.find((a) => a._id === sub.parent)
               ? acc.map((a) => {
-                  if (a._id === sub.parent) a.children.push(sub);
-                  return a;
-                })
+                if (a._id === sub.parent) a.children.push(sub);
+                return a;
+              })
               : [...acc, { ...sub, children: [] }];
           },
           sorted
@@ -398,8 +398,8 @@ const ApiKeyCard = ({
       if (!customName) {
         setCustomName(
           subscription.customName ||
-            planQuery.data.customName ||
-            planQuery.data.type
+          planQuery.data.customName ||
+          planQuery.data.type
         );
       }
     }
@@ -485,6 +485,7 @@ const ApiKeyCard = ({
     const disableRotation =
       api.visibility === "AdminOnly" || !!plan.autoRotation;
 
+      console.debug({subscription})
     return (
       <div className="col-12 col-sm-6 col-md-4 mb-2">
         <div className="card">
@@ -616,41 +617,33 @@ const ApiKeyCard = ({
                         </button>
                       </BeautifulTitle>
                     )}
-                    {!subscription.parent && (
-                      <BeautifulTitle title={subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}>
-                        <button
-                          type="button"
-                          disabled={
-                            subscription.parent ? !subscription.parentUp : false
-                          }
-                          aria-label={
-                            subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")
-                          }
-                          className={classNames("btn btn-sm ms-1", {
-                            "btn-outline-danger":
-                              subscription.enabled &&
-                              (subscription.parent
-                                ? subscription.parentUp
-                                : true),
-                            "btn-outline-success":
-                              !subscription.enabled &&
-                              (subscription.parent
-                                ? subscription.parentUp
-                                : true),
-                          })}
-                          onClick={archiveApiKey}
-                        >
-                          <i className="fas fa-power-off" />
-                        </button>
-                      </BeautifulTitle>
-                    )}
+                    <BeautifulTitle title={subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}>
+                      <button
+                        type="button"
+                        disabled={
+                          subscription.parent ? !subscription.parentUp : false
+                        }
+                        aria-label={
+                          subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")
+                        }
+                        className={classNames("btn btn-sm ms-1", {
+                          "btn-outline-danger":
+                            subscription.enabled,
+                          "btn-outline-success":
+                            !subscription.enabled,
+                        })}
+                        onClick={archiveApiKey}
+                      >
+                        <i className="fas fa-power-off" />
+                      </button>
+                    </BeautifulTitle>
                     {subscription.parent && (
                       <BeautifulTitle
                         title={translate("team_apikey_for_api.make_unique")}
                       >
                         <button
                           type="button"
-                          aria-label="make unique"
+                          aria-label={translate("team_apikey_for_api.make_unique")}
                           className="btn btn-sm ms-1 btn-outline-danger"
                           onClick={makeUniqueApiKey}
                         >
@@ -723,7 +716,7 @@ const ApiKeyCard = ({
                           readOnly
                           disabled={!subscription.enabled}
                           type={hide ? "password" : ""}
-                          className="form-control input-sm"
+                          className="form-control input"
                           id={`client-secret-${_id}`}
                           value={subscription.apiKey?.clientSecret}
                           aria-describedby={`client-secret-addon-${_id}`}
@@ -820,9 +813,8 @@ const ApiKeyCard = ({
                       </div>
                     )}
                     <button
-                      className={`btn btn-sm btn-outline-info mx-auto d-flex ${
-                        showAggregatePlan ? "mt-3" : ""
-                      }`}
+                      className={`btn btn-sm btn-outline-info mx-auto d-flex ${showAggregatePlan ? "mt-3" : ""
+                        }`}
                       onClick={() => setAggregatePlan(!showAggregatePlan)}
                     >
                       {showAggregatePlan

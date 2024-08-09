@@ -71,9 +71,10 @@ interface IApiSubscriptionGql extends ISubscriptionCustomization {
   customReadOnly?: boolean;
   tags: Array<string>;
   metadata?: JSON;
-  parent: {
+  parent?: {
     _id: string;
     adminCustomName: string;
+    enabled: boolean;
     api: {
       _id: string;
       name: string;
@@ -282,6 +283,7 @@ export const TeamApiSubscriptions = ({
         const sub = info.row.original;
         return (
           <SwitchButton
+            disabled={sub.parent && !sub.parent?.enabled}
             onSwitch={() =>
               Services.archiveSubscriptionByOwner(
                 currentTeam._id,

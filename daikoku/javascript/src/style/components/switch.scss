@@ -47,6 +47,9 @@
 input:checked + .slider {
   background-color: $success-color;
 }
+input:not(:checked) + .slider {
+  background-color: $error-color;
+}
 
 input:focus + .slider {
   box-shadow: 0 0 1px $success-color;
