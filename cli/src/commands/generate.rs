@@ -58,9 +58,11 @@ async fn generate_documentation_page(
         .join("src")
         .join("apis");
 
-    let apis = read_sources(apis_path.clone())?;
-
-    println!("{:?}", apis);
+    let mut apis = read_sources(apis_path.clone())?;
+    apis.dedup_by(|a, b| {
+        a.path().replace("apis/", "").split("/").nth(0).unwrap()
+            == b.path().replace("apis/", "").split("/").nth(0).unwrap()
+    });
 
     println!("ID : Name");
     apis.iter().enumerate().for_each(|(index, api)| {
@@ -88,13 +90,25 @@ async fn generate_documentation_page(
 
     let documentations_path: PathBuf = apis_path.join(api_name).join("documentations");
 
+    let page_path = documentations_path
+        .clone()
+        .join(format!("{}.html", filename));
+
+    if page_path.exists() {
+        return Err(DaikokuCliError::FileSystem(
+            "Documentation page alread exitsts in your project".to_string(),
+        ));
+    }
+
+    let mut metadata = HashMap::new();
+    metadata.insert("title".to_string(), title);
+    metadata.insert("description".to_string(), desc);
+
     create_path_and_file(
-        documentations_path
-            .clone()
-            .join(format!("{}.html", filename)),
-        format!("Documentation page for {}", api_name),
+        page_path,
+        format!("Documentation of the {} page", api_name),
         api_name.to_string(),
-        HashMap::new(),
+        metadata,
         SourceExtension::HTML,
     )?;
 

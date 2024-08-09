@@ -124,7 +124,7 @@ fn read_file(file_path: PathBuf, file_name: String, extension: String) -> CmsFil
         let parts = content.split("---");
 
         let mut metadata: HashMap<String, String> =
-            serde_yaml::from_str(&parts.clone().nth(0).unwrap()).unwrap();
+            serde_yaml::from_str(&parts.clone().nth(0).unwrap()).unwrap_or(HashMap::new());
         let content = parts.into_iter().nth(1).unwrap();
 
         metadata.insert("_path".to_string(), formatted_path.to_string());
@@ -183,7 +183,7 @@ impl ToString for SourceExtension {
             SourceExtension::HTML => String::from("html"),
             SourceExtension::CSS => String::from("css"),
             SourceExtension::Javascript => String::from("javascript"),
-            SourceExtension::JSON => String::from("json")
+            SourceExtension::JSON => String::from("json"),
         }
     }
 }
