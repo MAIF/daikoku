@@ -12,6 +12,8 @@ export default defineConfig({
   publicDir: "public",
   server: {
     proxy: {
+      "/_": "http://localhost:9000",
+      "/cms": "http://localhost:9000",
       "/api/": "http://localhost:9000",
       "/account": "http://localhost:9000",
       "/auth/Local/callback": "http://localhost:9000",

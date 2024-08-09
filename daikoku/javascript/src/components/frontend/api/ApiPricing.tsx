@@ -69,7 +69,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     const askForApikeys = (team: string, plan: IUsagePlan, apiKey?: ISubscription) => {
       const adminStep = plan.subscriptionProcess.find(s => isValidationStepTeamAdmin(s))
       if (adminStep && isValidationStepTeamAdmin(adminStep)) {
-        console.debug({apiKey, value: apiKey?.metadata})
+        console.debug({ apiKey, value: apiKey?.metadata })
         openFormModal<any>({
           title: translate('motivations.modal.title'),
           schema: adminStep.schema,
@@ -313,7 +313,8 @@ const TeamSelector = (props: ITeamSelector) => {
                       'cursor-forbidden': !allowed,
                     })}
                     onClick={() => {
-                      return allowed ? props.showApiKeySelectModal(team._id) : () => { }}
+                      return allowed ? props.showApiKeySelectModal(team._id) : () => { }
+                    }
                     }
                   >
                     {
@@ -411,7 +412,9 @@ export const ApiPricing = (props: ApiPricingProps) => {
           </div>
           <div>
             {maybeTab === 'swagger' && <ApiRedoc swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${plan._id}/swagger`} swaggerConf={plan.swagger} />}
-            {maybeTab === 'documentation' && <ApiDocumentation documentation={plan.documentation} getDocPage={(pageId) => Services.getUsagePlanDocPage(props.api._id, plan._id, pageId)} />}
+            {maybeTab === 'documentation' && <ApiDocumentation documentation={plan.documentation}
+              getDocPage={(pageId) => Services.getUsagePlanDocPage(props.api._id, plan._id, pageId)}
+              api={props.api} />}
             {maybeTab === 'testing' && <ApiSwagger _id={plan._id}
               testing={plan.testing}
               swagger={plan.swagger}

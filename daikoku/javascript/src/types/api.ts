@@ -25,6 +25,8 @@ interface IBaseApi extends IWithSwagger, IWithTesting {
   lastUpdate: string;
   name: string;
   smallDescription: string;
+  descriptionCmsPage?: string;
+  customHeaderCmsPage?: string;
   header?: string;
   image?: string;
   description: string;
@@ -340,6 +342,7 @@ export interface IDocPage {
   remoteContentUrl: string | null;
   remoteContentHeaders: object;
   linked?: boolean;
+  cmsPage?: string;
 }
 
 export interface IOtoroshiApiKey {

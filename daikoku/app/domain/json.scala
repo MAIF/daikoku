@@ -1858,6 +1858,7 @@ object json {
             lastModificationAt =
               (json \ "lastModificationAt").as(DateTimeFormat),
             content = (json \ "content").asOpt[String].getOrElse(""),
+            cmsPage = (json \ "cmsPage").asOpt[String],
             remoteContentEnabled =
               (json \ "remoteContentEnabled").asOpt[Boolean].getOrElse(false),
             contentType =
@@ -1883,6 +1884,7 @@ object json {
         "title" -> o.title,
         "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt),
         "content" -> o.content,
+        "cmsPage" -> o.cmsPage,
         "remoteContentEnabled" -> o.remoteContentEnabled,
         "contentType" -> o.contentType,
         "remoteContentUrl" -> o.remoteContentUrl
@@ -2560,6 +2562,10 @@ object json {
             description = (json \ "description").asOpt[String].getOrElse(""),
             smallDescription =
               (json \ "smallDescription").asOpt[String].getOrElse(""),
+            customHeaderCmsPage =
+              (json \ "customHeaderCmsPage").asOpt[String],
+            descriptionCmsPage =
+              (json \ "descriptionCmsPage").asOpt[String],
             header = (json \ "header").asOpt[String],
             image = (json \ "image").asOpt[String],
             currentVersion = (json \ "currentVersion").as(VersionFormat),
@@ -2621,6 +2627,8 @@ object json {
         "lastUpdate" -> DateTimeFormat.writes(o.lastUpdate),
         "name" -> o.name,
         "smallDescription" -> o.smallDescription,
+        "customHeaderCmsPage" -> o.customHeaderCmsPage,
+        "descriptionCmsPage" ->  o.descriptionCmsPage,
         "header" -> o.header.map(JsString).getOrElse(JsNull).as[JsValue],
         "image" -> o.image.map(JsString).getOrElse(JsNull).as[JsValue],
         "description" -> o.description,
@@ -4184,6 +4192,30 @@ object json {
           .map(DateTimeFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue]
+      )
+  }
+
+  val IntlTranslationFormat: Format[IntlTranslation] = new Format[IntlTranslation] {
+    override def reads(json: JsValue): JsResult[IntlTranslation] =
+      Try {
+        JsSuccess(
+          IntlTranslation(
+            id = (json \ "_id").as[String],
+            translations = (json \ "translations").asOpt(SeqTranslationFormat).getOrElse(Seq.empty),
+            content = (json \ "content").asOpt[String].getOrElse("")
+          )
+        )
+      } recover {
+        case e =>
+          AppLogger.warn(e.getMessage)
+          JsError(e.getMessage)
+      } get
+
+    override def writes(o: IntlTranslation): JsValue =
+      Json.obj(
+        "_id" -> o.id,
+        "translations" -> SeqTranslationFormat.writes(o.translations),
+        "content" -> o.content
       )
   }
 

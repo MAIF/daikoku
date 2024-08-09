@@ -1,4 +1,5 @@
 use std::{
+    any::type_name,
     collections::HashMap,
     fs::{self, File},
     path::{Path, PathBuf},
@@ -17,7 +18,7 @@ use tokio::net::TcpStream;
 use crate::{
     logging::{
         error::{DaikokuCliError, DaikokuResult},
-        logger::{self},
+        logger,
     },
     models::folder::{Ext, SourceExtension},
     process,
@@ -48,6 +49,49 @@ struct CmsPage {
     content: String,
 }
 
+#[derive(Clone, Deserialize, Serialize, Debug)]
+struct MailTemplate {
+    _id: String,
+    _tenant: String,
+    language: String,
+    key: String,
+    value: String,
+    #[serde(alias = "lastModificationAt")]
+    last_modification_at: Option<u64>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+struct IntlTranslation {
+    _id: String,
+    translations: Vec<MailTemplate>,
+    content: String,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+struct IntlTranslationBody {
+    translations: Vec<IntlTranslation>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+struct TenantMailBody {
+    #[serde(alias = "mailerSettings")]
+    mailer_settings: Option<MailerSettings>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+struct MailerSettings {
+    template: Option<String>,
+}
+
+#[derive(Clone, Deserialize, Serialize, Debug)]
+struct Api {
+    _id: String,
+    #[serde(alias = "_humanReadableId")]
+    human_readable_id: String,
+    header: Option<String>,
+    description: Option<String>,
+}
+
 pub(crate) async fn run(command: ProjectCommands) -> DaikokuResult<()> {
     match command {
         ProjectCommands::Add {
@@ -64,7 +108,8 @@ pub(crate) async fn run(command: ProjectCommands) -> DaikokuResult<()> {
             path,
             server,
             token,
-        } => import(name, absolute_path(path)?, server, token).await,
+            domain,
+        } => import(name, domain, absolute_path(path)?, server, token).await,
     }
 }
 
@@ -297,16 +342,22 @@ fn clear() -> DaikokuResult<()> {
 }
 
 #[async_recursion]
-async fn import(name: String, path: String, server: String, token: String) -> DaikokuResult<()> {
+async fn import(
+    name: String,
+    domain: String,
+    path: String,
+    server: String,
+    token: String,
+) -> DaikokuResult<()> {
     logger::loading("<yellow>Converting</> legacy project from Daikoku environment".to_string());
 
-    if internal_get_project(name.clone()).is_some() {
-        return Err(DaikokuCliError::Configuration(
-            "Project already exists".to_string(),
-        ));
-    } else {
-        force_clearing_default_project()?
-    }
+    // if internal_get_project(name.clone()).is_some() {
+    //     return Err(DaikokuCliError::Configuration(
+    //         "Project already exists".to_string(),
+    //     ));
+    // } else {
+    //     force_clearing_default_project()?
+    // }
 
     if !can_join_daikoku(&server.clone()).await? {
         return Err(DaikokuCliError::Configuration(
@@ -326,12 +377,91 @@ async fn import(name: String, path: String, server: String, token: String) -> Da
         .replace("http://", "")
         .replace("https://", "");
 
-    let url: String = format!("{}/api/cms", environment.server);
+    let project_path = PathBuf::from_str(&path)
+        .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?
+        .join(name.clone());
 
-    let req = Request::builder()
+    let sources_path = project_path.join("src");
+
+    let root_mail_tenant = bytes_to_struct::<TenantMailBody>(
+        fetch_daikoku_api("/tenants/default", &host, &environment, &cookie).await?,
+    )?;
+
+    let root_mail_user_translations = bytes_to_struct::<IntlTranslationBody>(
+        fetch_daikoku_api(
+            "/translations/_mail?domain=tenant.mail.template",
+            &host,
+            &environment,
+            &cookie,
+        )
+        .await?,
+    )?;
+
+    let mail_user_template = bytes_to_struct::<IntlTranslationBody>(
+        fetch_daikoku_api(
+            "/translations/_mail?domain=mail",
+            &host,
+            &environment,
+            &cookie,
+        )
+        .await?,
+    )?;
+
+    let apis_informations = bytes_to_vec_of_struct::<Api>(
+        fetch_daikoku_api(
+            "/apis?fields=_id,_humanReadableId,header,description",
+            &host,
+            &environment,
+            &cookie,
+        )
+        .await?,
+    )?;
+
+    // "all", "pages", "apis", "mails"
+
+    if domain == "all" || domain == "mails" {
+        create_mail_tenant(root_mail_tenant, sources_path.clone())?;
+        create_mail_folder(root_mail_user_translations, sources_path.clone(), true)?;
+        create_mail_folder(mail_user_template, sources_path.clone(), false)?;
+    }
+
+    if domain == "all" || domain == "apis" {
+        create_api_folder(apis_informations, sources_path.clone())?;
+    }
+
+    if domain == "all" || domain == "pages" {
+        create_cms_pages(&host, &environment, &cookie, &sources_path).await?;
+    }
+
+    create_daikoku_hidden_files(project_path.clone())?;
+
+    create_project(name.clone(), project_path.clone()).await?;
+
+    create_environment(name, server, cookie).await?;
+
+    Ok(())
+}
+
+async fn fetch_daikoku_api(
+    path: &str,
+    host: &String,
+    environment: &Environment,
+    cookie: &String,
+) -> DaikokuResult<Vec<u8>> {
+    let url: String = format!("{}/api{}", environment.server, &path);
+
+    println!("fetch_daikoku_api {}", url);
+    println!("{:?}", environment);
+    println!("{:?}", cookie);
+    println!("{:?}", host);
+
+    println!("############");
+
+    let req: Request<Empty<Bytes>> = Request::builder()
         .method(Method::GET)
         .uri(&url)
-        .header(header::HOST, &host)
+        .header(header::ACCEPT, "application/json")
+        .header(header::HOST, &host.clone())
         .header(header::COOKIE, cookie.clone())
         .body(Empty::<Bytes>::new())
         .unwrap();
@@ -366,33 +496,7 @@ async fn import(name: String, path: String, server: String, token: String) -> Da
     let status = status.as_u16();
 
     if status == 200 {
-        let zip_bytes: Vec<u8> = frame_to_bytes_body(body).await;
-
-        let items: Vec<CmsPage> = read_summary_file(zip_bytes)?;
-
-        if items.iter().find(|p| p.path.is_none()).is_none() {
-            return Err(DaikokuCliError::DaikokuStrError(
-                "imported project is not a legacy project".to_string(),
-            ));
-        }
-
-        let project_path = PathBuf::from_str(&path)
-            .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?
-            .join(name.clone());
-
-        let sources_path = project_path.join("src");
-
-        let new_pages = replace_ids(items)?;
-
-        convert_cms_pages(new_pages, sources_path.clone())?;
-
-        create_daikoku_hidden_files(project_path.clone())?;
-
-        create_project(name.clone(), project_path.clone()).await?;
-
-        create_environment(name, server, cookie).await?;
-
-        Ok(())
+        Ok(frame_to_bytes_body(body).await)
     } else {
         Err(DaikokuCliError::DaikokuStrError(format!(
             "failed to reach the Daikoku server {}",
@@ -434,16 +538,152 @@ fn replace_ids(items: Vec<CmsPage>) -> DaikokuResult<Vec<CmsPage>> {
     Ok(updated_pages)
 }
 
+fn create_api_folder(apis: Vec<Api>, project_path: PathBuf) -> DaikokuResult<()> {
+    apis.iter().for_each(|item| {
+        let file_path = project_path.clone().join(
+            PathBuf::from_str("apis")
+                .unwrap()
+                .join(item.human_readable_id.clone()),
+        );
+
+        let mut config: Ini = Ini::new();
+        config.set(&"default", "id", Some(item._id.clone()));
+
+        let _ = config.write(file_path.clone().join(".daikoku_data"));
+
+        if let Some(description) = &item.description {
+            let _description = create_path_and_file(
+                file_path.join("description").join("page.html").clone(),
+                description.clone(),
+                item._id.clone(),
+                HashMap::new(),
+                SourceExtension::HTML,
+            );
+        }
+
+        if let Some(header) = &item.header {
+            let _header = create_path_and_file(
+                file_path.join("header").join("page.html").clone(),
+                header.clone(),
+                item._id.clone(),
+                HashMap::new(),
+                SourceExtension::HTML,
+            );
+        }
+    });
+
+    Ok(())
+}
+
+fn create_mail_tenant(mail_settings: TenantMailBody, project_path: PathBuf) -> DaikokuResult<()> {
+    let filename = "page.html".to_string();
+
+    let file_path = project_path
+        .clone()
+        .join(get_mail_page_path(&filename, true).unwrap());
+
+    let _ = create_path_and_file(
+        file_path,
+        mail_settings
+            .mailer_settings
+            .map(|mailer| mailer.template.unwrap_or("".to_string()))
+            .unwrap_or("".to_string()),
+        filename,
+        HashMap::new(),
+        SourceExtension::HTML,
+    );
+
+    Ok(())
+}
+
+fn create_mail_folder(
+    intl_translation: IntlTranslationBody,
+    project_path: PathBuf,
+    is_root_mail: bool,
+) -> DaikokuResult<()> {
+    intl_translation.translations.iter().for_each(|item| {
+        let file_path = project_path
+            .clone()
+            .join(get_mail_page_path(&item._id.clone().replace(".", "-"), is_root_mail).unwrap());
+
+        let mut config: Ini = Ini::new();
+
+        config.set(&"default", "id", Some(item._id.clone()));
+
+        let _ = config.write(file_path.clone().join(".daikoku_data"));
+
+        // let _ = create_path_and_file(
+        //     ,
+        //     format!("id:{}", item._id),
+        //     item._id.clone(),
+        //     HashMap::new(),
+        //     SourceExtension::HTML,
+        // );
+
+        item.translations.iter().for_each(|translation| {
+            let _ = create_path_and_file(
+                file_path
+                    .clone()
+                    .join(translation.language.clone())
+                    .join("page.html"),
+                translation.value.clone(),
+                translation._id.clone(),
+                HashMap::new(),
+                SourceExtension::HTML,
+            );
+        })
+    });
+
+    Ok(())
+}
+
+async fn create_cms_pages(
+    host: &String,
+    environment: &Environment,
+    cookie: &String,
+    sources_path: &PathBuf,
+) -> DaikokuResult<()> {
+    let items = bytes_to_vec_of_struct::<CmsPage>(
+        fetch_daikoku_api("/cms", &host, &environment, &cookie).await?,
+    )?;
+
+    if items.iter().find(|p| p.path.is_none()).is_none() {
+        return Err(DaikokuCliError::DaikokuStrError(
+            "imported project is not a legacy project".to_string(),
+        ));
+    }
+
+    let new_pages = replace_ids(items)?;
+
+    convert_cms_pages(new_pages, sources_path.clone())
+}
+
 fn convert_cms_pages(items: Vec<CmsPage>, project_path: PathBuf) -> DaikokuResult<()> {
     items.iter().for_each(|item| {
         let extension = SourceExtension::from_str(&item.content_type).unwrap();
 
         let file_path = project_path.clone().join(get_cms_page_path(item).unwrap());
 
-        let _ = create_path_and_file(file_path, item.content.clone(), item, extension);
+        let metadata = extract_metadata(item).unwrap_or(HashMap::new());
+
+        let _ = create_path_and_file(
+            file_path,
+            item.content.clone(),
+            item.name.clone(),
+            metadata,
+            extension,
+        );
     });
 
     Ok(())
+}
+
+fn get_mail_page_path(filename: &String, is_root_mail: bool) -> DaikokuResult<PathBuf> {
+    let folder = if is_root_mail { "mails/root" } else { "mails" };
+
+    let folder_path = PathBuf::from_str(folder).unwrap().join(filename);
+
+    Ok(folder_path)
 }
 
 fn get_cms_page_path(item: &CmsPage) -> DaikokuResult<PathBuf> {
@@ -473,16 +713,18 @@ fn get_cms_page_path(item: &CmsPage) -> DaikokuResult<PathBuf> {
     let parent = folder_path.parent().unwrap();
 
     if !parent.exists() {
-        fs::create_dir_all(parent).map_err(map_error_to_filesystem_error)?;
+        fs::create_dir_all(parent).map_err(|err| map_error_to_filesystem_error(err, ""))?;
     }
 
     Ok(folder_path)
 }
 
-fn create_path_and_file(
+pub fn create_path_and_file(
     file_buf: PathBuf,
     content: String,
-    item: &CmsPage,
+    // item: &CmsPage,
+    name: String,
+    metadata: HashMap<String, String>,
     content_type: SourceExtension,
 ) -> DaikokuResult<()> {
     let parent =
@@ -494,23 +736,27 @@ fn create_path_and_file(
             )))?;
 
     if !parent.exists() {
-        fs::create_dir_all(parent).map_err(map_error_to_filesystem_error)?;
+        fs::create_dir_all(parent).map_err(|err| map_error_to_filesystem_error(err, ""))?;
     }
 
-    logger::println(format!("Creating {} {:?}", item.name, file_buf));
+    logger::println(format!("Creating {} {:?}", name, file_buf));
 
     if content_type == SourceExtension::HTML {
-        let metadata = extract_metadata(item)?;
-        let metadata_header = serde_yaml::to_string(&metadata).map_err(|_err| {
-            DaikokuCliError::ParsingError(format!("failed parsing metadata {}", &item.name))
-        })?;
+        if metadata.is_empty() {
+            Ok(fs::write(file_buf, content)
+                .map_err(|err| map_error_to_filesystem_error(err, ""))?)
+        } else {
+            let metadata_header = serde_yaml::to_string(&metadata).map_err(|_err| {
+                DaikokuCliError::ParsingError(format!("failed parsing metadata {}", &name))
+            })?;
 
-        Ok(
-            fs::write(file_buf, format!("{}\n---\n{}", metadata_header, content))
-                .map_err(map_error_to_filesystem_error)?,
-        )
+            Ok(
+                fs::write(file_buf, format!("{}\n---\n{}", metadata_header, content))
+                    .map_err(|err| map_error_to_filesystem_error(err, ""))?,
+            )
+        }
     } else {
-        Ok(fs::write(file_buf, content).map_err(map_error_to_filesystem_error)?)
+        Ok(fs::write(file_buf, content).map_err(|err| map_error_to_filesystem_error(err, ""))?)
     }
 }
 
@@ -563,15 +809,32 @@ async fn create_environment(name: String, server: String, token: String) -> Daik
     Ok(())
 }
 
-fn read_summary_file(content: Vec<u8>) -> DaikokuResult<Vec<CmsPage>> {
-    let content = String::from_utf8(content).map_err(map_error_to_filesystem_error)?;
+fn bytes_to_struct<T: for<'a> Deserialize<'a>>(content: Vec<u8>) -> DaikokuResult<T> {
+    let name = type_name::<T>();
 
-    let summary: Vec<CmsPage> =
-        serde_json::from_str(&content).map_err(map_error_to_filesystem_error)?;
+    let content =
+        String::from_utf8(content).map_err(|err| map_error_to_filesystem_error(err, name))?;
+
+    let summary: T =
+        serde_json::from_str(&content).map_err(|err| map_error_to_filesystem_error(err, name))?;
 
     Ok(summary)
 }
 
-fn map_error_to_filesystem_error<T: std::error::Error>(err: T) -> DaikokuCliError {
-    DaikokuCliError::FileSystem(err.to_string())
+fn bytes_to_vec_of_struct<T: for<'a> Deserialize<'a>>(content: Vec<u8>) -> DaikokuResult<Vec<T>> {
+    let name = type_name::<T>();
+
+    let content =
+        String::from_utf8(content).map_err(|err| map_error_to_filesystem_error(err, name))?;
+
+    println!("{:?}", content);
+
+    let summary: Vec<T> =
+        serde_json::from_str(&content).map_err(|err| map_error_to_filesystem_error(err, name))?;
+
+    Ok(summary)
+}
+
+fn map_error_to_filesystem_error<T: std::error::Error>(err: T, type_name: &str) -> DaikokuCliError {
+    DaikokuCliError::FileSystem(format!("{} : {}", type_name.to_string(), err.to_string()))
 }

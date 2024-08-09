@@ -454,7 +454,7 @@ dependencies = [
 
 [[package]]
 name = "daikokucli"
-version = "0.0.1"
+version = "1.0.0"
 dependencies = [
  "assert_cmd",
  "assert_fs",

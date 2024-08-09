@@ -113,7 +113,7 @@ fn read_file(file_path: PathBuf, file_name: String, extension: String) -> CmsFil
         .replace("pages/", "/")
         .replace("/page.html", "")
         .replace("/page.css", "");
-    
+
     if formatted_path == "" && file_name == "page.html" {
         formatted_path = "/".to_string();
     }
@@ -124,7 +124,7 @@ fn read_file(file_path: PathBuf, file_name: String, extension: String) -> CmsFil
         let parts = content.split("---");
 
         let mut metadata: HashMap<String, String> =
-            serde_yaml::from_str(&parts.clone().nth(0).unwrap()).unwrap();
+            serde_yaml::from_str(&parts.clone().nth(0).unwrap()).unwrap_or(HashMap::new());
         let content = parts.into_iter().nth(1).unwrap();
 
         metadata.insert("_path".to_string(), formatted_path.to_string());

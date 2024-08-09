@@ -77,6 +77,10 @@ pub enum Commands {
         #[command(subcommand)]
         command: AssetsCommands,
     },
+    Generate {
+        #[command(subcommand)]
+        command: GenerateCommands,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -162,6 +166,14 @@ pub enum ProjectCommands {
         token: String,
         #[arg(value_name = "SERVER", short = 's', long = "server")]
         server: String,
+        #[arg(
+            value_name = "DOMAIN", 
+            short = 'd', 
+            long = "domain",
+            value_parser = ["all", "pages", "apis", "mails"], 
+            default_value = "all",
+        )]
+        domain: String,
     },
 }
 
@@ -195,6 +207,20 @@ pub enum AssetsCommands {
     Sync {},
 }
 
+#[derive(Debug, Subcommand)]
+pub enum GenerateCommands {
+    /// create a new documentation page for your api
+    Documentation {
+        #[arg(value_name = "FILENAME", short = 'f', long = "filename")]
+        filename: String,
+        #[arg(value_name = "TITLE", short = 't', long = "title")]
+        title: String,
+        #[arg(value_name = "DESC", short = 'd', long = "desc")]
+        desc: String
+    },
+}
+
+
 async fn process(command: Commands) -> DaikokuResult<()> {
     match command {
         Commands::Version {} => commands::version::run(),
@@ -212,6 +238,7 @@ async fn process(command: Commands) -> DaikokuResult<()> {
         Commands::Login { token } => commands::login::run(token).await,
         Commands::Sync {} => commands::sync::run().await,
         Commands::Assets { command } => commands::assets::run(command).await,
+        Commands::Generate { command } => commands::generate::run(command).await
     }
 }
 
