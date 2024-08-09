@@ -9,7 +9,7 @@ import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { Table, TableRef } from '../../inputs';
 
-const CONTENT_TYPES = [
+export const CONTENT_TYPES = [
   { value: 'text/html', label: 'HTML' },
   { value: 'text/css', label: 'CSS' },
   { value: 'text/javascript', label: 'JS' },
