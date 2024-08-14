@@ -259,6 +259,7 @@ sealed trait UsagePlan {
   def removeAllAuthorizedTeams(): UsagePlan
   def integrationProcess: IntegrationProcess
   def aggregationApiKeysSecurity: Option[Boolean]
+  def environmentAggregationApiKeysSecurity: Option[Boolean]
   def paymentSettings: Option[PaymentSettings]
   def subscriptionProcess: Seq[ValidationStep] = Seq.empty
   def swagger: Option[SwaggerAccess]
@@ -358,6 +359,7 @@ case object UsagePlan {
       customDescription: Option[String] = Some("access to admin api"),
       otoroshiTarget: Option[OtoroshiTarget],
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      environmentAggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
       swagger: Option[SwaggerAccess] = None,
       testing: Option[Testing] = None,
@@ -416,6 +418,7 @@ case object UsagePlan {
       allowMultipleKeys: Option[Boolean],
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      environmentAggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
       autoRotation: Option[Boolean],
       swagger: Option[SwaggerAccess] = None,
@@ -490,6 +493,7 @@ case object UsagePlan {
       autoRotation: Option[Boolean],
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      environmentAggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
       swagger: Option[SwaggerAccess] = None,
       testing: Option[Testing] = None,
@@ -562,6 +566,7 @@ case object UsagePlan {
       autoRotation: Option[Boolean],
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      environmentAggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
       swagger: Option[SwaggerAccess] = None,
       testing: Option[Testing] = None,
@@ -634,6 +639,7 @@ case object UsagePlan {
       autoRotation: Option[Boolean],
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      environmentAggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
       swagger: Option[SwaggerAccess] = None,
       testing: Option[Testing] = None,
@@ -707,6 +713,7 @@ case object UsagePlan {
       autoRotation: Option[Boolean],
       integrationProcess: IntegrationProcess,
       aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+      environmentAggregationApiKeysSecurity: Option[Boolean] = Some(false),
       paymentSettings: Option[PaymentSettings] = None,
       swagger: Option[SwaggerAccess] = None,
       testing: Option[Testing] = None,

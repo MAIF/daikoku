@@ -230,6 +230,7 @@ export interface IStripePaymentSettings extends IPaymentSettings {
 export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting {
   allowMultipleKeys?: boolean;
   aggregationApiKeysSecurity?: boolean;
+  environmentAggregationApiKeysSecurity?: boolean;
   integrationProcess: 'Automatic' | 'ApiKey';
   autoRotation?: boolean;
   rotation: boolean;
@@ -484,6 +485,7 @@ export interface IFastPlan extends IBaseUsagePlan {
   costPerRequest?: number;
   allowMultipleKeys: boolean;
   aggregationApiKeysSecurity: boolean;
+  environmentAggregationApiKeysSecurity: boolean;
 }
 
 export interface IFastSubscription {

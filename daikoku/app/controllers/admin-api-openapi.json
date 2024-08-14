@@ -142,6 +142,10 @@
             "type": "boolean",
             "nullable": true
           },
+          "environmentAggregationApiKeysSecurity": {
+            "type": "boolean",
+            "nullable": true
+          },
           "robotTxt": {
             "type": "string",
             "nullable": true
@@ -2486,7 +2490,12 @@
           "aggregationApiKeysSecurity": {
             "type": "boolean",
             "nullable": false
+          },
+          "environmentAggregationApiKeysSecurity": {
+            "type": "boolean",
+            "nullable": false
           }
+          
         },
         "required": [
           "_id",
@@ -2578,6 +2587,10 @@
             ]
           },
           "aggregationApiKeysSecurity": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "environmentAggregationApiKeysSecurity": {
             "type": "boolean",
             "nullable": true
           },
@@ -2700,6 +2713,10 @@
             ]
           },
           "aggregationApiKeysSecurity": {
+            "type": "boolean",
+            "nullable": false
+          },
+          "environmentAggregationApiKeysSecurity": {
             "type": "boolean",
             "nullable": false
           },
@@ -2832,6 +2849,10 @@
             ]
           },
           "aggregationApiKeysSecurity": {
+            "type": "boolean",
+            "nullable": false
+          },
+          "environmentAggregationApiKeysSecurity": {
             "type": "boolean",
             "nullable": false
           },
@@ -2973,6 +2994,10 @@
             "type": "boolean",
             "nullable": false
           },
+          "environmentAggregationApiKeysSecurity": {
+            "type": "boolean",
+            "nullable": false
+          },
           "swagger": {
             "nullable": true,
             "$ref": "#/components/schemas/SwaggerAccess"
@@ -3105,6 +3130,10 @@
             ]
           },
           "aggregationApiKeysSecurity": {
+            "type": "boolean",
+            "nullable": false
+          },
+          "environmentAggregationApiKeysSecurity": {
             "type": "boolean",
             "nullable": false
           },

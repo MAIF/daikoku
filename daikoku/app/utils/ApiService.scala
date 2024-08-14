@@ -1985,6 +1985,12 @@ class ApiService(
               AppError.SecurityError("Subscription Aggregation")
             )
             _ <- EitherT.cond[Future][AppError, Unit](
+              plan.environmentAggregationApiKeysSecurity.isDefined &&
+                plan.environmentAggregationApiKeysSecurity.exists(identity),
+              (),
+              AppError.SecurityError("Subscription Aggregation")
+            )
+            _ <- EitherT.cond[Future][AppError, Unit](
               subscription.team == team.id,
               (),
               AppError.SubscriptionAggregationTeamConflict

@@ -4819,6 +4819,14 @@ class ApiController(
                   identity
                 ) && newPlan.aggregationApiKeysSecurity.exists(identity) =>
               EitherT.leftT(AppError.SubscriptionAggregationDisabled)
+            case _
+                if !ctx.tenant.environmentAggregationApiKeysSecurity.exists(
+                  identity
+                ) && newPlan.environmentAggregationApiKeysSecurity.exists(identity) && 
+                 !ctx.tenant.aggregationApiKeysSecurity.exists(
+                  identity
+                ) && newPlan.aggregationApiKeysSecurity.exists(identity) =>
+              EitherT.leftT(AppError.EnvironmentSubscriptionAggregationDisabled)
             case _ => EitherT.pure(newPlan)
           }
         }
