@@ -1031,6 +1031,44 @@ object utils {
       contact = "contactII@test-corp.foo.bar"
     )
 
+    val tenant3 = Tenant(
+      id = Tenant.Default,
+      name = "Test Corp.",
+      domain = "localhost",
+      style = Some(
+        DaikokuStyle(
+          title = "Test Corp."
+        )
+      ),
+      mailerSettings = Some(ConsoleMailerSettings()),
+      authProvider = AuthProvider.Local,
+      authProviderSettings = Json.obj(
+        "sessionMaxAge" -> 86400
+      ),
+      bucketSettings = None,
+      otoroshiSettings = Set(
+        OtoroshiSettings(
+          id = wiremockedOtoroshi,
+          url = s"$wireMockUrl",
+          host = "otoroshi-api.foo.bar",
+          clientSecret = "admin-api-apikey-id"
+        ),
+        OtoroshiSettings(
+          id = OtoroshiSettingsId("default"),
+          url = s"http://127.0.0.1:${port}/fakeotoroshi",
+          host = "otoroshi-api.foo.bar",
+          clientSecret = "admin-api-apikey-id"
+        )
+      ),
+      defaultLanguage = Some("En"),
+      adminApi = adminApi.id,
+      adminSubscriptions = Seq.empty,
+      contact = "contact@test-corp.foo.bar",
+      tenantMode = TenantMode.Default.some,
+      display = TenantDisplay.Environment,
+      environments = Set("dev", "prod", "recette")
+    )
+
     def generateApi(
         version: String = "0",
         tenant: TenantId,

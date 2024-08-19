@@ -157,7 +157,6 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                   infos.plan?.environmentAggregationApiKeysSecurity)
             )
             .map((infos) => infos.subscription);
-          console.log('filteredApiKeys int', int);
           if (props.plan.environmentAggregationApiKeysSecurity) {
             filteredApiKeys = filteredApiKeys.filter(
               (a) => a.planName === props.plan.customName

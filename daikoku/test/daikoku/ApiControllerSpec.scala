@@ -8,20 +8,14 @@ import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
-import controllers.AppError.SubscriptionAggregationDisabled
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import controllers.AppError.{EnvironmentSubscriptionAggregationDisabled, SubscriptionAggregationDisabled}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiFormat,
-  SeqApiSubscriptionFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, SeqApiSubscriptionFormat}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
@@ -5496,6 +5490,60 @@ class ApiControllerSpec()
       val strings2 =
         authorizations2.value.map(value => (value \ "id").as[String])
       strings2.size mustBe 3
+    }
+  }
+
+  "aggregate api keys by environment" can {
+    "not be enabled on plan when aggregation environment on tenant is disabled" in {
+      tenant3.copy(aggregationApiKeysSecurity = Some(true))
+      tenant3.copy(environmentAggregationApiKeysSecurity = Some(false))
+      setupEnvBlocking(
+        tenants = Seq(tenant3),
+        users = Seq(user, userApiEditor),
+        teams = Seq(teamOwner),
+        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api)
+      )
+      wireMockServer.isRunning mustBe true
+
+      val updatedPlans = defaultApi.plans.map {
+        case p: Admin => p.copy(aggregationApiKeysSecurity = Some(true))
+        p.copy(environmentAggregationApiKeysSecurity = Some(true))
+        case p: FreeWithoutQuotas =>
+          p.copy(aggregationApiKeysSecurity = Some(true))
+          p.copy(environmentAggregationApiKeysSecurity = Some(true))
+        case p: FreeWithQuotas =>
+          p.copy(aggregationApiKeysSecurity = Some(true))
+          p.copy(environmentAggregationApiKeysSecurity = Some(true))
+        case p: QuotasWithLimits =>
+          p.copy(aggregationApiKeysSecurity = Some(true))
+          p.copy(environmentAggregationApiKeysSecurity = Some(true))
+        case p: QuotasWithoutLimits =>
+          p.copy(aggregationApiKeysSecurity = Some(true))
+          p.copy(environmentAggregationApiKeysSecurity = Some(true))
+        case p: PayPerUse =>
+          p.copy(aggregationApiKeysSecurity = Some(true))
+          p.copy(environmentAggregationApiKeysSecurity = Some(true))
+        case p => p
+      }
+
+      updatedPlans.foreach(plan => {
+        val resp = httpJsonCallBlocking(
+          path =
+            s"/api/teams/${teamOwner.id.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan/${plan.id.value}",
+          method = "PUT",
+          body = Some(plan.asJson)
+        )(tenant3, loginWithBlocking(userApiEditor, tenant3))
+
+        resp.status mustBe Status.BAD_REQUEST
+
+        val expectedError =
+          (AppError.toJson(EnvironmentSubscriptionAggregationDisabled) \ "error")
+            .as[String]
+
+        (resp.json \ "error").as[String] mustBe expectedError
+      })
+
     }
   }
 }
