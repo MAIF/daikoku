@@ -98,8 +98,6 @@ export const CMSOffice = () => {
       else {
         const type = CONTENT_TYPES.find((f) => f.value === item.contentType)?.label || 'HTML'
 
-        console.log(type)
-
         if (type === "JS")
           scripts.push(item)
         else if (type === "CSS")

@@ -87,8 +87,10 @@ export const Pages = ({
         let isCreatedFromCLI = false;
 
         try {
-          isCreatedFromCLI = JSON.parse(info.row.original.metadata).from
+          isCreatedFromCLI = !!JSON.parse(info.row.original.metadata).from
         } catch (_) { }
+
+        const itemPath = value.path ? (value.path.startsWith('/') ? `/_${value.path}` : `/_/${value.path}`) : '#'
 
         return (
           <div className="d-flex justify-content-center align-items-center">
@@ -101,7 +103,7 @@ export const Pages = ({
             </Link>
             <Link
               className={classNames({ link__disabled: !value.path })}
-              to={value.path ? `/_${value.path}` : '#'}
+              to={itemPath}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}>
