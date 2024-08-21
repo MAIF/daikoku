@@ -420,7 +420,7 @@ export const TeamApiSubscriptions = ({
 
   const deleteApiSubscription = useMutation({
     mutationFn: (sub: IApiSubscriptionGql) =>
-      Services.deleteApiSubscription(sub.team._id, sub._id),
+      Services.deleteApiSubscription(sub.team._id, sub._id, "promotion"),
     onSuccess: () => {
       toast.success(translate('api.delete.subscription.deleted'));
       tableRef.current?.update();
