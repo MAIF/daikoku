@@ -1158,7 +1158,7 @@ export const deleteApiSubscription = (
   teamId: string,
   subscriptionId: string
 ): Promise<ResponseError | any> =>
-  customFetch(`/api/subscriptions/${subscriptionId}/teams/${teamId}/_delete`, {
+  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}`, {
     method: 'DELETE',
   });
 

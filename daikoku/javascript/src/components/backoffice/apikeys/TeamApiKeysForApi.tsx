@@ -148,6 +148,27 @@ export const TeamApiKeysForApi = () => {
       });
     };
 
+    const deleteApiKey = (subscription: ISubscription) => {
+      confirm({
+        message: translate("etes vous certain de supprimer cette subscription"),
+      }).then((ok) => {
+        if (ok)
+          Services.deleteApiSubscription(currentTeam._id, subscription._id)
+            .then(
+              () => {
+                queryClient.invalidateQueries({
+                  queryKey: ["data", "subscriptions"],
+                });
+                toast.success(
+                  translate(
+                    "team_apikey_for_api.ask_for_make_unique.success_message"
+                  )
+                );
+              }
+            );
+      });
+    };
+
     const toggleApiKeyRotation = (
       subscription: ISubscription,
       plan: IUsagePlan,
@@ -297,6 +318,7 @@ export const TeamApiKeysForApi = () => {
                         }
                         archiveApiKey={() => archiveApiKey(subscription)}
                         makeUniqueApiKey={() => makeUniqueApiKey(subscription)}
+                        deleteApiKey={() => deleteApiKey(subscription)}
                         toggleRotation={(
                           plan,
                           enabled,
@@ -340,6 +362,7 @@ type ApiKeyCardProps = {
   statsLink: string;
   archiveApiKey: () => void;
   makeUniqueApiKey: () => void;
+  deleteApiKey: () => void;
   toggleRotation: (
     plan: IUsagePlan,
     enabled: boolean,
@@ -362,6 +385,7 @@ const ApiKeyCard = ({
   regenerateSecret,
   currentTeam,
   subscribedApis,
+  deleteApiKey
 }: ApiKeyCardProps) => {
   const [hide, setHide] = useState(true);
   const [settingMode, setSettingMode] = useState(false);
@@ -485,7 +509,7 @@ const ApiKeyCard = ({
     const disableRotation =
       api.visibility === "AdminOnly" || !!plan.autoRotation;
 
-      console.debug({subscription})
+    console.debug({ subscription })
     return (
       <div className="col-12 col-sm-6 col-md-4 mb-2">
         <div className="card">
@@ -635,6 +659,19 @@ const ApiKeyCard = ({
                         onClick={archiveApiKey}
                       >
                         <i className="fas fa-power-off" />
+                      </button>
+                    </BeautifulTitle>
+                    <BeautifulTitle title="supprimer la souscription">
+                      <button
+                        type="button"
+                        disabled={
+                          subscription.parent ? !subscription.parentUp : false
+                        }
+                        aria-label="supprimer"
+                        className={classNames("btn btn-sm ms-1 btn-outline-danger")}
+                        onClick={deleteApiKey}
+                      >
+                        <i className="fas fa-trash" />
                       </button>
                     </BeautifulTitle>
                     {subscription.parent && (

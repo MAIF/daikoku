@@ -2309,7 +2309,6 @@ class ApiControllerSpec()
         method = "POST",
         body = Some(Json.obj("team" -> teamConsumer.id.value))
       )(tenant, session)
-      AppLogger.info(Json.stringify(transfer.json))
       transfer.status mustBe 200
       (transfer.json \ "notify").as[Boolean] mustBe true
 
@@ -2827,7 +2826,6 @@ class ApiControllerSpec()
         path =
           s"/api/me/subscriptions/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}"
       )(tenant, sessionAdmin)
-      logger.warn(Json.prettyPrint(subAdminResp.json))
       subAdminResp.status mustBe 200
 
       val subUserResp = httpJsonCallBlocking(
@@ -5446,7 +5444,6 @@ class ApiControllerSpec()
         port = container.mappedPort(8080)
       )(tenant, session)
 
-      AppLogger.info(Json.prettyPrint(respVerif.json))
       val authorizations = (respVerif.json \ "authorizations").as[JsArray]
       val strings = authorizations.value.map(value => (value \ "id").as[String])
       strings.size mustBe 2
@@ -5486,7 +5483,6 @@ class ApiControllerSpec()
         port = container.mappedPort(8080)
       )(tenant, session)
 
-      AppLogger.info(Json.prettyPrint(respVerif2.json))
       val authorizations2 = (respVerif2.json \ "authorizations").as[JsArray]
       val strings2 =
         authorizations2.value.map(value => (value \ "id").as[String])
@@ -5854,7 +5850,6 @@ class ApiControllerSpec()
         port = container.mappedPort(8080)
       )(tenant, session)
 
-      logger.info(Json.prettyPrint(respPreVerifOtoParent.json))
       (respPreVerifOtoParent.json \ "enabled").as[Boolean] mustBe true
       val preMetadata = (respPreVerifOtoParent.json \ "metadata").as[JsObject]
       val preKeys = preMetadata.keys.filter(key => !key.startsWith("daikoku_"))
@@ -5904,9 +5899,6 @@ class ApiControllerSpec()
       strings.contains(parentRouteId) mustBe true
       val metadata = (respVerifOtoParent.json \ "metadata").as[JsObject]
       val keys = metadata.keys.filter(key => !key.startsWith("daikoku_"))
-
-      logger.info(Json.prettyPrint(respVerifOtoParent.json))
-
       keys.size mustBe 0
     }
 
@@ -6272,7 +6264,6 @@ class ApiControllerSpec()
         port = container.mappedPort(8080)
       )(tenant, session)
 
-      logger.info(Json.prettyPrint(respPreVerifOtoParent.json))
       (respPreVerifOtoParent.json \ "enabled").as[Boolean] mustBe true
       val preMetadata = (respPreVerifOtoParent.json \ "metadata").as[JsObject]
       val preKeys = preMetadata.keys.filter(key => !key.startsWith("daikoku_"))
@@ -6322,252 +6313,763 @@ class ApiControllerSpec()
       strings.contains(parentRouteId) mustBe true
       val metadata = (respVerifOtoParent.json \ "metadata").as[JsObject]
       val keys = metadata.keys.filter(key => !key.startsWith("daikoku_"))
-
-      logger.info(Json.prettyPrint(respVerifOtoParent.json))
-
       keys.size mustBe 0
     }
 
+    "be deleted entirely by deleting the parent sub" in {
+      val parentPlan = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val childPlan = FreeWithoutQuotas(
+        id = UsagePlanId("child.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(childRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val childPlan2 = FreeWithoutQuotas(
+        id = UsagePlanId("child2.dev"),
+        tenant = tenant.id,
+        currency = Currency("EUR"),
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(otherRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
 
-//    "disable parent of an aggregation subscription disable all childs" in {
-//      val parentPlan = FreeWithoutQuotas(
-//        id = UsagePlanId("parent.dev"),
-//        tenant = tenant.id,
-//        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-//        currency = Currency("EUR"),
-//        customName = None,
-//        customDescription = None,
-//        otoroshiTarget = Some(
-//          OtoroshiTarget(
-//            containerizedOtoroshi,
-//            Some(
-//              AuthorizedEntities(
-//                routes = Set(OtoroshiRouteId(parentRouteId))
-//              )
-//            )
-//          )
-//        ),
-//        allowMultipleKeys = Some(false),
-//        subscriptionProcess = Seq.empty,
-//        integrationProcess = IntegrationProcess.ApiKey,
-//        autoRotation = Some(false),
-//        aggregationApiKeysSecurity = Some(true)
-//      )
-//      val childPlan = FreeWithoutQuotas(
-//        id = UsagePlanId("child.dev"),
-//        tenant = tenant.id,
-//        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-//        currency = Currency("EUR"),
-//        customName = None,
-//        customDescription = None,
-//        otoroshiTarget = Some(
-//          OtoroshiTarget(
-//            containerizedOtoroshi,
-//            Some(
-//              AuthorizedEntities(
-//                routes = Set(OtoroshiRouteId(childRouteId))
-//              )
-//            )
-//          )
-//        ),
-//        allowMultipleKeys = Some(false),
-//        subscriptionProcess = Seq.empty,
-//        integrationProcess = IntegrationProcess.ApiKey,
-//        autoRotation = Some(false),
-//        aggregationApiKeysSecurity = Some(true)
-//      )
-//
-//      val parentApi = defaultApi.api.copy(
-//        id = ApiId("parent-id"),
-//        name = "parent API",
-//        team = teamOwnerId,
-//        possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
-//        defaultUsagePlan = UsagePlanId("parent.dev").some
-//      )
-//      val childApi = defaultApi.api.copy(
-//        id = ApiId("child-id"),
-//        name = "child API",
-//        team = teamOwnerId,
-//        possibleUsagePlans = Seq(UsagePlanId("child.dev")),
-//        defaultUsagePlan = UsagePlanId("child.dev").some
-//      )
-//
-//      val parentSub = ApiSubscription(
-//        id = ApiSubscriptionId("parent_sub"),
-//        tenant = tenant.id,
-//        apiKey = parentApiKey,
-//        plan = parentPlan.id,
-//        createdAt = DateTime.now(),
-//        team = teamConsumerId,
-//        api = parentApi.id,
-//        by = userTeamAdminId,
-//        customName = None,
-//        rotation = None,
-//        integrationToken = "parent_token"
-//      )
-//      val childSub = ApiSubscription(
-//        id = ApiSubscriptionId("child_sub"),
-//        tenant = tenant.id,
-//        apiKey = parentApiKey,
-//        plan = childPlan.id,
-//        createdAt = DateTime.now(),
-//        team = teamConsumerId,
-//        api = childApi.id,
-//        by = userTeamAdminId,
-//        customName = None,
-//        rotation = None,
-//        integrationToken = "child_token",
-//        parent = Some(parentSub.id)
-//      )
-//
-//      setupEnvBlocking(
-//        tenants = Seq(
-//          tenant.copy(
-//            aggregationApiKeysSecurity = Some(true),
-//            otoroshiSettings = Set(
-//              OtoroshiSettings(
-//                id = containerizedOtoroshi,
-//                url =
-//                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-//                host = "otoroshi-api.oto.tools",
-//                clientSecret = otoroshiAdminApiKey.clientSecret,
-//                clientId = otoroshiAdminApiKey.clientId
-//              )
-//            )
-//          )
-//        ),
-//        users = Seq(userAdmin),
-//        teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
-//        usagePlans = Seq(parentPlan, childPlan, adminApiPlan),
-//        apis = Seq(parentApi, childApi, adminApi),
-//        subscriptions = Seq(parentSub, childSub)
-//      )
-//
-//      val session = loginWithBlocking(userAdmin, tenant)
-//
-//      //disable parent
-//      //test in oto
-//    }
-//
-//    "be archived as parent with 3 different ways" in {
-//      val parentPlan = FreeWithoutQuotas(
-//        id = UsagePlanId("parent.dev"),
-//        tenant = tenant.id,
-//        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-//        currency = Currency("EUR"),
-//        customName = None,
-//        customDescription = None,
-//        otoroshiTarget = Some(
-//          OtoroshiTarget(
-//            containerizedOtoroshi,
-//            Some(
-//              AuthorizedEntities(
-//                routes = Set(OtoroshiRouteId(parentRouteId))
-//              )
-//            )
-//          )
-//        ),
-//        allowMultipleKeys = Some(false),
-//        subscriptionProcess = Seq.empty,
-//        integrationProcess = IntegrationProcess.ApiKey,
-//        autoRotation = Some(false),
-//        aggregationApiKeysSecurity = Some(true)
-//      )
-//      val childPlan = FreeWithoutQuotas(
-//        id = UsagePlanId("child.dev"),
-//        tenant = tenant.id,
-//        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-//        currency = Currency("EUR"),
-//        customName = None,
-//        customDescription = None,
-//        otoroshiTarget = Some(
-//          OtoroshiTarget(
-//            containerizedOtoroshi,
-//            Some(
-//              AuthorizedEntities(
-//                routes = Set(OtoroshiRouteId(childRouteId))
-//              )
-//            )
-//          )
-//        ),
-//        allowMultipleKeys = Some(false),
-//        subscriptionProcess = Seq.empty,
-//        integrationProcess = IntegrationProcess.ApiKey,
-//        autoRotation = Some(false),
-//        aggregationApiKeysSecurity = Some(true)
-//      )
-//
-//      val parentApi = defaultApi.api.copy(
-//        id = ApiId("parent-id"),
-//        name = "parent API",
-//        team = teamOwnerId,
-//        possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
-//        defaultUsagePlan = UsagePlanId("parent.dev").some
-//      )
-//      val childApi = defaultApi.api.copy(
-//        id = ApiId("child-id"),
-//        name = "child API",
-//        team = teamOwnerId,
-//        possibleUsagePlans = Seq(UsagePlanId("child.dev")),
-//        defaultUsagePlan = UsagePlanId("child.dev").some
-//      )
-//
-//      val parentSub = ApiSubscription(
-//        id = ApiSubscriptionId("parent_sub"),
-//        tenant = tenant.id,
-//        apiKey = parentApiKey,
-//        plan = parentPlan.id,
-//        createdAt = DateTime.now(),
-//        team = teamConsumerId,
-//        api = parentApi.id,
-//        by = userTeamAdminId,
-//        customName = None,
-//        rotation = None,
-//        integrationToken = "parent_token"
-//      )
-//      val childSub = ApiSubscription(
-//        id = ApiSubscriptionId("child_sub"),
-//        tenant = tenant.id,
-//        apiKey = parentApiKey,
-//        plan = childPlan.id,
-//        createdAt = DateTime.now(),
-//        team = teamConsumerId,
-//        api = childApi.id,
-//        by = userTeamAdminId,
-//        customName = None,
-//        rotation = None,
-//        integrationToken = "child_token",
-//        parent = Some(parentSub.id)
-//      )
-//
-//      setupEnvBlocking(
-//        tenants = Seq(
-//          tenant.copy(
-//            aggregationApiKeysSecurity = Some(true),
-//            otoroshiSettings = Set(
-//              OtoroshiSettings(
-//                id = containerizedOtoroshi,
-//                url =
-//                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-//                host = "otoroshi-api.oto.tools",
-//                clientSecret = otoroshiAdminApiKey.clientSecret,
-//                clientId = otoroshiAdminApiKey.clientId
-//              )
-//            )
-//          )
-//        ),
-//        users = Seq(userAdmin),
-//        teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
-//        usagePlans = Seq(parentPlan, childPlan, adminApiPlan),
-//        apis = Seq(parentApi, childApi, adminApi),
-//        subscriptions = Seq(parentSub, childSub)
-//      )
-//
-//      val session = loginWithBlocking(userAdmin, tenant)
-//
-//      //archive all
-//      //promot first
-//      //extract all
-//    }
+      val parentApi = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
+        defaultUsagePlan = UsagePlanId("parent.dev").some
+      )
+      val childApi = defaultApi.api.copy(
+        id = ApiId("child-id"),
+        name = "child API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("child.dev")),
+        defaultUsagePlan = UsagePlanId("child.dev").some
+      )
+      val childApi2 = defaultApi.api.copy(
+        id = ApiId("child-id-2"),
+        name = "child API 2",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("child2.dev")),
+        defaultUsagePlan = UsagePlanId("child2.dev").some
+      )
+
+      val parentSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token"
+      )
+      val childSub = ApiSubscription(
+        id = ApiSubscriptionId("child_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = childPlan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = childApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "child_token",
+        parent = Some(parentSub.id),
+        customMetadata = Json.obj("foo" -> "bar").some
+      )
+      val childSub2 = ApiSubscription(
+        id = ApiSubscriptionId("child_sub_2"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = childPlan2.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = childApi2.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "child_token",
+        parent = Some(parentSub.id)
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            aggregationApiKeysSecurity = Some(true),
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
+        usagePlans = Seq(parentPlan, childPlan, childPlan2, adminApiPlan),
+        apis = Seq(parentApi, childApi, childApi2, adminApi),
+        subscriptions = Seq(parentSub, childSub, childSub2)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+
+
+      val respPreVerifOtoParent = httpJsonCallBlocking(
+        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+
+      (respPreVerifOtoParent.json \ "enabled").as[Boolean] mustBe true
+      val preMetadata = (respPreVerifOtoParent.json \ "metadata").as[JsObject]
+      val preKeys = preMetadata.keys.filter(key => !key.startsWith("daikoku_"))
+      preKeys.size mustBe 1
+      (preMetadata \ "foo").as[String] mustBe "bar"
+
+      val preAuthorizations = (respPreVerifOtoParent.json \ "authorizations").as[JsArray]
+      val preStrings = preAuthorizations.value.map(value => (value \ "id").as[String])
+      preStrings.size mustBe 3
+      preStrings.contains(otherRouteId) mustBe true
+      preStrings.contains(childRouteId) mustBe true
+      preStrings.contains(parentRouteId) mustBe true
+
+
+
+      //delete parentSub => allSub are deleted + otokey
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/subscriptions/${parentSub.id.value}?action=delete-all",
+        method = "DELETE"
+      )(tenant, session)
+      resp.status mustBe 200
+
+      val respVerifDkParent = httpJsonCallBlocking(
+        path = s"/api/teams/${teamConsumer.id.value}/subscription/${parentSub.id.value}/informations"
+      )(tenant, session)
+
+      respVerifDkParent.status mustBe 404
+
+      val respVerifDkChild = httpJsonCallBlocking(
+        path = s"/api/teams/${teamConsumer.id.value}/subscription/${childSub.id.value}/informations"
+      )(tenant, session)
+
+      respVerifDkChild.status mustBe 404
+
+      val respVerifOtoParent = httpJsonCallBlocking(
+        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+
+      respVerifOtoParent.status mustBe 404
+    }
+    "be kept in part by deleting the parent sub (first child become parent)" in {
+      val parentPlan = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val childPlan = FreeWithoutQuotas(
+        id = UsagePlanId("child.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(childRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val childPlan2 = FreeWithoutQuotas(
+        id = UsagePlanId("child2.dev"),
+        tenant = tenant.id,
+        currency = Currency("EUR"),
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(otherRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val parentApi = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
+        defaultUsagePlan = UsagePlanId("parent.dev").some
+      )
+      val childApi = defaultApi.api.copy(
+        id = ApiId("child-id"),
+        name = "child API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("child.dev")),
+        defaultUsagePlan = UsagePlanId("child.dev").some
+      )
+      val childApi2 = defaultApi.api.copy(
+        id = ApiId("child-id-2"),
+        name = "child API 2",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("child2.dev")),
+        defaultUsagePlan = UsagePlanId("child2.dev").some
+      )
+
+      val parentSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token",
+        customMetadata = Json.obj("parent-foo" -> "parent-bar").some
+      )
+      val childSub = ApiSubscription(
+        id = ApiSubscriptionId("child_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = childPlan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = childApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "child_token",
+        parent = Some(parentSub.id),
+        customMetadata = Json.obj("foo" -> "bar").some
+      )
+      val childSub2 = ApiSubscription(
+        id = ApiSubscriptionId("child_sub_2"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = childPlan2.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = childApi2.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "child_token",
+        parent = Some(parentSub.id)
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            aggregationApiKeysSecurity = Some(true),
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
+        usagePlans = Seq(parentPlan, childPlan, childPlan2, adminApiPlan),
+        apis = Seq(parentApi, childApi, childApi2, adminApi),
+        subscriptions = Seq(parentSub, childSub, childSub2)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      httpJsonCallBlocking(
+        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080),
+        method = "PATCH",
+        body = Json.arr(
+          Json.obj("op" -> "replace", "path" -> "/metadata/daikoku__metadata", "value" -> "| foo | parent-foo"),
+          Json.obj("op" -> "add", "path" -> "/metadata/parent-foo", "value" -> "parent-bar"),
+        ).some
+      )(tenant, session)
+
+      val respPreVerifOtoParent = httpJsonCallBlocking(
+        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+
+      (respPreVerifOtoParent.json \ "enabled").as[Boolean] mustBe true
+      val preMetadata = (respPreVerifOtoParent.json \ "metadata").as[JsObject]
+      val preKeys = preMetadata.keys.filter(key => !key.startsWith("daikoku_"))
+      //todo: c'est la merde le json init d'oto n'a que foo en metaddata...oopsi doopsi
+      preKeys.size mustBe 2
+      (preMetadata \ "foo").as[String] mustBe "bar"
+      (preMetadata \ "parent-foo").as[String] mustBe "parent-bar"
+
+      val preAuthorizations = (respPreVerifOtoParent.json \ "authorizations").as[JsArray]
+      val preStrings = preAuthorizations.value.map(value => (value \ "id").as[String])
+      preStrings.size mustBe 3
+      preStrings.contains(otherRouteId) mustBe true
+      preStrings.contains(childRouteId) mustBe true
+      preStrings.contains(parentRouteId) mustBe true
+
+
+
+      //delete parentSub => first child become parent
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/subscriptions/${parentSub.id.value}?action=promotion&childId=${childSub2.id.value}",
+        method = "DELETE"
+      )(tenant, session)
+      resp.status mustBe 200
+
+      val respVerifDkParent = httpJsonCallBlocking(
+        path = s"/api/teams/${teamConsumer.id.value}/subscription/${parentSub.id.value}/informations"
+      )(tenant, session)
+
+      respVerifDkParent.status mustBe 404
+      val respVerifDkChild = httpJsonCallBlocking(
+        path = s"/api/teams/${teamConsumer.id.value}/subscription/${childSub.id.value}/informations"
+      )(tenant, session)
+
+      respVerifDkChild.status mustBe 200
+
+      val respVerifOto = httpJsonCallBlocking(
+        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+
+      (respVerifOto.json \ "enabled").as[Boolean] mustBe true
+      val authorizations = (respVerifOto.json \ "authorizations").as[JsArray]
+      val strings = authorizations.value.map(value => (value \ "id").as[String])
+      strings.size mustBe 2
+      strings.contains(otherRouteId) mustBe true
+      strings.contains(childRouteId) mustBe true
+      strings.contains(parentRouteId) mustBe false
+      val metadata = (respVerifOto.json \ "metadata").as[JsObject]
+      val keys = metadata.keys.filter(key => !key.startsWith("daikoku_"))
+      keys.size mustBe 1
+      (preMetadata \ "foo").as[String] mustBe "bar"
+    }
+    "be exploded in parts by deleting the parent sub" in {
+      val parentPlan = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val childPlan = FreeWithoutQuotas(
+        id = UsagePlanId("child.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(childRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val childPlan2 = FreeWithoutQuotas(
+        id = UsagePlanId("child2.dev"),
+        tenant = tenant.id,
+        currency = Currency("EUR"),
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(otherRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val parentApi = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
+        defaultUsagePlan = UsagePlanId("parent.dev").some
+      )
+      val childApi = defaultApi.api.copy(
+        id = ApiId("child-id"),
+        name = "child API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("child.dev")),
+        defaultUsagePlan = UsagePlanId("child.dev").some
+      )
+      val childApi2 = defaultApi.api.copy(
+        id = ApiId("child-id-2"),
+        name = "child API 2",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("child2.dev")),
+        defaultUsagePlan = UsagePlanId("child2.dev").some
+      )
+
+      val parentSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token"
+      )
+      val childSub = ApiSubscription(
+        id = ApiSubscriptionId("child_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = childPlan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = childApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "child_token",
+        parent = Some(parentSub.id),
+        customMetadata = Json.obj("foo" -> "bar").some
+      )
+      val childSub2 = ApiSubscription(
+        id = ApiSubscriptionId("child_sub_2"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = childPlan2.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = childApi2.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "child_token",
+        parent = Some(parentSub.id),
+        customMetadata = Json.obj("foo2" -> "bar2").some
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            aggregationApiKeysSecurity = Some(true),
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
+        usagePlans = Seq(parentPlan, childPlan, childPlan2, adminApiPlan),
+        apis = Seq(parentApi, childApi, childApi2, adminApi),
+        subscriptions = Seq(parentSub, childSub, childSub2)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      httpJsonCallBlocking(
+        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080),
+        method = "PATCH",
+        body = Json.arr(
+          Json.obj("op" -> "replace", "path" -> "/metadata/daikoku__metadata", "value" -> "| foo | foo2"),
+          Json.obj("op" -> "add", "path" -> "/metadata/foo2", "value" -> "bar2"),
+        ).some
+      )(tenant, session)
+
+      val respPreVerifOtoParent = httpJsonCallBlocking(
+        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+
+      (respPreVerifOtoParent.json \ "enabled").as[Boolean] mustBe true
+      val preMetadata = (respPreVerifOtoParent.json \ "metadata").as[JsObject]
+      val preKeys = preMetadata.keys.filter(key => !key.startsWith("daikoku_"))
+      preKeys.size mustBe 2
+      (preMetadata \ "foo").as[String] mustBe "bar"
+      (preMetadata \ "foo2").as[String] mustBe "bar2"
+
+      val preAuthorizations = (respPreVerifOtoParent.json \ "authorizations").as[JsArray]
+      val preStrings = preAuthorizations.value.map(value => (value \ "id").as[String])
+      preStrings.size mustBe 3
+      preStrings.contains(otherRouteId) mustBe true
+      preStrings.contains(childRouteId) mustBe true
+      preStrings.contains(parentRouteId) mustBe true
+
+
+
+      //disable parentSub => allSub are disabled + otokey
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumerId.value}/subscriptions/${parentSub.id.value}?action=extraction",
+        method = "DELETE"
+      )(tenant, session)
+      resp.status mustBe 200
+
+      val respVerifDkParent = httpJsonCallBlocking(
+        path = s"/api/teams/${teamConsumer.id.value}/subscription/${parentSub.id.value}/informations"
+      )(tenant, session)
+      respVerifDkParent.status mustBe 404
+
+      val respVerifDkChild = httpJsonCallBlocking(
+        path = s"/api/apis/${childApi.id.value}/${childApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
+      )(tenant, session)
+
+      respVerifDkChild.status mustBe 200
+      val newChildClientId = (respVerifDkChild.json.as[JsArray].value.head \ "apiKey" \ "clientId").as[String]
+
+      val respVerifDkChild2 = httpJsonCallBlocking(
+        path = s"/api/apis/${childApi2.id.value}/${childApi2.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
+      )(tenant, session)
+      respVerifDkChild2.status mustBe 200
+      val newChildClientId2 = (respVerifDkChild2.json.as[JsArray].value.head \ "apiKey" \ "clientId").as[String]
+
+      val respVerifOtoParent = httpJsonCallBlocking(
+        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+      respVerifOtoParent.status mustBe 404
+
+      val respVerifOtoChild = httpJsonCallBlocking(
+        path = s"/api/apikeys/${newChildClientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+      respVerifOtoChild.status mustBe 200
+      (respVerifOtoChild.json \ "enabled").as[Boolean] mustBe true
+      val authorizations = (respVerifOtoChild.json \ "authorizations").as[JsArray]
+      val strings = authorizations.value.map(value => (value \ "id").as[String])
+      strings.size mustBe 1
+      strings.contains(childRouteId) mustBe true
+      val metadata = (respVerifOtoChild.json \ "metadata").as[JsObject]
+      val keys = metadata.keys.filter(key => !key.startsWith("daikoku_")).filter(key => key != "raw_custom_metadata")
+      keys.size mustBe 1
+      keys.contains("foo") mustBe true
+
+      val respVerifOtoChild2 = httpJsonCallBlocking(
+        path = s"/api/apikeys/$newChildClientId2",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+      respVerifOtoChild2.status mustBe 200
+      logger.info(Json.prettyPrint(respVerifOtoChild2.json))
+      (respVerifOtoChild2.json \ "enabled").as[Boolean] mustBe true
+      val authorizations2 = (respVerifOtoChild2.json \ "authorizations").as[JsArray]
+      val strings2 = authorizations2.value.map(value => (value \ "id").as[String])
+      strings2.size mustBe 1
+      strings2.contains(otherRouteId) mustBe true
+      val metadata2 = (respVerifOtoChild2.json \ "metadata").as[JsObject]
+      val keys2 = metadata2.keys.filter(key => !key.startsWith("daikoku_")).filter(key => key != "raw_custom_metadata")
+      keys2.size mustBe 1
+      keys2.contains("foo2") mustBe true
+    }
   }
 }
