@@ -1,20 +1,24 @@
+use configparser::ini::Ini;
 use serde::{Deserialize, Serialize};
+use toml::Value;
 use walkdir::WalkDir;
 
 use std::{
     collections::HashMap,
     fs::{self},
+    hash::Hash,
     path::PathBuf,
     str::FromStr,
 };
 
-use crate::logging::error::DaikokuResult;
+use crate::logging::error::{DaikokuCliError, DaikokuResult};
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub(crate) struct CmsFile {
     pub(crate) name: String,
     pub(crate) content: String,
     pub(crate) metadata: HashMap<String, String>,
+    pub(crate) daikoku_data: Option<HashMap<String, Option<String>>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -29,6 +33,7 @@ impl CmsFile {
             content: fs::read_to_string(file_path).unwrap(),
             name: file_name,
             metadata,
+            daikoku_data: None,
         }
     }
 
@@ -94,6 +99,76 @@ pub(crate) fn read_sources(path: PathBuf) -> DaikokuResult<Vec<CmsFile>> {
     Ok(pages)
 }
 
+// fn read_toml_file(path: &PathBuf, content: &String) -> DaikokuResult<HashMap<String, String>> {
+//     let parsed_toml: Value = Ini::read(&content).map_err(|err| {
+//         DaikokuCliError::FileSystem(format!(
+//             "unable to parse the .daikoku_data file - {:?} - {:#?}",
+//             path, err
+//         ))
+//     })?;
+
+//     Ok(parsed_toml.as_table().map_or(HashMap::new(), |table| {
+//         table
+//             .iter()
+//             .map(|(k, v)| {
+//                 (
+//                     k.clone(),
+//                     v.as_str().map_or(String::from("default"), String::from),
+//                 )
+//             })
+//             .collect::<HashMap<String, String>>()
+//     }))
+// }
+
+pub(crate) fn read_sources_and_daikoku_metadata(path: PathBuf) -> DaikokuResult<Vec<CmsFile>> {
+    let mut pages: Vec<CmsFile> = Vec::new();
+
+    let mut current_daikoku_data = None;
+
+    for entry in WalkDir::new(path).into_iter().filter_map(Result::ok) {
+        let f_name = String::from(entry.file_name().to_string_lossy());
+
+        if entry.metadata().unwrap().is_dir() {
+            let daikoku_data_path = entry.clone().into_path().join(".daikoku_data");
+
+            if daikoku_data_path.exists() {
+                let daikoku_data = read_file(
+                    daikoku_data_path.clone(),
+                    ".daikoku_data".to_string(),
+                    ".metadata".to_string(),
+                );
+                let mut data = Ini::new();
+                let data = Ini::read(&mut data, daikoku_data.content).map_err(|_err| {
+                    DaikokuCliError::FileSystem(format!(
+                        "unable to read daikoku_data file in {:#?}",
+                        daikoku_data_path
+                    ))
+                })?;
+                let default_section = data
+                    .get("default")
+                    .map(|value| value.clone())
+                    .unwrap_or(HashMap::new());
+
+                current_daikoku_data = Some(default_section);
+            }
+        }
+
+        if entry.metadata().unwrap().is_file() {
+            if let Some(extension) = entry.clone().path().extension() {
+                let mut new_file = read_file(
+                    entry.clone().into_path(),
+                    f_name,
+                    extension.to_string_lossy().into_owned(),
+                );
+                new_file.daikoku_data = current_daikoku_data.clone();
+                pages.push(new_file);
+            }
+        }
+    }
+
+    Ok(pages)
+}
+
 fn read_file(file_path: PathBuf, file_name: String, extension: String) -> CmsFile {
     let content = fs::read_to_string(&file_path).unwrap();
 
@@ -143,6 +218,7 @@ fn read_file(file_path: PathBuf, file_name: String, extension: String) -> CmsFil
             content: content.to_string(),
             name: file_name,
             metadata,
+            daikoku_data: None,
         }
     } else {
         let mut metadata: HashMap<String, String> = HashMap::new();

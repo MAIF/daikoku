@@ -102,7 +102,7 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
       props: { isClearable: true },
       optionsFrom: getCmsPages,
       transformer: page => ({
-        label: page.name,
+        label: `${page.name} - ${page.path}`,
         value: page.id
       }),
       //@ts-ignore //FIXME
@@ -218,7 +218,7 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
       props: { isClearable: true },
       optionsFrom: getCmsPages,
       transformer: page => ({
-        label: page.name,
+        label: `${page.name} - ${page.path}`,
         value: page.id
       }),
     }

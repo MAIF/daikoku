@@ -480,9 +480,12 @@ fn create_api_folder(apis: Vec<Api>, project_path: PathBuf) -> DaikokuResult<()>
                 .join(item.human_readable_id.clone()),
         );
 
+        if !file_path.exists() {
+            let _ = fs::create_dir_all(file_path.clone());
+        }
+
         let mut config: Ini = Ini::new();
         config.set(&"default", "id", Some(item._id.clone()));
-
         let _ = config.write(file_path.clone().join(".daikoku_data"));
 
         if let Some(description) = &item.description {

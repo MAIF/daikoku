@@ -446,6 +446,8 @@ class HomeController(
       )(ctx.tenant.id.value, ctx) { (tenant, _) =>
         {
           val body = ctx.request.body
+          
+          println(body)
 
           (for {
             _ <- env.dataStore.cmsRepo.forTenant(tenant).deleteAll()

@@ -13,7 +13,7 @@ use crate::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
     },
-    models::folder::{read_contents, read_sources, CmsFile},
+    models::folder::{read_contents, read_sources, read_sources_and_daikoku_metadata, CmsFile},
     utils::frame_to_bytes_body,
 };
 
@@ -184,7 +184,7 @@ async fn mail_synchronization() -> DaikokuResult<()> {
 
     let mail_path = PathBuf::from(project.path).join("src").join("mails");
 
-    let mut body = read_sources(mail_path)?;
+    let mut body = read_sources_and_daikoku_metadata(mail_path)?;
 
     apply_daikoku_ignore(&mut body)?;
 
