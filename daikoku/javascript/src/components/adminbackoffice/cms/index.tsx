@@ -87,7 +87,7 @@ export const CMSOffice = () => {
     const styles: Array<IPage> = []
 
     items.forEach(item => {
-      const group = item.path.split("/")[0]
+      const group = item.path?.split("/")[0]
 
       if (group === 'mails')
         mails.push(item)

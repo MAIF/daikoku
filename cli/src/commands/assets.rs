@@ -109,7 +109,6 @@ async fn exists(filename: String) -> DaikokuResult<()> {
 
     let status = upstream_resp.status();
 
-    println!("{:?}", status);
     if status == 303 {
         Err(DaikokuCliError::DaikokuStrError(
             "Whoops, your token has expired. daikokucli login --token is required".to_string(),
@@ -209,10 +208,7 @@ async fn add(
     let status = status.as_u16();
 
     if status == 200 {
-        let zip_bytes: Vec<u8> = frame_to_bytes_body(body).await;
-
-        println!("{:?}", String::from_utf8(zip_bytes).unwrap());
-
+        let _: Vec<u8> = frame_to_bytes_body(body).await;
         Ok(())
     } else {
         Err(DaikokuCliError::DaikokuStrError(format!(

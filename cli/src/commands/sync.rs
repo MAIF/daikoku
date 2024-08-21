@@ -7,11 +7,13 @@ use hyper_util::rt::TokioIo;
 use tokio::net::TcpStream;
 
 use crate::{
+    helpers::post_daikoku_api,
+    interactive::prompt,
     logging::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
     },
-    models::folder::{read_contents, CmsFile},
+    models::folder::{read_contents, read_sources, CmsFile},
     utils::frame_to_bytes_body,
 };
 
@@ -21,6 +23,30 @@ use super::{
 };
 
 pub(crate) async fn run() -> DaikokuResult<()> {
+    logger::loading(format!("<yellow>Syncing</> project"));
+    logger::done();
+
+    logger::info("What kind of synchronization ? Only write the identifier.".to_string());
+    logger::info("ID - Description".to_string());
+    logger::info(" 1 - Global".to_string());
+    logger::info(" 2 - Documentation page".to_string());
+    logger::info(" 3 - API page".to_string());
+    logger::info(" 4 - Mail page".to_string());
+
+    let identifier = prompt()?;
+
+    match identifier.trim() {
+        "1" => global_synchronization().await,
+        "2" => documentation_synchronization().await,
+        "3" => api_synchronization().await,
+        "4" => mail_synchronization().await,
+        _ => Err(DaikokuCliError::ParsingError(
+            "Invalid identifier".to_string(),
+        )),
+    }
+}
+
+async fn global_synchronization() -> DaikokuResult<()> {
     logger::loading(format!("<yellow>Syncing</> project"));
     let environment = get_default_environment()?;
 
@@ -35,40 +61,7 @@ pub(crate) async fn run() -> DaikokuResult<()> {
 
     let mut body = read_contents(&PathBuf::from(&project.path))?;
 
-    let daikoku_ignore = get_daikokuignore()?;
-
-    body = body
-        .into_iter()
-        .filter(|file| {
-            daikoku_ignore
-                .iter()
-                .filter(|line| !line.is_empty())
-                .find(|&line| {
-                    line == &file.name || line == &file.path() || file.path().starts_with(line)
-                })
-                .is_none()
-        })
-        .collect::<Vec<CmsFile>>();
-
-    let rules: Vec<&String> = daikoku_ignore
-        .iter()
-        .filter(|line| !line.is_empty())
-        .collect::<Vec<&String>>();
-
-    if !rules.is_empty() {
-        logger::println("Excluded files and folders".to_string());
-        body.iter().for_each(|file| {
-            if rules
-                .iter()
-                .find(|&&line| {
-                    line == &file.name || line == &file.path() || file.path().starts_with(line)
-                })
-                .is_none()
-            {
-                logger::println(file.name.to_string());
-            }
-        });
-    }
+    apply_daikoku_ignore(&mut body)?;
 
     let body = Bytes::from(
         serde_json::to_string(&body)
@@ -128,6 +121,79 @@ pub(crate) async fn run() -> DaikokuResult<()> {
                 .replace("\n", "")
         ));
     }
+
+    Ok(())
+}
+
+async fn documentation_synchronization() -> DaikokuResult<()> {
+    logger::loading(format!("<yellow>Syncing</> documentation"));
+
+    Ok(())
+}
+
+async fn api_synchronization() -> DaikokuResult<()> {
+    logger::loading(format!("<yellow>Syncing</> API"));
+
+    Ok(())
+}
+
+fn apply_daikoku_ignore(items: &mut Vec<CmsFile>) -> DaikokuResult<()> {
+    let daikoku_ignore = get_daikokuignore()?;
+
+    let rules: Vec<&String> = daikoku_ignore
+        .iter()
+        .filter(|line| !line.is_empty())
+        .collect::<Vec<&String>>();
+
+    if !rules.is_empty() {
+        logger::println("Excluded files and folders".to_string());
+    }
+
+    items.retain(|file| {
+        let retained = daikoku_ignore
+            .iter()
+            .filter(|line| !line.is_empty())
+            .find(|&line| {
+                line == &file.name || line == &file.path() || file.path().starts_with(line)
+            })
+            .is_none();
+
+        if !retained {
+            logger::println(file.name.to_string());
+        }
+
+        retained
+    });
+
+    Ok(())
+}
+
+async fn mail_synchronization() -> DaikokuResult<()> {
+    logger::loading(format!("<yellow>Syncing</> mail"));
+
+    let environment = get_default_environment()?;
+
+    let host = environment
+        .server
+        .replace("http://", "")
+        .replace("https://", "");
+
+    let cookie = read_cookie_from_environment(true)?;
+
+    let project = projects::get_default_project()?;
+
+    let mail_path = PathBuf::from(project.path).join("src").join("mails");
+
+    let mut body = read_sources(mail_path)?;
+
+    apply_daikoku_ignore(&mut body)?;
+
+    let body = Bytes::from(
+        serde_json::to_string(&body)
+            .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?,
+    );
+
+    post_daikoku_api("/cms/sync", &host, &environment, &cookie, body).await?;
 
     Ok(())
 }

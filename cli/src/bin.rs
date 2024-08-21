@@ -2,6 +2,8 @@ mod commands;
 mod logging;
 mod models;
 mod utils;
+mod interactive;
+mod helpers;
 
 use clap::{Parser, Subcommand};
 use logging::{error::DaikokuResult, logger};

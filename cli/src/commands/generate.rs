@@ -1,12 +1,10 @@
-use std::{collections::HashMap, fs::File, io::Write, path::PathBuf, str::FromStr};
-
-use configparser::ini::Ini;
+use std::{collections::HashMap, path::PathBuf, str::FromStr};
 
 use crate::{
     commands::projects::create_path_and_file,
     logging::{
         error::{DaikokuCliError, DaikokuResult},
-        logger::{self, println},
+        logger,
     },
     models::folder::{read_sources, CmsFile, SourceExtension},
     GenerateCommands,
@@ -51,7 +49,7 @@ async fn generate_documentation_page(
 
     logger::done();
 
-    println!("\nThis is the apis list. Write the APIs number");
+    logger::info("\nThis is the apis list. Write the APIs number".to_string());
 
     let apis_path = PathBuf::from_str(&project.path)
         .unwrap()
@@ -64,13 +62,14 @@ async fn generate_documentation_page(
             == b.path().replace("apis/", "").split("/").nth(0).unwrap()
     });
 
-    println!("ID : Name");
+    logger::info("ID : Name".to_string());
     apis.iter().enumerate().for_each(|(index, api)| {
-        println!(
+        let line = format!(
             "{} : {:?}",
             index,
             api.path().replace("apis/", "").split("/").nth(0).unwrap()
-        )
+        );
+        logger::info(line);
     });
 
     let mut input = String::new();
@@ -111,6 +110,8 @@ async fn generate_documentation_page(
         metadata,
         SourceExtension::HTML,
     )?;
+
+    logger::success("generation done".to_string());
 
     Ok(())
 }
