@@ -780,7 +780,7 @@ class ApiService(
         _ <- EitherT.liftF(
           env.dataStore.apiSubscriptionRepo
             .forTenant(tenant.id)
-            .deleteByIdLogically(subscription.id)
+            .deleteById(subscription.id)
         )
         _ <- if (subscription.parent.isDefined) EitherT.pure[Future, AppError](Json.obj())
         else otoroshiClient.deleteApiKey(subscription.apiKey.clientId)

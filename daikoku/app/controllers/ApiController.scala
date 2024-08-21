@@ -2312,7 +2312,7 @@ class ApiController(
                 case Nil if subscription.parent.isDefined => deleteSubscriptionAsChild(subscription, plan, ctx.tenant)
                 case Nil => EitherT(syncAndDeleteSubscription(subscription, api, plan, ctx.tenant, team, ctx.user))
                 case childs: Seq[ApiSubscription] => action match {
-                  case Some("delete-all") =>
+                  case Some("delete") =>
                     for {
                       _ <- apiService.condenseEitherT(childs.map(c => deleteSubscriptionAsChild(c, plan, ctx.tenant)))
                       json <- EitherT(syncAndDeleteSubscription(subscription, api, plan, ctx.tenant, team, ctx.user))

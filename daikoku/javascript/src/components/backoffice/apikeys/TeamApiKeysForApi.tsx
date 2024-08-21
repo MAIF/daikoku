@@ -1,5 +1,5 @@
 import { getApolloContext } from "@apollo/client";
-import { Form, constraints, type } from "@maif/react-forms";
+import { Form, constraints, type, format } from "@maif/react-forms";
 import classNames from "classnames";
 import sortBy from "lodash/sortBy";
 import React, { useContext, useEffect, useState } from "react";
@@ -48,7 +48,7 @@ export const TeamApiKeysForApi = () => {
   const params = useParams();
   const { client } = useContext(getApolloContext());
   const { translate, Translation } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { confirm, openFormModal } = useContext(ModalContext);
   const queryClient = useQueryClient();
 
   const apiQuery = useQuery({
@@ -148,25 +148,90 @@ export const TeamApiKeysForApi = () => {
       });
     };
 
-    const deleteApiKey = (subscription: ISubscription) => {
-      confirm({
-        message: translate("etes vous certain de supprimer cette subscription"),
-      }).then((ok) => {
-        if (ok)
-          Services.deleteApiSubscription(currentTeam._id, subscription._id)
-            .then(
-              () => {
-                queryClient.invalidateQueries({
-                  queryKey: ["data", "subscriptions"],
-                });
-                toast.success(
-                  translate(
-                    "team_apikey_for_api.ask_for_make_unique.success_message"
-                  )
-                );
+    const deleteApiKey = (subscription: ISubscriptionWithChildren) => {
+      const afterDeletionFunction = () => {
+        queryClient.invalidateQueries({
+          queryKey: ["data", "subscriptions"],
+        });
+        toast.success(
+          translate("apikeys.delete.success.message")
+        );
+      }
+      if (subscription.children.length) {
+        openFormModal({
+          title: translate("apikeys.delete.modal.title"),
+          schema: {
+            choice: {
+              type: type.string,
+              format: format.buttonsSelect,
+              label: translate("apikeys.delete.choice.label"),
+              options: [
+                {
+                  label: translate("apikeys.delete.choice.promotion"),
+                  value: "promotion"
+                },
+                {
+                  label: translate("apikeys.delete.choice.extraction"),
+                  value: "extraction"
+                },
+                {
+                  label: translate("apikeys.delete.choice.delete"),
+                  value: "delete"
+                },
+              ]
+            },
+            childId: {
+              type: type.string,
+              format: format.select,
+              label: translate("apikeys.delete.child.label"),
+              options: subscription.children,
+              transformer: (s: ISubscriptionExtended) => ({value: s._id, label: `${s.apiName}/${s.planName}`}),
+              visible: (d) => d.rawValues.choice === 'promotion',
+            }
+          },
+          onSubmit: ({choice, childId}) => openFormModal(
+            {
+              title: translate("apikeys.delete.confirm.modal.title"),
+              schema: {
+                validation: {
+                  type: type.string,
+                  label: translate({ key: "apikeys.delete.confirm.label", replacements: [`${subscription.apiName}/${subscription.customName ?? subscription.planName}`]}),
+                  constraints: [
+                    constraints.required(translate('constraints.required.value')),
+                    constraints.matches(new RegExp(`${subscription.apiName}/${subscription.customName ?? subscription.planName}`), translate('constraints.match.subscription'))
+                  ],
+                  defaultValue: ""
+                }
+              },
+              actionLabel: translate('Confirm'),
+              onSubmit: d => Services.deleteApiSubscription(currentTeam._id, subscription._id, choice, childId)
+                .then(afterDeletionFunction)
+            }
+          ),
+          actionLabel: translate('Delete'),
+          noClose: true
+        })
+      } else {
+        openFormModal(
+          {
+            title: translate("apikeys.delete.confirm.modal.title"),
+            schema: {
+              validation: {
+                type: type.string,
+                label: translate({ key: "apikeys.delete.confirm.label", replacements: [`${subscription.apiName}/${subscription.customName ?? subscription.planName}`] }),
+                constraints: [
+                  constraints.required(translate('constraints.required.value')),
+                  constraints.matches(new RegExp(`${subscription.apiName}/${subscription.customName ?? subscription.planName}`), translate('constraints.match.subscription'))
+                ],
+                defaultValue: ""
               }
-            );
-      });
+            },
+            actionLabel: translate('Confirm'),
+            onSubmit: d => Services.deleteApiSubscription(currentTeam._id, subscription._id, "delete")
+              .then(afterDeletionFunction)
+          }
+        )
+      }
     };
 
     const toggleApiKeyRotation = (
@@ -509,7 +574,6 @@ const ApiKeyCard = ({
     const disableRotation =
       api.visibility === "AdminOnly" || !!plan.autoRotation;
 
-    console.debug({ subscription })
     return (
       <div className="col-12 col-sm-6 col-md-4 mb-2">
         <div className="card">
@@ -835,7 +899,6 @@ const ApiKeyCard = ({
                             const api = subscribedApis.find(
                               (a) => a._id === aggregate.api
                             );
-                            console.debug(aggregate);
                             return (
                               <div key={aggregate._id}>
                                 <Link
