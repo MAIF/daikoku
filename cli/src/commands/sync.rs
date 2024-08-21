@@ -1,10 +1,6 @@
 use std::path::PathBuf;
 
 use bytes::Bytes;
-use http_body_util::Full;
-use hyper::{header, Method, Request};
-use hyper_util::rt::TokioIo;
-use tokio::net::TcpStream;
 
 use crate::{
     helpers::post_daikoku_api,
@@ -13,12 +9,13 @@ use crate::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
     },
-    models::folder::{read_contents, read_sources, read_sources_and_daikoku_metadata, CmsFile},
-    utils::frame_to_bytes_body,
+    models::folder::{read_sources_and_daikoku_metadata, CmsFile},
 };
 
 use super::{
-    enviroments::{get_daikokuignore, get_default_environment, read_cookie_from_environment},
+    enviroments::{
+        get_daikokuignore, get_default_environment, read_cookie_from_environment, Environment,
+    },
     projects,
 };
 
@@ -33,21 +30,6 @@ pub(crate) async fn run() -> DaikokuResult<()> {
     logger::info(" 3 - API page".to_string());
     logger::info(" 4 - Mail page".to_string());
 
-    let identifier = prompt()?;
-
-    match identifier.trim() {
-        "1" => global_synchronization().await,
-        "2" => documentation_synchronization().await,
-        "3" => api_synchronization().await,
-        "4" => mail_synchronization().await,
-        _ => Err(DaikokuCliError::ParsingError(
-            "Invalid identifier".to_string(),
-        )),
-    }
-}
-
-async fn global_synchronization() -> DaikokuResult<()> {
-    logger::loading(format!("<yellow>Syncing</> project"));
     let environment = get_default_environment()?;
 
     let host = environment
@@ -55,87 +37,68 @@ async fn global_synchronization() -> DaikokuResult<()> {
         .replace("http://", "")
         .replace("https://", "");
 
-    let url: String = format!("{}/api/cms/sync", environment.server);
+    let cookie = read_cookie_from_environment(true)?;
 
     let project = projects::get_default_project()?;
 
-    let mut body = read_contents(&PathBuf::from(&project.path))?;
+    let identifier = prompt()?;
 
-    apply_daikoku_ignore(&mut body)?;
-
-    let body = Bytes::from(
-        serde_json::to_string(&body)
-            .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?,
-    );
-
-    let cookie = read_cookie_from_environment(true)?;
-
-    let req = Request::builder()
-        .method(Method::POST)
-        .uri(&url)
-        .header(header::HOST, &host)
-        .header(header::CONTENT_TYPE, "application/json")
-        .header(header::COOKIE, cookie)
-        .body(Full::new(body))
-        .unwrap();
-
-    let stream = TcpStream::connect(&host).await.map_err(|err| {
-        DaikokuCliError::DaikokuErrorWithMessage("failed to join the server".to_string(), err)
-    })?;
-    let io = TokioIo::new(stream);
-
-    let (mut sender, conn) = hyper::client::conn::http1::handshake(io)
-        .await
-        .map_err(|err| DaikokuCliError::HyperError(err))?;
-
-    tokio::task::spawn(async move {
-        if let Err(err) = conn.await {
-            logger::error(format!("Connection error {:?}", err));
+    match identifier.trim() {
+        "1" => synchronization(None, &environment, &host, &cookie, &project).await?,
+        "2" => documentations_synchronization(&environment, &host, &cookie, &project).await?,
+        "3" => {
+            synchronization(
+                Some("apis".to_string()),
+                &environment,
+                &host,
+                &cookie,
+                &project,
+            )
+            .await?
         }
-    });
-
-    let upstream_resp = sender
-        .send_request(req)
-        .await
-        .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?;
-
-    let (
-        hyper::http::response::Parts {
-            headers: _, status, ..
-        },
-        body,
-    ) = upstream_resp.into_parts();
-
-    let status = status.as_u16();
-
-    if status == 204 {
-        logger::success("synchronization done".to_string());
-    } else {
-        let bytes_body: Vec<u8> = frame_to_bytes_body(body).await;
-
-        logger::error(format!(
-            "failed to sync project : {:?}",
-            String::from_utf8(bytes_body)
-                .unwrap()
-                .as_str()
-                .replace("\n", "")
-        ));
+        "4" => {
+            synchronization(
+                Some("mails".to_string()),
+                &environment,
+                &host,
+                &cookie,
+                &project,
+            )
+            .await?
+        }
+        _ => {
+            return Err(DaikokuCliError::ParsingError(
+                "Invalid identifier".to_string(),
+            ))
+        }
     }
 
-    Ok(())
-}
-
-async fn documentation_synchronization() -> DaikokuResult<()> {
-    logger::loading(format!("<yellow>Syncing</> documentation"));
+    logger::success("synchronization done".to_string());
 
     Ok(())
 }
 
-async fn api_synchronization() -> DaikokuResult<()> {
-    logger::loading(format!("<yellow>Syncing</> API"));
+// async fn global_synchronization(
+//     environment: &Environment,
+//     host: &String,
+//     cookie: &String,
+//     project: &projects::Project,
+// ) -> DaikokuResult<()> {
+//     logger::loading(format!("<yellow>Syncing</> project"));
 
-    Ok(())
-}
+//     let mut body = read_sources_and_daikoku_metadata(&PathBuf::from(&project.path))?;
+
+//     apply_daikoku_ignore(&mut body)?;
+
+//     let body = Bytes::from(
+//         serde_json::to_string(&body)
+//             .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?,
+//     );
+
+//     post_daikoku_api("/cms/sync", &host, &environment, &cookie, body).await?;
+
+//     Ok(())
+// }
 
 fn apply_daikoku_ignore(items: &mut Vec<CmsFile>) -> DaikokuResult<()> {
     let daikoku_ignore = get_daikokuignore()?;
@@ -168,23 +131,34 @@ fn apply_daikoku_ignore(items: &mut Vec<CmsFile>) -> DaikokuResult<()> {
     Ok(())
 }
 
-async fn mail_synchronization() -> DaikokuResult<()> {
-    logger::loading(format!("<yellow>Syncing</> mail"));
+async fn synchronization(
+    folder: Option<String>,
+    environment: &Environment,
+    host: &String,
+    cookie: &String,
+    project: &projects::Project,
+) -> DaikokuResult<()> {
+    logger::loading(format!(
+        "<yellow>Syncing</> {:#?}",
+        folder.clone().unwrap_or("global".to_string())
+    ));
 
-    let environment = get_default_environment()?;
+    let mut path = PathBuf::from(project.path.clone()).join("src");
 
-    let host = environment
-        .server
-        .replace("http://", "")
-        .replace("https://", "");
+    if let Some(folder) = folder {
+        path = path.join(folder);
+    }
 
-    let cookie = read_cookie_from_environment(true)?;
+    let mut body = read_sources_and_daikoku_metadata(&path)?;
 
-    let project = projects::get_default_project()?;
-
-    let mail_path = PathBuf::from(project.path).join("src").join("mails");
-
-    let mut body = read_sources_and_daikoku_metadata(mail_path)?;
+    logger::info(format!("Synchronization of {:?} pages", body.len()));
+    body.iter().for_each(|page| {
+        logger::info(format!(
+            "Synchronization of {:?} with path {:?}",
+            page.name,
+            page.path()
+        ))
+    });
 
     apply_daikoku_ignore(&mut body)?;
 
@@ -194,6 +168,42 @@ async fn mail_synchronization() -> DaikokuResult<()> {
     );
 
     post_daikoku_api("/cms/sync", &host, &environment, &cookie, body).await?;
+
+    Ok(())
+}
+
+async fn documentations_synchronization(
+    environment: &Environment,
+    host: &String,
+    cookie: &String,
+    project: &projects::Project,
+) -> DaikokuResult<()> {
+    logger::loading("<yellow>Syncing</> documentations pages".to_string());
+
+    // TODO - load each documentation page
+    // - check how compute the id of the page 
+
+    // let path = PathBuf::from(project.path.clone()).join("src").join("apis");
+
+    // let mut body = read_sources_and_daikoku_metadata(&path)?;
+
+    // logger::info(format!("Synchronization of {:?} pages", body.len()));
+    // body.iter().for_each(|page| {
+    //     logger::info(format!(
+    //         "Synchronization of {:?} with path {:?}",
+    //         page.name,
+    //         page.path()
+    //     ))
+    // });
+
+    // apply_daikoku_ignore(&mut body)?;
+
+    // let body = Bytes::from(
+    //     serde_json::to_string(&body)
+    //         .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?,
+    // );
+
+    // post_daikoku_api("/cms/sync", &host, &environment, &cookie, body).await?;
 
     Ok(())
 }

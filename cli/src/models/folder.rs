@@ -1,12 +1,10 @@
 use configparser::ini::Ini;
 use serde::{Deserialize, Serialize};
-use toml::Value;
 use walkdir::WalkDir;
 
 use std::{
     collections::HashMap,
     fs::{self},
-    hash::Hash,
     path::PathBuf,
     str::FromStr,
 };
@@ -99,28 +97,7 @@ pub(crate) fn read_sources(path: PathBuf) -> DaikokuResult<Vec<CmsFile>> {
     Ok(pages)
 }
 
-// fn read_toml_file(path: &PathBuf, content: &String) -> DaikokuResult<HashMap<String, String>> {
-//     let parsed_toml: Value = Ini::read(&content).map_err(|err| {
-//         DaikokuCliError::FileSystem(format!(
-//             "unable to parse the .daikoku_data file - {:?} - {:#?}",
-//             path, err
-//         ))
-//     })?;
-
-//     Ok(parsed_toml.as_table().map_or(HashMap::new(), |table| {
-//         table
-//             .iter()
-//             .map(|(k, v)| {
-//                 (
-//                     k.clone(),
-//                     v.as_str().map_or(String::from("default"), String::from),
-//                 )
-//             })
-//             .collect::<HashMap<String, String>>()
-//     }))
-// }
-
-pub(crate) fn read_sources_and_daikoku_metadata(path: PathBuf) -> DaikokuResult<Vec<CmsFile>> {
+pub(crate) fn read_sources_and_daikoku_metadata(path: &PathBuf) -> DaikokuResult<Vec<CmsFile>> {
     let mut pages: Vec<CmsFile> = Vec::new();
 
     let mut current_daikoku_data = None;

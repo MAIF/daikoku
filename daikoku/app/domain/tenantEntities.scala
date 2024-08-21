@@ -20,6 +20,7 @@ import play.api.libs.json._
 import play.api.mvc.Request
 import storage.TenantCapableRepo
 
+import java.util
 import java.util.concurrent.Executors
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -599,7 +600,8 @@ object CmsPage {
 case class CmsFile(
     name: String,
     content: String,
-    metadata: Map[String, JsValue] = Map.empty
+    metadata: Map[String, JsValue] = Map.empty,
+    daikokuData: Option[Map[String, String]] = None
 ) {
   def path(): String = metadata.getOrElse("_path", JsString("")).as[String]
   def contentType(): String =
@@ -618,9 +620,16 @@ case class CmsFile(
       .parse(metadata.getOrElse("_exact", JsString("true")).as[String])
       .as[Boolean]
 
+  def id() = {
+    val defaultId = path().replaceAll("/", "-")
+    daikokuData
+          .map(data => data.getOrElse("id", defaultId))
+          .getOrElse(defaultId)
+  }
+
   def toCmsPage(tenantId: TenantId): CmsPage = {
     CmsPage(
-      id = CmsPageId(path().replaceAll("/", "-")),
+      id = CmsPageId(id()),
       tenant = tenantId,
       visible = visible(),
       authenticated = authenticated(),

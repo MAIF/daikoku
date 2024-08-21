@@ -446,20 +446,17 @@ class HomeController(
       )(ctx.tenant.id.value, ctx) { (tenant, _) =>
         {
           val body = ctx.request.body
-          
+
           println(body)
 
-          (for {
-            _ <- env.dataStore.cmsRepo.forTenant(tenant).deleteAll()
-          } yield {
-            Future
+          Future
               .sequence(
                 body
                   .as(Reads.seq(CmsFileFormat.reads))
                   .map(page => {
                     env.dataStore.cmsRepo
-                      .forTenant(tenant)
-                      .save(page.toCmsPage(ctx.tenant.id))
+                          .forTenant(tenant)
+                          .save(page.toCmsPage(ctx.tenant.id))
                   })
               )
               .map(_ => NoContent)
@@ -467,7 +464,6 @@ class HomeController(
                 case e: Throwable =>
                   BadRequest(Json.obj("error" -> e.getMessage))
               }
-          }).flatten
         }
       }
     }

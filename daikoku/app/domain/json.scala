@@ -4542,7 +4542,8 @@ object json {
       Json.obj(
         "name" -> o.name,
         "content" -> o.content,
-        "metadata" -> o.metadata
+        "metadata" -> o.metadata,
+        "daikoku_data" -> o.daikokuData
       )
     override def reads(json: JsValue): JsResult[CmsFile] =
       Try {
@@ -4550,7 +4551,9 @@ object json {
           name = (json \ "name").as[String],
           content = (json \ "content").as[String],
           metadata =
-            (json \ "metadata").asOpt[Map[String, JsValue]].getOrElse(Map.empty)
+            (json \ "metadata").asOpt[Map[String, JsValue]].getOrElse(Map.empty),
+          daikokuData =
+            (json \ "daikoku_data").asOpt[Map[String, String]],
         )
       } match {
         case Failure(exception) => JsError(exception.getMessage)
