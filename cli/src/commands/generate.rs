@@ -1,5 +1,7 @@
 use std::{collections::HashMap, path::PathBuf, str::FromStr};
 
+use uuid::Uuid;
+
 use crate::{
     commands::projects::create_path_and_file,
     logging::{
@@ -102,6 +104,7 @@ async fn generate_documentation_page(
     let mut metadata = HashMap::new();
     metadata.insert("title".to_string(), title);
     metadata.insert("description".to_string(), desc);
+    metadata.insert("id".to_string(), Uuid::new_v4().to_string());
 
     create_path_and_file(
         page_path,

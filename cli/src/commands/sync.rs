@@ -9,7 +9,7 @@ use crate::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
     },
-    models::folder::{read_sources_and_daikoku_metadata, CmsFile},
+    models::folder::{read_documentations, read_sources_and_daikoku_metadata, CmsFile},
 };
 
 use super::{
@@ -180,30 +180,27 @@ async fn documentations_synchronization(
 ) -> DaikokuResult<()> {
     logger::loading("<yellow>Syncing</> documentations pages".to_string());
 
-    // TODO - load each documentation page
-    // - check how compute the id of the page 
+    let path = PathBuf::from(project.path.clone()).join("src").join("apis");
 
-    // let path = PathBuf::from(project.path.clone()).join("src").join("apis");
+    let mut body = read_documentations(&path)?;
 
-    // let mut body = read_sources_and_daikoku_metadata(&path)?;
+    logger::info(format!("Synchronization of {:?} pages", body.len()));
+    body.iter().for_each(|page| {
+        logger::info(format!(
+            "Synchronization of {:?} with path {:?}",
+            page.name,
+            page.path()
+        ))
+    });
 
-    // logger::info(format!("Synchronization of {:?} pages", body.len()));
-    // body.iter().for_each(|page| {
-    //     logger::info(format!(
-    //         "Synchronization of {:?} with path {:?}",
-    //         page.name,
-    //         page.path()
-    //     ))
-    // });
+    apply_daikoku_ignore(&mut body)?;
 
-    // apply_daikoku_ignore(&mut body)?;
+    let body = Bytes::from(
+        serde_json::to_string(&body)
+            .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?,
+    );
 
-    // let body = Bytes::from(
-    //     serde_json::to_string(&body)
-    //         .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?,
-    // );
-
-    // post_daikoku_api("/cms/sync", &host, &environment, &cookie, body).await?;
+    post_daikoku_api("/cms/sync", &host, &environment, &cookie, body).await?;
 
     Ok(())
 }

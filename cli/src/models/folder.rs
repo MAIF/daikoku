@@ -97,6 +97,36 @@ pub(crate) fn read_sources(path: PathBuf) -> DaikokuResult<Vec<CmsFile>> {
     Ok(pages)
 }
 
+pub(crate) fn read_documentations(path: &PathBuf) -> DaikokuResult<Vec<CmsFile>> {
+    let mut pages: Vec<CmsFile> = Vec::new();
+
+    for entry in WalkDir::new(path).into_iter().filter_map(Result::ok) {
+        let f_name = String::from(entry.file_name().to_string_lossy());
+
+        // println!("{f_name}");
+
+        if entry.metadata().unwrap().is_file()
+            & entry
+                .clone()
+                .path()
+                .as_os_str()
+                .to_string_lossy()
+                .contains("/documentations/")
+        {
+            if let Some(extension) = entry.clone().path().extension() {
+                let new_file = read_file(
+                    entry.clone().into_path(),
+                    f_name,
+                    extension.to_string_lossy().into_owned(),
+                );
+                pages.push(new_file);
+            }
+        }
+    }
+
+    Ok(pages)
+}
+
 pub(crate) fn read_sources_and_daikoku_metadata(path: &PathBuf) -> DaikokuResult<Vec<CmsFile>> {
     let mut pages: Vec<CmsFile> = Vec::new();
 
