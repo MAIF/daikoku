@@ -2308,7 +2308,6 @@ class ApiController(
             EitherT.liftF(env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
               .find(Json.obj("parent" -> subscription.id.asJson)))
               .flatMap {
-                //enfant => on delete la subscription mais on recalcul la clé
                 case Nil if subscription.parent.isDefined => deleteSubscriptionAsChild(subscription, plan, ctx.tenant)
                 case Nil => EitherT(syncAndDeleteSubscription(subscription, api, plan, ctx.tenant, team, ctx.user))
                 case childs: Seq[ApiSubscription] => action match {
@@ -2320,7 +2319,7 @@ class ApiController(
                   case Some("extraction") =>
                     for {
                       _ <- apiService.condenseEitherT(childs
-                        .map(s => EitherT(_makeUnique(ctx.tenant, plan, s, ctx.user))) //fixme: create a notification to inform about a secret rotation
+                        .map(s => EitherT(_makeUnique(ctx.tenant, plan, s, ctx.user)))
                       )
                       json <- EitherT(syncAndDeleteSubscription(subscription, api, plan, ctx.tenant, team, ctx.user))
                     } yield json
@@ -2363,7 +2362,7 @@ class ApiController(
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
           .findOneNotDeleted(
-            Json.obj("_id" -> subscriptionId, "team" -> team.id.asJson)
+            Json.obj("_id" -> subscriptionId)
           ),
         AppError.SubscriptionNotFound
       )
@@ -2373,6 +2372,7 @@ class ApiController(
           .findByIdNotDeleted(subscription.api),
         AppError.ApiNotFound
       )
+      _ <- EitherT.cond[Future][AppError, Unit](team.id == subscription.team || team.id == api.team, (), AppError.Unauthorized)
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)

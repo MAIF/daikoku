@@ -9,7 +9,6 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
 import controllers.AppError.SubscriptionAggregationDisabled
-import fr.maif.otoroshi.daikoku.domain
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -17,21 +16,18 @@ import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, SeqApiSubscriptionFormat}
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
-import org.scalatest.time.Span.convertSpanToDuration
-import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
 import org.scalatestplus.play.PlaySpec
 import org.testcontainers.containers.BindMode
 import play.api.http.Status
 import play.api.libs.json._
+import scala.concurrent.duration._
 
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Await
 import scala.util.Random
 
 class ApiControllerSpec()
@@ -61,7 +57,9 @@ class ApiControllerSpec()
     env = Map("APP_IMPORT_FROM" -> "/home/user/otoroshi.json")
   )
 
+
   before {
+    Await.result(cleanOtoroshiServer(container.mappedPort(8080)), 5.seconds)
     wireMockServer.start()
     WireMock.configureFor(stubHost, stubPort)
   }
@@ -70,105 +68,6 @@ class ApiControllerSpec()
     wireMockServer.stop()
   }
 
-//  "a simple test" can {
-//    "api-keys creation on otoroshi" in {
-//      setupEnvBlocking(
-//        tenants = Seq(tenant.copy(otoroshiSettings = Set(OtoroshiSettings(
-//          id = OtoroshiSettingsId("default"),
-//          url = "http://localhost:8080",
-//          host = "otoroshi-api.oto.tools",
-//          clientId = "admin-api-apikey-id",
-//          clientSecret = "password"
-//        )))),
-//        users = Seq(userAdmin),
-//        teams = Seq(teamConsumer),
-//        apis = Seq(defaultApi.api),
-//        usagePlans = defaultApi.plans
-//      )
-//
-//      //plans
-//      //free without quotas : 1
-//      //free with quotas : 2
-//      //Quotas With Limits : 3
-//      //Quotas Without Limits : 4
-//      //PayPerUse : 5
-//
-//      val session = loginWithBlocking(userAdmin, tenant)
-//
-//      (1 to 5).foreach(id => {
-//        val resp = httpJsonCallBlocking(
-//          path = s"/api/apis/${defaultApi.api.id.value}/subscriptions",
-//          method = "POST",
-//          body = Some(
-//            Json.obj("plan" -> id.toString, "teams" -> Json.arr(teamConsumer.id.asJson))
-//          )
-//        )(tenant, session)
-//        AppLogger.info(Json.prettyPrint(resp.json))
-//        resp.status mustBe 200
-//
-//
-//        AppLogger.info(Json.prettyPrint(resp.json))
-//      })
-//
-//      val respSubs = httpJsonCallBlocking(
-//        path = s"/api/subscriptions/teams/${teamConsumer.id.value}"
-//      )(tenant, session)
-//
-//      respSubs.status mustBe 200
-//
-//      val eventualSubs = SeqApiSubscriptionFormat.reads(respSubs.json)
-//
-//      eventualSubs.isSuccess mustBe true
-//
-//      val subs = eventualSubs.get
-//      subs.length mustBe 5
-//
-//      Map(
-//        "1" -> Int.MaxValue,
-//        "2" -> Int.MaxValue,
-//        "3" -> 2000,
-//        "4" -> 10000,
-//        "5" -> Int.MaxValue,
-//      ).foreach(tuple => {
-//        val planId = tuple._1
-//        val quotas = tuple._2
-//
-//        val sub = subs.find(s => s.plan.value === planId).get
-//
-//        val respApiKey = httpJsonCallBlocking(
-//          path = s"/api/apikeys/${sub.apiKey.clientId}",
-//          baseUrl = "http://localhost",
-//          port = container.mappedPort(8080),
-//          headers = Map(
-//            "Host" -> "otoroshi-api.oto.tools",
-//            "Otoroshi-Client-Id" -> "admin-api-apikey-id",
-//            "Otoroshi-Client-Secret" -> "password",
-//          )
-//        )(tenant, session)
-//
-//        val test = httpJsonCallBlocking(
-//          path = s"/api/apikeys",
-//          baseUrl = "http://localhost",
-//          port = container.mappedPort(8080),
-//          headers = Map(
-//            "Host" -> "otoroshi-api.oto.tools",
-//            "Otoroshi-Client-Id" -> "admin-api-apikey-id",
-//            "Otoroshi-Client-Secret" -> "password",
-//          )
-//        )(tenant, session)
-//        AppLogger.info(Json.prettyPrint(test.json))
-//
-//        AppLogger.info(s"/api/apikeys/${sub.apiKey.clientId}")
-//        AppLogger.info(Json.prettyPrint(respApiKey.json))
-//        respApiKey.status mustBe 200
-//
-//        (respApiKey.json \ "dailyQuota").as[Long] mustBe quotas
-//        (respApiKey.json \ "monthlyQuota").as[Long] mustBe quotas
-//      })
-//
-//
-//    }
-//  }
 
   "a tenant administrator" can {
     "not initialize apis for a tenant for which he's not admin" in {
@@ -978,68 +877,117 @@ class ApiControllerSpec()
     }
 
     "delete an api subscription from an api of his team" in {
-      val payPerUsePlanId: UsagePlanId = UsagePlanId("5")
-      val payPerUserSub: ApiSubscription = ApiSubscription(
-        id = ApiSubscriptionId("test"),
+      val plan = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
-        plan = payPerUsePlanId,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val api = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
+        defaultUsagePlan = UsagePlanId("parent.dev").some
+      )
+      val sub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = plan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
-        api = defaultApi.api.id,
+        api = api.id,
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "token"
-      )
-      val yesterdayConsumption: ApiKeyConsumption = ApiKeyConsumption(
-        id = DatastoreId("test"),
-        tenant = tenant.id,
-        team = teamConsumerId,
-        api = defaultApi.api.id,
-        plan = payPerUsePlanId,
-        clientId = payPerUserSub.apiKey.clientId,
-        hits = 1000L,
-        globalInformations = ApiKeyGlobalConsumptionInformations(
-          1000L,
-          100,
-          200,
-          None,
-          None
-        ),
-        quotas = ApiKeyQuotas(
-          authorizedCallsPerSec = 10000,
-          authorizedCallsPerDay = 10000,
-          authorizedCallsPerMonth = 10000,
-          currentCallsPerSec = 1000,
-          remainingCallsPerSec = 9000,
-          currentCallsPerDay = 1000,
-          remainingCallsPerDay = 9000,
-          currentCallsPerMonth = 1000,
-          remainingCallsPerMonth = 9000
-        ),
-        billing = ApiKeyBilling(1000, BigDecimal(30)),
-        from = DateTime.now().minusDays(1).withTimeAtStartOfDay(),
-        to = DateTime.now().withTimeAtStartOfDay(),
-        state = ApiKeyConsumptionState.Completed
+        integrationToken = "parent_token"
       )
 
       setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(userAdmin),
-        teams = Seq(teamOwner, teamConsumer),
-        usagePlans = defaultApi.plans,
-        apis = Seq(defaultApi.api),
-        subscriptions = Seq(payPerUserSub),
-        consumptions = Seq(yesterdayConsumption)
+        tenants = Seq(
+          tenant.copy(
+            aggregationApiKeysSecurity = Some(true),
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin, user),
+        teams = Seq(
+          teamOwner,
+          teamConsumer.copy(users = Set(
+            UserWithPermission(userTeamUserId, Administrator)
+          )),
+          defaultAdminTeam),
+        usagePlans = Seq(plan, adminApiPlan),
+        apis = Seq(api, adminApi),
+        subscriptions = Seq(sub)
       )
+
       val session = loginWithBlocking(userAdmin, tenant)
+      val userSession = loginWithBlocking(user, tenant)
+
+      val respPreVerifOtoParent = httpJsonCallBlocking(
+        path = s"/api/apikeys/${sub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+
+      (respPreVerifOtoParent.json \ "enabled").as[Boolean] mustBe true
+
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/subscriptions/${payPerUserSub.id.value}/teams/${payPerUserSub.team.value}/_delete",
+          s"/api/teams/${teamOwnerId.value}/subscriptions/${sub.id.value}",
         method = "DELETE"
       )(tenant, session)
       resp.status mustBe 200
+
+      val respVerifDk = httpJsonCallBlocking(
+        path = s"/api/teams/${teamConsumer.id.value}/subscription/${sub.id.value}/informations"
+      )(tenant, userSession)
+      respVerifDk.status mustBe 404
+
+      val respVerifOto = httpJsonCallBlocking(
+        path = s"/api/apikeys/${sub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+      respVerifOto.status mustBe 404
     }
 
     "not update an api of a team which he is not a member" in {
@@ -1285,82 +1233,6 @@ class ApiControllerSpec()
       resp.status mustBe 401
       (resp.json \ "error")
         .as[String] mustBe AppError.PlanUnauthorized.getErrorMessage()
-    }
-
-    "delete archived subscriptions" in {
-      val payPerUsePlanId = UsagePlanId("5")
-      val sub1 = ApiSubscription(
-        id = ApiSubscriptionId("test"),
-        tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
-        plan = payPerUsePlanId,
-        createdAt = DateTime.now(),
-        team = teamConsumerId,
-        api = defaultApi.api.id,
-        by = userTeamAdminId,
-        customName = None,
-        rotation = None,
-        integrationToken = "test"
-      )
-      val sub2 = ApiSubscription(
-        id = ApiSubscriptionId("test2"),
-        tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
-        plan = payPerUsePlanId,
-        createdAt = DateTime.now(),
-        team = teamConsumerId,
-        api = defaultApi.api.id,
-        by = userTeamAdminId,
-        customName = None,
-        enabled = false,
-        rotation = None,
-        integrationToken = "test2"
-      )
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(userAdmin),
-        teams = Seq(
-          teamOwner,
-          teamConsumer
-        ),
-        usagePlans = defaultApi.plans,
-        apis = Seq(defaultApi.api),
-        subscriptions = Seq(sub1, sub2)
-      )
-
-      val session = loginWithBlocking(userAdmin, tenant)
-      val respVerif0 = httpJsonCallBlocking(
-        s"/api/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
-      )(tenant, session)
-      respVerif0.status mustBe 200
-      val eventualSubs0 = json.SeqApiSubscriptionFormat.reads(respVerif0.json)
-      eventualSubs0.isSuccess mustBe true
-      eventualSubs0.get.length mustBe 2
-      eventualSubs0.get.find(_.id == sub1.id).get.enabled mustBe true
-      eventualSubs0.get.find(_.id == sub2.id).get.enabled mustBe false
-
-      val respClean = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumerId.value}/subscriptions/_clean",
-        method = "DELETE"
-      )(tenant, session)
-      respClean.status mustBe 200
-      (respClean.json \ "done").as[Boolean] mustBe true
-      val eventualsCleanSubs = json.SeqApiSubscriptionIdFormat.reads(
-        (respClean.json \ "apiSubscriptions").as[JsArray]
-      )
-      eventualsCleanSubs.isSuccess mustBe true
-      eventualsCleanSubs.get.length mustBe 1
-      eventualsCleanSubs.get.head mustBe sub2.id
-
-      val respVerif = httpJsonCallBlocking(
-        s"/api/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
-      )(tenant, session)
-      respVerif.status mustBe 200
-
-      val eventualSubs = json.SeqApiSubscriptionFormat.reads(respVerif.json)
-      eventualSubs.isSuccess mustBe true
-      eventualSubs.get.length mustBe 1
-      eventualSubs.get.head.id mustBe sub1.id
     }
 
     "get subscription informations" in {
@@ -2042,67 +1914,117 @@ class ApiControllerSpec()
     }
 
     "delete an api subscription from an api of his team" in {
-      val payPerUsePlanId: UsagePlanId = UsagePlanId("5")
-      val payPerUserSub: ApiSubscription = ApiSubscription(
-        id = ApiSubscriptionId("test"),
+      val plan = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        apiKey = OtoroshiApiKey("name", "id", "secret"),
-        plan = payPerUsePlanId,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val api = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
+        defaultUsagePlan = UsagePlanId("parent.dev").some
+      )
+      val sub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = plan.id,
         createdAt = DateTime.now(),
         team = teamConsumerId,
-        api = defaultApi.api.id,
+        api = api.id,
         by = userTeamAdminId,
         customName = None,
         rotation = None,
-        integrationToken = "token"
+        integrationToken = "parent_token"
       )
-      val yesterdayConsumption: ApiKeyConsumption = ApiKeyConsumption(
-        id = DatastoreId("test"),
-        tenant = tenant.id,
-        team = teamConsumerId,
-        api = defaultApi.api.id,
-        plan = payPerUsePlanId,
-        clientId = payPerUserSub.apiKey.clientId,
-        hits = 1000L,
-        globalInformations = ApiKeyGlobalConsumptionInformations(
-          1000L,
-          100,
-          200,
-          None,
-          None
-        ),
-        quotas = ApiKeyQuotas(
-          authorizedCallsPerSec = 10000,
-          authorizedCallsPerDay = 10000,
-          authorizedCallsPerMonth = 10000,
-          currentCallsPerSec = 1000,
-          remainingCallsPerSec = 9000,
-          currentCallsPerDay = 1000,
-          remainingCallsPerDay = 9000,
-          currentCallsPerMonth = 1000,
-          remainingCallsPerMonth = 9000
-        ),
-        billing = ApiKeyBilling(1000, BigDecimal(30)),
-        from = DateTime.now().minusDays(1).withTimeAtStartOfDay(),
-        to = DateTime.now().withTimeAtStartOfDay(),
-        state = ApiKeyConsumptionState.Completed
-      )
+
       setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(userApiEditor),
-        teams = Seq(teamOwner, teamConsumer),
-        usagePlans = defaultApi.plans,
-        apis = Seq(defaultApi.api),
-        subscriptions = Seq(payPerUserSub),
-        consumptions = Seq(yesterdayConsumption)
+        tenants = Seq(
+          tenant.copy(
+            aggregationApiKeysSecurity = Some(true),
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userApiEditor, user),
+        teams = Seq(
+          teamOwner,
+          teamConsumer.copy(users = Set(
+            UserWithPermission(userTeamUserId, Administrator)
+          )),
+          defaultAdminTeam),
+        usagePlans = Seq(plan, adminApiPlan),
+        apis = Seq(api, adminApi),
+        subscriptions = Seq(sub)
       )
+
       val session = loginWithBlocking(userApiEditor, tenant)
+      val userSession = loginWithBlocking(user, tenant)
+
+      val respPreVerifOtoParent = httpJsonCallBlocking(
+        path = s"/api/apikeys/${sub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+
+      (respPreVerifOtoParent.json \ "enabled").as[Boolean] mustBe true
+
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/subscriptions/${payPerUserSub.id.value}/teams/${payPerUserSub.team.value}/_delete",
+          s"/api/teams/${teamOwnerId.value}/subscriptions/${sub.id.value}",
         method = "DELETE"
       )(tenant, session)
       resp.status mustBe 200
+
+      val respVerifDk = httpJsonCallBlocking(
+        path = s"/api/teams/${teamConsumer.id.value}/subscription/${sub.id.value}/informations"
+      )(tenant, userSession)
+      respVerifDk.status mustBe 404
+
+      val respVerifOto = httpJsonCallBlocking(
+        path = s"/api/apikeys/${sub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+      respVerifOto.status mustBe 404
     }
 
     "not delete an api of a team which he's not a member" in {
@@ -5261,7 +5183,6 @@ class ApiControllerSpec()
         subscriptions = Seq(parentSub, childSub)
       )
 
-//      AppLogger.info(container.logs)
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path =
@@ -5409,7 +5330,6 @@ class ApiControllerSpec()
         subscriptions = Seq(parentSub, childSub)
       )
 
-//      AppLogger.info(container.logs)
       val session = loginWithBlocking(userAdmin, tenant)
 
       val resp = httpJsonCallBlocking(
@@ -6507,7 +6427,7 @@ class ApiControllerSpec()
       //delete parentSub => allSub are deleted + otokey
       val resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamConsumerId.value}/subscriptions/${parentSub.id.value}?action=delete-all",
+          s"/api/teams/${teamConsumerId.value}/subscriptions/${parentSub.id.value}?action=delete",
         method = "DELETE"
       )(tenant, session)
       resp.status mustBe 200
@@ -7060,7 +6980,6 @@ class ApiControllerSpec()
         port = container.mappedPort(8080)
       )(tenant, session)
       respVerifOtoChild2.status mustBe 200
-      logger.info(Json.prettyPrint(respVerifOtoChild2.json))
       (respVerifOtoChild2.json \ "enabled").as[Boolean] mustBe true
       val authorizations2 = (respVerifOtoChild2.json \ "authorizations").as[JsArray]
       val strings2 = authorizations2.value.map(value => (value \ "id").as[String])
