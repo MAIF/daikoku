@@ -256,9 +256,14 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
         format: format.select,
         label: translate('CMS Page'),
         props: { isClearable: true },
-        optionsFrom: getCmsPages,
+        optionsFrom: () => {
+          return getCmsPages()
+            .then(results => results
+              .filter(result => result.path.includes('documentations/'))
+              .sort((a, b) => a.path.includes(props.api._humanReadableId) ? 1 : b.path.includes(props.api._humanReadableId) ? 1 : -1))
+        },
         transformer: page => ({
-          label: page.name,
+          label: `${page.path}/${page.name}`,
           value: page.id
         }),
         visible: ({
