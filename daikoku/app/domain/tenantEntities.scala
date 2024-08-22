@@ -728,7 +728,7 @@ case class CmsPage(
               ),
               req
             )
-          case None => AppError.render(AppError.UserNotFound)
+          case None => AppError.render(AppError.UserNotFound())
         }
       }
     )

@@ -421,14 +421,16 @@ test('aggregation mode', async ({ page, request }) => {
   await page.getByRole('button', { name: 'Ok' }).click();
   await expect(page.getByLabel('Client Id').first()).not.toHaveValue(clientId);
 
-  //test archive apikey & clean archive apikeys
-  await page.getByRole('button', { name: 'disable' }).click();
-  await expect(page.getByRole('button', { name: 'enable' })).toBeVisible();
+  // //test archive apikey & clean archive apikeys
+  await page.getByRole('button', { name: 'Disable subscription' }).click();
+  await expect(page.getByRole('button', { name: 'Enable subscription' })).toBeVisible();
+
+  await page.getByLabel('Delete').click();
+  await expect(page.locator('h5')).toContainText('Confirm Deletion');
+  await page.getByLabel('To confirm the deletion,').fill('test API 2/test plan');
+  await page.getByRole('button', { name: 'Confirm' }).click();
   await page.getByText('API keys', { exact: true }).click();
-  await page.getByRole('button', { name: 'clean archived API keys' }).click();
-  await expect(page.getByRole('paragraph')).toContainText('Are you sure you want to clean archived API keys?');
-  await page.getByRole('button', { name: 'Ok' }).click();
-  await expect(page.locator('tbody')).not.toContainText('test API 2')
+  await expect(page.getByRole('row', { name: 'test API 2 1.0.0  API keys' })).toBeHidden
 
 
 

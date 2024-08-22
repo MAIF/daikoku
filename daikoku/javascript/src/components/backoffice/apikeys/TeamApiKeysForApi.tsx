@@ -1,5 +1,5 @@
 import { getApolloContext } from '@apollo/client';
-import { Form, constraints, type } from '@maif/react-forms';
+import { Form, constraints, type, format } from '@maif/react-forms';
 import classNames from 'classnames';
 import sortBy from 'lodash/sortBy';
 import React, { useContext, useEffect, useState } from 'react';
@@ -48,7 +48,7 @@ export const TeamApiKeysForApi = () => {
   const params = useParams();
   const { client } = useContext(getApolloContext());
   const { translate, Translation } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { confirm, openFormModal } = useContext(ModalContext);
   const queryClient = useQueryClient();
 
   const apiQuery = useQuery({
@@ -148,6 +148,92 @@ export const TeamApiKeysForApi = () => {
       });
     };
 
+    const deleteApiKey = (subscription: ISubscriptionWithChildren) => {
+      const afterDeletionFunction = () => {
+        queryClient.invalidateQueries({
+          queryKey: ["data", "subscriptions"],
+        });
+        toast.success(
+          translate("apikeys.delete.success.message")
+        );
+      }
+      if (subscription.children.length) {
+        openFormModal({
+          title: translate("apikeys.delete.modal.title"),
+          schema: {
+            choice: {
+              type: type.string,
+              format: format.buttonsSelect,
+              label: translate("apikeys.delete.choice.label"),
+              options: [
+                {
+                  label: translate("apikeys.delete.choice.promotion"),
+                  value: "promotion"
+                },
+                {
+                  label: translate("apikeys.delete.choice.extraction"),
+                  value: "extraction"
+                },
+                {
+                  label: translate("apikeys.delete.choice.delete"),
+                  value: "delete"
+                },
+              ]
+            },
+            childId: {
+              type: type.string,
+              format: format.select,
+              label: translate("apikeys.delete.child.label"),
+              options: subscription.children,
+              transformer: (s: ISubscriptionExtended) => ({value: s._id, label: `${s.apiName}/${s.planName}`}),
+              visible: (d) => d.rawValues.choice === 'promotion',
+            }
+          },
+          onSubmit: ({choice, childId}) => openFormModal(
+            {
+              title: translate("apikeys.delete.confirm.modal.title"),
+              schema: {
+                validation: {
+                  type: type.string,
+                  label: translate({ key: "apikeys.delete.confirm.label", replacements: [`${subscription.apiName}/${subscription.customName ?? subscription.planName}`]}),
+                  constraints: [
+                    constraints.required(translate('constraints.required.value')),
+                    constraints.matches(new RegExp(`${subscription.apiName}/${subscription.customName ?? subscription.planName}`), translate('constraints.match.subscription'))
+                  ],
+                  defaultValue: ""
+                }
+              },
+              actionLabel: translate('Confirm'),
+              onSubmit: d => Services.deleteApiSubscription(currentTeam._id, subscription._id, choice, childId)
+                .then(afterDeletionFunction)
+            }
+          ),
+          actionLabel: translate('Delete'),
+          noClose: true
+        })
+      } else {
+        openFormModal(
+          {
+            title: translate("apikeys.delete.confirm.modal.title"),
+            schema: {
+              validation: {
+                type: type.string,
+                label: translate({ key: "apikeys.delete.confirm.label", replacements: [`${subscription.apiName}/${subscription.customName ?? subscription.planName}`] }),
+                constraints: [
+                  constraints.required(translate('constraints.required.value')),
+                  constraints.matches(new RegExp(`${subscription.apiName}/${subscription.customName ?? subscription.planName}`), translate('constraints.match.subscription'))
+                ],
+                defaultValue: ""
+              }
+            },
+            actionLabel: translate('Confirm'),
+            onSubmit: d => Services.deleteApiSubscription(currentTeam._id, subscription._id, "delete")
+              .then(afterDeletionFunction)
+          }
+        )
+      }
+    };
+
     const toggleApiKeyRotation = (
       subscription: ISubscription,
       plan: IUsagePlan,
@@ -242,9 +328,9 @@ export const TeamApiKeysForApi = () => {
           (acc, sub) => {
             return acc.find((a) => a._id === sub.parent)
               ? acc.map((a) => {
-                  if (a._id === sub.parent) a.children.push(sub);
-                  return a;
-                })
+                if (a._id === sub.parent) a.children.push(sub);
+                return a;
+              })
               : [...acc, { ...sub, children: [] }];
           },
           sorted
@@ -297,6 +383,7 @@ export const TeamApiKeysForApi = () => {
                         }
                         archiveApiKey={() => archiveApiKey(subscription)}
                         makeUniqueApiKey={() => makeUniqueApiKey(subscription)}
+                        deleteApiKey={() => deleteApiKey(subscription)}
                         toggleRotation={(
                           plan,
                           enabled,
@@ -340,6 +427,7 @@ type ApiKeyCardProps = {
   statsLink: string;
   archiveApiKey: () => void;
   makeUniqueApiKey: () => void;
+  deleteApiKey: () => void;
   toggleRotation: (
     plan: IUsagePlan,
     enabled: boolean,
@@ -362,6 +450,7 @@ const ApiKeyCard = ({
   regenerateSecret,
   currentTeam,
   subscribedApis,
+  deleteApiKey
 }: ApiKeyCardProps) => {
   const [hide, setHide] = useState(true);
   const [settingMode, setSettingMode] = useState(false);
@@ -398,8 +487,8 @@ const ApiKeyCard = ({
       if (!customName) {
         setCustomName(
           subscription.customName ||
-            planQuery.data.customName ||
-            planQuery.data.type
+          planQuery.data.customName ||
+          planQuery.data.type
         );
       }
     }
@@ -626,41 +715,46 @@ const ApiKeyCard = ({
                         </button>
                       </BeautifulTitle>
                     )}
-                    {!subscription.parent && (
-                      <BeautifulTitle title={translate('Enable/Disable')}>
-                        <button
-                          type="button"
-                          disabled={
-                            subscription.parent ? !subscription.parentUp : false
-                          }
-                          aria-label={
-                            subscription.enabled ? 'disable' : 'enable'
-                          }
-                          className={classNames('btn btn-sm ms-1', {
-                            'btn-outline-danger':
-                              subscription.enabled &&
-                              (subscription.parent
-                                ? subscription.parentUp
-                                : true),
-                            'btn-outline-success':
-                              !subscription.enabled &&
-                              (subscription.parent
-                                ? subscription.parentUp
-                                : true),
-                          })}
-                          onClick={archiveApiKey}
-                        >
-                          <i className="fas fa-power-off" />
-                        </button>
-                      </BeautifulTitle>
-                    )}
+                    <BeautifulTitle title={subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}>
+                      <button
+                        type="button"
+                        disabled={
+                          subscription.parent ? !subscription.parentUp : false
+                        }
+                        aria-label={
+                          subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")
+                        }
+                        className={classNames("btn btn-sm ms-1", {
+                          "btn-outline-danger":
+                            subscription.enabled,
+                          "btn-outline-success":
+                            !subscription.enabled,
+                        })}
+                        onClick={archiveApiKey}
+                      >
+                        <i className="fas fa-power-off" />
+                      </button>
+                    </BeautifulTitle>
+                    <BeautifulTitle title={translate("api.delete.subscription")}>
+                      <button
+                        type="button"
+                        disabled={
+                          subscription.parent ? !subscription.parentUp : false
+                        }
+                        aria-label={translate("Delete")}
+                        className={classNames("btn btn-sm ms-1 btn-outline-danger")}
+                        onClick={deleteApiKey}
+                      >
+                        <i className="fas fa-trash" />
+                      </button>
+                    </BeautifulTitle>
                     {subscription.parent && (
                       <BeautifulTitle
                         title={translate('team_apikey_for_api.make_unique')}
                       >
                         <button
                           type="button"
-                          aria-label="make unique"
+                          aria-label={translate("team_apikey_for_api.make_unique")}
                           className="btn btn-sm ms-1 btn-outline-danger"
                           onClick={makeUniqueApiKey}
                         >
@@ -732,8 +826,8 @@ const ApiKeyCard = ({
                         <input
                           readOnly
                           disabled={!subscription.enabled}
-                          type={hide ? 'password' : ''}
-                          className="form-control input-sm"
+                          type={hide ? "password" : ""}
+                          className="form-control input"
                           id={`client-secret-${_id}`}
                           value={subscription.apiKey?.clientSecret}
                           aria-describedby={`client-secret-addon-${_id}`}
@@ -815,7 +909,6 @@ const ApiKeyCard = ({
                             const api = subscribedApis.find(
                               (a) => a._id === aggregate.api
                             );
-                            console.debug(aggregate);
                             return (
                               <div key={aggregate._id}>
                                 <Link
@@ -830,9 +923,8 @@ const ApiKeyCard = ({
                       </div>
                     )}
                     <button
-                      className={`btn btn-sm btn-outline-info mx-auto d-flex ${
-                        showAggregatePlan ? 'mt-3' : ''
-                      }`}
+                      className={`btn btn-sm btn-outline-info mx-auto d-flex ${showAggregatePlan ? "mt-3" : ""
+                        }`}
                       onClick={() => setAggregatePlan(!showAggregatePlan)}
                     >
                       {showAggregatePlan
