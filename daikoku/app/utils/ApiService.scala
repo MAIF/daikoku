@@ -1985,8 +1985,8 @@ class ApiService(
               AppError.SecurityError("Subscription Aggregation")
             )
             _ <- EitherT.cond[Future][AppError, Unit](
-              plan.environmentAggregationApiKeysSecurity.isDefined &&
-                plan.environmentAggregationApiKeysSecurity.exists(identity),
+               tenant.environmentAggregationApiKeysSecurity.equals(plan.environmentAggregationApiKeysSecurity)
+               || plan.environmentAggregationApiKeysSecurity.isEmpty,
               (),
               AppError.SecurityError("Environment Subscription Aggregation")
             )
