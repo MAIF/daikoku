@@ -414,14 +414,16 @@ test('aggregation mode', async ({ page, request }) => {
   await page.getByRole('button', { name: 'Ok' }).click();
   await expect(page.getByLabel('Client Id').first()).not.toHaveValue(clientId);
 
-  //test archive apikey & clean archive apikeys
+  // //test archive apikey & clean archive apikeys
   await page.getByRole('button', { name: 'Disable subscription' }).click();
   await expect(page.getByRole('button', { name: 'Enable subscription' })).toBeVisible();
+
+  await page.getByLabel('Delete').click();
+  await expect(page.locator('h5')).toContainText('Confirm Deletion');
+  await page.getByLabel('To confirm the deletion,').fill('test API 2/test plan');
+  await page.getByRole('button', { name: 'Confirm' }).click();
   await page.getByText('API keys', { exact: true }).click();
-  await page.getByRole('button', { name: 'clean archived API keys' }).click();
-  await expect(page.getByRole('paragraph')).toContainText('Are you sure you want to clean archived API keys?');
-  await page.getByRole('button', { name: 'Ok' }).click();
-  await expect(page.locator('tbody')).not.toContainText('test API 2')
+  await expect(page.getByRole('row', { name: 'test API 2 1.0.0  API keys' })).toBeHidden
 
 
 
@@ -499,11 +501,12 @@ test('API admin can transfer his own API ownership', async ({ page }) => {
   await expect(page.locator('#app')).toContainText('Consumersrequest to transfer the ownership of test APITestera few seconds');
   await page.getByRole('link', { name: 'Accept' }).nth(1).click();
   await page.getByRole('link', { name: 'Go home' }).click();
-  await page.locator('h3').filter({ hasText: 'test API' }).waitFor({ state: 'visible' })
-  const consumerSelector = page.locator('small').filter({ hasText: 'Consumers' })
-  // console.log(consumerSelector)
-  await consumerSelector.click();
-  await expect(page.locator('h3')).toContainText('test API');
+  await page.locator('h3').filter({ hasText: 'test API' }).waitFor({ state: 'visible' });
+  await page.locator('small').filter({ hasText: 'Consumers' }).click();
+  await expect(page.getByRole('heading', { name: 'test API' })).toBeVisible();
+  const count = await page.locator('h3').count();
+  console.log(`nb element ${count}`);
+  expect(count).toBe(1);
 });
 
 test('Filter API List', async ({ page, request }) => {

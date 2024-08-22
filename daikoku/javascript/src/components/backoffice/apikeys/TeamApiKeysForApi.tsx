@@ -725,13 +725,13 @@ const ApiKeyCard = ({
                         <i className="fas fa-power-off" />
                       </button>
                     </BeautifulTitle>
-                    <BeautifulTitle title="supprimer la souscription">
+                    <BeautifulTitle title={translate("api.delete.subscription")}>
                       <button
                         type="button"
                         disabled={
                           subscription.parent ? !subscription.parentUp : false
                         }
-                        aria-label="supprimer"
+                        aria-label={translate("Delete")}
                         className={classNames("btn btn-sm ms-1 btn-outline-danger")}
                         onClick={deleteApiKey}
                       >
