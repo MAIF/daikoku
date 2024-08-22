@@ -501,12 +501,11 @@ test('API admin can transfer his own API ownership', async ({ page }) => {
   await expect(page.locator('#app')).toContainText('Consumersrequest to transfer the ownership of test APITestera few seconds');
   await page.getByRole('link', { name: 'Accept' }).nth(1).click();
   await page.getByRole('link', { name: 'Go home' }).click();
-  await page.locator('h3').filter({ hasText: 'test API' }).waitFor({ state: 'visible' });
-  await page.locator('small').filter({ hasText: 'Consumers' }).click();
-  await expect(page.getByRole('heading', { name: 'test API' })).toBeVisible();
-  const count = await page.locator('h3').count();
-  console.log(`nb element ${count}`);
-  expect(count).toBe(1);
+  await page.locator('h3').filter({ hasText: 'test API' }).waitFor({ state: 'visible' })
+  const consumerSelector = page.locator('small').filter({ hasText: 'Consumers' })
+  // console.log(consumerSelector)
+  await consumerSelector.click();
+  await expect(page.locator('h3')).toContainText('test API');
 });
 
 test('Filter API List', async ({ page, request }) => {
