@@ -312,7 +312,8 @@ test('Create & manage API', async ({ page }) => {
   await page.getByRole('link', { name: 'Go home' }).click();
   await page.getByText('Consumers').click();
   await page.getByText('API keys').click();
-  await page.getByRole('row', { name: 'test API 2 1.0.0  API keys' }).getByRole('link').click();
+  await page.getByRole('row', { name: 'test API 2 1.0.0 ' }).getByRole('link', { name: '' }).click();
+
   //FIXME
   // await expect(page.locator('#tooltip-TwFQ')).toBeVisible();
   //FIXME: due to small viewport``
@@ -397,7 +398,7 @@ test('aggregation mode', async ({ page, request }) => {
     .getByText('Consumers').click()
   // await page.getByLabel('Notifications alt+T').getByRole('button').click();
   await page.getByText('API keys', { exact: true }).click();
-  await page.getByRole('row', { name: 'test API 2 1.0.0  API keys' }).getByRole('link').click();
+  await page.getByRole('row', { name: 'test API 2 1.0.0 ' }).getByRole('link', { name: '' }).click();
 
   //get the client id value to check
   const clientId = await page.getByLabel('Client Id').inputValue()
@@ -408,7 +409,8 @@ test('aggregation mode', async ({ page, request }) => {
   await page.getByRole('button', { name: 'Show aggregate subscriptions' }).click();
   await expect(page.getByRole('link', { name: 'test API 2/test plan' })).toBeVisible();
   await page.getByText('API keys', { exact: true }).click();
-  await page.getByRole('row', { name: 'test API 2 1.0.0  API keys' }).getByRole('link').click();
+  await page.getByRole('row', { name: 'test API 2 1.0.0 ' }).getByRole('link', { name: '' }).click();
+
   await page.getByRole('button', { name: 'make unique' }).click();
   await expect(page.getByRole('paragraph')).toContainText('Are you sure to make this API key unique and separate from his parent plan?');
   await page.getByRole('button', { name: 'Ok' }).click();

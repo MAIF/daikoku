@@ -144,6 +144,6 @@ test('test a complete user journey', async ({ page }) => {
   await page.locator('span').filter({ hasText: 'The A team' }).click();
   await page.getByText('API keys').click();
   await expect(page.getByRole('main')).toContainText('1 Result');
-  await page.getByRole('link', { name: ' API keys' }).click();
+  await page.getByRole('link', { name: '' }).click();
   await expect(page.locator('.card-header')).toContainText('dev plan');
 });

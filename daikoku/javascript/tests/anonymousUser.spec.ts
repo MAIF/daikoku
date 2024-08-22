@@ -259,7 +259,7 @@ test('[private tenant] - unlogged user can accept subscription demand', async ({
   await page.getByRole('button', { name: 'Login' }).click();
   await page.getByText('Consumers').click();
   await page.getByText('API keys').click();
-  await page.getByRole('row', { name: 'test API 2.0.0  Api keys' }).getByRole('link').click();
+  await page.getByRole('row', { name: 'test API 2.0.0 ' }).getByRole('link', { name: '' }).click();
   await expect(page.locator('.card-header')).toContainText('not test plan');
 })
 //anonymous user can accept demand
@@ -307,6 +307,6 @@ test('[public tenant] - unlogged user can accept subscription demand', async ({ 
   await page.getByPlaceholder('Password').press('Enter');
   await page.getByText('Consumers').click();
   await page.getByText('API keys').click();
-  await page.getByRole('row', { name: 'test API 2.0.0  Api keys' }).getByRole('link').click();
+  await page.getByRole('row', { name: 'test API 2.0.0 ' }).getByRole('link', { name: '' }).click();
   await expect(page.locator('.card-header')).toContainText('not test plan');
 })
