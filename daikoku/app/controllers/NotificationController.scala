@@ -686,7 +686,7 @@ class NotificationController(
         )
         sender <- EitherT.fromOptionF[Future, AppError, User](
           env.dataStore.userRepo.findByIdNotDeleted(notification.sender.id.get),
-          AppError.UserNotFound
+          AppError.UserNotFound()
         )
       } yield {
         implicit val lang: String = sender.defaultLanguage
@@ -813,7 +813,7 @@ class NotificationController(
     val r: EitherT[Future, AppError, Unit] = for {
       invitedUser <- EitherT.fromOptionF(
         env.dataStore.userRepo.findByIdNotDeleted(invitedUserId),
-        UserNotFound
+        UserNotFound()
       )
       team <- EitherT.fromOptionF(
         env.dataStore.teamRepo.forTenant(tenant).findByIdNotDeleted(team),

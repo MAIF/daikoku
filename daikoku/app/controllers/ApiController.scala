@@ -2060,16 +2060,16 @@ class ApiController(
           subscriptionId,
           (_: Api, plan: UsagePlan, subscription: ApiSubscription) => {
             ctx.setCtxValue("subscription", subscription)
-            subscription.parent match {
-              case Some(_) => FastFuture.successful(Left(ForbiddenAction))
-              case None =>
+//            subscription.parent match {
+//              case Some(_) => FastFuture.successful(Left(ForbiddenAction))
+//              case None =>
                 toggleSubscription(
                   plan,
                   subscription,
                   ctx.tenant,
                   enabled.getOrElse(false)
                 )
-            }
+//            }
           }
         )
       }
@@ -2087,60 +2087,64 @@ class ApiController(
           team,
           subscriptionId,
           (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
-            subscription.parent match {
-              case None =>
-                EitherT.leftT[Future, JsObject](MissingParentSubscription).value
-              case Some(parentSubscriptionId) =>
-                plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
-                  ctx.tenant.otoroshiSettings.find(_.id == id)
-                } match {
-                  case None =>
-                    FastFuture.successful(Left(OtoroshiSettingsNotFound))
-                  case Some(otoroshiSettings) =>
-                    implicit val o: OtoroshiSettings = otoroshiSettings
-                    import cats.implicits._
-                    (for {
-                      apikey <- EitherT(
-                        apiService.extractSubscriptionFromAggregation(
-                          subscription,
-                          ctx.tenant,
-                          ctx.user
-                        )
-                      )
-                      createdApiKey <-
-                        EitherT(otoroshiClient.createApiKey(apikey)(o))
-                      _ <- EitherT.right[AppError](
-                        env.dataStore.apiSubscriptionRepo
-                          .forTenant(ctx.tenant.id)
-                          .save(
-                            subscription.copy(
-                              parent = None,
-                              metadata = Some(
-                                JsObject(
-                                  apikey.metadata
-                                    .filterNot(i => i._1.startsWith("daikoku_"))
-                                    .view
-                                    .mapValues(i => JsString(i))
-                                    .toSeq
-                                )
-                              ),
-                              apiKey = subscription.apiKey.copy(
-                                clientId = createdApiKey.clientId,
-                                clientSecret = createdApiKey.clientSecret,
-                                clientName = createdApiKey.clientName
-                              )
-                            )
-                          )
-                      )
-                    } yield {
-                      Json.obj("created" -> true)
-                    }).value
-                }
-            }
+            _makeUnique(ctx.tenant, plan, subscription, ctx.user)
           }
         )
       }
     }
+
+  private def _makeUnique(tenant: Tenant, plan: UsagePlan, subscription: ApiSubscription, user: User) = {
+    subscription.parent match {
+      case None =>
+        EitherT.leftT[Future, JsObject](MissingParentSubscription).value
+      case Some(parentSubscriptionId) =>
+        plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+          tenant.otoroshiSettings.find(_.id == id)
+        } match {
+          case None =>
+            FastFuture.successful(Left(OtoroshiSettingsNotFound))
+          case Some(otoroshiSettings) =>
+            implicit val o: OtoroshiSettings = otoroshiSettings
+            import cats.implicits._
+            (for {
+              apikey <- EitherT(
+                apiService.extractSubscriptionFromAggregation(
+                  subscription,
+                  tenant,
+                  user
+                )
+              )
+              createdApiKey <-
+                EitherT(otoroshiClient.createApiKey(apikey)(o))
+              _ <- EitherT.right[AppError](
+                env.dataStore.apiSubscriptionRepo
+                  .forTenant(tenant.id)
+                  .save(
+                    subscription.copy(
+                      parent = None,
+                      metadata = Some(
+                        JsObject(
+                          apikey.metadata
+                            .filterNot(i => i._1.startsWith("daikoku_"))
+                            .view
+                            .mapValues(i => JsString(i))
+                            .toSeq
+                        )
+                      ),
+                      apiKey = subscription.apiKey.copy(
+                        clientId = createdApiKey.clientId,
+                        clientSecret = createdApiKey.clientSecret,
+                        clientName = createdApiKey.clientName
+                      )
+                    )
+                  )
+              )
+            } yield {
+              Json.obj("created" -> true)
+            }).value
+        }
+    }
+  }
 
   def toggleApiSubscriptionByApiOwner(
       teamId: String,
@@ -2249,7 +2253,45 @@ class ApiController(
       }
     }
 
-  def deleteApiSubscription(teamId: String, subscriptionId: String) =
+  private def syncAndDeleteSubscription(subscription: ApiSubscription, api: Api, plan: UsagePlan, tenant: Tenant, team: Team, user: User) = {
+    for {
+      _ <- apiKeyStatsJob.syncForSubscription(subscription, tenant)
+      notif = Notification(
+        id = NotificationId(IdGenerator.token(32)),
+        tenant = tenant.id,
+        team = Some(subscription.team),
+        sender = user.asNotificationSender,
+        notificationType = NotificationType.AcceptOnly,
+        action = NotificationAction.ApiKeyDeletionInformation(
+          api.name,
+          subscription.apiKey.clientId
+        )
+      )
+      _ <- env.dataStore.notificationRepo.forTenant(tenant).save(notif)
+      delete <- apiService
+          .deleteApiKey(tenant, subscription, plan, team)
+          .flatMap(delete => {
+            if (plan.visibility == Private) {
+              env.dataStore.usagePlanRepo
+                .forTenant(tenant)
+                .save(plan.removeAuthorizedTeam(team.id))
+                .map(_ => delete)
+            } else {
+              FastFuture.successful(delete)
+            }
+          })
+    } yield delete
+  }
+
+  private def deleteSubscriptionAsChild(subscription: ApiSubscription, plan: UsagePlan, tenant: Tenant) = {
+    for {
+      json <- EitherT(apiService.archiveApiKey(tenant, subscription, plan, enabled = false))
+      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo.forTenant(tenant)
+        .deleteById(subscription.id))
+    } yield json
+  }
+
+  def deleteApiSubscription(teamId: String, subscriptionId: String, action: Option[String], childId: Option[String]) =
     DaikokuAction.async { ctx =>
       TeamApiEditorOnly(
         AuditTrailEvent(
@@ -2263,35 +2305,41 @@ class ApiController(
           (api: Api, plan: UsagePlan, subscription: ApiSubscription) => {
             ctx.setCtxValue("subscription", subscription)
 
-            for {
-              _ <- apiKeyStatsJob.syncForSubscription(subscription, ctx.tenant)
-              notif = Notification(
-                id = NotificationId(IdGenerator.token(32)),
-                tenant = ctx.tenant.id,
-                team = Some(subscription.team),
-                sender = ctx.user.asNotificationSender,
-                notificationType = NotificationType.AcceptOnly,
-                action = NotificationAction.ApiKeyDeletionInformation(
-                  api.name,
-                  subscription.apiKey.clientId
-                )
-              )
-              _ <-
-                env.dataStore.notificationRepo.forTenant(ctx.tenant).save(notif)
-              delete <-
-                apiService
-                  .deleteApiKey(ctx.tenant, subscription, plan, team)
-                  .flatMap(delete => {
-                    if (plan.visibility == Private) {
-                      env.dataStore.usagePlanRepo
-                        .forTenant(ctx.tenant)
-                        .save(plan.removeAuthorizedTeam(team.id))
-                        .map(_ => delete)
-                    } else {
-                      FastFuture.successful(delete)
-                    }
-                  })
-            } yield delete
+            EitherT.liftF(env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
+              .find(Json.obj("parent" -> subscription.id.asJson)))
+              .flatMap {
+                case Nil if subscription.parent.isDefined => deleteSubscriptionAsChild(subscription, plan, ctx.tenant)
+                case Nil => EitherT(syncAndDeleteSubscription(subscription, api, plan, ctx.tenant, team, ctx.user))
+                case childs: Seq[ApiSubscription] => action match {
+                  case Some("delete") =>
+                    for {
+                      _ <- apiService.condenseEitherT(childs.map(c => deleteSubscriptionAsChild(c, plan, ctx.tenant)))
+                      json <- EitherT(syncAndDeleteSubscription(subscription, api, plan, ctx.tenant, team, ctx.user))
+                    } yield json
+                  case Some("extraction") =>
+                    for {
+                      _ <- apiService.condenseEitherT(childs
+                        .map(s => EitherT(_makeUnique(ctx.tenant, plan, s, ctx.user)))
+                      )
+                      json <- EitherT(syncAndDeleteSubscription(subscription, api, plan, ctx.tenant, team, ctx.user))
+                    } yield json
+                  case _ =>
+                    val futureParent = childId.flatMap(id => childs.find(c => c.id.value == id)).getOrElse(childs.head)
+                    for {
+                      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
+                        .save(futureParent.copy(parent = None))) //promot first or given sub id
+                      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
+                        .deleteById(subscriptionId)) //just delete ApiSubscription
+                      _ <- EitherT.liftF[Future, AppError, Seq[Boolean]](Future.sequence(childs.filter(c => c.id != futureParent.id)
+                        .map(child => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
+                          .save(child.copy(parent = futureParent.id.some))))) //update first child to remove parent
+                      _ <- EitherT.liftF[Future, AppError, Unit](otoroshiSynchronisator.verify(Json.obj("_id" -> futureParent.id.asJson)))
+                    } yield Json.obj(
+                      "archive" -> "done",
+                      "subscriptionId" -> subscriptionId
+                    )
+                }
+              }.value
           }
         )
       }
@@ -2314,7 +2362,7 @@ class ApiController(
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
           .findOneNotDeleted(
-            Json.obj("_id" -> subscriptionId, "team" -> team.id.asJson)
+            Json.obj("_id" -> subscriptionId)
           ),
         AppError.SubscriptionNotFound
       )
@@ -2324,6 +2372,7 @@ class ApiController(
           .findByIdNotDeleted(subscription.api),
         AppError.ApiNotFound
       )
+      _ <- EitherT.cond[Future][AppError, Unit](team.id == subscription.team || team.id == api.team, (), AppError.Unauthorized)
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
@@ -2348,35 +2397,6 @@ class ApiController(
       delete <- apiService.archiveApiKey(tenant, subscription, plan, enabled)
     } yield delete
   }
-
-  def cleanArchivedSubscriptions(teamId: String) =
-    DaikokuAction.async { ctx =>
-      TeamAdminOnly(
-        AuditTrailEvent(
-          s"@{user.name} has cleaned api subscription of @{team.name} - @{team.id}"
-        )
-      )(teamId, ctx) { team =>
-        for {
-          subRepo <- env.dataStore.apiSubscriptionRepo.forTenantF(ctx.tenant)
-          archivedSubs <- subRepo.findNotDeleted(
-            Json.obj("team" -> team.id.asJson, "enabled" -> false)
-          )
-          _ <-
-            env.dataStore.apiSubscriptionRepo
-              .forTenant(ctx.tenant)
-              .deleteLogically(
-                Json.obj("team" -> team.id.asJson, "enabled" -> false)
-              )
-        } yield {
-          Ok(
-            Json.obj(
-              "done" -> true,
-              "apiSubscriptions" -> JsArray(archivedSubs.map(_.id.asJson))
-            )
-          )
-        }
-      }
-    }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

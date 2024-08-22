@@ -67,16 +67,6 @@ export const TeamApiKeys = () => {
       },
     }),
   ];
-
-  const cleanSubs = (team: ITeamSimple) => {
-    confirm({ message: translate('clean.archived.sub.confirm') })
-      .then((ok) => {
-        if (ok) {
-          Services.cleanArchivedSubscriptions(team._id)
-            .then(() => tableRef.current?.update());
-        }
-      });
-  }
   
   if (isLoading) {
     return <Spinner />
@@ -102,9 +92,6 @@ export const TeamApiKeys = () => {
                 fetchItems={() => Services.subscribedApis(currentTeam._id)}
                 ref={tableRef}
               />
-              <button className="btn btn-sm btn-outline-danger mt-1" onClick={() => cleanSubs(currentTeam)}>
-                <Translation i18nkey="clean archived apikeys">clean archived apikeys</Translation>
-              </button>
             </div>
           </div>
         </div>
