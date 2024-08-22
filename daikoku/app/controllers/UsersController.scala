@@ -536,7 +536,7 @@ class UsersController(
           user <- EitherT.fromOptionF[Future, AppError, User](
             env.dataStore.userRepo
               .findOne(Json.obj("invitation.token" -> token)),
-            AppError.UserNotFound
+            AppError.UserNotFound()
           )
           _ = AppLogger.info(user.id.value)
           _ <- EitherT.pure[Future, AppError](
