@@ -882,7 +882,7 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
           },
           internationalization: {
             label: translate('internationalization'),
-            action: () => navigateTo('internationalization/mail'),
+            action: () => navigateTo('internationalization'),
             className: { active: currentTab === 'internationalization' },
           },
           pages: {
