@@ -426,30 +426,30 @@ class ApiService(
   }
 
   case class SyncInformation(
-                              parent: ApiSubscription,
-                              childs: Seq[ApiSubscription],
-                              team: Team,
-                              parentApi: Api,
-                              apk: ActualOtoroshiApiKey,
-                              otoroshiSettings: OtoroshiSettings,
-                              tenant: Tenant,
-                              tenantAdminTeam: Team
-                            )
+      parent: ApiSubscription,
+      childs: Seq[ApiSubscription],
+      team: Team,
+      parentApi: Api,
+      apk: ActualOtoroshiApiKey,
+      otoroshiSettings: OtoroshiSettings,
+      tenant: Tenant,
+      tenantAdminTeam: Team
+  )
 
   case class ComputedInformation(
-                                  parent: ApiSubscription,
-                                  childs: Seq[ApiSubscription],
-                                  apk: ActualOtoroshiApiKey,
-                                  computedApk: ActualOtoroshiApiKey,
-                                  otoroshiSettings: OtoroshiSettings,
-                                  tenant: Tenant,
-                                  tenantAdminTeam: Team
-                                )
+      parent: ApiSubscription,
+      childs: Seq[ApiSubscription],
+      apk: ActualOtoroshiApiKey,
+      computedApk: ActualOtoroshiApiKey,
+      otoroshiSettings: OtoroshiSettings,
+      tenant: Tenant,
+      tenantAdminTeam: Team
+  )
 
   def getListFromMeta(
-                       key: String,
-                       metadata: Map[String, String]
-                     ): Set[String] = {
+      key: String,
+      metadata: Map[String, String]
+  ): Set[String] = {
     metadata
       .get(key)
       .map(_.split('|').toSeq.map(_.trim).toSet)
@@ -457,18 +457,18 @@ class ApiService(
   }
 
   def mergeMetaValue(
-                      key: String,
-                      meta1: Map[String, String],
-                      meta2: Map[String, String]
-                    ): String = {
+      key: String,
+      meta1: Map[String, String],
+      meta2: Map[String, String]
+  ): String = {
     val list1 = getListFromMeta(key, meta1)
     val list2 = getListFromMeta(key, meta2)
     (list1 ++ list2).mkString(" | ")
   }
 
   private def computeAPIKey(
-                             infos: SyncInformation
-                           ): Future[Either[AppError, ComputedInformation]] = {
+      infos: SyncInformation
+  ): Future[Either[AppError, ComputedInformation]] = {
     val seq = (infos.childs :+ infos.parent)
       .map(subscription => {
         for {
@@ -481,13 +481,17 @@ class ApiService(
                   "state" -> ApiState.publishedJsonFilter
                 )
               ),
-            AppError.EntityNotFound(s"Api ${subscription.api.value} (for subscription ${subscription.id.value})")
+            AppError.EntityNotFound(
+              s"Api ${subscription.api.value} (for subscription ${subscription.id.value})"
+            )
           )
           plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
             env.dataStore.usagePlanRepo
               .forTenant(infos.tenant)
               .findById(subscription.plan),
-            AppError.EntityNotFound(s"usage plan ${subscription.plan.value} (for subscription ${subscription.id.value})")
+            AppError.EntityNotFound(
+              s"usage plan ${subscription.plan.value} (for subscription ${subscription.id.value})"
+            )
           )
           user <-
             EitherT
@@ -621,7 +625,8 @@ class ApiService(
         }
       })
 
-    seq.reduce((info1, info2) => {
+    seq
+      .reduce((info1, info2) => {
         for {
           apikey1 <- info1
           apikey2 <- info2
@@ -673,7 +678,8 @@ class ApiService(
           tenant = infos.tenant,
           tenantAdminTeam = infos.tenantAdminTeam
         )
-      }).value
+      })
+      .value
   }
 
   def updateSubscription(
@@ -773,7 +779,9 @@ class ApiService(
       plan: UsagePlan,
       team: Team
   ): Future[Either[AppError, JsObject]] = {
-    def deleteKey()(implicit otoroshiSettings: OtoroshiSettings): EitherT[Future, AppError, JsObject] = {
+    def deleteKey()(implicit
+        otoroshiSettings: OtoroshiSettings
+    ): EitherT[Future, AppError, JsObject] = {
       import cats.implicits._
 
       for {
@@ -782,8 +790,10 @@ class ApiService(
             .forTenant(tenant.id)
             .deleteById(subscription.id)
         )
-        _ <- if (subscription.parent.isDefined) EitherT.pure[Future, AppError](Json.obj())
-        else otoroshiClient.deleteApiKey(subscription.apiKey.clientId)
+        _ <-
+          if (subscription.parent.isDefined)
+            EitherT.pure[Future, AppError](Json.obj())
+          else otoroshiClient.deleteApiKey(subscription.apiKey.clientId)
       } yield {
         Json.obj(
           "archive" -> "done",
@@ -792,17 +802,20 @@ class ApiService(
       }
     }
 
-
     (for {
-      otoroshiSettings <- EitherT.fromOption[Future](plan.otoroshiTarget
-        .map(_.otoroshiSettings)
-        .flatMap(id => tenant.otoroshiSettings.find(_.id == id)), AppError.OtoroshiSettingsNotFound)
+      otoroshiSettings <- EitherT.fromOption[Future](
+        plan.otoroshiTarget
+          .map(_.otoroshiSettings)
+          .flatMap(id => tenant.otoroshiSettings.find(_.id == id)),
+        AppError.OtoroshiSettingsNotFound
+      )
       json <- deleteKey()(otoroshiSettings)
     } yield json).value
   }
 
   def computeOtoroshiApiKey(
-      subscription: ApiSubscription): Future[Either[AppError, ActualOtoroshiApiKey]] = {
+      subscription: ApiSubscription
+  ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
     val r = for {
       tenant <- EitherT.fromOptionF[Future, AppError, Tenant](
         env.dataStore.tenantRepo.findByIdNotDeleted(subscription.tenant),
@@ -813,7 +826,9 @@ class ApiService(
         env.dataStore.teamRepo
           .forTenant(tenant)
           .findOne(Json.obj("type" -> "Admin")),
-        AppError.EntityNotFound(s"Tenant admin team for tenant ${tenant.id.value}")
+        AppError.EntityNotFound(
+          s"Tenant admin team for tenant ${tenant.id.value}"
+        )
       )
 
       //GET parent API
@@ -847,11 +862,15 @@ class ApiService(
       otoroshiSettings <- EitherT.fromOption[Future](
         tenant.otoroshiSettings
           .find(_.id == otoroshiTarget.otoroshiSettings),
-        AppError.EntityNotFound(s"otoroshi settings (${otoroshiTarget.otoroshiSettings.value}")
+        AppError.EntityNotFound(
+          s"otoroshi settings (${otoroshiTarget.otoroshiSettings.value}"
+        )
       )
 
       // get previous apikey from otoroshi
-      apk <- EitherT(otoroshiClient.getApikey(subscription.apiKey.clientId)(otoroshiSettings))
+      apk <- EitherT(
+        otoroshiClient.getApikey(subscription.apiKey.clientId)(otoroshiSettings)
+      )
 
       // get subscription team
       team <- EitherT.fromOptionF[Future, AppError, Team](
@@ -864,22 +883,28 @@ class ApiService(
       childs <- EitherT.liftF(
         env.dataStore.apiSubscriptionRepo
           .forAllTenant()
-          .findNotDeleted(Json.obj(
-            "parent" -> subscription.id.asJson,
-            "enabled" -> true
-          ))
+          .findNotDeleted(
+            Json.obj(
+              "parent" -> subscription.id.asJson,
+              "enabled" -> true
+            )
+          )
       )
 
-      computedInformation <- EitherT(computeAPIKey(SyncInformation(
-        parent = subscription,
-        childs = childs,
-        apk = apk,
-        otoroshiSettings = otoroshiSettings,
-        tenant = tenant,
-        team = team,
-        parentApi = parentApi,
-        tenantAdminTeam = tenantAdminTeam
-      )))
+      computedInformation <- EitherT(
+        computeAPIKey(
+          SyncInformation(
+            parent = subscription,
+            childs = childs,
+            apk = apk,
+            otoroshiSettings = otoroshiSettings,
+            tenant = tenant,
+            team = team,
+            parentApi = parentApi,
+            tenantAdminTeam = tenantAdminTeam
+          )
+        )
+      )
     } yield computedInformation.computedApk
 
     r.value
@@ -895,7 +920,8 @@ class ApiService(
 
     val updatedSubscription = subscription.copy(enabled = enabled)
 
-    plan.otoroshiTarget.map(_.otoroshiSettings)
+    plan.otoroshiTarget
+      .map(_.otoroshiSettings)
       .flatMap { id =>
         tenant.otoroshiSettings.find(_.id == id)
       } match {
@@ -909,28 +935,39 @@ class ApiService(
               .forTenant(tenant.id)
               .save(updatedSubscription)
           )
-          _ <- if (!enabled) EitherT.liftF(
-            env.dataStore.apiSubscriptionRepo
-              .forTenant(tenant.id)
-              .updateManyByQuery(
-                Json.obj(
-                  "parent" -> subscription.id.asJson
-                ),
-                Json.obj(
-                  "$set" -> Json.obj(
-                    "enabled" -> enabled,
+          _ <-
+            if (!enabled)
+              EitherT.liftF(
+                env.dataStore.apiSubscriptionRepo
+                  .forTenant(tenant.id)
+                  .updateManyByQuery(
+                    Json.obj(
+                      "parent" -> subscription.id.asJson
+                    ),
+                    Json.obj(
+                      "$set" -> Json.obj(
+                        "enabled" -> enabled
+                      )
+                    )
                   )
+              )
+            else EitherT.pure[Future, AppError](0)
+          parentSubscription <- subscription.parent match {
+            case Some(parentId) =>
+              EitherT.fromOptionF(
+                env.dataStore.apiSubscriptionRepo
+                  .forTenant(tenant)
+                  .findById(parentId),
+                AppError.EntityNotFound(
+                  s"Parent subscription (ID: ${parentId.value})"
                 )
               )
-          ) else EitherT.pure[Future, AppError](0)
-          parentSubscription <- subscription.parent match {
-            case Some(parentId) => EitherT.fromOptionF(env.dataStore.apiSubscriptionRepo.forTenant(tenant).findById(parentId),
-              AppError.EntityNotFound(s"Parent subscription (ID: ${parentId.value})"))
             case None => EitherT.pure[Future, AppError](updatedSubscription)
           }
           apk <- EitherT(computeOtoroshiApiKey(parentSubscription))
           _ <- EitherT(otoroshiClient.updateApiKey(apk))
-          _ <- paymentClient.toggleStateThirdPartySubscription(updatedSubscription)
+          _ <-
+            paymentClient.toggleStateThirdPartySubscription(updatedSubscription)
         } yield updatedSubscription.asSafeJson.as[JsObject]
 
         r.value

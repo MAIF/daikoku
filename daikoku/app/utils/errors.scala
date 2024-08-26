@@ -35,13 +35,13 @@ object Errors {
         Redirect(
           s"${req.theProtocol}://${req.domain}:${env.config.exposedPort}/error#$msg"
         ).withHeaders(
-            "x-error" -> "true",
-            "x-error-msg" -> message
-            // TODO: handled by otoroshi filter ?
-            // env.config.identitySettings.stateRespHeaderName -> req.headers
-            //   .get(env.config.identitySettings.stateHeaderName)
-            //   .getOrElse("--")
-          )
+          "x-error" -> "true",
+          "x-error-msg" -> message
+          // TODO: handled by otoroshi filter ?
+          // env.config.identitySettings.stateRespHeaderName -> req.headers
+          //   .get(env.config.identitySettings.stateHeaderName)
+          //   .getOrElse("--")
+        )
       )
     } else {
       FastFuture.successful(

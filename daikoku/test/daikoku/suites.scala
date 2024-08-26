@@ -738,11 +738,21 @@ object utils {
         "authorizedEntities" -> Json.arr(
           "route_route_d74ea8b27-b8be-4177-82d9-c50722416c50",
           "route_route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d",
-          "route_route_d74ea8b27-b8be-4177-82d9-c50722416c51"),
+          "route_route_d74ea8b27-b8be-4177-82d9-c50722416c51"
+        ),
         "authorizations" -> Json.arr(
-          Json.obj("kind" -> "route", "id" -> "route_d74ea8b27-b8be-4177-82d9-c50722416c50"),
-          Json.obj("kind" -> "route", "id" -> "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"),
-          Json.obj("kind" -> "route", "id" -> "route_d74ea8b27-b8be-4177-82d9-c50722416c51"),
+          Json.obj(
+            "kind" -> "route",
+            "id" -> "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
+          ),
+          Json.obj(
+            "kind" -> "route",
+            "id" -> "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"
+          ),
+          Json.obj(
+            "kind" -> "route",
+            "id" -> "route_d74ea8b27-b8be-4177-82d9-c50722416c51"
+          )
         ),
         "enabled" -> true,
         "readOnly" -> false,
@@ -781,10 +791,19 @@ object utils {
         "clientName" -> "daikoku_test_parent_key",
         "description" -> "",
         "authorizedGroup" -> JsNull,
-        "authorizedEntities" -> Json.arr("route_route_d74ea8b27-b8be-4177-82d9-c50722416c50", "route_route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"),
+        "authorizedEntities" -> Json.arr(
+          "route_route_d74ea8b27-b8be-4177-82d9-c50722416c50",
+          "route_route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"
+        ),
         "authorizations" -> Json.arr(
-          Json.obj("kind" -> "route", "id" -> "route_d74ea8b27-b8be-4177-82d9-c50722416c50"),
-          Json.obj("kind" -> "route", "id" -> "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d")
+          Json.obj(
+            "kind" -> "route",
+            "id" -> "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
+          ),
+          Json.obj(
+            "kind" -> "route",
+            "id" -> "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"
+          )
         ),
         "enabled" -> true,
         "readOnly" -> false,
@@ -813,11 +832,13 @@ object utils {
 
       val apikeys = daikokuComponents.env.wsClient
         .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
-        .withHttpHeaders(Map(
-          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
-          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
-          "Host" -> "otoroshi-api.oto.tools"
-        ).toSeq: _*)
+        .withHttpHeaders(
+          Map(
+            "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+            "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+            "Host" -> "otoroshi-api.oto.tools"
+          ).toSeq: _*
+        )
         .withFollowRedirects(false)
         .withRequestTimeout(10.seconds)
         .withMethod("GET")
@@ -825,61 +846,67 @@ object utils {
         .map(_.json.as[JsArray].value.toSeq)
 
       for {
-        _ <- Source.futureSource(apikeys.map(Source(_)))
-          .mapAsync(5)(apk => {
-            val clientId = (apk \ "clientId").as[String]
-            if (clientId == "admin-api-apikey-id") {
-              FastFuture.successful(true)
-            } else {
-              logger.info(s"[init otoroshi] :: delete $clientId")
-              daikokuComponents.env.wsClient
-                .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys/${(apk \ "clientId").as[String]}")
-                .withHttpHeaders(Map(
-                  "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
-                  "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
-                  "Host" -> "otoroshi-api.oto.tools"
-                ).toSeq: _*)
-                .withFollowRedirects(false)
-                .withRequestTimeout(10.seconds)
-                .withMethod("DELETE")
-                .execute()
-                .map(_ => true)
-            }
-          })
-          .runWith(Sink.ignore)
-        _ <- daikokuComponents.env.wsClient
-          .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
-          .withHttpHeaders(Map(
-            "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
-            "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
-            "Host" -> "otoroshi-api.oto.tools"
-          ).toSeq: _*)
-          .withFollowRedirects(false)
-          .withRequestTimeout(10.seconds)
-          .withMethod("POST")
-          .withBody(parentApkAsJson)
-          .execute()
-          .map(_ => true)
-        _ <- daikokuComponents.env.wsClient
-          .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
-          .withHttpHeaders(Map(
-            "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
-            "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
-            "Host" -> "otoroshi-api.oto.tools"
-          ).toSeq: _*)
-          .withFollowRedirects(false)
-          .withRequestTimeout(10.seconds)
-          .withMethod("POST")
-          .withBody(parent2ApkAsJson)
-          .execute()
-          .map(_ => true)
+        _ <-
+          Source
+            .futureSource(apikeys.map(Source(_)))
+            .mapAsync(5)(apk => {
+              val clientId = (apk \ "clientId").as[String]
+              if (clientId == "admin-api-apikey-id") {
+                FastFuture.successful(true)
+              } else {
+                logger.info(s"[init otoroshi] :: delete $clientId")
+                daikokuComponents.env.wsClient
+                  .url(
+                    s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys/${(apk \ "clientId").as[String]}"
+                  )
+                  .withHttpHeaders(
+                    Map(
+                      "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+                      "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+                      "Host" -> "otoroshi-api.oto.tools"
+                    ).toSeq: _*
+                  )
+                  .withFollowRedirects(false)
+                  .withRequestTimeout(10.seconds)
+                  .withMethod("DELETE")
+                  .execute()
+                  .map(_ => true)
+              }
+            })
+            .runWith(Sink.ignore)
+        _ <-
+          daikokuComponents.env.wsClient
+            .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
+            .withHttpHeaders(
+              Map(
+                "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+                "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+                "Host" -> "otoroshi-api.oto.tools"
+              ).toSeq: _*
+            )
+            .withFollowRedirects(false)
+            .withRequestTimeout(10.seconds)
+            .withMethod("POST")
+            .withBody(parentApkAsJson)
+            .execute()
+            .map(_ => true)
+        _ <-
+          daikokuComponents.env.wsClient
+            .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
+            .withHttpHeaders(
+              Map(
+                "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+                "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+                "Host" -> "otoroshi-api.oto.tools"
+              ).toSeq: _*
+            )
+            .withFollowRedirects(false)
+            .withRequestTimeout(10.seconds)
+            .withMethod("POST")
+            .withBody(parent2ApkAsJson)
+            .execute()
+            .map(_ => true)
       } yield true
-
-
-
-
-
-
 
     }
 

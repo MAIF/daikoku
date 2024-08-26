@@ -9,13 +9,19 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
 import controllers.AppError.SubscriptionAggregationDisabled
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, SeqApiSubscriptionFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiFormat,
+  SeqApiSubscriptionFormat
+}
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
@@ -57,7 +63,6 @@ class ApiControllerSpec()
     env = Map("APP_IMPORT_FROM" -> "/home/user/otoroshi.json")
   )
 
-
   before {
     Await.result(cleanOtoroshiServer(container.mappedPort(8080)), 5.seconds)
     wireMockServer.start()
@@ -67,7 +72,6 @@ class ApiControllerSpec()
   after {
     wireMockServer.stop()
   }
-
 
   "a tenant administrator" can {
     "not initialize apis for a tenant for which he's not admin" in {
@@ -940,10 +944,13 @@ class ApiControllerSpec()
         users = Seq(userAdmin, user),
         teams = Seq(
           teamOwner,
-          teamConsumer.copy(users = Set(
-            UserWithPermission(userTeamUserId, Administrator)
-          )),
-          defaultAdminTeam),
+          teamConsumer.copy(users =
+            Set(
+              UserWithPermission(userTeamUserId, Administrator)
+            )
+          ),
+          defaultAdminTeam
+        ),
         usagePlans = Seq(plan, adminApiPlan),
         apis = Seq(api, adminApi),
         subscriptions = Seq(sub)
@@ -966,14 +973,14 @@ class ApiControllerSpec()
       (respPreVerifOtoParent.json \ "enabled").as[Boolean] mustBe true
 
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamOwnerId.value}/subscriptions/${sub.id.value}",
+        path = s"/api/teams/${teamOwnerId.value}/subscriptions/${sub.id.value}",
         method = "DELETE"
       )(tenant, session)
       resp.status mustBe 200
 
       val respVerifDk = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumer.id.value}/subscription/${sub.id.value}/informations"
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscription/${sub.id.value}/informations"
       )(tenant, userSession)
       respVerifDk.status mustBe 404
 
@@ -1977,10 +1984,13 @@ class ApiControllerSpec()
         users = Seq(userApiEditor, user),
         teams = Seq(
           teamOwner,
-          teamConsumer.copy(users = Set(
-            UserWithPermission(userTeamUserId, Administrator)
-          )),
-          defaultAdminTeam),
+          teamConsumer.copy(users =
+            Set(
+              UserWithPermission(userTeamUserId, Administrator)
+            )
+          ),
+          defaultAdminTeam
+        ),
         usagePlans = Seq(plan, adminApiPlan),
         apis = Seq(api, adminApi),
         subscriptions = Seq(sub)
@@ -2003,14 +2013,14 @@ class ApiControllerSpec()
       (respPreVerifOtoParent.json \ "enabled").as[Boolean] mustBe true
 
       val resp = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamOwnerId.value}/subscriptions/${sub.id.value}",
+        path = s"/api/teams/${teamOwnerId.value}/subscriptions/${sub.id.value}",
         method = "DELETE"
       )(tenant, session)
       resp.status mustBe 200
 
       val respVerifDk = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumer.id.value}/subscription/${sub.id.value}/informations"
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscription/${sub.id.value}/informations"
       )(tenant, userSession)
       respVerifDk.status mustBe 404
 
@@ -5479,8 +5489,6 @@ class ApiControllerSpec()
         aggregationApiKeysSecurity = Some(true)
       )
 
-
-
       val parentApi = defaultApi.api.copy(
         id = ApiId("parent-id"),
         name = "parent API",
@@ -5578,11 +5586,13 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val respVerifDkChild = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumer.id.value}/subscription/${childSub.id.value}/informations"
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscription/${childSub.id.value}/informations"
       )(tenant, session)
 
       respVerifDkChild.status mustBe 200
-      (respVerifDkChild.json \ "subscription" \ "enabled").as[Boolean] mustBe false
+      (respVerifDkChild.json \ "subscription" \ "enabled")
+        .as[Boolean] mustBe false
 
       val respVerifOtoParent = httpJsonCallBlocking(
         path = s"/api/apikeys/${parentSub.apiKey.clientId}",
@@ -5758,7 +5768,6 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(userAdmin, tenant)
 
-
       val respPreVerifOtoParent = httpJsonCallBlocking(
         path = s"/api/apikeys/${parentSub.apiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
@@ -5776,14 +5785,14 @@ class ApiControllerSpec()
       preKeys.size mustBe 1
       (preMetadata \ "foo").as[String] mustBe "bar"
 
-      val preAuthorizations = (respPreVerifOtoParent.json \ "authorizations").as[JsArray]
-      val preStrings = preAuthorizations.value.map(value => (value \ "id").as[String])
+      val preAuthorizations =
+        (respPreVerifOtoParent.json \ "authorizations").as[JsArray]
+      val preStrings =
+        preAuthorizations.value.map(value => (value \ "id").as[String])
       preStrings.size mustBe 3
       preStrings.contains(otherRouteId) mustBe true
       preStrings.contains(childRouteId) mustBe true
       preStrings.contains(parentRouteId) mustBe true
-
-
 
       //disable parentSub => allSub are disabled + otokey
       val resp = httpJsonCallBlocking(
@@ -5794,11 +5803,13 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val respVerifDkChild = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumer.id.value}/subscription/${parentSub.id.value}/informations"
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscription/${parentSub.id.value}/informations"
       )(tenant, session)
 
       respVerifDkChild.status mustBe 200
-      (respVerifDkChild.json \ "subscription" \ "enabled").as[Boolean] mustBe true
+      (respVerifDkChild.json \ "subscription" \ "enabled")
+        .as[Boolean] mustBe true
 
       val respVerifOtoParent = httpJsonCallBlocking(
         path = s"/api/apikeys/${parentSub.apiKey.clientId}",
@@ -5812,7 +5823,8 @@ class ApiControllerSpec()
       )(tenant, session)
 
       (respVerifOtoParent.json \ "enabled").as[Boolean] mustBe true
-      val authorizations = (respVerifOtoParent.json \ "authorizations").as[JsArray]
+      val authorizations =
+        (respVerifOtoParent.json \ "authorizations").as[JsArray]
       val strings = authorizations.value.map(value => (value \ "id").as[String])
       strings.size mustBe 2
       strings.contains(otherRouteId) mustBe true
@@ -5892,8 +5904,6 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-
-
 
       val parentApi = defaultApi.api.copy(
         id = ApiId("parent-id"),
@@ -5992,11 +6002,13 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val respVerifDkChild = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumer.id.value}/subscription/${childSub.id.value}/informations"
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscription/${childSub.id.value}/informations"
       )(tenant, session)
 
       respVerifDkChild.status mustBe 200
-      (respVerifDkChild.json \ "subscription" \ "enabled").as[Boolean] mustBe false
+      (respVerifDkChild.json \ "subscription" \ "enabled")
+        .as[Boolean] mustBe false
 
       val respVerifOtoParent = httpJsonCallBlocking(
         path = s"/api/apikeys/${parentSub.apiKey.clientId}",
@@ -6172,7 +6184,6 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(userAdmin, tenant)
 
-
       val respPreVerifOtoParent = httpJsonCallBlocking(
         path = s"/api/apikeys/${parentSub.apiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
@@ -6190,14 +6201,14 @@ class ApiControllerSpec()
       preKeys.size mustBe 1
       (preMetadata \ "foo").as[String] mustBe "bar"
 
-      val preAuthorizations = (respPreVerifOtoParent.json \ "authorizations").as[JsArray]
-      val preStrings = preAuthorizations.value.map(value => (value \ "id").as[String])
+      val preAuthorizations =
+        (respPreVerifOtoParent.json \ "authorizations").as[JsArray]
+      val preStrings =
+        preAuthorizations.value.map(value => (value \ "id").as[String])
       preStrings.size mustBe 3
       preStrings.contains(otherRouteId) mustBe true
       preStrings.contains(childRouteId) mustBe true
       preStrings.contains(parentRouteId) mustBe true
-
-
 
       //disable parentSub => allSub are disabled + otokey
       val resp = httpJsonCallBlocking(
@@ -6208,11 +6219,13 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val respVerifDkChild = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumer.id.value}/subscription/${parentSub.id.value}/informations"
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscription/${parentSub.id.value}/informations"
       )(tenant, session)
 
       respVerifDkChild.status mustBe 200
-      (respVerifDkChild.json \ "subscription" \ "enabled").as[Boolean] mustBe true
+      (respVerifDkChild.json \ "subscription" \ "enabled")
+        .as[Boolean] mustBe true
 
       val respVerifOtoParent = httpJsonCallBlocking(
         path = s"/api/apikeys/${parentSub.apiKey.clientId}",
@@ -6226,7 +6239,8 @@ class ApiControllerSpec()
       )(tenant, session)
 
       (respVerifOtoParent.json \ "enabled").as[Boolean] mustBe true
-      val authorizations = (respVerifOtoParent.json \ "authorizations").as[JsArray]
+      val authorizations =
+        (respVerifOtoParent.json \ "authorizations").as[JsArray]
       val strings = authorizations.value.map(value => (value \ "id").as[String])
       strings.size mustBe 2
       strings.contains(otherRouteId) mustBe true
@@ -6397,7 +6411,6 @@ class ApiControllerSpec()
 
       val session = loginWithBlocking(userAdmin, tenant)
 
-
       val respPreVerifOtoParent = httpJsonCallBlocking(
         path = s"/api/apikeys/${parentSub.apiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
@@ -6415,14 +6428,14 @@ class ApiControllerSpec()
       preKeys.size mustBe 1
       (preMetadata \ "foo").as[String] mustBe "bar"
 
-      val preAuthorizations = (respPreVerifOtoParent.json \ "authorizations").as[JsArray]
-      val preStrings = preAuthorizations.value.map(value => (value \ "id").as[String])
+      val preAuthorizations =
+        (respPreVerifOtoParent.json \ "authorizations").as[JsArray]
+      val preStrings =
+        preAuthorizations.value.map(value => (value \ "id").as[String])
       preStrings.size mustBe 3
       preStrings.contains(otherRouteId) mustBe true
       preStrings.contains(childRouteId) mustBe true
       preStrings.contains(parentRouteId) mustBe true
-
-
 
       //delete parentSub => allSub are deleted + otokey
       val resp = httpJsonCallBlocking(
@@ -6433,13 +6446,15 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val respVerifDkParent = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumer.id.value}/subscription/${parentSub.id.value}/informations"
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscription/${parentSub.id.value}/informations"
       )(tenant, session)
 
       respVerifDkParent.status mustBe 404
 
       val respVerifDkChild = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumer.id.value}/subscription/${childSub.id.value}/informations"
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscription/${childSub.id.value}/informations"
       )(tenant, session)
 
       respVerifDkChild.status mustBe 404
@@ -6629,10 +6644,20 @@ class ApiControllerSpec()
         ),
         port = container.mappedPort(8080),
         method = "PATCH",
-        body = Json.arr(
-          Json.obj("op" -> "replace", "path" -> "/metadata/daikoku__metadata", "value" -> "| foo | parent-foo"),
-          Json.obj("op" -> "add", "path" -> "/metadata/parent-foo", "value" -> "parent-bar"),
-        ).some
+        body = Json
+          .arr(
+            Json.obj(
+              "op" -> "replace",
+              "path" -> "/metadata/daikoku__metadata",
+              "value" -> "| foo | parent-foo"
+            ),
+            Json.obj(
+              "op" -> "add",
+              "path" -> "/metadata/parent-foo",
+              "value" -> "parent-bar"
+            )
+          )
+          .some
       )(tenant, session)
 
       val respPreVerifOtoParent = httpJsonCallBlocking(
@@ -6654,14 +6679,14 @@ class ApiControllerSpec()
       (preMetadata \ "foo").as[String] mustBe "bar"
       (preMetadata \ "parent-foo").as[String] mustBe "parent-bar"
 
-      val preAuthorizations = (respPreVerifOtoParent.json \ "authorizations").as[JsArray]
-      val preStrings = preAuthorizations.value.map(value => (value \ "id").as[String])
+      val preAuthorizations =
+        (respPreVerifOtoParent.json \ "authorizations").as[JsArray]
+      val preStrings =
+        preAuthorizations.value.map(value => (value \ "id").as[String])
       preStrings.size mustBe 3
       preStrings.contains(otherRouteId) mustBe true
       preStrings.contains(childRouteId) mustBe true
       preStrings.contains(parentRouteId) mustBe true
-
-
 
       //delete parentSub => first child become parent
       val resp = httpJsonCallBlocking(
@@ -6672,12 +6697,14 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val respVerifDkParent = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumer.id.value}/subscription/${parentSub.id.value}/informations"
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscription/${parentSub.id.value}/informations"
       )(tenant, session)
 
       respVerifDkParent.status mustBe 404
       val respVerifDkChild = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumer.id.value}/subscription/${childSub.id.value}/informations"
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscription/${childSub.id.value}/informations"
       )(tenant, session)
 
       respVerifDkChild.status mustBe 200
@@ -6877,10 +6904,17 @@ class ApiControllerSpec()
         ),
         port = container.mappedPort(8080),
         method = "PATCH",
-        body = Json.arr(
-          Json.obj("op" -> "replace", "path" -> "/metadata/daikoku__metadata", "value" -> "| foo | foo2"),
-          Json.obj("op" -> "add", "path" -> "/metadata/foo2", "value" -> "bar2"),
-        ).some
+        body = Json
+          .arr(
+            Json.obj(
+              "op" -> "replace",
+              "path" -> "/metadata/daikoku__metadata",
+              "value" -> "| foo | foo2"
+            ),
+            Json
+              .obj("op" -> "add", "path" -> "/metadata/foo2", "value" -> "bar2")
+          )
+          .some
       )(tenant, session)
 
       val respPreVerifOtoParent = httpJsonCallBlocking(
@@ -6901,14 +6935,14 @@ class ApiControllerSpec()
       (preMetadata \ "foo").as[String] mustBe "bar"
       (preMetadata \ "foo2").as[String] mustBe "bar2"
 
-      val preAuthorizations = (respPreVerifOtoParent.json \ "authorizations").as[JsArray]
-      val preStrings = preAuthorizations.value.map(value => (value \ "id").as[String])
+      val preAuthorizations =
+        (respPreVerifOtoParent.json \ "authorizations").as[JsArray]
+      val preStrings =
+        preAuthorizations.value.map(value => (value \ "id").as[String])
       preStrings.size mustBe 3
       preStrings.contains(otherRouteId) mustBe true
       preStrings.contains(childRouteId) mustBe true
       preStrings.contains(parentRouteId) mustBe true
-
-
 
       //disable parentSub => allSub are disabled + otokey
       val resp = httpJsonCallBlocking(
@@ -6919,22 +6953,29 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val respVerifDkParent = httpJsonCallBlocking(
-        path = s"/api/teams/${teamConsumer.id.value}/subscription/${parentSub.id.value}/informations"
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscription/${parentSub.id.value}/informations"
       )(tenant, session)
       respVerifDkParent.status mustBe 404
 
       val respVerifDkChild = httpJsonCallBlocking(
-        path = s"/api/apis/${childApi.id.value}/${childApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
+        path =
+          s"/api/apis/${childApi.id.value}/${childApi.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
       )(tenant, session)
 
       respVerifDkChild.status mustBe 200
-      val newChildClientId = (respVerifDkChild.json.as[JsArray].value.head \ "apiKey" \ "clientId").as[String]
+      val newChildClientId =
+        (respVerifDkChild.json.as[JsArray].value.head \ "apiKey" \ "clientId")
+          .as[String]
 
       val respVerifDkChild2 = httpJsonCallBlocking(
-        path = s"/api/apis/${childApi2.id.value}/${childApi2.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
+        path =
+          s"/api/apis/${childApi2.id.value}/${childApi2.currentVersion.value}/subscriptions/teams/${teamConsumerId.value}"
       )(tenant, session)
       respVerifDkChild2.status mustBe 200
-      val newChildClientId2 = (respVerifDkChild2.json.as[JsArray].value.head \ "apiKey" \ "clientId").as[String]
+      val newChildClientId2 =
+        (respVerifDkChild2.json.as[JsArray].value.head \ "apiKey" \ "clientId")
+          .as[String]
 
       val respVerifOtoParent = httpJsonCallBlocking(
         path = s"/api/apikeys/${parentSub.apiKey.clientId}",
@@ -6960,12 +7001,15 @@ class ApiControllerSpec()
       )(tenant, session)
       respVerifOtoChild.status mustBe 200
       (respVerifOtoChild.json \ "enabled").as[Boolean] mustBe true
-      val authorizations = (respVerifOtoChild.json \ "authorizations").as[JsArray]
+      val authorizations =
+        (respVerifOtoChild.json \ "authorizations").as[JsArray]
       val strings = authorizations.value.map(value => (value \ "id").as[String])
       strings.size mustBe 1
       strings.contains(childRouteId) mustBe true
       val metadata = (respVerifOtoChild.json \ "metadata").as[JsObject]
-      val keys = metadata.keys.filter(key => !key.startsWith("daikoku_")).filter(key => key != "raw_custom_metadata")
+      val keys = metadata.keys
+        .filter(key => !key.startsWith("daikoku_"))
+        .filter(key => key != "raw_custom_metadata")
       keys.size mustBe 1
       keys.contains("foo") mustBe true
 
@@ -6981,12 +7025,16 @@ class ApiControllerSpec()
       )(tenant, session)
       respVerifOtoChild2.status mustBe 200
       (respVerifOtoChild2.json \ "enabled").as[Boolean] mustBe true
-      val authorizations2 = (respVerifOtoChild2.json \ "authorizations").as[JsArray]
-      val strings2 = authorizations2.value.map(value => (value \ "id").as[String])
+      val authorizations2 =
+        (respVerifOtoChild2.json \ "authorizations").as[JsArray]
+      val strings2 =
+        authorizations2.value.map(value => (value \ "id").as[String])
       strings2.size mustBe 1
       strings2.contains(otherRouteId) mustBe true
       val metadata2 = (respVerifOtoChild2.json \ "metadata").as[JsObject]
-      val keys2 = metadata2.keys.filter(key => !key.startsWith("daikoku_")).filter(key => key != "raw_custom_metadata")
+      val keys2 = metadata2.keys
+        .filter(key => !key.startsWith("daikoku_"))
+        .filter(key => key != "raw_custom_metadata")
       keys2.size mustBe 1
       keys2.contains("foo2") mustBe true
     }

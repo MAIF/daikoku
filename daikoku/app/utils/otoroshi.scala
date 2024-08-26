@@ -6,10 +6,20 @@ import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import controllers.AppError.OtoroshiError
-import fr.maif.otoroshi.daikoku.audit.{ElasticReadsAnalytics, ElasticWritesAnalytics}
+import fr.maif.otoroshi.daikoku.audit.{
+  ElasticReadsAnalytics,
+  ElasticWritesAnalytics
+}
 import fr.maif.otoroshi.daikoku.audit.config.ElasticAnalyticsConfig
 import fr.maif.otoroshi.daikoku.domain.json.ActualOtoroshiApiKeyFormat
-import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, ApiKeyQuotas, ApiSubscription, OtoroshiSettings, Tenant, json}
+import fr.maif.otoroshi.daikoku.domain.{
+  ActualOtoroshiApiKey,
+  ApiKeyQuotas,
+  ApiSubscription,
+  OtoroshiSettings,
+  Tenant,
+  json
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import play.api.libs.json._
@@ -318,35 +328,42 @@ class OtoroshiClient(env: Env) {
   def getApiKeyConsumption(clientId: String, from: String, to: String)(implicit
       otoroshiSettings: OtoroshiSettings
   ): Future[JsObject] = {
-    client(s"/api/stats?apikey=$clientId&from=$from&to=$to").get().map {
-      resp =>
-        if (resp.status == 200) {
-          resp.json.as[JsObject]
-        } else {
-          AppLogger.error(s"Error while getting otoroshi apikey stats: ${resp.status} - ${resp.body}")
-          Json.obj(
-            "hits" -> Json.obj("count" -> 0),
-            "dataIn" -> Json.obj("data" -> Json.obj(
+    client(s"/api/stats?apikey=$clientId&from=$from&to=$to").get().map { resp =>
+      if (resp.status == 200) {
+        resp.json.as[JsObject]
+      } else {
+        AppLogger.error(
+          s"Error while getting otoroshi apikey stats: ${resp.status} - ${resp.body}"
+        )
+        Json.obj(
+          "hits" -> Json.obj("count" -> 0),
+          "dataIn" -> Json.obj(
+            "data" -> Json.obj(
               "dataIn" -> 0
-            )),
-            "dataOut" -> Json.obj("data" -> Json.obj(
+            )
+          ),
+          "dataOut" -> Json.obj(
+            "data" -> Json.obj(
               "dataOut" -> 0
-            )),
-            "avgDuration"-> Json.obj("duration" -> 0),
-            "avgOverhead"-> Json.obj("overhead" -> 0)
-          )
-        }
+            )
+          ),
+          "avgDuration" -> Json.obj("duration" -> 0),
+          "avgOverhead" -> Json.obj("overhead" -> 0)
+        )
+      }
     }
   }
 
   def getApiKeyQuotas(
-                       clientId: String
-                     )(implicit otoroshiSettings: OtoroshiSettings): Future[JsObject] = {
+      clientId: String
+  )(implicit otoroshiSettings: OtoroshiSettings): Future[JsObject] = {
     client(s"/api/apikeys/$clientId/quotas").get().map { resp =>
       if (resp.status == 200) {
         resp.json.as[JsObject]
       } else {
-        AppLogger.error(s"Error while getting otoroshi apikey stats: ${resp.status} - ${resp.body}")
+        AppLogger.error(
+          s"Error while getting otoroshi apikey stats: ${resp.status} - ${resp.body}"
+        )
         ApiKeyQuotas(
           authorizedCallsPerSec = 0,
           currentCallsPerSec = 0,

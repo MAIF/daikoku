@@ -125,20 +125,21 @@ object AppError {
 
   def getErrorMessage(error: AppError) =
     error match {
-      case OtoroshiError(e)           => Json.stringify(e) //todo: ???
-      case ApiKeyRotationError(e)     => Json.stringify(e) //todo: ???
-      case PaymentError(e)            => e
-      case ParsingPayloadError(msg)   => s"Error while parsing payload: $msg"
-      case BadRequestError(e)         => e
-      case ApiVersionConflict         => "This version already existed"
-      case TeamNameAlreadyExists      => "The name of this team already exists"
-      case ApiNotFound                => "API not found"
-      case ApiNotPublished            => "API not published"
-      case PageNotFound               => "Page not found"
-      case ApiGroupNotFound           => "API group not found"
-      case TeamNotFound               => "Team not found"
-      case TenantNotFound             => "Tenant not found"
-      case UserNotFound(user)         => s"User not found ${user.map(id => s"(ID: $id)").getOrElse("")}"
+      case OtoroshiError(e)         => Json.stringify(e) //todo: ???
+      case ApiKeyRotationError(e)   => Json.stringify(e) //todo: ???
+      case PaymentError(e)          => e
+      case ParsingPayloadError(msg) => s"Error while parsing payload: $msg"
+      case BadRequestError(e)       => e
+      case ApiVersionConflict       => "This version already existed"
+      case TeamNameAlreadyExists    => "The name of this team already exists"
+      case ApiNotFound              => "API not found"
+      case ApiNotPublished          => "API not published"
+      case PageNotFound             => "Page not found"
+      case ApiGroupNotFound         => "API group not found"
+      case TeamNotFound             => "Team not found"
+      case TenantNotFound           => "Tenant not found"
+      case UserNotFound(user) =>
+        s"User not found ${user.map(id => s"(ID: $id)").getOrElse("")}"
       case EntityNotFound(name)       => s"$name not found"
       case NotificationNotFound       => "Notification not found"
       case SubscriptionDemandNotFound => "SubscriptionDemand not found"

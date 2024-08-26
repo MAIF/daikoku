@@ -1155,9 +1155,12 @@ export const deleteApiSubscription = (
   action: string,
   childId?: string
 ): Promise<ResponseError | any> =>
-  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}?action=${action}${childId ? `&child=${childId}`: ''}`, {
-    method: 'DELETE',
-  });
+  customFetch(
+    `/api/teams/${teamId}/subscriptions/${subscriptionId}?action=${action}${childId ? `&child=${childId}` : ''}`,
+    {
+      method: 'DELETE',
+    }
+  );
 
 export const extendApiKey = (
   apiId: string,
