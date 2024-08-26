@@ -312,9 +312,7 @@ test('Create & manage API', async ({ page }) => {
   await page.getByRole('link', { name: 'Go home' }).click();
   await page.getByText('Consumers').click();
   await page.getByText('API keys').click();
-  await page.getByRole('row', { name: 'test API 2 1.0.0 ' })
-      .getByRole('link', { name: '' })
-      .click();
+  await page.getByRole('row', { name: 'test API 2 1.0.0' }).getByLabel('View APIkeys').click();
   //FIXME
   // await expect(page.locator('#tooltip-TwFQ')).toBeVisible();
   //FIXME: due to small viewport``
@@ -399,23 +397,18 @@ test('aggregation mode', async ({ page, request }) => {
     .getByText('Consumers').click()
   // await page.getByLabel('Notifications alt+T').getByRole('button').click();
   await page.getByText('API keys', { exact: true }).click();
-  await page.getByRole('row', { name: 'test API 2 1.0.0 ' })
-      .getByRole('link', { name: '' })
-      .click();
+  await page.getByRole('row', { name: 'test API 2 1.0.0' }).getByLabel('View APIkeys').click();
+
   //get the client id value to check
   const clientId = await page.getByLabel('Client Id').inputValue()
 
   await page.getByText('API keys', { exact: true }).click();
-  await page.getByRole('row', { name: 'test API 2.0.0 ' })
-      .getByRole('link', { name: '' })
-      .click();
+  await page.getByRole('row', { name: 'test API 2.0.0  API keys' }).getByLabel('view APikey').click();
   await expect(page.getByLabel('Client Id').first()).toHaveValue(clientId);
   await page.getByRole('button', { name: 'Show aggregate subscriptions' }).click();
   await expect(page.getByRole('link', { name: 'test API 2/test plan' })).toBeVisible();
   await page.getByText('API keys', { exact: true }).click();
-  await page.getByRole('row', { name: 'test API 2 1.0.0 ' })
-      .getByRole('link', { name: '' })
-      .click();
+  await page.getByRole('row', { name: 'test API 2 1.0.0  API keys' }).getByLabel('view APikey').click();
   await page.getByRole('button', { name: 'make unique' }).click();
   await expect(page.getByRole('paragraph')).toContainText('Are you sure to make this API key unique and separate from his parent plan?');
   await page.getByRole('button', { name: 'Ok' }).click();
@@ -430,7 +423,7 @@ test('aggregation mode', async ({ page, request }) => {
   await page.getByLabel('To confirm the deletion,').fill('test API 2/test plan');
   await page.getByRole('button', { name: 'Confirm' }).click();
   await page.getByText('API keys', { exact: true }).click();
-  await expect(page.getByRole('row', { name: 'test API 2 1.0.0  API keys' })).toBeHidden
+  await expect(page.getByRole('row', { name: 'test API 2 1.0.0' })).toBeHidden
 
 
 

@@ -71,14 +71,16 @@ export const TeamApiKeys = () => {
                 <Link
                   to={`/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`}
                   className="btn btn-sm btn-outline-info me-1"
-                  title="View this Api"
-                >
-                  <i className="fas fa-eye " />
+                  title={translate("apikeys.view.api")}
+                  aria-label={translate("apikeys.view.api")}
+                  >
+                  <i className="fa-solid fa-arrow-up-right-from-square" />
                 </Link>
                 <Link
                   to={`/${currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
                   className="btn btn-sm btn-outline-info me-1"
-                  title="View this Api's keys"
+                  title={translate("apikeys.view.apikeys")}
+                  aria-label={translate("apikeys.view.apikeys")}
                 >
                   <i className="fas fa-key" />
                 </Link>

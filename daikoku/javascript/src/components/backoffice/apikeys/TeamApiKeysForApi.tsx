@@ -577,17 +577,17 @@ const ApiKeyCard = ({
     return (
       <div className="col-12 col-sm-6 col-md-4 mb-2">
         <div className="card">
-          <div className="d-flex justify-content-end m-1">
-            <BeautifulTitle title={translate('View api')}>
-              <Link
-                to={`/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/pricing`}
-                className="btn btn-sm btn-outline-primary ms-1"
-              >
-                <i className="fas fa-arrow-up-right-from-square" />
-              </Link>
-            </BeautifulTitle>
-          </div>
           <div className="card-header" style={{ position: 'relative' }}>
+            <div className="d-flex justify-content-end m-1 position-absolute top-0 end-0">
+              <BeautifulTitle title={translate('apikeys.view.api')}>
+                <Link
+                  to={`/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/pricing`}
+                  className="btn btn-sm btn-outline-primary ms-1"
+                >
+                  <i className="fas fa-arrow-up-right-from-square" />
+                </Link>
+              </BeautifulTitle>
+            </div>
             <div className="d-flex align-items-center justify-content-between flex-column">
               {!settingMode &&
                 (!editMode ? (

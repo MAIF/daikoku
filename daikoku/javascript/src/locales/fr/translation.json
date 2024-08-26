@@ -1429,5 +1429,7 @@
   "apikeys.delete.modal.title": "Supprimer une souscription",
   "apikeys.delete.confirm.modal.title": "Confirmer la suppression",
   "apikeys.delete.confirm.label": "Pour confirmer la suppression, veuillez saisir le nom exact de la souscription : %s",
-  "apikeys.delete.success.message": "La souscription a été correctement supprimée"
+  "apikeys.delete.success.message": "La souscription a été correctement supprimée",
+  "apikeys.view.api": "Voir l'API",
+  "apikeys.view.apikeys": "Voir les clés d'API"
 }
