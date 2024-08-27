@@ -3,7 +3,8 @@
     border-color: $btn-border-color;
   
     .nav-link {
-      color: $level2_text-color;
+      background-color: $btn-text-color;
+      color: $btn-bg-color;
     }
   
     .nav-link:hover,
