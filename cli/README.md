@@ -40,7 +40,7 @@ Daikokucli uses your home folder to store the list of projects inside a `.daikok
 You can start a new project 
 
 ```sh
-daikokucli create --name=<PROJECT_NAME> --path=<PROJECT_PATH_OR_CURRENT_FOLDER>
+daikokucli init --name=<PROJECT_NAME> --path=<PROJECT_PATH_OR_CURRENT_FOLDER>
 ``` 
 
 then add a default Daikoku environment  
@@ -50,6 +50,13 @@ daikokucli environments add --name=<ENVIRONMENT_NAME> --server=<ENVIROMNENT_SERV
 ``` 
 
 > The Daikoku server has to be reachable and will be checked before saving the configuration
+
+
+you can sync the new project with your Daikoku instance and fetch the mails template
+
+```sh
+daikokucli sync mail
+```
 
 you can start to develop and watch file changes
 

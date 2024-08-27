@@ -24,7 +24,7 @@ pub(crate) async fn run(token: Option<String>) -> DaikokuResult<()> {
     match token {
         Some(token) => {
             process(Commands::Environments {
-                command: crate::EnvironmentsCommands::PathDefault { token },
+                command: crate::EnvironmentsCommands::Patch { token },
             })
             .await?;
             Ok(())
@@ -81,7 +81,7 @@ async fn watcher(
     if let Some(cookie_header) = headers.get_all(COOKIE).iter().next() {
         if let Ok(cookie_value) = cookie_header.to_str() {
             process(Commands::Environments {
-                command: crate::EnvironmentsCommands::PathDefault {
+                command: crate::EnvironmentsCommands::Patch {
                     token: cookie_value.to_string(),
                 },
             })

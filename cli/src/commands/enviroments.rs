@@ -53,7 +53,7 @@ pub(crate) async fn run(command: EnvironmentsCommands) -> DaikokuResult<()> {
             Ok(())
         }
         EnvironmentsCommands::List {} => list(),
-        EnvironmentsCommands::PathDefault { token } => patch_default(token),
+        EnvironmentsCommands::Patch { token } => patch_default(token),
     }
 }
 
@@ -257,7 +257,7 @@ pub(crate) fn read_cookie_from_environment(failed_if_not_present: bool) -> Daiko
             .map(|cookie| Ok(format_cookie(cookie)))
             .unwrap_or(if failed_if_not_present {
                 Err(DaikokuCliError::Configuration(
-                    "missing token on default environment".to_string(),
+                    "Missing token on default environment. Run daikokucli projects default --token=<> with the token paste from your Daikoku profile".to_string(),
                 ))
             } else {
                 Ok("".to_string())

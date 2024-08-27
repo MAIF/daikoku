@@ -4,12 +4,12 @@ use bytes::Bytes;
 
 use crate::{
     helpers::post_daikoku_api,
-    interactive::prompt,
     logging::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
     },
     models::folder::{read_documentations, read_sources_and_daikoku_metadata, CmsFile},
+    PushCommands,
 };
 
 use super::{
@@ -19,16 +19,9 @@ use super::{
     projects,
 };
 
-pub(crate) async fn run() -> DaikokuResult<()> {
-    logger::loading(format!("<yellow>Syncing</> project"));
+pub(crate) async fn run(commands: Option<PushCommands>) -> DaikokuResult<()> {
+    logger::loading(format!("<yellow>Pushing</> project"));
     logger::done();
-
-    logger::info("What kind of synchronization ? Only write the identifier.".to_string());
-    logger::info("ID - Description".to_string());
-    logger::info(" 1 - Global".to_string());
-    logger::info(" 2 - Documentation page".to_string());
-    logger::info(" 3 - API page".to_string());
-    logger::info(" 4 - Mail page".to_string());
 
     let environment = get_default_environment()?;
 
@@ -41,64 +34,40 @@ pub(crate) async fn run() -> DaikokuResult<()> {
 
     let project = projects::get_default_project()?;
 
-    let identifier = prompt()?;
-
-    match identifier.trim() {
-        "1" => synchronization(None, &environment, &host, &cookie, &project).await?,
-        "2" => documentations_synchronization(&environment, &host, &cookie, &project).await?,
-        "3" => {
-            synchronization(
-                Some("apis".to_string()),
-                &environment,
-                &host,
-                &cookie,
-                &project,
-            )
-            .await?
+    if let Some(command) = commands {
+        match command {
+            PushCommands::Documentation {} => {
+                documentations_synchronization(&environment, &host, &cookie, &project).await?
+            }
+            PushCommands::Api {} => {
+                synchronization(
+                    Some("apis".to_string()),
+                    &environment,
+                    &host,
+                    &cookie,
+                    &project,
+                )
+                .await?
+            }
+            PushCommands::Mail {} => {
+                synchronization(
+                    Some("mails".to_string()),
+                    &environment,
+                    &host,
+                    &cookie,
+                    &project,
+                )
+                .await?
+            }
         }
-        "4" => {
-            synchronization(
-                Some("mails".to_string()),
-                &environment,
-                &host,
-                &cookie,
-                &project,
-            )
-            .await?
-        }
-        _ => {
-            return Err(DaikokuCliError::ParsingError(
-                "Invalid identifier".to_string(),
-            ))
-        }
+    } else {
+        synchronization(None, &environment, &host, &cookie, &project).await?
     }
 
     logger::success("synchronization done".to_string());
 
     Ok(())
 }
-
-// async fn global_synchronization(
-//     environment: &Environment,
-//     host: &String,
-//     cookie: &String,
-//     project: &projects::Project,
-// ) -> DaikokuResult<()> {
-//     logger::loading(format!("<yellow>Syncing</> project"));
-
-//     let mut body = read_sources_and_daikoku_metadata(&PathBuf::from(&project.path))?;
-
-//     apply_daikoku_ignore(&mut body)?;
-
-//     let body = Bytes::from(
-//         serde_json::to_string(&body)
-//             .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?,
-//     );
-
-//     post_daikoku_api("/cms/sync", &host, &environment, &cookie, body).await?;
-
-//     Ok(())
-// }
 
 fn apply_daikoku_ignore(items: &mut Vec<CmsFile>) -> DaikokuResult<()> {
     let daikoku_ignore = get_daikokuignore()?;

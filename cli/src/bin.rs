@@ -7,7 +7,6 @@ mod helpers;
 
 use clap::{Parser, Subcommand};
 use logging::{error::DaikokuResult, logger};
-use utils::absolute_path;
 
 /// A fictional versioning CLI
 #[derive(Debug, Parser)] // requires `derive` feature
@@ -22,25 +21,6 @@ struct Cli {
 pub enum Commands {
     /// Get installed version
     Version {},
-    /// Initialize a new CMS project from template at specific path. Currently adding project as default project
-    #[command()]
-    Create {
-        /// The template to clone
-        #[arg(
-            value_name = "TEMPLATE",
-            short = 't',
-            long = "template",
-            value_parser = ["empty"],
-            require_equals = true,
-        )]
-        template: Option<String>,
-        /// Project name
-        #[arg(value_name = "NAME", short = 'n', long = "name", required = false)]
-        name: String,
-        /// Path where initialize the project
-        #[arg(value_name = "PATH", short = 'p', long = "path", required = false)]
-        path: Option<String>,
-    },
     /// Add a token to the current project. The token must be pasted from your Daikoku profile page.
     Login {
         /// Token can be found on your Daikoku profile page and used by Daikoku to access authenticated resources
@@ -73,7 +53,14 @@ pub enum Commands {
         command: ProjectCommands,
     },
     /// ⚠️ synchronize projects file with Daikoku
-    Sync {},
+    Push {
+        #[command(subcommand)]
+        command: Option<PushCommands>,
+    },
+    Pull {
+        #[command(subcommand)]
+        command: Option<PullCommands>,
+    },
     /// Manage your CMS assets
     Assets {
         #[command(subcommand)]
@@ -101,7 +88,7 @@ pub enum EnvironmentsCommands {
         force: Option<bool>,
     },
     /// update default environment by adding auth token
-    PathDefault {
+    Patch {
         #[arg(
             value_name = "TOKEN",
             short = 't',
@@ -159,11 +146,11 @@ pub enum ProjectCommands {
     /// ⚠️  be careful, this will clear all projects
     Clear {},
     /// ⚠️ import legacy projects from Daikoku
-    Import {
+    Clone {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
         #[arg(value_name = "PATH", short = 'p', long = "path")]
-        path: String,
+        path: Option<String>,
         #[arg(value_name = "TOKEN", short = 't', long = "token")]
         token: String,
         #[arg(value_name = "SERVER", short = 's', long = "server")]
@@ -176,6 +163,12 @@ pub enum ProjectCommands {
             default_value = "all",
         )]
         domain: String,
+    },
+    Init {
+        #[arg(value_name = "NAME", short = 'n', long = "name")]
+        name: String,
+        #[arg(value_name = "PATH", short = 'p', long = "path")]
+        path: Option<String>
     },
 }
 
@@ -209,6 +202,20 @@ pub enum AssetsCommands {
     Sync {},
 }
 
+
+
+#[derive(Debug, Subcommand)]
+pub enum PushCommands {
+    Documentation {},
+    Api {},
+    Mail {},
+}
+
+#[derive(Debug, Subcommand)]
+pub enum PullCommands {
+    Api {}
+}
+
 #[derive(Debug, Subcommand)]
 pub enum GenerateCommands {
     /// create a new documentation page for your api
@@ -226,11 +233,6 @@ pub enum GenerateCommands {
 async fn process(command: Commands) -> DaikokuResult<()> {
     match command {
         Commands::Version {} => commands::version::run(),
-        Commands::Create {
-            template,
-            name,
-            path,
-        } => commands::creation::run(template, name, path.map(|p| absolute_path(p).unwrap())).await,
         Commands::Watch {
             environment,
             authentication,
@@ -238,7 +240,8 @@ async fn process(command: Commands) -> DaikokuResult<()> {
         Commands::Environments { command } => commands::enviroments::run(command).await,
         Commands::Projects { command } => commands::projects::run(command).await,
         Commands::Login { token } => commands::login::run(token).await,
-        Commands::Sync {} => commands::sync::run().await,
+        Commands::Pull { command } => commands::pull::run(command).await,
+        Commands::Push { command } => commands::push::run(command).await,
         Commands::Assets { command } => commands::assets::run(command).await,
         Commands::Generate { command } => commands::generate::run(command).await
     }

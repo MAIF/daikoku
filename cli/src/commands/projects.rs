@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     fs::{self, File},
+    io::Write,
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -22,6 +23,8 @@ use crate::{
     utils::absolute_path,
     Commands, ProjectCommands,
 };
+
+const ZIP_CMS: &[u8] = include_bytes!("../../templates/project.zip");
 
 use super::enviroments::{can_join_daikoku, format_cookie, Environment};
 
@@ -81,7 +84,7 @@ struct MailerSettings {
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug)]
-struct Api {
+pub(crate) struct Api {
     _id: String,
     #[serde(alias = "_humanReadableId")]
     human_readable_id: String,
@@ -100,13 +103,25 @@ pub(crate) async fn run(command: ProjectCommands) -> DaikokuResult<()> {
         ProjectCommands::Remove { name, remove_files } => delete(name, remove_files),
         ProjectCommands::List {} => list(),
         ProjectCommands::Clear {} => clear(),
-        ProjectCommands::Import {
+        ProjectCommands::Clone {
             name,
             path,
             server,
             token,
             domain,
-        } => import(name, domain, absolute_path(path)?, server, token).await,
+        } => {
+            clone(
+                name,
+                domain,
+                absolute_path(path.unwrap_or("./".to_string()))?,
+                server,
+                token,
+            )
+            .await
+        }
+        ProjectCommands::Init { name, path } => {
+            init(name, absolute_path(path.unwrap_or("./".to_string()))?).await
+        }
     }
 }
 
@@ -146,7 +161,7 @@ fn add(name: String, path: String, overwrite: bool) -> DaikokuResult<()> {
 
     if config.get(&name, "path").is_some() && !overwrite {
         return Err(DaikokuCliError::Configuration(
-            "project already exists in the configuration file. use daikokucli projects list and remove it".to_string(),
+            format!("project already exists in the configuration file. Run daikokucli projects remove --name={} to remove it", name),
         ));
     }
 
@@ -339,7 +354,85 @@ fn clear() -> DaikokuResult<()> {
 }
 
 #[async_recursion]
-async fn import(
+async fn init(name: String, path: String) -> DaikokuResult<()> {
+    logger::loading("<yellow>Initializing project</> ...".to_string());
+
+    let manifest_dir = std::env::temp_dir();
+
+    let zip_name = "project.zip".to_string();
+
+    let zip_path = Path::new(&manifest_dir).join(zip_name.clone());
+
+    match std::path::Path::new(&zip_path).exists() {
+        true => (),
+        false => {
+            logger::indent_println(format!(
+                "turn template bytes to zip file, {}",
+                &zip_path.to_string_lossy()
+            ));
+            match fs::File::create(&zip_path) {
+                Ok(mut file) => match file.write_all(ZIP_CMS) {
+                    Err(err) => return Err(DaikokuCliError::FileSystem(err.to_string())),
+                    Ok(()) => (),
+                },
+                Err(e) => return Err(DaikokuCliError::FileSystem(e.to_string())),
+            };
+        }
+    }
+
+    logger::indent_println("<yellow>Unzipping</> the template ...".to_string());
+    let zip_action = zip_extensions::read::zip_extract(&PathBuf::from(zip_path), &manifest_dir);
+
+    match zip_action {
+        Ok(()) => rename_plugin("project".to_string(), name, Some(path)).await,
+        Err(er) => Err(DaikokuCliError::FileSystem(er.to_string())),
+    }
+}
+
+#[async_recursion]
+async fn rename_plugin(template: String, name: String, path: Option<String>) -> DaikokuResult<()> {
+    let complete_path = match &path {
+        Some(p) => Path::new(p).join(&name),
+        None => Path::new("./").join(&name),
+    };
+
+    let _ = match &path {
+        Some(p) => fs::create_dir_all(p),
+        None => Result::Ok(()),
+    };
+
+    let manifest_dir = std::env::temp_dir();
+
+    logger::indent_println(format!(
+        "<yellow>Write</> plugin from {} to {}",
+        &Path::new(&manifest_dir)
+            .join(format!("{}", template))
+            .to_string_lossy(),
+        &complete_path.to_string_lossy()
+    ));
+
+    match std::fs::rename(
+        Path::new(&manifest_dir).join(format!("{}", template)),
+        &complete_path,
+    ) {
+        Ok(()) => {
+            process(Commands::Projects {
+                command: crate::ProjectCommands::Add {
+                    name: name,
+                    path: complete_path.into_os_string().into_string().unwrap(),
+                    overwrite: None,
+                },
+            })
+            .await?;
+            logger::println("<green>CMS created</>".to_string());
+            Ok(())
+        }
+        Err(e) => Err(DaikokuCliError::CmsCreationFile(e.to_string())),
+    }
+}
+
+#[async_recursion]
+async fn clone(
     name: String,
     domain: String,
     path: String,
@@ -472,7 +565,7 @@ fn replace_ids(items: Vec<CmsPage>) -> DaikokuResult<Vec<CmsPage>> {
     Ok(updated_pages)
 }
 
-fn create_api_folder(apis: Vec<Api>, project_path: PathBuf) -> DaikokuResult<()> {
+pub(crate) fn create_api_folder(apis: Vec<Api>, project_path: PathBuf) -> DaikokuResult<()> {
     apis.iter().for_each(|item| {
         let file_path = project_path.clone().join(
             PathBuf::from_str("apis")
@@ -482,30 +575,36 @@ fn create_api_folder(apis: Vec<Api>, project_path: PathBuf) -> DaikokuResult<()>
 
         if !file_path.exists() {
             let _ = fs::create_dir_all(file_path.clone());
-        }
 
-        let mut config: Ini = Ini::new();
-        config.set(&"default", "id", Some(item._id.clone()));
-        let _ = config.write(file_path.clone().join(".daikoku_data"));
+            let mut config: Ini = Ini::new();
+            config.set(&"default", "id", Some(item._id.clone()));
+            let _ = config.write(file_path.clone().join(".daikoku_data"));
 
-        if let Some(description) = &item.description {
-            let _description = create_path_and_file(
-                file_path.join("description").join("page.html").clone(),
-                description.clone(),
-                item._id.clone(),
-                HashMap::new(),
-                SourceExtension::HTML,
-            );
-        }
+            if let Some(description) = &item.description {
+                let _description = create_path_and_file(
+                    file_path.join("description").join("page.html").clone(),
+                    description.clone(),
+                    item._id.clone(),
+                    HashMap::new(),
+                    SourceExtension::HTML,
+                );
+            } else {
+                let _ = fs::create_dir_all(file_path.join("description"))
+                    .map_err(|err| map_error_to_filesystem_error(err, ""));
+            }
 
-        if let Some(header) = &item.header {
-            let _header = create_path_and_file(
-                file_path.join("header").join("page.html").clone(),
-                header.clone(),
-                item._id.clone(),
-                HashMap::new(),
-                SourceExtension::HTML,
-            );
+            if let Some(header) = &item.header {
+                let _header = create_path_and_file(
+                    file_path.join("header").join("page.html").clone(),
+                    header.clone(),
+                    item._id.clone(),
+                    HashMap::new(),
+                    SourceExtension::HTML,
+                );
+            } else {
+                let _ = fs::create_dir_all(file_path.join("header"))
+                    .map_err(|err| map_error_to_filesystem_error(err, ""));
+            }
         }
     });
 

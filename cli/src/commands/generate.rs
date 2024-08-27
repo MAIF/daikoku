@@ -4,6 +4,7 @@ use uuid::Uuid;
 
 use crate::{
     commands::projects::create_path_and_file,
+    interactive::prompt,
     logging::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
@@ -74,10 +75,7 @@ async fn generate_documentation_page(
         logger::info(line);
     });
 
-    let mut input = String::new();
-    std::io::stdin()
-        .read_line(&mut input)
-        .expect("Error reading input.");
+    let input = prompt()?;
 
     let index = input.trim().parse::<usize>().unwrap();
 
