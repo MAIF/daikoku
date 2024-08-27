@@ -832,7 +832,6 @@ const ApiKeyCard = ({
                           value={subscription.apiKey?.clientSecret}
                           aria-describedby={`client-secret-addon-${_id}`}
                         />
-                        <div className="input-group-append">
                           <span
                             onClick={() => {
                               if (subscription.enabled) {
@@ -851,7 +850,6 @@ const ApiKeyCard = ({
                               <i className="fas fa-eye-slash" />
                             )}
                           </span>
-                        </div>
                       </div>
                     </div>
                   </>
