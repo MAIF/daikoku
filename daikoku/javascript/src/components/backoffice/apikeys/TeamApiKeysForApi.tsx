@@ -577,7 +577,7 @@ const ApiKeyCard = ({
     return (
       <div className="col-12 col-sm-6 col-md-4 mb-2">
         <div className="card">
-          <div className="card-header" style={{ position: 'relative' }}>
+          <div className="card-header" style={{ position: 'relative', fontSize: '12px' }}>
             <div className="d-flex justify-content-end m-1 position-absolute top-0 end-0">
               <BeautifulTitle title={translate('apikeys.view.api')}>
                 <Link
