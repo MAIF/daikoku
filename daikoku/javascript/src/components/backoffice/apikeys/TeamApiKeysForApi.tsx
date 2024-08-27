@@ -577,7 +577,7 @@ const ApiKeyCard = ({
     return (
       <div className="col-12 col-sm-6 col-md-4 mb-2">
         <div className="card">
-          <div className="card-header" style={{ position: 'relative', fontSize: '12px' }}>
+          <div className="card-header" style={{ position: 'relative', fontSize: '16px' }}>
             <div className="d-flex justify-content-end m-1 position-absolute top-0 end-0">
               <BeautifulTitle title={translate('apikeys.view.api')}>
                 <Link
@@ -612,7 +612,7 @@ const ApiKeyCard = ({
                       className="btn btn-sm btn-outline-primary ms-2"
                       onClick={() => setEditMode(true)}
                     >
-                      <i className="fas fa-pen cursor-pointer a-fake" />
+                      <i className="fas fa-pen cursor-pointer" />
                     </button>
                   </div>
                 ) : (
