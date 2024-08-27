@@ -403,12 +403,12 @@ test('aggregation mode', async ({ page, request }) => {
   const clientId = await page.getByLabel('Client Id').inputValue()
 
   await page.getByText('API keys', { exact: true }).click();
-  await page.getByRole('row', { name: 'test API 2.0.0  API keys' }).getByLabel('view APikey').click();
+  await page.getByRole('row', { name: 'test API 2.0.0' }).getByLabel('view APikey').click();
   await expect(page.getByLabel('Client Id').first()).toHaveValue(clientId);
   await page.getByRole('button', { name: 'Show aggregate subscriptions' }).click();
   await expect(page.getByRole('link', { name: 'test API 2/test plan' })).toBeVisible();
   await page.getByText('API keys', { exact: true }).click();
-  await page.getByRole('row', { name: 'test API 2 1.0.0  API keys' }).getByLabel('view APikey').click();
+  await page.getByRole('row', { name: 'test API 2 1.0.0' }).getByLabel('view APikey').click();
   await page.getByRole('button', { name: 'make unique' }).click();
   await expect(page.getByRole('paragraph')).toContainText('Are you sure to make this API key unique and separate from his parent plan?');
   await page.getByRole('button', { name: 'Ok' }).click();
