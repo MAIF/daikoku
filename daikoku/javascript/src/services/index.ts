@@ -257,11 +257,6 @@ export const regenerateApiKeySecret = (
     method: 'POST',
   });
 
-export const cleanArchivedSubscriptions = (teamId: string) =>
-  customFetch(`/api/teams/${teamId}/subscriptions/_clean`, {
-    method: 'DELETE',
-  });
-
 export const member = (teamId: string, userId: string) =>
   customFetch(`/api/teams/${teamId}/members/${userId}`, {});
 
@@ -1156,11 +1151,16 @@ export const createNewApiVersion = (apiId: string, teamId: string, version: stri
 
 export const deleteApiSubscription = (
   teamId: string,
-  subscriptionId: string
+  subscriptionId: string,
+  action: string,
+  childId?: string
 ): Promise<ResponseError | any> =>
-  customFetch(`/api/subscriptions/${subscriptionId}/teams/${teamId}/_delete`, {
-    method: 'DELETE',
-  });
+  customFetch(
+    `/api/teams/${teamId}/subscriptions/${subscriptionId}?action=${action}${childId ? `&child=${childId}` : ''}`,
+    {
+      method: 'DELETE',
+    }
+  );
 
 export const extendApiKey = (
   apiId: string,
@@ -1620,6 +1620,7 @@ export const graphql = {
         parent {
           _id
           adminCustomName
+          enabled
           api {
             _id
             name

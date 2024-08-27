@@ -311,48 +311,28 @@ package object modules {
     )(request: RequestHeader): Future[Result] = {
       nextFilter(request).map { result =>
         env.config.mode match {
-          case DaikokuMode.Dev  => result
-          case DaikokuMode.Test => result
           case DaikokuMode.Prod
-              if regex.matcher(request.relativeUri).find() => {
-            result.withHeaders(
-              "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net localhost:3000 blob:; img-src * data: blob:; font-src 'self' https://*; connect-src *",
-              "X-XSS-Protection" -> "1 ; mode=block",
-              "X-Content-Type-Options" -> "nosniff"
-            )
-          }
-          case DaikokuMode.Prod
-              if request.relativeUri.startsWith("/team-assets/") => {
+              if request.relativeUri.startsWith("/team-assets/") =>
             result.withHeaders(
               "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline'; img-src * data: blob:; font-src 'self' https://*",
               "X-XSS-Protection" -> "1 ; mode=block",
               "X-Content-Type-Options" -> "nosniff"
             )
-          }
           case DaikokuMode.Prod
-              if request.relativeUri.startsWith("/tenant-assets/") => {
+              if request.relativeUri.startsWith("/tenant-assets/") =>
             result.withHeaders(
               "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline'; img-src * data: blob:; font-src 'self' https://*",
               "X-XSS-Protection" -> "1 ; mode=block",
               "X-Content-Type-Options" -> "nosniff"
             )
-          }
           case DaikokuMode.Prod
-              if request.relativeUri.startsWith("/user-assets/") => {
+              if request.relativeUri.startsWith("/user-assets/") =>
             result.withHeaders(
               "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline'; img-src * data: blob:; font-src 'self' https://*",
               "X-XSS-Protection" -> "1 ; mode=block",
               "X-Content-Type-Options" -> "nosniff"
             )
-          }
-          case DaikokuMode.Prod => {
-            result.withHeaders(
-              "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net localhost:3000 blob:; img-src * data: blob:; font-src 'self' https://*; connect-src *",
-              "X-XSS-Protection" -> "1 ; mode=block",
-              "X-Content-Type-Options" -> "nosniff",
-              "X-Frame-Options" -> "sameorigin"
-            )
-          }
+          case _ => result
         }
       }
     }

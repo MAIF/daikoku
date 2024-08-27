@@ -2,6 +2,7 @@ package controllers
 
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import controllers.AppError.toJson
+import fr.maif.otoroshi.daikoku.domain.UserId
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc
 import play.api.mvc.Results._
@@ -25,7 +26,7 @@ object AppError {
   case object ApiGroupNotFound extends AppError
   case object TenantNotFound extends AppError
   case object TeamNotFound extends AppError
-  case object UserNotFound extends AppError
+  case class UserNotFound(user: Option[UserId] = None) extends AppError
   case class EntityNotFound(entityName: String) extends AppError
   case object ForbiddenAction extends AppError
   case object OtoroshiSettingsNotFound extends AppError
@@ -78,7 +79,7 @@ object AppError {
       case ApiGroupNotFound           => NotFound(toJson(error))
       case TeamNotFound               => NotFound(toJson(error))
       case TenantNotFound             => NotFound(toJson(error))
-      case UserNotFound               => NotFound(toJson(error))
+      case UserNotFound(_)            => NotFound(toJson(error))
       case EntityNotFound(_)          => NotFound(toJson(error))
       case SubscriptionDemandNotFound => NotFound(toJson(error))
       case SubscriptionDemandClosed   => Forbidden(toJson(error))
@@ -126,20 +127,21 @@ object AppError {
 
   def getErrorMessage(error: AppError) =
     error match {
-      case OtoroshiError(e)           => Json.stringify(e) //todo: ???
-      case ApiKeyRotationError(e)     => Json.stringify(e) //todo: ???
-      case PaymentError(e)            => e
-      case ParsingPayloadError(msg)   => s"Error while parsing payload: $msg"
-      case BadRequestError(e)         => e
-      case ApiVersionConflict         => "This version already existed"
-      case TeamNameAlreadyExists      => "The name of this team already exists"
-      case ApiNotFound                => "API not found"
-      case ApiNotPublished            => "API not published"
-      case PageNotFound               => "Page not found"
-      case ApiGroupNotFound           => "API group not found"
-      case TeamNotFound               => "Team not found"
-      case TenantNotFound             => "Tenant not found"
-      case UserNotFound               => "User not found"
+      case OtoroshiError(e)         => Json.stringify(e) //todo: ???
+      case ApiKeyRotationError(e)   => Json.stringify(e) //todo: ???
+      case PaymentError(e)          => e
+      case ParsingPayloadError(msg) => s"Error while parsing payload: $msg"
+      case BadRequestError(e)       => e
+      case ApiVersionConflict       => "This version already existed"
+      case TeamNameAlreadyExists    => "The name of this team already exists"
+      case ApiNotFound              => "API not found"
+      case ApiNotPublished          => "API not published"
+      case PageNotFound             => "Page not found"
+      case ApiGroupNotFound         => "API group not found"
+      case TeamNotFound             => "Team not found"
+      case TenantNotFound           => "Tenant not found"
+      case UserNotFound(user) =>
+        s"User not found ${user.map(id => s"(ID: $id)").getOrElse("")}"
       case EntityNotFound(name)       => s"$name not found"
       case NotificationNotFound       => "Notification not found"
       case SubscriptionDemandNotFound => "SubscriptionDemand not found"

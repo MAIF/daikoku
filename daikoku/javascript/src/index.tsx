@@ -12,6 +12,7 @@ import { I18nProvider } from './contexts/i18n-context';
 import '@maif/react-forms/lib/index.css';
 import 'bootstrap/dist/css/bootstrap.css';
 import 'react-tooltip/dist/react-tooltip.css';
+import '@fortawesome/fontawesome-free/css/all.min.css'
 import './style/main.scss';
 
 import 'bootstrap';

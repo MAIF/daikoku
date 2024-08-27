@@ -299,7 +299,7 @@ class DeletionService(
     for {
       user <- EitherT.fromOptionF(
         env.dataStore.userRepo.findByIdNotDeleted(userId),
-        AppError.UserNotFound
+        AppError.UserNotFound()
       )
       team <- EitherT.fromOptionF(
         env.dataStore.teamRepo
@@ -348,7 +348,7 @@ class DeletionService(
     for {
       user <- EitherT.fromOptionF(
         env.dataStore.userRepo.findByIdNotDeleted(userId),
-        AppError.UserNotFound
+        AppError.UserNotFound()
       )
       teams <- EitherT.liftF(
         env.dataStore.teamRepo
