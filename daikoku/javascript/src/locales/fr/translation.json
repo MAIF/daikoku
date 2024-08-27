@@ -609,6 +609,7 @@
   "constraint.apikey.grace.period": "La période de tuilage doit être inferieur à la période de rotation",
   "reset.secret.confirm": "Êtes-vous certain de vouloir réinitialiser le secret",
   "View usage statistics": "Voir les statistiques d'usage",
+  "View api": "Voir l'API",
   "Copy to clipboard": "Copier dans le presse-papier",
   "Setup rotation": "Paramètrer la rotation",
   "Enable/Disable": "Activer/Désactiver",
@@ -1428,5 +1429,7 @@
   "apikeys.delete.modal.title": "Supprimer une souscription",
   "apikeys.delete.confirm.modal.title": "Confirmer la suppression",
   "apikeys.delete.confirm.label": "Pour confirmer la suppression, veuillez saisir le nom exact de la souscription : %s",
-  "apikeys.delete.success.message": "La souscription a été correctement supprimée"
+  "apikeys.delete.success.message": "La souscription a été correctement supprimée",
+  "apikeys.view.api": "Voir l'API",
+  "apikeys.view.apikeys": "Voir les clés d'API"
 }

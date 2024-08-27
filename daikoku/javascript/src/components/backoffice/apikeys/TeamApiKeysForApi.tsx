@@ -1,18 +1,18 @@
-import { getApolloContext } from "@apollo/client";
-import { Form, constraints, type, format } from "@maif/react-forms";
-import classNames from "classnames";
-import sortBy from "lodash/sortBy";
-import React, { useContext, useEffect, useState } from "react";
-import { Link, useLocation, useParams } from "react-router-dom";
-import { toast } from "sonner";
+import { getApolloContext } from '@apollo/client';
+import { Form, constraints, type, format } from '@maif/react-forms';
+import classNames from 'classnames';
+import sortBy from 'lodash/sortBy';
+import React, { useContext, useEffect, useState } from 'react';
+import { Link, useLocation, useParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   I18nContext,
   ModalContext,
   useTeamBackOffice,
-} from "../../../contexts";
-import * as Services from "../../../services";
+} from '../../../contexts';
+import * as Services from '../../../services';
 import {
   IApi,
   IRotation,
@@ -23,7 +23,7 @@ import {
   IUsagePlan,
   ResponseError,
   isError,
-} from "../../../types";
+} from '../../../types';
 import {
   BeautifulTitle,
   Can,
@@ -34,7 +34,7 @@ import {
   formatPlanType,
   read,
   stat,
-} from "../../utils";
+} from '../../utils';
 
 type ISubscriptionWithChildren = ISubscriptionExtended & {
   children: Array<ISubscriptionExtended>;
@@ -42,7 +42,7 @@ type ISubscriptionWithChildren = ISubscriptionExtended & {
 
 export const TeamApiKeysForApi = () => {
   const { isLoading, currentTeam, error } = useTeamBackOffice();
-  const [searched, setSearched] = useState("");
+  const [searched, setSearched] = useState('');
 
   const location = useLocation();
   const params = useParams();
@@ -52,7 +52,7 @@ export const TeamApiKeysForApi = () => {
   const queryClient = useQueryClient();
 
   const apiQuery = useQuery({
-    queryKey: ["data", "visibleApi", params.apiId, params.versionId],
+    queryKey: ['data', 'visibleApi', params.apiId, params.versionId],
     queryFn: () =>
       Services.getTeamVisibleApi(
         (currentTeam as ITeamSimple)._id,
@@ -62,7 +62,7 @@ export const TeamApiKeysForApi = () => {
     enabled: !!currentTeam && !isError(currentTeam),
   }); //FIXME: not real IAPI (betterApis with plans & pendingPlans)
   const subsQuery = useQuery({
-    queryKey: ["data", "subscriptions"],
+    queryKey: ['data', 'subscriptions'],
     queryFn: () =>
       Services.getTeamSubscriptions(
         params.apiId!,
@@ -73,13 +73,13 @@ export const TeamApiKeysForApi = () => {
   });
 
   const teamQuery = useQuery({
-    queryKey: ["data", "team"],
+    queryKey: ['data', 'team'],
     queryFn: () => Services.team((apiQuery.data as IApi).team),
     enabled: !!apiQuery.data && !isError(apiQuery.data),
   });
 
   const subApisQuery = useQuery({
-    queryKey: ["data", "subscriptions", "apis"],
+    queryKey: ['data', 'subscriptions', 'apis'],
     queryFn: () => {
       return client?.query<{ apis: IApi[] }>({
         query: Services.graphql.apisByIds,
@@ -96,7 +96,7 @@ export const TeamApiKeysForApi = () => {
   });
 
   useEffect(() => {
-    queryClient.invalidateQueries({ queryKey: ["data"] });
+    queryClient.invalidateQueries({ queryKey: ['data'] });
   }, [location]);
 
   useEffect(() => {
@@ -124,23 +124,23 @@ export const TeamApiKeysForApi = () => {
         subscription._id,
         !subscription.enabled
       ).then(() =>
-        queryClient.invalidateQueries({ queryKey: ["data", "subscriptions"] })
+        queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] })
       );
     };
 
     const makeUniqueApiKey = (subscription: ISubscription) => {
       confirm({
-        message: translate("team_apikey_for_api.ask_for_make_unique"),
+        message: translate('team_apikey_for_api.ask_for_make_unique'),
       }).then((ok) => {
         if (ok)
           Services.makeUniqueApiKey(currentTeam._id, subscription._id).then(
             () => {
               queryClient.invalidateQueries({
-                queryKey: ["data", "subscriptions"],
+                queryKey: ['data', 'subscriptions'],
               });
               toast.success(
                 translate(
-                  "team_apikey_for_api.ask_for_make_unique.success_message"
+                  'team_apikey_for_api.ask_for_make_unique.success_message'
                 )
               );
             }
@@ -242,7 +242,7 @@ export const TeamApiKeysForApi = () => {
       gracePeriod: number
     ) => {
       if (plan.autoRotation) {
-        toast.error(translate("rotation.error.message"));
+        toast.error(translate('rotation.error.message'));
         return Promise.resolve();
       }
 
@@ -253,12 +253,12 @@ export const TeamApiKeysForApi = () => {
         rotationEvery,
         gracePeriod
       ).then((r) => {
-        queryClient.invalidateQueries({ queryKey: ["data", "subscriptions"] });
+        queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] });
       });
     };
 
     const regenerateApiKeySecret = (subscription: ISubscription) => {
-      return confirm({ message: translate("reset.secret.confirm") }).then(
+      return confirm({ message: translate('reset.secret.confirm') }).then(
         (ok) => {
           if (ok) {
             Services.regenerateApiKeySecret(
@@ -266,9 +266,9 @@ export const TeamApiKeysForApi = () => {
               subscription._id
             ).then(() => {
               queryClient.invalidateQueries({
-                queryKey: ["data", "subscriptions"],
+                queryKey: ['data', 'subscriptions'],
               });
-              toast.success(translate("secret reseted successfully"));
+              toast.success(translate('secret reseted successfully'));
             });
           }
         }
@@ -299,29 +299,29 @@ export const TeamApiKeysForApi = () => {
 
       const search = searched.trim().toLowerCase();
       const filteredApiKeys =
-        search === ""
+        search === ''
           ? subscriptions
           : subscriptions.filter((subs) => {
-            if (
-              subs.apiKey.clientName
-                .replace("-", " ")
-                .toLowerCase()
-                .includes(search)
-            ) {
-              return true;
-            } else if (
-              subs.customName &&
-              subs.customName.toLowerCase().includes(search)
-            ) {
-              return true;
-            } else {
-              return formatPlanType(subs.planType, translate)
-                .toLowerCase()
-                .includes(search);
-            }
-          });
+              if (
+                subs.apiKey.clientName
+                  .replace('-', ' ')
+                  .toLowerCase()
+                  .includes(search)
+              ) {
+                return true;
+              } else if (
+                subs.customName &&
+                subs.customName.toLowerCase().includes(search)
+              ) {
+                return true;
+              } else {
+                return formatPlanType(subs.planType, translate)
+                  .toLowerCase()
+                  .includes(search);
+              }
+            });
 
-      const sorted = sortBy(filteredApiKeys, ["plan", "customName", "parent"]);
+      const sorted = sortBy(filteredApiKeys, ['plan', 'customName', 'parent']);
       const sortedApiKeys = sorted
         .filter((f) => f.parent)
         .reduce<Array<ISubscriptionWithChildren>>(
@@ -358,7 +358,7 @@ export const TeamApiKeysForApi = () => {
                 <input
                   type="text"
                   className="form-control col-5"
-                  placeholder={translate("Search your apiKey...")}
+                  placeholder={translate('Search your apiKey...')}
                   aria-label="Search your apikey"
                   value={searched}
                   onChange={(e) => setSearched(e.target.value)}
@@ -458,8 +458,8 @@ const ApiKeyCard = ({
 
   const [editMode, setEditMode] = useState(false);
 
-  const [activeTab, setActiveTab] = useState<"apikey" | "token" | "basicAuth">(
-    "apikey"
+  const [activeTab, setActiveTab] = useState<'apikey' | 'token' | 'basicAuth'>(
+    'apikey'
   );
   const apiKeyValues = {
     apikey: `${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`,
@@ -474,7 +474,7 @@ const ApiKeyCard = ({
   const { translate, Translation } = useContext(I18nContext);
 
   const planQuery = useQuery({
-    queryKey: ["plan", subscription.plan],
+    queryKey: ['plan', subscription.plan],
     queryFn: () =>
       Services.getVisiblePlan(api._id, api.currentVersion, subscription.plan),
   });
@@ -482,7 +482,7 @@ const ApiKeyCard = ({
   useEffect(() => {
     if (planQuery.data && !isError(planQuery.data)) {
       setActiveTab(
-        planQuery.data.integrationProcess === "Automatic" ? "token" : "apikey"
+        planQuery.data.integrationProcess === 'Automatic' ? 'token' : 'apikey'
       );
       if (!customName) {
         setCustomName(
@@ -514,29 +514,29 @@ const ApiKeyCard = ({
     const settingsSchema = {
       enabled: {
         type: type.bool,
-        label: translate("Enabled"),
-        help: translate("help.apikey.rotation"),
+        label: translate('Enabled'),
+        help: translate('help.apikey.rotation'),
         disabled: plan.autoRotation,
       },
       rotationEvery: {
         type: type.number,
-        label: translate("Rotation period"),
-        help: translate("help.apikey.rotation.period"),
+        label: translate('Rotation period'),
+        help: translate('help.apikey.rotation.period'),
         disabled: ({ rawValues }: any) => !rawValues.enabled,
         props: { steps: 1, min: 0 },
-        constraints: [constraints.positive(translate("constraints.positive"))],
+        constraints: [constraints.positive(translate('constraints.positive'))],
       },
       gracePeriod: {
         type: type.number,
-        label: translate("Grace period"),
-        help: translate("help.apikey.grace.period"),
+        label: translate('Grace period'),
+        help: translate('help.apikey.grace.period'),
         disabled: ({ rawValues }: any) => !rawValues.enabled,
         props: { steps: 1, min: 0 },
         constraints: [
-          constraints.positive(translate("constraints.positive")),
+          constraints.positive(translate('constraints.positive')),
           constraints.lessThan(
-            constraints.ref<number>("rotationEvery"),
-            translate("constraint.apikey.grace.period")
+            constraints.ref<number>('rotationEvery'),
+            translate('constraint.apikey.grace.period')
           ),
         ],
       },
@@ -572,25 +572,35 @@ const ApiKeyCard = ({
     };
 
     const disableRotation =
-      api.visibility === "AdminOnly" || !!plan.autoRotation;
+      api.visibility === 'AdminOnly' || !!plan.autoRotation;
 
     return (
       <div className="col-12 col-sm-6 col-md-4 mb-2">
         <div className="card">
-          <div className="card-header" style={{ position: "relative" }}>
+          <div className="card-header" style={{ position: 'relative' }}>
+            <div className="d-flex justify-content-end m-1 position-absolute top-0 end-0">
+              <BeautifulTitle title={translate('apikeys.view.api')}>
+                <Link
+                  to={`/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/pricing`}
+                  className="btn btn-sm btn-outline-primary ms-1"
+                >
+                  <i className="fas fa-arrow-up-right-from-square" />
+                </Link>
+              </BeautifulTitle>
+            </div>
             <div className="d-flex align-items-center justify-content-between flex-column">
               {!settingMode &&
                 (!editMode ? (
                   <div className="d-flex align-items-center justify-content-between">
                     <BeautifulTitle
-                      title={customName || ""}
+                      title={customName || ''}
                       style={{
-                        wordBreak: "break-all",
-                        marginBlockEnd: "0",
-                        whiteSpace: "nowrap",
-                        maxWidth: "85%",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
+                        wordBreak: 'break-all',
+                        marginBlockEnd: '0',
+                        whiteSpace: 'nowrap',
+                        maxWidth: '85%',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
                       }}
                       className="plan-name"
                     >
@@ -638,7 +648,7 @@ const ApiKeyCard = ({
               ) : (
                 <div
                   className="badge bg-secondary"
-                  style={{ fontSize: "12px" }}
+                  style={{ fontSize: '12px' }}
                 >
                   Type : {formatPlanType(plan, translate)}
                 </div>
@@ -651,7 +661,7 @@ const ApiKeyCard = ({
                 <div className="d-flex justify-content-end mb-3">
                   <div className="d-flex justify-content-around">
                     {!subscription.parent && (
-                      <BeautifulTitle title={translate("Reset secret")}>
+                      <BeautifulTitle title={translate('Reset secret')}>
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-danger ms-1"
@@ -664,7 +674,7 @@ const ApiKeyCard = ({
                     )}
                     <Can I={read} a={stat} team={currentTeam}>
                       <BeautifulTitle
-                        title={translate("View usage statistics")}
+                        title={translate('View usage statistics')}
                       >
                         <Link
                           to={statsLink}
@@ -674,7 +684,7 @@ const ApiKeyCard = ({
                         </Link>
                       </BeautifulTitle>
                     </Can>
-                    <BeautifulTitle title={translate("Copy to clipboard")}>
+                    <BeautifulTitle title={translate('Copy to clipboard')}>
                       <button
                         type="button"
                         disabled={!subscription.enabled}
@@ -684,10 +694,10 @@ const ApiKeyCard = ({
                           navigator.clipboard
                             .writeText(credentials)
                             .then(() =>
-                              toast.info(translate("credential.copy.success"))
+                              toast.info(translate('credential.copy.success'))
                             )
                             .catch(() =>
-                              toast.warning(translate("credential.copy.error"))
+                              toast.warning(translate('credential.copy.error'))
                             );
                         }}
                       >
@@ -695,7 +705,7 @@ const ApiKeyCard = ({
                       </button>
                     </BeautifulTitle>
                     {!subscription.parent && !disableRotation && (
-                      <BeautifulTitle title={translate("Setup rotation")}>
+                      <BeautifulTitle title={translate('Setup rotation')}>
                         <button
                           type="button"
                           className="btn btn-sm btn-outline-primary ms-1"
@@ -740,7 +750,7 @@ const ApiKeyCard = ({
                     </BeautifulTitle>
                     {subscription.parent && (
                       <BeautifulTitle
-                        title={translate("team_apikey_for_api.make_unique")}
+                        title={translate('team_apikey_for_api.make_unique')}
                       >
                         <button
                           type="button"
@@ -759,8 +769,8 @@ const ApiKeyCard = ({
                     <ul className="nav nav-tabs flex-column flex-sm-row mb-2 col-12">
                       <li className="nav-item cursor-pointer">
                         <span
-                          className={`nav-link ${activeTab === "apikey" ? "active" : ""}`}
-                          onClick={() => setActiveTab("apikey")}
+                          className={`nav-link ${activeTab === 'apikey' ? 'active' : ''}`}
+                          onClick={() => setActiveTab('apikey')}
                         >
                           <Translation i18nkey="ApiKey">ApiKey</Translation>
                         </span>
@@ -768,8 +778,8 @@ const ApiKeyCard = ({
                       {!disableRotation && (
                         <li className="nav-item  cursor-pointer">
                           <span
-                            className={`nav-link ${activeTab === "token" ? "active" : ""}`}
-                            onClick={() => setActiveTab("token")}
+                            className={`nav-link ${activeTab === 'token' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('token')}
                           >
                             <Translation i18nkey="Integration token">
                               Integration token
@@ -779,8 +789,8 @@ const ApiKeyCard = ({
                       )}
                       <li className="nav-item  cursor-pointer">
                         <span
-                          className={`nav-link ${activeTab === "basicAuth" ? "active" : ""}`}
-                          onClick={() => setActiveTab("basicAuth")}
+                          className={`nav-link ${activeTab === 'basicAuth' ? 'active' : ''}`}
+                          onClick={() => setActiveTab('basicAuth')}
                         >
                           <Translation i18nkey="Basic auth">
                             Basic auth
@@ -790,7 +800,7 @@ const ApiKeyCard = ({
                     </ul>
                   </div>
                 )}
-                {activeTab == "apikey" && (
+                {activeTab == 'apikey' && (
                   <>
                     <div className="mb-3">
                       <label htmlFor={`client-id-${_id}`} className="">
@@ -829,9 +839,9 @@ const ApiKeyCard = ({
                                 setHide(!hide);
                               }
                             }}
-                            className={classNames("input-group-text", {
-                              "cursor-pointer": subscription.enabled,
-                              "cursor-forbidden": !subscription.enabled,
+                            className={classNames('input-group-text', {
+                              'cursor-pointer': subscription.enabled,
+                              'cursor-forbidden': !subscription.enabled,
                             })}
                             id={`client-secret-addon-${_id}`}
                           >
@@ -846,7 +856,7 @@ const ApiKeyCard = ({
                     </div>
                   </>
                 )}
-                {activeTab == "token" && (
+                {activeTab == 'token' && (
                   <>
                     <div className="mb-3">
                       <label htmlFor={`token-${_id}`} className="">
@@ -866,7 +876,7 @@ const ApiKeyCard = ({
                     </div>
                   </>
                 )}
-                {activeTab == "basicAuth" && (
+                {activeTab == 'basicAuth' && (
                   <>
                     <div className="mb-3">
                       <label htmlFor={`basicAuth-${_id}`} className="">
@@ -892,7 +902,7 @@ const ApiKeyCard = ({
                     {showAggregatePlan && (
                       <div className="text-center">
                         <h5 className="modal-title">
-                          {translate("team_apikey_aggregatePlans_title")}
+                          {translate('team_apikey_aggregatePlans_title')}
                         </h5>
                         <div>
                           {subscription.children.map((aggregate) => {
@@ -918,8 +928,8 @@ const ApiKeyCard = ({
                       onClick={() => setAggregatePlan(!showAggregatePlan)}
                     >
                       {showAggregatePlan
-                        ? translate("team_apikey_for_api.hide_aggregate_sub")
-                        : translate("team_apikey_for_api.show_aggregate_sub")}
+                        ? translate('team_apikey_for_api.hide_aggregate_sub')
+                        : translate('team_apikey_for_api.show_aggregate_sub')}
                     </button>
                   </>
                 )}

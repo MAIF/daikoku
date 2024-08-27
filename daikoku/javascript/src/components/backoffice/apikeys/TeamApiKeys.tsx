@@ -2,16 +2,27 @@ import { createColumnHelper } from '@tanstack/react-table';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-import { I18nContext, ModalContext, useTeamBackOffice } from '../../../contexts';
+import {
+  I18nContext,
+  ModalContext,
+  useTeamBackOffice,
+} from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IApi, ITeamSimple, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
-import { Can, Spinner, apikey, isUserIsTeamAdmin, manage, teamPermissions } from '../../utils';
+import {
+  Can,
+  Spinner,
+  apikey,
+  isUserIsTeamAdmin,
+  manage,
+  teamPermissions,
+} from '../../utils';
 import { toast } from 'sonner';
 
 export const TeamApiKeys = () => {
-  const { isLoading, currentTeam, error } = useTeamBackOffice()
+  const { isLoading, currentTeam, error } = useTeamBackOffice();
 
   const { connectedUser } = useContext(GlobalContext);
 
@@ -24,8 +35,10 @@ export const TeamApiKeys = () => {
   useEffect(() => {
     setShowApiKey(
       connectedUser.isDaikokuAdmin ||
-      (currentTeam && !isError(currentTeam) && currentTeam.apiKeyVisibility !== teamPermissions.administrator) ||
-      isUserIsTeamAdmin(connectedUser, currentTeam)
+        (currentTeam &&
+          !isError(currentTeam) &&
+          currentTeam.apiKeyVisibility !== teamPermissions.administrator) ||
+        isUserIsTeamAdmin(connectedUser, currentTeam)
     );
   }, [connectedUser.isDaikokuAdmin, currentTeam]);
 
@@ -36,13 +49,13 @@ export const TeamApiKeys = () => {
 
   const columnHelper = createColumnHelper<IApi>();
   const columns = (currentTeam: ITeamSimple) => [
-    columnHelper.accessor("name", {
+    columnHelper.accessor('name', {
       header: translate('Api Name'),
-      meta: { style: { textAlign: 'left' } }
+      meta: { style: { textAlign: 'left' } },
     }),
-    columnHelper.accessor("currentVersion", {
+    columnHelper.accessor('currentVersion', {
       header: translate('Version'),
-      meta: { style: { textAlign: 'left' } }
+      meta: { style: { textAlign: 'left' } },
     }),
     columnHelper.display({
       header: translate('Actions'),
@@ -53,30 +66,43 @@ export const TeamApiKeys = () => {
         const api = info.row.original;
         return (
           showApiKey && (
-            <div style={{ minWidth: 100 }}>
-              <Link
-                to={`/${currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
-                className="btn btn-sm btn-outline-primary"
-              >
-                <i className="fas fa-eye me-1" />
-                <Translation i18nkey="Api key" plural={true}>Api keys</Translation>
-              </Link>
-            </div>
+            <>
+              <div>
+                <Link
+                  to={`/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`}
+                  className="btn btn-sm btn-outline-info me-1"
+                  title={translate("apikeys.view.api")}
+                  aria-label={translate("apikeys.view.api")}
+                  >
+                  <i className="fa-solid fa-arrow-up-right-from-square" />
+                </Link>
+                <Link
+                  to={`/${currentTeam._humanReadableId}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`}
+                  className="btn btn-sm btn-outline-info me-1"
+                  title={translate("apikeys.view.apikeys")}
+                  aria-label={translate("apikeys.view.apikeys")}
+                >
+                  <i className="fas fa-key" />
+                </Link>
+              </div>
+            </>
           )
         );
       },
     }),
   ];
-  
+
   if (isLoading) {
-    return <Spinner />
+    return <Spinner />;
   } else if (currentTeam && !isError(currentTeam)) {
     return (
       <Can I={manage} a={apikey} team={currentTeam} dispatchError={true}>
         <div className="row">
           <div className="col">
             <h1>
-              <Translation i18nkey="Subscribed Apis">Subscribed Apis</Translation>
+              <Translation i18nkey="Subscribed Apis">
+                Subscribed Apis
+              </Translation>
             </h1>
             <Link
               to={`/${currentTeam._humanReadableId}/settings/consumption`}
@@ -98,9 +124,7 @@ export const TeamApiKeys = () => {
       </Can>
     );
   } else {
-    toast.error(error?.message || currentTeam?.error)
+    toast.error(error?.message || currentTeam?.error);
     return <></>;
   }
-
-
 };
