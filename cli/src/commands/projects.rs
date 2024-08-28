@@ -85,12 +85,14 @@ struct MailerSettings {
 
 #[derive(Clone, Deserialize, Serialize, Debug)]
 pub(crate) struct Api {
-    _id: String,
+    pub(crate) _id: String,
     #[serde(alias = "_humanReadableId")]
     human_readable_id: String,
     header: Option<String>,
     description: Option<String>,
 }
+
+pub(crate) const ADMIN_API_ID: &str = "admin-api-tenant-default";
 
 pub(crate) async fn run(command: ProjectCommands) -> DaikokuResult<()> {
     match command {
@@ -343,11 +345,11 @@ fn clear() -> DaikokuResult<()> {
 
     match config.write(&get_path()?) {
         Ok(_) => {
-            logger::println("<green>Environments erased</>".to_string());
+            logger::println("<green>Projects erased</>".to_string());
             Ok(())
         }
         Err(e) => Err(DaikokuCliError::FileSystem(format!(
-            "failed to reset the environments file : {}",
+            "failed to reset the projects file : {}",
             e.to_string()
         ))),
     }
@@ -497,7 +499,7 @@ async fn clone(
         .await?,
     )?;
 
-    let apis_informations = bytes_to_vec_of_struct::<Api>(
+    let apis_informations: Vec<Api> = bytes_to_vec_of_struct::<Api>(
         get_daikoku_api(
             "/apis?fields=_id,_humanReadableId,header,description",
             &host,
@@ -505,7 +507,10 @@ async fn clone(
             &cookie,
         )
         .await?,
-    )?;
+    )?
+    .into_iter()
+    .filter(|api| api._id != ADMIN_API_ID)
+    .collect();
 
     // "all", "pages", "apis", "mails"
 
@@ -565,7 +570,12 @@ fn replace_ids(items: Vec<CmsPage>) -> DaikokuResult<Vec<CmsPage>> {
     Ok(updated_pages)
 }
 
-pub(crate) fn create_api_folder(apis: Vec<Api>, project_path: PathBuf) -> DaikokuResult<()> {
+pub(crate) fn create_api_folder(
+    apis: Vec<Api>,
+    project_path: PathBuf,
+) -> DaikokuResult<Vec<String>> {
+    let mut created: Vec<String> = Vec::new();
+
     apis.iter().for_each(|item| {
         let file_path = project_path.clone().join(
             PathBuf::from_str("apis")
@@ -575,6 +585,8 @@ pub(crate) fn create_api_folder(apis: Vec<Api>, project_path: PathBuf) -> Daikok
 
         if !file_path.exists() {
             let _ = fs::create_dir_all(file_path.clone());
+
+            created.push(item.human_readable_id.clone());
 
             let mut config: Ini = Ini::new();
             config.set(&"default", "id", Some(item._id.clone()));
@@ -608,7 +620,7 @@ pub(crate) fn create_api_folder(apis: Vec<Api>, project_path: PathBuf) -> Daikok
         }
     });
 
-    Ok(())
+    Ok(created)
 }
 
 fn create_mail_tenant(mail_settings: TenantMailBody, project_path: PathBuf) -> DaikokuResult<()> {

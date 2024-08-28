@@ -11,7 +11,7 @@ use super::{
     enviroments::{
         get_daikokuignore, get_default_environment, read_cookie_from_environment, Environment,
     },
-    projects::{self, create_api_folder, Api},
+    projects::{self, create_api_folder, Api, ADMIN_API_ID},
 };
 
 pub(crate) async fn run(_commands: Option<PullCommands>) -> DaikokuResult<()> {
@@ -36,37 +36,6 @@ pub(crate) async fn run(_commands: Option<PullCommands>) -> DaikokuResult<()> {
     Ok(())
 }
 
-fn apply_daikoku_ignore(items: &mut Vec<CmsFile>) -> DaikokuResult<()> {
-    let daikoku_ignore = get_daikokuignore()?;
-
-    let rules: Vec<&String> = daikoku_ignore
-        .iter()
-        .filter(|line| !line.is_empty())
-        .collect::<Vec<&String>>();
-
-    if !rules.is_empty() {
-        logger::println("Excluded files and folders".to_string());
-    }
-
-    items.retain(|file| {
-        let retained = daikoku_ignore
-            .iter()
-            .filter(|line| !line.is_empty())
-            .find(|&line| {
-                line == &file.name || line == &file.path() || file.path().starts_with(line)
-            })
-            .is_none();
-
-        if !retained {
-            logger::println(file.name.to_string());
-        }
-
-        retained
-    });
-
-    Ok(())
-}
-
 async fn apis_synchronization(
     environment: &Environment,
     host: &String,
@@ -77,7 +46,7 @@ async fn apis_synchronization(
 
     let sources_path = PathBuf::from(project.path.clone()).join("src");
 
-    let apis_informations = bytes_to_vec_of_struct::<Api>(
+    let apis_informations: Vec<Api> = bytes_to_vec_of_struct::<Api>(
         get_daikoku_api(
             "/apis?fields=_id,_humanReadableId,header,description",
             &host,
@@ -85,9 +54,16 @@ async fn apis_synchronization(
             &cookie,
         )
         .await?,
-    )?;
+    )?
+    .into_iter()
+    .filter(|api| api._id != ADMIN_API_ID)
+    .collect();
 
-    create_api_folder(apis_informations, sources_path.clone())?;
+    let created = create_api_folder(apis_informations, sources_path.clone())?;
+
+    if created.is_empty() {
+        logger::indent_println("nothing to pull".to_string());
+    }
 
     logger::success(format!("<green>Pulling</> done"));
 
