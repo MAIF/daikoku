@@ -36,32 +36,41 @@ pub(crate) async fn run(commands: Option<PushCommands>) -> DaikokuResult<()> {
 
     if let Some(command) = commands {
         match command {
-            PushCommands::Documentation {} => {
-                documentations_synchronization(&environment, &host, &cookie, &project).await?
+            PushCommands::Documentation { interactive } => {
+                documentations_synchronization(
+                    &environment,
+                    &host,
+                    &cookie,
+                    &project,
+                    interactive.unwrap_or(false),
+                )
+                .await?
             }
-            PushCommands::Api {} => {
+            PushCommands::Api { interactive } => {
                 synchronization(
                     Some("apis".to_string()),
                     &environment,
                     &host,
                     &cookie,
                     &project,
+                    interactive.unwrap_or(false),
                 )
                 .await?
             }
-            PushCommands::Mail {} => {
+            PushCommands::Mail { interactive } => {
                 synchronization(
                     Some("mails".to_string()),
                     &environment,
                     &host,
                     &cookie,
                     &project,
+                    interactive.unwrap_or(false),
                 )
                 .await?
             }
         }
     } else {
-        synchronization(None, &environment, &host, &cookie, &project).await?
+        synchronization(None, &environment, &host, &cookie, &project, false).await?
     }
 
     logger::success("synchronization done".to_string());
@@ -106,6 +115,7 @@ async fn synchronization(
     host: &String,
     cookie: &String,
     project: &projects::Project,
+    interactive: bool,
 ) -> DaikokuResult<()> {
     logger::loading(format!(
         "<yellow>Syncing</> {:#?}",
@@ -146,6 +156,7 @@ async fn documentations_synchronization(
     host: &String,
     cookie: &String,
     project: &projects::Project,
+    interactive: bool,
 ) -> DaikokuResult<()> {
     logger::loading("<yellow>Syncing</> documentations pages".to_string());
 

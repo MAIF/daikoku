@@ -1,4 +1,4 @@
-import { Form, constraints, format, type } from '@maif/react-forms';
+import { Form, MarkdownInput, constraints, format, type } from '@maif/react-forms';
 import { createColumnHelper } from '@tanstack/react-table';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useRef, useState } from 'react';
@@ -112,6 +112,7 @@ const EditMailtemplate = ({
       label: null,
       defaultValue: '{{email}}',
       props: {
+        readOnly: true,
         actions: (insert: any) => {
           return (
             <BeautifulTitle
@@ -139,18 +140,30 @@ const EditMailtemplate = ({
     <div className="my-3">
       <span className="h5">{translate('Default mail template')}</span>
       <div className="mt-3">
-        <Form
-          value={{ value: tenant?.mailerSettings?.template }}
-          schema={translationSchema}
-          onSubmit={t => {
-            saveTenant({
-              ...tenant,
-              mailerSettings: {
-                ...tenant.mailerSettings,
-                template: t.value,
-              },
-            })
-          }} />
+        <div className='d-flex'>
+          <div className='flex-grow'>
+            <Form
+              value={{ value: tenant?.mailerSettings?.template }}
+              schema={translationSchema}
+              onSubmit={t => {
+                saveTenant({
+                  ...tenant,
+                  mailerSettings: {
+                    ...tenant.mailerSettings,
+                    template: t.value,
+                  },
+                })
+              }} />
+          </div>
+          <div className='flex-grow d-flex flex-column'>
+            <span className='h5'>Render</span>
+            {tenant?.mailerSettings?.template &&
+              <MarkdownInput className='' preview readOnly />}
+            <div className='d-flex align-items-center flex-grow'>
+              <p>Nothing to render</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
     {mailTemplateTranslations

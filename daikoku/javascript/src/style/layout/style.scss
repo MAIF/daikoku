@@ -99,7 +99,7 @@ hr {
   white-space: pre-wrap;
 }
 
-.api-description > p {
+.api-description>p {
   text-align: justify;
   white-space: pre-wrap;
 }
@@ -118,7 +118,7 @@ hr {
   top: 0;
 }
 
-img:hover + .changePicture,
+img:hover+.changePicture,
 .changePicture:hover {
   display: block;
   opacity: 0.5;
@@ -189,6 +189,7 @@ img:hover + .changePicture,
 
 .companion-link {
   color: $companion_link-color;
+
   &:hover {
     background-color: $companion_text-hover-bg-color;
     color: $companion_text-hover-color;
@@ -197,29 +198,35 @@ img:hover + .changePicture,
 
 .level1-link {
   color: $level1_link-color;
+
   &:hover {
     color: $level1_link-hover-color;
   }
 }
 
-.level1{
+.level1 {
   background-color: $level1_bg-color;
   color: $level1_text-color;
 }
+
 .level2 {
   background-color: $level2_bg-color;
   color: $level2_text-color;
 }
+
 .level2-link {
   color: $level2_link-color;
+
   &:hover {
     color: $level2_link-hover-color;
   }
-  &__with-bg:hover{
-      cursor: pointer;
-      background-color: $btn-border-color;
-      color:  $btn-bg-color;
+
+  &__with-bg:hover {
+    cursor: pointer;
+    background-color: $btn-border-color;
+    color: $btn-bg-color;
   }
+
   &__active-bg {
     color: $btn-text-color;
     background-color: $btn-bg-color;
@@ -232,11 +239,16 @@ img:hover + .changePicture,
   background-color: $level3_bg-color;
   color: $level3_text-color;
 }
+
 .level3-link {
   color: $level3_link-color;
+
   &:hover {
     color: $level3_link-hover-color;
     background-color: $level3_link-hover-bg-color;
   }
 }
 
+.flew-grow {
+  flex: 1;
+}

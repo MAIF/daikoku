@@ -206,9 +206,18 @@ pub enum AssetsCommands {
 
 #[derive(Debug, Subcommand)]
 pub enum PushCommands {
-    Documentation {},
-    Api {},
-    Mail {},
+    Documentation {
+        #[arg(value_name = "INTERACTIVE", short = 'i', long = "interactive")]
+        interactive: Option<bool>,
+    },
+    Api {
+        #[arg(value_name = "INTERACTIVE", short = 'f', long = "interactive")]
+        interactive: Option<bool>,
+    },
+    Mail {
+        #[arg(value_name = "INTERACTIVE", short = 'f', long = "interactive")]
+        interactive: Option<bool>,
+    },
 }
 
 #[derive(Debug, Subcommand)]
