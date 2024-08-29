@@ -91,7 +91,6 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         isValidationStepTeamAdmin(s)
       );
       if (adminStep && isValidationStepTeamAdmin(adminStep)) {
-        console.debug({ apiKey, value: apiKey?.metadata });
         openFormModal<any>({
           title: translate('motivations.modal.title'),
           schema: adminStep.schema,
@@ -111,7 +110,6 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         otoroshiSettings: string;
       };
       aggregationApiKeysSecurity: boolean;
-      environmentAggregationApiKeysSecurity: boolean;
     };
     type IApiGQL = {
       _id: string;
@@ -148,24 +146,20 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             return { subscription, api, plan };
           });
 
-          let filteredApiKeys = int
+          const filteredApiKeys = int
             .filter(
               (infos) =>
-                infos.plan?.otoroshiTarget?.otoroshiSettings ===
-                  plan?.otoroshiTarget?.otoroshiSettings &&
-                (infos.plan?.aggregationApiKeysSecurity ||
-                  infos.plan?.environmentAggregationApiKeysSecurity)
+                infos.plan?.otoroshiTarget?.otoroshiSettings === plan?.otoroshiTarget?.otoroshiSettings &&
+                (infos.plan?.aggregationApiKeysSecurity)
             )
+            .filter(s => !tenant.environmentAggregationApiKeysSecurity || s.subscription.planName === plan.customName)
             .map((infos) => infos.subscription);
-          if (props.plan.environmentAggregationApiKeysSecurity) {
-            filteredApiKeys = filteredApiKeys.filter(
-              (a) => a.planName === props.plan.customName
-            );
-          }
+
+          console.debug({ filteredApiKeys })
+          
           if (
-            (!plan.aggregationApiKeysSecurity &&
-              !plan.environmentAggregationApiKeysSecurity) ||
-            subscriptions.length <= 0
+            !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
+            filteredApiKeys.length <= 0
           ) {
             askForApikeys(team, plan);
           } else {
@@ -358,9 +352,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                       i18nkey={
                         isAutomaticProcess ? 'Get API key' : 'Request API key'
                       }
-                    >
-                      {isAutomaticProcess ? 'Get API key' : 'Request API key'}
-                    </Translation>
+                    />
                   </button>
                 )}
               </Can>
@@ -371,7 +363,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
               className="btn btn-sm btn-outline-primary mx-auto mt-3"
               onClick={() => openLoginOrRegisterModal({ tenant })}
             >
-              <Translation i18nkey="Get API key">Get API key</Translation>
+              <Translation i18nkey="Get API key" />
             </button>
           )}
         </div>

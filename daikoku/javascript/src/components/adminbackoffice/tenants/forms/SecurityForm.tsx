@@ -3,7 +3,7 @@ import { Form, Schema, type } from '@maif/react-forms';
 import { UseMutationResult } from '@tanstack/react-query';
 
 import { I18nContext } from '../../../../contexts';
-import { ITenantFull } from '../../../../types';
+import { Display, ITenantFull } from '../../../../types';
 import { ModalContext } from '../../../../contexts';
 
 export const SecurityForm = (props: {
@@ -43,16 +43,9 @@ export const SecurityForm = (props: {
     environmentAggregationApiKeysSecurity: {
       type: type.bool,
       label: translate('aggregation api keys security for environment mode'),
-      onChange: (value) => {
-        const security = (value as { value: any }).value;
-        if (security) {
-          alert({
-            message: translate(
-              'aggregation.environment.api_key.security.notification'
-            ),
-          });
-        }
-      },
+      help: translate('aggregation.environment.api_key.security.notification'),
+      deps: ['aggregationApiKeysSecurity'],
+      visible: ({ rawValues }) => rawValues.aggregationApiKeysSecurity && rawValues.display === Display.environment
     },
     apiReferenceHideForGuest: {
       type: type.bool,

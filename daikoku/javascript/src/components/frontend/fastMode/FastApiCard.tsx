@@ -18,6 +18,7 @@ import {
   ITeamSimple,
 } from '../../../types';
 import { isSubscriptionProcessIsAutomatic, Option } from '../../utils';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 type FastApiCardProps = {
   team: ITeamSimple;
@@ -37,6 +38,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
 
   const queryClient = useQueryClient();
   const { client } = useContext(getApolloContext());
+  const { tenant } = useContext(GlobalContext);
 
   const { translate } = useContext(I18nContext);
   const [selectedApiV, setSelectedApiV] = useState(
@@ -130,7 +132,6 @@ export const FastApiCard = (props: FastApiCardProps) => {
       otoroshiSettings: string;
     };
     aggregationApiKeysSecurity: boolean;
-    environmentAggregationApiKeysSecurity: boolean;
   };
   type IApiGQL = {
     _id: string;
@@ -176,17 +177,15 @@ export const FastApiCard = (props: FastApiCardProps) => {
             const filteredApiKeys = int
               .filter(
                 (infos) =>
-                  infos.plan?.otoroshiTarget?.otoroshiSettings ===
-                    plan?.otoroshiTarget?.otoroshiSettings &&
-                  (infos.plan?.aggregationApiKeysSecurity ||
-                    infos.plan?.environmentAggregationApiKeysSecurity)
+                  infos.plan?.otoroshiTarget?.otoroshiSettings === plan?.otoroshiTarget?.otoroshiSettings &&
+                  infos.plan?.aggregationApiKeysSecurity
               )
+              .filter(s => !tenant.environmentAggregationApiKeysSecurity || s.subscription.planName === plan.customName)
               .map((infos) => infos.subscription);
 
             if (
-              (!plan.aggregationApiKeysSecurity &&
-                !plan.environmentAggregationApiKeysSecurity) ||
-              subscriptions.length <= 0
+              (!plan.aggregationApiKeysSecurity) ||
+              filteredApiKeys.length <= 0
             ) {
               subscribe(apiId, team, plan);
             } else {

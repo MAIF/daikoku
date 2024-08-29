@@ -2318,12 +2318,6 @@ class ApiService(
               AppError.SecurityError("Subscription Aggregation")
             )
             _ <- EitherT.cond[Future][AppError, Unit](
-               tenant.environmentAggregationApiKeysSecurity.equals(plan.environmentAggregationApiKeysSecurity)
-               || plan.environmentAggregationApiKeysSecurity.isEmpty,
-              (),
-              AppError.SecurityError("Environment Subscription Aggregation")
-            )
-            _ <- EitherT.cond[Future][AppError, Unit](
               subscription.team == team.id,
               (),
               AppError.SubscriptionAggregationTeamConflict
@@ -2333,6 +2327,11 @@ class ApiService(
                 .forTenant(tenant)
                 .findById(subscription.plan),
               AppError.PlanNotFound
+            )
+            _ <- EitherT.cond[Future][AppError, Unit](
+              tenant.display != TenantDisplay.Environment || tenant.environmentAggregationApiKeysSecurity.forall(s => s && plan.customName == parentPlan.customName),
+              (),
+              AppError.SecurityError(s"Environment Subscription Aggregation security is enabled, a subscription cannot be extended by another environment")
             )
             _ <- EitherT.cond[Future][AppError, Unit](
               parentPlan.otoroshiTarget

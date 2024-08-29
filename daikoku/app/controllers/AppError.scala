@@ -117,7 +117,7 @@ object AppError {
       case NameAlreadyExists                       => Conflict(toJson(error))
       case ThirdPartyPaymentSettingsNotFound       => NotFound(toJson(error))
       case SecurityError(security) =>
-        play.api.mvc.Results.Unauthorized(toJson(error))
+        play.api.mvc.Results.Forbidden(toJson(error))
       case TeamAlreadyVerified => Conflict(toJson(error))
       case UnexpectedError     => BadRequest(toJson(error))
       case InternalServerError(message) =>

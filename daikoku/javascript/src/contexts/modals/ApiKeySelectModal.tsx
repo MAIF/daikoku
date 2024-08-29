@@ -59,10 +59,7 @@ export const ApiKeySelectModal = (
                 toggleApiKeysView(true);
               }
             }}
-            aggregationApiKeysSecurity={
-              props.plan.aggregationApiKeysSecurity ||
-              props.plan.environmentAggregationApiKeysSecurity
-            }
+            aggregationApiKeysSecurity={props.plan.aggregationApiKeysSecurity}
           />
         )}
         {showApiKeys && (
@@ -94,6 +91,7 @@ type ApiKeysViewProps = {
 
 const ApiKeysView = (props: ApiKeysViewProps) => {
   const { translate } = useContext(I18nContext);
+  console.debug({props})
   return (
     <div>
       <h5 className="modal-title">

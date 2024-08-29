@@ -1317,7 +1317,6 @@ export const graphql = {
               otoroshiSettings
             }
             aggregationApiKeysSecurity
-            environmentAggregationApiKeysSecurity
           }
         }
       }
@@ -1376,7 +1375,6 @@ export const graphql = {
               }
             }
             aggregationApiKeysSecurity
-            environmentAggregationApiKeysSecurity
           }
           apis {
             api {
@@ -1850,7 +1848,6 @@ export const graphql = {
               }
               allowMultipleKeys
               aggregationApiKeysSecurity
-              environmentAggregationApiKeysSecurity
               ... on QuotasWithLimits {
                 costPerMonth
                 maxPerSecond

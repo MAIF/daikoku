@@ -948,7 +948,7 @@
   "aggregation_apikeys.security.help": "Active la possibilité d'utiliser une même clé d'API sur plusieurs plans.",
   "aggregation_apikeys.environment.security.help" : "Active la possibilité d'utiliser une même clé d'API sur plusieurs plans ayant le même environnement.",
   "aggregation.api_key.security.notification": "L'agrégation des clés API est une utilisation avancée. Gardez à l'esprit que les métadonnées et les quotas seront partagés entre chaque clé d'API parente et ses clés d'API agrégées. Daikoku n'appliquera aucun contrôle en cas de conflit de métadonnées.",
-  "aggregation.environment.api_key.security.notification": "L'agrégation des clés API pour le mode environnement est une utilisation avancée. Gardez à l'esprit que les métadonnées et les quotas seront partagés entre la clé API parent et ses clés API agrégées ayant le même environnement. Daikoku n'appliquera aucun contrôle en cas de conflit de métadonnées.",
+  "aggregation.environment.api_key.security.notification": "Même si la sécurité d'agrégation est activée, un contrôle est effectué pour vérifier les noms des plans d'utilisation lorsque vous étendez une souscription à une autre. Cela garantit que les clés API ne peuvent être agrégées que dans des environnements compatibles.",
   "disabled.due.to.aggregation.security": "désactivé en raison de l'activation de l'aggégation des clés",
   "I understood": "J'ai compris",
   "team_apikey_for_api.make_unique": "Rendre unique",

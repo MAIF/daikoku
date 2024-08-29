@@ -963,11 +963,6 @@ object SchemaDefinition {
             OptionType(BooleanType),
             resolve = _.value.aggregationApiKeysSecurity
           ),
-          Field(
-            "environmentAggregationApiKeysSecurity",
-            OptionType(BooleanType),
-            resolve = _.value.environmentAggregationApiKeysSecurity
-          ),
           Field("type", StringType, resolve = _.value.typeName)
         )
     )

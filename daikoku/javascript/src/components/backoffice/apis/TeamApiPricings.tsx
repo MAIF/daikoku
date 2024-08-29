@@ -1589,33 +1589,6 @@ export const TeamApiPricings = (props: Props) => {
         falseLabel: translate('Disabled'),
       },
     },
-    environmentAggregationApiKeysSecurity: {
-      type: type.bool,
-      format: format.buttonsSelect,
-      visible: !!props.tenant.environmentAggregationApiKeysSecurity,
-      label: translate('aggregation api keys security for environment mode'),
-      help: translate('aggregation_apikeys.environment.security.help'),
-      onChange: ({ value, setValue }: any) => {
-        if (value)
-          confirm({
-            message: translate(
-              'aggregation.environment.api_key.security.notification'
-            ),
-          }).then((ok) => {
-            if (ok) {
-              setValue('otoroshiTarget.apikeyCustomization.readOnly', false);
-              setValue(
-                'otoroshiTarget.apikeyCustomization.clientIdOnly',
-                false
-              );
-            }
-          });
-      },
-      props: {
-        trueLabel: translate('Enabled'),
-        falseLabel: translate('Disabled'),
-      },
-    },
     allowMultipleKeys: {
       type: type.bool,
       format: format.buttonsSelect,
