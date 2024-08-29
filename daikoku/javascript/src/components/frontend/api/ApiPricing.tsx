@@ -166,7 +166,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
   const openTeamSelectorModal = () => {
     openCustomModal({
-      title: 'select team',
+      title: translate('team.selection.title'),
       content: <TeamSelector
         teams={authorizedTeams
           .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
