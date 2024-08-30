@@ -1701,7 +1701,7 @@ class ApiControllerSpec()
         body = Json.obj().some
       )(tenant, session)
 
-      respPersonal.status mustBe 401
+      respPersonal.status mustBe 403
 
       val respOrg = httpJsonCallBlocking(
         path =
@@ -4533,7 +4533,7 @@ class ApiControllerSpec()
         body = Json.obj().some
       )(tenant, loginWithBlocking(user, tenant))
 
-      resp.status mustBe Status.UNAUTHORIZED
+      resp.status mustBe Status.FORBIDDEN
     }
     "not be extended subscription that we have already a parent" in {
       val parentSub = ApiSubscription(
@@ -7180,7 +7180,6 @@ class ApiControllerSpec()
       respProd.status mustBe 200
 
       //disabled security
-
       setupEnvBlocking(
         tenants = Seq(tenantEnvMode.copy(
           otoroshiSettings = Set(
@@ -7193,7 +7192,7 @@ class ApiControllerSpec()
               clientId = otoroshiAdminApiKey.clientId
             )
           ),
-          environmentAggregationApiKeysSecurity = Some(true),
+          environmentAggregationApiKeysSecurity = Some(false),
           aggregationApiKeysSecurity = Some(true)
         )),
         users = Seq(user, userAdmin),

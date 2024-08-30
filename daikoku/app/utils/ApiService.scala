@@ -2329,7 +2329,10 @@ class ApiService(
               AppError.PlanNotFound
             )
             _ <- EitherT.cond[Future][AppError, Unit](
-              tenant.display != TenantDisplay.Environment || tenant.environmentAggregationApiKeysSecurity.forall(s => s && plan.customName == parentPlan.customName),
+              tenant.display != TenantDisplay.Environment || (tenant.environmentAggregationApiKeysSecurity match {
+                case Some(true)  => plan.customName == parentPlan.customName
+                case _           => true
+              }),
               (),
               AppError.SecurityError(s"Environment Subscription Aggregation security is enabled, a subscription cannot be extended by another environment")
             )
