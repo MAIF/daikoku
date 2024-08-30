@@ -178,13 +178,13 @@ export const FastApiCard = (props: FastApiCardProps) => {
               .filter(
                 (infos) =>
                   infos.plan?.otoroshiTarget?.otoroshiSettings === plan?.otoroshiTarget?.otoroshiSettings &&
-                  infos.plan?.aggregationApiKeysSecurity
+                  (infos.plan?.aggregationApiKeysSecurity)
               )
               .filter(s => !tenant.environmentAggregationApiKeysSecurity || s.subscription.planName === plan.customName)
               .map((infos) => infos.subscription);
 
             if (
-              (!plan.aggregationApiKeysSecurity) ||
+              !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
               filteredApiKeys.length <= 0
             ) {
               subscribe(apiId, team, plan);
