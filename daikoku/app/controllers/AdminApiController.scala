@@ -322,7 +322,7 @@ class StateAdminApiController(
     }
 
   def reset() =
-    DaikokuApiAction.async { _ =>
+    DaikokuApiAction.async { ctx =>
       (for {
         _ <- EitherT.cond[Future][AppError, Unit](
           env.config.isDev || env.config.mode == DaikokuMode.Test,
@@ -330,7 +330,7 @@ class StateAdminApiController(
           AppError.SecurityError("Action not avalaible")
         )
         _ <- EitherT.liftF[Future, AppError, Unit](env.dataStore.clear())
-        _ <- EitherT.liftF[Future, AppError, Done](env.initDatastore())
+        _ <- EitherT.liftF[Future, AppError, Done](env.initDatastore(ctx.request.getQueryString("path")))
       } yield Ok(Json.obj("done" -> true)))
         .leftMap(_.render())
         .merge

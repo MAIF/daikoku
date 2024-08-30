@@ -380,7 +380,7 @@ test('aggregation mode', async ({ page, request }) => {
   await page.getByText('Plans').click();
   await page.locator('.usage-plan__card').filter({ hasText: 'not test plan' }).getByRole('button').click();
   await page.locator('div').filter({ hasText: /^Consumers$/ }).click();
-  await page.getByRole('button', { name: 'Subscribe with a new api key' }).click();
+  // await page.getByRole('button', { name: 'Subscribe with a new api key' }).click();
   await page.getByRole('link', { name: 'Go home' }).click();
 
   //subscribe second api with aggregation

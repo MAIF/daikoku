@@ -2329,6 +2329,14 @@ class ApiService(
               AppError.PlanNotFound
             )
             _ <- EitherT.cond[Future][AppError, Unit](
+              tenant.display != TenantDisplay.Environment || (tenant.environmentAggregationApiKeysSecurity match {
+                case Some(true)  => plan.customName == parentPlan.customName
+                case _           => true
+              }),
+              (),
+              AppError.SecurityError(s"Environment Subscription Aggregation security is enabled, a subscription cannot be extended by another environment")
+            )
+            _ <- EitherT.cond[Future][AppError, Unit](
               parentPlan.otoroshiTarget
                 .map(_.otoroshiSettings) == plan.otoroshiTarget
                 .map(_.otoroshiSettings),

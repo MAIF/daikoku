@@ -52,6 +52,7 @@ object AppError {
   case object SubscriptionAggregationTeamConflict extends AppError
   case object SubscriptionAggregationOtoroshiConflict extends AppError
   case object SubscriptionAggregationDisabled extends AppError
+  case object EnvironmentSubscriptionAggregationDisabled extends AppError
   case object MissingParentSubscription extends AppError
   case object TranslationNotFound extends AppError
   case object Unauthorized extends AppError
@@ -106,6 +107,7 @@ object AppError {
       case SubscriptionNotFound                    => NotFound(toJson(error))
       case SubscriptionParentExisted               => Conflict(toJson(error))
       case SubscriptionAggregationDisabled         => BadRequest(toJson(error))
+      case EnvironmentSubscriptionAggregationDisabled => BadRequest(toJson(error))
       case SubscriptionAggregationTeamConflict     => Conflict(toJson(error))
       case SubscriptionAggregationOtoroshiConflict => Conflict(toJson(error))
       case MissingParentSubscription               => NotFound(toJson(error))
@@ -115,7 +117,7 @@ object AppError {
       case NameAlreadyExists                       => Conflict(toJson(error))
       case ThirdPartyPaymentSettingsNotFound       => NotFound(toJson(error))
       case SecurityError(security) =>
-        play.api.mvc.Results.Unauthorized(toJson(error))
+        play.api.mvc.Results.Forbidden(toJson(error))
       case TeamAlreadyVerified => Conflict(toJson(error))
       case UnexpectedError     => BadRequest(toJson(error))
       case InternalServerError(message) =>
@@ -167,6 +169,8 @@ object AppError {
         "The subscription already has a subscription parent - it cannot be extended any further"
       case SubscriptionAggregationDisabled =>
         "Aggregation of api keys is disabled on plan or on tenant"
+      case EnvironmentSubscriptionAggregationDisabled =>
+        "Aggregation of api keys is disabled on plan or on tenant for environment mode"
       case SubscriptionAggregationTeamConflict =>
         "The new subscription has another team of the parent subscription"
       case SubscriptionAggregationOtoroshiConflict =>

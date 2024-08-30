@@ -1214,6 +1214,14 @@ object utils {
       contact = "contactII@test-corp.foo.bar"
     )
 
+    val envModeDev = "dev"
+    val envModeProd = "prod"
+
+    val tenantEnvMode = tenant.copy(
+      display = TenantDisplay.Environment,
+      environments = Set(envModeDev, envModeProd)
+    )
+
     def generateApi(
         version: String = "0",
         tenant: TenantId,
