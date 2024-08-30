@@ -210,31 +210,22 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
   const openTeamSelectorModal = () => {
     openCustomModal({
-      title: 'select team',
-      content: (
-        <TeamSelector
-          teams={authorizedTeams
-            .filter(
-              (t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly'
-            )
-            .filter(
-              (team) =>
-                plan.visibility === 'Public' || team._id === props.ownerTeam._id
-            )
-            .filter(
-              (t) => !tenant.subscriptionSecurity || t.type !== 'Personal'
-            )}
-          pendingTeams={props.inProgressDemands.map((s) => s.team)}
-          acceptedTeams={props.subscriptions
-            .filter((f) => !f._deleted)
-            .map((subs) => subs.team)}
-          allowMultipleDemand={plan.allowMultipleKeys}
-          showApiKeySelectModal={showApiKeySelectModal}
-          plan={props.plan}
-        />
-      ),
-    });
-  };
+      title: translate('team.selection.title'),
+      content: <TeamSelector
+        teams={authorizedTeams
+          .filter((t) => t.type !== 'Admin' || props.api.visibility === 'AdminOnly')
+          .filter((team) => plan.visibility === 'Public' || team._id === props.ownerTeam._id)
+          .filter((t) => !tenant.subscriptionSecurity || t.type !== 'Personal')}
+        pendingTeams={props.inProgressDemands.map((s) => s.team)}
+        acceptedTeams={props.subscriptions
+          .filter((f) => !f._deleted)
+          .map((subs) => subs.team)}
+        allowMultipleDemand={plan.allowMultipleKeys}
+        showApiKeySelectModal={showApiKeySelectModal}
+        plan={props.plan}
+      />
+    })
+  }
 
   return (
     <div

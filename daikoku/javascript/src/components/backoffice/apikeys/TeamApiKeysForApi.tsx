@@ -346,13 +346,13 @@ export const TeamApiKeysForApi = () => {
                 <h1>
                   <Translation i18nkey="Api keys for">Api keys for</Translation>
                   &nbsp;
+                  {api.name}
+                </h1>
                   <Link
                     to={`/${apiTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`}
-                    className="cursor-pointer underline-on-hover a-fake"
-                  >
-                    {api.name}
+                    className="cursor-pointer btn btn-sm btn-outline-primary ms-3 align-self-start  "
+                  ><i className="fas fa-arrow-up-right-from-square"></i>
                   </Link>
-                </h1>
               </div>
               <div className="col-12 mt-2 mb-4">
                 <input
@@ -577,7 +577,7 @@ const ApiKeyCard = ({
     return (
       <div className="col-12 col-sm-6 col-md-4 mb-2">
         <div className="card">
-          <div className="card-header" style={{ position: 'relative' }}>
+          <div className="card-header" style={{ position: 'relative', fontSize: '16px' }}>
             <div className="d-flex justify-content-end m-1 position-absolute top-0 end-0">
               <BeautifulTitle title={translate('apikeys.view.api')}>
                 <Link
@@ -612,7 +612,7 @@ const ApiKeyCard = ({
                       className="btn btn-sm btn-outline-primary ms-2"
                       onClick={() => setEditMode(true)}
                     >
-                      <i className="fas fa-pen cursor-pointer a-fake" />
+                      <i className="fas fa-pen cursor-pointer" />
                     </button>
                   </div>
                 ) : (
@@ -767,7 +767,7 @@ const ApiKeyCard = ({
                 {subscription.apiKey && (
                   <div className="row">
                     <ul className="nav nav-tabs flex-column flex-sm-row mb-2 col-12">
-                      <li className="nav-item cursor-pointer">
+                      <li className="nav-item cursor-pointer mb-2">
                         <span
                           className={`nav-link ${activeTab === 'apikey' ? 'active' : ''}`}
                           onClick={() => setActiveTab('apikey')}
@@ -776,7 +776,7 @@ const ApiKeyCard = ({
                         </span>
                       </li>
                       {!disableRotation && (
-                        <li className="nav-item  cursor-pointer">
+                        <li className="nav-item cursor-pointer">
                           <span
                             className={`nav-link ${activeTab === 'token' ? 'active' : ''}`}
                             onClick={() => setActiveTab('token')}
@@ -787,7 +787,7 @@ const ApiKeyCard = ({
                           </span>
                         </li>
                       )}
-                      <li className="nav-item  cursor-pointer">
+                      <li className="nav-item cursor-pointer">
                         <span
                           className={`nav-link ${activeTab === 'basicAuth' ? 'active' : ''}`}
                           onClick={() => setActiveTab('basicAuth')}
@@ -832,7 +832,6 @@ const ApiKeyCard = ({
                           value={subscription.apiKey?.clientSecret}
                           aria-describedby={`client-secret-addon-${_id}`}
                         />
-                        <div className="input-group-append">
                           <span
                             onClick={() => {
                               if (subscription.enabled) {
@@ -851,7 +850,6 @@ const ApiKeyCard = ({
                               <i className="fas fa-eye-slash" />
                             )}
                           </span>
-                        </div>
                       </div>
                     </div>
                   </>
