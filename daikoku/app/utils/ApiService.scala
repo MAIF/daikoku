@@ -2607,4 +2607,75 @@ class ApiService(
     } yield Ok(Json.obj("creation" -> "refused"))
   }
 
+  def transferSubscription(maybeTeam: Option[Team], subscriptionId: ApiSubscriptionId, tenant: Tenant, user: User) =
+    for {
+      newTeam <- EitherT.fromOption[Future][AppError, Team](maybeTeam, AppError.TeamNotFound)
+      subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(tenant).findByIdNotDeleted(subscriptionId),
+        AppError.SubscriptionNotFound)
+      _ <- EitherT.cond[Future][AppError, Unit](subscription.parent.isEmpty, (), AppError.EntityConflict("Subscription is part of aggregation"))
+      childs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
+        env.dataStore.apiSubscriptionRepo.forTenant(tenant).findNotDeleted(Json.obj("parent" -> subscription.id.asJson)))
+      result <- EitherT.liftF[Future, AppError, Long](env.dataStore.apiSubscriptionRepo.forTenant(tenant).updateManyByQuery(
+        Json.obj(
+          "_id" -> Json
+            .obj("$in" -> JsArray(childs.map(_.id.asJson) :+ subscription.id.asJson))
+        ),
+        Json.obj(
+          "$set" -> Json.obj("team" -> newTeam.id.asJson)
+        )
+      ))
+      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.notificationRepo.forTenant(tenant).save(
+        Notification(
+          id = NotificationId(
+            IdGenerator.token(32)
+          ),
+          tenant = tenant.id,
+          sender = user.asNotificationSender,
+          action =
+            NotificationAction.ApiSubscriptionTransferSuccess(
+              subscription = subscription.id
+            ),
+          notificationType =
+            NotificationType.AcceptOnly,
+          team = newTeam.id.some
+        )
+      ))
+
+      //todo: update apkname ?
+      //todo: update apk metadata to set new team name ?
+    } yield result
+
+  def declineSubscriptionTransfer(subscriptionId: ApiSubscriptionId, tenant: Tenant, user: User)(implicit lang: String) =
+    for {
+      subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(tenant).findById(subscriptionId),
+        AppError.SubscriptionNotFound)
+      api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiSubscriptionRepo.forTenant(tenant).findById(subscriptionId),
+        AppError.ApiNotFound)
+      plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.apiSubscriptionRepo.forTenant(tenant).findById(subscriptionId),
+        AppError.SubscriptionNotFound)
+      ownerTeam <-  EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(tenant).findById(subscription.team), AppError.TeamNotFound)
+      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.notificationRepo.forTenant(tenant).save(
+        Notification(
+          id = NotificationId(
+            IdGenerator.token(32)
+          ),
+          tenant = tenant.id,
+          sender = user.asNotificationSender,
+          action =
+            NotificationAction.ApiSubscriptionTransferReject(
+              subscription = subscription.id
+            ),
+          notificationType =
+            NotificationType.AcceptOnly,
+          team = ownerTeam.id.some
+        )
+      ))
+      body <- EitherT.liftF[Future, AppError, String](translator.translate(
+        "mail.api.subscription.transfer.rejection.body",
+        tenant,
+        Map(
+          "subscription" -> s"${api.name}/${plan.customName.getOrElse(plan.typeName)}"
+        )
+      ))
+    } yield body
 }

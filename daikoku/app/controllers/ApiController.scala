@@ -2075,6 +2075,41 @@ class ApiController(
       }
     }
 
+  def transferSubscription(teamId: String, subscriptionId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(s"@{user.name} has ask to transfer subscription @{subscriptionId} to team @{teamId}"))(teamId, ctx) { team => {
+        val newTeamId = (ctx.request.body \ "team").as[String]
+
+        (for {
+          newTeam <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(newTeamId),
+            AppError.TeamNotFound)
+          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(subscriptionId),
+            AppError.SubscriptionNotFound)
+          _ <- EitherT.cond[Future][AppError, Unit](subscription.parent.isEmpty, (), AppError.EntityConflict("Subscription is part of aggregation"))
+          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.notificationRepo.forTenant(ctx.tenant).save(
+            Notification(
+              id = NotificationId(
+                IdGenerator.token(32)
+              ),
+              tenant = ctx.tenant.id,
+              sender = ctx.user.asNotificationSender,
+              action =
+                NotificationAction.ApiSubscriptionTransfer(
+                  subscription = subscription.id
+                ),
+              notificationType =
+                NotificationType.AcceptOrReject,
+              team = newTeam.id.some
+            )
+          ))
+        } yield Ok(Json.obj("done" -> true)))
+          .leftMap(_.render())
+          .merge
+      }
+      }
+    }
+
   def makeUniqueSubscription(teamId: String, subscriptionId: String) =
     DaikokuAction.async { ctx =>
       TeamApiKeyAction(

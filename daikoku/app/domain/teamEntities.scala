@@ -227,6 +227,16 @@ object NotificationAction {
       motivation: Option[String]
   ) extends NotificationAction
 
+  case class ApiSubscriptionTransfer(
+      subscription: ApiSubscriptionId,
+  ) extends NotificationAction
+  case class ApiSubscriptionTransferSuccess(
+      subscription: ApiSubscriptionId,
+  ) extends NotificationAction
+  case class ApiSubscriptionTransferReject(
+      subscription: ApiSubscriptionId,
+  ) extends NotificationAction
+
   case class OtoroshiSyncSubscriptionError(
       subscription: ApiSubscription,
       message: String
