@@ -1809,7 +1809,8 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
           schema: {
             title: {
               type: type.string,
-              defaultValue: 'Email',
+              label: translate('subscription.process.email.step.title.label'),
+              defaultValue: translate('subscription.process.email.step.title.defaultValue'),
               constraints: [
                 constraints.required(translate('constraints.required.value')),
               ],
@@ -1817,6 +1818,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
             emails: {
               type: type.string,
               format: format.email,
+              label: translate('subscription.process.email.step.emails.label'),
               array: true,
               constraints: [
                 constraints.required(translate('constraints.required.value')),
@@ -1834,6 +1836,7 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
             },
             message: {
               type: type.string,
+              label: translate('subscription.process.email.step.message.label'),
               format: format.text,
             },
           },
@@ -1869,6 +1872,13 @@ const SubscriptionProcessEditor = (props: SubProcessProps) => {
                 props.value.subscriptionProcess
               );
               props.savePlan({ ...props.value, subscriptionProcess });
+            }
+          },
+          options: {
+            actions: {
+              add: {
+                label: translate('subscription.process.email.step.add.label')
+              }
             }
           },
           actionLabel: translate('Create'),
