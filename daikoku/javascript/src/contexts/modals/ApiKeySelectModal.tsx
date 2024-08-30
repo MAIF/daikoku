@@ -91,7 +91,6 @@ type ApiKeysViewProps = {
 
 const ApiKeysView = (props: ApiKeysViewProps) => {
   const { translate } = useContext(I18nContext);
-  console.debug({props})
   return (
     <div>
       <h5 className="modal-title">

@@ -155,8 +155,6 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             .filter(s => !tenant.environmentAggregationApiKeysSecurity || s.subscription.planName === plan.customName)
             .map((infos) => infos.subscription);
 
-          console.debug({ filteredApiKeys })
-          
           if (
             !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
             filteredApiKeys.length <= 0
