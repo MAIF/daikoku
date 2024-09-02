@@ -346,13 +346,11 @@ export const TeamApiKeysForApi = () => {
                 <h1>
                   <Translation i18nkey="Api keys for">Api keys for</Translation>
                   &nbsp;
-                  {api.name}
-                </h1>
                   <Link
                     to={`/${apiTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`}
-                    className="cursor-pointer btn btn-sm btn-outline-primary ms-3 align-self-start  "
-                  ><i className="fas fa-arrow-up-right-from-square"></i>
-                  </Link>
+                    className="cursor-pointer"
+                  >{api.name}</Link>
+                </h1>
               </div>
               <div className="col-12 mt-2 mb-4">
                 <input
