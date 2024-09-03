@@ -388,6 +388,7 @@ case class Tenant(
     defaultMessage: Option[String] = None,
     tenantMode: Option[TenantMode] = None,
     aggregationApiKeysSecurity: Option[Boolean] = None,
+    environmentAggregationApiKeysSecurity: Option[Boolean] = None,
     robotTxt: Option[String] = None,
     thirdPartyPaymentSettings: Seq[ThirdPartyPaymentSettings] = Seq.empty,
     display: TenantDisplay = TenantDisplay.Default,
@@ -452,6 +453,10 @@ case class Tenant(
         .getOrElse(JsNull)
         .as[JsValue],
       "aggregationApiKeysSecurity" -> aggregationApiKeysSecurity
+        .map(JsBoolean)
+        .getOrElse(JsBoolean(false))
+        .as[JsValue],
+      "environmentAggregationApiKeysSecurity" -> environmentAggregationApiKeysSecurity
         .map(JsBoolean)
         .getOrElse(JsBoolean(false))
         .as[JsValue],

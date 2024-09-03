@@ -173,6 +173,7 @@ export interface ITenant {
   creationSecurity: boolean;
   subscriptionSecurity: boolean;
   aggregationApiKeysSecurity: boolean;
+  environmentAggregationApiKeysSecurity: boolean;
   apiReferenceHideForGuest: boolean;
   authProvider: AuthProvider;
   defaultMessage?: string;

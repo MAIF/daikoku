@@ -246,6 +246,10 @@ object SchemaDefinition {
               resolve = _.value.aggregationApiKeysSecurity
             ),
             Field(
+              "environmentAggregationApiKeysSecurity",
+              OptionType(BooleanType),
+              resolve = _.value.environmentAggregationApiKeysSecurity), 
+            Field(
               "display",
               OptionType(StringType),
               resolve = _.value.display.name

@@ -1,33 +1,50 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query"
-import React, { PropsWithChildren, useEffect, useLayoutEffect, useState } from "react"
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import React, {
+  PropsWithChildren,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from 'react';
 
-import { Spinner } from "../components/utils/Spinner";
-import { parseAsHtml } from "../components/utils/tenantUtils";
+import { Spinner } from '../components/utils/Spinner';
+import { parseAsHtml } from '../components/utils/tenantUtils';
 import * as Services from '../services/index';
-import { AuthProvider, DaikokuMode, Display, IStateContext, TenanMode, isError } from "../types";
+import {
+  AuthProvider,
+  DaikokuMode,
+  Display,
+  IStateContext,
+  TenanMode,
+  isError,
+} from '../types';
 
-
-type TGlobalContext = IStateContext & { reloadContext: () => void, toggleExpertMode: () => void, toggleTheme: () => void,reloadUnreadNotificationsCount: () => void }
+type TGlobalContext = IStateContext & {
+  reloadContext: () => void;
+  toggleExpertMode: () => void;
+  toggleTheme: () => void;
+  reloadUnreadNotificationsCount: () => void;
+};
 const initContext: TGlobalContext = {
   connectedUser: {
-    _id: "",
-    _humanReadableId: "",
-    email: "",
-    picture: "",
+    _id: '',
+    _humanReadableId: '',
+    email: '',
+    picture: '',
     isDaikokuAdmin: false,
     isGuest: true,
     starredApis: [],
     twoFactorAuthentication: null,
-    name: "fifou",
+    name: 'fifou',
   },
   tenant: {
-    _humanReadableId: "string",
-    _id: "string",
-    name: "string",
-    contact: "string",
+    _humanReadableId: 'string',
+    _id: 'string',
+    name: 'string',
+    contact: 'string',
     creationSecurity: true,
     subscriptionSecurity: true,
     aggregationApiKeysSecurity: true,
+    environmentAggregationApiKeysSecurity: true,
     apiReferenceHideForGuest: true,
     authProvider: AuthProvider.local,
     homePageVisible: true,
@@ -35,12 +52,12 @@ const initContext: TGlobalContext = {
     tenantMode: TenanMode.default,
     display: Display.default,
     environments: [],
-    loginProvider: 'Local'
+    loginProvider: 'Local',
   },
   session: {
     created: new Date().getTime(),
     expires: new Date().getTime(),
-    ttl: 0
+    ttl: 0,
   },
   isTenantAdmin: false,
   apiCreationPermitted: false,
@@ -48,41 +65,41 @@ const initContext: TGlobalContext = {
   expertMode: JSON.parse(localStorage.getItem('expertMode') || 'false'),
   reloadContext: () => Promise.resolve(),
   reloadUnreadNotificationsCount: () => Promise.resolve(),
-  toggleExpertMode: () => { },
+  toggleExpertMode: () => {},
   loginAction: '',
   theme: localStorage.getItem('theme') || 'LIGHT',
-  toggleTheme: () => { },
+  toggleTheme: () => {},
+};
 
-}
-
-export const GlobalContext = React.createContext<TGlobalContext>(initContext)
+export const GlobalContext = React.createContext<TGlobalContext>(initContext);
 
 export const GlobalContextProvider = (props: PropsWithChildren) => {
-  const getExpertMode = (): boolean => JSON.parse(localStorage.getItem('expertMode') || 'false')
-  const getTheme = () : string => {
-    const actualTheme=localStorage.getItem('theme') || 'LIGHT'
+  const getExpertMode = (): boolean =>
+    JSON.parse(localStorage.getItem('expertMode') || 'false');
+  const getTheme = (): string => {
+    const actualTheme = localStorage.getItem('theme') || 'LIGHT';
     document.documentElement.setAttribute('data-theme', actualTheme);
-    return actualTheme
-  }
+    return actualTheme;
+  };
 
-  const [expertMode, setExpertMode] = useState<boolean>(getExpertMode())
-  const [theme, setTheme] = useState<string>(getTheme())
-
+  const [expertMode, setExpertMode] = useState<boolean>(getExpertMode());
+  const [theme, setTheme] = useState<string>(getTheme());
 
   const queryClient = useQueryClient();
   const currentUserQuery = useQuery({
     queryKey: ['context'],
     queryFn: () => Services.getUserContext(),
-  })
+  });
   const notificationCountQuery = useQuery({
     queryKey: ['notification-count'],
     queryFn: () => Services.myUnreadNotificationsCount(),
-  })
+  });
 
   useEffect(() => {
     if (currentUserQuery?.data && !isError(currentUserQuery?.data)) {
       if (currentUserQuery.data.tenant.colorTheme) {
-        let style: HTMLStyleElement | null = document.querySelector("style#color-theme");
+        let style: HTMLStyleElement | null =
+          document.querySelector('style#color-theme');
         if (!style) {
           style = document.createElement('style');
           style.id = 'color-theme';
@@ -91,7 +108,8 @@ export const GlobalContextProvider = (props: PropsWithChildren) => {
         style.innerText = currentUserQuery.data.tenant.colorTheme;
       }
       if (currentUserQuery.data.tenant.css) {
-        let style: HTMLStyleElement | null = document.querySelector("style#custom-css");
+        let style: HTMLStyleElement | null =
+          document.querySelector('style#custom-css');
         if (!style) {
           style = document.createElement('style');
           style.id = 'custom-css';
@@ -100,7 +118,9 @@ export const GlobalContextProvider = (props: PropsWithChildren) => {
         style.innerText = currentUserQuery.data.tenant.css;
       }
       if (currentUserQuery.data.tenant.fontFamilyUrl) {
-        let style: HTMLStyleElement | null = document.querySelector("style#custom-font-family");
+        let style: HTMLStyleElement | null = document.querySelector(
+          'style#custom-font-family'
+        );
         if (!style) {
           style = document.createElement('style');
           style.id = 'custom-font-family';
@@ -112,36 +132,42 @@ export const GlobalContextProvider = (props: PropsWithChildren) => {
           }`;
       }
       if (currentUserQuery.data.tenant.cssUrl) {
-        let link: HTMLLinkElement | null = document.querySelector("link#custom-css-by-url");
+        let link: HTMLLinkElement | null = document.querySelector(
+          'link#custom-css-by-url'
+        );
         if (!link) {
           link = document.createElement('link');
-          link.rel = "stylesheet"
-          link.media = "screen"
+          link.rel = 'stylesheet';
+          link.media = 'screen';
           link.id = 'custom-css-by-url';
           document.head.appendChild(link);
         }
-        link.href = currentUserQuery.data.tenant.cssUrl
+        link.href = currentUserQuery.data.tenant.cssUrl;
       }
       if (currentUserQuery.data.tenant.js) {
-        let script: HTMLScriptElement | null = document.querySelector("script#custom-js");
+        let script: HTMLScriptElement | null =
+          document.querySelector('script#custom-js');
         if (!script) {
           script = document.createElement('script');
           script.id = 'custom-js';
           document.body.appendChild(script);
         }
-        script.innerText = currentUserQuery.data.tenant.js
+        script.innerText = currentUserQuery.data.tenant.js;
       }
       if (currentUserQuery.data.tenant.jsUrl) {
-        let script: HTMLScriptElement | null = document.querySelector("script#custom-js-by-url");
+        let script: HTMLScriptElement | null = document.querySelector(
+          'script#custom-js-by-url'
+        );
         if (!script) {
           script = document.createElement('script');
           script.id = 'custom-js-by-url';
           document.body.appendChild(script);
         }
-        script.src = currentUserQuery.data.tenant.jsUrl
+        script.src = currentUserQuery.data.tenant.jsUrl;
       }
       if (currentUserQuery.data.tenant.faviconUrl) {
-        let link: HTMLLinkElement | null = document.querySelector("link[rel~='icon']");
+        let link: HTMLLinkElement | null =
+          document.querySelector("link[rel~='icon']");
         if (!link) {
           link = document.createElement('link');
           link.rel = 'icon';
@@ -150,50 +176,57 @@ export const GlobalContextProvider = (props: PropsWithChildren) => {
         link.href = currentUserQuery.data.tenant.faviconUrl;
       }
     }
-  }, [currentUserQuery.data])
+  }, [currentUserQuery.data]);
 
   if (currentUserQuery.isLoading) {
-    return <Spinner /> //todo: get a real better loader who block & mask all the window
+    return <Spinner />; //todo: get a real better loader who block & mask all the window
   }
 
   //todo: get a real better error displaying
-  if (currentUserQuery.isError || isError(currentUserQuery.data) || !currentUserQuery.data) {
-    return <div>Something's happened when fetching user informations</div>
+  if (
+    currentUserQuery.isError ||
+    isError(currentUserQuery.data) ||
+    !currentUserQuery.data
+  ) {
+    return <div>Something's happened when fetching user informations</div>;
   }
 
-  const reloadContext = () => queryClient.invalidateQueries({ queryKey: ["context"] })
-  const reloadUnreadNotificationsCount = () => queryClient.invalidateQueries({ queryKey: ["notification-count"] })
+  const reloadContext = () =>
+    queryClient.invalidateQueries({ queryKey: ['context'] });
+  const reloadUnreadNotificationsCount = () =>
+    queryClient.invalidateQueries({ queryKey: ['notification-count'] });
 
   const toggleExpertMode = () => {
-    localStorage.setItem('expertMode', (!expertMode).toLocaleString())
-    setExpertMode(!expertMode)
+    localStorage.setItem('expertMode', (!expertMode).toLocaleString());
+    setExpertMode(!expertMode);
   };
 
   const toggleTheme = () => {
     if (theme === 'DARK') {
       document.documentElement.setAttribute('data-theme', 'LIGHT');
       localStorage.setItem('theme', 'LIGHT');
-      setTheme('LIGHT')
+      setTheme('LIGHT');
     } else {
       document.documentElement.setAttribute('data-theme', 'DARK');
       localStorage.setItem('theme', 'DARK');
-      setTheme('DARK')
+      setTheme('DARK');
     }
   };
 
   return (
-    <GlobalContext.Provider value={{
-      ...currentUserQuery.data,
-      reloadContext,
-      expertMode,
-      toggleExpertMode,
-      theme,
-      toggleTheme,
-      unreadNotificationsCount: notificationCountQuery.data?.count || 0,
-      reloadUnreadNotificationsCount
-    }}>
+    <GlobalContext.Provider
+      value={{
+        ...currentUserQuery.data,
+        reloadContext,
+        expertMode,
+        toggleExpertMode,
+        theme,
+        toggleTheme,
+        unreadNotificationsCount: notificationCountQuery.data?.count || 0,
+        reloadUnreadNotificationsCount,
+      }}
+    >
       {props.children}
     </GlobalContext.Provider>
-  )
-
-}
+  );
+};

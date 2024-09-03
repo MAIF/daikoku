@@ -2,19 +2,21 @@ import { useContext } from 'react';
 import { Form, Schema, type } from '@maif/react-forms';
 import { UseMutationResult } from '@tanstack/react-query';
 
-
 import { I18nContext } from '../../../../contexts';
-import { ITenantFull } from '../../../../types';
+import { Display, ITenantFull } from '../../../../types';
 import { ModalContext } from '../../../../contexts';
 
-export const SecurityForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
+export const SecurityForm = (props: {
+  tenant?: ITenantFull;
+  updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown>;
+}) => {
   const { translate } = useContext(I18nContext);
   const { alert } = useContext(ModalContext);
 
   const schema: Schema = {
     isPrivate: {
       type: type.bool,
-      label: translate('Private tenant')
+      label: translate('Private tenant'),
     },
     creationSecurity: {
       type: type.bool,
@@ -30,11 +32,20 @@ export const SecurityForm = (props: { tenant?: ITenantFull, updateTenant: UseMut
       type: type.bool,
       label: translate('aggregation api keys security'),
       onChange: (value) => {
-        const security = (value as { value: any }).value
+        const security = (value as { value: any }).value;
         if (security) {
-          alert({ message: translate('aggregation.api_key.security.notification') });
+          alert({
+            message: translate('aggregation.api_key.security.notification'),
+          });
         }
-      }
+      },
+    },
+    environmentAggregationApiKeysSecurity: {
+      type: type.bool,
+      label: translate('aggregation api keys security for environment mode'),
+      help: translate('aggregation.environment.api_key.security.notification'),
+      deps: ['aggregationApiKeysSecurity'],
+      visible: ({ rawValues }) => rawValues.aggregationApiKeysSecurity && rawValues.display === Display.environment
     },
     apiReferenceHideForGuest: {
       type: type.bool,
@@ -46,20 +57,21 @@ export const SecurityForm = (props: { tenant?: ITenantFull, updateTenant: UseMut
       array: true,
       label: translate('CMS Redirections Domains'),
       help: translate('cms.redirections.domains'),
-    }
-  }
+    },
+  };
 
   return (
     <Form
       schema={schema}
-      onSubmit={(updatedTenant) => props.updateTenant.mutateAsync(updatedTenant)}
+      onSubmit={(updatedTenant) =>
+        props.updateTenant.mutateAsync(updatedTenant)
+      }
       value={props.tenant}
       options={{
         actions: {
-          submit: { label: translate('Save') }
-        }
+          submit: { label: translate('Save') },
+        },
       }}
     />
-  )
-
-}
+  );
+};

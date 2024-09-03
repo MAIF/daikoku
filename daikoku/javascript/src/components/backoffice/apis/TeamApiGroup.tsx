@@ -48,7 +48,6 @@ export const TeamApiGroup = () => {
 
   const save = (group: IApi) => {
     if (creation) {
-      console.debug({ group })
       return Services.createTeamApi(currentTeam!._id, group)
         .then((createdGroup) => {
           if (createdGroup.error) {

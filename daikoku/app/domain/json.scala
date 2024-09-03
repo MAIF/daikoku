@@ -1007,7 +1007,7 @@ object json {
             otoroshiTarget =
               (json \ "otoroshiTarget").asOpt(OtoroshiTargetFormat),
             aggregationApiKeysSecurity =
-              (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
+              (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
           )
         )
       } recover {
@@ -2202,6 +2202,8 @@ object json {
             tenantMode = (json \ "tenantMode").asOpt(TenantModeFormat),
             aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity")
               .asOpt[Boolean],
+            environmentAggregationApiKeysSecurity = (json \ "environmentAggregationApiKeysSecurity")
+              .asOpt[Boolean],
             robotTxt = (json \ "robotTxt").asOpt[String],
             thirdPartyPaymentSettings = (json \ "thirdPartyPaymentSettings")
               .asOpt(SeqThirdPartyPaymentSettingsFormat)
@@ -2276,6 +2278,10 @@ object json {
           .getOrElse(JsNull)
           .as[JsValue],
         "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
+          .map(JsBoolean)
+          .getOrElse(JsBoolean(false))
+          .as[JsValue],
+        "environmentAggregationApiKeysSecurity" -> o.environmentAggregationApiKeysSecurity
           .map(JsBoolean)
           .getOrElse(JsBoolean(false))
           .as[JsValue],
