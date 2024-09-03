@@ -21,10 +21,11 @@ export const MaybeHomePage = ({
     if (message) {
       toast.success(translate(message))
     }
-
-    if (!tenant.homePageVisible || connectedUser?._humanReadableId) {
+    console.log('homePageVisible', tenant.homePageVisible);
+    if (tenant.homePageVisible) {
+      window.location.replace('/_/');
+    } else
       navigate('/apis');
-    } else window.location.replace('/_/');
   }, []);
 
   return null;
