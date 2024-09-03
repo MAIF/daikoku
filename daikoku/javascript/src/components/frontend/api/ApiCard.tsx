@@ -155,7 +155,7 @@ export const ApiCard = (props: {
           <div className="d-flex align-items-center">
             <i className="fas fa-tag me-2" />
             {api.tags.map((tag: any) => <span
-              className="badge bg-warning me-1 cursor-pointer"
+              className="badge badge-custom me-1 cursor-pointer"
               key={tag}
               onClick={() => props.handleTagSelect(tag)}
             >
@@ -169,7 +169,7 @@ export const ApiCard = (props: {
           <div className="d-flex">
             <i className="fas fa-folder me-2" />
             {api.categories.map((category: any) => <small
-              className="badge bg-warning me-1 cursor-pointer"
+              className="badge badge-custom me-1 cursor-pointer"
               key={category}
               onClick={() => props.handleCategorySelect(category)}
             >

@@ -445,7 +445,7 @@ const Top = (props: TTopProps) => {
       {props.list.slice(0, 10).map((item, idx) => {
         return (
           <span
-            className="badge bg-warning me-1 cursor-pointer"
+            className="badge badge-custom me-1 cursor-pointer"
             key={idx}
             onClick={() => props.handleClick(item)}
           >
