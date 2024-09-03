@@ -7,7 +7,7 @@ import Plus from 'react-feather/dist/icons/plus';
 import Search from 'react-feather/dist/icons/search';
 import Zap from 'react-feather/dist/icons/zap';
 import { Link, useLocation } from 'react-router-dom';
-
+import RectangleList from 'react-feather/dist/icons/list';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
