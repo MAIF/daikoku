@@ -110,11 +110,9 @@ pub(crate) async fn run(command: ProjectCommands) -> DaikokuResult<()> {
             path,
             server,
             token,
-            domain,
         } => {
             clone(
                 name,
-                domain,
                 absolute_path(path.unwrap_or("./".to_string()))?,
                 server,
                 token,
@@ -434,13 +432,7 @@ async fn rename_plugin(template: String, name: String, path: Option<String>) -> 
 }
 
 #[async_recursion]
-async fn clone(
-    name: String,
-    domain: String,
-    path: String,
-    server: String,
-    token: String,
-) -> DaikokuResult<()> {
+async fn clone(name: String, path: String, server: String, token: String) -> DaikokuResult<()> {
     logger::loading("<yellow>Converting</> legacy project from Daikoku environment".to_string());
 
     if internal_get_project(name.clone()).is_some() {
@@ -512,21 +504,13 @@ async fn clone(
     .filter(|api| api._id != ADMIN_API_ID)
     .collect();
 
-    // "all", "pages", "apis", "mails"
+    create_mail_tenant(root_mail_tenant, sources_path.clone())?;
+    create_mail_folder(root_mail_user_translations, sources_path.clone(), true)?;
+    create_mail_folder(mail_user_template, sources_path.clone(), false)?;
 
-    if domain == "all" || domain == "mails" {
-        create_mail_tenant(root_mail_tenant, sources_path.clone())?;
-        create_mail_folder(root_mail_user_translations, sources_path.clone(), true)?;
-        create_mail_folder(mail_user_template, sources_path.clone(), false)?;
-    }
+    create_api_folder(apis_informations, sources_path.clone())?;
 
-    if domain == "all" || domain == "apis" {
-        create_api_folder(apis_informations, sources_path.clone())?;
-    }
-
-    if domain == "all" || domain == "pages" {
-        create_cms_pages(&host, &environment, &cookie, &sources_path).await?;
-    }
+    create_cms_pages(&host, &environment, &cookie, &sources_path).await?;
 
     create_daikoku_hidden_files(project_path.clone())?;
 
@@ -695,12 +679,80 @@ async fn create_cms_pages(
         get_daikoku_api("/cms", &host, &environment, &cookie).await?,
     )?;
 
-    if items.iter().find(|p| p.path.is_none()).is_none() {
-        return Err(DaikokuCliError::DaikokuStrError(
-            "imported project is not a legacy project".to_string(),
-        ));
+    if items
+        .clone()
+        .into_iter()
+        .find(|p| {
+            p.path
+                .clone()
+                .map(|path| path.starts_with("mails"))
+                .unwrap_or(false)
+        })
+        .is_some()
+    {
+        clone_new_project(items, sources_path)
+    } else {
+        clone_legacy_project(items, sources_path)
     }
+}
 
+fn clone_new_project(items: Vec<CmsPage>, project_path: &PathBuf) -> DaikokuResult<()> {
+    println!("cloning new project");
+
+    items
+        .iter()
+        .filter(|item| {
+            !item.path.clone().unwrap().starts_with("apis")
+                && !item.path.clone().unwrap().starts_with("mails")
+        })
+        .for_each(|item| {
+            let extension = SourceExtension::from_str(&item.content_type).unwrap();
+
+            let item_path = item.path.clone().unwrap().clone();
+
+            // Remove the slash if the path starts with one.
+            let mut file_path = project_path.clone().join(if item_path.starts_with("/") {
+                &item_path[1..item_path.len()]
+            } else {
+                item_path.as_str()
+            });
+
+            let split_path = item_path.split("/");
+
+            // if the path didn't start with folder, we will place the page in the default pages folder
+            if split_path
+                .clone()
+                .into_iter()
+                .find(|part| part.is_empty())
+                .is_some()
+                || split_path.collect::<Vec<&str>>().len() == 1
+            {
+                file_path =
+                    project_path
+                        .clone()
+                        .join("pages")
+                        .join(if item_path.starts_with("/") {
+                            &item_path[1..item_path.len()]
+                        } else {
+                            item_path.as_str()
+                        });
+            }
+
+            let metadata = extract_metadata(item).unwrap_or(HashMap::new());
+
+            let _ = create_path_and_file(
+                file_path,
+                item.content.clone(),
+                item.name.clone(),
+                metadata,
+                extension,
+            );
+        });
+
+    Ok(())
+}
+
+fn clone_legacy_project(items: Vec<CmsPage>, sources_path: &PathBuf) -> DaikokuResult<()> {
     let new_pages = replace_ids(items)?;
 
     convert_cms_pages(new_pages, sources_path.clone())
@@ -752,11 +804,23 @@ fn get_cms_page_path(item: &CmsPage) -> DaikokuResult<PathBuf> {
         }
     });
 
-    let folder_path = PathBuf::from_str(folder).unwrap().join(format!(
-        "{}{}",
-        router_path.unwrap_or(item.name.clone()),
-        extension.ext()
-    ));
+    let folder_path = if router_path
+        .clone()
+        .unwrap_or(item.name.clone())
+        .starts_with(folder)
+    {
+        PathBuf::from_str(folder).unwrap().join(
+            router_path
+                .unwrap_or(item.name.clone())
+                .replacen(folder, "", 1),
+        )
+    } else {
+        PathBuf::from_str(folder).unwrap().join(format!(
+            "{}{}",
+            router_path.unwrap_or(item.name.clone()),
+            extension.ext()
+        ))
+    };
 
     let parent = folder_path.parent().unwrap();
 
@@ -787,11 +851,25 @@ pub fn create_path_and_file(
         fs::create_dir_all(parent).map_err(|err| map_error_to_filesystem_error(err, ""))?;
     }
 
-    logger::println(format!("Creating {} {:?}", name, file_buf));
+    let mut file_path = file_buf.clone();
+
+    // set extension if missing
+    file_path
+        .clone()
+        .as_path()
+        .as_os_str()
+        .to_str()
+        .unwrap()
+        .split("/")
+        .last()
+        .filter(|part| !part.contains("."))
+        .map(|_| file_path.set_extension(content_type.ext()[1..].to_string()));
+
+    logger::println(format!("Creating {} {:?}", name, file_path));
 
     if content_type == SourceExtension::HTML {
         if metadata.is_empty() {
-            Ok(fs::write(file_buf, content)
+            Ok(fs::write(file_path, content)
                 .map_err(|err| map_error_to_filesystem_error(err, ""))?)
         } else {
             let metadata_header = serde_yaml::to_string(&metadata).map_err(|_err| {
@@ -799,12 +877,12 @@ pub fn create_path_and_file(
             })?;
 
             Ok(
-                fs::write(file_buf, format!("{}\n---\n{}", metadata_header, content))
+                fs::write(file_path, format!("{}\n---\n{}", metadata_header, content))
                     .map_err(|err| map_error_to_filesystem_error(err, ""))?,
             )
         }
     } else {
-        Ok(fs::write(file_buf, content).map_err(|err| map_error_to_filesystem_error(err, ""))?)
+        Ok(fs::write(file_path, content).map_err(|err| map_error_to_filesystem_error(err, ""))?)
     }
 }
 

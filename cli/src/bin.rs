@@ -1,9 +1,9 @@
 mod commands;
+mod helpers;
+mod interactive;
 mod logging;
 mod models;
 mod utils;
-mod interactive;
-mod helpers;
 
 use clap::{Parser, Subcommand};
 use logging::{error::DaikokuResult, logger};
@@ -59,7 +59,7 @@ pub enum Commands {
     },
     Pull {
         #[command(subcommand)]
-        command: Option<PullCommands>,
+        command: PullCommands,
     },
     /// Manage your CMS assets
     Assets {
@@ -155,20 +155,12 @@ pub enum ProjectCommands {
         token: String,
         #[arg(value_name = "SERVER", short = 's', long = "server")]
         server: String,
-        #[arg(
-            value_name = "DOMAIN", 
-            short = 'd', 
-            long = "domain",
-            value_parser = ["all", "pages", "apis", "mails"], 
-            default_value = "all",
-        )]
-        domain: String,
     },
     Init {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
         #[arg(value_name = "PATH", short = 'p', long = "path")]
-        path: Option<String>
+        path: Option<String>,
     },
 }
 
@@ -202,27 +194,28 @@ pub enum AssetsCommands {
     Sync {},
 }
 
-
-
 #[derive(Debug, Subcommand)]
 pub enum PushCommands {
     Documentation {
-        #[arg(value_name = "INTERACTIVE", short = 'i', long = "interactive")]
-        interactive: Option<bool>,
+        #[arg(value_name = "PATH", short = 'p', long = "path")]
+        path: Option<String>,
     },
     Api {
-        #[arg(value_name = "INTERACTIVE", short = 'f', long = "interactive")]
-        interactive: Option<bool>,
+        #[arg(value_name = "PATH", short = 'p', long = "path")]
+        path: Option<String>,
     },
     Mail {
-        #[arg(value_name = "INTERACTIVE", short = 'f', long = "interactive")]
-        interactive: Option<bool>,
+        #[arg(value_name = "PATH", short = 'p', long = "path")]
+        path: Option<String>,
     },
 }
 
 #[derive(Debug, Subcommand)]
 pub enum PullCommands {
-    Api {}
+    Apis {
+        #[arg(value_name = "ID", short = 'i', long = "od")]
+        id: Option<String>,
+    },
 }
 
 #[derive(Debug, Subcommand)]
@@ -234,10 +227,9 @@ pub enum GenerateCommands {
         #[arg(value_name = "TITLE", short = 't', long = "title")]
         title: String,
         #[arg(value_name = "DESC", short = 'd', long = "desc")]
-        desc: String
+        desc: String,
     },
 }
-
 
 async fn process(command: Commands) -> DaikokuResult<()> {
     match command {
@@ -252,7 +244,7 @@ async fn process(command: Commands) -> DaikokuResult<()> {
         Commands::Pull { command } => commands::pull::run(command).await,
         Commands::Push { command } => commands::push::run(command).await,
         Commands::Assets { command } => commands::assets::run(command).await,
-        Commands::Generate { command } => commands::generate::run(command).await
+        Commands::Generate { command } => commands::generate::run(command).await,
     }
 }
 

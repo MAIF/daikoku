@@ -36,41 +36,34 @@ pub(crate) async fn run(commands: Option<PushCommands>) -> DaikokuResult<()> {
 
     if let Some(command) = commands {
         match command {
-            PushCommands::Documentation { interactive } => {
-                documentations_synchronization(
-                    &environment,
-                    &host,
-                    &cookie,
-                    &project,
-                    interactive.unwrap_or(false),
-                )
-                .await?
+            PushCommands::Documentation { path } => {
+                documentations_synchronization(&environment, &host, &cookie, &project, path).await?
             }
-            PushCommands::Api { interactive } => {
+            PushCommands::Api { path } => {
                 synchronization(
                     Some("apis".to_string()),
                     &environment,
                     &host,
                     &cookie,
                     &project,
-                    interactive.unwrap_or(false),
+                    path,
                 )
                 .await?
             }
-            PushCommands::Mail { interactive } => {
+            PushCommands::Mail { path } => {
                 synchronization(
                     Some("mails".to_string()),
                     &environment,
                     &host,
                     &cookie,
                     &project,
-                    interactive.unwrap_or(false),
+                    path,
                 )
                 .await?
             }
         }
     } else {
-        synchronization(None, &environment, &host, &cookie, &project, false).await?
+        synchronization(None, &environment, &host, &cookie, &project, None).await?
     }
 
     logger::success("synchronization done".to_string());
@@ -115,7 +108,7 @@ async fn synchronization(
     host: &String,
     cookie: &String,
     project: &projects::Project,
-    interactive: bool,
+    path: Option<String>,
 ) -> DaikokuResult<()> {
     logger::loading(format!(
         "<yellow>Syncing</> {:#?}",
@@ -156,11 +149,15 @@ async fn documentations_synchronization(
     host: &String,
     cookie: &String,
     project: &projects::Project,
-    interactive: bool,
+    api_path: Option<String>,
 ) -> DaikokuResult<()> {
     logger::loading("<yellow>Syncing</> documentations pages".to_string());
 
-    let path = PathBuf::from(project.path.clone()).join("src").join("apis");
+    let mut path = PathBuf::from(project.path.clone()).join("src").join("apis");
+
+    if let Some(folder_path) = api_path {
+        path = path.join(folder_path);
+    }
 
     let mut body = read_documentations(&path)?;
 
