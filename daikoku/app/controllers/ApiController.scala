@@ -10,25 +10,17 @@ import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.audit.config.ElasticAnalyticsConfig
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Private
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.Cypher.decrypt
+import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils._
@@ -2075,37 +2067,92 @@ class ApiController(
       }
     }
 
+  def checkTransferLink() =
+    DaikokuActionMaybeWithGuest.async { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent("@{user.name} has check a transfer link for @{subscription.id}")
+      )(ctx) {
+
+        (for {
+          cypheredInfos <- EitherT.fromOption[Future][AppError, String](ctx.request.getQueryString("token"), AppError.EntityNotFound("token"))
+          infosAsString <- EitherT.pure[Future, AppError](decrypt(env.config.cypherSecret, cypheredInfos, ctx.tenant))
+          infos <- EitherT.pure[Future, AppError](Json.parse(infosAsString))
+          _ <- EitherT.cond[Future][AppError, Unit]((infos \ "createdOn").as(DateTimeFormat).plusDays(1).isBefore(DateTime.now()), (), AppError.ForbiddenAction) //give reason
+          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdNotDeleted((infos \ "subscription").as[String]), AppError.SubscriptionNotFound)
+          usagePlan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.plan), AppError.PlanNotFound)
+          api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.api), AppError.ApiNotFound)
+        } yield {
+          ctx.setCtxValue("subscription.id", subscription.id.value)
+          Ok(Json.obj(
+            "subscription" -> subscription.id.asJson,
+            "api" -> api.id.asJson,
+            "plan" -> usagePlan.id.asJson
+          ))
+        })
+          .leftMap(_.render())
+          .merge
+      }
+    }
+
+  def getTransferLink(teamId: String, subscriptionId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(s"@{user.name} has generated a link to transfer subscription @{subscription.id}"))(teamId, ctx) { team => {
+
+        ctx.setCtxValue("subscription.id", subscriptionId)
+        (for {
+          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(subscriptionId),
+            AppError.SubscriptionNotFound)
+          _ <- EitherT.cond[Future][AppError, Unit](subscription.parent.isEmpty, (), AppError.EntityConflict("Subscription is part of aggregation"))
+
+          json = Json.obj(
+            "tenant" -> ctx.tenant.id.asJson,
+            "subscription" -> subscription.id.asJson,
+            "createdOn" -> DateTime.now().getMillis,
+            "by" -> ctx.user.id.asJson
+          )
+          cipheredToken = encrypt(env.config.cypherSecret, Json.stringify(json), ctx.tenant)
+          link <- EitherT.pure[Future, AppError](s"${env.getDaikokuUrl(ctx.tenant, "/api/me/subscription/_retrieve")}?token=$cipheredToken")
+        } yield Ok(Json.obj("link" -> link)))
+          .leftMap(_.render())
+          .merge
+      }
+      }
+    }
   def transferSubscription(teamId: String, subscriptionId: String) =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(s"@{user.name} has ask to transfer subscription @{subscriptionId} to team @{teamId}"))(teamId, ctx) { team => {
         val newTeamId = (ctx.request.body \ "team").as[String]
 
-        (for {
-          newTeam <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(newTeamId),
-            AppError.TeamNotFound)
-          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(subscriptionId),
-            AppError.SubscriptionNotFound)
-          _ <- EitherT.cond[Future][AppError, Unit](subscription.parent.isEmpty, (), AppError.EntityConflict("Subscription is part of aggregation"))
-          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.notificationRepo.forTenant(ctx.tenant).save(
-            Notification(
-              id = NotificationId(
-                IdGenerator.token(32)
-              ),
-              tenant = ctx.tenant.id,
-              sender = ctx.user.asNotificationSender,
-              action =
-                NotificationAction.ApiSubscriptionTransfer(
-                  subscription = subscription.id
-                ),
-              notificationType =
-                NotificationType.AcceptOrReject,
-              team = newTeam.id.some
-            )
-          ))
-        } yield Ok(Json.obj("done" -> true)))
-          .leftMap(_.render())
-          .merge
+        //FIXME: get token &
+        //FIXME: check if api, plan are accessible (child also)
+        //FIXME: check if team has no subscription to plan or childs plan (if security is enable)
+//        (for {
+//          newTeam <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(newTeamId),
+//            AppError.TeamNotFound)
+//          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(subscriptionId),
+//            AppError.SubscriptionNotFound)
+//          _ <- EitherT.cond[Future][AppError, Unit](subscription.parent.isEmpty, (), AppError.EntityConflict("Subscription is part of aggregation"))
+//          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.notificationRepo.forTenant(ctx.tenant).save(
+//            Notification(
+//              id = NotificationId(
+//                IdGenerator.token(32)
+//              ),
+//              tenant = ctx.tenant.id,
+//              sender = ctx.user.asNotificationSender,
+//              action =
+//                NotificationAction.ApiSubscriptionTransfer(
+//                  subscription = subscription.id
+//                ),
+//              notificationType =
+//                NotificationType.AcceptOrReject,
+//              team = newTeam.id.some
+//            )
+//          ))
+//        } yield Ok(Json.obj("done" -> true)))
+//          .leftMap(_.render())
+//          .merge
       }
       }
     }

@@ -1793,8 +1793,6 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true),
       )
-
-
       val api = defaultApi.api.copy(
         id = ApiId("test-api-id"),
         name = "test API",
@@ -1802,7 +1800,6 @@ class ApiControllerSpec()
         possibleUsagePlans = Seq(usagePlan.id),
         defaultUsagePlan = usagePlan.id.some
       )
-
       val subscription = ApiSubscription(
         id = ApiSubscriptionId("test_sub"),
         tenant = tenant.id,
@@ -1846,29 +1843,23 @@ class ApiControllerSpec()
         subscriptions = Seq(subscription)
       )
 
-      //trasferer la souscription
+      //get transfer link (no need to give team)
       val session = loginWithBlocking(userAdmin, tenant)
-      val resp = httpJsonCallBlocking(
+      val respLink = httpJsonCallBlocking(
           path = s"/api/teams/${teamConsumer.id.value}/subscriptions/${subscription.id.value}/_transfer",
-          method = "PUT",
-          body = Json.obj("team" -> teamOwner.id.asJson).some
         )(tenant, session)
-      resp.status mustBe 200
+      respLink.status mustBe 200
+      val link = (respLink.json \ "link").as[String]
+      val token = link.split("token=").lastOption.getOrElse("")
 
-      //accepter la notif
-      val getNotif = httpJsonCallBlocking(s"/api/teams/${teamOwner.id.value}/notifications")(tenant, session)
-      getNotif.status mustBe 200
-      val notifications = (getNotif.json \ "notifications").as(json.SeqNotificationFormat)
-      notifications.length mustBe 1
-      val transferNotif = notifications.head
-
-
-      val acceptNotif = httpJsonCallBlocking(
-        path = s"/api/notifications/${transferNotif.id.value}/accept",
+      //follow link
+      val respRetrieve = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwner.id.value}/subscriptions/${subscription.id.value}/_retrieve",
         method = "PUT",
-        body = Some(Json.obj())
+        body = Json.obj("token" -> token).some
       )(tenant, session)
-      acceptNotif.status mustBe 200
+      respRetrieve.status mustBe 200
+
 
       val consumerSubsReq = httpJsonCallBlocking(s"/api/subscriptions/teams/${teamConsumer.id.value}")(tenant, session)
       consumerSubsReq.status mustBe 200
@@ -1887,8 +1878,15 @@ class ApiControllerSpec()
       ownerSubs.head.id mustBe subscription.id
 
       //eventuellement verifier les metadata de l'apk pour voir la team
+      //tester les cas non passant :
+      //1: l equipe a deja une souscription et la securité est desactivé
+      //2: l equipe a deja une souscription (enfant) et la securité est desactivé
+      //3: l equipe n'a pas acces a l'api
+      //4: l equipe  n'a pas acces a une api enfant
+      //5: la souscription est enfant
     }
 
+    //verify /api/me/subscriptions/_transfer ==> get apis name & plan
     "not transfer child subscriptions to another team but parent subscription" in {
       val parentPlanProd = FreeWithoutQuotas(
         id = UsagePlanId("parent.dev"),
