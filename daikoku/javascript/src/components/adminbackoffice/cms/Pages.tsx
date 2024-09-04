@@ -1,7 +1,7 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import classNames from 'classnames';
 import moment from 'moment';
-import React, { useContext, useRef } from 'react';
+import React, { useContext, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { IPage } from '..';
 import { ModalContext } from '../../../contexts';
@@ -30,6 +30,11 @@ export const Pages = ({
   const table = useRef<TableRef>()
   const { translate } = useContext(I18nContext);
   const { alert, confirm } = useContext(ModalContext);
+
+  useEffect(() => {
+    if (table.current)
+      table.current.setPageSize(500)
+  }, [table])
 
   const navigate = useNavigate();
 
@@ -93,29 +98,27 @@ export const Pages = ({
         const itemPath = value.path ? (value.path.startsWith('/') ? `/_${value.path}` : `/_/${value.path}`) : '#'
 
         return (
-          <div className="d-flex justify-content-center align-items-center">
+          <div className="d-flex align-items-center">
             <Link
               to={`/settings/pages/edit/${value.id}`}
               onClick={(e) => e.stopPropagation()}>
-              <button className="btn btn-outline-info me-1" >
+              <button className="btn btn-outline-info btn-sm me-1">
                 <i className="fas fa-pen" />
               </button>
             </Link>
-            <Link
-              className={classNames({ link__disabled: !value.path })}
+            {value.path && <Link
               to={itemPath}
               target="_blank"
               rel="noopener noreferrer"
               onClick={(e) => e.stopPropagation()}>
               <button
-                className="btn btn-outline-info me-1"
-                disabled={!value.path}
+                className="btn btn-outline-info btn-sm me-1"
               >
                 <i className="fas fa-eye" />
               </button>
-            </Link>
+            </Link>}
             {!isCreatedFromCLI && <button
-              className="m-1 btn btn-outline-danger"
+              className="btn btn-sm btn-outline-danger"
               onClick={(e) => {
                 e.stopPropagation();
                 (confirm({ message: translate('cms.pages.remove_confirm') }))
@@ -142,12 +145,14 @@ export const Pages = ({
   return (
     <div>
       <Table
-        fetchItems={() => pages}
-        columns={columns}
         ref={table}
+        columns={columns}
+        className="reactTableV7--small"
         defaultSort="path"
         defaultSortDesc={true}
         header={false}
+        fetchItems={() => pages}
+        noPagination
         onSelectRow={(row: any) => {
           if (row.original) navigate(`edit/${row.original.id}`);
         }}
