@@ -23,7 +23,7 @@ test('manage team as admin', async ({ page }) => {
   await page.getByPlaceholder('Email adress').fill('user@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
   await page.getByPlaceholder('Password').press('Enter');
-  await page.locator('div:nth-child(3) > .notification-link').first().click();
+  await page.locator('div:nth-child(4) > .notification-link').first().click();
   await page.locator('span.block__entry__link').filter({ hasText: 'Team' }).first().click();
   await page.getByLabel('Name').fill('komainu');
   await page.getByRole('button', { name: 'Create' }).click();

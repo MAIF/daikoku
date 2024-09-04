@@ -170,7 +170,7 @@ test('Create & manage API', async ({ page }) => {
   await page.getByPlaceholder('Password').fill('password');
   await page.getByPlaceholder('Password').press('Enter');
   //create new API
-  await page.locator('div:nth-child(3) > .notification-link').first().click();
+  await page.locator('div:nth-child(4) > .notification-link').first().click();
   await page.locator('span').filter({ hasText: 'API' }).first().click();
   await page.locator('#portal-root div').filter({ hasText: /^Testers$/ }).click();
   await page.getByRole('button', { name: 'Published' }).click();
