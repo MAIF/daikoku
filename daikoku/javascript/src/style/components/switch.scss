@@ -78,8 +78,8 @@ input:checked + .slider:before {
 }
 
 .switch--disabled {
+  cursor: not-allowed;
   label {
     pointer-events: none;
   }
-  cursor: not-allowed;
 }
