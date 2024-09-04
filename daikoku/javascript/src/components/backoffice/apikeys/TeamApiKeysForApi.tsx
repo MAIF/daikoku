@@ -1,12 +1,14 @@
 import { getApolloContext } from '@apollo/client';
 import { Form, constraints, type, format } from '@maif/react-forms';
-import classNames from 'classnames';
 import sortBy from 'lodash/sortBy';
+import classNames from 'classnames';
 import React, { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-
+import Key from 'react-feather/dist/icons/key';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import moment from 'moment';
+
 import {
   I18nContext,
   ModalContext,
@@ -185,17 +187,17 @@ export const TeamApiKeysForApi = () => {
               format: format.select,
               label: translate("apikeys.delete.child.label"),
               options: subscription.children,
-              transformer: (s: ISubscriptionExtended) => ({value: s._id, label: `${s.apiName}/${s.planName}`}),
+              transformer: (s: ISubscriptionExtended) => ({ value: s._id, label: `${s.apiName}/${s.planName}` }),
               visible: (d) => d.rawValues.choice === 'promotion',
             }
           },
-          onSubmit: ({choice, childId}) => openFormModal(
+          onSubmit: ({ choice, childId }) => openFormModal(
             {
               title: translate("apikeys.delete.confirm.modal.title"),
               schema: {
                 validation: {
                   type: type.string,
-                  label: translate({ key: "apikeys.delete.confirm.label", replacements: [`${subscription.apiName}/${subscription.customName ?? subscription.planName}`]}),
+                  label: translate({ key: "apikeys.delete.confirm.label", replacements: [`${subscription.apiName}/${subscription.customName ?? subscription.planName}`] }),
                   constraints: [
                     constraints.required(translate('constraints.required.value')),
                     constraints.matches(new RegExp(`${subscription.apiName}/${subscription.customName ?? subscription.planName}`), translate('constraints.match.subscription'))
@@ -302,24 +304,24 @@ export const TeamApiKeysForApi = () => {
         search === ''
           ? subscriptions
           : subscriptions.filter((subs) => {
-              if (
-                subs.apiKey.clientName
-                  .replace('-', ' ')
-                  .toLowerCase()
-                  .includes(search)
-              ) {
-                return true;
-              } else if (
-                subs.customName &&
-                subs.customName.toLowerCase().includes(search)
-              ) {
-                return true;
-              } else {
-                return formatPlanType(subs.planType, translate)
-                  .toLowerCase()
-                  .includes(search);
-              }
-            });
+            if (
+              subs.apiKey.clientName
+                .replace('-', ' ')
+                .toLowerCase()
+                .includes(search)
+            ) {
+              return true;
+            } else if (
+              subs.customName &&
+              subs.customName.toLowerCase().includes(search)
+            ) {
+              return true;
+            } else {
+              return formatPlanType(subs.planType, translate)
+                .toLowerCase()
+                .includes(search);
+            }
+          });
 
       const sorted = sortBy(filteredApiKeys, ['plan', 'customName', 'parent']);
       const sortedApiKeys = sorted
@@ -346,13 +348,11 @@ export const TeamApiKeysForApi = () => {
                 <h1>
                   <Translation i18nkey="Api keys for">Api keys for</Translation>
                   &nbsp;
-                  {api.name}
-                </h1>
                   <Link
                     to={`/${apiTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`}
-                    className="cursor-pointer btn btn-sm btn-outline-primary ms-3 align-self-start  "
-                  ><i className="fas fa-arrow-up-right-from-square"></i>
-                  </Link>
+                    className="cursor-pointer"
+                  >{api.name}</Link>
+                </h1>
               </div>
               <div className="col-12 mt-2 mb-4">
                 <input
@@ -422,7 +422,7 @@ type ApiKeyCardProps = {
   api: IApi;
   subscription: ISubscriptionWithChildren;
   updateCustomName: (
-    name: string
+    name: string | null
   ) => Promise<ResponseError | ISafeSubscription>;
   statsLink: string;
   archiveApiKey: () => void;
@@ -455,7 +455,6 @@ const ApiKeyCard = ({
   const [hide, setHide] = useState(true);
   const [settingMode, setSettingMode] = useState(false);
   const [customName, setCustomName] = useState<string>();
-
   const [editMode, setEditMode] = useState(false);
 
   const [activeTab, setActiveTab] = useState<'apikey' | 'token' | 'basicAuth'>(
@@ -472,6 +471,7 @@ const ApiKeyCard = ({
   const { _id, integrationToken } = subscription;
 
   const { translate, Translation } = useContext(I18nContext);
+  const { openFormModal } = useContext(ModalContext);
 
   const planQuery = useQuery({
     queryKey: ['plan', subscription.plan],
@@ -545,10 +545,11 @@ const ApiKeyCard = ({
     const handleCustomNameChange = () => {
       const _customName = inputRef.current?.value.trim();
       if (_customName) {
-        updateCustomName(_customName).then(() => {
-          setCustomName(_customName);
-          setEditMode(false);
-        });
+        updateCustomName(_customName)
+          .then(() => {
+            setCustomName(_customName);
+            setEditMode(false);
+          });
       }
     };
 
@@ -567,17 +568,262 @@ const ApiKeyCard = ({
           rotation.enabled,
           rotation.rotationEvery,
           rotation.gracePeriod
-        ).then(() => setSettingMode(false));
+        )
+          .then(() => setSettingMode(false));
       }
     };
 
     const disableRotation =
       api.visibility === 'AdminOnly' || !!plan.autoRotation;
 
+
+    const _customName = subscription.customName ||
+      planQuery.data.customName ||
+      planQuery.data.type
+
+    return (
+      <div className='api-subscription'>
+        <div className="d-flex">
+          <div className='api-subscription__icon'>
+            <Key />
+            <div className='api-subscription__value__type'>activated</div>
+          </div>
+
+          <div className='api-subscription__infos'>
+            <div className='api-subscription__infos__name'>{_customName}</div>
+            <div className='api-subscription__infos__value'>{`${subscription.apiKey.clientId}:${subscription.apiKey.clientSecret}`}</div>
+            <div className='d-flex gap-2'>
+              <button className='btn btn-sm btn-outline-primary' onClick={() => {
+                navigator.clipboard
+                  .writeText(`${subscription.apiKey.clientId}:${subscription.apiKey.clientSecret}`)
+                  .then(() =>
+                    toast.info(translate('credential.copy.success'))
+                  )
+                  .catch(() =>
+                    toast.warning(translate('credential.copy.error'))
+                  );
+              }}>
+                <i className="fa fa-copy me-1" />
+                clientId
+              </button>
+              <button className='btn btn-sm btn-outline-primary' onClick={() => {
+                navigator.clipboard
+                  .writeText(subscription.integrationToken)
+                  .then(() =>
+                    toast.info(translate('credential.copy.success'))
+                  )
+                  .catch(() =>
+                    toast.warning(translate('credential.copy.error'))
+                  );
+              }}>
+                <i className="fa fa-copy me-1" />
+                token
+              </button>
+              <button className='btn btn-sm btn-outline-primary' onClick={() => {
+                navigator.clipboard
+                  .writeText(`Basic ${btoa(`${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`)}`)
+                  .then(() =>
+                    toast.info(translate('credential.copy.success'))
+                  )
+                  .catch(() =>
+                    toast.warning(translate('credential.copy.error'))
+                  );
+              }}>
+                <i className="fa fa-copy me-1" />
+                basic auth
+              </button>
+            </div>
+            <div className='api-subscription__infos__creation'>{
+              translate({
+                key: 'subscription.create.at', replacements: [moment(subscription.createdAt).format(translate('moment.date.format.without.hours'))]
+              })
+            }</div>
+          </div>
+        </div>
+        <div className="api-subscriptions__links">
+          Check out the informations to using <a className='cursor-pointer' href="#">the API</a> or explore <a className='cursor-pointer' href="#">the statistics</a> of your API key.
+        </div>
+        <div
+          className="dropdown"
+          style={{
+            position: 'absolute',
+            top: '15px',
+            right: '15px',
+            zIndex: '1000',
+          }}
+        >
+          <i
+            className="fa fa-bars cursor-pointer dropdown-menu-button"
+            style={{ fontSize: '20px' }}
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            id="dropdownMenuButton"
+          />
+          <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            <span
+              className="dropdown-item cursor-pointer"
+              onClick={() => openFormModal({
+                title: translate('Create a new team'),
+                actionLabel: translate('Create'),
+                schema: {
+                  customName: {
+                    type: type.string,
+                    placeholder: 'custom subscription name',
+                    label: 'subscription custom name',
+                  }
+                },
+                onSubmit: (data) => {
+                  updateCustomName(data.customName)
+                },
+                value: { customName: subscription.customName }
+              })}
+            >
+              modifier le nom perso.
+            </span>
+            <span
+              className="dropdown-item cursor-pointer"
+              onClick={() => openFormModal({
+                title: translate("ApiKey rotation"),
+                actionLabel: translate('Create'),
+                schema: settingsSchema,
+                onSubmit: (data) => handleChanges(data),
+                value: subscription.rotation
+              })}
+            >
+              parametrer la rotation
+            </span>
+            <div className="dropdown-divider" />
+            <span
+              className="dropdown-item cursor-pointer"
+              onClick={console.debug}
+            >
+              voir l'API
+            </span>
+            <span
+              className="dropdown-item cursor-pointer"
+              onClick={console.debug}
+            >
+              voir les statistiques d'usage
+            </span>
+            <div className="dropdown-divider" />
+            <span
+              className="dropdown-item cursor-pointer"
+              onClick={console.debug}
+            >
+              reinit. secret
+            </span>
+            <span
+              className="dropdown-item cursor-pointer"
+              onClick={console.debug}
+            >
+              transferer la subscription
+            </span>
+            <span
+              className="dropdown-item cursor-pointer"
+              onClick={console.debug}
+            >
+              enable/disable
+            </span>
+            <div className="dropdown-divider" />
+            <span
+              className="dropdown-item cursor-pointer"
+              onClick={console.debug}
+            >
+              Supprimer
+            </span>
+          </div>
+        </div>
+      </div>
+    )
+
     return (
       <div className="col-12 col-sm-6 col-md-4 mb-2">
         <div className="card">
           <div className="card-header" style={{ position: 'relative', fontSize: '16px' }}>
+            <div
+              className="dropdown"
+              style={{
+                position: 'absolute',
+                top: '15px',
+                left: '15px',
+                zIndex: '1000',
+              }}
+            >
+              <i
+                className="fa fa-cog cursor-pointer dropdown-menu-button"
+                style={{ fontSize: '20px' }}
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+                id="dropdownMenuButton"
+              />
+              <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
+                <span
+                  className="dropdown-item cursor-pointer"
+                  onClick={() => openFormModal({
+                    title: translate('Create a new team'),
+                    actionLabel: translate('Create'),
+                    schema: {
+                      customName: {
+                        type: type.string,
+                        placeholder: 'custom subscription name',
+                        label: 'subscription custom name',
+                      }
+                    },
+                    onSubmit: (data) => {
+                      updateCustomName(data.customName)
+                    },
+                    value: { customName: subscription.customName }
+                  })}
+                >
+                  modifier le nom perso.
+                </span>
+                <span
+                  className="dropdown-item cursor-pointer"
+                  onClick={console.debug}
+                >
+                  parametrer la rotation
+                </span>
+                <div className="dropdown-divider" />
+                <span
+                  className="dropdown-item cursor-pointer"
+                  onClick={console.debug}
+                >
+                  voir l'API
+                </span>
+                <span
+                  className="dropdown-item cursor-pointer"
+                  onClick={console.debug}
+                >
+                  voir les statistiques d'usage
+                </span>
+                <div className="dropdown-divider" />
+                <span
+                  className="dropdown-item cursor-pointer"
+                  onClick={console.debug}
+                >
+                  reinit. secret
+                </span>
+                <span
+                  className="dropdown-item cursor-pointer"
+                  onClick={console.debug}
+                >
+                  transferer la subscription
+                </span>
+                <span
+                  className="dropdown-item cursor-pointer"
+                  onClick={console.debug}
+                >
+                  enable/disable
+                </span>
+                <div className="dropdown-divider" />
+                <span
+                  className="dropdown-item cursor-pointer"
+                  onClick={console.debug}
+                >
+                  Supprimer
+                </span>
+              </div>
+            </div>
             <div className="d-flex justify-content-end m-1 position-absolute top-0 end-0">
               <BeautifulTitle title={translate('apikeys.view.api')}>
                 <Link
@@ -832,24 +1078,24 @@ const ApiKeyCard = ({
                           value={subscription.apiKey?.clientSecret}
                           aria-describedby={`client-secret-addon-${_id}`}
                         />
-                          <span
-                            onClick={() => {
-                              if (subscription.enabled) {
-                                setHide(!hide);
-                              }
-                            }}
-                            className={classNames('input-group-text', {
-                              'cursor-pointer': subscription.enabled,
-                              'cursor-forbidden': !subscription.enabled,
-                            })}
-                            id={`client-secret-addon-${_id}`}
-                          >
-                            {hide ? (
-                              <i className="fas fa-eye" />
-                            ) : (
-                              <i className="fas fa-eye-slash" />
-                            )}
-                          </span>
+                        <span
+                          onClick={() => {
+                            if (subscription.enabled) {
+                              setHide(!hide);
+                            }
+                          }}
+                          className={classNames('input-group-text', {
+                            'cursor-pointer': subscription.enabled,
+                            'cursor-forbidden': !subscription.enabled,
+                          })}
+                          id={`client-secret-addon-${_id}`}
+                        >
+                          {hide ? (
+                            <i className="fas fa-eye" />
+                          ) : (
+                            <i className="fas fa-eye-slash" />
+                          )}
+                        </span>
                       </div>
                     </div>
                   </>

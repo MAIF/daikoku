@@ -2649,9 +2649,9 @@ class ApiService(
     for {
       subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(tenant).findById(subscriptionId),
         AppError.SubscriptionNotFound)
-      api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiSubscriptionRepo.forTenant(tenant).findById(subscriptionId),
+      api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api),
         AppError.ApiNotFound)
-      plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.apiSubscriptionRepo.forTenant(tenant).findById(subscriptionId),
+      plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(tenant).findById(subscription.plan),
         AppError.SubscriptionNotFound)
       ownerTeam <-  EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(tenant).findById(subscription.team), AppError.TeamNotFound)
       _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.notificationRepo.forTenant(tenant).save(
