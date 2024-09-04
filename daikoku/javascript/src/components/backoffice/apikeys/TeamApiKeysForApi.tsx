@@ -1,13 +1,12 @@
 import { getApolloContext } from '@apollo/client';
-import { Form, constraints, type, format } from '@maif/react-forms';
-import sortBy from 'lodash/sortBy';
+import { constraints, format, type } from '@maif/react-forms';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
-import React, { useContext, useEffect, useState } from 'react';
+import sortBy from 'lodash/sortBy';
+import moment from 'moment';
+import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import Key from 'react-feather/dist/icons/key';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import moment from 'moment';
 
 import {
   I18nContext,
@@ -18,24 +17,20 @@ import * as Services from '../../../services';
 import {
   IApi,
   IRotation,
-  ISafeSubscription,
   ISubscription,
   ISubscriptionExtended,
   ITeamSimple,
   IUsagePlan,
-  ResponseError,
-  isError,
+  isError
 } from '../../../types';
 import {
   BeautifulTitle,
   Can,
-  Option,
   PaginatedComponent,
   Spinner,
   apikey,
   formatPlanType,
-  read,
-  stat,
+  read
 } from '../../utils';
 
 type ISubscriptionWithChildren = ISubscriptionExtended & {
@@ -117,16 +112,25 @@ export const TeamApiKeysForApi = () => {
         currentTeam,
         subscription,
         customName
-      );
+      ).then(() => {
+        toast.success(translate("subscription.custom.name.successfuly.updated"))
+        queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] })
+      });
     };
 
-    const archiveApiKey = (subscription: ISubscription) => {
+    const toggleApiKey = (subscription: ISubscription) => {
       return Services.archiveApiKey(
         currentTeam._id,
         subscription._id,
         !subscription.enabled
-      ).then(() =>
+      ).then(() => {
+        if (subscription.enabled) {
+          toast.success(translate("subscription.successfully.disabled"))
+        } else {
+          toast.success(translate("subscription.successfully.enabled"))
+        }
         queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] })
+      }
       );
     };
 
@@ -255,6 +259,7 @@ export const TeamApiKeysForApi = () => {
         rotationEvery,
         gracePeriod
       ).then((r) => {
+        toast.success(translate("subscription.rotation.successfully.setup"))
         queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] });
       });
     };
@@ -381,7 +386,7 @@ export const TeamApiKeysForApi = () => {
                         updateCustomName={(name) =>
                           updateCustomName(subscription, name)
                         }
-                        archiveApiKey={() => archiveApiKey(subscription)}
+                        toggle={() => toggleApiKey(subscription)}
                         makeUniqueApiKey={() => makeUniqueApiKey(subscription)}
                         deleteApiKey={() => deleteApiKey(subscription)}
                         toggleRotation={(
@@ -422,10 +427,10 @@ type ApiKeyCardProps = {
   api: IApi;
   subscription: ISubscriptionWithChildren;
   updateCustomName: (
-    name: string | null
-  ) => Promise<ResponseError | ISafeSubscription>;
+    name: string
+  ) => Promise<void>;
   statsLink: string;
-  archiveApiKey: () => void;
+  toggle: () => void;
   makeUniqueApiKey: () => void;
   deleteApiKey: () => void;
   toggleRotation: (
@@ -444,7 +449,7 @@ const ApiKeyCard = ({
   subscription,
   updateCustomName,
   statsLink,
-  archiveApiKey,
+  toggle,
   makeUniqueApiKey,
   toggleRotation,
   regenerateSecret,
@@ -452,14 +457,6 @@ const ApiKeyCard = ({
   subscribedApis,
   deleteApiKey
 }: ApiKeyCardProps) => {
-  const [hide, setHide] = useState(true);
-  const [settingMode, setSettingMode] = useState(false);
-  const [customName, setCustomName] = useState<string>();
-  const [editMode, setEditMode] = useState(false);
-
-  const [activeTab, setActiveTab] = useState<'apikey' | 'token' | 'basicAuth'>(
-    'apikey'
-  );
   const apiKeyValues = {
     apikey: `${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`,
     token: subscription.integrationToken,
@@ -478,29 +475,6 @@ const ApiKeyCard = ({
     queryFn: () =>
       Services.getVisiblePlan(api._id, api.currentVersion, subscription.plan),
   });
-
-  useEffect(() => {
-    if (planQuery.data && !isError(planQuery.data)) {
-      setActiveTab(
-        planQuery.data.integrationProcess === 'Automatic' ? 'token' : 'apikey'
-      );
-      if (!customName) {
-        setCustomName(
-          subscription.customName ||
-          planQuery.data.customName ||
-          planQuery.data.type
-        );
-      }
-    }
-  }, [planQuery.data]);
-
-  let inputRef = React.createRef<HTMLInputElement>();
-
-  useEffect(() => {
-    if (editMode) {
-      inputRef.current?.focus();
-    }
-  }, [editMode]);
 
   if (planQuery.isLoading) {
     return (
@@ -542,25 +516,6 @@ const ApiKeyCard = ({
       },
     };
 
-    const handleCustomNameChange = () => {
-      const _customName = inputRef.current?.value.trim();
-      if (_customName) {
-        updateCustomName(_customName)
-          .then(() => {
-            setCustomName(_customName);
-            setEditMode(false);
-          });
-      }
-    };
-
-    const abort = () => {
-      setSettingMode(false);
-    };
-
-    const abortCustomNameEdit = () => {
-      setEditMode(false);
-    };
-
     const handleChanges = (rotation: IRotation) => {
       if (subscription.enabled) {
         toggleRotation(
@@ -569,7 +524,6 @@ const ApiKeyCard = ({
           rotation.rotationEvery,
           rotation.gracePeriod
         )
-          .then(() => setSettingMode(false));
       }
     };
 
@@ -583,10 +537,16 @@ const ApiKeyCard = ({
 
     return (
       <div className='api-subscription'>
-        <div className="d-flex">
+        <div className="api-subscription__container">
           <div className='api-subscription__icon'>
-            <Key />
-            <div className='api-subscription__value__type'>activated</div>
+            <i className="fa-solid fa-key icon" />
+            <div className='api-subscription__value__type'>
+              {subscription.enabled ? translate("subscription.enable.label") : translate("subscription.disable.label")}
+              <div className={classNames('dot', {
+                enabled: subscription.enabled,
+                disabled: !subscription.enabled,
+              })} />
+            </div>
           </div>
 
           <div className='api-subscription__infos'>
@@ -641,7 +601,10 @@ const ApiKeyCard = ({
           </div>
         </div>
         <div className="api-subscriptions__links">
-          Check out the informations to using <a className='cursor-pointer' href="#">the API</a> or explore <a className='cursor-pointer' href="#">the statistics</a> of your API key.
+          {translate("subscription.nota.part.1")}
+          <a className='cursor-pointer underline mx-1' href="#">{translate("subscription.nota.link.api")}</a>
+          {translate("subscription.nota.part.2")}
+          <a className='cursor-pointer underline mx-1' href={statsLink}>{translate("subscription.nota.link.statistics")}</a>
         </div>
         <div
           className="dropdown"
@@ -664,7 +627,7 @@ const ApiKeyCard = ({
               className="dropdown-item cursor-pointer"
               onClick={() => openFormModal({
                 title: translate('Create a new team'),
-                actionLabel: translate('Create'),
+                actionLabel: translate('Save'),
                 schema: {
                   customName: {
                     type: type.string,
@@ -673,552 +636,55 @@ const ApiKeyCard = ({
                   }
                 },
                 onSubmit: (data) => {
-                  updateCustomName(data.customName)
+                  updateCustomName(data.customName ?? '')
                 },
                 value: { customName: subscription.customName }
               })}
             >
-              modifier le nom perso.
+              {translate("subscription.custom.name.update.label")}
             </span>
             <span
               className="dropdown-item cursor-pointer"
               onClick={() => openFormModal({
                 title: translate("ApiKey rotation"),
-                actionLabel: translate('Create'),
+                actionLabel: translate('Save'),
                 schema: settingsSchema,
                 onSubmit: (data) => handleChanges(data),
                 value: subscription.rotation
               })}
             >
-              parametrer la rotation
+              {translate("subscription.rotation.update.label")}
             </span>
             <div className="dropdown-divider" />
             <span
-              className="dropdown-item cursor-pointer"
-              onClick={console.debug}
+              className="dropdown-item cursor-pointer danger"
+              onClick={regenerateSecret}
             >
-              voir l'API
+              {translate("subscription.reset.secret.label")}
             </span>
             <span
-              className="dropdown-item cursor-pointer"
-              onClick={console.debug}
-            >
-              voir les statistiques d'usage
-            </span>
-            <div className="dropdown-divider" />
-            <span
-              className="dropdown-item cursor-pointer"
-              onClick={console.debug}
-            >
-              reinit. secret
-            </span>
-            <span
-              className="dropdown-item cursor-pointer"
+              className="dropdown-item cursor-pointer danger"
               onClick={console.debug}
             >
               transferer la subscription
             </span>
             <span
-              className="dropdown-item cursor-pointer"
-              onClick={console.debug}
+              className="dropdown-item cursor-pointer danger"
+              onClick={toggle}
             >
-              enable/disable
+              {subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
             </span>
             <div className="dropdown-divider" />
             <span
-              className="dropdown-item cursor-pointer"
-              onClick={console.debug}
+              className="dropdown-item cursor-pointer danger"
+              onClick={deleteApiKey}
             >
-              Supprimer
+              {translate("subscription.delete.button.label")}
             </span>
           </div>
         </div>
       </div>
     )
-
-    return (
-      <div className="col-12 col-sm-6 col-md-4 mb-2">
-        <div className="card">
-          <div className="card-header" style={{ position: 'relative', fontSize: '16px' }}>
-            <div
-              className="dropdown"
-              style={{
-                position: 'absolute',
-                top: '15px',
-                left: '15px',
-                zIndex: '1000',
-              }}
-            >
-              <i
-                className="fa fa-cog cursor-pointer dropdown-menu-button"
-                style={{ fontSize: '20px' }}
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-                id="dropdownMenuButton"
-              />
-              <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
-                <span
-                  className="dropdown-item cursor-pointer"
-                  onClick={() => openFormModal({
-                    title: translate('Create a new team'),
-                    actionLabel: translate('Create'),
-                    schema: {
-                      customName: {
-                        type: type.string,
-                        placeholder: 'custom subscription name',
-                        label: 'subscription custom name',
-                      }
-                    },
-                    onSubmit: (data) => {
-                      updateCustomName(data.customName)
-                    },
-                    value: { customName: subscription.customName }
-                  })}
-                >
-                  modifier le nom perso.
-                </span>
-                <span
-                  className="dropdown-item cursor-pointer"
-                  onClick={console.debug}
-                >
-                  parametrer la rotation
-                </span>
-                <div className="dropdown-divider" />
-                <span
-                  className="dropdown-item cursor-pointer"
-                  onClick={console.debug}
-                >
-                  voir l'API
-                </span>
-                <span
-                  className="dropdown-item cursor-pointer"
-                  onClick={console.debug}
-                >
-                  voir les statistiques d'usage
-                </span>
-                <div className="dropdown-divider" />
-                <span
-                  className="dropdown-item cursor-pointer"
-                  onClick={console.debug}
-                >
-                  reinit. secret
-                </span>
-                <span
-                  className="dropdown-item cursor-pointer"
-                  onClick={console.debug}
-                >
-                  transferer la subscription
-                </span>
-                <span
-                  className="dropdown-item cursor-pointer"
-                  onClick={console.debug}
-                >
-                  enable/disable
-                </span>
-                <div className="dropdown-divider" />
-                <span
-                  className="dropdown-item cursor-pointer"
-                  onClick={console.debug}
-                >
-                  Supprimer
-                </span>
-              </div>
-            </div>
-            <div className="d-flex justify-content-end m-1 position-absolute top-0 end-0">
-              <BeautifulTitle title={translate('apikeys.view.api')}>
-                <Link
-                  to={`/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/pricing`}
-                  className="btn btn-sm btn-outline-primary ms-1"
-                >
-                  <i className="fas fa-arrow-up-right-from-square" />
-                </Link>
-              </BeautifulTitle>
-            </div>
-            <div className="d-flex align-items-center justify-content-between flex-column">
-              {!settingMode &&
-                (!editMode ? (
-                  <div className="d-flex align-items-center justify-content-between">
-                    <BeautifulTitle
-                      title={customName || ''}
-                      style={{
-                        wordBreak: 'break-all',
-                        marginBlockEnd: '0',
-                        whiteSpace: 'nowrap',
-                        maxWidth: '85%',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                      className="plan-name"
-                    >
-                      {customName}
-                    </BeautifulTitle>
-                    <button
-                      disabled={!subscription.enabled}
-                      type="button"
-                      className="btn btn-sm btn-outline-primary ms-2"
-                      onClick={() => setEditMode(true)}
-                    >
-                      <i className="fas fa-pen cursor-pointer" />
-                    </button>
-                  </div>
-                ) : (
-                  <div className="input-group">
-                    <input
-                      type="text"
-                      className="form-control"
-                      defaultValue={customName}
-                      ref={inputRef}
-                    />
-                    <div className="input-group-append">
-                      <span
-                        className="input-group-text cursor-pointer"
-                        onClick={handleCustomNameChange}
-                      >
-                        <i className="fas fa-check accept" />
-                      </span>
-                      <span
-                        className="input-group-text cursor-pointer"
-                        onClick={abortCustomNameEdit}
-                      >
-                        <i className="fas fa-times escape a-fake" />
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              {settingMode ? (
-                <h3>
-                  <Translation i18nkey="ApiKey rotation">
-                    ApiKey rotation
-                  </Translation>
-                </h3>
-              ) : (
-                <div
-                  className="badge bg-secondary"
-                  style={{ fontSize: '12px' }}
-                >
-                  Type : {formatPlanType(plan, translate)}
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="card-body" style={{ margin: 0 }}>
-            {!settingMode && (
-              <div>
-                <div className="d-flex justify-content-end mb-3">
-                  <div className="d-flex justify-content-around">
-                    {!subscription.parent && (
-                      <BeautifulTitle title={translate('Reset secret')}>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-danger ms-1"
-                          disabled={!subscription.enabled}
-                          onClick={regenerateSecret}
-                        >
-                          <i className="fas fa-sync-alt" />
-                        </button>
-                      </BeautifulTitle>
-                    )}
-                    <Can I={read} a={stat} team={currentTeam}>
-                      <BeautifulTitle
-                        title={translate('View usage statistics')}
-                      >
-                        <Link
-                          to={statsLink}
-                          className="btn btn-sm btn-outline-primary ms-1"
-                        >
-                          <i className="fas fa-chart-bar" />
-                        </Link>
-                      </BeautifulTitle>
-                    </Can>
-                    <BeautifulTitle title={translate('Copy to clipboard')}>
-                      <button
-                        type="button"
-                        disabled={!subscription.enabled}
-                        className="btn btn-sm btn-outline-primary ms-1"
-                        onClick={() => {
-                          let credentials = apiKeyValues[activeTab];
-                          navigator.clipboard
-                            .writeText(credentials)
-                            .then(() =>
-                              toast.info(translate('credential.copy.success'))
-                            )
-                            .catch(() =>
-                              toast.warning(translate('credential.copy.error'))
-                            );
-                        }}
-                      >
-                        <i className="fas fa-copy" />
-                      </button>
-                    </BeautifulTitle>
-                    {!subscription.parent && !disableRotation && (
-                      <BeautifulTitle title={translate('Setup rotation')}>
-                        <button
-                          type="button"
-                          className="btn btn-sm btn-outline-primary ms-1"
-                          onClick={() => setSettingMode(true)}
-                        >
-                          <i className="fas fa-history" />
-                        </button>
-                      </BeautifulTitle>
-                    )}
-                    <BeautifulTitle title={subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}>
-                      <button
-                        type="button"
-                        disabled={
-                          subscription.parent ? !subscription.parentUp : false
-                        }
-                        aria-label={
-                          subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")
-                        }
-                        className={classNames("btn btn-sm ms-1", {
-                          "btn-outline-danger":
-                            subscription.enabled,
-                          "btn-outline-success":
-                            !subscription.enabled,
-                        })}
-                        onClick={archiveApiKey}
-                      >
-                        <i className="fas fa-power-off" />
-                      </button>
-                    </BeautifulTitle>
-                    <BeautifulTitle title={translate("api.delete.subscription")}>
-                      <button
-                        type="button"
-                        disabled={
-                          subscription.parent ? !subscription.parentUp : false
-                        }
-                        aria-label={translate("Delete")}
-                        className={classNames("btn btn-sm ms-1 btn-outline-danger")}
-                        onClick={deleteApiKey}
-                      >
-                        <i className="fas fa-trash" />
-                      </button>
-                    </BeautifulTitle>
-                    {subscription.parent && (
-                      <BeautifulTitle
-                        title={translate('team_apikey_for_api.make_unique')}
-                      >
-                        <button
-                          type="button"
-                          aria-label={translate("team_apikey_for_api.make_unique")}
-                          className="btn btn-sm ms-1 btn-outline-danger"
-                          onClick={makeUniqueApiKey}
-                        >
-                          <i className="fas fa-share" />
-                        </button>
-                      </BeautifulTitle>
-                    )}
-                  </div>
-                </div>
-                {subscription.apiKey && (
-                  <div className="row">
-                    <ul className="nav nav-tabs flex-column flex-sm-row mb-2 col-12">
-                      <li className="nav-item cursor-pointer mb-2">
-                        <span
-                          className={`nav-link ${activeTab === 'apikey' ? 'active' : ''}`}
-                          onClick={() => setActiveTab('apikey')}
-                        >
-                          <Translation i18nkey="ApiKey">ApiKey</Translation>
-                        </span>
-                      </li>
-                      {!disableRotation && (
-                        <li className="nav-item cursor-pointer">
-                          <span
-                            className={`nav-link ${activeTab === 'token' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('token')}
-                          >
-                            <Translation i18nkey="Integration token">
-                              Integration token
-                            </Translation>
-                          </span>
-                        </li>
-                      )}
-                      <li className="nav-item cursor-pointer">
-                        <span
-                          className={`nav-link ${activeTab === 'basicAuth' ? 'active' : ''}`}
-                          onClick={() => setActiveTab('basicAuth')}
-                        >
-                          <Translation i18nkey="Basic auth">
-                            Basic auth
-                          </Translation>
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
-                )}
-                {activeTab == 'apikey' && (
-                  <>
-                    <div className="mb-3">
-                      <label htmlFor={`client-id-${_id}`} className="">
-                        <Translation i18nkey="Client Id">Client Id</Translation>
-                      </label>
-                      <div className="">
-                        <input
-                          readOnly
-                          disabled={!subscription.enabled}
-                          className="form-control input-sm"
-                          id={`client-id-${_id}`}
-                          value={subscription.apiKey?.clientId}
-                        />
-                      </div>
-                    </div>
-                    <div className="mb-3">
-                      <label htmlFor={`client-secret-${_id}`} className="">
-                        <Translation i18nkey="Client secret">
-                          Client secret
-                        </Translation>
-                      </label>
-                      <div className="input-group">
-                        <input
-                          readOnly
-                          disabled={!subscription.enabled}
-                          type={hide ? "password" : ""}
-                          className="form-control input"
-                          id={`client-secret-${_id}`}
-                          value={subscription.apiKey?.clientSecret}
-                          aria-describedby={`client-secret-addon-${_id}`}
-                        />
-                        <span
-                          onClick={() => {
-                            if (subscription.enabled) {
-                              setHide(!hide);
-                            }
-                          }}
-                          className={classNames('input-group-text', {
-                            'cursor-pointer': subscription.enabled,
-                            'cursor-forbidden': !subscription.enabled,
-                          })}
-                          id={`client-secret-addon-${_id}`}
-                        >
-                          {hide ? (
-                            <i className="fas fa-eye" />
-                          ) : (
-                            <i className="fas fa-eye-slash" />
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                  </>
-                )}
-                {activeTab == 'token' && (
-                  <>
-                    <div className="mb-3">
-                      <label htmlFor={`token-${_id}`} className="">
-                        <Translation i18nkey="Integration token">
-                          Integration token
-                        </Translation>
-                      </label>
-                      <div className="">
-                        <textarea
-                          readOnly
-                          rows={4}
-                          className="form-control input-sm"
-                          id={`token-${_id}`}
-                          value={apiKeyValues[activeTab]}
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-                {activeTab == 'basicAuth' && (
-                  <>
-                    <div className="mb-3">
-                      <label htmlFor={`basicAuth-${_id}`} className="">
-                        <Translation i18nkey="Basic authentication">
-                          Basic authentication
-                        </Translation>
-                      </label>
-                      <div className="">
-                        <textarea
-                          readOnly
-                          rows={4}
-                          className="form-control input-sm"
-                          id={`basicAuth-${_id}`}
-                          value={apiKeyValues[activeTab]}
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {subscription.children.length > 0 && (
-                  <>
-                    {showAggregatePlan && (
-                      <div className="text-center">
-                        <h5 className="modal-title">
-                          {translate('team_apikey_aggregatePlans_title')}
-                        </h5>
-                        <div>
-                          {subscription.children.map((aggregate) => {
-                            const api = subscribedApis.find(
-                              (a) => a._id === aggregate.api
-                            );
-                            return (
-                              <div key={aggregate._id}>
-                                <Link
-                                  to={`/${currentTeam._humanReadableId}/settings/apikeys/${aggregate._humanReadableId}/${api!.currentVersion}`}
-                                >
-                                  {`${aggregate.apiName}/${aggregate.planName || aggregate.planType}`}
-                                </Link>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-                    <button
-                      className={`btn btn-sm btn-outline-info mx-auto d-flex ${showAggregatePlan ? "mt-3" : ""
-                        }`}
-                      onClick={() => setAggregatePlan(!showAggregatePlan)}
-                    >
-                      {showAggregatePlan
-                        ? translate('team_apikey_for_api.hide_aggregate_sub')
-                        : translate('team_apikey_for_api.show_aggregate_sub')}
-                    </button>
-                  </>
-                )}
-              </div>
-            )}
-
-            {settingMode && (
-              <div className="d-flex flex-column flex-grow-0">
-                {!plan.autoRotation && (
-                  <Form<IRotation>
-                    schema={settingsSchema}
-                    onSubmit={handleChanges}
-                    value={Option(subscription.rotation).getOrElse({
-                      enabled: false,
-                      rotationEvery: 744,
-                      gracePeriod: 168,
-                      pendingRotation: false,
-                    })}
-                    footer={({ valid }) => {
-                      return (
-                        <div className="d-flex justify-content-end mt-3">
-                          <button
-                            className="btn btn-outline-danger"
-                            onClick={abort}
-                          >
-                            <Translation i18nkey="Back">Back</Translation>
-                          </button>
-                          <button
-                            className="btn btn-outline-success ms-2"
-                            onClick={valid}
-                          >
-                            <i className="fas fa-save me-1"></i>
-                            <Translation i18nkey="Save">Save</Translation>
-                          </button>
-                        </div>
-                      );
-                    }}
-                  />
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    );
   } else {
     return <div>Error while fetching usage plan</div>;
   }
