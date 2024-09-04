@@ -345,6 +345,7 @@ export const TeamApiKeysForApi = () => {
             .map((sub) => ({ ...sub, children: [] }))
         );
 
+      const apiLink = `/${apiTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`;
       return (
         <Can I={read} a={apikey} team={currentTeam} dispatchError>
           {api && apiTeam ? (
@@ -354,7 +355,7 @@ export const TeamApiKeysForApi = () => {
                   <Translation i18nkey="Api keys for">Api keys for</Translation>
                   &nbsp;
                   <Link
-                    to={`/${apiTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`}
+                    to={apiLink}
                     className="cursor-pointer"
                   >{api.name}</Link>
                 </h1>
@@ -379,6 +380,7 @@ export const TeamApiKeysForApi = () => {
                       <ApiKeyCard
                         api={api}
                         currentTeam={currentTeam}
+                        apiLink={apiLink}
                         statsLink={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${subscription._id}/consumptions`}
                         key={subscription.apiKey.clientId}
                         subscription={subscription}
@@ -430,6 +432,7 @@ type ApiKeyCardProps = {
     name: string
   ) => Promise<void>;
   statsLink: string;
+  apiLink: string;
   toggle: () => void;
   makeUniqueApiKey: () => void;
   deleteApiKey: () => void;
@@ -448,13 +451,12 @@ const ApiKeyCard = ({
   api,
   subscription,
   updateCustomName,
+  apiLink,
   statsLink,
   toggle,
   makeUniqueApiKey,
   toggleRotation,
   regenerateSecret,
-  currentTeam,
-  subscribedApis,
   deleteApiKey
 }: ApiKeyCardProps) => {
   const apiKeyValues = {
@@ -464,8 +466,6 @@ const ApiKeyCard = ({
   };
 
   const [showAggregatePlan, setAggregatePlan] = useState(false);
-
-  const { _id, integrationToken } = subscription;
 
   const { translate, Translation } = useContext(I18nContext);
   const { openFormModal } = useContext(ModalContext);
@@ -539,7 +539,10 @@ const ApiKeyCard = ({
       <div className='api-subscription'>
         <div className="api-subscription__container">
           <div className='api-subscription__icon'>
-            <i className="fa-solid fa-key icon" />
+              <i className={classNames("fa-solid icon", {
+                "fa-key": subscription.children.length === 0,
+                "fa-box": subscription.children.length > 0
+              })} />
             <div className='api-subscription__value__type'>
               {subscription.enabled ? translate("subscription.enable.label") : translate("subscription.disable.label")}
               <div className={classNames('dot', {
@@ -602,7 +605,7 @@ const ApiKeyCard = ({
         </div>
         <div className="api-subscriptions__links">
           {translate("subscription.nota.part.1")}
-          <a className='cursor-pointer underline mx-1' href="#">{translate("subscription.nota.link.api")}</a>
+          <a className='cursor-pointer underline mx-1' href={apiLink}>{translate("subscription.nota.link.api")}</a>
           {translate("subscription.nota.part.2")}
           <a className='cursor-pointer underline mx-1' href={statsLink}>{translate("subscription.nota.link.statistics")}</a>
         </div>
@@ -643,7 +646,7 @@ const ApiKeyCard = ({
             >
               {translate("subscription.custom.name.update.label")}
             </span>
-            <span
+            {!subscription.parent && !disableRotation && <span
               className="dropdown-item cursor-pointer"
               onClick={() => openFormModal({
                 title: translate("ApiKey rotation"),
@@ -654,27 +657,39 @@ const ApiKeyCard = ({
               })}
             >
               {translate("subscription.rotation.update.label")}
-            </span>
+            </span>}
             <div className="dropdown-divider" />
-            <span
+            {!subscription.parent && <span
               className="dropdown-item cursor-pointer danger"
               onClick={regenerateSecret}
             >
               {translate("subscription.reset.secret.label")}
-            </span>
-            <span
+            </span>}
+            {!subscription.parent && <span
               className="dropdown-item cursor-pointer danger"
               onClick={console.debug}
             >
               transferer la subscription
-            </span>
+            </span>}
             <span
-              className="dropdown-item cursor-pointer danger"
-              onClick={toggle}
+              className={classNames("dropdown-item cursor-pointer danger", {
+                disabled: subscription.parent && !subscription.parentUp
+              })}
+              onClick={() => {
+                if (subscription.parent && subscription.parentUp) {
+                  toggle
+                }
+              }}
             >
               {subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
             </span>
             <div className="dropdown-divider" />
+            {subscription.parent && <span
+              className="dropdown-item cursor-pointer danger"
+              onClick={makeUniqueApiKey}
+            >
+              {translate("subscription.extract.button.label")}
+            </span>}
             <span
               className="dropdown-item cursor-pointer danger"
               onClick={deleteApiKey}

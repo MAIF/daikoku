@@ -1450,6 +1450,7 @@
   "subscription.enable.button.label": "Activer la souscription",
   "subscription.disable.button.label": "Désactiver la souscription",
   "subscription.delete.button.label": "Supprimer",
+  "subscription.extract.button.label": "Extraire de l'agrégat",
   "subscription.enable.label": "Activé",
   "subscription.disable.label": "Désactivé"
 }

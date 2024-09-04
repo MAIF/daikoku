@@ -1450,6 +1450,7 @@
     "subscription.enable.button.label": "Enable subscription",
     "subscription.disable.button.label": "Disable subscription",
     "subscription.delete.button.label": "Delete",
+    "subscription.extract.button.label": "Extract from agg.",
     "subscription.enable.label": "Enabled",
     "subscription.disable.label": "Disabled"
 }
