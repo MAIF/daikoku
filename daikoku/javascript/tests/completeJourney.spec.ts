@@ -21,7 +21,7 @@ test('test a complete user journey', async ({ page }) => {
   //connection
   await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('user@foo.bar');
+  await page.getByPlaceholder('Email address').fill('user@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
   await page.getByRole('button', { name: 'Login' }).click();
   await page.waitForResponse(response => response.url().includes('/auth/Local/callback') && response.status() === 303)

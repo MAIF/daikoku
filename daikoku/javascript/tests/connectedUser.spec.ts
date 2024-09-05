@@ -166,7 +166,7 @@ test('Create & manage API', async ({ page }) => {
   //connection with admin
   await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
+  await page.getByPlaceholder('Email address').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
   await page.getByPlaceholder('Password').press('Enter');
   //create new API
@@ -371,7 +371,7 @@ test('aggregation mode', async ({ page, request }) => {
   //login
   await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
+  await page.getByPlaceholder('Email address').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
   await page.getByRole('button', { name: 'Login' }).click();
 
@@ -451,7 +451,7 @@ test('do search', async ({ page, request }) => {
   //login
   await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
+  await page.getByPlaceholder('Email address').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
   await page.getByPlaceholder('Password').press('Enter');
   await page.waitForResponse(r => r.url().includes('/api/me/context') && r.status() === 200)
@@ -486,7 +486,7 @@ test('do search', async ({ page, request }) => {
 test('API admin can transfer his own API ownership', async ({ page }) => {
   await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
+  await page.getByPlaceholder('Email address').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
   await page.getByRole('button', { name: 'Login' }).click();
   await page.getByRole('heading', { name: 'test API' }).click();
@@ -530,7 +530,7 @@ test('Filter API List', async ({ page, request }) => {
 
   await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
+  await page.getByPlaceholder('Email address').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
   await page.getByRole('button', { name: 'Login' }).click();
   await page.waitForResponse(r => r.url().includes('/api/me/context') && r.status() === 200)
