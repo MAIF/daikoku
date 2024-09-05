@@ -3309,14 +3309,21 @@ class ApiController(
         val teamUsersFilter =
           if (ctx.user.isDaikokuAdmin) Json.obj()
           else Json.obj("users.userId" -> ctx.user.id.value)
-
+        val typeFilter = if (ctx.tenant.subscriptionSecurity.isDefined
+          &&  ctx.tenant.subscriptionSecurity.exists(identity)) {
+          Json.obj(
+            "type" -> Json.obj("$in" -> Json.arr(TeamType.Admin.name, TeamType.Organization.name))
+          )
+        } else {
+          Json.obj()
+        }
         for {
           myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
           teams <-
             env.dataStore.teamRepo
               .forTenant(ctx.tenant.id)
               .findNotDeleted(
-                Json.obj("name" -> searchAsRegex) ++ teamUsersFilter,
+                Json.obj("name" -> searchAsRegex) ++ teamUsersFilter ++ typeFilter,
                 5,
                 Json.obj("name" -> 1).some
               )
