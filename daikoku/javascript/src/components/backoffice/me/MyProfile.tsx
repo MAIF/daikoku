@@ -437,7 +437,7 @@ export const MyProfile = () => {
         constraints.required(translate('constraints.required.newPassword')),
         constraints.matches(
           /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/,
-          translate('constraint.matches.password')
+          translate('constraints.matches.password')
         ),
       ],
     },
@@ -449,7 +449,7 @@ export const MyProfile = () => {
         constraints.required(translate('constraints.required.newPassword')),
         constraints.oneOf(
           [constraints.ref('newPassword')],
-          translate('constraint.oneof.confirm.password')
+          translate('constraints.oneof.confirm.password')
         ),
       ],
     },
