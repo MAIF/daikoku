@@ -400,15 +400,27 @@ trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
       env: Env,
       ec: ExecutionContext
   ): Future[Seq[Team]] = {
+    val typeFilter = if (tenant.subscriptionSecurity.isDefined
+      &&  tenant.subscriptionSecurity.exists(identity)) {
+      Json.obj(
+        "type" -> Json.obj("$in" -> Json.arr(TeamType.Admin.name, TeamType.Organization.name))
+      )
+    } else {
+      Json.obj()
+    }
     if (user.isDaikokuAdmin) {
       env.dataStore.teamRepo
         .forTenant(tenant.id)
-        .findAllNotDeleted()
+        .findNotDeleted(
+            typeFilter
+        )
+
+
     } else {
       env.dataStore.teamRepo
         .forTenant(tenant.id)
         .findNotDeleted(
-          Json.obj("users.userId" -> user.id.value)
+          Json.obj("users.userId" -> user.id.value) ++ typeFilter
         )
     }
   }
