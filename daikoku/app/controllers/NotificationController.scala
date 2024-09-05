@@ -316,7 +316,6 @@ class NotificationController(
                     notification.sender
                   )
                 )
-              case ApiSubscriptionTransfer(subscriptionId) => apiService.transferSubscription(team, subscriptionId, ctx.tenant, ctx.user)
               case TeamInvitation(_, user) if user != ctx.user.id =>
                 EitherT.leftT[Future, Unit](ForbiddenAction)
               case TeamInvitation(team, user) =>
@@ -532,10 +531,6 @@ class NotificationController(
                 )
               )
             } yield body
-          case ApiSubscriptionTransfer(subscriptionId) => apiService.declineSubscriptionTransfer(subscriptionId, ctx.tenant, ctx.user)
-            .leftMap(_.getErrorMessage())
-            .merge
-
           case TransferApiOwnership(team, api) =>
             val result = for {
               api <-

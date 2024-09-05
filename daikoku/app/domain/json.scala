@@ -3219,9 +3219,7 @@ object json {
           case "NewIssueOpen"         => NewIssueOpenFormat.reads(json)
           case "NewCommentOnIssue"    => NewCommentOnIssueFormat.reads(json)
           case "TransferApiOwnership" => TransferApiOwnershipFormat.reads(json)
-          case "ApiSubscriptionTransfer" => ApiSubscriptionTransferFormat.reads(json)
           case "ApiSubscriptionTransferSuccess" => ApiSubscriptionTransferSuccessFormat.reads(json)
-          case "ApiSubscriptionTransferReject" => ApiSubscriptionTransferRejectFormat.reads(json)
           case "CheckoutForSubscription" =>
             CheckoutForSubscriptionFormat.reads(json)
           case str => JsError(s"Bad notification value: $str")
@@ -3241,17 +3239,9 @@ object json {
             ApiSubscriptionDemandFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiSubscription"
             )
-          case p: ApiSubscriptionTransfer =>
-            ApiSubscriptionTransferFormat.writes(p).as[JsObject] ++ Json.obj(
-              "type" -> "ApiSubscriptionTransfer"
-            )
           case p: ApiSubscriptionTransferSuccess =>
             ApiSubscriptionTransferSuccessFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiSubscriptionTransferSuccess"
-            )
-          case p: ApiSubscriptionTransferReject =>
-            ApiSubscriptionTransferRejectFormat.writes(p).as[JsObject] ++ Json.obj(
-              "type" -> "ApiSubscriptionTransferReject"
             )
           case p: ApiSubscriptionReject =>
             ApiSubscriptionRejectFormat.writes(p).as[JsObject] ++ Json.obj(
@@ -3496,24 +3486,6 @@ object json {
           .as[JsValue]
       )
   }
-  val ApiSubscriptionTransferFormat = new Format[ApiSubscriptionTransfer] {
-
-    override def reads(json: JsValue): JsResult[ApiSubscriptionTransfer] =
-      Try {
-        JsSuccess(
-          ApiSubscriptionTransfer(
-            subscription = (json \ "subscription").as(ApiSubscriptionIdFormat)
-          )
-        )
-      } recover {
-        case e => JsError(e.getMessage)
-      } get
-
-    override def writes(o: ApiSubscriptionTransfer): JsValue =
-      Json.obj(
-        "subscription" -> o.subscription.asJson
-      )
-  }
   val ApiSubscriptionTransferSuccessFormat = new Format[ApiSubscriptionTransferSuccess] {
 
     override def reads(json: JsValue): JsResult[ApiSubscriptionTransferSuccess] =
@@ -3528,24 +3500,6 @@ object json {
       } get
 
     override def writes(o: ApiSubscriptionTransferSuccess): JsValue =
-      Json.obj(
-        "subscription" -> o.subscription.asJson
-      )
-  }
-  val ApiSubscriptionTransferRejectFormat = new Format[ApiSubscriptionTransferReject] {
-
-    override def reads(json: JsValue): JsResult[ApiSubscriptionTransferReject] =
-      Try {
-        JsSuccess(
-          ApiSubscriptionTransferReject(
-            subscription = (json \ "subscription").as(ApiSubscriptionIdFormat)
-          )
-        )
-      } recover {
-        case e => JsError(e.getMessage)
-      } get
-
-    override def writes(o: ApiSubscriptionTransferReject): JsValue =
       Json.obj(
         "subscription" -> o.subscription.asJson
       )

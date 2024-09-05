@@ -2095,7 +2095,7 @@ class ApiController(
     }
 
   def getTransferLink(teamId: String, subscriptionId: String) =
-    DaikokuAction.async(parse.json) { ctx =>
+    DaikokuAction.async { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(s"@{user.name} has generated a link to transfer subscription @{subscription.id}"))(teamId, ctx) { team => {
 
@@ -2119,40 +2119,37 @@ class ApiController(
       }
       }
     }
+
   def transferSubscription(teamId: String, subscriptionId: String) =
     DaikokuAction.async(parse.json) { ctx =>
       TeamAdminOnly(
         AuditTrailEvent(s"@{user.name} has ask to transfer subscription @{subscriptionId} to team @{teamId}"))(teamId, ctx) { team => {
-        val newTeamId = (ctx.request.body \ "team").as[String]
 
-        //FIXME: get token &
-        //FIXME: check if api, plan are accessible (child also)
-        //FIXME: check if team has no subscription to plan or childs plan (if security is enable)
-//        (for {
-//          newTeam <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(newTeamId),
-//            AppError.TeamNotFound)
-//          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(subscriptionId),
-//            AppError.SubscriptionNotFound)
-//          _ <- EitherT.cond[Future][AppError, Unit](subscription.parent.isEmpty, (), AppError.EntityConflict("Subscription is part of aggregation"))
-//          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.notificationRepo.forTenant(ctx.tenant).save(
-//            Notification(
-//              id = NotificationId(
-//                IdGenerator.token(32)
-//              ),
-//              tenant = ctx.tenant.id,
-//              sender = ctx.user.asNotificationSender,
-//              action =
-//                NotificationAction.ApiSubscriptionTransfer(
-//                  subscription = subscription.id
-//                ),
-//              notificationType =
-//                NotificationType.AcceptOrReject,
-//              team = newTeam.id.some
-//            )
-//          ))
-//        } yield Ok(Json.obj("done" -> true)))
-//          .leftMap(_.render())
-//          .merge
+        (for {
+          token <- EitherT.fromOption[Future][AppError, String]((ctx.request.body \"token").asOpt[String], AppError.EntityNotFound("token"))
+          infos <- EitherT.pure[Future, AppError](Json.parse(Cypher.decrypt(env.config.cypherSecret, token, ctx.tenant)))
+          subscriptionFromInfo = (infos \ "subscription").as[String]
+          _ <- EitherT.cond[Future][AppError, Unit](subscriptionFromInfo == subscriptionId, (), AppError.EntityConflict("Subscription"))
+          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscriptionFromInfo), AppError.SubscriptionNotFound)
+          _ <- EitherT.cond[Future][AppError, Unit](subscription.parent.isEmpty, (), AppError.EntityConflict("Subscription is part of aggregation"))
+          api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.api), AppError.ApiNotFound)
+          plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.plan), AppError.PlanNotFound)
+          _ <- EitherT.cond[Future][AppError, Unit](api.visibility == ApiVisibility.Public || api.authorizedTeams.contains(team.id), (), AppError.Unauthorized)
+          _ <- EitherT.cond[Future][AppError, Unit](plan.visibility == UsagePlanVisibility.Public || plan.authorizedTeams.contains(team.id), (), AppError.Unauthorized)
+          childSubscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("parent" -> subscription.id.asJson)))
+          childApis <- EitherT.liftF[Future, AppError, Seq[Api]](env.dataStore.apiRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(childSubscriptions.map(_.api.asJson))))))
+          childPlans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(childSubscriptions.map(_.plan.asJson))))))
+          log = AppLogger.info(s"${childPlans.map(_.id.value).mkString("::")}")
+          log2 = AppLogger.info(s"${childApis.map(_.id.value).mkString("::")}")
+          log3 = AppLogger.info(s"${childSubscriptions.map(_.id.value).mkString("::")}")
+          _ <- EitherT.cond[Future][AppError, Unit](childApis.forall(a => a.visibility == ApiVisibility.Public || a.authorizedTeams.contains(team.id)), (), AppError.Unauthorized)
+          _ <- EitherT.cond[Future][AppError, Unit](childPlans.forall(p => p.visibility == UsagePlanVisibility.Public || p.authorizedTeams.contains(team.id)), (), AppError.Unauthorized)
+          teamSubscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("team" -> team.id.asJson)))
+          - <- EitherT.cond[Future][AppError, Unit]((childPlans :+ plan).forall(p => p.allowMultipleKeys.getOrElse(false) || !teamSubscriptions.exists(s => s.plan == p.id)), (), AppError.EntityConflict("plan not allow multiple subscription"))
+          _ <- apiService.transferSubscription(team, subscription, childSubscriptions, ctx.tenant, ctx.user)
+        } yield Ok(Json.obj("done" -> true)))
+          .leftMap(_.render())
+          .merge
       }
       }
     }
