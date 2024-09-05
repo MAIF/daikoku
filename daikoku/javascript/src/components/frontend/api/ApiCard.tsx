@@ -119,7 +119,7 @@ export const ApiCard = (props: {
   return (
     <div className="row border-bottom py-4">
       <div className="col-12 d-flex justify-content-between">
-        <div className="cursor-pointer underline-on-hover level2-link" onClick={props.redirectToApiPage}>
+        <div className="cursor-pointer underline level2-link" onClick={props.redirectToApiPage}>
           <h3>{`${api.name}${props.groupView && props.apiWithAutho.length > 1 ? ` - ${api.currentVersion}` : ''}`}</h3>
         </div>
         <div className="ms-2">
@@ -181,7 +181,7 @@ export const ApiCard = (props: {
       <div className="col-12 d-flex mt-2">
         {props.teamVisible && team && (
           <small
-            className="cursor-pointer underline-on-hover level2-link d-flex align-items-baseline"
+            className="cursor-pointer underline level2-link d-flex align-items-baseline"
             onClick={() => props.handleTeamSelect(team)}
           >
             <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />
