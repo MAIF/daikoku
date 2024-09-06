@@ -1601,6 +1601,7 @@ export const graphql = {
           type
         }
         createdAt
+        validUntil
         api {
           _id
           name

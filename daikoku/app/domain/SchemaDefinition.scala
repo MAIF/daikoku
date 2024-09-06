@@ -2109,6 +2109,7 @@ object SchemaDefinition {
             )
           ),
           Field("createdAt", DateTimeUnitype, resolve = _.value.createdAt),
+          Field("validUntil", DateTimeUnitype, resolve = _.value.validUntil),
           Field(
             "team",
             OptionType(TeamObjectType),

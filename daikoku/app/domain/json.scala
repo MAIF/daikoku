@@ -2731,6 +2731,7 @@ object json {
             team = (json \ "team").as(TeamIdFormat),
             api = (json \ "api").as(ApiIdFormat),
             createdAt = (json \ "createdAt").as(DateTimeFormat),
+            validUntil = (json \ "validUntil").as(DateTimeFormat),
             by = (json \ "by").as(UserIdFormat),
             customName = (json \ "customName").asOpt[String],
             adminCustomName = (json \ "adminCustomName").asOpt[String],
@@ -2779,6 +2780,7 @@ object json {
         "team" -> TeamIdFormat.writes(o.team),
         "api" -> ApiIdFormat.writes(o.api),
         "createdAt" -> DateTimeFormat.writes(o.createdAt),
+        "validUntil"-> DateTimeFormat.writes(o.validUntil),
         "by" -> UserIdFormat.writes(o.by),
         "customName" -> o.customName
           .map(id => JsString(id))

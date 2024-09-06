@@ -1072,6 +1072,7 @@ class ApiController(
               apiKey = data.apiKey,
               plan = data.plan,
               createdAt = DateTime.now(),
+              validUntil = DateTime.now(),
               team = data.team,
               api = data.api,
               by = ctx.user.id,

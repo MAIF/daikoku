@@ -59,6 +59,7 @@ case class ApiSubscription(
     apiKey: OtoroshiApiKey, // TODO: add the actual plan at the time of the subscription
     plan: UsagePlanId,
     createdAt: DateTime,
+    validUntil: DateTime,
     team: TeamId,
     api: ApiId,
     by: UserId,
@@ -108,6 +109,7 @@ case class ApiSubscription(
       "team" -> json.TeamIdFormat.writes(team),
       "api" -> json.ApiIdFormat.writes(api),
       "createdAt" -> json.DateTimeFormat.writes(createdAt),
+      "validUntil" -> json.DateTimeFormat.writes(validUntil),
       "customName" -> customName
         .map(id => JsString(id))
         .getOrElse(JsNull)
