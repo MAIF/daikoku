@@ -37,6 +37,21 @@ type ISubscriptionWithChildren = ISubscriptionExtended & {
   children: Array<ISubscriptionExtended>;
 };
 
+const DisplayLink = ({value}: {value: string}) => {
+  const [DisplayLink, setDisplayLink] = useState(false)
+  return (
+    <div>Pour transférer votre souscription à une autre équipe, veuillez suivre les étapes ci-dessous :
+      <ol>
+        <li>Copiez le lien de transfert présenté ci-dessous.</li>
+        <li>Envoyez le lien au responsable de l'équipe à laquelle vous souhaitez transférer la souscription.</li>
+        <li>Le responsable de l'équipe pourra suivre ce lien, sélectionner l'équipe cible, puis valider le transfert.</li>
+      </ol>
+      <span className='a-fake' onClick={() => setDisplayLink(!DisplayLink)}> afficher le lien</span>
+      {DisplayLink && <pre>{value}</pre>}
+    </div>
+  )
+}
+
 export const TeamApiKeysForApi = () => {
   const { isLoading, currentTeam, error } = useTeamBackOffice();
   const [searched, setSearched] = useState('');
@@ -45,7 +60,7 @@ export const TeamApiKeysForApi = () => {
   const params = useParams();
   const { client } = useContext(getApolloContext());
   const { translate, Translation } = useContext(I18nContext);
-  const { confirm, openFormModal } = useContext(ModalContext);
+  const { confirm, openFormModal, openCustomModal } = useContext(ModalContext);
   const queryClient = useQueryClient();
 
   const apiQuery = useQuery({
@@ -265,22 +280,49 @@ export const TeamApiKeysForApi = () => {
     };
 
     const regenerateApiKeySecret = (subscription: ISubscription) => {
-      return confirm({ message: translate('reset.secret.confirm') }).then(
-        (ok) => {
-          if (ok) {
-            Services.regenerateApiKeySecret(
-              currentTeam._id,
-              subscription._id
-            ).then(() => {
-              queryClient.invalidateQueries({
-                queryKey: ['data', 'subscriptions'],
+      return confirm({ message: translate('reset.secret.confirm') })
+        .then(
+          (ok) => {
+            if (ok) {
+              Services.regenerateApiKeySecret(
+                currentTeam._id,
+                subscription._id
+              ).then(() => {
+                queryClient.invalidateQueries({
+                  queryKey: ['data', 'subscriptions'],
+                });
+                toast.success(translate('secret reseted successfully'));
               });
-              toast.success(translate('secret reseted successfully'));
-            });
+            }
+          }
+        );
+    };
+
+    const transferApiKey = (subscription: ISubscription) => {
+      return Services.getSubscriptionTransferLink(currentTeam._id, subscription._id)
+        .then((response) => {
+          if (isError(response)) {
+
+          } else {
+            openCustomModal({
+              title: 'test',
+              content: <DisplayLink value={response.link}/>,
+              actions: (close) => <button className='btn btn-outline-info' onClick={() => {
+                navigator.clipboard
+                  .writeText(response.link)
+                  .then(() => {
+                    toast.info(translate('credential.copy.success'))
+                    close()
+                  })
+                  .catch(() =>
+                    toast.warning(translate('credential.copy.error'))
+                  );
+              }}><i className='fas fa-link me-1' />Copy link</button>
+            })
           }
         }
-      );
-    };
+        )
+    }
 
     if (
       apiQuery.isLoading &&
@@ -405,9 +447,8 @@ export const TeamApiKeysForApi = () => {
                             gracePeriod
                           )
                         }
-                        regenerateSecret={() =>
-                          regenerateApiKeySecret(subscription)
-                        }
+                        regenerateSecret={() => regenerateApiKeySecret(subscription)}
+                        transferKey={() => transferApiKey(subscription)}
                       />
                     );
                   }}
@@ -445,6 +486,7 @@ type ApiKeyCardProps = {
   regenerateSecret: () => void;
   currentTeam: ITeamSimple;
   subscribedApis: Array<IApi>;
+  transferKey: () => void;
 };
 
 const ApiKeyCard = ({
@@ -457,7 +499,8 @@ const ApiKeyCard = ({
   makeUniqueApiKey,
   toggleRotation,
   regenerateSecret,
-  deleteApiKey
+  deleteApiKey,
+  transferKey
 }: ApiKeyCardProps) => {
   const apiKeyValues = {
     apikey: `${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`,
@@ -539,10 +582,10 @@ const ApiKeyCard = ({
       <div className='api-subscription'>
         <div className="api-subscription__container">
           <div className='api-subscription__icon'>
-              <i className={classNames("fa-solid icon", {
-                "fa-key": subscription.children.length === 0,
-                "fa-box": subscription.children.length > 0
-              })} />
+            <i className={classNames("fa-solid icon", {
+              "fa-key": subscription.children.length === 0,
+              "fa-box": subscription.children.length > 0
+            })} />
             <div className='api-subscription__value__type'>
               {subscription.enabled ? translate("subscription.enable.label") : translate("subscription.disable.label")}
               <div className={classNames('dot', {
@@ -667,7 +710,7 @@ const ApiKeyCard = ({
             </span>}
             {!subscription.parent && <span
               className="dropdown-item cursor-pointer danger"
-              onClick={console.debug}
+              onClick={transferKey}
             >
               transferer la subscription
             </span>}

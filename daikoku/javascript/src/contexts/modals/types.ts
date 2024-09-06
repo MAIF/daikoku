@@ -23,6 +23,7 @@ import {
 import { IApiKeySelectModalProps } from './ApiKeySelectModal';
 import { IApiSelectModalProps, IModalProps } from './ApiSelectModal';
 import { CustomSubscriptionData } from './SubscriptionMetadataModal';
+import { ICustomModalProps } from './CustomModal';
 
 export interface IBaseModalProps {
   close: () => void;
@@ -45,7 +46,7 @@ export type TModalContext = {
   openAssetSelectorModal: (p: IAssetSelectorModalProps) => void;
   openApiKeySelectModal: (p: IApiKeySelectModalProps) => void;
   openApiSelectModal: (p: IApiSelectModalProps) => void;
-  openCustomModal: (p: IModalProps) => void;
+  openCustomModal: (p: ICustomModalProps) => void;
   close: () => void;
 };
 export type ConfirmModalProps = {

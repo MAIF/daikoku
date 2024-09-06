@@ -2024,3 +2024,6 @@ export const getSubscriptionsLastUsages = (
     method: 'POST',
     body: JSON.stringify({ subscriptions }),
   });
+
+export const getSubscriptionTransferLink = (teamId: string, subscriptionId: string): PromiseWithError<{link: string}> =>
+  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_transfer`)
