@@ -1452,5 +1452,13 @@
     "subscription.delete.button.label": "Delete",
     "subscription.extract.button.label": "Extract from agg.",
     "subscription.enable.label": "Enabled",
-    "subscription.disable.label": "Disabled"
+    "subscription.disable.label": "Disabled",
+    "subscriptions.hide.link": "Hide link",
+    "subscriptions.display.link": "Display link",
+    "subscriptions.link.explanation.1": "To transfer your subscription to another team, please follow the steps below:",
+    "subscriptions.link.explanation.2": "Copy the transfer link provided below.",
+    "subscriptions.link.explanation.3": "Send the link to the manager of the team to which you want to transfer the subscription.",
+    "subscriptions.link.explanation.4": "The team manager can follow this link, select the target team, and then confirm the transfer.",
+    "subscriptions.copy.link.button.label": "Copy link",
+    "subscriptions.transfer.modal.title": "Transfer API subscription"
 }

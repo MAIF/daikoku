@@ -111,5 +111,19 @@
     font-size: .75rem;
   }
 
+  
 
+
+}
+
+.api-susbcription__display-link {
+  width: 100%;
+  border: 1px solid black;
+  padding: 10px;
+  text-wrap: wrap;
+  word-wrap: break-word;
+  word-break: keep-all;
+
+  background-color: $level2_bg-color;
+  color: $level2_text-color;
 }

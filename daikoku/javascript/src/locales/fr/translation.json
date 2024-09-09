@@ -1452,5 +1452,13 @@
   "subscription.delete.button.label": "Supprimer",
   "subscription.extract.button.label": "Extraire de l'agrégat",
   "subscription.enable.label": "Activé",
-  "subscription.disable.label": "Désactivé"
+  "subscription.disable.label": "Désactivé",
+  "subscriptions.hide.link": "Cacher le lien",
+  "subscriptions.display.link": "Afficher le lien",
+  "subscriptions.link.explanation.1": "Pour transférer votre souscription à une autre équipe, veuillez suivre les étapes ci-dessous :",
+  "subscriptions.link.explanation.2": "Copiez le lien de transfert présenté ci-dessous.",
+  "subscriptions.link.explanation.3": "Envoyez le lien au responsable de l'équipe à laquelle vous souhaitez transférer la souscription.",
+  "subscriptions.link.explanation.4": "Le responsable de l'équipe pourra suivre ce lien, sélectionner l'équipe cible, puis valider le transfert.",
+  "subscriptions.copy.link.button.label": "Copier le lien",
+  "subscriptions.transfer.modal.title": "Transférer une souscription"
 }

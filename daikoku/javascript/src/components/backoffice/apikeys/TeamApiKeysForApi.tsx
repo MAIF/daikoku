@@ -37,17 +37,26 @@ type ISubscriptionWithChildren = ISubscriptionExtended & {
   children: Array<ISubscriptionExtended>;
 };
 
-const DisplayLink = ({value}: {value: string}) => {
+const DisplayLink = ({ value }: { value: string }) => {
   const [DisplayLink, setDisplayLink] = useState(false)
+  const { translate } = useContext(I18nContext);
   return (
-    <div>Pour transférer votre souscription à une autre équipe, veuillez suivre les étapes ci-dessous :
+    <div>{translate("subscriptions.link.explanation.1")}
       <ol>
-        <li>Copiez le lien de transfert présenté ci-dessous.</li>
-        <li>Envoyez le lien au responsable de l'équipe à laquelle vous souhaitez transférer la souscription.</li>
-        <li>Le responsable de l'équipe pourra suivre ce lien, sélectionner l'équipe cible, puis valider le transfert.</li>
+        <li>{translate("subscriptions.link.explanation.2")}</li>
+        <li>{translate("subscriptions.link.explanation.3")}</li>
+        <li>{translate("subscriptions.link.explanation.4")}</li>
       </ol>
-      <span className='a-fake' onClick={() => setDisplayLink(!DisplayLink)}> afficher le lien</span>
-      {DisplayLink && <pre>{value}</pre>}
+      <span className='a-fake' onClick={() => setDisplayLink(!DisplayLink)}>
+        <i className={classNames('me-1 fas', {
+          'fa-chevron-up': DisplayLink,
+          'fa-chevron-down': !DisplayLink,
+        })} />
+        {DisplayLink ? translate('subscriptions.hide.link'): translate('subscriptions.display.link')}
+      </span>
+      {DisplayLink && <div className='api-susbcription__display-link'>
+        {value}
+      </div>}
     </div>
   )
 }
@@ -305,8 +314,8 @@ export const TeamApiKeysForApi = () => {
 
           } else {
             openCustomModal({
-              title: 'test',
-              content: <DisplayLink value={response.link}/>,
+              title: translate("subscriptions.transfer.modal.title"),
+              content: <DisplayLink value={response.link} />,
               actions: (close) => <button className='btn btn-outline-info' onClick={() => {
                 navigator.clipboard
                   .writeText(response.link)
@@ -317,7 +326,7 @@ export const TeamApiKeysForApi = () => {
                   .catch(() =>
                     toast.warning(translate('credential.copy.error'))
                   );
-              }}><i className='fas fa-link me-1' />Copy link</button>
+              }}><i className='fas fa-link me-1' />{translate("subscriptions.copy.link.button.label")}</button>
             })
           }
         }
@@ -648,9 +657,9 @@ const ApiKeyCard = ({
         </div>
         <div className="api-subscriptions__links">
           {translate("subscription.nota.part.1")}
-          <a className='cursor-pointer underline mx-1' href={apiLink}>{translate("subscription.nota.link.api")}</a>
+          <Link className='cursor-pointer underline mx-1' to={apiLink}>{translate("subscription.nota.link.api")}</Link>
           {translate("subscription.nota.part.2")}
-          <a className='cursor-pointer underline mx-1' href={statsLink}>{translate("subscription.nota.link.statistics")}</a>
+          <Link className='cursor-pointer underline mx-1' to={statsLink}>{translate("subscription.nota.link.statistics")}</Link>
         </div>
         <div
           className="dropdown"
