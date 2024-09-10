@@ -1460,5 +1460,14 @@
   "subscriptions.link.explanation.3": "Envoyez le lien au responsable de l'équipe à laquelle vous souhaitez transférer la souscription.",
   "subscriptions.link.explanation.4": "Le responsable de l'équipe pourra suivre ce lien, sélectionner l'équipe cible, puis valider le transfert.",
   "subscriptions.copy.link.button.label": "Copier le lien",
-  "subscriptions.transfer.modal.title": "Transférer une souscription"
+  "subscriptions.transfer.modal.title": "Transférer une souscription",
+  "subscription.retrieve.select.team.modal.title": "Sélectionnez l'équipe destinataire",
+  "subscription.retrieve.select.team.modal.message": "L'équipe %s souhaite transférer sa souscription %s et vous a fourni un lien de transfert. Choisissez l'équipe à laquelle vous souhaitez transférer les droits d'administration pour cette souscription. Seules les équipes dont vous êtes administrateur sont disponibles pour la sélection.",
+  "subscription.retrieve.select.team.button.label": "Selectionner",
+  "subscription.retrieve.confirm.modal.title": "Confirmation du transfert",
+  "subscription.retrieve.confirm.modal.message": "Le transfert de la souscription vers l'équipe %s a été validé. Vous pouvez finaliser cette action en confirmant ci-dessous. Ce transfert accordera à cette équipe les droits d'administration de la souscription.",
+  "subscription.retrieve.confirm.modal.ok.button.label": "Confirmer le transfert",
+  "login.required": "Connexion requise",
+  "subscription.retrieve.login.required.message": "Veuillez vous connecter pour continuer. Vous devez être authentifié pour accéder à cette fonctionnalité.",
+  "subscription.retrieve.token.unavalaible": "Le jeton n'est plus valable"
 }

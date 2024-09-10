@@ -10,11 +10,19 @@ import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest,
+  DaikokuActionMaybeWithoutUser
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.audit.config.ElasticAnalyticsConfig
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Private
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
@@ -2077,16 +2085,18 @@ class ApiController(
           cypheredInfos <- EitherT.fromOption[Future][AppError, String](ctx.request.getQueryString("token"), AppError.EntityNotFound("token"))
           infosAsString <- EitherT.pure[Future, AppError](decrypt(env.config.cypherSecret, cypheredInfos, ctx.tenant))
           infos <- EitherT.pure[Future, AppError](Json.parse(infosAsString))
-          _ <- EitherT.cond[Future][AppError, Unit]((infos \ "createdOn").as(DateTimeFormat).plusDays(1).isBefore(DateTime.now()), (), AppError.ForbiddenAction) //give reason
+          _ <- EitherT.cond[Future][AppError, Unit]((infos \ "createdOn").as(DateTimeFormat).plusDays(1).isAfter(DateTime.now()), (), AppError.ForbiddenAction) //give reason
           subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdNotDeleted((infos \ "subscription").as[String]), AppError.SubscriptionNotFound)
+          team <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.team), AppError.TeamNotFound)
           usagePlan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.plan), AppError.PlanNotFound)
           api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.api), AppError.ApiNotFound)
         } yield {
           ctx.setCtxValue("subscription.id", subscription.id.value)
           Ok(Json.obj(
-            "subscription" -> subscription.id.asJson,
-            "api" -> api.id.asJson,
-            "plan" -> usagePlan.id.asJson
+            "subscription" -> subscription.asJson,
+            "api" -> api.asJson,
+            "plan" -> usagePlan.asJson,
+            "ownerTeam" -> team.asJson
           ))
         })
           .leftMap(_.render())
@@ -2112,7 +2122,7 @@ class ApiController(
             "by" -> ctx.user.id.asJson
           )
           cipheredToken = encrypt(env.config.cypherSecret, Json.stringify(json), ctx.tenant)
-          link <- EitherT.pure[Future, AppError](s"${env.getDaikokuUrl(ctx.tenant, "/api/me/subscription/_retrieve")}?token=$cipheredToken")
+          link <- EitherT.pure[Future, AppError](s"${env.getDaikokuUrl(ctx.tenant, "/subscriptions/_retrieve")}?token=$cipheredToken")
         } yield Ok(Json.obj("link" -> link)))
           .leftMap(_.render())
           .merge
@@ -2139,9 +2149,6 @@ class ApiController(
           childSubscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("parent" -> subscription.id.asJson)))
           childApis <- EitherT.liftF[Future, AppError, Seq[Api]](env.dataStore.apiRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(childSubscriptions.map(_.api.asJson))))))
           childPlans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(childSubscriptions.map(_.plan.asJson))))))
-          log = AppLogger.info(s"${childPlans.map(_.id.value).mkString("::")}")
-          log2 = AppLogger.info(s"${childApis.map(_.id.value).mkString("::")}")
-          log3 = AppLogger.info(s"${childSubscriptions.map(_.id.value).mkString("::")}")
           _ <- EitherT.cond[Future][AppError, Unit](childApis.forall(a => a.visibility == ApiVisibility.Public || a.authorizedTeams.contains(team.id)), (), AppError.Unauthorized)
           _ <- EitherT.cond[Future][AppError, Unit](childPlans.forall(p => p.visibility == UsagePlanVisibility.Public || p.authorizedTeams.contains(team.id)), (), AppError.Unauthorized)
           teamSubscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("team" -> team.id.asJson)))

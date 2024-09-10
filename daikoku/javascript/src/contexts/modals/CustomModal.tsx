@@ -42,7 +42,9 @@ export const CustomModal = ({
         <h5 className="modal-title">{title}</h5>
         <button type="button" className="btn-close" aria-label="Close" onClick={() => close()} />
       </div>
-      {content}
+      <div className="modal-body">
+        {content}
+      </div>
       {actions && (
         <div className="modal-footer">
           {actions(close)}

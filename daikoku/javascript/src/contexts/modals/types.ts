@@ -216,6 +216,7 @@ export interface ISaverOrCancelModalProps {
 
 export interface ILoginOrRegisterModalProps {
   tenant: ITenant;
+  title?: string;
   message?: string;
   showOnlyMessage?: boolean;
 }

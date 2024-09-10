@@ -1460,5 +1460,14 @@
     "subscriptions.link.explanation.3": "Send the link to the manager of the team to which you want to transfer the subscription.",
     "subscriptions.link.explanation.4": "The team manager can follow this link, select the target team, and then confirm the transfer.",
     "subscriptions.copy.link.button.label": "Copy link",
-    "subscriptions.transfer.modal.title": "Transfer API subscription"
+    "subscriptions.transfer.modal.title": "Transfer API subscription",
+    "subscription.retrieve.select.team.modal.title": "Select the Receiving Team",
+    "subscription.retrieve.select.team.modal.message": "The team %s wants to transfer its subscription %s and has provided you with a transfer link.Choose the team to which you want to transfer the admin rights for this subscription. Only the teams where you are an administrator are available for selection.",
+    "subscription.retrieve.select.team.button.label": "Select team",
+    "subscription.retrieve.confirm.modal.title": "Transfer Confirmation",
+    "subscription.retrieve.confirm.modal.message": "The transfer of the subscription to the team %s has been validated. You can finalize this action by confirming below. This transfer will grant the team admin rights for the subscription.",
+    "subscription.retrieve.confirm.modal.ok.button.label": "Confirm transfer",
+    "login.required": "Login required",
+    "subscription.retrieve.login.required.message": "Please log in to continue. You need to be authenticated to access this feature.",
+    "subscription.retrieve.token.unavalaible": "token unavailable"
 }

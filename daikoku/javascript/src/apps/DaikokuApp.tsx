@@ -14,7 +14,8 @@ import {
   MaybeHomePage,
   MyHome,
   TeamHome,
-  AtomicDesign
+  AtomicDesign,
+  SubscriptionRetrieve
 } from '../components/frontend';
 
 import { MessagesProvider, MyProfile, NotificationList } from '../components/backoffice';
@@ -449,6 +450,14 @@ export const DaikokuApp = () => {
                     element={
                       <FrontOfficeRoute>
                         <TeamHome />
+                      </FrontOfficeRoute>
+                    }
+                  />
+                  <Route 
+                    path='/subscriptions/_retrieve'
+                    element={
+                      <FrontOfficeRoute>
+                        <SubscriptionRetrieve />
                       </FrontOfficeRoute>
                     }
                   />

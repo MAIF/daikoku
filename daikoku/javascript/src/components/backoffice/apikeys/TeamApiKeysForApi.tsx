@@ -143,6 +143,7 @@ export const TeamApiKeysForApi = () => {
     };
 
     const toggleApiKey = (subscription: ISubscription) => {
+      console.debug("toggle")
       return Services.archiveApiKey(
         currentTeam._id,
         subscription._id,
@@ -728,9 +729,9 @@ const ApiKeyCard = ({
                 disabled: subscription.parent && !subscription.parentUp
               })}
               onClick={() => {
-                if (subscription.parent && subscription.parentUp) {
-                  toggle
-                }
+                // if (subscription.parent && subscription.parentUp) {
+                  toggle()
+                // }
               }}
             >
               {subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
