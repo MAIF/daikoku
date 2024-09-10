@@ -94,21 +94,19 @@ export const MyHome = () => {
     return (
       <main role="main">
         <section className="organisation__header col-12 mb-4 p-3">
-          <div className="container">
-            <div className="row text-center">
-              <div className="col-sm-4">
-                <img
-                  className="organisation__avatar"
-                  src={tenant.logo ? tenant.logo : '/assets/images/daikoku.svg'}
-                  alt="avatar"
-                />
-              </div>
-              <div className="col-sm-7 d-flex flex-column justify-content-center">
-                <h1 className="jumbotron-heading">
-                  {tenant.title ? tenant.title : translate('Your APIs center')}
-                </h1>
-                <Description description={tenant.description} />
-              </div>
+          <div className="row text-center">
+            <div className="col-sm-4">
+              <img
+                className="organisation__avatar"
+                src={tenant.logo ? tenant.logo : '/assets/images/daikoku.svg'}
+                alt="avatar"
+              />
+            </div>
+            <div className="col-sm-7 d-flex flex-column justify-content-center">
+              <h1 className="jumbotron-heading">
+                {tenant.title ? tenant.title : translate('Your APIs center')}
+              </h1>
+              <Description description={tenant.description} />
             </div>
           </div>
         </section>

@@ -264,50 +264,52 @@ export const TeamList = () => {
 
   return (<Can I={manage} a={TENANT} dispatchError>
     <div className="row">
-      <div className="d-flex justify-content-between align-items-center">
-        <h1>
-          <Translation i18nkey="Teams">Teams</Translation>
-        </h1>
-        <div className="col-5">
-          <input
-            placeholder={translate('Find a team')}
-            className="form-control"
-            onChange={(e) => {
-              debouncedResults(e)
-            }} />
+      <div className="col">
+        <div className="d-flex justify-content-between align-items-center">
+          <h1>
+            <Translation i18nkey="Teams">Teams</Translation>
+          </h1>
+          <div className="col-5">
+            <input
+              placeholder={translate('Find a team')}
+              className="form-control"
+              onChange={(e) => {
+                debouncedResults(e)
+              }} />
+          </div>
         </div>
-      </div>
-      {!dataRequest.isLoading && !dataRequest.isError && dataRequest.data &&
-        <div className="d-flex flex-wrap section">{
-          dataRequest.data.teams.map((team) => {
-            return (
-              <AvatarWithAction key={team._id} avatar={team.avatar} infos={<>
-                <span className=" section team__name text-truncate">{team.name}</span>
-              </>} actions={actions(team)} />)
-          })}
-          <div className="avatar-with-action new-team-button">
-            <div className="container">
-              <div className="avatar__container"
-                title={translate('Create a new team')}
-                onClick={createNewTeam}><Plus /></div>
+        {!dataRequest.isLoading && !dataRequest.isError && dataRequest.data &&
+          <div className="d-flex flex-wrap section">{
+            dataRequest.data.teams.map((team) => {
+              return (
+                <AvatarWithAction key={team._id} avatar={team.avatar} infos={<>
+                  <span className=" section team__name text-truncate">{team.name}</span>
+                </>} actions={actions(team)} />)
+            })}
+            <div className="avatar-with-action new-team-button">
+              <div className="container">
+                <div className="avatar__container"
+                  title={translate('Create a new team')}
+                  onClick={createNewTeam}><Plus /></div>
+              </div>
             </div>
-          </div>
-          <div className="apis__pagination d-flex justify-content-center align-items-center" style={{ width: '100%' }}>
-            <Pagination
-              previousLabel={translate('Previous')}
-              nextLabel={translate('Next')}
-              breakLabel={'...'}
-              breakClassName={'break'}
-              pageCount={Math.ceil(dataRequest.data.total / limit)}
-              marginPagesDisplayed={1}
-              pageRangeDisplayed={5}
-              onPageChange={(data) => handlePageClick(data)}
-              containerClassName={'pagination'}
-              pageClassName={'page-selector'}
-              forcePage={page}
-              activeClassName={'active'} />
-          </div>
-        </div>}
+            <div className="apis__pagination d-flex justify-content-center align-items-center" style={{ width: '100%' }}>
+              <Pagination
+                previousLabel={translate('Previous')}
+                nextLabel={translate('Next')}
+                breakLabel={'...'}
+                breakClassName={'break'}
+                pageCount={Math.ceil(dataRequest.data.total / limit)}
+                marginPagesDisplayed={1}
+                pageRangeDisplayed={5}
+                onPageChange={(data) => handlePageClick(data)}
+                containerClassName={'pagination'}
+                pageClassName={'page-selector'}
+                forcePage={page}
+                activeClassName={'active'} />
+            </div>
+          </div>}
+      </div>
     </div>
   </Can>);
 };
