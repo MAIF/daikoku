@@ -558,7 +558,7 @@ test('Filter API List', async ({ page, request }) => {
   await page.getByRole('option', { name: 'external' }).click();
   await expect(page.locator('.preview')).toContainText('1 result categorized in external');
   await page.getByText('clear filter').click();
-  await page.getByPlaceholder('Search your API...').fill('test');
+  await page.getByPlaceholder('Search your API').fill('test');
   await expect(page.locator('.preview')).toContainText('2 results matching test');
   await page.locator('.reactSelect__indicator').first().click();
   await page.getByRole('option', { name: 'Testers' }).click();
