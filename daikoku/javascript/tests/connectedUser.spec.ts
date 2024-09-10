@@ -463,7 +463,7 @@ test('do search', async ({ page, request }) => {
   await expect(page.locator('.navbar-panel.opened .block__entry__link')).toHaveCount(1)
   await expect(page.getByRole('link', { name: 'Testers' })).toBeVisible();
   await page.getByRole('link', { name: 'Testers' }).click();
-  await expect(page.getByRole('heading', { name: 'In progress demands' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'My Pending Requests' })).toBeVisible();
 
   //search an API
   await page.locator('.notification-link').first().click();
