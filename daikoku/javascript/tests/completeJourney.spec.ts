@@ -41,7 +41,7 @@ test('test a complete user journey', async ({ page }) => {
   //create a new API
   await page.locator('div:nth-child(4) > .notification-link').first().click();
   await page.locator('span').filter({ hasText: 'API' }).first().click();
-  await page.locator('div').filter({ hasText: /^The A team$/ }).click();
+  await page.locator('div').filter({ hasText: /^The A team$/ }).nth(1).click();
 
   await page.getByRole('button', { name: 'Published' }).click();
   await page.getByPlaceholder('New Api').fill('Test API');

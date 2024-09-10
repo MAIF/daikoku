@@ -648,19 +648,29 @@ object CommonServices {
       env: Env,
       ec: ExecutionContext
   ) = {
+
+    val typeFilter = if (ctx.tenant.subscriptionSecurity.isDefined
+      &&  ctx.tenant.subscriptionSecurity.exists(identity)) {
+      Json.obj(
+        "type" -> Json.obj("$ne" ->TeamType.Personal.name)
+      )
+    } else {
+      Json.obj()
+    }
     _UberPublicUserAccess(
       AuditTrailEvent("@{user.name} has accessed his team list")
     )(ctx) {
       (if (ctx.user.isDaikokuAdmin)
          env.dataStore.teamRepo
            .forTenant(ctx.tenant)
-           .findAllNotDeleted()
+           .findNotDeleted(typeFilter)
        else
          env.dataStore.teamRepo
            .forTenant(ctx.tenant)
-           .findNotDeleted(Json.obj("users.userId" -> ctx.user.id.value)))
+           .findNotDeleted(Json.obj("users.userId" -> ctx.user.id.value) ++ typeFilter))
         .map(teams =>
-          teams.sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
+          teams
+            .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
         )
     }
   }
