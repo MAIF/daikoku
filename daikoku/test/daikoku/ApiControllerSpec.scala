@@ -1881,13 +1881,8 @@ class ApiControllerSpec()
       ownerSubs.length mustBe 1
       ownerSubs.head.id mustBe subscription.id
 
-      //eventuellement verifier les metadata de l'apk pour voir la team
-      //tester les cas non passant :
-      //1: l equipe a deja une souscription et la securité est desactivé
-      //2: l equipe a deja une souscription (enfant) et la securité est desactivé
-      //3: l equipe n'a pas acces a l'api
-      //4: l equipe  n'a pas acces a une api enfant
-      //5: la souscription est enfant
+      //TODO: verifier le nouveau nom de la subscription
+
     }
 
     "not transfer child subscriptions to another team but parent subscription" in {

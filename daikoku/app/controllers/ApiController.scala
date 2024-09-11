@@ -2141,33 +2141,17 @@ class ApiController(
         AuditTrailEvent(s"@{user.name} has ask to transfer subscription @{subscriptionId} to team @{teamId}"))(teamId, ctx) { team => {
 
         (for {
-          transferToken <- EitherT.pure[Future, AppError](decrypt(env.config.cypherSecret, (ctx.request.body \ "token").as[String], ctx.tenant))
-          transfer <- EitherT.fromOptionF[Future, AppError, ApiSubscriptionTransfer](env.dataStore.apiSubscriptionTransferRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("token" -> transferToken)),
-            AppError.Unauthorized)
-          _ <- EitherT.cond[Future][AppError, Unit](transfer.subscription.value == subscriptionId, (), AppError.EntityConflict("Subscription"))
-          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdNotDeleted(transfer.subscription), AppError.SubscriptionNotFound)
-          _ <- EitherT.cond[Future][AppError, Unit](subscription.parent.isEmpty, (), AppError.EntityConflict("Subscription is part of aggregation"))
-          api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.api), AppError.ApiNotFound)
-          plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.plan), AppError.PlanNotFound)
-          _ <- EitherT.cond[Future][AppError, Unit](api.visibility == ApiVisibility.Public || api.authorizedTeams.contains(team.id), (), AppError.Unauthorized)
-          _ <- EitherT.cond[Future][AppError, Unit](plan.visibility == UsagePlanVisibility.Public || plan.authorizedTeams.contains(team.id), (), AppError.Unauthorized)
-          childSubscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("parent" -> subscription.id.asJson)))
-          childApis <- EitherT.liftF[Future, AppError, Seq[Api]](env.dataStore.apiRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(childSubscriptions.map(_.api.asJson))))))
-          childPlans <- EitherT.liftF[Future, AppError, Seq[UsagePlan]](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(childSubscriptions.map(_.plan.asJson))))))
-          _ <- EitherT.cond[Future][AppError, Unit](childApis.forall(a => a.visibility == ApiVisibility.Public || a.authorizedTeams.contains(team.id)), (), AppError.Unauthorized)
-          _ <- EitherT.cond[Future][AppError, Unit](childPlans.forall(p => p.visibility == UsagePlanVisibility.Public || p.authorizedTeams.contains(team.id)), (), AppError.Unauthorized)
-          teamSubscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("team" -> team.id.asJson)))
-          _ <- EitherT.cond[Future][AppError, Unit]((childPlans :+ plan).forall(p => p.allowMultipleKeys.getOrElse(false) || !teamSubscriptions.exists(s => s.plan == p.id)), (), AppError.EntityConflict("plan not allow multiple subscription"))
-          _ <- apiService.transferSubscription(team, subscription, childSubscriptions, ctx.tenant, ctx.user)
-          otoroshiSettings <- EitherT.fromOption[Future][AppError, OtoroshiSettings](plan.otoroshiTarget.flatMap(target => ctx.tenant.otoroshiSettings.find(_.id == target.otoroshiSettings)), AppError.EntityNotFound("Otoroshi settings"))
-          apk <- EitherT[Future, AppError, ActualOtoroshiApiKey](otoroshiClient.getApikey(subscription.apiKey.clientId)(otoroshiSettings))
-          newApk = apk.copy(clientName = s"daikoku-api-key-${api.humanReadableId}-${plan.customName
-            .getOrElse(plan.typeName)
-            .urlPathSegmentSanitized}-${team.humanReadableId}-${System
-            .currentTimeMillis()}-${api.currentVersion.value}",
-            metadata = apk.metadata + ("daikoku_transfer_to_team_id" -> team.id.value) + ("daikoku_transfer_to_team" -> team.name))
-          _ <- EitherT[Future, AppError, ActualOtoroshiApiKey](otoroshiClient.updateApiKey(newApk)(otoroshiSettings))
-
+          extract <- apiService.checkAndExtractTransferLink(ctx.tenant, subscriptionId, (ctx.request.body \ "token").as[String], team)
+          otoroshiSettings <- EitherT.fromOption[Future][AppError, OtoroshiSettings](extract.plan.otoroshiTarget.flatMap(target => ctx.tenant.otoroshiSettings.find(_.id == target.otoroshiSettings)), AppError.EntityNotFound("Otoroshi settings"))
+          _ <- apiService.transferSubscription(
+            newTeam = team,
+            subscription = extract.subscription,
+            childs = extract.childSubscriptions,
+            tenant = ctx.tenant,
+            user = ctx.user,
+            api = extract.api,
+            plan = extract.plan,
+            otoroshiSettings = otoroshiSettings)
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())
           .merge
