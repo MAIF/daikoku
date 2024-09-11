@@ -578,7 +578,7 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val result = (resp.json \ "data" \ "myTeams").as[JsArray]
-      result.value.length mustBe 3
+      result.value.length mustBe 2
     }
 
     "see one of his teams" in {
@@ -1750,7 +1750,7 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val result = (resp.json \ "data" \ "myTeams").as[JsArray]
-      result.value.length mustBe 2
+      result.value.length mustBe 1
     }
 
     "see one of his teams" in {
@@ -2367,7 +2367,7 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val result = (resp.json \ "data" \ "myTeams").as[JsArray]
-      result.value.length mustBe 3
+      result.value.length mustBe 2
     }
 
     "see one of his teams" in {
