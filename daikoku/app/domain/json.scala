@@ -4761,6 +4761,38 @@ object json {
       )
   }
 
+  val ApiSubscriptionTransferFormat = new Format[ApiSubscriptionTransfer] {
+
+    override def reads(json: JsValue): JsResult[ApiSubscriptionTransfer] =
+      Try {
+        ApiSubscriptionTransfer(
+          id = (json \ "_id").as(DatastoreIdFormat),
+          tenant = (json \ "_tenant").as(TenantIdFormat),
+          deleted = (json \ "_deleted").as[Boolean],
+          token = (json \ "token").as[String],
+          subscription = (json \ "subscription").as(ApiSubscriptionIdFormat),
+          by = (json \ "by").as(UserIdFormat),
+          date = (json \ "date").as(DateTimeFormat)
+        )
+      } match {
+        case Failure(e) =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+        case Success(value) => JsSuccess(value)
+      }
+
+    override def writes(o: ApiSubscriptionTransfer): JsValue =
+      Json.obj(
+        "_id" -> o.id.asJson,
+        "_tenant" -> o.tenant.asJson,
+        "_deleted" -> o.deleted,
+        "token" -> o.token,
+        "subscription" -> o.subscription.asJson,
+        "by" -> o.by.asJson,
+        "date" -> DateTimeFormat.writes(o.date)
+      )
+  }
+
   val SetOtoroshiServicesIdFormat =
     Format(
       Reads.set(OtoroshiServiceIdFormat),

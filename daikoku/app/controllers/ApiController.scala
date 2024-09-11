@@ -2083,10 +2083,11 @@ class ApiController(
 
         (for {
           cypheredInfos <- EitherT.fromOption[Future][AppError, String](ctx.request.getQueryString("token"), AppError.EntityNotFound("token"))
-          infosAsString <- EitherT.pure[Future, AppError](decrypt(env.config.cypherSecret, cypheredInfos, ctx.tenant))
-          infos <- EitherT.pure[Future, AppError](Json.parse(infosAsString))
-          _ <- EitherT.cond[Future][AppError, Unit]((infos \ "createdOn").as(DateTimeFormat).plusDays(1).isAfter(DateTime.now()), (), AppError.ForbiddenAction) //give reason
-          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdNotDeleted((infos \ "subscription").as[String]), AppError.SubscriptionNotFound)
+          transferToken <- EitherT.pure[Future, AppError](decrypt(env.config.cypherSecret, cypheredInfos, ctx.tenant))
+          transfer <- EitherT.fromOptionF[Future, AppError, ApiSubscriptionTransfer](env.dataStore.apiSubscriptionTransferRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("token" -> transferToken)),
+            AppError.Unauthorized)
+          _ <- EitherT.cond[Future][AppError, Unit](transfer.date.plusDays(1).isAfter(DateTime.now()), (), AppError.ForbiddenAction) //give reason
+          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdNotDeleted(transfer.subscription), AppError.SubscriptionNotFound)
           team <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.team), AppError.TeamNotFound)
           usagePlan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.plan), AppError.PlanNotFound)
           api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.api), AppError.ApiNotFound)
@@ -2115,13 +2116,17 @@ class ApiController(
             AppError.SubscriptionNotFound)
           _ <- EitherT.cond[Future][AppError, Unit](subscription.parent.isEmpty, (), AppError.EntityConflict("Subscription is part of aggregation"))
 
-          json = Json.obj(
-            "tenant" -> ctx.tenant.id.asJson,
-            "subscription" -> subscription.id.asJson,
-            "createdOn" -> DateTime.now().getMillis,
-            "by" -> ctx.user.id.asJson
+          transfer = ApiSubscriptionTransfer(
+            id = DatastoreId(IdGenerator.token(16)),
+            tenant = ctx.tenant.id,
+            token = IdGenerator.token,
+            subscription = subscription.id,
+            by = ctx.user.id,
+            date = DateTime.now()
           )
-          cipheredToken = encrypt(env.config.cypherSecret, Json.stringify(json), ctx.tenant)
+          cipheredToken = encrypt(env.config.cypherSecret, transfer.token, ctx.tenant)
+          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionTransferRepo.forTenant(ctx.tenant).delete(Json.obj("subscription" -> subscription.id.asJson)))
+          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionTransferRepo.forTenant(ctx.tenant).save(transfer))
           link <- EitherT.pure[Future, AppError](s"${env.getDaikokuUrl(ctx.tenant, "/subscriptions/_retrieve")}?token=$cipheredToken")
         } yield Ok(Json.obj("link" -> link)))
           .leftMap(_.render())
@@ -2136,11 +2141,11 @@ class ApiController(
         AuditTrailEvent(s"@{user.name} has ask to transfer subscription @{subscriptionId} to team @{teamId}"))(teamId, ctx) { team => {
 
         (for {
-          token <- EitherT.fromOption[Future][AppError, String]((ctx.request.body \"token").asOpt[String], AppError.EntityNotFound("token"))
-          infos <- EitherT.pure[Future, AppError](Json.parse(Cypher.decrypt(env.config.cypherSecret, token, ctx.tenant)))
-          subscriptionFromInfo = (infos \ "subscription").as[String]
-          _ <- EitherT.cond[Future][AppError, Unit](subscriptionFromInfo == subscriptionId, (), AppError.EntityConflict("Subscription"))
-          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscriptionFromInfo), AppError.SubscriptionNotFound)
+          transferToken <- EitherT.pure[Future, AppError](decrypt(env.config.cypherSecret, (ctx.request.body \ "token").as[String], ctx.tenant))
+          transfer <- EitherT.fromOptionF[Future, AppError, ApiSubscriptionTransfer](env.dataStore.apiSubscriptionTransferRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("token" -> transferToken)),
+            AppError.Unauthorized)
+          _ <- EitherT.cond[Future][AppError, Unit](transfer.subscription.value == subscriptionId, (), AppError.EntityConflict("Subscription"))
+          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdNotDeleted(transfer.subscription), AppError.SubscriptionNotFound)
           _ <- EitherT.cond[Future][AppError, Unit](subscription.parent.isEmpty, (), AppError.EntityConflict("Subscription is part of aggregation"))
           api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.api), AppError.ApiNotFound)
           plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.plan), AppError.PlanNotFound)

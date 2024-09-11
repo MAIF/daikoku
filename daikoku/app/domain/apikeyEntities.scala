@@ -337,3 +337,14 @@ case class StepValidator(
 ) extends CanJson[StepValidator] {
   override def asJson: JsValue = json.StepValidatorFormat.writes(this)
 }
+
+case class ApiSubscriptionTransfer(
+    id: DatastoreId,
+    tenant: TenantId,
+    deleted: Boolean = false,
+    token: String,
+    subscription: ApiSubscriptionId,
+    date: DateTime,
+    by: UserId) extends CanJson[ApiSubscriptionTransfer] {
+  override def asJson: JsValue = json.ApiSubscriptionTransferFormat.writes(this)
+}
