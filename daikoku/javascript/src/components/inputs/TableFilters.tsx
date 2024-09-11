@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sliders } from 'react-feather';
+import Sliders from 'react-feather/dist/icons/sliders';
 
 import { SwitchButton } from './Switch';
 

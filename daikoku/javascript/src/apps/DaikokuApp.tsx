@@ -48,6 +48,7 @@ import { I18nContext } from '../contexts/i18n-context';
 import { MessagesEvents } from '../services/messages';
 import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
 import { AnonymousReporting } from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
+import { RightPanel } from '../components/utils/sidebar/RightPanel';
 
 export const DaikokuApp = () => {
   const { connectedUser, tenant } = useContext(GlobalContext)
@@ -147,6 +148,7 @@ export const DaikokuApp = () => {
           <ModalProvider>
             <div className="d-flex flex-row">
               <SideBar />
+              <RightPanel />
               <div className="wrapper flex-grow-1">
                 <Routes>
                   <Route

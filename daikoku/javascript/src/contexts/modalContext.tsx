@@ -26,6 +26,7 @@ import {
   IContactModalComponentProps,
   IFormModalProps,
   ILoginOrRegisterModalProps,
+  IRightPanelProps,
   ISaverOrCancelModalProps,
   ITeamInvitationModalProps,
   PromptModalProps,
@@ -56,13 +57,17 @@ const init: TModalContext = {
   openApiSelectModal: () => { },
   openApiKeySelectModal: () => { },
   openCustomModal: () => {},
-  close: () => {}
+  close: () => {},
+  openRightPanel: () => {},
+  closeRightPanel: () => {},
+  rightPanelContent: undefined
+
 }
 
 export const ModalContext = React.createContext<TModalContext>(init);
 
 export const ModalProvider = (props: { children: JSX.Element | Array<JSX.Element> }) => {
-  const { open, close, modal, modalContent } = useModal();
+  const { open, close, modal, modalContent, openRightPanel, closeRightPanel, rightPanelContent } = useModal();
 
   const alert = (props: AlertModalProps) => new Promise<void>((success) => {
     open(<Alert
@@ -143,7 +148,10 @@ export const ModalProvider = (props: { children: JSX.Element | Array<JSX.Element
       openApiSelectModal,
       openApiKeySelectModal,
       openCustomModal,
-      close
+      close,
+      closeRightPanel,
+      openRightPanel,
+      rightPanelContent
     }}>
       <Modal modal={modal} modalContent={modalContent} />
       {props.children}
@@ -181,6 +189,7 @@ const Modal = ({ modal, modalContent }) => {
 const useModal = () => {
   const [modal, setModal] = useState(false);
   const [modalContent, setModalContent] = useState<JSX.Element>();
+  const [rightPanelContent, setRightPanelContent] = useState<IRightPanelProps>()
 
   const open = (content: JSX.Element) => {
     setModal(true)
@@ -191,5 +200,14 @@ const useModal = () => {
     setModalContent(undefined)
   };
 
-  return { modal, modalContent, setModalContent, open, close };
-};
+  const closeRightPanel = () => {
+    setRightPanelContent(undefined)
+  }
+
+  const openRightPanel = (p: IRightPanelProps) => {
+    console.debug({p})
+    setRightPanelContent(p)
+  }
+
+  return { modal, modalContent, setModalContent, open, close, closeRightPanel, openRightPanel, rightPanelContent };
+}
