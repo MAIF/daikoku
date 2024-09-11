@@ -2157,8 +2157,17 @@ class ApiController(
           _ <- EitherT.cond[Future][AppError, Unit](childApis.forall(a => a.visibility == ApiVisibility.Public || a.authorizedTeams.contains(team.id)), (), AppError.Unauthorized)
           _ <- EitherT.cond[Future][AppError, Unit](childPlans.forall(p => p.visibility == UsagePlanVisibility.Public || p.authorizedTeams.contains(team.id)), (), AppError.Unauthorized)
           teamSubscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findNotDeleted(Json.obj("team" -> team.id.asJson)))
-          - <- EitherT.cond[Future][AppError, Unit]((childPlans :+ plan).forall(p => p.allowMultipleKeys.getOrElse(false) || !teamSubscriptions.exists(s => s.plan == p.id)), (), AppError.EntityConflict("plan not allow multiple subscription"))
+          _ <- EitherT.cond[Future][AppError, Unit]((childPlans :+ plan).forall(p => p.allowMultipleKeys.getOrElse(false) || !teamSubscriptions.exists(s => s.plan == p.id)), (), AppError.EntityConflict("plan not allow multiple subscription"))
           _ <- apiService.transferSubscription(team, subscription, childSubscriptions, ctx.tenant, ctx.user)
+          otoroshiSettings <- EitherT.fromOption[Future][AppError, OtoroshiSettings](plan.otoroshiTarget.flatMap(target => ctx.tenant.otoroshiSettings.find(_.id == target.otoroshiSettings)), AppError.EntityNotFound("Otoroshi settings"))
+          apk <- EitherT[Future, AppError, ActualOtoroshiApiKey](otoroshiClient.getApikey(subscription.apiKey.clientId)(otoroshiSettings))
+          newApk = apk.copy(clientName = s"daikoku-api-key-${api.humanReadableId}-${plan.customName
+            .getOrElse(plan.typeName)
+            .urlPathSegmentSanitized}-${team.humanReadableId}-${System
+            .currentTimeMillis()}-${api.currentVersion.value}",
+            metadata = apk.metadata + ("daikoku_transfer_to_team_id" -> team.id.value) + ("daikoku_transfer_to_team" -> team.name))
+          _ <- EitherT[Future, AppError, ActualOtoroshiApiKey](otoroshiClient.updateApiKey(newApk)(otoroshiSettings))
+
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())
           .merge
