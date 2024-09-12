@@ -348,7 +348,7 @@ export const TeamApiKeysForApi = () => {
                   &nbsp;
                   <Link
                     to={`/${apiTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`}
-                    className="cursor-pointer"
+                    className="cursor-pointer underline"
                   >{api.name}</Link>
                 </h1>
               </div>
