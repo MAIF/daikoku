@@ -65,7 +65,7 @@ test('[public tenant] - external user can join a team', async ({ page }) => {
   await page.getByRole('link', { name: 'Access to the notifications' }).click();
   await expect(page.getByText('Admin, as admin of Consumers')).toBeVisible();
   await page.getByRole('link', { name: 'Accept' }).click();
-  await page.getByRole('link', { name: 'Go home' }).click();
+  await page.getByRole('link', { name: 'APIs list' }).click();
   await expect(page.getByText('Consumers')).toBeVisible();
 })
 
@@ -123,7 +123,7 @@ test('[private tenant] - external user can join a team', async ({ page, request 
   await page.getByRole('link', { name: 'Access to the notifications' }).click();
   await expect(page.getByText('Admin, as admin of Consumers')).toBeVisible();
   await page.getByRole('link', { name: 'Accept' }).click();
-  await page.getByRole('link', { name: 'Go home' }).click();
+  await page.getByRole('link', { name: 'APIs list' }).click();
   await expect(page.getByText('Consumers')).toBeVisible();
 })
 
@@ -185,7 +185,7 @@ test('[public tenant] - external user can signup', async ({ page }) => {
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Create an account' }).click();
   await page.getByLabel('Name').fill('fifou');
-  await page.getByLabel('Email address').fill('fifou@foo.bar');
+  await page.locator(".signup-form").getByLabel('Email address').fill('fifou@foo.bar');
   await page.locator('form.signup-form input[name="password"]').fill('Pa$$w0rd');
   await page.getByLabel('Confirm password').fill('Pa$$w0rd');
   await page.getByRole('button', { name: 'Create account' }).click();
@@ -260,7 +260,7 @@ test('[private tenant] - unlogged user can accept subscription demand', async ({
   await page.getByText('Consumers').click();
   await page.getByText('API keys').click();
   await page.getByRole('row', { name: 'test API 2.0.0' }).getByLabel('View APIkeys').click();
-  await expect(page.locator('.card-header')).toContainText('not test plan');
+  await expect(page.locator('.api-subscription__infos__name')).toContainText('not test plan');
 })
 //anonymous user can accept demand
 test('[public tenant] - unlogged user can accept subscription demand', async ({ page, request}) => {
@@ -308,5 +308,5 @@ test('[public tenant] - unlogged user can accept subscription demand', async ({ 
   await page.getByText('Consumers').click();
   await page.getByText('API keys').click();
   await page.getByRole('row', { name: 'test API 2.0.0' }).getByLabel('View APIkeys').click();
-  await expect(page.locator('.card-header')).toContainText('not test plan');
+  await expect(page.locator('.api-subscription__infos__name')).toContainText('not test plan');
 })
