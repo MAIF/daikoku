@@ -1,6 +1,6 @@
 import classNames from 'classnames';
 import { useContext, useEffect, useState } from 'react';
-import { Send } from 'react-feather';
+import Send from 'react-feather/dist/icons/send';
 
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { GlobalContext } from '../../../../contexts/globalContext';

@@ -23,9 +23,15 @@ import {
 import { IApiKeySelectModalProps } from './ApiKeySelectModal';
 import { IApiSelectModalProps, IModalProps } from './ApiSelectModal';
 import { CustomSubscriptionData } from './SubscriptionMetadataModal';
+import { ICustomModalProps } from './CustomModal';
 
 export interface IBaseModalProps {
   close: () => void;
+}
+
+export type IRightPanelProps = {
+  title: string,
+  content: JSX.Element
 }
 
 export type TModalContext = {
@@ -45,8 +51,11 @@ export type TModalContext = {
   openAssetSelectorModal: (p: IAssetSelectorModalProps) => void;
   openApiKeySelectModal: (p: IApiKeySelectModalProps) => void;
   openApiSelectModal: (p: IApiSelectModalProps) => void;
-  openCustomModal: (p: IModalProps) => void;
+  openCustomModal: (p: ICustomModalProps) => void;
   close: () => void;
+  openRightPanel: (p: IRightPanelProps) => void,
+  closeRightPanel: () => void,
+  rightPanelContent?: IRightPanelProps
 };
 export type ConfirmModalProps = {
   message: JSX.Element | string | ((ok: () => void, cancel: () => void) => JSX.Element | string);
@@ -215,6 +224,7 @@ export interface ISaverOrCancelModalProps {
 
 export interface ILoginOrRegisterModalProps {
   tenant: ITenant;
+  title?: string;
   message?: string;
   showOnlyMessage?: boolean;
 }

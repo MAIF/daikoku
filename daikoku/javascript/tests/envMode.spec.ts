@@ -71,7 +71,7 @@ test('aggregation security works', async ({ page, request }) => {
   await page.getByText('Environments').click();
   await page.locator('.usage-plan__card').filter({ hasText: 'prod' }).getByRole('button').click();
   await page.getByText('Consumers').click();
-  await page.getByLabel('Go home').click();
+  await page.getByLabel('APIs list').click();
 
   await page.getByRole('heading', { name: 'Child API' }).click();
   await page.getByText('Environments').click();
@@ -89,7 +89,7 @@ test('aggregation security works', async ({ page, request }) => {
   await page.getByText('Parent API/prod').click();
   // await expect(page.getByText('API key to plan Free without')).toBeVisible();
 
-  await page.getByLabel('Go home').click();
+  await page.getByLabel('APIs list').click();
   await page.getByText('Consumers', { exact: true }).click();
   await page.getByText('API keys').click();
   await expect(page.getByRole('cell', { name: 'Child API' })).toBeVisible();
@@ -109,7 +109,7 @@ test('aggregation security works', async ({ page, request }) => {
   // await page.getByText('Environments').click();
   // await page.locator('.usage-plan__card').filter({ hasText: 'prod' }).getByRole('button').click();
   // await page.locator('div').filter({ hasText: /^Consumers$/ }).click();
-  // await page.getByRole('link', { name: 'Go home' }).click();
+  // await page.getByRole('link', { name: 'APIs list' }).click();
 
   // //subscribe second api with aggregation
   // await page.getByRole('heading', { name: 'Child API' }).click();
@@ -120,7 +120,7 @@ test('aggregation security works', async ({ page, request }) => {
 
 
   // //subscribe second api with aggregation
-  // await page.getByRole('link', { name: 'Go home' }).click();
+  // await page.getByRole('link', { name: 'APIs list' }).click();
   // await page.getByRole('heading', { name: 'Child API' }).click();
   // await page.getByText('Environments').click();
   // await page.locator('.usage-plan__card').filter({ hasText: 'prod' }).getByRole('button').click();
@@ -129,7 +129,7 @@ test('aggregation security works', async ({ page, request }) => {
   // await page.getByText('parent API/prod').click();
 
   // //go to subscriptions
-  // await page.getByRole('link', { name: 'Go home' }).click();
+  // await page.getByRole('link', { name: 'APIs list' }).click();
   // await page.locator('.top__container').filter({ hasText: 'Your teams' })
   //   .getByText('Consumers').click()
   // // await page.getByLabel('Notifications alt+T').getByRole('button').click();

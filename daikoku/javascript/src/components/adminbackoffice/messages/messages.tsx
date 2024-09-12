@@ -6,7 +6,8 @@ import sortBy from 'lodash/sortBy';
 import values from 'lodash/values';
 import moment from 'moment';
 import { useContext, useEffect, useState } from 'react';
-import { ChevronLeft, Send } from 'react-feather';
+import Send from 'react-feather/dist/icons/send';
+import ChevronLeft from 'react-feather/dist/icons/chevron-left';
 import Select from 'react-select';
 
 import { useTenantBackOffice } from '../../../contexts';

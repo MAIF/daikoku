@@ -286,6 +286,19 @@ case class PostgresTenantCapableUsagePlanRepo(
     _tenantRepo(tenant)
 }
 
+case class PostgresTenantCapableApiSubscriptionTransferRepo(
+    _repo: () => PostgresRepo[ApiSubscriptionTransfer, DatastoreId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiSubscriptionTransfer, DatastoreId]
+) extends PostgresTenantCapableRepo[ApiSubscriptionTransfer, DatastoreId]
+    with ApiSubscriptionTransferRepo {
+  override def repo(): PostgresRepo[ApiSubscriptionTransfer, DatastoreId] = _repo()
+
+  override def tenantRepo(
+      tenant: TenantId
+  ): PostgresTenantAwareRepo[ApiSubscriptionTransfer, DatastoreId] =
+    _tenantRepo(tenant)
+}
+
 case class PostgresTenantCapableConsumptionRepo(
     _repo: () => PostgresRepo[ApiKeyConsumption, DatastoreId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[
@@ -413,7 +426,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     "step_validators" -> true,
     "usage_plans" -> true,
     "assets" -> true,
-    "reports_info" -> true
+    "reports_info" -> true,
+    "api_subscription_transfers" -> true
   )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
@@ -614,6 +628,12 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       t => new PostgresTenantUsagePlanRepo(env, reactivePg, t)
     )
 
+  private val _apiSubscriptionTransferRepo: ApiSubscriptionTransferRepo =
+    PostgresTenantCapableApiSubscriptionTransferRepo(
+      () => new PostgresApiSubscriptionTransferRepo(env, reactivePg),
+      t => new PostgresTenantApiSubscriptionTransferRepo(env, reactivePg, t)
+    )
+
   override def tenantRepo: TenantRepo = _tenantRepo
 
   override def userRepo: UserRepo = _userRepo
@@ -665,6 +685,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
   override def stepValidatorRepo: StepValidatorRepo = _stepValidatorRepo
 
   override def usagePlanRepo: UsagePlanRepo = _usagePlanRepo
+
+  override def apiSubscriptionTransferRepo: ApiSubscriptionTransferRepo = _apiSubscriptionTransferRepo
 
   override def start(): Future[Unit] = {
     Future.successful(())
@@ -788,7 +810,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       assetRepo.forAllTenant(),
       stepValidatorRepo.forAllTenant(),
       subscriptionDemandRepo.forAllTenant(),
-      usagePlanRepo.forAllTenant()
+      usagePlanRepo.forAllTenant(),
+      apiSubscriptionTransferRepo.forAllTenant()
     )
 
     if (exportAuditTrail) {
@@ -912,6 +935,10 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
               emailVerificationRepo
                 .forAllTenant()
                 .save(json.EmailVerificationFormat.reads(payload).get)
+            case ("apisubscriptiontransfers", payload) =>
+              apiSubscriptionTransferRepo
+                .forAllTenant()
+                .save(json.ApiSubscriptionTransferFormat.reads(payload).get)
             case (typ, _) =>
               logger.error(s"Unknown type: $typ")
               FastFuture.successful(false)
@@ -1106,6 +1133,16 @@ class PostgresTenantUsagePlanRepo(
   override def format: Format[UsagePlan] = json.UsagePlanFormat
 
   override def extractId(value: UsagePlan): String = value.id.value
+}
+
+class PostgresTenantApiSubscriptionTransferRepo(env: Env, reactivePg: ReactivePg, tenant: TenantId)
+  extends PostgresTenantAwareRepo[ApiSubscriptionTransfer, DatastoreId](env, reactivePg, tenant) {
+
+  override def tableName: String = "api_subscription_transfers"
+
+  override def format: Format[ApiSubscriptionTransfer] = json.ApiSubscriptionTransferFormat
+
+  override def extractId(value: ApiSubscriptionTransfer): String = value.id.value
 }
 
 class PostgresTenantCmsPageRepo(
@@ -1370,6 +1407,15 @@ class PostgresUsagePlanRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[UsagePlan] = json.UsagePlanFormat
 
   override def extractId(value: UsagePlan): String = value.id.value
+}
+
+class PostgresApiSubscriptionTransferRepo(env: Env, reactivePg: ReactivePg)
+    extends PostgresRepo[ApiSubscriptionTransfer, DatastoreId](env, reactivePg) {
+  override def tableName: String = "api_subscription_transfers"
+
+  override def format: Format[ApiSubscriptionTransfer] = json.ApiSubscriptionTransferFormat
+
+  override def extractId(value: ApiSubscriptionTransfer): String = value.id.value
 }
 
 class PostgresApiRepo(env: Env, reactivePg: ReactivePg)

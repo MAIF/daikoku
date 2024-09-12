@@ -724,112 +724,116 @@ object utils {
       promise.future
     }
 
-    def cleanOtoroshiServer(otoroshiPort: Int) = {
-      val parent2ApkAsJson = Json.obj(
-        "_loc" -> Json.obj(
-          "tenant" -> "default",
-          "teams" -> Json.arr("default")
+    val parentRouteId = "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
+    val childRouteId = "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"
+    val otherRouteId = "route_d74ea8b27-b8be-4177-82d9-c50722416c51"
+    val parent2ApkAsJson = Json.obj(
+      "_loc" -> Json.obj(
+        "tenant" -> "default",
+        "teams" -> Json.arr("default")
+      ),
+      "clientId" -> "fu283imnfv8jdt4e",
+      "clientSecret" -> "yaodpdfu283imnfv8jdt4eivaow6ipvh6ta9dwvd3tor9vf9wovxs6i5a2v7ep6m",
+      "clientName" -> "daikoku_test_parent_key_2_childs",
+      "description" -> "",
+      "authorizedGroup" -> JsNull,
+      "authorizedEntities" -> Json.arr(
+        s"route_$parentRouteId",
+        s"route_$childRouteId",
+        s"route_$otherRouteId"
+      ),
+      "authorizations" -> Json.arr(
+        Json.obj(
+          "kind" -> "route",
+          "id" -> parentRouteId
         ),
-        "clientId" -> "fu283imnfv8jdt4e",
-        "clientSecret" -> "yaodpdfu283imnfv8jdt4eivaow6ipvh6ta9dwvd3tor9vf9wovxs6i5a2v7ep6m",
-        "clientName" -> "daikoku_test_parent_key_2_childs",
-        "description" -> "",
-        "authorizedGroup" -> JsNull,
-        "authorizedEntities" -> Json.arr(
-          "route_route_d74ea8b27-b8be-4177-82d9-c50722416c50",
-          "route_route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d",
-          "route_route_d74ea8b27-b8be-4177-82d9-c50722416c51"
+        Json.obj(
+          "kind" -> "route",
+          "id" -> childRouteId
         ),
-        "authorizations" -> Json.arr(
-          Json.obj(
-            "kind" -> "route",
-            "id" -> "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
-          ),
-          Json.obj(
-            "kind" -> "route",
-            "id" -> "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"
-          ),
-          Json.obj(
-            "kind" -> "route",
-            "id" -> "route_d74ea8b27-b8be-4177-82d9-c50722416c51"
-          )
-        ),
-        "enabled" -> true,
-        "readOnly" -> false,
-        "allowClientIdOnly" -> false,
-        "throttlingQuota" -> 10000000,
-        "dailyQuota" -> 10000000,
-        "monthlyQuota" -> 10000000,
-        "constrainedServicesOnly" -> false,
-        "restrictions" -> Json.obj(
-          "enabled" -> false,
-          "allowLast" -> true,
-          "allowed" -> Json.arr(),
-          "forbidden" -> Json.arr(),
-          "notFound" -> Json.arr()
-        ),
-        "rotation" -> Json.obj(
-          "enabled" -> false,
-          "rotationEvery" -> 744,
-          "gracePeriod" -> 168,
-          "nextSecret" -> JsNull
-        ),
-        "validUntil" -> JsNull,
-        "tags" -> Json.arr(),
-        "metadata" -> Json.obj(
-          "daikoku__metadata" -> "| foo",
-          "foo" -> "bar"
+        Json.obj(
+          "kind" -> "route",
+          "id" -> otherRouteId
         )
+      ),
+      "enabled" -> true,
+      "readOnly" -> false,
+      "allowClientIdOnly" -> false,
+      "throttlingQuota" -> 10000000,
+      "dailyQuota" -> 10000000,
+      "monthlyQuota" -> 10000000,
+      "constrainedServicesOnly" -> false,
+      "restrictions" -> Json.obj(
+        "enabled" -> false,
+        "allowLast" -> true,
+        "allowed" -> Json.arr(),
+        "forbidden" -> Json.arr(),
+        "notFound" -> Json.arr()
+      ),
+      "rotation" -> Json.obj(
+        "enabled" -> false,
+        "rotationEvery" -> 744,
+        "gracePeriod" -> 168,
+        "nextSecret" -> JsNull
+      ),
+      "validUntil" -> JsNull,
+      "tags" -> Json.arr(),
+      "metadata" -> Json.obj(
+        "daikoku__metadata" -> "| foo",
+        "foo" -> "bar"
       )
-      val parentApkAsJson = Json.obj(
-        "_loc" -> Json.obj(
-          "tenant" -> "default",
-          "teams" -> Json.arr("default")
+    )
+    val parentApkAsJson = Json.obj(
+      "_loc" -> Json.obj(
+        "tenant" -> "default",
+        "teams" -> Json.arr("default")
+      ),
+      "clientId" -> "5w24yl2ly3dlnn92",
+      "clientSecret" -> "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db",
+      "clientName" -> "daikoku_test_parent_key",
+      "description" -> "",
+      "authorizedGroup" -> JsNull,
+      "authorizedEntities" -> Json.arr(
+        s"route_$parentRouteId",
+        s"route_$childRouteId"
+      ),
+      "authorizations" -> Json.arr(
+        Json.obj(
+          "kind" -> "route",
+          "id" -> parentRouteId
         ),
-        "clientId" -> "5w24yl2ly3dlnn92",
-        "clientSecret" -> "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db",
-        "clientName" -> "daikoku_test_parent_key",
-        "description" -> "",
-        "authorizedGroup" -> JsNull,
-        "authorizedEntities" -> Json.arr(
-          "route_route_d74ea8b27-b8be-4177-82d9-c50722416c50",
-          "route_route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"
-        ),
-        "authorizations" -> Json.arr(
-          Json.obj(
-            "kind" -> "route",
-            "id" -> "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
-          ),
-          Json.obj(
-            "kind" -> "route",
-            "id" -> "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"
-          )
-        ),
-        "enabled" -> true,
-        "readOnly" -> false,
-        "allowClientIdOnly" -> false,
-        "throttlingQuota" -> 10000000,
-        "dailyQuota" -> 10000000,
-        "monthlyQuota" -> 10000000,
-        "constrainedServicesOnly" -> false,
-        "restrictions" -> Json.obj(
-          "enabled" -> false,
-          "allowLast" -> true,
-          "allowed" -> Json.arr(),
-          "forbidden" -> Json.arr(),
-          "notFound" -> Json.arr()
-        ),
-        "rotation" -> Json.obj(
-          "enabled" -> false,
-          "rotationEvery" -> 744,
-          "gracePeriod" -> 168,
-          "nextSecret" -> JsNull
-        ),
-        "validUntil" -> JsNull,
-        "tags" -> Json.arr(),
-        "metadata" -> Json.obj()
-      )
+        Json.obj(
+          "kind" -> "route",
+          "id" -> childRouteId
+        )
+      ),
+      "enabled" -> true,
+      "readOnly" -> false,
+      "allowClientIdOnly" -> false,
+      "throttlingQuota" -> 10000000,
+      "dailyQuota" -> 10000000,
+      "monthlyQuota" -> 10000000,
+      "constrainedServicesOnly" -> false,
+      "restrictions" -> Json.obj(
+        "enabled" -> false,
+        "allowLast" -> true,
+        "allowed" -> Json.arr(),
+        "forbidden" -> Json.arr(),
+        "notFound" -> Json.arr()
+      ),
+      "rotation" -> Json.obj(
+        "enabled" -> false,
+        "rotationEvery" -> 744,
+        "gracePeriod" -> 168,
+        "nextSecret" -> JsNull
+      ),
+      "validUntil" -> JsNull,
+      "tags" -> Json.arr(),
+      "metadata" -> Json.obj()
+    )
 
+
+    def cleanOtoroshiServer(otoroshiPort: Int, apks: Seq[JsValue] = Seq(parentApkAsJson, parent2ApkAsJson)) = {
       val apikeys = daikokuComponents.env.wsClient
         .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
         .withHttpHeaders(
@@ -874,38 +878,21 @@ object utils {
               }
             })
             .runWith(Sink.ignore)
-        _ <-
-          daikokuComponents.env.wsClient
-            .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
-            .withHttpHeaders(
-              Map(
-                "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
-                "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
-                "Host" -> "otoroshi-api.oto.tools"
-              ).toSeq: _*
-            )
-            .withFollowRedirects(false)
-            .withRequestTimeout(10.seconds)
-            .withMethod("POST")
-            .withBody(parentApkAsJson)
-            .execute()
-            .map(_ => true)
-        _ <-
-          daikokuComponents.env.wsClient
-            .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
-            .withHttpHeaders(
-              Map(
-                "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
-                "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
-                "Host" -> "otoroshi-api.oto.tools"
-              ).toSeq: _*
-            )
-            .withFollowRedirects(false)
-            .withRequestTimeout(10.seconds)
-            .withMethod("POST")
-            .withBody(parent2ApkAsJson)
-            .execute()
-            .map(_ => true)
+        _ <- Future.sequence(apks.map(apk => daikokuComponents.env.wsClient
+          .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
+          .withHttpHeaders(
+            Map(
+              "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+              "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+              "Host" -> "otoroshi-api.oto.tools"
+            ).toSeq: _*
+          )
+          .withFollowRedirects(false)
+          .withRequestTimeout(10.seconds)
+          .withMethod("POST")
+          .withBody(apk)
+          .execute()
+          .map(_ => true)))
       } yield true
 
     }
@@ -943,10 +930,6 @@ object utils {
       clientSecret =
         "yaodpdfu283imnfv8jdt4eivaow6ipvh6ta9dwvd3tor9vf9wovxs6i5a2v7ep6m"
     )
-
-    val parentRouteId = "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
-    val childRouteId = "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"
-    val otherRouteId = "route_d74ea8b27-b8be-4177-82d9-c50722416c51"
 
     val teamOwnerId = TeamId("team-owner")
     val teamConsumerId = TeamId("team-consumer")

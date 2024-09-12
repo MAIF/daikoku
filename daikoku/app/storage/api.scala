@@ -395,6 +395,8 @@ trait UserRepo extends Repo[User, UserId]
 trait EvolutionRepo extends Repo[Evolution, DatastoreId]
 trait ReportsInfoRepo extends Repo[ReportsInfo, DatastoreId]
 
+trait ApiSubscriptionTransferRepo extends TenantCapableRepo[ApiSubscriptionTransfer, DatastoreId]
+
 trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
   def myTeams(tenant: Tenant, user: User)(implicit
       env: Env,
@@ -570,6 +572,8 @@ trait DataStore {
   def usagePlanRepo: UsagePlanRepo
 
   def reportsInfoRepo: ReportsInfoRepo
+
+  def apiSubscriptionTransferRepo: ApiSubscriptionTransferRepo
 
   def exportAsStream(pretty: Boolean, exportAuditTrail: Boolean = true)(implicit
       ec: ExecutionContext,

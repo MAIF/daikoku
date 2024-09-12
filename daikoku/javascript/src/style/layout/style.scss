@@ -41,6 +41,12 @@ a {
   color: $level1_link-color;
 }
 
+.a-fake, a {
+  &.underline {
+    text-decoration: underline;
+  }
+}
+
 .a-fake {
   cursor: pointer;
 }
