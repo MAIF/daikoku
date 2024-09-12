@@ -1072,7 +1072,7 @@ class ApiController(
               apiKey = data.apiKey,
               plan = data.plan,
               createdAt = DateTime.now(),
-              validUntil = DateTime.now(),
+              validUntil = None,
               team = data.team,
               api = data.api,
               by = ctx.user.id,
@@ -1750,7 +1750,8 @@ class ApiController(
             customMaxPerDay = (body \ "customMaxPerDay").asOpt[Long],
             customMaxPerMonth = (body \ "customMaxPerMonth").asOpt[Long],
             customReadOnly = (body \ "customReadOnly").asOpt[Boolean],
-            adminCustomName = (body \ "adminCustomName").asOpt[String]
+            adminCustomName = (body \ "adminCustomName").asOpt[String],
+            validUntil = (body \ "validUntil").asOpt[String],
           )
           result <-
             EitherT(apiService.updateSubscription(ctx.tenant, subToSave, plan))
