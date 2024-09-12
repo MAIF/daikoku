@@ -77,7 +77,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(
     }
   };
 
-  const schema = {
+  let schema = {
     customMetadata: {
       type: type.object,
       label: translate("Additional metadata"),
@@ -119,12 +119,15 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(
       label: translate("sub.meta.modal.admin.custom.name.label"),
       help: translate("sub.meta.modal.admin.custom.name.help"),
     },
-    validUntil: {
+  };
+
+  if (!props.subscription?.parent) {
+    schema["validUntil"] = {
       type: type.date,
       label: translate("sub.meta.modal.valid.until.label"),
       help: translate("sub.meta.modal.valid.until.help"),
-    },
-  };
+    };
+  }
 
   const mandatoryMetadataSchema = (plan?: IUsagePlan) => ({
     metadata: {
@@ -218,7 +221,6 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(
       },
       [[], []]
     );
-
     const value = {
       metadata: Object.fromEntries(maybeMetadata),
       customMetadata: Object.fromEntries(maybeCustomMetadata),

@@ -77,6 +77,7 @@ interface IApiSubscriptionGql extends ISubscriptionCustomization {
     _id: string;
     adminCustomName: string;
     enabled: boolean;
+    validUntil: string;
     api: {
       _id: string;
       name: string;
@@ -196,7 +197,6 @@ export const TeamApiSubscriptions = ({
       tableRef.current?.update();
     }
   }, [api, subscriptionsQuery.data]);
-
   useEffect(() => {
     tableRef.current?.update();
   }, [filters]);
@@ -211,6 +211,7 @@ export const TeamApiSubscriptions = ({
         meta: { style: { textAlign: "left" } },
         filterFn: (row, _, value) => {
           const sub = row.original;
+
           const displayed: string =
             sub.team._id === currentTeam._id
               ? sub.customName || sub.apiKey.clientName
@@ -223,7 +224,7 @@ export const TeamApiSubscriptions = ({
         sortingFn: "basic",
         cell: (info) => {
           const sub = info.row.original;
-          const titleDate = `<div>
+          let titleDate = `<div>
           <strong>${translate("validationDate.apikey.badge.title")}</strong> :
           ${sub.validUntil ? formatDate(sub.validUntil, language) : "N/A"} 
          </div>`;
@@ -236,6 +237,10 @@ export const TeamApiSubscriptions = ({
               <li>${translate("aggregated.apikey.badge.apikey.name")}: ${sub.parent.adminCustomName}</li>
             </ul>
           </div>`;
+            titleDate = `<div>
+          <strong>${translate("validationDate.apikey.badge.title")}</strong> :
+          ${sub.parent.validUntil ? formatDate(sub.parent.validUntil, language) : "N/A"} 
+         </div>`;
             return (
               <div className="d-flex flex-row justify-content-between">
                 <span>{info.getValue()}</span>
@@ -386,8 +391,8 @@ export const TeamApiSubscriptions = ({
     }),
   ];
 
-  const updateMeta = (sub: IApiSubscriptionGql) =>
-    openSubMetadataModal({
+  const updateMeta = (sub: IApiSubscriptionGql) => {
+    return openSubMetadataModal({
       save: (updates: CustomSubscriptionData) => {
         Services.updateSubscription(currentTeam, { ...sub, ...updates }).then(
           () => {
@@ -404,6 +409,7 @@ export const TeamApiSubscriptions = ({
         (p) => sub.plan._id === p._id
       )!,
     });
+  };
 
   const regenerateApiKeySecret = useMutation({
     mutationFn: (sub: IApiSubscriptionGql) =>
