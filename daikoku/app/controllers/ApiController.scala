@@ -3393,10 +3393,11 @@ class ApiController(
         val teamUsersFilter =
           if (ctx.user.isDaikokuAdmin) Json.obj()
           else Json.obj("users.userId" -> ctx.user.id.value)
+
         val typeFilter = if (ctx.tenant.subscriptionSecurity.isDefined
           &&  ctx.tenant.subscriptionSecurity.exists(identity)) {
           Json.obj(
-            "type" -> Json.obj("$in" -> Json.arr(TeamType.Admin.name, TeamType.Organization.name))
+            "type" -> Json.obj("$ne" -> TeamType.Personal.name)
           )
         } else {
           Json.obj()

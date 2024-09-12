@@ -405,7 +405,7 @@ trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
     val typeFilter = if (tenant.subscriptionSecurity.isDefined
       &&  tenant.subscriptionSecurity.exists(identity)) {
       Json.obj(
-        "type" -> Json.obj("$in" -> Json.arr(TeamType.Admin.name, TeamType.Organization.name))
+        "type" -> Json.obj("$ne" -> TeamType.Personal.name)
       )
     } else {
       Json.obj()

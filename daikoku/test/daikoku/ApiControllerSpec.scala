@@ -545,9 +545,9 @@ class ApiControllerSpec()
       resp.status mustBe 403
     }
 
-    "see his teams" in {
+    "see his teams (graphQl)" in {
       setupEnvBlocking(
-        tenants = Seq(tenant),
+        tenants = Seq(tenant.copy(subscriptionSecurity = Some(true))),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer)
       )
@@ -581,6 +581,134 @@ class ApiControllerSpec()
 
       val result = (resp.json \ "data" \ "myTeams").as[JsArray]
       result.value.length mustBe 2
+
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(subscriptionSecurity = Some(false))),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer)
+      )
+      val session2 = loginWithBlocking(userAdmin, tenant)
+      val resp2 = httpJsonCallBlocking(
+        "/api/search",
+        "POST",
+        body = Some(
+          Json.obj(
+            "query" ->
+              """
+                |query MyTeams {
+                |    myTeams {
+                |      name
+                |      _humanReadableId
+                |      _id
+                |      type
+                |      users {
+                |        user {
+                |          userId: id
+                |        }
+                |        teamPermission
+                |      }
+                |    }
+                |  }
+                |""".stripMargin
+          )
+        )
+      )(tenant, session2)
+      resp2.status mustBe 200
+
+      val result2 = (resp2.json \ "data" \ "myTeams").as[JsArray]
+      result2.value.length mustBe 3
+    }
+    "see his teams" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(subscriptionSecurity = Some(true))),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer)
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking("/api/me/teams")(tenant, session)
+      resp.status mustBe 200
+
+      val result = resp.json.as[JsArray]
+      result.value.length mustBe 2
+
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(subscriptionSecurity = Some(false))),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer)
+      )
+      val session2 = loginWithBlocking(userAdmin, tenant)
+      val resp2 = httpJsonCallBlocking("/api/me/teams")(tenant, session2)
+      resp2.status mustBe 200
+
+      val result2 = resp2.json.as[JsArray]
+      result2.value.length mustBe 3
+    }
+
+    "search a team" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(subscriptionSecurity = Some(true))),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer)
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val resp =
+        httpJsonCallBlocking(
+          path = s"/api/_search",
+          method = "POST",
+          body = Some(Json.obj("search" -> ""))
+        )(tenant, session)
+
+      resp.status mustBe 200
+      val maybeValue = resp.json.as[JsArray].value.find(entry => (entry \ "label").as[String] == "Teams")
+      maybeValue.isDefined mustBe true
+      (maybeValue.get \ "options").as[JsArray].value.length mustBe 2
+
+      val resp2 =
+        httpJsonCallBlocking(
+          path = s"/api/_search",
+          method = "POST",
+          body = Some(Json.obj("search" -> "Admin"))
+        )(tenant, session)
+
+      resp2.status mustBe 200
+      val maybeValue2 = resp2.json.as[JsArray].value.find(entry => (entry \ "label").as[String] == "Teams")
+      maybeValue2.isDefined mustBe true
+      (maybeValue2.get \ "options").as[JsArray].value.length mustBe 0
+
+      //disable subscription security
+
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(subscriptionSecurity = Some(false))),
+        users = Seq(userAdmin, userApiEditor),
+        teams = Seq(teamOwner, teamConsumer)
+      )
+      val session2 = loginWithBlocking(userAdmin, tenant)
+
+      val resp3 =
+        httpJsonCallBlocking(
+          path = s"/api/_search",
+          method = "POST",
+          body = Some(Json.obj("search" -> ""))
+        )(tenant, session2)
+
+      resp3.status mustBe 200
+      val maybeValue3 = resp3.json.as[JsArray].value.find(entry => (entry \ "label").as[String] == "Teams")
+      maybeValue3.isDefined mustBe true
+      (maybeValue3.get \ "options").as[JsArray].value.length mustBe 3
+
+      val resp4 =
+        httpJsonCallBlocking(
+          path = s"/api/_search",
+          method = "POST",
+          body = Some(Json.obj("search" -> "Admin"))
+        )(tenant, session2)
+
+      resp4.status mustBe 200
+      val maybeValue4 = resp4.json.as[JsArray].value.find(entry => (entry \ "label").as[String] == "Teams")
+      maybeValue4.isDefined mustBe true
+      (maybeValue4.get \ "options").as[JsArray].value.length mustBe 1
+
     }
 
     "see one of his teams" in {

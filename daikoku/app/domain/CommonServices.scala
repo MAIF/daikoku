@@ -686,7 +686,7 @@ object CommonServices {
       val typeFilter = if (ctx.tenant.subscriptionSecurity.isDefined
         &&  ctx.tenant.subscriptionSecurity.exists(identity)) {
         Json.obj(
-          "type" -> Json.obj("$in" -> Json.arr(TeamType.Admin.name, TeamType.Organization.name))
+          "type" -> TeamType.Organization.name
         )
       } else {
         Json.obj()
@@ -699,7 +699,7 @@ object CommonServices {
               Json.obj(
                 "_deleted" -> false,
                 "name" -> Json.obj("$regex" -> research)
-              )++ typeFilter,
+              ) ++ typeFilter,
               offset,
               limit,
               Some(Json.obj("_humanReadableId" -> 1))
