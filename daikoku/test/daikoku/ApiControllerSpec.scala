@@ -2007,60 +2007,6 @@ class ApiControllerSpec()
       )(tenant, session)
       logger.debug(Json.stringify(respLink.json))
       respLink.status mustBe 409
-      val link = (respLink.json \ "link").as[String]
-      val token = link.split("token=").lastOption.getOrElse("")
-
-      //todo: generer un token avec la subChild et tester un retrieve avec => 409
-//      val respRetrieve = httpJsonCallBlocking(
-//        path = s"/api/teams/${teamOwner.id.value}/subscriptions/${childSub.id.value}/_retrieve",
-//        method = "PUT",
-//        body = Json.obj("token" -> token).some
-//      )(tenant, session)
-//      logger.info(Json.stringify(respRetrieve.json))
-//      respRetrieve.status mustBe 403
-
-      //todo: test with a team has already a parentSub
-      //todo: test with a team has already a childSub
-
-//      val respParent = httpJsonCallBlocking(
-//        path = s"/api/teams/${teamConsumer.id.value}/subscriptions/${parentSub.id.value}/_transfer",
-//        method = "PUT",
-//        body = Json.obj("team" -> teamOwner.id.asJson).some
-//      )(tenant, session)
-//      respParent.status mustBe 200
-//
-//      val getNotif = httpJsonCallBlocking(s"/api/teams/${teamOwner.id.value}/notifications")(tenant, session)
-//      getNotif.status mustBe 200
-//      val notifications = (getNotif.json \ "notifications").as(json.SeqNotificationFormat)
-//      notifications.length mustBe 1
-//      val transferNotif = notifications.head
-//
-//
-//      val acceptNotif = httpJsonCallBlocking(
-//        path = s"/api/notifications/${transferNotif.id.value}/accept",
-//        method = "PUT",
-//        body = Some(Json.obj())
-//      )(tenant, session)
-//      acceptNotif.status mustBe 200
-//
-//      val consumerSubsReq = httpJsonCallBlocking(s"/api/subscriptions/teams/${teamConsumer.id.value}")(tenant, session)
-//      consumerSubsReq.status mustBe 200
-//      val maybeConsumerSubs = json.SeqApiSubscriptionFormat.reads(consumerSubsReq.json)
-//      maybeConsumerSubs.isSuccess mustBe true
-//      val consumerSubs = maybeConsumerSubs.get
-//      consumerSubs.length mustBe 0
-//
-//
-//      val ownerSubsReq = httpJsonCallBlocking(s"/api/subscriptions/teams/${teamOwner.id.value}")(tenant, session)
-//      ownerSubsReq.status mustBe 200
-//      val maybeOwnerSubs = json.SeqApiSubscriptionFormat.reads(ownerSubsReq.json)
-//      maybeOwnerSubs.isSuccess mustBe true
-//      val ownerSubs = maybeOwnerSubs.get
-//      ownerSubs.length mustBe 2
-//      ownerSubs.exists(s => s.id == parentSub.id) mustBe true
-//      ownerSubs.exists(s => s.id == childSub.id) mustBe true
-
-      //eventuellement verifier les metadata de l'apk pour voir la team
     }
 
     "not transfer child subscriptions to another team which have already a parent subscription" in {
@@ -2515,17 +2461,17 @@ class ApiControllerSpec()
 
       setupEnvBlocking(
         tenants = Seq(tenant.copy(
-          //          otoroshiSettings = Set(
-          //            OtoroshiSettings(
-          //              id = containerizedOtoroshi,
-          //              url =
-          //                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-          //              host = "otoroshi-api.oto.tools",
-          //              clientSecret = otoroshiAdminApiKey.clientSecret,
-          //              clientId = otoroshiAdminApiKey.clientId
-          //            )
-          //          ),
-          //          environmentAggregationApiKeysSecurity = Some(true),
+                    otoroshiSettings = Set(
+                      OtoroshiSettings(
+                        id = containerizedOtoroshi,
+                        url =
+                          s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                        host = "otoroshi-api.oto.tools",
+                        clientSecret = otoroshiAdminApiKey.clientSecret,
+                        clientId = otoroshiAdminApiKey.clientId
+                      )
+                    ),
+                    environmentAggregationApiKeysSecurity = Some(true),
           aggregationApiKeysSecurity = Some(true)
         )),
         users = Seq(user, userAdmin),
@@ -2680,17 +2626,17 @@ class ApiControllerSpec()
 
       setupEnvBlocking(
         tenants = Seq(tenant.copy(
-          //          otoroshiSettings = Set(
-          //            OtoroshiSettings(
-          //              id = containerizedOtoroshi,
-          //              url =
-          //                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-          //              host = "otoroshi-api.oto.tools",
-          //              clientSecret = otoroshiAdminApiKey.clientSecret,
-          //              clientId = otoroshiAdminApiKey.clientId
-          //            )
-          //          ),
-          //          environmentAggregationApiKeysSecurity = Some(true),
+          otoroshiSettings = Set(
+            OtoroshiSettings(
+              id = containerizedOtoroshi,
+              url =
+                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+              host = "otoroshi-api.oto.tools",
+              clientSecret = otoroshiAdminApiKey.clientSecret,
+              clientId = otoroshiAdminApiKey.clientId
+            )
+          ),
+          environmentAggregationApiKeysSecurity = Some(true),
           aggregationApiKeysSecurity = Some(true)
         )),
         users = Seq(user, userAdmin),
