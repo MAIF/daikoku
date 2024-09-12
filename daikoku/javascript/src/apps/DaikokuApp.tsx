@@ -149,7 +149,7 @@ export const DaikokuApp = () => {
             <div className="d-flex flex-row">
               <SideBar />
               <RightPanel />
-              <div className="wrapper flex-grow-1">
+              <div className="wrapper flex-grow-1 container-fluid">
                 <Routes>
                   <Route
                     path='/error'
@@ -455,7 +455,7 @@ export const DaikokuApp = () => {
                       </FrontOfficeRoute>
                     }
                   />
-                  <Route 
+                  <Route
                     path='/subscriptions/_retrieve'
                     element={
                       <FrontOfficeRoute>

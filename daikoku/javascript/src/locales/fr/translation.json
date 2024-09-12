@@ -1269,9 +1269,9 @@
   "select.team.placeholder": "Sélectionner une équipe",
   "otoroshi.missing.entities": "Entités Otoroshi manquantes",
   "otoroshi.missing.target": "Cible Otoroshi manquante",
-  "apiList.tag.search": "Recherchez un tag",
-  "apiList.category.search": "Recherchez une catégorie",
-  "apiList.team.search": "Recherchez une équipe",
+  "apiList.tag.search": "Par tag",
+  "apiList.category.search": "Par catégorie",
+  "apiList.team.search": "Par équipe",
   "team.email.verification.send": "Mail envoyé à %s pour vérifier cette adresse email.",
   "team.email.alreadyVerified": "Cet email est déjà vérifié",
   "team.email.notVerified": "Envoyer un mail",
@@ -1469,5 +1469,7 @@
   "subscription.retrieve.confirm.modal.ok.button.label": "Confirmer le transfert",
   "login.required": "Connexion requise",
   "subscription.retrieve.login.required.message": "Veuillez vous connecter pour continuer. Vous devez être authentifié pour accéder à cette fonctionnalité.",
-  "subscription.retrieve.token.unavalaible": "Le jeton n'est plus valable"
+  "subscription.retrieve.token.unavalaible": "Le jeton n'est plus valable",
+  "Daikoku.home" : "Accueil Daikoku",
+  "API.list" : "Liste des APIs"
 }

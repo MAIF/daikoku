@@ -21,7 +21,7 @@ test('test a complete user journey', async ({ page }) => {
   //connection
   await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('user@foo.bar');
+  await page.getByPlaceholder('Email address').fill('user@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
   await page.getByRole('button', { name: 'Login' }).click();
   await page.waitForResponse(response => response.url().includes('/auth/Local/callback') && response.status() === 303)
@@ -29,7 +29,7 @@ test('test a complete user journey', async ({ page }) => {
   // FIXME: find the fine selector to check user is connected
 
   //create a new team
-  await page.locator('div:nth-child(3) > .notification-link').first().click();
+  await page.locator('div:nth-child(4) > .notification-link').first().click();
   await page.getByRole('button', { name: '' }).first().click();
   await page.getByLabel('Name').fill('The A team');
   await page.getByLabel('Description').fill('the A team');
@@ -39,7 +39,7 @@ test('test a complete user journey', async ({ page }) => {
   await page.locator('.navbar-panel-background').click();
 
   //create a new API
-  await page.locator('div:nth-child(3) > .notification-link').first().click();
+  await page.locator('div:nth-child(4) > .notification-link').first().click();
   await page.locator('span').filter({ hasText: 'API' }).first().click();
   await page.locator('div').filter({ hasText: /^The A team$/ }).click();
 

@@ -56,7 +56,7 @@ a:hover {
   color: $level1_link-hover-color;
 }
 
-.underline-on-hover:hover {
+.underline-on-hover:hover, .underline {
   text-decoration: underline;
 }
 

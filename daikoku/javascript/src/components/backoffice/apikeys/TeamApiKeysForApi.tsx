@@ -409,7 +409,7 @@ export const TeamApiKeysForApi = () => {
                   &nbsp;
                   <Link
                     to={apiLink}
-                    className="cursor-pointer"
+                    className="cursor-pointer underline"
                   >{api.name}</Link>
                 </h1>
               </div>
