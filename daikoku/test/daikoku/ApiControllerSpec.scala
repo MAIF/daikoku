@@ -60,7 +60,7 @@ class ApiControllerSpec()
   )
 
   before {
-//    Await.result(cleanOtoroshiServer(container.mappedPort(8080)), 5.seconds)
+    Await.result(cleanOtoroshiServer(container.mappedPort(8080)), 5.seconds)
     wireMockServer.start()
     WireMock.configureFor(stubHost, stubPort)
   }
@@ -7757,6 +7757,7 @@ class ApiControllerSpec()
 
       (respPreVerifOtoParent.json \ "enabled").as[Boolean] mustBe true
       val preMetadata = (respPreVerifOtoParent.json \ "metadata").as[JsObject]
+      logger.info(Json.stringify(respPreVerifOtoParent.json))
       val preKeys = preMetadata.keys.filter(key => !key.startsWith("daikoku_"))
       preKeys.size mustBe 1
       (preMetadata \ "foo").as[String] mustBe "bar"
