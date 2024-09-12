@@ -63,7 +63,7 @@ test('aggregation security works', async ({ page, request }) => {
   //login
   await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
+  await page.getByPlaceholder('Email address').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
   await page.getByRole('button', { name: 'Login' }).click();
 

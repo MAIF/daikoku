@@ -146,7 +146,7 @@ export const DaikokuApp = () => {
           <ModalProvider>
             <div className="d-flex flex-row">
               <SideBar />
-              <div className="wrapper flex-grow-1">
+              <div className="wrapper flex-grow-1 container-fluid">
                 <Routes>
                   <Route
                     path='/error'

@@ -26,7 +26,7 @@ test('[public tenant] - external user can join a team', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'admin-api-tenant-default' })).toBeHidden();
   await expect(page.getByRole('heading', { name: 'test API' })).toBeVisible();
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('admin@foo.bar');
+  await page.getByPlaceholder('Email address').fill('admin@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
   await page.getByPlaceholder('Password').press('Enter');
   await page.getByText('Consumers').click();
@@ -58,7 +58,7 @@ test('[public tenant] - external user can join a team', async ({ page }) => {
   await page.getByText('Validate your Evil Corp.').first().click();
   await page.getByRole('link', { name: 'Confirm' }).click();
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('bob@foo.bar');
+  await page.getByPlaceholder('Email address').fill('bob@foo.bar');
   await page.getByPlaceholder('Password').fill('Pa$$w0rd');
   await page.getByRole('button', { name: 'Login' }).click();
   await expect(page.getByRole('heading', { name: 'public with permissions API' })).toBeVisible();
@@ -195,7 +195,7 @@ test('[public tenant] - external user can signup', async ({ page }) => {
   await page.getByRole('link', { name: 'Confirm' }).click();
   await page.locator('h1.jumbotron-heading').filter({ hasText: 'Evil Corp.' }).waitFor({ state: 'visible' })
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('fifou@foo.bar');
+  await page.getByPlaceholder('Email address').fill('fifou@foo.bar');
   await page.getByPlaceholder('Password').fill('Pa$$w0rd');
   await page.getByRole('button', { name: 'Login' }).click();
   await page.waitForResponse(response => response.url().includes('/auth/Local/callback') && response.status() === 303)
@@ -302,7 +302,7 @@ test('[public tenant] - unlogged user can accept subscription demand', async ({ 
   // await expect(page.getByRole('alert')).toContainText('Thank you for your response');
   // await page.getByRole('link', { name: 'Go back' }).click();
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('admin@foo.bar');
+  await page.getByPlaceholder('Email address').fill('admin@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
   await page.getByPlaceholder('Password').press('Enter');
   await page.getByText('Consumers').click();

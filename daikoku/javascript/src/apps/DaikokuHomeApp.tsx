@@ -214,7 +214,7 @@ export const ResetPassword = () => {
         constraints.required(translate('constraints.required.confirmPassword')),
         constraints.oneOf(
           [constraints.ref('password')],
-          translate('constraint.oneof.confirm.password')
+          translate('constraints.oneof.confirm.password')
         ),
       ],
     },

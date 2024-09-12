@@ -103,7 +103,7 @@ export const ApiCard = (props: {
             <span className="flex-grow-1 api-description my-2">{api.smallDescription}</span>
             {props.teamVisible && team && (
               <small
-                className="cursor-pointer underline-on-hover a-fake d-flex align-items-baseline justify-content-end"
+                className="cursor-pointer underline-on-hover a-fake d-flex align-items-center justify-content-end"
                 onClick={() => props.handleTeamSelect(team)}
               >
                 <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />

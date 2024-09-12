@@ -1276,9 +1276,9 @@
   "select.team.placeholder": "Sélectionner une équipe",
   "otoroshi.missing.entities": "Entités Otoroshi manquantes",
   "otoroshi.missing.target": "Cible Otoroshi manquante",
-  "apiList.tag.search": "Recherchez un tag",
-  "apiList.category.search": "Recherchez une catégorie",
-  "apiList.team.search": "Recherchez une équipe",
+  "apiList.tag.search": "Par tag",
+  "apiList.category.search": "Par catégorie",
+  "apiList.team.search": "Par équipe",
   "team.email.verification.send": "Mail envoyé à %s pour vérifier cette adresse email.",
   "team.email.alreadyVerified": "Cet email est déjà vérifié",
   "team.email.notVerified": "Envoyer un mail",
@@ -1440,5 +1440,7 @@
   "apikeys.delete.confirm.label": "Pour confirmer la suppression, veuillez saisir le nom exact de la souscription : %s",
   "apikeys.delete.success.message": "La souscription a été correctement supprimée",
   "apikeys.view.api": "Voir l'API",
-  "apikeys.view.apikeys": "Voir les clés d'API"
+  "apikeys.view.apikeys": "Voir les clés d'API",
+  "Daikoku.home" : "Accueil Daikoku",
+  "API.list" : "Liste des APIs"
 }
