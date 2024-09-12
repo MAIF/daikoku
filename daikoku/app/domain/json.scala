@@ -3219,6 +3219,7 @@ object json {
           case "NewIssueOpen"         => NewIssueOpenFormat.reads(json)
           case "NewCommentOnIssue"    => NewCommentOnIssueFormat.reads(json)
           case "TransferApiOwnership" => TransferApiOwnershipFormat.reads(json)
+          case "ApiSubscriptionTransferSuccess" => ApiSubscriptionTransferSuccessFormat.reads(json)
           case "CheckoutForSubscription" =>
             CheckoutForSubscriptionFormat.reads(json)
           case str => JsError(s"Bad notification value: $str")
@@ -3237,6 +3238,10 @@ object json {
           case p: ApiSubscriptionDemand =>
             ApiSubscriptionDemandFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiSubscription"
+            )
+          case p: ApiSubscriptionTransferSuccess =>
+            ApiSubscriptionTransferSuccessFormat.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "ApiSubscriptionTransferSuccess"
             )
           case p: ApiSubscriptionReject =>
             ApiSubscriptionRejectFormat.writes(p).as[JsObject] ++ Json.obj(
@@ -3479,6 +3484,24 @@ object json {
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue]
+      )
+  }
+  val ApiSubscriptionTransferSuccessFormat = new Format[ApiSubscriptionTransferSuccess] {
+
+    override def reads(json: JsValue): JsResult[ApiSubscriptionTransferSuccess] =
+      Try {
+        JsSuccess(
+          ApiSubscriptionTransferSuccess(
+            subscription = (json \ "subscription").as(ApiSubscriptionIdFormat)
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiSubscriptionTransferSuccess): JsValue =
+      Json.obj(
+        "subscription" -> o.subscription.asJson
       )
   }
   val ApiSubscriptionRejectFormat = new Format[ApiSubscriptionReject] {
@@ -4735,6 +4758,38 @@ object json {
         "name" -> o.name,
         "publicKey" -> o.publicKey,
         "secretKey" -> o.secretKey
+      )
+  }
+
+  val ApiSubscriptionTransferFormat = new Format[ApiSubscriptionTransfer] {
+
+    override def reads(json: JsValue): JsResult[ApiSubscriptionTransfer] =
+      Try {
+        ApiSubscriptionTransfer(
+          id = (json \ "_id").as(DatastoreIdFormat),
+          tenant = (json \ "_tenant").as(TenantIdFormat),
+          deleted = (json \ "_deleted").as[Boolean],
+          token = (json \ "token").as[String],
+          subscription = (json \ "subscription").as(ApiSubscriptionIdFormat),
+          by = (json \ "by").as(UserIdFormat),
+          date = (json \ "date").as(DateTimeFormat)
+        )
+      } match {
+        case Failure(e) =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+        case Success(value) => JsSuccess(value)
+      }
+
+    override def writes(o: ApiSubscriptionTransfer): JsValue =
+      Json.obj(
+        "_id" -> o.id.asJson,
+        "_tenant" -> o.tenant.asJson,
+        "_deleted" -> o.deleted,
+        "token" -> o.token,
+        "subscription" -> o.subscription.asJson,
+        "by" -> o.by.asJson,
+        "date" -> DateTimeFormat.writes(o.date)
       )
   }
 

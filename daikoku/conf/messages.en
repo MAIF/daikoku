@@ -95,3 +95,4 @@ mail.checkout.title = You can checkout your subscription
 mail.checkout.body = Your subscription demand for [api.name]/[api.plan] has been accepted\
 you can now checkout.\
 please click the following link to <a href="[link]">Checkout</a>
+mail.api.subscription.transfer.rejection.body = Your request to transfer to your subscription [subscription] has been rejected.

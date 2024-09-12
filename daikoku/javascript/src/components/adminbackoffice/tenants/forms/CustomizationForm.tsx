@@ -2,7 +2,6 @@ import { getApolloContext, gql } from '@apollo/client';
 import { Flow, Form, FormRef, Schema, SchemaEntry, format, type } from '@maif/react-forms';
 import { UseMutationResult, useQuery } from '@tanstack/react-query';
 import { useContext, useRef } from 'react';
-import { Settings } from 'react-feather';
 import { useNavigate } from 'react-router-dom';
 
 import { ModalContext } from '../../../../contexts';

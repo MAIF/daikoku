@@ -1,6 +1,7 @@
 import classNames from 'classnames';
 import { useContext, useState } from 'react';
-import { CheckSquare, Square } from 'react-feather';
+import Square from 'react-feather/dist/icons/square';
+import CheckSquare from 'react-feather/dist/icons/check-square';
 
 import { I18nContext } from '../../contexts';
 import { ITeamSimple } from '../../types';

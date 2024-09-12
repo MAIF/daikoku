@@ -1,0 +1,73 @@
+.right-panel-container {
+  height: 100vh;
+  // background-color: $navbar-bg-color;
+  // position: 'relative';
+  // color: $navbar-text-color;
+
+
+  .right-panel {
+    height: 100%;
+    width: 0;
+    min-height: 300px;
+    overflow-y: hidden;
+  }
+}
+
+.right-panel {
+  position: absolute;
+  overflow: hidden;
+  width: 0;
+  height: 100vh;
+  z-index: 10000;
+  top: 0;
+  right: 0;
+  background-color: $companion_bg-color;
+  color: $companion_text-color;
+  filter: brightness(105%);
+  transition: width .2s ease-in-out;
+
+  &.opened {
+    width: calc(75vw);
+    overflow-y: auto;
+
+    @media screen and (min-width:768px) {
+      width: calc(35vw);
+    }
+  }
+
+  .right-panel__back {
+    height: 40px;
+    width: 40px;
+    position: absolute;
+    top: .5rem;
+    right: .5rem;
+
+    &:hover {
+      border-radius: 50%;
+      background-color: $companion_text-hover-bg-color;
+      color: var(--companion-link-hover-text-color);
+    }
+  }
+}
+
+.right-panel-background {
+  position: absolute;
+  width: 0;
+  height: 100vh;
+  z-index: 1000;
+  top: 0;
+  left: 0;
+  background-color: #000;
+  opacity: 0.3;
+  width: 0;
+
+  transition: width .2s ease-in-out;
+
+  &.opened {
+    width: 25vw;
+
+    @media screen and (min-width:768px) {
+      width: 65vw;
+    }
+  }
+}

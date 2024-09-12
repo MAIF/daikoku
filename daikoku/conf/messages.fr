@@ -95,3 +95,4 @@ mail.checkout.title = Un paiement en attente
 mail.checkout.body = Votre demande de souscription pour l'api [api.name] et le plan [api.plan] a été accepté\
 Vous pouvez effectuer maintenant le reglement.\
 Vous pouvez finaliser votre demande : <a href="[link]">Reglement</a>
+mail.api.subscription.transfer.rejection.body = Votre demande de transfert de le souscription [subscription] a été rejetée.

@@ -309,7 +309,7 @@ test('Create & manage API', async ({ page }) => {
   await page.getByText('Validate a subscription', { exact: true }).click();
   await page.getByRole('link', { name: 'Accept' }).click();
   await page.getByRole('link', { name: 'Access to the notifications' }).click();
-  await page.getByRole('link', { name: 'Go home' }).click();
+  await page.getByRole('link', { name: 'APIs list' }).click();
   await page.getByText('Consumers').click();
   await page.getByText('API keys').click();
   await page.getByRole('row', { name: 'test API 2 1.0.0' }).getByLabel('View APIkeys').click();
@@ -317,7 +317,7 @@ test('Create & manage API', async ({ page }) => {
   // await expect(page.locator('#tooltip-TwFQ')).toBeVisible();
   //FIXME: due to small viewport``
 
-  await expect(page.locator('.card-header').filter({ hasText: 'public & automatic' })).toBeVisible()
+  await expect(page.locator('.api-subscription__infos__name').filter({ hasText: 'public & automatic' })).toBeVisible()
 })
 
 /**
@@ -381,7 +381,7 @@ test('aggregation mode', async ({ page, request }) => {
   await page.locator('.usage-plan__card').filter({ hasText: 'not test plan' }).getByRole('button').click();
   await page.locator('div').filter({ hasText: /^Consumers$/ }).click();
   // await page.getByRole('button', { name: 'Subscribe with a new api key' }).click();
-  await page.getByRole('link', { name: 'Go home' }).click();
+  await page.getByRole('link', { name: 'APIs list' }).click();
 
   //subscribe second api with aggregation
   await page.getByRole('heading', { name: 'test API 2' }).click();
@@ -392,7 +392,7 @@ test('aggregation mode', async ({ page, request }) => {
   await page.getByText('test API/not test plan').click();
 
   //go to subscriptions
-  await page.getByRole('link', { name: 'Go home' }).click();
+  await page.getByRole('link', { name: 'APIs list' }).click();
   await page.locator('.top__container').filter({ hasText: 'Your teams' })
     .getByText('Consumers').click()
   // await page.getByLabel('Notifications alt+T').getByRole('button').click();
@@ -400,26 +400,33 @@ test('aggregation mode', async ({ page, request }) => {
   await page.getByRole('row', { name: 'test API 2 1.0.0' }).getByLabel('View APIkeys').click();
 
   //get the client id value to check
-  const clientId = await page.getByLabel('Client Id').inputValue()
+  const apikey = await page.locator('.api-subscription__infos__value').innerText()
 
   await page.getByText('API keys', { exact: true }).click();
   await page.getByRole('row', { name: 'test API 2.0.0' }).getByLabel('view APikey').click();
-  await expect(page.getByLabel('Client Id').first()).toHaveValue(clientId);
-  await page.getByRole('button', { name: 'Show aggregate subscriptions' }).click();
+  await expect(page.locator('.api-subscription__infos__value').first()).toHaveText(apikey);
+  await page.locator('.api-subscription').locator('.dropdown').click();
+  await page.getByText('Show aggregate').click();
   await expect(page.getByRole('link', { name: 'test API 2/test plan' })).toBeVisible();
+  await page.locator('.right-panel-background.opened').click();
   await page.getByText('API keys', { exact: true }).click();
   await page.getByRole('row', { name: 'test API 2 1.0.0' }).getByLabel('view APikey').click();
-  await page.getByRole('button', { name: 'make unique' }).click();
+  await page.locator('.api-subscription').locator('.dropdown').click();
+  await page.getByText('Extract from agg.').click();
+  // await page.getByRole('button', { name: 'make unique' }).click();
   await expect(page.getByRole('paragraph')).toContainText('Are you sure to make this API key unique and separate from his parent plan?');
-  await page.getByRole('button', { name: 'Ok' }).click();
-  await expect(page.getByLabel('Client Id').first()).not.toHaveValue(clientId);
+  await page.getByRole('button', { name: 'Ok', exact: true }).click();
+  await expect(page.locator('.api-subscription__infos__value').first()).not.toHaveText(apikey);
 
   // //test archive apikey & clean archive apikeys
-  await page.getByRole('button', { name: 'Disable subscription' }).click();
-  await expect(page.getByRole('button', { name: 'Enable subscription' })).toBeVisible();
+  await page.locator('.api-subscription').locator('.dropdown').click();
+  await page.getByText('Disable subscription').click();
+  await expect(page.locator('.api-subscription__value__type')).toHaveText('Disabled')
+  // await expect(page.getByRole('button', { name: 'Enable subscription' })).toBeVisible();
 
-  await page.getByLabel('Delete').click();
-  await expect(page.locator('h5')).toContainText('Confirm Deletion');
+  await page.locator('.api-subscription').locator('.dropdown').click();
+  await page.getByText('Delete').click();
+  await expect(page.locator('h5')).toContainText('Confirm the deletion');
   await page.getByLabel('To confirm the deletion,').fill('test API 2/test plan');
   await page.getByRole('button', { name: 'Confirm' }).click();
   await page.getByText('API keys', { exact: true }).click();
@@ -463,7 +470,7 @@ test('do search', async ({ page, request }) => {
   await expect(page.locator('.navbar-panel.opened .block__entry__link')).toHaveCount(1)
   await expect(page.getByRole('link', { name: 'Testers' })).toBeVisible();
   await page.getByRole('link', { name: 'Testers' }).click();
-  await expect(page.getByRole('heading', { name: 'My Pending Requests' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'My pending requests' })).toBeVisible();
 
   //search an API
   await page.locator('.notification-link').first().click();
@@ -500,7 +507,7 @@ test('API admin can transfer his own API ownership', async ({ page }) => {
   await page.getByRole('link', { name: 'Access to the notifications' }).click();
   await expect(page.locator('#app')).toContainText('Consumersrequest to transfer the ownership of test APITestera few seconds');
   await page.getByRole('link', { name: 'Accept' }).nth(1).click();
-  await page.getByRole('link', { name: 'Go home' }).click();
+  await page.getByRole('link', { name: 'APIs list' }).click();
   await page.locator('h3').filter({ hasText: 'test API' }).waitFor({ state: 'visible' })
   const consumerSelector = page.locator('small').filter({ hasText: 'Consumers' })
   // console.log(consumerSelector)
@@ -558,13 +565,15 @@ test('Filter API List', async ({ page, request }) => {
   await page.getByRole('option', { name: 'external' }).click();
   await expect(page.locator('.preview')).toContainText('1 result categorized in external');
   await page.getByText('clear filter').click();
-  await page.getByPlaceholder('Search your API...').fill('test');
+  await page.getByPlaceholder('Search your API').fill('test');
   await expect(page.locator('.preview')).toContainText('2 results matching test');
   await page.locator('.reactSelect__indicator').first().click();
   await page.getByRole('option', { name: 'Testers' }).click();
-  await page.locator('div').filter({ hasText: /^option Testers, selected\.TestersSearch a tagSearch a category$/ }).locator('svg').nth(2).click();
+  await page.locator('.reactSelect__control').nth(1).locator('svg').click()
+  // await page.locator('div').filter({ hasText: /^option Testers, selected\.By tagBy category$/ }).locator('svg').nth(2).click();
   await page.getByRole('option', { name: 'test' }).click();
-  await page.locator('div').filter({ hasText: /^Testersoption test, selected\.testSearch a category$/ }).locator('svg').nth(4).click();
+  await page.locator('.reactSelect__control').nth(2).locator('svg').click()
+  // await page.locator('div').filter({ hasText: /^Testersoption test, selected\.testBy category$/ }).locator('svg').nth(4).click();
   await page.getByRole('option', { name: 'internal' }).click();
   await expect(page.locator('.preview')).toContainText('1 result matching test categorized in internal tagged test produced by Testers');
   await page.locator('.category__selector > .reactSelect__control > .reactSelect__value-container > .reactSelect__input-container').click();

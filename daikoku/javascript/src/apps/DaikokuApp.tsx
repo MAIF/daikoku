@@ -14,7 +14,8 @@ import {
   MaybeHomePage,
   MyHome,
   TeamHome,
-  AtomicDesign
+  AtomicDesign,
+  SubscriptionRetrieve
 } from '../components/frontend';
 
 import { MessagesProvider, MyProfile, NotificationList } from '../components/backoffice';
@@ -47,6 +48,7 @@ import { I18nContext } from '../contexts/i18n-context';
 import { MessagesEvents } from '../services/messages';
 import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
 import { AnonymousReporting } from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
+import { RightPanel } from '../components/utils/sidebar/RightPanel';
 
 export const DaikokuApp = () => {
   const { connectedUser, tenant } = useContext(GlobalContext)
@@ -146,6 +148,7 @@ export const DaikokuApp = () => {
           <ModalProvider>
             <div className="d-flex flex-row">
               <SideBar />
+              <RightPanel />
               <div className="wrapper flex-grow-1 container-fluid">
                 <Routes>
                   <Route
@@ -449,6 +452,14 @@ export const DaikokuApp = () => {
                     element={
                       <FrontOfficeRoute>
                         <TeamHome />
+                      </FrontOfficeRoute>
+                    }
+                  />
+                  <Route
+                    path='/subscriptions/_retrieve'
+                    element={
+                      <FrontOfficeRoute>
+                        <SubscriptionRetrieve />
                       </FrontOfficeRoute>
                     }
                   />

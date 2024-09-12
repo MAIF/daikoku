@@ -28,7 +28,7 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.Cypher.decrypt
+import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils._
@@ -2072,6 +2072,90 @@ class ApiController(
 //            }
           }
         )
+      }
+    }
+
+  def checkTransferLink() =
+    DaikokuActionMaybeWithGuest.async { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent("@{user.name} has check a transfer link for @{subscription.id}")
+      )(ctx) {
+
+        (for {
+          cypheredInfos <- EitherT.fromOption[Future][AppError, String](ctx.request.getQueryString("token"), AppError.EntityNotFound("token"))
+          transferToken <- EitherT.pure[Future, AppError](decrypt(env.config.cypherSecret, cypheredInfos, ctx.tenant))
+          transfer <- EitherT.fromOptionF[Future, AppError, ApiSubscriptionTransfer](env.dataStore.apiSubscriptionTransferRepo.forTenant(ctx.tenant).findOneNotDeleted(Json.obj("token" -> transferToken)),
+            AppError.Unauthorized)
+          _ <- EitherT.cond[Future][AppError, Unit](transfer.date.plusDays(1).isAfter(DateTime.now()), (), AppError.ForbiddenAction) //give reason
+          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdNotDeleted(transfer.subscription), AppError.SubscriptionNotFound)
+          team <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.team), AppError.TeamNotFound)
+          usagePlan <- EitherT.fromOptionF[Future, AppError, UsagePlan](env.dataStore.usagePlanRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.plan), AppError.PlanNotFound)
+          api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo.forTenant(ctx.tenant).findByIdNotDeleted(subscription.api), AppError.ApiNotFound)
+        } yield {
+          ctx.setCtxValue("subscription.id", subscription.id.value)
+          Ok(Json.obj(
+            "subscription" -> subscription.asJson,
+            "api" -> api.asJson,
+            "plan" -> usagePlan.asJson,
+            "ownerTeam" -> team.asJson
+          ))
+        })
+          .leftMap(_.render())
+          .merge
+      }
+    }
+
+  def getTransferLink(teamId: String, subscriptionId: String) =
+    DaikokuAction.async { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(s"@{user.name} has generated a link to transfer subscription @{subscription.id}"))(teamId, ctx) { team => {
+
+        ctx.setCtxValue("subscription.id", subscriptionId)
+        (for {
+          subscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findByIdOrHrIdNotDeleted(subscriptionId),
+            AppError.SubscriptionNotFound)
+          _ <- EitherT.cond[Future][AppError, Unit](subscription.parent.isEmpty, (), AppError.EntityConflict("Subscription is part of aggregation"))
+
+          transfer = ApiSubscriptionTransfer(
+            id = DatastoreId(IdGenerator.token(16)),
+            tenant = ctx.tenant.id,
+            token = IdGenerator.token,
+            subscription = subscription.id,
+            by = ctx.user.id,
+            date = DateTime.now()
+          )
+          cipheredToken = encrypt(env.config.cypherSecret, transfer.token, ctx.tenant)
+          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionTransferRepo.forTenant(ctx.tenant).delete(Json.obj("subscription" -> subscription.id.asJson)))
+          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiSubscriptionTransferRepo.forTenant(ctx.tenant).save(transfer))
+          link <- EitherT.pure[Future, AppError](s"${env.getDaikokuUrl(ctx.tenant, "/subscriptions/_retrieve")}?token=$cipheredToken")
+        } yield Ok(Json.obj("link" -> link)))
+          .leftMap(_.render())
+          .merge
+      }
+      }
+    }
+
+  def transferSubscription(teamId: String, subscriptionId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TeamAdminOnly(
+        AuditTrailEvent(s"@{user.name} has ask to transfer subscription @{subscriptionId} to team @{teamId}"))(teamId, ctx) { team => {
+
+        (for {
+          extract <- apiService.checkAndExtractTransferLink(ctx.tenant, subscriptionId, (ctx.request.body \ "token").as[String], team)
+          otoroshiSettings <- EitherT.fromOption[Future][AppError, OtoroshiSettings](extract.plan.otoroshiTarget.flatMap(target => ctx.tenant.otoroshiSettings.find(_.id == target.otoroshiSettings)), AppError.EntityNotFound("Otoroshi settings"))
+          _ <- apiService.transferSubscription(
+            newTeam = team,
+            subscription = extract.subscription,
+            childs = extract.childSubscriptions,
+            tenant = ctx.tenant,
+            user = ctx.user,
+            api = extract.api,
+            plan = extract.plan,
+            otoroshiSettings = otoroshiSettings)
+        } yield Ok(Json.obj("done" -> true)))
+          .leftMap(_.render())
+          .merge
+      }
       }
     }
 

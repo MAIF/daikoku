@@ -60,19 +60,19 @@ export const SideBar = () => {
     <div className="navbar-container d-flex flex-row">
       <div className="navbar d-flex flex-column p-2 align-items-center justify-content-between">
         <div className="navbar_top d-flex flex-column align-items-center">
-              <a
-                href={'/'}
-                title="Daikoku home"
-                aria-label="Go home"
+              <Link
+                to='/'
+                title={translate("Daikoku.home")}
+                aria-label={translate("Daikoku.home")}
                 className="mb-3 brand"
               >
                 <img src={tenant.logo} alt={translate("tenant.logo")} />
-              </a>
+              </Link>
               <div className="nav_item mb-3 cursor-pointer">
                 <Link
                   to="/apis"
-                  title="list apis"
-                  aria-label="Access to list apis"
+                  title={translate("API.list")}
+                  aria-label={translate("API.list")}
                   className="mb-3 brand"
                 >
                   <RectangleList />
