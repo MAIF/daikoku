@@ -675,8 +675,7 @@ const ApiKeyCard = ({
           style={{
             position: 'absolute',
             top: '15px',
-            right: '15px',
-            zIndex: '1000',
+            right: '15px'
           }}
         >
           <i
@@ -686,17 +685,17 @@ const ApiKeyCard = ({
             aria-expanded="false"
             id="dropdownMenuButton"
           />
-          <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
+          <div className="dropdown-menu" aria-labelledby="dropdownMenuButton" style={{zIndex:1}}>
             <span
               className="dropdown-item cursor-pointer"
               onClick={() => openFormModal({
-                title: translate('Create a new team'),
+                title: translate("subscription.custom.name.update.label"),
                 actionLabel: translate('Save'),
                 schema: {
                   customName: {
                     type: type.string,
-                    placeholder: 'custom subscription name',
-                    label: 'subscription custom name',
+                    placeholder: translate('subscription.custom.name.update.placeholder'),
+                    label: translate('subscription.custom.name.update.message'),
                   }
                 },
                 onSubmit: (data) => {
@@ -755,7 +754,7 @@ const ApiKeyCard = ({
               className="dropdown-item cursor-pointer danger"
               onClick={transferKey}
             >
-              transferer la subscription
+              {translate("subscription.transfer.label")}
             </span>}
             <span
               className={classNames("dropdown-item cursor-pointer danger", {

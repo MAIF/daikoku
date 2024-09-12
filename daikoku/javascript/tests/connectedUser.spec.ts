@@ -419,7 +419,7 @@ test('aggregation mode', async ({ page, request }) => {
   await expect(page.getByRole('button', { name: 'Enable subscription' })).toBeVisible();
 
   await page.getByLabel('Delete').click();
-  await expect(page.locator('h5')).toContainText('Confirm Deletion');
+  await expect(page.locator('h5')).toContainText('Confirm the deletion');
   await page.getByLabel('To confirm the deletion,').fill('test API 2/test plan');
   await page.getByRole('button', { name: 'Confirm' }).click();
   await page.getByText('API keys', { exact: true }).click();
