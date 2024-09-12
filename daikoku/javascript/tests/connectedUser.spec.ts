@@ -400,25 +400,32 @@ test('aggregation mode', async ({ page, request }) => {
   await page.getByRole('row', { name: 'test API 2 1.0.0' }).getByLabel('View APIkeys').click();
 
   //get the client id value to check
-  const clientId = await page.getByLabel('Client Id').inputValue()
+  const apikey = await page.locator('.api-subscription__infos__value').innerText()
 
   await page.getByText('API keys', { exact: true }).click();
   await page.getByRole('row', { name: 'test API 2.0.0' }).getByLabel('view APikey').click();
-  await expect(page.getByLabel('Client Id').first()).toHaveValue(clientId);
-  await page.getByRole('button', { name: 'Show aggregate subscriptions' }).click();
+  await expect(page.locator('.api-subscription__infos__value').first()).toHaveText(apikey);
+  await page.locator('.api-subscription').locator('.dropdown').click();
+  await page.getByText('Show aggregate').click();
   await expect(page.getByRole('link', { name: 'test API 2/test plan' })).toBeVisible();
+  await page.locator('.right-panel-background.opened').click();
   await page.getByText('API keys', { exact: true }).click();
   await page.getByRole('row', { name: 'test API 2 1.0.0' }).getByLabel('view APikey').click();
-  await page.getByRole('button', { name: 'make unique' }).click();
+  await page.locator('.api-subscription').locator('.dropdown').click();
+  await page.getByText('Extract from agg.').click();
+  // await page.getByRole('button', { name: 'make unique' }).click();
   await expect(page.getByRole('paragraph')).toContainText('Are you sure to make this API key unique and separate from his parent plan?');
-  await page.getByRole('button', { name: 'Ok' }).click();
-  await expect(page.getByLabel('Client Id').first()).not.toHaveValue(clientId);
+  await page.getByRole('button', { name: 'Ok', exact: true }).click();
+  await expect(page.locator('.api-subscription__infos__value').first()).not.toHaveText(apikey);
 
   // //test archive apikey & clean archive apikeys
-  await page.getByRole('button', { name: 'Disable subscription' }).click();
-  await expect(page.getByRole('button', { name: 'Enable subscription' })).toBeVisible();
+  await page.locator('.api-subscription').locator('.dropdown').click();
+  await page.getByText('Disable subscription').click();
+  await expect(page.locator('.api-subscription__value__type')).toHaveText('Disabled')
+  // await expect(page.getByRole('button', { name: 'Enable subscription' })).toBeVisible();
 
-  await page.getByLabel('Delete').click();
+  await page.locator('.api-subscription').locator('.dropdown').click();
+  await page.getByText('Delete').click();
   await expect(page.locator('h5')).toContainText('Confirm the deletion');
   await page.getByLabel('To confirm the deletion,').fill('test API 2/test plan');
   await page.getByRole('button', { name: 'Confirm' }).click();

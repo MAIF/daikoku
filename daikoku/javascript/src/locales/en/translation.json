@@ -1448,6 +1448,7 @@
     "subscription.custom.name.update.placeholder":"Custom name",
     "subscription.rotation.update.label": "Setup secret rotation",
     "subscription.reset.secret.label": "Reset secret",
+    "subscription.show.aggregate.label": "Show aggregate",
     "subscription.transfer.label": "Transfer subscription",
     "subscription.enable.button.label": "Enable subscription",
     "subscription.disable.button.label": "Disable subscription",

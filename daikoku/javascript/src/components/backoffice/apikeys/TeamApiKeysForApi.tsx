@@ -741,7 +741,7 @@ const ApiKeyCard = ({
                 </div>
               })}
             >
-              Voir l'agreggat
+              {translate("subscription.show.aggregate.label")}
             </span>}
             <div className="dropdown-divider" />
             {!subscription.parent && <span
