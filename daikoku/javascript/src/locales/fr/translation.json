@@ -1474,5 +1474,6 @@
   "subscription.retrieve.login.required.message": "Veuillez vous connecter pour continuer. Vous devez être authentifié pour accéder à cette fonctionnalité.",
   "subscription.retrieve.token.unavalaible": "Le jeton n'est plus valable",
   "Daikoku.home" : "Accueil Daikoku",
-  "API.list" : "Liste des APIs"
+  "API.list" : "Liste des APIs",
+  "more.nav.options": "Plus d'options"
 }

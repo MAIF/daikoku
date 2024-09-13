@@ -1474,5 +1474,6 @@
     "subscription.retrieve.login.required.message": "Please log in to continue. You need to be authenticated to access this feature.",
     "subscription.retrieve.token.unavalaible": "token unavailable",
     "Daikoku.home" : "Daikoku home",
-    "API.list" : "APIs list"
+    "API.list" : "APIs list",
+    "more.nav.options": "More options"
 }
