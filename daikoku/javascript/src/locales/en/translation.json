@@ -1475,5 +1475,6 @@
     "subscription.retrieve.token.unavalaible": "token unavailable",
     "Daikoku.home" : "Daikoku home",
     "API.list" : "APIs list",
-    "more.nav.options": "More options"
+    "more.nav.options": "More options",
+    "api.access.modal.title": "Api access request"
 }

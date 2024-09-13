@@ -1475,5 +1475,6 @@
   "subscription.retrieve.token.unavalaible": "Le jeton n'est plus valable",
   "Daikoku.home" : "Accueil Daikoku",
   "API.list" : "Liste des APIs",
-  "more.nav.options": "Plus d'options"
+  "more.nav.options": "Plus d'options",
+  "api.access.modal.title": "demande d'accès à une API"
 }

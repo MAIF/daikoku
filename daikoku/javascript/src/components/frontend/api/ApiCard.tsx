@@ -44,7 +44,7 @@ export const ApiCard = (props: {
     ) {
       return (
         <ActionWithTeamSelector
-          title="Api access"
+          title={translate("api.access.modal.title")}
           description={translate({ key: 'api.access.request', replacements: [api.name] })}
           pendingTeams={authorizations.filter((auth: any) => auth.pending).map((auth: any) => auth.team)}
           acceptedTeams={authorizations
