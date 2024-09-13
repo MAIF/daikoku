@@ -469,7 +469,7 @@ const YourTeams = ({
 
   const [searchedTeam, setSearchedTeam] = useState<string>();
   const maybeTeams = searchedTeam
-    ? teams.filter((team) => team.name.toLowerCase().includes(searchedTeam))
+    ? teams.filter((team) => team.name.toLocaleLowerCase().includes(searchedTeam.toLocaleLowerCase()))
     : teams;
   return (
     <div className={'top__container p-3 rounded album mb-2'}>
