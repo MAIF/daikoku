@@ -748,6 +748,7 @@
   "moment.duration.months": "%s m",
   "moment.duration.years": "%s a",
   "Unknown user": "Utilisateur inconnu",
+  "Unknown team": "Équipe inconnue",
   "European server": "Serveur européen",
   "API creation security": "Sécurité - création d'API",
   "creation.security.help": "si activé, seules les équipes autorisées pourront créer des APIs",
