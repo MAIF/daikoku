@@ -22,31 +22,9 @@ export const SearchPanel = () => {
   }, []);
 
   const search = (inputValue: string) => {
-    const options = [
-      {
-        value: 'me',
-        label: translate('My profile'),
-        type: 'link',
-        url: '/me',
-      },
-    ];
-    if (connectedUser?.isDaikokuAdmin)
-      options.push({
-        value: 'daikoku',
-        label: translate('Daikoku settings'),
-        type: 'link',
-        url: `/settings/tenants`,
-      });
-
-    const utils = {
-      label: 'Daikoku',
-      options: options.filter((i) => i.label.toLowerCase().includes(inputValue.toLowerCase())),
-    };
-
     return Services.search(inputValue)
       .then((result) =>
         setResults([
-          utils,
           ...result.map((item: any) => ({
             ...item,
             label: translate(item.label)
