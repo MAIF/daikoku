@@ -395,28 +395,31 @@ trait UserRepo extends Repo[User, UserId]
 trait EvolutionRepo extends Repo[Evolution, DatastoreId]
 trait ReportsInfoRepo extends Repo[ReportsInfo, DatastoreId]
 
-trait ApiSubscriptionTransferRepo extends TenantCapableRepo[ApiSubscriptionTransfer, DatastoreId]
+trait ApiSubscriptionTransferRepo
+    extends TenantCapableRepo[ApiSubscriptionTransfer, DatastoreId]
 
 trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
   def myTeams(tenant: Tenant, user: User)(implicit
       env: Env,
       ec: ExecutionContext
   ): Future[Seq[Team]] = {
-    val typeFilter = if (tenant.subscriptionSecurity.isDefined
-      &&  tenant.subscriptionSecurity.exists(identity)) {
-      Json.obj(
-        "type" -> Json.obj("$ne" -> TeamType.Personal.name)
-      )
-    } else {
-      Json.obj()
-    }
+    val typeFilter =
+      if (
+        tenant.subscriptionSecurity.isDefined
+        && tenant.subscriptionSecurity.exists(identity)
+      ) {
+        Json.obj(
+          "type" -> Json.obj("$ne" -> TeamType.Personal.name)
+        )
+      } else {
+        Json.obj()
+      }
     if (user.isDaikokuAdmin) {
       env.dataStore.teamRepo
         .forTenant(tenant.id)
         .findNotDeleted(
-            typeFilter
+          typeFilter
         )
-
 
     } else {
       env.dataStore.teamRepo

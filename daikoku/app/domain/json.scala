@@ -1007,7 +1007,7 @@ object json {
             otoroshiTarget =
               (json \ "otoroshiTarget").asOpt(OtoroshiTargetFormat),
             aggregationApiKeysSecurity =
-              (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
+              (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
           )
         )
       } recover {
@@ -2202,8 +2202,9 @@ object json {
             tenantMode = (json \ "tenantMode").asOpt(TenantModeFormat),
             aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity")
               .asOpt[Boolean],
-            environmentAggregationApiKeysSecurity = (json \ "environmentAggregationApiKeysSecurity")
-              .asOpt[Boolean],
+            environmentAggregationApiKeysSecurity =
+              (json \ "environmentAggregationApiKeysSecurity")
+                .asOpt[Boolean],
             robotTxt = (json \ "robotTxt").asOpt[String],
             thirdPartyPaymentSettings = (json \ "thirdPartyPaymentSettings")
               .asOpt(SeqThirdPartyPaymentSettingsFormat)
@@ -3219,7 +3220,8 @@ object json {
           case "NewIssueOpen"         => NewIssueOpenFormat.reads(json)
           case "NewCommentOnIssue"    => NewCommentOnIssueFormat.reads(json)
           case "TransferApiOwnership" => TransferApiOwnershipFormat.reads(json)
-          case "ApiSubscriptionTransferSuccess" => ApiSubscriptionTransferSuccessFormat.reads(json)
+          case "ApiSubscriptionTransferSuccess" =>
+            ApiSubscriptionTransferSuccessFormat.reads(json)
           case "CheckoutForSubscription" =>
             CheckoutForSubscriptionFormat.reads(json)
           case str => JsError(s"Bad notification value: $str")
@@ -3240,9 +3242,10 @@ object json {
               "type" -> "ApiSubscription"
             )
           case p: ApiSubscriptionTransferSuccess =>
-            ApiSubscriptionTransferSuccessFormat.writes(p).as[JsObject] ++ Json.obj(
-              "type" -> "ApiSubscriptionTransferSuccess"
-            )
+            ApiSubscriptionTransferSuccessFormat.writes(p).as[JsObject] ++ Json
+              .obj(
+                "type" -> "ApiSubscriptionTransferSuccess"
+              )
           case p: ApiSubscriptionReject =>
             ApiSubscriptionRejectFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiSubscriptionReject"
@@ -3486,24 +3489,27 @@ object json {
           .as[JsValue]
       )
   }
-  val ApiSubscriptionTransferSuccessFormat = new Format[ApiSubscriptionTransferSuccess] {
+  val ApiSubscriptionTransferSuccessFormat =
+    new Format[ApiSubscriptionTransferSuccess] {
 
-    override def reads(json: JsValue): JsResult[ApiSubscriptionTransferSuccess] =
-      Try {
-        JsSuccess(
-          ApiSubscriptionTransferSuccess(
-            subscription = (json \ "subscription").as(ApiSubscriptionIdFormat)
+      override def reads(
+          json: JsValue
+      ): JsResult[ApiSubscriptionTransferSuccess] =
+        Try {
+          JsSuccess(
+            ApiSubscriptionTransferSuccess(
+              subscription = (json \ "subscription").as(ApiSubscriptionIdFormat)
+            )
           )
-        )
-      } recover {
-        case e => JsError(e.getMessage)
-      } get
+        } recover {
+          case e => JsError(e.getMessage)
+        } get
 
-    override def writes(o: ApiSubscriptionTransferSuccess): JsValue =
-      Json.obj(
-        "subscription" -> o.subscription.asJson
-      )
-  }
+      override def writes(o: ApiSubscriptionTransferSuccess): JsValue =
+        Json.obj(
+          "subscription" -> o.subscription.asJson
+        )
+    }
   val ApiSubscriptionRejectFormat = new Format[ApiSubscriptionReject] {
     override def reads(json: JsValue): JsResult[ApiSubscriptionReject] =
       Try {

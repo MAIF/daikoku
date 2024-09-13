@@ -345,6 +345,7 @@ case class ApiSubscriptionTransfer(
     token: String,
     subscription: ApiSubscriptionId,
     date: DateTime,
-    by: UserId) extends CanJson[ApiSubscriptionTransfer] {
+    by: UserId
+) extends CanJson[ApiSubscriptionTransfer] {
   override def asJson: JsValue = json.ApiSubscriptionTransferFormat.writes(this)
 }

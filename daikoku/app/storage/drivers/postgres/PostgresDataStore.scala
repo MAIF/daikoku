@@ -288,10 +288,14 @@ case class PostgresTenantCapableUsagePlanRepo(
 
 case class PostgresTenantCapableApiSubscriptionTransferRepo(
     _repo: () => PostgresRepo[ApiSubscriptionTransfer, DatastoreId],
-    _tenantRepo: TenantId => PostgresTenantAwareRepo[ApiSubscriptionTransfer, DatastoreId]
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[
+      ApiSubscriptionTransfer,
+      DatastoreId
+    ]
 ) extends PostgresTenantCapableRepo[ApiSubscriptionTransfer, DatastoreId]
     with ApiSubscriptionTransferRepo {
-  override def repo(): PostgresRepo[ApiSubscriptionTransfer, DatastoreId] = _repo()
+  override def repo(): PostgresRepo[ApiSubscriptionTransfer, DatastoreId] =
+    _repo()
 
   override def tenantRepo(
       tenant: TenantId
@@ -686,7 +690,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
 
   override def usagePlanRepo: UsagePlanRepo = _usagePlanRepo
 
-  override def apiSubscriptionTransferRepo: ApiSubscriptionTransferRepo = _apiSubscriptionTransferRepo
+  override def apiSubscriptionTransferRepo: ApiSubscriptionTransferRepo =
+    _apiSubscriptionTransferRepo
 
   override def start(): Future[Unit] = {
     Future.successful(())
@@ -1135,14 +1140,23 @@ class PostgresTenantUsagePlanRepo(
   override def extractId(value: UsagePlan): String = value.id.value
 }
 
-class PostgresTenantApiSubscriptionTransferRepo(env: Env, reactivePg: ReactivePg, tenant: TenantId)
-  extends PostgresTenantAwareRepo[ApiSubscriptionTransfer, DatastoreId](env, reactivePg, tenant) {
+class PostgresTenantApiSubscriptionTransferRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[ApiSubscriptionTransfer, DatastoreId](
+      env,
+      reactivePg,
+      tenant
+    ) {
 
   override def tableName: String = "api_subscription_transfers"
 
-  override def format: Format[ApiSubscriptionTransfer] = json.ApiSubscriptionTransferFormat
+  override def format: Format[ApiSubscriptionTransfer] =
+    json.ApiSubscriptionTransferFormat
 
-  override def extractId(value: ApiSubscriptionTransfer): String = value.id.value
+  override def extractId(value: ApiSubscriptionTransfer): String =
+    value.id.value
 }
 
 class PostgresTenantCmsPageRepo(
@@ -1410,12 +1424,17 @@ class PostgresUsagePlanRepo(env: Env, reactivePg: ReactivePg)
 }
 
 class PostgresApiSubscriptionTransferRepo(env: Env, reactivePg: ReactivePg)
-    extends PostgresRepo[ApiSubscriptionTransfer, DatastoreId](env, reactivePg) {
+    extends PostgresRepo[ApiSubscriptionTransfer, DatastoreId](
+      env,
+      reactivePg
+    ) {
   override def tableName: String = "api_subscription_transfers"
 
-  override def format: Format[ApiSubscriptionTransfer] = json.ApiSubscriptionTransferFormat
+  override def format: Format[ApiSubscriptionTransfer] =
+    json.ApiSubscriptionTransferFormat
 
-  override def extractId(value: ApiSubscriptionTransfer): String = value.id.value
+  override def extractId(value: ApiSubscriptionTransfer): String =
+    value.id.value
 }
 
 class PostgresApiRepo(env: Env, reactivePg: ReactivePg)

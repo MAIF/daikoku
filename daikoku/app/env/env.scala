@@ -306,7 +306,9 @@ sealed trait Env {
 
   def getDaikokuUrl(tenant: Tenant, path: String): String
 
-  def initDatastore(path: Option[String]= None)(implicit ec: ExecutionContext): Future[Done]
+  def initDatastore(path: Option[String] = None)(implicit
+      ec: ExecutionContext
+  ): Future[Done]
 }
 
 class DaikokuEnv(
@@ -376,14 +378,16 @@ class DaikokuEnv(
       }
   }
 
-  override def initDatastore(path: Option[String]=None)(implicit ec: ExecutionContext): Future[Done] = {
+  override def initDatastore(
+      path: Option[String] = None
+  )(implicit ec: ExecutionContext): Future[Done] = {
     def run(isEmpty: Boolean): Future[Unit] = {
       if (isEmpty) {
         (dataStore match {
           case store: PostgresDataStore => store.checkDatabase()
           case _                        => FastFuture.successful(None)
         }).map { _ =>
-          path.orElse(config.init.data.from)  match {
+          path.orElse(config.init.data.from) match {
             case Some(path)
                 if path.startsWith("http://") || path
                   .startsWith("https://") =>

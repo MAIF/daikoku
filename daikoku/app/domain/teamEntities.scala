@@ -228,7 +228,7 @@ object NotificationAction {
   ) extends NotificationAction
 
   case class ApiSubscriptionTransferSuccess(
-      subscription: ApiSubscriptionId,
+      subscription: ApiSubscriptionId
   ) extends NotificationAction
 
   case class OtoroshiSyncSubscriptionError(

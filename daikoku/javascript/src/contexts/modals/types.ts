@@ -30,9 +30,9 @@ export interface IBaseModalProps {
 }
 
 export type IRightPanelProps = {
-  title: string,
-  content: JSX.Element
-}
+  title: string;
+  content: JSX.Element;
+};
 
 export type TModalContext = {
   alert: (p: AlertModalProps) => Promise<void>;
@@ -53,9 +53,9 @@ export type TModalContext = {
   openApiSelectModal: (p: IApiSelectModalProps) => void;
   openCustomModal: (p: ICustomModalProps) => void;
   close: () => void;
-  openRightPanel: (p: IRightPanelProps) => void,
-  closeRightPanel: () => void,
-  rightPanelContent?: IRightPanelProps
+  openRightPanel: (p: IRightPanelProps) => void;
+  closeRightPanel: () => void;
+  rightPanelContent?: IRightPanelProps;
 };
 export type ConfirmModalProps = {
   message: JSX.Element | string | ((ok: () => void, cancel: () => void) => JSX.Element | string);

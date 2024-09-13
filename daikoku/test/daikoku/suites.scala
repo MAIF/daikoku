@@ -832,8 +832,10 @@ object utils {
       "metadata" -> Json.obj()
     )
 
-
-    def cleanOtoroshiServer(otoroshiPort: Int, apks: Seq[JsValue] = Seq(parentApkAsJson, parent2ApkAsJson)) = {
+    def cleanOtoroshiServer(
+        otoroshiPort: Int,
+        apks: Seq[JsValue] = Seq(parentApkAsJson, parent2ApkAsJson)
+    ) = {
       val apikeys = daikokuComponents.env.wsClient
         .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
         .withHttpHeaders(
@@ -878,21 +880,25 @@ object utils {
               }
             })
             .runWith(Sink.ignore)
-        _ <- Future.sequence(apks.map(apk => daikokuComponents.env.wsClient
-          .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
-          .withHttpHeaders(
-            Map(
-              "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
-              "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
-              "Host" -> "otoroshi-api.oto.tools"
-            ).toSeq: _*
+        _ <- Future.sequence(
+          apks.map(apk =>
+            daikokuComponents.env.wsClient
+              .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
+              .withHttpHeaders(
+                Map(
+                  "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+                  "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+                  "Host" -> "otoroshi-api.oto.tools"
+                ).toSeq: _*
+              )
+              .withFollowRedirects(false)
+              .withRequestTimeout(10.seconds)
+              .withMethod("POST")
+              .withBody(apk)
+              .execute()
+              .map(_ => true)
           )
-          .withFollowRedirects(false)
-          .withRequestTimeout(10.seconds)
-          .withMethod("POST")
-          .withBody(apk)
-          .execute()
-          .map(_ => true)))
+        )
       } yield true
 
     }
