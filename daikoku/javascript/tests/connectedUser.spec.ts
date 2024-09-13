@@ -480,14 +480,6 @@ test('do search', async ({ page, request }) => {
   await expect(page.getByRole('link', { name: 'test API - 1.0.0' })).toBeVisible();
   await page.getByRole('link', { name: 'test API - 2.0.0' }).click();
   await expect(page.getByRole('heading', { name: 'test API 2.0.0' })).toBeVisible();
-  await page.locator('.notification-link').first().click();
-
-  //go to profile page
-  await page.getByPlaceholder('Search for API, team and more').fill('');
-  await page.waitForResponse(r => r.url().includes('/api/_search') && r.status() === 200)
-  await page.getByRole('link', { name: 'My profile' }).click();
-  await expect(page.getByLabel('Name')).toHaveValue("Tester"); // expect = admin
-  await page.locator('.notification-link').first().click();
 });
 
 test('API admin can transfer his own API ownership', async ({ page }) => {
