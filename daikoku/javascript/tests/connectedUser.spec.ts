@@ -584,3 +584,41 @@ test('Filter API List', async ({ page, request }) => {
   await page.locator('small').filter({ hasText: 'external' }).click();
   await expect(page.locator('.preview')).toContainText('1 result categorized in external');
 })
+
+
+test('test', async ({ page }) => {
+  await page.goto('http://localhost:5173/apis');
+  await page.getByRole('img', { name: 'user menu' }).click();
+  await page.getByPlaceholder('Email address').fill('tester@foo.bar');
+  await page.getByPlaceholder('Password').fill('password');
+  await page.getByRole('button', { name: 'Login' }).click();
+  await page.waitForResponse(r => r.url().includes('/api/me/context') && r.status() === 200)
+  await page.waitForSelector('.apis__pagination')
+  await page.getByRole('heading', { name: 'test API' }).click();
+  
+  //tester l'url pour verifier que c'est bien la v2
+  await page.getByText('Plans').click();
+
+  await page.locator('div').filter({ hasText: /^fake prod plan/ }).getByRole('button').click();
+  await page.getByText('Consumers').click();
+  await page.getByLabel('Notifications').getByRole('img').nth(1).click();
+  const apikey = await page.locator('.api-subscription__infos__value').innerText();
+
+
+
+  await page.locator('#dropdownMenuButton').click();
+  await page.getByText('Transfer subscription').click();
+  await page.getByText('Display link').click();
+  const link = await page.locator('.api-susbcription__display-link').innerText();
+
+
+
+  await page.goto(link);
+  await page.getByText('Testers').click();
+  await page.getByRole('button', { name: 'Confirm transfer' }).click();
+
+  await page.getByText('Testers').click();
+  await page.getByText('API keys').click();
+  await page.getByRole('row', { name: 'test API 2.0.0 View API View' }).getByLabel('View APIkeys').click();
+  expect(page.locator('.api-subscription__infos__value')).toHaveText(apikey)
+});
