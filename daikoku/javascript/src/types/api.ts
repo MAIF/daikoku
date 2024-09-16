@@ -379,7 +379,7 @@ export interface IBaseSubscription {
   team: string;
   api: string;
   createdAt: string;
-  validUntil?: string;
+  validUntil?: number;
   by: string;
   customName: string | null;
   enabled: boolean;
@@ -444,7 +444,7 @@ export interface ISubscriptionCustomization {
   customMaxPerDay?: number;
   customReadOnly?: boolean;
   adminCustomName?: string;
-  validUntil?: string;
+  validUntil?: number;
   parent? : object;
 }
 

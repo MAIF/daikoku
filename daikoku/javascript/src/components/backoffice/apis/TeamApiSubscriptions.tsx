@@ -59,7 +59,7 @@ interface IApiSubscriptionGql extends ISubscriptionCustomization {
     type: string;
   };
   createdAt: string;
-  validUntil: string;
+  validUntil: number;
   api: {
     _id: string;
   };
@@ -77,7 +77,7 @@ interface IApiSubscriptionGql extends ISubscriptionCustomization {
     _id: string;
     adminCustomName: string;
     enabled: boolean;
-    validUntil: string;
+    validUntil: number;
     api: {
       _id: string;
       name: string;
@@ -224,10 +224,6 @@ export const TeamApiSubscriptions = ({
         sortingFn: "basic",
         cell: (info) => {
           const sub = info.row.original;
-          let titleDate = `<div>
-          <strong>${translate("validationDate.apikey.badge.title")}</strong> :
-          ${sub.validUntil ? formatDate(sub.validUntil, language) : "N/A"} 
-         </div>`;
           if (sub.parent) {
             const title = `<div>
             <strong>${translate("aggregated.apikey.badge.title")}</strong>
@@ -237,33 +233,18 @@ export const TeamApiSubscriptions = ({
               <li>${translate("aggregated.apikey.badge.apikey.name")}: ${sub.parent.adminCustomName}</li>
             </ul>
           </div>`;
-            titleDate = `<div>
-          <strong>${translate("validationDate.apikey.badge.title")}</strong> :
-          ${sub.parent.validUntil ? formatDate(sub.parent.validUntil, language) : "N/A"} 
-         </div>`;
             return (
               <div className="d-flex flex-row justify-content-between">
                 <span>{info.getValue()}</span>
-                <div>
-                  <BeautifulTitle title={titleDate} html>
-                    <div className="badge badge-custom me-1">V</div>
-                  </BeautifulTitle>
-
                   <BeautifulTitle title={title} html>
                     <div className="badge badge-custom">A</div>
                   </BeautifulTitle>
-                </div>
               </div>
             );
           }
 
           return (
-            <div className="d-flex flex-row justify-content-between">
               <span>{info.getValue()}</span>
-              <BeautifulTitle title={titleDate} html>
-                <div className="badge badge-custom">V</div>
-              </BeautifulTitle>
-            </div>
           );
         },
       }

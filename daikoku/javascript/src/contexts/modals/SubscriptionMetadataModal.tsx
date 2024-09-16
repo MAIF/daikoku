@@ -27,7 +27,7 @@ export type CustomSubscriptionData = {
   customMaxPerMonth: number;
   customReadOnly: boolean;
   adminCustomName: string;
-  validUntil: Date;
+  validUntil: number;
 };
 
 export const SubscriptionMetadataModal = <T extends IWithTesting>(
@@ -66,7 +66,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(
       customMaxPerMonth: formData.customQuotas.customMaxPerMonth,
       customReadOnly: formData.customReadOnly,
       adminCustomName: formData.adminCustomName,
-      validUntil: formData.validUntil,
+      validUntil: Date.parse(formData.validUntil),
     };
 
     const res = props.save(subProps);
