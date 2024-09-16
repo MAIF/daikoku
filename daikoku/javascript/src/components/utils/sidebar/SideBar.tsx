@@ -6,6 +6,7 @@ import MessageSquare from 'react-feather/dist/icons/message-square';
 import Plus from 'react-feather/dist/icons/plus';
 import Search from 'react-feather/dist/icons/search';
 import Zap from 'react-feather/dist/icons/zap';
+import More from 'react-feather/dist/icons/more-vertical';
 import { Link, useLocation } from 'react-router-dom';
 import RectangleList from 'react-feather/dist/icons/list';
 import { I18nContext } from '../../../contexts/i18n-context';
@@ -14,6 +15,7 @@ import * as Services from '../../../services';
 import { MessagesContext } from '../../backoffice';
 import { Companion } from './companions';
 import { AddPanel, DarkModeActivator, GuestPanel, MessagePanel, SearchPanel, SettingsPanel } from './panels';
+import { MorePanel } from './panels/MorePanel';
 
 
 export const state = {
@@ -60,24 +62,24 @@ export const SideBar = () => {
     <div className="navbar-container d-flex flex-row">
       <div className="navbar d-flex flex-column p-2 align-items-center justify-content-between">
         <div className="navbar_top d-flex flex-column align-items-center">
-              <a
-                href={'/'}
-                title="Daikoku home"
-                aria-label="Go home"
-                className="mb-3 brand"
-              >
-                <img src={tenant.logo} alt={translate("tenant.logo")} />
-              </a>
-              <div className="nav_item mb-3 cursor-pointer">
-                <Link
-                  to="/apis"
-                  title="list apis"
-                  aria-label="Access to list apis"
-                  className="mb-3 brand"
-                >
-                  <RectangleList />
-                </Link>
-              </div>
+          <Link
+            to='/'
+            title={translate("Daikoku.home")}
+            aria-label={translate("Daikoku.home")}
+            className="mb-3 brand"
+          >
+            <img src={tenant.logo} alt={translate("tenant.logo")} />
+          </Link>
+          <div className="nav_item mb-3 cursor-pointer">
+            <Link
+              to="/apis"
+              title={translate("API.list")}
+              aria-label={translate("API.list")}
+              className="mb-3 brand"
+            >
+              <RectangleList />
+            </Link>
+          </div>
 
           {!connectedUser.isGuest && (
             <>
@@ -103,16 +105,15 @@ export const SideBar = () => {
             </>
           )}
           {!connectedUser.isGuest && (
-            <Link
-              to="/apis/fast"
-              className={classNames(
-                'nav-item mb-3 cursor-pointer'
-              )}
-              title={translate('fastMode.access')}
-            >
-              <Zap
-                className="notification-link notification-link-color" />
-            </Link>
+            <div className="nav_item mb-3 cursor-pointer">
+              <More
+                className="notification-link notification-link-color"
+                aria-label="create"
+                onClick={() => {
+                  setPanelState(state.opened);
+                  setPanelContent(<MorePanel />);
+                }} />
+            </div>
           )}
         </div>
 

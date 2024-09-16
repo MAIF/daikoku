@@ -186,6 +186,81 @@ class TeamControllerSpec()
       )(tenant, session)
       respDelete.status mustBe 403
     }
+
+    "list all teams" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(subscriptionSecurity = Some(true))),
+        users = Seq(userAdmin, tenantAdmin),
+        teams = Seq(teamOwner, teamConsumer, defaultAdminTeam)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        "/api/search",
+        "POST",
+        body = Some(
+          Json.obj(
+            "query" ->
+              """
+                |query getAllteams($research: String, $limit: Int, $offset: Int) {
+                |    teamsPagination(research: $research, limit: $limit, offset: $offset) {
+                |      teams {
+                |        _id
+                |        _humanReadableId
+                |        name
+                |        avatar
+                |        type
+                |      }
+                |      total
+                |    }
+                |  }
+                |""".stripMargin,
+            "variables" -> Json.obj(
+              "research" -> "",
+              "limit" -> 10,
+              "offset" -> 0
+            )
+          )
+        )
+      )(tenant, session)
+
+      resp.status mustBe 200
+      val result = (resp.json \ "data" \ "teamsPagination" \ "total").as[Int]
+      result mustBe 2
+
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(subscriptionSecurity = Some(false))),
+        users = Seq(userAdmin, tenantAdmin),
+        teams = Seq(teamOwner, teamConsumer, defaultAdminTeam)
+      )
+      val session2 = loginWithBlocking(tenantAdmin, tenant)
+      val resp2 = httpJsonCallBlocking(
+        "/api/search",
+        "POST",
+        body = Some(
+          Json.obj(
+            "query" ->
+              """
+                |query getAllteams {
+                |    teamsPagination {
+                |      teams {
+                |        _id
+                |        _humanReadableId
+                |        name
+                |        avatar
+                |        type
+                |      }
+                |      total
+                |    }
+                |  }
+                |""".stripMargin
+          )
+        )
+      )(tenant, session2)
+      resp2.status mustBe 200
+
+      val result2 = (resp2.json \ "data" \ "teamsPagination" \ "total").as[Int]
+      result2 mustBe 4
+    }
   }
 
   "a team administrator" can {

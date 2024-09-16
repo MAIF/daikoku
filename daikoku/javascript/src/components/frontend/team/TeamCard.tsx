@@ -3,56 +3,56 @@ import { Can, read, team as TEAM } from '../../utils';
 import { I18nContext } from '../../../contexts';
 
 type Props = {
-    user?: any;
-    team: any;
-    askToJoin?: (...args: any[]) => any;
-    redirectToTeamPage?: (...args: any[]) => any;
-    redirectToTeamSettings?: (...args: any[]) => any;
+  user?: any;
+  team: any;
+  askToJoin?: (...args: any[]) => any;
+  redirectToTeamPage?: (...args: any[]) => any;
+  redirectToTeamSettings?: (...args: any[]) => any;
 };
 
 export function TeamCard(props: Props) {
-    const { Translation } = useContext(I18nContext);
+  const { Translation } = useContext(I18nContext);
 
   const { team } = props;
   return (
-        <div className="row border-bottom py-4">
-            <div className="team__avatar col-2">
-                <img
+    <div className="row border-bottom py-4">
+      <div className="team__avatar col-2">
+        <img
           className="img-fluid"
           src={props.team.avatar ? props.team.avatar : '/assets/images/daikoku.svg'}
           alt="avatar"
         />
       </div>
-            <div className="col-10">
-                <div className="row">
-                    <div className="col-12 d-flex justify-content-between">
-                        <div onClick={props.redirectToTeamPage}>
-                            <h3 className="cursor-pointer underline-on-hover">
+      <div className="col-10">
+        <div className="row">
+          <div className="col-12 d-flex justify-content-between">
+            <div onClick={props.redirectToTeamPage}>
+              <h3 className="cursor-pointer underline-on-hover">
                 {props.team.name}
-                                <Can I={read} a={TEAM} team={props.team}>
-                                    <a
+                <Can I={read} a={TEAM} team={props.team}>
+                  <a
                     href="#"
                     className="ms-3 team__settings"
                     onClick={props.redirectToTeamSettings}
                   >
-                                        <i className="fas fa-cogs fa-xxs" />
+                    <i className="fas fa-cogs fa-xxs" />
                   </a>
                 </Can>
               </h3>
-                            <Translation i18nkey={`${team._id}.description`} extraConf={team.translation}>
+              <Translation i18nkey={`${team._id}.description`} extraConf={team.translation}>
                 {team.description}
               </Translation>
             </div>
-                        <div className="ms-2">
-                            <div className="btn_group">
+            <div className="ms-2">
+              <div className="btn_group">
                 {team.canJoin && !team.alreadyJoin && (
-                                    <button className="btn btn-sm btn-outline-primary me-2" onClick={props.askToJoin}>
-                                        <Translation i18nkey="Join">Join</Translation>
+                  <button className="btn btn-sm btn-outline-primary me-2" onClick={props.askToJoin}>
+                    <Translation i18nkey="Join">Join</Translation>
                   </button>
                 )}
                 {team.canJoin && team.alreadyJoin && (
-                                    <button className="btn btn-sm btn-outline-primary me-2">
-                                        <Translation i18nkey="Pending request">Pending request</Translation>
+                  <button className="btn btn-sm btn-outline-primary me-2">
+                    <Translation i18nkey="Pending request">Pending request</Translation>
                   </button>
                 )}
               </div>

@@ -9,14 +9,21 @@ import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
 import controllers.AppError.SubscriptionAggregationDisabled
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, SeqApiSubscriptionFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiFormat,
+  SeqApiSubscriptionFormat
+}
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
+import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
@@ -25,8 +32,8 @@ import org.scalatestplus.play.PlaySpec
 import org.testcontainers.containers.BindMode
 import play.api.http.Status
 import play.api.libs.json._
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.util.Random
 
@@ -543,9 +550,9 @@ class ApiControllerSpec()
       resp.status mustBe 403
     }
 
-    "see his teams" in {
+    "see his teams (graphQl)" in {
       setupEnvBlocking(
-        tenants = Seq(tenant),
+        tenants = Seq(tenant.copy(subscriptionSecurity = Some(true))),
         users = Seq(userAdmin),
         teams = Seq(teamOwner, teamConsumer)
       )
@@ -578,7 +585,147 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val result = (resp.json \ "data" \ "myTeams").as[JsArray]
-      result.value.length mustBe 3
+      result.value.length mustBe 2
+
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(subscriptionSecurity = Some(false))),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer)
+      )
+      val session2 = loginWithBlocking(userAdmin, tenant)
+      val resp2 = httpJsonCallBlocking(
+        "/api/search",
+        "POST",
+        body = Some(
+          Json.obj(
+            "query" ->
+              """
+                |query MyTeams {
+                |    myTeams {
+                |      name
+                |      _humanReadableId
+                |      _id
+                |      type
+                |      users {
+                |        user {
+                |          userId: id
+                |        }
+                |        teamPermission
+                |      }
+                |    }
+                |  }
+                |""".stripMargin
+          )
+        )
+      )(tenant, session2)
+      resp2.status mustBe 200
+
+      val result2 = (resp2.json \ "data" \ "myTeams").as[JsArray]
+      result2.value.length mustBe 3
+    }
+    "see his teams" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(subscriptionSecurity = Some(true))),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer)
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking("/api/me/teams")(tenant, session)
+      resp.status mustBe 200
+
+      val result = resp.json.as[JsArray]
+      result.value.length mustBe 2
+
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(subscriptionSecurity = Some(false))),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer)
+      )
+      val session2 = loginWithBlocking(userAdmin, tenant)
+      val resp2 = httpJsonCallBlocking("/api/me/teams")(tenant, session2)
+      resp2.status mustBe 200
+
+      val result2 = resp2.json.as[JsArray]
+      result2.value.length mustBe 3
+    }
+
+    "search a team" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(subscriptionSecurity = Some(true))),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer)
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val resp =
+        httpJsonCallBlocking(
+          path = s"/api/_search",
+          method = "POST",
+          body = Some(Json.obj("search" -> ""))
+        )(tenant, session)
+
+      resp.status mustBe 200
+      val maybeValue = resp.json
+        .as[JsArray]
+        .value
+        .find(entry => (entry \ "label").as[String] == "Teams")
+      maybeValue.isDefined mustBe true
+      (maybeValue.get \ "options").as[JsArray].value.length mustBe 2
+
+      val resp2 =
+        httpJsonCallBlocking(
+          path = s"/api/_search",
+          method = "POST",
+          body = Some(Json.obj("search" -> "Admin"))
+        )(tenant, session)
+
+      resp2.status mustBe 200
+      val maybeValue2 = resp2.json
+        .as[JsArray]
+        .value
+        .find(entry => (entry \ "label").as[String] == "Teams")
+      maybeValue2.isDefined mustBe true
+      (maybeValue2.get \ "options").as[JsArray].value.length mustBe 0
+
+      //disable subscription security
+
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(subscriptionSecurity = Some(false))),
+        users = Seq(userAdmin, userApiEditor),
+        teams = Seq(teamOwner, teamConsumer)
+      )
+      val session2 = loginWithBlocking(userAdmin, tenant)
+
+      val resp3 =
+        httpJsonCallBlocking(
+          path = s"/api/_search",
+          method = "POST",
+          body = Some(Json.obj("search" -> ""))
+        )(tenant, session2)
+
+      resp3.status mustBe 200
+      val maybeValue3 = resp3.json
+        .as[JsArray]
+        .value
+        .find(entry => (entry \ "label").as[String] == "Teams")
+      maybeValue3.isDefined mustBe true
+      (maybeValue3.get \ "options").as[JsArray].value.length mustBe 3
+
+      val resp4 =
+        httpJsonCallBlocking(
+          path = s"/api/_search",
+          method = "POST",
+          body = Some(Json.obj("search" -> "Admin"))
+        )(tenant, session2)
+
+      resp4.status mustBe 200
+      val maybeValue4 = resp4.json
+        .as[JsArray]
+        .value
+        .find(entry => (entry \ "label").as[String] == "Teams")
+      maybeValue4.isDefined mustBe true
+      (maybeValue4.get \ "options").as[JsArray].value.length mustBe 1
+
     }
 
     "see one of his teams" in {
@@ -1713,6 +1860,1539 @@ class ApiControllerSpec()
       respOrg.status mustBe 200
     }
 
+    "transfer subscriptions to another team" in {
+
+      //creer un apk otoroshi a transferer
+      Json.obj(
+        "_loc" -> Json.obj(
+          "tenant" -> "default",
+          "teams" -> Json.arr("default")
+        ),
+        "clientId" -> parentApiKey.clientId,
+        "clientSecret" -> parentApiKey.clientSecret,
+        "clientName" -> parentApiKey.clientName,
+        "description" -> "",
+        "authorizedGroup" -> JsNull,
+        "authorizedEntities" -> Json.arr(
+          s"route_$parentRouteId"
+        ),
+        "authorizations" -> Json.arr(
+          Json.obj(
+            "kind" -> "route",
+            "id" -> parentRouteId
+          )
+        ),
+        "enabled" -> true,
+        "readOnly" -> false,
+        "allowClientIdOnly" -> false,
+        "throttlingQuota" -> 10000000,
+        "dailyQuota" -> 10000000,
+        "monthlyQuota" -> 10000000,
+        "constrainedServicesOnly" -> false,
+        "restrictions" -> Json.obj(
+          "enabled" -> false,
+          "allowLast" -> true,
+          "allowed" -> Json.arr(),
+          "forbidden" -> Json.arr(),
+          "notFound" -> Json.arr()
+        ),
+        "rotation" -> Json.obj(
+          "enabled" -> false,
+          "rotationEvery" -> 744,
+          "gracePeriod" -> 168,
+          "nextSecret" -> JsNull
+        ),
+        "validUntil" -> JsNull,
+        "tags" -> Json.arr(),
+        "metadata" -> Json.obj(
+          "daikoku__metadata" -> "| foo",
+          "foo" -> "bar"
+        )
+      )
+
+      //update otoroshi
+      Await.result(cleanOtoroshiServer(container.mappedPort(8080)), 5.seconds)
+
+      //setup dk
+      val usagePlan = FreeWithoutQuotas(
+        id = UsagePlanId("test.plan"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            ),
+            ApikeyCustomization(
+              metadata = Json.obj("foo" -> "bar")
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val api = defaultApi.api.copy(
+        id = ApiId("test-api-id"),
+        name = "test API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(usagePlan.id),
+        defaultUsagePlan = usagePlan.id.some
+      )
+      val subscription = ApiSubscription(
+        id = ApiSubscriptionId("test_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        plan = usagePlan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = api.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "token",
+        metadata = Json.obj("foo" -> "bar").some
+      )
+      //2 equipes
+      //une api / un plan
+      //une souscription
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenantEnvMode.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            ),
+            environmentAggregationApiKeysSecurity = Some(true),
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
+        users = Seq(userAdmin),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(api),
+        usagePlans = Seq(usagePlan),
+        subscriptions = Seq(subscription)
+      )
+
+      //get transfer link (no need to give team)
+      val session = loginWithBlocking(userAdmin, tenant)
+      val respLink = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscriptions/${subscription.id.value}/_transfer"
+      )(tenant, session)
+      respLink.status mustBe 200
+      val link = (respLink.json \ "link").as[String]
+      val token = link.split("token=").lastOption.getOrElse("")
+
+      //follow link
+      val respRetrieve = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwner.id.value}/subscriptions/${subscription.id.value}/_retrieve",
+        method = "PUT",
+        body = Json.obj("token" -> token).some
+      )(tenant, session)
+      logger.info(Json.stringify(respRetrieve.json))
+      respRetrieve.status mustBe 200
+
+      val consumerSubsReq = httpJsonCallBlocking(
+        s"/api/subscriptions/teams/${teamConsumer.id.value}"
+      )(tenant, session)
+      logger.info(Json.stringify(consumerSubsReq.json))
+      consumerSubsReq.status mustBe 200
+      val maybeConsumerSubs =
+        json.SeqApiSubscriptionFormat.reads(consumerSubsReq.json)
+      maybeConsumerSubs.isSuccess mustBe true
+      val consumerSubs = maybeConsumerSubs.get
+      consumerSubs.length mustBe 0
+
+      val ownerSubsReq = httpJsonCallBlocking(
+        s"/api/subscriptions/teams/${teamOwner.id.value}"
+      )(tenant, session)
+      logger.info(Json.stringify(ownerSubsReq.json))
+      ownerSubsReq.status mustBe 200
+      val maybeOwnerSubs =
+        json.SeqApiSubscriptionFormat.reads(ownerSubsReq.json)
+      maybeOwnerSubs.isSuccess mustBe true
+      val ownerSubs = maybeOwnerSubs.get
+      ownerSubs.length mustBe 1
+      ownerSubs.head.id mustBe subscription.id
+
+      //TODO: verifier le nouveau nom de la subscription
+
+    }
+
+    "not transfer child subscriptions to another team but parent subscription" in {
+      val parentPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val childPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("child.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(childRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val parentApi = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(parentPlanProd.id),
+        defaultUsagePlan = parentPlanProd.id.some
+      )
+      val childApi = defaultApi.api.copy(
+        id = ApiId("child-id"),
+        name = "child API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(childPlanProd.id),
+        defaultUsagePlan = childPlanProd.id.some
+      )
+
+      val parentSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token"
+      )
+      val childSub = ApiSubscription(
+        id = ApiSubscriptionId("child_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token",
+        parent = parentSub.id.some
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenantEnvMode.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            ),
+            environmentAggregationApiKeysSecurity = Some(true),
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
+        users = Seq(user, userAdmin),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(parentApi, childApi),
+        usagePlans = Seq(parentPlanProd, childPlanProd),
+        subscriptions = Seq(parentSub, childSub)
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val respLink = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscriptions/${childSub.id.value}/_transfer"
+      )(tenant, session)
+      logger.debug(Json.stringify(respLink.json))
+      respLink.status mustBe 409
+    }
+
+    "not transfer child subscriptions to another team which have already a parent subscription" in {
+      val parentPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val childPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("child.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(childRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val parentApi = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(parentPlanProd.id),
+        defaultUsagePlan = parentPlanProd.id.some
+      )
+      val childApi = defaultApi.api.copy(
+        id = ApiId("child-id"),
+        name = "child API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(childPlanProd.id),
+        defaultUsagePlan = childPlanProd.id.some
+      )
+
+      val parentSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token"
+      )
+      val childSub = ApiSubscription(
+        id = ApiSubscriptionId("child_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token",
+        parent = parentSub.id.some
+      )
+
+      val parentOwnerSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_owner_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_owner_token"
+      )
+      val childOwnerSub = ApiSubscription(
+        id = ApiSubscriptionId("child_owner_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_owner_token",
+        parent = parentSub.id.some
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            //          otoroshiSettings = Set(
+            //            OtoroshiSettings(
+            //              id = containerizedOtoroshi,
+            //              url =
+            //                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+            //              host = "otoroshi-api.oto.tools",
+            //              clientSecret = otoroshiAdminApiKey.clientSecret,
+            //              clientId = otoroshiAdminApiKey.clientId
+            //            )
+            //          ),
+            //          environmentAggregationApiKeysSecurity = Some(true),
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
+        users = Seq(user, userAdmin),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(parentApi, childApi),
+        usagePlans = Seq(parentPlanProd, childPlanProd),
+        subscriptions = Seq(
+          parentSub,
+          childSub,
+          parentOwnerSub
+        )
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val respLink = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscriptions/${parentSub.id.value}/_transfer"
+      )(tenant, session)
+      respLink.status mustBe 200
+      val link = (respLink.json \ "link").as[String]
+      val token = link.split("token=").lastOption.getOrElse("")
+
+      //todo: test with a team has already a parentSub
+
+      val respRetrieve = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwner.id.value}/subscriptions/${parentSub.id.value}/_retrieve",
+        method = "PUT",
+        body = Json.obj("token" -> token).some
+      )(tenant, session)
+      logger.info(Json.stringify(respRetrieve.json))
+      respRetrieve.status mustBe 409
+    }
+    "not transfer child subscriptions to another team which have already a child subscription" in {
+      val parentPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val childPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("child.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(childRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val parentApi = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(parentPlanProd.id),
+        defaultUsagePlan = parentPlanProd.id.some
+      )
+      val childApi = defaultApi.api.copy(
+        id = ApiId("child-id"),
+        name = "child API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(childPlanProd.id),
+        defaultUsagePlan = childPlanProd.id.some
+      )
+
+      val parentSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token"
+      )
+      val childSub = ApiSubscription(
+        id = ApiSubscriptionId("child_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token",
+        parent = parentSub.id.some
+      )
+
+      val parentOwnerSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_owner_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_owner_token"
+      )
+      val childOwnerSub = ApiSubscription(
+        id = ApiSubscriptionId("child_owner_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_owner_token",
+        parent = parentSub.id.some
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            //          otoroshiSettings = Set(
+            //            OtoroshiSettings(
+            //              id = containerizedOtoroshi,
+            //              url =
+            //                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+            //              host = "otoroshi-api.oto.tools",
+            //              clientSecret = otoroshiAdminApiKey.clientSecret,
+            //              clientId = otoroshiAdminApiKey.clientId
+            //            )
+            //          ),
+            //          environmentAggregationApiKeysSecurity = Some(true),
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
+        users = Seq(user, userAdmin),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(parentApi, childApi),
+        usagePlans = Seq(parentPlanProd, childPlanProd),
+        subscriptions = Seq(
+          parentSub,
+          childSub,
+          childOwnerSub
+        )
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val respLink = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscriptions/${parentSub.id.value}/_transfer"
+      )(tenant, session)
+      respLink.status mustBe 200
+      val link = (respLink.json \ "link").as[String]
+      val token = link.split("token=").lastOption.getOrElse("")
+
+      //todo: test with a team has already a parentSub
+
+      val respRetrieve = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwner.id.value}/subscriptions/${parentSub.id.value}/_retrieve",
+        method = "PUT",
+        body = Json.obj("token" -> token).some
+      )(tenant, session)
+      logger.info(Json.stringify(respRetrieve.json))
+      respRetrieve.status mustBe 409
+    }
+
+    "transfer child subscriptions to another team which have already a subscription when parent plan allow it" in {
+      val parentPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(true),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val childPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("child.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(childRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(true),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val parentApi = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(parentPlanProd.id),
+        defaultUsagePlan = parentPlanProd.id.some
+      )
+      val childApi = defaultApi.api.copy(
+        id = ApiId("child-id"),
+        name = "child API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(childPlanProd.id),
+        defaultUsagePlan = childPlanProd.id.some
+      )
+
+      val parentSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token"
+      )
+      val childSub = ApiSubscription(
+        id = ApiSubscriptionId("child_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token",
+        parent = parentSub.id.some
+      )
+
+      val parentOwnerSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_owner_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_owner_token"
+      )
+      val childOwnerSub = ApiSubscription(
+        id = ApiSubscriptionId("child_owner_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_owner_token",
+        parent = parentSub.id.some
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            ),
+            environmentAggregationApiKeysSecurity = Some(true),
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
+        users = Seq(user, userAdmin),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(parentApi, childApi),
+        usagePlans = Seq(parentPlanProd, childPlanProd),
+        subscriptions = Seq(
+          parentSub,
+          childSub,
+          parentOwnerSub
+        )
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val respLink = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscriptions/${parentSub.id.value}/_transfer"
+      )(tenant, session)
+      respLink.status mustBe 200
+      val link = (respLink.json \ "link").as[String]
+      val token = link.split("token=").lastOption.getOrElse("")
+
+      //todo: test with a team has already a parentSub
+
+      val respRetrieve = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwner.id.value}/subscriptions/${parentSub.id.value}/_retrieve",
+        method = "PUT",
+        body = Json.obj("token" -> token).some
+      )(tenant, session)
+      logger.info(Json.stringify(respRetrieve.json))
+      respRetrieve.status mustBe 200
+    }
+    "transfer child subscriptions to another team which have already a subscription when child plan allow it" in {
+      val parentPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(true),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val childPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("child.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(childRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(true),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val parentApi = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(parentPlanProd.id),
+        defaultUsagePlan = parentPlanProd.id.some
+      )
+      val childApi = defaultApi.api.copy(
+        id = ApiId("child-id"),
+        name = "child API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(childPlanProd.id),
+        defaultUsagePlan = childPlanProd.id.some
+      )
+
+      val parentSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token"
+      )
+      val childSub = ApiSubscription(
+        id = ApiSubscriptionId("child_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token",
+        parent = parentSub.id.some
+      )
+
+      val parentOwnerSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_owner_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_owner_token"
+      )
+      val childOwnerSub = ApiSubscription(
+        id = ApiSubscriptionId("child_owner_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_owner_token",
+        parent = parentSub.id.some
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            ),
+            environmentAggregationApiKeysSecurity = Some(true),
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
+        users = Seq(user, userAdmin),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(parentApi, childApi),
+        usagePlans = Seq(parentPlanProd, childPlanProd),
+        subscriptions = Seq(
+          parentSub,
+          childSub,
+          parentOwnerSub,
+          childOwnerSub
+        )
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val respLink = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscriptions/${parentSub.id.value}/_transfer"
+      )(tenant, session)
+      respLink.status mustBe 200
+      val link = (respLink.json \ "link").as[String]
+      val token = link.split("token=").lastOption.getOrElse("")
+
+      //todo: test with a team has already a parentSub
+
+      val respRetrieve = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwner.id.value}/subscriptions/${parentSub.id.value}/_retrieve",
+        method = "PUT",
+        body = Json.obj("token" -> token).some
+      )(tenant, session)
+      logger.info(Json.stringify(respRetrieve.json))
+      respRetrieve.status mustBe 200
+    }
+
+    "not transfer subscriptions to another team unauthorized on parent api" in {
+      val parentPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val childPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("child.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(childRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val parentApi = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(parentPlanProd.id),
+        defaultUsagePlan = parentPlanProd.id.some,
+        visibility = ApiVisibility.Private,
+        authorizedTeams = Seq(teamOwner.id)
+      )
+      val childApi = defaultApi.api.copy(
+        id = ApiId("child-id"),
+        name = "child API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(childPlanProd.id),
+        defaultUsagePlan = childPlanProd.id.some
+      )
+
+      val parentSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token"
+      )
+      val childSub = ApiSubscription(
+        id = ApiSubscriptionId("child_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token",
+        parent = parentSub.id.some
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            //          otoroshiSettings = Set(
+            //            OtoroshiSettings(
+            //              id = containerizedOtoroshi,
+            //              url =
+            //                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+            //              host = "otoroshi-api.oto.tools",
+            //              clientSecret = otoroshiAdminApiKey.clientSecret,
+            //              clientId = otoroshiAdminApiKey.clientId
+            //            )
+            //          ),
+            //          environmentAggregationApiKeysSecurity = Some(true),
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
+        users = Seq(user, userAdmin),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(parentApi, childApi),
+        usagePlans = Seq(parentPlanProd, childPlanProd),
+        subscriptions = Seq(
+          parentSub,
+          childSub
+        )
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val respLink = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwner.id.value}/subscriptions/${parentSub.id.value}/_transfer"
+      )(tenant, session)
+      respLink.status mustBe 200
+      val link = (respLink.json \ "link").as[String]
+      val token = link.split("token=").lastOption.getOrElse("")
+
+      //todo: test with a team has already a parentSub
+
+      val respRetrieve = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscriptions/${parentSub.id.value}/_retrieve",
+        method = "PUT",
+        body = Json.obj("token" -> token).some
+      )(tenant, session)
+      logger.info(Json.stringify(respRetrieve.json))
+      respRetrieve.status mustBe 401
+    }
+    "not transfer subscriptions to another team unauthorized on parent plan" in {
+      val parentPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true),
+        visibility = UsagePlanVisibility.Private,
+        authorizedTeams = Seq(teamOwner.id)
+      )
+      val childPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("child.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(childRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val parentApi = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(parentPlanProd.id),
+        defaultUsagePlan = parentPlanProd.id.some
+      )
+      val childApi = defaultApi.api.copy(
+        id = ApiId("child-id"),
+        name = "child API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(childPlanProd.id),
+        defaultUsagePlan = childPlanProd.id.some
+      )
+
+      val parentSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token"
+      )
+      val childSub = ApiSubscription(
+        id = ApiSubscriptionId("child_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token",
+        parent = parentSub.id.some
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            //          otoroshiSettings = Set(
+            //            OtoroshiSettings(
+            //              id = containerizedOtoroshi,
+            //              url =
+            //                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+            //              host = "otoroshi-api.oto.tools",
+            //              clientSecret = otoroshiAdminApiKey.clientSecret,
+            //              clientId = otoroshiAdminApiKey.clientId
+            //            )
+            //          ),
+            //          environmentAggregationApiKeysSecurity = Some(true),
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
+        users = Seq(user, userAdmin),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(parentApi, childApi),
+        usagePlans = Seq(parentPlanProd, childPlanProd),
+        subscriptions = Seq(
+          parentSub,
+          childSub
+        )
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val respLink = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwner.id.value}/subscriptions/${parentSub.id.value}/_transfer"
+      )(tenant, session)
+      respLink.status mustBe 200
+      val link = (respLink.json \ "link").as[String]
+      val token = link.split("token=").lastOption.getOrElse("")
+
+      //todo: test with a team has already a parentSub
+
+      val respRetrieve = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscriptions/${parentSub.id.value}/_retrieve",
+        method = "PUT",
+        body = Json.obj("token" -> token).some
+      )(tenant, session)
+      logger.info(Json.stringify(respRetrieve.json))
+      respRetrieve.status mustBe 401
+    }
+
+    "not transfer subscriptions to another team unauthorized on child api" in {
+      val parentPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val childPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("child.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(childRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val parentApi = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(parentPlanProd.id),
+        defaultUsagePlan = parentPlanProd.id.some
+      )
+      val childApi = defaultApi.api.copy(
+        id = ApiId("child-id"),
+        name = "child API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(childPlanProd.id),
+        defaultUsagePlan = childPlanProd.id.some,
+        visibility = ApiVisibility.Private,
+        authorizedTeams = Seq(teamOwner.id)
+      )
+
+      val parentSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token"
+      )
+      val childSub = ApiSubscription(
+        id = ApiSubscriptionId("child_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = childPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = childApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token",
+        parent = parentSub.id.some
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            //          otoroshiSettings = Set(
+            //            OtoroshiSettings(
+            //              id = containerizedOtoroshi,
+            //              url =
+            //                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+            //              host = "otoroshi-api.oto.tools",
+            //              clientSecret = otoroshiAdminApiKey.clientSecret,
+            //              clientId = otoroshiAdminApiKey.clientId
+            //            )
+            //          ),
+            //          environmentAggregationApiKeysSecurity = Some(true),
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
+        users = Seq(user, userAdmin),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(parentApi, childApi),
+        usagePlans = Seq(parentPlanProd, childPlanProd),
+        subscriptions = Seq(
+          parentSub,
+          childSub
+        )
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val respLink = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwner.id.value}/subscriptions/${parentSub.id.value}/_transfer"
+      )(tenant, session)
+      respLink.status mustBe 200
+      val link = (respLink.json \ "link").as[String]
+      val token = link.split("token=").lastOption.getOrElse("")
+
+      //todo: test with a team has already a parentSub
+
+      val respRetrieve = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscriptions/${parentSub.id.value}/_retrieve",
+        method = "PUT",
+        body = Json.obj("token" -> token).some
+      )(tenant, session)
+      logger.info(Json.stringify(respRetrieve.json))
+      respRetrieve.status mustBe 401
+    }
+    "not transfer subscriptions to another team unauthorized on child plan" in {
+      val parentPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val childPlanProd = FreeWithoutQuotas(
+        id = UsagePlanId("child.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = envModeProd.some,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(childRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true),
+        visibility = UsagePlanVisibility.Private,
+        authorizedTeams = Seq(teamOwner.id)
+      )
+
+      val parentApi = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(parentPlanProd.id),
+        defaultUsagePlan = parentPlanProd.id.some
+      )
+      val childApi = defaultApi.api.copy(
+        id = ApiId("child-id"),
+        name = "child API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(childPlanProd.id),
+        defaultUsagePlan = childPlanProd.id.some
+      )
+
+      val parentSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = parentPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token"
+      )
+      val childSub = ApiSubscription(
+        id = ApiSubscriptionId("child_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKeyWith2childs,
+        plan = childPlanProd.id,
+        createdAt = DateTime.now(),
+        team = teamOwnerId,
+        api = childApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token",
+        parent = parentSub.id.some
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            //          otoroshiSettings = Set(
+            //            OtoroshiSettings(
+            //              id = containerizedOtoroshi,
+            //              url =
+            //                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+            //              host = "otoroshi-api.oto.tools",
+            //              clientSecret = otoroshiAdminApiKey.clientSecret,
+            //              clientId = otoroshiAdminApiKey.clientId
+            //            )
+            //          ),
+            //          environmentAggregationApiKeysSecurity = Some(true),
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
+        users = Seq(user, userAdmin),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
+        apis = Seq(parentApi, childApi),
+        usagePlans = Seq(parentPlanProd, childPlanProd),
+        subscriptions = Seq(
+          parentSub,
+          childSub
+        )
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      val respLink = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwner.id.value}/subscriptions/${parentSub.id.value}/_transfer"
+      )(tenant, session)
+      respLink.status mustBe 200
+      val link = (respLink.json \ "link").as[String]
+      val token = link.split("token=").lastOption.getOrElse("")
+
+      //todo: test with a team has already a parentSub
+
+      val respRetrieve = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamConsumer.id.value}/subscriptions/${parentSub.id.value}/_retrieve",
+        method = "PUT",
+        body = Json.obj("token" -> token).some
+      )(tenant, session)
+      logger.info(Json.stringify(respRetrieve.json))
+      respRetrieve.status mustBe 401
+    }
+
     "setup validUntil date for a subscription to his api" in {
       val parentPlan = FreeWithoutQuotas(
         id = UsagePlanId("parent.dev"),
@@ -1866,7 +3546,7 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val result = (resp.json \ "data" \ "myTeams").as[JsArray]
-      result.value.length mustBe 2
+      result.value.length mustBe 1
     }
 
     "see one of his teams" in {
@@ -2483,7 +4163,7 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       val result = (resp.json \ "data" \ "myTeams").as[JsArray]
-      result.value.length mustBe 3
+      result.value.length mustBe 2
     }
 
     "see one of his teams" in {
@@ -6307,6 +7987,7 @@ class ApiControllerSpec()
 
       (respPreVerifOtoParent.json \ "enabled").as[Boolean] mustBe true
       val preMetadata = (respPreVerifOtoParent.json \ "metadata").as[JsObject]
+      logger.info(Json.stringify(respPreVerifOtoParent.json))
       val preKeys = preMetadata.keys.filter(key => !key.startsWith("daikoku_"))
       preKeys.size mustBe 1
       (preMetadata \ "foo").as[String] mustBe "bar"
@@ -7149,7 +8830,7 @@ class ApiControllerSpec()
       keys2.contains("foo2") mustBe true
     }
 
-    "not be controlled by a security tenant in environment mode" in {
+    "be controlled by a security tenant in environment mode" in {
       val parentPlanProd = FreeWithoutQuotas(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
@@ -7250,7 +8931,8 @@ class ApiControllerSpec()
       )
 
       setupEnvBlocking(
-        tenants = Seq(tenantEnvMode.copy(
+        tenants = Seq(
+          tenantEnvMode.copy(
             otoroshiSettings = Set(
               OtoroshiSettings(
                 id = containerizedOtoroshi,
@@ -7261,14 +8943,12 @@ class ApiControllerSpec()
                 clientId = otoroshiAdminApiKey.clientId
               )
             ),
-          environmentAggregationApiKeysSecurity = Some(true),
-          aggregationApiKeysSecurity = Some(true)
-        )),
+            environmentAggregationApiKeysSecurity = Some(true),
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
         users = Seq(user, userAdmin),
-        teams = Seq(
-          defaultAdminTeam,
-          teamOwner,
-          teamConsumer),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
         apis = Seq(parentApi, childApi),
         usagePlans = Seq(parentPlanProd, childPlanProd, childPlanDev),
         subscriptions = Seq(parentSub)
@@ -7285,7 +8965,6 @@ class ApiControllerSpec()
       )(tenant, consumerSession)
       respDev.status mustBe 403
 
-
       //test extend parent prod sub with child prod ==> OK
       val respProd = httpJsonCallBlocking(
         path =
@@ -7297,25 +8976,24 @@ class ApiControllerSpec()
 
       //disabled security
       setupEnvBlocking(
-        tenants = Seq(tenantEnvMode.copy(
-          otoroshiSettings = Set(
-            OtoroshiSettings(
-              id = containerizedOtoroshi,
-              url =
-                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-              host = "otoroshi-api.oto.tools",
-              clientSecret = otoroshiAdminApiKey.clientSecret,
-              clientId = otoroshiAdminApiKey.clientId
-            )
-          ),
-          environmentAggregationApiKeysSecurity = Some(false),
-          aggregationApiKeysSecurity = Some(true)
-        )),
+        tenants = Seq(
+          tenantEnvMode.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            ),
+            environmentAggregationApiKeysSecurity = Some(false),
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
         users = Seq(user, userAdmin),
-        teams = Seq(
-          defaultAdminTeam,
-          teamOwner,
-          teamConsumer),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
         apis = Seq(parentApi, childApi),
         usagePlans = Seq(parentPlanProd, childPlanProd, childPlanDev),
         subscriptions = Seq(parentSub)
@@ -7331,7 +9009,6 @@ class ApiControllerSpec()
       )(tenant, consumerSession2)
       respDev2.status mustBe 200
 
-
       //test extend parent prod sub with child prod ==> OK
       val respProd2 = httpJsonCallBlocking(
         path =
@@ -7342,25 +9019,24 @@ class ApiControllerSpec()
       respProd2.status mustBe 200
 
       setupEnvBlocking(
-        tenants = Seq(tenantEnvMode.copy(
-          otoroshiSettings = Set(
-            OtoroshiSettings(
-              id = containerizedOtoroshi,
-              url =
-                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-              host = "otoroshi-api.oto.tools",
-              clientSecret = otoroshiAdminApiKey.clientSecret,
-              clientId = otoroshiAdminApiKey.clientId
-            )
-          ),
-          environmentAggregationApiKeysSecurity = None,
-          aggregationApiKeysSecurity = Some(true)
-        )),
+        tenants = Seq(
+          tenantEnvMode.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            ),
+            environmentAggregationApiKeysSecurity = None,
+            aggregationApiKeysSecurity = Some(true)
+          )
+        ),
         users = Seq(user, userAdmin),
-        teams = Seq(
-          defaultAdminTeam,
-          teamOwner,
-          teamConsumer),
+        teams = Seq(defaultAdminTeam, teamOwner, teamConsumer),
         apis = Seq(parentApi, childApi),
         usagePlans = Seq(parentPlanProd, childPlanProd, childPlanDev),
         subscriptions = Seq(parentSub)
@@ -7375,7 +9051,6 @@ class ApiControllerSpec()
         body = Json.obj().some
       )(tenant, consumerSession3)
       respDev3.status mustBe 200
-
 
       //test extend parent prod sub with child prod ==> OK
       val respProd3 = httpJsonCallBlocking(

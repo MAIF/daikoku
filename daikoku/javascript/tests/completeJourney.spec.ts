@@ -41,7 +41,7 @@ test('test a complete user journey', async ({ page }) => {
   //create a new API
   await page.locator('div:nth-child(4) > .notification-link').first().click();
   await page.locator('span').filter({ hasText: 'API' }).first().click();
-  await page.locator('div').filter({ hasText: /^The A team$/ }).click();
+  await page.locator('div').filter({ hasText: /^The A team$/ }).nth(1).click();
 
   await page.getByRole('button', { name: 'Published' }).click();
   await page.getByPlaceholder('New Api').fill('Test API');
@@ -62,6 +62,8 @@ test('test a complete user journey', async ({ page }) => {
   await page.getByRole('button', { name: 'Add plan' }).click();
   await page.locator('.react-form-select__input-container').click();
   await page.getByText('Free without quotas', { exact: true }).click();
+  await page.getByPlaceholder('Plan name').click();
+  await page.keyboard.type('dev plan')
   await page.getByPlaceholder('Plan name').fill('dev plan');
   await page.getByPlaceholder('Plan description').fill('a dev plan to test the API with unlimited usage');
   await page.getByRole('button', { name: 'Next' }).click();
@@ -114,7 +116,7 @@ test('test a complete user journey', async ({ page }) => {
   //subscribe
   await page.getByText('Subscriptions').click();
   await expect(page.getByRole('main')).toContainText('0 Result');
-  await page.getByRole('link', { name: 'Go home' }).click();
+  await page.getByRole('link', { name: 'APIs list' }).click();
   await expect(page.getByRole('main')).toContainText('second test api');
 
   
@@ -140,10 +142,10 @@ test('test a complete user journey', async ({ page }) => {
   // await expect(page.getByRole('main')).toContainText('Lorem ipsum');
   // await page.getByText('News').click();
   // await expect(page.getByRole('main')).toContainText('Our API is alive');
-  await page.getByRole('link', { name: 'Go home' }).click();
+  await page.getByRole('link', { name: 'APIs list' }).click();
   await page.locator('span').filter({ hasText: 'The A team' }).click();
   await page.getByText('API keys').click();
   await expect(page.getByRole('main')).toContainText('1 Result');
   await page.getByLabel('View APIkeys').click();
-  await expect(page.locator('.card-header')).toContainText('dev plan');
+  await expect(page.locator('.api-subscription__infos__name')).toContainText('dev plan');
 });

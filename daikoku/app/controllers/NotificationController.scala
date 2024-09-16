@@ -386,7 +386,7 @@ class NotificationController(
       AuditTrailEvent(
         s"@{user.name} has rejected a notifications for team @{team.name} - @{team.id} => @{notification.id}"
       )
-    )(teamId.value, ctx) { _ =>
+    )(teamId.value, ctx) { team =>
       {
 
         ctx.setCtxValue("notification.id", notification.id)

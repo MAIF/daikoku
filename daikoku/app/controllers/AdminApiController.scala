@@ -330,7 +330,9 @@ class StateAdminApiController(
           AppError.SecurityError("Action not avalaible")
         )
         _ <- EitherT.liftF[Future, AppError, Unit](env.dataStore.clear())
-        _ <- EitherT.liftF[Future, AppError, Done](env.initDatastore(ctx.request.getQueryString("path")))
+        _ <- EitherT.liftF[Future, AppError, Done](
+          env.initDatastore(ctx.request.getQueryString("path"))
+        )
       } yield Ok(Json.obj("done" -> true)))
         .leftMap(_.render())
         .merge

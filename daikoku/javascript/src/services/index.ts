@@ -43,6 +43,7 @@ import {
   ResponseDone,
   ResponseError,
 } from '../types/api';
+import { Token } from 'graphql';
 
 const HEADERS = {
   Accept: 'application/json',
@@ -2025,4 +2026,25 @@ export const getSubscriptionsLastUsages = (
   customFetch(`/api/teams/${teamId}/subscriptions/_lastUsage`, {
     method: 'POST',
     body: JSON.stringify({ subscriptions }),
+  });
+
+export const getSubscriptionTransferLink = (
+  teamId: string,
+  subscriptionId: string
+): PromiseWithError<{ link: string }> =>
+  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_transfer`);
+
+export const checkTransferlink = (
+  token: string
+): PromiseWithError<{ subscription: ISubscription; api: IApi; plan: IUsagePlan }> =>
+  customFetch(`/api/me/subscription/_retrieve?token=${token}`);
+
+export const retrieveSubscription = (
+  token: string,
+  teamId: string,
+  subscription: string
+): PromiseWithError<ResponseDone> =>
+  customFetch(`/api/teams/${teamId}/subscriptions/${subscription}/_retrieve`, {
+    method: 'PUT',
+    body: JSON.stringify({ token }),
   });
