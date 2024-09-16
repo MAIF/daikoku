@@ -121,7 +121,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(
     },
   };
 
-  if (!props.subscription?.parent) {
+  if (!props.subscription?.["parent"]) {
     schema["validUntil"] = {
       type: type.date,
       label: translate("sub.meta.modal.valid.until.label"),

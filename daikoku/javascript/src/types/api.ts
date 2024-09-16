@@ -392,7 +392,7 @@ export interface IBaseSubscription {
   customMaxPerDay?: number;
   customReadOnly?: boolean;
   adminCustomName?: string;
-  parent? : object;
+  parent: string | null;
   parentUp: boolean;
 }
 
@@ -445,7 +445,6 @@ export interface ISubscriptionCustomization {
   customReadOnly?: boolean;
   adminCustomName?: string;
   validUntil?: number;
-  parent? : object;
 }
 
 
