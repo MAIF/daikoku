@@ -2109,9 +2109,7 @@ object SchemaDefinition {
             )
           ),
           Field("createdAt", DateTimeUnitype, resolve = _.value.createdAt),
-          Field("validUntil",
-            OptionType(StringType),
-            resolve = _.value.validUntil),
+          Field("validUntil", OptionType(DateTimeUnitype), resolve = _.value.validUntil),
           Field(
             "team",
             OptionType(TeamObjectType),
@@ -3569,7 +3567,7 @@ object SchemaDefinition {
       ),
       ReplaceField(
         "validUntil",
-        Field("validUntil", DateTimeUnitype, resolve = _.value.validUntil)
+        Field("validUntil", OptionType(DateTimeUnitype), resolve = _.value.validUntil)
       )
     )
     lazy val TranslationType =

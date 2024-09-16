@@ -25,7 +25,8 @@ case class ApikeyCustomization(
     metadata: JsObject = play.api.libs.json.Json.obj(),
     customMetadata: Seq[CustomMetadata] = Seq.empty,
     tags: JsArray = play.api.libs.json.Json.arr(),
-    restrictions: ApiKeyRestrictions = ApiKeyRestrictions()
+    restrictions: ApiKeyRestrictions = ApiKeyRestrictions(),
+    validUntil: Option[DateTime] = None,
 ) extends CanJson[ApikeyCustomization] {
   def asJson: JsValue = json.ApikeyCustomizationFormat.writes(this)
 }
@@ -59,7 +60,7 @@ case class ApiSubscription(
     apiKey: OtoroshiApiKey, // TODO: add the actual plan at the time of the subscription
     plan: UsagePlanId,
     createdAt: DateTime,
-    validUntil: Option[String] = None,
+    validUntil: Option[DateTime] = None,
     team: TeamId,
     api: ApiId,
     by: UserId,
@@ -109,7 +110,10 @@ case class ApiSubscription(
       "team" -> json.TeamIdFormat.writes(team),
       "api" -> json.ApiIdFormat.writes(api),
       "createdAt" -> json.DateTimeFormat.writes(createdAt),
-      "validUntil" -> validUntil.map(JsString).getOrElse(JsNull).as[JsValue],
+      "validUntil" -> validUntil
+        .map(json.DateTimeFormat.writes)
+        .getOrElse(JsNull)
+        .as[JsValue],
       "customName" -> customName
         .map(id => JsString(id))
         .getOrElse(JsNull)
@@ -137,7 +141,8 @@ case class ActualOtoroshiApiKey(
     tags: Set[String] = Set.empty[String],
     metadata: Map[String, String] = Map.empty[String, String],
     restrictions: ApiKeyRestrictions = ApiKeyRestrictions(),
-    rotation: Option[ApiKeyRotation]
+    rotation: Option[ApiKeyRotation],
+    validUntil : Option[Long] = None
 ) extends CanJson[OtoroshiApiKey] {
   override def asJson: JsValue = json.ActualOtoroshiApiKeyFormat.writes(this)
   def asOtoroshiApiKey: OtoroshiApiKey =

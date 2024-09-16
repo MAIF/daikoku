@@ -531,7 +531,8 @@ class OtoroshiSettingsController(
               .flatMap(_.asOpt[Map[String, String]])
               .getOrElse(Map.empty[String, String]),
             rotation = None,
-            readOnly = readOnlyOpt.getOrElse(false)
+            readOnly = readOnlyOpt.getOrElse(false),
+            validUntil = None,
           )
         }
 

@@ -1751,7 +1751,7 @@ class ApiController(
             customMaxPerMonth = (body \ "customMaxPerMonth").asOpt[Long],
             customReadOnly = (body \ "customReadOnly").asOpt[Boolean],
             adminCustomName = (body \ "adminCustomName").asOpt[String],
-            validUntil = (body \ "validUntil").asOpt[String],
+            validUntil = (body \ "validUntil").asOpt(DateTimeFormat),
           )
           result <-
             EitherT(apiService.updateSubscription(ctx.tenant, subToSave, plan))

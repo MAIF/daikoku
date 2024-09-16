@@ -305,6 +305,7 @@ interface IOtoroshiTarget {
       forbidden: Array<IPath>;
       notFound: Array<IPath>;
     };
+    validUntil? : string;
   };
 }
 
@@ -391,7 +392,7 @@ export interface IBaseSubscription {
   customMaxPerDay?: number;
   customReadOnly?: boolean;
   adminCustomName?: string;
-  parent: string | null;
+  parent? : object;
   parentUp: boolean;
 }
 
@@ -444,8 +445,9 @@ export interface ISubscriptionCustomization {
   customReadOnly?: boolean;
   adminCustomName?: string;
   validUntil?: string;
-  parent : string | null;
+  parent? : object;
 }
+
 
 export interface ISubscriptionExtended extends ISubscription {
   parentUp: boolean;

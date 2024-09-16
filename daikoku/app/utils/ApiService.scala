@@ -162,7 +162,9 @@ class ApiService(
         "daikoku__tags" -> processedTags.mkString(" | ")
       ) ++ processedMetadata,
       rotation =
-        plan.autoRotation.map(enabled => ApiKeyRotation(enabled = enabled))
+        plan.autoRotation.map(enabled => ApiKeyRotation(enabled = enabled)), 
+      validUntil = plan.otoroshiTarget.flatMap(_.apikeyCustomization
+        .validUntil.map(_.getMillis))
     )
 
     plan match {
@@ -761,7 +763,8 @@ class ApiService(
             metadata = apiKey.metadata ++ subscription.customMetadata
               .flatMap(_.asOpt[Map[String, String]])
               .getOrElse(Map.empty[String, String]),
-            readOnly = subscription.customReadOnly.getOrElse(apiKey.readOnly)
+            readOnly = subscription.customReadOnly.getOrElse(apiKey.readOnly),
+            validUntil = subscription.validUntil.map(_.getMillis)
           )
         )(otoSettings)
       )
