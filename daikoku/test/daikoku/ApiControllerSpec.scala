@@ -3505,8 +3505,7 @@ class ApiControllerSpec()
         ),
         port = container.mappedPort(8080)
       )(tenant, session)
-      (respUpdateOto.json \ "validUntil").asOpt[Long] mustBe validUntil.getMillis
-      )
+      (respUpdateOto.json \ "validUntil").asOpt[Long] mustBe validUntil.getMillis.some
     }
   }
 
