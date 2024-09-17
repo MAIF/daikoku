@@ -454,6 +454,8 @@ export interface ISubscriptionExtended extends ISubscription {
   planName: string;
   apiName: string;
   _humanReadableId: string;
+  apiLink: string;
+  planLink: string;
 }
 
 export interface ISubscriptionWithApiInfo extends ISubscription {

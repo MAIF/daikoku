@@ -1437,7 +1437,8 @@
   "apikeys.delete.success.message": "La souscription a été correctement supprimée",
   "apikeys.view.api": "Voir l'API",
   "apikeys.view.apikeys": "Voir les clés d'API",
-  "subscription.create.at": "Souscription crée le %s",
+  "subscription.for": "Souscription à",
+  "subscription.create.at": "crée le %s",
   "subscription.nota.part.1": "Consultez la documentation",
   "subscription.nota.part.2": "ou explorez",
   "subscription.nota.link.api": "pour utiliser l'API",
@@ -1451,7 +1452,7 @@
   "subscription.custom.name.update.placeholder":"Nom personnalisé",
   "subscription.rotation.update.label": "Paramétrer la rotation",
   "subscription.reset.secret.label": "Réinit. le secret",
-  "subscription.show.agregate.label": "Voir l'agrégat",
+  "subscription.show.aggregate.label": "Voir l'agrégat",
   "subscription.transfer.label": "Transférer la souscription",
   "subscription.enable.button.label": "Activer la souscription",
   "subscription.disable.button.label": "Désactiver la souscription",
@@ -1479,5 +1480,11 @@
   "Daikoku.home" : "Accueil Daikoku",
   "API.list" : "Liste des APIs",
   "more.nav.options": "Plus d'options",
-  "api.access.modal.title": "demande d'accès à une API"
+  "api.access.modal.title": "demande d'accès à une API",
+  "subscription.copy.basic.auth.label": "Basic auth.",
+  "subscription.copy.basic.auth.help": "Copier les identifiants sous la forme de valeur Basic auth.",
+  "subscription.copy.apikey.label": "ClientId:ClientToken",
+  "subscription.copy.apikey.help": "Copier les identifiants sous la forme clientId:clientSecret",
+  "subscription.copy.token.label": "Jeton",
+  "subscription.copy.token.help": "Copier le jeton Daikoku, utilisable pour récupérer les identifiants par API"
 }

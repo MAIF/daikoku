@@ -31,14 +31,18 @@ export const ApiSelectModal = (props: IApiSelectModalProps & IBaseModalProps) =>
   const [selectedPlan, setSelectedPlan] = useState<IUsagePlan>()
   const { translate } = useContext(I18nContext);
 
-  const plansRequest = useQuery({ queryKey: ['plans'], queryFn: () => Services.getAllPlanOfApi(props.teamId, props.api._humanReadableId, props.api.currentVersion) })
-
-
-
+  const parentRequest = useQuery({ 
+    queryKey: ['root'], 
+    queryFn: () => Services.getRootApi(props.api._humanReadableId)})
+  const plansRequest = useQuery({ 
+    queryKey: ['root_plans'], 
+    queryFn: () => Services.getAllPlanOfApi(props.teamId, (parentRequest.data as IApi)._id, (parentRequest.data as IApi).currentVersion),
+    enabled: parentRequest.data && !isError(parentRequest.data)
+  })
 
   const plansAsOptions = (plans: Array<IUsagePlan>): Array<plans> => {
     return plans.reduce<Array<plans>>((a, plan) => {
-      const groupName = `${props.api._humanReadableId}/${props.api.currentVersion}`;
+      const groupName = `${props.api._humanReadableId}/${(parentRequest.data as IApi).currentVersion}`;
       const optGroup = a.find((grp) => grp.label === groupName);
       if (!optGroup)
         return [
@@ -63,9 +67,9 @@ export const ApiSelectModal = (props: IApiSelectModalProps & IBaseModalProps) =>
     props.close();
   }
 
-  if (plansRequest.isLoading) {
+  if (parentRequest.isLoading && plansRequest.isLoading) {
     return <Spinner />
-  } else if (plansRequest.data && !isError(plansRequest)) {
+  } else if (parentRequest.data && !isError(parentRequest.data) && plansRequest.data && !isError(plansRequest.data)) {
     const plans = plansRequest.data as Array<IUsagePlan>
 
     return (
@@ -93,6 +97,9 @@ export const ApiSelectModal = (props: IApiSelectModalProps & IBaseModalProps) =>
       </div>
     )
   } else {
+    console.log(plansRequest.data)
+    console.log(!isError(plansRequest.data))
+    console.log(!isError(plansRequest))
     return <div>Error while fetching usage plans</div>
   }
 
