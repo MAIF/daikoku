@@ -205,7 +205,6 @@ a.navbar-brand,
 .navbar-companion {
   z-index: 10;
   background-color: $companion_bg-color;
-  // color: $level1_text-color;
   filter: brightness(105%);
   height: 100vh;
   position: relative;
@@ -234,7 +233,6 @@ a.navbar-brand,
     flex-direction: column;
 
     .companion-title {
-      // height: 40px;
       min-height: 40px;
       margin-bottom: 1rem;
       overflow: hidden;
@@ -271,7 +269,7 @@ a.navbar-brand,
             }
 
             &.disabled {
-              color: lighten(#000, 50%);
+              opacity: 0.5;
               cursor: default;
             }
 
