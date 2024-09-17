@@ -482,14 +482,6 @@ object SchemaDefinition {
           resolve = _.value.restrictions
         )
       ),
-      ReplaceField(
-        "validUntil",
-        Field(
-          "validUntil",
-          OptionType(DateTimeUnitype),
-          resolve = _.value.validUntil
-        )
-      )
     )
 
     lazy val AuthorizedEntitiesType = deriveObjectType[

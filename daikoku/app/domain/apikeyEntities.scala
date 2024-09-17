@@ -26,7 +26,6 @@ case class ApikeyCustomization(
     customMetadata: Seq[CustomMetadata] = Seq.empty,
     tags: JsArray = play.api.libs.json.Json.arr(),
     restrictions: ApiKeyRestrictions = ApiKeyRestrictions(),
-    validUntil: Option[DateTime] = None,
 ) extends CanJson[ApikeyCustomization] {
   def asJson: JsValue = json.ApikeyCustomizationFormat.writes(this)
 }

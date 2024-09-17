@@ -1663,7 +1663,6 @@ object json {
               .getOrElse(Seq.empty),
             tags = (json \ "tags").asOpt[JsArray].getOrElse(Json.arr()),
             restrictions = (json \ "restrictions").as(ApiKeyRestrictionsFormat),
-            validUntil = (json \ "validUntil").asOpt(DateTimeFormat)
           )
         )
       } recover {
@@ -1681,8 +1680,6 @@ object json {
         ),
         "tags" -> o.tags,
         "restrictions" -> o.restrictions.asJson,
-        "validUntil" -> o.validUntil.map(DateTimeFormat.writes)
-          .getOrElse(JsNull).as[JsValue]
       )
   }
   val ApiKeyRestrictionsFormat = new Format[ApiKeyRestrictions] {

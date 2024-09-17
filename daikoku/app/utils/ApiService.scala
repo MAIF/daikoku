@@ -83,7 +83,7 @@ class ApiService(
       customMaxPerDay: Option[Long] = None,
       customMaxPerMonth: Option[Long] = None,
       customReadOnly: Option[Boolean] = None,
-      maybeOtoroshiApiKey: Option[OtoroshiApiKey] = None
+      maybeOtoroshiApiKey: Option[OtoroshiApiKey] = None,
   ) = {
 
     val otoroshiApiKey = maybeOtoroshiApiKey.getOrElse(
@@ -163,8 +163,6 @@ class ApiService(
       ) ++ processedMetadata,
       rotation =
         plan.autoRotation.map(enabled => ApiKeyRotation(enabled = enabled)), 
-      validUntil = plan.otoroshiTarget.flatMap(_.apikeyCustomization
-        .validUntil.map(_.getMillis))
     )
 
     plan match {
