@@ -185,10 +185,10 @@ a.navbar-brand,
           cursor: pointer;
           font-size: 14px;
           color: $companion_link-color;
+          margin-top: 5px;
           margin-bottom: 5px;
-          line-height: 40px;
           border-radius: 4px;
-          padding-left: .5rem;
+          padding: .5rem;
 
           &:hover {
             background-color: $companion_text-hover-bg-color;
