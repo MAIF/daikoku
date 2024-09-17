@@ -3,23 +3,22 @@ use std::path::PathBuf;
 use bytes::Bytes;
 
 use crate::{
-    helpers::post_daikoku_api,
+    helpers::daikoku_cms_api_post,
     logging::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
     },
     models::folder::{read_documentations, read_sources_and_daikoku_metadata, CmsFile},
-    PushCommands,
 };
 
 use super::{
+    cms,
     enviroments::{
         get_daikokuignore, get_default_environment, read_cookie_from_environment, Environment,
     },
-    projects,
 };
 
-pub(crate) async fn run(commands: Option<PushCommands>) -> DaikokuResult<()> {
+pub(crate) async fn run(dry_run: Option<bool>, file_path: Option<String>) -> DaikokuResult<()> {
     logger::loading(format!("<yellow>Pushing</> project"));
     logger::done();
 
@@ -32,39 +31,19 @@ pub(crate) async fn run(commands: Option<PushCommands>) -> DaikokuResult<()> {
 
     let cookie = read_cookie_from_environment(true)?;
 
-    let project = projects::get_default_project()?;
+    let project = cms::get_default_project()?;
 
-    if let Some(command) = commands {
-        match command {
-            PushCommands::Documentation { path } => {
-                documentations_synchronization(&environment, &host, &cookie, &project, path).await?
-            }
-            PushCommands::Api { path } => {
-                synchronization(
-                    Some("apis".to_string()),
-                    &environment,
-                    &host,
-                    &cookie,
-                    &project,
-                    path,
-                )
-                .await?
-            }
-            PushCommands::Mail { path } => {
-                synchronization(
-                    Some("mails".to_string()),
-                    &environment,
-                    &host,
-                    &cookie,
-                    &project,
-                    path,
-                )
-                .await?
-            }
-        }
-    } else {
-        synchronization(None, &environment, &host, &cookie, &project, None).await?
-    }
+    // TODO - synchronize
+
+    // synchronization(
+    //     Some("apis".to_string()),
+    //     &environment,
+    //     &host,
+    //     &cookie,
+    //     &project,
+    //     path,
+    // )
+    // .await?
 
     logger::success("synchronization done".to_string());
 
@@ -107,7 +86,7 @@ async fn synchronization(
     environment: &Environment,
     host: &String,
     cookie: &String,
-    project: &projects::Project,
+    project: &cms::Project,
     path: Option<String>,
 ) -> DaikokuResult<()> {
     logger::loading(format!(
@@ -139,45 +118,7 @@ async fn synchronization(
             .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?,
     );
 
-    post_daikoku_api("/cms/sync", &host, &environment, &cookie, body).await?;
-
-    Ok(())
-}
-
-async fn documentations_synchronization(
-    environment: &Environment,
-    host: &String,
-    cookie: &String,
-    project: &projects::Project,
-    api_path: Option<String>,
-) -> DaikokuResult<()> {
-    logger::loading("<yellow>Syncing</> documentations pages".to_string());
-
-    let mut path = PathBuf::from(project.path.clone()).join("src").join("apis");
-
-    if let Some(folder_path) = api_path {
-        path = path.join(folder_path);
-    }
-
-    let mut body = read_documentations(&path)?;
-
-    logger::info(format!("Synchronization of {:?} pages", body.len()));
-    body.iter().for_each(|page| {
-        logger::info(format!(
-            "Synchronization of {:?} with path {:?}",
-            page.name,
-            page.path()
-        ))
-    });
-
-    apply_daikoku_ignore(&mut body)?;
-
-    let body = Bytes::from(
-        serde_json::to_string(&body)
-            .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?,
-    );
-
-    post_daikoku_api("/cms/sync", &host, &environment, &cookie, body).await?;
+    daikoku_cms_api_post("/cms/sync", body).await?;
 
     Ok(())
 }

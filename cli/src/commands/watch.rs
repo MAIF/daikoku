@@ -19,10 +19,10 @@ use crate::logging::logger::{self};
 use crate::models::folder::{read_contents, CmsFile, SourceExtension, UiCmsFile};
 use crate::utils::frame_to_bytes_body;
 
+use super::cms::{self};
 use super::enviroments::{
     can_join_daikoku, check_environment_from_str, read_cookie_from_environment, Environment,
 };
-use super::projects::{self};
 
 pub(crate) const SESSION_EXPIRED: &[u8] = include_bytes!("../../templates/session_expired.html");
 const MANAGER_PAGE: &[u8] = include_bytes!("../../templates/manager.html");
@@ -50,7 +50,7 @@ pub(crate) async fn run(
 ) -> DaikokuResult<()> {
     let environment = check_environment_from_str(incoming_environment.clone())?;
 
-    let _ = can_join_daikoku(&environment.server).await?;
+    let _ = can_join_daikoku(&environment.server, None).await?;
 
     let port = std::env::var("WATCHING_PORT").unwrap_or("3333".to_string());
 
@@ -90,7 +90,7 @@ pub(crate) async fn run(
 
 fn read_cms_pages() -> DaikokuResult<Summary> {
     Ok(Summary {
-        pages: read_contents(&PathBuf::from(projects::get_default_project()?.path))?,
+        pages: read_contents(&PathBuf::from(cms::get_default_project()?.path))?,
     })
 }
 
@@ -274,7 +274,7 @@ async fn render_page(
         page.name
     ));
 
-    let project = projects::get_default_project()?;
+    let project = cms::get_default_project()?;
 
     let content = read_contents(&PathBuf::from(&project.path))?;
 
@@ -298,11 +298,17 @@ async fn render_page(
         environment.server, watch_path
     );
 
-    let mut builder = Request::builder()
-        .method(Method::POST)
-        .uri(&url)
-        .header(header::HOST, &host)
-        .header(header::CONTENT_TYPE, "application/json");
+    // let mut builder = Request::builder()
+    //     .method(Method::POST)
+    //     .uri(&url)
+    //     .header(header::HOST, &host)
+    //     .header(header::CONTENT_TYPE, "application/json");
+
+    let mut builder = reqwest::Client::new()
+        .post(url)
+        .header(header::HOST, host)
+        .header(header::CONTENT_TYPE, "application/json")
+        .body(body);
 
     if authentication && page.authenticated() {
         match read_cookie_from_environment(true) {
@@ -319,38 +325,19 @@ async fn render_page(
             }
         }
     }
-    let req = builder.body(Full::new(body)).unwrap();
 
-    let stream = TcpStream::connect(&host)
+    let resp = builder
+        .send()
         .await
-        .map_err(|err| DaikokuCliError::DaikokuError(err))?;
-    let io = TokioIo::new(stream);
+        .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?;
 
-    let (mut sender, conn) = hyper::client::conn::http1::handshake(io)
+    let status = resp.status().as_u16();
+
+    let result: Vec<u8> = resp
+        .bytes()
         .await
-        .map_err(|err| DaikokuCliError::HyperError(err))?;
-
-    tokio::task::spawn(async move {
-        if let Err(err) = conn.await {
-            logger::error(format!("Connection error {:?}", err));
-        }
-    });
-
-    let upstream_resp = sender.send_request(req).await.map_err(|err| {
-        logger::error(format!("{:?}", err));
-        DaikokuCliError::ParsingError(err.to_string())
-    })?;
-
-    let (
-        hyper::http::response::Parts {
-            headers: _, status, ..
-        },
-        body,
-    ) = upstream_resp.into_parts();
-
-    let result: Vec<u8> = frame_to_bytes_body(body).await;
-
-    let status = status.as_u16();
+        .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?
+        .to_vec();
 
     if status == 303 {
         Ok(Response::builder()
@@ -358,7 +345,7 @@ async fn render_page(
             .body(Full::new(Bytes::from(
                 String::from_utf8(SESSION_EXPIRED.to_vec())
                     .unwrap()
-                    .replace("{{message}}", "Whoops, your token has expired"),
+                    .replace("{{message}}", "Whoops, your session has expired"),
             )))
             .unwrap())
     } else if status >= 400 {
@@ -385,23 +372,23 @@ async fn render_page(
                 format!("<textarea readonly>{}</textarea>", src)
             };
 
-            println!(
-                "{}",
-                String::from_utf8(MANAGER_PAGE.to_vec())
-                    .unwrap()
-                    .replace(
-                        "{{components}}",
-                        serde_json::to_string(
-                            &content
-                                .iter()
-                                .map(|file| file.to_ui_component())
-                                .collect::<Vec<UiCmsFile>>(),
-                        )
-                        .unwrap()
-                        .as_str(),
-                    )
-                    .replace("{{children}}", children.as_str())
-            );
+            // println!(
+            //     "{}",
+            //     String::from_utf8(MANAGER_PAGE.to_vec())
+            //         .unwrap()
+            //         .replace(
+            //             "{{components}}",
+            //             serde_json::to_string(
+            //                 &content
+            //                     .iter()
+            //                     .map(|file| file.to_ui_component())
+            //                     .collect::<Vec<UiCmsFile>>(),
+            //             )
+            //             .unwrap()
+            //             .as_str(),
+            //         )
+            //         .replace("{{children}}", children.as_str())
+            // );
 
             Ok(Response::builder()
                 // .header(header::CONTENT_TYPE, &page.content_type())

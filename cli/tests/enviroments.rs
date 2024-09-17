@@ -5,7 +5,7 @@ use std::{
     process::{Command, Output},
 };
 
-const WASMO_TEST_FOLDER: &str = "/tmp/daikokucli";
+const WASMO_TEST_FOLDER: &str = "/tmp/daikoku";
 struct Setup {
     temporary_path: String,
 }
@@ -35,7 +35,7 @@ impl Setup {
             Ok(v) => println!("{:?}", v),
         }
 
-        let mut cmd = Command::cargo_bin("daikokucli").unwrap();
+        let mut cmd = Command::cargo_bin("daikoku").unwrap();
 
         cmd.args([
             "create",
@@ -60,7 +60,7 @@ impl Setup {
             Ok(v) => println!("{:?}", v),
         }
 
-        let mut cmd = Command::cargo_bin("daikokucli").unwrap();
+        let mut cmd = Command::cargo_bin("daikoku").unwrap();
 
         cmd.args([
             "create",
@@ -70,7 +70,7 @@ impl Setup {
         ]);
         cmd.assert();
 
-        cmd = Command::cargo_bin("daikokucli").unwrap();
+        cmd = Command::cargo_bin("daikoku").unwrap();
 
         cmd.args([
             "environments",
@@ -97,7 +97,7 @@ impl Setup {
 fn add_environment_on_missing_project() -> Result<(), Box<dyn std::error::Error>> {
     let setup = Setup::new();
 
-    let mut cmd = Command::cargo_bin("daikokucli")?;
+    let mut cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args([
         "environments",
@@ -118,7 +118,7 @@ fn add_environment_on_missing_project() -> Result<(), Box<dyn std::error::Error>
 fn add_environment_after_creating_project() -> Result<(), Box<dyn std::error::Error>> {
     let setup = Setup::new_with_project();
 
-    let mut cmd = Command::cargo_bin("daikokucli")?;
+    let mut cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args([
         "environments",
@@ -139,7 +139,7 @@ fn add_environment_after_creating_project() -> Result<(), Box<dyn std::error::Er
 fn clear_environments() -> Result<(), Box<dyn std::error::Error>> {
     let setup = Setup::new_with_project();
 
-    let mut cmd = Command::cargo_bin("daikokucli")?;
+    let mut cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args(["environments", "clear"]).assert().success();
     cmd.assert().success();
@@ -153,7 +153,7 @@ fn clear_environments() -> Result<(), Box<dyn std::error::Error>> {
 fn remove_environment() -> Result<(), Box<dyn std::error::Error>> {
     let setup = Setup::new_with_project_and_environment();
 
-    let mut cmd = Command::cargo_bin("daikokucli")?;
+    let mut cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args(["environments", "remove", "--name=dev"])
         .assert()
@@ -168,7 +168,7 @@ fn remove_environment() -> Result<(), Box<dyn std::error::Error>> {
 fn default_environment() -> Result<(), Box<dyn std::error::Error>> {
     let setup = Setup::new_with_project_and_environment();
 
-    let mut cmd = Command::cargo_bin("daikokucli")?;
+    let mut cmd = Command::cargo_bin("daikoku")?;
 
     let content: Output = cmd.args(["environments", "list"]).output()?;
 
@@ -188,7 +188,7 @@ fn default_environment() -> Result<(), Box<dyn std::error::Error>> {
 fn get_environment() -> Result<(), Box<dyn std::error::Error>> {
     let setup = Setup::new_with_project_and_environment();
 
-    let mut cmd = Command::cargo_bin("daikokucli")?;
+    let mut cmd = Command::cargo_bin("daikoku")?;
 
     let content: Output = cmd.args(["environments", "env", "--name=dev"]).output()?;
 

@@ -1,20 +1,19 @@
 use std::any::type_name;
 
-use bytes::{Buf, Bytes};
-use http_body_util::{Empty, Full};
-use hyper::{header, Method, Request};
-use hyper_util::rt::TokioIo;
+use bytes::Buf;
+use hyper::header;
 use serde::Deserialize;
-use tokio::net::TcpStream;
 
 use crate::{
-    commands::enviroments::Environment,
-    logging::{
-        error::{DaikokuCliError, DaikokuResult},
-        logger,
-    },
-    utils::frame_to_bytes_body,
+    commands::enviroments::{get_default_environment, read_apikey_from_secrets},
+    logging::error::{DaikokuCliError, DaikokuResult},
 };
+
+#[derive(Debug)]
+pub(crate) struct CmsApiResponse<T> {
+    pub(crate) status: u16,
+    pub(crate) response: T,
+}
 
 pub(crate) fn bytes_to_struct<T: for<'a> Deserialize<'a>>(content: Vec<u8>) -> DaikokuResult<T> {
     let name = type_name::<T>();
@@ -42,55 +41,42 @@ pub(crate) fn bytes_to_vec_of_struct<T: for<'a> Deserialize<'a>>(
     Ok(summary)
 }
 
-pub(crate) async fn post_daikoku_api<T: Buf + std::marker::Send + 'static>(
+pub(crate) async fn daikoku_cms_api_post<T: Buf + std::marker::Send + 'static>(
     path: &str,
-    host: &String,
-    environment: &Environment,
-    cookie: &String,
     body: T,
-) -> DaikokuResult<Vec<u8>> {
-    let url: String = format!("{}/api{}", environment.server, &path);
+) -> DaikokuResult<Vec<u8>>
+where
+    reqwest::Body: From<T>,
+{
+    let environment = get_default_environment()?;
 
-    let req: Request<Full<T>> = Request::builder()
-        .method(Method::POST)
-        .uri(&url)
+    let host = environment
+        .server
+        .replace("http://", "")
+        .replace("https://", "");
+
+    let apikey = read_apikey_from_secrets(true)?;
+
+    let url: String = format!("{}/cms-api/{}", environment.server, &path);
+
+    let resp = reqwest::Client::new()
+        .post(url)
         .header(header::HOST, host)
         .header(header::CONTENT_TYPE, "application/json")
-        .header(header::COOKIE, cookie)
-        .body(Full::new(body))
-        .unwrap();
-
-    let stream = TcpStream::connect(&host).await.map_err(|err| {
-        DaikokuCliError::DaikokuErrorWithMessage("failed to join the server".to_string(), err)
-    })?;
-    let io = TokioIo::new(stream);
-
-    let (mut sender, conn) = hyper::client::conn::http1::handshake(io)
+        .header(header::AUTHORIZATION, format!("Basic {}", apikey))
+        .body(body)
+        .send()
         .await
-        .map_err(|err| DaikokuCliError::HyperError(err))?;
+        .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?;
 
-    tokio::task::spawn(async move {
-        if let Err(err) = conn.await {
-            logger::error(format!("Connection error {:?}", err));
-        }
-    });
-
-    let upstream_resp = sender
-        .send_request(req)
-        .await
-        .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?;
-
-    let (
-        hyper::http::response::Parts {
-            headers: _, status, ..
-        },
-        body,
-    ) = upstream_resp.into_parts();
-
-    let status = status.as_u16();
+    let status = resp.status().as_u16();
 
     if status < 300 {
-        Ok(frame_to_bytes_body(body).await)
+        Ok(resp
+            .bytes()
+            .await
+            .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?
+            .to_vec())
     } else {
         Err(DaikokuCliError::DaikokuStrError(format!(
             "failed to reach the Daikoku server {}",
@@ -99,60 +85,55 @@ pub(crate) async fn post_daikoku_api<T: Buf + std::marker::Send + 'static>(
     }
 }
 
-pub(crate) async fn get_daikoku_api(
+pub(crate) async fn raw_daikoku_cms_api_get(
     path: &str,
+    server: &String,
+    apikey: &String,
+) -> DaikokuResult<CmsApiResponse<Vec<u8>>> {
+    let host = server.replace("http://", "").replace("https://", "");
+
+    daikoku_cms_api_get_internal(path, &server, &apikey, &host).await
+}
+
+pub(crate) async fn daikoku_cms_api_get(path: &str) -> DaikokuResult<CmsApiResponse<Vec<u8>>> {
+    let environment = get_default_environment()?;
+
+    let host = environment
+        .server
+        .replace("http://", "")
+        .replace("https://", "");
+
+    let apikey = read_apikey_from_secrets(true)?;
+
+    daikoku_cms_api_get_internal(path, &environment.server, &apikey, &host).await
+}
+
+async fn daikoku_cms_api_get_internal(
+    path: &str,
+    server: &String,
+    apikey: &String,
     host: &String,
-    environment: &Environment,
-    cookie: &String,
-) -> DaikokuResult<Vec<u8>> {
-    let url: String = format!("{}/api{}", environment.server, &path);
+) -> DaikokuResult<CmsApiResponse<Vec<u8>>> {
+    let url: String = format!("{}/cms-api{}", server, &path);
 
-    let req = Request::builder()
-        .method(Method::GET)
-        .uri(&url)
-        .header(header::ACCEPT, "application/json")
-        .header(header::HOST, &host.clone())
-        .header(header::COOKIE, cookie.clone())
-        .body(Empty::<Bytes>::new())
-        .unwrap();
+    // println!("\ndaikoku_cms_api_get_internal {}", url);
 
-    let stream = TcpStream::connect(&host).await.map_err(|err| {
-        DaikokuCliError::DaikokuErrorWithMessage("failed to join the server".to_string(), err)
-    })?;
-    let io = TokioIo::new(stream);
-
-    let (mut sender, conn) = hyper::client::conn::http1::handshake(io)
+    let resp = reqwest::Client::new()
+        .get(url)
+        .header(header::HOST, host)
+        .header(header::AUTHORIZATION, format!("Basic {}", apikey))
+        .send()
         .await
-        .map_err(|err| DaikokuCliError::HyperError(err))?;
+        .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?;
 
-    tokio::task::spawn(async move {
-        if let Err(err) = conn.await {
-            logger::error(format!("Connection error {:?}", err));
-        }
-    });
-
-    let upstream_resp = sender
-        .send_request(req)
-        .await
-        .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?;
-
-    let (
-        hyper::http::response::Parts {
-            headers: _, status, ..
-        },
-        body,
-    ) = upstream_resp.into_parts();
-
-    let status = status.as_u16();
-
-    if status == 200 {
-        Ok(frame_to_bytes_body(body).await)
-    } else {
-        Err(DaikokuCliError::DaikokuStrError(format!(
-            "failed to reach the Daikoku server {}",
-            status
-        )))
-    }
+    Ok(CmsApiResponse {
+        status: resp.status().as_u16(),
+        response: resp
+            .bytes()
+            .await
+            .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?
+            .to_vec(),
+    })
 }
 
 pub(crate) fn map_error_to_filesystem_error<T: std::error::Error>(

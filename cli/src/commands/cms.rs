@@ -12,8 +12,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     helpers::{
-        bytes_to_struct, bytes_to_vec_of_struct, get_daikoku_api, map_error_to_filesystem_error,
+        bytes_to_struct, bytes_to_vec_of_struct, daikoku_cms_api_get,
+        map_error_to_filesystem_error, raw_daikoku_cms_api_get,
     },
+    interactive::prompt,
     logging::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
@@ -21,12 +23,12 @@ use crate::{
     models::folder::{Ext, SourceExtension},
     process,
     utils::absolute_path,
-    Commands, ProjectCommands,
+    CmsCommands, Commands,
 };
 
-const ZIP_CMS: &[u8] = include_bytes!("../../templates/project.zip");
+const ZIP_CMS: &[u8] = include_bytes!("../../templates/cms.zip");
 
-use super::enviroments::{can_join_daikoku, format_cookie, Environment};
+use super::enviroments::{can_join_daikoku, Environment};
 
 #[derive(Clone)]
 pub(crate) struct Project {
@@ -92,34 +94,35 @@ pub(crate) struct Api {
     description: Option<String>,
 }
 
-pub(crate) const ADMIN_API_ID: &str = "admin-api-tenant-default";
+pub(crate) const EXCLUDE_API: [&'static str; 2] =
+    ["admin-api-tenant-default", "cms-api-tenant-default"];
 
-pub(crate) async fn run(command: ProjectCommands) -> DaikokuResult<()> {
+pub(crate) async fn run(command: CmsCommands) -> DaikokuResult<()> {
     match command {
-        ProjectCommands::Add {
+        CmsCommands::Add {
             name,
             path,
             overwrite,
         } => add(name, absolute_path(path)?, overwrite.unwrap_or(false)),
-        ProjectCommands::Default { name } => update_default(name),
-        ProjectCommands::Remove { name, remove_files } => delete(name, remove_files),
-        ProjectCommands::List {} => list(),
-        ProjectCommands::Clear {} => clear(),
-        ProjectCommands::Clone {
+        CmsCommands::Switch { name } => switch_cms(name),
+        CmsCommands::Remove { name, remove_files } => delete(name, remove_files),
+        CmsCommands::List {} => list(),
+        CmsCommands::Clear {} => clear(),
+        CmsCommands::Migrate {
             name,
             path,
             server,
-            token,
+            apikey,
         } => {
-            clone(
+            migrate(
                 name,
                 absolute_path(path.unwrap_or("./".to_string()))?,
                 server,
-                token,
+                apikey,
             )
             .await
         }
-        ProjectCommands::Init { name, path } => {
+        CmsCommands::Init { name, path } => {
             init(name, absolute_path(path.unwrap_or("./".to_string()))?).await
         }
     }
@@ -161,7 +164,7 @@ fn add(name: String, path: String, overwrite: bool) -> DaikokuResult<()> {
 
     if config.get(&name, "path").is_some() && !overwrite {
         return Err(DaikokuCliError::Configuration(
-            format!("project already exists in the configuration file. Run daikokucli projects remove --name={} to remove it", name),
+            format!("project already exists in the configuration file. Run daikoku projects remove --name={} to remove it", name),
         ));
     }
 
@@ -185,7 +188,7 @@ fn add(name: String, path: String, overwrite: bool) -> DaikokuResult<()> {
     }
 }
 
-fn update_default(name: String) -> DaikokuResult<()> {
+fn switch_cms(name: String) -> DaikokuResult<()> {
     logger::loading("<yellow>Updating</> default project".to_string());
     let mut config: Ini = read(false)?;
 
@@ -337,19 +340,25 @@ fn read(last_attempt: bool) -> DaikokuResult<Ini> {
 }
 
 fn clear() -> DaikokuResult<()> {
-    let mut config = Ini::new();
+    logger::error("Are you to delete all cms ? [yN]".to_string());
 
-    config.clear();
+    let choice = prompt()?;
 
-    match config.write(&get_path()?) {
-        Ok(_) => {
-            logger::println("<green>Projects erased</>".to_string());
-            Ok(())
+    if choice.trim() == "y" {
+        let mut config = Ini::new();
+        config.clear();
+        match config.write(&get_path()?) {
+            Ok(_) => {
+                logger::println("<green>Projects erased</>".to_string());
+                Ok(())
+            }
+            Err(e) => Err(DaikokuCliError::FileSystem(format!(
+                "failed to reset the projects file : {}",
+                e.to_string()
+            ))),
         }
-        Err(e) => Err(DaikokuCliError::FileSystem(format!(
-            "failed to reset the projects file : {}",
-            e.to_string()
-        ))),
+    } else {
+        Ok(())
     }
 }
 
@@ -359,7 +368,7 @@ async fn init(name: String, path: String) -> DaikokuResult<()> {
 
     let manifest_dir = std::env::temp_dir();
 
-    let zip_name = "project.zip".to_string();
+    let zip_name = "cms.zip".to_string();
 
     let zip_path = Path::new(&manifest_dir).join(zip_name.clone());
 
@@ -384,7 +393,7 @@ async fn init(name: String, path: String) -> DaikokuResult<()> {
     let zip_action = zip_extensions::read::zip_extract(&PathBuf::from(zip_path), &manifest_dir);
 
     match zip_action {
-        Ok(()) => rename_plugin("project".to_string(), name, Some(path)).await,
+        Ok(()) => rename_plugin("cms".to_string(), name, Some(path)).await,
         Err(er) => Err(DaikokuCliError::FileSystem(er.to_string())),
     }
 }
@@ -416,8 +425,8 @@ async fn rename_plugin(template: String, name: String, path: Option<String>) -> 
         &complete_path,
     ) {
         Ok(()) => {
-            process(Commands::Projects {
-                command: crate::ProjectCommands::Add {
+            process(Commands::Cms {
+                command: crate::CmsCommands::Add {
                     name: name,
                     path: complete_path.into_os_string().into_string().unwrap(),
                     overwrite: None,
@@ -432,7 +441,7 @@ async fn rename_plugin(template: String, name: String, path: Option<String>) -> 
 }
 
 #[async_recursion]
-async fn clone(name: String, path: String, server: String, token: String) -> DaikokuResult<()> {
+async fn migrate(name: String, path: String, server: String, apikey: String) -> DaikokuResult<()> {
     logger::loading("<yellow>Converting</> legacy project from Daikoku environment".to_string());
 
     if internal_get_project(name.clone()).is_some() {
@@ -443,23 +452,25 @@ async fn clone(name: String, path: String, server: String, token: String) -> Dai
         force_clearing_default_project()?
     }
 
-    if !can_join_daikoku(&server.clone()).await? {
+    if raw_daikoku_cms_api_get("/health", &server.clone(), &apikey)
+        .await?
+        .status
+        != 200
+    {
         return Err(DaikokuCliError::Configuration(
             "Failed to join Daikoku server".to_string(),
         ));
     }
 
-    let cookie = format_cookie(token);
-
-    let environment = Environment {
-        server: server.clone(),
-        token: Some(cookie.clone()),
-    };
-
-    let host = environment
-        .server
-        .replace("http://", "")
-        .replace("https://", "");
+    if raw_daikoku_cms_api_get("/version", &server, &apikey)
+        .await?
+        .status
+        != 404
+    {
+        return Err(DaikokuCliError::DaikokuStrError(
+            "The CMS version in Daikoku is too recent to be migrated".to_string(),
+        ));
+    }
 
     let project_path = PathBuf::from_str(&path)
         .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?
@@ -468,40 +479,38 @@ async fn clone(name: String, path: String, server: String, token: String) -> Dai
     let sources_path = project_path.join("src");
 
     let root_mail_tenant = bytes_to_struct::<TenantMailBody>(
-        get_daikoku_api("/tenants/default", &host, &environment, &cookie).await?,
+        raw_daikoku_cms_api_get("/tenants/default", &server, &apikey)
+            .await?
+            .response,
     )?;
 
     let root_mail_user_translations = bytes_to_struct::<IntlTranslationBody>(
-        get_daikoku_api(
+        raw_daikoku_cms_api_get(
             "/translations/_mail?domain=tenant.mail.template",
-            &host,
-            &environment,
-            &cookie,
+            &server,
+            &apikey,
         )
-        .await?,
+        .await?
+        .response,
     )?;
 
     let mail_user_template = bytes_to_struct::<IntlTranslationBody>(
-        get_daikoku_api(
-            "/translations/_mail?domain=mail",
-            &host,
-            &environment,
-            &cookie,
-        )
-        .await?,
+        raw_daikoku_cms_api_get("/translations/_mail?domain=mail", &server, &apikey)
+            .await?
+            .response,
     )?;
 
     let apis_informations: Vec<Api> = bytes_to_vec_of_struct::<Api>(
-        get_daikoku_api(
+        raw_daikoku_cms_api_get(
             "/apis?fields=_id,_humanReadableId,header,description",
-            &host,
-            &environment,
-            &cookie,
+            &server,
+            &apikey,
         )
-        .await?,
+        .await?
+        .response,
     )?
     .into_iter()
-    .filter(|api| api._id != ADMIN_API_ID)
+    .filter(|api| !EXCLUDE_API.contains(&api._id.as_str()))
     .collect();
 
     create_mail_tenant(root_mail_tenant, sources_path.clone())?;
@@ -510,13 +519,19 @@ async fn clone(name: String, path: String, server: String, token: String) -> Dai
 
     create_api_folder(apis_informations, sources_path.clone())?;
 
-    create_cms_pages(&host, &environment, &cookie, &sources_path).await?;
+    logger::info("create_cms_pages".to_string());
+    create_cms_pages(&sources_path, &server, &apikey).await?;
 
+    logger::info("create_daikoku_hidden_files".to_string());
     create_daikoku_hidden_files(project_path.clone())?;
 
+    logger::info("Trying to create project".to_string());
     create_project(name.clone(), project_path.clone()).await?;
 
-    create_environment(name, server, cookie).await?;
+    logger::info("Trying to create environment".to_string());
+    create_environment(name, server, apikey).await?;
+
+    logger::println("<green>Migration endded</>".to_string());
 
     Ok(())
 }
@@ -670,93 +685,76 @@ fn create_mail_folder(
 }
 
 async fn create_cms_pages(
-    host: &String,
-    environment: &Environment,
-    cookie: &String,
     sources_path: &PathBuf,
+    server: &String,
+    apikey: &String,
 ) -> DaikokuResult<()> {
     let items = bytes_to_vec_of_struct::<CmsPage>(
-        get_daikoku_api("/cms", &host, &environment, &cookie).await?,
+        raw_daikoku_cms_api_get("/pages", &server, &apikey)
+            .await?
+            .response,
     )?;
 
-    if items
-        .clone()
-        .into_iter()
-        .find(|p| {
-            p.path
-                .clone()
-                .map(|path| path.starts_with("mails"))
-                .unwrap_or(false)
-        })
-        .is_some()
-    {
-        clone_new_project(items, sources_path)
-    } else {
-        clone_legacy_project(items, sources_path)
-    }
-}
-
-fn clone_new_project(items: Vec<CmsPage>, project_path: &PathBuf) -> DaikokuResult<()> {
-    println!("cloning new project");
-
-    items
-        .iter()
-        .filter(|item| {
-            !item.path.clone().unwrap().starts_with("apis")
-                && !item.path.clone().unwrap().starts_with("mails")
-        })
-        .for_each(|item| {
-            let extension = SourceExtension::from_str(&item.content_type).unwrap();
-
-            let item_path = item.path.clone().unwrap().clone();
-
-            // Remove the slash if the path starts with one.
-            let mut file_path = project_path.clone().join(if item_path.starts_with("/") {
-                &item_path[1..item_path.len()]
-            } else {
-                item_path.as_str()
-            });
-
-            let split_path = item_path.split("/");
-
-            // if the path didn't start with folder, we will place the page in the default pages folder
-            if split_path
-                .clone()
-                .into_iter()
-                .find(|part| part.is_empty())
-                .is_some()
-                || split_path.collect::<Vec<&str>>().len() == 1
-            {
-                file_path =
-                    project_path
-                        .clone()
-                        .join("pages")
-                        .join(if item_path.starts_with("/") {
-                            &item_path[1..item_path.len()]
-                        } else {
-                            item_path.as_str()
-                        });
-            }
-
-            let metadata = extract_metadata(item).unwrap_or(HashMap::new());
-
-            let _ = create_path_and_file(
-                file_path,
-                item.content.clone(),
-                item.name.clone(),
-                metadata,
-                extension,
-            );
-        });
-
-    Ok(())
-}
-
-fn clone_legacy_project(items: Vec<CmsPage>, sources_path: &PathBuf) -> DaikokuResult<()> {
     let new_pages = replace_ids(items)?;
 
     convert_cms_pages(new_pages, sources_path.clone())
 }
+
+// fn clone_new_project(items: Vec<CmsPage>, project_path: &PathBuf) -> DaikokuResult<()> {
+//     println!("cloning new project");
+
+//     items
+//         .iter()
+//         .filter(|item| {
+//             !item.path.clone().unwrap().starts_with("apis")
+//                 && !item.path.clone().unwrap().starts_with("mails")
+//         })
+//         .for_each(|item| {
+//             let extension = SourceExtension::from_str(&item.content_type).unwrap();
+
+//             let item_path = item.path.clone().unwrap().clone();
+
+//             // Remove the slash if the path starts with one.
+//             let mut file_path = project_path.clone().join(if item_path.starts_with("/") {
+//                 &item_path[1..item_path.len()]
+//             } else {
+//                 item_path.as_str()
+//             });
+
+//             let split_path = item_path.split("/");
+
+//             // if the path didn't start with folder, we will place the page in the default pages folder
+//             if split_path
+//                 .clone()
+//                 .into_iter()
+//                 .find(|part| part.is_empty())
+//                 .is_some()
+//                 || split_path.collect::<Vec<&str>>().len() == 1
+//             {
+//                 file_path =
+//                     project_path
+//                         .clone()
+//                         .join("pages")
+//                         .join(if item_path.starts_with("/") {
+//                             &item_path[1..item_path.len()]
+//                         } else {
+//                             item_path.as_str()
+//                         });
+//             }
+
+//             let metadata = extract_metadata(item).unwrap_or(HashMap::new());
+
+//             let _ = create_path_and_file(
+//                 file_path,
+//                 item.content.clone(),
+//                 item.name.clone(),
+//                 metadata,
+//                 extension,
+//             );
+//         });
+
+//     Ok(())
+// }
 
 fn convert_cms_pages(items: Vec<CmsPage>, project_path: PathBuf) -> DaikokuResult<()> {
     items.iter().for_each(|item| {
@@ -905,12 +903,15 @@ fn create_daikoku_hidden_files(complete_path: PathBuf) -> DaikokuResult<File> {
         .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
 
     fs::File::create(complete_path.join(".daikoku").join(".daikokuignore"))
+        .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+
+    fs::File::create(complete_path.join(".daikoku").join(".secrets"))
         .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))
 }
 
 async fn create_project(name: String, complete_path: PathBuf) -> DaikokuResult<()> {
-    process(Commands::Projects {
-        command: crate::ProjectCommands::Add {
+    process(Commands::Cms {
+        command: crate::CmsCommands::Add {
             name: name,
             path: complete_path.into_os_string().into_string().unwrap(),
             overwrite: None,
@@ -920,17 +921,15 @@ async fn create_project(name: String, complete_path: PathBuf) -> DaikokuResult<(
     Ok(())
 }
 
-async fn create_environment(name: String, server: String, token: String) -> DaikokuResult<()> {
+async fn create_environment(name: String, server: String, apikey: String) -> DaikokuResult<()> {
     process(Commands::Environments {
         command: crate::EnvironmentsCommands::Add {
             name: name,
             server,
-            token: Some(token),
+            apikey,
             overwrite: Some(true),
-            force: Some(false),
         },
     })
     .await?;
-    logger::println("<green>Migration endded</>".to_string());
     Ok(())
 }

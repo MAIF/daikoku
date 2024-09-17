@@ -3,7 +3,7 @@
 // // use std::fs;
 // use testcontainers::{clients, core::WaitFor, GenericImage};
 
-// // const WASMO_TEST_FOLDER: &str = "/tmp/daikokucli";
+// // const WASMO_TEST_FOLDER: &str = "/tmp/daikoku";
 // // struct Setup {
 // //     temporary_path: String,
 // // }

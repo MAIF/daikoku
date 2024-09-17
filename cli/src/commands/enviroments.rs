@@ -1,29 +1,28 @@
 use crate::{
+    helpers::{daikoku_cms_api_get, raw_daikoku_cms_api_get},
+    interactive::prompt,
     logging::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
     },
     EnvironmentsCommands,
 };
-use bytes::Bytes;
 use configparser::ini::Ini;
-use http_body_util::Empty;
-use hyper::{header, Method, Request};
-use hyper_util::rt::TokioIo;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
     fs,
     path::{Path, PathBuf},
 };
-use tokio::net::TcpStream;
 
-use super::projects;
+use super::cms;
 
 #[derive(Deserialize, Serialize, Clone, Debug)]
 pub(crate) struct Environment {
     pub(crate) server: String,
-    pub(crate) token: Option<String>,
+    pub(crate) cookie: Option<String>,
+    pub(crate) apikey: Option<String>,
+    pub(crate) name: String,
 }
 
 pub(crate) async fn run(command: EnvironmentsCommands) -> DaikokuResult<()> {
@@ -32,130 +31,117 @@ pub(crate) async fn run(command: EnvironmentsCommands) -> DaikokuResult<()> {
         EnvironmentsCommands::Add {
             name,
             server,
-            token,
             overwrite,
-            force,
-        } => {
-            add(
-                name,
-                server,
-                token,
-                overwrite.unwrap_or(false),
-                force.unwrap_or(false),
-            )
-            .await
-        }
-        EnvironmentsCommands::Default { name } => update_default(name),
-        EnvironmentsCommands::Remove { name } => delete(name),
-        EnvironmentsCommands::Env { name } => {
+            apikey,
+        } => add(name, server, overwrite.unwrap_or(false), apikey).await,
+        EnvironmentsCommands::Switch { name } => switch_environment(name),
+        EnvironmentsCommands::Remove { name } => remove(name),
+        EnvironmentsCommands::Info { name } => {
             let environment = get(name)?;
             logger::info(serde_json::to_string_pretty(&environment).unwrap());
             Ok(())
         }
         EnvironmentsCommands::List {} => list(),
-        EnvironmentsCommands::Patch { token } => patch_default(token),
+        EnvironmentsCommands::Config { apikey, cookie } => configure(apikey, cookie).await,
     }
 }
 
-fn get_path() -> DaikokuResult<String> {
-    let project = projects::get_default_project()?;
+fn get_environments_path() -> DaikokuResult<String> {
+    get_hidden_file(
+        ".environments".to_string(),
+        "failed to read environments file".to_string(),
+    )
+}
 
-    let environment_path = Path::new(&PathBuf::from(project.path))
+fn get_hidden_file(name: String, error_message: String) -> DaikokuResult<String> {
+    let project = cms::get_default_project()?;
+
+    let path = Path::new(&PathBuf::from(project.path))
         .join(".daikoku")
-        .join(".environments")
+        .join(name)
         .into_os_string()
         .into_string();
 
-    environment_path
-        .map(Ok)
-        .unwrap_or(Err(DaikokuCliError::Configuration(
-            "failed to read environments file".to_string(),
-        )))
+    path.map(Ok)
+        .unwrap_or(Err(DaikokuCliError::Configuration(error_message)))
 }
 
-fn read() -> DaikokuResult<Ini> {
+fn get_secrets_path() -> DaikokuResult<String> {
+    get_hidden_file(
+        ".secrets".to_string(),
+        "failed to read secrets file".to_string(),
+    )
+}
+
+fn read_environments() -> DaikokuResult<Ini> {
     let mut config = Ini::new();
 
-    match config.load(&get_path()?) {
+    match config.load(&get_environments_path()?) {
+        Ok(_) => Ok(config),
+        Err(e) => Err(DaikokuCliError::Configuration(e.to_string())),
+    }
+}
+
+fn read_secrets() -> DaikokuResult<Ini> {
+    let mut config = Ini::new();
+
+    match config.load(&get_secrets_path()?) {
         Ok(_) => Ok(config),
         Err(e) => Err(DaikokuCliError::Configuration(e.to_string())),
     }
 }
 
 fn set_content_file(content: &String) -> DaikokuResult<()> {
-    std::fs::write(get_path()?, content).map_err(|err| DaikokuCliError::FileSystem(err.to_string()))
+    std::fs::write(get_environments_path()?, content)
+        .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))
 }
 
 fn clear() -> DaikokuResult<()> {
-    match set_content_file(&"".to_string()) {
-        Ok(_) => {
-            logger::println("<green>Environments erased</>".to_string());
-            Ok(())
+    logger::error("Are you to delete all environments ? [yN]".to_string());
+
+    let choice = prompt()?;
+
+    if choice.trim() == "y" {
+        match set_content_file(&"".to_string()) {
+            Ok(_) => {
+                logger::println("<green>Environments erased</>".to_string());
+                Ok(())
+            }
+            Err(e) => Err(DaikokuCliError::FileSystem(format!(
+                "failed to reset the environments file : {}",
+                e.to_string()
+            ))),
         }
-        Err(e) => Err(DaikokuCliError::FileSystem(format!(
-            "failed to reset the environments file : {}",
-            e.to_string()
-        ))),
+    } else {
+        Ok(())
     }
 }
 
-pub(crate) async fn can_join_daikoku(server: &String) -> DaikokuResult<bool> {
+pub(crate) async fn can_join_daikoku(
+    server: &String,
+    apikey: Option<&String>,
+) -> DaikokuResult<bool> {
     let host = server.replace("http://", "").replace("https://", "");
 
-    let url: String = format!("{}/api/versions/_daikoku", server);
+    let url: String = format!("{}/health", host);
 
-    let req = Request::builder()
-        .method(Method::GET)
-        .uri(&url)
-        .header(header::HOST, &host)
-        .body(Empty::<Bytes>::new())
-        .unwrap();
-
-    let stream = TcpStream::connect(&host).await.map_err(|err| {
-        DaikokuCliError::DaikokuErrorWithMessage("failed to join the server".to_string(), err)
-    })?;
-    let io = TokioIo::new(stream);
-
-    let (mut sender, conn) = hyper::client::conn::http1::handshake(io)
-        .await
-        .map_err(|err| DaikokuCliError::HyperError(err))?;
-
-    tokio::task::spawn(async move {
-        if let Err(err) = conn.await {
-            logger::error(format!("Connection error {:?}", err));
+    let status = match apikey {
+        None => daikoku_cms_api_get(&url).await?.status,
+        Some(apikey) => {
+            raw_daikoku_cms_api_get("/health", &server.clone(), &apikey)
+                .await?
+                .status
         }
-    });
-
-    let upstream_resp = sender
-        .send_request(req)
-        .await
-        .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?;
-
-    let (
-        hyper::http::response::Parts {
-            headers: _, status, ..
-        },
-        _body,
-    ) = upstream_resp.into_parts();
-
-    let status = status.as_u16();
+    };
 
     logger::println(format!("Daikoku have returned : {}", status));
 
     Ok(status == 200)
 }
 
-async fn add(
-    name: String,
-    server: String,
-    token: Option<String>,
-    overwrite: bool,
-    force: bool,
-) -> DaikokuResult<()> {
+async fn add(name: String, server: String, overwrite: bool, apikey: String) -> DaikokuResult<()> {
     logger::loading("<yellow>Patching</> configuration".to_string());
-    let mut config: Ini = read()?;
-
-    let exists = config.get(&name, "server").is_some();
+    let mut config: Ini = read_environments()?;
 
     if name.to_lowercase() == "default" {
         return Err(DaikokuCliError::Configuration(
@@ -163,11 +149,13 @@ async fn add(
         ));
     }
 
+    let exists = config.get(&name, "server").is_some();
+
     if exists && !overwrite {
         return Err(DaikokuCliError::Configuration("configuration already exists. you maybe want to use --overwrite=true parameter to overwrite contents".to_string()));
     }
 
-    if !force && !can_join_daikoku(&server).await? {
+    if !can_join_daikoku(&server, Some(&apikey)).await? {
         return Err(DaikokuCliError::Configuration(
             "failed to save configuration. The specified Daikoku server can not be reached"
                 .to_string(),
@@ -175,27 +163,33 @@ async fn add(
     }
 
     config.set(&name, "server", Some(server));
-    config.set(&name, "token", token);
-
     config.set("default", "environment", Some(name.clone()));
+    config.set(name.clone().as_str(), "name", Some(name.clone()));
 
-    match config.write(&get_path()?) {
+    let mut secrets: Ini = read_secrets()?;
+    secrets.set(name.clone().as_str(), "apikey", Some(apikey));
+
+    secrets
+        .write(&get_secrets_path()?)
+        .map_err(|err| DaikokuCliError::DaikokuError(err))?;
+
+    match config.write(&get_environments_path()?) {
         Ok(()) => {
             logger::println(if exists {
                 "<green>Entry</> updated".to_string()
             } else {
                 "<green>New entry</> added".to_string()
             });
-            logger::info(serde_json::to_string_pretty(&get(name)?).unwrap());
+            // logger::info(serde_json::to_string_pretty(&get(name)?).unwrap());
             Ok(())
         }
         Err(err) => Err(DaikokuCliError::Configuration(err.to_string())),
     }
 }
 
-fn update_default(name: String) -> DaikokuResult<()> {
-    logger::loading("<yellow>Updating</> default environment".to_string());
-    let mut config: Ini = read()?;
+fn switch_environment(name: String) -> DaikokuResult<()> {
+    logger::loading("<yellow>Switch</> of default environment".to_string());
+    let mut config: Ini = read_environments()?;
 
     if config.get(&name, "server").is_none() {
         return Err(DaikokuCliError::Configuration(
@@ -205,7 +199,7 @@ fn update_default(name: String) -> DaikokuResult<()> {
 
     config.set("default", "environment", Some(name.clone()));
 
-    match config.write(&get_path()?) {
+    match config.write(&get_environments_path()?) {
         Ok(()) => {
             logger::println("<green>Defaut</> updated".to_string());
             let _ = get("default".to_string());
@@ -215,29 +209,43 @@ fn update_default(name: String) -> DaikokuResult<()> {
     }
 }
 
-fn patch_default(token: String) -> DaikokuResult<()> {
-    logger::loading("<yellow>Patching</> default environment".to_string());
-    let mut config: Ini = read()?;
+async fn configure(apikey: Option<String>, cookie: Option<String>) -> DaikokuResult<()> {
+    logger::loading("<yellow>Updating</> default environment".to_string());
 
-    match config.get("default", "environment") {
-        None => {
+    let environment = get_default_environment()?;
+
+    let mut config: Ini = read_secrets()?;
+
+    if let Some(new_apikey) = apikey {
+        config.set(&environment.name, "apikey", Some(new_apikey.clone()));
+
+        if !can_join_daikoku(&environment.server, Some(&new_apikey)).await? {
             return Err(DaikokuCliError::Configuration(
-                "no default environment is configured".to_string(),
-            ))
+                "failed to save configuration. The specified Daikoku server can not be reached"
+                    .to_string(),
+            ));
         }
-        Some(environment) => {
-            config.set(&environment, "token", Some(token));
 
-            match config.write(&get_path()?) {
-                Ok(()) => {
-                    logger::println("<green>Defaut</> updated".to_string());
-                    let _ = get(environment);
-                    Ok(())
-                }
-                Err(err) => Err(DaikokuCliError::Configuration(err.to_string())),
+        match config.write(&get_secrets_path()?) {
+            Ok(()) => {
+                logger::println("<green>apikey</> updated".to_string());
             }
+            Err(err) => return Err(DaikokuCliError::Configuration(err.to_string())),
         }
     }
+
+    if let Some(new_cookie) = cookie {
+        config.set(&environment.name, "cookie", Some(new_cookie.clone()));
+
+        match config.write(&get_secrets_path()?) {
+            Ok(()) => {
+                logger::println("<green>cookie</> updated".to_string());
+            }
+            Err(err) => return Err(DaikokuCliError::Configuration(err.to_string())),
+        }
+    }
+
+    Ok(())
 }
 
 pub(crate) fn format_cookie(str: String) -> String {
@@ -249,15 +257,16 @@ pub(crate) fn format_cookie(str: String) -> String {
 }
 
 pub(crate) fn read_cookie_from_environment(failed_if_not_present: bool) -> DaikokuResult<String> {
-    let config: Ini = read()?;
+    let config: Ini = read_environments()?;
 
     if let Some(environment) = config.get("default", "environment") {
-        config
-            .get(&environment, "token")
+        let secrets: Ini = read_secrets()?;
+        secrets
+            .get(&environment, "cookie")
             .map(|cookie| Ok(format_cookie(cookie)))
             .unwrap_or(if failed_if_not_present {
                 Err(DaikokuCliError::Configuration(
-                    "Missing token on default environment. Run daikokucli projects default --token=<> with the token paste from your Daikoku profile".to_string(),
+                    "Missing cookie on default environment. Run daikoku login".to_string(),
                 ))
             } else {
                 Ok("".to_string())
@@ -269,9 +278,31 @@ pub(crate) fn read_cookie_from_environment(failed_if_not_present: bool) -> Daiko
     }
 }
 
-fn delete(name: String) -> DaikokuResult<()> {
+pub(crate) fn read_apikey_from_secrets(failed_if_not_present: bool) -> DaikokuResult<String> {
+    let config: Ini = read_environments()?;
+
+    if let Some(environment) = config.get("default", "environment") {
+        let secrets: Ini = read_secrets()?;
+        secrets
+            .get(&environment, "apikey")
+            .map(Ok)
+            .unwrap_or(if failed_if_not_present {
+                Err(DaikokuCliError::Configuration(
+                    "Missing apikey on default environment. Run daikoku environments configure --apikey=<> with the apikey paste from your Daikoku CMS API".to_string(),
+                ))
+            } else {
+                Ok("".to_string())
+            })
+    } else {
+        Err(DaikokuCliError::Configuration(
+            "missing default environment".to_string(),
+        ))
+    }
+}
+
+fn remove(name: String) -> DaikokuResult<()> {
     logger::loading("<yellow>Deleting</> environment".to_string());
-    let mut config: Ini = read()?;
+    let mut config: Ini = read_environments()?;
 
     if name.to_lowercase() == "default" {
         return Err(DaikokuCliError::Configuration(
@@ -285,17 +316,25 @@ fn delete(name: String) -> DaikokuResult<()> {
         ));
     };
 
-    match config.write(&get_path()?) {
-        Ok(()) => {
+    let mut secrets: Ini = read_secrets()?;
+    secrets.remove_section(&name);
+
+    match (
+        config.write(&get_environments_path()?),
+        secrets.write(&get_secrets_path()?),
+    ) {
+        (Ok(()), Ok(())) => {
             logger::println(format!("<green>{}</> deleted", &name));
             Ok(())
         }
-        Err(err) => Err(DaikokuCliError::Configuration(err.to_string())),
+        _ => Err(DaikokuCliError::Configuration(
+            "failed to update environments and secrets files".to_string(),
+        )),
     }
 }
 
 fn get(name: String) -> DaikokuResult<Environment> {
-    let config: Ini = read()?;
+    let config: Ini = read_environments()?;
 
     let values = config
         .get_map()
@@ -317,11 +356,11 @@ fn get(name: String) -> DaikokuResult<Environment> {
 }
 
 pub(crate) fn get_default_environment() -> DaikokuResult<Environment> {
-    let config: Ini = read()?;
+    let config: Ini = read_environments()?;
 
     let default_environment = config.get("default", "environment").map(Ok).unwrap_or(Err(
         DaikokuCliError::Configuration(
-            "default environment not found. see daikokucli environments help".to_string(),
+            "default environment not found. see daikoku environments help".to_string(),
         ),
     ))?;
 
@@ -334,7 +373,7 @@ pub(crate) fn check_environment_from_str(name: Option<String>) -> DaikokuResult<
 }
 
 fn list() -> DaikokuResult<()> {
-    let config: Ini = read()?;
+    let config: Ini = read_environments()?;
 
     let map = config.get_map().unwrap_or(HashMap::new());
 
@@ -344,7 +383,7 @@ fn list() -> DaikokuResult<()> {
 }
 
 pub(crate) fn get_daikokuignore() -> DaikokuResult<Vec<String>> {
-    let project = projects::get_default_project()?;
+    let project = cms::get_default_project()?;
 
     let daikokuignore_path = Path::new(&PathBuf::from(project.path))
         .join(".daikoku")

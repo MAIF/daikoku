@@ -2,7 +2,7 @@ use assert_cmd::prelude::*;
 use serial_test::serial;
 use std::{fs, process::Command};
 
-const WASMO_TEST_FOLDER: &str = "/tmp/daikokucli";
+const WASMO_TEST_FOLDER: &str = "/tmp/daikoku";
 struct Setup {
     temporary_path: String,
 }
@@ -18,11 +18,11 @@ impl Setup {
             Ok(v) => println!("{:?}", v),
         }
 
-        let mut cmd = Command::cargo_bin("daikokucli").unwrap();
+        let mut cmd = Command::cargo_bin("daikoku").unwrap();
 
         cmd.args(["projects", "clear"]).assert().success();
 
-        cmd = Command::cargo_bin("daikokucli").unwrap();
+        cmd = Command::cargo_bin("daikoku").unwrap();
 
         cmd.args([
             "create",
@@ -46,7 +46,7 @@ impl Setup {
 fn add_project() -> Result<(), Box<dyn std::error::Error>> {
     let setup = Setup::new();
 
-    let mut cmd = Command::cargo_bin("daikokucli")?;
+    let mut cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args([
         "projects",
@@ -66,7 +66,7 @@ fn add_project() -> Result<(), Box<dyn std::error::Error>> {
 fn default_project() -> Result<(), Box<dyn std::error::Error>> {
     let setup = Setup::new();
 
-    let mut cmd = Command::cargo_bin("daikokucli")?;
+    let mut cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args([
         "projects",
@@ -77,7 +77,7 @@ fn default_project() -> Result<(), Box<dyn std::error::Error>> {
     .assert()
     .success();
 
-    cmd = Command::cargo_bin("daikokucli")?;
+    cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args(["projects", "default", "--name=dev"])
         .assert()
@@ -92,7 +92,7 @@ fn default_project() -> Result<(), Box<dyn std::error::Error>> {
 fn remove_project() -> Result<(), Box<dyn std::error::Error>> {
     let setup = Setup::new();
 
-    let mut cmd = Command::cargo_bin("daikokucli")?;
+    let mut cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args([
         "projects",
@@ -103,7 +103,7 @@ fn remove_project() -> Result<(), Box<dyn std::error::Error>> {
     .assert()
     .success();
 
-    cmd = Command::cargo_bin("daikokucli")?;
+    cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args(["projects", "remove", "--name=dev"])
         .assert()
@@ -118,7 +118,7 @@ fn remove_project() -> Result<(), Box<dyn std::error::Error>> {
 fn clear_project() -> Result<(), Box<dyn std::error::Error>> {
     let setup = Setup::new();
 
-    let mut cmd = Command::cargo_bin("daikokucli")?;
+    let mut cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args([
         "projects",
@@ -129,7 +129,7 @@ fn clear_project() -> Result<(), Box<dyn std::error::Error>> {
     .assert()
     .success();
 
-    cmd = Command::cargo_bin("daikokucli")?;
+    cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args(["projects", "clear"]).assert().success();
 

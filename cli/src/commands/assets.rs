@@ -25,8 +25,8 @@ use tokio::net::TcpStream;
 use walkdir::WalkDir;
 
 use super::{
-    enviroments::{get_default_environment, read_cookie_from_environment},
-    projects::{self, get_default_project},
+    cms::{self, get_default_project},
+    enviroments::{get_default_environment, read_apikey_from_secrets},
 };
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -39,7 +39,7 @@ struct Asset {
 
 pub(crate) async fn run(command: AssetsCommands) -> DaikokuResult<()> {
     match command {
-        AssetsCommands::Add {
+        AssetsCommands::Push {
             filename,
             title,
             desc,
@@ -73,7 +73,7 @@ async fn exists(filename: String) -> DaikokuResult<()> {
         .replace("http://", "")
         .replace("https://", "");
 
-    let cookie = read_cookie_from_environment(true)?;
+    let apikey = read_apikey_from_secrets(true)?;
 
     let url: String = format!(
         "{}/tenant-assets/{}",
@@ -83,7 +83,8 @@ async fn exists(filename: String) -> DaikokuResult<()> {
 
     let req = Request::head(&url)
         .header(header::HOST, &host)
-        .header(header::COOKIE, cookie)
+        // .header(header::COOKIE, cookie)
+        .header(header::AUTHORIZATION, format!("Basic {}", apikey))
         .body(Empty::<Bytes>::new())
         .expect("failed to build a request");
 
@@ -111,7 +112,7 @@ async fn exists(filename: String) -> DaikokuResult<()> {
 
     if status == 303 {
         Err(DaikokuCliError::DaikokuStrError(
-            "Whoops, your token has expired. daikokucli login --token is required".to_string(),
+            "Whoops, your session has expired. daikoku login is required".to_string(),
         ))
     } else if status != 404 {
         Err(DaikokuCliError::DaikokuStrError(
@@ -130,7 +131,7 @@ async fn add(
     path: Option<String>,
     slug: Option<String>,
 ) -> DaikokuResult<()> {
-    logger::loading("<yellow>Creating</> new assets".to_string());
+    logger::loading("<yellow>Creating and pushing</> new assets".to_string());
 
     exists(match &slug {
         Some(s) => s.clone(),
@@ -145,7 +146,7 @@ async fn add(
         .replace("http://", "")
         .replace("https://", "");
 
-    let cookie = read_cookie_from_environment(true)?;
+    let apikey = read_apikey_from_secrets(true)?;
 
     let url: String = format!(
         "{}/tenant-assets?filename={}&title={}&desc={}&slug={}",
@@ -174,7 +175,8 @@ async fn add(
 
     let req = Request::post(&url)
         .header(header::HOST, &host)
-        .header(header::COOKIE, cookie)
+        // .header(header::COOKIE, cookie)
+        .header(header::AUTHORIZATION, format!("Basic {}", apikey))
         .body(Full::new(Bytes::from(contents)))
         .expect("failed to build a request");
 
@@ -228,7 +230,7 @@ async fn remove(filename: String, path: Option<String>, slug: Option<String>) ->
         .replace("http://", "")
         .replace("https://", "");
 
-    let cookie = read_cookie_from_environment(true)?;
+    let apikey = read_apikey_from_secrets(true)?;
 
     let url: String = format!(
         "{}/tenant-assets/{}",
@@ -238,7 +240,8 @@ async fn remove(filename: String, path: Option<String>, slug: Option<String>) ->
 
     let req = Request::delete(&url)
         .header(header::HOST, &host)
-        .header(header::COOKIE, cookie)
+        // .header(header::COOKIE, cookie)
+        .header(header::AUTHORIZATION, format!("Basic {}", apikey))
         .body(Empty::<Bytes>::new())
         .expect("failed to build a request");
 
@@ -300,13 +303,14 @@ async fn list() -> DaikokuResult<()> {
         .replace("http://", "")
         .replace("https://", "");
 
-    let cookie = read_cookie_from_environment(true)?;
+    let apikey = read_apikey_from_secrets(true)?;
 
     let url: String = format!("{}/tenant-assets/slugified", environment.server);
 
     let req = Request::get(&url)
         .header(header::HOST, &host)
-        .header(header::COOKIE, cookie)
+        // .header(header::COOKIE, cookie)
+        .header(header::AUTHORIZATION, format!("Basic {}", apikey))
         .body(Empty::<Bytes>::new())
         .expect("failed to build a request");
 
@@ -366,7 +370,7 @@ async fn list() -> DaikokuResult<()> {
 async fn sync() -> DaikokuResult<()> {
     logger::loading("<yellow>Syncing</> assets folder".to_string());
 
-    let project = projects::get_default_project()?;
+    let project = cms::get_default_project()?;
 
     let mut pages: Vec<Asset> = Vec::new();
 
@@ -406,9 +410,9 @@ async fn sync() -> DaikokuResult<()> {
         .replace("http://", "")
         .replace("https://", "");
 
-    let cookie = read_cookie_from_environment(true)?;
+    let apikey = read_apikey_from_secrets(true)?;
 
-    let url: String = format!("{}/tenant-assets/bulk", environment.server,);
+    let url: String = format!("{}/tenant-assets/bulk", environment.server);
 
     let files = pages
         .iter()
@@ -432,7 +436,8 @@ async fn sync() -> DaikokuResult<()> {
 
     let req = Request::post(&url)
         .header(header::HOST, &host)
-        .header(header::COOKIE, cookie)
+        // .header(header::COOKIE, cookie)
+        .header(header::AUTHORIZATION, format!("Basic {}", apikey))
         .body(Full::new(Bytes::from(
             serde_json::to_string(&contents).map_err(|_err| {
                 DaikokuCliError::ParsingError("failed to convert assets to json array".to_string())

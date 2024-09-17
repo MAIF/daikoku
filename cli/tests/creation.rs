@@ -1,7 +1,7 @@
 use assert_cmd::prelude::*;
 use std::{fs, process::Command};
 
-const WASMO_TEST_FOLDER: &str = "/tmp/daikokucli";
+const WASMO_TEST_FOLDER: &str = "/tmp/daikoku";
 struct Setup {
     temporary_path: String,
 }
@@ -28,11 +28,11 @@ impl Setup {
 fn run() -> Result<(), Box<dyn std::error::Error>> {
     let setup = Setup::new();
 
-    let mut cmd = Command::cargo_bin("daikokucli")?;
+    let mut cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args(["projects", "clear"]).assert().success();
 
-    cmd = Command::cargo_bin("daikokucli")?;
+    cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args([
         "create",

@@ -1,7 +1,7 @@
 pub mod watch;
 pub mod enviroments;
 pub mod version;
-pub mod projects;
+pub mod cms;
 pub mod login;
 pub mod pull;
 pub mod push;
