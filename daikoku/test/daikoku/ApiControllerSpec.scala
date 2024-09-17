@@ -6602,7 +6602,7 @@ class ApiControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(user),
-        teams = Seq(teamConsumer),
+        teams = Seq(teamConsumer, teamOwner),
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(parentSub, childSub)
