@@ -701,18 +701,7 @@ const ApiKeyCard = ({
             >
               {translate("subscription.custom.name.update.label")}
             </span>
-            {!subscription.parent && !disableRotation && <span
-              className="dropdown-item cursor-pointer"
-              onClick={() => openFormModal({
-                title: translate("ApiKey rotation"),
-                actionLabel: translate('Save'),
-                schema: settingsSchema,
-                onSubmit: (data) => handleChanges(data),
-                value: subscription.rotation
-              })}
-            >
-              {translate("subscription.rotation.update.label")}
-            </span>}
+          
             {subscription.children.length > 0 && <span
               className="dropdown-item cursor-pointer"
               onClick={() => openRightPanel({
@@ -739,20 +728,26 @@ const ApiKeyCard = ({
               {translate("subscription.show.aggregate.label")}
             </span>}
             <div className="dropdown-divider" />
-            {!subscription.parent && <span
-              className="dropdown-item cursor-pointer danger"
-              onClick={regenerateSecret}
+            {!subscription.parent && !disableRotation && <span
+              className="dropdown-item cursor-pointer"
+              onClick={() => openFormModal({
+                title: translate("ApiKey rotation"),
+                actionLabel: translate('Save'),
+                schema: settingsSchema,
+                onSubmit: (data) => handleChanges(data),
+                value: subscription.rotation
+              })}
             >
-              {translate("subscription.reset.secret.label")}
+              {translate("subscription.rotation.update.label")}
             </span>}
             {!subscription.parent && <span
-              className="dropdown-item cursor-pointer danger"
+              className="dropdown-item cursor-pointer "
               onClick={transferKey}
             >
               {translate("subscription.transfer.label")}
             </span>}
             <span
-              className={classNames("dropdown-item cursor-pointer danger", {
+              className={classNames("dropdown-item cursor-pointer", {
                 disabled: subscription.parent && !subscription.parentUp
               })}
               onClick={() => {
@@ -764,6 +759,12 @@ const ApiKeyCard = ({
               {subscription.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
             </span>
             <div className="dropdown-divider" />
+            {!subscription.parent && <span
+              className="dropdown-item cursor-pointer danger"
+              onClick={regenerateSecret}
+            >
+              {translate("subscription.reset.secret.label")}
+            </span>}
             {subscription.parent && <span
               className="dropdown-item cursor-pointer danger"
               onClick={makeUniqueApiKey}
