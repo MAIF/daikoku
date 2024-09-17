@@ -341,6 +341,7 @@ export const TeamApiSubscriptions = ({
                 key={`edit-meta-${sub._id}`}
                 type="button"
                 className="btn btn-sm btn-outline-primary me-1"
+                aria-label={translate("Update metadata")}
                 onClick={() => updateMeta(sub)}
               >
                 <i className="fas fa-pen" />

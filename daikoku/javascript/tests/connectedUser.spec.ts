@@ -586,7 +586,7 @@ test('Filter API List', async ({ page, request }) => {
 })
 
 
-test('test', async ({ page }) => {
+test('transfer an api subscription', async ({ page }) => {
   await page.goto('http://localhost:5173/apis');
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email address').fill('tester@foo.bar');
@@ -621,4 +621,26 @@ test('test', async ({ page }) => {
   await page.getByText('API keys').click();
   await page.getByRole('row', { name: 'test API 2.0.0 View API View' }).getByLabel('View APIkeys').click();
   expect(page.locator('.api-subscription__infos__value')).toHaveText(apikey)
+});
+
+test('can setup subscription valid until for a subs to his apis', async ({ page }) => {
+  await page.goto('http://localhost:5173/apis');
+  await page.getByRole('img', { name: 'user menu' }).click();
+  await page.getByPlaceholder('Email address').fill('admin@foo.bar');
+  await page.getByPlaceholder('Password').fill('password');
+  await page.getByPlaceholder('Password').press('Enter');
+  await page.waitForResponse(response => response.url().includes('/auth/Local/callback') && response.status() === 303)
+  await page.waitForSelector("section.organisation__header")
+
+  await page.goto('http://localhost:5173/testers/settings/apis/test-api/1.0.0/infos')
+  // await page.waitForResponse(r => r.url().includes('/_name') && r.status() === 200)
+  await page.locator('.block__entry__link').filter({ hasText: 'Subscriptions'}).click();
+  await page.getByRole('row', { name: 'daikoku-api-key-test-api-not-test-plan-consumers-' }).getByRole('button', { name: 'Update metadata' }).click();
+  await page.getByPlaceholder('mm/dd/yyyy').fill('11/18/2024');
+  await page.locator('.modal-footer .btn-outline-success').filter({ hasText: 'Update' }).click();
+  await page.getByLabel('Daikoku home').click();
+  await page.getByText('Consumers').click();
+  await page.getByText('API keys').click();
+  await page.getByLabel('View APIkeys').click();
+  await expect(page.getByText('valid until 18 Nov.')).toBeVisible();
 });
