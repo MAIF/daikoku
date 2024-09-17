@@ -7,7 +7,6 @@ import moment from 'moment';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Key } from 'react-feather/dist/icons/key';
 
 import {
   I18nContext,
@@ -618,7 +617,6 @@ export const ApiKeyCard = ({
 
           <div className='api-subscription__infos'>
             <div className='api-subscription__infos__name'>{_customName}</div>
-            <div className='api-subscription__infos__value'>{`${subscription.apiKey.clientId}:${subscription.apiKey.clientSecret}`}</div>
             <div className='d-flex gap-2'>
               <BeautifulTitle title={translate("subscription.copy.apikey.help")}>
                 <button className='btn btn-sm btn-outline-info' onClick={() => {
@@ -670,9 +668,14 @@ export const ApiKeyCard = ({
               translate("subscription.for")}
               <Link to={subscription.apiLink} className='ms-1 underline'>{subscription.apiName}</Link>/<Link to={subscription.planLink} className='me-1 underline'>{subscription.planName}</Link>
               {translate({
-                key: 'subscription.create.at', replacements: [moment(subscription.createdAt).format(translate('moment.date.format.without.hours'))]
-              })
-              }</div>
+                key: 'subscription.created.at', replacements: [moment(subscription.createdAt).format(translate('moment.date.format.without.hours'))]
+              })}
+              <span className={classNames('ms-1', {
+                "danger-color": moment(subscription.validUntil).isBefore(moment())
+              })}>
+                {subscription.validUntil && translate({
+                  key: 'subscription.valid.until', replacements: [moment(subscription.validUntil).format(translate('moment.date.format.without.hours'))]
+                })}</span></div>
           </div>
         </div>
         <div className="api-subscriptions__links">

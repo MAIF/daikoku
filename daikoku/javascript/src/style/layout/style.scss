@@ -21,6 +21,10 @@ main {
   }
 }
 
+.danger-color {
+  color: $danger-color
+}
+
 .section,
 .album {
   background-color: $level2_bg-color;
