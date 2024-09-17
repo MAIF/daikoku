@@ -82,9 +82,9 @@ case class DaikokuStyle(
   --card_header-bg-color: #404040;
   --card_header-text-color: #fff;
   --card_bg-color: #282828;
-  --card_text-color: #fff;
-  --card_link-color: #b3b3b3;
-  --card_link-hover-color: orange;
+  --card_text-color: #fff; 
+  --card_link-color: #97b0c7;
+  --card_link-hover-color : #a9cbea;
 
   --btn-bg-color: #fff;
   --btn-text-color: #495057;
@@ -143,8 +143,8 @@ case class DaikokuStyle(
   --card_header-text-color: #fff;
   --card_bg-color: #282828;
   --card_text-color: #fff;
-  --card_link-color: #b3b3b3;
-  --card_link-hover-color: orange;
+  --card_link-color: #97b0c7;
+  --card_link-hover-color : #a9cbea;
 
 
   --btn-bg-color: #fff;

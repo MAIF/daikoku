@@ -24,6 +24,9 @@
   }
   #dropdownMenuButton {
     color: $card-link-color;
+    &:hover{
+      color: $card-link-hover-color;
+    }
   }
 }
 
