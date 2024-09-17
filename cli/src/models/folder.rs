@@ -130,22 +130,66 @@ pub(crate) fn read_documentations(path: &PathBuf) -> DaikokuResult<Vec<CmsFile>>
 pub(crate) fn read_sources_and_daikoku_metadata(path: &PathBuf) -> DaikokuResult<Vec<CmsFile>> {
     let mut pages: Vec<CmsFile> = Vec::new();
 
-    let mut current_daikoku_data = None;
+    let paths = fs::read_dir(path).unwrap();
+
+    for raw_path in paths {
+        let directory_name = raw_path.unwrap().file_name().into_string().unwrap();
+        if directory_name != ".DS_Store" {
+            let sources = if directory_name == "apis" {
+                read_apis_folder(&path.join("apis"))
+            } else {
+                read_sources(path.join(directory_name))
+            }?;
+            pages.extend(sources);
+        }
+    }
+
+    for page in pages.iter_mut() {
+        if !page.path().starts_with("/") {
+            page.metadata
+                .insert("_path".to_string(), format!("/{}", page.path()));
+        }
+    }
+
+    Ok(pages)
+}
+
+fn read_apis_folder(path: &PathBuf) -> DaikokuResult<Vec<CmsFile>> {
+    let mut pages: Vec<CmsFile> = Vec::new();
+
+    let apis = fs::read_dir(path).unwrap();
+
+    for raw_path in apis {
+        let directory_name = raw_path.unwrap().file_name().into_string().unwrap();
+
+        if !directory_name.starts_with(".") {
+            let sources = read_api_folder(&path.join(directory_name))?;
+            pages.extend(sources);
+        }
+    }
+
+    Ok(pages)
+}
+
+fn read_api_folder(path: &PathBuf) -> DaikokuResult<Vec<CmsFile>> {
+    let mut pages: Vec<CmsFile> = Vec::new();
+
+    let mut daikoku_data = None;
 
     for entry in WalkDir::new(path).into_iter().filter_map(Result::ok) {
         let f_name = String::from(entry.file_name().to_string_lossy());
 
-        if entry.metadata().unwrap().is_dir() {
-            let daikoku_data_path = entry.clone().into_path().join(".daikoku_data");
+        if entry.metadata().unwrap().is_file() {
+            if entry.clone().file_name() == ".daikoku_data" {
+                let daikoku_data_path = entry.clone().path().to_path_buf();
 
-            if daikoku_data_path.exists() {
-                let daikoku_data = read_file(
+                let daikoku_data_file = read_file(
                     daikoku_data_path.clone(),
                     ".daikoku_data".to_string(),
                     ".metadata".to_string(),
                 );
                 let mut data = Ini::new();
-                let data = Ini::read(&mut data, daikoku_data.content).map_err(|_err| {
+                let data = Ini::read(&mut data, daikoku_data_file.content).map_err(|_err| {
                     DaikokuCliError::FileSystem(format!(
                         "unable to read daikoku_data file in {:#?}",
                         daikoku_data_path
@@ -156,23 +200,20 @@ pub(crate) fn read_sources_and_daikoku_metadata(path: &PathBuf) -> DaikokuResult
                     .map(|value| value.clone())
                     .unwrap_or(HashMap::new());
 
-                current_daikoku_data = Some(default_section);
-            }
-        }
-
-        if entry.metadata().unwrap().is_file() {
-            if let Some(extension) = entry.clone().path().extension() {
-                let mut new_file = read_file(
-                    entry.clone().into_path(),
-                    f_name,
-                    extension.to_string_lossy().into_owned(),
-                );
-                new_file.daikoku_data = current_daikoku_data.clone();
-                pages.push(new_file);
+                daikoku_data = Some(default_section);
+            } else {
+                if let Some(extension) = entry.clone().path().extension() {
+                    let mut new_file = read_file(
+                        entry.clone().into_path(),
+                        f_name,
+                        extension.to_string_lossy().into_owned(),
+                    );
+                    new_file.daikoku_data = daikoku_data.clone();
+                    pages.push(new_file);
+                }
             }
         }
     }
-
     Ok(pages)
 }
 

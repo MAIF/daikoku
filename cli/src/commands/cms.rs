@@ -28,25 +28,23 @@ use crate::{
 
 const ZIP_CMS: &[u8] = include_bytes!("../../templates/cms.zip");
 
-use super::enviroments::{can_join_daikoku, Environment};
-
 #[derive(Clone)]
 pub(crate) struct Project {
     pub(crate) path: String,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug)]
-struct CmsPage {
-    _id: String,         //: "651443d43d00001b85d2dc7a",
-    visible: bool,       //: true,
-    authenticated: bool, //: false,
-    name: String,        //: "parcours-affiliation-digitale",
+pub(crate) struct CmsPage {
+    pub(crate) _id: String,
+    visible: bool,
+    authenticated: bool,
+    pub(crate) name: String,
     #[serde(alias = "contentType")]
-    content_type: String, //: "text/html",
-    path: Option<String>, //: "/parcours-affiliation-digitale",
-    exact: bool,         //: false,
+    content_type: String,
+    pub(crate) path: Option<String>,
+    exact: bool,
     #[serde(alias = "lastPublishedDate")]
-    last_published_date: Option<u64>, //: 1706520418595
+    last_published_date: Option<u64>,
     #[serde(alias = "body")]
     content: String,
 }

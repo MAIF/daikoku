@@ -57,7 +57,7 @@ where
 
     let apikey = read_apikey_from_secrets(true)?;
 
-    let url: String = format!("{}/cms-api/{}", environment.server, &path);
+    let url: String = format!("{}/cms-api{}", environment.server, &path);
 
     let resp = reqwest::Client::new()
         .post(url)
@@ -115,8 +115,6 @@ async fn daikoku_cms_api_get_internal(
     host: &String,
 ) -> DaikokuResult<CmsApiResponse<Vec<u8>>> {
     let url: String = format!("{}/cms-api{}", server, &path);
-
-    // println!("\ndaikoku_cms_api_get_internal {}", url);
 
     let resp = reqwest::Client::new()
         .get(url)

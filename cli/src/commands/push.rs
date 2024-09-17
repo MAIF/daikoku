@@ -3,7 +3,8 @@ use std::path::PathBuf;
 use bytes::Bytes;
 
 use crate::{
-    helpers::daikoku_cms_api_post,
+    commands::cms::CmsPage,
+    helpers::{bytes_to_vec_of_struct, daikoku_cms_api_get, daikoku_cms_api_post},
     logging::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
@@ -12,7 +13,7 @@ use crate::{
 };
 
 use super::{
-    cms,
+    cms::{self, Api},
     enviroments::{
         get_daikokuignore, get_default_environment, read_cookie_from_environment, Environment,
     },
@@ -24,26 +25,13 @@ pub(crate) async fn run(dry_run: Option<bool>, file_path: Option<String>) -> Dai
 
     let environment = get_default_environment()?;
 
-    let host = environment
-        .server
-        .replace("http://", "")
-        .replace("https://", "");
-
-    let cookie = read_cookie_from_environment(true)?;
-
     let project = cms::get_default_project()?;
 
-    // TODO - synchronize
+    let path = PathBuf::from(project.path.clone()).join("src");
 
-    // synchronization(
-    //     Some("apis".to_string()),
-    //     &environment,
-    //     &host,
-    //     &cookie,
-    //     &project,
-    //     path,
-    // )
-    // .await?
+    let mut local_pages = read_sources_and_daikoku_metadata(&path)?;
+
+    let _ = synchronization(&mut local_pages).await?;
 
     logger::success("synchronization done".to_string());
 
@@ -81,26 +69,8 @@ fn apply_daikoku_ignore(items: &mut Vec<CmsFile>) -> DaikokuResult<()> {
     Ok(())
 }
 
-async fn synchronization(
-    folder: Option<String>,
-    environment: &Environment,
-    host: &String,
-    cookie: &String,
-    project: &cms::Project,
-    path: Option<String>,
-) -> DaikokuResult<()> {
-    logger::loading(format!(
-        "<yellow>Syncing</> {:#?}",
-        folder.clone().unwrap_or("global".to_string())
-    ));
-
-    let mut path = PathBuf::from(project.path.clone()).join("src");
-
-    if let Some(folder) = folder {
-        path = path.join(folder);
-    }
-
-    let mut body = read_sources_and_daikoku_metadata(&path)?;
+async fn synchronization(body: &mut Vec<CmsFile>) -> DaikokuResult<()> {
+    logger::loading("<yellow>Syncing</>".to_string());
 
     logger::info(format!("Synchronization of {:?} pages", body.len()));
     body.iter().for_each(|page| {
@@ -111,14 +81,14 @@ async fn synchronization(
         ))
     });
 
-    apply_daikoku_ignore(&mut body)?;
+    apply_daikoku_ignore(body)?;
 
     let body = Bytes::from(
         serde_json::to_string(&body)
             .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?,
     );
 
-    daikoku_cms_api_post("/cms/sync", body).await?;
+    daikoku_cms_api_post("/sync", body).await?;
 
     Ok(())
 }
