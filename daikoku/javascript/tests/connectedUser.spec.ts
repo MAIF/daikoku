@@ -412,7 +412,7 @@ test('aggregation mode', async ({ page, request }) => {
   await page.getByText('API keys', { exact: true }).click();
   await page.getByRole('row', { name: 'test API 2 1.0.0' }).getByLabel('view APikey').click();
   await page.locator('.api-subscription').locator('.dropdown').click();
-  await page.getByText('Extract from agg.').click();
+  await page.getByText('Extract from aggregate').click();
   // await page.getByRole('button', { name: 'make unique' }).click();
   await expect(page.getByRole('paragraph')).toContainText('Are you sure to make this API key unique and separate from his parent plan?');
   await page.getByRole('button', { name: 'Ok', exact: true }).click();
