@@ -586,7 +586,7 @@ test('Filter API List', async ({ page, request }) => {
 })
 
 
-test('test', async ({ page }) => {
+test('transfer an api subscription', async ({ page }) => {
   await page.goto('http://localhost:5173/apis');
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email address').fill('tester@foo.bar');
@@ -595,7 +595,7 @@ test('test', async ({ page }) => {
   await page.waitForResponse(r => r.url().includes('/api/me/context') && r.status() === 200)
   await page.waitForSelector('.apis__pagination')
   await page.getByRole('heading', { name: 'test API' }).click();
-  
+
   //tester l'url pour verifier que c'est bien la v2
   await page.getByText('Plans').click();
 
@@ -617,7 +617,7 @@ test('test', async ({ page }) => {
   await page.getByText('Testers').click();
   await page.getByRole('button', { name: 'Confirm transfer' }).click();
 
-  await page.getByText('Testers').click();
+  await page.locator('.top__container').filter({hasText: 'Your teams'}).getByText('Testers').click();
   await page.getByText('API keys').click();
   await page.getByRole('row', { name: 'test API 2.0.0 View API View' }).getByLabel('View APIkeys').click();
   expect(page.locator('.api-subscription__infos__value')).toHaveText(apikey)
