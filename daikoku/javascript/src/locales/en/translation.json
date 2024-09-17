@@ -608,6 +608,7 @@
     "help.apikey.grace.period": "Period during which the new client secret and the old are both active. The rotation period includes this period.",
     "constraint.apikey.grace.period": "Grace period must be inferior to rotation period",
     "reset.secret.confirm": "Are you sure you want to reset this secret?",
+    "secret reseted successfully": "secret reseted successfully",
     "Integration": "Integration",
     "Force apikey auto-rotation": "Force API key auto-rotation",
     "ApiKey": "API key",

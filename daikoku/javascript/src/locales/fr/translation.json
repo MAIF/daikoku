@@ -608,6 +608,7 @@
   "help.apikey.grace.period": "Période pendant laquelle le nouveau secret et l'ancien sont tous deux actifs (cette période est inclue dans la période de rotation).",
   "constraint.apikey.grace.period": "La période de tuilage doit être inferieur à la période de rotation",
   "reset.secret.confirm": "Êtes-vous certain de vouloir réinitialiser le secret ?",
+  "secret reseted successfully": "Secret réinitialisé avec succès",
   "Integration": "Intégration",
   "Force apikey auto-rotation": "Forcer la rotation auto. des secrets",
   "ApiKey": "Clé d'API",
