@@ -9,7 +9,6 @@ import { IBaseModalProps, TeamSelectorModalProps } from './types';
 export const TeamSelectorModal = ({ title, description, teams, pendingTeams = [], acceptedTeams = [], action, allTeamSelector, allowMultipleDemand, actionLabel, close }: TeamSelectorModalProps & IBaseModalProps) => {
   const [selectedTeams, setSelectedTeams] = useState<Array<string>>([]);
 
-
   const allTeams = teams.filter(
     (team) => allowMultipleDemand || ![...pendingTeams, ...acceptedTeams].includes(team._id)
   );

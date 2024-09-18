@@ -33,6 +33,7 @@ export const Pages = ({
 
   useEffect(() => {
     if (table.current)
+      //@ts-ignore
       table.current.setPageSize(500)
   }, [table])
 

@@ -1,58 +1,52 @@
-// use assert_cmd::prelude::*;
-// use serial_test::serial;
-// use std::fs;
-use testcontainers::{
-    core::{IntoContainerPort, WaitFor},
-    runners::AsyncRunner,
-    GenericImage, ImageExt,
-};
+mod commands;
+mod setup;
 
-// const WASMO_TEST_FOLDER: &str = "/tmp/daikoku";
-// struct Setup {
-//     temporary_path: String,
-// }
+use std::fs;
 
-// impl Setup {
-//     fn new() -> Self {
-//         let temporary_path = WASMO_TEST_FOLDER.to_string();
+use commands::cli::{Cms, Environment};
+use setup::start_containers;
 
-//         let _ = fs::remove_dir_all(&temporary_path);
+async fn create_cms() -> Result<(), Box<dyn std::error::Error + 'static>> {
+    let temporary_path = std::env::temp_dir()
+        .join("daikoku")
+        .into_os_string()
+        .into_string()
+        .unwrap();
 
-//         match fs::create_dir(&temporary_path) {
-//             Err(err) => println!("{:?}", err),
-//             Ok(v) => println!("{:?}", v),
-//         }
-//         Setup {
-//             temporary_path: temporary_path,
-//         }
-//     }
+    let _ = fs::remove_dir_all(&temporary_path);
 
-//     fn clean(&self) {
-//         fs::remove_dir_all(&self.temporary_path).expect("Failed to remove folder")
-//     }
-// }
+    Cms::clear(true);
+
+    let _ = fs::create_dir(&temporary_path);
+
+    Cms::init("cms", temporary_path);
+
+    Ok(())
+}
+
+fn test_check_info_of_environment() {
+    let result = Environment::info("dev");
+    let output = String::from_utf8(result.get_output().stdout.clone()).unwrap();
+
+    assert!(output.contains("http://localhost:8080"));
+    assert!(output.contains("dev"));
+}
 
 #[tokio::test]
 async fn login() -> Result<(), Box<dyn std::error::Error + 'static>> {
-    let postgres = GenericImage::new("postgres", "13")
-        .with_exposed_port(5432.tcp())
-        .with_wait_for(WaitFor::seconds(1))
-        .with_env_var("POSTGRES_USER", "postgres")
-        .with_env_var("POSTGRES_PASSWORD", "postgres")
-        .with_env_var("POSTGRES_DB", "daikoku");
+    let (_postgres_container, _daikoku_container) = start_containers().await?;
 
-    let daikoku = GenericImage::new("maif/daikoku", "17.5.0")
-        .with_wait_for(WaitFor::seconds(1))
-        .with_env_var("daikoku.mode", "dev")
-        .with_env_var("Ddaikoku.postgres.database", "daikoku")
-        .with_env_var("daikoku.exposedOn", "9000");
+    let daikoku_ip = "localhost"; //daikoku_container.get_host().await?.to_string();
 
-    let postgres_container = postgres.start().await?;
-    let daikoku_container = daikoku.start().await?;
+    create_cms().await?;
 
-    println!("{:#?}", postgres_container);
+    Environment::add("dev", &daikoku_ip);
 
-    
+    test_check_info_of_environment();
+
+    Environment::switch("dev");
+
+    Environment::login();
 
     Ok(())
 }

@@ -28,7 +28,7 @@ pub(crate) struct Environment {
 
 pub(crate) async fn run(command: EnvironmentsCommands) -> DaikokuResult<()> {
     match command {
-        EnvironmentsCommands::Clear {} => clear(),
+        EnvironmentsCommands::Clear { force } => clear(force.unwrap_or(false)),
         EnvironmentsCommands::Add {
             name,
             server,
@@ -93,22 +93,30 @@ fn set_content_file(content: &String) -> DaikokuResult<()> {
         .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))
 }
 
-fn clear() -> DaikokuResult<()> {
+fn clearing() -> DaikokuResult<()> {
+    match set_content_file(&"".to_string()) {
+        Ok(_) => {
+            logger::println("<green>Environments erased</>".to_string());
+            Ok(())
+        }
+        Err(e) => Err(DaikokuCliError::FileSystem(format!(
+            "failed to reset the environments file : {}",
+            e.to_string()
+        ))),
+    }
+}
+
+fn clear(force: bool) -> DaikokuResult<()> {
+    if force {
+        return clearing();
+    }
+
     logger::error("Are you to delete all environments ? [yN]".to_string());
 
     let choice = prompt()?;
 
     if choice.trim() == "y" {
-        match set_content_file(&"".to_string()) {
-            Ok(_) => {
-                logger::println("<green>Environments erased</>".to_string());
-                Ok(())
-            }
-            Err(e) => Err(DaikokuCliError::FileSystem(format!(
-                "failed to reset the environments file : {}",
-                e.to_string()
-            ))),
-        }
+        clearing()
     } else {
         Ok(())
     }

@@ -93,7 +93,10 @@ pub enum EnvironmentsCommands {
         // name: Option<String>,
     },
     /// ⚠️  be careful, this will clear all environments
-    Clear {},
+    Clear {
+        #[arg(value_name = "FORCE", short = 'f', long = "force")]
+        force: Option<bool>,
+    },
     /// change the default environment to the specified name
     Switch {
         #[arg(value_name = "NAME", short = 'n', long = "name")]

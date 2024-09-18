@@ -151,8 +151,7 @@ class CmsApiController(
                 .getOrElse(TenantMode.Default)
                 .name
             )
-          ).withHeaders("Content-Type" -> "application/json")
-            .future
+          ).future
       }
     }
 
