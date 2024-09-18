@@ -1,5 +1,5 @@
 [package]
-name = "daikokucli"
+name = "daikoku"
 version = "1.0.0"
 edition = "2021"
 authors = ["Zwiterrion <etienne.anne@icloud.com>"]
@@ -12,7 +12,7 @@ keywords = ["cli", "wasm", "build", "webassembly"]
 categories = ["command-line-utilities"]
 
 [[bin]]
-name = "daikokucli"
+name = "daikoku"
 path = "src/bin.rs"
 
 [dependencies]
@@ -45,7 +45,7 @@ serde_yaml = "0.9.32"
 void = "1.0.2"
 walkdir = "2.5.0"
 webbrowser = "0.8.13"
-testcontainers = "0.15.0"
+testcontainers = "0.22.0"
 slug = "0.1.5"
 
 [dependencies.uuid]
@@ -53,7 +53,7 @@ version = "1.7.0"
 features = ["v4", "fast-rng", "macro-diagnostics"]
 
 [dev-dependencies]
-serial_test = "2.0.0"
+serial_test = "3.1.1"
 assert_cmd = "2.0.12"
 predicates = "3.0.4"
 assert_fs = "1.0.13"

@@ -5,6 +5,7 @@ use crate::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
     },
+    utils::apply_credentials_mask,
     EnvironmentsCommands,
 };
 use configparser::ini::Ini;
@@ -36,11 +37,7 @@ pub(crate) async fn run(command: EnvironmentsCommands) -> DaikokuResult<()> {
         } => add(name, server, overwrite.unwrap_or(false), apikey).await,
         EnvironmentsCommands::Switch { name } => switch_environment(name),
         EnvironmentsCommands::Remove { name } => remove(name),
-        EnvironmentsCommands::Info { name } => {
-            let environment = get(name)?;
-            logger::info(serde_json::to_string_pretty(&environment).unwrap());
-            Ok(())
-        }
+        EnvironmentsCommands::Info { name, full } => info(name, full.unwrap_or(false)),
         EnvironmentsCommands::List {} => list(),
         EnvironmentsCommands::Config { apikey, cookie } => configure(apikey, cookie).await,
     }
@@ -298,6 +295,22 @@ pub(crate) fn read_apikey_from_secrets(failed_if_not_present: bool) -> DaikokuRe
             "missing default environment".to_string(),
         ))
     }
+}
+
+fn info(name: String, show_full_credentials: bool) -> DaikokuResult<()> {
+    let mut environment = get(name)?;
+
+    let secrets = read_secrets()?;
+
+    environment.apikey = secrets
+        .get(&environment.name, "apikey")
+        .map(|credential| apply_credentials_mask(&credential, show_full_credentials));
+    environment.cookie = secrets
+        .get(&environment.name, "cookie")
+        .map(|credential| apply_credentials_mask(&credential, show_full_credentials));
+
+    logger::info(serde_json::to_string_pretty(&environment).unwrap());
+    Ok(())
 }
 
 fn remove(name: String) -> DaikokuResult<()> {

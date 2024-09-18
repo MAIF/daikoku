@@ -3,27 +3,23 @@ use std::path::PathBuf;
 use bytes::Bytes;
 
 use crate::{
-    commands::cms::CmsPage,
-    helpers::{bytes_to_vec_of_struct, daikoku_cms_api_get, daikoku_cms_api_post},
+    helpers::daikoku_cms_api_post,
     logging::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
     },
-    models::folder::{read_documentations, read_sources_and_daikoku_metadata, CmsFile},
+    models::folder::{read_sources_and_daikoku_metadata, CmsFile},
+    utils::PathBufExt,
 };
 
 use super::{
-    cms::{self, Api},
-    enviroments::{
-        get_daikokuignore, get_default_environment, read_cookie_from_environment, Environment,
-    },
+    cms::{self},
+    enviroments::get_daikokuignore,
 };
 
 pub(crate) async fn run(dry_run: Option<bool>, file_path: Option<String>) -> DaikokuResult<()> {
     logger::loading(format!("<yellow>Pushing</> project"));
     logger::done();
-
-    let environment = get_default_environment()?;
 
     let project = cms::get_default_project()?;
 
@@ -31,9 +27,35 @@ pub(crate) async fn run(dry_run: Option<bool>, file_path: Option<String>) -> Dai
 
     let mut local_pages = read_sources_and_daikoku_metadata(&path)?;
 
-    let _ = synchronization(&mut local_pages).await?;
+    if let Some(specific_path) = file_path {
+        local_pages.retain(|file| {
+            file.path() == specific_path
+                || path
+                    .concat(&file.path())
+                    .to_str()
+                    .expect("Failed to convert path to string")
+                    .starts_with(
+                        path.concat(&specific_path)
+                            .to_str()
+                            .expect("Failed to convert path to string"),
+                    )
+        });
 
-    logger::success("synchronization done".to_string());
+        if local_pages.len() == 0 {
+            return Err(DaikokuCliError::FileSystem(format!(
+                "file not found at path {}",
+                specific_path
+            )));
+        }
+    }
+
+    let _ = synchronization(&mut local_pages, dry_run.unwrap_or(false)).await?;
+
+    if dry_run.unwrap_or(false) {
+        logger::success("[dry_run] synchronization done".to_string());
+    } else {
+        logger::success("synchronization done".to_string());
+    }
 
     Ok(())
 }
@@ -69,7 +91,7 @@ fn apply_daikoku_ignore(items: &mut Vec<CmsFile>) -> DaikokuResult<()> {
     Ok(())
 }
 
-async fn synchronization(body: &mut Vec<CmsFile>) -> DaikokuResult<()> {
+async fn synchronization(body: &mut Vec<CmsFile>, dry_run: bool) -> DaikokuResult<()> {
     logger::loading("<yellow>Syncing</>".to_string());
 
     logger::info(format!("Synchronization of {:?} pages", body.len()));
@@ -88,7 +110,9 @@ async fn synchronization(body: &mut Vec<CmsFile>) -> DaikokuResult<()> {
             .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?,
     );
 
-    daikoku_cms_api_post("/sync", body).await?;
+    if !dry_run {
+        daikoku_cms_api_post("/sync", body).await?;
+    }
 
     Ok(())
 }

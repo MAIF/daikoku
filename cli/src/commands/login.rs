@@ -1,5 +1,3 @@
-use std::process::exit;
-
 use async_recursion::async_recursion;
 use base64::engine::general_purpose;
 use base64::Engine;

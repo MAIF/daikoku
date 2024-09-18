@@ -11,8 +11,7 @@ daikoku cms clear
 avec confirmation pour faire plaisir
 
 # PUSH
-daikoku push <DRY_RUN>
-daikoku push <FILEPATH> 
+daikoku push <DRY_RUN> <FILEPATH>
 qui peut être un dossier
 
 # ASSETS
@@ -26,7 +25,7 @@ daikoku environments clear
 daikoku environments add <NAME> <SERVER> <OVERWRITE>
 daikoku environments switch <NAME> // rename du default
 daikoku environments remove <NAME>
-daikoku environments info <NAME> // rename from env
+daikoku environments info <NAME> <FULL> // rename from env
 daikoku environments list
 daikoku environments config <APIKEY>
 // editer le .gitignore pour mettre le .secrets du .daikoku
@@ -39,7 +38,6 @@ daikoku login
 
 # PULL
 daikoku pull apis
-daikoku pull apis <ID>
 daikoku pull mails
 
 # VERSION

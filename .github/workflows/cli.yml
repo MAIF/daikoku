@@ -23,19 +23,19 @@ jobs:
           - os_name: Linux-x86_64
             os: ubuntu-20.04
             target: x86_64-unknown-linux-gnu
-            bin: daikokucli-linux-amd64
+            bin: daikoku-linux-amd64
           - os_name: Windows-x86_64
             os: windows-latest
             target: x86_64-pc-windows-msvc
-            bin: daikokucli-amd64.exe
+            bin: daikoku-amd64.exe
           - os_name: macOS-x86_64
             os: macOS-latest
             target: x86_64-apple-darwin
-            bin: daikokucli-darwin-amd64
+            bin: daikoku-darwin-amd64
           - os_name: macOS-aarch64
             os: macOS-latest
             target: aarch64-apple-darwin
-            bin: daikokucli-darwin-arm64
+            bin: daikoku-darwin-arm64
         toolchain:
           - stable
     steps:
@@ -50,10 +50,10 @@ jobs:
           args: "--release"
           strip: true
       - name: Rename binary (linux and macos)
-        run: mv ./cli/target/${{ matrix.platform.target }}/release/daikokucli ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+        run: mv ./cli/target/${{ matrix.platform.target }}/release/daikoku ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
         if: matrix.platform.os_name != 'Windows-x86_64'
       - name: Rename binary (windows)
-        run: mv ./cli/target/${{ matrix.platform.target }}/release/daikokucli.exe ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
+        run: mv ./cli/target/${{ matrix.platform.target }}/release/daikoku.exe ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}
         if: matrix.platform.os_name == 'Windows-x86_64'
       - name: Generate SHA-256
         run: shasum -a 256 ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }} | cut -d ' ' -f 1 > ./cli/target/${{ matrix.platform.target }}/release/${{ matrix.platform.bin }}.sha256

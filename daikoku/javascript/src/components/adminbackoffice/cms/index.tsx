@@ -85,9 +85,10 @@ export const CMSOffice = () => {
     const mails: Array<IPage> = []
     const scripts: Array<IPage> = []
     const styles: Array<IPage> = []
+    const documentations: Array<IPage> = []
 
     items.forEach(item => {
-      const group = item.path?.split("/")[0]
+      const group = item.path?.split("/")[1]
 
       if (group === 'mails')
         mails.push(item)
@@ -95,6 +96,8 @@ export const CMSOffice = () => {
         blocks.push(item)
       else if (group === "apis")
         apis.push(item)
+      else if (group === "documentations")
+        documentations.push(item)
       else {
         const type = CONTENT_TYPES.find((f) => f.value === item.contentType)?.label || 'HTML'
 
@@ -109,10 +112,10 @@ export const CMSOffice = () => {
       }
     })
 
-    return { pages, apis, blocks, data, mails, scripts, styles }
+    return { pages, apis, blocks, data, mails, scripts, styles, documentations }
   }
 
-  const { pages, apis, blocks, data, mails, scripts, styles } = calculateGroups(cmsPages)
+  const { pages, apis, blocks, data, mails, scripts, styles, documentations } = calculateGroups(cmsPages)
 
   const Index = ({ }) => {
     return (<div className="p-3">
@@ -173,6 +176,7 @@ export const CMSOffice = () => {
         mails={mails}
         scripts={scripts}
         styles={styles}
+        documentations={documentations}
       />
       <Pages pages={cmsPages} removePage={(id: string) => setPages(cmsPages.filter((f) => f.id !== id))} />
     </div>);
@@ -190,7 +194,7 @@ export const CMSOffice = () => {
   );
 };
 
-function Stats({ pages, apis, blocks, data, mails, scripts, styles }) {
+function Stats({ pages, apis, blocks, data, mails, scripts, styles, documentations }) {
 
   const arr = [
     { value: pages.length, label: 'Pages' },
@@ -200,6 +204,7 @@ function Stats({ pages, apis, blocks, data, mails, scripts, styles }) {
     { label: "Mails", value: mails.length },
     { label: "Scripts", value: scripts.length },
     { label: "Styles", value: styles.length },
+    { label: "Documentations", value: documentations.length },
   ].sort((a, b) => a.value > b.value ? -1 : 1)
 
   return <div className='d-flex flex-wrap items-center gap-2 my-3'>

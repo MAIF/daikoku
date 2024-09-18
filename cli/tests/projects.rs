@@ -20,14 +20,13 @@ impl Setup {
 
         let mut cmd = Command::cargo_bin("daikoku").unwrap();
 
-        cmd.args(["projects", "clear"]).assert().success();
+        cmd.args(["cms", "clear"]).assert().success();
 
         cmd = Command::cargo_bin("daikoku").unwrap();
 
         cmd.args([
-            "create",
+            "init",
             "--name=cms",
-            "--template=empty",
             format!("--path={}", &temporary_path).as_str(),
         ]);
 
@@ -49,7 +48,7 @@ fn add_project() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args([
-        "projects",
+        "cms",
         "add",
         "--name=dev",
         &format!("--path={}", WASMO_TEST_FOLDER),
@@ -69,7 +68,7 @@ fn default_project() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args([
-        "projects",
+        "cms",
         "add",
         "--name=dev",
         &format!("--path={}", WASMO_TEST_FOLDER),
@@ -79,7 +78,7 @@ fn default_project() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd = Command::cargo_bin("daikoku")?;
 
-    cmd.args(["projects", "default", "--name=dev"])
+    cmd.args(["cms", "default", "--name=dev"])
         .assert()
         .success();
 
@@ -95,7 +94,7 @@ fn remove_project() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args([
-        "projects",
+        "cms",
         "add",
         "--name=dev",
         &format!("--path={}", WASMO_TEST_FOLDER),
@@ -105,9 +104,7 @@ fn remove_project() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd = Command::cargo_bin("daikoku")?;
 
-    cmd.args(["projects", "remove", "--name=dev"])
-        .assert()
-        .success();
+    cmd.args(["cms", "remove", "--name=dev"]).assert().success();
 
     setup.clean();
     Ok(())
@@ -121,7 +118,7 @@ fn clear_project() -> Result<(), Box<dyn std::error::Error>> {
     let mut cmd = Command::cargo_bin("daikoku")?;
 
     cmd.args([
-        "projects",
+        "cms",
         "add",
         "--name=dev",
         &format!("--path={}", WASMO_TEST_FOLDER),
@@ -131,7 +128,7 @@ fn clear_project() -> Result<(), Box<dyn std::error::Error>> {
 
     cmd = Command::cargo_bin("daikoku")?;
 
-    cmd.args(["projects", "clear"]).assert().success();
+    cmd.args(["cms", "clear"]).assert().success();
 
     setup.clean();
     Ok(())

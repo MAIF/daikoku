@@ -31,14 +31,14 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
 class ApiService(
-    env: Env,
-    otoroshiClient: OtoroshiClient,
-    messagesApi: MessagesApi,
-    translator: Translator,
-    apiKeyStatsJob: ApiKeyStatsJob,
-    otoroshiSynchronisator: OtoroshiVerifierJob,
-    paymentClient: PaymentClient
-) {
+                  env: Env,
+                  otoroshiClient: OtoroshiClient,
+                  messagesApi: MessagesApi,
+                  translator: Translator,
+                  apiKeyStatsJob: ApiKeyStatsJob,
+                  otoroshiSynchronisator: OtoroshiVerifierJob,
+                  paymentClient: PaymentClient
+                ) {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
@@ -48,14 +48,14 @@ class ApiService(
   def jsonToOtoroshiMetadata(json: JsObject) = {
     json.fieldSet.map {
       case (a, b: JsString) => a -> b.value
-      case (a, b)           => a -> Json.stringify(b)
+      case (a, b) => a -> Json.stringify(b)
     }.toMap + ("raw_custom_metadata" -> Json.stringify(json))
   }
 
   def getListFromStringMap(
-      key: String,
-      metadata: Map[String, String]
-  ): Set[String] = {
+                            key: String,
+                            metadata: Map[String, String]
+                          ): Set[String] = {
     metadata
       .get(key)
       .map(_.split('|').toSeq.map(_.trim).toSet)
@@ -63,38 +63,42 @@ class ApiService(
   }
 
   def mergeStringMapValue(
-      key: String,
-      meta1: Map[String, String],
-      meta2: Map[String, String]
-  ): String = {
+                           key: String,
+                           meta1: Map[String, String],
+                           meta2: Map[String, String]
+                         ): String = {
     val list1 = getListFromStringMap(key, meta1)
     val list2 = getListFromStringMap(key, meta2)
     (list1 ++ list2).mkString(" | ")
   }
 
   def createOtoroshiApiKey(
-      user: User,
-      api: Api,
-      plan: UsagePlan,
-      team: Team,
-      tenant: Tenant,
-      integrationToken: String,
-      customMetadata: Option[JsObject] = None,
-      customMaxPerSecond: Option[Long] = None,
-      customMaxPerDay: Option[Long] = None,
-      customMaxPerMonth: Option[Long] = None,
-      customReadOnly: Option[Boolean] = None,
-      maybeOtoroshiApiKey: Option[OtoroshiApiKey] = None
-  ) = {
+                            user: User,
+                            api: Api,
+                            plan: UsagePlan,
+                            team: Team,
+                            tenant: Tenant,
+                            integrationToken: String,
+                            customMetadata: Option[JsObject] = None,
+                            customMaxPerSecond: Option[Long] = None,
+                            customMaxPerDay: Option[Long] = None,
+                            customMaxPerMonth: Option[Long] = None,
+                            customReadOnly: Option[Boolean] = None,
+                            maybeOtoroshiApiKey: Option[OtoroshiApiKey] = None
+                          ) = {
 
     val otoroshiApiKey = maybeOtoroshiApiKey.getOrElse(
       OtoroshiApiKey(
         clientId = IdGenerator.token(32),
         clientSecret = IdGenerator.token(64),
-        clientName = s"daikoku-api-key-${api.humanReadableId}-${plan.customName
-          .getOrElse(plan.typeName)
-          .urlPathSegmentSanitized}-${team.humanReadableId}-${System
-          .currentTimeMillis()}-${api.currentVersion.value}"
+        clientName = s"daikoku-api-key-${api.humanReadableId}-${
+          plan.customName
+            .getOrElse(plan.typeName)
+            .urlPathSegmentSanitized
+        }-${team.humanReadableId}-${
+          System
+            .currentTimeMillis()
+        }-${api.currentVersion.value}"
       )
     )
 
@@ -184,31 +188,31 @@ class ApiService(
   }
 
   def subscribeToApi(
-      tenant: Tenant,
-      user: User,
-      api: Api,
-      plan: UsagePlan,
-      team: Team,
-      parentSubscriptionId: Option[ApiSubscriptionId] = None,
-      customMetadata: Option[JsObject] = None,
-      customMaxPerSecond: Option[Long] = None,
-      customMaxPerDay: Option[Long] = None,
-      customMaxPerMonth: Option[Long] = None,
-      customReadOnly: Option[Boolean] = None,
-      adminCustomName: Option[String] = None,
-      thirdPartySubscriptionInformations: Option[
-        ThirdPartySubscriptionInformations
-      ]
-  ): Future[Either[AppError, ApiSubscription]] = {
+                      tenant: Tenant,
+                      user: User,
+                      api: Api,
+                      plan: UsagePlan,
+                      team: Team,
+                      parentSubscriptionId: Option[ApiSubscriptionId] = None,
+                      customMetadata: Option[JsObject] = None,
+                      customMaxPerSecond: Option[Long] = None,
+                      customMaxPerDay: Option[Long] = None,
+                      customMaxPerMonth: Option[Long] = None,
+                      customReadOnly: Option[Boolean] = None,
+                      adminCustomName: Option[String] = None,
+                      thirdPartySubscriptionInformations: Option[
+                        ThirdPartySubscriptionInformations
+                      ]
+                    ): Future[Either[AppError, ApiSubscription]] = {
     def createKey(
-        api: Api,
-        plan: UsagePlan,
-        team: Team,
-        authorizedEntities: AuthorizedEntities,
-        parentSubscriptionId: Option[ApiSubscriptionId]
-    )(implicit
-        otoroshiSettings: OtoroshiSettings
-    ): Future[Either[AppError, ApiSubscription]] = {
+                   api: Api,
+                   plan: UsagePlan,
+                   team: Team,
+                   authorizedEntities: AuthorizedEntities,
+                   parentSubscriptionId: Option[ApiSubscriptionId]
+                 )(implicit
+                   otoroshiSettings: OtoroshiSettings
+                 ): Future[Either[AppError, ApiSubscription]] = {
       import cats.implicits._
 
       EitherT(parentSubscriptionId match {
@@ -223,7 +227,7 @@ class ApiService(
             .findById(id.value)
             .map {
               case Some(sub) => Right((Some(sub), Some(sub.apiKey)))
-              case None      => Left(AppError.SubscriptionNotFound)
+              case None => Left(AppError.SubscriptionNotFound)
             }
       }).flatMap {
         case (maybeParentSub, otoroshiApiKey) =>
@@ -281,7 +285,7 @@ class ApiService(
           )
 
           val otoroshiApiKeyActionResult
-              : EitherT[Future, AppError, ActualOtoroshiApiKey] =
+          : EitherT[Future, AppError, ActualOtoroshiApiKey] =
             maybeParentSub match {
               case Some(subscription) =>
                 EitherT(otoroshiClient.getApikey(subscription.apiKey.clientId))
@@ -342,18 +346,20 @@ class ApiService(
     }
 
     def createAdminKey(
-        api: Api,
-        plan: UsagePlan
-    ): Future[Either[AppError, ApiSubscription]] = {
+                        api: Api,
+                        plan: UsagePlan
+                      ): Future[Either[AppError, ApiSubscription]] = {
       import cats.implicits._
       // TODO: verify if group is in authorized groups (if some)
 
       val clientId = IdGenerator.token(32)
       val clientSecret = IdGenerator.token(64)
       val clientName =
-        s"daikoku-api-key-${api.humanReadableId}-${plan.customName
-          .getOrElse(plan.typeName)
-          .urlPathSegmentSanitized}-${team.humanReadableId}-${System.currentTimeMillis()}"
+        s"daikoku-api-key-${api.humanReadableId}-${
+          plan.customName
+            .getOrElse(plan.typeName)
+            .urlPathSegmentSanitized
+        }-${team.humanReadableId}-${System.currentTimeMillis()}"
       val apiSubscription = ApiSubscription(
         id = ApiSubscriptionId(IdGenerator.token(32)),
         tenant = tenant.id,
@@ -427,10 +433,10 @@ class ApiService(
   }
 
   def updateSubscription(
-      tenant: Tenant,
-      subscription: ApiSubscription,
-      plan: UsagePlan
-  ): Future[Either[AppError, JsObject]] = {
+                          tenant: Tenant,
+                          subscription: ApiSubscription,
+                          plan: UsagePlan
+                        ): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
     plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
@@ -479,13 +485,13 @@ class ApiService(
   }
 
   def deleteApiKey(
-      tenant: Tenant,
-      subscription: ApiSubscription,
-      plan: UsagePlan,
-      team: Team
-  ): Future[Either[AppError, JsObject]] = {
+                    tenant: Tenant,
+                    subscription: ApiSubscription,
+                    plan: UsagePlan,
+                    team: Team
+                  ): Future[Either[AppError, JsObject]] = {
     def deleteKey()(implicit
-        otoroshiSettings: OtoroshiSettings
+                    otoroshiSettings: OtoroshiSettings
     ): Future[Either[AppError, JsObject]] = {
       import cats.implicits._
 
@@ -522,11 +528,11 @@ class ApiService(
   }
 
   def archiveApiKey(
-      tenant: Tenant,
-      subscription: ApiSubscription,
-      plan: UsagePlan,
-      enabled: Boolean
-  ): Future[Either[AppError, JsObject]] = {
+                     tenant: Tenant,
+                     subscription: ApiSubscription,
+                     plan: UsagePlan,
+                     enabled: Boolean
+                   ): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
     val updatedSubscription = subscription.copy(enabled = enabled)
@@ -546,7 +552,7 @@ class ApiService(
             case Some(_) =>
               plan.otoroshiTarget match {
                 case Some(target)
-                    if target.authorizedEntities.isDefined && enabled =>
+                  if target.authorizedEntities.isDefined && enabled =>
                   EitherT.liftF(
                     otoroshiClient.updateApiKey(
                       apiKey.copy(authorizedEntities =
@@ -605,13 +611,13 @@ class ApiService(
   }
 
   def regenerateApiKeySecret(
-      tenant: Tenant,
-      subscription: ApiSubscription,
-      plan: UsagePlan,
-      api: Api,
-      team: Team,
-      user: User
-  ): Future[Either[AppError, JsObject]] = {
+                              tenant: Tenant,
+                              subscription: ApiSubscription,
+                              plan: UsagePlan,
+                              api: Api,
+                              team: Team,
+                              user: User
+                            ): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
     plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
@@ -722,14 +728,14 @@ class ApiService(
   }
 
   def toggleApiKeyRotation(
-      tenant: Tenant,
-      subscription: ApiSubscription,
-      plan: UsagePlan,
-      api: Api,
-      enabled: Boolean,
-      rotationEvery: Long,
-      gracePeriod: Long
-  ): Future[Either[AppError, JsObject]] = {
+                            tenant: Tenant,
+                            subscription: ApiSubscription,
+                            plan: UsagePlan,
+                            api: Api,
+                            enabled: Boolean,
+                            rotationEvery: Long,
+                            gracePeriod: Long
+                          ): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
     if (api.visibility == ApiVisibility.AdminOnly) {
@@ -824,8 +830,8 @@ class ApiService(
   }
 
   def condenseEitherT[F[_], E, A](
-      seq: Seq[EitherT[F, E, A]]
-  )(implicit F: Monad[F]): EitherT[F, E, Seq[A]] = {
+                                   seq: Seq[EitherT[F, E, A]]
+                                 )(implicit F: Monad[F]): EitherT[F, E, Seq[A]] = {
     seq.foldLeft(EitherT.pure[F, E](Seq.empty[A]))((a, b) => {
       for {
         seq <- a
@@ -835,21 +841,21 @@ class ApiService(
   }
 
   /**
-    * remove a subcription from an aggregation, compute newly aggregation, save it in otoroshi and return new computed otoroshi apikey
-    *
-    * @param subscription the subscription to extract
-    * @param tenant the tenant
-    * @param user the user responsible for the extraction
-    * @param o the oto settings
-    * @return extracted otoroshi apikey (unsaved)
-    */
+   * remove a subcription from an aggregation, compute newly aggregation, save it in otoroshi and return new computed otoroshi apikey
+   *
+   * @param subscription the subscription to extract
+   * @param tenant       the tenant
+   * @param user         the user responsible for the extraction
+   * @param o            the oto settings
+   * @return extracted otoroshi apikey (unsaved)
+   */
   def extractSubscriptionFromAggregation(
-      subscription: ApiSubscription,
-      tenant: Tenant,
-      user: User
-  )(implicit
-      o: OtoroshiSettings
-  ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
+                                          subscription: ApiSubscription,
+                                          tenant: Tenant,
+                                          user: User
+                                        )(implicit
+                                          o: OtoroshiSettings
+                                        ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
     (for {
       //get parent ApiSubscription
       parentSubscriptionId <- EitherT.fromOption[Future](
@@ -1019,10 +1025,10 @@ class ApiService(
   }
 
   def deleteApiSubscriptionsAsFlow(
-      tenant: Tenant,
-      apiOrGroupName: String,
-      user: User
-  ): Flow[(UsagePlan, Seq[ApiSubscription]), UsagePlan, NotUsed] =
+                                    tenant: Tenant,
+                                    apiOrGroupName: String,
+                                    user: User
+                                  ): Flow[(UsagePlan, Seq[ApiSubscription]), UsagePlan, NotUsed] =
     Flow[(UsagePlan, Seq[ApiSubscription])]
       .map {
         case (plan, subscriptions) =>
@@ -1048,10 +1054,10 @@ class ApiService(
       .mapAsync(1) {
         case (plan, subscription, notification) =>
           def deaggregateSubsAndDelete(
-              subscription: ApiSubscription,
-              childs: Seq[ApiSubscription],
-              subscriberTeam: Team
-          )(implicit otoroshiSettings: OtoroshiSettings) = {
+                                        subscription: ApiSubscription,
+                                        childs: Seq[ApiSubscription],
+                                        subscriberTeam: Team
+                                      )(implicit otoroshiSettings: OtoroshiSettings) = {
             subscription.parent match {
               case Some(_) =>
                 extractSubscriptionFromAggregation(subscription, tenant, user)
@@ -1169,11 +1175,11 @@ class ApiService(
       }
 
   def deleteUsagePlan(
-      plan: UsagePlan,
-      api: Api,
-      tenant: Tenant,
-      user: User
-  ): EitherT[Future, AppError, Api] = {
+                       plan: UsagePlan,
+                       api: Api,
+                       tenant: Tenant,
+                       user: User
+                     ): EitherT[Future, AppError, Api] = {
     val updatedApi = api.copy(possibleUsagePlans =
       api.possibleUsagePlans.filter(pp => pp != plan.id)
     )
@@ -1215,11 +1221,11 @@ class ApiService(
   }
 
   def deleteApiPlansSubscriptions(
-      plans: Seq[UsagePlan],
-      api: Api,
-      tenant: Tenant,
-      user: User
-  ): Future[Done] = {
+                                   plans: Seq[UsagePlan],
+                                   api: Api,
+                                   tenant: Tenant,
+                                   user: User
+                                 ): Future[Done] = {
     implicit val mat: Materializer = env.defaultMaterializer
 
     Source(plans.toList)
@@ -1245,11 +1251,11 @@ class ApiService(
   }
 
   def notifyApiSubscription(
-      demand: SubscriptionDemand,
-      tenant: Tenant,
-      step: SubscriptionDemandStep,
-      actualStep: ValidationStep.TeamAdmin
-  ): EitherT[Future, AppError, Result] = {
+                             demand: SubscriptionDemand,
+                             tenant: Tenant,
+                             step: SubscriptionDemandStep,
+                             actualStep: ValidationStep.TeamAdmin
+                           ): EitherT[Future, AppError, Result] = {
     import cats.implicits._
 
     val motivationPattern = "\\[\\[(.+?)\\]\\]".r
@@ -1348,15 +1354,15 @@ class ApiService(
   }
 
   def callHttpRequestStep(
-      step: ValidationStep.HttpRequest,
-      _step: SubscriptionDemandStep,
-      demand: SubscriptionDemand,
-      tenant: Tenant,
-      maybeSessionId: Option[String] = None
-  )(implicit
-      language: String,
-      currentUser: User
-  ): EitherT[Future, AppError, Result] = {
+                           step: ValidationStep.HttpRequest,
+                           _step: SubscriptionDemandStep,
+                           demand: SubscriptionDemand,
+                           tenant: Tenant,
+                           maybeSessionId: Option[String] = None
+                         )(implicit
+                           language: String,
+                           currentUser: User
+                         ): EitherT[Future, AppError, Result] = {
 
     def validStep(response: JsValue): EitherT[Future, AppError, Result] = {
       val customMedata = (response \ "customMetadata").asOpt[JsObject]
@@ -1528,19 +1534,19 @@ class ApiService(
   }
 
   def runSubscriptionProcess(
-      demandId: SubscriptionDemandId,
-      tenant: Tenant,
-      from: Option[String] = None,
-      maybeSessionId: Option[String] = None
-  )(implicit
-      language: String,
-      currentUser: User
-  ): EitherT[Future, AppError, Result] = {
+                              demandId: SubscriptionDemandId,
+                              tenant: Tenant,
+                              from: Option[String] = None,
+                              maybeSessionId: Option[String] = None
+                            )(implicit
+                              language: String,
+                              currentUser: User
+                            ): EitherT[Future, AppError, Result] = {
     def runRightProcess(
-        step: SubscriptionDemandStep,
-        demand: SubscriptionDemand,
-        tenant: Tenant
-    ): EitherT[Future, AppError, Result] = {
+                         step: SubscriptionDemandStep,
+                         demand: SubscriptionDemand,
+                         tenant: Tenant
+                       ): EitherT[Future, AppError, Result] = {
 
       val run = step.step match {
         case ValidationStep.Email(_, emails, template, _) =>
@@ -1662,7 +1668,7 @@ class ApiService(
       .flatMap {
         //generate notification to checkout
         case (Some(step), demand)
-            if step.step.name == "payment" && demand.steps.size > 1 && step.state.name == "waiting" =>
+          if step.step.name == "payment" && demand.steps.size > 1 && step.state.name == "waiting" =>
           for {
             _ <- EitherT.liftF[Future, AppError, Boolean](
               env.dataStore.notificationRepo
@@ -1867,19 +1873,19 @@ class ApiService(
   }
 
   def _createOrExtendApiKey(
-      tenant: Tenant,
-      apiId: String,
-      planId: String,
-      teamId: String,
-      parentSubscriptionId: Option[ApiSubscriptionId] = None,
-      motivation: Option[JsObject] = None,
-      customMetadata: Option[JsObject],
-      customMaxPerSecond: Option[Long],
-      customMaxPerDay: Option[Long],
-      customMaxPerMonth: Option[Long],
-      customReadOnly: Option[Boolean],
-      adminCustomName: Option[String]
-  )(implicit language: String, currentUser: User) = {
+                             tenant: Tenant,
+                             apiId: String,
+                             planId: String,
+                             teamId: String,
+                             parentSubscriptionId: Option[ApiSubscriptionId] = None,
+                             motivation: Option[JsObject] = None,
+                             customMetadata: Option[JsObject],
+                             customMaxPerSecond: Option[Long],
+                             customMaxPerDay: Option[Long],
+                             customMaxPerMonth: Option[Long],
+                             customReadOnly: Option[Boolean],
+                             adminCustomName: Option[String]
+                           )(implicit language: String, currentUser: User) = {
     import cats.implicits._
 
     def controlApiAndPlan(api: Api): EitherT[Future, AppError, Unit] = {
@@ -1895,10 +1901,10 @@ class ApiService(
     }
 
     def controlTeam(
-        team: Team,
-        api: Api,
-        plan: UsagePlan
-    ): EitherT[Future, AppError, Unit] = {
+                     team: Team,
+                     api: Api,
+                     plan: UsagePlan
+                   ): EitherT[Future, AppError, Unit] = {
       if (!currentUser.isDaikokuAdmin && !team.includeUser(currentUser.id)) {
         EitherT.leftT[Future, Unit](AppError.TeamUnauthorized)
       } else if (
@@ -1924,9 +1930,9 @@ class ApiService(
     }
 
     def controlSubscriptionExtension(
-        plan: UsagePlan,
-        team: Team
-    ): EitherT[Future, AppError, Unit] = {
+                                      plan: UsagePlan,
+                                      team: Team
+                                    ): EitherT[Future, AppError, Unit] = {
       parentSubscriptionId match {
         case Some(subId) =>
           for {
@@ -1971,10 +1977,10 @@ class ApiService(
     }
 
     def controlDemand(
-        team: Team,
-        api: Api,
-        plan: UsagePlan
-    ): EitherT[Future, AppError, Unit] = {
+                       team: Team,
+                       api: Api,
+                       plan: UsagePlan
+                     ): EitherT[Future, AppError, Unit] = {
       plan.allowMultipleKeys match {
         case Some(value) if value => EitherT.pure(())
         case _ =>
@@ -1990,7 +1996,7 @@ class ApiService(
               )
               .map {
                 case Some(_) => Left(AppError.SubscriptionConflict)
-                case None    => Right(())
+                case None => Right(())
               }
           )
       }
@@ -2034,32 +2040,32 @@ class ApiService(
   }
 
   def applyProcessForApiSubscription(
-      tenant: Tenant,
-      user: User,
-      api: Api,
-      plan: UsagePlan,
-      team: Team,
-      apiKeyId: Option[ApiSubscriptionId],
-      motivation: Option[JsObject],
-      customMetadata: Option[JsObject],
-      customMaxPerSecond: Option[Long],
-      customMaxPerDay: Option[Long],
-      customMaxPerMonth: Option[Long],
-      customReadOnly: Option[Boolean],
-      adminCustomName: Option[String]
-  )(implicit language: String): EitherT[Future, AppError, Result] = {
+                                      tenant: Tenant,
+                                      user: User,
+                                      api: Api,
+                                      plan: UsagePlan,
+                                      team: Team,
+                                      apiKeyId: Option[ApiSubscriptionId],
+                                      motivation: Option[JsObject],
+                                      customMetadata: Option[JsObject],
+                                      customMaxPerSecond: Option[Long],
+                                      customMaxPerDay: Option[Long],
+                                      customMaxPerMonth: Option[Long],
+                                      customReadOnly: Option[Boolean],
+                                      adminCustomName: Option[String]
+                                    )(implicit language: String): EitherT[Future, AppError, Result] = {
     import cats.implicits._
 
     plan match {
       case _
-          if api.visibility != ApiVisibility.Public && !api.authorizedTeams
-            .contains(team.id) && !user.isDaikokuAdmin =>
+        if api.visibility != ApiVisibility.Public && !api.authorizedTeams
+          .contains(team.id) && !user.isDaikokuAdmin =>
         EitherT.leftT[Future, Result](ApiUnauthorized)
       case _
-          if api.visibility == ApiVisibility.AdminOnly && !user.isDaikokuAdmin =>
+        if api.visibility == ApiVisibility.AdminOnly && !user.isDaikokuAdmin =>
         EitherT.leftT[Future, Result](ApiUnauthorized)
       case _
-          if plan.visibility == UsagePlanVisibility.Private && api.team != team.id =>
+        if plan.visibility == UsagePlanVisibility.Private && api.team != team.id =>
         EitherT.leftT[Future, Result](PlanUnauthorized)
       case _ =>
         plan.subscriptionProcess match {
@@ -2119,12 +2125,12 @@ class ApiService(
   }
 
   def declineSubscriptionDemand(
-      tenant: Tenant,
-      demandId: SubscriptionDemandId,
-      stepId: SubscriptionDemandStepId,
-      sender: NotificationSender,
-      maybeMessage: Option[String] = None
-  ): EitherT[Future, AppError, Result] = {
+                                 tenant: Tenant,
+                                 demandId: SubscriptionDemandId,
+                                 stepId: SubscriptionDemandStepId,
+                                 sender: NotificationSender,
+                                 maybeMessage: Option[String] = None
+                               ): EitherT[Future, AppError, Result] = {
 
     for {
       demand <- EitherT.fromOptionF(
@@ -2229,27 +2235,30 @@ class ApiService(
     } yield Ok(Json.obj("creation" -> "refused"))
   }
 
-  def getApis[T](ctx: ApiActionContext[T]) = env.dataStore.apiRepo.forTenant(ctx.tenant)
-    .findAll()
-    .map(apis => {
-      val fields: Seq[String] = ctx.request.getQueryString("fields").map(_.split(",").toSeq).getOrElse(Seq.empty[String])
-      val hasFields = fields.nonEmpty
-      if (hasFields) {
-        Ok(JsArray(apis.map(api => {
-          val jsonAPI = api.asJson
-          val content = jsonAPI match {
-            case arr @ JsArray(_)  =>
-              JsArray(arr.value.map { item =>
-                JsonOperationsHelper.filterJson(item.as[JsObject], fields)
-              })
-            case obj @ JsObject(_) => JsonOperationsHelper.filterJson(obj, fields)
-            case _                 => jsonAPI
-          }
+  def getApis[T](ctx: ApiActionContext[T], notDeleted: Boolean = false) = {
+    val repo = env.dataStore.apiRepo.forTenant(ctx.tenant)
 
-          content
-        })))
-      } else {
-        Ok(SeqApiFormat.writes(apis))
-      }
-    })
+    (if (!notDeleted) repo.findAll() else repo.findAllNotDeleted())
+      .map(apis => {
+        val fields: Seq[String] = ctx.request.getQueryString("fields").map(_.split(",").toSeq).getOrElse(Seq.empty[String])
+        val hasFields = fields.nonEmpty
+        if (hasFields) {
+          Ok(JsArray(apis.map(api => {
+            val jsonAPI = api.asJson
+            val content = jsonAPI match {
+              case arr@JsArray(_) =>
+                JsArray(arr.value.map { item =>
+                  JsonOperationsHelper.filterJson(item.as[JsObject], fields)
+                })
+              case obj@JsObject(_) => JsonOperationsHelper.filterJson(obj, fields)
+              case _ => jsonAPI
+            }
+
+            content
+          })))
+        } else {
+          Ok(SeqApiFormat.writes(apis))
+        }
+      })
+  }
 }

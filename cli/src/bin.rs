@@ -81,7 +81,7 @@ pub enum EnvironmentsCommands {
         #[arg(value_name = "APIKEY", short = 'a', long = "apikey")]
         apikey: String,
         #[arg(value_name = "OVERWRITE", long = "overwrite", required = false)]
-        overwrite: Option<bool>
+        overwrite: Option<bool>,
     },
     /// update default environment
     Config {
@@ -108,6 +108,8 @@ pub enum EnvironmentsCommands {
     Info {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
+        #[arg(value_name = "FULL", short = 'f', long = "full")]
+        full: Option<bool>,
     },
     /// list all environments
     List {},
@@ -139,7 +141,10 @@ pub enum CmsCommands {
     /// list all projects
     List {},
     /// ⚠️  be careful, this will clear all projects
-    Clear {},
+    Clear {
+        #[arg(value_name = "FORCE", short = 'f', long = "force")]
+        force: Option<bool>,
+    },
     /// ⚠️ import legacy projects from Daikoku
     Migrate {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
@@ -195,6 +200,7 @@ pub enum PullCommands {
         #[arg(value_name = "ID", short = 'i', long = "od")]
         id: Option<String>,
     },
+    Mails {},
 }
 
 #[derive(Debug, Subcommand)]

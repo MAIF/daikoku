@@ -12,8 +12,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     helpers::{
-        bytes_to_struct, bytes_to_vec_of_struct, daikoku_cms_api_get,
-        map_error_to_filesystem_error, raw_daikoku_cms_api_get,
+        bytes_to_struct, bytes_to_vec_of_struct, map_error_to_filesystem_error,
+        raw_daikoku_cms_api_get,
     },
     interactive::prompt,
     logging::{
@@ -68,12 +68,12 @@ struct IntlTranslation {
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug)]
-struct IntlTranslationBody {
+pub(crate) struct IntlTranslationBody {
     translations: Vec<IntlTranslation>,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug)]
-struct TenantMailBody {
+pub(crate) struct TenantMailBody {
     #[serde(alias = "mailerSettings")]
     mailer_settings: Option<MailerSettings>,
 }
@@ -105,7 +105,7 @@ pub(crate) async fn run(command: CmsCommands) -> DaikokuResult<()> {
         CmsCommands::Switch { name } => switch_cms(name),
         CmsCommands::Remove { name, remove_files } => delete(name, remove_files),
         CmsCommands::List {} => list(),
-        CmsCommands::Clear {} => clear(),
+        CmsCommands::Clear { force } => clear(force.unwrap_or(false)),
         CmsCommands::Migrate {
             name,
             path,
@@ -129,28 +129,27 @@ pub(crate) async fn run(command: CmsCommands) -> DaikokuResult<()> {
 pub(crate) fn get_default_project() -> DaikokuResult<Project> {
     let config = read(false)?;
 
-    let default_project_name = config
-        .get("default", "project")
-        .ok_or(DaikokuCliError::Configuration(
-        "missing default project or values in project. Specify a default project to use. See projects commands"
-            .to_string(),
-    ))?;
+    let default_project_name =
+        config
+            .get("default", "project")
+            .ok_or(DaikokuCliError::Configuration(
+                "missing default project or values in project. See cms commands".to_string(),
+            ))?;
 
     let project = config
         .get_map()
         .map(|m| m[&default_project_name].clone())
         .ok_or(DaikokuCliError::Configuration(
-        "missing default project or values in project. Specify a default project to use. See projects commands"
-            .to_string(),
-    ))?;
+            "missing default project or values in project. See cms commands".to_string(),
+        ))?;
 
     match (&project["name"], &project["path"]) {
         (Some(_name), Some(path)) => Ok(Project {
             // name: name.to_string(),
-            path: path.to_string() }),
+            path: path.to_string(),
+        }),
         (_, _) => Err(DaikokuCliError::Configuration(
-            "missing default project or values in project. Specify a default project to use. See projects commands"
-                .to_string(),
+            "missing default project or values in project. See cms commands".to_string(),
         )),
     }
 }
@@ -162,7 +161,7 @@ fn add(name: String, path: String, overwrite: bool) -> DaikokuResult<()> {
 
     if config.get(&name, "path").is_some() && !overwrite {
         return Err(DaikokuCliError::Configuration(
-            format!("project already exists in the configuration file. Run daikoku projects remove --name={} to remove it", name),
+            format!("project already exists in the configuration file. Run daikoku cms remove --name={} to remove it", name),
         ));
     }
 
@@ -337,24 +336,32 @@ fn read(last_attempt: bool) -> DaikokuResult<Ini> {
     }
 }
 
-fn clear() -> DaikokuResult<()> {
+fn remove_cms() -> DaikokuResult<()> {
+    let mut config = Ini::new();
+    config.clear();
+    match config.write(&get_path()?) {
+        Ok(_) => {
+            logger::println("<green>Projects erased</>".to_string());
+            Ok(())
+        }
+        Err(e) => Err(DaikokuCliError::FileSystem(format!(
+            "failed to reset the projects file : {}",
+            e.to_string()
+        ))),
+    }
+}
+
+fn clear(force: bool) -> DaikokuResult<()> {
+    if force {
+        return remove_cms();
+    }
+
     logger::error("Are you to delete all cms ? [yN]".to_string());
 
     let choice = prompt()?;
 
     if choice.trim() == "y" {
-        let mut config = Ini::new();
-        config.clear();
-        match config.write(&get_path()?) {
-            Ok(_) => {
-                logger::println("<green>Projects erased</>".to_string());
-                Ok(())
-            }
-            Err(e) => Err(DaikokuCliError::FileSystem(format!(
-                "failed to reset the projects file : {}",
-                e.to_string()
-            ))),
-        }
+        remove_cms()
     } else {
         Ok(())
     }
@@ -620,7 +627,10 @@ pub(crate) fn create_api_folder(
     Ok(created)
 }
 
-fn create_mail_tenant(mail_settings: TenantMailBody, project_path: PathBuf) -> DaikokuResult<()> {
+pub(crate) fn create_mail_tenant(
+    mail_settings: TenantMailBody,
+    project_path: PathBuf,
+) -> DaikokuResult<()> {
     let filename = "page.html".to_string();
 
     let file_path = project_path
@@ -641,7 +651,7 @@ fn create_mail_tenant(mail_settings: TenantMailBody, project_path: PathBuf) -> D
     Ok(())
 }
 
-fn create_mail_folder(
+pub(crate) fn create_mail_folder(
     intl_translation: IntlTranslationBody,
     project_path: PathBuf,
     is_root_mail: bool,
@@ -656,14 +666,6 @@ fn create_mail_folder(
         config.set(&"default", "id", Some(item._id.clone()));
 
         let _ = config.write(file_path.clone().join(".daikoku_data"));
-
-        // let _ = create_path_and_file(
-        //     ,
-        //     format!("id:{}", item._id),
-        //     item._id.clone(),
-        //     HashMap::new(),
-        //     SourceExtension::HTML,
-        // );
 
         item.translations.iter().for_each(|translation| {
             let _ = create_path_and_file(
