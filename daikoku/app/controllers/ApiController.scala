@@ -1016,29 +1016,7 @@ class ApiController(
           s"@{user.name} has fetch all apis"
         )
       )(ctx.tenant.id.value, ctx) { (tenant, _) =>
-        env.dataStore.apiRepo.forTenant(tenant)
-          .findAll()
-          .map(apis => {
-            val fields: Seq[String] = ctx.request.getQueryString("fields").map(_.split(",").toSeq).getOrElse(Seq.empty[String])
-            val hasFields = fields.nonEmpty
-            if (hasFields) {
-              Ok(JsArray(apis.map(api => {
-                val jsonAPI = api.asJson
-                val content = jsonAPI match {
-                  case arr @ JsArray(_)  =>
-                    JsArray(arr.value.map { item =>
-                      JsonOperationsHelper.filterJson(item.as[JsObject], fields)
-                    })
-                  case obj @ JsObject(_) => JsonOperationsHelper.filterJson(obj, fields)
-                  case _                 => jsonAPI
-                }
-
-                content
-              })))
-            } else {
-              Ok(SeqApiFormat.writes(apis))
-            }
-          })
+        apiService.getApis(ctx)
       }
   }
 
@@ -4418,7 +4396,7 @@ class ApiController(
         env.dataStore.apiRepo
           .findAllVersions(tenant = ctx.tenant, id = apiId)
           .map { apis =>
-            ctx.setCtxValue("api.name", apis.head.name)
+            ctx.setCtxValue("api.name", apis.headOption.map(_.name).getOrElse("unknown api name"))
             ctx.setCtxValue("api.id", apiId)
             Ok(
               SeqVersionFormat.writes(

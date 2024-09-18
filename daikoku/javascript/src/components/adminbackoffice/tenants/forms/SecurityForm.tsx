@@ -40,12 +40,6 @@ export const SecurityForm = (props: { tenant?: ITenantFull, updateTenant: UseMut
       type: type.bool,
       label: translate('API reference visibility'),
       help: translate('api.reference.visibility.help'),
-    },
-    cmsRedirections: {
-      type: type.string,
-      array: true,
-      label: translate('CMS Redirections Domains'),
-      help: translate('cms.redirections.domains'),
     }
   }
 

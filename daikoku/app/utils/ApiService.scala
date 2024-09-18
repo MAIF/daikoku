@@ -9,10 +9,12 @@ import cats.data.{EitherT, OptionT}
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import controllers.AppError._
+import fr.maif.otoroshi.daikoku.actions.ApiActionContext
 import fr.maif.otoroshi.daikoku.ctrls.PaymentClient
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.domain.json.SeqApiFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
@@ -2227,4 +2229,27 @@ class ApiService(
     } yield Ok(Json.obj("creation" -> "refused"))
   }
 
+  def getApis[T](ctx: ApiActionContext[T]) = env.dataStore.apiRepo.forTenant(ctx.tenant)
+    .findAll()
+    .map(apis => {
+      val fields: Seq[String] = ctx.request.getQueryString("fields").map(_.split(",").toSeq).getOrElse(Seq.empty[String])
+      val hasFields = fields.nonEmpty
+      if (hasFields) {
+        Ok(JsArray(apis.map(api => {
+          val jsonAPI = api.asJson
+          val content = jsonAPI match {
+            case arr @ JsArray(_)  =>
+              JsArray(arr.value.map { item =>
+                JsonOperationsHelper.filterJson(item.as[JsObject], fields)
+              })
+            case obj @ JsObject(_) => JsonOperationsHelper.filterJson(obj, fields)
+            case _                 => jsonAPI
+          }
+
+          content
+        })))
+      } else {
+        Ok(SeqApiFormat.writes(apis))
+      }
+    })
 }

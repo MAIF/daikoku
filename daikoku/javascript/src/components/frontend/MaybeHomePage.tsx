@@ -1,5 +1,5 @@
 import { useContext, useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { redirect, useLocation, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { I18nContext } from '../../contexts/i18n-context';
 
@@ -21,6 +21,18 @@ export const MaybeHomePage = ({
     if (message) {
       toast.success(translate(message))
     }
+
+    if (params.get('redirect')) {
+      const rawRedirect = params.get('redirect')!;
+      try {
+        const redirect = atob(rawRedirect);
+        window.location.href = redirect
+      } catch (err) {
+        window.location.href = rawRedirect
+      }
+      return
+    }
+
 
     if (!tenant.homePageVisible || connectedUser?._humanReadableId) {
       navigate('/apis');

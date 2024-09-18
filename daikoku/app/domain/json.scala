@@ -2211,9 +2211,6 @@ object json {
             environments = (json \ "environments")
               .asOpt[Set[String]]
               .getOrElse(Set.empty),
-            cmsRedirections = (json \ "cmsRedirections")
-              .asOpt[Set[String]]
-              .getOrElse(Set.empty)
           )
         )
       } recover {
@@ -2285,10 +2282,7 @@ object json {
         "thirdPartyPaymentSettings" -> SeqThirdPartyPaymentSettingsFormat
           .writes(o.thirdPartyPaymentSettings),
         "display" -> TenantDisplayFormat.writes(o.display),
-        "environments" -> JsArray(o.environments.map(JsString.apply).toSeq),
-        "cmsRedirections" -> JsArray(
-          o.cmsRedirections.map(JsString.apply).toSeq
-        )
+        "environments" -> JsArray(o.environments.map(JsString.apply).toSeq)
       )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
@@ -4623,8 +4617,7 @@ object json {
         "draft" -> o.draft,
         "path" -> o.path.map(JsString.apply).getOrElse(JsNull).as[JsValue],
         "exact" -> o.exact,
-        "lastPublishedDate" -> o.lastPublishedDate.map(DateTimeFormat.writes),
-        "history" -> SeqCmsHistoryFormat.writes(o.history)
+        "lastPublishedDate" -> o.lastPublishedDate.map(DateTimeFormat.writes)
       )
     override def reads(json: JsValue): JsResult[CmsPage] =
       Try {
@@ -4652,9 +4645,6 @@ object json {
           exact = (json \ "exact").asOpt[Boolean].getOrElse(false),
           lastPublishedDate =
             (json \ "lastPublishedDate").asOpt[DateTime](DateTimeFormat.reads),
-          history = (json \ "history")
-            .asOpt(SeqCmsHistoryFormat)
-            .getOrElse(Seq.empty)
         )
       } match {
         case Failure(exception) => JsError(exception.getMessage)
@@ -4777,8 +4767,6 @@ object json {
       Reads.set(OtoroshiServiceGroupIdFormat),
       Writes.set(OtoroshiServiceGroupIdFormat)
     )
-  val SeqCmsHistoryFormat =
-    Format(Reads.seq(CmsHistoryFormat), Writes.seq(CmsHistoryFormat))
   val SeqApiDocumentationDetailPageFormat
       : Format[Seq[ApiDocumentationDetailPage]] =
     Format(

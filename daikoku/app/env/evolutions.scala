@@ -6,17 +6,9 @@ import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
+import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiDocumentationPageFormat,
-  ApiFormat,
-  ApiSubscriptionFormat,
-  SeqApiDocumentationDetailPageFormat,
-  TeamFormat,
-  TeamIdFormat,
-  TenantFormat,
-  UserFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, UserFormat}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.joda.time.DateTime
@@ -1093,6 +1085,95 @@ object evolution_1634 extends EvolutionScript {
     }
 }
 
+object evolution_1750 extends EvolutionScript {
+  override def version: String = "17.5.0"
+
+  override def script: (
+    Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+    ) => Future[Done] =
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - create cms api"
+      )
+
+      implicit val executionContext: ExecutionContext = ec
+
+      val cmsApiDefaultPlan = FreeWithoutQuotas(
+        id = UsagePlanId(IdGenerator.token),
+        tenant = Tenant.Default,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = Some("admin"),
+        customDescription = None,
+        otoroshiTarget = None,
+        allowMultipleKeys = Some(true),
+        autoRotation = None,
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey
+      )
+
+      val cmsApiDefaultTenantId =
+        ApiId(s"cms-api-tenant-${Tenant.Default.value}")
+
+      for {
+        tenants <-dataStore.tenantRepo.findAll()
+        _ <- Future.sequence(tenants.map(tenant => dataStore.teamRepo
+          .forTenant(tenant)
+          .findOne(Json.obj("type" -> TeamType.Admin.name))
+          .flatMap(team => {
+            if(team.isDefined) {
+              val cmsApiDefaultTenant = Api(
+                id = cmsApiDefaultTenantId,
+                tenant = Tenant.Default,
+                team = team.get.id,
+                name = s"cms-api-tenant-${Tenant.Default.value}",
+                lastUpdate = DateTime.now(),
+                smallDescription = "cms api",
+                description = "cms api",
+                currentVersion = Version("1.0.0"),
+                documentation = ApiDocumentation(
+                  id = ApiDocumentationId(IdGenerator.token(32)),
+                  tenant = Tenant.Default,
+                  pages = Seq.empty[ApiDocumentationDetailPage],
+                  lastModificationAt = DateTime.now()
+                ),
+                swagger =
+                  Some(SwaggerAccess(url = "/cms-api/swagger.json".some)),
+                possibleUsagePlans = Seq(cmsApiDefaultPlan.id),
+                visibility = ApiVisibility.AdminOnly,
+                defaultUsagePlan = cmsApiDefaultPlan.id.some,
+                authorizedTeams = Seq.empty,
+                state = ApiState.Published
+              )
+
+              Future.sequence(Seq(
+                dataStore.apiRepo
+                  .forTenant(tenant.id)
+                  .save(cmsApiDefaultTenant),
+                dataStore.usagePlanRepo
+                  .forTenant(tenant.id)
+                  .save(cmsApiDefaultPlan)
+              ))
+            } else {
+              Future.successful(())
+            }
+          })))
+      } yield {
+        Done
+      }
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -1109,7 +1190,8 @@ object evolutions {
       evolution_1613,
       evolution_1613_b,
       evolution_1630,
-      evolution_1634
+      evolution_1634,
+      evolution_1750
     )
   def run(
       dataStore: DataStore,

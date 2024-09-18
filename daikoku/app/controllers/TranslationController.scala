@@ -10,6 +10,7 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.domain.{DatastoreId, IntlTranslation, Translation}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.services.TranslationsService
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, Translator}
 import org.joda.time.DateTime
 import play.api.i18n.I18nSupport
@@ -23,7 +24,8 @@ class TranslationController(
     DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
     env: Env,
     cc: ControllerComponents,
-    translator: Translator
+    translator: Translator,
+    translationsService: TranslationsService
 ) extends AbstractController(cc)
     with I18nSupport {
 
@@ -49,61 +51,7 @@ class TranslationController(
       TenantAdminOnly(
         AuditTrailEvent(s"@{user.name} has reset translations - @{tenant._id}")
       )(ctx.tenant.id.value, ctx) { (_, _) =>
-        env.dataStore.translationRepo
-          .forTenant(ctx.tenant.id)
-          .find(
-            Json.obj(
-              "key" -> Json.obj(
-                "$regex" -> s".*${domain.getOrElse("mail")}",
-                "$options" -> "-i"
-              )
-            )
-          )
-          .map(translations => {
-            val defaultTranslations = messagesApi.messages
-              .map(v =>
-                (
-                  v._1,
-                  v._2.filter(k => k._1.startsWith(domain.getOrElse("mail")))
-                )
-              )
-              .flatMap { v =>
-                v._2
-                  .map {
-                    case (key, value) =>
-                      Translation(
-                        id = DatastoreId(IdGenerator.token(32)),
-                        tenant = ctx.tenant.id,
-                        language = v._1,
-                        key = key,
-                        value = value
-                      )
-                  }
-                  .filter(t => languages.contains(t.language))
-              }
-
-            Ok(
-              Json.obj(
-                "translations" -> defaultTranslations
-                  .map { translation =>
-                    translations.find(t =>
-                      t.key == translation.key && t.language == translation.language
-                    ) match {
-                      case None    => translation
-                      case Some(t) => t
-                    }
-                  }
-                  .groupBy(_.key)
-                  .map(v => IntlTranslationFormat.writes(IntlTranslation(
-                    id = v._1,
-                    translations = v._2.toSeq,
-                    content = defaultTranslations
-                        .find(p => p.key == v._1)
-                        .map(_.value)
-                        .getOrElse("")
-                  )))
-              ))
-          })
+        translationsService.getMailTranslations(ctx,  domain, messagesApi, supportedLangs)
       }
     }
 

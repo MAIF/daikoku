@@ -123,11 +123,11 @@ export const CMSOffice = () => {
             <button type="button" className="btn btn-sm me-1 btn-outline-primary" data-bs-toggle="dropdown" aria-expanded="false">
               <i className="fas fa-cog"></i>
             </button>
-            <ul className="dropdown-menu">
-              {/* <li className="dropdown-item" onClick={() => importRef.current?.click()}>
-                <input ref={r => importRef.current = r} type="file" accept=".zip" className="form-control hide" onChange={loadFiles} />
-                {translate('cms.import_all')}
-              </li> */}
+            <ul className="dropdown-menu"> */}
+          <li className="dropdown-item" onClick={() => importRef.current?.click()}>
+            <input ref={r => importRef.current = r} type="file" accept=".zip" className="form-control hide" onChange={loadFiles} />
+            {translate('cms.import_all')}
+          </li>
           <button className="btn btn-sm btn-outline-info" onClick={() => {
             if (!downloading) {
               setDownloading(true);

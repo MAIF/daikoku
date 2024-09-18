@@ -40,6 +40,7 @@ daikoku login
 # PULL
 daikoku pull apis
 daikoku pull apis <ID>
+daikoku pull mails
 
 # VERSION
 daikoku version

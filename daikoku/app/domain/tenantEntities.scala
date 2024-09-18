@@ -386,8 +386,7 @@ case class Tenant(
     robotTxt: Option[String] = None,
     thirdPartyPaymentSettings: Seq[ThirdPartyPaymentSettings] = Seq.empty,
     display: TenantDisplay = TenantDisplay.Default,
-    environments: Set[String] = Set.empty,
-    cmsRedirections: Set[String] = Set.empty
+    environments: Set[String] = Set.empty
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -453,7 +452,6 @@ case class Tenant(
       "display" -> display.name,
       "environments" -> JsArray(environments.map(JsString.apply).toSeq),
       "loginProvider" -> authProvider.name,
-      "cmsRedirections" -> JsArray(cmsRedirections.map(JsString.apply).toSeq),
       "colorTheme" -> style.map(_.colorTheme).map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "css" -> style.map(_.css).map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "cssUrl" -> style.flatMap(_.cssUrl).map(JsString.apply).getOrElse(JsNull).as[JsValue],
@@ -671,8 +669,7 @@ case class CmsPage(
     draft: String,
     path: Option[String] = None,
     exact: Boolean = false,
-    lastPublishedDate: Option[DateTime] = None,
-    history: Seq[CmsHistory] = Seq.empty
+    lastPublishedDate: Option[DateTime] = None
 ) extends CanJson[CmsPage] {
   override def asJson: JsValue = json.CmsPageFormat.writes(this)
 

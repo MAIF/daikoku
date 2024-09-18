@@ -1,6 +1,6 @@
 import { useContext, useEffect } from 'react';
 import { Navigate } from 'react-router';
-import { BrowserRouter, Route, BrowserRouter as Router, Routes, createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { BrowserRouter, Route, BrowserRouter as Router, Routes, createBrowserRouter, RouterProvider, useSearchParams } from 'react-router-dom';
 
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
 import { Footer, LoginPage, SideBar, tenant } from '../components/utils';
@@ -130,7 +130,7 @@ export const DaikokuApp = () => {
               />
               <Route
                 path='*'
-                element={<Navigate to={`/auth/${tenant.authProvider}/login`} replace />}
+                element={<ToLogin tenant={tenant} />}
               />
             </Routes>
           </div>
@@ -468,6 +468,19 @@ export const DaikokuApp = () => {
     </BrowserRouter>
   );
 };
+
+const ToLogin = ({ tenant }) => {
+
+  const [searchParams] = useSearchParams();
+
+  const redirect = searchParams.get('redirect')
+  const to = `/auth/${tenant.authProvider}/login`
+
+  if (redirect)
+    return <Navigate to={`${to}?redirect=${redirect}`} replace />
+  else
+    return <Navigate to={to} replace />
+}
 
 const FrontOfficeRoute = (props: { title?: string, children: JSX.Element }) => {
   return (
