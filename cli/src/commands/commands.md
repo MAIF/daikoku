@@ -7,7 +7,7 @@ daikoku cms list
 daikoku cms add <NAME> <PATH> <OVERWRITE>
 daikoku cms switch <NAME> // change default en switch
 daikoku cms remove <NAME> <REMOVE_FILES>
-daikoku cms clear
+daikoku cms clear <FORCE>
 avec confirmation pour faire plaisir
 
 # PUSH
@@ -21,7 +21,7 @@ daikoku assets list
 daikoku assets sync
 
 # ENVIRONMENTS
-daikoku environments clear
+daikoku environments clear <FORCE>
 daikoku environments add <NAME> <SERVER> <OVERWRITE>
 daikoku environments switch <NAME> // rename du default
 daikoku environments remove <NAME>

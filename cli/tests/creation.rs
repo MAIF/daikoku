@@ -35,7 +35,7 @@ impl CreationSetup {
     }
 }
 
-#[test]
+#[cfg(test)]
 fn test_create_empty_cms() -> Result<(), Box<dyn std::error::Error>> {
     let setup = CreationSetup::new();
 

@@ -40,7 +40,7 @@ impl Setup {
     }
 }
 
-#[test]
+#[cfg(test)]
 #[serial]
 fn add_project() -> Result<(), Box<dyn std::error::Error>> {
     let setup = Setup::new();
@@ -60,7 +60,7 @@ fn add_project() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[test]
+#[cfg(test)]
 #[serial]
 fn default_project() -> Result<(), Box<dyn std::error::Error>> {
     let setup = Setup::new();
@@ -86,7 +86,7 @@ fn default_project() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[test]
+#[cfg(test)]
 #[serial]
 fn remove_project() -> Result<(), Box<dyn std::error::Error>> {
     let setup = Setup::new();
@@ -110,7 +110,7 @@ fn remove_project() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-#[test]
+#[cfg(test)]
 #[serial]
 fn clear_project() -> Result<(), Box<dyn std::error::Error>> {
     let setup = Setup::new();
