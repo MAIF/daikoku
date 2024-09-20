@@ -1,6 +1,10 @@
 mod cli;
 
-use cli::commands::{cli::CLI, cms, environment};
+use cli::commands::{
+    cli::CLI,
+    cms::{self, get_temporary_path},
+    environment,
+};
 use serial_test::serial;
 
 fn test_check_info_of_environment() {
@@ -16,11 +20,9 @@ fn test_check_info_of_environment() {
 async fn login() -> Result<(), Box<dyn std::error::Error + 'static>> {
     CLI::start().await?;
 
-    let daikoku_ip = "localhost"; //daikoku_container.get_host().await?.to_string();
+    cms::init("cms", get_temporary_path());
 
-    cms::reset_cms().await?;
-
-    environment::add("dev", &daikoku_ip);
+    environment::add("dev", "localhost");
 
     test_check_info_of_environment();
 

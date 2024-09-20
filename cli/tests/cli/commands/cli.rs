@@ -114,14 +114,7 @@ pub trait CustomRun {
 
 impl CustomRun for Assert {
     fn run_and_expect(&mut self, expected: &str) {
-        assert!(
-            String::from_utf8(self.get_output().stdout.clone())
-                .unwrap()
-                .contains(expected)
-                || String::from_utf8(self.get_output().stderr.clone())
-                    .unwrap()
-                    .contains(expected)
-        );
+        self.run_and_multiple_expect(vec![expected]);
     }
 
     fn run_and_multiple_expect(&mut self, expected: Vec<&str>) {

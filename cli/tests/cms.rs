@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use cli::commands::{
     cli::{run_test, CustomRun, CLI},
-    cms, environment,
+    cms,
 };
 
 use serial_test::serial;
