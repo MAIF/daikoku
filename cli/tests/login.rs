@@ -1,10 +1,10 @@
 mod cli;
 
-use cli::{Cms, Environment, CLI};
+use cli::commands::{cli::CLI, cms, environment};
 use serial_test::serial;
 
 fn test_check_info_of_environment() {
-    let result = Environment::info("dev");
+    let result = environment::info("dev");
     let output = String::from_utf8(result.get_output().stdout.clone()).unwrap();
 
     assert!(output.contains("http://localhost:8080"));
@@ -18,15 +18,15 @@ async fn login() -> Result<(), Box<dyn std::error::Error + 'static>> {
 
     let daikoku_ip = "localhost"; //daikoku_container.get_host().await?.to_string();
 
-    Cms::reset_cms().await?;
+    cms::reset_cms().await?;
 
-    Environment::add("dev", &daikoku_ip);
+    environment::add("dev", &daikoku_ip);
 
     test_check_info_of_environment();
 
-    Environment::switch("dev");
+    environment::switch("dev");
 
-    Environment::login();
+    environment::login();
 
     Ok(())
 }

@@ -1,7 +1,12 @@
+use std::ffi;
 use std::path::PathBuf;
-use std::{ffi, fs};
 
-use assert_cmd::{assert::Assert, Command};
+use assert_cmd::{
+    assert::{Assert, OutputAssertExt},
+    cargo::CommandCargoExt,
+};
+use std::process::Command;
+
 use testcontainers::{
     core::{IntoContainerPort, Mount, WaitFor},
     runners::AsyncRunner,
@@ -10,18 +15,18 @@ use testcontainers::{
 
 pub(crate) async fn run_test<T>(test: T) -> Result<(), Box<dyn std::error::Error + 'static>>
 where
-    T: FnOnce() -> (),
+    T: FnOnce(CLI) -> (),
 {
-    let _cli = CLI::start().await?;
+    let cli = CLI::start().await.unwrap();
 
-    test();
+    test(cli);
 
     Ok(())
 }
 
 pub(crate) struct CLI {
-    postgres_container: ContainerAsync<GenericImage>,
-    daikoku_container: ContainerAsync<GenericImage>,
+    pub postgres_container: ContainerAsync<GenericImage>,
+    pub daikoku_container: ContainerAsync<GenericImage>,
 }
 
 impl CLI {
@@ -37,8 +42,8 @@ impl CLI {
         let (postgres_container, daikoku_container) = Self::start_containers().await?;
 
         Ok(CLI {
-            postgres_container,
-            daikoku_container,
+            postgres_container: postgres_container,
+            daikoku_container: daikoku_container,
         })
     }
 
@@ -66,7 +71,7 @@ impl CLI {
 
         let daikoku = GenericImage::new("maif/daikoku", "17.4.0-dev")
             .with_wait_for(WaitFor::message_on_stdout("Running missing evolutions"))
-            .with_wait_for(WaitFor::seconds(5))
+            // .with_wait_for(WaitFor::seconds(10))
             .with_mapped_port(8080, 8080.tcp())
             .with_env_var("DAIKOKU_INIT_DATA_FROM", "/tmp/daikoku-state.ndjson")
             .with_env_var("DAIKOKU_POSTGRES_HOST", host)
@@ -84,7 +89,7 @@ impl CLI {
     }
 }
 
-pub(crate) trait AssertCommand {
+pub trait AssertCommand {
     fn run(&mut self) -> Assert;
 }
 
@@ -94,79 +99,14 @@ impl AssertCommand for Command {
     }
 }
 
-pub(crate) struct Environment {}
-
-impl Environment {
-    pub(crate) fn info(name: &str) -> Assert {
-        CLI::run(["environments", "info", format!("--name={}", name).as_str()])
-    }
-
-    pub(crate) fn clear(force: bool) -> Assert {
-        CLI::run([
-            "environments",
-            "clear",
-            format!("--force={}", force.to_string()).as_str(),
-        ])
-    }
-
-    pub(crate) fn add(name: &str, daikoku_ip: &str /* apikey: String*/) -> Assert {
-        CLI::run([
-            "environments",
-            "add",
-            format!("--name={}", name).as_str(),
-            format!("--server=http://{}:8080", daikoku_ip).as_str(),
-            "--apikey=amJ1UWtEYWpZZThWVTU0a2RjVW1oWjhWM0I1Q0NmV1I6eTJXNmtYV21yRzBxdm8xU2psSjdYU1M0ZEE5cGc5dDlZZ25wMTlIOXR5cUJaZE5NSkZDQmRJUXVKQ3haMXk4VQ=="
-        ])
-    }
-
-    pub(crate) fn switch(name: &str) -> Assert {
-        CLI::run([
-            "environments",
-            "switch",
-            format!("--name={}", name).as_str(),
-        ])
-    }
-
-    pub(crate) fn login() -> Assert {
-        CLI::run(["login"])
-    }
+pub trait CustomRun {
+    fn run_and_check_output(&mut self, expected: &str);
 }
 
-pub struct Cms {}
-
-impl Cms {
-    pub(crate) fn clear(force: bool) -> Assert {
-        CLI::run([
-            "cms",
-            "clear",
-            format!("--force={}", force.to_string()).as_str(),
-        ])
-    }
-
-    pub(crate) fn init(name: &str, path: String) -> Assert {
-        CLI::run([
-            "cms",
-            "init",
-            format!("--name={}", name).as_str(),
-            format!("--path={}", path).as_str(),
-        ])
-    }
-
-    pub(crate) async fn reset_cms() -> Result<(), Box<dyn std::error::Error + 'static>> {
-        let temporary_path = std::env::temp_dir()
-            .join("daikoku")
-            .into_os_string()
-            .into_string()
-            .unwrap();
-
-        let _ = fs::remove_dir_all(&temporary_path);
-
-        Cms::clear(true);
-
-        let _ = fs::create_dir(&temporary_path);
-
-        Cms::init("cms", temporary_path);
-
-        Ok(())
+impl CustomRun for Assert {
+    fn run_and_check_output(&mut self, expected: &str) {
+        assert!(String::from_utf8(self.get_output().stdout.clone())
+            .unwrap()
+            .contains(expected));
     }
 }
