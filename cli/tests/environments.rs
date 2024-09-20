@@ -2,6 +2,7 @@ mod cli;
 
 use cli::commands::{
     cli::{run_test, CustomRun, CLI},
+    cms,
     environment::{self, CMS_APIKEY},
 };
 
@@ -11,6 +12,7 @@ use serial_test::serial;
 #[serial]
 async fn add() -> Result<(), Box<dyn std::error::Error + 'static>> {
     run_test(|_| {
+        cms::init("cms", cms::get_temporary_path());
         environment::clear(true);
         environment::add("test", "localhost");
     })
@@ -21,6 +23,7 @@ async fn add() -> Result<(), Box<dyn std::error::Error + 'static>> {
 #[serial]
 async fn switch() -> Result<(), Box<dyn std::error::Error + 'static>> {
     run_test(|_| {
+        cms::init("cms", cms::get_temporary_path());
         environment::clear(true);
         environment::add("test", "localhost");
         environment::info("test").run_and_expect("test");
@@ -34,6 +37,7 @@ async fn switch() -> Result<(), Box<dyn std::error::Error + 'static>> {
 #[serial]
 async fn remove() -> Result<(), Box<dyn std::error::Error + 'static>> {
     run_test(|_| {
+        cms::init("cms", cms::get_temporary_path());
         environment::clear(true);
         environment::add("test", "localhost");
         environment::remove("test");
@@ -48,6 +52,7 @@ async fn remove() -> Result<(), Box<dyn std::error::Error + 'static>> {
 #[serial]
 async fn list() -> Result<(), Box<dyn std::error::Error + 'static>> {
     run_test(|_| {
+        cms::init("cms", cms::get_temporary_path());
         environment::clear(true);
         environment::add("test", "localhost");
         environment::add("prod", "localhost");
@@ -65,6 +70,7 @@ async fn list() -> Result<(), Box<dyn std::error::Error + 'static>> {
 #[serial]
 async fn config() -> Result<(), Box<dyn std::error::Error + 'static>> {
     run_test(|_| {
+        cms::init("cms", cms::get_temporary_path());
         environment::clear(true);
         environment::add("test", "localhost");
 
