@@ -226,7 +226,7 @@ async fn process(command: Commands) -> DaikokuResult<()> {
             environment,
             authentication,
         } => commands::watch::run(environment, authentication).await,
-        Commands::Environments { command } => commands::enviroments::run(command).await,
+        Commands::Environments { command } => commands::environments::run(command).await,
         Commands::Cms { command } => commands::cms::run(command).await,
         Commands::Login {} => commands::login::run().await,
         Commands::Pull { command } => commands::pull::run(command).await,

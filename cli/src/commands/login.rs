@@ -17,7 +17,7 @@ use crate::logging::error::{DaikokuCliError, DaikokuResult};
 use crate::logging::logger::{self};
 use crate::{process, Commands};
 
-use super::enviroments::{can_join_daikoku, get_default_environment};
+use super::environments::{can_join_daikoku, get_default_environment};
 use super::watch::SESSION_EXPIRED;
 
 #[derive(Clone, Deserialize, Serialize, Debug)]

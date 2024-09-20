@@ -1,9 +1,9 @@
-pub mod watch;
-pub mod enviroments;
-pub mod version;
+pub mod assets;
 pub mod cms;
+pub mod environments;
+pub mod generate;
 pub mod login;
 pub mod pull;
 pub mod push;
-pub mod assets;
-pub mod generate;
+pub mod version;
+pub mod watch;

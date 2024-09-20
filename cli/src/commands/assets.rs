@@ -26,7 +26,7 @@ use walkdir::WalkDir;
 
 use super::{
     cms::{self, get_default_project},
-    enviroments::{get_default_environment, read_apikey_from_secrets},
+    environments::{get_default_environment, read_apikey_from_secrets},
 };
 
 #[derive(Deserialize, Serialize, Debug)]

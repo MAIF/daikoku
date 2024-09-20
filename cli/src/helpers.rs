@@ -5,7 +5,7 @@ use hyper::header;
 use serde::Deserialize;
 
 use crate::{
-    commands::enviroments::{get_default_environment, read_apikey_from_secrets},
+    commands::environments::{get_default_environment, read_apikey_from_secrets},
     logging::error::{DaikokuCliError, DaikokuResult},
 };
 

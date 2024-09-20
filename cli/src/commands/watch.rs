@@ -20,7 +20,7 @@ use crate::models::folder::{read_contents, CmsFile, SourceExtension, UiCmsFile};
 use crate::utils::frame_to_bytes_body;
 
 use super::cms::{self};
-use super::enviroments::{
+use super::environments::{
     can_join_daikoku, check_environment_from_str, read_cookie_from_environment, Environment,
 };
 

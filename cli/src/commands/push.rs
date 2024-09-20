@@ -14,7 +14,7 @@ use crate::{
 
 use super::{
     cms::{self},
-    enviroments::get_daikokuignore,
+    environments::get_daikokuignore,
 };
 
 pub(crate) async fn run(dry_run: Option<bool>, file_path: Option<String>) -> DaikokuResult<()> {

@@ -38,6 +38,14 @@ impl CLI {
         Command::cargo_bin("daikoku").unwrap().args(args).run()
     }
 
+    pub(crate) fn build<I, S>(args: I) -> Assert
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<ffi::OsStr>,
+    {
+        Command::cargo_bin("daikoku").unwrap().args(args).assert()
+    }
+
     pub(crate) async fn start() -> Result<CLI, Box<dyn std::error::Error + 'static>> {
         let (postgres_container, daikoku_container) = Self::start_containers().await?;
 
@@ -71,7 +79,7 @@ impl CLI {
 
         let daikoku = GenericImage::new("maif/daikoku", "17.4.0-dev")
             .with_wait_for(WaitFor::message_on_stdout("Running missing evolutions"))
-            // .with_wait_for(WaitFor::seconds(10))
+            .with_wait_for(WaitFor::seconds(5))
             .with_mapped_port(8080, 8080.tcp())
             .with_env_var("DAIKOKU_INIT_DATA_FROM", "/tmp/daikoku-state.ndjson")
             .with_env_var("DAIKOKU_POSTGRES_HOST", host)
@@ -100,13 +108,28 @@ impl AssertCommand for Command {
 }
 
 pub trait CustomRun {
-    fn run_and_check_output(&mut self, expected: &str);
+    fn run_and_expect(&mut self, expected: &str);
+    fn run_and_multiple_expect(&mut self, expected: Vec<&str>);
 }
 
 impl CustomRun for Assert {
-    fn run_and_check_output(&mut self, expected: &str) {
-        assert!(String::from_utf8(self.get_output().stdout.clone())
-            .unwrap()
-            .contains(expected));
+    fn run_and_expect(&mut self, expected: &str) {
+        assert!(
+            String::from_utf8(self.get_output().stdout.clone())
+                .unwrap()
+                .contains(expected)
+                || String::from_utf8(self.get_output().stderr.clone())
+                    .unwrap()
+                    .contains(expected)
+        );
+    }
+
+    fn run_and_multiple_expect(&mut self, expected: Vec<&str>) {
+        let stdout = String::from_utf8(self.get_output().stdout.clone()).unwrap();
+        let stderr = String::from_utf8(self.get_output().stderr.clone()).unwrap();
+
+        for expected_value in expected {
+            assert!(stdout.contains(expected_value) || stderr.contains(expected_value));
+        }
     }
 }
