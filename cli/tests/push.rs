@@ -8,43 +8,43 @@ use cli::commands::{
 
 use serial_test::serial;
 
-// #[tokio::test]
-// #[serial]
-// async fn failed_push_missing_environment() -> Result<(), Box<dyn std::error::Error + 'static>> {
-//     run_test(|_| {
-//         cms::clear(true);
-//         cms::init("cms", get_temporary_path());
+#[tokio::test]
+#[serial]
+async fn failed_push_missing_environment() -> Result<(), Box<dyn std::error::Error + 'static>> {
+    run_test(|_| {
+        cms::clear(true);
+        cms::init("cms", get_temporary_path());
 
-//         CLI::build(["push"]).run_and_expect("default environment not found");
-//     })
-//     .await
-// }
+        CLI::build(["push"]).run_and_expect("default environment not found");
+    })
+    .await
+}
 
-// #[tokio::test]
-// #[serial]
-// async fn push() -> Result<(), Box<dyn std::error::Error + 'static>> {
-//     run_test(|_| {
-//         cms::clear(true);
-//         cms::init("cms", get_temporary_path());
+#[tokio::test]
+#[serial]
+async fn push() -> Result<(), Box<dyn std::error::Error + 'static>> {
+    run_test(|_| {
+        cms::clear(true);
+        cms::init("cms", get_temporary_path());
 
-//         environment::add("prod", "localhost");
-//         CLI::run(["push"]);
-//     })
-//     .await
-// }
+        environment::add("prod", "localhost");
+        CLI::run(["push"]);
+    })
+    .await
+}
 
-// #[tokio::test]
-// #[serial]
-// async fn dry_run() -> Result<(), Box<dyn std::error::Error + 'static>> {
-//     run_test(|_| {
-//         cms::clear(true);
-//         cms::init("cms", get_temporary_path());
+#[tokio::test]
+#[serial]
+async fn dry_run() -> Result<(), Box<dyn std::error::Error + 'static>> {
+    run_test(|_| {
+        cms::clear(true);
+        cms::init("cms", get_temporary_path());
 
-//         environment::add("prod", "localhost");
-//         CLI::build(["push", "--dry-run=true"]).run_and_expect("dry_run");
-//     })
-//     .await
-// }
+        environment::add("prod", "localhost");
+        CLI::build(["push", "--dry-run=true"]).run_and_expect("dry_run");
+    })
+    .await
+}
 
 #[tokio::test]
 #[serial]
