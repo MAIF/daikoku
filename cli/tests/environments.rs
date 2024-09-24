@@ -12,6 +12,7 @@ use serial_test::serial;
 #[serial]
 async fn add() -> Result<(), Box<dyn std::error::Error + 'static>> {
     run_test(|_| {
+        cms::clear(true);
         cms::init("cms", cms::get_temporary_path());
         environment::clear(true);
         environment::add("test", "localhost");
@@ -23,6 +24,7 @@ async fn add() -> Result<(), Box<dyn std::error::Error + 'static>> {
 #[serial]
 async fn switch() -> Result<(), Box<dyn std::error::Error + 'static>> {
     run_test(|_| {
+        cms::clear(true);
         cms::init("cms", cms::get_temporary_path());
         environment::clear(true);
         environment::add("test", "localhost");
@@ -37,6 +39,7 @@ async fn switch() -> Result<(), Box<dyn std::error::Error + 'static>> {
 #[serial]
 async fn remove() -> Result<(), Box<dyn std::error::Error + 'static>> {
     run_test(|_| {
+        cms::clear(true);
         cms::init("cms", cms::get_temporary_path());
         environment::clear(true);
         environment::add("test", "localhost");
@@ -52,6 +55,7 @@ async fn remove() -> Result<(), Box<dyn std::error::Error + 'static>> {
 #[serial]
 async fn list() -> Result<(), Box<dyn std::error::Error + 'static>> {
     run_test(|_| {
+        cms::clear(true);
         cms::init("cms", cms::get_temporary_path());
         environment::clear(true);
         environment::add("test", "localhost");
@@ -70,6 +74,7 @@ async fn list() -> Result<(), Box<dyn std::error::Error + 'static>> {
 #[serial]
 async fn config() -> Result<(), Box<dyn std::error::Error + 'static>> {
     run_test(|_| {
+        cms::clear(true);
         cms::init("cms", cms::get_temporary_path());
         environment::clear(true);
         environment::add("test", "localhost");

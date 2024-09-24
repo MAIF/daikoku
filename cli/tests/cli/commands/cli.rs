@@ -8,7 +8,7 @@ use assert_cmd::{
 use std::process::Command;
 
 use testcontainers::{
-    core::{IntoContainerPort, Mount, WaitFor},
+    core::{wait::HealthWaitStrategy, IntoContainerPort, Mount, WaitFor},
     runners::AsyncRunner,
     ContainerAsync, GenericImage, ImageExt,
 };
@@ -24,9 +24,21 @@ where
     Ok(())
 }
 
+pub(crate) async fn run_test_with_s3<T>(test: T) -> Result<(), Box<dyn std::error::Error + 'static>>
+where
+    T: FnOnce(CLI) -> (),
+{
+    let cli = CLI::start_with_s3().await.unwrap();
+
+    test(cli);
+
+    Ok(())
+}
+
 pub(crate) struct CLI {
     pub postgres_container: ContainerAsync<GenericImage>,
     pub daikoku_container: ContainerAsync<GenericImage>,
+    pub s3_container: Option<ContainerAsync<GenericImage>>,
 }
 
 impl CLI {
@@ -52,7 +64,20 @@ impl CLI {
         Ok(CLI {
             postgres_container: postgres_container,
             daikoku_container: daikoku_container,
+            s3_container: None,
         })
+    }
+
+    pub(crate) async fn start_with_s3() -> Result<CLI, Box<dyn std::error::Error + 'static>> {
+        let s3 = GenericImage::new("scireum/s3-ninja", "latest")
+            .with_wait_for(WaitFor::message_on_stdout("System is UP and RUNNING"))
+            .with_mapped_port(9000, 9000.tcp());
+
+        let s3_container = s3.start().await?;
+
+        let mut cli = CLI::start().await?;
+        cli.s3_container = Some(s3_container);
+        Ok(cli)
     }
 
     pub(crate) async fn start_containers() -> Result<

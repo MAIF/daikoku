@@ -78,13 +78,15 @@ object tenantSecurity {
 case class DaikokuTenantActionContext[A](
     request: Request[A],
     tenant: Tenant,
-    ctx: TrieMap[String, String] = new TrieMap[String, String]()
-) {
-  def setCtxValue(key: String, value: Any): Unit = {
-    if (value != null) {
-      ctx.put(key, value.toString)
-    }
-  }
+//    ctx: TrieMap[String, String] = new TrieMap[String, String]()
+) extends ApiActionContext[A] {
+//  def setCtxValue(key: String, value: Any): Unit = {
+//    if (value != null) {
+//      ctx.put(key, value.toString)
+//    }
+//  }
+
+  override def user: User = null
 }
 
 case class DaikokuActionMaybeWithoutUserContext[A](
@@ -109,6 +111,12 @@ trait ApiActionContext[A] {
   def user: User
   def tenant: Tenant
   def ctx: TrieMap[String, String] = new TrieMap[String, String]()
+
+  def setCtxValue(key: String, value: Any): Unit = {
+    if (value != null) {
+      ctx.put(key, value.toString)
+    }
+  }
 }
 
 case class DaikokuActionContext[A](
@@ -121,11 +129,11 @@ case class DaikokuActionContext[A](
                                     apiCreationPermitted: Boolean = false,
                                     override val ctx: TrieMap[String, String] = new TrieMap[String, String]()
                                   ) extends ApiActionContext[A] {
-  def setCtxValue(key: String, value: Any): Unit = {
-    if (value != null) {
-      ctx.put(key, value.toString)
-    }
-  }
+//  def setCtxValue(key: String, value: Any): Unit = {
+//    if (value != null) {
+//      ctx.put(key, value.toString)
+//    }
+//  }
 }
 
 class CmsApiAction(val parser: BodyParser[AnyContent], env: Env)

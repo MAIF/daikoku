@@ -23,12 +23,14 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider.{OAuth2, Otoroshi}
 import fr.maif.otoroshi.daikoku.login.{IdentityAttrs, OAuth2Config}
-import fr.maif.otoroshi.daikoku.services.TranslationsService
+import fr.maif.otoroshi.daikoku.services.{AssetsService, TranslationsService}
 import fr.maif.otoroshi.daikoku.utils.ApiService
 import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
 import fr.maif.otoroshi.daikoku.utils.admin.UpdateOrCreate
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.scaladsl.Source
+import org.apache.pekko.util.ByteString
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
@@ -52,6 +54,7 @@ class CmsApiController(
     DaikokuActionMaybeWithoutUser: DaikokuActionMaybeWithoutUser,
     translationsService: TranslationsService,
     apiService: ApiService,
+    assetsService: AssetsService,
     assets: Assets
 ) extends AbstractController(cc) {
 
@@ -81,6 +84,55 @@ class CmsApiController(
 
   def getId(entity: CmsPage): CmsPageId = entity.id
 
+  def storeAssets() =
+    CmsApiAction.async { ctx =>
+      assetsService.storeAssets(
+        ctx.asInstanceOf[CmsApiActionContext[Source[ByteString, _]]]
+      )
+    }
+
+  def storeAsset() =
+    CmsApiAction.async { ctx =>
+      assetsService.storeAsset(ctx, ctx.request.body match {
+        case raw: AnyContentAsRaw =>
+          Source.single(raw.raw.asBytes().getOrElse(ByteString.empty))
+        case _ =>
+          throw new IllegalArgumentException("Request body is not raw data")
+      })
+    }
+
+  def replaceAsset(assetId: String) =
+    CmsApiAction.async { ctx =>
+      assetsService.replaceAsset(assetId, ctx.asInstanceOf[CmsApiActionContext[Source[ByteString, _]]])
+    }
+
+  def listAssets() =
+    CmsApiAction.async { ctx =>
+      assetsService.listAssets(ctx)
+    }
+
+  def slugifiedAssets() =
+    CmsApiAction.async { ctx =>
+      assetsService.slugifiedAssets(ctx)
+    }
+
+  def deleteAsset(assetId: String) =
+    CmsApiAction.async { ctx =>
+      assetsService.deleteAsset(assetId, ctx)
+    }
+
+  def doesAssetExists(slug: String) = {
+    CmsApiAction.async { ctx =>
+      assetsService.doesAssetExists(slug, ctx)
+    }
+  }
+
+  def getAsset(assetId: String) = {
+    CmsApiAction.async { ctx =>
+      assetsService.getAsset(assetId, ctx)
+    }
+  }
+
   def getCmsPage(id: String) =
     CmsApiAction.async { ctx =>
       env.dataStore.cmsRepo
@@ -97,10 +149,11 @@ class CmsApiController(
       Ok(Json.obj("message" -> "synchronization done")).future
     }
 
-  def sync() = CmsApiAction.async(parse.json) { ctx =>
-    for {
-      _ <- env.dataStore.cmsRepo.forTenant(ctx.tenant).deleteAll()
-      _ <- Future.sequence(
+  def sync() =
+    CmsApiAction.async(parse.json) { ctx =>
+      for {
+        _ <- env.dataStore.cmsRepo.forTenant(ctx.tenant).deleteAll()
+        _ <- Future.sequence(
           ctx.request.body
             .as(Reads.seq(CmsFileFormat.reads))
             .map(page => {
@@ -109,10 +162,10 @@ class CmsApiController(
                 .save(page.toCmsPage(ctx.tenant.id))
             })
         )
-    } yield {
-      NoContent
+      } yield {
+        NoContent
+      }
     }
-  }
 
 //  def sync() =
 //    CmsApiAction.async(parse.json) { ctx =>
@@ -251,260 +304,6 @@ class CmsApiController(
           NotFound(Json.obj("error" -> "redirect param is missing")).future
       }
     }
-
-//  def findById(id: String): Action[AnyContent] =
-//    DaikokuApiAction.async { ctx =>
-//      val notDeleted: Boolean =
-//        ctx.request.queryString.get("notDeleted").exists(_.contains("true"))
-//      if (notDeleted) {
-//        entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id).flatMap {
-//          case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
-//          case None =>
-//            Errors.craftResponseResult(
-//              s"$entityName not found",
-//              Results.NotFound,
-//              ctx.request,
-//              None,
-//              env
-//            )
-//        }
-//      } else {
-//        entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
-//          case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
-//          case None =>
-//            Errors.craftResponseResult(
-//              s"$entityName not found",
-//              Results.NotFound,
-//              ctx.request,
-//              None,
-//              env
-//            )
-//        }
-//      }
-//    }
-//
-//  def createEntity(): Action[JsValue] =
-//    DaikokuApiAction.async(parse.json) { ctx =>
-//      fromJson(ctx.request.body) match {
-//        case Left(e) =>
-//          logger.error(s"Bad $entityName format", new RuntimeException(e))
-//          Errors.craftResponseResult(
-//            s"Bad $entityName format",
-//            Results.BadRequest,
-//            ctx.request,
-//            None,
-//            env
-//          )
-//        case Right(newEntity) =>
-//          entityStore(ctx.tenant, env.dataStore)
-//            .findByIdNotDeleted(getId(newEntity).value)
-//            .flatMap {
-//              case Some(_) =>
-//                AppError
-//                  .EntityConflict("entity with same id already exists")
-//                  .renderF()
-//              case None =>
-//                validate(newEntity, UpdateOrCreate.Create)
-//                  .map(entity =>
-//                    entityStore(ctx.tenant, env.dataStore)
-//                      .save(entity)
-//                      .map(_ => Created(toJson(entity)))
-//                  )
-//                  .leftMap(_.renderF())
-//                  .merge
-//                  .flatten
-//            }
-//
-//      }
-//    }
-//
-//  def updateEntity(id: String): Action[JsValue] =
-//    DaikokuApiAction.async(parse.json) { ctx =>
-//      entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
-//        case None =>
-//          Errors.craftResponseResult(
-//            s"Entity $entityName not found",
-//            Results.NotFound,
-//            ctx.request,
-//            None,
-//            env
-//          )
-//        case Some(_) =>
-//          fromJson(ctx.request.body) match {
-//            case Left(e) =>
-//              logger.error(s"Bad $entityName format", new RuntimeException(e))
-//              Errors.craftResponseResult(
-//                s"Bad $entityName format",
-//                Results.BadRequest,
-//                ctx.request,
-//                None,
-//                env
-//              )
-//            case Right(newEntity) =>
-//              validate(newEntity, UpdateOrCreate.Update)
-//                .map(entity =>
-//                  entityStore(ctx.tenant, env.dataStore)
-//                    .save(entity)
-//                    .map(_ => NoContent)
-//                )
-//                .leftMap(_.renderF())
-//                .merge
-//                .flatten
-//          }
-//      }
-//    }
-//
-//  def patchEntity(id: String): Action[JsValue] =
-//    DaikokuApiAction.async(parse.json) { ctx =>
-//      object JsonPatchHelpers {
-//        import diffson.jsonpatch._
-//        import diffson.jsonpatch.lcsdiff.remembering.JsonDiffDiff
-//        import diffson.lcs._
-//        import diffson.playJson.DiffsonProtocol._
-//        import diffson.playJson._
-//
-//        private def patchResponse(
-//            patchJson: JsonPatch[JsValue],
-//            document: JsValue
-//        ): Either[AppError, JsValue] = {
-//          patchJson.apply(document) match {
-//            case JsSuccess(value, path) => Right(value)
-//            case JsError(errors) =>
-//              logger.error(s"error during patch entity : $errors")
-//              val formattedErrors = errors.toVector.flatMap {
-//                case (JsPath(nodes), es) =>
-//                  es.map(e => e.message)
-//              }
-//              Left(AppError.EntityConflict(formattedErrors.mkString(",")))
-//          }
-//        }
-//
-//        def patchJson(
-//            patchOps: JsValue,
-//            document: JsValue
-//        ): Either[AppError, JsValue] = {
-//          val patch =
-//            diffson.playJson.DiffsonProtocol.JsonPatchFormat.reads(patchOps).get
-//          patchResponse(patch, document)
-//        }
-//
-//        def diffJson(
-//            sourceJson: JsValue,
-//            targetJson: JsValue
-//        ): Either[AppError, JsValue] = {
-//          implicit val lcs = new Patience[JsValue]
-//          val diff = diffson.diff(sourceJson, targetJson)
-//          patchResponse(diff, targetJson)
-//        }
-//
-//      }
-//
-//      val fu: Future[Option[CmsPage]] =
-//        if (
-//          ctx.request.queryString
-//            .get("notDeleted")
-//            .exists(_.contains("true"))
-//        ) {
-//          entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id)
-//        } else {
-//          entityStore(ctx.tenant, env.dataStore).findById(id)
-//        }
-//
-//      def finalizePatch(patchedJson: JsValue): Future[Result] = {
-//        fromJson(patchedJson) match {
-//          case Left(e) =>
-//            logger.error(s"Bad $entityName format", new RuntimeException(e))
-//            Errors.craftResponseResult(
-//              s"Bad $entityName format",
-//              Results.BadRequest,
-//              ctx.request,
-//              None,
-//              env
-//            )
-//          case Right(patchedEntity) =>
-//            validate(patchedEntity, UpdateOrCreate.Update)
-//              .map(entity =>
-//                entityStore(ctx.tenant, env.dataStore)
-//                  .save(entity)
-//                  .map(_ => NoContent)
-//              )
-//              .leftMap(_.renderF())
-//              .merge
-//              .flatten
-//        }
-//      }
-//
-//      val value: Future[Result] = fu.flatMap {
-//        case None =>
-//          Errors.craftResponseResult(
-//            s"Entity $entityName not found",
-//            Results.NotFound,
-//            ctx.request,
-//            None,
-//            env
-//          )
-//        case Some(entity) =>
-//          val currentJson = toJson(entity)
-//          ctx.request.body match {
-//            case JsArray(_) =>
-//              val patchedJson =
-//                JsonPatchHelpers.patchJson(ctx.request.body, currentJson)
-//              patchedJson.fold(
-//                error => error.renderF(),
-//                json => finalizePatch(json)
-//              )
-//            case JsObject(_) =>
-//              val newJson =
-//                currentJson
-//                  .as[JsObject]
-//                  .deepMerge(ctx.request.body.as[JsObject])
-//              fromJson(newJson) match {
-//                case Left(e) =>
-//                  logger.error(
-//                    s"Bad $entityName format",
-//                    new RuntimeException(e)
-//                  )
-//                  Errors.craftResponseResult(
-//                    s"Bad $entityName format",
-//                    Results.BadRequest,
-//                    ctx.request,
-//                    None,
-//                    env
-//                  )
-//                case Right(patchedEntity) =>
-//                  val patchedJson =
-//                    JsonPatchHelpers.diffJson(newJson, toJson(patchedEntity))
-//                  patchedJson.fold(
-//                    error => error.renderF(),
-//                    json => finalizePatch(json)
-//                  )
-//
-//              }
-//
-//            case _ =>
-//              FastFuture.successful(
-//                BadRequest(
-//                  Json.obj("error" -> "[patch error] wrong patch format")
-//                )
-//              )
-//          }
-//
-//      }
-//      value
-//    }
-//
-//  def deleteEntity(id: String): Action[AnyContent] =
-//    DaikokuApiAction.async { ctx =>
-//      if (ctx.request.queryString.get("logically").exists(_.contains("true"))) {
-//        entityStore(ctx.tenant, env.dataStore)
-//          .deleteByIdLogically(id)
-//          .map(_ => Ok(Json.obj("done" -> true)))
-//      } else {
-//        entityStore(ctx.tenant, env.dataStore)
-//          .deleteById(id)
-//          .map(_ => Ok(Json.obj("done" -> true)))
-//      }
-//    }
 }
 
 class CmsApiSwaggerController(cc: ControllerComponents)

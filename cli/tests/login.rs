@@ -1,7 +1,7 @@
 mod cli;
 
 use cli::commands::{
-    cli::CLI,
+    cli::{run_test, CLI},
     cms::{self, get_temporary_path},
     environment,
 };
@@ -18,17 +18,18 @@ fn test_check_info_of_environment() {
 #[tokio::test]
 #[serial]
 async fn login() -> Result<(), Box<dyn std::error::Error + 'static>> {
-    CLI::start().await?;
+    run_test(|_| {
+        cms::clear(true);
 
-    cms::init("cms", get_temporary_path());
+        cms::init("cms", get_temporary_path());
 
-    environment::add("dev", "localhost");
+        environment::add("dev", "localhost");
 
-    test_check_info_of_environment();
+        test_check_info_of_environment();
 
-    environment::switch("dev");
+        environment::switch("dev");
 
-    environment::login();
-
-    Ok(())
+        environment::login();
+    })
+    .await
 }

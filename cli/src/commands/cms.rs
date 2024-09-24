@@ -377,22 +377,19 @@ async fn init(name: String, path: String) -> DaikokuResult<()> {
 
     let zip_path = Path::new(&manifest_dir).join(zip_name.clone());
 
-    match std::path::Path::new(&zip_path).exists() {
-        true => (),
-        false => {
-            logger::indent_println(format!(
-                "turn template bytes to zip file, {}",
-                &zip_path.to_string_lossy()
-            ));
-            match fs::File::create(&zip_path) {
-                Ok(mut file) => match file.write_all(ZIP_CMS) {
-                    Err(err) => return Err(DaikokuCliError::FileSystem(err.to_string())),
-                    Ok(()) => (),
-                },
-                Err(e) => return Err(DaikokuCliError::FileSystem(e.to_string())),
-            };
-        }
-    }
+    let _ = fs::remove_dir(PathBuf::from(&zip_path));
+
+    logger::indent_println(format!(
+        "convert template bytes to zip file, {}",
+        &zip_path.to_string_lossy()
+    ));
+    match fs::File::create(&zip_path) {
+        Ok(mut file) => match file.write_all(ZIP_CMS) {
+            Err(err) => return Err(DaikokuCliError::FileSystem(err.to_string())),
+            Ok(()) => (),
+        },
+        Err(e) => return Err(DaikokuCliError::FileSystem(e.to_string())),
+    };
 
     logger::indent_println("<yellow>Unzipping</> the template ...".to_string());
     let zip_action = zip_extensions::read::zip_extract(&PathBuf::from(zip_path), &manifest_dir);

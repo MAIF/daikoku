@@ -62,7 +62,7 @@ where
     let resp = reqwest::Client::new()
         .post(url)
         .header(header::HOST, host)
-        .header(header::CONTENT_TYPE, "application/json")
+        // .header(header::CONTENT_TYPE, "application/json")
         .header(header::AUTHORIZATION, format!("Basic {}", apikey))
         .body(body)
         .send()

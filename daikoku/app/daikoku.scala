@@ -8,7 +8,7 @@ import fr.maif.otoroshi.daikoku.actions.{CmsApiAction, DaikokuAction, DaikokuAct
 import fr.maif.otoroshi.daikoku.ctrls._
 import fr.maif.otoroshi.daikoku.env._
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
-import fr.maif.otoroshi.daikoku.services.TranslationsService
+import fr.maif.otoroshi.daikoku.services.{AssetsService, TranslationsService}
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 import fr.maif.otoroshi.daikoku.utils.admin._
 import fr.maif.otoroshi.daikoku.utils.{ApiService, DeletionService, Errors, OtoroshiClient, Translator}
@@ -61,6 +61,7 @@ package object modules {
     lazy val paymentClient = wire[PaymentClient]
 
     lazy val apiService = wire[ApiService]
+    lazy val assetsService = wire[AssetsService]
     lazy val translationsService = wire[TranslationsService]
     lazy val deletionService = wire[DeletionService]
 

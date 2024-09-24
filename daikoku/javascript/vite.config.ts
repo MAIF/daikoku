@@ -17,6 +17,7 @@ export default defineConfig({
       "/api/": "http://localhost:9000",
       "/cms-api": "http://localhost:9000",
       "/account": "http://localhost:9000",
+      "/tenant-assets": "http://localhost:9000",
       "/auth/Local/callback": "http://localhost:9000",
       "/auth/LDAP/callback": "http://localhost:9000",
       "/auth/oauth2/callback": "http://localhost:9000",
