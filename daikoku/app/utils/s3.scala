@@ -120,8 +120,10 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
       s3RegionProvider = new AwsRegionProvider {
         override def getRegion: Region = Region.of(conf.region)
       },
-      listBucketApiVersion = ApiVersion.ListBucketVersion2
-    ).withEndpointUrl(conf.endpoint)
+      listBucketApiVersion = ApiVersion.ListBucketVersion2,
+    )
+      .withEndpointUrl(conf.endpoint)
+//      .withAccessStyle(AccessStyle.PathAccessStyle)
     S3Attributes.settings(settings)
   }
 
@@ -260,6 +262,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
     val ctype = ContentType
       .parse(contentType)
       .getOrElse(ContentTypes.`application/octet-stream`)
+
     val meta = MetaHeaders(
       Map(
         "filename" -> name,

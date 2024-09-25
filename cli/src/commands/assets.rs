@@ -11,18 +11,14 @@ use crate::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
     },
-    utils::{absolute_path, frame_to_bytes_body},
+    utils::absolute_path,
     AssetsCommands,
 };
 
-use async_recursion::async_recursion;
 use bytes::Bytes;
 
-use http_body_util::{Empty, Full};
-use hyper::{header, Request};
-use hyper_util::rt::TokioIo;
+use hyper::header;
 use serde::{Deserialize, Serialize};
-use tokio::net::TcpStream;
 use walkdir::WalkDir;
 
 use super::{
@@ -77,7 +73,7 @@ async fn exists(filename: String) -> DaikokuResult<()> {
     let apikey = read_apikey_from_secrets(true)?;
 
     let url: String = format!(
-        "{}/cms-api/tenant-assets/{}",
+        "{}/tenant-assets/{}",
         environment.server,
         slug::slugify(filename.clone()),
     );
@@ -144,7 +140,9 @@ async fn add(
         .read_to_end(&mut contents)
         .map_err(|err| DaikokuCliError::FileSystem(err.to_string()));
 
-    let _ = daikoku_cms_api_post(&url, Bytes::from(contents)).await?;
+    let _ = daikoku_cms_api_post(&url, Bytes::from(contents), false).await?;
+
+    logger::success("New asset has been pushed".to_string());
 
     Ok(())
 }
@@ -167,40 +165,15 @@ async fn remove(filename: String, path: Option<String>, slug: Option<String>) ->
         slug.unwrap_or(slug::slugify(filename.clone()))
     );
 
-    let req = Request::delete(&url)
-        .header(header::HOST, &host)
+    let req = reqwest::Client::new()
+        .delete(url)
+        .header(header::HOST, host)
         .header(header::AUTHORIZATION, format!("Basic {}", apikey))
-        .body(Empty::<Bytes>::new())
-        .expect("failed to build a request");
-
-    let stream = TcpStream::connect(&host).await.map_err(|err| {
-        DaikokuCliError::DaikokuErrorWithMessage("failed to join the server".to_string(), err)
-    })?;
-    let io = TokioIo::new(stream);
-
-    let (mut sender, conn) = hyper::client::conn::http1::handshake(io)
+        .send()
         .await
-        .map_err(|err| DaikokuCliError::HyperError(err))?;
+        .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?;
 
-    tokio::task::spawn(async move {
-        if let Err(err) = conn.await {
-            logger::error(format!("Connection error {:?}", err));
-        }
-    });
-
-    let upstream_resp = sender
-        .send_request(req)
-        .await
-        .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?;
-
-    let (
-        hyper::http::response::Parts {
-            headers: _, status, ..
-        },
-        _body,
-    ) = upstream_resp.into_parts();
-
-    let status = status.as_u16();
+    let status = req.status().as_u16();
 
     if status == 200 {
         let project = get_default_project()?;
@@ -235,46 +208,23 @@ async fn list() -> DaikokuResult<()> {
 
     let url: String = format!("{}/cms-api/tenant-assets/slugified", environment.server);
 
-    let req = Request::get(&url)
-        .header(header::HOST, &host)
-        // .header(header::COOKIE, cookie)
+    let req = reqwest::Client::new()
+        .get(url)
+        .header(header::HOST, host)
         .header(header::AUTHORIZATION, format!("Basic {}", apikey))
-        .body(Empty::<Bytes>::new())
-        .expect("failed to build a request");
-
-    let stream = TcpStream::connect(&host).await.map_err(|err| {
-        DaikokuCliError::DaikokuErrorWithMessage("failed to join the server".to_string(), err)
-    })?;
-    let io = TokioIo::new(stream);
-
-    let (mut sender, conn) = hyper::client::conn::http1::handshake(io)
+        .send()
         .await
-        .map_err(|err| DaikokuCliError::HyperError(err))?;
+        .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?;
 
-    tokio::task::spawn(async move {
-        if let Err(err) = conn.await {
-            logger::error(format!("Connection error {:?}", err));
-        }
-    });
-
-    let upstream_resp = sender
-        .send_request(req)
-        .await
-        .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?;
-
-    let (
-        hyper::http::response::Parts {
-            headers: _, status, ..
-        },
-        body,
-    ) = upstream_resp.into_parts();
-
-    let status = status.as_u16();
+    let status = req.status().as_u16();
 
     if status == 200 {
-        let bytes = frame_to_bytes_body(body).await;
+        let bytes = req
+            .bytes()
+            .await
+            .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?;
 
-        let assets: String = String::from_utf8(bytes).map_err(|_err| {
+        let assets: String = String::from_utf8(bytes.to_vec()).map_err(|_err| {
             DaikokuCliError::ParsingError("failed to convert assets body".to_string())
         })?;
 
@@ -340,7 +290,7 @@ async fn sync() -> DaikokuResult<()> {
 
     let apikey = read_apikey_from_secrets(true)?;
 
-    let url: String = format!("{}/cms-api/tenant-assets/bulk", environment.server);
+    let url: String = format!("{}/tenant-assets/bulk", environment.server);
 
     let files = pages
         .iter()
@@ -362,45 +312,20 @@ async fn sync() -> DaikokuResult<()> {
         })
         .collect::<Vec<Asset>>();
 
-    let req = Request::post(&url)
-        .header(header::HOST, &host)
+    let req = reqwest::Client::new()
+        .post(url)
+        .header(header::HOST, host)
         .header(header::AUTHORIZATION, format!("Basic {}", apikey))
-        .body(Full::new(Bytes::from(
-            serde_json::to_string(&contents).map_err(|_err| {
+        .body(Bytes::from(serde_json::to_string(&contents).map_err(
+            |_err| {
                 DaikokuCliError::ParsingError("failed to convert assets to json array".to_string())
-            })?,
-        )))
-        .expect("failed to build a request");
-
-    let stream = TcpStream::connect(&host).await.map_err(|err| {
-        DaikokuCliError::DaikokuErrorWithMessage("failed to join the server".to_string(), err)
-    })?;
-    let io = TokioIo::new(stream);
-
-    let (mut sender, conn) = hyper::client::conn::http1::handshake(io)
+            },
+        )?))
+        .send()
         .await
-        .map_err(|err| DaikokuCliError::HyperError(err))?;
+        .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?;
 
-    tokio::task::spawn(async move {
-        if let Err(err) = conn.await {
-            logger::error(format!("Connection error {:?}", err));
-        }
-    });
-
-    let upstream_resp = sender
-        .send_request(req)
-        .await
-        .map_err(|err| DaikokuCliError::ParsingError(err.to_string()))?;
-
-    let (
-        hyper::http::response::Parts {
-            headers: _, status, ..
-        },
-        _body,
-    ) = upstream_resp.into_parts();
-
-    let status = status.as_u16();
-
+    let status = req.status().as_u16();
     if status == 200 {
         logger::success("synchronization done".to_string());
         list().await

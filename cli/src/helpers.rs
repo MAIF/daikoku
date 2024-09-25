@@ -44,6 +44,7 @@ pub(crate) fn bytes_to_vec_of_struct<T: for<'a> Deserialize<'a>>(
 pub(crate) async fn daikoku_cms_api_post<T: Buf + std::marker::Send + 'static>(
     path: &str,
     body: T,
+    is_json_content: bool,
 ) -> DaikokuResult<Vec<u8>>
 where
     reqwest::Body: From<T>,
@@ -59,15 +60,18 @@ where
 
     let url: String = format!("{}/cms-api{}", environment.server, &path);
 
-    let resp = reqwest::Client::new()
-        .post(url)
-        .header(header::HOST, host)
-        // .header(header::CONTENT_TYPE, "application/json")
-        .header(header::AUTHORIZATION, format!("Basic {}", apikey))
-        .body(body)
-        .send()
-        .await
-        .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?;
+    let builder = reqwest::Client::new().post(url).header(header::HOST, host);
+
+    let resp = if is_json_content {
+        builder.header(header::CONTENT_TYPE, "application/json")
+    } else {
+        builder
+    }
+    .header(header::AUTHORIZATION, format!("Basic {}", apikey))
+    .body(body)
+    .send()
+    .await
+    .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?;
 
     let status = resp.status().as_u16();
 

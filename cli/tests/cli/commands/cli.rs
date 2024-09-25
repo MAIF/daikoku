@@ -1,5 +1,5 @@
-use std::ffi;
 use std::path::PathBuf;
+use std::{ffi, fs};
 
 use assert_cmd::{
     assert::{Assert, OutputAssertExt},
@@ -69,14 +69,26 @@ impl CLI {
     }
 
     pub(crate) async fn start_with_s3() -> Result<CLI, Box<dyn std::error::Error + 'static>> {
+        let mut state_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        state_path.push("tests/resources/s3");
+
         let s3 = GenericImage::new("scireum/s3-ninja", "latest")
             .with_wait_for(WaitFor::message_on_stdout("System is UP and RUNNING"))
-            .with_mapped_port(9000, 9000.tcp());
+            .with_mapped_port(9002, 9000.tcp())
+            .with_mount(Mount::bind_mount(
+                state_path.into_os_string().into_string().unwrap(),
+                "/home/sirius/data",
+            ))
+            .with_network("daikoku");
 
         let s3_container = s3.start().await?;
 
-        let mut cli = CLI::start().await?;
-        cli.s3_container = Some(s3_container);
+        let (postgres_container, daikoku_container) = Self::start_containers().await?;
+        let cli = CLI {
+            postgres_container: postgres_container,
+            daikoku_container: daikoku_container,
+            s3_container: Some(s3_container),
+        };
         Ok(cli)
     }
 
@@ -91,7 +103,8 @@ impl CLI {
             .with_mapped_port(5432, 5432.tcp())
             .with_env_var("POSTGRES_USER", "postgres")
             .with_env_var("POSTGRES_PASSWORD", "postgres")
-            .with_env_var("POSTGRES_DB", "daikoku");
+            .with_env_var("POSTGRES_DB", "daikoku")
+            .with_network("daikoku");
 
         let postgres_container = postgres.start().await?;
         let host = postgres_container
@@ -114,7 +127,8 @@ impl CLI {
             .with_mount(Mount::bind_mount(
                 state_path.into_os_string().into_string().unwrap(),
                 "/tmp",
-            ));
+            ))
+            .with_network("daikoku");
 
         let daikoku_container = daikoku.start().await?;
 

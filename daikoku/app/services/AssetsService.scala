@@ -136,6 +136,8 @@ class AssetsService {
       .get("Asset-Content-Type")
       .orElse(ctx.request.contentType)
       .getOrElse("application/octet-stream")
+//      .replace("text/xml", "application/xml")
+
     val filename = normalize(
       ctx.request
         .getQueryString("filename")
