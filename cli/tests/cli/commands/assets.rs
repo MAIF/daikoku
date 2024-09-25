@@ -20,31 +20,19 @@ pub(crate) fn push(
     ])
 }
 
-pub(crate) fn remove(filename: Option<&str>, path: Option<&str>, slug: Option<&str>) -> Assert {
-    match (filename, path, slug) {
-        (Some(filename), _, _) => CLI::run([
-            "assets",
-            "remove",
-            format!("--filename={}", filename.to_string()).as_str(),
-        ]),
-        (_, Some(path), _) => CLI::run([
-            "assets",
-            "remove",
-            format!("--path={}", path.to_string()).as_str(),
-        ]),
-        (_, _, Some(slug)) => CLI::run([
-            "assets",
-            "remove",
-            format!("--slug={}", slug.to_string()).as_str(),
-        ]),
-        _ => panic!("unknown command"),
-    }
+pub(crate) fn remove(filename: &str, slug: &str) -> Assert {
+    CLI::run([
+        "assets",
+        "remove",
+        format!("--slug={}", slug.to_string()).as_str(),
+        format!("--filename={}", filename.to_string()).as_str(),
+    ])
 }
 
 pub(crate) fn list() -> Assert {
     CLI::run(["assets", "list"])
 }
 
-pub(crate) fn sync(apikey: &str, cookie: &str) -> Assert {
+pub(crate) fn sync() -> Assert {
     CLI::run(["assets", "sync"])
 }

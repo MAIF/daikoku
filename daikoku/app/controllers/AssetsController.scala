@@ -347,7 +347,7 @@ class TenantAssetsController(
       TenantAdminOnly(
         AuditTrailEvent(s"@{user.name} syncs assets")
       )(ctx.tenant.id.value, ctx) { (_, _) =>
-        assetsService.storeAssets(ctx)
+        assetsService.storeAssets(ctx, ctx.request.body)
       }
     }
 

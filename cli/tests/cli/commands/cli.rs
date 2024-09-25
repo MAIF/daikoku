@@ -38,7 +38,6 @@ where
 pub(crate) struct CLI {
     pub postgres_container: ContainerAsync<GenericImage>,
     pub daikoku_container: ContainerAsync<GenericImage>,
-    pub s3_container: Option<ContainerAsync<GenericImage>>,
 }
 
 impl CLI {
@@ -64,30 +63,61 @@ impl CLI {
         Ok(CLI {
             postgres_container: postgres_container,
             daikoku_container: daikoku_container,
-            s3_container: None,
         })
     }
 
     pub(crate) async fn start_with_s3() -> Result<CLI, Box<dyn std::error::Error + 'static>> {
-        let mut state_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-        state_path.push("tests/resources/s3");
+        let root_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
 
-        let s3 = GenericImage::new("scireum/s3-ninja", "latest")
-            .with_wait_for(WaitFor::message_on_stdout("System is UP and RUNNING"))
-            .with_mapped_port(9002, 9000.tcp())
-            .with_mount(Mount::bind_mount(
-                state_path.into_os_string().into_string().unwrap(),
-                "/home/sirius/data",
-            ))
-            .with_network("daikoku");
+        let content =
+            fs::read_to_string(root_path.clone().join("tests/resources/.s3_env")).unwrap();
 
-        let s3_container = s3.start().await?;
+        let lines = content.split("\n").collect::<Vec<&str>>();
+
+        let s3_bucket = lines
+            .iter()
+            .find(|line| line.contains("S3_BUCKET"))
+            .unwrap()
+            .replace("S3_BUCKET=", "");
+
+        let s3_endpoint = lines
+            .iter()
+            .find(|line| line.contains("S3_ENDPOINT"))
+            .unwrap()
+            .replace("S3_ENDPOINT=", "");
+
+        let s3_key = lines
+            .iter()
+            .find(|line| line.contains("S3_KEY"))
+            .unwrap()
+            .replace("S3_KEY=", "");
+
+        let s3_secret = lines
+            .iter()
+            .find(|line| line.contains("S3_SECRET"))
+            .unwrap()
+            .replace("S3_SECRET=", "");
+
+        let _ = fs::write(
+            root_path
+                .clone()
+                .join("tests/resources/daikoku-state.ndjson"),
+            fs::read_to_string(
+                root_path
+                    .clone()
+                    .join("tests/resources/daikoku-state-template.ndjson"),
+            )
+            .unwrap()
+            .replace("@@S3_ENDPOINT@@", s3_endpoint.trim())
+            .replace("@@S3_KEY@@", s3_key.trim())
+            .replace("@@S3_SECRET@@", s3_secret.trim())
+            .replace("@@S3_BUCKET@@", s3_bucket.trim()),
+        );
 
         let (postgres_container, daikoku_container) = Self::start_containers().await?;
         let cli = CLI {
             postgres_container: postgres_container,
             daikoku_container: daikoku_container,
-            s3_container: Some(s3_container),
         };
         Ok(cli)
     }
@@ -103,8 +133,7 @@ impl CLI {
             .with_mapped_port(5432, 5432.tcp())
             .with_env_var("POSTGRES_USER", "postgres")
             .with_env_var("POSTGRES_PASSWORD", "postgres")
-            .with_env_var("POSTGRES_DB", "daikoku")
-            .with_network("daikoku");
+            .with_env_var("POSTGRES_DB", "daikoku");
 
         let postgres_container = postgres.start().await?;
         let host = postgres_container
@@ -127,8 +156,7 @@ impl CLI {
             .with_mount(Mount::bind_mount(
                 state_path.into_os_string().into_string().unwrap(),
                 "/tmp",
-            ))
-            .with_network("daikoku");
+            ));
 
         let daikoku_container = daikoku.start().await?;
 

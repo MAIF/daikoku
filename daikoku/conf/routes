@@ -36,7 +36,6 @@ GET     /cms-api/tenant-assets/:assetId                 fr.maif.otoroshi.daikoku
 GET     /cms-api/tenant-assets                          fr.maif.otoroshi.daikoku.ctrls.CmsApiController.listAssets()
 POST    /cms-api/tenant-assets                          fr.maif.otoroshi.daikoku.ctrls.CmsApiController.storeAsset()
 POST    /cms-api/tenant-assets/bulk                     fr.maif.otoroshi.daikoku.ctrls.CmsApiController.storeAssets()
-POST    /cms-api/tenant-assets/:assetId/_replace        fr.maif.otoroshi.daikoku.ctrls.CmsApiController.replaceAsset(assetId)
 
 GET     /                                               fr.maif.otoroshi.daikoku.ctrls.HomeController.index()
 GET     /robots.txt                                     fr.maif.otoroshi.daikoku.ctrls.HomeController.indexForRobots()

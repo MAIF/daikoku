@@ -123,7 +123,6 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
       listBucketApiVersion = ApiVersion.ListBucketVersion2,
     )
       .withEndpointUrl(conf.endpoint)
-//      .withAccessStyle(AccessStyle.PathAccessStyle)
     S3Attributes.settings(settings)
   }
 

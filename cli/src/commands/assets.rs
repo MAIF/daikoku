@@ -195,7 +195,9 @@ async fn remove(filename: String, path: Option<String>, slug: Option<String>) ->
 }
 
 async fn list() -> DaikokuResult<()> {
-    logger::loading(format!("<yellow>Retrieving</> assets"));
+    logger::loading(format!(
+        "<yellow>Retrieving</> assets, limited to those identified by slugs."
+    ));
 
     let environment = get_default_environment()?;
 
@@ -235,6 +237,12 @@ async fn list() -> DaikokuResult<()> {
         assets
             .iter()
             .for_each(|asset| logger::println(asset.slug.clone()));
+
+        if assets.is_empty() {
+            logger::println("no assets found".to_string());
+        }
+
+        logger::success("".to_string());
 
         Ok(())
     } else {
@@ -281,17 +289,6 @@ async fn sync() -> DaikokuResult<()> {
         }
     }
 
-    let environment = get_default_environment()?;
-
-    let host = environment
-        .server
-        .replace("http://", "")
-        .replace("https://", "");
-
-    let apikey = read_apikey_from_secrets(true)?;
-
-    let url: String = format!("{}/tenant-assets/bulk", environment.server);
-
     let files = pages
         .iter()
         .map(|page| File::open(page.path.clone().unwrap()).unwrap())
@@ -300,6 +297,12 @@ async fn sync() -> DaikokuResult<()> {
     let contents = pages
         .iter()
         .enumerate()
+        .filter(|(_idx, page)| {
+            page.filename
+                .clone()
+                .map(|filename| !filename.starts_with("."))
+                .unwrap_or(false)
+        })
         .map(|(idx, page)| {
             let mut content = Vec::new();
             let _ = files.get(idx).unwrap().read_to_end(&mut content).unwrap();
@@ -312,27 +315,21 @@ async fn sync() -> DaikokuResult<()> {
         })
         .collect::<Vec<Asset>>();
 
-    let req = reqwest::Client::new()
-        .post(url)
-        .header(header::HOST, host)
-        .header(header::AUTHORIZATION, format!("Basic {}", apikey))
-        .body(Bytes::from(serde_json::to_string(&contents).map_err(
-            |_err| {
-                DaikokuCliError::ParsingError("failed to convert assets to json array".to_string())
-            },
-        )?))
-        .send()
-        .await
-        .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?;
-
-    let status = req.status().as_u16();
-    if status == 200 {
-        logger::success("synchronization done".to_string());
-        list().await
-    } else {
-        Err(DaikokuCliError::DaikokuStrError(format!(
-            "failed to reach the Daikoku server {}",
-            status
-        )))
+    if contents.is_empty() {
+        logger::println("already up to date".to_string());
+        logger::done();
+        return Ok(());
     }
+
+    let _resp: Vec<u8> = daikoku_cms_api_post(
+        "/tenant-assets/bulk",
+        Bytes::from(serde_json::to_string(&contents).map_err(|_err| {
+            DaikokuCliError::ParsingError("failed to convert assets to json array".to_string())
+        })?),
+        false,
+    )
+    .await?;
+
+    logger::success("synchronization done".to_string());
+    list().await
 }

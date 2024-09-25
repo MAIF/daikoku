@@ -84,26 +84,24 @@ class CmsApiController(
 
   def getId(entity: CmsPage): CmsPageId = entity.id
 
+  private def bodyToSource[A](body: A): Source[ByteString, _] = {
+    body match {
+        case raw: AnyContentAsRaw =>
+          Source.single(raw.raw.asBytes().getOrElse(ByteString.empty))
+        case e =>
+          println(e)
+          throw new IllegalArgumentException("Request body is not raw data")
+      }
+  }
+
   def storeAssets() =
     CmsApiAction.async { ctx =>
-      assetsService.storeAssets(
-        ctx.asInstanceOf[CmsApiActionContext[Source[ByteString, _]]]
-      )
+      assetsService.storeAssets(ctx, bodyToSource(ctx.request.body))
     }
 
   def storeAsset() =
     CmsApiAction.async { ctx =>
-      assetsService.storeAsset(ctx, ctx.request.body match {
-        case raw: AnyContentAsRaw =>
-          Source.single(raw.raw.asBytes().getOrElse(ByteString.empty))
-        case _ =>
-          throw new IllegalArgumentException("Request body is not raw data")
-      })
-    }
-
-  def replaceAsset(assetId: String) =
-    CmsApiAction.async { ctx =>
-      assetsService.replaceAsset(assetId, ctx.asInstanceOf[CmsApiActionContext[Source[ByteString, _]]])
+      assetsService.storeAsset(ctx, bodyToSource(ctx.request.body))
     }
 
   def listAssets() =

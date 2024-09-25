@@ -47,8 +47,10 @@ trait NormalizeSupport {
 object NormalizeSupport extends NormalizeSupport
 
 class AssetsService {
-  def storeAssets[T <: Source[ByteString, _]](
-      ctx: ApiActionContext[T]
+
+  def storeAssets[T](
+      ctx: ApiActionContext[T],
+      body: Source[ByteString, _]
   )(implicit env: Env) = {
 
     implicit val ec: ExecutionContext = env.defaultExecutionContext
@@ -59,7 +61,7 @@ class AssetsService {
           NotFound(Json.obj("error" -> "No bucket config found !"))
         )
       case Some(cfg) =>
-        ctx.request.body
+        body
           .runWith(Sink.reduce[ByteString](_ ++ _))(env.defaultMaterializer)
           .map(str => str.utf8String)
           .map(Json.parse)
