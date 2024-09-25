@@ -4,12 +4,24 @@ import com.github.blemale.scaffeine.{Cache, Scaffeine}
 import com.nimbusds.jose.util.StandardCharset
 import controllers.Assets
 import daikoku.BuildInfo
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest,
+  DaikokuActionMaybeWithoutUser,
+  DaikokuActionMaybeWithoutUserContext
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{DaikokuAdminOrSelf, TenantAdminOnly}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
+  DaikokuAdminOrSelf,
+  TenantAdminOnly
+}
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.sync.TeamMemberOnly
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{CmsFileFormat, CmsPageFormat, CmsRequestRenderingFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  CmsFileFormat,
+  CmsPageFormat,
+  CmsRequestRenderingFormat
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Errors
@@ -113,12 +125,20 @@ class HomeController(
 
   def getConnectedUser() = {
     DaikokuActionMaybeWithoutUser { ctx =>
-
       Ok(
         Json.obj(
-          "connectedUser" -> ctx.user.map(_.toUiPayload()).getOrElse(JsNull).as[JsValue],
-          "impersonator" -> ctx.session.map(_.impersonatorJson()).getOrElse(JsNull).as[JsValue],
-          "session" -> ctx.session.map(_.asSimpleJson).getOrElse(JsNull).as[JsValue],
+          "connectedUser" -> ctx.user
+            .map(_.toUiPayload())
+            .getOrElse(JsNull)
+            .as[JsValue],
+          "impersonator" -> ctx.session
+            .map(_.impersonatorJson())
+            .getOrElse(JsNull)
+            .as[JsValue],
+          "session" -> ctx.session
+            .map(_.asSimpleJson)
+            .getOrElse(JsNull)
+            .as[JsValue],
           "tenant" -> ctx.tenant.toUiPayload(env),
           "isTenantAdmin" -> ctx.isTenantAdmin,
           "apiCreationPermitted" -> ctx.apiCreationPermitted,

@@ -1,17 +1,25 @@
 import React, { useContext, useState } from 'react';
 import { I18nContext } from '../../contexts';
-import { IApiKey, IFastPlan, ISubscription, ISubscriptionWithApiInfo, IUsagePlan } from '../../types';
+import {
+  IApiKey,
+  IFastPlan,
+  ISubscription,
+  ISubscriptionWithApiInfo,
+  IUsagePlan,
+} from '../../types';
 import { IBaseModalProps } from './types';
 import classNames from 'classnames';
 
 export interface IApiKeySelectModalProps {
-  onSubscribe: () => void,
-  plan: IUsagePlan | IFastPlan,
-  apiKeys: Array<ISubscriptionWithApiInfo>,
-  extendApiKey: (key: ISubscription) => void
+  onSubscribe: () => void;
+  plan: IUsagePlan | IFastPlan;
+  apiKeys: Array<ISubscriptionWithApiInfo>;
+  extendApiKey: (key: ISubscription) => void;
 }
 
-export const ApiKeySelectModal = (props: IApiKeySelectModalProps & IBaseModalProps) => {
+export const ApiKeySelectModal = (
+  props: IApiKeySelectModalProps & IBaseModalProps
+) => {
   const [showApiKeys, toggleApiKeysView] = useState(false);
   const [showSelectOrCreateApiKey, toggleSelectOrCreateApiKey] = useState(true);
 
@@ -30,8 +38,15 @@ export const ApiKeySelectModal = (props: IApiKeySelectModalProps & IBaseModalPro
   return (
     <div className="modal-content">
       <div className="modal-header">
-        <h5 className="modal-title">{translate('apikey_select_modal.title')}</h5>
-        <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />
+        <h5 className="modal-title">
+          {translate('apikey_select_modal.title')}
+        </h5>
+        <button
+          type="button"
+          className="btn-close"
+          aria-label="Close"
+          onClick={props.close}
+        />
       </div>
       <div className="modal-body">
         {showSelectOrCreateApiKey && (
@@ -47,10 +62,20 @@ export const ApiKeySelectModal = (props: IApiKeySelectModalProps & IBaseModalPro
             aggregationApiKeysSecurity={props.plan.aggregationApiKeysSecurity}
           />
         )}
-        {showApiKeys && <ApiKeysView apiKeys={props.apiKeys} extendApiKey={extendApiKey} />}
+        {showApiKeys && (
+          <ApiKeysView
+            plan={props.plan}
+            apiKeys={props.apiKeys}
+            extendApiKey={extendApiKey}
+          />
+        )}
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={props.close}>
+        <button
+          type="button"
+          className="btn btn-outline-danger"
+          onClick={props.close}
+        >
           {translate('Close')}
         </button>
       </div>
@@ -59,19 +84,28 @@ export const ApiKeySelectModal = (props: IApiKeySelectModalProps & IBaseModalPro
 };
 
 type ApiKeysViewProps = {
-  apiKeys: Array<ISubscriptionWithApiInfo>,
-  extendApiKey: (key: ISubscriptionWithApiInfo) => void
-}
+  plan: IUsagePlan | IFastPlan;
+  apiKeys: Array<ISubscriptionWithApiInfo>;
+  extendApiKey: (key: ISubscriptionWithApiInfo) => void;
+};
 
 const ApiKeysView = (props: ApiKeysViewProps) => {
   const { translate } = useContext(I18nContext);
   return (
     <div>
-      <h5 className="modal-title">{translate('apikey_select_modal.select_your_api_key')}</h5>
+      <h5 className="modal-title">
+        {translate('apikey_select_modal.select_your_api_key')}
+      </h5>
       <div className="team-selection__container">
         {props.apiKeys
-          .filter(a => !a.parent)
-          .sort((a, b) => a.apiName.localeCompare(b.apiName) || (a.customName || a.planType).localeCompare((b.customName || b.planType)))
+          .filter((a) => !a.parent)
+          .sort(
+            (a, b) =>
+              a.apiName.localeCompare(b.apiName) ||
+              (a.customName || a.planType).localeCompare(
+                b.customName || b.planType
+              )
+          )
           .map((apiKey) => {
             return (
               <div
@@ -79,10 +113,11 @@ const ApiKeysView = (props: ApiKeysViewProps) => {
                 className="team-selection team-selection__team selectable mt-1"
                 onClick={() => props.extendApiKey(apiKey)}
               >
-                <span className="ms-2">{`${apiKey.apiName}/${apiKey.customName || apiKey.planName || apiKey.planType
-                  }`}</span>
+                <span className="ms-2">{`${apiKey.apiName}/${
+                  apiKey.customName || apiKey.planName || apiKey.planType
+                }`}</span>
               </div>
-            )
+            );
           })}
       </div>
     </div>
@@ -90,17 +125,12 @@ const ApiKeysView = (props: ApiKeysViewProps) => {
 };
 
 type SelectOrCreateApiKeyProps = {
-  create: (t: boolean) => void,
-  disableExtendButton: boolean,
-  aggregationApiKeysSecurity?: boolean
-}
+  create: (t: boolean) => void;
+  disableExtendButton: boolean;
+  aggregationApiKeysSecurity?: boolean;
+};
 const SelectOrCreateApiKey = (props: SelectOrCreateApiKeyProps) => {
-  const Button = ({
-    onClick,
-    message,
-    icon,
-    disabled
-  }: any) => (
+  const Button = ({ onClick, message, icon, disabled }: any) => (
     <button
       type="button"
       className="btn"
@@ -108,14 +138,21 @@ const SelectOrCreateApiKey = (props: SelectOrCreateApiKeyProps) => {
       onClick={onClick}
       disabled={disabled}
     >
-      <div className={classNames("d-flex flex-column p-2 aggregation-button", {disabled})}>
+      <div
+        className={classNames('d-flex flex-column p-2 aggregation-button', {
+          disabled,
+        })}
+      >
         <div
           style={{ flex: 1, minHeight: '100px' }}
           className="d-flex align-items-center justify-content-center"
         >
           <i className={`fas fa-${icon} fa-2x`} />
         </div>
-        <div style={{ flex: 1 }} className="d-flex align-items-start justify-content-center">
+        <div
+          style={{ flex: 1 }}
+          className="d-flex align-items-start justify-content-center"
+        >
           <span className="text-center px-3">{message}</span>
         </div>
       </div>
@@ -126,7 +163,11 @@ const SelectOrCreateApiKey = (props: SelectOrCreateApiKeyProps) => {
 
   return (
     <div className="d-flex justify-content-center">
-      <Button onClick={() => props.create(true)} message={translate("aggregation.button.subscription.usual.label")} icon="plus" />
+      <Button
+        onClick={() => props.create(true)}
+        message={translate('aggregation.button.subscription.usual.label')}
+        icon="plus"
+      />
       {props.aggregationApiKeysSecurity && (
         <Button
           onClick={() => props.create(false)}

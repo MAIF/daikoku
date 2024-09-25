@@ -186,8 +186,7 @@ object TenantHelper {
                 Results.NotFound,
                 request,
                 None,
-                env,
-
+                env
               )
             case Some(tenant) if !tenant.enabled =>
               Errors.craftResponseResult(

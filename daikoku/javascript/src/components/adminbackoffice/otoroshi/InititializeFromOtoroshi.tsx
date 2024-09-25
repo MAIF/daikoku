@@ -184,7 +184,6 @@ export const InitializeFromOtoroshi = () => {
     const orderedApikeys = orderBy(state.context.apikeys, ['clientName']);
 
     const filterApikeys = (entity: { label: string, prefix: string, value: string }) => {
-      console.debug({ entity, orderedApikeys })
       return orderedApikeys.filter((apikey) => (apikey.authorizedEntities || '').includes(`${entity.prefix}${entity.value}`));
     };
 

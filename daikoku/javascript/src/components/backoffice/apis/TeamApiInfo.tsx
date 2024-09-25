@@ -261,13 +261,13 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
     name: {
       type: type.string,
       disabled: true,
-      props: { label: translate('Name'), placeholder: 'New Api' },
+      label: translate('Name'),
     },
     smallDescription: {
       type: type.string,
       format: format.text,
       disabled: true,
-      props: { label: translate('Small desc.') },
+      label: translate('Small desc.'),
     },
   };
 

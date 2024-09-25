@@ -50,7 +50,7 @@ export function ApiCartidge(props: any) {
       <span>
         <Translation i18nkey="Tags">Tags</Translation>
         {(api.tags || []).map((a: any, idx: any) => (
-          <span key={idx} className="badge bg-warning ms-1">
+          <span key={idx} className="badge badge-custom ms-1">
             {a}
           </span>
         ))}

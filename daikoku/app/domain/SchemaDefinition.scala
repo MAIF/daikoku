@@ -246,6 +246,11 @@ object SchemaDefinition {
               resolve = _.value.aggregationApiKeysSecurity
             ),
             Field(
+              "environmentAggregationApiKeysSecurity",
+              OptionType(BooleanType),
+              resolve = _.value.environmentAggregationApiKeysSecurity
+            ),
+            Field(
               "display",
               OptionType(StringType),
               resolve = _.value.display.name
@@ -1712,7 +1717,11 @@ object SchemaDefinition {
       ),
       ReplaceField(
         "specificationType",
-        Field("specificationType", StringType, resolve = _.value.specificationType.name)
+        Field(
+          "specificationType",
+          StringType,
+          resolve = _.value.specificationType.name
+        )
       )
     )
     lazy val ApiDocumentationPageType = deriveObjectType[
@@ -2326,7 +2335,11 @@ object SchemaDefinition {
             ),
             Field("isDefault", BooleanType, resolve = _.value.isDefault),
             Field("lastUpdate", DateTimeUnitype, resolve = _.value.lastUpdate),
-            Field("testing", OptionType(TestingType), resolve = _.value.testing),
+            Field(
+              "testing",
+              OptionType(TestingType),
+              resolve = _.value.testing
+            ),
             Field(
               "documentation",
               ApiDocumentationType,

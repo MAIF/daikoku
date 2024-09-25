@@ -4,7 +4,8 @@ import classNames from 'classnames';
 import debounce from "lodash/debounce";
 import sortBy from 'lodash/sortBy';
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { Grid, List } from 'react-feather';
+import Grid from 'react-feather/dist/icons/grid';
+import List from 'react-feather/dist/icons/list';
 import Pagination from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Select, { SingleValue } from 'react-select';
@@ -445,7 +446,7 @@ const Top = (props: TTopProps) => {
       {props.list.slice(0, 10).map((item, idx) => {
         return (
           <span
-            className="badge bg-warning me-1 cursor-pointer"
+            className="badge badge-custom me-1 cursor-pointer"
             key={idx}
             onClick={() => props.handleClick(item)}
           >
@@ -468,7 +469,7 @@ const YourTeams = ({
 
   const [searchedTeam, setSearchedTeam] = useState<string>();
   const maybeTeams = searchedTeam
-    ? teams.filter((team) => team.name.toLowerCase().includes(searchedTeam))
+    ? teams.filter((team) => team.name.toLocaleLowerCase().includes(searchedTeam.toLocaleLowerCase()))
     : teams;
   return (
     <div className={'top__container p-3 rounded album mb-2'}>

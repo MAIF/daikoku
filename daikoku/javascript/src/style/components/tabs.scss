@@ -1,9 +1,11 @@
 
 .nav-tabs {
     border-color: $btn-border-color;
+    gap: 5px;
   
     .nav-link {
-      color: $level2_text-color;
+      background-color: $btn-text-color;
+      color: $btn-bg-color;
     }
   
     .nav-link:hover,

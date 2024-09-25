@@ -74,93 +74,155 @@ const TwoFactorAuthentication = ({
     }
   }
 
-  return modal ? (<div>
-    {backupCodes ? (<div className="d-flex flex-column justify-content-center align-items-center w-50 mx-auto">
-      <span className="my-3">{translate('2fa.backup_codes_message')}</span>
-      <div className="d-flex w-100 mb-3">
-        <input type="text" disabled={true} value={backupCodes} className="form-control" />
-        <button className="btn btn-outline-success ms-1" type="button" onClick={() => {
-          navigator.clipboard.writeText(backupCodes);
-          toast.success(translate('Copied'));
-        }}>
-          <i className="fas fa-copy" />
-        </button>
-      </div>
-      <button className="btn btn-outline-success" type="button" onClick={() => window.location.reload()}>
-        {translate('2fa.confirm')}
-      </button>
-    </div>) : (<div className="d-flex flex-column justify-content-center align-items-center p-3">
-      <div className="d-flex justify-content-center align-items-center p-3">
-        <div className="d-flex flex-column justify-content-center align-items-center">
-          <span className="my-3 text-center w-75 mx-auto">
-            {translate('2fa.advice_scan')}
-          </span>
-          <img src={`data:image/svg+xml;utf8,${encodeURIComponent(modal.qrcode)}`} style={{
-            maxWidth: '250px',
-            height: '250px',
-          }} />
-        </div>
-        <div className="w-75">
-          <span className="my-3 text-center">
-            {translate('2fa.advice_enter_manually')}
-          </span>
-          <textarea style={{
-            resize: 'none',
-            background: 'none',
-            fontWeight: 'bold',
-            border: 0,
-            color: 'black',
-            letterSpacing: '3px',
-          }}
-            disabled={true}
-            value={modal.rawSecret.match(/.{1,4}/g)!.join(' ')}
-            className="form-control" />
-        </div>
-      </div>
-      <div className="w-75 mx-auto">
-        <span className="mt-3">{translate('2fa.enter_6_digits')}</span>
-        <span className="mb-3">{translate('2fa.enter_a_code')}</span>
-        {error && (<div className="alert alert-danger" role="alert">
-          {error}
-        </div>)}
-        <input type="number" value={modal.code} placeholder={translate('2fa.insert_code')} onChange={(e) => {
-          if (e.target.value.length < 7) {
-            setError(undefined);
-            setModal({ ...modal, code: e.target.value });
-          }
-        }} className="form-control my-3" />
-
-        <button className="btn btn-outline-success" type="button" onClick={verify}>
-          {translate('2fa.complete_registration')}
-        </button>
-      </div>
-    </div>)}
-  </div>) : (<>
-    <div className="form-group row">
-      <div className="col-sm-10">
-        {user?.twoFactorAuthentication?.enabled ? (
-          <button onClick={disable2FA} className="btn btn-outline-danger" type="button">
-            {translate('2fa.disable_action')}
-          </button>) : (<button onClick={getQRCode} className="btn btn-outline-success" type="button">
-            {translate('2fa.enable_action')}
-          </button>)}
-      </div>
-    </div>
-    {user?.twoFactorAuthentication?.enabled && (<div className="form-group row">
-      <label className="col-xs-12 col-sm-2 col-form-label">
-        {translate('2fa.backup_codes')}
-      </label>
-      <div className="col-sm-10">
-        <div className="d-flex">
-          <input type="text" disabled={true} value={user?.twoFactorAuthentication.backupCodes}
-            className="form-control" />
-          <button className="btn btn-outline-success ms-1" type="button" onClick={copyToClipboard}>
-            <i className="fas fa-copy" />
+  return modal ? (
+    <div>
+      {backupCodes ? (
+        <div className="d-flex flex-column justify-content-center align-items-center w-50 mx-auto">
+          <span className="my-3">{translate('2fa.backup_codes_message')}</span>
+          <div className="d-flex w-100 mb-3">
+            <input
+              type="text"
+              disabled={true}
+              value={backupCodes}
+              className="form-control"
+            />
+            <button
+              className="btn btn-outline-success ms-1"
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(backupCodes);
+                toast.success(translate('Copied'));
+              }}
+            >
+              <i className="fas fa-copy" />
+            </button>
+          </div>
+          <button
+            className="btn btn-outline-success"
+            type="button"
+            onClick={() => window.location.reload()}
+          >
+            {translate('2fa.confirm')}
           </button>
         </div>
+      ) : (
+        <div className="d-flex flex-column justify-content-center align-items-center p-3">
+          <div className="d-flex justify-content-center align-items-center p-3">
+            <div className="d-flex flex-column justify-content-center align-items-center">
+              <span className="my-3 text-center w-75 mx-auto">
+                {translate('2fa.advice_scan')}
+              </span>
+              <img
+                src={`data:image/svg+xml;utf8,${encodeURIComponent(modal.qrcode)}`}
+                style={{
+                  maxWidth: '250px',
+                  height: '250px',
+                }}
+              />
+            </div>
+            <div className="w-75">
+              <span className="my-3 text-center">
+                {translate('2fa.advice_enter_manually')}
+              </span>
+              <textarea
+                style={{
+                  resize: 'none',
+                  background: 'none',
+                  fontWeight: 'bold',
+                  border: 0,
+                  color: 'black',
+                  letterSpacing: '3px',
+                }}
+                disabled={true}
+                value={modal.rawSecret.match(/.{1,4}/g)!.join(' ')}
+                className="form-control"
+              />
+            </div>
+          </div>
+          <div className="w-75 mx-auto">
+            <span className="mt-3">{translate('2fa.enter_6_digits')}</span>
+            <span className="mb-3">{translate('2fa.enter_a_code')}</span>
+            {error && (
+              <div className="alert alert-danger" role="alert">
+                {error}
+              </div>
+            )}
+            <input
+              type="text"
+              value={modal.code}
+              placeholder={translate('2fa.insert_code')}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (/^\d{0,6}$/.test(value)) {
+                  setError(undefined);
+                  setModal({ ...modal, code: e.target.value });
+                }
+              }}
+              inputMode="numeric"
+              className="form-control my-3"
+              pattern="\d{6}"
+              required
+            />
+            <button
+              className="btn btn-outline-success"
+              type="button"
+              onClick={verify}
+            >
+              {translate('2fa.complete_registration')}
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  ) : (
+    <>
+      <div className="form-group row">
+        <div className="col-sm-10">
+          {user?.twoFactorAuthentication?.enabled ? (
+            <button
+              onClick={disable2FA}
+              className="btn btn-outline-danger"
+              type="button"
+            >
+              {translate('2fa.disable_action')}
+            </button>
+          ) : (
+            <button
+              onClick={getQRCode}
+              className="btn btn-outline-success"
+              type="button"
+            >
+              {translate('2fa.enable_action')}
+            </button>
+          )}
+        </div>
       </div>
-    </div>)}
-  </>);
+      {user?.twoFactorAuthentication?.enabled && (
+        <div className="form-group row">
+          <label className="col-xs-12 col-sm-2 col-form-label">
+            {translate('2fa.backup_codes')}
+          </label>
+          <div className="col-sm-10">
+            <div className="d-flex">
+              <input
+                type="text"
+                disabled={true}
+                value={user?.twoFactorAuthentication.backupCodes}
+                className="form-control"
+              />
+              <button
+                className="btn btn-outline-success ms-1"
+                type="button"
+                onClick={copyToClipboard}
+              >
+                <i className="fas fa-copy" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 };
 
 const Avatar = ({
@@ -375,7 +437,7 @@ export const MyProfile = () => {
         constraints.required(translate('constraints.required.newPassword')),
         constraints.matches(
           /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/,
-          translate('constraint.matches.password')
+          translate('constraints.matches.password')
         ),
       ],
     },
@@ -387,7 +449,7 @@ export const MyProfile = () => {
         constraints.required(translate('constraints.required.newPassword')),
         constraints.oneOf(
           [constraints.ref('newPassword')],
-          translate('constraint.oneof.confirm.password')
+          translate('constraints.oneof.confirm.password')
         ),
       ],
     },

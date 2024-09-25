@@ -43,7 +43,6 @@ import {
   ResponseDone,
   ResponseError,
 } from '../types/api';
-import { IRenderingPage } from '../components/adminbackoffice';
 
 const HEADERS = {
   Accept: 'application/json',
@@ -60,7 +59,8 @@ export const me = (): PromiseWithError<IUser> => customFetch('/api/me');
 export const myOwnTeam = () => customFetch('/api/me/teams/own');
 export const oneOfMyTeam = (id: any) => customFetch(`/api/me/teams/${id}`);
 export const getUserContext = (): PromiseWithError<IStateContext> => customFetch('/api/me/context');
-export const getAuthContext = (provider: string): PromiseWithError<IAuthContext> => customFetch(`/api/auth/${provider}/context`);
+export const getAuthContext = (provider: string): PromiseWithError<IAuthContext> =>
+  customFetch(`/api/auth/${provider}/context`);
 
 export const getVisibleApiWithId = (id: string): PromiseWithError<IApi> =>
   customFetch(`/api/me/visible-apis/${id}`);
@@ -255,11 +255,6 @@ export const regenerateApiKeySecret = (
 ): PromiseWithError<ISafeSubscription> =>
   customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_refresh`, {
     method: 'POST',
-  });
-
-export const cleanArchivedSubscriptions = (teamId: string) =>
-  customFetch(`/api/teams/${teamId}/subscriptions/_clean`, {
-    method: 'DELETE',
   });
 
 export const member = (teamId: string, userId: string) =>
@@ -1019,7 +1014,12 @@ function updateQueryStringParameter(uri, key, value) {
   }
 }
 
-export const login = (username: string, password: string, action: string, redirect?: string | null) => {
+export const login = (
+  username: string,
+  password: string,
+  action: string,
+  redirect?: string | null
+) => {
   const body = new URLSearchParams();
   body.append('username', username);
   body.append('password', password);
@@ -1151,11 +1151,16 @@ export const createNewApiVersion = (apiId: string, teamId: string, version: stri
 
 export const deleteApiSubscription = (
   teamId: string,
-  subscriptionId: string
+  subscriptionId: string,
+  action: string,
+  childId?: string
 ): Promise<ResponseError | any> =>
-  customFetch(`/api/subscriptions/${subscriptionId}/teams/${teamId}/_delete`, {
-    method: 'DELETE',
-  });
+  customFetch(
+    `/api/teams/${teamId}/subscriptions/${subscriptionId}?action=${action}${childId ? `&child=${childId}` : ''}`,
+    {
+      method: 'DELETE',
+    }
+  );
 
 export const extendApiKey = (
   apiId: string,
@@ -1622,6 +1627,7 @@ export const graphql = {
         parent {
           _id
           adminCustomName
+          enabled
           api {
             _id
             name
@@ -2026,4 +2032,25 @@ export const getSubscriptionsLastUsages = (
   customFetch(`/api/teams/${teamId}/subscriptions/_lastUsage`, {
     method: 'POST',
     body: JSON.stringify({ subscriptions }),
+  });
+
+export const getSubscriptionTransferLink = (
+  teamId: string,
+  subscriptionId: string
+): PromiseWithError<{ link: string }> =>
+  customFetch(`/api/teams/${teamId}/subscriptions/${subscriptionId}/_transfer`);
+
+export const checkTransferlink = (
+  token: string
+): PromiseWithError<{ subscription: ISubscription; api: IApi; plan: IUsagePlan }> =>
+  customFetch(`/api/me/subscription/_retrieve?token=${token}`);
+
+export const retrieveSubscription = (
+  token: string,
+  teamId: string,
+  subscription: string
+): PromiseWithError<ResponseDone> =>
+  customFetch(`/api/teams/${teamId}/subscriptions/${subscription}/_retrieve`, {
+    method: 'PUT',
+    body: JSON.stringify({ token }),
   });

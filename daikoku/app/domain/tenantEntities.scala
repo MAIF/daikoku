@@ -5,10 +5,16 @@ import com.github.jknack.handlebars.{Context, Handlebars, Options}
 import controllers.AppError.toJson
 import controllers.{AppError, Assets}
 import domain.JsonNodeValueResolver
-import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuActionMaybeWithoutUserContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuActionContext,
+  DaikokuActionMaybeWithoutUserContext
+}
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, KafkaConfig}
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
+  _TeamMemberOnly,
+  _UberPublicUserAccess
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
@@ -77,9 +83,9 @@ case class DaikokuStyle(
   --card_header-bg-color: #404040;
   --card_header-text-color: #fff;
   --card_bg-color: #282828;
-  --card_text-color: #fff;
-  --card_link-color: #b3b3b3;
-  --card_link-hover-color: orange;
+  --card_text-color: #fff; 
+  --card_link-color: #97b0c7;
+  --card_link-hover-color : #a9cbea;
 
   --btn-bg-color: #fff;
   --btn-text-color: #495057;
@@ -138,8 +144,8 @@ case class DaikokuStyle(
   --card_header-text-color: #fff;
   --card_bg-color: #282828;
   --card_text-color: #fff;
-  --card_link-color: #b3b3b3;
-  --card_link-hover-color: orange;
+  --card_link-color: #97b0c7;
+  --card_link-hover-color : #a9cbea;
 
 
   --btn-bg-color: #fff;
@@ -383,6 +389,7 @@ case class Tenant(
     defaultMessage: Option[String] = None,
     tenantMode: Option[TenantMode] = None,
     aggregationApiKeysSecurity: Option[Boolean] = None,
+    environmentAggregationApiKeysSecurity: Option[Boolean] = None,
     robotTxt: Option[String] = None,
     thirdPartyPaymentSettings: Seq[ThirdPartyPaymentSettings] = Seq.empty,
     display: TenantDisplay = TenantDisplay.Default,
@@ -449,17 +456,40 @@ case class Tenant(
         .map(JsBoolean)
         .getOrElse(JsBoolean(false))
         .as[JsValue],
+      "environmentAggregationApiKeysSecurity" -> environmentAggregationApiKeysSecurity
+        .map(JsBoolean)
+        .getOrElse(JsBoolean(false))
+        .as[JsValue],
       "display" -> display.name,
       "environments" -> JsArray(environments.map(JsString.apply).toSeq),
       "loginProvider" -> authProvider.name,
-      "colorTheme" -> style.map(_.colorTheme).map(JsString.apply).getOrElse(JsNull).as[JsValue],
-      "css" -> style.map(_.css).map(JsString.apply).getOrElse(JsNull).as[JsValue],
-      "cssUrl" -> style.flatMap(_.cssUrl).map(JsString.apply).getOrElse(JsNull).as[JsValue],
-      "jsUrl" -> style.flatMap(_.jsUrl).map(JsString.apply).getOrElse(JsNull).as[JsValue],
+      "colorTheme" -> style
+        .map(_.colorTheme)
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "css" -> style
+        .map(_.css)
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "cssUrl" -> style
+        .flatMap(_.cssUrl)
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "jsUrl" -> style
+        .flatMap(_.jsUrl)
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue],
       "js" -> style.map(_.js).map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "faviconUrl" -> favicon(),
-      "fontFamilyUrl" -> style.flatMap(_.fontFamilyUrl).map(JsString.apply).getOrElse(JsNull).as[JsValue],
-
+      "fontFamilyUrl" -> style
+        .flatMap(_.fontFamilyUrl)
+        .map(JsString.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
   }
   def favicon(): String = {
@@ -709,7 +739,7 @@ case class CmsPage(
               ),
               req
             )
-          case None => AppError.render(AppError.UserNotFound)
+          case None => AppError.render(AppError.UserNotFound())
         }
       }
     )

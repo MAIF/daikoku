@@ -40,6 +40,7 @@ export const FormModal = <T extends TBaseObject>({
           options={{
             ...(options || {}),
             actions: {
+              ...options?.actions || {},
               submit: { display: false },
             }
           }}

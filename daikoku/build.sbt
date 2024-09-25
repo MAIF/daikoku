@@ -59,7 +59,7 @@ libraryDependencies ++= Seq(
   "com.themillhousegroup" %% "scoup" % "1.0.0" % Test,
   "org.wiremock" % "wiremock" % wiremockVersion % Test,
 //  "org.wiremock" % "wiremock-jre8" % wiremockVersion % Test,
-//  "org.testcontainers" % "testcontainers" % "1.17.5" % Test,
+  "org.testcontainers" % "testcontainers" % "1.20.0" % Test,
   "com.dimafeng" %% "testcontainers-scala-scalatest" % "0.40.14" % Test,
   "com.dimafeng" %% "testcontainers-scala-postgresql" % "0.40.14" % Test,
   "org.apache.commons" % "commons-lang3" % "3.13.0",

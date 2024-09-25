@@ -89,9 +89,16 @@ class DeletionService(
         tenant: Tenant
     ): EitherT[Future, AppError, Unit] = {
       for {
-        target <- EitherT.fromOption[Future](plan.otoroshiTarget, AppError.EntityNotFound("Otoroshi settings"))
-        settings <- EitherT.fromOption[Future](tenant.otoroshiSettings.find(s => s.id == target.otoroshiSettings), AppError.EntityNotFound("Otoroshi settings"))
-        _ <- otoroshiClient.deleteApiKey(apiSubscription.apiKey.clientId)(settings)
+        target <- EitherT.fromOption[Future](
+          plan.otoroshiTarget,
+          AppError.EntityNotFound("Otoroshi settings")
+        )
+        settings <- EitherT.fromOption[Future](
+          tenant.otoroshiSettings.find(s => s.id == target.otoroshiSettings),
+          AppError.EntityNotFound("Otoroshi settings")
+        )
+        _ <-
+          otoroshiClient.deleteApiKey(apiSubscription.apiKey.clientId)(settings)
       } yield ()
     }
 
@@ -292,7 +299,7 @@ class DeletionService(
     for {
       user <- EitherT.fromOptionF(
         env.dataStore.userRepo.findByIdNotDeleted(userId),
-        AppError.UserNotFound
+        AppError.UserNotFound()
       )
       team <- EitherT.fromOptionF(
         env.dataStore.teamRepo
@@ -341,7 +348,7 @@ class DeletionService(
     for {
       user <- EitherT.fromOptionF(
         env.dataStore.userRepo.findByIdNotDeleted(userId),
-        AppError.UserNotFound
+        AppError.UserNotFound()
       )
       teams <- EitherT.liftF(
         env.dataStore.teamRepo

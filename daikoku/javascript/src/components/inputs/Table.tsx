@@ -79,6 +79,11 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
     getFacetedMinMaxValues: getFacetedMinMaxValues(),
+    initialState: {
+      sorting: [
+        {id: props.defaultSort || "", desc: !!props.defaultSortDesc}
+      ]
+    }
   });
 
   useImperativeHandle(ref, () => ({

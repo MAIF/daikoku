@@ -25,11 +25,15 @@ import { IBaseModalProps } from './types';
  * </>
  * 
  */
+export interface ICustomModalProps extends IModalProps {
+  actions?: (close) => JSX.Element
+}
 export const CustomModal = ({
   title,
   content,
-  close
-}: IModalProps & IBaseModalProps) => {
+  close,
+  actions
+}: ICustomModalProps & IBaseModalProps) => {
 
 
   return (
@@ -38,7 +42,14 @@ export const CustomModal = ({
         <h5 className="modal-title">{title}</h5>
         <button type="button" className="btn-close" aria-label="Close" onClick={() => close()} />
       </div>
-      {content}
+      <div className="modal-body">
+        {content}
+      </div>
+      {actions && (
+        <div className="modal-footer">
+          {actions(close)}
+        </div>
+      )}
     </div>
   );
 };

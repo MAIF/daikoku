@@ -3,7 +3,12 @@ package fr.maif.otoroshi.daikoku.ctrls
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import com.google.common.base.Charsets
 import controllers.Assets
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithoutUser, DaikokuTenantAction, DaikokuTenantActionContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithoutUser,
+  DaikokuTenantAction,
+  DaikokuTenantActionContext
+}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
@@ -46,11 +51,12 @@ class LoginController(
     DaikokuActionMaybeWithoutUser { _ =>
       Ok(
         Json.obj(
-          "action" -> fr.maif.otoroshi.daikoku.ctrls.routes.LoginController.login(provider).url
+          "action" -> fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
+            .login(provider)
+            .url
         )
       )
     }
-
 
   def loginPage(provider: String) =
     DaikokuTenantAction.async { ctx =>
@@ -95,7 +101,12 @@ class LoginController(
                   s"redirect" -> redirect.getOrElse("/")
                 )
               )
-            case _ if env.config.isDev => FastFuture.successful(Redirect(env.getDaikokuUrl(ctx.tenant, s"/auth/${p.name}/login")))
+            case _ if env.config.isDev =>
+              FastFuture.successful(
+                Redirect(
+                  env.getDaikokuUrl(ctx.tenant, s"/auth/${p.name}/login")
+                )
+              )
             case _ => assets.at("index.html").apply(ctx.request)
           }
       }
@@ -504,7 +515,10 @@ class LoginController(
                       ctx.tenant,
                       Map(
                         "tenant" -> ctx.tenant.name,
-                        "link" -> env.getDaikokuUrl(ctx.tenant, s"/account/validate?id=$randomId")
+                        "link" -> env.getDaikokuUrl(
+                          ctx.tenant,
+                          s"/account/validate?id=$randomId"
+                        )
                       )
                     )
                   } yield {
@@ -601,8 +615,12 @@ class LoginController(
                       } yield ()
                       userCreation.map { _ =>
                         Status(302)(
-                          Json.obj("Location" -> "/?message=user.validated.success")
-                        ).withHeaders("Location" -> "/?message=user.validated.success")
+                          Json.obj(
+                            "Location" -> "/?message=user.validated.success"
+                          )
+                        ).withHeaders(
+                          "Location" -> "/?message=user.validated.success"
+                        )
                       }
                   }
               case _ =>
@@ -658,8 +676,9 @@ class LoginController(
                 ctx.tenant.defaultLanguage.getOrElse("en")
               implicit val language: String =
                 user.defaultLanguage.getOrElse(tenantLanguage)
-              val link = env.getDaikokuUrl(ctx.tenant, s"/account/reset?id=$randomId")
-                ctx.tenant.mailer
+              val link =
+                env.getDaikokuUrl(ctx.tenant, s"/account/reset?id=$randomId")
+              ctx.tenant.mailer
                 .send(
                   s"Reset your ${ctx.tenant.name} account password",
                   Seq(email),
@@ -692,7 +711,10 @@ class LoginController(
       ctx.request.getQueryString("id") match {
         case None =>
           FastFuture.successful(
-            Redirect(env.getDaikokuUrl(ctx.tenant, "/reset?error=bad.creation.id")))
+            Redirect(
+              env.getDaikokuUrl(ctx.tenant, "/reset?error=bad.creation.id")
+            )
+          )
         case Some(id) => {
           env.dataStore.passwordResetRepo
             .findOneNotDeleted(Json.obj("randomId" -> id))
@@ -702,7 +724,12 @@ class LoginController(
                 env.dataStore.passwordResetRepo
                   .deleteByIdLogically(pwdReset.id.value)
                   .map { _ =>
-                    Redirect(env.getDaikokuUrl(ctx.tenant, "/reset?error=not.valid.anymore"))
+                    Redirect(
+                      env.getDaikokuUrl(
+                        ctx.tenant,
+                        "/reset?error=not.valid.anymore"
+                      )
+                    )
                   }
               case Some(pwdReset)
                   if pwdReset.validUntil.isAfter(DateTime.now()) =>
@@ -716,7 +743,13 @@ class LoginController(
                   .flatMap {
                     case None =>
                       FastFuture.successful(
-                        Redirect(env.getDaikokuUrl(ctx.tenant, "/reset?error=user.not.found")))
+                        Redirect(
+                          env.getDaikokuUrl(
+                            ctx.tenant,
+                            "/reset?error=user.not.found"
+                          )
+                        )
+                      )
                     case Some(user) =>
                       env.dataStore.userRepo
                         .save(user.copy(password = Some(pwdReset.password)))
@@ -724,13 +757,22 @@ class LoginController(
                           env.dataStore.passwordResetRepo
                             .deleteByIdLogically(pwdReset.id.value)
                             .map { _ =>
-                              Redirect(env.getDaikokuUrl(ctx.tenant, "/?message=password.reset.successfull"))
+                              Redirect(
+                                env.getDaikokuUrl(
+                                  ctx.tenant,
+                                  "/?message=password.reset.successfull"
+                                )
+                              )
                             }
                         }
                   }
               case _ =>
                 FastFuture.successful(
-                  Redirect(env.getDaikokuUrl(ctx.tenant, "/reset?error=bad.creation.id")))
+                  Redirect(
+                    env
+                      .getDaikokuUrl(ctx.tenant, "/reset?error=bad.creation.id")
+                  )
+                )
             }
         }
       }

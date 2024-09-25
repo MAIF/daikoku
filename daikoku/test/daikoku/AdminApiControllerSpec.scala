@@ -1235,7 +1235,11 @@ class AdminApiControllerSpec
         respCreateKo.status mustBe 400
 
         val some = defaultApi.api
-          .copy(id = ApiId(IdGenerator.token), parent = defaultApi.api.id.some, currentVersion = Version("vTest"))
+          .copy(
+            id = ApiId(IdGenerator.token),
+            parent = defaultApi.api.id.some,
+            currentVersion = Version("vTest")
+          )
           .asJson
           .some
 

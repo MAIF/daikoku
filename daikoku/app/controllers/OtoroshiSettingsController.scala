@@ -584,7 +584,8 @@ class OtoroshiSettingsController(
           if (previousSettings != actualSettings) {
             for {
               _ <- otoroshiClient.deleteApiKey(key.clientId)(previousSettings)
-              newKey <-EitherT(otoroshiClient.createApiKey(key)(actualSettings))
+              newKey <-
+                EitherT(otoroshiClient.createApiKey(key)(actualSettings))
             } yield newKey
           } else {
             EitherT(otoroshiClient.updateApiKey(key)(previousSettings))
@@ -661,16 +662,25 @@ class OtoroshiSettingsController(
         val otoroshiSettingsOpt =
           (ctx.request.body \ "otoroshiSettings").asOpt[String]
 
-
         val clientIdOpt = (ctx.request.body \ "clientId").asOpt[String]
 
         (for {
-          otoroshiSettingsId <- EitherT.fromOption[Future](otoroshiSettingsOpt, AppError.EntityNotFound("Otoroshi settings"))
-          clientId <- EitherT.fromOption[Future](clientIdOpt, AppError.EntityNotFound("clientId settings"))
-          otoroshiSettings <- EitherT.fromOption[Future](ctx.tenant.otoroshiSettings
-            .find(s => s.id.value == otoroshiSettingsId), AppError.EntityNotFound("Otoroshi settings"))
-          _ <- otoroshiClient
-            .deleteApiKey(clientId)(otoroshiSettings)
+          otoroshiSettingsId <- EitherT.fromOption[Future](
+            otoroshiSettingsOpt,
+            AppError.EntityNotFound("Otoroshi settings")
+          )
+          clientId <- EitherT.fromOption[Future](
+            clientIdOpt,
+            AppError.EntityNotFound("clientId settings")
+          )
+          otoroshiSettings <- EitherT.fromOption[Future](
+            ctx.tenant.otoroshiSettings
+              .find(s => s.id.value == otoroshiSettingsId),
+            AppError.EntityNotFound("Otoroshi settings")
+          )
+          _ <-
+            otoroshiClient
+              .deleteApiKey(clientId)(otoroshiSettings)
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())
           .merge
@@ -713,7 +723,8 @@ class OtoroshiSettingsController(
           .find(_._2 == s"fake-${api.id.value}")
         val headerOpt = headers.find(_._2 == s"fake-${api.id.value}")
         val finalUrl = api.testing match {
-          case Some(Testing(_, auth, _, username, _, _)) if queryOpt.isDefined && auth.name == TestingAuth.ApiKey.name =>
+          case Some(Testing(_, auth, _, username, _, _))
+              if queryOpt.isDefined && auth.name == TestingAuth.ApiKey.name =>
             url
               .replace(
                 s"&${queryOpt.get._1}=fake-${api.id.value}",
@@ -727,9 +738,12 @@ class OtoroshiSettingsController(
         }
         val finalHeaders: Map[String, String] =
           api.testing match {
-            case Some(Testing(_, auth, _, username, _, _)) if auth.name == TestingAuth.ApiKey.name && headerOpt.isDefined =>
-              headers - headerOpt.get._1 + (headerOpt.get._1 -> username.getOrElse(""))
-            case Some(Testing(_, auth, _, username, password, _)) if auth.name == TestingAuth.Basic.name =>
+            case Some(Testing(_, auth, _, username, _, _))
+                if auth.name == TestingAuth.ApiKey.name && headerOpt.isDefined =>
+              headers - headerOpt.get._1 + (headerOpt.get._1 -> username
+                .getOrElse(""))
+            case Some(Testing(_, auth, _, username, password, _))
+                if auth.name == TestingAuth.Basic.name =>
               headers - "Authorization" + ("Authorization" -> s"Basic ${Base64
                 .encodeBase64String(s"${username.getOrElse("")}:$password".getBytes(Charsets.UTF_8))}")
             case _ => headers

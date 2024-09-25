@@ -21,7 +21,7 @@ test('test a complete user journey', async ({ page }) => {
   //connection
   await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('user@foo.bar');
+  await page.getByPlaceholder('Email address').fill('user@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
   await page.getByRole('button', { name: 'Login' }).click();
   await page.waitForResponse(response => response.url().includes('/auth/Local/callback') && response.status() === 303)
@@ -29,7 +29,7 @@ test('test a complete user journey', async ({ page }) => {
   // FIXME: find the fine selector to check user is connected
 
   //create a new team
-  await page.locator('div:nth-child(3) > .notification-link').first().click();
+  await page.locator('div:nth-child(4) > .notification-link').first().click();
   await page.getByRole('button', { name: '' }).first().click();
   await page.getByLabel('Name').fill('The A team');
   await page.getByLabel('Description').fill('the A team');
@@ -39,9 +39,9 @@ test('test a complete user journey', async ({ page }) => {
   await page.locator('.navbar-panel-background').click();
 
   //create a new API
-  await page.locator('div:nth-child(3) > .notification-link').first().click();
+  await page.locator('div:nth-child(4) > .notification-link').first().click();
   await page.locator('span').filter({ hasText: 'API' }).first().click();
-  await page.locator('div').filter({ hasText: /^The A team$/ }).click();
+  await page.locator('div').filter({ hasText: /^The A team$/ }).nth(1).click();
 
   await page.getByRole('button', { name: 'Published' }).click();
   await page.getByPlaceholder('New Api').fill('Test API');
@@ -62,6 +62,8 @@ test('test a complete user journey', async ({ page }) => {
   await page.getByRole('button', { name: 'Add plan' }).click();
   await page.locator('.react-form-select__input-container').click();
   await page.getByText('Free without quotas', { exact: true }).click();
+  await page.getByPlaceholder('Plan name').click();
+  await page.keyboard.type('dev plan')
   await page.getByPlaceholder('Plan name').fill('dev plan');
   await page.getByPlaceholder('Plan description').fill('a dev plan to test the API with unlimited usage');
   await page.getByRole('button', { name: 'Next' }).click();
@@ -114,7 +116,7 @@ test('test a complete user journey', async ({ page }) => {
   //subscribe
   await page.getByText('Subscriptions').click();
   await expect(page.getByRole('main')).toContainText('0 Result');
-  await page.getByRole('link', { name: 'Go home' }).click();
+  await page.getByRole('link', { name: 'APIs list' }).click();
   await expect(page.getByRole('main')).toContainText('second test api');
 
   
@@ -140,10 +142,10 @@ test('test a complete user journey', async ({ page }) => {
   // await expect(page.getByRole('main')).toContainText('Lorem ipsum');
   // await page.getByText('News').click();
   // await expect(page.getByRole('main')).toContainText('Our API is alive');
-  await page.getByRole('link', { name: 'Go home' }).click();
+  await page.getByRole('link', { name: 'APIs list' }).click();
   await page.locator('span').filter({ hasText: 'The A team' }).click();
   await page.getByText('API keys').click();
   await expect(page.getByRole('main')).toContainText('1 Result');
-  await page.getByRole('link', { name: ' API keys' }).click();
-  await expect(page.locator('.card-header')).toContainText('dev plan');
+  await page.getByLabel('View APIkeys').click();
+  await expect(page.locator('.api-subscription__infos__name')).toContainText('dev plan');
 });

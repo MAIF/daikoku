@@ -6,6 +6,7 @@
 @import 'layout/navbar';
 @import 'layout/login';
 @import 'layout/footer.scss';
+@import 'layout/rightPanel.scss';
 
 @import "components/antCalandar";
 @import 'components/avatarWithAction';
@@ -39,3 +40,4 @@
 @import 'components/navDocumentation';
 @import 'components/swagger';
 @import 'components/tabs';
+@import 'components/apiSubscription.scss'

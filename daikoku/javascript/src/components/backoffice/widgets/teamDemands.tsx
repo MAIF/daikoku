@@ -1,6 +1,6 @@
 
 import { getApolloContext, gql } from '@apollo/client';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext } from 'react';
 
 import { I18nContext } from '../../../contexts';
@@ -54,6 +54,7 @@ export const LastDemands = (props: LastDemandsProps) => {
   const { confirm } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
+  const queryClient = useQueryClient()
   const { isLoading, isError, data } = useQuery({
     queryKey: ["widget", "widget_team_last_demands"],
     queryFn: () => client?.query({
@@ -61,7 +62,7 @@ export const LastDemands = (props: LastDemandsProps) => {
       variables: { teamId: props.team._id, offset: 0, limit: 5 }
     })
   })
-  const isAdmin = !!props.team.users.find(u => u.userId === connectedUser._id && u.teamPermission === 'Administrator')
+  const isAdmin = !!props.team.users.find(u => u.userId === connectedUser._id && u.teamPermission === 'Administrator') || connectedUser.isDaikokuAdmin
 
   const handleCheckout = (demandId: string) => {
     return Services.rerunProcess(props.team._id, demandId)
@@ -76,6 +77,7 @@ export const LastDemands = (props: LastDemandsProps) => {
       message: translate('demand.delete.modal.message')
     })
       .then(() => Services.cancelProcess(props.team._id, demandId))
+      .then(() => queryClient.invalidateQueries({ queryKey: ["widget", "widget_team_last_demands"] }));
   }
 
   return (

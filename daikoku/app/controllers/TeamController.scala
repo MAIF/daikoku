@@ -848,8 +848,11 @@ class TeamController(
                       implicit val language: String =
                         tenant.defaultLanguage.getOrElse("en")
 
-                      val link = env.getDaikokuUrl(ctx.tenant, s"/join?token=${invitedUser.invitation.get.token}")
-                        tenant.mailer
+                      val link = env.getDaikokuUrl(
+                        ctx.tenant,
+                        s"/join?token=${invitedUser.invitation.get.token}"
+                      )
+                      tenant.mailer
                         .send(
                           s"Join ${team.name}",
                           Seq(email),
@@ -952,11 +955,11 @@ class TeamController(
         // TODO: verify if the behavior is correct
         case team if team.includeUser(UserId(id)) =>
           env.dataStore.userRepo.findByIdNotDeleted(id).map {
-            case None       => Left(AppError.UserNotFound)
+            case None       => Left(AppError.UserNotFound(None))
             case Some(user) => Right(Ok(user.asSimpleJson))
           }
         case _ =>
-          FastFuture.successful(Left(AppError.UserNotFound))
+          FastFuture.successful(Left(AppError.UserNotFound()))
       }
     }
 

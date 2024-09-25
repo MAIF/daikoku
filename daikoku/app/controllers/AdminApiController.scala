@@ -322,7 +322,7 @@ class StateAdminApiController(
     }
 
   def reset() =
-    DaikokuApiAction.async { _ =>
+    DaikokuApiAction.async { ctx =>
       (for {
         _ <- EitherT.cond[Future][AppError, Unit](
           env.config.isDev || env.config.mode == DaikokuMode.Test,
@@ -330,7 +330,9 @@ class StateAdminApiController(
           AppError.SecurityError("Action not avalaible")
         )
         _ <- EitherT.liftF[Future, AppError, Unit](env.dataStore.clear())
-        _ <- EitherT.liftF[Future, AppError, Done](env.initDatastore())
+        _ <- EitherT.liftF[Future, AppError, Done](
+          env.initDatastore(ctx.request.getQueryString("path"))
+        )
       } yield Ok(Json.obj("done" -> true)))
         .leftMap(_.render())
         .merge
@@ -526,11 +528,15 @@ class ApiAdminApiController(
               .findOne(
                 Json.obj(
                   "_id" -> Json.obj("$ne" -> entity.id.asJson),
-                  "name" -> entity.name,
-                ) ++ entity.parent.map(p => Json.obj("_id" -> p.asJson)).getOrElse(Json.obj())
+                  "name" -> entity.name
+                ) ++ entity.parent
+                  .map(p => Json.obj("_id" -> p.asJson))
+                  .getOrElse(Json.obj())
               )
               .map {
-                case Some(api) if entity.parent.contains(api.id) || api.parent.contains(entity.id) =>
+                case Some(api)
+                    if entity.parent.contains(api.id) || api.parent
+                      .contains(entity.id) =>
                   Right(())
                 case Some(_) =>
                   Left(AppError.ParsingPayloadError("Api name already exists"))
@@ -545,7 +551,9 @@ class ApiAdminApiController(
                 Json.obj(
                   "_id" -> Json.obj("$ne" -> entity.id.asJson),
                   "name" -> entity.name
-                ) ++ entity.parent.map(p => Json.obj("_id" -> p.asJson)).getOrElse(Json.obj())
+                ) ++ entity.parent
+                  .map(p => Json.obj("_id" -> p.asJson))
+                  .getOrElse(Json.obj())
               )
               .map {
                 case None =>

@@ -20,10 +20,10 @@ test.beforeAll(async () => {
 test('manage team as admin', async ({ page }) => {
   await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByPlaceholder('Email adress').fill('user@foo.bar');
+  await page.getByPlaceholder('Email address').fill('user@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
   await page.getByPlaceholder('Password').press('Enter');
-  await page.locator('div:nth-child(3) > .notification-link').first().click();
+  await page.locator('div:nth-child(4) > .notification-link').first().click();
   await page.locator('span.block__entry__link').filter({ hasText: 'Team' }).first().click();
   await page.getByLabel('Name').fill('komainu');
   await page.getByRole('button', { name: 'Create' }).click();
@@ -56,7 +56,7 @@ test('manage team as admin', async ({ page }) => {
 // test('join a team as daikoku user', async ({ page }) => {
 //   await page.goto('http://localhost:9000/apis');
 //   await page.getByRole('img', { name: 'user menu' }).click();
-//   await page.getByPlaceholder('Email adress').fill('tester@foo.bar');
+//   await page.getByPlaceholder('Email address').fill('tester@foo.bar');
 //   await page.getByPlaceholder('Password').fill('password');
 //   await page.getByPlaceholder('Password').press('Enter');
 //   await page.waitForResponse(r => r.url().includes('/api/me/context') && r.status() === 200)

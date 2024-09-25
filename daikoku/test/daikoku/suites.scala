@@ -6,7 +6,6 @@ import com.themillhousegroup.scoup.Scoup
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
@@ -18,17 +17,9 @@ import org.joda.time.DateTime
 import org.jsoup.nodes.Document
 import org.mindrot.jbcrypt.BCrypt
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{
-  Args,
-  BeforeAndAfterAll,
-  FailedStatus,
-  Status,
-  Suite,
-  TestSuite,
-  TestSuiteMixin
-}
+import org.scalatest._
 import org.scalatestplus.play.components.OneServerPerSuiteWithComponents
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsArray, JsNull, JsObject, JsValue, Json}
 import play.api.libs.ws.{DefaultWSCookie, WSResponse}
 import play.api.{Application, BuiltInComponents, Logger}
 
@@ -37,7 +28,6 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, StandardCopyOption}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
-import scala.concurrent.impl.Promise
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.sys.process.ProcessLogger
 import scala.util.{Failure, Success, Try}
@@ -734,6 +724,185 @@ object utils {
       promise.future
     }
 
+    val parentRouteId = "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
+    val childRouteId = "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"
+    val otherRouteId = "route_d74ea8b27-b8be-4177-82d9-c50722416c51"
+    val parent2ApkAsJson = Json.obj(
+      "_loc" -> Json.obj(
+        "tenant" -> "default",
+        "teams" -> Json.arr("default")
+      ),
+      "clientId" -> "fu283imnfv8jdt4e",
+      "clientSecret" -> "yaodpdfu283imnfv8jdt4eivaow6ipvh6ta9dwvd3tor9vf9wovxs6i5a2v7ep6m",
+      "clientName" -> "daikoku_test_parent_key_2_childs",
+      "description" -> "",
+      "authorizedGroup" -> JsNull,
+      "authorizedEntities" -> Json.arr(
+        s"route_$parentRouteId",
+        s"route_$childRouteId",
+        s"route_$otherRouteId"
+      ),
+      "authorizations" -> Json.arr(
+        Json.obj(
+          "kind" -> "route",
+          "id" -> parentRouteId
+        ),
+        Json.obj(
+          "kind" -> "route",
+          "id" -> childRouteId
+        ),
+        Json.obj(
+          "kind" -> "route",
+          "id" -> otherRouteId
+        )
+      ),
+      "enabled" -> true,
+      "readOnly" -> false,
+      "allowClientIdOnly" -> false,
+      "throttlingQuota" -> 10000000,
+      "dailyQuota" -> 10000000,
+      "monthlyQuota" -> 10000000,
+      "constrainedServicesOnly" -> false,
+      "restrictions" -> Json.obj(
+        "enabled" -> false,
+        "allowLast" -> true,
+        "allowed" -> Json.arr(),
+        "forbidden" -> Json.arr(),
+        "notFound" -> Json.arr()
+      ),
+      "rotation" -> Json.obj(
+        "enabled" -> false,
+        "rotationEvery" -> 744,
+        "gracePeriod" -> 168,
+        "nextSecret" -> JsNull
+      ),
+      "validUntil" -> JsNull,
+      "tags" -> Json.arr(),
+      "metadata" -> Json.obj(
+        "daikoku__metadata" -> "| foo",
+        "foo" -> "bar"
+      )
+    )
+    val parentApkAsJson = Json.obj(
+      "_loc" -> Json.obj(
+        "tenant" -> "default",
+        "teams" -> Json.arr("default")
+      ),
+      "clientId" -> "5w24yl2ly3dlnn92",
+      "clientSecret" -> "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db",
+      "clientName" -> "daikoku_test_parent_key",
+      "description" -> "",
+      "authorizedGroup" -> JsNull,
+      "authorizedEntities" -> Json.arr(
+        s"route_$parentRouteId",
+        s"route_$childRouteId"
+      ),
+      "authorizations" -> Json.arr(
+        Json.obj(
+          "kind" -> "route",
+          "id" -> parentRouteId
+        ),
+        Json.obj(
+          "kind" -> "route",
+          "id" -> childRouteId
+        )
+      ),
+      "enabled" -> true,
+      "readOnly" -> false,
+      "allowClientIdOnly" -> false,
+      "throttlingQuota" -> 10000000,
+      "dailyQuota" -> 10000000,
+      "monthlyQuota" -> 10000000,
+      "constrainedServicesOnly" -> false,
+      "restrictions" -> Json.obj(
+        "enabled" -> false,
+        "allowLast" -> true,
+        "allowed" -> Json.arr(),
+        "forbidden" -> Json.arr(),
+        "notFound" -> Json.arr()
+      ),
+      "rotation" -> Json.obj(
+        "enabled" -> false,
+        "rotationEvery" -> 744,
+        "gracePeriod" -> 168,
+        "nextSecret" -> JsNull
+      ),
+      "validUntil" -> JsNull,
+      "tags" -> Json.arr(),
+      "metadata" -> Json.obj()
+    )
+
+    def cleanOtoroshiServer(
+        otoroshiPort: Int,
+        apks: Seq[JsValue] = Seq(parentApkAsJson, parent2ApkAsJson)
+    ) = {
+      val apikeys = daikokuComponents.env.wsClient
+        .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
+        .withHttpHeaders(
+          Map(
+            "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+            "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+            "Host" -> "otoroshi-api.oto.tools"
+          ).toSeq: _*
+        )
+        .withFollowRedirects(false)
+        .withRequestTimeout(10.seconds)
+        .withMethod("GET")
+        .execute()
+        .map(_.json.as[JsArray].value.toSeq)
+
+      for {
+        _ <-
+          Source
+            .futureSource(apikeys.map(Source(_)))
+            .mapAsync(5)(apk => {
+              val clientId = (apk \ "clientId").as[String]
+              if (clientId == "admin-api-apikey-id") {
+                FastFuture.successful(true)
+              } else {
+                logger.info(s"[init otoroshi] :: delete $clientId")
+                daikokuComponents.env.wsClient
+                  .url(
+                    s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys/${(apk \ "clientId").as[String]}"
+                  )
+                  .withHttpHeaders(
+                    Map(
+                      "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+                      "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+                      "Host" -> "otoroshi-api.oto.tools"
+                    ).toSeq: _*
+                  )
+                  .withFollowRedirects(false)
+                  .withRequestTimeout(10.seconds)
+                  .withMethod("DELETE")
+                  .execute()
+                  .map(_ => true)
+              }
+            })
+            .runWith(Sink.ignore)
+        _ <- Future.sequence(
+          apks.map(apk =>
+            daikokuComponents.env.wsClient
+              .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
+              .withHttpHeaders(
+                Map(
+                  "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+                  "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+                  "Host" -> "otoroshi-api.oto.tools"
+                ).toSeq: _*
+              )
+              .withFollowRedirects(false)
+              .withRequestTimeout(10.seconds)
+              .withMethod("POST")
+              .withBody(apk)
+              .execute()
+              .map(_ => true)
+          )
+        )
+      } yield true
+
+    }
+
     def otoroshiPathApiKeyQuotas(clientId: String) =
       s"/api/apikeys/$clientId/quotas"
     val otoroshiPathStats = s"/api/stats"
@@ -747,6 +916,26 @@ object utils {
     lazy val wireMockUrl = s"http://$stubHost:$stubPort"
     val stubPort = 11112
     val stubHost = "localhost"
+    lazy val containerizedOtoroshiUrl = "http://ototoshi.oto.tools:8080"
+
+    val otoroshiAdminApiKey = OtoroshiApiKey(
+      clientName = "Otoroshi Backoffice ApiKey",
+      clientId = "admin-api-apikey-id",
+      clientSecret = "admin-api-apikey-secret"
+    )
+    val parentApiKey = OtoroshiApiKey(
+      clientName = "daikoku_test_parent_key",
+      clientId = "5w24yl2ly3dlnn92",
+      clientSecret =
+        "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db"
+    )
+    //apikey with child_route & other_route (with parent) as authorized entities & {"foo": "bar"} as metadata
+    val parentApiKeyWith2childs = OtoroshiApiKey(
+      clientName = "daikoku_test_parent_key_2_childs",
+      clientId = "fu283imnfv8jdt4e",
+      clientSecret =
+        "yaodpdfu283imnfv8jdt4eivaow6ipvh6ta9dwvd3tor9vf9wovxs6i5a2v7ep6m"
+    )
 
     val teamOwnerId = TeamId("team-owner")
     val teamConsumerId = TeamId("team-consumer")
@@ -759,6 +948,7 @@ object utils {
     val userTeamUserId = UserId("team-user")
 
     val wiremockedOtoroshi = OtoroshiSettingsId("wiremock")
+    val containerizedOtoroshi = OtoroshiSettingsId("test-container")
 
     val teamOwner = Team(
       id = teamOwnerId,
@@ -1011,6 +1201,14 @@ object utils {
       adminApi = adminApi2.id,
       adminSubscriptions = Seq.empty,
       contact = "contactII@test-corp.foo.bar"
+    )
+
+    val envModeDev = "dev"
+    val envModeProd = "prod"
+
+    val tenantEnvMode = tenant.copy(
+      display = TenantDisplay.Environment,
+      environments = Set(envModeDev, envModeProd)
     )
 
     def generateApi(

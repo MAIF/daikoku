@@ -47,6 +47,9 @@
 input:checked + .slider {
   background-color: $success-color;
 }
+input:not(:checked) + .slider {
+  background-color: $error-color;
+}
 
 input:focus + .slider {
   box-shadow: 0 0 1px $success-color;
@@ -75,8 +78,8 @@ input:checked + .slider:before {
 }
 
 .switch--disabled {
+  cursor: not-allowed;
   label {
     pointer-events: none;
   }
-  cursor: not-allowed;
 }

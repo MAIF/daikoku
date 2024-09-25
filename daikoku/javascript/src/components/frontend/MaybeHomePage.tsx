@@ -36,7 +36,7 @@ export const MaybeHomePage = ({
 
     if (!tenant.homePageVisible || connectedUser?._humanReadableId) {
       navigate('/apis');
-    } else window.location.replace('/_/');
+    }
   }, []);
 
   return null;

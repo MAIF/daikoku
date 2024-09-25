@@ -191,7 +191,7 @@ object json {
     override def reads(json: JsValue): JsResult[SpecificationType] =
       json.as[String] match {
         case "openapi"  => JsSuccess(SpecificationType.OpenApi)
-        case "asyncapi"    => JsSuccess(SpecificationType.AsyncApi)
+        case "asyncapi" => JsSuccess(SpecificationType.AsyncApi)
         case str        => JsError(s"Bad specification type value: $str")
       }
 
@@ -201,26 +201,28 @@ object json {
   val TestingFormat = new Format[Testing] {
     override def reads(json: JsValue): JsResult[Testing] = {
       json match {
-        case JsObject(_) => Try {
-          JsSuccess(
-            Testing(
-              enabled = (json \ "enabled").asOpt[Boolean].getOrElse(false),
-              auth = (json \ "auth").asOpt[String].filter(_.trim.nonEmpty) match {
-                case Some("ApiKey") => TestingAuth.ApiKey
-                case Some("Basic")  => TestingAuth.Basic
-                case _              => TestingAuth.Basic
-              },
-              name = (json \ "name").asOpt[String].filter(_.trim.nonEmpty),
-              username =
-                (json \ "username").asOpt[String].filter(_.trim.nonEmpty),
-              password =
-                (json \ "password").asOpt[String].filter(_.trim.nonEmpty),
-              config = (json \ "config").asOpt(TestingConfigFormat)
+        case JsObject(_) =>
+          Try {
+            JsSuccess(
+              Testing(
+                enabled = (json \ "enabled").asOpt[Boolean].getOrElse(false),
+                auth =
+                  (json \ "auth").asOpt[String].filter(_.trim.nonEmpty) match {
+                    case Some("ApiKey") => TestingAuth.ApiKey
+                    case Some("Basic")  => TestingAuth.Basic
+                    case _              => TestingAuth.Basic
+                  },
+                name = (json \ "name").asOpt[String].filter(_.trim.nonEmpty),
+                username =
+                  (json \ "username").asOpt[String].filter(_.trim.nonEmpty),
+                password =
+                  (json \ "password").asOpt[String].filter(_.trim.nonEmpty),
+                config = (json \ "config").asOpt(TestingConfigFormat)
+              )
             )
-          )
-        } recover {
-          case e => JsError(e.getMessage)
-        } get
+          } recover {
+            case e => JsError(e.getMessage)
+          } get
         case _ => JsError()
       }
 
@@ -1810,25 +1812,26 @@ object json {
   val SwaggerAccessFormat = new Format[SwaggerAccess] {
     override def reads(json: JsValue): JsResult[SwaggerAccess] = {
       json match {
-        case JsObject(_) => Try {
-          JsSuccess(
-            SwaggerAccess(
-              url = (json \ "url").asOpt[String],
-              content = (json \ "content").asOpt[String],
-              headers = (json \ "headers")
-                .asOpt[Map[String, String]]
-                .getOrElse(Map.empty[String, String]),
-              additionalConf = (json \ "additionalConf").asOpt[JsObject],
-              specificationType = (json \ "specificationType")
-                .asOpt(SpecificationTypeFormat)
-                .getOrElse(SpecificationType.OpenApi)
+        case JsObject(_) =>
+          Try {
+            JsSuccess(
+              SwaggerAccess(
+                url = (json \ "url").asOpt[String],
+                content = (json \ "content").asOpt[String],
+                headers = (json \ "headers")
+                  .asOpt[Map[String, String]]
+                  .getOrElse(Map.empty[String, String]),
+                additionalConf = (json \ "additionalConf").asOpt[JsObject],
+                specificationType = (json \ "specificationType")
+                  .asOpt(SpecificationTypeFormat)
+                  .getOrElse(SpecificationType.OpenApi)
+              )
             )
-          )
-        } recover {
-          case e =>
-            AppLogger.error(e.getMessage, e)
-            JsError(e.getMessage)
-        } get
+          } recover {
+            case e =>
+              AppLogger.error(e.getMessage, e)
+              JsError(e.getMessage)
+          } get
         case _ => JsError()
       }
 
@@ -2201,6 +2204,9 @@ object json {
             tenantMode = (json \ "tenantMode").asOpt(TenantModeFormat),
             aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity")
               .asOpt[Boolean],
+            environmentAggregationApiKeysSecurity =
+              (json \ "environmentAggregationApiKeysSecurity")
+                .asOpt[Boolean],
             robotTxt = (json \ "robotTxt").asOpt[String],
             thirdPartyPaymentSettings = (json \ "thirdPartyPaymentSettings")
               .asOpt(SeqThirdPartyPaymentSettingsFormat)
@@ -2272,6 +2278,10 @@ object json {
           .getOrElse(JsNull)
           .as[JsValue],
         "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
+          .map(JsBoolean)
+          .getOrElse(JsBoolean(false))
+          .as[JsValue],
+        "environmentAggregationApiKeysSecurity" -> o.environmentAggregationApiKeysSecurity
           .map(JsBoolean)
           .getOrElse(JsBoolean(false))
           .as[JsValue],
@@ -2564,8 +2574,7 @@ object json {
               .asOpt(SeqVersionFormat)
               .map(_.toSet)
               .getOrElse(Set.empty),
-            testing =
-              (json \ "testing").asOpt(TestingFormat),
+            testing = (json \ "testing").asOpt(TestingFormat),
             documentation = (json \ "documentation")
               .as(ApiDocumentationFormat),
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
@@ -3213,6 +3222,8 @@ object json {
           case "NewIssueOpen"         => NewIssueOpenFormat.reads(json)
           case "NewCommentOnIssue"    => NewCommentOnIssueFormat.reads(json)
           case "TransferApiOwnership" => TransferApiOwnershipFormat.reads(json)
+          case "ApiSubscriptionTransferSuccess" =>
+            ApiSubscriptionTransferSuccessFormat.reads(json)
           case "CheckoutForSubscription" =>
             CheckoutForSubscriptionFormat.reads(json)
           case str => JsError(s"Bad notification value: $str")
@@ -3232,6 +3243,11 @@ object json {
             ApiSubscriptionDemandFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiSubscription"
             )
+          case p: ApiSubscriptionTransferSuccess =>
+            ApiSubscriptionTransferSuccessFormat.writes(p).as[JsObject] ++ Json
+              .obj(
+                "type" -> "ApiSubscriptionTransferSuccess"
+              )
           case p: ApiSubscriptionReject =>
             ApiSubscriptionRejectFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiSubscriptionReject"
@@ -3475,6 +3491,27 @@ object json {
           .as[JsValue]
       )
   }
+  val ApiSubscriptionTransferSuccessFormat =
+    new Format[ApiSubscriptionTransferSuccess] {
+
+      override def reads(
+          json: JsValue
+      ): JsResult[ApiSubscriptionTransferSuccess] =
+        Try {
+          JsSuccess(
+            ApiSubscriptionTransferSuccess(
+              subscription = (json \ "subscription").as(ApiSubscriptionIdFormat)
+            )
+          )
+        } recover {
+          case e => JsError(e.getMessage)
+        } get
+
+      override def writes(o: ApiSubscriptionTransferSuccess): JsValue =
+        Json.obj(
+          "subscription" -> o.subscription.asJson
+        )
+    }
   val ApiSubscriptionRejectFormat = new Format[ApiSubscriptionReject] {
     override def reads(json: JsValue): JsResult[ApiSubscriptionReject] =
       Try {
@@ -4752,6 +4789,38 @@ object json {
         "name" -> o.name,
         "publicKey" -> o.publicKey,
         "secretKey" -> o.secretKey
+      )
+  }
+
+  val ApiSubscriptionTransferFormat = new Format[ApiSubscriptionTransfer] {
+
+    override def reads(json: JsValue): JsResult[ApiSubscriptionTransfer] =
+      Try {
+        ApiSubscriptionTransfer(
+          id = (json \ "_id").as(DatastoreIdFormat),
+          tenant = (json \ "_tenant").as(TenantIdFormat),
+          deleted = (json \ "_deleted").as[Boolean],
+          token = (json \ "token").as[String],
+          subscription = (json \ "subscription").as(ApiSubscriptionIdFormat),
+          by = (json \ "by").as(UserIdFormat),
+          date = (json \ "date").as(DateTimeFormat)
+        )
+      } match {
+        case Failure(e) =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+        case Success(value) => JsSuccess(value)
+      }
+
+    override def writes(o: ApiSubscriptionTransfer): JsValue =
+      Json.obj(
+        "_id" -> o.id.asJson,
+        "_tenant" -> o.tenant.asJson,
+        "_deleted" -> o.deleted,
+        "token" -> o.token,
+        "subscription" -> o.subscription.asJson,
+        "by" -> o.by.asJson,
+        "date" -> DateTimeFormat.writes(o.date)
       )
   }
 

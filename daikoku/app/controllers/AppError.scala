@@ -2,6 +2,7 @@ package controllers
 
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import controllers.AppError.toJson
+import fr.maif.otoroshi.daikoku.domain.UserId
 import play.api.libs.json.{JsObject, Json}
 import play.api.mvc
 import play.api.mvc.Results._
@@ -25,7 +26,7 @@ object AppError {
   case object ApiGroupNotFound extends AppError
   case object TenantNotFound extends AppError
   case object TeamNotFound extends AppError
-  case object UserNotFound extends AppError
+  case class UserNotFound(user: Option[UserId] = None) extends AppError
   case class EntityNotFound(entityName: String) extends AppError
   case object ForbiddenAction extends AppError
   case object OtoroshiSettingsNotFound extends AppError
@@ -51,6 +52,7 @@ object AppError {
   case object SubscriptionAggregationTeamConflict extends AppError
   case object SubscriptionAggregationOtoroshiConflict extends AppError
   case object SubscriptionAggregationDisabled extends AppError
+  case object EnvironmentSubscriptionAggregationDisabled extends AppError
   case object MissingParentSubscription extends AppError
   case object TranslationNotFound extends AppError
   case object Unauthorized extends AppError
@@ -77,7 +79,7 @@ object AppError {
       case ApiGroupNotFound           => NotFound(toJson(error))
       case TeamNotFound               => NotFound(toJson(error))
       case TenantNotFound             => NotFound(toJson(error))
-      case UserNotFound               => NotFound(toJson(error))
+      case UserNotFound(_)            => NotFound(toJson(error))
       case EntityNotFound(_)          => NotFound(toJson(error))
       case SubscriptionDemandNotFound => NotFound(toJson(error))
       case SubscriptionDemandClosed   => Forbidden(toJson(error))
@@ -94,17 +96,19 @@ object AppError {
       case ApiNotLinked     => BadRequest(toJson(error))
       case UserNotTeamAdmin(userId, teamId) =>
         play.api.mvc.Results.Unauthorized(toJson(error))
-      case OtoroshiError(e)                        => BadRequest(e)
-      case PaymentError(_)                         => BadRequest(toJson(error))
-      case SubscriptionConflict                    => Conflict(toJson(error))
-      case ApiKeyRotationConflict                  => Conflict(toJson(error))
-      case EntityConflict(_)                       => Conflict(toJson(error))
-      case ApiKeyRotationError(e)                  => BadRequest(e)
-      case ForbiddenAction                         => Forbidden(toJson(error))
-      case ApiKeyCustomMetadataNotPrivided         => BadRequest(toJson(error))
-      case SubscriptionNotFound                    => NotFound(toJson(error))
-      case SubscriptionParentExisted               => Conflict(toJson(error))
-      case SubscriptionAggregationDisabled         => BadRequest(toJson(error))
+      case OtoroshiError(e)                => BadRequest(e)
+      case PaymentError(_)                 => BadRequest(toJson(error))
+      case SubscriptionConflict            => Conflict(toJson(error))
+      case ApiKeyRotationConflict          => Conflict(toJson(error))
+      case EntityConflict(_)               => Conflict(toJson(error))
+      case ApiKeyRotationError(e)          => BadRequest(e)
+      case ForbiddenAction                 => Forbidden(toJson(error))
+      case ApiKeyCustomMetadataNotPrivided => BadRequest(toJson(error))
+      case SubscriptionNotFound            => NotFound(toJson(error))
+      case SubscriptionParentExisted       => Conflict(toJson(error))
+      case SubscriptionAggregationDisabled => BadRequest(toJson(error))
+      case EnvironmentSubscriptionAggregationDisabled =>
+        BadRequest(toJson(error))
       case SubscriptionAggregationTeamConflict     => Conflict(toJson(error))
       case SubscriptionAggregationOtoroshiConflict => Conflict(toJson(error))
       case MissingParentSubscription               => NotFound(toJson(error))
@@ -114,7 +118,7 @@ object AppError {
       case NameAlreadyExists                       => Conflict(toJson(error))
       case ThirdPartyPaymentSettingsNotFound       => NotFound(toJson(error))
       case SecurityError(security) =>
-        play.api.mvc.Results.Unauthorized(toJson(error))
+        play.api.mvc.Results.Forbidden(toJson(error))
       case TeamAlreadyVerified => Conflict(toJson(error))
       case UnexpectedError     => BadRequest(toJson(error))
       case InternalServerError(message) =>
@@ -124,20 +128,21 @@ object AppError {
 
   def getErrorMessage(error: AppError) =
     error match {
-      case OtoroshiError(e)           => Json.stringify(e) //todo: ???
-      case ApiKeyRotationError(e)     => Json.stringify(e) //todo: ???
-      case PaymentError(e)            => e
-      case ParsingPayloadError(msg)   => s"Error while parsing payload: $msg"
-      case BadRequestError(e)         => e
-      case ApiVersionConflict         => "This version already existed"
-      case TeamNameAlreadyExists      => "The name of this team already exists"
-      case ApiNotFound                => "API not found"
-      case ApiNotPublished            => "API not published"
-      case PageNotFound               => "Page not found"
-      case ApiGroupNotFound           => "API group not found"
-      case TeamNotFound               => "Team not found"
-      case TenantNotFound             => "Tenant not found"
-      case UserNotFound               => "User not found"
+      case OtoroshiError(e)         => Json.stringify(e) //todo: ???
+      case ApiKeyRotationError(e)   => Json.stringify(e) //todo: ???
+      case PaymentError(e)          => e
+      case ParsingPayloadError(msg) => s"Error while parsing payload: $msg"
+      case BadRequestError(e)       => e
+      case ApiVersionConflict       => "This version already existed"
+      case TeamNameAlreadyExists    => "The name of this team already exists"
+      case ApiNotFound              => "API not found"
+      case ApiNotPublished          => "API not published"
+      case PageNotFound             => "Page not found"
+      case ApiGroupNotFound         => "API group not found"
+      case TeamNotFound             => "Team not found"
+      case TenantNotFound           => "Tenant not found"
+      case UserNotFound(user) =>
+        s"User not found ${user.map(id => s"(ID: $id)").getOrElse("")}"
       case EntityNotFound(name)       => s"$name not found"
       case NotificationNotFound       => "Notification not found"
       case SubscriptionDemandNotFound => "SubscriptionDemand not found"
@@ -165,6 +170,8 @@ object AppError {
         "The subscription already has a subscription parent - it cannot be extended any further"
       case SubscriptionAggregationDisabled =>
         "Aggregation of api keys is disabled on plan or on tenant"
+      case EnvironmentSubscriptionAggregationDisabled =>
+        "Aggregation of api keys is disabled on plan or on tenant for environment mode"
       case SubscriptionAggregationTeamConflict =>
         "The new subscription has another team of the parent subscription"
       case SubscriptionAggregationOtoroshiConflict =>

@@ -13,7 +13,7 @@ export const LoginOrRegisterModal = (props: ILoginOrRegisterModalProps & IBaseMo
     <div className="modal-content mx-auto" style={{ maxWidth: '448px' }}>
       {!props.showOnlyMessage && (
         <div className="modal-header">
-          <h5 className="modal-title">{translate('consume.apikey')}</h5>
+          <h5 className="modal-title">{props.title ?? translate('consume.apikey')}</h5>
           <button
             type="button"
             className="btn-close"
@@ -24,7 +24,7 @@ export const LoginOrRegisterModal = (props: ILoginOrRegisterModalProps & IBaseMo
       )}
       <div className="modal-body">
         <div className="modal-description">
-          {props.showOnlyMessage ? props.message : translate('get.apikey.requires.login')}
+          {props.message ?? translate('get.apikey.requires.login')}
         </div>
       </div>
       <div

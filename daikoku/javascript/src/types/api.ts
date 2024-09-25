@@ -149,14 +149,14 @@ export interface IImportingDocumentation {
 
 export enum SpecificationType {
   openapi = 'openapi',
-  asyncapi = 'asyncapi'
+  asyncapi = 'asyncapi',
 }
 export interface ISwagger {
   url?: string;
   content?: string;
   headers: { [key: string]: string };
   additionalConf?: object;
-  specificationType: SpecificationType
+  specificationType: SpecificationType;
 }
 
 export type IValidationStepType = 'teamAdmin' | 'email' | 'payment' | 'httpRequest';

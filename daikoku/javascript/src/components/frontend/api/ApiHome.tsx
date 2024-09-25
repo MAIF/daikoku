@@ -314,7 +314,7 @@ export const ApiHome = ({
         </>) : (<>
           <span className="text-center my-3">{translate('request_api_access')}</span>
           <ActionWithTeamSelector
-            title="Api access"
+            title={translate("api.access.modal.title")}
             description={translate({ key: 'api.access.request', replacements: [params.apIid] })}
             pendingTeams={pendingTeams}
             acceptedTeams={authorizedTeams}
