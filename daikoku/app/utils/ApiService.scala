@@ -2617,7 +2617,6 @@ class ApiService(
     } yield Ok(Json.obj("creation" -> "refused"))
   }
 
-<<<<<<< HEAD
   def getApis[T](ctx: ApiActionContext[T], notDeleted: Boolean = false) = {
     val repo = env.dataStore.apiRepo.forTenant(ctx.tenant)
 
@@ -2644,7 +2643,8 @@ class ApiService(
         }
       })
   }
-=======
+
+
   case class ExtractTransferLink(
       subscription: ApiSubscription,
       childSubscriptions: Seq[ApiSubscription],
@@ -2829,5 +2829,4 @@ class ApiService(
           )
       )
     } yield result
->>>>>>> master
 }

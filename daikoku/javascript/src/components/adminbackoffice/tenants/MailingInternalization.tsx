@@ -15,6 +15,7 @@ import { Table, TableRef } from '../../inputs';
 import { Can, Option, Spinner, tenant as TENANT, manage } from '../../utils';
 import { BeautifulTitle } from '../../utils/BeautifulTitle';
 import { EditFrontOfficeTranslations } from './EditFrontOfficeTranslations';
+import { MailInput } from './MailInput';
 
 const MAIL_CATEGORIES = [
   'subscription', 'new', 'create', 'apikey', 'team', 'api',
@@ -22,8 +23,9 @@ const MAIL_CATEGORIES = [
 ]
 
 const EditMailtemplate = ({
-  tenantId
-}: { tenantId: string }) => {
+  tenantId,
+  mails
+}: { tenantId: string, mails: any }) => {
   const [tenant, setTenant] = useState<ITenantFull>();
   const [mailTemplateTranslations, setMailTemplateTranslations] = useState<Array<any>>([]);
 
@@ -137,36 +139,29 @@ const EditMailtemplate = ({
   }
 
   return (<div className="col-12 pb-3">
-    <div className="my-3">
-      <span className="h5">{translate('Default mail template')}</span>
-      <div className="mt-3">
-        <div className='d-flex'>
-          <div className='flex-grow'>
-            <Form
-              value={{ value: tenant?.mailerSettings?.template }}
-              schema={translationSchema}
-              onSubmit={t => {
-                saveTenant({
-                  ...tenant,
-                  mailerSettings: {
-                    ...tenant.mailerSettings,
-                    template: t.value,
-                  },
-                })
-              }} />
-          </div>
-          <div className='flex-grow d-flex flex-column'>
-            <span className='h5'>Render</span>
-            {tenant?.mailerSettings?.template &&
-              <MarkdownInput className='' preview readOnly />}
-            <div className='d-flex align-items-center flex-grow'>
-              <p>Nothing to render</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-    {mailTemplateTranslations
+    <MailInput
+      defaultRawContent="{{email}}"
+      rawContent={tenant?.mailerSettings?.template}
+      translations={mailTemplateTranslations}
+      _id="-mails-root-tenant-mail-template-"
+      onSubmit={template => {
+        setTenant({
+          ...tenant,
+          mailerSettings: {
+            ...tenant.mailerSettings,
+            template
+          }
+        })
+        // saveTenant({
+        //   ...tenant,
+        //   mailerSettings: {
+        //     ...tenant.mailerSettings,
+        //     template
+        //   },
+        // })
+      }}
+      title="Default mail template" />
+    {/* {mailTemplateTranslations
       .map((translation) => {
         return (<div className="my-3" key={`${translation.key}-${translation.language}`}>
           <span className="h5">{translate('Translation')} : {translation.language}</span>
@@ -174,7 +169,7 @@ const EditMailtemplate = ({
             <Form value={translation} schema={translationSchema} onSubmit={saveTranslation} />
           </div>
         </div>);
-      })}
+      })} */}
   </div>);
 };
 
@@ -378,7 +373,6 @@ export const MailingInternalization = () => {
   }, [domain])
 
   useEffect(() => {
-    console.log('reload table', mails, category)
     if (table.current)
       table.current.update()
   }, [mails, category])

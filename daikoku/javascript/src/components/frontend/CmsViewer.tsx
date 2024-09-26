@@ -15,7 +15,7 @@ export function CmsViewer({ pageId, fields }: CmsViewerProps) {
             .then(page => {
                 setCmsPage(page)
             })
-    }, [pageId])
+    }, [pageId, fields])
 
     if (cmsPage)
         return <div dangerouslySetInnerHTML={{ __html: cmsPage, }} />

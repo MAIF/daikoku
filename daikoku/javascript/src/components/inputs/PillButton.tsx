@@ -10,13 +10,13 @@ export function PillButton({
   pillButtonStyle = {},
 }) {
   return (
-    <div className={`d-flex justify-content-center ${className}`}>
+    <div className={`d-flex ${className}`}>
       <div
         className="p-1"
         style={{
           borderRadius: '24px',
-          backgroundColor: 'var(--bg-color_level2)',
-          color: 'var(--color_level2)',
+          backgroundColor: "var(--level2_bg-color, #e5e7ea)",
+          color: "var(--level2_text-color, #4c4c4d)",
           position: 'relative',
           width: 'fit-content',
           ...style,
