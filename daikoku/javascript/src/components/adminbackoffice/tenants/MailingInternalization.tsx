@@ -140,27 +140,30 @@ const EditMailtemplate = ({
 
   return (<div className="col-12 pb-3">
     <MailInput
-      defaultRawContent="{{email}}"
-      rawContent={tenant?.mailerSettings?.template}
-      translations={mailTemplateTranslations}
-      _id="-mails-root-tenant-mail-template-"
-      onSubmit={template => {
-        setTenant({
-          ...tenant,
-          mailerSettings: {
-            ...tenant.mailerSettings,
-            template
-          }
-        })
-        // saveTenant({
-        //   ...tenant,
-        //   mailerSettings: {
-        //     ...tenant.mailerSettings,
-        //     template
-        //   },
-        // })
+      legacyInformations={{
+        defaultRawContent: "{{email}}",
+        rawContent: tenant?.mailerSettings?.template
       }}
-      title="Default mail template" />
+      // translations={mailTemplateTranslations}
+      cmsPageId="-mails-root-tenant-mail-template-"
+    // onSubmit={template => {
+    //   setTenant({
+    //     ...tenant,
+    //     mailerSettings: {
+    //       ...tenant.mailerSettings,
+    //       template
+    //     }
+    //   })
+    // saveTenant({
+    //   ...tenant,
+    //   mailerSettings: {
+    //     ...tenant.mailerSettings,
+    //     template
+    //   },
+    // })
+    // }}
+    // title="Default mail template" 
+    />
     {/* {mailTemplateTranslations
       .map((translation) => {
         return (<div className="my-3" key={`${translation.key}-${translation.language}`}>

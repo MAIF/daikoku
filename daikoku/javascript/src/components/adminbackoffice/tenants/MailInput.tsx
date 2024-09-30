@@ -1,15 +1,12 @@
-import { CodeInput, Form, format, SelectInput, type } from '@maif/react-forms';
-import { useContext, useEffect, useRef, useState } from "react";
-import { I18nContext } from "../../../contexts";
+import { CodeInput } from '@maif/react-forms';
+import { useEffect, useRef, useState } from "react";
 
 import showdown from 'showdown';
-import classNames from 'classnames';
 
 import '@fortawesome/fontawesome-free/css/all.css';
 import 'highlight.js/styles/monokai.css';
 import { getCmsPage, getMailTranslations } from '../../../services';
 import { PillButton } from '../../inputs/PillButton';
-import { CmsViewer } from '../../frontend/CmsViewer'
 import Select from 'react-select';
 
 function extractRequiredVariables(str?: string) {
@@ -30,14 +27,33 @@ function extractRequiredVariables(str?: string) {
 			words.push(str.substring(pos + 1, (pos < len ? len : len + pos) + 1));
 		}
 	}
-	return words;
+
+	if (str.includes("{{email}}"))
+		words.push("{{email}}")
+
+	return [...new Set(words)];
 }
 
 function overwriteParameters(parameters, content) {
+	if (!content)
+		return ""
+
 	let out = content;
-	for (const parameter in parameters) {
-		out = out?.replace(`[${parameters[parameter]}]`, "COUCOU")
+
+	if (content.includes('{{email}}')) {
+		out = out.replaceAll(`{{email}}`, parameters.email)
 	}
+
+	console.log(out)
+
+	for (const parameter in parameters) {
+		if (parameter !== '{{email}}') {
+			out = out
+				.replaceAll(`[${parameter}]`, parameters[parameter])
+		}
+	}
+
+	// console.log({ parameters, content, out })
 	return out;
 }
 
@@ -118,33 +134,86 @@ const commands = [
 	}
 ];
 
-export function MailInput({ onSubmit, _id, translations, rawContent, defaultRawContent }) {
+const DEFAULT_PARAMETERS = {
+	apiName: "WeatherAPI",
+	user: "john.doe",
+	team: "Development",
+	link: "https://weatherapi.example.com",
+	teamName: "Backend Team",
+	subscription: "Premium Plan",
+	"api.name": "WeatherAPI",
+	"api.plan": "Pro Plan",
+	subject: "New API Subscription",
+	email: "john.doe@to.tools",
+	body: "Bonjour, Vous avez souscrit à la WeatherAPI avec succès. Votre plan actuel est 'Pro Plan'.",
+	tenant: "Acme Corp",
+	urlAccept: "https://example.com/accept",
+	urlDecline: "https://example.com/decline",
+	"{{email}}": ""
+}
 
-	// const { translate } = useContext(I18nContext);
+export function MailInput({ legacyInformations, cmsPageId }) {
 
-	const [email, setEmail] = useState()
-	const [useCmsPage, toggleCmsPage] = useState(false)
-	const [language, toggleLanguage] = useState("fr")
+	const [useCmsPage, setUseCmsPage] = useState(false)
 
-	const [cmsPage, setCmsPage] = useState()
+	const [content, setContent] = useState()
+	const [parameters, setParameters] = useState(DEFAULT_PARAMETERS)
 
-	const [emails, setEmails] = useState([])
-
-	let parameters = extractRequiredVariables(translations.find(t => t.language === language)?.value)
-
-	if (parameters?.includes('email')) {
-		parameters = [
-			...parameters,
-			...extractRequiredVariables(email)
-		]
-	}
+	const language = 'fr'
 
 	useEffect(() => {
-		getCmsPage(`${_id}${language}`, {
-			email,
-		})
-			.then(content => setCmsPage(content))
-	}, [_id, language])
+		if (useCmsPage)
+			getCmsPage(`${cmsPageId}${language}`, {
+				...parameters,
+				email: parameters["{{email}}"]
+			})
+				.then(content => setContent(content))
+	}, [useCmsPage, parameters["{{email}}"]])
+
+	console.log({
+		content,
+	})
+
+	return <>
+		<div className='d-flex gap-3'>
+			<div style={{
+				flex: 1
+			}}>
+				<div className='h5 mb-2'>Format du mail</div>
+				<PillButton
+					className='mb-3'
+					leftText="En ligne"
+					rightText="Page de CMS"
+					onLeftClick={() => setUseCmsPage(false)}
+					onRightClick={() => setUseCmsPage(true)}
+					rightEnabled={!useCmsPage}
+					onChange={console.log}
+				/>
+				<MailContent
+					useCmsPage={useCmsPage}
+					cmsPageId={cmsPageId}
+					legacyInformations={legacyInformations}
+					onLegacyInformationsChange={setContent} />
+			</div>
+			<div style={{
+				flex: 1
+			}} className='section p-3'>
+				<Preview
+					rawContent={content}
+					content={overwriteParameters(parameters,
+						content?.replace("{{email}}", parameters["{{email}}"])
+					)}
+					useCmsPage={useCmsPage}
+					parameters={parameters}
+					setParameters={setParameters} />
+			</div>
+		</div>
+	</>
+}
+
+function Parameters({ parameters, setParameters, content, rawContent }) {
+	const [emails, setEmails] = useState([])
+	const [email, setEmail] = useState()
 
 	useEffect(() => {
 		getMailTranslations()
@@ -153,77 +222,71 @@ export function MailInput({ onSubmit, _id, translations, rawContent, defaultRawC
 				.sort((a, b) => a._id.split(".")[1] < b._id.split(".")[1] ? -1 : 1)
 				.map(r => ({ label: r._id, value: r.content })))
 			.then(setEmails)
-
 	}, [])
 
-	const ref = useRef()
+	const requiredRarameters = extractRequiredVariables(rawContent);
 
-	const cmsPageWithParameters = overwriteParameters(parameters, cmsPage)
+	return <div>
+		<label className='mb-1 mt-3'>Paramètres du mail</label>
+		<Select
+			value={email}
+			options={emails}
+			onChange={email => {
+				setParameters({
+					...parameters,
+					"{{email}}": email.value
+				})
+				setEmail(email)
+			}}
+		/>
 
-	return <div className='d-flex gap-3'>
-		<div style={{
-			flex: 1
-		}}>
-			<div className='h5 mb-2'>Format du mail</div>
-			<PillButton
-				className='mb-3'
-				leftText="En ligne"
-				rightText="Page de CMS"
-				onLeftClick={() => toggleCmsPage(false)}
-				onRightClick={() => toggleCmsPage(true)}
-				rightEnabled={!useCmsPage}
-				onChange={console.log}
-			/>
-			<div className='h5 mb-2'>Contenu</div>
-			{!useCmsPage && <CodeInput
-				value={rawContent || defaultRawContent}
-				onChange={onSubmit}
-				mode={'markdown'}
-				setRef={e => ref.current = e} />}
-
-			{useCmsPage && <p>La page utilisé est {_id}</p>}
-		</div>
-		<div style={{
-			flex: 1
-		}} className='section p-3'>
-			<div>Prévisualisation des mails</div>
-			<div className=''>
-				<label className='mb-1 mt-3'>Langue</label>
-				<PillButton
-					className='pill-button--small'
-					leftText="Francais"
-					rightText="Anglais"
-					onLeftClick={() => toggleLanguage('fr')}
-					onRightClick={() => toggleLanguage('en')}
-					rightEnabled={language === 'fr'}
-					onChange={toggleLanguage}
-				/>
-			</div>
-			<div className=''>
-				<label className='mb-1 mt-3'>Paramètres du mail</label>
-				{parameters?.includes('email') && <Select
-					// label='[email]'
-					// placeholder: 'Select a mail to visualize content'
-					options={emails}
-					value={email}
-					onChange={setEmail}
-				/>}
-				{parameters.filter(f => f !== 'email').map((acc, c) => {
-					return <div key={c}>
-						<label>{c}</label>
-						<input type="text" value="" />
+		<div className='mt-3'>
+			{Object.entries(parameters)
+				.filter(([field, _]) => field !== "{{email}}" && requiredRarameters.includes(field))
+				.map(([field, value]) => {
+					return <div key={field} className='d-flex gap-2 mb-2 justify-space-between'>
+						<label style={{ minWidth: 120 }}>{field}</label>
+						<input type="text"
+							className='form-control'
+							value={value}
+							placeholder='Saisissez une valeur'
+							onChange={e => setParameters({
+								...parameters,
+								[field]: e.target.value
+							})} style={{ flex: 1 }} />
 					</div>
 				})}
-			</div>
-			<div className='section mt-3'>
-				{useCmsPage ?
-					<div dangerouslySetInnerHTML={{ __html: cmsPageWithParameters, }} /> :
-					<div
-						className="mrf-preview "
-						dangerouslySetInnerHTML={{ __html: converter.makeHtml(rawContent.replace('{{email}}', rawContent) || "") }} />}
-			</div>
-
 		</div>
-	</div >
+	</div>
+}
 
+function Preview({ content, rawContent, useCmsPage, parameters, setParameters }) {
+
+	return <div>
+		<div>Prévisualisation des mails</div>
+
+		<Parameters
+			content={content}
+			rawContent={rawContent}
+			parameters={parameters}
+			setParameters={setParameters} />
+
+		{useCmsPage ?
+			<div dangerouslySetInnerHTML={{ __html: content }} /> :
+
+			<div
+				className="mrf-preview "
+				dangerouslySetInnerHTML={{ __html: converter.makeHtml(content || "") }} />}
+	</div>
+}
+
+function MailContent({ useCmsPage, cmsPageId, legacyInformations, onLegacyInformationsChange }) {
+
+	if (useCmsPage)
+		return <p>La page utilisé est {cmsPageId}</p>
+
+	return <CodeInput
+		value={legacyInformations.rawContent || legacyInformations.defaultRawContent}
+		onChange={onLegacyInformationsChange}
+		mode={'markdown'} />
 }

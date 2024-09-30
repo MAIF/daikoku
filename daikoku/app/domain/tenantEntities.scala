@@ -1687,7 +1687,14 @@ case class CmsPage(
       fields: Map[String, Any],
       jsonToCombine: Map[String, JsValue]
   ): Context.Builder =
-    (fields ++ jsonToCombine).foldLeft(context) { (acc, item) =>
+    (fields ++ jsonToCombine.map { case (key, value) => (key, value match {
+      case JsNull => null
+      case boolean: JsBoolean => boolean
+      case JsNumber(value) => value
+      case JsString(value) => value
+      case JsArray(value) => value
+      case JsObject(underlying) => underlying
+    })}).foldLeft(context) { (acc, item) =>
       acc.combine(item._1, item._2)
     }
 
@@ -1749,7 +1756,13 @@ case class CmsPage(
                   s"${env.getDaikokuUrl(ctx.tenant, "/assets/react-app/daikoku.min.css")}"
               }
             ),
-          fields,
+          fields.map { case (key, value)  => (key,
+            value match {
+              case JsString(value) =>
+                value // remove quotes framing string
+              case value => value
+            })
+          },
           jsonToCombine
         )
 
@@ -2056,6 +2069,7 @@ case class CmsPage(
 
         val result = handlebars.compileInline(template).apply(c)
         c.destroy()
+
         FastFuture.successful((result, page.contentType))
       }
     } catch {
