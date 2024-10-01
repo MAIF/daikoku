@@ -18,9 +18,9 @@ export function ApiIssue({
   const [api, setRootApi] = useState<IApi>();
 
   const [filter, setFilter] = useState('open');
-  const [selectedVersion, setSelectedVersion] = useState({ value: 'all version', label: 'All version' });
-
   const { translate } = useContext(I18nContext);
+  
+  const [selectedVersion, setSelectedVersion] = useState({ value: 'all version', label: `${translate('All version')}` });
 
   useEffect(() => {
     Services.getRootApi(props.api._humanReadableId)

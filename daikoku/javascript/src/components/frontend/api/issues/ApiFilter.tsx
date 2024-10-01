@@ -99,7 +99,7 @@ export function ApiFilter({
 
   const options: readonly VersionOption[] = [
     ...availableApiVersions.map((iss) => ({ value: iss, label: `Version : ${iss}` })),
-    { value: 'all version', label: 'All version' },
+    { value: 'all version', label: `${translate('All version')}` },
   ]
 
   return (
