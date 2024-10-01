@@ -122,15 +122,6 @@ export const CMSOffice = () => {
       <div className="d-flex flex-row align-items-center justify-content-between mb-2">
         <h1 className="mb-0">Pages</h1>
         <div>
-          {/* <div className="btn-group dropstart">
-            <button type="button" className="btn btn-sm me-1 btn-outline-primary" data-bs-toggle="dropdown" aria-expanded="false">
-              <i className="fas fa-cog"></i>
-            </button>
-            <ul className="dropdown-menu"> */}
-          <li className="dropdown-item" onClick={() => importRef.current?.click()}>
-            <input ref={r => importRef.current = r} type="file" accept=".zip" className="form-control hide" onChange={loadFiles} />
-            {translate('cms.import_all')}
-          </li>
           <button className="btn btn-sm btn-outline-info" onClick={() => {
             if (!downloading) {
               setDownloading(true);
@@ -147,24 +138,6 @@ export const CMSOffice = () => {
           }}>
             {downloading ? (<Spinner heigth={18} width={18} />) : (translate('cms.export_all'))}
           </button>
-          {/* </ul> */}
-          {/* </div> */}
-          {/* <button onClick={() => {
-            prompt({
-              message: translate('page.prompt.creation.message'),
-              title: translate('page.prompt.creation.title'),
-              placeholder: translate('page.prompt.creation.placeholder'),
-              okLabel: translate('Create')
-            })
-              .then((newPageName) => {
-                if (newPageName) {
-                  Services.createCmsPageWithName(newPageName)
-                    .then((res) => navigate(`${location.pathname}/edit/${res._id}`));
-                }
-              });
-          }} className="btn btn-sm btn-outline-success">
-            {translate('cms.index.new_page')}
-          </button> */}
         </div>
       </div>
 

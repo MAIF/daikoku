@@ -1149,7 +1149,6 @@
     "cms.revisions.restore": "Restore this version",
     "cms.revisions.delete_sentence": "Are you sure to restore this version ?",
     "cms.revisions.version_history": "Version history",
-    "cms.import_all": "Import",
     "updated password can't be saved": "Updated password can't be saved",
     "incorrect password": "Incorrect password",
     "Standard mode": "Standard mode",
