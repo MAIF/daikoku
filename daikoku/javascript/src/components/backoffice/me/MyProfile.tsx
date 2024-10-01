@@ -378,9 +378,6 @@ export const MyProfile = () => {
   const [tab, setTab] = useState('infos');
 
   const { tenant, reloadContext } = useContext(GlobalContext);
-  const [token, setToken] = useState("");
-
-  const [copiedTimeout, setCopiedTimeout] = useState<any>()
 
   const { translate, setLanguage, language, Translation, languages } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
@@ -466,12 +463,6 @@ export const MyProfile = () => {
           toast.error(user.error)
         }
       });
-
-    return () => {
-      if (copiedTimeout) {
-        clearTimeout(copiedTimeout)
-      }
-    }
   }, []);
 
   const save = (data: any) => {
@@ -534,16 +525,6 @@ export const MyProfile = () => {
               onClick={() => setTab('security')}
             >
               <Translation i18nkey="Security">AccountSecurity</Translation>
-            </span>
-          </li>
-          <li className="nav-item">
-            <span
-              className={`nav-link cursor-pointer ${tab === 'cms_cli' ? 'active' : ''}`}
-              onClick={() => {
-                setTab('cms_cli')
-              }}
-            >
-              <Translation i18nkey="CMS CLI">CMS CLI</Translation>
             </span>
           </li>
         </ul>
@@ -623,10 +604,6 @@ export const MyProfile = () => {
             </div>
           </div>
         )}
-
-        {tab === "cms_cli" && <div>
-          <p>Comming soon</p>
-        </div>}
       </div>
     </div>
   );
