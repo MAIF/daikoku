@@ -1,0 +1,163 @@
+{
+  "openapi": "3.0.2",
+  "externalDocs": {
+    "description": "Find out more about Daikoku",
+    "url": "https://maif.github.io/daikoku/"
+  },
+  "info": {
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "contact": {
+      "name": "MAIF open source team",
+      "email": "oss@maif.fr"
+    },
+    "description": "Cms API of Daikoku",
+    "title": "Daikoku Cms API",
+    "version": "16.3.0"
+  },
+  "tags": [],
+  "components": {
+    "schemas": {
+      "CmsPage": {
+        "description": "CmsPage",
+        "properties": {
+          "_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "_id",
+          "enabled",
+          "name",
+          "contact",
+          "adminApi"
+        ]
+      },
+      "done": {
+        "description": "task is done",
+        "properties": {
+          "done": {
+            "type": "boolean"
+          }
+        }
+      },
+      "error": {
+        "description": "error response",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/cms-api/pages/{id}": {
+      "delete": {
+        "summary": "delete a cms page",
+        "operationId": "cmspage.delete",
+        "responses": {
+          "200": {
+            "description": "entity deleted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/done"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "description": "The ID of the cms page to delete",
+            "required": true
+          }
+        ],
+        "tags": [
+          "cmspage"
+        ]
+      },
+      "get": {
+        "summary": "read a cms page",
+        "operationId": "cmspage.findById",
+        "responses": {
+          "200": {
+            "description": "found entity",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "items": {
+                    "$ref": "#/components/schemas/CmsPage"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "entity not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/error"
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "path",
+            "name": "id",
+            "description": "The ID of the cms page to retrieve",
+            "required": true
+          }
+        ],
+        "tags": [
+          "cmspage"
+        ]
+      }
+    }
+  }
+}

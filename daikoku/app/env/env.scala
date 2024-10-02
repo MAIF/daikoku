@@ -150,6 +150,31 @@ object AdminApiConfig {
   }
 }
 
+sealed trait CmsApiConfig
+
+case class LocalCmsApiConfig(key: String) extends CmsApiConfig
+
+case class OtoroshiCmsApiConfig(claimsHeaderName: String, algo: Algorithm)
+  extends CmsApiConfig
+
+object CmsApiConfig {
+  def apply(config: Configuration): CmsApiConfig = {
+    config.getOptional[String]("daikoku.cms.api.type") match {
+      case Some("local") =>
+        LocalCmsApiConfig(config.getOptional[String]("daikoku.cms.api.key").get)
+      case Some("otoroshi") =>
+        OtoroshiCmsApiConfig(
+          config.getOptional[String]("daikoku.cms.api.headerName").get,
+          Algorithm.HMAC512(
+            config.getOptional[String]("daikoku.cms.api.headerSecret").get
+          )
+        )
+      case _ =>
+        LocalCmsApiConfig(config.getOptional[String]("daikoku.api.key").get)
+    }
+  }
+}
+
 class Config(val underlying: Configuration) {
 
   lazy val port: Int = underlying
@@ -254,6 +279,8 @@ class Config(val underlying: Configuration) {
   lazy val init: InitConfig = InitConfig(underlying)
 
   lazy val adminApiConfig: AdminApiConfig = AdminApiConfig(underlying)
+
+  lazy val cmsApiConfig: CmsApiConfig = CmsApiConfig(underlying)
 
   lazy val anonymousReportingUrl: String =
     underlying.get[String]("daikoku.anonymous-reporting.url")
@@ -439,6 +466,8 @@ class DaikokuEnv(
               val administrationTeamId = TeamId("administration")
               val adminApiDefaultTenantId =
                 ApiId(s"admin-api-tenant-${Tenant.Default.value}")
+              val cmsApiDefaultTenantId =
+                ApiId(s"cms-api-tenant-${Tenant.Default.value}")
               val defaultAdminTeam = Team(
                 id = TeamId(IdGenerator.token),
                 tenant = Tenant.Default,
@@ -489,6 +518,45 @@ class DaikokuEnv(
                 authorizedTeams = Seq.empty,
                 state = ApiState.Published
               )
+
+              val cmsApiDefaultPlan = FreeWithoutQuotas(
+                id = UsagePlanId(IdGenerator.token),
+                tenant = Tenant.Default,
+                billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+                currency = Currency("EUR"),
+                customName = Some("admin"),
+                customDescription = None,
+                otoroshiTarget = None,
+                allowMultipleKeys = Some(true),
+                autoRotation = None,
+                subscriptionProcess = Seq.empty,
+                integrationProcess = IntegrationProcess.ApiKey
+              )
+
+              val cmsApiDefaultTenant = Api(
+                id = cmsApiDefaultTenantId,
+                tenant = Tenant.Default,
+                team = defaultAdminTeam.id,
+                name = s"cms-api-tenant-${Tenant.Default.value}",
+                lastUpdate = DateTime.now(),
+                smallDescription = "cms api",
+                description = "cms api",
+                currentVersion = Version("1.0.0"),
+                documentation = ApiDocumentation(
+                  id = ApiDocumentationId(IdGenerator.token(32)),
+                  tenant = Tenant.Default,
+                  pages = Seq.empty[ApiDocumentationDetailPage],
+                  lastModificationAt = DateTime.now()
+                ),
+                swagger =
+                  Some(SwaggerAccess(url = "/cms-api/swagger.json".some)),
+                possibleUsagePlans = Seq(cmsApiDefaultPlan.id),
+                visibility = ApiVisibility.AdminOnly,
+                defaultUsagePlan = cmsApiDefaultPlan.id.some,
+                authorizedTeams = Seq.empty,
+                state = ApiState.Published
+              )
+
               val tenant = Tenant(
                 id = Tenant.Default,
                 name = "Daikoku Default Tenant",
@@ -560,6 +628,14 @@ class DaikokuEnv(
                   dataStore.usagePlanRepo
                     .forTenant(tenant.id)
                     .save(adminApiDefaultPlan)
+                _ <-
+                  dataStore.apiRepo
+                    .forTenant(tenant.id)
+                    .save(cmsApiDefaultTenant)
+                _ <-
+                  dataStore.usagePlanRepo
+                    .forTenant(tenant.id)
+                    .save(cmsApiDefaultPlan)
                 _ <- dataStore.userRepo.save(user)
               } yield ()
 

@@ -145,6 +145,12 @@ case class Translation(
   }
 }
 
+case class IntlTranslation(
+    id: String,
+    translations: Seq[Translation],
+    content: String
+)
+
 case class Evolution(
     id: DatastoreId,
     version: String,

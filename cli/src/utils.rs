@@ -1,10 +1,12 @@
-use std::{fs, path::{Path, PathBuf}};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 use http_body_util::BodyExt;
 use std::io::Read;
 
 use crate::logging::error::{DaikokuCliError, DaikokuResult};
-
 
 pub fn absolute_path(path: String) -> DaikokuResult<String> {
     match expand_tilde(&path) {
@@ -15,7 +17,7 @@ pub fn absolute_path(path: String) -> DaikokuResult<String> {
             .map_err(|_p| DaikokuCliError::FileSystem("failed to canonicalize path".to_string())),
         Some(path) => fs::canonicalize(path)
             .map(|res| res.into_os_string().into_string().unwrap())
-            .map_err(|p| DaikokuCliError::FileSystem(p.to_string()))
+            .map_err(|p| DaikokuCliError::FileSystem(p.to_string())),
     }
 }
 
@@ -52,4 +54,28 @@ pub(crate) async fn frame_to_bytes_body(mut req: hyper::body::Incoming) -> Vec<u
     }
 
     result
+}
+
+pub(crate) trait PathBufExt {
+    fn concat(&self, suffix: &String) -> PathBuf;
+}
+
+impl PathBufExt for PathBuf {
+    fn concat(&self, suffix: &String) -> PathBuf {
+        let mut suffix = suffix.clone();
+
+        if suffix.starts_with("/") {
+            suffix.remove(0);
+        }
+
+        self.join(suffix)
+    }
+}
+
+pub(crate) fn apply_credentials_mask(credential: &String, show_full_credentials: bool) -> String {
+    if show_full_credentials {
+        credential.clone()
+    } else {
+        credential.as_str()[1..10].to_string() + "*******"
+    }
 }

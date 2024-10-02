@@ -24,7 +24,7 @@ import fr.maif.otoroshi.daikoku.domain.json.{
 }
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator, diff_match_patch}
+import fr.maif.otoroshi.daikoku.utils.Errors
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, MessagesApi}
@@ -349,12 +349,15 @@ class HomeController(
   private def render[A](
       ctx: DaikokuActionMaybeWithoutUserContext[A],
       r: CmsPage,
-      req: Option[CmsRequestRendering] = None
+      req: Option[CmsRequestRendering] = None,
+      skipCache: Boolean = false,
+      fields: Map[String, JsValue] = Map.empty[String, JsValue]
   ) = {
+
     val isDraftRender: Boolean =
       ctx.request.getQueryString("draft").contains("true")
     val forceReloading: Boolean =
-      ctx.request.getQueryString("force_reloading").contains("true")
+      ctx.request.getQueryString("force_reloading").contains("true") || skipCache
 
     val cacheId =
       s"${ctx.user.map(_.id.value).getOrElse("")}-${r.path.getOrElse("")}"
@@ -375,13 +378,13 @@ class HomeController(
       })
 
     if (isDraftRender || forceReloading)
-      r.render(ctx, None, req = req).map(res => Ok(res._1).as(res._2))
+      r.render(ctx, None, req = req, jsonToCombine = fields).map(res => Ok(res._1).as(res._2))
     else
       cache.getIfPresent(cacheId) match {
         case Some(value) =>
           FastFuture.successful(Ok(value.content).as(value.contentType))
         case _ =>
-          r.render(ctx, None, req = req)
+          r.render(ctx, None, req = req, jsonToCombine = fields)
             .map(res => {
               cache.put(
                 cacheId,
@@ -394,7 +397,9 @@ class HomeController(
 
   private def cmsPageByIdWithoutAction[A](
       ctx: DaikokuActionMaybeWithoutUserContext[A],
-      id: String
+      id: String,
+      skipCache: Boolean = false,
+      fields: Map[String, JsValue] = Map.empty
   ) = {
     env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id).flatMap {
       case None                        => cmsPageNotFound(ctx)
@@ -405,13 +410,24 @@ class HomeController(
             s"/auth/${ctx.tenant.authProvider.name}/login?redirect=${ctx.request.path}"
           )
         )
-      case Some(page) => render(ctx, page)
+      case Some(page) =>
+        render(ctx, page, skipCache = skipCache, fields = fields)
     }
   }
 
   def cmsPageById(id: String) =
     DaikokuActionMaybeWithoutUser.async { ctx =>
-      cmsPageByIdWithoutAction(ctx, id)
+      cmsPageByIdWithoutAction(ctx, id, skipCache = true)
+    }
+
+  def advancedRenderCmsPageById(id: String) =
+    DaikokuActionMaybeWithoutUser.async(parse.json) { ctx =>
+      cmsPageByIdWithoutAction(ctx, id,
+        skipCache = true,
+        fields = ctx.request.body
+          .asOpt[JsObject]
+          .flatMap(body => (body \ "fields").asOpt[Map[String, JsValue]])
+          .getOrElse(Map.empty[String, JsValue]))
     }
 
   def getCmsPage(id: String) =
@@ -431,265 +447,17 @@ class HomeController(
       }
     }
 
-  def session(userId: String) =
-    DaikokuAction.async { ctx =>
-      DaikokuAdminOrSelf(AuditTrailEvent("@{user.name} get session"))(
-        UserId(userId),
-        ctx
-      ) {
-        val token =
-          ctx.request.cookies.get("daikoku-session").map(_.value).getOrElse("")
-        FastFuture.successful(Ok(Json.obj("token" -> token)))
-      }
-    }
-
-  def sync() =
-    DaikokuAction.async(parse.json) { ctx =>
-      TenantAdminOnly(
-        AuditTrailEvent("@{user.name} sync cms project")
-      )(ctx.tenant.id.value, ctx) { (tenant, _) =>
-        {
-          val body = ctx.request.body
-
-          (for {
-            _ <- env.dataStore.cmsRepo.forTenant(tenant).deleteAll()
-          } yield {
-            Future
-              .sequence(
-                body
-                  .as(Reads.seq(CmsFileFormat.reads))
-                  .map(page => {
-                    env.dataStore.cmsRepo
-                      .forTenant(tenant)
-                      .save(page.toCmsPage(ctx.tenant.id))
-                  })
-              )
-              .map(_ => NoContent)
-              .recover {
-                case e: Throwable =>
-                  BadRequest(Json.obj("error" -> e.getMessage))
-              }
-          }).flatten
-        }
-      }
-    }
-
-  def cmsDiffById(id: String, diffId: String) =
-    DaikokuAction.async { ctx =>
-      TenantAdminOnly(AuditTrailEvent("@{user.name} has get a cms diff"))(
-        ctx.tenant.id.value,
-        ctx
-      ) { (tenant, _) =>
-        {
-          val diffMatchPatch = new diff_match_patch()
-
-          env.dataStore.cmsRepo
-            .forTenant(tenant)
-            .findById(id)
-            .map {
-              case None => NotFound(Json.obj("error" -> "cms page not found"))
-              case Some(page) =>
-                val historySeq = buildCmsPageFromPatches(page.history, diffId)
-                val diffs = diffMatchPatch.diff_main(
-                  page.draft,
-                  historySeq
-                )
-                Ok(
-                  Json.obj(
-                    "html" -> (if (
-                                 ctx.request
-                                   .getQueryString("showDiffs")
-                                   .exists(_.toBoolean)
-                               )
-                                 diffMatchPatch.diff_prettyHtml(diffs)
-                               else historySeq),
-                    "hasDiff" -> !diffs.isEmpty
-                  )
-                )
-            }
-        }
-      }
-    }
-
-  def restoreDiff(id: String, diffId: String) =
-    DaikokuAction.async { ctx =>
-      TenantAdminOnly(
-        AuditTrailEvent(
-          "@{user.name} has restore the cms page @{pageName} with revision of @{diffDate}"
-        )
-      )(ctx.tenant.id.value, ctx) { (tenant, _) =>
-        {
-          env.dataStore.cmsRepo
-            .forTenant(tenant)
-            .findById(id)
-            .flatMap {
-              case None =>
-                FastFuture.successful(
-                  NotFound(Json.obj("error" -> "cms page not found"))
-                )
-              case Some(page) =>
-                ctx.setCtxValue("pageName", page.name)
-                ctx.setCtxValue(
-                  "diffDate",
-                  page.history
-                    .find(_.id == diffId)
-                    .map(_.date)
-                    .getOrElse("unknown date")
-                )
-
-                val newContentPage =
-                  buildCmsPageFromPatches(page.history, diffId)
-                val history = diff(newContentPage, page.draft, ctx.user.id)
-
-                env.dataStore.cmsRepo
-                  .forTenant(tenant)
-                  .save(
-                    page.copy(
-                      draft = newContentPage,
-                      history = (page.history :+ history).take(
-                        tenant.style.map(_.cmsHistoryLength).getOrElse(10) + 1
-                      )
-                    )
-                  )
-                  .map(_ => Ok(Json.obj("restored" -> true)))
-            }
-        }
-      }
-    }
-
-  def createCmsPageWithName(name: String) =
-    DaikokuAction.async { ctx =>
-      TenantAdminOnly(
-        AuditTrailEvent("@{user.name} has created a cms page with name")
-      )(ctx.tenant.id.value, ctx) { (tenant, _) =>
-        {
-          val page = CmsPage(
-            id = CmsPageId(IdGenerator.token(32)),
-            tenant = tenant.id,
-            visible = true,
-            authenticated = false,
-            name = name,
-            forwardRef = None,
-            tags = List(),
-            metadata = Map(),
-            draft = "",
-            contentType = "text/html",
-            body = "",
-            path = Some("/" + IdGenerator.token(32))
-          )
-          env.dataStore.cmsRepo
-            .forTenant(tenant)
-            .save(page)
-            .map {
-              case true => Created(page.asJson)
-              case false =>
-                BadRequest(Json.obj("error" -> "Error when creating cms page"))
-            }
-        }
-      }
-    }
-
-  def diff(a: String, b: String, userId: UserId): CmsHistory = {
-    val patchMatch = new diff_match_patch()
-    val diff = patchMatch.patch_toText(patchMatch.patch_make(a, b))
-    CmsHistory(
-      id = IdGenerator.token(32),
-      date = DateTime.now(),
-      diff = diff,
-      user = userId
-    )
-  }
-
-  private def buildCmsPageFromPatches(
-      history: Seq[CmsHistory],
-      diffId: String
-  ): String = {
-    var diffReached = false
-    val items = history.flatMap(item => {
-      if (item.id == diffId) {
-        diffReached = true
-        Some(item)
-      } else if (!diffReached)
-        Some(item)
-      else
-        None
-    })
-    val diffMatchPatch = new diff_match_patch()
-    items.foldLeft("") {
-      case (text, current) =>
-        diffMatchPatch.patch_apply(
-          new util.LinkedList(diffMatchPatch.patch_fromText(current.diff)),
-          text
-        )
-    }
-  }
-
-  def createCmsPage() =
-    DaikokuAction.async(parse.json) { ctx =>
-      TenantAdminOnly(AuditTrailEvent("@{user.name} has created a cms page"))(
-        ctx.tenant.id.value,
-        ctx
-      ) { (tenant, _) =>
-        {
-          val body = ctx.request.body.as[JsObject]
-
-          val cmsPage = body ++
-            Json.obj(
-              "_id" -> JsString(
-                (body \ "id")
-                  .asOpt[String]
-                  .getOrElse(
-                    (body \ "_id")
-                      .asOpt[String]
-                      .getOrElse(IdGenerator.token(32))
-                  )
-              )
-            ) ++
-            Json.obj("_tenant" -> tenant.id.value)
-
-          json.CmsPageFormat.reads(cmsPage) match {
-            case JsSuccess(page, _) =>
-              env.dataStore.cmsRepo
-                .forTenant(tenant)
-                .findByIdOrHrId(page.id.value)
-                .map {
-                  case Some(cms) =>
-                    val d = diff(cms.draft, page.draft, ctx.user.id)
-                    if (d.diff.nonEmpty)
-                      page.copy(history = cms.history :+ d)
-                    else
-                      page.copy(history = cms.history)
-                  case None =>
-                    val d = diff("", page.draft, ctx.user.id)
-                    if (d.diff.nonEmpty)
-                      page.copy(history = Seq(d))
-                    else
-                      page
-                }
-                .flatMap(page => {
-                  env.dataStore.cmsRepo
-                    .forTenant(tenant)
-                    .save(
-                      page.copy(history =
-                        page.history.takeRight(
-                          tenant.style.map(_.cmsHistoryLength).getOrElse(10) + 1
-                        )
-                      )
-                    )
-                    .map {
-                      case true => Created(Json.obj("created" -> true))
-                      case false =>
-                        BadRequest(
-                          Json.obj("error" -> "Error when creating cms page")
-                        )
-                    }
-                })
-            case e: JsError =>
-              FastFuture.successful(BadRequest(JsError.toJson(e)))
-          }
-        }
-      }
-    }
+//  def session(userId: String) =
+//    DaikokuAction.async { ctx =>
+//      DaikokuAdminOrSelf(AuditTrailEvent("@{user.name} get session"))(
+//        UserId(userId),
+//        ctx
+//      ) {
+//        val token =
+//          ctx.request.cookies.get("daikoku-session").map(_.value).getOrElse("")
+//        FastFuture.successful(Ok(Json.obj("token" -> token)))
+//      }
+//    }
 
   def deleteCmsPage(id: String) =
     DaikokuAction.async { ctx =>
@@ -718,70 +486,24 @@ class HomeController(
     "text/xml" -> "xml"
   )
 
-  def summary() =
-    DaikokuAction.async { ctx =>
-      TenantAdminOnly(
-        AuditTrailEvent("@{user.name} has download the cms summary")
-      )(ctx.tenant.id.value, ctx) { (tenant, _) =>
-        env.dataStore.cmsRepo
-          .forTenant(tenant)
-          .findAllNotDeleted()
-          .map(pages => {
-            val summary = pages.foldLeft(Json.arr()) { (acc, page) =>
-              acc ++ Json
-                .arr(page.asJson.as[JsObject] - "draft" - "history")
-            }
-
-            Ok(summary)
-          })
-      }
-    }
-
-  def download() =
-    DaikokuAction.async { ctx =>
-      TenantAdminOnly(
-        AuditTrailEvent("@{user.name} has download all files of the cms")
-      )(ctx.tenant.id.value, ctx) { (tenant, _) =>
-        env.dataStore.cmsRepo
-          .forTenant(tenant)
-          .findAllNotDeleted()
-          .map(pages => {
-            val outZip = new File(s"/tmp/${System.currentTimeMillis()}.zip")
-            val out = new ZipOutputStream(new FileOutputStream(outZip))
-
-            pages.foreach(page => {
-              val sb = new StringBuilder()
-              sb.append(page.body)
-              val data = sb.toString().getBytes()
-
-              val e = new ZipEntry(
-                s"${page.name}.${contentTypeToExtension.getOrElse(page.contentType, ".txt")}"
-              )
-              out.putNextEntry(e)
-
-              out.write(data, 0, data.length)
-            })
-
-            val summary = pages.foldLeft(Json.arr()) { (acc, page) =>
-              acc ++ Json
-                .arr(page.asJson.as[JsObject] - "body" - "draft" - "history")
-            }
-
-            val sb = new StringBuilder()
-            sb.append(Json.stringify(summary))
-            val data = sb.toString().getBytes()
-
-            val e = new ZipEntry("summary.json")
-            out.putNextEntry(e)
-            out.write(data, 0, data.length)
-
-            out.closeEntry()
-            out.close()
-
-            Ok.sendFile(outZip)
-          })
-      }
-    }
+//  def summary() =
+//    DaikokuAction.async { ctx =>
+//      TenantAdminOnly(
+//        AuditTrailEvent("@{user.name} has download the cms summary")
+//      )(ctx.tenant.id.value, ctx) { (tenant, _) =>
+//        env.dataStore.cmsRepo
+//          .forTenant(tenant)
+//          .findAllNotDeleted()
+//          .map(pages => {
+//            val summary = pages.foldLeft(Json.arr()) { (acc, page) =>
+//              acc ++ Json
+//                .arr(page.asJson.as[JsObject] - "draft" - "history")
+//            }
+//
+//            Ok(summary)
+//          })
+//      }
+//    }
 
   def importFromZip() =
     DaikokuAction.async(parse.multipartFormData) { ctx =>
@@ -846,7 +568,6 @@ class HomeController(
                         case Some((_, value)) => value
                         case None             => page.draft
                       }
-                      val d = diff("", content, ctx.user.id)
                       env.dataStore.cmsRepo
                         .forTenant(ctx.tenant)
                         .save(
@@ -854,7 +575,6 @@ class HomeController(
                             draft = content,
                             body = content,
                             tenant = ctx.tenant.id,
-                            history = if (d.diff.nonEmpty) Seq(d) else Seq.empty
                           )
                         )
                     })

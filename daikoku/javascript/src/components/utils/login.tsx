@@ -49,7 +49,9 @@ export function LoginPage(props: {}) {
               ...state,
               loginError: true,
             });
-          else if (res.redirected) window.location.href = res.url;
+          else if (res.redirected) {
+            window.location.href = res.url;
+          }
         });
   };
 

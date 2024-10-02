@@ -272,54 +272,54 @@ const Avatar = ({
 
   const isOtherOriginThanLocal = rawValues?.origins?.some((o: any) => o.toLowerCase !== 'local');
 
-    if (!isOtherOriginThanLocal) {
-        return <></>;
-    }
-    return (
-        <div className="">
-            <div className="float-right mb-4 position-relative">
-                <img
-                    src={`${rawValues?.picture}${rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
-                    }`}
-                    style={{
-                        width: 100,
-                        borderRadius: '50%',
-                        backgroundColor: 'white',
-                    }}
-                    alt="avatar"
-                    className="mx-3"
-                />
-                <PictureUpload setFiles={setFiles} tenant={tenant}/>
-            </div>
-            <div className="">
-                <input
-                    type="text"
-                    className="form-control"
-                    value={value}
-                    onChange={(e) => changePicture(e.target.value)}
-                />
-                <div className="d-flex mt-1 justify-content-end">
-                    <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink}>
-                        <i className="fas fa-user-circle me-1"/>
-                        <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
-                    </button>
-                    {isOtherOriginThanLocal && (
-                        <button
-                            type="button"
-                            className="btn btn-outline-info"
-                            onClick={setPictureFromProvider}
-                            disabled={rawValues.pictureFromProvider}
-                        >
-                            <i className="fas fa-user-circle me-1"/>
-                            <Translation i18nkey="Set avatar from auth. provider">
-                                Set avatar from auth. Provider
-                            </Translation>
-                        </button>
-                    )}
-                </div>
-            </div>
+  if (!isOtherOriginThanLocal) {
+    return <></>;
+  }
+  return (
+    <div className="">
+      <div className="float-right mb-4 position-relative">
+        <img
+          src={`${rawValues?.picture}${rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
+            }`}
+          style={{
+            width: 100,
+            borderRadius: '50%',
+            backgroundColor: 'white',
+          }}
+          alt="avatar"
+          className="mx-3"
+        />
+        <PictureUpload setFiles={setFiles} tenant={tenant} />
+      </div>
+      <div className="">
+        <input
+          type="text"
+          className="form-control"
+          value={value}
+          onChange={(e) => changePicture(e.target.value)}
+        />
+        <div className="d-flex mt-1 justify-content-end">
+          <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink}>
+            <i className="fas fa-user-circle me-1" />
+            <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
+          </button>
+          {isOtherOriginThanLocal && (
+            <button
+              type="button"
+              className="btn btn-outline-info"
+              onClick={setPictureFromProvider}
+              disabled={rawValues.pictureFromProvider}
+            >
+              <i className="fas fa-user-circle me-1" />
+              <Translation i18nkey="Set avatar from auth. provider">
+                Set avatar from auth. Provider
+              </Translation>
+            </button>
+          )}
         </div>
-    );
+      </div>
+    </div>
+  );
 };
 
 type PictureUploadProps = {
@@ -345,30 +345,30 @@ const PictureUpload = (props: PictureUploadProps) => {
 
   let input: any;
 
-    return (
-        <div className="changePicture mx-3">
-            <input
-                ref={(r) => (input = r)}
-                type="file"
-                className="form-control hide"
-                onChange={e => setFiles(e)}
-            />
-            <button
-                type="button"
-                className="btn btn-outline-primary"
-                disabled={uploading}
-                onClick={trigger}
-                style={{width: 100, height: 100, borderRadius: '50%'}}
-            >
-                {uploading && <i className="fas fa-spinner"/>}
-                {!uploading && (
-                    <div className="text-white">
-                        <Translation i18nkey="Change your picture">Change your picture</Translation>
-                    </div>
-                )}
-            </button>
-        </div>
-    );
+  return (
+    <div className="changePicture mx-3">
+      <input
+        ref={(r) => (input = r)}
+        type="file"
+        className="form-control hide"
+        onChange={e => setFiles(e)}
+      />
+      <button
+        type="button"
+        className="btn btn-outline-primary"
+        disabled={uploading}
+        onClick={trigger}
+        style={{ width: 100, height: 100, borderRadius: '50%' }}
+      >
+        {uploading && <i className="fas fa-spinner" />}
+        {!uploading && (
+          <div className="text-white">
+            <Translation i18nkey="Change your picture">Change your picture</Translation>
+          </div>
+        )}
+      </button>
+    </div>
+  );
 };
 
 export const MyProfile = () => {
@@ -378,9 +378,6 @@ export const MyProfile = () => {
   const [tab, setTab] = useState('infos');
 
   const { tenant, reloadContext } = useContext(GlobalContext);
-  const [token, setToken] = useState("");
-
-  const [copiedTimeout, setCopiedTimeout] = useState<any>()
 
   const { translate, setLanguage, language, Translation, languages } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
@@ -466,12 +463,6 @@ export const MyProfile = () => {
           toast.error(user.error)
         }
       });
-
-    return () => {
-      if (copiedTimeout) {
-        clearTimeout(copiedTimeout)
-      }
-    }
   }, []);
 
   const save = (data: any) => {
@@ -516,31 +507,6 @@ export const MyProfile = () => {
     return <Spinner />
   }
 
-  const resetToken = (copy?: boolean) => {
-    let rawUser: IUser = user;
-
-    fetch(`/api/users/${rawUser._id}/session`, {
-      credentials: 'include'
-    })
-      .then(r => r.json())
-      .then(data => {
-        setToken(data.token);
-
-        if (copy)
-          copyToken()
-      })
-  }
-
-  const copyToken = () => {
-    if (navigator.clipboard && window.isSecureContext && !copiedTimeout) {
-      navigator.clipboard.writeText(`daikokucli login --token=${token}`);
-
-      setCopiedTimeout(setTimeout(() => {
-        setCopiedTimeout(null)
-      }, 1500))
-    }
-  }
-
   return (
     <div className="container-fluid">
       <div className="row">
@@ -559,17 +525,6 @@ export const MyProfile = () => {
               onClick={() => setTab('security')}
             >
               <Translation i18nkey="Security">AccountSecurity</Translation>
-            </span>
-          </li>
-          <li className="nav-item">
-            <span
-              className={`nav-link cursor-pointer ${tab === 'cms_cli' ? 'active' : ''}`}
-              onClick={() => {
-                resetToken()
-                setTab('cms_cli')
-              }}
-            >
-              <Translation i18nkey="CMS CLI">CMS CLI</Translation>
             </span>
           </li>
         </ul>
@@ -649,33 +604,6 @@ export const MyProfile = () => {
             </div>
           </div>
         )}
-
-        {tab === "cms_cli" && <div>
-          <textarea
-            readOnly
-            rows={4}
-            className="form-control input-sm" value={`daikokucli login --token=${token}`} />
-          <div className='d-flex align-items-center mt-3' style={{ gap: '.25rem' }}>
-            <button
-              type="button"
-              disabled={copiedTimeout}
-              className="btn btn-sm btn-outline-primary m-1"
-              onClick={copyToken}
-            >
-              {copiedTimeout ? <span>
-                <Translation i18nkey="profile.cmscli.paste.token">
-                  Copied
-                </Translation>
-                <i className='fas fa-paste ms-1' />
-              </span> : <span>
-                <Translation i18nkey="profile.cmscli.copy.token">
-                  Copy
-                </Translation>
-                <i className='fas fa-copy ms-1' />
-              </span>}
-            </button>
-          </div>
-        </div>}
       </div>
     </div>
   );

@@ -39,6 +39,7 @@ type MetaStyle = {
 }
 
 type TableProps<T> = {
+  className?: string,
   columns: ColumnDef<T, any>[];
   fetchItems: () => Array<T> | Promise<Array<T> | ResponseError>;
   injectTopBar?: () => JSX.Element,
@@ -49,6 +50,7 @@ type TableProps<T> = {
   footer?: boolean,
   onSelectRow?: (row: any) => void,
   ref?: MutableRefObject<TableRef | undefined>
+  noPagination?: boolean,
 };
 
 const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<TableRef>) => {
@@ -60,11 +62,6 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
     []
   )
 
-  useImperativeHandle(ref, () => ({
-    update() {
-      update();
-    },
-  }));
 
   const { translate } = useContext(I18nContext);
 
@@ -89,6 +86,14 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
     }
   });
 
+  useImperativeHandle(ref, () => ({
+    update() {
+      update();
+    },
+    setPageSize(number) {
+      table.setPageSize(number)
+    }
+  }));
 
   // useEffect(() => {
   //   const sizeListener = debounce(() => {
@@ -162,7 +167,7 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
   };
 
   const tablePagination =
-    <div className="d-flex flex-row align-items-center justify-content-end flex-grow-1">
+    <div className="d-flex flex-row align-items-center justify-content-end flex-grow-1 pe-2">
       <span>
         {`${table.getPrePaginationRowModel().rows.length} ${translate({ key: 'Result', plural: table.getPrePaginationRowModel().rows.length > 1 })}`}
       </span>
@@ -211,7 +216,7 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
               </div>
             </div>
           )}
-          <table className="reactTableV7">
+          <table className={`reactTableV7 ${props.className}`}>
             <thead>
               {table.getHeaderGroups().map((headerGroup) => (
                 <tr key={`${headerGroup.id}`}>
@@ -262,7 +267,7 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
               ))}
             </tbody>
           </table>
-          {tablePagination}
+          {!props.noPagination && tablePagination}
         </div>
       </div>
     </div>

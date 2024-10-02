@@ -1,11 +1,12 @@
-use assert_cmd::prelude::*;
-use std::process::Command;
+mod cli;
 
-#[test]
-fn run() -> Result<(), Box<dyn std::error::Error>> {
-    let mut cmd = Command::cargo_bin("daikokucli")?;
+use cli::commands::cli::{CustomRun, CLI};
 
-    cmd.args(["version"]);
-    cmd.assert().success();
+use serial_test::serial;
+#[tokio::test]
+#[serial]
+async fn version() -> Result<(), Box<dyn std::error::Error + 'static>> {
+    CLI::build(["version"]).run_and_expect("daikoku version:");
+
     Ok(())
 }
