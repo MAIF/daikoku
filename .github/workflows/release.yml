@@ -49,30 +49,30 @@ jobs:
         branch: ${{ github.ref }}
         github_token: ${{ secrets.GITHUB_TOKEN}}
     #Build manual with right version
-    - name: build manual
-      id: manual
-      run: |
-        find ./manual/src/main/paradox -type f -name '*.md' | xargs node ./scripts/version.js ${{ github.event.inputs.lastVersion }} ${{ github.event.inputs.releaseversion }}
-        find ./docs -type f -name '*.html' -d 1 | xargs node ./scripts/version.js ${{ github.event.inputs.lastVersion }} ${{ github.event.inputs.releaseversion }}
-        cd manual
-        sbt "release with-defaults release-version ${{ github.event.inputs.releaseversion }}"
-        cd ..
-        sh ./scripts/build.sh manual
-        echo "diff=$(git diff --numstat | wc -l)" >> $GITHUB_OUTPUT
-        cd ..
-    - name: Commit manual
-      if: steps.manual.outputs.diff != '0'
-      run: |
-        git config --local user.email "daikoku-github-actions@users.noreply.github.com"
-        git config --local user.name "daikoku-github-actions"
-        git add --all
-        git commit -am "Update documentation before release"
-    - name: Push manual
-      uses: ad-m/github-push-action@master
-      if: steps.manual.outputs.diff != '0'
-      with:
-        branch: ${{ github.ref }}
-        github_token: ${{ secrets.GITHUB_TOKEN}}
+    # - name: build manual
+    #   id: manual
+    #   run: |
+    #     find ./manual/src/main/paradox -type f -name '*.md' | xargs node ./scripts/version.js ${{ github.event.inputs.lastVersion }} ${{ github.event.inputs.releaseversion }}
+    #     find ./docs -type f -name '*.html' -d 1 | xargs node ./scripts/version.js ${{ github.event.inputs.lastVersion }} ${{ github.event.inputs.releaseversion }}
+    #     cd manual
+    #     sbt "release with-defaults release-version ${{ github.event.inputs.releaseversion }}"
+    #     cd ..
+    #     sh ./scripts/build.sh manual
+    #     echo "diff=$(git diff --numstat | wc -l)" >> $GITHUB_OUTPUT
+    #     cd ..
+    # - name: Commit manual
+    #   if: steps.manual.outputs.diff != '0'
+    #   run: |
+    #     git config --local user.email "daikoku-github-actions@users.noreply.github.com"
+    #     git config --local user.name "daikoku-github-actions"
+    #     git add --all
+    #     git commit -am "Update documentation before release"
+    # - name: Push manual
+    #   uses: ad-m/github-push-action@master
+    #   if: steps.manual.outputs.diff != '0'
+    #   with:
+    #     branch: ${{ github.ref }}
+    #     github_token: ${{ secrets.GITHUB_TOKEN}}
     # release sbt (with auto commit tag)
     - name: release sbt
       run: |
