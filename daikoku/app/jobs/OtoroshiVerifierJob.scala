@@ -418,6 +418,15 @@ class OtoroshiVerifierJob(client: OtoroshiClient,
                         api.team,
                         tenant.id)
                     )
+                    otoroshiTarget <- EitherT.fromOption[Future](
+                      plan.otoroshiTarget,
+                      sendErrorNotification(
+                        NotificationAction.OtoroshiSyncSubscriptionError(
+                          subscription,
+                          "No Otoroshi target specified"),
+                        parentApi.team,
+                        parentApi.tenant)
+                    )
                     user <- EitherT
                       .fromOptionF(env.dataStore.userRepo.findById(sub.by), ())
                   } yield {
