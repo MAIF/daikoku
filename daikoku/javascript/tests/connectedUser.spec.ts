@@ -412,7 +412,7 @@ test('aggregation mode', async ({ page, request }) => {
   await page.getByText('API keys', { exact: true }).click();
   await page.getByRole('row', { name: 'test API 2 1.0.0' }).getByLabel('view APikey').click();
   await page.locator('.api-subscription').locator('.dropdown').click();
-  await page.getByText('Extract from agg.').click();
+  await page.getByText('Extract from aggregate').click();
   // await page.getByRole('button', { name: 'make unique' }).click();
   await expect(page.getByRole('paragraph')).toContainText('Are you sure to make this API key unique and separate from his parent plan?');
   await page.getByRole('button', { name: 'Ok', exact: true }).click();
@@ -595,7 +595,7 @@ test('transfer an api subscription', async ({ page }) => {
   await page.waitForResponse(r => r.url().includes('/api/me/context') && r.status() === 200)
   await page.waitForSelector('.apis__pagination')
   await page.getByRole('heading', { name: 'test API' }).click();
-  
+
   //tester l'url pour verifier que c'est bien la v2
   await page.getByText('Plans').click();
 
@@ -617,7 +617,7 @@ test('transfer an api subscription', async ({ page }) => {
   await page.getByText('Testers').click();
   await page.getByRole('button', { name: 'Confirm transfer' }).click();
 
-  await page.getByText('Testers').click();
+  await page.locator('.top__container').filter({hasText: 'Your teams'}).getByText('Testers').click();
   await page.getByText('API keys').click();
   await page.getByRole('row', { name: 'test API 2.0.0 View API View' }).getByLabel('View APIkeys').click();
   expect(page.locator('.api-subscription__infos__value')).toHaveText(apikey)

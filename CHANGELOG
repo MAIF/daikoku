@@ -625,3 +625,25 @@ We'd like to thank all the contributors who worked on this release!
 - Lack of translation [#700](https://github.com/MAIF/daikoku/issues/700)
 - API testing UI is broken [#699](https://github.com/MAIF/daikoku/issues/699)
 
+## [v17.5.0] - 2024-09-17
+
+## :star: New Features
+
+- Hide personal teams if security prohibits personal teams from subscribing [#740](https://github.com/MAIF/daikoku/issues/740)
+- add a control for environment name for subscription aggregation [#714](https://github.com/MAIF/daikoku/issues/714)
+- Add a way to disable part of aggragation [#711](https://github.com/MAIF/daikoku/issues/711)
+- Allow to transfer subscriptions ownership [#708](https://github.com/MAIF/daikoku/issues/708)
+- Add HTTP links everywhere, it’s unusable in practice sometimes. [#696](https://github.com/MAIF/daikoku/issues/696)
+- display S3 bucket example to avoid S3Exception [#622](https://github.com/MAIF/daikoku/issues/622)
+
+## :beetle: Bug Fixes
+
+- User can't go in home page from daikoku [#741](https://github.com/MAIF/daikoku/issues/741)
+- No UI [#735](https://github.com/MAIF/daikoku/issues/735)
+- Crash on notification page in case of unknown team in action property [#720](https://github.com/MAIF/daikoku/issues/720)
+- [productor view]subscription table is not refresh after enable/disable apikey [#715](https://github.com/MAIF/daikoku/issues/715)
+- Update parent subscription in aggregation does not update childs [#710](https://github.com/MAIF/daikoku/issues/710)
+- 2FA inputs don't work if code begin with 0 [#701](https://github.com/MAIF/daikoku/issues/701)
+- translation for validation step [#697](https://github.com/MAIF/daikoku/issues/697)
+- Delete Tag, delete all the tags [#694](https://github.com/MAIF/daikoku/issues/694)
+

@@ -185,10 +185,10 @@ a.navbar-brand,
           cursor: pointer;
           font-size: 14px;
           color: $companion_link-color;
+          margin-top: 5px;
           margin-bottom: 5px;
-          line-height: 40px;
           border-radius: 4px;
-          padding-left: .5rem;
+          padding: .5rem;
 
           &:hover {
             background-color: $companion_text-hover-bg-color;
@@ -205,7 +205,6 @@ a.navbar-brand,
 .navbar-companion {
   z-index: 10;
   background-color: $companion_bg-color;
-  // color: $level1_text-color;
   filter: brightness(105%);
   height: 100vh;
   position: relative;
@@ -234,11 +233,10 @@ a.navbar-brand,
     flex-direction: column;
 
     .companion-title {
-      // height: 40px;
-      min-height: 40px;
+      // min-height: 40px;
       margin-bottom: 1rem;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      // overflow: hidden;
+      // text-overflow: ellipsis;
       white-space: nowrap;
       line-height: 1.14286;
       color: $companion_text-color;
@@ -271,7 +269,7 @@ a.navbar-brand,
             }
 
             &.disabled {
-              color: lighten(#000, 50%);
+              opacity: 0.5;
               cursor: default;
             }
 
