@@ -95,73 +95,14 @@ test('aggregation security works', async ({ page, request }) => {
   await expect(page.getByRole('cell', { name: 'Child API' })).toBeVisible();
   await expect(page.getByRole('cell', { name: 'Parent API' })).toBeVisible();
   await page.getByRole('row', { name: 'Parent API 1.0.0 View API' }).getByLabel('View APIkeys').click();
-  await expect(page.getByText('prod')).toBeVisible();
+  // await expect(page.getByText('prod')).toBeVisible();
+  await expect(page.locator('.api-subscription__infos__name')).toHaveText('prod')
   await page.getByText('API keys', { exact: true }).click();
   await page.getByRole('cell', { name: 'Child API' }).click();
   await page.getByRole('row', { name: 'Child API 1.0.0 View API View' }).getByLabel('View APIkeys').click();
-  await expect(page.getByText('dev')).toBeVisible();
-  await expect(page.getByText('prod')).toBeVisible();
-
-
-
-  // //subscribe first API
-  // await page.getByRole('heading', { name: 'Parent API', exact: true }).click();
-  // await page.getByText('Environments').click();
-  // await page.locator('.usage-plan__card').filter({ hasText: 'prod' }).getByRole('button').click();
-  // await page.locator('div').filter({ hasText: /^Consumers$/ }).click();
-  // await page.getByRole('link', { name: 'APIs list' }).click();
-
-  // //subscribe second api with aggregation
-  // await page.getByRole('heading', { name: 'Child API' }).click();
-  // await page.getByText('Environments').click();
-  // await page.locator('.usage-plan__card').filter({ hasText: 'dev' }).getByRole('button').click();
-  // await page.locator('.team-selection').filter({ hasText: 'Consumers' }).click();
-  // //no possibility to extends existing key
-
-
-  // //subscribe second api with aggregation
-  // await page.getByRole('link', { name: 'APIs list' }).click();
-  // await page.getByRole('heading', { name: 'Child API' }).click();
-  // await page.getByText('Environments').click();
-  // await page.locator('.usage-plan__card').filter({ hasText: 'prod' }).getByRole('button').click();
-  // await page.locator('.team-selection').filter({ hasText: 'Consumers' }).click();
-  // await page.getByRole('button', { name: ' Subscribe using an existing' }).click();
-  // await page.getByText('parent API/prod').click();
-
-  // //go to subscriptions
-  // await page.getByRole('link', { name: 'APIs list' }).click();
-  // await page.locator('.top__container').filter({ hasText: 'Your teams' })
-  //   .getByText('Consumers').click()
-  // // await page.getByLabel('Notifications alt+T').getByRole('button').click();
-  // await page.getByText('API keys', { exact: true }).click();
-  // await page.getByRole('row', { name: 'test API 2 1.0.0' }).getByLabel('View APIkeys').click();
-
-  // //get the client id value to check
-  // const clientId = await page.getByLabel('Client Id').inputValue()
-
-  // await page.getByText('API keys', { exact: true }).click();
-  // await page.getByRole('row', { name: 'test API 2.0.0' }).getByLabel('view APikey').click();
-  // await expect(page.getByLabel('Client Id').first()).toHaveValue(clientId);
-  // await page.getByRole('button', { name: 'Show aggregate subscriptions' }).click();
-  // await expect(page.getByRole('link', { name: 'test API 2/test plan' })).toBeVisible();
-  // await page.getByText('API keys', { exact: true }).click();
-  // await page.getByRole('row', { name: 'test API 2 1.0.0' }).getByLabel('view APikey').click();
-  // await page.getByRole('button', { name: 'make unique' }).click();
-  // await expect(page.getByRole('paragraph')).toContainText('Are you sure to make this API key unique and separate from his parent plan?');
-  // await page.getByRole('button', { name: 'Ok' }).click();
-  // await expect(page.getByLabel('Client Id').first()).not.toHaveValue(clientId);
-
-  // // //test archive apikey & clean archive apikeys
-  // await page.getByRole('button', { name: 'Disable subscription' }).click();
-  // await expect(page.getByRole('button', { name: 'Enable subscription' })).toBeVisible();
-
-  // await page.getByLabel('Delete').click();
-  // await expect(page.locator('h5')).toContainText('Confirm Deletion');
-  // await page.getByLabel('To confirm the deletion,').fill('test API 2/test plan');
-  // await page.getByRole('button', { name: 'Confirm' }).click();
-  // await page.getByText('API keys', { exact: true }).click();
-  // await expect(page.getByRole('row', { name: 'test API 2 1.0.0' })).toBeHidden
-
-
-
+  
+  const apiKeys = await page.locator('.api-subscription__infos__name');
+  expect(apiKeys).toHaveCount(2);
+  expect(apiKeys.nth(0)).toHaveText('dev');
+  expect(apiKeys.nth(1)).toHaveText('prod');
 })
