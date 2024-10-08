@@ -64,28 +64,28 @@ jobs:
         git config --local user.name "daikoku-github-actions"
         git add --all
         git commit -am "Update version number before release"
-    # - name: build manual
-    #   id: manual
-    #   run: |
-    #     cd manual
-    #     sbt "release release-version ${{ github.event.inputs.releaseversion }}"
-    #     cd ..
-    #     sh ./scripts/build.sh manual
-    #     echo "diff=$(git diff --numstat | wc -l)" >> $GITHUB_OUTPUT
-    #     cd ..
-    # - name: Commit manual
-    #   if: steps.manual.outputs.diff != '0'
-    #   run: |
-    #     git config --local user.email "daikoku-github-actions@users.noreply.github.com"
-    #     git config --local user.name "daikoku-github-actions"
-    #     git add --all
-    #     git commit -am "Update documentation before release"
-    # - name: Push manual
-    #   uses: ad-m/github-push-action@master
-    #   if: steps.manual.outputs.diff != '0'
-    #   with:
-    #     branch: ${{ github.ref }}
-    #     github_token: ${{ secrets.GITHUB_TOKEN}}
+    - name: build manual
+      id: manual
+      run: |
+        cd manual
+        sbt "release release-version ${{ github.event.inputs.releaseversion }}"
+        cd ..
+        sh ./scripts/build.sh manual
+        echo "diff=$(git diff --numstat | wc -l)" >> $GITHUB_OUTPUT
+        cd ..
+    - name: Commit manual
+      if: steps.manual.outputs.diff != '0'
+      run: |
+        git config --local user.email "daikoku-github-actions@users.noreply.github.com"
+        git config --local user.name "daikoku-github-actions"
+        git add --all
+        git commit -am "Update documentation before release"
+    - name: Push manual
+      uses: ad-m/github-push-action@master
+      if: steps.manual.outputs.diff != '0'
+      with:
+        branch: ${{ github.ref }}
+        github_token: ${{ secrets.GITHUB_TOKEN}}
     # release sbt (with auto commit tag)
     - name: release sbt
       run: |
