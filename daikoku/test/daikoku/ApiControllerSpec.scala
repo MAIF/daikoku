@@ -3392,6 +3392,121 @@ class ApiControllerSpec()
       logger.info(Json.stringify(respRetrieve.json))
       respRetrieve.status mustBe 401
     }
+
+    "setup validUntil date for a subscription to his api" in {
+      val parentPlan = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val parentApi = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
+        defaultUsagePlan = UsagePlanId("parent.dev").some
+      )
+
+      val parentSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        plan = parentPlan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token"
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            aggregationApiKeysSecurity = Some(true),
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
+        usagePlans = Seq(parentPlan, adminApiPlan),
+        apis = Seq(parentApi, adminApi),
+        subscriptions = Seq(parentSub))
+
+      val session = loginWithBlocking(userAdmin, tenant)
+      //check validnuntil dans oto
+      val respPreOto = httpJsonCallBlocking(
+        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+
+      (respPreOto.json \ "validUntil").asOpt[Boolean] mustBe None
+
+
+
+      //update subscription
+      val validUntil = DateTime.now().plusHours(1)
+      val respUpdate = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/subscriptions/${parentSub.id.value}",
+        method = "PUT",
+        body = Some(
+          parentSub
+            .copy(
+              validUntil = validUntil.some
+            )
+            .asSafeJson
+        )
+      )(tenant, session)
+      respUpdate.status mustBe 200
+
+      //check validUntil dans oto
+      val respUpdateOto = httpJsonCallBlocking(
+        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+      (respUpdateOto.json \ "validUntil").asOpt[Long] mustBe validUntil.getMillis.some
+    }
   }
 
   "a api editor" can {
@@ -6487,7 +6602,7 @@ class ApiControllerSpec()
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(user),
-        teams = Seq(teamConsumer),
+        teams = Seq(teamConsumer, teamOwner),
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
         subscriptions = Seq(parentSub, childSub)

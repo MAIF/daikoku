@@ -245,7 +245,8 @@ class ConsumptionControllerSpec()
         tags = Set.empty[String],
         restrictions = ApiKeyRestrictions(),
         metadata = Map(),
-        rotation = None
+        rotation = None, 
+        validUntil = payperUserSub.validUntil.map(_.getMillis)
       )
 
       wireMockServer.isRunning mustBe true

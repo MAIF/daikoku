@@ -37,6 +37,7 @@ import { formatPlanType } from '../../utils/formatters';
 import { ApiDocumentation } from './ApiDocumentation';
 import { ApiRedoc } from './ApiRedoc';
 import { ApiSwagger } from './ApiSwagger';
+import { ApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
 
 export const currency = (plan?: IBaseUsagePlan) => {
   if (!plan) {
@@ -69,6 +70,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     openApiKeySelectModal,
     openCustomModal,
     close,
+    openRightPanel
   } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
@@ -227,6 +229,51 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     })
   }
 
+//   const displaySubscription = () => {
+//     Services.getMySubscriptions(props.api._id, props.api.currentVersion)
+//       .then(r => {
+//         openRightPanel({
+//           title: "test",
+//           content: <div>
+//             {r.subscriptions.map(subscription => {
+//               return (
+//                 <ApiKeyCard
+//                   api={props.api}
+//                   apiLink={""}
+//                   statsLink={`/`}
+//                   key={subscription.apiKey.clientId}
+//                   subscription={{
+//                     ...subscription, 
+//                     parentUp: false,
+//                     planType: "",
+//                     planName: "planname",
+//                     apiName: "apiName",
+//                     _humanReadableId: "hrid",
+//                     children: []
+// }}
+//                   subscribedApis={[]}
+//                   updateCustomName={() => Promise.resolve()}
+//                   toggle={console.debug}
+//                   makeUniqueApiKey={console.debug}
+//                   deleteApiKey={console.debug}
+//                   toggleRotation={(
+//                     plan,
+//                     enabled,
+//                     rotationEvery,
+//                     gracePeriod
+//                   ) =>
+//                     Promise.resolve()
+//                   }
+//                   regenerateSecret={console.debug}
+//                   transferKey={console.debug}
+//                 />
+//               )
+//             })}
+//           </div>
+//         })
+//       })
+//   }
+
   return (
     <div
       className="col-md-4 card mb-4 shadow-sm usage-plan__card"
@@ -236,6 +283,31 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         className="card-img-top card-link card-header"
         data-holder-rendered="true"
       >
+        {/* <div
+          className="dropdown"
+          style={{
+            position: 'absolute',
+            top: '0',
+            right: '15px',
+            zIndex: '100',
+          }}
+        >
+          <i
+            className="fa fa-ellipsis-vertical cursor-pointer dropdown-menu-button"
+            style={{ fontSize: '20px' }}
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            id="dropdownMenuButton"
+          />
+          <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            <span
+              className="dropdown-item cursor-pointer"
+              onClick={() => displaySubscription()}
+            >
+              voir mes clés d'apis
+            </span>
+          </div>
+        </div> */}
         <span>{plan.customName || formatPlanType(plan, translate)}</span>
       </div>
       <div className="card-body plan-body d-flex flex-column">
@@ -332,18 +404,18 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
               >
                 {(props.api.visibility === 'AdminOnly' ||
                   (plan.otoroshiTarget && !isAccepted)) && (
-                  <button
-                    type="button"
-                    className="btn btn-sm btn-outline-primary col-12"
-                    onClick={openTeamSelectorModal}
-                  >
-                    <Translation
-                      i18nkey={
-                        isAutomaticProcess ? 'Get API key' : 'Request API key'
-                      }
-                    />
-                  </button>
-                )}
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-outline-primary col-12"
+                      onClick={openTeamSelectorModal}
+                    >
+                      <Translation
+                        i18nkey={
+                          isAutomaticProcess ? 'Get API key' : 'Request API key'
+                        }
+                      />
+                    </button>
+                  )}
               </Can>
             )}
           {connectedUser.isGuest && (
@@ -410,7 +482,7 @@ const TeamSelector = (props: ITeamSelector) => {
                   onClick={() => {
                     return allowed
                       ? props.showApiKeySelectModal(team._id)
-                      : () => {};
+                      : () => { };
                   }}
                 >
                   {props.pendingTeams.includes(team._id) && (

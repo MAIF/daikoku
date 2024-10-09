@@ -1662,7 +1662,7 @@ object json {
               .asOpt(SeqCustomMetadataFormat)
               .getOrElse(Seq.empty),
             tags = (json \ "tags").asOpt[JsArray].getOrElse(Json.arr()),
-            restrictions = (json \ "restrictions").as(ApiKeyRestrictionsFormat)
+            restrictions = (json \ "restrictions").as(ApiKeyRestrictionsFormat),
           )
         )
       } recover {
@@ -1679,7 +1679,7 @@ object json {
           o.customMetadata.map(CustomMetadataFormat.writes)
         ),
         "tags" -> o.tags,
-        "restrictions" -> o.restrictions.asJson
+        "restrictions" -> o.restrictions.asJson,
       )
   }
   val ApiKeyRestrictionsFormat = new Format[ApiKeyRestrictions] {
@@ -2732,6 +2732,7 @@ object json {
             team = (json \ "team").as(TeamIdFormat),
             api = (json \ "api").as(ApiIdFormat),
             createdAt = (json \ "createdAt").as(DateTimeFormat),
+            validUntil = (json \ "validUntil").asOpt(DateTimeFormat),
             by = (json \ "by").as(UserIdFormat),
             customName = (json \ "customName").asOpt[String],
             adminCustomName = (json \ "adminCustomName").asOpt[String],
@@ -2780,6 +2781,10 @@ object json {
         "team" -> TeamIdFormat.writes(o.team),
         "api" -> ApiIdFormat.writes(o.api),
         "createdAt" -> DateTimeFormat.writes(o.createdAt),
+        "validUntil"-> o.validUntil
+          .map(DateTimeFormat.writes)
+          .getOrElse(JsNull)
+          .as[JsValue],
         "by" -> UserIdFormat.writes(o.by),
         "customName" -> o.customName
           .map(id => JsString(id))
@@ -3126,7 +3131,9 @@ object json {
           "rotation" -> apk.rotation
             .map(ApiKeyRotationFormat.writes)
             .getOrElse(JsNull)
-            .as[JsValue]
+            .as[JsValue],
+          "validUntil" -> apk.validUntil  
+
         )
 
       override def reads(json: JsValue): JsResult[ActualOtoroshiApiKey] =
@@ -3161,7 +3168,8 @@ object json {
               .asOpt[Set[String]]
               .getOrElse(Set.empty[String]),
             restrictions = (json \ "restrictions").as(ApiKeyRestrictionsFormat),
-            rotation = (json \ "rotation").asOpt(ApiKeyRotationFormat)
+            rotation = (json \ "rotation").asOpt(ApiKeyRotationFormat),
+            validUntil = (json \ "validUntil").asOpt[Long]
           )
         } map {
           case sd => JsSuccess(sd)
