@@ -215,7 +215,10 @@ export interface IBaseUsagePlan {
   otoroshiTarget?: IOtoroshiTarget;
 }
 
-export type UsagePlanVisibility = 'Public' | 'Private';
+export enum UsagePlanVisibility {
+  public = 'Public',
+  private = 'Private'
+}
 
 export interface IPaymentSettings {
   thirdPartyPaymentSettingsId: string;
@@ -267,7 +270,7 @@ export interface IUsagePlanPayPerUse extends IUsagePlan {
 
   currency: ICurrency;
   billingDuration: IBillingDuration;
-  visibility: 'Public' | 'Private';
+  visibility: UsagePlanVisibility;
   authorizedTeams: Array<string>;
   autoRotation?: boolean;
   integrationProcess: 'Automatic' | 'ApiKey';

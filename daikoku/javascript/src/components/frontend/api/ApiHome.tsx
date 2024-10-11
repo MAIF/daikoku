@@ -5,25 +5,39 @@ import Navigation from 'react-feather/dist/icons/navigation';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select';
 import { toast } from 'sonner';
+import More from 'react-feather/dist/icons/more-vertical';
 
 import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiSwagger } from '.';
 import { I18nContext, ModalContext, useApiFrontOffice } from '../../../contexts';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { IApi, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, isError } from '../../../types';
-import { ActionWithTeamSelector, Can, CanIDoAction, Option, apikey, manage } from '../../utils';
+import { IApi, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, IUserSimple, IWithSwagger, isError } from '../../../types';
+import { ActionWithTeamSelector, Can, CanIDoAction, Option, apikey, manage, api as API } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
 import StarsButton from './StarsButton';
 
 import classNames from 'classnames';
 import 'highlight.js/styles/monokai.css';
 import { GlobalContext } from '../../../contexts/globalContext';
+import { teamApiInfoForm } from '../../backoffice/apis/TeamApiInfo';
+import { Form, format, type } from '@maif/react-forms';
+import { right } from '@popperjs/core';
 
 (window as any).hljs = hljs;
 
+type ApiDescriptionProps = {
+  api: IApi
+  ownerTeam: ITeamSimple
+}
 export const ApiDescription = ({
-  api
-}: { api: IApi }) => {
+  api,
+  ownerTeam
+}: ApiDescriptionProps) => {
+
+  const { openRightPanel, closeRightPanel } = useContext(ModalContext);
+  const { translate } = useContext(I18nContext);
+
+
   useEffect(() => {
     (window as any).$('pre code').each((i: any, block: any) => {
       hljs.highlightElement(block);
@@ -31,11 +45,38 @@ export const ApiDescription = ({
   }, []);
 
   return (
-    <div className="d-flex col flex-column p-3 section">
+    <div className="d-flex col flex-column p-3 section" style={{ position: 'relative' }}>
       <div
         className="api-description"
         dangerouslySetInnerHTML={{ __html: converter.makeHtml(api.description) }}
       />
+      <Can I={manage} a={API} team={ownerTeam}>
+        <More
+          className="a-fake"
+          aria-label="update api"
+          style={{ position: "absolute", right: 0 }}
+          onClick={() => openRightPanel({
+            title: "Update api",
+            content: <div className="">
+              <Form
+                schema={{
+                  description: {
+                    type: type.string,
+                    format: format.markdown,
+                    label: translate('Description'),
+                  },
+                }}
+                onSubmit={(data) => {
+                  Promise.resolve(console.debug(data))
+                    .then(() => closeRightPanel())
+                    .then(() => toast.success("bravo"))
+                }}
+                value={api}
+              />
+            </div>
+          })
+          } />
+      </Can>
     </div>
   );
 };
@@ -45,15 +86,25 @@ type Version = {
   value: string
 }
 
+type ApiHeaderProps = {
+  api: IApi
+  ownerTeam: ITeamSimple
+  toggleStar: () => void
+  tab: string
+}
+
 export const ApiHeader = ({
   api,
   ownerTeam,
-  connectedUser,
   toggleStar,
   tab
-}: any) => {
+}: ApiHeaderProps) => {
   const navigate = useNavigate();
   const params = useParams();
+
+  const { openRightPanel, closeRightPanel } = useContext(ModalContext);
+  const { translate } = useContext(I18nContext);
+  const { tenant, connectedUser, expertMode } = useContext(GlobalContext);
 
   const [versions, setApiVersions] = useState<Array<Version>>([]);
 
@@ -78,11 +129,26 @@ export const ApiHeader = ({
           className="api-description"
           dangerouslySetInnerHTML={{ __html: converter.makeHtml(apiHeader) }}
         />
+        <button>test</button>
       </section>
     );
   } else {
+
+    const informationForm = teamApiInfoForm(translate, ownerTeam, tenant);
+
+    // if (api.visibility === 'AdminOnly') {
+    //   return (
+    //     <Form
+    //       schema={informationForm.adminSchema}
+    //       flow={informationForm.adminFlow}
+    //       onSubmit={save}
+    //       value={api}
+    //     />
+    //   )
+    // }
+
     return (
-      <section className="api__header col-12 mb-4 p-3">
+      <section className="api__header col-12 mb-4 p-3 d-flex flex-row">
         <div className="container-fluid">
           <h1 className="jumbotron-heading" style={{ position: 'relative' }}>
             {api.name}
@@ -115,6 +181,27 @@ export const ApiHeader = ({
           </h1>
           <p className="lead">{api.smallDescription}</p>
         </div>
+        <Can I={manage} a={API} team={ownerTeam}>
+          <More
+            className="a-fake"
+            aria-label="update api"
+            onClick={() => openRightPanel({
+              title: "Update api",
+              content: <div className="text-center">
+                <Form
+                  schema={informationForm.schema}
+                  flow={informationForm.flow(expertMode)} //todo: get real flow, for admin api for example
+                  onSubmit={(data) => {
+                    Promise.resolve(console.debug(data))
+                      .then(() => closeRightPanel())
+                      .then(() => toast.success("bravo"))
+                  }}
+                  value={api}
+                />
+              </div>
+            })
+            } />
+        </Can>
       </section>
     );
   }
@@ -130,7 +217,7 @@ export const ApiHome = ({
   const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
   const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<ISubscriptionDemand>>([]);
   const [ownerTeam, setOwnerTeam] = useState<ITeamSimple>();
-  const [myTeams, setMyTeams] = useState<Array<any>>([]);
+  const [myTeams, setMyTeams] = useState<Array<ITeamSimple>>([]);
   const [showAccessModal, setAccessModalError] = useState<any>();
   const [showGuestModal, setGuestModal] = useState(false);
 
@@ -263,7 +350,7 @@ export const ApiHome = ({
               backgroundColor: 'inherit'
             },
             action: <Navigation size='1.5rem' className="cursor-pointer" onClick={() => navigate(`/${result.subscription.team}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`)} />,
-            
+
           });
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
@@ -336,19 +423,27 @@ export const ApiHome = ({
   if (!api || !ownerTeam) {
     return null;
   }
+
+  const saveApi = (api: IApi) => {
+    return (
+      Promise.resolve(console.debug({ api }))
+        .then(() => toast.success('Bravo'))
+    )
+  }
+
   const teamId = params.teamId;
 
   document.title = `${tenant.title} - ${api ? api.name : 'API'}`;
 
   return (<main role="main">
-    <ApiHeader api={api} ownerTeam={ownerTeam} connectedUser={connectedUser} toggleStar={toggleStar} tab={params.tab} />
-    <div className="album py-2 me-4 min-vh-100">
+    <ApiHeader api={api} ownerTeam={ownerTeam} toggleStar={toggleStar} tab={params.tab} />
+    <div className="album py-2 me-4 min-vh-100" style={{ position: 'relative' }}>
       <div className={classNames({
         'container-fluid': params.tab === 'swagger',
         container: params.tab !== 'swagger'
       })}>
         <div className="row pt-3">
-          {params.tab === 'description' && (<ApiDescription api={api} />)}
+          {params.tab === 'description' && (<ApiDescription api={api} ownerTeam={ownerTeam} />)}
           {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
           {params.tab === 'documentation' && <ApiDocumentation documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)} />}
           {params.tab === 'testing' && (<ApiSwagger
@@ -357,9 +452,11 @@ export const ApiHome = ({
             swagger={api.swagger}
             swaggerUrl={`/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger`}
             callUrl={`/api/teams/${ownerTeam._id}/testing/${api._id}/call`}
+            ownerTeam={ownerTeam}
+            entity={api}
+            save={saveApi}
           />)}
-          {params.tab === 'swagger' && (<ApiRedoc
-            swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`} swaggerConf={api.swagger}/>)}
+          {params.tab === 'swagger' && (<ApiRedoc save={saveApi} entity={api} ownerTeam={ownerTeam} swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`} swaggerConf={api.swagger} />)}
           {params.tab === 'news' && (<ApiPost api={api} ownerTeam={ownerTeam} versionId={params.versionId} />)}
           {(params.tab === 'issues' || params.tab === 'labels') && (<ApiIssue api={api} onChange={(editedApi: any) => setApi(editedApi)} ownerTeam={ownerTeam} connectedUser={connectedUser} />)}
         </div>

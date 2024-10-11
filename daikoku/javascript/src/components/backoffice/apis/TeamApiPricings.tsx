@@ -99,7 +99,7 @@ const SUBSCRIPTION_PLAN_TYPES = {
   },
 };
 
-const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate }: any) => {
+export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate }: any) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [groups, setGroups] = useState<Array<any>>([]);
   const [services, setServices] = useState<Array<any>>([]);
@@ -327,7 +327,7 @@ const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate }: any) => {
   );
 };
 
-const CustomMetadataInput = (props: {
+export const CustomMetadataInput = (props: {
   value?: Array<{ key: string; possibleValues: Array<string> }>;
   onChange?: (param: any) => void;
   setValue?: (key: string, data: any) => void;
@@ -645,8 +645,8 @@ const Card = ({
   );
 };
 
-const PUBLIC: UsagePlanVisibility = 'Public';
-const PRIVATE: UsagePlanVisibility = 'Private';
+const PUBLIC: UsagePlanVisibility = UsagePlanVisibility.public;
+const PRIVATE: UsagePlanVisibility = UsagePlanVisibility.private;
 
 type Props = {
   currentTeam: ITeamSimple;

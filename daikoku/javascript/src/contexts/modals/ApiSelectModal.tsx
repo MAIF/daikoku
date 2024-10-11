@@ -97,9 +97,6 @@ export const ApiSelectModal = (props: IApiSelectModalProps & IBaseModalProps) =>
       </div>
     )
   } else {
-    console.log(plansRequest.data)
-    console.log(!isError(plansRequest.data))
-    console.log(!isError(plansRequest))
     return <div>Error while fetching usage plans</div>
   }
 

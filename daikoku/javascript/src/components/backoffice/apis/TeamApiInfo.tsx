@@ -189,11 +189,11 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
         value: t._id
       }),
     },
-    description: {
-      type: type.string,
-      format: format.markdown,
-      label: translate('Description'),
-    },
+    // description: {
+    //   type: type.string,
+    //   format: format.markdown,
+    //   label: translate('Description'),
+    // },
   };
 
   const simpleOrExpertMode = (entry: any, expert: any) => {//@ts-ignore

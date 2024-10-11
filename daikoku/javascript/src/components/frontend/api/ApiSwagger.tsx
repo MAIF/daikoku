@@ -1,27 +1,38 @@
 import { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { SwaggerUIBundle } from 'swagger-ui-dist';
+import More from 'react-feather/dist/icons/more-vertical';
+import { toast } from 'sonner';
+
+
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
-import { ISwagger, ITesting } from '../../../types';
+import { IApi, ISwagger, ITeamSimple, ITesting, IWithSwagger } from '../../../types';
+import { Can, manage, api as API } from '../../utils';
 
 import 'swagger-ui-dist/swagger-ui.css';
+import { Form, format, type } from '@maif/react-forms';
+import { TeamApiSwagger } from '../../backoffice';
 
 
-type ApiSwaggerProps = {
+type ApiSwaggerProps<T extends IWithSwagger> = {
   testing?: ITesting,
   swagger?: ISwagger,
   swaggerUrl: string,
   callUrl: string,
   _id: string
+  ownerTeam: ITeamSimple
+  entity: T
+  save: (d: T) => Promise<any>
 }
-export function ApiSwagger(props: ApiSwaggerProps) {
+export function ApiSwagger<T extends IWithSwagger>(props: ApiSwaggerProps<T>) {
 
   const { tenant, connectedUser } = useContext(GlobalContext)
 
   const { translate } = useContext(I18nContext);
-  const { alert, openLoginOrRegisterModal } = useContext(ModalContext);
+  const { alert, openLoginOrRegisterModal, openRightPanel, closeRightPanel } = useContext(ModalContext);
+
 
   const [state, setState] = useState<{ error?: string, info?: string }>({});
 
@@ -124,6 +135,18 @@ export function ApiSwagger(props: ApiSwaggerProps) {
   if (state.error || state.info)
     return (
       <div className="d-flex justify-content-center w-100">
+        <Can I={manage} a={API} team={props.ownerTeam}>
+          <More
+            className="a-fake"
+            aria-label="update api"
+            style={{ position: "absolute", right: 0 }}
+            onClick={() => openRightPanel({
+              title: "Update api",
+              content: 
+                <TeamApiSwagger value={props.entity} save={d => props.save(d).then(closeRightPanel)} />
+            })
+            } />
+        </Can>
         <span className={`alert alert-${state.error ? 'danger' : 'info'} text-center`}>
           {state.error ? state.error : state.info}
         </span>
@@ -132,6 +155,18 @@ export function ApiSwagger(props: ApiSwaggerProps) {
   else
     return (
       <div style={{ width: '100%' }}>
+        <Can I={manage} a={API} team={props.ownerTeam}>
+          <More
+            className="a-fake"
+            aria-label="update api"
+            style={{ position: "absolute", right: 0 }}
+            onClick={() => openRightPanel({
+              title: "Update api",
+              content:
+                <TeamApiSwagger value={props.entity} save={d => props.save(d).then(closeRightPanel)} />
+            })
+            } />
+        </Can>
         <div id="swagger-ui" style={{ width: '100%' }} />
       </div>
     );

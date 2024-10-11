@@ -1,30 +1,38 @@
 .card {
-  background-color:$card-bg-color;
+  background-color: $card-bg-color;
   color: $card-text-color;
+
   .card-body {
-    border : none !important;
-    .a-fake, a {
+    border: none !important;
+
+    .a-fake,
+    a {
       color: $card-link-color;
-      &:hover{
-        color:$card-link-hover-color;
+
+      &:hover {
+        color: $card-link-hover-color;
       }
     }
+
     .card-text {
       height: 100px;
       overflow: hidden;
     }
   }
+
   .plan-body {
     border: none;
     margin: 0;
-    border-radius:0;
-    border-bottom-left-radius: 5px ;
-    border-bottom-right-radius: 5px ;
+    border-radius: 0;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
     overflow: scroll;
   }
+
   #dropdownMenuButton {
     color: $card-link-color;
-    &:hover{
+
+    &:hover {
       color: $card-link-hover-color;
     }
   }
@@ -36,13 +44,13 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color:$card-header-bg-color;
+  background-color: $card-header-bg-color;
   color: $card-header-text-color;
   font-family: Arial, Helvetica, "Open Sans", sans-serif, monospace;
   font-size: 25pt;
   text-align: center;
   position: relative;
-  overflow: hidden;
+  // overflow: hidden;
 }
 
 
@@ -51,11 +59,15 @@
   font-weight: 500;
 }
 
-.plan-quotas, .plan-pricing {
+.plan-quotas,
+.plan-pricing {
   font-size: .75rem;
 }
 
-a.card-link:hover, a.card-link:visited, a.card-link:link, a.card-link:active {
+a.card-link:hover,
+a.card-link:visited,
+a.card-link:link,
+a.card-link:active {
   text-decoration: none;
 }
 
@@ -76,28 +88,31 @@ a.card-link:hover, a.card-link:visited, a.card-link:link, a.card-link:active {
     white-space: pre-wrap;
     overflow: scroll;
   }
-  .card-img-top {
-      button.btn {
-        display: none ;
-        position: absolute;
 
-        &.btn-edit {
-          top: 10px;
-          right: 10px;
-        }
+  .card-img-top {
+    button.btn {
+      display: none;
+      position: absolute;
+
+      &.btn-edit {
+        top: 10px;
+        right: 10px;
       }
     }
+  }
 
   &:hover {
     .card-img-top {
       button.btn {
-        display: block ;
+        display: block;
       }
     }
   }
 }
 
-.card-img-top:hover .btn { display: block;}
+.card-img-top:hover .btn {
+  display: block;
+}
 
 .pricing-content {
   gap: 20px;
@@ -107,4 +122,20 @@ a.card-link:hover, a.card-link:visited, a.card-link:link, a.card-link:active {
   padding: 0;
   border: none;
   width: calc(33% - 10px);
+}
+
+.fake-pricing-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+
+  &:hover {
+    background-color: $card-header-bg-color;
+  }
+
+  &:before {
+    content: '+';
+    font-size: 5rem;
+  }
 }
