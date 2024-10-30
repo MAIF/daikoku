@@ -4,14 +4,18 @@ import asciidoctor from 'asciidoctor';
 import classNames from 'classnames';
 import hljs from 'highlight.js';
 import { useContext, useEffect, useState } from 'react';
+import More from 'react-feather/dist/icons/more-vertical';
+import { useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 
-import { I18nContext } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
 import { converter } from '../../../services/showdown';
-import { IDocPage, IDocumentation, IDocumentationPages, ResponseError, isError } from '../../../types';
-import { Spinner } from '../../utils';
+import { IApi, IDocPage, IDocumentation, IDocumentationPages, isError, ITeamSimple, IWithDocumentation, IWithSwagger, ResponseError } from '../../../types';
+import { api as API, Can, manage, Spinner } from '../../utils';
+import * as Services from '../../../services';
+
 
 import 'highlight.js/styles/monokai.css';
-import { ParamKeyValuePair, useSearchParams } from 'react-router-dom';
 
 type ApiDocumentationCartidgeProps = {
   documentation?: IDocumentation
@@ -98,17 +102,26 @@ const ApiDocPage = (props: ApiDocPageProps) => {
 
 }
 
-type ApiDocumentationProps = {
+type ApiDocumentationProps<T extends IWithDocumentation> = {
   documentation?: IDocumentation
   getDocPage: (pageId: string) => Promise<IDocPage | ResponseError>
+  ownerTeam: ITeamSimple
+  entity: T
 }
-export const ApiDocumentation = (props: ApiDocumentationProps) => {
+
+
+export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumentationProps<T>) => {
   const { Translation } = useContext(I18nContext);
+  const { openRightPanel, closeRightPanel, openApiDocumentationSelectModal } = useContext(ModalContext);
+  const { translate } = useContext(I18nContext);
 
   const [searchParams, setSearchParams] = useSearchParams();
 
+  const [updateView, setUpdateView] = useState(false);
+
   const page = searchParams.get('page');
-  const [pageId, setPageId] = useState(page || props.documentation?.pages[0].id);
+  // const [pageId, setPageId] = useState(page || props.documentation?.pages[0].id);
+  const [pageId, setPageId] = useState<string>();
 
   const flattenDoc = (pages?: IDocumentationPages): Array<string> => {
     if (!pages) {
@@ -131,25 +144,89 @@ export const ApiDocumentation = (props: ApiDocumentationProps) => {
   const next = orderedPages[idx + (pageId ? 1 : 2)];
   const prev = orderedPages[idx - 1];
 
-  return (<div className='d-flex flex-row'>
-    <ApiDocumentationCartidge documentation={props.documentation} currentPageId={pageId} goTo={setPageId} />
-    <div className="col p-3 d-flex flex-column">
-      <div className={classNames("d-flex", {
-        'justify-content-between': !!prev,
-        'justify-content-end': !prev,
-      })}>
-        {prev && (<button className='btn btn-sm btn-outline-primary' onClick={() => setPageId(prev)}>
-          <i className="fas fa-chevron-left me-1" />
-          <Translation i18nkey="Previous page">Previous page</Translation>
-        </button>)}
-        {next && (<button className='btn btn-sm btn-outline-primary' onClick={() => setPageId(next)}>
-          <Translation i18nkey="Next page">Next page</Translation>
-          <i className="fas fa-chevron-right ms-1" />
-        </button>)}
-      </div>
-      <ApiDocPage pageId={pageId} getDocPage={props.getDocPage} />
-    </div >
-  </div>);
+  return (
+    <div>
+      <Can I={manage} a={API} team={props.ownerTeam}>
+        <div
+          className="dropdown"
+          style={{
+            position: 'absolute',
+            top: '0px',
+            right: '15px',
+            zIndex: '100',
+          }}
+        >
+          <More
+            className="fa fa-cog cursor-pointer dropdown-menu-button"
+            style={{ fontSize: '20px' }}
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            id="dropdownMenuButton"
+          />
+          <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
+            <span
+              onClick={() => setUpdateView(true)}
+              className="dropdown-item cursor-pointer"
+            >
+              Modifier la documentation
+            </span>
+            <div className="dropdown-divider" />
+            <span
+              className="dropdown-item cursor-pointer"
+              onClick={() => openRightPanel({
+                title: "Ajouter une nouvelle page de doc",
+                content: <div>toto</div>
+              })}
+            >
+              Ajouter une page
+            </span>
+            <span
+              className="dropdown-item cursor-pointer"
+              onClick={() => openApiDocumentationSelectModal({
+                api: props.entity, //FIXME: oops
+                teamId: props.ownerTeam._id,
+                onClose: () => {
+                  toast.success(translate('doc.page.import.successfull'));
+                  // reloadApi() //todo: reload page
+                },
+                getDocumentationPages: () => Services.getAllApiDocumentation(props.ownerTeam._id, props.entity._id, props.entity.currentVersion), //FIXME: plan have no current version
+                importPages: (pages: Array<string>, linked?: boolean) => Services.importApiPages(props.ownerTeam._id, props.entity._id, pages, props.entity.currentVersion, linked) //FIXME: plan have no current version
+              })}
+            >
+              cloner une page
+            </span>
+          </div>
+        </div>
+      </Can>
+      {pageId && (<div className='d-flex flex-row'>
+        <ApiDocumentationCartidge documentation={props.documentation} currentPageId={pageId} goTo={setPageId} />
+        <div className="col p-3 d-flex flex-column">
+          <div className={classNames("d-flex", {
+            'justify-content-between': !!prev,
+            'justify-content-end': !prev,
+          })}>
+            {prev && (<button className='btn btn-sm btn-outline-primary' onClick={() => setPageId(prev)}>
+              <i className="fas fa-chevron-left me-1" />
+              <Translation i18nkey="Previous page">Previous page</Translation>
+            </button>)}
+            {next && (<button className='btn btn-sm btn-outline-primary' onClick={() => setPageId(next)}>
+              <Translation i18nkey="Next page">Next page</Translation>
+              <i className="fas fa-chevron-right ms-1" />
+            </button>)}
+          </div>
+          <ApiDocPage pageId={pageId} getDocPage={props.getDocPage} />
+        </div >
+      </div>)}
+      {!pageId && (
+        <div>
+          <span>
+            seems like you have not yet setup your api documentation
+          </span>
+          <button className='btn btn-outline-primary'>add a first page</button>
+        </div>
+      )}
+    </div>
+  )
 }
 
 const TypeNotSupportedYet = () => <h3>Content type not supported yet !</h3>;

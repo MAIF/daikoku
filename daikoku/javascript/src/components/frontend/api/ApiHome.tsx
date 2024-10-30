@@ -445,7 +445,7 @@ export const ApiHome = ({
         <div className="row pt-3">
           {params.tab === 'description' && (<ApiDescription api={api} ownerTeam={ownerTeam} />)}
           {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
-          {params.tab === 'documentation' && <ApiDocumentation documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)} />}
+          {params.tab === 'documentation' && <ApiDocumentation api={api} ownerTeam={ownerTeam} documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)} />}
           {params.tab === 'testing' && (<ApiSwagger
             _id={api._id}
             testing={api.testing}

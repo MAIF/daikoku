@@ -3,7 +3,7 @@ import merge from 'lodash/merge';
 import React, { PropsWithChildren, useContext, useEffect, useState } from 'react';
 import { Link, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
 
-import { api as API, Can, manage } from '../components/utils';
+import { api as API, Can, manage, teamPermissions } from '../components/utils';
 import { I18nContext } from '../contexts';
 import * as Services from '../services/index';
 import { IApi, ITeamSimple, ITenant, SpecificationType, isError } from '../types';
@@ -107,6 +107,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
   const navigate = useNavigate();
   const params = useParams();
 
+  const userCanUpdateApi = team?.users.find(u => u.userId === connectedUser._id && u.teamPermission !== teamPermissions.user)
+
   const schema = (currentTab: string) => ({
     title: api?.name,
 
@@ -127,11 +129,11 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
           documentation: {
             label: translate('Documentation'),
             action: () => {
-              if (api?.documentation?.pages?.length) navigateTo('documentation');
+              if (api?.documentation?.pages?.length || userCanUpdateApi) navigateTo('documentation');
             },
             className: {
               active: currentTab === 'documentation',
-              disabled: tenant.display === 'environment' || !api?.documentation?.pages?.length,
+              disabled: tenant.display === 'environment' || !api?.documentation?.pages?.length && !userCanUpdateApi,
               'd-none': tenant.display === 'environment'
             },
           },

@@ -1195,6 +1195,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 getDocPage={(pageId) =>
                   Services.getUsagePlanDocPage(props.api._id, plan._id, pageId)
                 }
+                ownerTeam={props.ownerTeam}
               />
             )}
             {maybeTab === 'testing' && (

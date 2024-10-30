@@ -6,6 +6,10 @@ import { ITeamFullGql } from './gql';
 
 export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked' | 'deleted';
 
+export interface IWithDocumentation {
+  _id: string;
+  documentation?: IDocumentation;
+}
 export interface IWithSwagger {
   swagger?: ISwagger;
 }
@@ -17,7 +21,7 @@ export interface IWithTesting {
   customName?: string;
 }
 
-interface IBaseApi extends IWithSwagger, IWithTesting {
+interface IBaseApi extends IWithSwagger, IWithTesting, IWithDocumentation {
   _id: string;
   _humanReadableId: string;
   _tenant: string;
@@ -30,7 +34,6 @@ interface IBaseApi extends IWithSwagger, IWithTesting {
   description: string;
   currentVersion: string;
   supportedVersions: Array<string>;
-  documentation: IDocumentation;
   tags: Array<string>;
   categories: Array<string>;
   visibility: 'Public' | 'Private' | 'PublicWithAuthorisation' | 'AdminOnly';
@@ -230,7 +233,7 @@ export interface IStripePaymentSettings extends IPaymentSettings {
   priceIds: Array<string>;
 }
 
-export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting {
+export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, IWithDocumentation {
   allowMultipleKeys?: boolean;
   aggregationApiKeysSecurity?: boolean;
   integrationProcess: 'Automatic' | 'ApiKey';
@@ -245,7 +248,6 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting {
   maxPerSecond?: number;
   maxPerDay?: number;
   paymentSettings?: IPaymentSettings;
-  documentation?: IDocumentation;
 }
 
 export interface IUsagePlanAdmin extends IUsagePlan {}
