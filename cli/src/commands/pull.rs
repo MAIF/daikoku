@@ -69,8 +69,15 @@ async fn mails_synchronization(project: &cms::Project) -> DaikokuResult<()> {
             .response,
     )?;
 
+    let mail_user_template = bytes_to_struct::<IntlTranslationBody>(
+        daikoku_cms_api_get("/translations/_mail?domain=mail")
+            .await?
+            .response,
+    )?;
+
     create_mail_tenant(root_mail_tenant, sources_path.clone())?;
     create_mail_folder(root_mail_user_translations, sources_path.clone(), true)?;
+    create_mail_folder(mail_user_template, sources_path.clone(), false)?;
 
     logger::success(format!("<green>Pulling</> done"));
 
