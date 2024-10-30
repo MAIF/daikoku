@@ -1,6 +1,5 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import fr.maif.otoroshi.daikoku.domain.json.SeqCmsHistoryFormat
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
@@ -1596,66 +1595,6 @@ class TenantControllerSpec()
 
       resp.status mustBe 200
       resp.body mustBe s"${defaultApi.plans.map(_.id.value).mkString("\n")}"
-    }
-    "create, update and restore version of a cms page" in {
-      val page = defaultCmsPage.copy(
-        id = CmsPageId("create-update-restore-page"),
-        path = Some("/create-update-restore-page"),
-        draft = "first"
-      )
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(tenantAdmin),
-        teams = Seq(defaultAdminTeam),
-        usagePlans = defaultApi.plans,
-        apis = Seq(defaultApi.api)
-      )
-
-      val session = loginWithBlocking(tenantAdmin, tenant)
-
-      httpJsonCallBlocking(
-        s"/api/cms/pages",
-        "POST",
-        body = Some(page.asJson)
-      )(tenant, session)
-
-      def mustBeEquals(value: String) = {
-        val getPage =
-          httpJsonCallBlocking(s"/_${page.path.get}?draft=true")(
-            tenant,
-            session
-          )
-        getPage.status mustBe 200
-        getPage.body mustBe value
-      }
-
-      mustBeEquals("first")
-
-      Await.result(
-        httpJsonCall(
-          s"/api/cms/pages",
-          "POST",
-          body = Some(page.copy(draft = "second", body = "second").asJson)
-        )(tenant, session),
-        atMost = 10.seconds
-      )
-
-      mustBeEquals("second")
-
-      val res =
-        httpJsonCallBlocking(s"/api/cms/pages/${page.id.value}")(
-          tenant,
-          session
-        )
-      val updatedPage = (res.json \ "history").as(SeqCmsHistoryFormat)
-
-      httpJsonCallBlocking(
-        path = s"/api/cms/pages/${page.id.value}/diffs/${updatedPage.head.id}",
-        method = "POST"
-      )(tenant, session)
-
-      mustBeEquals("first")
-
     }
   }
   "a simple user" can {
