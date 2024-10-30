@@ -307,6 +307,7 @@ interface IOtoroshiTarget {
       forbidden: Array<IPath>;
       notFound: Array<IPath>;
     };
+    validUntil? : string;
   };
 }
 
@@ -381,6 +382,7 @@ export interface IBaseSubscription {
   team: string;
   api: string;
   createdAt: string;
+  validUntil?: number;
   by: string;
   customName: string | null;
   enabled: boolean;
@@ -445,7 +447,9 @@ export interface ISubscriptionCustomization {
   customMaxPerDay?: number;
   customReadOnly?: boolean;
   adminCustomName?: string;
+  validUntil?: number;
 }
+
 
 export interface ISubscriptionExtended extends ISubscription {
   parentUp: boolean;
@@ -453,6 +457,8 @@ export interface ISubscriptionExtended extends ISubscription {
   planName: string;
   apiName: string;
   _humanReadableId: string;
+  apiLink: string;
+  planLink: string;
 }
 
 export interface ISubscriptionWithApiInfo extends ISubscription {

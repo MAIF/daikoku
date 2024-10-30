@@ -326,7 +326,7 @@ test('Create & manage API', async ({ page }) => {
  * subscribe on second API and aggregate it
  * delete a key
  */
-test('aggregation mode', async ({ page, request }) => {
+test('aggregation mode', async ({ page, request, context }) => {
   await request.post('http://localhost:9000/admin-api/usage-plans', {
     headers: {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
@@ -368,6 +368,8 @@ test('aggregation mode', async ({ page, request }) => {
     ]
   })
 
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+
   //login
   await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
@@ -395,16 +397,18 @@ test('aggregation mode', async ({ page, request }) => {
   await page.getByRole('link', { name: 'APIs list' }).click();
   await page.locator('.top__container').filter({ hasText: 'Your teams' })
     .getByText('Consumers').click()
-  // await page.getByLabel('Notifications alt+T').getByRole('button').click();
   await page.getByText('API keys', { exact: true }).click();
   await page.getByRole('row', { name: 'test API 2 1.0.0' }).getByLabel('View APIkeys').click();
 
   //get the client id value to check
-  const apikey = await page.locator('.api-subscription__infos__value').innerText()
+  await page.getByRole('button', { name: 'clientId:clientToken' }).click();
+  const apikey = await page.evaluate(() => navigator.clipboard.readText());
 
   await page.getByText('API keys', { exact: true }).click();
   await page.getByRole('row', { name: 'test API 2.0.0' }).getByLabel('view APikey').click();
-  await expect(page.locator('.api-subscription__infos__value').first()).toHaveText(apikey);
+  await page.getByRole('button', { name: 'clientId:clientToken' }).click();
+  const apikey2 = await page.evaluate(() => navigator.clipboard.readText());
+  await expect(apikey2).toBe(apikey)
   await page.locator('.api-subscription').locator('.dropdown').click();
   await page.getByText('Show aggregate').click();
   await expect(page.getByRole('link', { name: 'test API 2/test plan' })).toBeVisible();
@@ -413,16 +417,21 @@ test('aggregation mode', async ({ page, request }) => {
   await page.getByRole('row', { name: 'test API 2 1.0.0' }).getByLabel('view APikey').click();
   await page.locator('.api-subscription').locator('.dropdown').click();
   await page.getByText('Extract from aggregate').click();
-  // await page.getByRole('button', { name: 'make unique' }).click();
   await expect(page.getByRole('paragraph')).toContainText('Are you sure to make this API key unique and separate from his parent plan?');
   await page.getByRole('button', { name: 'Ok', exact: true }).click();
-  await expect(page.locator('.api-subscription__infos__value').first()).not.toHaveText(apikey);
+  await page.waitForResponse(r => r.url().includes('/_makeUnique') && r.status() === 200);
+  await page.reload();
+
+  await page.getByRole('button', { name: 'clientId:clientToken' }).click();
+  const apikeyUniq = await page.evaluate(() => navigator.clipboard.readText());
+  console.log({apikey, apikey2, apikeyUniq})
+  await expect(apikeyUniq).not.toBe(apikey)
+
 
   // //test archive apikey & clean archive apikeys
   await page.locator('.api-subscription').locator('.dropdown').click();
   await page.getByText('Disable subscription').click();
   await expect(page.locator('.api-subscription__value__type')).toHaveText('Disabled')
-  // await expect(page.getByRole('button', { name: 'Enable subscription' })).toBeVisible();
 
   await page.locator('.api-subscription').locator('.dropdown').click();
   await page.getByText('Delete').click();
@@ -586,7 +595,8 @@ test('Filter API List', async ({ page, request }) => {
 })
 
 
-test('transfer an api subscription', async ({ page }) => {
+test('transfer an api subscription', async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto('http://localhost:5173/apis');
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email address').fill('tester@foo.bar');
@@ -602,16 +612,15 @@ test('transfer an api subscription', async ({ page }) => {
   await page.locator('div').filter({ hasText: /^fake prod plan/ }).getByRole('button').click();
   await page.getByText('Consumers').click();
   await page.getByLabel('Notifications').getByRole('img').nth(1).click();
-  const apikey = await page.locator('.api-subscription__infos__value').innerText();
-
-
+  await page.locator('.api-subscription__icon').isVisible();
+  // await page.locator('.api-subscription__infos__value').innerText();
+  await page.getByRole('button', { name: 'clientId:clientToken' }).click();
+  const apikey = await page.evaluate(() => navigator.clipboard.readText());
 
   await page.locator('#dropdownMenuButton').click();
   await page.getByText('Transfer subscription').click();
   await page.getByText('Display link').click();
   const link = await page.locator('.api-susbcription__display-link').innerText();
-
-
 
   await page.goto(link);
   await page.getByText('Testers').click();
@@ -621,4 +630,26 @@ test('transfer an api subscription', async ({ page }) => {
   await page.getByText('API keys').click();
   await page.getByRole('row', { name: 'test API 2.0.0 View API View' }).getByLabel('View APIkeys').click();
   expect(page.locator('.api-subscription__infos__value')).toHaveText(apikey)
+});
+
+test('can setup subscription valid until for a subs to his apis', async ({ page }) => {
+  await page.goto('http://localhost:5173/apis');
+  await page.getByRole('img', { name: 'user menu' }).click();
+  await page.getByPlaceholder('Email address').fill('admin@foo.bar');
+  await page.getByPlaceholder('Password').fill('password');
+  await page.getByPlaceholder('Password').press('Enter');
+  await page.waitForResponse(response => response.url().includes('/auth/Local/callback') && response.status() === 303)
+  await page.waitForSelector("section.organisation__header")
+
+  await page.goto('http://localhost:5173/testers/settings/apis/test-api/1.0.0/infos')
+  // await page.waitForResponse(r => r.url().includes('/_name') && r.status() === 200)
+  await page.locator('.block__entry__link').filter({ hasText: 'Subscriptions'}).click();
+  await page.getByRole('row', { name: 'daikoku-api-key-test-api-not-test-plan-consumers-' }).getByRole('button', { name: 'Update metadata' }).click();
+  await page.getByPlaceholder('mm/dd/yyyy').fill('11/18/2024');
+  await page.locator('.modal-footer .btn-outline-success').filter({ hasText: 'Update' }).click();
+  await page.getByLabel('Daikoku home').click();
+  await page.getByText('Consumers').click();
+  await page.getByText('API keys').click();
+  await page.getByLabel('View APIkeys').click();
+  await expect(page.getByText('valid until 18 Nov.')).toBeVisible();
 });

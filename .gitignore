@@ -33,4 +33,9 @@ daikoku/public/assets/
 daikoku/public/index.html
 daikoku/public/index*
 daikoku/public/fa-*
+daikoku/public/asciidoctor-*
+daikoku/public/asyncapi-*
+daikoku/public/backofffice-*
+daikoku/public/highlight-*
+daikoku/public/swagger-*
 stats.html

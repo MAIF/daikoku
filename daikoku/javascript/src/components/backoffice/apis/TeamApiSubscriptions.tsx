@@ -1,13 +1,13 @@
-import { getApolloContext } from '@apollo/client';
-import { format, type } from '@maif/react-forms';
-import { createColumnHelper } from '@tanstack/react-table';
-import { useContext, useEffect, useRef, useState } from 'react';
-import { toast } from 'sonner';
+import { getApolloContext } from "@apollo/client";
+import { format, type } from "@maif/react-forms";
+import { createColumnHelper } from "@tanstack/react-table";
+import { useContext, useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 
-import { ModalContext } from '../../../contexts';
-import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
-import { I18nContext } from '../../../contexts';
-import * as Services from '../../../services';
+import { ModalContext } from "../../../contexts";
+import { CustomSubscriptionData } from "../../../contexts/modals/SubscriptionMetadataModal";
+import { I18nContext } from "../../../contexts";
+import * as Services from "../../../services";
 import {
   IApi,
   isError,
@@ -16,8 +16,8 @@ import {
   ITeamSimple,
   IUsagePlan,
   ResponseError,
-} from '../../../types';
-import { SwitchButton, Table, TableRef } from '../../inputs';
+} from "../../../types";
+import { SwitchButton, Table, TableRef } from "../../inputs";
 import {
   api as API,
   BeautifulTitle,
@@ -27,8 +27,9 @@ import {
   manage,
   Option,
   Spinner,
-} from '../../utils';
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+} from "../../utils";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+import { cp } from "fs";
 
 type TeamApiSubscriptionsProps = {
   api: IApi;
@@ -58,6 +59,7 @@ interface IApiSubscriptionGql extends ISubscriptionCustomization {
     type: string;
   };
   createdAt: string;
+  validUntil: number;
   api: {
     _id: string;
   };
@@ -75,6 +77,7 @@ interface IApiSubscriptionGql extends ISubscriptionCustomization {
     _id: string;
     adminCustomName: string;
     enabled: boolean;
+    validUntil: number;
     api: {
       _id: string;
       name: string;
@@ -106,17 +109,17 @@ export const TeamApiSubscriptions = ({
     useContext(ModalContext);
 
   const plansQuery = useQuery({
-    queryKey: ['plans'],
+    queryKey: ["plans"],
     queryFn: () =>
       Services.getAllPlanOfApi(api.team, api._id, api.currentVersion),
   });
   const subscriptionsQuery = useQuery({
-    queryKey: ['subscriptions'],
+    queryKey: ["subscriptions"],
     queryFn: () =>
       client!
         .query<{ apiApiSubscriptions: Array<IApiSubscriptionGql> }>({
           query: Services.graphql.getApiSubscriptions,
-          fetchPolicy: 'no-cache',
+          fetchPolicy: "no-cache",
           variables: {
             apiId: api._id,
             teamId: currentTeam._id,
@@ -186,7 +189,7 @@ export const TeamApiSubscriptions = ({
   });
 
   useEffect(() => {
-    document.title = `${currentTeam.name} - ${translate('Subscriptions')}`;
+    document.title = `${currentTeam.name} - ${translate("Subscriptions")}`;
   }, []);
 
   useEffect(() => {
@@ -194,7 +197,6 @@ export const TeamApiSubscriptions = ({
       tableRef.current?.update();
     }
   }, [api, subscriptionsQuery.data]);
-
   useEffect(() => {
     tableRef.current?.update();
   }, [filters]);
@@ -204,11 +206,12 @@ export const TeamApiSubscriptions = ({
     columnHelper.accessor(
       (row) => row.adminCustomName || row.apiKey.clientName,
       {
-        id: 'adminCustomName',
-        header: translate('Name'),
-        meta: { style: { textAlign: 'left' } },
+        id: "adminCustomName",
+        header: translate("Name"),
+        meta: { style: { textAlign: "left" } },
         filterFn: (row, _, value) => {
           const sub = row.original;
+
           const displayed: string =
             sub.team._id === currentTeam._id
               ? sub.customName || sub.apiKey.clientName
@@ -218,34 +221,37 @@ export const TeamApiSubscriptions = ({
             .toLocaleLowerCase()
             .includes(value.toLocaleLowerCase());
         },
-        sortingFn: 'basic',
+        sortingFn: "basic",
         cell: (info) => {
           const sub = info.row.original;
           if (sub.parent) {
             const title = `<div>
-            <strong>${translate('aggregated.apikey.badge.title')}</strong>
+            <strong>${translate("aggregated.apikey.badge.title")}</strong>
             <ul>
-              <li>${translate('Api')}: ${sub.parent.api.name}</li>
-              <li>${translate('Plan')}: ${sub.parent.plan.customName}</li>
-              <li>${translate('aggregated.apikey.badge.apikey.name')}: ${sub.parent.adminCustomName}</li>
+              <li>${translate("Api")}: ${sub.parent.api.name}</li>
+              <li>${translate("Plan")}: ${sub.parent.plan.customName}</li>
+              <li>${translate("aggregated.apikey.badge.apikey.name")}: ${sub.parent.adminCustomName}</li>
             </ul>
           </div>`;
             return (
               <div className="d-flex flex-row justify-content-between">
                 <span>{info.getValue()}</span>
-                <BeautifulTitle title={title} html>
-                  <div className="badge badge-custom">A</div>
-                </BeautifulTitle>
+                  <BeautifulTitle title={title} html>
+                    <div className="badge badge-custom">A</div>
+                  </BeautifulTitle>
               </div>
             );
           }
-          return <div>{info.getValue()}</div>;
+
+          return (
+              <span>{info.getValue()}</span>
+          );
         },
       }
     ),
-    columnHelper.accessor('plan', {
-      header: translate('Plan'),
-      meta: { style: { textAlign: 'left' } },
+    columnHelper.accessor("plan", {
+      header: translate("Plan"),
+      meta: { style: { textAlign: "left" } },
       cell: (info) =>
         Option(usagePlans.find((pp) => pp._id === info.getValue()._id))
           .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
@@ -255,16 +261,16 @@ export const TeamApiSubscriptions = ({
           usagePlans.find((pp) => pp._id === row.original.plan._id)
         )
           .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
-          .getOrElse('');
+          .getOrElse("");
 
         return displayed
           .toLocaleLowerCase()
           .includes(value.toLocaleLowerCase());
       },
     }),
-    columnHelper.accessor('team', {
-      header: translate('Team'),
-      meta: { style: { textAlign: 'left' } },
+    columnHelper.accessor("team", {
+      header: translate("Team"),
+      meta: { style: { textAlign: "left" } },
       cell: (info) => info.getValue().name,
       filterFn: (row, columnId, value) => {
         const displayed: string = row.original.team.name;
@@ -274,11 +280,11 @@ export const TeamApiSubscriptions = ({
           .includes(value.toLocaleLowerCase());
       },
     }),
-    columnHelper.accessor('enabled', {
-      header: translate('Enabled'),
+    columnHelper.accessor("enabled", {
+      header: translate("Enabled"),
       enableColumnFilter: false,
       enableSorting: false,
-      meta: { style: { textAlign: 'center' } },
+      meta: { style: { textAlign: "center" } },
       cell: (info) => {
         const sub = info.row.original;
         return (
@@ -291,7 +297,7 @@ export const TeamApiSubscriptions = ({
                 !sub.enabled
               ).then(() => {
                 tableRef.current?.update();
-                queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+                queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
               })
             }
             checked={sub.enabled}
@@ -299,48 +305,49 @@ export const TeamApiSubscriptions = ({
         );
       },
     }),
-    columnHelper.accessor('createdAt', {
+    columnHelper.accessor("createdAt", {
       enableColumnFilter: false,
-      header: translate('Created at'),
-      meta: { style: { textAlign: 'left' } },
+      header: translate("Created at"),
+      meta: { style: { textAlign: "left" } },
       cell: (info) => {
         const date = info.getValue();
         if (!!date) {
           return formatDate(date, language);
         }
-        return translate('N/A');
+        return translate("N/A");
       },
     }),
-    columnHelper.accessor('lastUsage', {
+    columnHelper.accessor("lastUsage", {
       enableColumnFilter: false,
-      header: translate('apisubscription.lastUsage.label'),
-      meta: { style: { textAlign: 'left' } },
+      header: translate("apisubscription.lastUsage.label"),
+      meta: { style: { textAlign: "left" } },
       cell: (info) => {
         const date = info.getValue();
         if (!!date) {
           return formatDate(date, language);
         }
-        return translate('N/A');
+        return translate("N/A");
       },
     }),
     columnHelper.display({
-      header: translate('Actions'),
-      meta: { style: { textAlign: 'center', width: '120px' } },
+      header: translate("Actions"),
+      meta: { style: { textAlign: "center", width: "120px" } },
       cell: (info) => {
         const sub = info.row.original;
         return (
           <div className="btn-group">
-            <BeautifulTitle title={translate('Update metadata')}>
+            <BeautifulTitle title={translate("Update metadata")}>
               <button
                 key={`edit-meta-${sub._id}`}
                 type="button"
                 className="btn btn-sm btn-outline-primary me-1"
+                aria-label={translate("Update metadata")}
                 onClick={() => updateMeta(sub)}
               >
                 <i className="fas fa-pen" />
               </button>
             </BeautifulTitle>
-            <BeautifulTitle title={translate('Refresh secret')}>
+            <BeautifulTitle title={translate("Refresh secret")}>
               <button
                 key={`edit-meta-${sub._id}`}
                 type="button"
@@ -350,7 +357,7 @@ export const TeamApiSubscriptions = ({
                 <i className="fas fa-sync" />
               </button>
             </BeautifulTitle>
-            <BeautifulTitle title={translate('api.delete.subscription')}>
+            <BeautifulTitle title={translate("api.delete.subscription")}>
               <button
                 key={`edit-meta-${sub._id}`}
                 type="button"
@@ -366,12 +373,12 @@ export const TeamApiSubscriptions = ({
     }),
   ];
 
-  const updateMeta = (sub: IApiSubscriptionGql) =>
-    openSubMetadataModal({
+  const updateMeta = (sub: IApiSubscriptionGql) => {
+    return openSubMetadataModal({
       save: (updates: CustomSubscriptionData) => {
         Services.updateSubscription(currentTeam, { ...sub, ...updates }).then(
           () => {
-            queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+            queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
           }
         );
       },
@@ -384,14 +391,15 @@ export const TeamApiSubscriptions = ({
         (p) => sub.plan._id === p._id
       )!,
     });
+  };
 
   const regenerateApiKeySecret = useMutation({
     mutationFn: (sub: IApiSubscriptionGql) =>
       Services.regenerateApiKeySecret(currentTeam._id, sub._id),
     onSuccess: () => {
-      toast.success(translate('secret.refresh.success'));
+      toast.success(translate("secret.refresh.success"));
       tableRef.current?.update();
-      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
     },
     onError: (e: ResponseError) => {
       toast.error(translate(e.error));
@@ -403,14 +411,14 @@ export const TeamApiSubscriptions = ({
 
     confirm({
       message: translate({
-        key: 'secret.refresh.confirm',
+        key: "secret.refresh.confirm",
         replacements: [
           sub.team.name,
           plan.customName ? plan.customName : plan.type,
         ],
       }),
-      okLabel: translate('Yes'),
-      cancelLabel: translate('No'),
+      okLabel: translate("Yes"),
+      cancelLabel: translate("No"),
     }).then((ok) => {
       if (ok) {
         regenerateApiKeySecret.mutate(sub);
@@ -422,9 +430,9 @@ export const TeamApiSubscriptions = ({
     mutationFn: (sub: IApiSubscriptionGql) =>
       Services.deleteApiSubscription(sub.team._id, sub._id, "promotion"),
     onSuccess: () => {
-      toast.success(translate('api.delete.subscription.deleted'));
+      toast.success(translate("api.delete.subscription.deleted"));
       tableRef.current?.update();
-      queryClient.invalidateQueries({ queryKey: ['subscriptions'] });
+      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
     },
     onError: (e: ResponseError) => {
       toast.error(translate(e.error));
@@ -432,16 +440,16 @@ export const TeamApiSubscriptions = ({
   });
   const deleteSubscription = (sub: IApiSubscriptionGql) => {
     confirm({
-      title: translate('api.delete.subscription.form.title'),
+      title: translate("api.delete.subscription.form.title"),
       message: translate({
-        key: 'api.delete.subscription.message',
+        key: "api.delete.subscription.message",
         replacements: [
           sub.team.name,
           sub.plan.customName ? sub.plan.customName : sub.plan.type,
         ],
       }),
-      okLabel: translate('Yes'),
-      cancelLabel: translate('No'),
+      okLabel: translate("Yes"),
+      cancelLabel: translate("No"),
     }).then((ok) => {
       if (ok) {
         deleteApiSubscription.mutate(sub);
@@ -471,7 +479,7 @@ export const TeamApiSubscriptions = ({
               className="btn btn-sm btn-outline-info"
               onClick={() =>
                 openFormModal({
-                  actionLabel: translate('Filter'),
+                  actionLabel: translate("Filter"),
                   onSubmit: (data) => {
                     setFilters(data);
                   },
@@ -479,7 +487,7 @@ export const TeamApiSubscriptions = ({
                     metadata: {
                       type: type.object,
                       format: format.form,
-                      label: translate('Filter metadata'),
+                      label: translate("Filter metadata"),
                       array: true,
                       schema: {
                         key: {
@@ -493,22 +501,22 @@ export const TeamApiSubscriptions = ({
                     },
                     tags: {
                       type: type.string,
-                      label: translate('Filter tags'),
+                      label: translate("Filter tags"),
                       array: true,
                     },
                     clientIds: {
                       type: type.string,
                       array: true,
-                      label: translate('Filter Client Ids'),
+                      label: translate("Filter Client Ids"),
                     },
                   },
-                  title: translate('Filter data'),
+                  title: translate("Filter data"),
                   value: filters,
                 })
               }
             >
-              {' '}
-              {translate('Filter')}{' '}
+              {" "}
+              {translate("Filter")}{" "}
             </button>
             {!!filters && (
               <div

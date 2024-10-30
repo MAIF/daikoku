@@ -1610,6 +1610,7 @@ export const graphql = {
           type
         }
         createdAt
+        validUntil
         api {
           _id
           name
@@ -1628,6 +1629,7 @@ export const graphql = {
           _id
           adminCustomName
           enabled
+          validUntil
           api {
             _id
             name

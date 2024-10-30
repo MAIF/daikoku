@@ -1082,6 +1082,7 @@ class ApiController(
               apiKey = data.apiKey,
               plan = data.plan,
               createdAt = DateTime.now(),
+              validUntil = None,
               team = data.team,
               api = data.api,
               by = ctx.user.id,
@@ -1759,7 +1760,8 @@ class ApiController(
             customMaxPerDay = (body \ "customMaxPerDay").asOpt[Long],
             customMaxPerMonth = (body \ "customMaxPerMonth").asOpt[Long],
             customReadOnly = (body \ "customReadOnly").asOpt[Boolean],
-            adminCustomName = (body \ "adminCustomName").asOpt[String]
+            adminCustomName = (body \ "adminCustomName").asOpt[String],
+            validUntil = (body \ "validUntil").asOpt(DateTimeFormat),
           )
           result <-
             EitherT(apiService.updateSubscription(ctx.tenant, subToSave, plan))
@@ -1791,6 +1793,7 @@ class ApiController(
 
         def subscriptionToJson(
             api: Api,
+            apiTeam: Team,
             plan: UsagePlan,
             sub: ApiSubscription,
             parentSub: Option[ApiSubscription]
@@ -1807,8 +1810,9 @@ class ApiController(
             Json.obj("planName" -> name) ++
             Json.obj("apiName" -> api.name) ++
             Json.obj("_humanReadableId" -> api.humanReadableId) ++
-            Json.obj("parentUp" -> false)
-
+            Json.obj("parentUp" -> false) ++
+            Json.obj("apiLink" -> s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/description") ++
+            Json.obj("planLink" -> s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/pricing")
           sub.parent match {
             case None => FastFuture.successful(r)
             case Some(parentId) =>
@@ -1881,14 +1885,21 @@ class ApiController(
                                   case None =>
                                     FastFuture.successful(Json.obj()) //FIXME
                                   case Some(plan) =>
-                                    subscriptionToJson(
-                                      api = api,
-                                      plan = plan,
-                                      sub = sub,
-                                      parentSub = sub.parent.flatMap(p =>
-                                        subscriptions.find(s => s.id == p)
-                                      )
-                                    )
+                                    env.dataStore.teamRepo.forTenant(ctx.tenant)
+                                      .findByIdNotDeleted(api.team)
+                                      .flatMap {
+                                        case Some(team) => subscriptionToJson(
+                                          api = api,
+                                          apiTeam = team,
+                                          plan = plan,
+                                          sub = sub,
+                                          parentSub = sub.parent.flatMap(p =>
+                                            subscriptions.find(s => s.id == p)
+                                          )
+                                        )
+                                        case None => FastFuture.successful(Json.obj()) //FIXME
+                                      }
+
                                 }
 
                             case None => FastFuture.successful(Json.obj())

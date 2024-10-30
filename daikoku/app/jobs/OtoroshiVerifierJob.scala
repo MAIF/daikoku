@@ -380,6 +380,8 @@ class OtoroshiVerifierJob(
                   .map(_.apikeyCustomization.readOnly)
               )
               .getOrElse(infos.apk.readOnly),
+            validUntil = subscription.validUntil
+              .map(_.getMillis),
             rotation = infos.apk.rotation
               .map(r =>
                 r.copy(enabled =

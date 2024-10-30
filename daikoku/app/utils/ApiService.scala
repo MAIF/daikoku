@@ -74,19 +74,19 @@ class ApiService(
   }
 
   def createOtoroshiApiKey(
-                            user: User,
-                            api: Api,
-                            plan: UsagePlan,
-                            team: Team,
-                            tenant: Tenant,
-                            integrationToken: String,
-                            customMetadata: Option[JsObject] = None,
-                            customMaxPerSecond: Option[Long] = None,
-                            customMaxPerDay: Option[Long] = None,
-                            customMaxPerMonth: Option[Long] = None,
-                            customReadOnly: Option[Boolean] = None,
-                            maybeOtoroshiApiKey: Option[OtoroshiApiKey] = None
-                          ) = {
+      user: User,
+      api: Api,
+      plan: UsagePlan,
+      team: Team,
+      tenant: Tenant,
+      integrationToken: String,
+      customMetadata: Option[JsObject] = None,
+      customMaxPerSecond: Option[Long] = None,
+      customMaxPerDay: Option[Long] = None,
+      customMaxPerMonth: Option[Long] = None,
+      customReadOnly: Option[Boolean] = None,
+      maybeOtoroshiApiKey: Option[OtoroshiApiKey] = None,
+  ) = {
 
     val otoroshiApiKey = maybeOtoroshiApiKey.getOrElse(
       OtoroshiApiKey(
@@ -168,7 +168,7 @@ class ApiService(
         "daikoku__tags" -> processedTags.mkString(" | ")
       ) ++ processedMetadata,
       rotation =
-        plan.autoRotation.map(enabled => ApiKeyRotation(enabled = enabled))
+        plan.autoRotation.map(enabled => ApiKeyRotation(enabled = enabled)), 
     )
 
     plan match {
@@ -262,6 +262,7 @@ class ApiService(
             apiKey = tunedApiKey.asOtoroshiApiKey,
             plan = plan.id,
             createdAt = DateTime.now(),
+            validUntil = None,
             team = team.id,
             api = api.id,
             by = user.id,
@@ -367,6 +368,7 @@ class ApiService(
         apiKey = OtoroshiApiKey(clientName, clientId, clientSecret),
         plan = plan.id,
         createdAt = DateTime.now(),
+        validUntil = None,
         team = team.id,
         api = api.id,
         by = user.id,
@@ -767,7 +769,8 @@ class ApiService(
             metadata = apiKey.metadata ++ subscription.customMetadata
               .flatMap(_.asOpt[Map[String, String]])
               .getOrElse(Map.empty[String, String]),
-            readOnly = subscription.customReadOnly.getOrElse(apiKey.readOnly)
+            readOnly = subscription.customReadOnly.getOrElse(apiKey.readOnly),
+            validUntil = subscription.validUntil.map(_.getMillis)
           )
         )(otoSettings)
       )
