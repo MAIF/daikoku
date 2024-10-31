@@ -12,7 +12,7 @@ POST    /api/cms/import                                 fr.maif.otoroshi.daikoku
 #DELETE  /api/cms/pages/:id                              fr.maif.otoroshi.daikoku.ctrls.HomeController.deleteCmsPage(id)
 #GET     /api/cms/pages/:id                              fr.maif.otoroshi.daikoku.ctrls.HomeController.getCmsPage(id)
 
-POST    /cms-api/sync                                  fr.maif.otoroshi.daikoku.ctrls.CmsApiController.sync()
+POST    /cms-api/sync                                   fr.maif.otoroshi.daikoku.ctrls.CmsApiController.sync()
 GET     /cms-api/health                                 fr.maif.otoroshi.daikoku.ctrls.CmsApiController.health()
 GET     /cms-api/version                                fr.maif.otoroshi.daikoku.ctrls.CmsApiController.version()
 GET     /cms-api/tenants/default                        fr.maif.otoroshi.daikoku.ctrls.CmsApiController.defaultTenant()
@@ -24,7 +24,6 @@ GET     /cms-api/apis                                   fr.maif.otoroshi.daikoku
 
 GET     /cms-api/pages                                  fr.maif.otoroshi.daikoku.ctrls.CmsApiController.findAll()
 GET     /cms-api/pages/:id                              fr.maif.otoroshi.daikoku.ctrls.CmsApiController.getCmsPage(id)
-POST    /cms-api/pages/sync                             fr.maif.otoroshi.daikoku.ctrls.CmsApiController.synchronizeWithLocalBundle()
 
 GET     /cms-api/swagger.json                           fr.maif.otoroshi.daikoku.ctrls.CmsApiSwaggerController.swagger()
 GET     /cms-api/openapi.json                           fr.maif.otoroshi.daikoku.ctrls.CmsApiSwaggerController.swagger()

@@ -1693,7 +1693,7 @@ case class CmsPage(
       case JsNumber(value) => value
       case JsString(value) => value
       case JsArray(value) => value
-      case JsObject(underlying) => underlying
+      case o @ JsObject(underlying) => o
     })}).foldLeft(context) { (acc, item) =>
       acc.combine(item._1, item._2)
     }

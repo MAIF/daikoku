@@ -40,7 +40,7 @@ Daikokucli uses your home folder to store the list of projects inside a `.daikok
 You can start a new project from scratch
 
 ```sh
-daikoku init --name=<PROJECT_NAME> --path=<PROJECT_PATH_OR_CURRENT_FOLDER>
+daikoku cms init --name=<PROJECT_NAME> --path=<PROJECT_PATH_OR_CURRENT_FOLDER>
 ``` 
 
 or import an existing one

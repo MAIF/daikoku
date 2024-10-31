@@ -142,11 +142,6 @@ class CmsApiController(
         }
     }
 
-  def synchronizeWithLocalBundle() =
-    CmsApiAction.async { ctx =>
-      Ok(Json.obj("message" -> "synchronization done")).future
-    }
-
   def sync() =
     CmsApiAction.async(parse.json) { ctx =>
       for {
