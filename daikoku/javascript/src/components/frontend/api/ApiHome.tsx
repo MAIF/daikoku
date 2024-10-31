@@ -18,6 +18,7 @@ import StarsButton from './StarsButton';
 import classNames from 'classnames';
 import 'highlight.js/styles/monokai.css';
 import { GlobalContext } from '../../../contexts/globalContext';
+import { CmsViewer } from '../CmsViewer';
 
 (window as any).hljs = hljs;
 
@@ -263,7 +264,7 @@ export const ApiHome = ({
               backgroundColor: 'inherit'
             },
             action: <Navigation size='1.5rem' className="cursor-pointer" onClick={() => navigate(`/${result.subscription.team}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`)} />,
-            
+
           });
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
@@ -341,16 +342,21 @@ export const ApiHome = ({
   document.title = `${tenant.title} - ${api ? api.name : 'API'}`;
 
   return (<main role="main">
-    <ApiHeader api={api} ownerTeam={ownerTeam} connectedUser={connectedUser} toggleStar={toggleStar} tab={params.tab} />
+
+    {api.customHeaderCmsPage ?
+      <CmsViewer pageId={api.customHeaderCmsPage} fields={{ api }} /> :
+      <ApiHeader api={api} ownerTeam={ownerTeam} connectedUser={connectedUser} toggleStar={toggleStar} tab={params.tab} />}
+
     <div className="album py-2 me-4 min-vh-100">
       <div className={classNames({
         'container-fluid': params.tab === 'swagger',
         container: params.tab !== 'swagger'
       })}>
         <div className="row pt-3">
-          {params.tab === 'description' && (<ApiDescription api={api} />)}
+          {params.tab === 'description' &&
+            api.descriptionCmsPage ? <CmsViewer pageId={api.descriptionCmsPage} fields={{ api }} /> : <ApiDescription api={api} />}
           {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
-          {params.tab === 'documentation' && <ApiDocumentation documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)} />}
+          {params.tab === 'documentation' && <ApiDocumentation api={api} documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)} />}
           {params.tab === 'testing' && (<ApiSwagger
             _id={api._id}
             testing={api.testing}
@@ -359,7 +365,7 @@ export const ApiHome = ({
             callUrl={`/api/teams/${ownerTeam._id}/testing/${api._id}/call`}
           />)}
           {params.tab === 'swagger' && (<ApiRedoc
-            swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`} swaggerConf={api.swagger}/>)}
+            swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`} swaggerConf={api.swagger} />)}
           {params.tab === 'news' && (<ApiPost api={api} ownerTeam={ownerTeam} versionId={params.versionId} />)}
           {(params.tab === 'issues' || params.tab === 'labels') && (<ApiIssue api={api} onChange={(editedApi: any) => setApi(editedApi)} ownerTeam={ownerTeam} connectedUser={connectedUser} />)}
         </div>

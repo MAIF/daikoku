@@ -3859,12 +3859,6 @@ object SchemaDefinition {
               "lastPublishedDate",
               OptionType(LongType),
               resolve = _.value.lastPublishedDate.map(p => p.getMillis)
-            ),
-            Field(
-              "history",
-              ListType(CmsHistoryType),
-              resolve = _.value.history
-                .sortBy(_.date.toInstant.getMillis)(Ordering[Long].reverse)
             )
           )
       )

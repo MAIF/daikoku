@@ -1,15 +1,16 @@
 mod commands;
+mod helpers;
+mod interactive;
 mod logging;
 mod models;
 mod utils;
 
 use clap::{Parser, Subcommand};
 use logging::{error::DaikokuResult, logger};
-use utils::absolute_path;
 
 /// A fictional versioning CLI
 #[derive(Debug, Parser)] // requires `derive` feature
-#[command(name = "daikokucli")]
+#[command(name = "daikoku")]
 #[command(about = "Daikoku CLI", long_about = None, version = env!("CARGO_PKG_VERSION"))]
 struct Cli {
     #[command(subcommand)]
@@ -20,31 +21,8 @@ struct Cli {
 pub enum Commands {
     /// Get installed version
     Version {},
-    /// Initialize a new CMS project from template at specific path. Currently adding project as default project
-    #[command()]
-    Create {
-        /// The template to clone
-        #[arg(
-            value_name = "TEMPLATE",
-            short = 't',
-            long = "template",
-            value_parser = ["empty"],
-            require_equals = true,
-        )]
-        template: Option<String>,
-        /// Project name
-        #[arg(value_name = "NAME", short = 'n', long = "name", required = false)]
-        name: String,
-        /// Path where initialize the project
-        #[arg(value_name = "PATH", short = 'p', long = "path", required = false)]
-        path: Option<String>,
-    },
-    /// Add a token to the current project. The token must be pasted from your Daikoku profile page.
-    Login {
-        /// Token can be found on your Daikoku profile page and used by Daikoku to access authenticated resources
-        #[arg(value_name = "TOKEN", short = 't', long = "token")]
-        token: Option<String>,
-    },
+    /// Add a cookie to the current project
+    Login {},
     /// Watch project changes and serve pages on :3333 (or on WATCHING_PORT=)
     #[command()]
     Watch {
@@ -56,7 +34,7 @@ pub enum Commands {
             required = false
         )]
         environment: Option<String>,
-        /// Enable/Disable token usage - really useful for testing authenticated pages
+        /// Enable/Disable cookie usage - really useful for testing authenticated pages
         #[arg(value_name = "AUTHENTICATION", short = 'a', long = "authentication")]
         authentication: Option<bool>,
     },
@@ -66,16 +44,29 @@ pub enum Commands {
         command: EnvironmentsCommands,
     },
     /// Manage your CMS projects
-    Projects {
+    Cms {
         #[command(subcommand)]
-        command: ProjectCommands,
+        command: CmsCommands,
     },
     /// ⚠️ synchronize projects file with Daikoku
-    Sync {},
+    Push {
+        #[arg(value_name = "DRY_RUN", short = 'd', long = "dry_run")]
+        dry_run: Option<bool>,
+        #[arg(value_name = "FILE_PATH", short = 'f', long = "file_path")]
+        file_path: Option<String>,
+    },
+    Pull {
+        #[command(subcommand)]
+        command: PullCommands,
+    },
     /// Manage your CMS assets
     Assets {
         #[command(subcommand)]
         command: AssetsCommands,
+    },
+    Generate {
+        #[command(subcommand)]
+        command: GenerateCommands,
     },
 }
 
@@ -87,27 +78,27 @@ pub enum EnvironmentsCommands {
         name: String,
         #[arg(value_name = "SERVER", short = 's', long = "server")]
         server: String,
-        #[arg(value_name = "TOKEN", short = 'a', long = "token")]
-        token: Option<String>,
+        #[arg(value_name = "APIKEY", short = 'a', long = "apikey")]
+        apikey: String,
         #[arg(value_name = "OVERWRITE", long = "overwrite", required = false)]
         overwrite: Option<bool>,
-        #[arg(value_name = "FORCE", long = "force", required = false)]
-        force: Option<bool>,
     },
-    /// update default environment by adding auth token
-    PathDefault {
-        #[arg(
-            value_name = "TOKEN",
-            short = 't',
-            long = "token",
-            require_equals = true
-        )]
-        token: String,
+    /// update default environment
+    Config {
+        #[arg(value_name = "APIKEY", short = 'a', long = "apikey")]
+        apikey: Option<String>,
+        #[arg(value_name = "COOKIE", short = 'c', long = "cookie")]
+        cookie: Option<String>,
+        // #[arg(value_name = "NAME", short = 'n', long = "name")]
+        // name: Option<String>,
     },
     /// ⚠️  be careful, this will clear all environments
-    Clear {},
+    Clear {
+        #[arg(value_name = "FORCE", short = 'f', long = "force")]
+        force: Option<bool>,
+    },
     /// change the default environment to the specified name
-    Default {
+    Switch {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
     },
@@ -117,16 +108,18 @@ pub enum EnvironmentsCommands {
         name: String,
     },
     /// show information of the specified environment
-    Env {
+    Info {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
+        #[arg(value_name = "FULL", short = 'f', long = "full")]
+        full: Option<bool>,
     },
     /// list all environments
     List {},
 }
 
 #[derive(Debug, Subcommand)]
-pub enum ProjectCommands {
+pub enum CmsCommands {
     /// register a new project to the CLI
     Add {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
@@ -137,7 +130,7 @@ pub enum ProjectCommands {
         overwrite: Option<bool>,
     },
     /// change the default project to the specified name
-    Default {
+    Switch {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
     },
@@ -145,30 +138,39 @@ pub enum ProjectCommands {
     Remove {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
-        #[arg(value_name = "FILES", short = 'f', long = "files")]
+        #[arg(value_name = "REMOVE_FILES", short = 'f', long = "remove_files")]
         remove_files: bool,
     },
     /// list all projects
     List {},
     /// ⚠️  be careful, this will clear all projects
-    Clear {},
+    Clear {
+        #[arg(value_name = "FORCE", short = 'f', long = "force")]
+        force: Option<bool>,
+    },
     /// ⚠️ import legacy projects from Daikoku
-    Import {
+    Migrate {
         #[arg(value_name = "NAME", short = 'n', long = "name")]
         name: String,
         #[arg(value_name = "PATH", short = 'p', long = "path")]
-        path: String,
-        #[arg(value_name = "TOKEN", short = 't', long = "token")]
-        token: String,
+        path: Option<String>,
+        #[arg(value_name = "APIKEY", short = 'a', long = "apikey")]
+        apikey: String,
         #[arg(value_name = "SERVER", short = 's', long = "server")]
         server: String,
+    },
+    Init {
+        #[arg(value_name = "NAME", short = 'n', long = "name")]
+        name: String,
+        #[arg(value_name = "PATH", short = 'p', long = "path")]
+        path: Option<String>,
     },
 }
 
 #[derive(Debug, Subcommand)]
 pub enum AssetsCommands {
     /// register a new asset
-    Add {
+    Push {
         #[arg(value_name = "FILENAME", short = 'f', long = "filename")]
         filename: String,
         #[arg(value_name = "TITLE", short = 't', long = "title")]
@@ -195,23 +197,42 @@ pub enum AssetsCommands {
     Sync {},
 }
 
+#[derive(Debug, Subcommand)]
+pub enum PullCommands {
+    Apis {
+        #[arg(value_name = "ID", short = 'i', long = "od")]
+        id: Option<String>,
+    },
+    Mails {},
+}
+
+#[derive(Debug, Subcommand)]
+pub enum GenerateCommands {
+    /// create a new documentation page for your api
+    Documentation {
+        #[arg(value_name = "FILENAME", short = 'f', long = "filename")]
+        filename: String,
+        #[arg(value_name = "TITLE", short = 't', long = "title")]
+        title: String,
+        #[arg(value_name = "DESC", short = 'd', long = "desc")]
+        desc: String,
+    },
+}
+
 async fn process(command: Commands) -> DaikokuResult<()> {
     match command {
         Commands::Version {} => commands::version::run(),
-        Commands::Create {
-            template,
-            name,
-            path,
-        } => commands::creation::run(template, name, path.map(|p| absolute_path(p).unwrap())).await,
         Commands::Watch {
             environment,
             authentication,
         } => commands::watch::run(environment, authentication).await,
-        Commands::Environments { command } => commands::enviroments::run(command).await,
-        Commands::Projects { command } => commands::projects::run(command).await,
-        Commands::Login { token } => commands::login::run(token).await,
-        Commands::Sync {} => commands::sync::run().await,
+        Commands::Environments { command } => commands::environments::run(command).await,
+        Commands::Cms { command } => commands::cms::run(command).await,
+        Commands::Login {} => commands::login::run().await,
+        Commands::Pull { command } => commands::pull::run(command).await,
+        Commands::Push { dry_run, file_path } => commands::push::run(dry_run, file_path).await,
         Commands::Assets { command } => commands::assets::run(command).await,
+        Commands::Generate { command } => commands::generate::run(command).await,
     }
 }
 

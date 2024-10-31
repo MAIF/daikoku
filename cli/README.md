@@ -1,5 +1,5 @@
 <div align="center">
-  <h1><code>daikokucli</code></h1>
+  <h1><code>daikoku</code></h1>
 </div>
 
 ![CLI architecture](architecture.png "Architecture")
@@ -10,10 +10,10 @@
 This project can be installed and compiled from source with this Cargo command:
 
 ```
-$ cargo install daikokucli
+$ cargo install daikoku
 or
-$ brew tap maif/daikokucli
-$ brew install daikokucli
+$ brew tap maif/daikoku
+$ brew install daikoku
 ```
 
 Additionally there are [precompiled artifacts built on CI][artifacts] which are
@@ -24,82 +24,123 @@ available for download as well.
 Installation can be confirmed with:
 
 ```
-$ daikokucli version
+$ daikoku version
 ```
 
 Subcommands can be explored with:
 
 ```
-$ daikokucli help
+$ daikoku help
 ```
 
 # Core commands
 
 Daikokucli uses your home folder to store the list of projects inside a `.daikoku` file. Each project created with the CLI should contain a `src` folder and a `.daikoku/.environments`. This file will contain
 
-You can start a new project 
+You can start a new project from scratch
 
 ```sh
-daikokucli create --name=<PROJECT_NAME> --path=<PROJECT_PATH_OR_CURRENT_FOLDER>
+daikoku cms init --name=<PROJECT_NAME> --path=<PROJECT_PATH_OR_CURRENT_FOLDER>
+``` 
+
+or import an existing one
+
+```sh
+daikoku cms migrate --name=<PROJECT_NAME> --path=<PROJECT_PATH_OR_CURRENT_FOLDER> --server=<DAIKOKU_SERVER> --apikey=<CMS_APIKEY>
 ``` 
 
 then add a default Daikoku environment  
 
 ```sh
-daikokucli environments add --name=<ENVIRONMENT_NAME> --server=<ENVIROMNENT_SERVER>
+daikoku environments add --name=<ENVIRONMENT_NAME> --server=<ENVIROMNENT_SERVER> --apikey=<CMS_APIKEY>
 ``` 
 
 > The Daikoku server has to be reachable and will be checked before saving the configuration
 
+
+you can sync the new project with your Daikoku instance and fetch mails and apis
+
+```sh
+daikoku pull 
+```
+
 you can start to develop and watch file changes
 
 ```sh
-daikokucli watch
+daikoku watch
 ``` 
 
-Common practices involve utilizing the directives within the Daikoku CMS to access private entities based on the connected user's permissions. You have the option to configure the token for accessing your CMS with an authenticated user by pasting the token from your Daikoku profile page.
+Common practices involve utilizing the directives within the Daikoku CMS to access private entities based on the connected user's permissions.
 
 ```sh
-daikokucli login --token=<YOUR_TOKEN>
+daikoku login
 ```
 
-If you have many environments you can switch between us simply using
+You can start to follow your changes using
 
 ```sh
-daikokucli watch --environment=<NAME_OF_YOUR_ENVIRONMENT>
+daikoku watch --environment=<NAME_OF_YOUR_ENVIRONMENT>
 ``` 
 
 or permanently by changing the default project or environment
 
 ```sh
-daikokucli environments default --name=<NAME_OF_YOUR_ENVIRONMENT>
-daikokucli projects default --name=<NAME_OF_YOUR_PROJECT>
+daikoku environments switch --name=<NAME_OF_YOUR_ENVIRONMENT>
+daikoku cms switch --name=<NAME_OF_YOUR_PROJECT>
 ``` 
 
 you can view the currently used project and the others
 ```sh
-daikokucli projects list
+daikoku cms list
 ``` 
 
 At anytime, you can track an existing CMS folder or update its information
 ```sh
-daikokucli projects add --name=<NAME_OF_YOUR_PROJECT> --path=<PATH_TO_YOUR_PROJECT> --overwrite=<true|false>
+daikoku cms add --name=<NAME_OF_YOUR_PROJECT> --path=<PATH_TO_YOUR_PROJECT> --overwrite=<true|false>
 ``` 
 
-Once ready, you can synchronize your sources with the Daikoku environment
+Once ready, you can push your sources with the Daikoku environment
 ```sh
-daikokucli sync
+daikoku push
 ```
 
 ## Start a new project by importing an existing one
 
 If you already have a legacy CMS on your Daikoku, you can start by importing it 
 ```sh
-daikokucli projects import --name=<NEW_NAME_OF_YOUR_PROJECT> \
+daikoku projects migrate --name=<NEW_NAME_OF_YOUR_PROJECT> \
                            --path=<PATH_TO_THE_NEW_PROJECT> \
                            --server=<DAIKOKU_SERVER_TO_PULL> \
-                           --token=<AUTHENTICATION_TOKEN>
+                           --apikey=<CMS_APIKEY>
 ```
+
+# CMS Structure
+
+The CMS projects adhere to the following strict file structure:
+
+- `.daikoku`: This hidden folder is used exclusively by Daikoku to store environments, secrets, and credentials. The only file you can edit here is the .daikokuignore, which allows you to exclude specific files from being pushed.
+
+- `assets`: Files placed in this folder can be uploaded to the Daikoku S3 Bucket associated with your project. They can then be accessed using a generated slug.
+
+- `src`: This folder contains all other source files, organized into the following subdirectories:
+  - `apis`: Lists all APIs available in your Daikoku. Each API has its own subfolder containing a header and description folder.
+   - `data`: Contains external data files such as JSON, YAML, CSV, and others.
+  - `pages`: Stores all source files that are not categorized under apis, data, scripts, mails, or styles.
+  - `scripts`: Contains JavaScript (JS) files.
+  - `styles`: Contains CSS files.
+  - `documentations` : Contains files that can be used as documentation page of APIs
+
+# Nested routing
+
+The CLI uses file-system routing where folders are used to create nested routes. Each folder represents a route segment that maps to a URL segment.
+
+You can create separate UIs for each route using page.html files. `page.html` is a special CLI file that contains html content.
+
+To create a nested route, you can nest folders inside each other and add page.html files inside them. For example:
+
+`src/pages/page.html`: is associated with the `/` path.
+`src/pages/invoices/page.html`: is associated with the `/invoices` path.
+`src/pages/offres.html`: is associated with the `/offres` path.
 
 # Manage your assets
 
@@ -107,7 +148,7 @@ You can manage your images, diagrams, or any type of files directly by creating 
 
 Each asset is save in the S3 of your Daikoku using the following command
 ```sh
-daikokucli assets add --filename=<ASSET_FILENAME> \
+daikoku assets push --filename=<ASSET_FILENAME> \
   --path=<ONLY_NESTED_FOLDER_BEHIND_ASSETS_FOLDER> \
   --desc=<ASSET_DESCRIPTION> \
   --title=<ASSET_TITLE>
@@ -119,25 +160,17 @@ If you require a particular `slug` for your asset, you have the option to replac
 To delete your asset you have to give the `filename` and the `slug` iif it differs
 
 ```sh
-daikokucli assets remove --slug=<CUSTOM_SLUG> --filename=<ASSET_FILENAME>
+daikoku assets remove --slug=<CUSTOM_SLUG> --filename=<ASSET_FILENAME>
 ```
 
 As others commands, you can display all registered assets 
 ```sh
-daikokucli assets list
+daikoku assets list
 ```
 
 If you prefer to synchronize all assets with a single command, it offers speed advantages over doing so individually, albeit with reduced configurability.
 ```sh
-daikokucli assets sync
-```
-
-# Authorized applications
-
-Just before running the `daikoku login` command, you have to configure your tenant by adding the CLI server. By default, the server is set to `http://localhost:3334` but you can overwrite it using the `WATCHING_PORT` environment variable.
-
-```sh
-daikokucli login
+daikoku assets sync
 ```
 
 # CMS Directives
@@ -479,3 +512,9 @@ This project is licensed under the Apache 2.0 license with the LLVM exception.
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in this project by you, as defined in the Apache-2.0 license,
 shall be licensed as above, without any additional terms or conditions.
+
+
+#### Run tests
+```
+cargo test --test <filename> -- --nocapture --test-threads 1
+```

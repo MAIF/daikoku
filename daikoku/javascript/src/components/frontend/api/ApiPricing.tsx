@@ -607,29 +607,16 @@ export const ApiPricing = (props: ApiPricingProps) => {
             </Link>
           </div>
           <div>
-            {maybeTab === 'swagger' && (
-              <ApiRedoc
-                swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${plan._id}/swagger`}
-                swaggerConf={plan.swagger}
-              />
-            )}
-            {maybeTab === 'documentation' && (
-              <ApiDocumentation
-                documentation={plan.documentation}
-                getDocPage={(pageId) =>
-                  Services.getUsagePlanDocPage(props.api._id, plan._id, pageId)
-                }
-              />
-            )}
-            {maybeTab === 'testing' && (
-              <ApiSwagger
-                _id={plan._id}
-                testing={plan.testing}
-                swagger={plan.swagger}
-                swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${plan._id}/swagger`}
-                callUrl={`/api/teams/${props.api.team}/testing/${props.api._id}/plans/${plan._id}/call`}
-              />
-            )}
+            {maybeTab === 'swagger' && <ApiRedoc swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${plan._id}/swagger`} swaggerConf={plan.swagger} />}
+            {maybeTab === 'documentation' && <ApiDocumentation documentation={plan.documentation}
+              getDocPage={(pageId) => Services.getUsagePlanDocPage(props.api._id, plan._id, pageId)}
+              api={props.api} />}
+            {maybeTab === 'testing' && <ApiSwagger _id={plan._id}
+              testing={plan.testing}
+              swagger={plan.swagger}
+              swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${plan._id}/swagger`}
+              callUrl={`/api/teams/${props.api.team}/testing/${props.api._id}/plans/${plan._id}/call`}
+            />}
           </div>
         </div>
       );

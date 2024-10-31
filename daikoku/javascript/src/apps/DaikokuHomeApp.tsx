@@ -315,7 +315,9 @@ export const TwoFactorAuthentication = () => {
         if (res.status >= 400) {
           setError(translate('2fa.wrong_code'));
           setCode('');
-        } else if (res.redirected) window.location.href = res.url;
+        } else if (res.redirected) {
+          window.location.href = res.url;
+        }
       });
     }
   }

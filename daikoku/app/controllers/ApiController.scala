@@ -1022,6 +1022,16 @@ class ApiController(
       }
     }
 
+  def getAllApis() = DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has fetch all apis"
+        )
+      )(ctx.tenant.id.value, ctx) { (tenant, _) =>
+        apiService.getApis(ctx)
+      }
+  }
+
   case class subscriptionData(
       apiKey: OtoroshiApiKey,
       plan: UsagePlanId,
@@ -4521,7 +4531,7 @@ class ApiController(
         env.dataStore.apiRepo
           .findAllVersions(tenant = ctx.tenant, id = apiId)
           .map { apis =>
-            ctx.setCtxValue("api.name", apis.head.name)
+            ctx.setCtxValue("api.name", apis.headOption.map(_.name).getOrElse("unknown api name"))
             ctx.setCtxValue("api.id", apiId)
             Ok(
               SeqVersionFormat.writes(

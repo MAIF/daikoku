@@ -47,7 +47,8 @@ const EditMailtemplate = ({
             .then(([languages, data]) => {
               if (!isError(languages) && !isError(data)) {
                 const templates = languages.map((language) => {
-                  return Option(data.translations[0][1].find((t) => t.language === language))
+                  const item: IMailingTranslation = data.translations[0];
+                  return Option(item.translations.find((t) => t.language === language))
                     .getOrElse({
                       _id: nanoid(),
                       key: KEY_MAIL_TEMPLATE,
@@ -200,13 +201,13 @@ export const MailingInternalization = () => {
 
   const columnHelper = createColumnHelper<IMailingTranslation>()
   const columns = [
-    columnHelper.accessor(row => translate(row[0]), {
+    columnHelper.accessor(row => translate(row._id), {
       id: 'message',
       header: translate('mailing_internalization.message_text'),
       meta: { style: { textAlign: 'left' } },
       sortingFn: 'basic',
     }),
-    columnHelper.accessor(row => row[2], {
+    columnHelper.accessor(row => row.content, {
       header: translate('mailing_internalization.required_variables'),
       meta: { style: { textAlign: 'left' } },
       enableSorting: false,
@@ -231,11 +232,10 @@ export const MailingInternalization = () => {
       enableSorting: false,
       enableColumnFilter: false,
       cell: (info) => {
-
-        const requiredVariables = getRequiredVariables(info.row.original[2]);
+        const requiredVariables = getRequiredVariables(info.row.original.content);
         return (
           <div className='d-flex flex-row flex-wrap justify-content-around'>
-            {info.row.original[1].map((value: any) => {
+            {info.row.original.translations.map((value: any) => {
               return (
                 <button type='button' key={value.language}
                   className='btn btn-outline-success'
@@ -245,7 +245,7 @@ export const MailingInternalization = () => {
                       value: {
                         type: type.string,
                         format: format.markdown,
-                        label: translate(info.row.original[0]),
+                        label: translate(info.row.original._id),
                         constraints: [
                           constraints.required(translate('constraints.required.value')),
                           constraints.test('variables', translate('constraint.test.required.variables'), (value) => {
@@ -302,6 +302,7 @@ export const MailingInternalization = () => {
           </Link>
         </li>
       </ul>
+
 
       {domain === 'mail' && (
         <Table
