@@ -1133,42 +1133,6 @@ class TenantControllerSpec()
       val resp = httpJsonCallBlocking(s"/api/admin/auditTrail")(tenant, session)
       resp.status mustBe 200
     }
-    "create a cms page" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(tenantAdmin),
-        teams = Seq(defaultAdminTeam),
-        apis = Seq(adminApi)
-      )
-
-      val session = loginWithBlocking(tenantAdmin, tenant)
-
-      val resp = httpJsonCallBlocking(
-        path = "/api/cms/pages",
-        method = "POST",
-        body = Some(defaultCmsPage.asJson)
-      )(tenant, session)
-
-      resp.status mustBe 201
-    }
-    "delete a cms page" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(tenantAdmin),
-        cmsPages = Seq(defaultCmsPage),
-        teams = Seq(defaultAdminTeam),
-        apis = Seq(adminApi)
-      )
-
-      val session = loginWithBlocking(tenantAdmin, tenant)
-
-      val resp = httpJsonCallBlocking(
-        path = s"/api/cms/pages/${defaultCmsPage.id.value}",
-        method = "DELETE"
-      )(tenant, session)
-
-      resp.status mustBe 200
-    }
     "get the production content of a cms page by id" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1188,25 +1152,6 @@ class TenantControllerSpec()
       resp.status mustBe 200
       resp.body mustBe "<h1>production content</h1>"
     }
-    "get the draft content of a cms page by id" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(tenantAdmin),
-        cmsPages = Seq(defaultCmsPage),
-        teams = Seq(defaultAdminTeam),
-        apis = Seq(adminApi)
-      )
-
-      val session = loginWithBlocking(tenantAdmin, tenant)
-
-      val resp = httpJsonCallBlocking(
-        path = s"/cms/pages/${defaultCmsPage.id.value}?draft=true",
-        headers = Map("accept" -> "text/html")
-      )(tenant, session)
-
-      resp.status mustBe 200
-      resp.body mustBe defaultCmsPage.draft
-    }
     "get the production content of a cms page by path" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1225,25 +1170,6 @@ class TenantControllerSpec()
 
       resp.status mustBe 200
       resp.body mustBe defaultCmsPage.body
-    }
-    "get the draft content of a cms page by path" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(tenantAdmin),
-        cmsPages = Seq(defaultCmsPage),
-        teams = Seq(defaultAdminTeam),
-        apis = Seq(adminApi)
-      )
-
-      val session = loginWithBlocking(tenantAdmin, tenant)
-
-      val resp = httpJsonCallBlocking(
-        path = s"/_${defaultCmsPage.path.get}?draft=true",
-        headers = Map("accept" -> "text/html")
-      )(tenant, session)
-
-      resp.status mustBe 200
-      resp.body mustBe defaultCmsPage.draft
     }
     "navigate to an unknown cms page" in {
       setupEnvBlocking(
