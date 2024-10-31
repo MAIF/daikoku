@@ -1108,61 +1108,25 @@ object evolution_1750 extends EvolutionScript {
 
       implicit val executionContext: ExecutionContext = ec
 
-      val cmsApiDefaultPlan = FreeWithoutQuotas(
-        id = UsagePlanId(IdGenerator.token),
-        tenant = Tenant.Default,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = Some("admin"),
-        customDescription = None,
-        otoroshiTarget = None,
-        allowMultipleKeys = Some(true),
-        autoRotation = None,
-        subscriptionProcess = Seq.empty,
-        integrationProcess = IntegrationProcess.ApiKey
-      )
-
       val cmsApiDefaultTenantId =
         ApiId(s"cms-api-tenant-${Tenant.Default.value}")
 
       for {
-        tenants <-dataStore.tenantRepo.findAll()
+        tenants <- dataStore.tenantRepo.findAll()
         _ <- Future.sequence(tenants.map(tenant => dataStore.teamRepo
           .forTenant(tenant)
           .findOne(Json.obj("type" -> TeamType.Admin.name))
           .flatMap(team => {
-            if(team.isDefined) {
-              val cmsApiDefaultTenant = Api(
-                id = cmsApiDefaultTenantId,
-                tenant = Tenant.Default,
-                team = team.get.id,
-                name = s"cms-api-tenant-${Tenant.Default.value}",
-                lastUpdate = DateTime.now(),
-                smallDescription = "cms api",
-                description = "cms api",
-                currentVersion = Version("1.0.0"),
-                documentation = ApiDocumentation(
-                  id = ApiDocumentationId(IdGenerator.token(32)),
-                  tenant = Tenant.Default,
-                  pages = Seq.empty[ApiDocumentationDetailPage],
-                  lastModificationAt = DateTime.now()
-                ),
-                swagger =
-                  Some(SwaggerAccess(url = "/cms-api/swagger.json".some)),
-                possibleUsagePlans = Seq(cmsApiDefaultPlan.id),
-                visibility = ApiVisibility.AdminOnly,
-                defaultUsagePlan = cmsApiDefaultPlan.id.some,
-                authorizedTeams = Seq.empty,
-                state = ApiState.Published
-              )
+            if (team.isDefined) {
+              val (cmsApi, cmsPlan) = ApiTemplate.cmsApi(team.get, tenant)
 
               Future.sequence(Seq(
                 dataStore.apiRepo
                   .forTenant(tenant.id)
-                  .save(cmsApiDefaultTenant),
+                  .save(cmsApi),
                 dataStore.usagePlanRepo
                   .forTenant(tenant.id)
-                  .save(cmsApiDefaultPlan)
+                  .save(cmsPlan)
               ))
             } else {
               Future.successful(())

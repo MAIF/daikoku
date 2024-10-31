@@ -236,44 +236,11 @@ class TenantController(
               contact = tenant.contact,
               apisCreationPermission = true.some
             )
-            val adminApiPlan = FreeWithoutQuotas(
-              id = UsagePlanId(IdGenerator.token),
-              tenant = tenant.id,
-              billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-              currency = Currency("EUR"),
-              customName = Some("admin"),
-              customDescription = None,
-              otoroshiTarget = None,
-              allowMultipleKeys = Some(true),
-              autoRotation = None,
-              subscriptionProcess = Seq.empty,
-              integrationProcess = IntegrationProcess.ApiKey
-            )
+            val (adminApi, adminApiPlan) = ApiTemplate.adminApi(adminTeam, tenant)
 
-            val adminApi = Api(
-              id = ApiId(s"admin-api-tenant-${tenant.humanReadableId}"),
-              tenant = tenant.id,
-              team = adminTeam.id,
-              name = s"admin-api-tenant-${tenant.humanReadableId}",
-              lastUpdate = DateTime.now(),
-              smallDescription = "admin api",
-              description = "admin api",
-              currentVersion = Version("1.0.0"),
-              state = ApiState.Published,
-              visibility = ApiVisibility.AdminOnly,
-              documentation = ApiDocumentation(
-                id = ApiDocumentationId(IdGenerator.token(32)),
-                tenant = tenant.id,
-                pages = Seq.empty[ApiDocumentationDetailPage],
-                lastModificationAt = DateTime.now()
-              ),
-              swagger =
-                Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
-              possibleUsagePlans = Seq(adminApiPlan.id),
-              defaultUsagePlan = UsagePlanId("admin").some,
-              authorizedTeams = Seq.empty
-            )
             val tenantForCreation = tenant.copy(adminApi = adminApi.id)
+
+            val (cmsApi, cmsPlan) = ApiTemplate.cmsApi(adminTeam, tenant)
 
             for {
               _ <- env.dataStore.tenantRepo.save(tenantForCreation)
@@ -281,10 +248,18 @@ class TenantController(
                 env.dataStore.teamRepo
                   .forTenant(tenantForCreation)
                   .save(adminTeam)
-              _ <-
-                env.dataStore.apiRepo
+              _ <- env.dataStore.apiRepo
                   .forTenant(tenantForCreation)
                   .save(adminApi)
+              _ <- env.dataStore.apiRepo
+                .forTenant(tenantForCreation)
+                .save(cmsApi)
+              _ <- env.dataStore.usagePlanRepo
+                .forTenant(tenantForCreation)
+                .save(cmsPlan)
+              _ <- env.dataStore.usagePlanRepo
+                .forTenant(tenantForCreation)
+                .save(adminApiPlan)
             } yield {
               Created(tenantForCreation.asJsonWithJwt)
             }

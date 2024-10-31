@@ -463,7 +463,6 @@ class DaikokuEnv(
                 "Main dataStore seems to be empty, generating initial data ..."
               )
               val userId = UserId(IdGenerator.token(32))
-              val administrationTeamId = TeamId("administration")
               val adminApiDefaultTenantId =
                 ApiId(s"admin-api-tenant-${Tenant.Default.value}")
               val cmsApiDefaultTenantId =
@@ -480,81 +479,6 @@ class DaikokuEnv(
                 users = Set(UserWithPermission(userId, Administrator)),
                 authorizedOtoroshiEntities = None,
                 contact = "no-replay@daikoku.io"
-              )
-              val adminApiDefaultPlan = FreeWithoutQuotas(
-                id = UsagePlanId(IdGenerator.token),
-                tenant = Tenant.Default,
-                billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-                currency = Currency("EUR"),
-                customName = Some("admin"),
-                customDescription = None,
-                otoroshiTarget = None,
-                allowMultipleKeys = Some(true),
-                autoRotation = None,
-                subscriptionProcess = Seq.empty,
-                integrationProcess = IntegrationProcess.ApiKey
-              )
-
-              val adminApiDefaultTenant = Api(
-                id = adminApiDefaultTenantId,
-                tenant = Tenant.Default,
-                team = defaultAdminTeam.id,
-                name = s"admin-api-tenant-${Tenant.Default.value}",
-                lastUpdate = DateTime.now(),
-                smallDescription = "admin api",
-                description = "admin api",
-                currentVersion = Version("1.0.0"),
-                documentation = ApiDocumentation(
-                  id = ApiDocumentationId(IdGenerator.token(32)),
-                  tenant = Tenant.Default,
-                  pages = Seq.empty[ApiDocumentationDetailPage],
-                  lastModificationAt = DateTime.now()
-                ),
-                swagger =
-                  Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
-                possibleUsagePlans = Seq(adminApiDefaultPlan.id),
-                visibility = ApiVisibility.AdminOnly,
-                defaultUsagePlan = adminApiDefaultPlan.id.some,
-                authorizedTeams = Seq.empty,
-                state = ApiState.Published
-              )
-
-              val cmsApiDefaultPlan = FreeWithoutQuotas(
-                id = UsagePlanId(IdGenerator.token),
-                tenant = Tenant.Default,
-                billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-                currency = Currency("EUR"),
-                customName = Some("admin"),
-                customDescription = None,
-                otoroshiTarget = None,
-                allowMultipleKeys = Some(true),
-                autoRotation = None,
-                subscriptionProcess = Seq.empty,
-                integrationProcess = IntegrationProcess.ApiKey
-              )
-
-              val cmsApiDefaultTenant = Api(
-                id = cmsApiDefaultTenantId,
-                tenant = Tenant.Default,
-                team = defaultAdminTeam.id,
-                name = s"cms-api-tenant-${Tenant.Default.value}",
-                lastUpdate = DateTime.now(),
-                smallDescription = "cms api",
-                description = "cms api",
-                currentVersion = Version("1.0.0"),
-                documentation = ApiDocumentation(
-                  id = ApiDocumentationId(IdGenerator.token(32)),
-                  tenant = Tenant.Default,
-                  pages = Seq.empty[ApiDocumentationDetailPage],
-                  lastModificationAt = DateTime.now()
-                ),
-                swagger =
-                  Some(SwaggerAccess(url = "/cms-api/swagger.json".some)),
-                possibleUsagePlans = Seq(cmsApiDefaultPlan.id),
-                visibility = ApiVisibility.AdminOnly,
-                defaultUsagePlan = cmsApiDefaultPlan.id.some,
-                authorizedTeams = Seq.empty,
-                state = ApiState.Published
               )
 
               val tenant = Tenant(
@@ -577,6 +501,10 @@ class DaikokuEnv(
                 otoroshiSettings = Set(),
                 adminApi = adminApiDefaultTenantId
               )
+
+              val (adminApiDefaultTenant, adminApiDefaultPlan) = ApiTemplate.adminApi(defaultAdminTeam, tenant)
+              val (cmsApi, cmsPlan) = ApiTemplate.cmsApi(defaultAdminTeam, tenant)
+
               val team = Team(
                 id = TeamId(IdGenerator.token(32)),
                 tenant = tenant.id,
@@ -631,11 +559,11 @@ class DaikokuEnv(
                 _ <-
                   dataStore.apiRepo
                     .forTenant(tenant.id)
-                    .save(cmsApiDefaultTenant)
+                    .save(cmsApi)
                 _ <-
                   dataStore.usagePlanRepo
                     .forTenant(tenant.id)
-                    .save(cmsApiDefaultPlan)
+                    .save(cmsPlan)
                 _ <- dataStore.userRepo.save(user)
               } yield ()
 
