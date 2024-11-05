@@ -629,7 +629,12 @@ test('transfer an api subscription', async ({ page, context }) => {
   await page.locator('.top__container').filter({hasText: 'Your teams'}).getByText('Testers').click();
   await page.getByText('API keys').click();
   await page.getByRole('row', { name: 'test API 2.0.0 View API View' }).getByLabel('View APIkeys').click();
-  expect(page.locator('.api-subscription__infos__value')).toHaveText(apikey)
+  expect(page.locator('.api-subscription__infos__name')).toHaveText("not test plan");
+
+  await page.getByRole('button', { name: 'clientId:clientToken' }).click();
+  const _apikey = await page.evaluate(() => navigator.clipboard.readText());
+  expect(_apikey).toBe(apikey);
+
 });
 
 test('can setup subscription valid until for a subs to his apis', async ({ page }) => {
