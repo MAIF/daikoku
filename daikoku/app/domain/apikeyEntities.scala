@@ -25,7 +25,7 @@ case class ApikeyCustomization(
     metadata: JsObject = play.api.libs.json.Json.obj(),
     customMetadata: Seq[CustomMetadata] = Seq.empty,
     tags: JsArray = play.api.libs.json.Json.arr(),
-    restrictions: ApiKeyRestrictions = ApiKeyRestrictions(),
+    restrictions: ApiKeyRestrictions = ApiKeyRestrictions()
 ) extends CanJson[ApikeyCustomization] {
   def asJson: JsValue = json.ApikeyCustomizationFormat.writes(this)
 }
@@ -141,7 +141,7 @@ case class ActualOtoroshiApiKey(
     metadata: Map[String, String] = Map.empty[String, String],
     restrictions: ApiKeyRestrictions = ApiKeyRestrictions(),
     rotation: Option[ApiKeyRotation],
-    validUntil : Option[Long] = None
+    validUntil: Option[Long] = None
 ) extends CanJson[OtoroshiApiKey] {
   override def asJson: JsValue = json.ActualOtoroshiApiKeyFormat.writes(this)
   def asOtoroshiApiKey: OtoroshiApiKey =

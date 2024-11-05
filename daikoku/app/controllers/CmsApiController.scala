@@ -86,12 +86,12 @@ class CmsApiController(
 
   private def bodyToSource[A](body: A): Source[ByteString, _] = {
     body match {
-        case raw: AnyContentAsRaw =>
-          Source.single(raw.raw.asBytes().getOrElse(ByteString.empty))
-        case e =>
-          println(e)
-          throw new IllegalArgumentException("Request body is not raw data")
-      }
+      case raw: AnyContentAsRaw =>
+        Source.single(raw.raw.asBytes().getOrElse(ByteString.empty))
+      case e =>
+        println(e)
+        throw new IllegalArgumentException("Request body is not raw data")
+    }
   }
 
   def storeAssets() =

@@ -307,7 +307,7 @@ interface IOtoroshiTarget {
       forbidden: Array<IPath>;
       notFound: Array<IPath>;
     };
-    validUntil? : string;
+    validUntil?: string;
   };
 }
 
@@ -449,7 +449,6 @@ export interface ISubscriptionCustomization {
   adminCustomName?: string;
   validUntil?: number;
 }
-
 
 export interface ISubscriptionExtended extends ISubscription {
   parentUp: boolean;

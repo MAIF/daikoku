@@ -155,7 +155,7 @@ sealed trait CmsApiConfig
 case class LocalCmsApiConfig(key: String) extends CmsApiConfig
 
 case class OtoroshiCmsApiConfig(claimsHeaderName: String, algo: Algorithm)
-  extends CmsApiConfig
+    extends CmsApiConfig
 
 object CmsApiConfig {
   def apply(config: Configuration): CmsApiConfig = {
@@ -502,8 +502,10 @@ class DaikokuEnv(
                 adminApi = adminApiDefaultTenantId
               )
 
-              val (adminApiDefaultTenant, adminApiDefaultPlan) = ApiTemplate.adminApi(defaultAdminTeam, tenant)
-              val (cmsApi, cmsPlan) = ApiTemplate.cmsApi(defaultAdminTeam, tenant)
+              val (adminApiDefaultTenant, adminApiDefaultPlan) =
+                ApiTemplate.adminApi(defaultAdminTeam, tenant)
+              val (cmsApi, cmsPlan) =
+                ApiTemplate.cmsApi(defaultAdminTeam, tenant)
 
               val team = Team(
                 id = TeamId(IdGenerator.token(32)),

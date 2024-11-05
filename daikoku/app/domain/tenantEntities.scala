@@ -651,8 +651,8 @@ case class CmsFile(
   def id() = {
     val defaultId = path().replaceAll("/", "-")
     daikokuData
-          .map(data => data.getOrElse("id", defaultId))
-          .getOrElse(defaultId)
+      .map(data => data.getOrElse("id", defaultId))
+      .getOrElse(defaultId)
   }
 
   def toCmsPage(tenantId: TenantId): CmsPage = {
@@ -1687,14 +1687,20 @@ case class CmsPage(
       fields: Map[String, Any],
       jsonToCombine: Map[String, JsValue]
   ): Context.Builder =
-    (fields ++ jsonToCombine.map { case (key, value) => (key, value match {
-      case JsNull => null
-      case boolean: JsBoolean => boolean
-      case JsNumber(value) => value
-      case JsString(value) => value
-      case JsArray(value) => value
-      case o @ JsObject(underlying) => o
-    })}).foldLeft(context) { (acc, item) =>
+    (fields ++ jsonToCombine.map {
+      case (key, value) =>
+        (
+          key,
+          value match {
+            case JsNull                   => null
+            case boolean: JsBoolean       => boolean
+            case JsNumber(value)          => value
+            case JsString(value)          => value
+            case JsArray(value)           => value
+            case o @ JsObject(underlying) => o
+          }
+        )
+    }).foldLeft(context) { (acc, item) =>
       acc.combine(item._1, item._2)
     }
 
@@ -1756,12 +1762,16 @@ case class CmsPage(
                   s"${env.getDaikokuUrl(ctx.tenant, "/assets/react-app/daikoku.min.css")}"
               }
             ),
-          fields.map { case (key, value)  => (key,
-            value match {
-              case JsString(value) =>
-                value // remove quotes framing string
-              case value => value
-            })
+          fields.map {
+            case (key, value) =>
+              (
+                key,
+                value match {
+                  case JsString(value) =>
+                    value // remove quotes framing string
+                  case value => value
+                }
+              )
           },
           jsonToCombine
         )

@@ -4,11 +4,19 @@ import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import controllers.AppError
 import controllers.AppError.TranslationNotFound
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest,
+  DaikokuActionMaybeWithoutUser
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.json._
-import fr.maif.otoroshi.daikoku.domain.{DatastoreId, IntlTranslation, Translation}
+import fr.maif.otoroshi.daikoku.domain.{
+  DatastoreId,
+  IntlTranslation,
+  Translation
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.services.TranslationsService
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, Translator}
@@ -51,7 +59,12 @@ class TranslationController(
       TenantAdminOnly(
         AuditTrailEvent(s"@{user.name} has reset translations - @{tenant._id}")
       )(ctx.tenant.id.value, ctx) { (_, _) =>
-        translationsService.getMailTranslations(ctx,  domain, messagesApi, supportedLangs)
+        translationsService.getMailTranslations(
+          ctx,
+          domain,
+          messagesApi,
+          supportedLangs
+        )
       }
     }
 

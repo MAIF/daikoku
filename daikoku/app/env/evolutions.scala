@@ -8,7 +8,16 @@ import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, UserFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiDocumentationPageFormat,
+  ApiFormat,
+  ApiSubscriptionFormat,
+  SeqApiDocumentationDetailPageFormat,
+  TeamFormat,
+  TeamIdFormat,
+  TenantFormat,
+  UserFormat
+}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.joda.time.DateTime
@@ -1089,18 +1098,18 @@ object evolution_1750 extends EvolutionScript {
   override def version: String = "17.5.0"
 
   override def script: (
-    Option[DatastoreId],
+      Option[DatastoreId],
       DataStore,
       Materializer,
       ExecutionContext,
       OtoroshiClient
-    ) => Future[Done] =
+  ) => Future[Done] =
     (
-      _: Option[DatastoreId],
-      dataStore: DataStore,
-      mat: Materializer,
-      ec: ExecutionContext,
-      _: OtoroshiClient
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        mat: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
     ) => {
       AppLogger.info(
         s"Begin evolution $version - create cms api"
@@ -1113,25 +1122,31 @@ object evolution_1750 extends EvolutionScript {
 
       for {
         tenants <- dataStore.tenantRepo.findAll()
-        _ <- Future.sequence(tenants.map(tenant => dataStore.teamRepo
-          .forTenant(tenant)
-          .findOne(Json.obj("type" -> TeamType.Admin.name))
-          .flatMap(team => {
-            if (team.isDefined) {
-              val (cmsApi, cmsPlan) = ApiTemplate.cmsApi(team.get, tenant)
+        _ <- Future.sequence(
+          tenants.map(tenant =>
+            dataStore.teamRepo
+              .forTenant(tenant)
+              .findOne(Json.obj("type" -> TeamType.Admin.name))
+              .flatMap(team => {
+                if (team.isDefined) {
+                  val (cmsApi, cmsPlan) = ApiTemplate.cmsApi(team.get, tenant)
 
-              Future.sequence(Seq(
-                dataStore.apiRepo
-                  .forTenant(tenant.id)
-                  .save(cmsApi),
-                dataStore.usagePlanRepo
-                  .forTenant(tenant.id)
-                  .save(cmsPlan)
-              ))
-            } else {
-              Future.successful(())
-            }
-          })))
+                  Future.sequence(
+                    Seq(
+                      dataStore.apiRepo
+                        .forTenant(tenant.id)
+                        .save(cmsApi),
+                      dataStore.usagePlanRepo
+                        .forTenant(tenant.id)
+                        .save(cmsPlan)
+                    )
+                  )
+                } else {
+                  Future.successful(())
+                }
+              })
+          )
+        )
       } yield {
         Done
       }

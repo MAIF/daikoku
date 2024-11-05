@@ -189,10 +189,14 @@ class LoginController(
             .get("redirect")
             .getOrElse(request.getQueryString("redirect").getOrElse("/"))
 
-          redirectUri = if (redirectUri.startsWith("/api/")) "/" else redirectUri
+          redirectUri =
+            if (redirectUri.startsWith("/api/")) "/" else redirectUri
 
           try {
-            redirectUri = new String(Base64.getUrlDecoder.decode(redirectUri), Charsets.UTF_8)
+            redirectUri = new String(
+              Base64.getUrlDecoder.decode(redirectUri),
+              Charsets.UTF_8
+            )
           } catch {
             case _: Throwable =>
           }

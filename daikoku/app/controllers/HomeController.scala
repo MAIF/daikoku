@@ -357,7 +357,9 @@ class HomeController(
     val isDraftRender: Boolean =
       ctx.request.getQueryString("draft").contains("true")
     val forceReloading: Boolean =
-      ctx.request.getQueryString("force_reloading").contains("true") || skipCache
+      ctx.request
+        .getQueryString("force_reloading")
+        .contains("true") || skipCache
 
     val cacheId =
       s"${ctx.user.map(_.id.value).getOrElse("")}-${r.path.getOrElse("")}"
@@ -378,7 +380,8 @@ class HomeController(
       })
 
     if (isDraftRender || forceReloading)
-      r.render(ctx, None, req = req, jsonToCombine = fields).map(res => Ok(res._1).as(res._2))
+      r.render(ctx, None, req = req, jsonToCombine = fields)
+        .map(res => Ok(res._1).as(res._2))
     else
       cache.getIfPresent(cacheId) match {
         case Some(value) =>
@@ -422,12 +425,15 @@ class HomeController(
 
   def advancedRenderCmsPageById(id: String) =
     DaikokuActionMaybeWithoutUser.async(parse.json) { ctx =>
-      cmsPageByIdWithoutAction(ctx, id,
+      cmsPageByIdWithoutAction(
+        ctx,
+        id,
         skipCache = true,
         fields = ctx.request.body
           .asOpt[JsObject]
           .flatMap(body => (body \ "fields").asOpt[Map[String, JsValue]])
-          .getOrElse(Map.empty[String, JsValue]))
+          .getOrElse(Map.empty[String, JsValue])
+      )
     }
 
   def getCmsPage(id: String) =
@@ -574,7 +580,7 @@ class HomeController(
                           page.copy(
                             draft = content,
                             body = content,
-                            tenant = ctx.tenant.id,
+                            tenant = ctx.tenant.id
                           )
                         )
                     })

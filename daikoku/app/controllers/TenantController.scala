@@ -236,7 +236,8 @@ class TenantController(
               contact = tenant.contact,
               apisCreationPermission = true.some
             )
-            val (adminApi, adminApiPlan) = ApiTemplate.adminApi(adminTeam, tenant)
+            val (adminApi, adminApiPlan) =
+              ApiTemplate.adminApi(adminTeam, tenant)
 
             val tenantForCreation = tenant.copy(adminApi = adminApi.id)
 
@@ -248,18 +249,22 @@ class TenantController(
                 env.dataStore.teamRepo
                   .forTenant(tenantForCreation)
                   .save(adminTeam)
-              _ <- env.dataStore.apiRepo
+              _ <-
+                env.dataStore.apiRepo
                   .forTenant(tenantForCreation)
                   .save(adminApi)
-              _ <- env.dataStore.apiRepo
-                .forTenant(tenantForCreation)
-                .save(cmsApi)
-              _ <- env.dataStore.usagePlanRepo
-                .forTenant(tenantForCreation)
-                .save(cmsPlan)
-              _ <- env.dataStore.usagePlanRepo
-                .forTenant(tenantForCreation)
-                .save(adminApiPlan)
+              _ <-
+                env.dataStore.apiRepo
+                  .forTenant(tenantForCreation)
+                  .save(cmsApi)
+              _ <-
+                env.dataStore.usagePlanRepo
+                  .forTenant(tenantForCreation)
+                  .save(cmsPlan)
+              _ <-
+                env.dataStore.usagePlanRepo
+                  .forTenant(tenantForCreation)
+                  .save(adminApiPlan)
             } yield {
               Created(tenantForCreation.asJsonWithJwt)
             }

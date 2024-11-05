@@ -1,6 +1,14 @@
 package fr.maif.otoroshi.daikoku.utils
 
-import play.api.libs.json.{JsArray, JsDefined, JsObject, JsString, JsUndefined, JsValue, Json}
+import play.api.libs.json.{
+  JsArray,
+  JsDefined,
+  JsObject,
+  JsString,
+  JsUndefined,
+  JsValue,
+  Json
+}
 
 object JsonOperationsHelper {
 
@@ -16,19 +24,19 @@ object JsonOperationsHelper {
             case Some(value) =>
               acc = value.value(path.toInt)
               out = acc
-            case None        => acc = Json.obj()
+            case None => acc = Json.obj()
           }
         } else {
           acc \ path match {
             case JsDefined(a @ JsObject(_)) =>
               acc = a
               out = a
-            case JsDefined(a @ JsArray(_))  =>
+            case JsDefined(a @ JsArray(_)) =>
               acc = a
               out = a
-            case JsDefined(value)           =>
+            case JsDefined(value) =>
               out = value
-            case _: JsUndefined             =>
+            case _: JsUndefined =>
               acc = Json.obj()
               out = Json.obj()
           }
@@ -38,13 +46,21 @@ object JsonOperationsHelper {
     (input, out)
   }
 
-  def insertAtPath(acc: JsObject, path: Seq[String], value: JsValue): JsObject = {
+  def insertAtPath(
+      acc: JsObject,
+      path: Seq[String],
+      value: JsValue
+  ): JsObject = {
     if (path.length == 1) {
       acc.deepMerge(Json.obj(path.head -> value))
     } else {
       acc.deepMerge(
         Json.obj(
-          path.head -> insertAtPath((acc \ path.head).asOpt[JsObject].getOrElse(Json.obj()), path.tail, value)
+          path.head -> insertAtPath(
+            (acc \ path.head).asOpt[JsObject].getOrElse(Json.obj()),
+            path.tail,
+            value
+          )
         )
       )
     }
@@ -52,8 +68,9 @@ object JsonOperationsHelper {
   def filterJson(obj: JsValue, fields: Seq[String]): JsObject = {
     val out = fields.map(input => getValueAtPath(input, obj))
 
-    out.foldLeft(Json.obj()) { case (acc, curr) =>
-      insertAtPath(acc, curr._1.split("\\.").toIndexedSeq, curr._2)
+    out.foldLeft(Json.obj()) {
+      case (acc, curr) =>
+        insertAtPath(acc, curr._1.split("\\.").toIndexedSeq, curr._2)
     }
   }
 

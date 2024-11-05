@@ -314,7 +314,9 @@ class AssetsService {
     }
   }
 
-  def deleteAsset[T](assetId: String, ctx: ApiActionContext[T])(implicit env: Env) = {
+  def deleteAsset[T](assetId: String, ctx: ApiActionContext[T])(implicit
+      env: Env
+  ) = {
     implicit val ec = env.defaultExecutionContext
 
     ctx.setCtxValue("assetId", assetId)

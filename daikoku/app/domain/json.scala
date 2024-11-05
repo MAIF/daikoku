@@ -1662,7 +1662,7 @@ object json {
               .asOpt(SeqCustomMetadataFormat)
               .getOrElse(Seq.empty),
             tags = (json \ "tags").asOpt[JsArray].getOrElse(Json.arr()),
-            restrictions = (json \ "restrictions").as(ApiKeyRestrictionsFormat),
+            restrictions = (json \ "restrictions").as(ApiKeyRestrictionsFormat)
           )
         )
       } recover {
@@ -1679,7 +1679,7 @@ object json {
           o.customMetadata.map(CustomMetadataFormat.writes)
         ),
         "tags" -> o.tags,
-        "restrictions" -> o.restrictions.asJson,
+        "restrictions" -> o.restrictions.asJson
       )
   }
   val ApiKeyRestrictionsFormat = new Format[ApiKeyRestrictions] {
@@ -2216,7 +2216,7 @@ object json {
               .getOrElse(TenantDisplay.Default),
             environments = (json \ "environments")
               .asOpt[Set[String]]
-              .getOrElse(Set.empty),
+              .getOrElse(Set.empty)
           )
         )
       } recover {
@@ -2563,10 +2563,8 @@ object json {
             description = (json \ "description").asOpt[String].getOrElse(""),
             smallDescription =
               (json \ "smallDescription").asOpt[String].getOrElse(""),
-            customHeaderCmsPage =
-              (json \ "customHeaderCmsPage").asOpt[String],
-            descriptionCmsPage =
-              (json \ "descriptionCmsPage").asOpt[String],
+            customHeaderCmsPage = (json \ "customHeaderCmsPage").asOpt[String],
+            descriptionCmsPage = (json \ "descriptionCmsPage").asOpt[String],
             header = (json \ "header").asOpt[String],
             image = (json \ "image").asOpt[String],
             currentVersion = (json \ "currentVersion").as(VersionFormat),
@@ -2629,7 +2627,7 @@ object json {
         "name" -> o.name,
         "smallDescription" -> o.smallDescription,
         "customHeaderCmsPage" -> o.customHeaderCmsPage,
-        "descriptionCmsPage" ->  o.descriptionCmsPage,
+        "descriptionCmsPage" -> o.descriptionCmsPage,
         "header" -> o.header.map(JsString).getOrElse(JsNull).as[JsValue],
         "image" -> o.image.map(JsString).getOrElse(JsNull).as[JsValue],
         "description" -> o.description,
@@ -2783,7 +2781,7 @@ object json {
         "team" -> TeamIdFormat.writes(o.team),
         "api" -> ApiIdFormat.writes(o.api),
         "createdAt" -> DateTimeFormat.writes(o.createdAt),
-        "validUntil"-> o.validUntil
+        "validUntil" -> o.validUntil
           .map(DateTimeFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
@@ -3134,8 +3132,7 @@ object json {
             .map(ApiKeyRotationFormat.writes)
             .getOrElse(JsNull)
             .as[JsValue],
-          "validUntil" -> apk.validUntil  
-
+          "validUntil" -> apk.validUntil
         )
 
       override def reads(json: JsValue): JsResult[ActualOtoroshiApiKey] =
@@ -4232,29 +4229,32 @@ object json {
       )
   }
 
-  val IntlTranslationFormat: Format[IntlTranslation] = new Format[IntlTranslation] {
-    override def reads(json: JsValue): JsResult[IntlTranslation] =
-      Try {
-        JsSuccess(
-          IntlTranslation(
-            id = (json \ "_id").as[String],
-            translations = (json \ "translations").asOpt(SeqTranslationFormat).getOrElse(Seq.empty),
-            content = (json \ "content").asOpt[String].getOrElse("")
+  val IntlTranslationFormat: Format[IntlTranslation] =
+    new Format[IntlTranslation] {
+      override def reads(json: JsValue): JsResult[IntlTranslation] =
+        Try {
+          JsSuccess(
+            IntlTranslation(
+              id = (json \ "_id").as[String],
+              translations = (json \ "translations")
+                .asOpt(SeqTranslationFormat)
+                .getOrElse(Seq.empty),
+              content = (json \ "content").asOpt[String].getOrElse("")
+            )
           )
-        )
-      } recover {
-        case e =>
-          AppLogger.warn(e.getMessage)
-          JsError(e.getMessage)
-      } get
+        } recover {
+          case e =>
+            AppLogger.warn(e.getMessage)
+            JsError(e.getMessage)
+        } get
 
-    override def writes(o: IntlTranslation): JsValue =
-      Json.obj(
-        "_id" -> o.id,
-        "translations" -> SeqTranslationFormat.writes(o.translations),
-        "content" -> o.content
-      )
-  }
+      override def writes(o: IntlTranslation): JsValue =
+        Json.obj(
+          "_id" -> o.id,
+          "translations" -> SeqTranslationFormat.writes(o.translations),
+          "content" -> o.content
+        )
+    }
 
   val TeamPermissionFormat = new Format[TeamPermission] {
     override def reads(json: JsValue) =
@@ -4589,10 +4589,10 @@ object json {
         CmsFile(
           name = (json \ "name").as[String],
           content = (json \ "content").as[String],
-          metadata =
-            (json \ "metadata").asOpt[Map[String, JsValue]].getOrElse(Map.empty),
-          daikokuData =
-            (json \ "daikoku_data").asOpt[Map[String, String]],
+          metadata = (json \ "metadata")
+            .asOpt[Map[String, JsValue]]
+            .getOrElse(Map.empty),
+          daikokuData = (json \ "daikoku_data").asOpt[Map[String, String]]
         )
       } match {
         case Failure(exception) => JsError(exception.getMessage)
@@ -4689,7 +4689,7 @@ object json {
           path = (json \ "path").asOpt[String],
           exact = (json \ "exact").asOpt[Boolean].getOrElse(false),
           lastPublishedDate =
-            (json \ "lastPublishedDate").asOpt[DateTime](DateTimeFormat.reads),
+            (json \ "lastPublishedDate").asOpt[DateTime](DateTimeFormat.reads)
         )
       } match {
         case Failure(exception) => JsError(exception.getMessage)

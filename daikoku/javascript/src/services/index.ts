@@ -1249,14 +1249,14 @@ export const getMyTeamsStatusAccess = (
 ): PromiseWithError<IApiExtended> =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/${version}/access`);
 
-export const getCmsPage = (id: any, fields: any) => fetch(`/cms/pages/${id}`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json'
-  },
-  body: JSON.stringify({ fields })
-})
-  .then(r => r.text())
+export const getCmsPage = (id: any, fields: any) =>
+  fetch(`/cms/pages/${id}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ fields }),
+  }).then((r) => r.text());
 
 export const createCmsPage = (id: any, cmsPage: any) =>
   customFetch('/api/cms/pages', {

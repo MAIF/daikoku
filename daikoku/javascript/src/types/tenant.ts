@@ -222,10 +222,10 @@ export interface ITranslation {
 }
 
 export interface IMailingTranslation {
-  _id: string,
-  translations: Array<ITranslation>,
-  content: string,
-};
+  _id: string;
+  translations: Array<ITranslation>;
+  content: string;
+}
 
 export interface IAsset {
   label: string;

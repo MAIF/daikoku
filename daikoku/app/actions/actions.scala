@@ -77,7 +77,7 @@ object tenantSecurity {
 
 case class DaikokuTenantActionContext[A](
     request: Request[A],
-    tenant: Tenant,
+    tenant: Tenant
 //    ctx: TrieMap[String, String] = new TrieMap[String, String]()
 ) extends ApiActionContext[A] {
 //  def setCtxValue(key: String, value: Any): Unit = {
@@ -120,15 +120,15 @@ trait ApiActionContext[A] {
 }
 
 case class DaikokuActionContext[A](
-                                    request: Request[A],
-                                    user: User,
-                                    tenant: Tenant,
-                                    session: UserSession,
-                                    impersonator: Option[User],
-                                    isTenantAdmin: Boolean,
-                                    apiCreationPermitted: Boolean = false,
-                                    override val ctx: TrieMap[String, String] = new TrieMap[String, String]()
-                                  ) extends ApiActionContext[A] {
+    request: Request[A],
+    user: User,
+    tenant: Tenant,
+    session: UserSession,
+    impersonator: Option[User],
+    isTenantAdmin: Boolean,
+    apiCreationPermitted: Boolean = false,
+    override val ctx: TrieMap[String, String] = new TrieMap[String, String]()
+) extends ApiActionContext[A] {
 //  def setCtxValue(key: String, value: Any): Unit = {
 //    if (value != null) {
 //      ctx.put(key, value.toString)
