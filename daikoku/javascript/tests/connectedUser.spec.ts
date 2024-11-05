@@ -597,7 +597,7 @@ test('Filter API List', async ({ page, request }) => {
 
 test('transfer an api subscription', async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
-  await page.goto('http://localhost:5173/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email address').fill('tester@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -638,7 +638,7 @@ test('transfer an api subscription', async ({ page, context }) => {
 });
 
 test('can setup subscription valid until for a subs to his apis', async ({ page }) => {
-  await page.goto('http://localhost:5173/apis');
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByPlaceholder('Email address').fill('admin@foo.bar');
   await page.getByPlaceholder('Password').fill('password');
@@ -646,7 +646,7 @@ test('can setup subscription valid until for a subs to his apis', async ({ page 
   await page.waitForResponse(response => response.url().includes('/auth/Local/callback') && response.status() === 303)
   await page.waitForSelector("section.organisation__header")
 
-  await page.goto('http://localhost:5173/testers/settings/apis/test-api/1.0.0/infos')
+  await page.goto(`http://localhost:${exposedPort}/testers/settings/apis/test-api/1.0.0/infos`)
   // await page.waitForResponse(r => r.url().includes('/_name') && r.status() === 200)
   await page.locator('.block__entry__link').filter({ hasText: 'Subscriptions'}).click();
   await page.getByRole('row', { name: 'daikoku-api-key-test-api-not-test-plan-consumers-' }).getByRole('button', { name: 'Update metadata' }).click();
