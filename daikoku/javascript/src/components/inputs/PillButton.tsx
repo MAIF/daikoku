@@ -10,7 +10,7 @@ export function PillButton({
   pillButtonStyle = {},
 }) {
   return (
-    <div className={`d-flex ${className}`}>
+    <div className={`d-flex ${className}`} style={{ border: '1px solid #fff', width: 'fit-content', borderRadius: '24px', background: '#fff' }}>
       <div
         className="p-1"
         style={{
