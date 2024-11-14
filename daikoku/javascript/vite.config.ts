@@ -11,6 +11,16 @@ export default defineConfig({
   },
   publicDir: "public",
   server: {
+    // host: '0.0.0.0', // Accepte les connexions externes
+    // port: 5173,
+    // strictPort: true,
+    // hmr: {
+    //   host: '*.oto.tools',
+    //   port: 5173,
+    // },
+    // watch: {
+    //   usePolling: true,
+    // },
     proxy: {
       "/_": "http://localhost:9000",
       "/cms": "http://localhost:9000",

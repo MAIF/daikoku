@@ -99,11 +99,11 @@ export const ApiList = (props: TApiList) => {
           limit: queryKey[5],
           offset: queryKey[6],
           groupId: queryKey[7],
-          selectedTeam : queryKey[8]
+          selectedTeam: queryKey[8]
         }
       }).then(({ data: { visibleApis } }) => {
         setApisWithAuth(visibleApis.apis)
-        setProducers(visibleApis.producers.map(p => ({label: p.name, value: p._id})))
+        setProducers(visibleApis.producers.map(p => ({ label: p.name, value: p._id })))
         return visibleApis
       }
       )
@@ -228,7 +228,7 @@ export const ApiList = (props: TApiList) => {
   const toggleStar = (apiWithAuthorization: IApiWithAuthorization) => {
     Services.toggleStar(apiWithAuthorization.api._id)
       .then(() => {
-        queryClient.invalidateQueries({queryKey: ['data']})
+        queryClient.invalidateQueries({ queryKey: ['data'] })
         reloadContext()
       });
   };
@@ -252,20 +252,20 @@ export const ApiList = (props: TApiList) => {
           />
         </div>
         {(producers.length > 1 || !!selectedProducer) && <Select
-            name="team-selector"
-            className="team__selector filter__select reactSelect col-6 col-sm mb-2"
-            value={selectedProducer ? selectedProducer : null}
-            placeholder={translate('apiList.team.search')}
-            aria-label={translate('apiList.team.search')}
-            isClearable={true}
-            options={producers || []}
-            onChange={(e: SingleValue<TOption>) => {
-              setSelectedProducer(e || undefined);
-              setPage(0)
-              setOffset(0)
+          name="team-selector"
+          className="team__selector filter__select reactSelect col-6 col-sm mb-2"
+          value={selectedProducer ? selectedProducer : null}
+          placeholder={translate('apiList.team.search')}
+          aria-label={translate('apiList.team.search')}
+          isClearable={true}
+          options={producers || []}
+          onChange={(e: SingleValue<TOption>) => {
+            setSelectedProducer(e || undefined);
+            setPage(0)
+            setOffset(0)
 
-            }}
-            classNamePrefix="reactSelect"
+          }}
+          classNamePrefix="reactSelect"
         />}
         <Select
           name="tag-selector"
@@ -362,7 +362,7 @@ export const ApiList = (props: TApiList) => {
                         redirectToApiPage={() => props.redirectToApiPage(apiWithAuth)}
                         redirectToEditPage={() => props.redirectToEditPage(apiWithAuth)}
                         handleTagSelect={(tag) => setSelectedTag(tags.find((t) => t.value === tag))}
-                        handleTeamSelect={(team) => (producers.length > 1 || !!selectedProducer) ? setSelectedProducer( {label: team.name, value: team._id} ) : {}}
+                        handleTeamSelect={(team) => (producers.length > 1 || !!selectedProducer) ? setSelectedProducer({ label: team.name, value: team._id }) : {}}
                         toggleStar={() => toggleStar(apiWithAuth)}
                         handleCategorySelect={(category) => setSelectedCategory(categories.find((c) => c.value === category))}
                         view={view}

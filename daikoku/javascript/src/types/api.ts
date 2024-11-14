@@ -18,7 +18,7 @@ export interface IWithTesting {
   testing?: ITesting;
   _id: string;
   name?: string;
-  customName?: string;
+  // customName?: string;
 }
 
 interface IBaseApi extends IWithSwagger, IWithTesting, IWithDocumentation {

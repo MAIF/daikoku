@@ -7,10 +7,10 @@ import difference from 'lodash/difference';
 import find from 'lodash/find';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useState } from 'react';
-import { Link, useMatch, useNavigate } from 'react-router-dom';
 import More from 'react-feather/dist/icons/more-vertical';
-
+import { Link, useMatch, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
@@ -81,12 +81,14 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     openLoginOrRegisterModal,
     openApiKeySelectModal,
     openCustomModal,
+    confirm,
     close,
-    openRightPanel
+    closeRightPanel
   } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
   const { connectedUser, tenant } = useContext(GlobalContext);
+  const queryClient = useQueryClient();
 
   const showApiKeySelectModal = (team: string) => {
     const { plan } = props;
@@ -288,8 +290,18 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
   const isDefault = plan._id === props.api.defaultUsagePlan
 
-  const editPlan = () => console.debug("edit")
-  const deleteWithConfirm = () => console.debug("delete")
+  const editPlan = () => props.updatePlan(props.plan)
+  const deleteWithConfirm = () => confirm({
+    message: "ok ?"
+  }).then(ok => {
+    if (ok) {
+      Services.deletePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, props.plan)
+        .then(() => queryClient.invalidateQueries({ queryKey: ["plans"]}))
+        .then(() => toast.success(translate('delete.plan.sucessful')))
+    }
+  })
+    .then(closeRightPanel)
+
 
   const toggleVisibility = () => {
     if (props.api.defaultUsagePlan !== plan._id) {
@@ -331,14 +343,14 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             zIndex: '100',
           }}
         >
-          <More 
-            className="fa fa-cog cursor-pointer dropdown-menu-button"
+          <More
+            className="cursor-pointer dropdown-menu-button"
             style={{ fontSize: '20px' }}
             data-bs-toggle="dropdown"
             aria-expanded="false"
-            id="dropdownMenuButton"
+            id={`${plan._id}-dropdownMenuButton`}
           />
-          <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
+          <div className="dropdown-menu" aria-labelledby={`${plan._id}-dropdownMenuButton`}>
             {!isDefault && (
               <span
                 onClick={toggleVisibility}
@@ -633,8 +645,6 @@ export const ApiPricing = (props: ApiPricingProps) => {
   const { translate } = useContext(I18nContext);
   const { tenant } = useContext(GlobalContext);
 
-  const [creation, setcreation] = useState(false)
-
   const queryClient = useQueryClient();
   const usagePlansQuery = useQuery({
     queryKey: ['plans', props.api.currentVersion],
@@ -651,11 +661,19 @@ export const ApiPricing = (props: ApiPricingProps) => {
     queryClient.invalidateQueries({ queryKey: ['plans'] });
   }, [props.api]);
 
-  const savePlan = (plan: IUsagePlan) => {
-    return (
-      Promise.resolve(console.debug({ plan }))
-        .then(() => toast.success('Bravo'))
-    )
+  const savePlan = (plan: IUsagePlan, creation: boolean = false) => {
+    if (creation) {
+      return (
+        Services.createPlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
+          .then(() => toast.success('create.plan.succesful.toast.label'))
+      )
+    } else {
+      return (
+        Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
+          .then(() => toast.success('update.plan.succesful.toast.label'))
+      )
+
+    }
   }
 
   const SUBSCRIPTION_PLAN_TYPES = {
@@ -764,7 +782,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
   const steps = (
     planForEdition: IUsagePlan,
     plans: IUsagePlan[],
-    api: IApi
+    api: IApi,
+    creation: boolean = false
   ): Array<IMultistepsformStep<IUsagePlan>> => [
       {
         id: 'info',
@@ -832,8 +851,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
               otoroshiSettings: {
                 type: type.string,
                 format: format.select,
-                disabled:
-                  !creation && !!planForEdition?.otoroshiTarget?.otoroshiSettings,
+                disabled: !creation && !!planForEdition?.otoroshiTarget?.otoroshiSettings,
                 label: translate('Otoroshi instances'),
                 optionsFrom: Services.allSimpleOtoroshis(
                   tenant._id,
@@ -1057,9 +1075,9 @@ export const ApiPricing = (props: ApiPricingProps) => {
       },
     ];
 
-  const updatePlan = (plan: IUsagePlan) => {
+  const updatePlan = (plan: IUsagePlan, creation: boolean = false) => {
     return openRightPanel({
-      title: "[REPLACE IT]",
+      title: creation ? translate("create.plan.title") : translate("update.plan.title"),
       content: <MultiStepForm<IUsagePlan>
         value={plan}
         steps={steps(
@@ -1069,7 +1087,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
         )}
         initial="info"
         creation={creation}
-        save={savePlan}
+        save={data => savePlan(data, creation)
+          .then(closeRightPanel)
+          .then(() => queryClient.invalidateQueries({ queryKey: ["plans"] }))
+        }
         currentTeam={props.ownerTeam}
         labels={{
           previous: translate('Previous'),
@@ -1089,7 +1110,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
           <span>version bla bla another plan for example</span>
           <div className='d-flex flex-rox justify-content-around'>
             <button className='btn btn-outline-info' onClick={() => Services.fetchNewPlan('FreeWithQuotas')
-              .then(updatePlan)
+              .then(p => updatePlan(p, true))
               .then(close)}>
               Create a brand new plan from scratch
             </button>
@@ -1191,6 +1212,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             )}
             {maybeTab === 'documentation' && (
               <ApiDocumentation
+                entity={plan}
                 documentation={plan.documentation}
                 getDocPage={(pageId) =>
                   Services.getUsagePlanDocPage(props.api._id, plan._id, pageId)

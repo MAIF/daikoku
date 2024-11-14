@@ -219,11 +219,6 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
       label: translate('Visibility'),
       flow: ['visibility', 'authorizedTeams'].filter((entry) => simpleOrExpertMode(entry, expert)),
       collapsed: true,
-    },
-    {
-      label: translate('Description'),
-      flow: ['description'],
-      collapsed: true
     }
   ];
 

@@ -45,3 +45,5 @@ export const parseAsHtml = (element: string): DocumentFragment => {
   const parse = Range.prototype.createContextualFragment.bind(document.createRange());
   return parse(element);
 };
+
+export const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];

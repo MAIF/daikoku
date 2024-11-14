@@ -10,12 +10,14 @@ import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services';
 import { isError } from '../../../../types';
 import { teamSchema } from '../../../backoffice/teams/TeamEdit';
+import { Form } from '@maif/react-forms';
+import { teamApiInfoForm } from '../../../backoffice/apis/TeamApiInfo';
 
 export const AddPanel = () => {
   const { translate } = useContext(I18nContext);
-  const { openFormModal, openTeamSelectorModal } = useContext(ModalContext);
+  const { openFormModal, openTeamSelectorModal, openRightPanel, closeRightPanel } = useContext(ModalContext);
 
-  const { tenant, connectedUser, apiCreationPermitted } = useContext(GlobalContext);
+  const { tenant, connectedUser, apiCreationPermitted, expertMode } = useContext(GlobalContext);
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/*');
   const queryClient = useQueryClient();
@@ -60,15 +62,38 @@ export const AddPanel = () => {
       } else {
         const team = myTeamsRequest.data.find((t) => teamId === t._id);
 
-        return Services.fetchNewApi()
-          .then((e) => {
-            return { ...e, team: team?._id };
-          })
-          .then((newApi) =>
-            navigate(`/${team?._humanReadableId}/settings/apis/${newApi._id}/infos`, {
-              state: { newApi },
+        if (!team) {
+          toast.warning('toast.no.team.found')
+        } else {
+          const informationForm = teamApiInfoForm(translate, team, tenant);
+
+          return Services.fetchNewApi()
+            .then((e) => {
+              return { ...e, team: team._id };
             })
-          );
+            .then((newApi) => openRightPanel({
+              title: translate('create.new.api.title'),
+              content: <div className="text-center">
+                <Form
+                  schema={informationForm.schema}
+                  flow={informationForm.flow(expertMode)} //todo: get real flow, for admin api for example
+                  onSubmit={(data) => {
+                    Promise.resolve(Services.createTeamApi(team._id, data))
+                      .then(() => closeRightPanel())
+                      .then(() => toast.success("api.created.successful.toast"))
+                      .then(() => queryClient.invalidateQueries({queryKey: ["data"]}))
+                  }}
+                  value={newApi}
+                />
+              </div>
+            }))
+          // .then((newApi) =>
+          //   navigate(`/${team?._humanReadableId}/settings/apis/${newApi._id}/infos`, {
+          //     state: { newApi },
+          //   })
+          // );
+        }
+
       }
     }
   };

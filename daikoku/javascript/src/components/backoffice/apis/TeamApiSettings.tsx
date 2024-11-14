@@ -4,11 +4,10 @@ import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { I18nContext, ModalContext, useApiBackOffice } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IApi, isError, ITeamSimple } from '../../../types';
 import { FeedbackButton } from '../../utils/FeedbackButton';
-import { Spinner } from '../../utils/Spinner';
 
 type TeamApiSettingsProps = {
   api: IApi,

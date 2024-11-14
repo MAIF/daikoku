@@ -370,7 +370,7 @@ export const getOtoroshiRoutes = (tenantId: any, otoId: any) =>
 export const getOtoroshiApiKeys = (tenantId: any, otoId: any) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/apikeys`);
 
-export const deleteTeamApi = (teamId: any, id: any) =>
+export const deleteTeamApi = (teamId: string, id: string): PromiseWithError<ResponseDone> =>
   customFetch(`/api/teams/${teamId}/apis/${id}`, {
     method: 'DELETE',
   });
@@ -539,7 +539,7 @@ export const getTenantNames = (ids: any) =>
 
 export const fetchNewTenant = () => customFetch('/api/entities/tenant');
 export const fetchNewTeam = (): Promise<ITeamSimple> => customFetch('/api/entities/team');
-export const fetchNewApi = () => customFetch('/api/entities/api');
+export const fetchNewApi = (): Promise<IApi> => customFetch('/api/entities/api');
 export const fetchNewApiDoc = (): Promise<IDocumentation> =>
   customFetch('/api/entities/api-documentation');
 export const fetchNewApiGroup = () => customFetch('/api/entities/apigroup');
