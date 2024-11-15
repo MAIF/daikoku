@@ -1,377 +1,20 @@
-import { constraints, Form, format, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import { GraphQLClient } from 'graphql-request';
-import hljs from 'highlight.js';
-import { useContext, useEffect, useState } from 'react';
-import More from 'react-feather/dist/icons/more-vertical';
+import { useContext, useEffect } from 'react';
 import Navigation from 'react-feather/dist/icons/navigation';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
-import Select from 'react-select';
 import { toast } from 'sonner';
-import sortBy from 'lodash/sortBy';
 
 import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiSwagger } from '.';
-import { I18nContext, ModalContext, useApiFrontOffice } from '../../../contexts';
+import { I18nContext, useApiFrontOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
-import { converter } from '../../../services/showdown';
-import { ApiState, IApi, ISubscription, ITeamFullGql, ITeamSimple, IUsagePlan, isError } from '../../../types';
-import { teamApiInfoForm } from '../../backoffice/apis/TeamApiInfo';
-import { api as API, ActionWithTeamSelector, Can, CanIDoAction, Option, Spinner, apikey, manage, teamGQLToSimple } from '../../utils';
+import { IApi, ISubscription, ITeamFullGql, ITeamSimple, IUsagePlan, isError } from '../../../types';
+import { ActionWithTeamSelector, Can, CanIDoAction, Option, Spinner, apikey, manage, teamGQLToSimple } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
-import StarsButton from './StarsButton';
-
-import 'highlight.js/styles/monokai.css';
-import { reservedCharacters } from '../../utils/tenantUtils';
-
-(window as any).hljs = hljs;
-
-type ApiDescriptionProps = {
-  api: IApi
-  ownerTeam: ITeamSimple
-}
-export const ApiDescription = ({
-  api,
-  ownerTeam
-}: ApiDescriptionProps) => {
-
-  const queryClient = useQueryClient();
-  const { openRightPanel, closeRightPanel } = useContext(ModalContext);
-  const { translate } = useContext(I18nContext);
-
-
-  useEffect(() => {
-    (window as any).$('pre code').each((i: any, block: any) => {
-      hljs.highlightElement(block);
-    });
-  }, []);
-
-  return (
-    <div className="d-flex col flex-column p-3 section" style={{ position: 'relative' }}>
-      <div
-        className="api-description"
-        dangerouslySetInnerHTML={{ __html: converter.makeHtml(api.description) }}
-      />
-      <Can I={manage} a={API} team={ownerTeam}>
-        <More
-          className="a-fake"
-          aria-label={translate('update.api.description.btn.label')}
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-          id={`${api._humanReadableId}-dropdownMenuButton`}
-          style={{ position: "absolute", right: 0 }} />
-        <div className="dropdown-menu" aria-labelledby={`${api._humanReadableId}-dropdownMenuButton`}>
-          <span
-            onClick={() => openRightPanel({
-              title: translate('update.api.description.panel.title'),
-              content: <div>
-                <Form
-                  schema={{
-                    description: {
-                      type: type.string,
-                      format: format.markdown,
-                      label: translate('Description'),
-                    },
-                  }}
-                  onSubmit={(data) => {
-                    Services.saveTeamApi(ownerTeam._id, data, data.currentVersion)
-                      .then(() => queryClient.invalidateQueries({ queryKey: ["api"] })) //todo: get the right keys
-                      .then(() => closeRightPanel())
-                      .then(() => toast.success("update.api.sucecssful.toast.label"))
-                  }}
-                  value={api}
-                />
-              </div>
-            })}
-            className="dropdown-item cursor-pointer"
-          >
-            {translate('update.api.description.btn.label')}
-          </span>
-        </div>
-      </Can>
-    </div>
-  );
-};
-
-type Version = {
-  label: string,
-  value: string
-}
-
-type ApiHeaderProps = {
-  api: IApi
-  ownerTeam: ITeamSimple
-  toggleStar: () => void
-  tab: string
-}
-
-export const ApiHeader = ({
-  api,
-  ownerTeam,
-  toggleStar,
-  tab
-}: ApiHeaderProps) => {
-  const navigate = useNavigate();
-  const params = useParams();
-
-  const queryClient = useQueryClient();
-  const { openRightPanel, closeRightPanel, prompt, openFormModal } = useContext(ModalContext);
-  const { translate } = useContext(I18nContext);
-  const { tenant, connectedUser, expertMode } = useContext(GlobalContext);
-
-  const [versions, setApiVersions] = useState<Array<Version>>([]);
-
-  const createNewVersion = (newVersion: string) => {
-    Services.createNewApiVersion(api._humanReadableId, ownerTeam._id, newVersion)
-      .then((res) => {
-        if (res.error) toast.error(res.error);
-        else {
-          toast.success(translate('version.creation.success.message'));
-          navigate(`/${ownerTeam._id}/${api._humanReadableId}/${newVersion}/description`);
-        }
-      });
-  };
-
-  useEffect(() => {
-    Services.getAllApiVersions(ownerTeam._id, params.apiId! || params.apiGroupId!)
-      .then((versions) =>
-        setApiVersions(versions.map((v) => ({
-          label: v,
-          value: v
-        })))
-      );
-  }, []);
-
-  if (api.header) {
-    const apiHeader = api.header
-      .replace('{{title}}', api.name)
-      .replace('{{description}}', api.smallDescription);
-
-    return (
-      <section className="api__header col-12 mb-4">
-        <div
-          className="api-description"
-          dangerouslySetInnerHTML={{ __html: converter.makeHtml(apiHeader) }}
-        />
-        <button>test</button>
-      </section>
-    );
-  } else {
-
-    const informationForm = teamApiInfoForm(translate, ownerTeam, tenant);
-
-    const transferSchema = {
-      team: {
-        type: type.string,
-        label: translate('new.owner'),
-        format: format.select,
-        optionsFrom: Services.teams(ownerTeam)
-          .then((teams) => {
-            if (!isError(teams)) {
-              return sortBy(teams.filter((team: any) => team._id !== api.team), 'name')
-            } else {
-              return []
-            }
-          }
-          ),
-        transformer: (team: any) => ({
-          label: team.name,
-          value: team._id
-        }),
-        constraints: [constraints.required(translate('constraints.required.team'))],
-      },
-      comfirm: {
-        type: type.string,
-        label: translate({ key: 'type.api.name.confirmation', replacements: [api.name] }),
-        constraints: [
-          constraints.oneOf(
-            [api.name],
-            translate({ key: 'constraints.type.api.name', replacements: [api.name] })
-          ),
-        ],
-      },
-    };
-
-    //FIXME: Beware of Admin API
-    // if (api.visibility === 'AdminOnly') {
-    //   return (
-    //     <Form
-    //       schema={informationForm.adminSchema}
-    //       flow={informationForm.adminFlow}
-    //       onSubmit={save}
-    //       value={api}
-    //     />
-    //   )
-    // }
-
-    return (
-      <section className="api__header col-12 mb-4 p-3 d-flex flex-row">
-        <div className="container-fluid">
-          <h1 className="jumbotron-heading" style={{ position: 'relative' }}>
-            {api.name}
-            <div
-              style={{ position: 'absolute', right: 0, bottom: 0 }}
-              className="d-flex align-items-center"
-            >
-              {versions.length > 1 && tab !== 'issues' && (
-                <div style={{ minWidth: '125px', fontSize: 'initial' }}>
-                  <Select
-                    name="versions-selector"
-                    value={{ label: params.versionId, value: params.versionId }}
-                    options={versions}
-                    onChange={(e) =>
-                      navigate(`/${params.teamId}/${params.apiId}/${e?.value}/${tab}`)
-                    }
-                    classNamePrefix="reactSelect"
-                    className="me-2"
-                    menuPlacement="auto"
-                    menuPosition="fixed"
-                  />
-                </div>
-              )}
-              <StarsButton
-                stars={api.stars}
-                starred={connectedUser.starredApis.includes(api._id)}
-                toggleStar={toggleStar}
-              />
-            </div>
-          </h1>
-          <p className="lead">{api.smallDescription}</p>
-        </div>
-        <Can I={manage} a={API} team={ownerTeam}>
-          <More
-            className="a-fake"
-            aria-label={translate("update.api.btn.label")}
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-            id={`${api._humanReadableId}-dropdownMenuButton`}
-          />
-          <div className="dropdown-menu" aria-labelledby={`${api._humanReadableId}-dropdownMenuButton`}>
-            <span
-              onClick={() => openRightPanel({
-                title: translate("update.api.form.title"),
-                content: <div className="text-center">
-                  <Form
-                    schema={informationForm.schema}
-                    flow={informationForm.flow(expertMode)} //todo: get real flow, for admin api for example
-                    onSubmit={(data) => {
-                      Services.saveTeamApi(ownerTeam._id, data, data.currentVersion)
-                        .then(() => queryClient.invalidateQueries({ queryKey: ["api"] }))
-                        .then(() => closeRightPanel())
-                        .then(() => toast.success("update.api.sucecssful.toast.label"))
-                    }}
-                    value={api}
-                  />
-                </div>
-              })
-              }
-              className="dropdown-item cursor-pointer"
-            >
-              {translate("update.api.btn.label")}
-            </span>
-            <div className="dropdown-divider" />
-            <span
-              className="dropdown-item cursor-pointer"
-              onClick={() => Services.fetchNewApi()
-                .then((e) => {
-                  const clonedApi: IApi = { ...e, team: ownerTeam._id, name: `${api.name} copy`, state: 'created' };
-                  return clonedApi
-                })
-                .then((newApi) => openRightPanel({
-                  title: translate('create.new.api.title'),
-                  content: <div className="">
-                    <Form
-                      schema={informationForm.schema}
-                      flow={informationForm.flow(expertMode)} //todo: get real flow, for admin api for example
-                      onSubmit={(data) => {
-                        Services.createTeamApi(ownerTeam._id, data)
-                          .then(() => closeRightPanel())
-                          .then(() => toast.success("api.created.successful.toast"))
-                          .then(() => queryClient.invalidateQueries({ queryKey: ["data"] }))
-                      }}
-                      value={newApi}
-                    />
-                  </div>
-                }))}
-            >
-              {translate("clone.api.btn.label")}
-            </span>
-            <span
-              className="dropdown-item cursor-pointer"
-              onClick={() => prompt({
-                placeholder: translate('Version number'),
-                title: translate('New version'),
-                value: api.currentVersion,
-                okLabel: translate('Create')
-              })
-                .then((newVersion) => {
-                  if (newVersion) {
-                    if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
-                      toast.error(translate({ key: "semver.error.message", replacements: [reservedCharacters.join(' | ')] }));
-                    else
-                      createNewVersion(newVersion);
-                  }
-                })}
-            >
-              {translate("new.version.api.btn.label")}
-            </span>
-            <div className="dropdown-divider" />
-            <span
-              className="dropdown-item cursor-pointer btn-outline-danger"
-              onClick={() => openRightPanel({
-                title: "api.transfer.title",
-                content: <Form
-                  schema={transferSchema}
-                  onSubmit={(data) => {
-                    Services.transferApiOwnership(data.team, api.team, api._id)
-                      .then((r) => {
-                        if (r.notify) {
-                          toast.info(translate('team.transfer.notified'));
-                        } else if (r.error) {
-                          toast.error(r.error);
-                        } else {
-                          toast.error(translate('issues.on_error'));
-                        }
-                      })
-                      .then(closeRightPanel);
-                  }}
-                />
-              })}
-            >
-              {translate('api.transfer.label')}
-            </span>
-            <span
-              className="dropdown-item cursor-pointer btn-outline-danger"
-              onClick={() => openFormModal(
-                {
-                  title: translate("apikeys.delete.confirm.modal.title"),
-                  schema: {
-                    validation: {
-                      type: type.string,
-                      label: translate("vous voulez supprimer cette api, remplir avec le noim exatct de l'api puis confirmez"),
-                      constraints: [
-                        constraints.required(translate('constraints.required.value')),
-                        constraints.matches(new RegExp(`${api.name}`), translate('constraints.match.subscription'))
-                      ],
-                      defaultValue: ""
-                    }
-                  },
-                  actionLabel: translate('Confirm'),
-                  onSubmit: () => Services.deleteTeamApi(ownerTeam._id, api._id)
-                    .then(() => toast.success(translate('api.deletion.succesful')))
-                    .then(() => navigate('/apis'))
-                }
-              )}
-            >
-              {translate('delet.api.btn.label')}
-            </span>
-          </div>
-        </Can>
-      </section>
-    );
-  }
-};
+import { ApiDescription } from './Apidescription';
+import { ApiHeader } from './ApiHeader';
 
 type ApiHomeProps = {
   groupView?: boolean
@@ -393,7 +36,7 @@ export const ApiHome = ({
 
   const queryClient = useQueryClient();
   const apiQuery = useQuery({
-    queryKey: ["api", params.versionId],
+    queryKey: ["api", params.apiId, params.versionId],
     queryFn: () => Services.getVisibleApi(params.apiId, params.versionId)
   })
 
@@ -408,7 +51,7 @@ export const ApiHome = ({
   })
 
   const ownerTeamQuery = useQuery({
-    queryKey: ["ownerTeam"],
+    queryKey: ["ownerTeam", apiQuery.data],
     queryFn: () => Services.team((apiQuery.data as IApi).team),
     enabled: apiQuery.isSuccess && !!apiQuery.data
   })
@@ -534,11 +177,6 @@ export const ApiHome = ({
     }
   };
 
-  const toggleStar = (api: IApi) => {
-    Services.toggleStar(api._id)
-      .then(() => reloadContext());
-  };
-
   const saveApi = (api: IApi) => {
     return (
       Promise.resolve(console.debug({ api }))
@@ -574,7 +212,7 @@ export const ApiHome = ({
 
     return (
       <main role="main">
-        <ApiHeader api={api} ownerTeam={ownerTeam} toggleStar={() => toggleStar(api)} tab={params.tab} />
+        <ApiHeader api={api} ownerTeam={ownerTeam} tab={params.tab} />
         <div className="album py-2 me-4 min-vh-100" style={{ position: 'relative' }}>
           <div className={classNames({
             'container-fluid': params.tab === 'swagger',

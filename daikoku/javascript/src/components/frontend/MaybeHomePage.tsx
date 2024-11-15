@@ -21,7 +21,6 @@ export const MaybeHomePage = ({
     if (message) {
       toast.success(translate(message))
     }
-    console.log('homePageVisible', tenant.homePageVisible);
     if (tenant.homePageVisible) {
       window.location.replace('/_/');
     } else

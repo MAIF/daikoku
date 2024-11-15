@@ -1077,7 +1077,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
 
   const updatePlan = (plan: IUsagePlan, creation: boolean = false) => {
     return openRightPanel({
-      title: creation ? translate("create.plan.title") : translate("update.plan.title"),
+      title: creation ? translate("api.home.create.plan.form.title") : translate("api.home.update.plan.form.title"),
       content: <MultiStepForm<IUsagePlan>
         value={plan}
         steps={steps(
@@ -1105,14 +1105,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
   const createNewPlan = () => {
     if (props.api.parent) {
       openCustomModal({
-        title: translate("apikeys.delete.modal.title"),
+        title: translate("api.home.create.plan.modal.title"),
         content: <div className='d-flex flex-column'>
-          <span>version bla bla another plan for example</span>
+          <span>{translate("api.home.create.plan.modal.description")}</span>
           <div className='d-flex flex-rox justify-content-around'>
             <button className='btn btn-outline-info' onClick={() => Services.fetchNewPlan('FreeWithQuotas')
               .then(p => updatePlan(p, true))
               .then(close)}>
-              Create a brand new plan from scratch
+              {translate('api.home.create.plan.modal.create.btn.label')}
             </button>
             <button className='btn btn-outline-info' onClick={() =>
               Promise.resolve(() => close())
@@ -1129,7 +1129,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                     },
                   })
                 })}>
-              copy a plan from another version and update it
+              {translate('api.home.create.plan.modal.import.btn.label')}
             </button>
           </div>
         </div>

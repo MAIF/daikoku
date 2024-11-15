@@ -4,14 +4,20 @@ import X from 'react-feather/dist/icons/x';
 
 import { ModalContext } from '../../../contexts';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { useLocation } from 'react-router-dom';
 
 
 export const RightPanel = () => {
   const { rightPanelContent, closeRightPanel } = useContext(ModalContext);
+  const location = useLocation();
 
 
   useEffect(() => {
     closeRightPanel();
+
+    return () => {
+      closeRightPanel()
+    };
   }, [location]);
 
   const closeOnEsc = (e: any) => {

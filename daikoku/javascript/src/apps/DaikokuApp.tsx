@@ -1,6 +1,6 @@
 import { useContext, useEffect } from 'react';
-import { Navigate } from 'react-router';
-import { BrowserRouter, Route, BrowserRouter as Router, Routes, createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router';
+import { BrowserRouter, Route, BrowserRouter as Router, Routes, createBrowserRouter, RouterProvider, ScrollRestoration } from 'react-router-dom';
 
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
 import { Footer, LoginPage, SideBar, tenant } from '../components/utils';
