@@ -13,7 +13,7 @@ import * as Services from '../../../services';
 import { IApi, ISubscription, ITeamFullGql, ITeamSimple, IUsagePlan, isError } from '../../../types';
 import { ActionWithTeamSelector, Can, CanIDoAction, Option, Spinner, apikey, manage, teamGQLToSimple } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
-import { ApiDescription } from './Apidescription';
+import { ApiDescription } from './ApiDescription';
 import { ApiHeader } from './ApiHeader';
 
 type ApiHomeProps = {

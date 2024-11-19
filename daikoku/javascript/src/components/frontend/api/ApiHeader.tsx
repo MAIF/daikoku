@@ -163,7 +163,7 @@ export const ApiHeader = ({
           <div className="dropdown-menu" aria-labelledby={`${api._humanReadableId}-dropdownMenuButton`}>
             <span
               onClick={() => openRightPanel({
-                title: translate("api.home.update.form.title"),
+                title: translate({ key: "api.home.update.api.form.title", replacements: [api.name] }),
                 content: <div className="text-center">
                   <Form
                     schema={informationForm.schema}
