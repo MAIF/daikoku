@@ -1,5 +1,5 @@
 import { CodeInput } from '@maif/react-forms';
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import showdown from 'showdown';
 
@@ -7,32 +7,7 @@ import '@fortawesome/fontawesome-free/css/all.css';
 import 'highlight.js/styles/monokai.css';
 import { getCmsPage, getMailTranslations } from '../../../services';
 import { PillButton } from '../../inputs/PillButton';
-import Select from 'react-select';
-
-function extractRequiredVariables(str?: string) {
-    const dels: Array<number> = [];
-    const words: Array<string> = [];
-
-    if (!str)
-        return []
-
-    for (let i = 0; i < str.length; i++) {
-        if (str[i] === '[') {
-            dels.push(i);
-        } else if (str[i] === ']' && dels.length > 0) {
-            let pos = dels[dels.length - 1];
-            dels.pop();
-
-            const len = i - 1 - pos;
-            words.push(str.substring(pos + 1, (pos < len ? len : len + pos) + 1));
-        }
-    }
-
-    if (str.includes("{{email}}"))
-        words.push("{{email}}")
-
-    return [...new Set(words)];
-}
+import { MAILS_DESCRIPTIONS_FR } from './MailsDescriptions/fr';
 
 function overwriteParameters(parameters, content) {
     if (!content)
@@ -70,7 +45,6 @@ interface Range {
     from: any;
     to: any;
 }
-
 
 const commands = [
     {
@@ -165,14 +139,14 @@ export function MailInput({ legacyInformations, cmsPageId }) {
 
     return <>
         <div className='d-flex flex-column gap-3'>
-            {emails.map(({ label, value }) => <div className='section' style={{ borderRadius: '.25rem', minHeight: '25rem' }} key={label} >
-                <Email label={label} value={value} cmsPageId={cmsPageId} language={language} />
+            {emails.map(({ label, value }, i) => <div className='section' style={{ borderRadius: '.25rem', minHeight: '25rem' }} key={label} >
+                <Email label={label} value={value} cmsPageId={cmsPageId} language={language} i={i} />
             </div>)}
         </div>
     </>
 }
 
-function Email({ label, value, cmsPageId, language }) {
+function Email({ label, value, cmsPageId, language, i }) {
 
     const [useCmsPage, setUseCmsPage] = useState(false)
 
@@ -191,13 +165,15 @@ function Email({ label, value, cmsPageId, language }) {
 
     return <>
         <div style={{ flex: 1 }} className='p-3'>
-            <div className='h5'>{label}</div>
-            <p style={{ fontStyle: 'italic' }}>Mail recu quand une demande de clé a été effectué</p>
-            <div className='d-flex align-items-center justify-content-between mb-2'>
-                Provenance du contenu
+            <div className='h5'>{i + 1} | {MAILS_DESCRIPTIONS_FR[label]}</div>
+            <p className='m-0' style={{ fontStyle: 'italic' }}>CMS Identifiant : {`-mails-${label.replaceAll(".", '-')}-${language}`}</p>
+            <div className='d-flex align-items-center justify-content-center mb-2'>
+                Utiliser le contenu provenant
                 <PillButton
-                    leftText="De l'interface"
-                    rightText="Page de CMS"
+                    large
+                    className='ms-1'
+                    leftText="du champ ci-dessous"
+                    rightText="d'une page de CMS"
                     onLeftClick={() => setUseCmsPage(false)}
                     onRightClick={() => setUseCmsPage(true)}
                     rightEnabled={!useCmsPage}

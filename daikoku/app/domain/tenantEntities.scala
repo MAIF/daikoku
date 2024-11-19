@@ -675,7 +675,7 @@ case class CmsFile(
   }
 }
 
-case class CmsRequestRendering(content: Seq[CmsFile], current_page: String)
+case class CmsRequestRendering(content: Seq[CmsFile], current_page: String, fields: Map[String, JsValue])
 case class CmsHistory(id: String, date: DateTime, diff: String, user: UserId)
 
 case class Asset(id: AssetId, tenant: TenantId, slug: String)
@@ -1754,6 +1754,9 @@ case class CmsPage(
             .combine("connected", ctx.user.map(!_.isGuest).getOrElse(false))
             .combine("user", ctx.user.map(u => u.asSimpleJson).getOrElse(""))
             .combine("request", EntitiesToMap.request(ctx.request))
+            .combine("apis", JsArray(Await
+              .result(env.dataStore.apiRepo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
+              .map(_.asJson)))
             .combine(
               "daikoku-css", {
                 if (env.config.isDev)

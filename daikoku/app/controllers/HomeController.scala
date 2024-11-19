@@ -218,7 +218,7 @@ class HomeController(
             )) =>
           redirectToLoginPage(ctx)
         case Some(r) if !r.visible() => cmsPageNotFound(ctx)
-        case Some(page)              => render(ctx, page.toCmsPage(ctx.tenant.id), Some(req))
+        case Some(page)              => render(ctx, page.toCmsPage(ctx.tenant.id), Some(req), skipCache = true, req.fields)
         case None                    => cmsPageNotFound(ctx)
       }
     }
@@ -379,10 +379,10 @@ class HomeController(
         }
       })
 
-    if (isDraftRender || forceReloading)
+    if (isDraftRender || forceReloading) {
       r.render(ctx, None, req = req, jsonToCombine = fields)
         .map(res => Ok(res._1).as(res._2))
-    else
+    } else
       cache.getIfPresent(cacheId) match {
         case Some(value) =>
           FastFuture.successful(Ok(value.content).as(value.contentType))

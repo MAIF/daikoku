@@ -1,3 +1,5 @@
+use regex::Regex;
+use std::collections::HashMap;
 use std::io::Read;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -42,6 +44,7 @@ pub(crate) struct Summary {
 struct CmsRequestRendering {
     content: Vec<CmsFile>,
     current_page: String,
+    fields: HashMap<String, String>,
 }
 
 pub(crate) async fn run(
@@ -56,7 +59,7 @@ pub(crate) async fn run(
 
     logger::loading(format!("<yellow>Listening</> on {}", port));
 
-    if webbrowser::open(&format!("http://localhost:{}", port)).is_ok() {}
+    // if webbrowser::open(&format!("http://localhost:{}", port)).is_ok() {}
 
     let listener = TcpListener::bind(format!("0.0.0.0:{}", port))
         .await
@@ -107,10 +110,10 @@ async fn watcher(
     } else {
         let path = uri.replace("_/", "");
 
-        let root_source = req
+        let visualizer = req
             .uri()
             .query()
-            .map(|queries| queries.contains("root_source"))
+            .map(|queries| queries.contains("visualizer"))
             .unwrap_or(false);
 
         logger::println(format!("<green>Request received</> {}", &path));
@@ -127,7 +130,7 @@ async fn watcher(
         });
 
         match pages.iter().find(|page| page.path() == path) {
-            Some(page) => render_page(page, path, environment, root_source, authentication).await,
+            Some(page) => render_page(page, path, environment, visualizer, authentication).await,
             None => {
                 let strict_page = get_matching_routes(&path, get_pages(&router_pages, true), true);
 
@@ -146,14 +149,8 @@ async fn watcher(
                             logger::println("<green>Serve 404</>".to_string());
                             match pages.iter().find(|p| p.path() == "/404") {
                                 Some(page) => {
-                                    render_page(
-                                        page,
-                                        path,
-                                        environment,
-                                        root_source,
-                                        authentication,
-                                    )
-                                    .await
+                                    render_page(page, path, environment, visualizer, authentication)
+                                        .await
                                 }
                                 None => Ok(Response::new("404 page not found".into())),
                             }
@@ -163,12 +160,50 @@ async fn watcher(
                                 pages.iter().find(|p| p.path() == res.path).unwrap(),
                                 path,
                                 environment,
-                                root_source,
+                                visualizer,
                                 authentication,
                             )
                             .await
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+fn find_page_from_path<'a>(path: String) -> Option<CmsFile> {
+    let Summary { pages } = read_cms_pages().unwrap();
+
+    let mut router_pages = vec![];
+
+    pages.iter().for_each(|p| {
+        router_pages.push(RouterCmsPage {
+            exact: p.exact(),
+            path: p.path(),
+        })
+    });
+
+    match pages.iter().find(|page| page.path() == path) {
+        Some(page) => Some(page.clone()),
+        None => {
+            let strict_page = get_matching_routes(&path, get_pages(&router_pages, true), true);
+
+            let result_page = if !strict_page.is_empty() {
+                strict_page
+            } else {
+                get_matching_routes(&path, get_pages(&router_pages, false), false)
+            };
+
+            if result_page.is_empty() {
+                None
+            } else {
+                match result_page.iter().nth(0) {
+                    None => None,
+                    Some(res) => pages
+                        .iter()
+                        .find(|p| p.path() == res.path)
+                        .map(|p| p.clone()),
                 }
             }
         }
@@ -265,7 +300,7 @@ async fn render_page(
     page: &CmsFile,
     watch_path: String,
     environment: &Environment,
-    root_source: bool,
+    visualizer: bool,
     authentication: bool,
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     logger::println(format!(
@@ -274,13 +309,49 @@ async fn render_page(
         page.name
     ));
 
+    let mut current_page = page.path().clone();
+
     let project = cms::get_default_project()?;
 
-    let content = read_contents(&PathBuf::from(&project.path))?;
+    let mut content = read_contents(&PathBuf::from(&project.path))?;
+
+    let mut fields: HashMap<String, String> = HashMap::new();
+
+    if watch_path.starts_with("/mails") {
+        let language = if watch_path.contains("/fr") {
+            "fr"
+        } else {
+            "en"
+        };
+
+        let root_template = format!("/mails/root/tenant-mail-template/{}", language);
+
+        if let Some(root) = find_page_from_path(root_template) {
+            current_page = root.path().clone();
+        }
+
+        fields.insert("email".to_string(), page.content.clone());
+
+        content = content
+            .clone()
+            .iter_mut()
+            .map(|page| {
+                let input = page.content.clone();
+                let re = Regex::new(r"\[([^\]]+)\]").unwrap();
+                page.content = re
+                    .replace_all(&input, |caps: &regex::Captures| {
+                        format!("{{{{{}}}}}", &caps[1])
+                    })
+                    .to_string();
+                page.clone()
+            })
+            .collect();
+    }
 
     let body_obj = CmsRequestRendering {
         content: content.clone(),
-        current_page: page.path().clone(),
+        current_page,
+        fields,
     };
 
     let body = Bytes::from(
@@ -297,12 +368,6 @@ async fn render_page(
         "{}/_{}?force_reloading=true",
         environment.server, watch_path
     );
-
-    // let mut builder = Request::builder()
-    //     .method(Method::POST)
-    //     .uri(&url)
-    //     .header(header::HOST, &host)
-    //     .header(header::CONTENT_TYPE, "application/json");
 
     let mut builder = reqwest::Client::new()
         .post(url)
@@ -351,7 +416,7 @@ async fn render_page(
     } else if status >= 400 {
         Ok(Response::new(Full::new(Bytes::from(result))))
     } else {
-        if !root_source {
+        if !visualizer {
             Ok(Response::builder()
                 .header(header::CONTENT_TYPE, &page.content_type())
                 .body(Full::new(Bytes::from(result)))
@@ -371,24 +436,6 @@ async fn render_page(
             } else {
                 format!("<textarea readonly>{}</textarea>", src)
             };
-
-            // println!(
-            //     "{}",
-            //     String::from_utf8(MANAGER_PAGE.to_vec())
-            //         .unwrap()
-            //         .replace(
-            //             "{{components}}",
-            //             serde_json::to_string(
-            //                 &content
-            //                     .iter()
-            //                     .map(|file| file.to_ui_component())
-            //                     .collect::<Vec<UiCmsFile>>(),
-            //             )
-            //             .unwrap()
-            //             .as_str(),
-            //         )
-            //         .replace("{{children}}", children.as_str())
-            // );
 
             Ok(Response::builder()
                 // .header(header::CONTENT_TYPE, &page.content_type())

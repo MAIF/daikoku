@@ -47,6 +47,7 @@ walkdir = "2.5.0"
 webbrowser = "0.8.13"
 testcontainers = "0.22.0"
 slug = "0.1.5"
+regex = "1.11.1"
 
 [dependencies.uuid]
 version = "1.7.0"

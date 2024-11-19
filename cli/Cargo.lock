@@ -530,6 +530,7 @@ dependencies = [
  "once_cell",
  "paris",
  "predicates",
+ "regex",
  "reqwest",
  "serde",
  "serde_json",

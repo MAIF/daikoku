@@ -4604,13 +4604,15 @@ object json {
     override def writes(o: CmsRequestRendering): JsValue =
       Json.obj(
         "content" -> o.content.map(CmsFileFormat.writes),
-        "current_page" -> o.current_page
+        "current_page" -> o.current_page,
+        "fields" -> o.fields
       )
     override def reads(json: JsValue): JsResult[CmsRequestRendering] =
       Try {
         CmsRequestRendering(
           content = (json \ "content").as(Reads.seq(CmsFileFormat.reads)),
-          current_page = (json \ "current_page").as[String]
+          current_page = (json \ "current_page").as[String],
+          fields = (json \ "fields").as[Map[String, JsValue]]
         )
       } match {
         case Failure(exception) => JsError(exception.getMessage)

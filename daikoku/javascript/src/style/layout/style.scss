@@ -265,26 +265,33 @@ img:hover+.changePicture,
   flex: 1;
 }
 
-.pill-button--small {
-  background: $level3_bg-color;
-  padding: .1rem;
-  border-radius: 24px;
+.pill-button {
+  display: flex;
+  // border: 1px solid #fff;
   width: fit-content;
+  border-radius: 24px;
+  background: #fff;
 }
 
-.pill-button--small .pill-mode {
-  min-width: 90px;
+.pill-container {
+  display: flex;
+  border-radius: 24px;
+  position: relative;
+  width: fit-content;
 }
 
 .pill-mode {
   font-size: 1rem;
   border: none;
-  padding: .25rem 0;
+  padding: .75rem;
   text-align: center;
   background: none;
   z-index: 21;
   position: relative;
-  min-width: 115px;
+  min-width: 110px;
+  flex: 1;
+  white-space: nowrap;
+  color: #fff;
 }
 
 .pill-mode-right {
@@ -295,11 +302,11 @@ img:hover+.changePicture,
 .pill-cursor {
   transition: left 0.25s;
   position: absolute;
-  background-color: $level3_bg-color;
+  background-color: #000;
   color: $level1_text-color;
-  top: 4px;
-  bottom: 4px;
-  left: 4px;
+  top: 0;
+  bottom: 0;
+  left: 0;
   border-radius: 24px;
   width: calc(50%);
   z-index: 20;
