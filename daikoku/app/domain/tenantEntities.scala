@@ -1952,10 +1952,6 @@ case class CmsPage(
           (id: String, _: Options) => s"/cms/pages/$id"
         )
         handlebars.registerHelper(
-          "daikoku-path-param",
-          (id: String, _: Options) => daikokuPathParam(ctx, id, req)
-        )
-        handlebars.registerHelper(
           "daikoku-query-param",
           (id: String, _: Options) =>
             ctx.request.queryString

@@ -1118,7 +1118,6 @@
     "cms.content_side_view.ifnoteq": "Checks if the variable if not equals to the value",
     "cms.content_side_view.getOrElse": "Evaluates the value of the variable and return us the alternative value if the value is empty",
     "cms.content_side_view.translate": "Translates the variable using Daikoku translations",
-    "cms.content_side_view.daikoku-path-param": "Get the nth path params",
     "cms.content_side_view.daikoku-query-param": "Get the query param of name",
     "cms.content_side_view.daikoku-template-wrapper": "Display a wrapper block of the passed id",
     "cms.content_side_view.daikoku-apis": "Get all APIs",

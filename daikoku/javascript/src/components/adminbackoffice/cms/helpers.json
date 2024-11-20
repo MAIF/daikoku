@@ -167,14 +167,6 @@
         "category": "OPERATION"
     },
     {
-        "name": "daikoku-path-param",
-        "parameters": [
-            "the position of the path params"
-        ],
-        "example": "{{daikoku-path-param '0'}}",
-        "category": "OPERATION"
-    },
-    {
         "name": "daikoku-query-param",
         "parameters": [
             "the name of the query param"

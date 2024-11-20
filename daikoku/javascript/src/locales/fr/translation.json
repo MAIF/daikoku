@@ -1118,7 +1118,6 @@
   "cms.content_side_view.ifnoteq": "S'assure que la variable n'est pas égale à la valeur souhaitée",
   "cms.content_side_view.getOrElse": "Évalue la valeur de la variable et retourne l'alternative de la valeur si elle est non définie",
   "cms.content_side_view.translate": "Traduit une variable en utilisant les traduction de Daikoku",
-  "cms.content_side_view.daikoku-path-param": "Récupère le énième path param",
   "cms.content_side_view.daikoku-query-param": "Récupère le query param avec le nom passé en paramètre",
   "cms.content_side_view.daikoku-template-wrapper": "Affiche un bloc englobant un contenu enfant (avec ID)",
   "cms.content_side_view.daikoku-apis": "Récupère toutes les APIs",

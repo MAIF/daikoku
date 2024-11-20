@@ -131,7 +131,7 @@ The CMS projects adhere to the following strict file structure:
   - `styles`: Contains CSS files.
   - `documentations` : Contains files that can be used as documentation page of APIs
 
-# Dynamic nested routing
+# Dynamic routes
 
 The CLI uses file-system routing where folders are used to create nested routes. Each folder represents a route segment that maps to a URL segment.
 
@@ -139,10 +139,12 @@ You can create separate UIs for each route using page.html files. `page.html` is
 
 To create a nested route, you can nest folders inside each other and add page.html files inside them. For example:
 
-`src/pages/page.html`: can be reach on `/` path.
-`src/pages/invoices/page.html`: can be reach on `/invoices` path.
-`src/pages/offres.html`: can be reach on  `/offres` path.
-`src/pages/apis/api/[apiId]`: can be reach on `/apis/api/any-kind-of-api` and the apiId value can be use in the page as mustache variable using {{apiId}}
+```sh
+src/pages/page.html           -> mysite.com/
+src/pages/invoices/page.html  -> mysite.com/invoices
+src/pages/offres.html         -> mysite.com/offres
+src/pages/apis/api/[apiId]    -> mysite.com/apis/api/any-kind-of-api (the apiId value can be use in the page as mustache variable using {{apiId}})
+```
 
 # Manage your assets
 
@@ -367,14 +369,6 @@ When you have an user returned from directive, you can use the following fields
 
 ```html
 {{translate 'Logout'}}
-```
-
-## daikoku-path-param
-`parameters`: 
-- the position of the path params
-        
-```html
-{{daikoku-path-param '0'}}
 ```
 
 ## daikoku-query-param

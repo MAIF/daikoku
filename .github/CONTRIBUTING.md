@@ -64,9 +64,26 @@ You must add the dependency and its licence in https://github.com/MAIF/daikoku/b
 
 if you add features to Daikoku, don't forget to modify the user documentation
 
-* https://github.com/MAIF/daikoku/tree/master/docs/manual
+* https://github.com/MAIF/daikoku/tree/master/docs
 
-to build the documentation, run the following command at the root of the repository
+To run the documentation locally
+
+Navigate to the `manual` folder and install the Docusaurus dependencies:
+```sh
+cd manual && npm install
+```
+
+Launch the documentation server, then edit the markdown files located in the manual folder:
+```sh
+npm run start
+```
+
+To test the search bar, build the project first:
+```sh
+npm run build
+``` 
+
+to build the documentation, run the following command at the root of the repository:
 
 ```sh
 sh ./scripts/build.sh manual
