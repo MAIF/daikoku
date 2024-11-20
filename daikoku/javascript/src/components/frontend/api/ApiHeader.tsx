@@ -15,6 +15,8 @@ import { IApi, ITeamSimple, isError } from '../../../types';
 import { teamApiInfoForm } from '../../backoffice/apis/TeamApiInfo';
 import { api as API, Can, manage } from '../../utils';
 import { reservedCharacters } from '../../utils/tenantUtils';
+import { IPage } from '../../adminbackoffice/cms';
+import { getApolloContext, gql } from '@apollo/client';
 
 type Version = {
   label: string,
@@ -64,7 +66,25 @@ export const ApiHeader = ({
       );
   }, []);
 
-  const informationForm = teamApiInfoForm(translate, ownerTeam, tenant);
+  const cmsPagesQuery = () => ({
+    query: gql`
+    query CmsPages {
+      pages {
+        id
+        name
+        path
+        contentType
+        lastPublishedDate
+        metadata
+      }
+    }
+  `,
+  });
+  const { client } = useContext(getApolloContext());
+  const getCmsPages = (): Promise<Array<IPage>> =>
+    client!.query(cmsPagesQuery())
+      .then(res => res.data.pages as Array<IPage>)
+  const informationForm = teamApiInfoForm(translate, ownerTeam, tenant, getCmsPages);
   const transferSchema = {
     team: {
       type: type.string,

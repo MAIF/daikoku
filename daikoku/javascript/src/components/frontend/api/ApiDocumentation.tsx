@@ -9,14 +9,13 @@ import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { I18nContext, ModalContext } from '../../../contexts';
-import { converter } from '../../../services/showdown';
-import { IApi, IDocPage, IDocumentation, IDocumentationPages, isError, ITeamSimple, IWithDocumentation, IWithSwagger, ResponseError } from '../../../types';
-import { api as API, Can, manage, Spinner } from '../../utils';
 import * as Services from '../../../services';
+import { converter } from '../../../services/showdown';
+import { IApi, IDocPage, IDocumentation, IDocumentationPages, isError, ITeamSimple, IWithDocumentation, ResponseError } from '../../../types';
+import { api as API, Can, manage, Spinner } from '../../utils';
 
 
 import 'highlight.js/styles/monokai.css';
-import { ParamKeyValuePair, useSearchParams } from 'react-router-dom';
 import { CmsViewer } from '../CmsViewer';
 
 type ApiDocumentationCartidgeProps = {
@@ -113,7 +112,6 @@ const ApiDocPage = (props: ApiDocPageProps) => {
 
 type ApiDocumentationProps<T extends IWithDocumentation> = {
   documentation?: IDocumentation
-  api: IApi,
   getDocPage: (pageId: string) => Promise<IDocPage | ResponseError>
   ownerTeam: ITeamSimple
   entity: T
