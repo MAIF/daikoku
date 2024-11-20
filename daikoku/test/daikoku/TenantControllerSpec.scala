@@ -1,6 +1,5 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import fr.maif.otoroshi.daikoku.domain.json.SeqCmsHistoryFormat
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
@@ -1134,42 +1133,6 @@ class TenantControllerSpec()
       val resp = httpJsonCallBlocking(s"/api/admin/auditTrail")(tenant, session)
       resp.status mustBe 200
     }
-    "create a cms page" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(tenantAdmin),
-        teams = Seq(defaultAdminTeam),
-        apis = Seq(adminApi)
-      )
-
-      val session = loginWithBlocking(tenantAdmin, tenant)
-
-      val resp = httpJsonCallBlocking(
-        path = "/api/cms/pages",
-        method = "POST",
-        body = Some(defaultCmsPage.asJson)
-      )(tenant, session)
-
-      resp.status mustBe 201
-    }
-    "delete a cms page" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(tenantAdmin),
-        cmsPages = Seq(defaultCmsPage),
-        teams = Seq(defaultAdminTeam),
-        apis = Seq(adminApi)
-      )
-
-      val session = loginWithBlocking(tenantAdmin, tenant)
-
-      val resp = httpJsonCallBlocking(
-        path = s"/api/cms/pages/${defaultCmsPage.id.value}",
-        method = "DELETE"
-      )(tenant, session)
-
-      resp.status mustBe 200
-    }
     "get the production content of a cms page by id" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1189,25 +1152,6 @@ class TenantControllerSpec()
       resp.status mustBe 200
       resp.body mustBe "<h1>production content</h1>"
     }
-    "get the draft content of a cms page by id" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(tenantAdmin),
-        cmsPages = Seq(defaultCmsPage),
-        teams = Seq(defaultAdminTeam),
-        apis = Seq(adminApi)
-      )
-
-      val session = loginWithBlocking(tenantAdmin, tenant)
-
-      val resp = httpJsonCallBlocking(
-        path = s"/cms/pages/${defaultCmsPage.id.value}?draft=true",
-        headers = Map("accept" -> "text/html")
-      )(tenant, session)
-
-      resp.status mustBe 200
-      resp.body mustBe defaultCmsPage.draft
-    }
     "get the production content of a cms page by path" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1226,25 +1170,6 @@ class TenantControllerSpec()
 
       resp.status mustBe 200
       resp.body mustBe defaultCmsPage.body
-    }
-    "get the draft content of a cms page by path" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(tenantAdmin),
-        cmsPages = Seq(defaultCmsPage),
-        teams = Seq(defaultAdminTeam),
-        apis = Seq(adminApi)
-      )
-
-      val session = loginWithBlocking(tenantAdmin, tenant)
-
-      val resp = httpJsonCallBlocking(
-        path = s"/_${defaultCmsPage.path.get}?draft=true",
-        headers = Map("accept" -> "text/html")
-      )(tenant, session)
-
-      resp.status mustBe 200
-      resp.body mustBe defaultCmsPage.draft
     }
     "navigate to an unknown cms page" in {
       setupEnvBlocking(
@@ -1596,66 +1521,6 @@ class TenantControllerSpec()
 
       resp.status mustBe 200
       resp.body mustBe s"${defaultApi.plans.map(_.id.value).mkString("\n")}"
-    }
-    "create, update and restore version of a cms page" in {
-      val page = defaultCmsPage.copy(
-        id = CmsPageId("create-update-restore-page"),
-        path = Some("/create-update-restore-page"),
-        draft = "first"
-      )
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(tenantAdmin),
-        teams = Seq(defaultAdminTeam),
-        usagePlans = defaultApi.plans,
-        apis = Seq(defaultApi.api)
-      )
-
-      val session = loginWithBlocking(tenantAdmin, tenant)
-
-      httpJsonCallBlocking(
-        s"/api/cms/pages",
-        "POST",
-        body = Some(page.asJson)
-      )(tenant, session)
-
-      def mustBeEquals(value: String) = {
-        val getPage =
-          httpJsonCallBlocking(s"/_${page.path.get}?draft=true")(
-            tenant,
-            session
-          )
-        getPage.status mustBe 200
-        getPage.body mustBe value
-      }
-
-      mustBeEquals("first")
-
-      Await.result(
-        httpJsonCall(
-          s"/api/cms/pages",
-          "POST",
-          body = Some(page.copy(draft = "second", body = "second").asJson)
-        )(tenant, session),
-        atMost = 10.seconds
-      )
-
-      mustBeEquals("second")
-
-      val res =
-        httpJsonCallBlocking(s"/api/cms/pages/${page.id.value}")(
-          tenant,
-          session
-        )
-      val updatedPage = (res.json \ "history").as(SeqCmsHistoryFormat)
-
-      httpJsonCallBlocking(
-        path = s"/api/cms/pages/${page.id.value}/diffs/${updatedPage.head.id}",
-        method = "POST"
-      )(tenant, session)
-
-      mustBeEquals("first")
-
     }
   }
   "a simple user" can {

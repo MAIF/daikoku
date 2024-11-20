@@ -532,7 +532,7 @@ class OtoroshiSettingsController(
               .getOrElse(Map.empty[String, String]),
             rotation = None,
             readOnly = readOnlyOpt.getOrElse(false),
-            validUntil = None,
+            validUntil = None
           )
         }
 

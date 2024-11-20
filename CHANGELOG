@@ -647,3 +647,16 @@ We'd like to thank all the contributors who worked on this release!
 - translation for validation step [#697](https://github.com/MAIF/daikoku/issues/697)
 - Delete Tag, delete all the tags [#694](https://github.com/MAIF/daikoku/issues/694)
 
+## [v18.0.0] - 2024-11-05
+
+## :star: New Features
+
+- API Admin can setup validity date on subscription [#728](https://github.com/MAIF/daikoku/issues/728)
+- Use the CMS block for replaceable parts of an API [#646](https://github.com/MAIF/daikoku/issues/646)
+
+## :heart: Contributors
+
+We'd like to thank all the contributors who worked on this release!
+
+- [@Zwiterrion](https://github.com/Zwiterrion)
+

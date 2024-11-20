@@ -1,6 +1,6 @@
 import { getApolloContext } from '@apollo/client';
 import { constraints, format, type } from '@maif/react-forms';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import sortBy from 'lodash/sortBy';
 import moment from 'moment';
@@ -335,9 +335,9 @@ export const TeamApiKeysForApi = () => {
     }
 
     if (
-      apiQuery.isLoading &&
-      subsQuery.isLoading &&
-      teamQuery.isLoading &&
+      apiQuery.isLoading ||
+      subsQuery.isLoading ||
+      teamQuery.isLoading ||
       subApisQuery.isLoading
     ) {
       return <Spinner />;

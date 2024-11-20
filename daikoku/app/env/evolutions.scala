@@ -6,6 +6,7 @@ import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
+import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.{
   ApiDocumentationPageFormat,
@@ -1093,6 +1094,65 @@ object evolution_1634 extends EvolutionScript {
     }
 }
 
+object evolution_1750 extends EvolutionScript {
+  override def version: String = "17.5.0"
+
+  override def script: (
+      Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+  ) => Future[Done] =
+    (
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        mat: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - create cms api"
+      )
+
+      implicit val executionContext: ExecutionContext = ec
+
+      val cmsApiDefaultTenantId =
+        ApiId(s"cms-api-tenant-${Tenant.Default.value}")
+
+      for {
+        tenants <- dataStore.tenantRepo.findAll()
+        _ <- Future.sequence(
+          tenants.map(tenant =>
+            dataStore.teamRepo
+              .forTenant(tenant)
+              .findOne(Json.obj("type" -> TeamType.Admin.name))
+              .flatMap(team => {
+                if (team.isDefined) {
+                  val (cmsApi, cmsPlan) = ApiTemplate.cmsApi(team.get, tenant)
+
+                  Future.sequence(
+                    Seq(
+                      dataStore.apiRepo
+                        .forTenant(tenant.id)
+                        .save(cmsApi),
+                      dataStore.usagePlanRepo
+                        .forTenant(tenant.id)
+                        .save(cmsPlan)
+                    )
+                  )
+                } else {
+                  Future.successful(())
+                }
+              })
+          )
+        )
+      } yield {
+        Done
+      }
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -1109,7 +1169,8 @@ object evolutions {
       evolution_1613,
       evolution_1613_b,
       evolution_1630,
-      evolution_1634
+      evolution_1634,
+      evolution_1750
     )
   def run(
       dataStore: DataStore,

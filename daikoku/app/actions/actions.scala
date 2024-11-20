@@ -2,9 +2,16 @@ package fr.maif.otoroshi.daikoku.actions
 
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.implicits.catsSyntaxOptionId
+import com.auth0.jwt.JWT
+import com.google.common.base.Charsets
+import fr.maif.otoroshi.daikoku.ctrls.CmsApiActionContext
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.env.{
+  Env,
+  LocalCmsApiConfig,
+  OtoroshiCmsApiConfig
+}
 import fr.maif.otoroshi.daikoku.login.{IdentityAttrs, TenantHelper}
 import fr.maif.otoroshi.daikoku.utils.Errors
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits.EnhancedRequestHeader
@@ -12,8 +19,10 @@ import play.api.Logger
 import play.api.libs.json.{JsString, JsValue, Json}
 import play.api.mvc._
 
+import java.util.Base64
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Success, Try}
 
 object tenantSecurity {
   def userCanCreateApi(tenant: Tenant, user: User)(implicit
@@ -68,14 +77,16 @@ object tenantSecurity {
 
 case class DaikokuTenantActionContext[A](
     request: Request[A],
-    tenant: Tenant,
-    ctx: TrieMap[String, String] = new TrieMap[String, String]()
-) {
-  def setCtxValue(key: String, value: Any): Unit = {
-    if (value != null) {
-      ctx.put(key, value.toString)
-    }
-  }
+    tenant: Tenant
+//    ctx: TrieMap[String, String] = new TrieMap[String, String]()
+) extends ApiActionContext[A] {
+//  def setCtxValue(key: String, value: Any): Unit = {
+//    if (value != null) {
+//      ctx.put(key, value.toString)
+//    }
+//  }
+
+  override def user: User = null
 }
 
 case class DaikokuActionMaybeWithoutUserContext[A](
@@ -95,6 +106,19 @@ case class DaikokuActionMaybeWithoutUserContext[A](
   }
 }
 
+trait ApiActionContext[A] {
+  def request: Request[A]
+  def user: User
+  def tenant: Tenant
+  def ctx: TrieMap[String, String] = new TrieMap[String, String]()
+
+  def setCtxValue(key: String, value: Any): Unit = {
+    if (value != null) {
+      ctx.put(key, value.toString)
+    }
+  }
+}
+
 case class DaikokuActionContext[A](
     request: Request[A],
     user: User,
@@ -103,13 +127,114 @@ case class DaikokuActionContext[A](
     impersonator: Option[User],
     isTenantAdmin: Boolean,
     apiCreationPermitted: Boolean = false,
-    ctx: TrieMap[String, String] = new TrieMap[String, String]()
-) {
-  def setCtxValue(key: String, value: Any): Unit = {
-    if (value != null) {
-      ctx.put(key, value.toString)
+    override val ctx: TrieMap[String, String] = new TrieMap[String, String]()
+) extends ApiActionContext[A] {
+//  def setCtxValue(key: String, value: Any): Unit = {
+//    if (value != null) {
+//      ctx.put(key, value.toString)
+//    }
+//  }
+}
+
+class CmsApiAction(val parser: BodyParser[AnyContent], env: Env)
+    extends ActionBuilder[CmsApiActionContext, AnyContent]
+    with ActionFunction[Request, CmsApiActionContext] {
+
+  implicit lazy val ec: ExecutionContext = env.defaultExecutionContext
+
+  def decodeBase64(encoded: String): String =
+    new String(Base64.getUrlDecoder.decode(encoded), Charsets.UTF_8)
+  private def extractUsernamePassword(
+      header: String
+  ): Option[(String, String)] = {
+    val base64 = header.replace("Basic ", "").replace("basic ", "")
+    Option(base64)
+      .map(decodeBase64)
+      .map(_.split(":").toSeq)
+      .flatMap(a =>
+        a.headOption.flatMap(head => a.lastOption.map(last => (head, last)))
+      )
+  }
+
+  override def invokeBlock[A](
+      request: Request[A],
+      block: CmsApiActionContext[A] => Future[Result]
+  ): Future[Result] = {
+    TenantHelper.withTenant(request, env) { tenant =>
+      env.config.cmsApiConfig match {
+        case OtoroshiCmsApiConfig(headerName, algo) =>
+          request.headers.get(headerName) match {
+            case Some(value) =>
+              Try(JWT.require(algo).build().verify(value)) match {
+                case Success(decoded) if !decoded.getClaim("apikey").isNull =>
+                  block(CmsApiActionContext[A](request, tenant))
+                case _ =>
+                  Errors.craftResponseResult(
+                    "No api key provided",
+                    Results.Unauthorized,
+                    request,
+                    None,
+                    env
+                  )
+              }
+            case _ =>
+              Errors.craftResponseResult(
+                "No api key provided",
+                Results.Unauthorized,
+                request,
+                None,
+                env
+              )
+          }
+        case LocalCmsApiConfig(_) =>
+          request.headers.get("Authorization") match {
+            case Some(auth) if auth.startsWith("Basic ") =>
+              extractUsernamePassword(auth) match {
+                case None =>
+                  Errors.craftResponseResult(
+                    "No api key provided",
+                    Results.Unauthorized,
+                    request,
+                    None,
+                    env
+                  )
+                case Some((clientId, clientSecret)) =>
+                  env.dataStore.apiSubscriptionRepo
+                    .forTenant(tenant)
+                    .findNotDeleted(
+                      Json.obj(
+                        "apiKey.clientId" -> clientId,
+                        "apiKey.clientSecret" -> clientSecret
+                      )
+                    )
+                    .map(_.length == 1)
+                    .flatMap({
+                      case done if done =>
+                        block(CmsApiActionContext[A](request, tenant))
+                      case _ =>
+                        Errors.craftResponseResult(
+                          "No api key provided",
+                          Results.Unauthorized,
+                          request,
+                          None,
+                          env
+                        )
+                    })
+              }
+            case _ =>
+              Errors.craftResponseResult(
+                "No api key provided",
+                Results.Unauthorized,
+                request,
+                None,
+                env
+              )
+          }
+      }
     }
   }
+
+  override protected def executionContext: ExecutionContext = ec
 }
 
 class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)

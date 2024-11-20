@@ -260,6 +260,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
     val ctype = ContentType
       .parse(contentType)
       .getOrElse(ContentTypes.`application/octet-stream`)
+
     val meta = MetaHeaders(
       Map(
         "filename" -> name,

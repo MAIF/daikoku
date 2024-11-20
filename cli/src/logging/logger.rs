@@ -35,6 +35,13 @@ pub fn check_loading() {
     }
 }
 
+pub fn done() {
+    unsafe {
+        LOADING_LOGGER.done();
+        *LOADING_MESSAGE = None;
+    }
+}
+
 pub fn error(str: String) {
     check_loading();
     let mut logger = Logger::new();

@@ -4,6 +4,8 @@ import * as Services from '../../../services';
 import { I18nContext } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import { ITeamSimple, ITenant } from '../../../types';
+import { IPage } from '../../adminbackoffice/cms';
+
 
 const Image = ({
   value,
@@ -42,16 +44,16 @@ const Image = ({
 const getTeams = (): Promise<Array<ITeamSimple>> => new Promise((resolve, reject) => {
   setTimeout(() => {
     const teams = [
-      {_id: '1', name: 'foo'},
-      {_id: '2', name: 'bar'},
-      {_id: '3', name: 'avengers'},
+      { _id: '1', name: 'foo' },
+      { _id: '2', name: 'bar' },
+      { _id: '3', name: 'avengers' },
     ]//@ts-ignore
     resolve(teams);
   }, 300);
 });
 
 const reservedVersionCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
-export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITenant) => {
+export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITenant, getCmsPages: () => Promise<Array<IPage>>) => {
   const schema: Schema = {
     isDefault: {
       type: type.bool,
@@ -90,6 +92,20 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
       props: {
         theme: 'monokai',
       }, //@ts-ignore //FIXME
+      expert: true,
+      visible: ({ rawValues }) => !rawValues.customHeaderCmsPage,
+    },
+    customHeaderCmsPage: {
+      type: type.string,
+      format: format.select,
+      label: translate('CMS Page as Header'),
+      props: { isClearable: true },
+      optionsFrom: getCmsPages,
+      transformer: page => ({
+        label: `${page.name} - ${page.path}`,
+        value: page.id
+      }),
+      //@ts-ignore //FIXME
       expert: true,
     },
     image: {
@@ -132,10 +148,10 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
       format: format.buttonsSelect,
       label: translate('State'),
       options: [
-        {label: translate('api.created'), value: 'created'}, 
-        {label: translate('api.published'), value: 'published'}, 
-        {label: translate('api.deprecated'), value: 'deprecated'}, 
-        {label: translate('api.blocked'), value: 'blocked'}],
+        { label: translate('api.created'), value: 'created' },
+        { label: translate('api.published'), value: 'published' },
+        { label: translate('api.deprecated'), value: 'deprecated' },
+        { label: translate('api.blocked'), value: 'blocked' }],
       defaultValue: 'created',
     },
     testable: {
@@ -194,6 +210,17 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
     //   format: format.markdown,
     //   label: translate('Description'),
     // },
+    //   descriptionCmsPage: {
+    //       type: type.string,
+    //       format: format.select,
+    //       label: translate('CMS Page'),
+    //       props: { isClearable: true },
+    //       optionsFrom: getCmsPages,
+    //       transformer: page => ({
+    //           label: `${page.name} - ${page.path}`,
+    //           value: page.id
+    //       }),
+    //   }
   };
 
   const simpleOrExpertMode = (entry: any, expert: any) => {//@ts-ignore
@@ -203,7 +230,7 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
   const flow = (expert: any) => [
     {
       label: translate('Basic.informations'),
-      flow: ['state', 'name', 'smallDescription', 'image', 'header'].filter((entry) =>
+      flow: ['state', 'name', 'smallDescription', 'image', 'header', 'customHeaderCmsPage'].filter((entry) =>
         simpleOrExpertMode(entry, expert)
       ),
       collapsed: false,
@@ -219,7 +246,12 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
       label: translate('Visibility'),
       flow: ['visibility', 'authorizedTeams'].filter((entry) => simpleOrExpertMode(entry, expert)),
       collapsed: true,
-    }
+    },
+    // {
+    //   label: translate('Description'),
+    //   flow: ['description', 'descriptionCmsPage'],
+    //   collapsed: true
+    // }
   ];
 
   const adminFlow = ['name', 'smallDescription'];

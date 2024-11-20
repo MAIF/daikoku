@@ -26,6 +26,7 @@ import play.api.libs.json._
 import play.api.mvc.Request
 import storage.TenantCapableRepo
 
+import java.util
 import java.util.concurrent.Executors
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -392,8 +393,7 @@ case class Tenant(
     robotTxt: Option[String] = None,
     thirdPartyPaymentSettings: Seq[ThirdPartyPaymentSettings] = Seq.empty,
     display: TenantDisplay = TenantDisplay.Default,
-    environments: Set[String] = Set.empty,
-    cmsRedirections: Set[String] = Set.empty
+    environments: Set[String] = Set.empty
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -463,7 +463,6 @@ case class Tenant(
       "display" -> display.name,
       "environments" -> JsArray(environments.map(JsString.apply).toSeq),
       "loginProvider" -> authProvider.name,
-      "cmsRedirections" -> JsArray(cmsRedirections.map(JsString.apply).toSeq),
       "colorTheme" -> style
         .map(_.colorTheme)
         .map(JsString.apply)
@@ -629,7 +628,8 @@ object CmsPage {
 case class CmsFile(
     name: String,
     content: String,
-    metadata: Map[String, JsValue] = Map.empty
+    metadata: Map[String, JsValue] = Map.empty,
+    daikokuData: Option[Map[String, String]] = None
 ) {
   def path(): String = metadata.getOrElse("_path", JsString("")).as[String]
   def contentType(): String =
@@ -648,9 +648,16 @@ case class CmsFile(
       .parse(metadata.getOrElse("_exact", JsString("true")).as[String])
       .as[Boolean]
 
+  def id() = {
+    val defaultId = path().replaceAll("/", "-")
+    daikokuData
+      .map(data => data.getOrElse("id", defaultId))
+      .getOrElse(defaultId)
+  }
+
   def toCmsPage(tenantId: TenantId): CmsPage = {
     CmsPage(
-      id = CmsPageId(path().replaceAll("/", "-")),
+      id = CmsPageId(id()),
       tenant = tenantId,
       visible = visible(),
       authenticated = authenticated(),
@@ -692,8 +699,7 @@ case class CmsPage(
     draft: String,
     path: Option[String] = None,
     exact: Boolean = false,
-    lastPublishedDate: Option[DateTime] = None,
-    history: Seq[CmsHistory] = Seq.empty
+    lastPublishedDate: Option[DateTime] = None
 ) extends CanJson[CmsPage] {
   override def asJson: JsValue = json.CmsPageFormat.writes(this)
 
@@ -1681,7 +1687,20 @@ case class CmsPage(
       fields: Map[String, Any],
       jsonToCombine: Map[String, JsValue]
   ): Context.Builder =
-    (fields ++ jsonToCombine).foldLeft(context) { (acc, item) =>
+    (fields ++ jsonToCombine.map {
+      case (key, value) =>
+        (
+          key,
+          value match {
+            case JsNull                   => null
+            case boolean: JsBoolean       => boolean
+            case JsNumber(value)          => value
+            case JsString(value)          => value
+            case JsArray(value)           => value
+            case o @ JsObject(underlying) => o
+          }
+        )
+    }).foldLeft(context) { (acc, item) =>
       acc.combine(item._1, item._2)
     }
 
@@ -1743,7 +1762,17 @@ case class CmsPage(
                   s"${env.getDaikokuUrl(ctx.tenant, "/assets/react-app/daikoku.min.css")}"
               }
             ),
-          fields,
+          fields.map {
+            case (key, value) =>
+              (
+                key,
+                value match {
+                  case JsString(value) =>
+                    value // remove quotes framing string
+                  case value => value
+                }
+              )
+          },
           jsonToCombine
         )
 
@@ -2050,6 +2079,7 @@ case class CmsPage(
 
         val result = handlebars.compileInline(template).apply(c)
         c.destroy()
+
         FastFuture.successful((result, page.contentType))
       }
     } catch {

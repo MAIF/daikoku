@@ -5,6 +5,7 @@ import org.apache.pekko.stream.Materializer
 import com.softwaremill.macwire._
 import controllers.{Assets, AssetsComponents}
 import fr.maif.otoroshi.daikoku.actions.{
+  CmsApiAction,
   DaikokuAction,
   DaikokuActionMaybeWithGuest,
   DaikokuActionMaybeWithoutUser,
@@ -13,6 +14,7 @@ import fr.maif.otoroshi.daikoku.actions.{
 import fr.maif.otoroshi.daikoku.ctrls._
 import fr.maif.otoroshi.daikoku.env._
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
+import fr.maif.otoroshi.daikoku.services.{AssetsService, TranslationsService}
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 import fr.maif.otoroshi.daikoku.utils.admin._
 import fr.maif.otoroshi.daikoku.utils.{
@@ -77,6 +79,8 @@ package object modules {
     lazy val paymentClient = wire[PaymentClient]
 
     lazy val apiService = wire[ApiService]
+    lazy val assetsService = wire[AssetsService]
+    lazy val translationsService = wire[TranslationsService]
     lazy val deletionService = wire[DeletionService]
 
     lazy val translator = wire[Translator]
@@ -95,6 +99,7 @@ package object modules {
     val daikokuTenantActionMaybeWithGuest = wire[DaikokuActionMaybeWithGuest]
     val daikokuActionMaybeWithoutUser = wire[DaikokuActionMaybeWithoutUser]
     val daikokuApiAction = wire[DaikokuApiAction]
+    val cmsApiAction = wire[CmsApiAction]
     val daikokuApiActionWithoutTenant = wire[DaikokuApiActionWithoutTenant]
 
     lazy val homeController = wire[HomeController]
@@ -146,6 +151,8 @@ package object modules {
     lazy val subscriptionDemandsAdminApiController =
       wire[SubscriptionDemandsAdminApiController]
     lazy val graphQLController = wire[GraphQLController]
+    lazy val cmsApiController = wire[CmsApiController]
+    lazy val cmsApiSwaggerController = wire[CmsApiSwaggerController]
 
     override lazy val assets: Assets = wire[Assets]
     lazy val router: Router = {

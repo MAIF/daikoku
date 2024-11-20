@@ -29,6 +29,8 @@ interface IBaseApi extends IWithSwagger, IWithTesting, IWithDocumentation {
   lastUpdate: string;
   name: string;
   smallDescription: string;
+  descriptionCmsPage?: string;
+  customHeaderCmsPage?: string;
   header?: string;
   image?: string;
   description: string;
@@ -310,7 +312,7 @@ interface IOtoroshiTarget {
       forbidden: Array<IPath>;
       notFound: Array<IPath>;
     };
-    validUntil? : string;
+    validUntil?: string;
   };
 }
 
@@ -346,6 +348,7 @@ export interface IDocPage {
   remoteContentUrl: string | null;
   remoteContentHeaders: object;
   linked?: boolean;
+  cmsPage?: string;
 }
 
 export interface IOtoroshiApiKey {
@@ -451,7 +454,6 @@ export interface ISubscriptionCustomization {
   adminCustomName?: string;
   validUntil?: number;
 }
-
 
 export interface ISubscriptionExtended extends ISubscription {
   parentUp: boolean;

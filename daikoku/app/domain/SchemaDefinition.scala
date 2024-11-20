@@ -481,7 +481,7 @@ object SchemaDefinition {
           ApiKeyRestrictionsType,
           resolve = _.value.restrictions
         )
-      ),
+      )
     )
 
     lazy val AuthorizedEntitiesType = deriveObjectType[
@@ -1376,7 +1376,11 @@ object SchemaDefinition {
                 .findById(ctx.value.plan)
           ),
           Field("createdAt", DateTimeUnitype, resolve = _.value.createdAt),
-          Field("validUntil", OptionType(DateTimeUnitype), resolve = _.value.validUntil),
+          Field(
+            "validUntil",
+            OptionType(DateTimeUnitype),
+            resolve = _.value.validUntil
+          ),
           Field(
             "team",
             OptionType(TeamObjectType),
@@ -2778,7 +2782,11 @@ object SchemaDefinition {
       ),
       ReplaceField(
         "validUntil",
-        Field("validUntil", OptionType(DateTimeUnitype), resolve = _.value.validUntil)
+        Field(
+          "validUntil",
+          OptionType(DateTimeUnitype),
+          resolve = _.value.validUntil
+        )
       )
     )
     lazy val TranslationType =
@@ -3069,12 +3077,6 @@ object SchemaDefinition {
               "lastPublishedDate",
               OptionType(LongType),
               resolve = _.value.lastPublishedDate.map(p => p.getMillis)
-            ),
-            Field(
-              "history",
-              ListType(CmsHistoryType),
-              resolve = _.value.history
-                .sortBy(_.date.toInstant.getMillis)(Ordering[Long].reverse)
             )
           )
       )

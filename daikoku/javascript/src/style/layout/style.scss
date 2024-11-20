@@ -45,7 +45,8 @@ a {
   color: $level1_link-color;
 }
 
-.a-fake, a {
+.a-fake,
+a {
   &.underline {
     text-decoration: underline;
   }
@@ -60,7 +61,8 @@ a:hover {
   color: $level1_link-hover-color;
 }
 
-.underline-on-hover:hover, .underline {
+.underline-on-hover:hover,
+.underline {
   text-decoration: underline;
 }
 
@@ -109,7 +111,7 @@ hr {
   white-space: pre-wrap;
 }
 
-.api-description > p {
+.api-description>p {
   text-align: justify;
   white-space: pre-wrap;
 }
@@ -128,7 +130,7 @@ hr {
   top: 0;
 }
 
-img:hover + .changePicture,
+img:hover+.changePicture,
 .changePicture:hover {
   display: block;
   opacity: 0.5;
@@ -199,6 +201,7 @@ img:hover + .changePicture,
 
 .companion-link {
   color: $companion_link-color;
+
   &:hover {
     background-color: $companion_text-hover-bg-color;
     color: $companion_text-hover-color;
@@ -207,29 +210,35 @@ img:hover + .changePicture,
 
 .level1-link {
   color: $level1_link-color;
+
   &:hover {
     color: $level1_link-hover-color;
   }
 }
 
-.level1{
+.level1 {
   background-color: $level1_bg-color;
   color: $level1_text-color;
 }
+
 .level2 {
   background-color: $level2_bg-color;
   color: $level2_text-color;
 }
+
 .level2-link {
   color: $level2_link-color;
+
   &:hover {
     color: $level2_link-hover-color;
   }
-  &__with-bg:hover{
-      cursor: pointer;
-      background-color: $btn-border-color;
-      color:  $btn-bg-color;
+
+  &__with-bg:hover {
+    cursor: pointer;
+    background-color: $btn-border-color;
+    color: $btn-bg-color;
   }
+
   &__active-bg {
     color: $btn-text-color;
     background-color: $btn-bg-color;
@@ -242,11 +251,56 @@ img:hover + .changePicture,
   background-color: $level3_bg-color;
   color: $level3_text-color;
 }
+
 .level3-link {
   color: $level3_link-color;
+
   &:hover {
     color: $level3_link-hover-color;
     background-color: $level3_link-hover-bg-color;
   }
 }
 
+.flew-grow {
+  flex: 1;
+}
+
+.pill-button--small {
+  background: $level3_bg-color;
+  padding: .1rem;
+  border-radius: 24px;
+  width: fit-content;
+}
+
+.pill-button--small .pill-mode {
+  min-width: 90px;
+}
+
+.pill-mode {
+  font-size: 1rem;
+  border: none;
+  padding: .25rem 0;
+  text-align: center;
+  background: none;
+  z-index: 21;
+  position: relative;
+  min-width: 115px;
+}
+
+.pill-mode-right {
+  left: calc(50% - 4px) !important;
+  width: 50% !important;
+}
+
+.pill-cursor {
+  transition: left 0.25s;
+  position: absolute;
+  background-color: $level1_bg-color;
+  color: $level1_text-color;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  border-radius: 24px;
+  width: calc(50%);
+  z-index: 20;
+}

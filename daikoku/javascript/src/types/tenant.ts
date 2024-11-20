@@ -221,11 +221,11 @@ export interface ITranslation {
   value: TranslationItem;
 }
 
-export type IMailingTranslation = [
-  key: string,
-  translations: Array<ITranslation>,
-  defaultValue: string,
-];
+export interface IMailingTranslation {
+  _id: string;
+  translations: Array<ITranslation>;
+  content: string;
+}
 
 export interface IAsset {
   label: string;

@@ -15,6 +15,7 @@ import { ActionWithTeamSelector, Can, CanIDoAction, Option, Spinner, apikey, man
 import { formatPlanType } from '../../utils/formatters';
 import { ApiDescription } from './ApiDescription';
 import { ApiHeader } from './ApiHeader';
+import { CmsViewer } from '../CmsViewer';
 
 type ApiHomeProps = {
   groupView?: boolean
@@ -212,14 +213,17 @@ export const ApiHome = ({
 
     return (
       <main role="main">
-        <ApiHeader api={api} ownerTeam={ownerTeam} tab={params.tab} />
+          {api.customHeaderCmsPage ?
+              <CmsViewer pageId={api.customHeaderCmsPage} fields={{ api }} /> :
+                <ApiHeader api={api} ownerTeam={ownerTeam} tab={params.tab} />
+          }
         <div className="album py-2 me-4 min-vh-100" style={{ position: 'relative' }}>
           <div className={classNames({
             'container-fluid': params.tab === 'swagger',
             container: params.tab !== 'swagger'
           })}>
             <div className="row pt-3">
-              {params.tab === 'description' && (<ApiDescription api={api} ownerTeam={ownerTeam} />)}
+              {params.tab === 'description' && api.descriptionCmsPage ? <CmsViewer pageId={api.descriptionCmsPage} fields={{ api }} /> : <ApiDescription api={api} ownerTeam={ownerTeam}/>}
               {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam}
                 subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
               {params.tab === 'documentation' && <ApiDocumentation entity={api} ownerTeam={ownerTeam}

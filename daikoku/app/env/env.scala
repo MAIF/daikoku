@@ -142,6 +142,31 @@ object AdminApiConfig {
   }
 }
 
+sealed trait CmsApiConfig
+
+case class LocalCmsApiConfig(key: String) extends CmsApiConfig
+
+case class OtoroshiCmsApiConfig(claimsHeaderName: String, algo: Algorithm)
+    extends CmsApiConfig
+
+object CmsApiConfig {
+  def apply(config: Configuration): CmsApiConfig = {
+    config.getOptional[String]("daikoku.cms.api.type") match {
+      case Some("local") =>
+        LocalCmsApiConfig(config.getOptional[String]("daikoku.cms.api.key").get)
+      case Some("otoroshi") =>
+        OtoroshiCmsApiConfig(
+          config.getOptional[String]("daikoku.cms.api.headerName").get,
+          Algorithm.HMAC512(
+            config.getOptional[String]("daikoku.cms.api.headerSecret").get
+          )
+        )
+      case _ =>
+        LocalCmsApiConfig(config.getOptional[String]("daikoku.api.key").get)
+    }
+  }
+}
+
 class Config(val underlying: Configuration) {
 
   lazy val port: Int = underlying
@@ -246,6 +271,8 @@ class Config(val underlying: Configuration) {
   lazy val init: InitConfig = InitConfig(underlying)
 
   lazy val adminApiConfig: AdminApiConfig = AdminApiConfig(underlying)
+
+  lazy val cmsApiConfig: CmsApiConfig = CmsApiConfig(underlying)
 
   lazy val anonymousReportingUrl: String =
     underlying.get[String]("daikoku.anonymous-reporting.url")
@@ -428,9 +455,10 @@ class DaikokuEnv(
                 "Main dataStore seems to be empty, generating initial data ..."
               )
               val userId = UserId(IdGenerator.token(32))
-              val administrationTeamId = TeamId("administration")
               val adminApiDefaultTenantId =
                 ApiId(s"admin-api-tenant-${Tenant.Default.value}")
+              val cmsApiDefaultTenantId =
+                ApiId(s"cms-api-tenant-${Tenant.Default.value}")
               val defaultAdminTeam = Team(
                 id = TeamId(IdGenerator.token),
                 tenant = Tenant.Default,
@@ -444,44 +472,7 @@ class DaikokuEnv(
                 authorizedOtoroshiEntities = None,
                 contact = "no-replay@daikoku.io"
               )
-              val adminApiDefaultPlan = UsagePlan(
-                id = UsagePlanId(IdGenerator.token),
-                tenant = Tenant.Default,
-                billingDuration = None,
-                currency = None,
-                customName = "admin",
-                customDescription = None,
-                otoroshiTarget = None,
-                allowMultipleKeys = Some(true),
-                autoRotation = None,
-                subscriptionProcess = Seq.empty,
-                integrationProcess = IntegrationProcess.ApiKey,
-                visibility = UsagePlanVisibility.Admin
-              )
 
-              val adminApiDefaultTenant = Api(
-                id = adminApiDefaultTenantId,
-                tenant = Tenant.Default,
-                team = defaultAdminTeam.id,
-                name = s"admin-api-tenant-${Tenant.Default.value}",
-                lastUpdate = DateTime.now(),
-                smallDescription = "admin api",
-                description = "admin api",
-                currentVersion = Version("1.0.0"),
-                documentation = ApiDocumentation(
-                  id = ApiDocumentationId(IdGenerator.token(32)),
-                  tenant = Tenant.Default,
-                  pages = Seq.empty[ApiDocumentationDetailPage],
-                  lastModificationAt = DateTime.now()
-                ),
-                swagger =
-                  Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
-                possibleUsagePlans = Seq(adminApiDefaultPlan.id),
-                visibility = ApiVisibility.AdminOnly,
-                defaultUsagePlan = adminApiDefaultPlan.id.some,
-                authorizedTeams = Seq.empty,
-                state = ApiState.Published
-              )
               val tenant = Tenant(
                 id = Tenant.Default,
                 name = "Daikoku Default Tenant",
@@ -502,6 +493,12 @@ class DaikokuEnv(
                 otoroshiSettings = Set(),
                 adminApi = adminApiDefaultTenantId
               )
+
+              val (adminApiDefaultTenant, adminApiDefaultPlan) =
+                ApiTemplate.adminApi(defaultAdminTeam, tenant)
+              val (cmsApi, cmsPlan) =
+                ApiTemplate.cmsApi(defaultAdminTeam, tenant)
+
               val team = Team(
                 id = TeamId(IdGenerator.token(32)),
                 tenant = tenant.id,
@@ -553,6 +550,14 @@ class DaikokuEnv(
                   dataStore.usagePlanRepo
                     .forTenant(tenant.id)
                     .save(adminApiDefaultPlan)
+                _ <-
+                  dataStore.apiRepo
+                    .forTenant(tenant.id)
+                    .save(cmsApi)
+                _ <-
+                  dataStore.usagePlanRepo
+                    .forTenant(tenant.id)
+                    .save(cmsPlan)
                 _ <- dataStore.userRepo.save(user)
               } yield ()
 

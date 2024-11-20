@@ -1,55 +1,35 @@
-// // use assert_cmd::prelude::*;
-// // use serial_test::serial;
-// // use std::fs;
-// use testcontainers::{clients, core::WaitFor, GenericImage};
+mod cli;
 
-// // const WASMO_TEST_FOLDER: &str = "/tmp/daikokucli";
-// // struct Setup {
-// //     temporary_path: String,
-// // }
+use cli::commands::{
+    cli::{run_test, CLI},
+    cms::{self, get_temporary_path},
+    environment,
+};
+use serial_test::serial;
 
-// // impl Setup {
-// //     fn new() -> Self {
-// //         let temporary_path = WASMO_TEST_FOLDER.to_string();
+fn test_check_info_of_environment() {
+    let result = environment::info("dev");
+    let output = String::from_utf8(result.get_output().stdout.clone()).unwrap();
 
-// //         let _ = fs::remove_dir_all(&temporary_path);
+    assert!(output.contains("http://localhost:8080"));
+    assert!(output.contains("dev"));
+}
 
-// //         match fs::create_dir(&temporary_path) {
-// //             Err(err) => println!("{:?}", err),
-// //             Ok(v) => println!("{:?}", v),
-// //         }
-// //         Setup {
-// //             temporary_path: temporary_path,
-// //         }
-// //     }
+#[tokio::test]
+#[serial]
+async fn login() -> Result<(), Box<dyn std::error::Error + 'static>> {
+    run_test(|_| {
+        cms::clear(true);
 
-// //     fn clean(&self) {
-// //         fs::remove_dir_all(&self.temporary_path).expect("Failed to remove folder")
-// //     }
-// // }
+        cms::init("cms", get_temporary_path());
 
-// #[test]
-// fn login() -> Result<(), Box<dyn std::error::Error>> {
-//     let docker = clients::Cli::default();
+        environment::add("dev", "localhost");
 
-//     let postgres = docker.run(
-//         GenericImage::new("postgres", "12")
-//             .with_env_var("POSTGRES_USER", "postgres")
-//             .with_env_var("POSTGRES_PASSWORD", "postgres")
-//             .with_env_var("POSTGRES_DB", "daikoku"),
-//     );
+        test_check_info_of_environment();
 
-//     let daikoku = docker.run(
-//         GenericImage::new("daikoku", "17.1.2")
-//             .with_env_var("daikoku.mode", "dev")
-//             .with_env_var("Ddaikoku.postgres.database", "daikoku")
-//             .with_env_var("daikoku.exposedOn", "9000"),
-//     );
+        environment::switch("dev");
 
-//     postgres.start();
-//     daikoku.start();
-
-//     WaitFor::seconds(60);
-
-//     Ok(())
-// }
+        environment::login();
+    })
+    .await
+}

@@ -4,6 +4,7 @@ import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.data.EitherT
 import cats.syntax.option._
 import controllers.AppError
+import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
 import fr.maif.otoroshi.daikoku.domain.json.{
   SeqIssueIdFormat,
   SeqPostIdFormat,
@@ -12,7 +13,7 @@ import fr.maif.otoroshi.daikoku.domain.json.{
   UsagePlanFormat
 }
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.ReplaceAllWith
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, ReplaceAllWith}
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import org.joda.time.{DateTime, Days}
 import play.api.libs.json._
@@ -502,6 +503,7 @@ case class ApiDocumentationPage(
     lastModificationAt: DateTime,
     content: String,
     contentType: String = "text/markdown",
+    cmsPage: Option[String] = None,
     remoteContentEnabled: Boolean = false,
     remoteContentUrl: Option[String] = None,
     remoteContentHeaders: Map[String, String] = Map.empty[String, String]
@@ -620,6 +622,8 @@ case class Api(
     team: TeamId,
     name: String,
     smallDescription: String,
+    customHeaderCmsPage: Option[String] = None,
+    descriptionCmsPage: Option[String] = None,
     header: Option[String] = None,
     image: Option[String] = None,
     description: String,
@@ -813,5 +817,90 @@ object ValidationStep {
   ) extends ValidationStep {
     def name: String = "httpRequest"
     override def isAutomatic: Boolean = true
+  }
+}
+
+object ApiTemplate {
+  def cmsApi(team: Team, tenant: Tenant): (Api, UsagePlan) = {
+    val plan = FreeWithoutQuotas(
+      id = UsagePlanId(IdGenerator.token),
+      tenant = tenant.id,
+      billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+      currency = Currency("EUR"),
+      customName = Some("admin"),
+      customDescription = Some("Access to cms API"),
+      otoroshiTarget = None,
+      allowMultipleKeys = Some(true),
+      autoRotation = None,
+      integrationProcess = IntegrationProcess.ApiKey
+    )
+    val api = Api(
+      id = ApiId(IdGenerator.token),
+      tenant = tenant.id,
+      team = team.id,
+      name = s"cms-api-tenant-${tenant.id.value}",
+      lastUpdate = DateTime.now(),
+      smallDescription = "cms api",
+      description =
+        "@@@ warning \nThis API is dedicated to Daikoku's CMS CLI and is not intended for direct end-user access.\n@@@\n\nTo obtain the API key needed for CLI configuration, please subscribe to this API.\n\nThe complete documentation is available __[here](https://maif.github.io/daikoku/docs/cli)__.",
+      currentVersion = Version("1.0.0"),
+      documentation = ApiDocumentation(
+        id = ApiDocumentationId(IdGenerator.token(32)),
+        tenant = tenant.id,
+        pages = Seq.empty[ApiDocumentationDetailPage],
+        lastModificationAt = DateTime.now()
+      ),
+      swagger = Some(SwaggerAccess(url = "/cms-api/swagger.json".some)),
+      possibleUsagePlans = Seq(plan.id),
+      visibility = ApiVisibility.AdminOnly,
+      defaultUsagePlan = plan.id.some,
+      authorizedTeams = Seq.empty,
+      state = ApiState.Published,
+      tags = Set("cms"),
+      categories = Set("administration")
+    )
+    (api, plan)
+  }
+
+  def adminApi(team: Team, tenant: Tenant): (Api, UsagePlan) = {
+    val plan = FreeWithoutQuotas(
+      id = UsagePlanId(IdGenerator.token),
+      tenant = tenant.id,
+      billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+      currency = Currency("EUR"),
+      customName = Some("admin"),
+      customDescription = Some("admin API access"),
+      otoroshiTarget = None,
+      allowMultipleKeys = Some(true),
+      autoRotation = None,
+      integrationProcess = IntegrationProcess.ApiKey
+    )
+
+    val api = Api(
+      id = ApiId(s"admin-api-tenant-${tenant.humanReadableId}"),
+      tenant = tenant.id,
+      team = team.id,
+      name = s"admin-api-tenant-${tenant.humanReadableId}",
+      lastUpdate = DateTime.now(),
+      smallDescription = "admin api",
+      description =
+        "@@@ warning \nThis API is reserved for Daikoku administration and is not intended for direct end-user access.\n@@@\n\nTo obtain the API key needed for admin API, please subscribe to this API.\n\nThe complete openAPI is available __[here](https://maif.github.io/daikoku/openapi)__.",
+      currentVersion = Version("1.0.0"),
+      state = ApiState.Published,
+      visibility = ApiVisibility.AdminOnly,
+      documentation = ApiDocumentation(
+        id = ApiDocumentationId(IdGenerator.token(32)),
+        tenant = tenant.id,
+        pages = Seq.empty[ApiDocumentationDetailPage],
+        lastModificationAt = DateTime.now()
+      ),
+      swagger = Some(SwaggerAccess(url = "/admin-api/swagger.json".some)),
+      possibleUsagePlans = Seq(plan.id),
+      defaultUsagePlan = UsagePlanId("admin").some,
+      authorizedTeams = Seq.empty,
+      categories = Set("administration")
+    )
+
+    (api, plan)
   }
 }

@@ -5,9 +5,11 @@ import cats.data.{EitherT, OptionT}
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import controllers.AppError._
+import fr.maif.otoroshi.daikoku.actions.ApiActionContext
 import fr.maif.otoroshi.daikoku.ctrls.PaymentClient
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.domain.json.SeqApiFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
@@ -81,7 +83,7 @@ class ApiService(
       customMaxPerDay: Option[Long] = None,
       customMaxPerMonth: Option[Long] = None,
       customReadOnly: Option[Boolean] = None,
-      maybeOtoroshiApiKey: Option[OtoroshiApiKey] = None,
+      maybeOtoroshiApiKey: Option[OtoroshiApiKey] = None
   ) = {
 
     val otoroshiApiKey = maybeOtoroshiApiKey.getOrElse(
@@ -159,7 +161,7 @@ class ApiService(
         "daikoku__tags" -> processedTags.mkString(" | ")
       ) ++ processedMetadata,
       rotation =
-        plan.autoRotation.map(enabled => ApiKeyRotation(enabled = enabled)), 
+        plan.autoRotation.map(enabled => ApiKeyRotation(enabled = enabled))
     )
 
     (plan.maxPerSecond, plan.maxPerDay, plan.maxPerMonth) match {
@@ -1201,9 +1203,9 @@ class ApiService(
     * remove a subcription from an aggregation, compute newly aggregation, save it in otoroshi and return new computed otoroshi apikey
     *
     * @param subscription the subscription to extract
-    * @param tenant the tenant
-    * @param user the user responsible for the extraction
-    * @param o the oto settings
+    * @param tenant       the tenant
+    * @param user         the user responsible for the extraction
+    * @param o            the oto settings
     * @return extracted otoroshi apikey (unsaved)
     */
   def extractSubscriptionFromAggregation(
@@ -2600,6 +2602,37 @@ class ApiService(
         env.dataStore.notificationRepo.forTenant(tenant).save(newNotification)
       )
     } yield Ok(Json.obj("creation" -> "refused"))
+  }
+
+  def getApis[T](ctx: ApiActionContext[T], notDeleted: Boolean = false) = {
+    val repo = env.dataStore.apiRepo.forTenant(ctx.tenant)
+
+    (if (!notDeleted) repo.findAll() else repo.findAllNotDeleted())
+      .map(apis => {
+        val fields: Seq[String] = ctx.request
+          .getQueryString("fields")
+          .map(_.split(",").toSeq)
+          .getOrElse(Seq.empty[String])
+        val hasFields = fields.nonEmpty
+        if (hasFields) {
+          Ok(JsArray(apis.map(api => {
+            val jsonAPI = api.asJson
+            val content = jsonAPI match {
+              case arr @ JsArray(_) =>
+                JsArray(arr.value.map { item =>
+                  JsonOperationsHelper.filterJson(item.as[JsObject], fields)
+                })
+              case obj @ JsObject(_) =>
+                JsonOperationsHelper.filterJson(obj, fields)
+              case _ => jsonAPI
+            }
+
+            content
+          })))
+        } else {
+          Ok(SeqApiFormat.writes(apis))
+        }
+      })
   }
 
   case class ExtractTransferLink(

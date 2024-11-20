@@ -3408,7 +3408,8 @@ class ApiControllerSpec()
         teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
         usagePlans = Seq(parentPlan, adminApiPlan),
         apis = Seq(parentApi, adminApi),
-        subscriptions = Seq(parentSub))
+        subscriptions = Seq(parentSub)
+      )
 
       val session = loginWithBlocking(userAdmin, tenant)
       //check validnuntil dans oto
@@ -3425,12 +3426,11 @@ class ApiControllerSpec()
 
       (respPreOto.json \ "validUntil").asOpt[Boolean] mustBe None
 
-
-
       //update subscription
       val validUntil = DateTime.now().plusHours(1)
       val respUpdate = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/subscriptions/${parentSub.id.value}",
+        path =
+          s"/api/teams/${teamOwnerId.value}/subscriptions/${parentSub.id.value}",
         method = "PUT",
         body = Some(
           parentSub
@@ -3453,7 +3453,8 @@ class ApiControllerSpec()
         ),
         port = container.mappedPort(8080)
       )(tenant, session)
-      (respUpdateOto.json \ "validUntil").asOpt[Long] mustBe validUntil.getMillis.some
+      (respUpdateOto.json \ "validUntil")
+        .asOpt[Long] mustBe validUntil.getMillis.some
     }
   }
 

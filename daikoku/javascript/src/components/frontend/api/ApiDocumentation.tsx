@@ -16,6 +16,8 @@ import * as Services from '../../../services';
 
 
 import 'highlight.js/styles/monokai.css';
+import { ParamKeyValuePair, useSearchParams } from 'react-router-dom';
+import { CmsViewer } from '../CmsViewer';
 
 type ApiDocumentationCartidgeProps = {
   documentation?: IDocumentation
@@ -54,6 +56,7 @@ export const ApiDocumentationCartidge = (props: ApiDocumentationCartidgeProps) =
 
 type ApiDocPageProps = {
   pageId?: string,
+  api: IApi,
   getDocPage: (id: string) => Promise<IDocPage | ResponseError>
 }
 const ApiDocPage = (props: ApiDocPageProps) => {
@@ -65,7 +68,6 @@ const ApiDocPage = (props: ApiDocPageProps) => {
       return props.getDocPage(keys.pageId)
     }
   });
-
 
   useEffect(() => {
     if (pageRequest.data && !isError(pageRequest.data)) {
@@ -88,11 +90,18 @@ const ApiDocPage = (props: ApiDocPageProps) => {
       return <span>Error while fetching documentation page: {pageRequest.data.error}</span>
     } else if (pageRequest.data.remoteContentEnabled) {
       return (
-        <AwesomeContentViewer contentType={pageRequest.data.contentType} remoteContent={{ url: pageRequest.data.remoteContentUrl! }} />
+        <AwesomeContentViewer
+          api={props.api}
+          contentType={pageRequest.data.contentType}
+          remoteContent={{ url: pageRequest.data.remoteContentUrl! }} />
       )
     } else {
       return (
-        <AwesomeContentViewer contentType={pageRequest.data.contentType} content={pageRequest.data.content} />
+        <AwesomeContentViewer
+          api={props.api}
+          cmsPage={pageRequest.data.cmsPage}
+          contentType={pageRequest.data.contentType}
+          content={pageRequest.data.content} />
       )
     }
   } else {
@@ -104,6 +113,7 @@ const ApiDocPage = (props: ApiDocPageProps) => {
 
 type ApiDocumentationProps<T extends IWithDocumentation> = {
   documentation?: IDocumentation
+  api: IApi,
   getDocPage: (pageId: string) => Promise<IDocPage | ResponseError>
   ownerTeam: ITeamSimple
   entity: T
@@ -388,14 +398,27 @@ const mimeTypes = [
     render: (url: any) => <Pdf url={url} />,
   },
   { label: '.webm WEBM video file ', value: 'video/webm', render: (url: any) => <Video url={url} /> },
+  {
+    label: '.cms : Page from CMS', value: 'cms/page', render: (value, ...props) => {
+      console.log(value, props)
+      return value
+    }
+  },
 ];
 
 type AwesomeContentViewerProp = {
   contentType: string
   remoteContent?: { url: string }
   content?: string
+  cmsPage?: string
+  api: IApi,
 }
 const AwesomeContentViewer = (props: AwesomeContentViewerProp) => {
+
+  if (props.cmsPage) {
+    return <CmsViewer pageId={props.cmsPage} fields={{ api: props.api }} />
+  }
+
   const mimeType = mimeTypes.filter((t) => t.value === props.contentType)[0] || {
     render: () => <TypeNotSupportedYet />,
   };

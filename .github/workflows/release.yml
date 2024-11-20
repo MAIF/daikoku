@@ -67,9 +67,6 @@ jobs:
     - name: build manual
       id: manual
       run: |
-        cd manual
-        sbt "release release-version ${{ github.event.inputs.releaseversion }}"
-        cd ..
         sh ./scripts/build.sh manual
         echo "diff=$(git diff --numstat | wc -l)" >> $GITHUB_OUTPUT
         cd ..
