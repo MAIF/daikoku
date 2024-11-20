@@ -1,35 +1,23 @@
 package daikoku
 
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
-import fr.maif.otoroshi.daikoku.domain.{
-  BillingDuration,
-  BillingTimeUnit,
-  Currency,
-  IntegrationProcess,
-  OtoroshiTarget,
-  TenantDisplay,
-  UsagePlan,
-  UsagePlanId
-}
+import fr.maif.otoroshi.daikoku.domain.{IntegrationProcess, TenantDisplay, UsagePlan, UsagePlanId}
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.{JsArray, Json}
+import play.api.libs.json.JsArray
 
 class EnvironmentDisplayMode()
     extends PlaySpec
     with DaikokuSpecHelper
     with IntegrationPatience {
 
-  def createPlan(maybeName: Option[String]): UsagePlan =
-    FreeWithoutQuotas(
+  def createPlan(name: String): UsagePlan =
+    UsagePlan(
       id = UsagePlanId(IdGenerator.token),
       tenant = tenant.id,
-      billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-      currency = Currency("EUR"),
-      customName = maybeName,
+      customName = name,
       customDescription = None,
       otoroshiTarget = None,
       allowMultipleKeys = Some(false),
@@ -57,10 +45,10 @@ class EnvironmentDisplayMode()
         apis = Seq(api)
       )
 
-      val devPlan = createPlan("dev".some)
-      val devPlan2 = createPlan("dev".some)
-      val preprodplan = createPlan("preprod".some)
-      val nonePlan = createPlan(None)
+      val devPlan = createPlan("dev")
+      val devPlan2 = createPlan("dev")
+      val preprodplan = createPlan("preprod")
+      val nonePlan = createPlan("None")
 
       val session = loginWithBlocking(userAdmin, tenant)
 
@@ -100,8 +88,8 @@ class EnvironmentDisplayMode()
 
     "be deleted if associated env is deleted" in {
 
-      val devPlan = createPlan("dev".some)
-      val prodPlan = createPlan("prod".some)
+      val devPlan = createPlan("dev")
+      val prodPlan = createPlan("prod")
 
       val api = generateApi("0", tenant.id, teamOwnerId, Seq.empty).api
         .copy(possibleUsagePlans = Seq(devPlan.id, prodPlan.id))

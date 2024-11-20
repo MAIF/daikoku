@@ -1,17 +1,8 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiSubscriptionAccept,
-  ApiSubscriptionDemand,
-  TeamAccess,
-  TeamInvitation
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiSubscriptionAccept, TeamAccess, TeamInvitation}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
-  Administrator,
-  ApiEditor,
-  TeamUser
-}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import org.joda.time.DateTime

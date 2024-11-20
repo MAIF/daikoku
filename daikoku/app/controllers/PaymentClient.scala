@@ -32,7 +32,7 @@ class PaymentClient(
   val ws: WSClient = env.wsClient
 
   def getStripeProductName(api: Api, plan: UsagePlan) =
-    s"${api.name}::${api.currentVersion.value}/${plan.customName.getOrElse(plan.typeName)}"
+    s"${api.name}::${api.currentVersion.value}/${plan.customName}"
 
   private def stripeClient(
       path: String
@@ -288,84 +288,84 @@ class PaymentClient(
   )(implicit
       stripeSettings: StripeSettings
   ): EitherT[Future, AppError, PaymentSettings] = {
+    (plan.costPerMonth, plan.currency, plan.billingDuration) match {
+      case (Some(costPerMonth), Some(currency), Some(billingDuration)) =>
+        val body = Map(
+          "product" -> productId,
+          "unit_amount" -> (costPerMonth * 100).longValue.toString,
+          "currency" -> currency.code,
+          "nickname" -> plan.customName,
+          "metadata[plan]" -> plan.id.value,
+          "recurring[interval]" -> billingDuration.unit.name.toLowerCase
+        )
 
-    val planName: String = plan.customName.getOrElse(plan.typeName)
-
-    val body = Map(
-      "product" -> productId,
-      "unit_amount" -> (plan.costPerMonth * 100).longValue.toString,
-      "currency" -> plan.currency.code,
-      "nickname" -> planName,
-      "metadata[plan]" -> plan.id.value,
-      "recurring[interval]" -> plan.billingDuration.unit.name.toLowerCase
-    )
-
-    plan match {
-      case _: UsagePlan.QuotasWithLimits =>
-        postStripePrice(body)
-          .map(priceId =>
-            PaymentSettings.Stripe(
+        (plan.costPerRequest, plan.maxPerMonth) match {
+          case (Some(costPerRequest), Some(maxPerMonth)) =>
+            for {
+              baseprice <- postStripePrice(body)
+              payperUsePrice <- postStripePrice(
+                Map(
+                  "product" -> productId,
+                  "currency" -> currency.code,
+                  "nickname" -> plan.customName,
+                  "metadata[plan]" -> plan.id.value,
+                  "recurring[interval]" -> billingDuration.unit.name.toLowerCase,
+                  "recurring[usage_type]" -> "metered",
+                  "recurring[aggregate_usage]" -> "sum",
+                  "tiers_mode" -> "graduated",
+                  "billing_scheme" -> "tiered",
+                  "tiers[0][unit_amount]" -> "0",
+                  "tiers[0][up_to]" -> maxPerMonth.toString,
+                  "tiers[1][unit_amount]" -> (costPerRequest * 100).longValue.toString,
+                  "tiers[1][up_to]" -> "inf"
+                )
+              )
+            } yield PaymentSettings.Stripe(
               stripeSettings.id,
               productId,
-              StripePriceIds(basePriceId = priceId)
+              StripePriceIds(
+                basePriceId = baseprice,
+                additionalPriceId = payperUsePrice.some
+              )
             )
-          )
-      case p: UsagePlan.QuotasWithoutLimits =>
-        for {
-          baseprice <- postStripePrice(body)
-          payperUsePrice <- postStripePrice(
-            Map(
-              "product" -> productId,
-              "currency" -> plan.currency.code,
-              "nickname" -> planName,
-              "metadata[plan]" -> plan.id.value,
-              "recurring[interval]" -> plan.billingDuration.unit.name.toLowerCase,
-              "recurring[usage_type]" -> "metered",
-              "recurring[aggregate_usage]" -> "sum",
-              "tiers_mode" -> "graduated",
-              "billing_scheme" -> "tiered",
-              "tiers[0][unit_amount]" -> "0",
-              "tiers[0][up_to]" -> p.maxRequestPerMonth.getOrElse(0L).toString,
-              "tiers[1][unit_amount]" -> (p.costPerAdditionalRequest * 100).longValue.toString,
-              "tiers[1][up_to]" -> "inf"
+          case (Some(costPerRequest), None) =>
+            for {
+              baseprice <- postStripePrice(body)
+              payperUsePrice <- postStripePrice(
+                Map(
+                  "product" -> productId,
+                  "unit_amount" -> (costPerRequest * 100).longValue.toString,
+                  "currency" -> currency.code,
+                  "nickname" -> plan.customName,
+                  "metadata[plan]" -> plan.id.value,
+                  "recurring[interval]" -> billingDuration.unit.name.toLowerCase,
+                  "recurring[usage_type]" -> "metered",
+                  "recurring[aggregate_usage]" -> "sum"
+                )
+              )
+            } yield PaymentSettings.Stripe(
+              stripeSettings.id,
+              productId,
+              StripePriceIds(
+                basePriceId = baseprice,
+                additionalPriceId = payperUsePrice.some
+              )
             )
-          )
-        } yield PaymentSettings.Stripe(
-          stripeSettings.id,
-          productId,
-          StripePriceIds(
-            basePriceId = baseprice,
-            additionalPriceId = payperUsePrice.some
-          )
-        )
-      case p: UsagePlan.PayPerUse =>
-        for {
-          baseprice <- postStripePrice(body)
-          payperUsePrice <- postStripePrice(
-            Map(
-              "product" -> productId,
-              "unit_amount" -> (p.costPerRequest * 100).longValue.toString,
-              "currency" -> plan.currency.code,
-              "nickname" -> planName,
-              "metadata[plan]" -> plan.id.value,
-              "recurring[interval]" -> plan.billingDuration.unit.name.toLowerCase,
-              "recurring[usage_type]" -> "metered",
-              "recurring[aggregate_usage]" -> "sum"
-            )
-          )
-        } yield PaymentSettings.Stripe(
-          stripeSettings.id,
-          productId,
-          StripePriceIds(
-            basePriceId = baseprice,
-            additionalPriceId = payperUsePrice.some
-          )
-        )
-      case _ =>
-        EitherT.leftT[Future, PaymentSettings](
-          AppError.PlanUnauthorized
-        )
+          case _ =>
+            postStripePrice(body)
+              .map(priceId =>
+                PaymentSettings.Stripe(
+                  stripeSettings.id,
+                  productId,
+                  StripePriceIds(basePriceId = priceId)
+                )
+              )
+        }
+      case _ => EitherT.leftT[Future, PaymentSettings](AppError.PaymentError("Basic payment information is not setted up")) //todo: better error message
+
     }
+
+
   }
 
   def createStripeProduct(

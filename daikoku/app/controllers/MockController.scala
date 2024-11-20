@@ -148,12 +148,12 @@ class MockController(
 
   def samplePlans(tenantId: TenantId, linkToOtoroshi: Boolean = false) =
     Seq(
-      FreeWithoutQuotas(
+      UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenantId,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
+        currency = Currency("EUR").some,
+        customName = "plan 1",
         customDescription = None,
         allowMultipleKeys = Some(false),
         autoRotation = None,
@@ -173,15 +173,15 @@ class MockController(
             )
           else None
       ),
-      FreeWithQuotas(
+      UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenantId,
-        maxPerSecond = 2000,
-        maxPerDay = 2000,
-        maxPerMonth = 2000,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        maxPerSecond = 2000L.some,
+        maxPerDay = 2000L.some,
+        maxPerMonth = 2000L.some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
+        currency = Currency("EUR").some,
+        customName = "plan 2",
         customDescription = None,
         allowMultipleKeys = Some(false),
         autoRotation = None,
@@ -201,17 +201,17 @@ class MockController(
             )
           else None
       ),
-      QuotasWithLimits(
+      UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenantId,
-        maxPerSecond = 10000,
-        maxPerDay = 10000,
-        maxPerMonth = 10000,
-        costPerMonth = BigDecimal(10.0),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        maxPerSecond = 10000L.some,
+        maxPerDay = 10000L.some,
+        maxPerMonth = 10000L.some,
+        costPerMonth = BigDecimal(10.0).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "plan 3",
         customDescription = None,
         allowMultipleKeys = Some(false),
         autoRotation = None,
@@ -231,18 +231,18 @@ class MockController(
             )
           else None
       ),
-      QuotasWithoutLimits(
+      UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenantId,
-        maxPerSecond = 10000,
-        maxPerDay = 10000,
-        maxPerMonth = 10000,
-        costPerAdditionalRequest = BigDecimal(0.015),
-        costPerMonth = BigDecimal(10.0),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        maxPerSecond = 10000L.some,
+        maxPerDay = 10000L.some,
+        maxPerMonth = 10000L.some,
+        costPerRequest = BigDecimal(0.015).some,
+        costPerMonth = BigDecimal(10.0).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "plan 4",
         customDescription = None,
         allowMultipleKeys = Some(false),
         autoRotation = None,
@@ -262,15 +262,15 @@ class MockController(
             )
           else None
       ),
-      PayPerUse(
+      UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenantId,
-        costPerMonth = BigDecimal(10.0),
-        costPerRequest = BigDecimal(0.02),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        costPerMonth = BigDecimal(10.0).some,
+        costPerRequest = BigDecimal(0.02).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "plan 5",
         customDescription = None,
         allowMultipleKeys = Some(false),
         autoRotation = None,
@@ -634,28 +634,24 @@ class MockController(
                 case None => NotFound(Json.obj("error" -> "plan not found"))
                 case Some(pp) =>
                   val callPerSec =
-                    r.nextInt(pp.maxRequestPerSecond.getOrElse(10L).toInt)
+                    r.nextLong(pp.maxPerSecond.getOrElse(Long.MaxValue))
                   val callPerDay =
-                    r.nextInt(pp.maxRequestPerDay.getOrElse(100L).toInt)
+                    r.nextLong(pp.maxPerDay.getOrElse(Long.MaxValue))
                   val callPerMonth =
-                    r.nextInt(pp.maxRequestPerMonth.getOrElse(1000L).toInt)
+                    r.nextLong(pp.maxPerMonth.getOrElse(Long.MaxValue))
 
                   Ok(
                     ApiKeyQuotas(
                       authorizedCallsPerSec =
-                        pp.maxRequestPerSecond.getOrElse(0),
+                        pp.maxPerSecond.getOrElse(Long.MaxValue),
                       currentCallsPerSec = callPerSec,
-                      remainingCallsPerSec = pp.maxRequestPerSecond
-                        .getOrElse(0L) - callPerSec,
-                      authorizedCallsPerDay = pp.maxRequestPerDay.getOrElse(0),
+                      remainingCallsPerSec = pp.maxPerSecond.getOrElse(Long.MaxValue) - callPerSec,
+                      authorizedCallsPerDay = pp.maxPerDay.getOrElse(Long.MaxValue),
                       currentCallsPerDay = callPerDay,
-                      remainingCallsPerDay = pp.maxRequestPerDay
-                        .getOrElse(0L) - callPerDay,
-                      authorizedCallsPerMonth =
-                        pp.maxRequestPerMonth.getOrElse(0),
+                      remainingCallsPerDay = pp.maxPerDay.getOrElse(Long.MaxValue) - callPerDay,
+                      authorizedCallsPerMonth = pp.maxPerMonth.getOrElse(Long.MaxValue),
                       currentCallsPerMonth = callPerMonth,
-                      remainingCallsPerMonth = pp.maxRequestPerMonth
-                        .getOrElse(0L) - callPerMonth
+                      remainingCallsPerMonth = pp.maxPerMonth.getOrElse(Long.MaxValue) - callPerMonth
                     ).asJson
                   )
               }

@@ -433,7 +433,7 @@ class ConsumptionController(
                     .getOrElse(c.clientId)
                   val plan: String = plans
                     .find(p => p.id == c.plan)
-                    .map(plan => plan.customName.getOrElse(plan.typeName))
+                    .map(plan => plan.customName)
                     .getOrElse(c.plan.value)
 
                   c.asJson.as[JsObject] ++ Json.obj(

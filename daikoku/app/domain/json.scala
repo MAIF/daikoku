@@ -598,6 +598,7 @@ object json {
       json.as[String] match {
         case "Public"  => JsSuccess(UsagePlanVisibility.Public)
         case "Private" => JsSuccess(UsagePlanVisibility.Private)
+        case "Admin"   => JsSuccess(UsagePlanVisibility.Admin)
         case str       => JsError(s"Bad UsagePlanVisibility value: $str")
       }
 
@@ -747,41 +748,116 @@ object json {
 
   val UsagePlanFormat = new Format[UsagePlan] {
     override def reads(json: JsValue) =
-      (json \ "type").as[String] match {
-        case "FreeWithoutQuotas"   => FreeWithoutQuotasFormat.reads(json)
-        case "FreeWithQuotas"      => FreeWithQuotasFormat.reads(json)
-        case "QuotasWithLimits"    => QuotasWithLimitsFormat.reads(json)
-        case "QuotasWithoutLimits" => QuotasWithoutLimitsFormat.reads(json)
-        case "PayPerUse"           => PayPerUseFormat.reads(json)
-        case "Admin"               => AdminFormat.reads(json)
-        case str                   => JsError(s"Bad UsagePlan value: $str")
-      }
+      Try {
+        JsSuccess(
+          UsagePlan(
+            id = (json \ "_id").as(UsagePlanIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
+            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
+            maxPerSecond = (json \ "maxPerSecond").asOpt(LongFormat),
+            maxPerDay = (json \ "maxPerDay").asOpt(LongFormat),
+            maxPerMonth = (json \ "maxPerMonth").asOpt(LongFormat),
+            costPerMonth = (json \ "costPerMonth").asOpt[BigDecimal],
+            costPerRequest = (json \ "costPerRequest").asOpt[BigDecimal],
+            trialPeriod = (json \ "trialPeriod").asOpt(BillingDurationFormat),
+            billingDuration = (json \ "billingDuration").asOpt(BillingDurationFormat),
+            currency = (json \ "currency").asOpt(CurrencyFormat),
+            customName = (json \ "customName").as[String],
+            customDescription = (json \ "customDescription").asOpt[String],
+            otoroshiTarget =
+              (json \ "otoroshiTarget").asOpt(OtoroshiTargetFormat),
+            allowMultipleKeys = (json \ "allowMultipleKeys").asOpt[Boolean],
+            visibility = (json \ "visibility")
+              .asOpt(UsagePlanVisibilityFormat)
+              .getOrElse(UsagePlanVisibility.Public),
+            authorizedTeams = (json \ "authorizedTeams")
+              .asOpt(SeqTeamIdFormat)
+              .getOrElse(Seq.empty),
+            autoRotation = (json \ "autoRotation")
+              .asOpt[Boolean],
+            subscriptionProcess =
+              (json \ "subscriptionProcess").as(SeqValidationStepFormat),
+            integrationProcess =
+              (json \ "integrationProcess").as(IntegrationProcessFormat),
+            aggregationApiKeysSecurity =
+              (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
+            paymentSettings =
+              (json \ "paymentSettings").asOpt(PaymentSettingsFormat),
+            swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
+            testing = (json \ "testing").asOpt(TestingFormat),
+            documentation =
+              (json \ "documentation").asOpt(ApiDocumentationFormat),
+          )
+        )
+      } recover {
+        case e =>
+          AppLogger.warn("Quotas with limits")
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
 
     override def writes(o: UsagePlan) =
-      o match {
-        case p: Admin =>
-          AdminFormat.writes(p).as[JsObject] ++ Json.obj("type" -> "Admin")
-        case p: FreeWithoutQuotas =>
-          FreeWithoutQuotasFormat.writes(p).as[JsObject] ++ Json.obj(
-            "type" -> "FreeWithoutQuotas"
-          )
-        case p: FreeWithQuotas =>
-          FreeWithQuotasFormat.writes(p).as[JsObject] ++ Json.obj(
-            "type" -> "FreeWithQuotas"
-          )
-        case p: QuotasWithLimits =>
-          QuotasWithLimitsFormat.writes(p).as[JsObject] ++ Json.obj(
-            "type" -> "QuotasWithLimits"
-          )
-        case p: QuotasWithoutLimits =>
-          QuotasWithoutLimitsFormat.writes(p).as[JsObject] ++ Json.obj(
-            "type" -> "QuotasWithoutLimits"
-          )
-        case p: PayPerUse =>
-          PayPerUseFormat.writes(p).as[JsObject] ++ Json.obj(
-            "type" -> "PayPerUse"
-          )
-      }
+      Json.obj(
+        "_id" -> UsagePlanIdFormat.writes(o.id),
+        "_tenant" -> TenantIdFormat.writes(o.tenant),
+        "_deleted" -> o.deleted,
+        "maxPerSecond" -> o.maxPerSecond,
+        "maxPerDay" -> o.maxPerDay,
+        "maxPerMonth" -> o.maxPerMonth.map(JsNumber(_)).getOrElse(JsNull).as[JsValue],
+        "costPerMonth" -> o.costPerMonth.map(JsNumber(_)).getOrElse(JsNull).as[JsValue],
+        "costPerRequest" -> o.costPerRequest.map(JsNumber(_)).getOrElse(JsNull).as[JsValue],
+        "billingDuration" -> o.billingDuration.map(_.asJson).getOrElse(JsNull).as[JsValue],
+        "trialPeriod" -> o.trialPeriod
+          .map(_.asJson)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "currency" -> o.currency.map(_.asJson).getOrElse(JsNull).as[JsValue],
+        "customName" -> o.customName,
+        "customDescription" -> o.customDescription
+          .map(JsString.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "otoroshiTarget" -> o.otoroshiTarget
+          .map(_.asJson)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "allowMultipleKeys" -> o.allowMultipleKeys
+          .map(JsBoolean.apply)
+          .getOrElse(JsBoolean(false))
+          .as[JsValue],
+        "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
+        "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
+        "autoRotation" -> o.autoRotation
+          .map(JsBoolean.apply)
+          .getOrElse(JsBoolean(false))
+          .as[JsValue],
+        "subscriptionProcess" -> SeqValidationStepFormat.writes(
+          o.subscriptionProcess
+        ),
+        "integrationProcess" -> IntegrationProcessFormat.writes(
+          o.integrationProcess
+        ),
+        "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
+          .map(JsBoolean.apply)
+          .getOrElse(JsBoolean(false))
+          .as[JsValue],
+        "paymentSettings" -> o.paymentSettings
+          .map(PaymentSettingsFormat.writes)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "testing" -> o.testing
+          .map(TestingFormat.writes)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "documentation" -> o.documentation
+          .map(ApiDocumentationFormat.writes)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "swagger" -> o.swagger
+          .map(SwaggerAccessFormat.writes)
+          .getOrElse(JsNull)
+          .as[JsValue]
+      )
   }
   val ConsoleSettingsFormat = new Format[ConsoleMailerSettings] {
     override def reads(json: JsValue): JsResult[ConsoleMailerSettings] =
@@ -996,594 +1072,7 @@ object json {
       )
   }
 
-  val AdminFormat = new Format[Admin] {
-    override def reads(json: JsValue): JsResult[Admin] =
-      Try {
-        JsSuccess(
-          Admin(
-            id = (json \ "_id").as(UsagePlanIdFormat),
-            tenant = (json \ "_tenant").as(TenantIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-            otoroshiTarget =
-              (json \ "otoroshiTarget").asOpt(OtoroshiTargetFormat),
-            aggregationApiKeysSecurity =
-              (json \ "aggregationApiKeysSecurity").asOpt[Boolean]
-          )
-        )
-      } recover {
-        case e =>
-          AppLogger.warn("Admin")
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
-      } get
 
-    override def writes(o: Admin): JsValue =
-      Json.obj(
-        "_id" -> UsagePlanIdFormat.writes(o.id),
-        "_tenant" -> TenantIdFormat.writes(o.tenant),
-        "_deleted" -> o.deleted,
-        "customDescription" -> o.customDescription,
-        "customName" -> o.customName,
-        "allowMultipleKeys" -> o.allowMultipleKeys
-          .map(JsBoolean.apply)
-          .getOrElse(JsBoolean(false))
-          .as[JsValue],
-        "otoroshiTarget" -> o.otoroshiTarget
-          .map(_.asJson)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
-          .map(JsBoolean.apply)
-          .getOrElse(JsBoolean(false))
-          .as[JsValue],
-        "subscriptionProcess" -> SeqValidationStepFormat.writes(
-          o.subscriptionProcess
-        )
-      )
-  }
-  val FreeWithoutQuotasFormat = new Format[FreeWithoutQuotas] {
-    override def reads(json: JsValue): JsResult[FreeWithoutQuotas] =
-      Try {
-        JsSuccess(
-          FreeWithoutQuotas(
-            id = (json \ "_id").as(UsagePlanIdFormat),
-            tenant = (json \ "_tenant").as(TenantIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-            currency = (json \ "currency").as(CurrencyFormat),
-            customName = (json \ "customName").asOpt[String],
-            customDescription = (json \ "customDescription").asOpt[String],
-            otoroshiTarget =
-              (json \ "otoroshiTarget").asOpt(OtoroshiTargetFormat),
-            billingDuration =
-              (json \ "billingDuration").as(BillingDurationFormat),
-            allowMultipleKeys = (json \ "allowMultipleKeys").asOpt[Boolean],
-            visibility = (json \ "visibility")
-              .asOpt(UsagePlanVisibilityFormat)
-              .getOrElse(UsagePlanVisibility.Public),
-            authorizedTeams = (json \ "authorizedTeams")
-              .asOpt(SeqTeamIdFormat)
-              .getOrElse(Seq.empty),
-            autoRotation = (json \ "autoRotation")
-              .asOpt[Boolean],
-            subscriptionProcess =
-              (json \ "subscriptionProcess").as(SeqValidationStepFormat),
-            integrationProcess =
-              (json \ "integrationProcess").as(IntegrationProcessFormat),
-            aggregationApiKeysSecurity =
-              (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
-            swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
-            testing = (json \ "testing").asOpt(TestingFormat),
-            documentation =
-              (json \ "documentation").asOpt(ApiDocumentationFormat)
-          )
-        )
-      } recover {
-        case e =>
-          AppLogger.warn("Free without quotas")
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
-      } get
-
-    override def writes(o: FreeWithoutQuotas): JsValue =
-      Json.obj(
-        "_id" -> UsagePlanIdFormat.writes(o.id),
-        "_tenant" -> TenantIdFormat.writes(o.tenant),
-        "_deleted" -> o.deleted,
-        "currency" -> o.currency.asJson,
-        "billingDuration" -> o.billingDuration.asJson,
-        "customName" -> o.customName
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "customDescription" -> o.customDescription
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "otoroshiTarget" -> o.otoroshiTarget
-          .map(_.asJson)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "allowMultipleKeys" -> o.allowMultipleKeys
-          .map(JsBoolean.apply)
-          .getOrElse(JsBoolean(false))
-          .as[JsValue],
-        "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
-        "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
-        "autoRotation" -> o.autoRotation
-          .map(JsBoolean.apply)
-          .getOrElse(JsBoolean(false))
-          .as[JsValue],
-        "subscriptionProcess" -> SeqValidationStepFormat.writes(
-          o.subscriptionProcess
-        ),
-        "integrationProcess" -> IntegrationProcessFormat.writes(
-          o.integrationProcess
-        ),
-        "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
-          .map(JsBoolean.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "testing" -> o.testing
-          .map(TestingFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "documentation" -> o.documentation
-          .map(ApiDocumentationFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "swagger" -> o.swagger
-          .map(SwaggerAccessFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue]
-      )
-  }
-  val FreeWithQuotasFormat = new Format[FreeWithQuotas] {
-    override def reads(json: JsValue): JsResult[FreeWithQuotas] =
-      Try {
-        JsSuccess(
-          FreeWithQuotas(
-            id = (json \ "_id").as(UsagePlanIdFormat),
-            tenant = (json \ "_tenant").as(TenantIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-            maxPerSecond = (json \ "maxPerSecond").as(LongFormat),
-            maxPerDay = (json \ "maxPerDay").as(LongFormat),
-            maxPerMonth = (json \ "maxPerMonth").as(LongFormat),
-            currency = (json \ "currency").as(CurrencyFormat),
-            customName = (json \ "customName").asOpt[String],
-            customDescription = (json \ "customDescription").asOpt[String],
-            otoroshiTarget =
-              (json \ "otoroshiTarget").asOpt(OtoroshiTargetFormat),
-            billingDuration =
-              (json \ "billingDuration").as(BillingDurationFormat),
-            allowMultipleKeys = (json \ "allowMultipleKeys").asOpt[Boolean],
-            visibility = (json \ "visibility")
-              .asOpt(UsagePlanVisibilityFormat)
-              .getOrElse(UsagePlanVisibility.Public),
-            authorizedTeams = (json \ "authorizedTeams")
-              .asOpt(SeqTeamIdFormat)
-              .getOrElse(Seq.empty),
-            autoRotation = (json \ "autoRotation")
-              .asOpt[Boolean],
-            subscriptionProcess =
-              (json \ "subscriptionProcess").as(SeqValidationStepFormat),
-            integrationProcess =
-              (json \ "integrationProcess").as(IntegrationProcessFormat),
-            aggregationApiKeysSecurity =
-              (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
-            swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
-            testing = (json \ "testing").asOpt(TestingFormat),
-            documentation =
-              (json \ "documentation").asOpt(ApiDocumentationFormat)
-          )
-        )
-      } recover {
-        case e =>
-          AppLogger.warn("Free with quotas")
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
-      } get
-
-    override def writes(o: FreeWithQuotas): JsValue =
-      Json.obj(
-        "_id" -> UsagePlanIdFormat.writes(o.id),
-        "_tenant" -> TenantIdFormat.writes(o.tenant),
-        "_deleted" -> o.deleted,
-        "maxPerSecond" -> o.maxPerSecond,
-        "maxPerDay" -> o.maxPerDay,
-        "maxPerMonth" -> o.maxPerMonth,
-        "currency" -> o.currency.asJson,
-        "billingDuration" -> o.billingDuration.asJson,
-        "customName" -> o.customName
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "customDescription" -> o.customDescription
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "otoroshiTarget" -> o.otoroshiTarget
-          .map(_.asJson)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "allowMultipleKeys" -> o.allowMultipleKeys
-          .map(JsBoolean.apply)
-          .getOrElse(JsBoolean(false))
-          .as[JsValue],
-        "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
-        "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
-        "autoRotation" -> o.autoRotation
-          .map(JsBoolean.apply)
-          .getOrElse(JsBoolean(false))
-          .as[JsValue],
-        "subscriptionProcess" -> SeqValidationStepFormat.writes(
-          o.subscriptionProcess
-        ),
-        "integrationProcess" -> IntegrationProcessFormat.writes(
-          o.integrationProcess
-        ),
-        "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
-          .map(JsBoolean.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "testing" -> o.testing
-          .map(TestingFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "documentation" -> o.documentation
-          .map(ApiDocumentationFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "swagger" -> o.swagger
-          .map(SwaggerAccessFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue]
-      )
-  }
-  val QuotasWithLimitsFormat = new Format[QuotasWithLimits] {
-    override def reads(json: JsValue): JsResult[QuotasWithLimits] =
-      Try {
-        JsSuccess(
-          QuotasWithLimits(
-            id = (json \ "_id").as(UsagePlanIdFormat),
-            tenant = (json \ "_tenant").as(TenantIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-            maxPerSecond = (json \ "maxPerSecond").as(LongFormat),
-            maxPerDay = (json \ "maxPerDay").as(LongFormat),
-            maxPerMonth = (json \ "maxPerMonth").as(LongFormat),
-            costPerMonth = (json \ "costPerMonth").as[BigDecimal],
-            trialPeriod = (json \ "trialPeriod").asOpt(BillingDurationFormat),
-            billingDuration =
-              (json \ "billingDuration").as(BillingDurationFormat),
-            currency = (json \ "currency").as(CurrencyFormat),
-            customName = (json \ "customName").asOpt[String],
-            customDescription = (json \ "customDescription").asOpt[String],
-            otoroshiTarget =
-              (json \ "otoroshiTarget").asOpt(OtoroshiTargetFormat),
-            allowMultipleKeys = (json \ "allowMultipleKeys").asOpt[Boolean],
-            visibility = (json \ "visibility")
-              .asOpt(UsagePlanVisibilityFormat)
-              .getOrElse(UsagePlanVisibility.Public),
-            authorizedTeams = (json \ "authorizedTeams")
-              .asOpt(SeqTeamIdFormat)
-              .getOrElse(Seq.empty),
-            autoRotation = (json \ "autoRotation")
-              .asOpt[Boolean],
-            subscriptionProcess =
-              (json \ "subscriptionProcess").as(SeqValidationStepFormat),
-            integrationProcess =
-              (json \ "integrationProcess").as(IntegrationProcessFormat),
-            aggregationApiKeysSecurity =
-              (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
-            paymentSettings =
-              (json \ "paymentSettings").asOpt(PaymentSettingsFormat),
-            swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
-            testing = (json \ "testing").asOpt(TestingFormat),
-            documentation =
-              (json \ "documentation").asOpt(ApiDocumentationFormat)
-          )
-        )
-      } recover {
-        case e =>
-          AppLogger.warn("Quotas with limits")
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
-      } get
-
-    override def writes(o: QuotasWithLimits): JsValue =
-      Json.obj(
-        "_id" -> UsagePlanIdFormat.writes(o.id),
-        "_tenant" -> TenantIdFormat.writes(o.tenant),
-        "_deleted" -> o.deleted,
-        "maxPerSecond" -> o.maxPerSecond,
-        "maxPerDay" -> o.maxPerDay,
-        "maxPerMonth" -> o.maxPerMonth,
-        "costPerMonth" -> o.costPerMonth,
-        "billingDuration" -> o.billingDuration.asJson,
-        "trialPeriod" -> o.trialPeriod
-          .map(_.asJson)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "currency" -> o.currency.asJson,
-        "customName" -> o.customName
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "customDescription" -> o.customDescription
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "otoroshiTarget" -> o.otoroshiTarget
-          .map(_.asJson)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "allowMultipleKeys" -> o.allowMultipleKeys
-          .map(JsBoolean.apply)
-          .getOrElse(JsBoolean(false))
-          .as[JsValue],
-        "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
-        "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
-        "autoRotation" -> o.autoRotation
-          .map(JsBoolean.apply)
-          .getOrElse(JsBoolean(false))
-          .as[JsValue],
-        "subscriptionProcess" -> SeqValidationStepFormat.writes(
-          o.subscriptionProcess
-        ),
-        "integrationProcess" -> IntegrationProcessFormat.writes(
-          o.integrationProcess
-        ),
-        "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
-          .map(JsBoolean.apply)
-          .getOrElse(JsBoolean(false))
-          .as[JsValue],
-        "paymentSettings" -> o.paymentSettings
-          .map(PaymentSettingsFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "testing" -> o.testing
-          .map(TestingFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "documentation" -> o.documentation
-          .map(ApiDocumentationFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "swagger" -> o.swagger
-          .map(SwaggerAccessFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue]
-      )
-  }
-  val QuotasWithoutLimitsFormat = new Format[QuotasWithoutLimits] {
-    override def reads(json: JsValue): JsResult[QuotasWithoutLimits] =
-      Try {
-        JsSuccess(
-          QuotasWithoutLimits(
-            id = (json \ "_id").as(UsagePlanIdFormat),
-            tenant = (json \ "_tenant").as(TenantIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-            maxPerSecond = (json \ "maxPerSecond").as(LongFormat),
-            maxPerDay = (json \ "maxPerDay").as(LongFormat),
-            maxPerMonth = (json \ "maxPerMonth").as(LongFormat),
-            costPerMonth = (json \ "costPerMonth").as[BigDecimal],
-            costPerAdditionalRequest =
-              (json \ "costPerAdditionalRequest").as[BigDecimal],
-            trialPeriod = (json \ "trialPeriod").asOpt(BillingDurationFormat),
-            billingDuration =
-              (json \ "billingDuration").as(BillingDurationFormat),
-            currency = (json \ "currency").as(CurrencyFormat),
-            customName = (json \ "customName").asOpt[String],
-            customDescription = (json \ "customDescription").asOpt[String],
-            otoroshiTarget =
-              (json \ "otoroshiTarget").asOpt(OtoroshiTargetFormat),
-            allowMultipleKeys = (json \ "allowMultipleKeys").asOpt[Boolean],
-            visibility = (json \ "visibility")
-              .asOpt(UsagePlanVisibilityFormat)
-              .getOrElse(UsagePlanVisibility.Public),
-            authorizedTeams = (json \ "authorizedTeams")
-              .asOpt(SeqTeamIdFormat)
-              .getOrElse(Seq.empty),
-            autoRotation = (json \ "autoRotation")
-              .asOpt[Boolean],
-            subscriptionProcess =
-              (json \ "subscriptionProcess").as(SeqValidationStepFormat),
-            integrationProcess =
-              (json \ "integrationProcess").as(IntegrationProcessFormat),
-            aggregationApiKeysSecurity =
-              (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
-            paymentSettings =
-              (json \ "paymentSettings").asOpt(PaymentSettingsFormat),
-            swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
-            testing = (json \ "testing").asOpt(TestingFormat),
-            documentation =
-              (json \ "documentation").asOpt(ApiDocumentationFormat)
-          )
-        )
-      } recover {
-        case e =>
-          AppLogger.warn("Quotas without limit")
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
-      } get
-
-    override def writes(o: QuotasWithoutLimits): JsValue =
-      Json.obj(
-        "_id" -> UsagePlanIdFormat.writes(o.id),
-        "_tenant" -> TenantIdFormat.writes(o.tenant),
-        "_deleted" -> o.deleted,
-        "maxPerSecond" -> o.maxPerSecond,
-        "maxPerDay" -> o.maxPerDay,
-        "maxPerMonth" -> o.maxPerMonth,
-        "costPerMonth" -> o.costPerMonth,
-        "costPerAdditionalRequest" -> o.costPerAdditionalRequest,
-        "billingDuration" -> o.billingDuration.asJson,
-        "trialPeriod" -> o.trialPeriod
-          .map(_.asJson)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "currency" -> o.currency.asJson,
-        "customName" -> o.customName
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "customDescription" -> o.customDescription
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "otoroshiTarget" -> o.otoroshiTarget
-          .map(_.asJson)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "allowMultipleKeys" -> o.allowMultipleKeys
-          .map(JsBoolean.apply)
-          .getOrElse(JsBoolean(false))
-          .as[JsValue],
-        "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
-        "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
-        "autoRotation" -> o.autoRotation
-          .map(JsBoolean.apply)
-          .getOrElse(JsBoolean(false))
-          .as[JsValue],
-        "subscriptionProcess" -> SeqValidationStepFormat.writes(
-          o.subscriptionProcess
-        ),
-        "integrationProcess" -> IntegrationProcessFormat.writes(
-          o.integrationProcess
-        ),
-        "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
-          .map(JsBoolean.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "paymentSettings" -> o.paymentSettings
-          .map(PaymentSettingsFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "testing" -> o.testing
-          .map(TestingFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "documentation" -> o.documentation
-          .map(ApiDocumentationFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "swagger" -> o.swagger
-          .map(SwaggerAccessFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue]
-      )
-  }
-  val PayPerUseFormat = new Format[PayPerUse] {
-    override def reads(json: JsValue): JsResult[PayPerUse] = {
-      Try {
-        JsSuccess(
-          PayPerUse(
-            id = (json \ "_id").as(UsagePlanIdFormat),
-            tenant = (json \ "_tenant").as(TenantIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-            costPerMonth = (json \ "costPerMonth").as[BigDecimal],
-            costPerRequest = (json \ "costPerRequest").as[BigDecimal],
-            trialPeriod = (json \ "trialPeriod").asOpt(BillingDurationFormat),
-            billingDuration =
-              (json \ "billingDuration").as(BillingDurationFormat),
-            currency = (json \ "currency").as(CurrencyFormat),
-            customName = (json \ "customName").asOpt[String],
-            customDescription = (json \ "customDescription").asOpt[String],
-            otoroshiTarget =
-              (json \ "otoroshiTarget").asOpt(OtoroshiTargetFormat),
-            allowMultipleKeys = (json \ "allowMultipleKeys").asOpt[Boolean],
-            visibility = (json \ "visibility")
-              .asOpt(UsagePlanVisibilityFormat)
-              .getOrElse(UsagePlanVisibility.Public),
-            authorizedTeams = (json \ "authorizedTeams")
-              .asOpt(SeqTeamIdFormat)
-              .getOrElse(Seq.empty),
-            autoRotation = (json \ "autoRotation")
-              .asOpt[Boolean],
-            subscriptionProcess =
-              (json \ "subscriptionProcess").as(SeqValidationStepFormat),
-            integrationProcess =
-              (json \ "integrationProcess").as(IntegrationProcessFormat),
-            aggregationApiKeysSecurity =
-              (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
-            paymentSettings =
-              (json \ "paymentSettings").asOpt(PaymentSettingsFormat),
-            swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
-            testing = (json \ "testing").asOpt(TestingFormat),
-            documentation =
-              (json \ "documentation").asOpt(ApiDocumentationFormat)
-          )
-        )
-      } recover {
-        case e =>
-          AppLogger.warn("Pay per use")
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
-      } get
-    }
-
-    override def writes(o: PayPerUse): JsValue =
-      Json.obj(
-        "_id" -> UsagePlanIdFormat.writes(o.id),
-        "_tenant" -> TenantIdFormat.writes(o.tenant),
-        "_deleted" -> o.deleted,
-        "costPerMonth" -> o.costPerMonth,
-        "costPerRequest" -> o.costPerRequest,
-        "trialPeriod" -> o.trialPeriod
-          .map(_.asJson)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "billingDuration" -> o.billingDuration.asJson,
-        "currency" -> o.currency.asJson,
-        "customName" -> o.customName
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "customDescription" -> o.customDescription
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "otoroshiTarget" -> o.otoroshiTarget
-          .map(_.asJson)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "allowMultipleKeys" -> o.allowMultipleKeys
-          .map(JsBoolean.apply)
-          .getOrElse(JsBoolean(false))
-          .as[JsValue],
-        "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
-        "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
-        "autoRotation" -> o.autoRotation
-          .map(JsBoolean.apply)
-          .getOrElse(JsBoolean(false))
-          .as[JsValue],
-        "subscriptionProcess" -> SeqValidationStepFormat.writes(
-          o.subscriptionProcess
-        ),
-        "integrationProcess" -> IntegrationProcessFormat.writes(
-          o.integrationProcess
-        ),
-        "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
-          .map(JsBoolean.apply)
-          .getOrElse(JsBoolean(false))
-          .as[JsValue],
-        "paymentSettings" -> o.paymentSettings
-          .map(PaymentSettingsFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "testing" -> o.testing
-          .map(TestingFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "documentation" -> o.documentation
-          .map(ApiDocumentationFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "swagger" -> o.swagger
-          .map(SwaggerAccessFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue]
-      )
-  }
   val OtoroshiApiKeyFormat = new Format[OtoroshiApiKey] {
     override def reads(json: JsValue): JsResult[OtoroshiApiKey] =
       Try {

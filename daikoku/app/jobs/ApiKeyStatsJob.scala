@@ -422,11 +422,11 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       }
     }
 
-    val from = plan.billingDuration.unit match {
-      case Year  => DateTime.now().withDayOfYear(1).withTimeAtStartOfDay()
-      case Month => periodStart.withDayOfMonth(1).withTimeAtStartOfDay()
-      case Day   => DateTime.now().withTimeAtStartOfDay()
-      case Hour  => DateTime.now().withMinuteOfHour(1)
+    val from = plan.billingDuration.map(_.unit) match {
+      case Some(Year)  => DateTime.now().withDayOfYear(1).withTimeAtStartOfDay()
+      case Some(Hour)  => DateTime.now().withMinuteOfHour(1)
+      case Some(Day)   => DateTime.now().withTimeAtStartOfDay()
+      case _ => periodStart.withDayOfMonth(1).withTimeAtStartOfDay()
     }
 
     val to = periodEnd.plusMonths(1).withDayOfMonth(1).withTimeAtStartOfDay()
@@ -441,42 +441,42 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
         )
       )
       .map(consumptions => {
-        plan match {
+        (plan.costPerMonth, plan.costPerRequest, plan.maxPerMonth) match {
           //todo: consider trial period
-          case _: FreeWithoutQuotas =>
+          case (None, None, Some(_)) =>
             ApiKeyBilling(
               hits = hits + consumptions.map(_.hits).sum,
               total = 0
             )
-          case _: FreeWithQuotas =>
+          case (Some(costPerMonth), None, Some(_)) =>
             ApiKeyBilling(
               hits = hits + consumptions.map(_.hits).sum,
-              total = 0
+              total = costPerMonth
             )
-          case p: QuotasWithLimits =>
+          case (Some(costPerMonth), Some(costPerRequest), Some(maxPerMonth)) =>
             ApiKeyBilling(
               hits = hits + consumptions.map(_.hits).sum,
-              total = p.costPerMonth
-            )
-          case p: QuotasWithoutLimits =>
-            ApiKeyBilling(
-              hits = hits + consumptions.map(_.hits).sum,
-              total = p.costPerMonth + computeAdditionalHitsCost(
-                p.maxPerMonth,
+              total = costPerMonth + computeAdditionalHitsCost(
+                maxPerMonth,
                 hits + consumptions.map(_.hits).sum,
-                p.costPerAdditionalRequest
+                costPerRequest
               )
             )
-          case p: PayPerUse =>
+          case (Some(costPerMonth), Some(costPerRequest), None) =>
             ApiKeyBilling(
               hits = hits + consumptions.map(_.hits).sum,
-              total = p.costPerMonth + computeAdditionalHitsCost(
+              total = costPerMonth + computeAdditionalHitsCost(
                 0,
                 hits + consumptions.map(_.hits).sum,
-                p.costPerRequest
+                costPerRequest
               )
             )
-          case p: Admin => ApiKeyBilling(0, 0)
+          case _ if plan.visibility == UsagePlanVisibility.Admin => ApiKeyBilling(0, 0)
+          case _ =>
+            ApiKeyBilling(
+              hits = hits + consumptions.map(_.hits).sum,
+              total = 0
+            )
         }
       })
   }

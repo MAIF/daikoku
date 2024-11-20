@@ -6,10 +6,8 @@ import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.QuotasWithLimits
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
@@ -27,7 +25,7 @@ class NotificationControllerSpec()
     with IntegrationPatience
     with BeforeAndAfterEach {
 
-  val treatedNotification = Notification(
+  val treatedNotification: Notification = Notification(
     id = NotificationId("treated-notification"),
     tenant = tenant.id,
     team = Some(teamOwnerId),
@@ -36,7 +34,7 @@ class NotificationControllerSpec()
     action = ApiAccess(defaultApi.api.id, teamConsumerId),
     status = Accepted()
   )
-  val untreatedNotification = Notification(
+  val untreatedNotification: Notification = Notification(
     id = NotificationId("untreated-notification"),
     tenant = tenant.id,
     team = Some(teamOwnerId),
@@ -45,7 +43,7 @@ class NotificationControllerSpec()
     action = ApiAccess(defaultApi.api.id, teamConsumerId)
   )
 
-  val ApiSubscriptionSafeFormat = new Format[ApiSubscription] {
+  val ApiSubscriptionSafeFormat: Format[ApiSubscription] = new Format[ApiSubscription] {
     override def reads(json: JsValue): JsResult[ApiSubscription] =
       Try {
         JsSuccess(
@@ -115,7 +113,7 @@ class NotificationControllerSpec()
           .as[JsValue]
       )
   }
-  val SeqApiSubscriptionSafeFormat =
+  val SeqApiSubscriptionSafeFormat: Format[Seq[ApiSubscription]] =
     Format(
       Reads.seq(ApiSubscriptionSafeFormat),
       Writes.seq(ApiSubscriptionSafeFormat)
@@ -471,17 +469,17 @@ class NotificationControllerSpec()
       eventualApi.get.authorizedTeams.contains(teamConsumerId) mustBe false
     }
     "accept notification - api subscription" in {
-      val plan = QuotasWithLimits(
+      val plan = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        maxPerDay = 10000,
-        maxPerMonth = 10000,
-        maxPerSecond = 10000,
-        costPerMonth = BigDecimal(10.0),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        maxPerDay = 10000L.some,
+        maxPerMonth = 10000L.some,
+        maxPerSecond = 10000L.some,
+        costPerMonth = BigDecimal(10.0).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "QuotasWithLimits",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -579,17 +577,17 @@ class NotificationControllerSpec()
           title = "Admin"
         )
       )
-      val plan = QuotasWithLimits(
+      val plan = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        maxPerSecond = 10000,
-        maxPerDay = 10000,
-        maxPerMonth = 10000,
-        costPerMonth = BigDecimal(10.0),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        maxPerSecond = 10000L.some,
+        maxPerDay = 10000L.some,
+        maxPerMonth = 10000L.some,
+        costPerMonth = BigDecimal(10.0).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "QuotasWithLimits",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -864,17 +862,17 @@ class NotificationControllerSpec()
           title = "Admin"
         )
       )
-      val plan = QuotasWithLimits(
+      val plan = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        maxPerSecond = 10000,
-        maxPerDay = 10000,
-        maxPerMonth = 10000,
-        costPerMonth = BigDecimal(10.0),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        maxPerSecond = 10000L.some,
+        maxPerDay = 10000L.some,
+        maxPerMonth = 10000L.some,
+        costPerMonth = BigDecimal(10.0).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "QuotasWithLimits",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -955,17 +953,17 @@ class NotificationControllerSpec()
           title = "Admin"
         )
       )
-      val plan = QuotasWithLimits(
+      val plan = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        maxPerSecond = 10000,
-        maxPerDay = 10000,
-        maxPerMonth = 10000,
-        costPerMonth = BigDecimal(10.0),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        maxPerSecond = 10000L.some,
+        maxPerDay = 10000L.some,
+        maxPerMonth = 10000L.some,
+        costPerMonth = BigDecimal(10.0).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "QuotasWithLimits",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(

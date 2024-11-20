@@ -613,7 +613,7 @@ class ApiController(
         } yield {
           ctx.setCtxValue("plan.id", plan.id.value)
           ctx.setCtxValue("aip.name", api.id.value)
-          ctx.setCtxValue("plan.name", plan.customName.getOrElse(plan.typeName))
+          ctx.setCtxValue("plan.name", plan.customName)
           Ok(plan.asJson)
         }).leftMap(_.render())
           .merge
@@ -817,7 +817,7 @@ class ApiController(
           _ <- check(api, plan, page)
         } yield {
           ctx.setCtxValue("plan.id", plan.id.value)
-          ctx.setCtxValue("plan.name", plan.customName.getOrElse(plan.typeName))
+          ctx.setCtxValue("plan.name", plan.customName)
 
           if (page.remoteContentEnabled) {
             val url: String = page.remoteContentUrl.getOrElse(
@@ -1788,7 +1788,7 @@ class ApiController(
             sub: ApiSubscription,
             parentSub: Option[ApiSubscription]
         ): Future[JsValue] = {
-          val name: String = plan.customName.getOrElse(plan.typeName)
+          val name: String = plan.customName
           val r = sub
             .asAuthorizedJson(
               teamPermission,
@@ -1796,7 +1796,6 @@ class ApiController(
               ctx.user.isDaikokuAdmin
             )
             .as[JsObject] ++
-            Json.obj("planType" -> plan.typeName) ++
             Json.obj("planName" -> name) ++
             Json.obj("apiName" -> api.name) ++
             Json.obj("_humanReadableId" -> api.humanReadableId) ++
@@ -1985,20 +1984,15 @@ class ApiController(
                     .getOrElse(IntegrationProcess.Automatic)
 
                   val apiName: String = api.map(_.name).getOrElse("")
-                  val planName: String =
-                    plan.flatMap(_.customName).getOrElse("")
+                  val planName: String = plan.map(_.customName).getOrElse("")
                   sub
                     .asAuthorizedJson(
                       teamPermission,
                       planIntegrationProcess,
                       ctx.user.isDaikokuAdmin
                     )
-                    .as[JsObject] ++
-                    plans
-                      .find(p => p.id == sub.plan)
-                      .map(plan => Json.obj("planType" -> plan.typeName))
-                      .getOrElse(Json.obj("planType" -> "")) ++ Json
-                    .obj("apiName" -> apiName, "planName" -> planName)
+                    .as[JsObject]  ++
+                    Json.obj("apiName" -> apiName, "planName" -> planName)
                 })
             )
           )
@@ -2682,7 +2676,7 @@ class ApiController(
                       )
                     )
                     .map { pages =>
-                      val str: String = p.customName.getOrElse(p.typeName)
+                      val str: String = p.customName
                       Json.obj(
                         "from" -> str,
                         "_id" -> p.id.asJson,
@@ -4669,23 +4663,7 @@ class ApiController(
             AppError.PlanNotFound
           )
           copyPlanId = UsagePlanId(IdGenerator.token(32))
-          customName = Some(
-            s"Imported plan from ${fromApi.currentVersion} - ${plan.typeName}"
-          )
-          copy = (plan match {
-              case u: UsagePlan.Admin =>
-                u.copy(id = copyPlanId, customName = customName)
-              case u: UsagePlan.PayPerUse =>
-                u.copy(id = copyPlanId, customName = customName)
-              case u: UsagePlan.FreeWithQuotas =>
-                u.copy(id = copyPlanId, customName = customName)
-              case u: UsagePlan.FreeWithoutQuotas =>
-                u.copy(id = copyPlanId, customName = customName)
-              case u: UsagePlan.QuotasWithLimits =>
-                u.copy(id = copyPlanId, customName = customName)
-              case u: UsagePlan.QuotasWithoutLimits =>
-                u.copy(id = copyPlanId, customName = customName)
-            }).asInstanceOf[UsagePlan]
+          copy = plan.copy(id = copyPlanId, customName = s"${plan.customName} (copy)")
           _ <- EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.usagePlanRepo.forTenant(ctx.tenant).save(copy)
           )
@@ -4917,31 +4895,23 @@ class ApiController(
                   _.otoroshiSettings
                 ) =>
               EitherT.leftT(AppError.ForbiddenAction)
-            // Handle type changes
-            case _ if oldPlan.typeName != newPlan.typeName =>
-              EitherT.leftT(AppError.ForbiddenAction)
             //Handle prices changes or payment settings deletion (addition is really forbidden)
             case _ if oldPlan.paymentSettings != newPlan.paymentSettings =>
               EitherT.leftT(AppError.ForbiddenAction)
-            case p: UsagePlan.QuotasWithLimits
-                if p.costPerMonth != newPlan.costPerMonth =>
+            case _ if oldPlan.costPerMonth != newPlan.costPerMonth =>
               EitherT.leftT(AppError.ForbiddenAction)
-            case p: UsagePlan.QuotasWithoutLimits
-                if p.costPerMonth != newPlan.costPerMonth || p.costPerAdditionalRequest != oldPlan
-                  .asInstanceOf[UsagePlan.QuotasWithoutLimits]
-                  .costPerAdditionalRequest =>
+            case _ if oldPlan.costPerMonth != newPlan.costPerMonth || oldPlan.costPerRequest != newPlan
+              .costPerRequest =>
               EitherT.leftT(AppError.ForbiddenAction)
-            case p: UsagePlan.PayPerUse
-                if p.costPerMonth != newPlan.costPerMonth || p.costPerRequest != oldPlan
-                  .asInstanceOf[UsagePlan.PayPerUse]
-                  .costPerRequest =>
-              EitherT.leftT(AppError.ForbiddenAction)
-            //handle otoroshi target update
-            case _
-                if !ctx.tenant.aggregationApiKeysSecurity.exists(
-                  identity
-                ) && newPlan.aggregationApiKeysSecurity.exists(identity) =>
+            case _ if !ctx.tenant.aggregationApiKeysSecurity.exists(identity) &&
+              newPlan.aggregationApiKeysSecurity.exists(identity) =>
               EitherT.leftT(AppError.SubscriptionAggregationDisabled)
+            case _ if oldPlan.visibility == UsagePlanVisibility.Admin =>
+              EitherT.pure(oldPlan.copy(
+                otoroshiTarget = newPlan.otoroshiTarget,
+                allowMultipleKeys = newPlan.allowMultipleKeys,
+                autoRotation = newPlan.autoRotation
+              ))
             case _ => EitherT.pure(newPlan)
           }
         }
@@ -4969,6 +4939,7 @@ class ApiController(
                   val value: EitherT[Future, AppError, UsagePlan] =
                     EitherT(future)
                   value
+                case UsagePlanVisibility.Admin => EitherT.leftT[Future, UsagePlan](AppError.ForbiddenAction)
               }
             case _ => EitherT.pure(plan)
           }
@@ -5223,7 +5194,7 @@ class ApiController(
                 )
               )
           )
-          _ <- getPlanAndCheckIt(oldPlan, updatedPlan)
+          updatedPlan <- getPlanAndCheckIt(oldPlan, updatedPlan)
           handledUpdatedPlan <-
             handleVisibilityToggling(oldPlan, updatedPlan, api)
           updatedPlan <- handleProcess(oldPlan, handledUpdatedPlan, api)
@@ -5313,25 +5284,19 @@ class ApiController(
         val base = ctx.request.body.as(BasePaymentInformationFormat)
 
         def getRatedPlan(
-            api: Api,
             plan: UsagePlan,
             base: BasePaymentInformation
         ): EitherT[Future, AppError, UsagePlan] = {
-          plan match {
-            case p: UsagePlan.QuotasWithLimits =>
-              EitherT.pure(p.mergeBase(base))
-            case p: UsagePlan.QuotasWithoutLimits =>
-              val costPerAdditionalRequest =
-                (ctx.request.body \ "costPerAdditionalRequest").as[BigDecimal]
-              val ratedPlan = p
-                .mergeBase(base)
-                .copy(costPerAdditionalRequest = costPerAdditionalRequest)
-              EitherT.pure(ratedPlan)
-            case p: UsagePlan.PayPerUse =>
+
+          (plan.costPerMonth, plan.costPerRequest) match {
+            case (Some(_), None) =>
+              EitherT.pure(plan.mergeBase(base))
+            case (Some(_), Some(_)) =>
               val costPerRequest =
                 (ctx.request.body \ "costPerRequest").as[BigDecimal]
-              val ratedPlan =
-                p.mergeBase(base).copy(costPerRequest = costPerRequest)
+              val ratedPlan = plan
+                .mergeBase(base)
+                .copy(costPerRequest = costPerRequest.some)
               EitherT.pure(ratedPlan)
             case _ =>
               EitherT.leftT[Future, UsagePlan](AppError.PlanUnauthorized)
@@ -5362,7 +5327,7 @@ class ApiController(
               )
             case None => EitherT.pure[Future, AppError](())
           }
-          ratedPlan <- getRatedPlan(api, plan, base)
+          ratedPlan <- getRatedPlan(plan, base)
           paymentSettings <- paymentClient.createProduct(
             ctx.tenant,
             api,
@@ -5370,9 +5335,9 @@ class ApiController(
             paymentSettingsId
           )
 
-          ratedPlanwithSettings = ratedPlan match {
-            case p: UsagePlan.QuotasWithLimits =>
-              p.copy(paymentSettings = paymentSettings.some)
+          ratedPlanwithSettings = ratedPlan.isPaymentDefined match {
+            case true =>
+              ratedPlan.copy(paymentSettings = paymentSettings.some)
                 .addSubscriptionStep(
                   ValidationStep.Payment(
                     id = IdGenerator.token(32),
@@ -5380,25 +5345,7 @@ class ApiController(
                       paymentSettings.thirdPartyPaymentSettingsId
                   )
                 )
-            case p: UsagePlan.QuotasWithoutLimits =>
-              p.copy(paymentSettings = paymentSettings.some)
-                .addSubscriptionStep(
-                  ValidationStep.Payment(
-                    id = IdGenerator.token(32),
-                    thirdPartyPaymentSettingsId =
-                      paymentSettings.thirdPartyPaymentSettingsId
-                  )
-                )
-            case p: UsagePlan.PayPerUse =>
-              p.copy(paymentSettings = paymentSettings.some)
-                .addSubscriptionStep(
-                  ValidationStep.Payment(
-                    id = IdGenerator.token(32),
-                    thirdPartyPaymentSettingsId =
-                      paymentSettings.thirdPartyPaymentSettingsId
-                  )
-                )
-            case p: UsagePlan => p
+            case false => ratedPlan
           }
 
           _ <- EitherT.liftF(

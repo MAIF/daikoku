@@ -405,7 +405,7 @@ class AuditActor(implicit
               tenant,
               Map(
                 "apiName" -> api.name,
-                "planName" -> plan.customName.getOrElse(plan.typeName)
+                "planName" -> plan.customName
               )
             )
           )

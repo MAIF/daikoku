@@ -168,12 +168,18 @@ object UsagePlanVisibility {
   case object Private extends UsagePlanVisibility {
     def name: String = "Private"
   }
+
+  case object Admin extends UsagePlanVisibility {
+    def name: String = "Admin"
+  }
+
   val values: Seq[UsagePlanVisibility] =
     Seq(Public, Private)
   def apply(name: String): Option[UsagePlanVisibility] =
     name match {
       case "Public"  => Public.some
       case "Private" => Private.some
+      case "Admin"   => Admin.some
       case _         => None
     }
 }
@@ -233,63 +239,93 @@ case class BasePaymentInformation(
   override def asJson: JsValue = json.BasePaymentInformationFormat.writes(this)
 }
 
-sealed trait UsagePlan {
-  def id: UsagePlanId
-  def tenant: TenantId
-  def deleted: Boolean
-  def costPerMonth: BigDecimal
-  def maxRequestPerSecond: Option[Long]
-  def maxRequestPerDay: Option[Long]
-  def maxRequestPerMonth: Option[Long]
-  def allowMultipleKeys: Option[Boolean]
-  def autoRotation: Option[Boolean]
-  def costFor(requests: Long): BigDecimal
-  def currency: Currency
-  def customName: Option[String]
-  def customDescription: Option[String]
-  def otoroshiTarget: Option[OtoroshiTarget]
-  def trialPeriod: Option[BillingDuration]
-  def billingDuration: BillingDuration
-  def typeName: String
-  def visibility: UsagePlanVisibility
-  def authorizedTeams: Seq[TeamId]
-  def addAutorizedTeam(teamId: TeamId): UsagePlan
-  def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan
-  def removeAuthorizedTeam(teamId: TeamId): UsagePlan
-  def removeAllAuthorizedTeams(): UsagePlan
-  def integrationProcess: IntegrationProcess
-  def aggregationApiKeysSecurity: Option[Boolean]
-  def paymentSettings: Option[PaymentSettings]
-  def subscriptionProcess: Seq[ValidationStep] = Seq.empty
-  def swagger: Option[SwaggerAccess]
-  def testing: Option[Testing]
-  def documentation: Option[ApiDocumentation]
+case class UsagePlan(
+                             id: UsagePlanId,
+                             tenant: TenantId,
+                             customName: String,
+                             deleted: Boolean = false,
+                             maxPerSecond: Option[Long] = None,
+                             maxPerDay: Option[Long] = None,
+                             maxPerMonth: Option[Long] = None,
+                             costPerRequest: Option[BigDecimal] = None,
+                             costPerMonth: Option[BigDecimal] = None,
+                             trialPeriod: Option[BillingDuration] = None,
+                             currency: Option[Currency] = None,
+                             billingDuration: Option[BillingDuration] = None,
+                             customDescription: Option[String] = None,
+                             otoroshiTarget: Option[OtoroshiTarget] = None,
+                             allowMultipleKeys: Option[Boolean] = None,
+                             autoRotation: Option[Boolean] = None,
+                             integrationProcess: IntegrationProcess = IntegrationProcess.ApiKey,
+                             aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+                             paymentSettings: Option[PaymentSettings] = None,
+                             swagger: Option[SwaggerAccess] = None,
+                             testing: Option[Testing] = None,
+                             documentation: Option[ApiDocumentation] = None,
+                             subscriptionProcess: Seq[ValidationStep] = Seq.empty,
+                             visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
+                             authorizedTeams: Seq[TeamId] = Seq.empty
+                           ) extends CanJson[UsagePlan] {
+  def costFor(requests: Long): BigDecimal = (costPerMonth, costPerRequest) match {
+    case (Some(_costPerMonth), Some(_costPerRequest)) => _costPerMonth + (requests * _costPerRequest)
+    case (_, _) => 0
+  }
 
-  def asJson: JsValue = UsagePlanFormat.writes(this)
-  def mergeBase(a: BasePaymentInformation): UsagePlan
+  def addAutorizedTeam(teamId: TeamId): UsagePlan =
+    this.copy(authorizedTeams = authorizedTeams :+ teamId)
+  def removeAuthorizedTeam(teamId: TeamId): UsagePlan =
+    this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
+  def removeAllAuthorizedTeams(): UsagePlan =
+    this.copy(authorizedTeams = Seq.empty)
+  def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
+    this.copy(authorizedTeams = teamIds)
+
+  def mergeBase(a: BasePaymentInformation): UsagePlan =
+    this.copy(
+      costPerMonth = a.costPerMonth.some,
+      currency = a.currency.some,
+      trialPeriod = a.trialPeriod,
+      billingDuration = a.billingDuration.some
+    )
+
   def addSubscriptionStep(
-      step: ValidationStep,
-      idx: Option[Int] = None
-  ): UsagePlan
-  def addDocumentationPages(pages: Seq[ApiDocumentationDetailPage]): UsagePlan
-  def removeSubscriptionStep(predicate: ValidationStep => Boolean): UsagePlan
+                           step: ValidationStep,
+                           idx: Option[Int] = None
+                         ): UsagePlan = {
+    idx match {
+      case Some(value) =>
+        val (front, back) = this.subscriptionProcess.splitAt(value)
+        this.copy(subscriptionProcess = front ++ List(step) ++ back)
+      case None =>
+        this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
+    }
+  }
+
+  def removeSubscriptionStep(
+                              predicate: ValidationStep => Boolean
+                            ): UsagePlan = this
+
+  def addDocumentationPages(
+                             pages: Seq[ApiDocumentationDetailPage]
+                           ): UsagePlan =
+    this.copy(documentation =
+      documentation.map(d => d.copy(pages = d.pages ++ pages))
+    )
+
   def checkCustomName(
-      tenant: Tenant,
-      plans: Seq[UsagePlan],
-      apiVisibility: ApiVisibility
-  )(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
+                       tenant: Tenant,
+                       plans: Seq[UsagePlan],
+                       apiVisibility: ApiVisibility
+                     )(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
     val existingNames = plans
       .filter(_.id != id)
       .collect(_.customName)
-      .collect { case Some(name) => name }
     //FIXME: check conflict with extisting name in case of creation but
     (apiVisibility, tenant.display) match {
       case (ApiVisibility.AdminOnly, _) => EitherT.pure[Future, AppError](())
       case (_, TenantDisplay.Environment) =>
         EitherT.cond[Future](
-          customName.exists(name =>
-            tenant.environments.contains(name) && !existingNames.contains(name)
-          ),
+          !existingNames.contains(customName),
           (),
           AppError.EntityConflict("Plan custom name")
         )
@@ -298,8 +334,8 @@ sealed trait UsagePlan {
   }
 
   def checkAuthorizedEntities(
-      team: Team
-  )(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
+                               team: Team
+                             )(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
     otoroshiTarget match {
       case Some(otoroshiTarget) if team.authorizedOtoroshiEntities.isDefined =>
         val teamAuthorizedEntities = team.authorizedOtoroshiEntities.get
@@ -347,420 +383,13 @@ sealed trait UsagePlan {
       case _ => EitherT.pure[Future, AppError](())
     }
   }
-}
 
-case object UsagePlan {
-  case class Admin(
-      id: UsagePlanId,
-      tenant: TenantId,
-      deleted: Boolean = false,
-      customName: Option[String] = Some("Administration plan"),
-      customDescription: Option[String] = Some("access to admin api"),
-      otoroshiTarget: Option[OtoroshiTarget],
-      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
-      paymentSettings: Option[PaymentSettings] = None,
-      swagger: Option[SwaggerAccess] = None,
-      testing: Option[Testing] = None,
-      documentation: Option[ApiDocumentation] = None,
-      override val authorizedTeams: Seq[TeamId] = Seq.empty
-  ) extends UsagePlan {
-    override def costPerMonth: BigDecimal = BigDecimal(0)
-    override def maxRequestPerSecond: Option[Long] = None
-    override def maxRequestPerDay: Option[Long] = None
-    override def maxRequestPerMonth: Option[Long] = None
-    override def allowMultipleKeys: Option[Boolean] = Some(true)
-    override def autoRotation: Option[Boolean] = Some(false)
-    override def costFor(requests: Long): BigDecimal = BigDecimal(0)
-    override def currency: Currency = Currency(code = "Eur")
-    override def trialPeriod: Option[BillingDuration] = None
-    override def billingDuration: BillingDuration =
-      BillingDuration(1, BillingTimeUnit.Year)
-    override def typeName: String = "Admin"
-    override def visibility: UsagePlanVisibility = UsagePlanVisibility.Private
-    override def addAutorizedTeam(teamId: TeamId): UsagePlan =
-      this.copy(authorizedTeams = authorizedTeams :+ teamId)
-    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan =
-      this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
-    override def removeAllAuthorizedTeams(): UsagePlan =
-      this.copy(authorizedTeams = Seq.empty)
-    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
-      this.copy(authorizedTeams = teamIds)
-    override def subscriptionProcess: Seq[ValidationStep] = Seq.empty
-    override def integrationProcess: IntegrationProcess =
-      IntegrationProcess.ApiKey
-    override def mergeBase(a: BasePaymentInformation): Admin = this
-
-    override def addSubscriptionStep(
-        step: ValidationStep,
-        idx: Option[Int] = None
-    ): UsagePlan = this
-
-    override def removeSubscriptionStep(
-        predicate: ValidationStep => Boolean
-    ): UsagePlan = this
-
-    override def addDocumentationPages(
-        pages: Seq[ApiDocumentationDetailPage]
-    ): UsagePlan =
-      this
+  def isPaymentDefined = (costPerMonth, currency, billingDuration) match {
+    case (Some(_), Some(_), Some(_)) => true
+    case _ => false
   }
-  case class FreeWithoutQuotas(
-      id: UsagePlanId,
-      tenant: TenantId,
-      deleted: Boolean = false,
-      currency: Currency,
-      billingDuration: BillingDuration,
-      customName: Option[String],
-      customDescription: Option[String],
-      otoroshiTarget: Option[OtoroshiTarget],
-      allowMultipleKeys: Option[Boolean],
-      integrationProcess: IntegrationProcess,
-      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
-      paymentSettings: Option[PaymentSettings] = None,
-      autoRotation: Option[Boolean],
-      swagger: Option[SwaggerAccess] = None,
-      testing: Option[Testing] = None,
-      documentation: Option[ApiDocumentation] = None,
-      override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
-      override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-      override val authorizedTeams: Seq[TeamId] = Seq.empty
-  ) extends UsagePlan {
-    override def typeName: String = "FreeWithoutQuotas"
-    override def costPerMonth: BigDecimal = BigDecimal(0)
-    override def maxRequestPerSecond: Option[Long] = None
-    override def maxRequestPerDay: Option[Long] = None
-    override def maxRequestPerMonth: Option[Long] = None
-    override def costFor(requests: Long): BigDecimal = BigDecimal(0)
-    override def trialPeriod: Option[BillingDuration] = None
-    override def addAutorizedTeam(teamId: TeamId): UsagePlan =
-      this.copy(authorizedTeams = authorizedTeams :+ teamId)
-    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan =
-      this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
-    override def removeAllAuthorizedTeams(): UsagePlan =
-      this.copy(authorizedTeams = Seq.empty)
-    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
-      this.copy(authorizedTeams = teamIds)
 
-    override def mergeBase(a: BasePaymentInformation): FreeWithoutQuotas =
-      this.copy(
-        currency = a.currency,
-        billingDuration = a.billingDuration
-      )
-
-    override def addSubscriptionStep(
-        step: ValidationStep,
-        idx: Option[Int] = None
-    ): UsagePlan = {
-      idx match {
-        case Some(value) =>
-          val (front, back) = this.subscriptionProcess.splitAt(value)
-          this.copy(subscriptionProcess = front ++ List(step) ++ back)
-        case None =>
-          this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
-      }
-    }
-
-    override def removeSubscriptionStep(
-        predicate: ValidationStep => Boolean
-    ): UsagePlan =
-      this.copy(
-        subscriptionProcess = this.subscriptionProcess.filter(predicate)
-      )
-
-    override def addDocumentationPages(
-        pages: Seq[ApiDocumentationDetailPage]
-    ): UsagePlan =
-      this.copy(documentation =
-        documentation.map(d => d.copy(pages = d.pages ++ pages))
-      )
-  }
-  case class FreeWithQuotas(
-      id: UsagePlanId,
-      tenant: TenantId,
-      deleted: Boolean = false,
-      maxPerSecond: Long,
-      maxPerDay: Long,
-      maxPerMonth: Long,
-      currency: Currency,
-      billingDuration: BillingDuration,
-      customName: Option[String],
-      customDescription: Option[String],
-      otoroshiTarget: Option[OtoroshiTarget],
-      allowMultipleKeys: Option[Boolean],
-      autoRotation: Option[Boolean],
-      integrationProcess: IntegrationProcess,
-      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
-      paymentSettings: Option[PaymentSettings] = None,
-      swagger: Option[SwaggerAccess] = None,
-      testing: Option[Testing] = None,
-      documentation: Option[ApiDocumentation] = None,
-      override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
-      override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-      override val authorizedTeams: Seq[TeamId] = Seq.empty
-  ) extends UsagePlan {
-    override def typeName: String = "FreeWithQuotas"
-    override def costPerMonth: BigDecimal = BigDecimal(0)
-    override def maxRequestPerSecond: Option[Long] = maxPerSecond.some
-    override def maxRequestPerDay: Option[Long] = maxPerDay.some
-    override def maxRequestPerMonth: Option[Long] = maxPerMonth.some
-    override def costFor(requests: Long): BigDecimal = BigDecimal(0)
-    override def trialPeriod: Option[BillingDuration] = None
-    override def addAutorizedTeam(teamId: TeamId): UsagePlan =
-      this.copy(authorizedTeams = authorizedTeams :+ teamId)
-    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan =
-      this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
-    override def removeAllAuthorizedTeams(): UsagePlan =
-      this.copy(authorizedTeams = Seq.empty)
-    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
-      this.copy(authorizedTeams = teamIds)
-
-    override def mergeBase(a: BasePaymentInformation): FreeWithQuotas =
-      this.copy(
-        currency = a.currency,
-        billingDuration = a.billingDuration
-      )
-
-    override def addSubscriptionStep(
-        step: ValidationStep,
-        idx: Option[Int] = None
-    ): UsagePlan = {
-      idx match {
-        case Some(value) =>
-          val (front, back) = this.subscriptionProcess.splitAt(value)
-          this.copy(subscriptionProcess = front ++ List(step) ++ back)
-        case None =>
-          this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
-      }
-    }
-
-    override def removeSubscriptionStep(
-        predicate: ValidationStep => Boolean
-    ): UsagePlan = this
-
-    override def addDocumentationPages(
-        pages: Seq[ApiDocumentationDetailPage]
-    ): UsagePlan =
-      this.copy(documentation =
-        documentation.map(d => d.copy(pages = d.pages ++ pages))
-      )
-  }
-  case class QuotasWithLimits(
-      id: UsagePlanId,
-      tenant: TenantId,
-      deleted: Boolean = false,
-      maxPerSecond: Long,
-      maxPerDay: Long,
-      maxPerMonth: Long,
-      costPerMonth: BigDecimal,
-      trialPeriod: Option[BillingDuration],
-      currency: Currency,
-      billingDuration: BillingDuration,
-      customName: Option[String],
-      customDescription: Option[String],
-      otoroshiTarget: Option[OtoroshiTarget],
-      allowMultipleKeys: Option[Boolean],
-      autoRotation: Option[Boolean],
-      integrationProcess: IntegrationProcess,
-      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
-      paymentSettings: Option[PaymentSettings] = None,
-      swagger: Option[SwaggerAccess] = None,
-      testing: Option[Testing] = None,
-      documentation: Option[ApiDocumentation] = None,
-      override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
-      override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-      override val authorizedTeams: Seq[TeamId] = Seq.empty
-  ) extends UsagePlan {
-    override def typeName: String = "QuotasWithLimits"
-    override def maxRequestPerSecond: Option[Long] = maxPerSecond.some
-    override def maxRequestPerDay: Option[Long] = maxPerDay.some
-    override def maxRequestPerMonth: Option[Long] = maxPerMonth.some
-    override def costFor(requests: Long): BigDecimal = costPerMonth
-    override def addAutorizedTeam(teamId: TeamId): UsagePlan =
-      this.copy(authorizedTeams = authorizedTeams :+ teamId)
-    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan =
-      this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
-    override def removeAllAuthorizedTeams(): UsagePlan =
-      this.copy(authorizedTeams = Seq.empty)
-    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
-      this.copy(authorizedTeams = teamIds)
-    override def mergeBase(a: BasePaymentInformation): QuotasWithLimits =
-      this.copy(
-        costPerMonth = a.costPerMonth,
-        currency = a.currency,
-        trialPeriod = a.trialPeriod,
-        billingDuration = a.billingDuration
-      )
-
-    override def addSubscriptionStep(
-        step: ValidationStep,
-        idx: Option[Int] = None
-    ): UsagePlan = {
-      idx match {
-        case Some(value) =>
-          val (front, back) = this.subscriptionProcess.splitAt(value)
-          this.copy(subscriptionProcess = front ++ List(step) ++ back)
-        case None =>
-          this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
-      }
-    }
-
-    override def removeSubscriptionStep(
-        predicate: ValidationStep => Boolean
-    ): UsagePlan = this
-
-    override def addDocumentationPages(
-        pages: Seq[ApiDocumentationDetailPage]
-    ): UsagePlan =
-      this.copy(documentation =
-        documentation.map(d => d.copy(pages = d.pages ++ pages))
-      )
-  }
-  case class QuotasWithoutLimits(
-      id: UsagePlanId,
-      tenant: TenantId,
-      deleted: Boolean = false,
-      maxPerSecond: Long,
-      maxPerDay: Long,
-      maxPerMonth: Long,
-      costPerAdditionalRequest: BigDecimal,
-      costPerMonth: BigDecimal,
-      trialPeriod: Option[BillingDuration],
-      currency: Currency,
-      billingDuration: BillingDuration,
-      customName: Option[String],
-      customDescription: Option[String],
-      otoroshiTarget: Option[OtoroshiTarget],
-      allowMultipleKeys: Option[Boolean],
-      autoRotation: Option[Boolean],
-      integrationProcess: IntegrationProcess,
-      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
-      paymentSettings: Option[PaymentSettings] = None,
-      swagger: Option[SwaggerAccess] = None,
-      testing: Option[Testing] = None,
-      documentation: Option[ApiDocumentation] = None,
-      override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
-      override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-      override val authorizedTeams: Seq[TeamId] = Seq.empty
-  ) extends UsagePlan {
-    override def typeName: String = "QuotasWithoutLimits"
-    override def maxRequestPerSecond: Option[Long] = maxPerSecond.some
-    override def maxRequestPerDay: Option[Long] = maxPerDay.some
-    override def maxRequestPerMonth: Option[Long] = maxPerMonth.some
-    override def costFor(requests: Long): BigDecimal =
-      costPerMonth + (Math.max(
-        requests - maxPerMonth,
-        0
-      ) * costPerAdditionalRequest)
-    override def addAutorizedTeam(teamId: TeamId): UsagePlan =
-      this.copy(authorizedTeams = authorizedTeams :+ teamId)
-    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan =
-      this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
-    override def removeAllAuthorizedTeams(): UsagePlan =
-      this.copy(authorizedTeams = Seq.empty)
-    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
-      this.copy(authorizedTeams = teamIds)
-    override def mergeBase(a: BasePaymentInformation): QuotasWithoutLimits =
-      this.copy(
-        costPerMonth = a.costPerMonth,
-        currency = a.currency,
-        trialPeriod = a.trialPeriod,
-        billingDuration = a.billingDuration
-      )
-
-    override def addSubscriptionStep(
-        step: ValidationStep,
-        idx: Option[Int] = None
-    ): UsagePlan = {
-      idx match {
-        case Some(value) =>
-          val (front, back) = this.subscriptionProcess.splitAt(value)
-          this.copy(subscriptionProcess = front ++ List(step) ++ back)
-        case None =>
-          this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
-      }
-    }
-
-    override def removeSubscriptionStep(
-        predicate: ValidationStep => Boolean
-    ): UsagePlan = this
-
-    override def addDocumentationPages(
-        pages: Seq[ApiDocumentationDetailPage]
-    ): UsagePlan =
-      this.copy(documentation =
-        documentation.map(d => d.copy(pages = d.pages ++ pages))
-      )
-  }
-  case class PayPerUse(
-      id: UsagePlanId,
-      tenant: TenantId,
-      deleted: Boolean = false,
-      costPerMonth: BigDecimal,
-      costPerRequest: BigDecimal,
-      trialPeriod: Option[BillingDuration],
-      currency: Currency,
-      billingDuration: BillingDuration,
-      customName: Option[String],
-      customDescription: Option[String],
-      otoroshiTarget: Option[OtoroshiTarget],
-      allowMultipleKeys: Option[Boolean],
-      autoRotation: Option[Boolean],
-      integrationProcess: IntegrationProcess,
-      aggregationApiKeysSecurity: Option[Boolean] = Some(false),
-      paymentSettings: Option[PaymentSettings] = None,
-      swagger: Option[SwaggerAccess] = None,
-      testing: Option[Testing] = None,
-      documentation: Option[ApiDocumentation] = None,
-      override val subscriptionProcess: Seq[ValidationStep] = Seq.empty,
-      override val visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-      override val authorizedTeams: Seq[TeamId] = Seq.empty
-  ) extends UsagePlan {
-    override def typeName: String = "PayPerUse"
-    override def costFor(requests: Long): BigDecimal =
-      costPerMonth + (requests * costPerRequest)
-    override def maxRequestPerMonth: Option[Long] = None
-    override def maxRequestPerSecond: Option[Long] = None
-    override def maxRequestPerDay: Option[Long] = None
-    override def addAutorizedTeam(teamId: TeamId): UsagePlan =
-      this.copy(authorizedTeams = authorizedTeams :+ teamId)
-    override def removeAuthorizedTeam(teamId: TeamId): UsagePlan =
-      this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
-    override def removeAllAuthorizedTeams(): UsagePlan =
-      this.copy(authorizedTeams = Seq.empty)
-    override def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
-      this.copy(authorizedTeams = teamIds)
-    override def mergeBase(a: BasePaymentInformation): PayPerUse =
-      this.copy(
-        costPerMonth = a.costPerMonth,
-        currency = a.currency,
-        trialPeriod = a.trialPeriod,
-        billingDuration = a.billingDuration
-      )
-
-    override def addSubscriptionStep(
-        step: ValidationStep,
-        idx: Option[Int] = None
-    ): UsagePlan = {
-      idx match {
-        case Some(value) =>
-          val (front, back) = this.subscriptionProcess.splitAt(value)
-          this.copy(subscriptionProcess = front ++ List(step) ++ back)
-        case None =>
-          this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
-      }
-    }
-
-    override def removeSubscriptionStep(
-        predicate: ValidationStep => Boolean
-    ): UsagePlan = this
-
-    override def addDocumentationPages(
-        pages: Seq[ApiDocumentationDetailPage]
-    ): UsagePlan =
-      this.copy(documentation =
-        documentation.map(d => d.copy(pages = d.pages ++ pages))
-      )
-  }
+  override def asJson: JsValue = json.UsagePlanFormat.writes(this)
 }
 
 case class OtoroshiApiKey(

@@ -116,7 +116,7 @@ class UserControllerSpec()
 
       val respTestTeam =
         httpJsonCallBlocking(s"/api/teams/user-team")(tenant, session)
-      resp.status mustBe 404
+      respTestTeam.status mustBe 404
     }
 
     "create user" in {
