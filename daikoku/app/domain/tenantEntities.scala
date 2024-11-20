@@ -178,7 +178,6 @@ case class DaikokuStyle(
     notFoundCmsPage: Option[String] = None,
     authenticatedCmsPage: Option[String] = None,
     cacheTTL: Int = 60000,
-    cmsHistoryLength: Int = 10,
     logo: String = "/assets/images/daikoku.svg",
     footer: Option[String] = None
 ) extends CanJson[DaikokuStyle] {
@@ -645,7 +644,7 @@ case class CmsFile(
       .as[Boolean]
   def exact(): Boolean =
     Json
-      .parse(metadata.getOrElse("_exact", JsString("true")).as[String])
+      .parse(metadata.getOrElse("_exact", JsString("false")).as[String])
       .as[Boolean]
 
   def id() = {
@@ -661,6 +660,7 @@ case class CmsFile(
       tenant = tenantId,
       visible = visible(),
       authenticated = authenticated(),
+      exact = exact(),
       name = name,
       forwardRef = None,
       tags = List.empty,
@@ -669,14 +669,12 @@ case class CmsFile(
       },
       contentType = contentType(),
       body = content,
-      draft = content,
       path = Some(path())
     )
   }
 }
 
 case class CmsRequestRendering(content: Seq[CmsFile], current_page: String, fields: Map[String, JsValue])
-case class CmsHistory(id: String, date: DateTime, diff: String, user: UserId)
 
 case class Asset(id: AssetId, tenant: TenantId, slug: String)
     extends CanJson[Asset] {
@@ -696,7 +694,6 @@ case class CmsPage(
     metadata: Map[String, String],
     contentType: String,
     body: String,
-    draft: String,
     path: Option[String] = None,
     exact: Boolean = false,
     lastPublishedDate: Option[DateTime] = None
@@ -1127,7 +1124,6 @@ case class CmsPage(
           metadata = Map(),
           contentType = "text/html",
           body = str,
-          draft = str,
           path = Some("/")
         ).render(
           ctx,
@@ -1305,7 +1301,6 @@ case class CmsPage(
                   tags = List(),
                   metadata = Map(),
                   contentType = "text/html",
-                  draft = options.fn.text(),
                   body = options.fn.text(),
                   path = Some("/")
                 ).render(
@@ -1383,16 +1378,13 @@ case class CmsPage(
     cmsFindByIdNotDeleted(ctx, id, req) match {
       case None => "#not-found"
       case Some(page) =>
-        val wantDraft = ctx.request.getQueryString("draft").contains("true")
         var path = page.path.getOrElse("")
 
         if (!path.startsWith("/"))
           path = s"/$path"
 
-        if (wantDraft)
-          s"/_${path}?draft=true"
-        else
-          s"/_${path}"
+
+        s"/_${path}"
     }
   }
 
@@ -1960,10 +1952,6 @@ case class CmsPage(
           (id: String, _: Options) => s"/cms/pages/$id"
         )
         handlebars.registerHelper(
-          "daikoku-page-preview-url",
-          (id: String, _: Options) => s"/cms/pages/$id?draft=true"
-        )
-        handlebars.registerHelper(
           "daikoku-path-param",
           (id: String, _: Options) => daikokuPathParam(ctx, id, req)
         )
@@ -2075,9 +2063,7 @@ case class CmsPage(
         val template = req match {
           case Some(value) if page.name != "#generated" =>
             searchCmsFile(value, page).map(_.content).getOrElse("")
-          case _ =>
-            if (ctx.request.getQueryString("draft").contains("true")) page.draft
-            else page.body
+          case _ => page.body
         }
 
         val result = handlebars.compileInline(template).apply(c)

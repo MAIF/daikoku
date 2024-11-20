@@ -277,8 +277,6 @@
   "tenant_edit.authenticated_cmspage_help": "Affiché quand un utilisateur non connecté accède à une page nécessitant d'être connecté",
   "tenant_edit.cache_help": "Durée pendant laquelle les pages CMS en cache ne seront pas re-rendues. Peut améliorer les performances et le SEO.",
   "tenant_edit.cache": "Durée de vie du cache (en ms)",
-  "tenant_edit.cms_history_length": "Longueur de l'historique",
-  "tenant_edit.cms_history_length.help": "Nombre de modifications gardées en base",
   "tenant_edit.view_home_page": "Voir la page d'accueil",
   "tenant_edit.home_page.visibility": "Visibilité de la page d'accueil",
   "tenant_edit.translation_mode_message": "Vous pouvez à présent naviguer sur les pages et survoler chaque élément pour modifier leur texte",

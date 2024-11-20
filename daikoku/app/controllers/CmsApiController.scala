@@ -160,27 +160,6 @@ class CmsApiController(
       }
     }
 
-//  def sync() =
-//    CmsApiAction.async(parse.json) { ctx =>
-//      val body = ctx.request.body
-//
-//      Future
-//        .sequence(
-//          body
-//            .as(Reads.seq(CmsFileFormat.reads))
-//            .map(page => {
-//              env.dataStore.cmsRepo
-//                .forTenant(ctx.tenant)
-//                .save(page.toCmsPage(ctx.tenant.id))
-//            })
-//        )
-//        .map(_ => NoContent)
-//        .recover {
-//          case e: Throwable =>
-//            BadRequest(Json.obj("error" -> e.getMessage))
-//        }
-//    }
-
   def health() =
     CmsApiAction.async { ctx =>
       ctx.request.headers.get("Otoroshi-Health-Check-Logic-Test") match {

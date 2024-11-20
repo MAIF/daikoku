@@ -2079,8 +2079,6 @@ object json {
             notFoundCmsPage = (json \ "notFoundCmsPage").asOpt[String],
             authenticatedCmsPage =
               (json \ "authenticatedCmsPage").asOpt[String],
-            cmsHistoryLength =
-              (json \ "cmsHistoryLength").asOpt[Int].getOrElse(10),
             logo = (json \ "logo")
               .asOpt[String]
               .getOrElse("/assets/images/daikoku.svg"),
@@ -2125,7 +2123,6 @@ object json {
           .as[JsValue],
         "cacheTTL" -> o.cacheTTL,
         "homePageVisible" -> o.homePageVisible,
-        "cmsHistoryLength" -> o.cmsHistoryLength,
         "logo" -> o.logo,
         "footer" -> o.footer
           .map(JsString.apply)
@@ -4554,28 +4551,6 @@ object json {
     override def writes(o: AssetId): JsValue = JsString(o.value)
   }
 
-  val CmsHistoryFormat = new Format[CmsHistory] {
-    override def writes(o: CmsHistory): JsValue =
-      Json.obj(
-        "id" -> o.id,
-        "date" -> DateTimeFormat.writes(o.date),
-        "diff" -> o.diff,
-        "user" -> UserIdFormat.writes(o.user)
-      )
-    override def reads(o: JsValue): JsResult[CmsHistory] =
-      Try {
-        CmsHistory(
-          id = (o \ "id").as[String],
-          date = (o \ "date").as(DateTimeFormat),
-          diff = (o \ "diff").as[String],
-          user = (o \ "user").as(UserIdFormat)
-        )
-      } match {
-        case Failure(exception) => JsError(exception.getMessage)
-        case Success(page)      => JsSuccess(page)
-      }
-  }
-
   val CmsFileFormat = new Format[CmsFile] {
     override def writes(o: CmsFile): JsValue =
       Json.obj(
@@ -4661,7 +4636,6 @@ object json {
           .getOrElse(JsNull)
           .as[JsValue],
         "body" -> o.body,
-        "draft" -> o.draft,
         "path" -> o.path.map(JsString.apply).getOrElse(JsNull).as[JsValue],
         "exact" -> o.exact,
         "lastPublishedDate" -> o.lastPublishedDate.map(DateTimeFormat.writes)
@@ -4681,7 +4655,6 @@ object json {
           metadata =
             (json \ "metadata").asOpt[Map[String, String]].getOrElse(Map.empty),
           body = (json \ "body").asOpt[String].getOrElse(""),
-          draft = (json \ "draft").asOpt[String].getOrElse(""),
           contentType =
             (json \ "contentType").asOpt[String].getOrElse("text/html"),
           forwardRef = (json \ "forwardRef")

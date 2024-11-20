@@ -113,14 +113,6 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
         disabled: !tenant?.style?.homePageVisible,
       },
     },
-    cmsHistoryLength: {
-      type: 'number',
-      visible: tenant?.style?.homePageVisible,
-      props: {
-        label: translate('tenant_edit.cms_history_length'),
-        help: translate('tenant_edit.cms_history_length.help'),
-      },
-    },
     logo: urlWithAssetButton(translate('Logo'), translate({ key: 'set.from.assets', replacements: [translate('set.logo')] }), MimeTypeFilter.image),
     cssUrl: urlWithAssetButton(translate('CSS URL'), translate({ key: 'set.from.assets', replacements: [translate('set.css')] }), MimeTypeFilter.css),
     css: {
@@ -172,7 +164,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
     },
     {
       label: translate('Pages'),
-      flow: ['homePageVisible', 'homeCmsPage', 'notFoundCmsPage', 'authenticatedCmsPage', 'cacheTTL', 'cmsHistoryLength', 'footer'],
+      flow: ['homePageVisible', 'homeCmsPage', 'notFoundCmsPage', 'authenticatedCmsPage', 'cacheTTL', 'footer'],
       collapsed: true
     }
   ]

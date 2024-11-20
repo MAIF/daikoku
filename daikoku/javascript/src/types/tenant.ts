@@ -154,7 +154,6 @@ interface ITenantStyle {
   notFoundCmsPage?: string;
   authenticatedCmsPage?: string;
   cacheTTL: number;
-  cmsHistoryLength: number;
   logo: string;
   footer?: string;
 }

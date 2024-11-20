@@ -198,10 +198,6 @@ object evolution_151 extends EvolutionScript {
                                 if (value.unloggedHome.nonEmpty)
                                   value.unloggedHome
                                 else "<!DOCTYPE html><html><head></head><body><h1>Home page</h1><a href=\"/apis\">Back office</a></body></html>",
-                              draft =
-                                if (value.unloggedHome.nonEmpty)
-                                  value.unloggedHome
-                                else "<!DOCTYPE html><html><head></head><body><h1>Home page</h1><a href=\"/apis\">Back office</a></body></html>",
                               path = Some("/"),
                               lastPublishedDate = Some(DateTime.now())
                             )

@@ -29,10 +29,16 @@ use super::environments::{
 pub(crate) const SESSION_EXPIRED: &[u8] = include_bytes!("../../templates/session_expired.html");
 const MANAGER_PAGE: &[u8] = include_bytes!("../../templates/manager.html");
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct RouterCmsPage {
     exact: bool,
     path: String,
+}
+
+#[derive(Debug)]
+struct UrlSearchParam {
+    key: String,
+    value: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -59,7 +65,7 @@ pub(crate) async fn run(
 
     logger::loading(format!("<yellow>Listening</> on {}", port));
 
-    // if webbrowser::open(&format!("http://localhost:{}", port)).is_ok() {}
+    if webbrowser::open(&format!("http://localhost:{}", port)).is_ok() {}
 
     let listener = TcpListener::bind(format!("0.0.0.0:{}", port))
         .await
@@ -130,12 +136,15 @@ async fn watcher(
         });
 
         match pages.iter().find(|page| page.path() == path) {
-            Some(page) => render_page(page, path, environment, visualizer, authentication).await,
+            Some(page) => {
+                render_page(page, path, environment, visualizer, authentication, vec![]).await
+            }
             None => {
-                let strict_page = get_matching_routes(&path, get_pages(&router_pages, true), true);
+                let (strict_page, url_search_params) =
+                    get_matching_routes(&path, get_pages(&router_pages, true), true);
 
-                let result_page = if !strict_page.is_empty() {
-                    strict_page
+                let (result_page, url_search_params) = if !strict_page.is_empty() {
+                    (strict_page, url_search_params)
                 } else {
                     get_matching_routes(&path, get_pages(&router_pages, false), false)
                 };
@@ -149,8 +158,15 @@ async fn watcher(
                             logger::println("<green>Serve 404</>".to_string());
                             match pages.iter().find(|p| p.path() == "/404") {
                                 Some(page) => {
-                                    render_page(page, path, environment, visualizer, authentication)
-                                        .await
+                                    render_page(
+                                        page,
+                                        path,
+                                        environment,
+                                        visualizer,
+                                        authentication,
+                                        url_search_params,
+                                    )
+                                    .await
                                 }
                                 None => Ok(Response::new("404 page not found".into())),
                             }
@@ -162,6 +178,7 @@ async fn watcher(
                                 environment,
                                 visualizer,
                                 authentication,
+                                url_search_params,
                             )
                             .await
                         }
@@ -187,10 +204,11 @@ fn find_page_from_path<'a>(path: String) -> Option<CmsFile> {
     match pages.iter().find(|page| page.path() == path) {
         Some(page) => Some(page.clone()),
         None => {
-            let strict_page = get_matching_routes(&path, get_pages(&router_pages, true), true);
+            let (strict_page, params) =
+                get_matching_routes(&path, get_pages(&router_pages, true), true);
 
-            let result_page = if !strict_page.is_empty() {
-                strict_page
+            let (result_page, _params) = if !strict_page.is_empty() {
+                (strict_page, params)
             } else {
                 get_matching_routes(&path, get_pages(&router_pages, false), false)
             };
@@ -302,6 +320,7 @@ async fn render_page(
     environment: &Environment,
     visualizer: bool,
     authentication: bool,
+    url_search_params: Vec<UrlSearchParam>,
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     logger::println(format!(
         "<green>Serve page</> {} {}",
@@ -316,6 +335,10 @@ async fn render_page(
     let mut content = read_contents(&PathBuf::from(&project.path))?;
 
     let mut fields: HashMap<String, String> = HashMap::new();
+
+    for param in url_search_params {
+        fields.insert(param.key, param.value);
+    }
 
     if watch_path.starts_with("/mails") {
         let language = if watch_path.contains("/fr") {
@@ -466,7 +489,7 @@ fn get_matching_routes<'a>(
     path: &'a String,
     cms_paths: Vec<(String, &'a RouterCmsPage)>,
     strict_mode: bool,
-) -> Vec<&'a RouterCmsPage> {
+) -> (Vec<RouterCmsPage>, Vec<UrlSearchParam>) {
     let str = path.clone().replace("/_", "").replace(".html", "");
     let paths = str
         .split("/")
@@ -474,71 +497,101 @@ fn get_matching_routes<'a>(
         .collect::<Vec<&str>>();
 
     if paths.is_empty() {
-        vec![]
+        (vec![], vec![])
     } else {
         let mut matched = false;
 
-        let mut init: Vec<(Vec<String>, &RouterCmsPage)> = vec![];
+        let mut formatted_paths: Vec<(Vec<String>, RouterCmsPage)> = vec![];
 
-        cms_paths.iter().for_each(|r| {
-            let page = r.1;
-
+        cms_paths.clone().iter().for_each(|r| {
             let mut current_path: Vec<String> =
                 r.0.replace("/_/", "")
                     .split("/")
                     .map(String::from)
                     .collect();
 
-            let path_suffix = if page.exact { "" } else { "*" }.to_string();
+            let path_suffix = if r.1.exact { "" } else { "*" }.to_string();
 
             current_path.push(path_suffix);
             current_path = current_path.into_iter().filter(|p| !p.is_empty()).collect();
 
             if !current_path.is_empty() {
-                init.push((current_path, page))
+                formatted_paths.push((current_path, r.1.clone()))
             }
         });
 
-        paths
-            .iter()
-            .fold(init, |acc: Vec<(Vec<String>, &RouterCmsPage)>, path| {
-                if acc.is_empty() || matched {
-                    acc
-                } else {
-                    let matching_routes: Vec<(Vec<String>, &RouterCmsPage)> = acc
-                        .iter()
-                        .filter(|p| {
-                            if p.0.is_empty() {
-                                false
-                            } else {
-                                let path_path = p.0.iter().nth(0).unwrap();
-                                path_path == path || path_path == "*"
-                            }
-                        })
-                        .map(|p| (p.0.to_vec(), p.1))
-                        .collect();
+        formatted_paths.sort_by(|a, b| a.0.len().cmp(&b.0.len()));
 
-                    if !matching_routes.is_empty() {
-                        matching_routes
-                            .iter()
-                            .map(|p| (p.0.to_vec().into_iter().skip(1).collect(), p.1))
-                            .collect()
-                    } else {
-                        match acc.iter().find(|p| p.0.is_empty()) {
-                            Some(matching_route) if !strict_mode => {
-                                matched = true;
-                                let mut results = Vec::new();
-                                results.push((matching_route.0.to_vec(), matching_route.1));
-                                results
+        let mut params: Vec<UrlSearchParam> = vec![];
+
+        (
+            paths
+                .iter()
+                .fold(
+                    formatted_paths,
+                    |acc: Vec<(Vec<String>, RouterCmsPage)>, path| {
+                        if acc.is_empty() || matched {
+                            acc
+                        } else {
+                            let matching_routes: Vec<(Vec<String>, RouterCmsPage)> = acc
+                                .iter()
+                                .filter(|p| {
+                                    if p.0.is_empty() {
+                                        false
+                                    } else {
+                                        let path_path = p.0.iter().nth(0).unwrap();
+
+                                        if path_path == path || path_path == "*" {
+                                            true
+                                        } else {
+                                            let pattern = r"\[\w+\]";
+                                            let regex: Regex = Regex::new(pattern).unwrap();
+
+                                            if let Some(cap) = regex.captures(&path_path) {
+                                                params.push(UrlSearchParam {
+                                                    value: path.to_string(),
+                                                    key: cap[0][1..cap[0].len() - 1].to_string(),
+                                                });
+
+                                                true
+                                            } else {
+                                                false
+                                            }
+                                        }
+                                    }
+                                })
+                                .map(|p| (p.0.to_vec(), p.1.clone()))
+                                .collect();
+
+                            if !matching_routes.is_empty() {
+                                matching_routes
+                                    .iter()
+                                    .map(|p| {
+                                        (p.0.to_vec().into_iter().skip(1).collect(), p.1.clone())
+                                    })
+                                    .collect()
+                            } else {
+                                match acc.iter().find(|p| p.0.is_empty()) {
+                                    Some(matching_route) if !strict_mode => {
+                                        matched = true;
+                                        let mut results = Vec::new();
+                                        results.push((
+                                            matching_route.0.to_vec(),
+                                            matching_route.1.clone(),
+                                        ));
+                                        results
+                                    }
+                                    _ => Vec::new(),
+                                }
                             }
-                            _ => Vec::new(),
                         }
-                    }
-                }
-            })
-            .into_iter()
-            .map(|f| f.1)
-            .collect()
+                    },
+                )
+                .into_iter()
+                .map(|page| page.1)
+                .collect(),
+            params,
+        )
     }
 }
 
