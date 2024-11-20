@@ -145,7 +145,6 @@ pub(crate) fn get_default_project() -> DaikokuResult<Project> {
 
     match (&project["name"], &project["path"]) {
         (Some(_name), Some(path)) => Ok(Project {
-            // name: name.to_string(),
             path: path.to_string(),
         }),
         (_, _) => Err(DaikokuCliError::Configuration(
@@ -215,20 +214,17 @@ pub(crate) fn get_project(name: String) -> DaikokuResult<Project> {
     ))?;
 
     match projects.get(&name) {
-        Some(project) => {
-            match (&project["name"], &project["path"]) {
-                (Some(_name), Some(path)) => {
-                    logger::info(serde_json::to_string_pretty(&project).unwrap());
-                    Ok(Project {
-                        // name: name.to_string(),
-                        path: path.to_string(),
-                    })
-                }
-                (_, _) => Err(DaikokuCliError::Configuration(
-                    "missing project or values in project.".to_string(),
-                )),
+        Some(project) => match (&project["name"], &project["path"]) {
+            (Some(_name), Some(path)) => {
+                logger::info(serde_json::to_string_pretty(&project).unwrap());
+                Ok(Project {
+                    path: path.to_string(),
+                })
             }
-        }
+            (_, _) => Err(DaikokuCliError::Configuration(
+                "missing project or values in project.".to_string(),
+            )),
+        },
         None => {
             return Err(DaikokuCliError::Configuration(
                 "project is missing".to_string(),
@@ -697,62 +693,6 @@ async fn create_cms_pages(
     convert_cms_pages(new_pages, sources_path.clone())
 }
 
-// fn clone_new_project(items: Vec<CmsPage>, project_path: &PathBuf) -> DaikokuResult<()> {
-//     println!("cloning new project");
-
-//     items
-//         .iter()
-//         .filter(|item| {
-//             !item.path.clone().unwrap().starts_with("apis")
-//                 && !item.path.clone().unwrap().starts_with("mails")
-//         })
-//         .for_each(|item| {
-//             let extension = SourceExtension::from_str(&item.content_type).unwrap();
-
-//             let item_path = item.path.clone().unwrap().clone();
-
-//             // Remove the slash if the path starts with one.
-//             let mut file_path = project_path.clone().join(if item_path.starts_with("/") {
-//                 &item_path[1..item_path.len()]
-//             } else {
-//                 item_path.as_str()
-//             });
-
-//             let split_path = item_path.split("/");
-
-//             // if the path didn't start with folder, we will place the page in the default pages folder
-//             if split_path
-//                 .clone()
-//                 .into_iter()
-//                 .find(|part| part.is_empty())
-//                 .is_some()
-//                 || split_path.collect::<Vec<&str>>().len() == 1
-//             {
-//                 file_path =
-//                     project_path
-//                         .clone()
-//                         .join("pages")
-//                         .join(if item_path.starts_with("/") {
-//                             &item_path[1..item_path.len()]
-//                         } else {
-//                             item_path.as_str()
-//                         });
-//             }
-
-//             let metadata = extract_metadata(item).unwrap_or(HashMap::new());
-
-//             let _ = create_path_and_file(
-//                 file_path,
-//                 item.content.clone(),
-//                 item.name.clone(),
-//                 metadata,
-//                 extension,
-//             );
-//         });
-
-//     Ok(())
-// }
-
 fn convert_cms_pages(items: Vec<CmsPage>, project_path: PathBuf) -> DaikokuResult<()> {
     items.iter().for_each(|item| {
         let extension = SourceExtension::from_str(&item.content_type).unwrap();
@@ -829,7 +769,6 @@ fn get_cms_page_path(item: &CmsPage) -> DaikokuResult<PathBuf> {
 pub fn create_path_and_file(
     file_buf: PathBuf,
     content: String,
-    // item: &CmsPage,
     name: String,
     metadata: HashMap<String, String>,
     content_type: SourceExtension,

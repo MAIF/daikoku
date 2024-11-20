@@ -446,12 +446,10 @@ async fn render_page(
                 .unwrap())
         } else {
             let src = String::from_utf8(result).unwrap();
-            // let source = html_escape::encode_text(&src);
-            // src.replace('"', "&quot;");
-            // .replace("&", "&amp;")
+
             let source = src.replace('"', "&quot;");
 
-            // let source = src.replace("\"", "&quot;");
+            
             let children: String = if SourceExtension::from_str(&page.content_type()).unwrap()
                 == SourceExtension::HTML
             {
@@ -461,9 +459,7 @@ async fn render_page(
             };
 
             Ok(Response::builder()
-                // .header(header::CONTENT_TYPE, &page.content_type())
                 .header(header::CONTENT_TYPE, "text/html")
-                // .body(Full::new(Bytes::from(result)))
                 .body(Full::new(Bytes::from(
                     String::from_utf8(MANAGER_PAGE.to_vec())
                         .unwrap()

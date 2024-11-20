@@ -61,7 +61,8 @@ daikoku environments add --name=<ENVIRONMENT_NAME> --server=<ENVIROMNENT_SERVER>
 you can sync the new project with your Daikoku instance and fetch mails and apis
 
 ```sh
-daikoku pull 
+daikoku pull apis
+daikoku pull mails
 ```
 
 you can start to develop and watch file changes
@@ -130,7 +131,7 @@ The CMS projects adhere to the following strict file structure:
   - `styles`: Contains CSS files.
   - `documentations` : Contains files that can be used as documentation page of APIs
 
-# Nested routing
+# Dynamic nested routing
 
 The CLI uses file-system routing where folders are used to create nested routes. Each folder represents a route segment that maps to a URL segment.
 
@@ -138,9 +139,10 @@ You can create separate UIs for each route using page.html files. `page.html` is
 
 To create a nested route, you can nest folders inside each other and add page.html files inside them. For example:
 
-`src/pages/page.html`: is associated with the `/` path.
-`src/pages/invoices/page.html`: is associated with the `/invoices` path.
-`src/pages/offres.html`: is associated with the `/offres` path.
+`src/pages/page.html`: can be reach on `/` path.
+`src/pages/invoices/page.html`: can be reach on `/invoices` path.
+`src/pages/offres.html`: can be reach on  `/offres` path.
+`src/pages/apis/api/[apiId]`: can be reach on `/apis/api/any-kind-of-api` and the apiId value can be use in the page as mustache variable using {{apiId}}
 
 # Manage your assets
 
@@ -171,6 +173,18 @@ daikoku assets list
 If you prefer to synchronize all assets with a single command, it offers speed advantages over doing so individually, albeit with reduced configurability.
 ```sh
 daikoku assets sync
+```
+
+# Manage documentation pages
+
+You already have many choices in Daikoku to create the APIs's documentation. But, with the release of the CMS, you can now write your documentation with it. The documentations pages have to be written in the `src/documentations` folder and can be named as you wish.
+
+The recommended usage to create a new documentation page is to use the CLI as following : 
+
+```sh
+daikoku generate documentation --filename=my-new-documentation-page \
+                               --title="Title of the page" \
+                               --desc="The description of this page"
 ```
 
 # CMS Directives
@@ -507,12 +521,78 @@ When you have an user returned from directive, you can use the following fields
 
 This project is licensed under the Apache 2.0 license with the LLVM exception.
 
+
+# Commands
+
+The following commands must be run, replacing `<parameter>` with `--parameter=value`.
+
+# PROJECT commands
+```sh
+daikoku cms init <NAME> <PATH>
+daikoku cms migrate <NAME> <PATH> <SERVER> <APIKEY> 
+
+daikoku cms list
+daikoku cms add <NAME> <PATH> <OVERWRITE>
+daikoku cms switch <NAME>
+daikoku cms remove <NAME> <REMOVE_FILES>
+daikoku cms clear <FORCE>
+```
+
+# PUSH commands
+```sh
+daikoku push <DRY_RUN> <FILEPATH>
+```
+
+# ASSETS commands
+```sh
+daikoku assets push <FILENAME> <TITLE> <DESC> <PATH> <SLUG>
+daikoku assets remove <FILENAME> <PATH> <SLUG>
+daikoku assets list
+daikoku assets sync
+```
+
+# ENVIRONMENTS commands
+```sh
+daikoku environments clear <FORCE>
+daikoku environments add <NAME> <SERVER> <OVERWRITE>
+daikoku environments switch <NAME>
+daikoku environments remove <NAME>
+daikoku environments info <NAME> <FULL>
+daikoku environments list
+daikoku environments config <APIKEY>
+```
+
+# GENERATE commands
+```sh
+daikoku generate documentation <FILENAME> <TITLE> <DESC>
+```
+
+# LOGIN
+```sh
+daikoku login
+```
+
+# PULL commands
+```sh
+daikoku pull apis
+daikoku pull mails
+```
+
+# VERSION commands
+```sh
+daikoku version
+```
+
+# WATCH commands
+```sh
+daikoku watch
+```
+
 ### Contribution
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in this project by you, as defined in the Apache-2.0 license,
 shall be licensed as above, without any additional terms or conditions.
-
 
 #### Run tests
 ```
