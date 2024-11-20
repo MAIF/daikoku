@@ -1,180 +1,19 @@
-import { Form, MarkdownInput, constraints, format, type } from '@maif/react-forms';
+import { constraints, format, type } from '@maif/react-forms';
 import { createColumnHelper } from '@tanstack/react-table';
-import { nanoid } from 'nanoid';
+
 import { useContext, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../contexts/i18n-context';
-import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
-import { IMailingTranslation, ITenantFull, isError } from '../../../types';
+import { IMailingTranslation, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
-import { Can, Option, Spinner, tenant as TENANT, manage } from '../../utils';
-import { BeautifulTitle } from '../../utils/BeautifulTitle';
+import { Can, tenant as TENANT, manage } from '../../utils';
 import { EditFrontOfficeTranslations } from './EditFrontOfficeTranslations';
-import { MailInput } from './MailInput';
 
-const MAIL_CATEGORIES = [
-  'subscription', 'new', 'create', 'apikey', 'team', 'api',
-  'contact', 'user', 'checkout', 'rejection', 'acceptation'
-]
-
-const EditMailtemplate = ({
-  tenantId,
-  mails
-}: { tenantId: string, mails: any }) => {
-  const [tenant, setTenant] = useState<ITenantFull>();
-  const [mailTemplateTranslations, setMailTemplateTranslations] = useState<Array<any>>([]);
-
-  const KEY_MAIL_TEMPLATE = 'tenant.mail.template';
-
-  // const tenantRequest = useQuery({ queryKey: ['tenant'], queryFn: () => Services.oneTenant(tenantId) })
-  // const translationsRequests = useQueries({
-  //   queries: [
-  //     {queryKey: [], queryFn: () => Services.getTranslationLanguages() },
-  //     {queryKey: [], queryFn: () => Services.getMailTranslations()},
-  //   ]
-  // })
-
-  const { translate } = useContext(I18nContext);
-
-  useEffect(() => {
-    Services.oneTenant(tenantId)
-      .then((tenant) => {
-        if (!isError(tenant)) {
-          setTenant(tenant);
-
-          Promise.all([
-            Services.getTranslationLanguages(),
-            Services.getMailTranslations(KEY_MAIL_TEMPLATE)
-          ])
-            .then(([languages, data]) => {
-              if (!isError(languages) && !isError(data)) {
-                const templates = languages.map((language) => {
-                  const item: IMailingTranslation = data.translations[0];
-                  return Option(item.translations.find((t) => t.language === language))
-                    .getOrElse({
-                      _id: nanoid(),
-                      key: KEY_MAIL_TEMPLATE,
-                      language,
-                      value: '{{email}}',
-                      _tenant: tenant._id
-                    });
-                })
-                setMailTemplateTranslations(templates)
-              }
-            });
-        }
-      });
-  }, []);
-
-  const saveTenant = (tenant) => {
-    return Services.saveTenant(tenant)
-      .then(r => {
-        manageError(r);
-        setTenant(tenant);
-      });
-  };
-
-  const saveTranslation = (translation: any) => {
-    Services.saveTranslation(translation)
-      .then((res) => {
-        if (!res.error)
-          setMailTemplateTranslations(
-            mailTemplateTranslations.map((t) => {
-              if ((t as any)._id === translation._id) {
-                return res;
-              }
-
-              return t;
-            })
-          );
-        return res;
-      })
-      .then(manageError);
-  };
-
-  const manageError = (res: any) => {
-    if (res.error) {
-      toast.error(res.error);
-    } else {
-      toast.success(translate('mailing_internalization.translation_updated'));
-    }
-  };
-
-  if (!tenant) return <Spinner />;
-
-  const translationSchema = {
-    value: {
-      type: type.string,
-      format: format.markdown,
-      label: null,
-      defaultValue: '{{email}}',
-      props: {
-        readOnly: true,
-        actions: (insert: any) => {
-          return (
-            <BeautifulTitle
-              place="bottom"
-              title={translate('image url from asset')}
-            >
-              <AssetChooserByModal
-                typeFilter={MimeTypeFilter.image}
-                onlyPreview
-                tenantMode={true}
-                icon="fas fa-file-image"
-                classNames="btn-for-descriptionToolbar"
-                label={translate('Select')}
-                onSelect={(asset: any) => insert(asset.link)
-                }
-              />
-            </BeautifulTitle>
-          );
-        }
-      }
-    }
-  }
-
-  return (<div className="col-12 pb-3">
-    <MailInput
-      legacyInformations={{
-        defaultRawContent: "{{email}}",
-        rawContent: tenant?.mailerSettings?.template
-      }}
-      // translations={mailTemplateTranslations}
-      cmsPageId="-mails-root-tenant-mail-template-"
-    // onSubmit={template => {
-    //   setTenant({
-    //     ...tenant,
-    //     mailerSettings: {
-    //       ...tenant.mailerSettings,
-    //       template
-    //     }
-    //   })
-    // saveTenant({
-    //   ...tenant,
-    //   mailerSettings: {
-    //     ...tenant.mailerSettings,
-    //     template
-    //   },
-    // })
-    // }}
-    // title="Default mail template" 
-    />
-    {/* {mailTemplateTranslations
-      .map((translation) => {
-        return (<div className="my-3" key={`${translation.key}-${translation.language}`}>
-          <span className="h5">{translate('Translation')} : {translation.language}</span>
-          <div className="mt-3">
-            <Form value={translation} schema={translationSchema} onSubmit={saveTranslation} />
-          </div>
-        </div>);
-      })} */}
-  </div>);
-};
 
 function Breadcrumb() {
   const { pathname } = useLocation()
@@ -208,11 +47,6 @@ function InternalizationChooser({ domain, translate }) {
       active: "mail",
       translation: 'mailing_internalization.mail_tab',
       description: 'mailing_internalization.mail_description'
-    },
-    {
-      active: "mail-template",
-      translation: 'mailing_internalization.mail_template_tab',
-      description: 'mailing_internalization.mail_template_description'
     },
     {
       active: "front",
@@ -391,39 +225,15 @@ export const MailingInternalization = () => {
 
       <Breadcrumb />
 
-      {domain === 'mail' && <>
-        <div className='d-flex align-items-center gap-2'>
-          <span>Catégories :</span>
-          {<div className='d-flex gap-1 my-2'>
-            {['all', ...MAIL_CATEGORIES
-              .sort()]
-              .map(cat => {
-                return <button className='btn btn-sm btn-outline-primary'
-                  type="button"
-                  style={{ textTransform: 'capitalize' }}
-                  onClick={() => {
-                    if (cat === category)
-                      setCategory(undefined)
-                    else
-                      setCategory(cat)
-                  }}
-                  key={cat}>{cat}</button>
-              })}
-          </div>}
+      {domain === 'mail' && <div>
+        <div className="alert alert-warning" role="alert">
+          You have to use the CLI to customize your Daikoku mails.
         </div>
-        <Table
-          defaultSort="message"
-          columns={columns}
-          fetchItems={() => {
-            if (!category || category === 'all') {
-              return Promise.resolve(mails)
-            }
-            return Promise.resolve(mails.filter(mail => mail._id.split(".")[1] === category))
-          }}
-          ref={table}
-        />
-      </>}
-      {domain === 'mail-template' && <EditMailtemplate tenantId={tenant._id} />}
+
+        <div className='section p-2'>
+          <a href="https://maif.github.io/daikoku/docs/cli" target="_blank"> Follow these following instructions to start</a>
+        </div>
+      </div>}
 
       {domain === 'front' && <EditFrontOfficeTranslations tenantId={tenant._id} />}
     </Can>
