@@ -6,7 +6,6 @@ import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.{
   ApiDocumentationPageFormat,

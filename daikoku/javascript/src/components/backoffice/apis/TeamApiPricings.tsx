@@ -99,7 +99,13 @@ const SUBSCRIPTION_PLAN_TYPES = {
   },
 };
 
-export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate }: any) => {
+type OtoroshiEntitiesSelectorProps = {
+  rawValues: any
+  onChange: (item: any) => void,
+  translate: (x: string) => string
+  ownerTeam: ITeamSimple
+}
+export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate, ownerTeam }: OtoroshiEntitiesSelectorProps) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [groups, setGroups] = useState<Array<any>>([]);
   const [services, setServices] = useState<Array<any>>([]);
@@ -117,15 +123,15 @@ export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate }: any
     if (otoroshiTarget && otoroshiTarget.otoroshiSettings) {
       Promise.all([
         Services.getOtoroshiGroupsAsTeamAdmin(
-          params.teamId,
+          ownerTeam._id,
           rawValues.otoroshiTarget.otoroshiSettings
         ),
         Services.getOtoroshiServicesAsTeamAdmin(
-          params.teamId,
+          ownerTeam._id,
           rawValues.otoroshiTarget.otoroshiSettings
         ),
         Services.getOtoroshiRoutesAsTeamAdmin(
-          params.teamId,
+          ownerTeam._id,
           rawValues.otoroshiTarget.otoroshiSettings
         ),
       ])
@@ -948,7 +954,7 @@ export const TeamApiPricings = (props: Props) => {
   };
 
   const createNewPlan = () => {
-    Services.fetchNewPlan('FreeWithQuotas').then((newPlan) => {
+    Services.fetchNewPlan().then((newPlan) => {
       setPlanForEdition(newPlan);
       setMode(possibleMode.creation);
       setSelectedTab('settings');

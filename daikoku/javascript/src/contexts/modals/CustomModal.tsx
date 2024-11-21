@@ -26,7 +26,8 @@ import { IBaseModalProps } from './types';
  * 
  */
 export interface ICustomModalProps extends IModalProps {
-  actions?: (close) => JSX.Element
+  actions?: (close) => JSX.Element,
+  noClose?: boolean
 }
 export const CustomModal = ({
   title,

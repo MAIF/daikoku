@@ -1,20 +1,13 @@
 package fr.maif.otoroshi.daikoku.domain
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.data.EitherT
 import cats.syntax.option._
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
-import fr.maif.otoroshi.daikoku.domain.json.{
-  SeqIssueIdFormat,
-  SeqPostIdFormat,
-  SeqTeamIdFormat,
-  SetApiTagFormat,
-  UsagePlanFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{SeqIssueIdFormat, SeqPostIdFormat, SeqTeamIdFormat, SetApiTagFormat}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.{IdGenerator, ReplaceAllWith}
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, ReplaceAllWith}
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.{DateTime, Days}
 import play.api.libs.json._
 
@@ -822,17 +815,16 @@ object ValidationStep {
 
 object ApiTemplate {
   def cmsApi(team: Team, tenant: Tenant): (Api, UsagePlan) = {
-    val plan = FreeWithoutQuotas(
+    val plan = UsagePlan(
       id = UsagePlanId(IdGenerator.token),
       tenant = tenant.id,
-      billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-      currency = Currency("EUR"),
-      customName = Some("admin"),
+      customName = "admin",
       customDescription = Some("Access to cms API"),
       otoroshiTarget = None,
       allowMultipleKeys = Some(true),
       autoRotation = None,
-      integrationProcess = IntegrationProcess.ApiKey
+      integrationProcess = IntegrationProcess.ApiKey,
+      visibility = UsagePlanVisibility.Admin
     )
     val api = Api(
       id = ApiId(IdGenerator.token),
@@ -863,17 +855,16 @@ object ApiTemplate {
   }
 
   def adminApi(team: Team, tenant: Tenant): (Api, UsagePlan) = {
-    val plan = FreeWithoutQuotas(
+    val plan = UsagePlan(
       id = UsagePlanId(IdGenerator.token),
       tenant = tenant.id,
-      billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-      currency = Currency("EUR"),
-      customName = Some("admin"),
+      customName = "admin",
       customDescription = Some("admin API access"),
       otoroshiTarget = None,
       allowMultipleKeys = Some(true),
       autoRotation = None,
-      integrationProcess = IntegrationProcess.ApiKey
+      integrationProcess = IntegrationProcess.ApiKey,
+      visibility = UsagePlanVisibility.Admin
     )
 
     val api = Api(

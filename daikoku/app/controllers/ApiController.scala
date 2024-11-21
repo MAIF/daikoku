@@ -639,13 +639,16 @@ class ApiController(
               _.id == api.team
             ))
           ) {
+            AppLogger.warn("ICI")
             val filteredPlans = plans.filter(plan =>
               plan.visibility == UsagePlanVisibility.Public || ctx.user.isDaikokuAdmin || (plan.authorizedTeams :+ api.team)
                 .intersect(myTeams.map(_.id))
                 .nonEmpty
             )
+            AppLogger.warn(plans.size.toString)
             EitherT.pure[Future, AppError](filteredPlans)
           } else {
+            AppLogger.warn("LÀ")
             EitherT.leftT[Future, Seq[UsagePlan]](AppError.ApiUnauthorized)
           }
         }

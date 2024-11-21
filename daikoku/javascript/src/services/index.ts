@@ -348,25 +348,25 @@ export const createOtoroshiSettings = (tenantId: any, oto: any) =>
     body: JSON.stringify(oto),
   });
 
-export const getOtoroshiGroups = (tenantId: any, otoId: any) =>
+export const getOtoroshiGroups = (tenantId: string, otoId: string) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/groups`);
 
-export const getOtoroshiGroupsAsTeamAdmin = (teamId: any, otoId: any) =>
+export const getOtoroshiGroupsAsTeamAdmin = (teamId: string, otoId: string) =>
   customFetch(`/api/teams/${teamId}/tenant/otoroshis/${otoId}/groups`);
 
-export const getOtoroshiServicesAsTeamAdmin = (teamId: any, otoId: any) =>
+export const getOtoroshiServicesAsTeamAdmin = (teamId: string, otoId: string) =>
   customFetch(`/api/teams/${teamId}/tenant/otoroshis/${otoId}/services`);
 
-export const getOtoroshiRoutesAsTeamAdmin = (teamId: any, otoId: any) =>
+export const getOtoroshiRoutesAsTeamAdmin = (teamId: string, otoId: string) =>
   customFetch(`/api/teams/${teamId}/tenant/otoroshis/${otoId}/routes`);
 
-export const getOtoroshiServices = (tenantId: any, otoId: any) =>
+export const getOtoroshiServices = (tenantId: string, otoId: string) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/services`);
 
-export const getOtoroshiRoutes = (tenantId: any, otoId: any) =>
+export const getOtoroshiRoutes = (tenantId: string, otoId: string) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/routes`);
 
-export const getOtoroshiApiKeys = (tenantId: any, otoId: any) =>
+export const getOtoroshiApiKeys = (tenantId: string, otoId: string) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/apikeys`);
 
 export const deleteTeamApi = (teamId: string, id: string): PromiseWithError<ResponseDone> =>
@@ -545,8 +545,8 @@ export const fetchNewApiGroup = () => customFetch('/api/entities/apigroup');
 export const fetchNewUser = () => customFetch('/api/entities/user');
 export const fetchNewOtoroshi = () => customFetch('/api/entities/otoroshi');
 export const fetchNewIssue = () => customFetch('/api/entities/issue');
-export const fetchNewPlan = (planType: string): Promise<IUsagePlan> =>
-  customFetch(`/api/entities/plan?planType=${planType}`);
+export const fetchNewPlan = (): Promise<IUsagePlan> =>
+  customFetch('/api/entities/plan');
 
 export const checkIfApiNameIsUnique = (name: any, id?: any) =>
   customFetch('/api/apis/_names', {

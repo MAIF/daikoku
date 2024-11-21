@@ -245,41 +245,12 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, 
   billingDuration: IBillingDuration;
   visibility: UsagePlanVisibility;
   authorizedTeams: Array<string>;
-  costPerrequest?: number;
+  costPerRequest?: number;
   costPerMonth?: number;
   maxPerMonth?: number;
   maxPerSecond?: number;
   maxPerDay?: number;
   paymentSettings?: IPaymentSettings;
-}
-
-export interface IUsagePlanAdmin extends IUsagePlan {}
-
-export interface IUsagePlanFreeWithoutQuotas extends IUsagePlan {}
-export interface IUsagePlanFreeWithQuotas extends IUsagePlanFreeWithoutQuotas {
-  maxPerSecond: number;
-  maxPerDay: number;
-  maxPerMonth: number;
-}
-export interface IUsagePlanQuotasWithLimits extends IUsagePlanFreeWithQuotas {
-  costPerMonth: number;
-  trialPeriod: IBillingDuration;
-}
-export interface IUsagePlanQuotasWitoutLimit extends IUsagePlanQuotasWithLimits {
-  costPerRequest: number;
-}
-export interface IUsagePlanPayPerUse extends IUsagePlan {
-  costPerMonth: number;
-  costPerRequest: number;
-  trialPeriod: IBillingDuration;
-
-  currency: ICurrency;
-  billingDuration: IBillingDuration;
-  visibility: UsagePlanVisibility;
-  authorizedTeams: Array<string>;
-  autoRotation?: boolean;
-  integrationProcess: 'Automatic' | 'ApiKey';
-  rotation: boolean;
 }
 
 export interface IAuthorizedEntities {

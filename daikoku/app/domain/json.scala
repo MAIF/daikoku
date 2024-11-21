@@ -778,7 +778,8 @@ object json {
             subscriptionProcess =
               (json \ "subscriptionProcess").as(SeqValidationStepFormat),
             integrationProcess =
-              (json \ "integrationProcess").as(IntegrationProcessFormat),
+              (json \ "integrationProcess").asOpt(IntegrationProcessFormat)
+                .getOrElse(IntegrationProcess.ApiKey),
             aggregationApiKeysSecurity =
               (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
             paymentSettings =
