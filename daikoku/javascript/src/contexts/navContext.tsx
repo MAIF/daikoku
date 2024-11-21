@@ -107,7 +107,6 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
   const navigate = useNavigate();
   const params = useParams();
 
-  console.debug({team})
   const userCanUpdateApi = team?.users.find(u => u.userId === connectedUser._id && u.teamPermission !== teamPermissions.user)
 
   const schema = (currentTab: string) => ({

@@ -42,11 +42,12 @@ export const getCurrencySymbol = (code: any) => {
 export const renderPricing = (plan: IFastPlan | IUsagePlan, translate: (params: string | TranslateParams) => string ) => {
   let pricing = translate('Free');
   const req = translate('req.');
-
   const month = translate('month');
+
+//FIXME: do not use old usage plan type
   if (isQuotasWitoutLimit(plan)) {
     pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency.code)}/${month} + 
-      ${formatCurrency(plan.costPerAdditionalRequest)} ${getCurrencySymbol(plan.currency.code)}/${req}`
+      ${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency.code)}/${req}`
   } else if (isPayPerUse(plan)) {
     pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency.code)}/${month} + 
     ${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency.code)}/${req}`;
@@ -102,13 +103,13 @@ export const renderPlanInfo = (planInfo: IFastPlan | IUsagePlan) => {
                 plan.costPerMonth!.toString(),
                 currency(plan),
                 plan.maxPerMonth!.toString(),
-                plan.costPerAdditionalRequest!.toString(),
+                plan.costPerRequest!.toString(),
                 currency(plan)
               ]
           })}
           You'll pay {plan.costPerMonth}
           <Currency plan={planInfo}/> for {plan.maxPerMonth} authorized requests per month and
-          you'll be charged {plan.costPerAdditionalRequest}
+          you'll be charged {plan.costPerRequest}
           <Currency plan={planInfo}/> per additional request
         </>
       </span>

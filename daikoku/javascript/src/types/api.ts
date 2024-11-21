@@ -245,6 +245,7 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, 
   billingDuration: IBillingDuration;
   visibility: UsagePlanVisibility;
   authorizedTeams: Array<string>;
+  costPerrequest?: number;
   costPerMonth?: number;
   maxPerMonth?: number;
   maxPerSecond?: number;
@@ -265,7 +266,7 @@ export interface IUsagePlanQuotasWithLimits extends IUsagePlanFreeWithQuotas {
   trialPeriod: IBillingDuration;
 }
 export interface IUsagePlanQuotasWitoutLimit extends IUsagePlanQuotasWithLimits {
-  costPerAdditionalRequest: number;
+  costPerRequest: number;
 }
 export interface IUsagePlanPayPerUse extends IUsagePlan {
   costPerMonth: number;
@@ -405,19 +406,19 @@ export interface IBaseSubscription {
 }
 
 export const isPayPerUse = (obj: IUsagePlan | IFastPlan): obj is IUsagePlanPayPerUse => {
-  return (<IUsagePlanPayPerUse>obj).costPerRequest !== undefined;
+  return !!(<IUsagePlanPayPerUse>obj).costPerRequest && !obj.maxPerMonth;
 };
 
 export const isQuotasWitoutLimit = (
   obj: IUsagePlan | IFastPlan
 ): obj is IUsagePlanQuotasWitoutLimit => {
-  return (<IUsagePlanQuotasWitoutLimit>obj).costPerAdditionalRequest !== undefined;
+  return !!(<IUsagePlanQuotasWitoutLimit>obj).costPerRequest && !!obj.maxPerMonth;
 };
 
 export const isMiniFreeWithQuotas = (
   obj: IUsagePlan | IFastPlan
 ): obj is IUsagePlanFreeWithQuotas => {
-  return (<IUsagePlanFreeWithQuotas>obj).maxPerSecond !== undefined;
+  return !!(<IUsagePlanFreeWithQuotas>obj).maxPerSecond && !obj.costPerMonth;
 };
 
 export type ResponseError = {

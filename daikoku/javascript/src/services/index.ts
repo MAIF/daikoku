@@ -1442,7 +1442,7 @@ export const graphql = {
               currency {
                 code
               }
-              type
+              visibility
             }
             currentVersion
             team {
