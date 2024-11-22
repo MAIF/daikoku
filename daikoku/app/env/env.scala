@@ -408,6 +408,8 @@ class DaikokuEnv(
   override def initDatastore(
       path: Option[String] = None
   )(implicit ec: ExecutionContext): Future[Done] = {
+
+
     def run(isEmpty: Boolean): Future[Unit] = {
       if (isEmpty) {
         (dataStore match {
@@ -603,6 +605,8 @@ class DaikokuEnv(
     implicit val ec: ExecutionContext = defaultExecutionContext
 
     dataStore.start()
+
+    println("start datastore")
 
     Source
       .tick(1.second, 5.seconds, ())
