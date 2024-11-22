@@ -48,14 +48,14 @@ export const ApiSelectModal = (props: IApiSelectModalProps & IBaseModalProps) =>
         return [
           ...a,
           {
-            options: [{ label: plan.customName || plan.type, value: plan }],
+            options: [{ label: plan.customName, value: plan }],
             label: groupName,
           },
         ];
 
       return a.map((group) => {
         if (group.label === groupName)
-          group.options.push({ label: plan.customName || plan.type, value: plan });
+          group.options.push({ label: plan.customName, value: plan });
 
         return group;
       });

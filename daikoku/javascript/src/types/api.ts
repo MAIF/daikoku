@@ -212,9 +212,8 @@ export interface IBaseUsagePlan {
   _id: string;
   _tenant: string;
   _deleted: boolean;
-  type: string;
   customDescription?: string;
-  customName?: string;
+  customName: string;
   subscriptionProcess: Array<IValidationStep>;
   currency: ICurrency;
   otoroshiTarget?: IOtoroshiTarget;
@@ -376,20 +375,20 @@ export interface IBaseSubscription {
   parentUp: boolean;
 }
 
-export const isPayPerUse = (obj: IUsagePlan | IFastPlan): obj is IUsagePlanPayPerUse => {
-  return !!(<IUsagePlanPayPerUse>obj).costPerRequest && !obj.maxPerMonth;
+export const isPayPerUse = (plan: IUsagePlan | IFastPlan) => {
+  return !!plan.costPerRequest && !plan.maxPerMonth;
 };
 
 export const isQuotasWitoutLimit = (
-  obj: IUsagePlan | IFastPlan
-): obj is IUsagePlanQuotasWitoutLimit => {
-  return !!(<IUsagePlanQuotasWitoutLimit>obj).costPerRequest && !!obj.maxPerMonth;
+  plan: IUsagePlan | IFastPlan
+) => {
+  return !!plan.costPerRequest && !!plan.maxPerMonth;
 };
 
 export const isMiniFreeWithQuotas = (
-  obj: IUsagePlan | IFastPlan
-): obj is IUsagePlanFreeWithQuotas => {
-  return !!(<IUsagePlanFreeWithQuotas>obj).maxPerSecond && !obj.costPerMonth;
+  plan: IUsagePlan | IFastPlan
+) => {
+  return !!plan.maxPerSecond && !plan.costPerMonth;
 };
 
 export type ResponseError = {

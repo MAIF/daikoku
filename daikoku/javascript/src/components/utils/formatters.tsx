@@ -8,17 +8,16 @@ import {
   isPayPerUse,
   isQuotasWitoutLimit,
   IUsagePlan,
-  IUsagePlanFreeWithQuotas, IUsagePlanPayPerUse, IUsagePlanQuotasWithLimits, IUsagePlanQuotasWitoutLimit
 } from '../../types';
 
-import {I18nContext} from "../../contexts";
-import React, {useContext} from "react";
-import {currency} from "../frontend";
 import find from "lodash/find";
+import { useContext } from "react";
+import { I18nContext } from "../../contexts";
+import { currency } from "../frontend";
 
 
 
-export const Currency = ({plan}: {plan: IUsagePlan | IFastPlan}) => {
+export const Currency = ({ plan }: { plan: IUsagePlan | IFastPlan }) => {
   const cur = find(currencies, (c) => c.code === plan.currency.code);
   return (
     <span>
@@ -39,12 +38,12 @@ export const getCurrencySymbol = (code: any) => {
   const currency = currencies.find((currency) => currency.code === code);
   return currency ? currency.symbol : undefined;
 };
-export const renderPricing = (plan: IFastPlan | IUsagePlan, translate: (params: string | TranslateParams) => string ) => {
+export const renderPricing = (plan: IFastPlan | IUsagePlan, translate: (params: string | TranslateParams) => string) => {
   let pricing = translate('Free');
   const req = translate('req.');
   const month = translate('month');
 
-//FIXME: do not use old usage plan type
+  //FIXME: do not use old usage plan type
   if (isQuotasWitoutLimit(plan)) {
     pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency.code)}/${month} + 
       ${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency.code)}/${req}`
@@ -59,40 +58,36 @@ export const renderPricing = (plan: IFastPlan | IUsagePlan, translate: (params: 
 
 export const renderPlanInfo = (planInfo: IFastPlan | IUsagePlan) => {
   const { translate } = useContext(I18nContext);
-  const type = planInfo.type
-  if(type === 'FreeWithoutQuotas') {
+  if (!planInfo.costPerMonth && !planInfo.maxPerMonth) {
     return (
       <span>
-          {translate('free.without.quotas.desc')}
-        </span>
-    )
-  } else if (type ==='FreeWithQuotas') {
-    let plan = planInfo as IUsagePlanFreeWithQuotas
-    return (
-      <span>
-        {translate({ key: 'free.with.quotas.desc', replacements: [plan.maxPerMonth!.toString()] })}
+        {translate('free.without.quotas.desc')}
       </span>
     )
-  } else if (type ==='QuotasWithLimits') {
-    let plan = planInfo as IUsagePlanQuotasWithLimits
+  } else if (!planInfo.costPerMonth && planInfo.maxPerMonth) {
+    return (
+      <span>
+        {translate({ key: 'free.with.quotas.desc', replacements: [planInfo.maxPerMonth.toString()] })}
+      </span>
+    )
+  } else if (planInfo.maxPerMonth && planInfo.costPerMonth) {
     return (
       <span>
         <>
           {translate({
             key: 'quotas.with.limits.desc',
             replacements:
-              [ plan.costPerMonth!.toString(),
-                currency(plan),
-                plan.maxPerMonth!.toString()
+              [planInfo.costPerMonth.toString(),
+              currency(planInfo),
+              planInfo.maxPerMonth.toString()
               ]
           })}
-          You'll pay {plan.costPerMonth}
-          <Currency plan={planInfo} /> and you'll have {plan.maxPerMonth} authorized requests per month
+          You'll pay {planInfo.costPerMonth}
+          <Currency plan={planInfo} /> and you'll have {planInfo.maxPerMonth} authorized requests per month
         </>
       </span>
     )
-  } else if (type ==='QuotasWithoutLimits') {
-    let plan = planInfo as IUsagePlanQuotasWitoutLimit
+  } else if (planInfo.maxPerMonth && planInfo.costPerRequest) {
     return (
       <span>
         <>
@@ -100,45 +95,44 @@ export const renderPlanInfo = (planInfo: IFastPlan | IUsagePlan) => {
             key: 'quotas.without.limits.desc',
             replacements:
               [
-                plan.costPerMonth!.toString(),
-                currency(plan),
-                plan.maxPerMonth!.toString(),
-                plan.costPerRequest!.toString(),
-                currency(plan)
+                planInfo.costPerMonth!.toString(),
+                currency(planInfo),
+                planInfo.maxPerMonth!.toString(),
+                planInfo.costPerRequest!.toString(),
+                currency(planInfo)
               ]
           })}
-          You'll pay {plan.costPerMonth}
-          <Currency plan={planInfo}/> for {plan.maxPerMonth} authorized requests per month and
-          you'll be charged {plan.costPerRequest}
-          <Currency plan={planInfo}/> per additional request
+          You'll pay {planInfo.costPerMonth}
+          <Currency plan={planInfo} /> for {planInfo.maxPerMonth} authorized requests per month and
+          you'll be charged {planInfo.costPerRequest}
+          <Currency plan={planInfo} /> per additional request
         </>
       </span>
     )
-  } else if (type === 'PayPerUse') {
-    let plan = planInfo as IUsagePlanPayPerUse
+  } else if (!planInfo.maxPerMonth && planInfo.costPerRequest) {
     return (
       <span>
         {translate({
           key: 'pay.per.use.desc.default', replacements:
-            [plan.costPerMonth!.toString(),
-              currency(plan),
-              plan.costPerRequest!.toString(),
-              currency(plan)
+            [planInfo.costPerMonth!.toString(),
+            currency(planInfo),
+            planInfo.costPerRequest!.toString(),
+            currency(planInfo)
             ]
         })}
-        {plan.costPerMonth === 0.0 &&
-            <>
-              You'll pay {plan.costPerMonth}
-              <Currency plan={planInfo} /> per month and you'll be charged{' '}
-              {plan.costPerRequest}<Currency plan={planInfo} />
-              per request
-            </>
+        {planInfo.costPerMonth === 0.0 &&
+          <>
+            You'll pay {planInfo.costPerMonth}
+            <Currency plan={planInfo} /> per month and you'll be charged{' '}
+            {planInfo.costPerRequest}<Currency plan={planInfo} />
+            per request
+          </>
         }
-        {plan.costPerMonth !== 0.0 &&
-            <>
-              You'll be charged {plan.costPerRequest}
-              <Currency plan={planInfo} /> per request
-            </>
+        {planInfo.costPerMonth !== 0.0 &&
+          <>
+            You'll be charged {planInfo.costPerRequest}
+            <Currency plan={planInfo} /> per request
+          </>
         }
       </span>
     )
@@ -183,12 +177,12 @@ export const teamPermissions = {
   user: 'User',
 };
 
-export const formatDate = (date: number|string, language: string, format = 'l LT') => {
+export const formatDate = (date: number | string, language: string, format = 'l LT') => {
   moment.locale(language);
   return moment(date).format(format);
 };
 
-export const formatMessageDate = (date: any, language:any) => {
+export const formatMessageDate = (date: any, language: any) => {
   moment.locale(language);
   const messageDate = moment.isMoment(date) ? date : moment(date);
   const now = moment();
