@@ -1,5 +1,20 @@
 # 9 - Create react component
 
+Now that you have added a layout to your APIs page, it's time to explore a different approach to creating files.
+
+In fact, the content management system relies on HTML, CSS and JavaScript. 
+Therefore, you can also import any javscript files into your HTML documents as framework javascript.
+
+# Import React
+
+Both React and ReactDOM are available over a CDN. Create a new layout file by duplicating the previous one, and add 
+the React imports. You will also need to import the JavaScript compiler babel to transform our React component into compatible 
+version of JavaScript.
+
+:::note
+Babel is a toolchain that is mainly used to convert ECMAScript 2015+ code into a backwards compatible version of JavaScript in current and older browsers or environments.
+:::
+
 ```html title="src/layouts/react-base.html"
 <!DOCTYPE html>
 <html lang="en">
@@ -10,9 +25,15 @@
   <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>My CMS</title>
 
+  <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+
+//addition
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+//addition
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+//addition
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 </head>
 
 <body>
@@ -20,10 +41,14 @@
 </body>
 ```
 
+Then, create a new file at the location `src/components/api.jsx`. (You will need to create a new components folder first.)
+
+Copy the following content into your new file, `api.jsx`.
+
 ```jsx title="src/components/api.jsx"
 function MyAPIs() {
 
-    const apis = JSON.parse("{{apis}}") || []
+    const apis = JSON.parse(`{{{apis}}}`);
 
     return apis.map(api => {
         return <div key={api.name} className="card bg-base-100 w-96 shadow-xl">
@@ -36,7 +61,7 @@ function MyAPIs() {
             <div class="card-body">
                 <h2 class="card-title">
                     {api.name}
-                    <div class="badge badge-secondary">{api.version}</div>
+                    <div class="badge badge-secondary">{api.currentVersion}</div>
                 </h2>
                 <p>{api.description}</p>
             </div>
@@ -47,3 +72,27 @@ function MyAPIs() {
 const container = document.getElementById('apis');
 ReactDOM.createRoot(container).render(<MyAPIs />);
 ```
+
+In this file, you used a new directive `{{{apis}}}` to fetch the APIs in JSON format.
+
+Replace the content of the APIs page with the following.    
+
+```html title="src/pages/apis/page.html"
+_exact: true
+
+---
+//addition
+<script src="/components/api.jsx" type="text/babel"></script>
+
+{{#daikoku-template-wrapper "/layouts/react-base.html" coucou="salut"}}
+<h1 class="text-5xl font-bold">My apis {{coucou}}</h1>
+<div class="flex gap-5 m-5">
+    //addition
+    <div id="apis"></div>
+</div>
+{{/daikoku-template-wrapper}}
+```
+
+Refresh the live preview of your /apis page.
+
+Your page text should look the same, but it will now use React to build your components.

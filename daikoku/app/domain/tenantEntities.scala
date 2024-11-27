@@ -1737,19 +1737,13 @@ case class CmsPage(
       else if (parentId.nonEmpty && page.id.value == parentId.get)
         FastFuture.successful(("", page.contentType))
       else {
+        val template = req match {
+          case Some(value) if page.name != "#generated" =>
+            searchCmsFile(value, page).map(_.content).getOrElse("")
+          case _ => page.body
+        }
 
-        println(r"""
-            ${
-          Json.stringify(JsArray(Await
-            .result(env.dataStore.apiRepo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
-            .map(a => {
-              a.copy(description = a.description.replaceAll("\n", "\\n"), smallDescription = a.smallDescription.replaceAll("\n", "\\n"))
-            })
-            .map(_.asJson)))
-        }""")
-
-        val context = combineFieldsToContext(
-          Context
+        var contextBuilder = Context
             .newBuilder(this)
             .resolver(JsonNodeValueResolver.INSTANCE)
             .combine("tenant", ctx.tenant.asJson)
@@ -1757,12 +1751,6 @@ case class CmsPage(
             .combine("connected", ctx.user.map(!_.isGuest).getOrElse(false))
             .combine("user", ctx.user.map(u => u.asSimpleJson).getOrElse(""))
             .combine("request", EntitiesToMap.request(ctx.request))
-            .combine("apis", Json.stringify(JsArray(Await
-              .result(env.dataStore.apiRepo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
-              .map(a => {
-                a.copy(description = a.description.replaceAll("\n", "\\n"), smallDescription = a.smallDescription.replaceAll("\n", "\\n"))
-              })
-              .map(_.asJson))))
             .combine(
               "daikoku-css", {
                 if (env.config.isDev)
@@ -1770,7 +1758,35 @@ case class CmsPage(
                 else if (env.config.isProd)
                   s"${env.getDaikokuUrl(ctx.tenant, "/assets/react-app/daikoku.min.css")}"
               }
-            ),
+            )
+
+        if (template.contains("{{apis}")) {
+          contextBuilder = contextBuilder.combine("apis", Json.stringify(JsArray(Await
+              .result(env.dataStore.apiRepo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
+              .map(a => {
+                a.copy(
+                  description = a.description.replaceAll("\n", "\\n"),
+                  smallDescription = a.smallDescription.replaceAll("\n", "\\n"))
+                  .asJson
+              }))))
+        }
+
+        if (template.contains("{{teams}")) {
+          contextBuilder = contextBuilder.combine("teams", Json.stringify(JsArray(Await
+              .result(env.dataStore.teamRepo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
+              .map(a => {
+                a.copy(description = a.description.replaceAll("\n", "\\n")).asJson
+              }))))
+        }
+
+         if (template.contains("{{users}")) {
+          contextBuilder = contextBuilder.combine("users", Json.stringify(JsArray(Await
+              .result(env.dataStore.userRepo.findAllNotDeleted(), 10.seconds)
+              .map(_.toUiPayload()))))
+        }
+
+        val context = combineFieldsToContext(
+          contextBuilder,
           fields.map {
             case (key, value) =>
               (
@@ -2071,12 +2087,6 @@ case class CmsPage(
         )
 
         val c = context.build()
-
-        val template = req match {
-          case Some(value) if page.name != "#generated" =>
-            searchCmsFile(value, page).map(_.content).getOrElse("")
-          case _ => page.body
-        }
 
         val result = handlebars.compileInline(template).apply(c)
         c.destroy()
