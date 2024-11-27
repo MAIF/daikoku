@@ -52,3 +52,28 @@ Refresh the live preview of your `/apis` page.
 Your page text should look the same, and your page title displayed in your browser tab should now read `APIs` instead of `My CMS`
 
 Instead of typing text directly into HTML tags, you just defined and then used a variable in the two sections of your .html file, respectively.
+
+# Conditionally render elements
+
+Daikoku includes 3 reserved keywords : `_authenticated`, `_visible` and `_exact`
+
+# _visible
+
+You can use the `_visible` variable to control *wheter or not* to render a page. This can be useful for publishing or hiding a page without removing it from your project.
+
+# _authenticated
+
+You can restrict access to a page for unauthenticated users. If an unauthenticated user tries to access the page, Daikoku will prevent it from rendering and display the `Need to be logged` warning.
+
+# _exact
+
+By default, the router tries to match pages with the nearest paths. You can specify whether or not you want to match the page's path exactly.
+
+Let's take an example:
+
+|Path|Page path|_exact|Matching|
+|--|--|--|--|
+|`/apis/foo`|`/apis`|false|✅
+|`/apis`|`/apis`|false|✅
+|`/apis`|`/apis`|true|✅
+|`/apis/foo`|`/apis`|true|❌

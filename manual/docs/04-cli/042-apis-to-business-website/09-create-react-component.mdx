@@ -1,0 +1,49 @@
+# 9 - Create react component
+
+```html title="src/layouts/react-base.html"
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>My CMS</title>
+
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+</head>
+
+<body>
+  {{children}}
+</body>
+```
+
+```jsx title="src/components/api.jsx"
+function MyAPIs() {
+
+    const apis = JSON.parse("{{apis}}") || []
+
+    return apis.map(api => {
+        return <div key={api.name} className="card bg-base-100 w-96 shadow-xl">
+            <figure>
+                <img
+                    src="https://images.pexels.com/photos/1148820/pexels-photo-1148820.jpeg"
+                    alt="Shoes" />
+            </figure>
+
+            <div class="card-body">
+                <h2 class="card-title">
+                    {api.name}
+                    <div class="badge badge-secondary">{api.version}</div>
+                </h2>
+                <p>{api.description}</p>
+            </div>
+        </div>
+    })
+}
+
+const container = document.getElementById('apis');
+ReactDOM.createRoot(container).render(<MyAPIs />);
+```

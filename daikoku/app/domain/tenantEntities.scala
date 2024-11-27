@@ -1737,6 +1737,17 @@ case class CmsPage(
       else if (parentId.nonEmpty && page.id.value == parentId.get)
         FastFuture.successful(("", page.contentType))
       else {
+
+        println(r"""
+            ${
+          Json.stringify(JsArray(Await
+            .result(env.dataStore.apiRepo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
+            .map(a => {
+              a.copy(description = a.description.replaceAll("\n", "\\n"), smallDescription = a.smallDescription.replaceAll("\n", "\\n"))
+            })
+            .map(_.asJson)))
+        }""")
+
         val context = combineFieldsToContext(
           Context
             .newBuilder(this)
@@ -1746,9 +1757,12 @@ case class CmsPage(
             .combine("connected", ctx.user.map(!_.isGuest).getOrElse(false))
             .combine("user", ctx.user.map(u => u.asSimpleJson).getOrElse(""))
             .combine("request", EntitiesToMap.request(ctx.request))
-            .combine("apis", JsArray(Await
+            .combine("apis", Json.stringify(JsArray(Await
               .result(env.dataStore.apiRepo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
-              .map(_.asJson)))
+              .map(a => {
+                a.copy(description = a.description.replaceAll("\n", "\\n"), smallDescription = a.smallDescription.replaceAll("\n", "\\n"))
+              })
+              .map(_.asJson))))
             .combine(
               "daikoku-css", {
                 if (env.config.isDev)
@@ -1788,7 +1802,9 @@ case class CmsPage(
         }
 
         val handlebars = new Handlebars().`with`(new EscapingStrategy() {
-          override def escape(value: CharSequence): String = value.toString
+          override def escape(value: CharSequence): String = {
+            value.toString
+          }
         })
 
         handlebars.registerHelper(
