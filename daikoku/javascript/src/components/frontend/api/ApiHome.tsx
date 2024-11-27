@@ -144,6 +144,8 @@ export const ApiHome = ({
     .map((match: any) => match.params)
     .getOrElse(defaultParams);
 
+  console.log(params)
+
   const { translate, Translation } = useContext(I18nContext);
   const { openLoginOrRegisterModal } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
@@ -354,7 +356,7 @@ export const ApiHome = ({
       })}>
         <div className="row pt-3">
           {params.tab === 'description' &&
-            api.descriptionCmsPage ? <CmsViewer pageId={api.descriptionCmsPage} fields={{ api }} /> : <ApiDescription api={api} />}
+            (api.descriptionCmsPage ? <CmsViewer pageId={api.descriptionCmsPage} fields={{ api }} /> : <ApiDescription api={api} />)}
           {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
           {params.tab === 'documentation' && <ApiDocumentation api={api} documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)} />}
           {params.tab === 'testing' && (<ApiSwagger

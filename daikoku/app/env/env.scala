@@ -606,8 +606,6 @@ class DaikokuEnv(
 
     dataStore.start()
 
-    println("start datastore")
-
     Source
       .tick(1.second, 5.seconds, ())
       .mapAsync(1) { _ =>

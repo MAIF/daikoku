@@ -69,6 +69,7 @@ async fn mails_synchronization(project: &cms::Project) -> DaikokuResult<()> {
             .response,
     )?;
 
+    println!("3");
     let mail_user_template = bytes_to_struct::<IntlTranslationBody>(
         daikoku_cms_api_get("/translations/_mail?domain=mail")
             .await?
