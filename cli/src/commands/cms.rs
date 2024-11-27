@@ -46,7 +46,7 @@ pub(crate) struct CmsPage {
     #[serde(alias = "lastPublishedDate")]
     last_published_date: Option<u64>,
     #[serde(alias = "body")]
-    content: String,
+    pub(crate) content: String,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug)]
@@ -724,20 +724,28 @@ fn get_mail_page_path(filename: &String, is_root_mail: bool) -> DaikokuResult<Pa
 fn get_cms_page_path(item: &CmsPage) -> DaikokuResult<PathBuf> {
     let extension = SourceExtension::from_str(&item.content_type).unwrap();
 
-    let folder = match extension {
+    let mut folder = match extension {
         SourceExtension::HTML => item.path.clone().map(|_| "pages").unwrap_or("blocks"),
         SourceExtension::CSS => "styles",
         SourceExtension::Javascript => "scripts",
         SourceExtension::JSON => "data",
     };
 
-    let router_path = item.path.clone().map(|p| p.replace("/", "")).map(|path| {
-        if path == "/" || path.is_empty() {
-            item.name.clone()
-        } else {
-            path
-        }
-    });
+    if item.path.clone().map(|p| p.contains("mails")).is_some() {
+        folder = "mails"
+    }
+
+    let router_path = item
+        .path
+        .clone()
+        .map(|p| p.replacen("/", "", 1))
+        .map(|formatted_path| {
+            if formatted_path == "/" || formatted_path.is_empty() {
+                item.name.clone()
+            } else {
+                formatted_path
+            }
+        });
 
     let folder_path = if router_path
         .clone()
