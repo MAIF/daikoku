@@ -215,7 +215,7 @@ export interface IBaseUsagePlan {
   customDescription?: string;
   customName: string;
   subscriptionProcess: Array<IValidationStep>;
-  currency: ICurrency;
+  currency?: ICurrency;
   otoroshiTarget?: IOtoroshiTarget;
 }
 
@@ -240,7 +240,7 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, 
   integrationProcess: 'Automatic' | 'ApiKey';
   autoRotation?: boolean;
   rotation: boolean;
-  currency: ICurrency;
+  currency?: ICurrency;
   billingDuration: IBillingDuration;
   visibility: UsagePlanVisibility;
   authorizedTeams: Array<string>;
@@ -250,6 +250,7 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, 
   maxPerSecond?: number;
   maxPerDay?: number;
   paymentSettings?: IPaymentSettings;
+  trialPeriod?: IBillingDuration
 }
 
 export interface IAuthorizedEntities {
@@ -270,7 +271,7 @@ export interface ICurrency {
 interface IOtoroshiTarget {
   otoroshiSettings?: string;
   authorizedEntities?: IAuthorizedEntities;
-  apikeyCustomization: {
+  apikeyCustomization?: {
     clientIdOnly: boolean;
     constrainedServicesOnly: boolean;
     tags: Array<string>;

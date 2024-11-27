@@ -18,7 +18,7 @@ import { currency } from "../frontend";
 
 
 export const Currency = ({ plan }: { plan: IUsagePlan | IFastPlan }) => {
-  const cur = find(currencies, (c) => c.code === plan.currency.code);
+  const cur = find(currencies, (c) => c.code === plan.currency?.code);
   return (
     <span>
       {' '}
@@ -45,13 +45,13 @@ export const renderPricing = (plan: IFastPlan | IUsagePlan, translate: (params: 
 
   //FIXME: do not use old usage plan type
   if (isQuotasWitoutLimit(plan)) {
-    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency.code)}/${month} + 
-      ${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency.code)}/${req}`
+    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency!.code)}/${month} + 
+      ${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency!.code)}/${req}`
   } else if (isPayPerUse(plan)) {
-    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency.code)}/${month} + 
-    ${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency.code)}/${req}`;
+    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency!.code)}/${month} + 
+    ${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency!.code)}/${req}`;
   } else if (plan.costPerMonth) {
-    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency.code)}/${month}`;
+    pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency!.code)}/${month}`;
   }
   return pricing;
 }
