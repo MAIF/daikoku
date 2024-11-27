@@ -1,0 +1,98 @@
+# 10 - Configure custom emails 
+
+Your website and Daikoku are almost ready to be published, but before that, you need to configure the email content.
+
+# Synchronize emails
+
+The first step is to fetch the Daikoku's emails using the following command:
+
+```sh
+daikoku pull mails
+```
+
+# Update the email layout
+
+Each email is wrapped by the email layout located at `src/mails/root/tenant-mail-template/en/page.html` or `src/mails/root/tenant-mail-template/fr/page.html`.
+
+Open the `src/mails/root/tenant-mail-template/en/page.html` file and update the contents.
+
+```html title="src/mails/root/tenant-mail-template/en/page.html" 
+<h1>Dear Developer,</h1> 
+
+[email]
+
+Best regards,
+```
+
+Then push the modification to your Daikoku.
+
+```sh
+daikoku push
+```
+
+Perform an action in Daikoku and check the changes in the received emails.
+
+# Update the email for a specific event
+
+Each Daikoku event triggers the generation of an email.
+You can find a folder for each event in `src/mails`, which contains two subfolders (fr and en), one for each language.
+
+This is the complete list.
+
+<ul>
+    <li>mail-acceptation-title</li>
+    <li>mail-api-access-acceptation-body</li>
+    <li>mail-api-access-body</li>
+    <li>mail-api-access-rejection-body</li>
+    <li>mail-api-access-title</li>
+    <li>mail-api-subscription-acceptation-body</li>
+    <li>mail-api-subscription-rejection-body</li>
+    <li>mail-api-subscription-transfer-rejection-body</li>
+    <li>mail-api-transfer-ownership-acceptation-body</li>
+    <li>mail-api-transfer-ownership-rejection-body</li>
+    <li>mail-apikey-demand-body</li>
+    <li>mail-apikey-demand-title</li>
+    <li>mail-apikey-refresh-body</li>
+    <li>mail-apikey-refresh-title</li>
+    <li>mail-apikey-rotation-body</li>
+    <li>mail-apikey-rotation-title</li>
+    <li>mail-checkout-body</li>
+    <li>mail-checkout-title</li>
+    <li>mail-contact-contact</li>
+    <li>mail-contact-sender</li>
+    <li>mail-contact-title</li>
+    <li>mail-create-post-body</li>
+    <li>mail-create-post-title</li>
+    <li>mail-create-team-token-body</li>
+    <li>mail-create-team-token-title</li>
+    <li>mail-new-issue-body</li>
+    <li>mail-new-issue-title</li>
+    <li>mail-new-message-body</li>
+    <li>mail-new-message-title</li>
+    <li>mail-new-user-body</li>
+    <li>mail-new-user-title</li>
+    <li>mail-rejection-title</li>
+    <li>mail-subscription-validation-body</li>
+    <li>mail-subscription-validation-title</li>
+    <li>mail-team-access-acceptation-body</li>
+    <li>mail-team-access-body</li>
+    <li>mail-team-access-rejection-body</li>
+    <li>mail-team-access-title</li>
+    <li>mail-team-invitation-body</li>
+    <li>mail-team-invitation-title</li>
+    <li>mail-user-invitation-acceptation-body</li>
+    <li>mail-user-invitation-rejection-body</li>
+</ul>
+
+Each folder structure contains two subfolders, each with a `page.html` file.
+
+For example, the following content can be overridden to modify the layout of the email.
+
+```sh
+root 
+    tenant-mail-template
+        ├── en
+        │   └── page.html
+        └── fr
+            └── page.html
+```
