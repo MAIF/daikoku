@@ -362,19 +362,26 @@ fn clear(force: bool) -> DaikokuResult<()> {
     }
 }
 
+fn map_filesystem_err(err: zip::result::ZipError) -> DaikokuCliError {
+    DaikokuCliError::FileSystem(err.to_string())
+}
+fn map_io_err(err: std::io::Error) -> DaikokuCliError {
+    DaikokuCliError::FileSystem(err.to_string())
+}
+
 fn unzip_to_path(zip_bytes: &[u8], dest_path: &PathBuf) -> DaikokuResult<()> {
     let cursor = std::io::Cursor::new(zip_bytes);
 
     let mut archive =
-        zip::ZipArchive::new(cursor).map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+        zip::ZipArchive::new(cursor).map_err(map_filesystem_err)?;
 
     std::fs::create_dir_all(dest_path)
-        .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+        .map_err(map_io_err)?;
 
     for i in 0..archive.len() {
         let mut file = archive
             .by_index(i)
-            .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+            .map_err(map_filesystem_err)?;
 
         let filename = file.name().replace("cms/", "");
 
@@ -383,18 +390,18 @@ fn unzip_to_path(zip_bytes: &[u8], dest_path: &PathBuf) -> DaikokuResult<()> {
 
             if let Some(parent) = out_path.parent() {
                 std::fs::create_dir_all(parent)
-                    .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+                    .map_err(map_io_err)?;
             }
 
             if file.is_dir() {
                 let _ = create_dir(out_path)
-                    .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+                    .map_err(map_io_err)?;
             } else {
                 let mut dest_file = File::create(out_path)
-                    .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+                    .map_err(map_io_err)?;
 
                 std::io::copy(&mut file, &mut dest_file)
-                    .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+                    .map_err(map_io_err)?;
             }
         }
     }

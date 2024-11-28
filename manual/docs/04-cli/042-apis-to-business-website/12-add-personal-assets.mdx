@@ -1,0 +1,25 @@
+# 12 - Add personal assets
+
+In this tutorial, you’ve only used assets from external resources.
+However, Daikoku also provides a way to upload, store, and publish your own assets to your CMS.
+
+# Add your first asset
+
+Download the asset used earlier in this tutorial and save it to the `src/assets/api.jpeg` location.
+
+```sh
+wget -O ./assets/api.jpeg https://images.pexels.com/photos/1148820/pexels-photo-1148820.jpeg \
+    --user-agent="Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36"
+```
+
+In case of 403 failure, use one of your own assets instead.
+
+Each asset is save in the S3 of your Daikoku (you need to configure one if it hasn't been done already by navigating to `http(s)://<daikoku-url>/settings/settings/bucket`) using the following command
+```sh
+daikoku assets push --filename=api.jpeg \
+  --desc="Picture of API" \
+  --title="API" \
+  --slug=api.jpeg
+```
+
+You can now use this asset on the CMS.
