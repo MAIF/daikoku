@@ -1,21 +1,17 @@
-use std::{collections::HashMap, fs, io::Write, path::PathBuf};
+use std::{io::Write, path::PathBuf};
 
 use crate::{
     helpers::{
         bytes_to_struct, bytes_to_vec_of_struct, daikoku_cms_api_get, raw_daikoku_cms_api_get,
     },
-    logging::{
-        error::{DaikokuCliError, DaikokuResult},
-        logger,
-    },
-    models::folder::SourceExtension,
+    logging::{error::DaikokuResult, logger},
     PullCommands,
 };
 
 use super::{
     cms::{
-        self, create_api_folder, create_mail_folder, create_mail_tenant, create_path_and_file,
-        extract_metadata, Api, CmsPage, IntlTranslationBody, TenantMailBody, EXCLUDE_API,
+        self, create_api_folder, create_mail_folder, create_mail_tenant, Api, CmsPage,
+        IntlTranslationBody, TenantMailBody, EXCLUDE_API,
     },
     environments::{get_default_environment, read_apikey_from_secrets},
 };

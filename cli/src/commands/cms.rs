@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap,
-    fs::{self, File},
-    io::Write,
+    fs::{self, create_dir, File},
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -363,65 +362,55 @@ fn clear(force: bool) -> DaikokuResult<()> {
     }
 }
 
+fn unzip_to_path(zip_bytes: &[u8], dest_path: &PathBuf) -> DaikokuResult<()> {
+    let cursor = std::io::Cursor::new(zip_bytes);
+
+    let mut archive =
+        zip::ZipArchive::new(cursor).map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+
+    std::fs::create_dir_all(dest_path)
+        .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+
+    for i in 0..archive.len() {
+        let mut file = archive
+            .by_index(i)
+            .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+
+        let filename = file.name().replace("cms/", "");
+
+        if !filename.is_empty() {
+            let out_path = Path::new(dest_path).join(filename);
+
+            if let Some(parent) = out_path.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+            }
+
+            if file.is_dir() {
+                let _ = create_dir(out_path)
+                    .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+            } else {
+                let mut dest_file = File::create(out_path)
+                    .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+
+                std::io::copy(&mut file, &mut dest_file)
+                    .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+            }
+        }
+    }
+
+    Ok(())
+}
+
 #[async_recursion]
 async fn init(name: String, path: String) -> DaikokuResult<()> {
     logger::loading("<yellow>Initializing project</> ...".to_string());
 
-    let manifest_dir = std::env::temp_dir();
-
-    let zip_name = "cms.zip".to_string();
-
-    let zip_path = Path::new(&manifest_dir).join(zip_name.clone());
-
-    let _ = fs::remove_dir(PathBuf::from(&zip_path));
-
-    logger::indent_println(format!(
-        "convert template bytes to zip file, {}",
-        &zip_path.to_string_lossy()
-    ));
-    match fs::File::create(&zip_path) {
-        Ok(mut file) => match file.write_all(ZIP_CMS) {
-            Err(err) => return Err(DaikokuCliError::FileSystem(err.to_string())),
-            Ok(()) => (),
-        },
-        Err(e) => return Err(DaikokuCliError::FileSystem(e.to_string())),
-    };
-
     logger::indent_println("<yellow>Unzipping</> the template ...".to_string());
-    let zip_action = zip_extensions::read::zip_extract(&PathBuf::from(zip_path), &manifest_dir);
 
-    match zip_action {
-        Ok(()) => rename_plugin("cms".to_string(), name, Some(path)).await,
-        Err(er) => Err(DaikokuCliError::FileSystem(er.to_string())),
-    }
-}
+    let complete_path = Path::new(&path).join(&name);
 
-#[async_recursion]
-async fn rename_plugin(template: String, name: String, path: Option<String>) -> DaikokuResult<()> {
-    let complete_path = match &path {
-        Some(p) => Path::new(p).join(&name),
-        None => Path::new("./").join(&name),
-    };
-
-    let _ = match &path {
-        Some(p) => fs::create_dir_all(p),
-        None => Result::Ok(()),
-    };
-
-    let manifest_dir = std::env::temp_dir();
-
-    logger::indent_println(format!(
-        "<yellow>Write</> plugin from {} to {}",
-        &Path::new(&manifest_dir)
-            .join(format!("{}", template))
-            .to_string_lossy(),
-        &complete_path.to_string_lossy()
-    ));
-
-    match std::fs::rename(
-        Path::new(&manifest_dir).join(format!("{}", template)),
-        &complete_path,
-    ) {
+    match unzip_to_path(ZIP_CMS, &complete_path) {
         Ok(()) => {
             process(Commands::Cms {
                 command: crate::CmsCommands::Add {
