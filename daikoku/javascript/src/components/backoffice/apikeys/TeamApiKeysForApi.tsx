@@ -582,13 +582,9 @@ export const ApiKeyCard = ({
       }
     };
 
-    const disableRotation =
-      api.visibility === 'AdminOnly' || !!plan.autoRotation;
+    const disableRotation = api.visibility === 'AdminOnly' || !!plan.autoRotation;
 
-
-    const _customName = subscription.customName ||
-      planQuery.data.customName ||
-      planQuery.data.type
+    const _customName = subscription.customName || planQuery.data.customName
 
     console.debug({ subscription })
     return (

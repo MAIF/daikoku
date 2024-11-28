@@ -1,5 +1,7 @@
-import { IApi, IFastApi, IFastPlan, ITeamFull, ITeamFullGql, ITeamSimple, IUsagePlan, TOption, TOptions } from "../../types";
-import React, { useContext } from "react";
+import hash from 'object-hash';
+import { useContext } from "react";
+import { IApi, IFastPlan, ITeamFullGql, ITeamSimple, IUsagePlan, TOption, TOptions } from "../../types";
+
 import { I18nContext } from "../../contexts/i18n-context";
 
 export function partition(array: any, isValid: any) {
@@ -124,3 +126,23 @@ export const teamGQLToSimple = (team: ITeamFullGql): ITeamSimple => {
     users: team.users.map(({ user, teamPermission }) => ({ userId: user?.userId, teamPermission }))
   })
 }
+export const cleanHash = (item: any) => hash(cleanPromise(item))
+export const isPromise = (value: any) => {
+  return Boolean(value && typeof value.then === 'function');
+}
+export const cleanPromise = <T extends { [x: string]: any } | any[] | string | number | boolean,>(obj: T): T => {
+    if (!!obj && Array.isArray(obj)) {
+      return obj.map(cleanPromise) as T
+    } else if (!!obj && typeof obj === 'object') {
+      return Object.fromEntries(Object.entries(obj).map(([k, v]) => {
+        if (isPromise(v)) {
+          return [k, `promise-${k}`];
+        } else if (typeof v === "object") {
+          return [k, cleanPromise(v)];
+        } else {
+          return [k, v];
+        }
+      })) as T;
+    }
+    return obj;
+  };

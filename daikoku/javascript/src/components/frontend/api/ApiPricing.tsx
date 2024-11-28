@@ -5,7 +5,7 @@ import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
 import find from 'lodash/find';
 import { nanoid } from 'nanoid';
-import { memo, PropsWithChildren, useContext, useEffect, useState } from 'react';
+import { memo, useContext, useEffect, useState } from 'react';
 import More from 'react-feather/dist/icons/more-vertical';
 import { Link, useMatch, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -35,6 +35,7 @@ import {
   api as API,
   apikey,
   Can,
+  cleanHash,
   isPublish,
   isSubscriptionProcessIsAutomatic,
   manage,
@@ -49,7 +50,7 @@ import { ApiSwagger } from './ApiSwagger';
 
 export const currency = (plan?: IBaseUsagePlan) => {
   if (!plan) {
-    return ''; //todo: return undefined
+    return undefined;
   }
   const cur = find(currencies, (c) => c.code === plan.currency?.code);
   return `${cur?.name}(${cur?.symbol})`;
@@ -79,19 +80,6 @@ type MemoizedFormProps = {
   onSubmit: (plan: IUsagePlan) => void
 }
 
-const isPlanEqual = (oldProps: MemoizedFormProps, newProps: MemoizedFormProps) => {
-  const oldPlan = oldProps.plan
-  const newPlan = newProps.plan
-
-  //FIXME: better test with deepEqual for example or deep hash
-
-  return oldPlan.customName === newPlan.customName &&
-    oldPlan.customDescription === newPlan.customDescription &&
-    oldPlan.otoroshiTarget?.otoroshiSettings === newPlan.otoroshiTarget?.otoroshiSettings &&
-    oldPlan.otoroshiTarget?.authorizedEntities?.groups.length === newPlan.otoroshiTarget?.authorizedEntities?.groups.length &&
-    oldPlan.otoroshiTarget?.authorizedEntities?.services.length === newPlan.otoroshiTarget?.authorizedEntities?.services.length &&
-    oldPlan.otoroshiTarget?.authorizedEntities?.routes.length === newPlan.otoroshiTarget?.authorizedEntities?.routes.length
-}
 const MemoizedForm = memo((props: MemoizedFormProps) => {
   return (
     <Form
@@ -109,17 +97,7 @@ const MemoizedForm = memo((props: MemoizedFormProps) => {
       }}
     />
   )
-}, isPlanEqual)
-
-const FormSection = (props: PropsWithChildren<{ label: string }>) => {
-  return (
-    <div>
-      <hr />
-      <span className="mrf-collapse_label">{props.label}</span>
-      {props.children}
-    </div>
-  )
-}
+}, (newPlan, oldPlan) => cleanHash(oldPlan) === cleanHash(newPlan))
 
 const ApiPricingCard = (props: ApiPricingCardProps) => {
   const { Translation } = useContext(I18nContext);
@@ -281,53 +259,6 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     })
   }
 
-  //   const displaySubscription = () => {
-  //     Services.getMySubscriptions(props.api._id, props.api.currentVersion)
-  //       .then(r => {
-  //         openRightPanel({
-  //           title: "test",
-  //           content: <div>
-  //             {r.subscriptions.map(subscription => {
-  //               return (
-  //                 <ApiKeyCard
-  //                   api={props.api}
-  //                   apiLink={""}
-  //                   statsLink={`/`}
-  //                   key={subscription.apiKey.clientId}
-  //                   subscription={{
-  //                     ...subscription, 
-  //                     parentUp: false,
-  //                     planType: "",
-  //                     planName: "planname",
-  //                     apiName: "apiName",
-  //                     _humanReadableId: "hrid",
-  //                     children: []
-  // }}
-  //                   subscribedApis={[]}
-  //                   updateCustomName={() => Promise.resolve()}
-  //                   toggle={console.debug}
-  //                   makeUniqueApiKey={console.debug}
-  //                   deleteApiKey={console.debug}
-  //                   toggleRotation={(
-  //                     plan,
-  //                     enabled,
-  //                     rotationEvery,
-  //                     gracePeriod
-  //                   ) =>
-  //                     Promise.resolve()
-  //                   }
-  //                   regenerateSecret={console.debug}
-  //                   transferKey={console.debug}
-  //                 />
-  //               )
-  //             })}
-  //           </div>
-  //         })
-  //       })
-  //   }
-
-  const isDefault = plan._id === props.api.defaultUsagePlan
-
   const editPlan = () => props.updatePlan(props.plan)
   const deleteWithConfirm = () => confirm({
     message: "ok ?"
@@ -339,17 +270,6 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     }
   })
     .then(closeRightPanel)
-
-
-  const toggleVisibility = () => {
-    if (props.api.defaultUsagePlan !== plan._id) {
-      const originalVisibility = plan.visibility;
-      const visibility = originalVisibility === UsagePlanVisibility.public ? UsagePlanVisibility.private : UsagePlanVisibility.public;
-      const updatedPlan = { ...plan, visibility };
-      // savePlan(updatedPlan);
-      console.debug("save plan", { updatedPlan })
-    }
-  };
 
   const duplicatePlan = () => {
     const clone: IUsagePlan = {
@@ -390,24 +310,11 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
               id={`${plan._id}-dropdownMenuButton`}
             />
             <div className="dropdown-menu" aria-labelledby={`${plan._id}-dropdownMenuButton`}>
-              {!isDefault && (
-                <span
-                  onClick={toggleVisibility}
-                  className="dropdown-item cursor-pointer"
-                >
-                  {plan.visibility === UsagePlanVisibility.public && (
-                    <Translation i18nkey="Make it private">
-                      Make it private
-                    </Translation>
-                  )}
-                  {plan.visibility === UsagePlanVisibility.private && (
-                    <Translation i18nkey="Make it public">
-                      Make it public
-                    </Translation>
-                  )}
-                </span>
-              )}
-              <div className="dropdown-divider" />
+              <span className="dropdown-item cursor-pointer" onClick={editPlan}>
+                {tenant.display === 'environment'
+                  ? translate('pricing.edit.env.btn.label')
+                  : translate('Edit plan')}
+              </span>
               <span
                 className="dropdown-item cursor-pointer"
                 onClick={duplicatePlan}
@@ -415,11 +322,6 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                 {tenant.display === 'environment'
                   ? translate('pricing.clone.env.btn.label')
                   : translate('Duplicate plan')}
-              </span>
-              <span className="dropdown-item cursor-pointer" onClick={editPlan}>
-                {tenant.display === 'environment'
-                  ? translate('pricing.edit.env.btn.label')
-                  : translate('Edit plan')}
               </span>
               <div className="dropdown-divider" />
               <span
@@ -740,15 +642,15 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
     }
   ]
 
-  const quotasFlowPart: Flow = [{ label: "quotas", flow: ["maxPerSecond", "maxPerDay", "maxPerMonth"], collapsed: true }]
+  const quotasFlowPart: Flow = [{ label: "Configuration des quoats", flow: ["maxPerSecond", "maxPerDay", "maxPerMonth"], collapsed: true }]
 
   const billingFlow: Flow = [{
-    label: "priced",
+    label: "Configuration des frais",
     flow: ["paymentSettings", "costPerRequest", "currency", "billingPeriod", "trialPeriod"],
     collapsed: true
   }]
   const customizationFlow: Flow = [{
-    label: "Customization",
+    label: "Configuration des clés d'API",
     flow: ["autoRotation", "allowMultipleKeys", "otoroshiTarget.apikeyCustomization", "integrationProcess"],
     collapsed: true
   }]
@@ -806,7 +708,7 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
     visibility: {
       type: type.string,
       label: 'Visibility',
-      format: format.select,
+      format: format.buttonsSelect,
       options: [
         { label: 'Public', value: 'Public' },
         { label: 'Private', value: 'Private' },
@@ -1090,7 +992,7 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
       label: 'Max Requests Per Second',
       placeholder: 'Enter the maximum requests per second',
       constraints: [constraints.min(1, 'Must be at least 1'), constraints.integer("value.must.be.integer")],
-      onChange: ({value, setValue}) => setValue("maxPerSecond",  Number(value) || null),
+      onChange: ({ value, setValue }) => setValue("maxPerSecond", Number(value) || null),
       defaultValue: 10
     },
     maxPerDay: {
@@ -1262,64 +1164,61 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
   };
 
   return (
-    <>
-      <ToggleFormPartButton
-        value={quotasDisplayed}
-        action={setQuotasDisplayed}
-        falseLabel={"Illimité"}
-        falseDescription={"Les consommateurs peuvent effectuer un nombre illimité d'appels à l'API."}
-        trueLabel={"Quotas configurés"}
-        trueDescription={"Configurez des quotas pour limiter le nombre d'appels."}
-      />
-      <ToggleFormPartButton
-        value={billingDisplayed}
-        action={setBillingDisplayed}
-        falseLabel={"Gratuit"}
-        falseDescription={"Les consommateurs accèdent à l'API sans frais."}
-        trueLabel={"Avec frais"}
-        trueDescription={"Définissez des tarifs pour accéder à l'API, avec des options avancées."}
-      />
-      <ToggleFormPartButton
-        value={customizationDisplayed}
-        action={setCustomizationDisplayed}
-        falseLabel={"Sans personnalisation"}
-        falseDescription={"Utilisez une clé API standard sans configuration particulière."}
-        trueLabel={"Personnaliser la clé"}
-        trueDescription={"Appliquez une configuration avancée à la clé API générée."}
-      />
-      <MemoizedForm
-        schema={baseSchema}
-        flow={baseFlow}
-        onSubmit={setPlan}
-        plan={plan}
-      />
-      <MemoizedForm
-        schema={otoroshiSchema}
-        flow={otoroshiFlow}
-        onSubmit={setPlan}
-        plan={plan}
-      />
-      {quotasDisplayed &&
+    <div className='usage-plan-form-panel-content'>
+      <div className="usage-plan-form">
+
+        <ToggleFormPartButton
+          value={quotasDisplayed}
+          action={setQuotasDisplayed}
+          falseLabel={translate("usage.plan.form.quotas.selector.false.label")}
+          falseDescription={translate("usage.plan.form.quotas.selector.false.description")}
+          trueLabel={translate("usage.plan.form.quotas.selector.true.label")}
+          trueDescription={translate("usage.plan.form.quotas.selector.true.description")}
+        />
+        <ToggleFormPartButton
+          value={billingDisplayed}
+          action={setBillingDisplayed}
+          falseLabel={translate("usage.plan.form.pricing.selector.false.label")}
+          falseDescription={translate("usage.plan.form.pricing.selector.false.description")}
+          trueLabel={translate("usage.plan.form.pricing.selector.true.label")}
+          trueDescription={translate("usage.plan.form.pricing.selector.true.description")}
+        />
         <MemoizedForm
-          schema={quotasSchema}
-          flow={quotasFlowPart}
+          schema={baseSchema}
+          flow={baseFlow}
+          onSubmit={setPlan}
+          plan={plan}
+        />
+        <MemoizedForm
+          schema={otoroshiSchema}
+          flow={otoroshiFlow}
+          onSubmit={setPlan}
+          plan={plan}
+        />
+        <MemoizedForm
+          schema={customizationSchema}
+          flow={customizationFlow}
+          onSubmit={setPlan}
+          plan={plan}
+        />
+        {quotasDisplayed &&
+          <MemoizedForm
+            schema={quotasSchema}
+            flow={quotasFlowPart}
+            onSubmit={setPlan}
+            plan={plan}
+          />}
+        {billingDisplayed && <MemoizedForm
+          schema={billingSchema}
+          flow={billingFlow}
           onSubmit={setPlan}
           plan={plan}
         />}
-      {billingDisplayed && <MemoizedForm
-        schema={billingSchema}
-        flow={billingFlow}
-        onSubmit={setPlan}
-        plan={plan}
-      />}
-      {customizationDisplayed && <MemoizedForm
-        schema={customizationSchema}
-        flow={customizationFlow}
-        onSubmit={setPlan}
-        plan={plan}
-      />}
-      <button className='btn btn-outline-success' onClick={() => props.onSubmit(plan)}>Save</button>
-    </>
+      </div>
+      <div className="usage-plan-form--actions">
+        <button className='btn btn-outline-success' onClick={() => props.onSubmit(plan)}>{translate('Save')}</button>
+      </div>
+    </div>
   )
 }
 type ToggleButtonProps = {
@@ -1330,33 +1229,6 @@ type ToggleButtonProps = {
   falseLabel: string
   falseDescription: string
 
-}
-const _ToggleFormPartButton = (props: ToggleButtonProps) => {
-  const schema: Schema = {
-    enabled: {
-      type: type.bool,
-      label: null,
-      format: format.buttonsSelect,
-      props: {
-        trueLabel: props.trueLabel,
-        falseLabel: props.falseLabel,
-      }
-    }
-  }
-  return (
-    <Form
-      schema={schema}
-      onSubmit={(data) => props.action(data.enabled)}
-      options={{
-        autosubmit: true,
-        actions: {
-          submit: {
-            display: false
-          }
-        }
-      }}
-    />
-  )
 }
 
 const ToggleFormPartButton = (props: ToggleButtonProps) => {
@@ -1380,7 +1252,6 @@ const ToggleFormPartButton = (props: ToggleButtonProps) => {
     </div>
   )
 }
-
 
 export const ApiPricing = (props: ApiPricingProps) => {
 

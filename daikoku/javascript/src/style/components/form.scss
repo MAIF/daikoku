@@ -1,14 +1,36 @@
-.form-control, .form-control:focus {
+.form-control,
+.form-control:focus {
   background-color: $form-bg-color;
-  color:$form-text-color;
-  border-color:$form-border-color;
+  color: $form-text-color;
+  border-color: $form-border-color;
 }
 
-.form-control:disabled, .form-control[readonly] {
+.form-control:disabled,
+.form-control[readonly] {
   background-color: grey;
   color: #e2e2e2;
 }
 
 .motivation-form__editor .cm-editor {
   min-height: 0px;
+}
+
+.usage-plan-form-panel-content {
+  display: grid;
+  grid-template-rows: auto 70px;
+  row-gap: 5px;
+  height: calc(100vh - 80px);
+  
+
+  .usage-plan-form {
+    grid-row: 1 / 2;
+    overflow-y: scroll;
+  }
+
+  .usage-plan-form--actions {
+    grid-row: 2 / 2;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+  }
 }

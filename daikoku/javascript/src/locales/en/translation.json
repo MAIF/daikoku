@@ -1505,5 +1505,13 @@
     "api.home.create.plan.modal.title": "Create new usage plan",
     "api.home.create.plan.modal.description": "Create a new usage plan from scratch or import an existing usage plan from another API version. You can then customize it as needed.",
     "api.home.create.plan.modal.create.btn.label": "Create new usage plan",
-    "api.home.create.plan.modal.import.btn.label": "Import a existing usage plan"
+    "api.home.create.plan.modal.import.btn.label": "Import a existing usage plan",
+    "usage.plan.form.quotas.selector.true.label": "Configure quotas",
+    "usage.plan.form.quotas.selector.true.description": "Set quotas to limit the number of calls.",
+    "usage.plan.form.quotas.selector.false.label": "Unlimited",
+    "usage.plan.form.quotas.selector.false.description": "Consumers can make unlimited API calls.",
+    "usage.plan.form.pricing.selector.true.label": "With fees",
+    "usage.plan.form.pricing.selector.true.description": "Set prices to access the API, with advanced options.",
+    "usage.plan.form.pricing.selector.false.label": "Free",
+    "usage.plan.form.pricing.selector.false.description": "Consumers access the API free of charge."
 }
