@@ -73,25 +73,48 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
       message: translate('api_redoc.guest_user')
     })
     return <></>
-  } else if (props.swaggerConf?.specificationType === SpecificationType.openapi) {
+  } else {
+    const openApiDocForm = () => openRightPanel({
+      title: translate('update.api.details.panel.title'),
+      content: <div>
+        <TeamApiSwagger value={props.entity} save={d => props.save(d).then(closeRightPanel)} />
+      </div>
+    })
+
+
     return <div>
       <Can I={manage} a={API} team={props.ownerTeam}>
         <More
           className="a-fake"
-          aria-label="update api"
-          style={{ position: "absolute", right: 0 }}
-          onClick={() => openRightPanel({
-            title: "Update api",
-            content:
-              <TeamApiSwagger value={props.entity} save={d => props.save(d).then(closeRightPanel)} />
-          })
-          } />
+          aria-label={translate('update.api.openapi.btn.label')}
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+          id={`${props.entity._id}-dropdownMenuButton`}
+          style={{ position: "absolute", right: 0 }} />
+        <div className="dropdown-menu" aria-labelledby={`${props.entity._id}-dropdownMenuButton`}>
+          <span
+            onClick={() => openApiDocForm()}
+            className="dropdown-item cursor-pointer"
+          >
+            {translate('update.api.openapi.btn.label')}
+          </span>
+          {props.entity.swagger && <div className="dropdown-divider" />}
+          {props.entity.swagger && <span
+            onClick={() => props.save({ ...props.entity, swagger: null })}
+            className="dropdown-item cursor-pointer btn-outline-danger"
+          >
+            {translate('update.api.testing.delete.btn.label')}
+          </span>}
+        </div>
       </Can>
-      <RedocStandalone specUrl={props.swaggerUrl} options={{ downloadFileName, pathInMiddlePanel: true, sideNavStyle: SideNavStyleEnum.PathOnly, ...(props.swaggerConf?.additionalConf || {}) }} />
+      {props.swaggerConf?.specificationType === SpecificationType.openapi && <RedocStandalone specUrl={props.swaggerUrl} options={{ downloadFileName, pathInMiddlePanel: true, sideNavStyle: SideNavStyleEnum.PathOnly, ...(props.swaggerConf?.additionalConf || {}) }} />}
+      {props.swaggerConf?.specificationType === SpecificationType.asyncapi && <AsyncApiComponent schema={spec} config={config} />}
+      {!props.swaggerConf && (
+        <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
+          <div>{translate('update.api.openapi.not.found.alert')}</div>
+          <button className="btn btn-outline-info" onClick={openApiDocForm}>{translate('update.api.openapi.btn.label')}</button>
+        </div>
+      )}
     </div>
-  } else if (props.swaggerConf?.specificationType === SpecificationType.asyncapi && spec) {
-    return <AsyncApiComponent schema={spec} config={config} />
-  } else {
-    return <Spinner />
   }
 }

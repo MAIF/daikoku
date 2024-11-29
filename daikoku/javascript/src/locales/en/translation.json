@@ -1535,5 +1535,12 @@
     "update.api.description.successful.toast.label": "Description has been succesfully updated",
     "api.form.header.flow.label": "Header",
     "api.form.cms.header.label": "Custom API header from CMS page",
-    "api.form.cms.header.help": "Define a custom API header by using a CMS page."
+    "api.form.cms.header.help": "Define a custom API header by using a CMS page.",
+    "update.api.openapi.btn.label": "Edit API documentation",
+    "update.api.openapi.delete.btn.label": "Delete API documentation",
+    "update.api.testing.btn.label": "Edit API testing configuration",
+    "update.api.testing.delete.btn.label": "Delete testing configuration",
+    "update.api.successful.toast.label": "API succesfully updated",
+    "update.api.openapi.not.found.alert": "No API documentation configured.",
+    "update.api.testing.not.found.alert": "No API testing configured."
 }

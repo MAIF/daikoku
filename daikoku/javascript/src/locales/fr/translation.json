@@ -1535,5 +1535,12 @@
   "update.api.description.successful.toast.label": "La description a été modifée avec succès.",
   "api.form.header.flow.label": "Entête",
   "api.form.cms.header.label": "En-tête d'API personnalisé à partir de la page CMS",
-  "api.form.cms.header.help": "Définissez un en-tête d'API personnalisé à l'aide d'une page CMS."
+  "api.form.cms.header.help": "Définissez un en-tête d'API personnalisé à l'aide d'une page CMS.",
+  "update.api.openapi.btn.label": "Editer la documentation d'API",
+  "update.api.openapi.delete.btn.label": "Supprimer la documentation d'API",
+  "update.api.testing.btn.label": "Editer la configuration de test de l'API",
+  "update.api.testing.delete.btn.label": "Supprimer la configuration de test de l'API",
+  "update.api.successful.toast.label": "API succesfully updated",
+  "update.api.openapi.not.found.alert": "Aucune documentation d'API configurée.",
+  "update.api.testing.not.found.alert": "Aucun test d'API configuré."
 }

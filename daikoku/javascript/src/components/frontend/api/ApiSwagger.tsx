@@ -8,15 +8,15 @@ import { toast } from 'sonner';
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
-import { IApi, ISwagger, ITeamSimple, ITesting, IWithSwagger } from '../../../types';
+import { IApi, ISwagger, ITeamSimple, ITesting, IWithSwagger, IWithTesting } from '../../../types';
 import { Can, manage, api as API } from '../../utils';
 
 import 'swagger-ui-dist/swagger-ui.css';
 import { Form, format, type } from '@maif/react-forms';
-import { TeamApiSwagger } from '../../backoffice';
+import { TeamApiSwagger, TeamApiTesting } from '../../backoffice';
 
 
-type ApiSwaggerProps<T extends IWithSwagger> = {
+type ApiSwaggerProps<T extends IWithTesting> = {
   testing?: ITesting,
   swagger?: ISwagger,
   swaggerUrl: string,
@@ -26,7 +26,7 @@ type ApiSwaggerProps<T extends IWithSwagger> = {
   entity: T
   save: (d: T) => Promise<any>
 }
-export function ApiSwagger<T extends IWithSwagger>(props: ApiSwaggerProps<T>) {
+export function ApiSwagger<T extends IWithTesting>(props: ApiSwaggerProps<T>) {
 
   const { tenant, connectedUser } = useContext(GlobalContext)
 
@@ -129,45 +129,65 @@ export function ApiSwagger<T extends IWithSwagger>(props: ApiSwaggerProps<T>) {
       message: translate('api_swagger.guest_user')
     })
 
-  // const api = props.api;
-  if (!props._id) return <div>{translate({ key: 'api_data.missing', replacements: ['Swagger'] })}</div>;
+  const openApiDocForm = () => openRightPanel({
+    title: translate('update.api.details.panel.title'),
+    content: <div>
+      <TeamApiSwagger value={props.entity} save={d => props.save(d).then(closeRightPanel)} />
+    </div>
+  })
+  //FIXME: teamAPiTesting does not work on right panel right now
+  const openTestingForm = () => openRightPanel({
+    title: "Update api",
+    content:
+      <TeamApiTesting currentTeam={props.ownerTeam} value={props.entity} save={d => props.save(d).then(closeRightPanel)} />
+  })
 
-  if (state.error || state.info)
-    return (
-      <div className="d-flex justify-content-center w-100">
-        <Can I={manage} a={API} team={props.ownerTeam}>
-          <More
-            className="a-fake"
-            aria-label="update api"
-            style={{ position: "absolute", right: 0 }}
-            onClick={() => openRightPanel({
-              title: "Update api",
-              content: 
-                <TeamApiSwagger value={props.entity} save={d => props.save(d).then(closeRightPanel)} />
-            })
-            } />
-        </Can>
-        <span className={`alert alert-${state.error ? 'danger' : 'info'} text-center`}>
-          {state.error ? state.error : state.info}
-        </span>
-      </div>
-    );
-  else
-    return (
-      <div style={{ width: '100%' }}>
-        <Can I={manage} a={API} team={props.ownerTeam}>
-          <More
-            className="a-fake"
-            aria-label="update api"
-            style={{ position: "absolute", right: 0 }}
-            onClick={() => openRightPanel({
-              title: "Update api",
-              content:
-                <TeamApiSwagger value={props.entity} save={d => props.save(d).then(closeRightPanel)} />
-            })
-            } />
-        </Can>
-        <div id="swagger-ui" style={{ width: '100%' }} />
-      </div>
-    );
+  return (
+    <div className="d-flex justify-content-center w-100">
+      <Can I={manage} a={API} team={props.ownerTeam}>
+        <More
+          className="a-fake"
+          aria-label={translate('update.api.testing.btn.label')}
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+          id={`${props.entity._id}-dropdownMenuButton`}
+          style={{ position: "absolute", right: 0 }} />
+
+        <div className="dropdown-menu" aria-labelledby={`${props.entity._id}-dropdownMenuButton`}>
+          {!props.swagger && <span
+            onClick={() => openApiDocForm()}
+            className="dropdown-item cursor-pointer"
+          >
+            {translate('update.api.openapi.btn.label')}
+          </span>}
+          {props.swagger && <span
+            onClick={openTestingForm}
+            className="dropdown-item cursor-pointer"
+          >
+            {translate('update.api.testing.btn.label')}
+          </span>}
+          {props.entity.testing && <div className="dropdown-divider" />}
+          {props.entity.testing && <span
+            onClick={() => props.save({...props.entity, testing: null})}
+            className="dropdown-item cursor-pointer btn-outline-danger"
+          >
+            {translate('update.api.testing.delete.btn.label')}
+          </span>}
+        </div>
+      </Can>
+      {!props.swagger && (
+        <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
+          <div>{translate('update.api.openapi.not.found.alert')}</div>
+          <button className="btn btn-outline-info" onClick={openApiDocForm}>{translate('update.api.openapi.btn.label')}</button>
+        </div>
+      )}
+      {props.swagger && !props.testing && (
+        <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
+          <div>{translate('update.api.testing.not.found.alert')}</div>
+          <button className="btn btn-outline-info" onClick={openTestingForm}>{translate('update.api.testing.btn.label')}</button>
+        </div>
+      )}
+      {props.swagger && props.testing && <div id="swagger-ui" style={{ width: '100%' }} />}
+    </div>
+  );
 }

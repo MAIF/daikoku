@@ -180,8 +180,9 @@ export const ApiHome = ({
 
   const saveApi = (api: IApi) => {
     return (
-      Promise.resolve(console.debug({ api }))
-        .then(() => toast.success('Bravo'))
+      Promise.resolve(Services.saveTeamApi((ownerTeamQuery.data as ITeamSimple)._id, api, api.currentVersion))
+        .then(() => toast.success(translate('update.api.successful.toast.label')))
+        .then(() => queryClient.invalidateQueries({ queryKey: ['api']}))
     )
   }
 

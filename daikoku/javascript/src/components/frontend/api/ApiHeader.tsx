@@ -194,7 +194,7 @@ export const ApiHeader = ({
                           if (!isError(response)) {
                             queryClient.invalidateQueries({ queryKey: ["api"] });
                             closeRightPanel();
-                            toast.success("update.api.sucecssful.toast.label");
+                            toast.success("update.api.successful.toast.label");
                             navigate(`/${ownerTeam._humanReadableId}/${response._humanReadableId}/${response.currentVersion}/description`)
                           } else {
                             toast.error(response.error);

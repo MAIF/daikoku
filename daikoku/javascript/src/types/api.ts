@@ -11,6 +11,7 @@ export interface IWithDocumentation {
   documentation?: IDocumentation;
 }
 export interface IWithSwagger {
+  _id: string;
   swagger?: ISwagger;
 }
 

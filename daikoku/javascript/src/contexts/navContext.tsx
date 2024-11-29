@@ -140,31 +140,34 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
           swagger: {
             label: translate('Swagger'),
             action: () => {
-              if (api?.swagger?.content || api?.swagger?.url) navigateTo('swagger');
+              if (userCanUpdateApi || api?.swagger?.content || api?.swagger?.url) navigateTo('swagger');
             },
             className: {
               active: currentTab === 'swagger',
-              disabled: tenant.display === 'environment' || !api?.swagger?.content && !api?.swagger?.url,
+              disabled: !userCanUpdateApi && (tenant.display === 'environment' || !api?.swagger?.content && !api?.swagger?.url),
               'd-none': tenant.display === 'environment'
             },
           },
           testing: {
             label: translate('Testing'),
             action: () => {
-              if (api?.testing?.enabled) navigateTo('testing');
+              if (userCanUpdateApi || api?.testing?.enabled) navigateTo('testing');
             },
             className: {
               active: currentTab === 'testing',
-              disabled: tenant.display === 'environment' || !api?.testing?.enabled,
+              disabled: !userCanUpdateApi && (tenant.display === 'environment' || !api?.testing?.enabled),
               'd-none': tenant.display === 'environment'
             },
           },
           news: {
             label: translate('News'),
             action: () => {
-              if (api?.posts?.length) navigateTo('news');
+              if (userCanUpdateApi || api?.posts?.length) navigateTo('news');
             },
-            className: { active: currentTab === 'news', disabled: !api?.posts?.length },
+            className: {
+              active: currentTab === 'news',
+              disabled: !userCanUpdateApi && !api?.posts?.length
+            },
           },
           issues: {
             label: translate('Issues'),
