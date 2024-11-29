@@ -183,8 +183,8 @@ export const ApiHeader = ({
           <div className="dropdown-menu" aria-labelledby={`${api._humanReadableId}-dropdownMenuButton`}>
             <span
               onClick={() => openRightPanel({
-                title: translate({ key: "api.home.update.api.form.title", replacements: [api.name] }),
-                content: <div className="text-center">
+                title: translate("update.api.details.panel.title"),
+                content: <div className="">
                   <Form
                     schema={informationForm.schema}
                     flow={informationForm.flow(expertMode)} //todo: get real flow, for admin api for example

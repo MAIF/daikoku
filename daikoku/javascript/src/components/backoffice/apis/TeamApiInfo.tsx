@@ -98,7 +98,8 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
     customHeaderCmsPage: {
       type: type.string,
       format: format.select,
-      label: translate('CMS Page as Header'),
+      label: translate('api.form.cms.header.label'),
+      help: translate('api.form.cms.header.help'),
       props: { isClearable: true },
       optionsFrom: getCmsPages,
       transformer: page => ({
@@ -230,10 +231,17 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
   const flow = (expert: any) => [
     {
       label: translate('Basic.informations'),
-      flow: ['state', 'name', 'smallDescription', 'image', 'header', 'customHeaderCmsPage'].filter((entry) =>
+      flow: ['state', 'name', 'smallDescription', 'image'].filter((entry) =>
         simpleOrExpertMode(entry, expert)
       ),
       collapsed: false,
+    },
+    {
+      label: translate('api.form.header.flow.label'),
+      flow: ['header', 'customHeaderCmsPage'].filter((entry) =>
+        simpleOrExpertMode(entry, expert)
+      ),
+      collapsed: true,
     },
     {
       label: translate('Versions and tags'),

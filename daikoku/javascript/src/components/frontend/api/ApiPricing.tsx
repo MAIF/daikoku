@@ -642,15 +642,15 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
     }
   ]
 
-  const quotasFlowPart: Flow = [{ label: "Configuration des quoats", flow: ["maxPerSecond", "maxPerDay", "maxPerMonth"], collapsed: true }]
+  const quotasFlowPart: Flow = [{ label: translate("usage.plan.form.quotas.flow.label"), flow: ["maxPerSecond", "maxPerDay", "maxPerMonth"], collapsed: true }]
 
   const billingFlow: Flow = [{
-    label: "Configuration des frais",
+    label: translate("usage.plan.form.billing.flow.label"),
     flow: ["paymentSettings", "costPerRequest", "currency", "billingPeriod", "trialPeriod"],
     collapsed: true
   }]
   const customizationFlow: Flow = [{
-    label: "Configuration des clés d'API",
+    label: translate("usage.plan.form.customization.flow.label"),
     flow: ["autoRotation", "allowMultipleKeys", "otoroshiTarget.apikeyCustomization", "integrationProcess"],
     collapsed: true
   }]
@@ -701,13 +701,13 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
 
     customDescription: {
       type: type.string,
-      label: 'Custom Description',
-      placeholder: 'Enter a description for this usage plan',
+      label: translate('Description'),
+      placeholder: translate('usage.plan.form.description.help'),
       format: format.textarea,
     },
     visibility: {
       type: type.string,
-      label: 'Visibility',
+      label: translate('Visibility'),
       format: format.buttonsSelect,
       options: [
         { label: 'Public', value: 'Public' },
@@ -721,6 +721,7 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
       defaultValue: [],
       visible: ({ rawValues }) => rawValues['visibility'] !== 'Public',
       label: translate('Authorized teams'),
+      help: translate('usage.plan.form.authorized.teams.help'),
       optionsFrom: '/api/me/teams',
       transformer: (t: any) => ({
         label: t.name,
@@ -744,10 +745,6 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
             tenant._id,
             props.ownerTeam
           )
-            .then((r) => {
-              console.log({ r });
-              return r;
-            })
             .then((r) => (isError(r) ? [] : r)),
           transformer: (s: IOtoroshiSettings) => ({
             label: s.url,
@@ -989,25 +986,28 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
   const quotasSchema: Schema = {
     maxPerSecond: {
       type: type.number,
-      label: 'Max Requests Per Second',
-      placeholder: 'Enter the maximum requests per second',
-      constraints: [constraints.min(1, 'Must be at least 1'), constraints.integer("value.must.be.integer")],
+      label: translate('usage.plan.form.max.request.second.label'),
+      help: translate('usage.plan.form.max.request.second.help'),
+      placeholder: translate('usage.plan.form.max.request.placeholder'),
+      constraints: [constraints.min(1, translate('constraints.positive')), constraints.integer(translate('constraints.integer'))],
       onChange: ({ value, setValue }) => setValue("maxPerSecond", Number(value) || null),
       defaultValue: 10
     },
     maxPerDay: {
       type: type.number,
-      label: 'Max Requests Per Day',
-      placeholder: 'Enter the maximum requests per day',
-      constraints: [constraints.min(1, 'Must be at least 1'), constraints.integer("value.must.be.integer")],
+      label: translate('usage.plan.form.max.request.day.label'),
+      help: translate('usage.plan.form.max.request.day.help'),
+      placeholder: translate('usage.plan.form.max.request.placeholder'),
+      constraints: [constraints.min(1, translate('constraints.positive')), constraints.integer(translate('constraints.integer'))],
       onChange: ({ value, setValue }) => setValue("maxPerDay", Number(value) || null),
       defaultValue: 10
     },
     maxPerMonth: {
       type: type.number,
-      label: 'Max Requests Per Month',
-      placeholder: 'Enter the maximum requests per month',
-      constraints: [constraints.min(1, 'Must be at least 1'), constraints.integer("value.must.be.integer")],
+      label: translate('usage.plan.form.max.request.month.label'),
+      help: translate('usage.plan.form.max.request.month.help'),
+      placeholder: translate('usage.plan.form.max.request.placeholder'),
+      constraints: [constraints.min(1, translate('constraints.positive')), constraints.integer(translate('constraints.integer'))],
       onChange: ({ value, setValue }) => setValue("maxPerMonth", Number(value) || null),
       defaultValue: 10
     },
@@ -1017,13 +1017,13 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
     paymentSettings: {
       type: type.object,
       format: format.form,
-      label: translate('payment settings'),
+      label: translate('usage.plan.form.payment.settings.label'),
       schema: {
         thirdPartyPaymentSettingsId: {
           type: type.string,
           format: format.select,
-          label: translate('Type'),
-          help: 'If no type is selected, use Daikoku APIs to get billing informations',
+          label: translate('usage.plan.form.payment.settings.id.label'),
+          help: translate('usage.plan.form.third.party.payment.help'),
           options: queryFullTenant.data
             ? (queryFullTenant.data as ITenantFull).thirdPartyPaymentSettings
             : [],
@@ -1050,6 +1050,7 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
         translate(
           `Cost per ${rawValues?.billingDuration?.unit.toLocaleLowerCase()}`
         ),
+      help: translate("usage.plan.form.cost.per.period.help"),
       placeholder: translate('Cost per billing period'),
       constraints: [constraints.positive(translate('constraints.positive'))],
     },
@@ -1057,6 +1058,7 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
       type: type.number,
       label: translate('Cost per req.'),
       placeholder: translate('Cost per request'),
+      help: translate('usage.plan.form.cost.per.request.help'),
       constraints: [constraints.positive(translate('constraints.positive'))],
     },
     currency: {
@@ -1121,6 +1123,7 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
       type: type.object,
       format: format.form,
       label: translate('Trial'),
+      help: translate('usage.plan.form.trial.period.help'),
       schema: {
         value: {
           type: type.number,
@@ -1166,7 +1169,6 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
   return (
     <div className='usage-plan-form-panel-content'>
       <div className="usage-plan-form">
-
         <ToggleFormPartButton
           value={quotasDisplayed}
           action={setQuotasDisplayed}

@@ -53,7 +53,7 @@ export const ApiDescription = ({
         <div className="dropdown-menu" aria-labelledby={`${api._humanReadableId}-dropdownMenuButton`}>
           <span
             onClick={() => openRightPanel({
-              title: translate('update.api.description.panel.title'),
+              title: translate('update.api.details.panel.title'),
               content: <div>
                 <Form
                   schema={{
@@ -67,9 +67,12 @@ export const ApiDescription = ({
                     Services.saveTeamApi(ownerTeam._id, data, data.currentVersion)
                       .then(() => queryClient.invalidateQueries({ queryKey: ["api"] })) //todo: get the right keys
                       .then(() => closeRightPanel())
-                      .then(() => toast.success("update.api.sucecssful.toast.label"))
+                      .then(() => toast.success("update.api.description.successful.toast.label"))
                   }}
                   value={api}
+                  options={{actions: {
+                    submit: {label: translate("Save")}
+                  }}}
                 />
               </div>
             })}
