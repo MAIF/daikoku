@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkdaikoku_documentation=self.webpackChunkdaikoku_documentation||[]).push([[50],{59447:a=>{a.exports=JSON.parse('{"tags":[{"label":"installation","permalink":"/daikoku/docs/tags/installation","count":1},{"label":"licence","permalink":"/daikoku/docs/tags/licence","count":1}]}')}}]);
