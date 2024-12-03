@@ -1,0 +1,52 @@
+import APIImage from '@site/static/img/api.png';
+
+# Add dynamic content
+
+# Use your first directive
+
+1. Create a new directory at `src/pages/apis/`.
+
+Add a new (empty) file `page.html` inside your new `/apis/` folder.
+
+Look for this page in your browser preview by adding `/apis` to the end of your existing preview URL. (e.g. http://localhost:3333/apis)
+
+Change the browser preview URL to view /apis/test instead. (This is a page you have not yet created.)
+
+Note the different output when previewing an `empty` page, and one that doesn’t exist. This will help you troubleshoot in the future.
+
+We’re going to use a simple directive for displaying the details of the apis present in our Daikoku. 
+
+Mustache is a logicless template engine for creating dynamic content like HTML, configuration files among other things.
+
+Add the following code to your HTML template:
+
+```html title="src/pages/apis/page.html"
+_exact: true
+
+---
+
+<body>
+    <h1>My apis</h1>
+    {{#daikoku-apis}}
+    <div class="api">
+        <p>Api : {{api.name}}</p>
+        <p>{{api.smallDescription}}</p>
+    </div>
+    {{/daikoku-apis}}
+</body>
+```
+
+You can find the model for each entity (api, documentation, team, user, etc) on the [Daikoku OpenAPI documentation](https://maif.github.io/daikoku/openapi#tag/api/operation/apis.patch).
+
+<div style={{textAlign: 'center', width: 500, border: '1px solid #eee', borderRadius: '.25rem' }}>
+  <img
+    src={APIImage}
+    alt="schema d'architecture"
+  />
+</div>
+
+# Explore the Directives
+
+Following the steps above, you can access all Daikoku entities, including teams, APIs, users or documentation pages.
+
+You can find more information about them [here](https://maif.github.io/daikoku/docs/cli)

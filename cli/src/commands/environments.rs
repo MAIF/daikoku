@@ -185,7 +185,6 @@ async fn add(name: String, server: String, overwrite: bool, apikey: String) -> D
             } else {
                 "<green>New entry</> added".to_string()
             });
-            // logger::info(serde_json::to_string_pretty(&get(name)?).unwrap());
             Ok(())
         }
         Err(err) => Err(DaikokuCliError::Configuration(err.to_string())),

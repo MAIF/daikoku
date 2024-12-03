@@ -219,6 +219,10 @@ export const AssetsList = ({
       header: translate('Title'),
       meta: { style: { textAlign: 'left' } },
     }),
+    columnHelper.accessor(row => row.slug || '--', {
+      header: translate('Slug'),
+      meta: { style: { textAlign: 'left' } },
+    }),
     columnHelper.accessor(row => row.meta.desc || '--', {
       header: translate('Description'),
       meta: { style: { textAlign: 'left' } },

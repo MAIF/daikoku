@@ -28,7 +28,6 @@ daikoku environments remove <NAME>
 daikoku environments info <NAME> <FULL> // rename from env
 daikoku environments list
 daikoku environments config <APIKEY>
-// editer le .gitignore pour mettre le .secrets du .daikoku
 
 # GENERATE
 daikoku generate documentation <FILENAME> <TITLE> <DESC>

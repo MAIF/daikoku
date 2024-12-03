@@ -408,6 +408,8 @@ class DaikokuEnv(
   override def initDatastore(
       path: Option[String] = None
   )(implicit ec: ExecutionContext): Future[Done] = {
+
+
     def run(isEmpty: Boolean): Future[Unit] = {
       if (isEmpty) {
         (dataStore match {

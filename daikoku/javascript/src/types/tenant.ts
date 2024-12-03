@@ -154,7 +154,6 @@ interface ITenantStyle {
   notFoundCmsPage?: string;
   authenticatedCmsPage?: string;
   cacheTTL: number;
-  cmsHistoryLength: number;
   logo: string;
   footer?: string;
 }
@@ -236,6 +235,7 @@ export interface IAsset {
   contentType: string;
   meta: { [key: string]: string };
   link: string;
+  slug?: string;
 }
 
 export interface ITenantAdministration {

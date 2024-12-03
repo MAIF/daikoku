@@ -317,6 +317,7 @@ class TeamAssetsController(
                           )
                         }
                       case None =>
+                        println("HEHE")
                         NotFound(Json.obj("error" -> "Asset not found!"))
                     }
               }

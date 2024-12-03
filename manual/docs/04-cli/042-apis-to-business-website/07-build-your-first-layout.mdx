@@ -1,0 +1,66 @@
+# Build your first layout
+
+You still have some links and components repeatedly rendered on every page. It’s time to refactor again to create a shared page layout!
+
+# Create your first layout component
+
+Create a new file at the location `src/layouts/base.html`. (You will need to create a new layouts folder first.)
+
+Copy the entire contents of `src/pages/page.html` into your new file, `base.html`.
+
+```html title="src/layout/base.html"
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>My CMS</title>
+     
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body>
+  // deletion
+    <main>
+  // deletion
+        <h1>Welcome to your CMS</h1>
+  // deletion
+    </main>
+  // addition
+  {{children}}
+</body>
+</html>
+```
+
+# Use your layout on a page
+
+Replace the code at `src/pages/apis/page.html` with the following:
+
+```html title="src/pages/apis/page.html"
+{{#daikoku-template-wrapper "/layouts/base.html"}}
+    <h1 class="text-5xl font-bold">My apis</h1>
+    <div class="flex gap-5 m-5">
+      {{#daikoku-apis}}
+      <div class="card bg-base-100 w-96 shadow-xl">
+        <figure>
+          <img
+            src="https://images.pexels.com/photos/1148820/pexels-photo-1148820.jpeg"
+            alt="Shoes" />
+        </figure>
+        <div class="card-body">
+          <h2 class="card-title">
+            {{api.name}}
+            <div class="badge badge-secondary">{{api.version}}</div>
+          </h2>
+          <p>{{api.description}}</p>
+        </div>
+      </div>
+      {{/daikoku-apis}}
+    </div>
+{{/daikoku-template-wrapper}}
+```
+
+Check the browser preview again to notice what did (or, spoiler alert: did not!) change.

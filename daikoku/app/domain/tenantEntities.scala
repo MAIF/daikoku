@@ -178,7 +178,6 @@ case class DaikokuStyle(
     notFoundCmsPage: Option[String] = None,
     authenticatedCmsPage: Option[String] = None,
     cacheTTL: Int = 60000,
-    cmsHistoryLength: Int = 10,
     logo: String = "/assets/images/daikoku.svg",
     footer: Option[String] = None
 ) extends CanJson[DaikokuStyle] {
@@ -645,7 +644,7 @@ case class CmsFile(
       .as[Boolean]
   def exact(): Boolean =
     Json
-      .parse(metadata.getOrElse("_exact", JsString("true")).as[String])
+      .parse(metadata.getOrElse("_exact", JsString("false")).as[String])
       .as[Boolean]
 
   def id() = {
@@ -661,6 +660,7 @@ case class CmsFile(
       tenant = tenantId,
       visible = visible(),
       authenticated = authenticated(),
+      exact = exact(),
       name = name,
       forwardRef = None,
       tags = List.empty,
@@ -669,14 +669,12 @@ case class CmsFile(
       },
       contentType = contentType(),
       body = content,
-      draft = content,
       path = Some(path())
     )
   }
 }
 
-case class CmsRequestRendering(content: Seq[CmsFile], current_page: String)
-case class CmsHistory(id: String, date: DateTime, diff: String, user: UserId)
+case class CmsRequestRendering(content: Seq[CmsFile], current_page: String, fields: Map[String, JsValue])
 
 case class Asset(id: AssetId, tenant: TenantId, slug: String)
     extends CanJson[Asset] {
@@ -696,7 +694,6 @@ case class CmsPage(
     metadata: Map[String, String],
     contentType: String,
     body: String,
-    draft: String,
     path: Option[String] = None,
     exact: Boolean = false,
     lastPublishedDate: Option[DateTime] = None
@@ -1127,7 +1124,6 @@ case class CmsPage(
           metadata = Map(),
           contentType = "text/html",
           body = str,
-          draft = str,
           path = Some("/")
         ).render(
           ctx,
@@ -1305,7 +1301,6 @@ case class CmsPage(
                   tags = List(),
                   metadata = Map(),
                   contentType = "text/html",
-                  draft = options.fn.text(),
                   body = options.fn.text(),
                   path = Some("/")
                 ).render(
@@ -1383,16 +1378,13 @@ case class CmsPage(
     cmsFindByIdNotDeleted(ctx, id, req) match {
       case None => "#not-found"
       case Some(page) =>
-        val wantDraft = ctx.request.getQueryString("draft").contains("true")
         var path = page.path.getOrElse("")
 
         if (!path.startsWith("/"))
           path = s"/$path"
 
-        if (wantDraft)
-          s"/_${path}?draft=true"
-        else
-          s"/_${path}"
+
+        s"/_${path}"
     }
   }
 
@@ -1745,8 +1737,13 @@ case class CmsPage(
       else if (parentId.nonEmpty && page.id.value == parentId.get)
         FastFuture.successful(("", page.contentType))
       else {
-        val context = combineFieldsToContext(
-          Context
+        val template = req match {
+          case Some(value) if page.name != "#generated" =>
+            searchCmsFile(value, page).map(_.content).getOrElse("")
+          case _ => page.body
+        }
+
+        var contextBuilder = Context
             .newBuilder(this)
             .resolver(JsonNodeValueResolver.INSTANCE)
             .combine("tenant", ctx.tenant.asJson)
@@ -1761,7 +1758,35 @@ case class CmsPage(
                 else if (env.config.isProd)
                   s"${env.getDaikokuUrl(ctx.tenant, "/assets/react-app/daikoku.min.css")}"
               }
-            ),
+            )
+
+        if (template.contains("{{apis}")) {
+          contextBuilder = contextBuilder.combine("apis", Json.stringify(JsArray(Await
+              .result(env.dataStore.apiRepo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
+              .map(a => {
+                a.copy(
+                  description = a.description.replaceAll("\n", "\\n"),
+                  smallDescription = a.smallDescription.replaceAll("\n", "\\n"))
+                  .asJson
+              }))))
+        }
+
+        if (template.contains("{{teams}")) {
+          contextBuilder = contextBuilder.combine("teams", Json.stringify(JsArray(Await
+              .result(env.dataStore.teamRepo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
+              .map(a => {
+                a.copy(description = a.description.replaceAll("\n", "\\n")).asJson
+              }))))
+        }
+
+         if (template.contains("{{users}")) {
+          contextBuilder = contextBuilder.combine("users", Json.stringify(JsArray(Await
+              .result(env.dataStore.userRepo.findAllNotDeleted(), 10.seconds)
+              .map(_.toUiPayload()))))
+        }
+
+        val context = combineFieldsToContext(
+          contextBuilder,
           fields.map {
             case (key, value) =>
               (
@@ -1793,7 +1818,9 @@ case class CmsPage(
         }
 
         val handlebars = new Handlebars().`with`(new EscapingStrategy() {
-          override def escape(value: CharSequence): String = value.toString
+          override def escape(value: CharSequence): String = {
+            value.toString
+          }
         })
 
         handlebars.registerHelper(
@@ -1957,14 +1984,6 @@ case class CmsPage(
           (id: String, _: Options) => s"/cms/pages/$id"
         )
         handlebars.registerHelper(
-          "daikoku-page-preview-url",
-          (id: String, _: Options) => s"/cms/pages/$id?draft=true"
-        )
-        handlebars.registerHelper(
-          "daikoku-path-param",
-          (id: String, _: Options) => daikokuPathParam(ctx, id, req)
-        )
-        handlebars.registerHelper(
           "daikoku-query-param",
           (id: String, _: Options) =>
             ctx.request.queryString
@@ -2068,14 +2087,6 @@ case class CmsPage(
         )
 
         val c = context.build()
-
-        val template = req match {
-          case Some(value) if page.name != "#generated" =>
-            searchCmsFile(value, page).map(_.content).getOrElse("")
-          case _ =>
-            if (ctx.request.getQueryString("draft").contains("true")) page.draft
-            else page.body
-        }
 
         val result = handlebars.compileInline(template).apply(c)
         c.destroy()

@@ -3807,23 +3807,6 @@ object SchemaDefinition {
           )
       )
 
-    val CmsHistoryType =
-      deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsHistory](
-        ReplaceField(
-          "date",
-          Field("date", DateTimeUnitype, resolve = _.value.date)
-        ),
-        ReplaceField("diff", Field("diff", StringType, resolve = _.value.diff)),
-        ReplaceField(
-          "user",
-          Field(
-            "user",
-            OptionType(UserType),
-            resolve = ctx => ctx.ctx._1.userRepo.findById(ctx.value.user)
-          )
-        )
-      )
-
     lazy val CmsPageType
         : ObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsPage] =
       ObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsPage](
@@ -3860,7 +3843,6 @@ object SchemaDefinition {
             Field("metadata", MapType, resolve = _.value.metadata),
             Field("contentType", StringType, resolve = _.value.contentType),
             Field("body", StringType, resolve = _.value.body),
-            Field("draft", OptionType(StringType), resolve = _.value.draft),
             Field("path", OptionType(StringType), resolve = _.value.path),
             Field("exact", BooleanType, resolve = _.value.exact),
             Field(

@@ -1,0 +1,111 @@
+import APIStyling from '@site/static/img/apis-styling.png';
+
+# Style your APIs page
+
+# Style an individual page
+
+Using HTML’s own <style></style> tags, you can style items on your page. Adding attributes and directives to these tags gives you even more ways to style.
+
+Copy the following code and paste it into src/pages/apis/page.html:
+
+```html title="src/pages/apis/page.html"
+_exact: true
+
+---
+// addition
+<head>
+  // addition
+    <link href="styles/api.css" rel="stylesheet" type="text/css" />
+    // addition
+</head>
+
+<body>
+    <h1>My apis</h1>
+    {{#daikoku-apis}}
+    <div class="api">
+        <p>Api : {{api.name}}</p>
+        <p>{{api.smallDescription}}</p>
+    </div>
+    {{/daikoku-apis}}
+</body>
+```
+
+Add the following code a new file called `src/styles/api.css`:
+
+```css title="src/styles/api.css"
+.api {
+    border-radius: 1rem;
+    box-shadow: rgba(50, 50, 93, 0.25) 0px 2px 5px -1px, rgba(0, 0, 0, 0.3) 0px 1px 3px -1px;
+    max-width: 32rem;
+    padding: 1rem;
+}
+```
+
+# Add external CSS component library
+
+:::tip
+Writing a Daikoku template is very much like writing HTML, so you can use all HTML tags and import evertything, including external CSS external librairies.
+:::
+
+```html title="src/pages/apis/page.html"
+
+<head>
+  // deletion
+    <link href="styles/api.css" rel="stylesheet" type="text/css" />
+    // addition
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.14/dist/full.min.css" rel="stylesheet" type="text/css" />
+    // addition
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="m-5">
+    //addition
+    <h1 class="text-5xl font-bold">My apis</h1>
+    // addition
+    <div class="flex gap-5 m-5">
+      {{#daikoku-apis}}
+      // deletion
+      <div class="api">
+        //deletion
+          <p>Api : {{api.name}}</p>
+          //deletion
+          <p>{{api.smallDescription}}</p>
+          //deletion
+      </div>
+      // addition
+      <div class="card bg-base-100 w-96 shadow-xl">
+        // addition
+        <figure>
+          // addition
+          <img
+            src="https://images.pexels.com/photos/1148820/pexels-photo-1148820.jpeg"
+            alt="Shoes" />
+            // addition
+        </figure>
+        // addition
+        <div class="card-body">
+          // addition
+          <h2 class="card-title">
+            // addition
+            {{api.name}}
+            // addition
+            <div class="badge badge-secondary">{{api.version}}</div>
+            // addition
+          </h2>
+          // addition
+          <p>{{api.description}}</p>
+        </div>
+      </div>
+      {{/daikoku-apis}}
+    </div>
+</body>
+```
+
+Visit your APIs page in your browser again.
+
+<div style={{textAlign: 'center', width: 500, border: '1px solid #eee', borderRadius: '.25rem' }}>
+  <img
+    src={APIStyling}
+    alt="result"
+  />
+</div>

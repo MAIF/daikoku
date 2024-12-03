@@ -1,7 +1,6 @@
 use std::{
     collections::HashMap,
-    fs::{self, File},
-    io::Write,
+    fs::{self, create_dir, File},
     path::{Path, PathBuf},
     str::FromStr,
 };
@@ -46,7 +45,7 @@ pub(crate) struct CmsPage {
     #[serde(alias = "lastPublishedDate")]
     last_published_date: Option<u64>,
     #[serde(alias = "body")]
-    content: String,
+    pub(crate) content: String,
 }
 
 #[derive(Clone, Deserialize, Serialize, Debug)]
@@ -145,7 +144,6 @@ pub(crate) fn get_default_project() -> DaikokuResult<Project> {
 
     match (&project["name"], &project["path"]) {
         (Some(_name), Some(path)) => Ok(Project {
-            // name: name.to_string(),
             path: path.to_string(),
         }),
         (_, _) => Err(DaikokuCliError::Configuration(
@@ -215,20 +213,17 @@ pub(crate) fn get_project(name: String) -> DaikokuResult<Project> {
     ))?;
 
     match projects.get(&name) {
-        Some(project) => {
-            match (&project["name"], &project["path"]) {
-                (Some(_name), Some(path)) => {
-                    logger::info(serde_json::to_string_pretty(&project).unwrap());
-                    Ok(Project {
-                        // name: name.to_string(),
-                        path: path.to_string(),
-                    })
-                }
-                (_, _) => Err(DaikokuCliError::Configuration(
-                    "missing project or values in project.".to_string(),
-                )),
+        Some(project) => match (&project["name"], &project["path"]) {
+            (Some(_name), Some(path)) => {
+                logger::info(serde_json::to_string_pretty(&project).unwrap());
+                Ok(Project {
+                    path: path.to_string(),
+                })
             }
-        }
+            (_, _) => Err(DaikokuCliError::Configuration(
+                "missing project or values in project.".to_string(),
+            )),
+        },
         None => {
             return Err(DaikokuCliError::Configuration(
                 "project is missing".to_string(),
@@ -367,65 +362,62 @@ fn clear(force: bool) -> DaikokuResult<()> {
     }
 }
 
+fn map_filesystem_err(err: zip::result::ZipError) -> DaikokuCliError {
+    DaikokuCliError::FileSystem(err.to_string())
+}
+fn map_io_err(err: std::io::Error) -> DaikokuCliError {
+    DaikokuCliError::FileSystem(err.to_string())
+}
+
+fn unzip_to_path(zip_bytes: &[u8], dest_path: &PathBuf) -> DaikokuResult<()> {
+    let cursor = std::io::Cursor::new(zip_bytes);
+
+    let mut archive =
+        zip::ZipArchive::new(cursor).map_err(map_filesystem_err)?;
+
+    std::fs::create_dir_all(dest_path)
+        .map_err(map_io_err)?;
+
+    for i in 0..archive.len() {
+        let mut file = archive
+            .by_index(i)
+            .map_err(map_filesystem_err)?;
+
+        let filename = file.name().replace("cms/", "");
+
+        if !filename.is_empty() {
+            let out_path = Path::new(dest_path).join(filename);
+
+            if let Some(parent) = out_path.parent() {
+                std::fs::create_dir_all(parent)
+                    .map_err(map_io_err)?;
+            }
+
+            if file.is_dir() {
+                let _ = create_dir(out_path)
+                    .map_err(map_io_err)?;
+            } else {
+                let mut dest_file = File::create(out_path)
+                    .map_err(map_io_err)?;
+
+                std::io::copy(&mut file, &mut dest_file)
+                    .map_err(map_io_err)?;
+            }
+        }
+    }
+
+    Ok(())
+}
+
 #[async_recursion]
 async fn init(name: String, path: String) -> DaikokuResult<()> {
     logger::loading("<yellow>Initializing project</> ...".to_string());
 
-    let manifest_dir = std::env::temp_dir();
-
-    let zip_name = "cms.zip".to_string();
-
-    let zip_path = Path::new(&manifest_dir).join(zip_name.clone());
-
-    let _ = fs::remove_dir(PathBuf::from(&zip_path));
-
-    logger::indent_println(format!(
-        "convert template bytes to zip file, {}",
-        &zip_path.to_string_lossy()
-    ));
-    match fs::File::create(&zip_path) {
-        Ok(mut file) => match file.write_all(ZIP_CMS) {
-            Err(err) => return Err(DaikokuCliError::FileSystem(err.to_string())),
-            Ok(()) => (),
-        },
-        Err(e) => return Err(DaikokuCliError::FileSystem(e.to_string())),
-    };
-
     logger::indent_println("<yellow>Unzipping</> the template ...".to_string());
-    let zip_action = zip_extensions::read::zip_extract(&PathBuf::from(zip_path), &manifest_dir);
 
-    match zip_action {
-        Ok(()) => rename_plugin("cms".to_string(), name, Some(path)).await,
-        Err(er) => Err(DaikokuCliError::FileSystem(er.to_string())),
-    }
-}
+    let complete_path = Path::new(&path).join(&name);
 
-#[async_recursion]
-async fn rename_plugin(template: String, name: String, path: Option<String>) -> DaikokuResult<()> {
-    let complete_path = match &path {
-        Some(p) => Path::new(p).join(&name),
-        None => Path::new("./").join(&name),
-    };
-
-    let _ = match &path {
-        Some(p) => fs::create_dir_all(p),
-        None => Result::Ok(()),
-    };
-
-    let manifest_dir = std::env::temp_dir();
-
-    logger::indent_println(format!(
-        "<yellow>Write</> plugin from {} to {}",
-        &Path::new(&manifest_dir)
-            .join(format!("{}", template))
-            .to_string_lossy(),
-        &complete_path.to_string_lossy()
-    ));
-
-    match std::fs::rename(
-        Path::new(&manifest_dir).join(format!("{}", template)),
-        &complete_path,
-    ) {
+    match unzip_to_path(ZIP_CMS, &complete_path) {
         Ok(()) => {
             process(Commands::Cms {
                 command: crate::CmsCommands::Add {
@@ -480,12 +472,6 @@ async fn migrate(name: String, path: String, server: String, apikey: String) -> 
 
     let sources_path = project_path.join("src");
 
-    let root_mail_tenant = bytes_to_struct::<TenantMailBody>(
-        raw_daikoku_cms_api_get("/tenants/default", &server, &apikey)
-            .await?
-            .response,
-    )?;
-
     let root_mail_user_translations = bytes_to_struct::<IntlTranslationBody>(
         raw_daikoku_cms_api_get(
             "/translations/_mail?domain=tenant.mail.template",
@@ -515,7 +501,6 @@ async fn migrate(name: String, path: String, server: String, apikey: String) -> 
     .filter(|api| !EXCLUDE_API.contains(&api._id.as_str()))
     .collect();
 
-    create_mail_tenant(root_mail_tenant, sources_path.clone())?;
     create_mail_folder(root_mail_user_translations, sources_path.clone(), true)?;
     create_mail_folder(mail_user_template, sources_path.clone(), false)?;
 
@@ -624,30 +609,6 @@ pub(crate) fn create_api_folder(
     Ok(created)
 }
 
-pub(crate) fn create_mail_tenant(
-    mail_settings: TenantMailBody,
-    project_path: PathBuf,
-) -> DaikokuResult<()> {
-    let filename = "page.html".to_string();
-
-    let file_path = project_path
-        .clone()
-        .join(get_mail_page_path(&filename, true).unwrap());
-
-    let _ = create_path_and_file(
-        file_path,
-        mail_settings
-            .mailer_settings
-            .map(|mailer| mailer.template.unwrap_or("".to_string()))
-            .unwrap_or("".to_string()),
-        filename,
-        HashMap::new(),
-        SourceExtension::HTML,
-    );
-
-    Ok(())
-}
-
 pub(crate) fn create_mail_folder(
     intl_translation: IntlTranslationBody,
     project_path: PathBuf,
@@ -697,62 +658,6 @@ async fn create_cms_pages(
     convert_cms_pages(new_pages, sources_path.clone())
 }
 
-// fn clone_new_project(items: Vec<CmsPage>, project_path: &PathBuf) -> DaikokuResult<()> {
-//     println!("cloning new project");
-
-//     items
-//         .iter()
-//         .filter(|item| {
-//             !item.path.clone().unwrap().starts_with("apis")
-//                 && !item.path.clone().unwrap().starts_with("mails")
-//         })
-//         .for_each(|item| {
-//             let extension = SourceExtension::from_str(&item.content_type).unwrap();
-
-//             let item_path = item.path.clone().unwrap().clone();
-
-//             // Remove the slash if the path starts with one.
-//             let mut file_path = project_path.clone().join(if item_path.starts_with("/") {
-//                 &item_path[1..item_path.len()]
-//             } else {
-//                 item_path.as_str()
-//             });
-
-//             let split_path = item_path.split("/");
-
-//             // if the path didn't start with folder, we will place the page in the default pages folder
-//             if split_path
-//                 .clone()
-//                 .into_iter()
-//                 .find(|part| part.is_empty())
-//                 .is_some()
-//                 || split_path.collect::<Vec<&str>>().len() == 1
-//             {
-//                 file_path =
-//                     project_path
-//                         .clone()
-//                         .join("pages")
-//                         .join(if item_path.starts_with("/") {
-//                             &item_path[1..item_path.len()]
-//                         } else {
-//                             item_path.as_str()
-//                         });
-//             }
-
-//             let metadata = extract_metadata(item).unwrap_or(HashMap::new());
-
-//             let _ = create_path_and_file(
-//                 file_path,
-//                 item.content.clone(),
-//                 item.name.clone(),
-//                 metadata,
-//                 extension,
-//             );
-//         });
-
-//     Ok(())
-// }
-
 fn convert_cms_pages(items: Vec<CmsPage>, project_path: PathBuf) -> DaikokuResult<()> {
     items.iter().for_each(|item| {
         let extension = SourceExtension::from_str(&item.content_type).unwrap();
@@ -784,20 +689,28 @@ fn get_mail_page_path(filename: &String, is_root_mail: bool) -> DaikokuResult<Pa
 fn get_cms_page_path(item: &CmsPage) -> DaikokuResult<PathBuf> {
     let extension = SourceExtension::from_str(&item.content_type).unwrap();
 
-    let folder = match extension {
+    let mut folder = match extension {
         SourceExtension::HTML => item.path.clone().map(|_| "pages").unwrap_or("blocks"),
         SourceExtension::CSS => "styles",
         SourceExtension::Javascript => "scripts",
         SourceExtension::JSON => "data",
     };
 
-    let router_path = item.path.clone().map(|p| p.replace("/", "")).map(|path| {
-        if path == "/" || path.is_empty() {
-            item.name.clone()
-        } else {
-            path
-        }
-    });
+    if item.path.clone().map(|p| p.contains("mails")).is_some() {
+        folder = "mails"
+    }
+
+    let router_path = item
+        .path
+        .clone()
+        .map(|p| p.replacen("/", "", 1))
+        .map(|formatted_path| {
+            if formatted_path == "/" || formatted_path.is_empty() {
+                item.name.clone()
+            } else {
+                formatted_path
+            }
+        });
 
     let folder_path = if router_path
         .clone()
@@ -829,7 +742,6 @@ fn get_cms_page_path(item: &CmsPage) -> DaikokuResult<PathBuf> {
 pub fn create_path_and_file(
     file_buf: PathBuf,
     content: String,
-    // item: &CmsPage,
     name: String,
     metadata: HashMap<String, String>,
     content_type: SourceExtension,
