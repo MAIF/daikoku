@@ -1412,7 +1412,6 @@ object utils {
       forwardRef = None,
       tags = List(),
       metadata = Map(),
-      draft = "<h1>draft content</h1>",
       contentType = "text/html",
       body = "<h1>production content</h1>",
       path = Some("/" + IdGenerator.token(32))

@@ -1,12 +1,9 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import classNames from 'classnames';
-import moment from 'moment';
-import React, { useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { IPage } from '..';
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../contexts';
-import * as Services from '../../../services';
 import { Table, TableRef } from '../../inputs';
 
 export const CONTENT_TYPES = [
@@ -20,16 +17,13 @@ export const CONTENT_TYPES = [
 ];
 
 type PagesProps = {
-  pages: Array<IPage>,
-  removePage: (page: string) => void
+  pages: Array<IPage>
 }
 export const Pages = ({
-  pages,
-  removePage
+  pages
 }: PagesProps) => {
   const table = useRef<TableRef>()
   const { translate } = useContext(I18nContext);
-  const { alert, confirm } = useContext(ModalContext);
 
   useEffect(() => {
     if (table.current)
@@ -78,11 +72,6 @@ export const Pages = ({
       cell: (info) =>
         info.getValue() || <span className="badge bg-dark">{translate('cms.pages.block')}</span>
     }),
-    columnHelper.accessor(row => row.lastPublishedDate ? moment(row.lastPublishedDate).format(translate('moment.date.format')) : '-', {
-      header: translate('cms.pages.publish_date'),
-      meta: { style: { textAlign: 'left', width: '200px' } },
-      enableColumnFilter: false,
-    }),
     columnHelper.display({
       header: 'Actions',
       meta: { style: { textAlign: 'center', width: '120px' } },
@@ -90,16 +79,11 @@ export const Pages = ({
       enableSorting: false,
       cell: (info) => {
         const value = info.row.original;
-        let isCreatedFromCLI = false;
-
-        try {
-          isCreatedFromCLI = !!JSON.parse(info.row.original.metadata).from
-        } catch (_) { }
 
         const itemPath = value.path ? (value.path.startsWith('/') ? `/_${value.path}` : `/_/${value.path}`) : '#'
 
         return (
-          <div className="d-flex align-items-center">
+          <div className="d-flex align-items-center justify-content-center">
             <Link
               to={`/settings/pages/${value.id}`}
               onClick={(e) => e.stopPropagation()}>
@@ -118,25 +102,6 @@ export const Pages = ({
                 <i className="fas fa-eye" />
               </button>
             </Link>}
-            {!isCreatedFromCLI && <button
-              className="btn btn-sm btn-outline-danger"
-              onClick={(e) => {
-                e.stopPropagation();
-                (confirm({ message: translate('cms.pages.remove_confirm') }))
-                  .then((ok) => {
-                    if (ok) {
-                      Services.removeCmsPage(value.id).then((res) => {
-                        if (res.error)
-                          alert({ message: res.error });
-                        else
-                          removePage(value.id);
-                      });
-                    }
-                  });
-              }}
-            >
-              <i className="fas fa-trash" />
-            </button>}
           </div>
         );
       },

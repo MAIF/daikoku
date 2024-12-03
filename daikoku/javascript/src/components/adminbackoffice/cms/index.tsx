@@ -1,13 +1,13 @@
 import { getApolloContext, gql } from '@apollo/client';
-import { useContext, useEffect, useRef, useState } from 'react';
-import { Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { useContext, useEffect, useState } from 'react';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import { I18nContext } from '../../../contexts';
 import { Can, manage, tenant } from '../../utils';
 import { Create } from './Create';
-import { CONTENT_TYPES, Pages } from './Pages';
+import { Pages } from './Pages';
 import * as Services from '../../../services';
 import { Spinner } from '../..';
-import { ModalContext, useTenantBackOffice } from '../../../contexts';
+import { useTenantBackOffice } from '../../../contexts';
 
 export interface IPage {
   id: string
@@ -86,7 +86,7 @@ export const CMSOffice = () => {
         </div>
       </div>
 
-      <Pages pages={cmsPages} removePage={(id: string) => setPages(cmsPages.filter((f) => f.id !== id))} />
+      <Pages pages={cmsPages} />
     </div>);
   };
 

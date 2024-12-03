@@ -300,7 +300,20 @@ class HomeController(
             case Some(page) if !page.visible => cmsPageNotFound(ctx)
             case Some(page) if page.authenticated && ctx.user.isEmpty =>
               redirectToLoginPage(ctx)
-            case Some(page) => render(ctx, page)
+            case Some(page) =>
+              val uri = ctx.request.uri
+              if (uri.contains("/mails/") && !uri.contains("/mails/root/tenant-mail-template")) {
+                env.dataStore.cmsRepo.forTenant(ctx.tenant)
+                  .findById("-mails-root-tenant-mail-template-fr")
+                  .flatMap {
+                    case None => render(ctx, page)
+                    case Some(layout) =>
+                      val fields = Map("email" -> JsString(page.body))
+                      render(ctx, layout, skipCache = true, fields = fields)
+                  }
+              } else {
+                render(ctx, page)
+              }
           }
     }
 
