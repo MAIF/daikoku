@@ -153,7 +153,6 @@ interface ITenantStyle {
   homeCmsPage?: string;
   notFoundCmsPage?: string;
   authenticatedCmsPage?: string;
-  cacheTTL: number;
   logo: string;
   footer?: string;
 }

@@ -1,30 +1,21 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import com.github.blemale.scaffeine.{Cache, Scaffeine}
-import com.nimbusds.jose.util.StandardCharset
 import controllers.Assets
 import daikoku.BuildInfo
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{DaikokuAdminOrSelf, TenantAdminOnly}
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.sync.TeamMemberOnly
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{CmsFileFormat, CmsPageFormat, CmsRequestRenderingFormat}
+import fr.maif.otoroshi.daikoku.domain.json.CmsRequestRenderingFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Errors
 import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, MessagesApi}
 import play.api.libs.json._
 import play.api.mvc._
 
-import java.io.{ByteArrayOutputStream, File, FileInputStream, FileOutputStream}
-import java.util
-import java.util.concurrent.TimeUnit
-import java.util.zip.{ZipEntry, ZipInputStream, ZipOutputStream}
 import scala.collection.mutable
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.matching.Regex
 
@@ -41,13 +32,6 @@ class HomeController(
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val e: Env = env
   implicit val m: MessagesApi = messagesApi
-
-  case class CmsPageCache(contentType: String, content: String)
-
-  private val cache: Cache[String, CmsPageCache] = Scaffeine()
-    .expireAfterWrite(60.seconds)
-    .maximumSize(100)
-    .build[String, CmsPageCache]()
 
   private def manageCmsHome[A](
       ctx: DaikokuActionMaybeWithoutUserContext[A],
@@ -234,7 +218,7 @@ class HomeController(
             )) =>
           redirectToLoginPage(ctx)
         case Some(r) if !r.visible() => cmsPageNotFound(ctx)
-        case Some(page)              => render(ctx, page.toCmsPage(ctx.tenant.id), Some(req), skipCache = true, req.fields)
+        case Some(page)              => render(ctx, page.toCmsPage(ctx.tenant.id), Some(req), req.fields)
         case None                    => cmsPageNotFound(ctx)
       }
     }
@@ -309,7 +293,7 @@ class HomeController(
                     case None => render(ctx, page)
                     case Some(layout) =>
                       val fields = Map("email" -> JsString(page.body))
-                      render(ctx, layout, skipCache = true, fields = fields)
+                      render(ctx, layout, fields = fields)
                   }
               } else {
                 render(ctx, page)
@@ -364,55 +348,17 @@ class HomeController(
       ctx: DaikokuActionMaybeWithoutUserContext[A],
       r: CmsPage,
       req: Option[CmsRequestRendering] = None,
-      skipCache: Boolean = false,
       fields: Map[String, JsValue] = Map.empty[String, JsValue]
   ) = {
-    val forceReloading: Boolean =
-      ctx.request
-        .getQueryString("force_reloading")
-        .contains("true") || skipCache
-
-    val cacheId =
-      s"${ctx.user.map(_.id.value).getOrElse("")}-${r.path.getOrElse("")}"
-
-    cache
-      .policy()
-      .expireAfterWrite()
-      .ifPresent(eviction => {
-        val ttl: Long = ctx.tenant.style
-          .map(_.cacheTTL)
-          .getOrElse(60000)
-          .asInstanceOf[Number]
-          .longValue
-        if (eviction.getExpiresAfter(TimeUnit.MILLISECONDS) != ttl) {
-          cache.invalidateAll()
-          eviction.setExpiresAfter(ttl, TimeUnit.MILLISECONDS)
-        }
+    r.render(ctx, None, req = req, jsonToCombine = fields)
+      .map(res => {
+        Ok(res._1).as(res._2)
       })
-
-    if (forceReloading) {
-      r.render(ctx, None, req = req, jsonToCombine = fields)
-        .map(res => Ok(res._1).as(res._2))
-    } else
-      cache.getIfPresent(cacheId) match {
-        case Some(value) =>
-          FastFuture.successful(Ok(value.content).as(value.contentType))
-        case _ =>
-          r.render(ctx, None, req = req, jsonToCombine = fields)
-            .map(res => {
-              cache.put(
-                cacheId,
-                CmsPageCache(content = res._1, contentType = res._2)
-              )
-              Ok(res._1).as(res._2)
-            })
-      }
   }
 
   private def cmsPageByIdWithoutAction[A](
       ctx: DaikokuActionMaybeWithoutUserContext[A],
       id: String,
-      skipCache: Boolean = false,
       fields: Map[String, JsValue] = Map.empty
   ) = {
     env.dataStore.cmsRepo.forTenant(ctx.tenant).findByIdNotDeleted(id).flatMap {
@@ -424,14 +370,13 @@ class HomeController(
             s"/auth/${ctx.tenant.authProvider.name}/login?redirect=${ctx.request.path}"
           )
         )
-      case Some(page) =>
-        render(ctx, page, skipCache = skipCache, fields = fields)
+      case Some(page) => render(ctx, page, fields = fields)
     }
   }
 
   def cmsPageById(id: String) =
     DaikokuActionMaybeWithoutUser.async { ctx =>
-      cmsPageByIdWithoutAction(ctx, id, skipCache = true)
+      cmsPageByIdWithoutAction(ctx, id)
     }
 
   def advancedRenderCmsPageById(id: String) =
@@ -439,7 +384,6 @@ class HomeController(
       cmsPageByIdWithoutAction(
         ctx,
         id,
-        skipCache = true,
         fields = ctx.request.body
           .asOpt[JsObject]
           .flatMap(body => (body \ "fields").asOpt[Map[String, JsValue]])
