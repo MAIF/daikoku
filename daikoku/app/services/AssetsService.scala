@@ -1,13 +1,14 @@
 package fr.maif.otoroshi.daikoku.services
 
 import fr.maif.otoroshi.daikoku.actions.ApiActionContext
+import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
+import fr.maif.otoroshi.daikoku.ctrls.CmsApiActionContext
 import fr.maif.otoroshi.daikoku.domain.{Asset, AssetId}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.services.NormalizeSupport.normalize
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
-import org.apache.pekko.http.scaladsl.model.{ContentType, ContentTypes, HttpResponse}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.connectors.s3.ObjectMetadata
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
@@ -151,10 +152,6 @@ class AssetsService {
       .getQueryString("slug")
       .flatMap(slug => if (slug.isEmpty) None else Some(slug))
     val assetId = AssetId(IdGenerator.uuid)
-
-    println(contentType)
-
-    Future.successful(Ok(Json.obj()))
 
     ctx.tenant.bucketSettings match {
       case None =>
@@ -386,7 +383,6 @@ class AssetsService {
   ) = {
     implicit val ec = env.defaultExecutionContext
 
-
     ctx.tenant.bucketSettings match {
       case None =>
         FastFuture.successful(
@@ -420,38 +416,28 @@ class AssetsService {
             case Some(_) if download =>
               env.assetsStore
                 .getTenantAsset(ctx.tenant.id, AssetId(assetId))(cfg)
-                .map { case (metadata, data, s3Source) =>
+                .map {
+                  case None =>
+                    NotFound(Json.obj("error" -> "Asset not found!"))
+                  case Some((source, meta)) =>
+                    val filename = meta.metadata
+                      .filter(_.name().startsWith("x-amz-meta-"))
+                      .find(_.name() == "x-amz-meta-filename")
+                      .map(_.value())
+                      .getOrElse("asset.txt")
 
-//                  case None =>
-//                    NotFound(Json.obj("error" -> "Asset not found!"))
-//                  case Some((source, meta)) =>
-//                    val filename = meta.metadata
-//                      .filter(_.name().startsWith("x-amz-meta-"))
-//                      .find(_.name() == "x-amz-meta-filename")
-//                      .map(_.value())
-//                      .getOrElse("asset.txt")
-
-//                    Ok.send(
-                      val entity = org.apache.pekko.http.scaladsl.model.HttpEntity(
-                          metadata.contentType
-                            .flatMap(ContentType.parse(_).toOption)
-                            .getOrElse(ContentTypes.`application/octet-stream`),
-                          metadata.contentLength,
-                          s3Source)
-
-                      Ok.sendEntity(HttpEntity.Streamed(entity, None, None))
-
-//                  )
-//                        HttpEntity.Streamed(
-//                          Source.single(source),
-//                          None,
-//                          meta.contentType
-//                            .map(Some.apply)
-//                            .getOrElse(Some("application/octet-stream"))
-//                        )
-//                      .withHeaders(
-//                        "Content-Disposition" -> s"""attachment; filename="$filename""""
-//                      )
+                    Ok.sendEntity(
+                        HttpEntity.Streamed(
+                          source,
+                          None,
+                          meta.contentType
+                            .map(Some.apply)
+                            .getOrElse(Some("application/octet-stream"))
+                        )
+                      )
+                      .withHeaders(
+                        "Content-Disposition" -> s"""attachment; filename="$filename""""
+                      )
                 }
             case Some(url) =>
               env.wsClient

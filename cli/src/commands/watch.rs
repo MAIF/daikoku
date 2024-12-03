@@ -1,3 +1,4 @@
+use hyper::header::{HeaderValue, LOCATION};
 use regex::Regex;
 use std::collections::HashMap;
 use std::io::Read;
@@ -8,7 +9,7 @@ use http_body_util::{BodyExt, Empty, Full};
 use hyper::body::Bytes;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
-use hyper::{header, Method};
+use hyper::{header, Method, StatusCode};
 use hyper::{Request, Response};
 
 use hyper_util::rt::TokioIo;
@@ -110,8 +111,18 @@ async fn watcher(
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     let uri = req.uri().path().to_string();
 
-    if uri.starts_with("/api/") || uri.starts_with("/tenant-assets/") {
-        logger::println("forward to api or /tenant-assets".to_string());
+    if uri.starts_with("/tenant-assets/") {
+        let redirect_url = "http://localhost:5173/tenant-assets/api3.jpeg";
+
+        let mut response = Response::new(Full::<Bytes>::new(Bytes::from("")));
+        *response.status_mut() = StatusCode::FOUND; // 302 status
+        response
+            .headers_mut()
+            .insert(LOCATION, HeaderValue::from_str(redirect_url).unwrap());
+
+        Ok(response)
+    } else if uri.starts_with("/api/") {
+        logger::println("forward to api".to_string());
         forward_api_call(uri, req, environment).await
     } else {
         let path = uri.replace("_/", "");
@@ -242,13 +253,12 @@ async fn forward_api_call(
 
     let url: String = format!("{}{}", environment.server, uri);
 
-    let cookie = read_cookie_from_environment(true)?;
-
     let raw_req = Request::builder()
         .method(Method::from_str(&method).unwrap())
         .uri(&url)
         .header(header::HOST, &host)
-        .header(header::COOKIE, cookie);
+        .header("Accept", "*/*")
+        .header(header::COOKIE, read_cookie_from_environment(true)?);
 
     let req = if method == "GET" {
         raw_req.body(Empty::<Bytes>::new().boxed()).unwrap()
@@ -292,7 +302,9 @@ async fn forward_api_call(
 
     let (
         hyper::http::response::Parts {
-            headers: _, status, ..
+            headers: _headers,
+            status,
+            ..
         },
         body,
     ) = upstream_resp.into_parts();
@@ -300,6 +312,8 @@ async fn forward_api_call(
     let result: Vec<u8> = frame_to_bytes_body(body).await;
 
     let status = status.as_u16();
+
+    println!("{:?}", _headers);
 
     if status >= 300 && status < 400 {
         Ok(Response::new(Full::new(Bytes::from(
@@ -340,7 +354,9 @@ async fn render_page(
         fields.insert(param.key, param.value);
     }
 
-    if watch_path.starts_with("/mails") {
+    if watch_path.starts_with("/mails")
+        && !watch_path.starts_with("/mails/root/tenant-mail-template")
+    {
         let language = if watch_path.contains("/fr") {
             "fr"
         } else {
@@ -449,7 +465,6 @@ async fn render_page(
 
             let source = src.replace('"', "&quot;");
 
-            
             let children: String = if SourceExtension::from_str(&page.content_type()).unwrap()
                 == SourceExtension::HTML
             {

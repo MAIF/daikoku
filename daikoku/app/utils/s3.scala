@@ -3,11 +3,14 @@ package fr.maif.otoroshi.daikoku.utils
 import com.amazonaws.auth.{AWSStaticCredentialsProvider, BasicAWSCredentials}
 import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
-import com.amazonaws.services.s3.model.PutObjectRequest
 import com.amazonaws.{ClientConfiguration, HttpMethod, SdkClientException}
 import fr.maif.otoroshi.daikoku.domain._
 import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.http.scaladsl.model.{ContentType, ContentTypes, HttpHeader}
+import org.apache.pekko.http.scaladsl.model.{
+  ContentType,
+  ContentTypes,
+  HttpHeader
+}
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.connectors.s3.headers.CannedAcl
 import org.apache.pekko.stream.connectors.s3.scaladsl.S3
@@ -120,9 +123,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
         override def getRegion: Region = Region.of(conf.region)
       },
       listBucketApiVersion = ApiVersion.ListBucketVersion2
-    )
-      .withEndpointUrl(conf.endpoint)
-      .withAccessStyle(AccessStyle.PathAccessStyle)
+    ).withEndpointUrl(conf.endpoint)
     S3Attributes.settings(settings)
   }
 
@@ -141,7 +142,6 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
     val ctype = ContentType
       .parse(contentType)
       .getOrElse(ContentTypes.`application/octet-stream`)
-
     val meta = MetaHeaders(
       Map(
         "filename" -> name,
@@ -153,14 +153,6 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
         "content-type" -> ctype.value
       )
     )
-
-    lazy val opts = new ClientConfiguration()
-    lazy val endpointConfiguration =
-      new EndpointConfiguration(conf.endpoint, conf.region)
-    lazy val credentialsProvider = new AWSStaticCredentialsProvider(
-      new BasicAWSCredentials(conf.access, conf.secret)
-    )
-
     val sink = S3
       .multipartUpload(
         bucket = conf.bucket,
@@ -288,7 +280,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
         contentType = ctype,
         metaHeaders = meta,
         cannedAcl = CannedAcl.Private, // CannedAcl.PublicRead
-        chunkingParallelism = 1,
+        chunkingParallelism = 1
       )
       .withAttributes(s3ClientSettingsAttrs)
     content.toMat(sink)(Keep.right).run()
@@ -322,24 +314,17 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
     val attrs = s3ClientSettingsAttrs
     S3.listBucket(conf.bucket, Some(s"/${tenant.value}/tenant-assets"))
       .mapAsync(1) { content =>
-//        S3.getObjectMetadata(conf.bucket, content.key)
-//            .withAttributes(s3ClientSettingsAttrs)
-//              .toMat(Sink.head)(Keep.both)
-//              .run()
-//          ._2
-//          .map(meta => S3ListItem(content, meta.getOrElse(ObjectMetadata(Seq.empty))))
-          val (metadataFuture, _dataFuture) = S3.getObject(
-                conf.bucket,
-                content.key
+        val none: Option[ObjectMetadata] = None
+        S3.getObjectMetadata(conf.bucket, content.key)
+          .withAttributes(attrs)
+          .runFold(none)((_, opt) => opt)
+          .map {
+            case None =>
+              S3ListItem(
+                content,
+                ObjectMetadata(collection.immutable.Seq.empty[HttpHeader])
               )
-              .withAttributes(s3ClientSettingsAttrs)
-              .toMat(Sink.head)(Keep.both)
-              .run()
-
-          for {
-            metadata <- metadataFuture
-          } yield {
-            S3ListItem(content, metadata)
+            case Some(meta) => S3ListItem(content, meta)
           }
       }
       .withAttributes(attrs)
@@ -360,45 +345,11 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
 
   def getTenantAsset(tenant: TenantId, asset: AssetId)(implicit
       conf: S3Configuration
-  ): Future[(ObjectMetadata, ByteString, Source[ByteString, Future[ObjectMetadata]])] = {
-//    val none: Option[(Source[ByteString, NotUsed], ObjectMetadata)] = None
-
-//    val s3Source: Source[ByteString, Future[ObjectMetadata]] = S3.getObject(conf.bucket, s"/${tenant.value}/tenant-assets/${asset.value}")
-//    s3Source
-     val s3Source: Source[ByteString, Future[ObjectMetadata]] =
-       S3.getObject(conf.bucket, s"/${tenant.value}/tenant-assets/${asset.value}")
-
-    val (metadataFuture, dataFuture) =
-      s3Source.toMat(Sink.head)(Keep.both).run()
-
-        for {
-          m <- metadataFuture
-          d <- dataFuture
-        } yield {
-          (m, d, s3Source)
-        }
-
-//    val (meta, data) = S3.getObject(conf.bucket, s"/${tenant.value}/tenant-assets/${asset.value}")
-//          .withAttributes(s3ClientSettingsAttrs)
-//          .toMat(Sink.head)(Keep.both)
-//          .run()
-//
-//    for {
-//      m <- meta
-//      d <- data
-//    } yield {
-//      (d, m)
-//    }
-
-//    S3.getObject(conf.bucket, s"/${tenant.value}/tenant-assets/${asset.value}")
-//      .withAttributes(s3ClientSettingsAttrs)
-//      .runFold(none) { case (meta, data) =>
-//
-//        println(meta)
-//        println(data)
-//
-//        meta
-//      }
+  ): Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
+    val none: Option[(Source[ByteString, NotUsed], ObjectMetadata)] = None
+    S3.getObject(conf.bucket, s"/${tenant.value}/tenant-assets/${asset.value}")
+      .withAttributes(s3ClientSettingsAttrs)
+      .runFold(none)((opt, _) => opt)
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

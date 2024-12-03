@@ -48,6 +48,7 @@ testcontainers = "0.23.1"
 slug = "0.1.5"
 regex = "1.11.1"
 zip = "2.2.1"
+mime_guess = "2.0.5"
 
 [dependencies.uuid]
 version = "1.7.0"

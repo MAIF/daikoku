@@ -472,12 +472,6 @@ async fn migrate(name: String, path: String, server: String, apikey: String) -> 
 
     let sources_path = project_path.join("src");
 
-    let root_mail_tenant = bytes_to_struct::<TenantMailBody>(
-        raw_daikoku_cms_api_get("/tenants/default", &server, &apikey)
-            .await?
-            .response,
-    )?;
-
     let root_mail_user_translations = bytes_to_struct::<IntlTranslationBody>(
         raw_daikoku_cms_api_get(
             "/translations/_mail?domain=tenant.mail.template",
@@ -507,7 +501,6 @@ async fn migrate(name: String, path: String, server: String, apikey: String) -> 
     .filter(|api| !EXCLUDE_API.contains(&api._id.as_str()))
     .collect();
 
-    create_mail_tenant(root_mail_tenant, sources_path.clone())?;
     create_mail_folder(root_mail_user_translations, sources_path.clone(), true)?;
     create_mail_folder(mail_user_template, sources_path.clone(), false)?;
 
@@ -614,30 +607,6 @@ pub(crate) fn create_api_folder(
     });
 
     Ok(created)
-}
-
-pub(crate) fn create_mail_tenant(
-    mail_settings: TenantMailBody,
-    project_path: PathBuf,
-) -> DaikokuResult<()> {
-    let filename = "page.html".to_string();
-
-    let file_path = project_path
-        .clone()
-        .join(get_mail_page_path(&filename, true).unwrap());
-
-    let _ = create_path_and_file(
-        file_path,
-        mail_settings
-            .mailer_settings
-            .map(|mailer| mailer.template.unwrap_or("".to_string()))
-            .unwrap_or("".to_string()),
-        filename,
-        HashMap::new(),
-        SourceExtension::HTML,
-    );
-
-    Ok(())
 }
 
 pub(crate) fn create_mail_folder(

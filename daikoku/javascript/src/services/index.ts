@@ -1908,7 +1908,6 @@ export const graphql = {
         cmsPage(id: "${id}") {
             name
             path
-            draft
             body
             exact
             visible
@@ -1924,7 +1923,6 @@ export const graphql = {
   query GetCmsPage {
       cmsPage(id: "${id}") {
           name
-          draft
           history {
             id
             date

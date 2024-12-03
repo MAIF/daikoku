@@ -2,6 +2,7 @@ use std::any::type_name;
 
 use bytes::Buf;
 use hyper::header;
+use mime_guess::Mime;
 use serde::Deserialize;
 
 use crate::{
@@ -45,6 +46,7 @@ pub(crate) async fn daikoku_cms_api_post<T: Buf + std::marker::Send + 'static>(
     path: &str,
     body: T,
     is_json_content: bool,
+    content_type: Option<Mime>,
 ) -> DaikokuResult<Vec<u8>>
 where
     reqwest::Body: From<T>,
@@ -60,18 +62,24 @@ where
 
     let url: String = format!("{}/cms-api{}", environment.server, &path);
 
-    let builder = reqwest::Client::new().post(url).header(header::HOST, host);
+    let mut builder = reqwest::Client::new().post(url).header(header::HOST, host);
 
-    let resp = if is_json_content {
+    builder = if is_json_content {
         builder.header(header::CONTENT_TYPE, "application/json")
     } else {
         builder
     }
-    .header(header::AUTHORIZATION, format!("Basic {}", apikey))
-    .body(body)
-    .send()
-    .await
-    .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?;
+    .header(header::AUTHORIZATION, format!("Basic {}", apikey));
+
+    if let Some(content) = content_type {
+        builder = builder.header("Asset-Content-Type", content.to_string());
+    }
+
+    let resp = builder
+        .body(body)
+        .send()
+        .await
+        .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?;
 
     let status = resp.status().as_u16();
 

@@ -10,8 +10,8 @@ use crate::{
 
 use super::{
     cms::{
-        self, create_api_folder, create_mail_folder, create_mail_tenant, Api, CmsPage,
-        IntlTranslationBody, TenantMailBody, EXCLUDE_API,
+        self, create_api_folder, create_mail_folder, Api, CmsPage, IntlTranslationBody,
+        TenantMailBody, EXCLUDE_API,
     },
     environments::{get_default_environment, read_apikey_from_secrets},
 };
@@ -81,10 +81,6 @@ async fn mails_synchronization(project: &cms::Project) -> DaikokuResult<()> {
         .collect::<Vec<&CmsPage>>();
 
     if existing_emails_pages.is_empty() {
-        let root_mail_tenant = bytes_to_struct::<TenantMailBody>(
-            daikoku_cms_api_get("/tenants/default").await?.response,
-        )?;
-
         let root_mail_user_translations = bytes_to_struct::<IntlTranslationBody>(
             daikoku_cms_api_get("/translations/_mail?domain=tenant.mail.template")
                 .await?
@@ -97,7 +93,6 @@ async fn mails_synchronization(project: &cms::Project) -> DaikokuResult<()> {
                 .response,
         )?;
 
-        create_mail_tenant(root_mail_tenant, sources_path.clone())?;
         create_mail_folder(root_mail_user_translations, sources_path.clone(), true)?;
         create_mail_folder(mail_user_template, sources_path.clone(), false)?;
     } else {
@@ -107,15 +102,16 @@ async fn mails_synchronization(project: &cms::Project) -> DaikokuResult<()> {
                 .join(item.path.clone().unwrap().replacen("/", "", 1))
                 .join("page.html");
 
-            let mut file = std::fs::OpenOptions::new()
+            let file = std::fs::OpenOptions::new()
                 .write(true)
                 .truncate(true)
-                .open(file_path)
-                .unwrap();
+                .open(file_path);
 
-            let _ = file.write_all(item.content.clone().as_bytes());
+            if let Ok(mut email) = file {
+                let _ = email.write_all(item.content.clone().as_bytes());
 
-            let _ = file.flush();
+                let _ = email.flush();
+            }
         });
     }
 

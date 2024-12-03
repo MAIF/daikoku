@@ -284,8 +284,6 @@ class HomeController(
                       true
                     )
 
-//                  println(strictPage)
-
                   val (page, urlSearchParams) =
                     if (strictPage._1.nonEmpty)
                       strictPage

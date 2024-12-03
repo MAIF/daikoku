@@ -1,4 +1,4 @@
-# 12 - Add personal assets
+# Add personal assets
 
 In this tutorial, you’ve only used assets from external resources.
 However, Daikoku also provides a way to upload, store, and publish your own assets to your CMS.
@@ -22,4 +22,24 @@ daikoku assets push --filename=api.jpeg \
   --slug=api.jpeg
 ```
 
-You can now use this asset on the CMS.
+You can now use the asset on the CMS.
+
+Open the `src/pages/components/api.jsx` and edit the content
+
+```jsx title="src/pages/components/api.jsx"
+function MyAPIs() {
+
+    const apis = JSON.parse(`{{{apis}}}`);
+
+    return apis.map(api => {
+        return <div key={api.name} className="card bg-base-100 w-96 shadow-xl">
+            <figure>
+                <img
+            // deletion
+                    src="https://images.pexels.com/photos/1148820/pexels-photo-1148820.jpeg"
+              <img
+            // addition
+                    src="/tenant-assets/api.jpeg"
+```
+
+Check the browser preview again to notice what did (or, spoiler alert: did not!) change.

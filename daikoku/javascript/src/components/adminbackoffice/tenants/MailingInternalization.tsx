@@ -228,10 +228,8 @@ export const MailingInternalization = () => {
       {domain === 'mail' && <div>
         <div className="alert alert-warning" role="alert">
           You have to use the CLI to customize your Daikoku mails.
-        </div>
 
-        <div className='section p-2'>
-          <a href="https://maif.github.io/daikoku/docs/cli" target="_blank"> Follow these following instructions to start</a>
+          <a className="alert-link" href="https://maif.github.io/daikoku/docs/cli" target="_blank"> Follow these instructions to start</a>
         </div>
       </div>}
 

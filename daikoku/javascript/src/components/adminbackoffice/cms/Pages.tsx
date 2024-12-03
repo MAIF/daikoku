@@ -101,7 +101,7 @@ export const Pages = ({
         return (
           <div className="d-flex align-items-center">
             <Link
-              to={`/settings/pages/edit/${value.id}`}
+              to={`/settings/pages/${value.id}`}
               onClick={(e) => e.stopPropagation()}>
               <button className="btn btn-outline-info btn-sm me-1">
                 <i className="fas fa-pen" />
