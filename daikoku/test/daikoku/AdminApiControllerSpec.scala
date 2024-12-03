@@ -4749,7 +4749,6 @@ class AdminApiControllerSpec
           metadata = Map.empty,
           contentType = "text/html",
           body = "<div>hello world</div>",
-          draft = "<div>hello world</div>",
           path = None,
           lastPublishedDate = DateTime.now().some
         )
@@ -4782,7 +4781,6 @@ class AdminApiControllerSpec
           metadata = Map.empty,
           contentType = "text/html",
           body = "<div>hello world</div>",
-          draft = "<div>hello world</div>",
           path = None,
           lastPublishedDate = DateTime.now().some
         )
@@ -4816,7 +4814,6 @@ class AdminApiControllerSpec
           metadata = Map.empty,
           contentType = "text/html",
           body = "<div>hello world</div>",
-          draft = "<div>hello world</div>",
           path = None,
           lastPublishedDate = DateTime.now().some
         )
@@ -4849,7 +4846,6 @@ class AdminApiControllerSpec
           metadata = Map.empty,
           contentType = "text/html",
           body = "<div>hello world</div>",
-          draft = "<div>hello world</div>",
           path = None,
           lastPublishedDate = DateTime.now().some
         )
@@ -4880,7 +4876,6 @@ class AdminApiControllerSpec
           metadata = Map.empty,
           contentType = "text/html",
           body = "<div>hello world</div>",
-          draft = "<div>hello world</div>",
           path = None,
           lastPublishedDate = DateTime.now().some
         )
@@ -4912,7 +4907,6 @@ class AdminApiControllerSpec
           metadata = Map.empty,
           contentType = "text/html",
           body = "<div>hello world</div>",
-          draft = "<div>hello world</div>",
           path = None,
           lastPublishedDate = DateTime.now().some
         )
@@ -4951,7 +4945,6 @@ class AdminApiControllerSpec
           metadata = Map.empty,
           contentType = "text/html",
           body = "<div>hello world</div>",
-          draft = "<div>hello world</div>",
           path = None,
           lastPublishedDate = DateTime.now().some
         )
@@ -4991,7 +4984,6 @@ class AdminApiControllerSpec
           metadata = Map.empty,
           contentType = "text/html",
           body = "<div>hello world</div>",
-          draft = "<div>hello world</div>",
           path = None,
           lastPublishedDate = DateTime.now().some
         )
@@ -5035,7 +5027,6 @@ class AdminApiControllerSpec
           metadata = Map.empty,
           contentType = "text/html",
           body = "<div>hello world</div>",
-          draft = "<div>hello world</div>",
           path = None,
           lastPublishedDate = DateTime.now().some
         )
