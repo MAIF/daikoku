@@ -89,7 +89,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
       isValidationStepTeamAdmin(s)
     );
     if (adminStep && isValidationStepTeamAdmin(adminStep)) {
-      openFormModal<{ motivation: string }>({
+      openFormModal<any>({
         title: translate('motivations.modal.title'),
         schema: adminStep.schema,
         onSubmit: (motivation) => {
@@ -108,6 +108,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
           });
         },
         actionLabel: translate('Send'),
+        value: apiKey?.customMetadata
       });
     } else {
       apiKeyDemand().then((response) => {
