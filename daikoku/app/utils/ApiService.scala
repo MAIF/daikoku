@@ -2461,7 +2461,7 @@ class ApiService(
               )
             ).map(s =>
               Ok(
-                Json.obj("creation" -> "done", "subscription" -> s.asSafeJson)
+                Json.obj("creation" -> "done", "subscription" -> s.asJson)
               )
             )
           case steps =>

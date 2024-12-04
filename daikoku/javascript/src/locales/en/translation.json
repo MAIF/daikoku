@@ -1399,5 +1399,6 @@
     "subscription.copy.apikey.help": "Copy credentials as clientId:clientSecret",
     "subscription.copy.token.label": "token",
     "subscription.copy.token.help": "Copy daikoku token, used for retrieve credentials by API",
-    "setting.panel.reset.confirm.message": "Are you sure you want to reset your organization's data?"
+    "setting.panel.reset.confirm.message": "Are you sure you want to reset your organization's data?",
+    "api.pricing.created.subscription.panel.title": "Your API Key is Ready"
 }

@@ -590,7 +590,6 @@ export const ApiKeyCard = ({
       planQuery.data.customName ||
       planQuery.data.type
 
-    console.debug({ subscription })
     return (
       <div className='api-subscription'>
         <div className="api-subscription__container flex-column flex-xl-row">
@@ -814,3 +813,85 @@ export const Help = ({ message }: HelpProps) => {
     </BeautifulTitle>
   );
 };
+
+type SimpleApiKeyCardProps = {
+  subscription: ISubscription,
+  plan: IUsagePlan,
+  api: IApi
+  apiTeam: ITeamSimple
+}
+
+export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
+  const { translate } = useContext(I18nContext);
+
+  const _customName = props.subscription.customName || props.plan.customName
+
+  return (
+    <div className='api-subscription'>
+      <div className="api-subscription__container flex-column flex-xl-row">
+        <div className='api-subscription__infos'>
+          <div className='api-subscription__infos__name'>{_customName}</div>
+          <div className='d-flex gap-2'>
+            <BeautifulTitle title={translate("subscription.copy.apikey.help")}>
+              <button className='btn btn-sm btn-outline-info' onClick={() => {
+                navigator.clipboard
+                  .writeText(`${props.subscription.apiKey.clientId}:${props.subscription.apiKey.clientSecret}`)
+                  .then(() =>
+                    toast.info(translate('credential.copy.success'))
+                  )
+                  .catch(() =>
+                    toast.warning(translate('credential.copy.error'))
+                  );
+              }}>
+                <i className="fa fa-copy me-1" />
+                {translate("subscription.copy.apikey.label")}
+              </button>
+            </BeautifulTitle>
+            <BeautifulTitle title={translate("subscription.copy.token.help")}>
+              <button className='btn btn-sm btn-outline-info' onClick={() => {
+                navigator.clipboard
+                  .writeText(props.subscription.integrationToken)
+                  .then(() =>
+                    toast.info(translate('credential.copy.success'))
+                  )
+                  .catch(() =>
+                    toast.warning(translate('credential.copy.error'))
+                  );
+              }}>
+                <i className="fa fa-copy me-1" />
+                {translate("subscription.copy.token.label")}
+              </button>
+            </BeautifulTitle>
+            <BeautifulTitle title={translate("subscription.copy.basic.auth.help")}>
+              <button className='btn btn-sm btn-outline-info' onClick={() => {
+                navigator.clipboard
+                  .writeText(`Basic ${btoa(`${props.subscription.apiKey?.clientId}:${props.subscription.apiKey?.clientSecret}`)}`)
+                  .then(() =>
+                    toast.info(translate('credential.copy.success'))
+                  )
+                  .catch(() =>
+                    toast.warning(translate('credential.copy.error'))
+                  );
+              }}>
+                <i className="fa fa-copy me-1" />
+                {translate("subscription.copy.basic.auth.label")}
+              </button>
+            </BeautifulTitle>
+          </div>
+          <div className='api-subscription__infos__creation'>{
+            translate("subscription.for")} 
+            <span className='ms-1 underline'>{props.api.name}</span>/<span className='me-1 underline'>{props.plan.customName}</span>
+            {translate({
+              key: 'subscription.created.at', replacements: [moment(props.subscription.createdAt).format(translate('moment.date.format.without.hours'))]
+            })}
+            <span className={classNames('ms-1', {
+              "danger-color": moment(props.subscription.validUntil).isBefore(moment())
+            })}>
+              {props.subscription.validUntil && translate({
+                key: 'subscription.valid.until', replacements: [moment(props.subscription.validUntil).format(translate('moment.date.format.without.hours'))]
+              })}</span></div>
+        </div>
+      </div>
+    </div>
+  )
+}

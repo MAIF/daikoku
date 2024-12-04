@@ -19,6 +19,7 @@ import classNames from 'classnames';
 import 'highlight.js/styles/monokai.css';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { CmsViewer } from '../CmsViewer';
+import { ApiKeyCard, SimpleApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
 
 (window as any).hljs = hljs;
 
@@ -135,7 +136,8 @@ export const ApiHome = ({
   const [showAccessModal, setAccessModalError] = useState<any>();
   const [showGuestModal, setGuestModal] = useState(false);
 
-  const { connectedUser, tenant, reloadContext } = useContext(GlobalContext)
+  const { connectedUser, tenant, reloadContext } = useContext(GlobalContext);
+  const { openCustomModal, openRightPanel } = useContext(ModalContext);
 
   const navigate = useNavigate();
   const defaultParams = useParams();
@@ -143,8 +145,6 @@ export const ApiHome = ({
   const params = Option(apiGroupMatch)
     .map((match: any) => match.params)
     .getOrElse(defaultParams);
-
-  console.log(params)
 
   const { translate, Translation } = useContext(I18nContext);
   const { openLoginOrRegisterModal } = useContext(ModalContext);
@@ -243,7 +243,6 @@ export const ApiHome = ({
     );
   };
 
-
   const askForApikeys = ({ team, plan, apiKey, motivation }: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }) => {
     const planName = formatPlanType(plan, translate);
 
@@ -258,16 +257,16 @@ export const ApiHome = ({
           return toast.error(result.error);
         } else if (Services.isCheckoutUrl(result)) {
           window.location.href = result.checkoutUrl
-        } else if (result.creation === 'done') {
-          const teamName = myTeams.find((t) => t._id === result.subscription.team)!.name;
-          return toast.success(translate({ key: 'subscription.plan.accepted', replacements: [planName, teamName] }), {
-            actionButtonStyle: {
-              color: 'inherit',
-              backgroundColor: 'inherit'
-            },
-            action: <Navigation size='1.5rem' className="cursor-pointer" onClick={() => navigate(`/${result.subscription.team}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`)} />,
-
-          });
+        } else if (Services.isCreationDone(result)) {
+          openRightPanel({
+            title: translate('api.pricing.created.subscription.panel.title'),
+            content: <SimpleApiKeyCard
+              api={api!}
+              plan={plan!}
+              apiTeam={ownerTeam!}
+              subscription={result.subscription}
+            />
+          })
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
           return toast.info(translate({ key: 'subscription.plan.waiting', replacements: [planName, teamName] }));
