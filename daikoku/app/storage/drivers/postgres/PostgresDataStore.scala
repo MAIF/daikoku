@@ -17,6 +17,7 @@ import io.vertx.pgclient.{PgConnectOptions, PgPool, SslMode}
 import io.vertx.sqlclient.PoolOptions
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
+import services.CmsPage
 import storage._
 import storage.drivers.postgres.Helper._
 import storage.drivers.postgres.pgimplicits.EnhancedRow

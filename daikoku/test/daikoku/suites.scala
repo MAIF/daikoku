@@ -22,6 +22,7 @@ import org.scalatestplus.play.components.OneServerPerSuiteWithComponents
 import play.api.libs.json.{JsArray, JsNull, JsObject, JsValue, Json}
 import play.api.libs.ws.{DefaultWSCookie, WSResponse}
 import play.api.{Application, BuiltInComponents, Logger}
+import services.CmsPage
 
 import java.io.File
 import java.nio.charset.StandardCharsets

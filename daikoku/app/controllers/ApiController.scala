@@ -2955,10 +2955,10 @@ class ApiController(
               "mail.api.access.body",
               ctx.tenant,
               Map(
-                "user" -> ctx.user.name,
-                "apiName" -> api.name,
-                "teamName" -> team.name,
-                "link" -> env.getDaikokuUrl(ctx.tenant, "/notifications")
+                "user" -> JsString(ctx.user.name),
+                "apiName" -> JsString(api.name),
+                "teamName" -> JsString(team.name),
+                "link" -> JsString(env.getDaikokuUrl(ctx.tenant, "/notifications"))
               )
             )
           } yield {
@@ -3715,13 +3715,13 @@ class ApiController(
                                   "mail.create.post.body",
                                   ctx.tenant,
                                   Map(
-                                    "user" -> ctx.user.name,
-                                    "apiName" -> api.get.humanReadableId,
-                                    "teamName" -> api.get.team.value, //not sure
-                                    "link" -> env.getDaikokuUrl(
+                                    "user" -> JsString(ctx.user.name),
+                                    "apiName" -> JsString(api.get.humanReadableId),
+                                    "teamName" -> JsString(api.get.team.value), //not sure
+                                    "link" -> JsString(env.getDaikokuUrl(
                                       ctx.tenant,
                                       "/" + api.get.team.value + "/" + api.get.humanReadableId + "/" + api.get.currentVersion.value + "/news"
-                                    ) //same
+                                    )) //same
                                   )
                                 )
                               } yield {
@@ -4131,13 +4131,13 @@ class ApiController(
                                               "mail.new.issue.body",
                                               ctx.tenant,
                                               Map(
-                                                "user" -> ctx.user.name,
-                                                "apiName" -> api.name,
-                                                "teamName" -> api.team.value, // not sure if it's okay
-                                                "link" -> env.getDaikokuUrl(
+                                                "user" -> JsString(ctx.user.name),
+                                                "apiName" -> JsString(api.name),
+                                                "teamName" -> JsString(api.team.value), // not sure if it's okay
+                                                "link" -> JsString(env.getDaikokuUrl(
                                                   ctx.tenant,
                                                   "/" + api.team.value + "/" + api.humanReadableId + "/" + api.currentVersion.value + "/issues"
-                                                ) //same
+                                                )) //same
                                               )
                                             )
                                           } yield {

@@ -193,11 +193,12 @@ class TeamController(
                   "mail.create.team.token.body",
                   ctx.tenant,
                   Map(
-                    "team" -> team.name,
-                    "link" -> env.getDaikokuUrl(
+                    "objTeam" -> team.asJson,
+                    "team" -> JsString(team.name),
+                    "link" -> JsString(env.getDaikokuUrl(
                       ctx.tenant,
                       s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"
-                    )
+                    ))
                   )
                 )
               )
@@ -344,11 +345,11 @@ class TeamController(
                   "mail.create.team.token.body",
                   ctx.tenant,
                   Map(
-                    "team" -> team.name,
-                    "link" -> env.getDaikokuUrl(
+                    "team" -> JsString(team.name),
+                    "link" -> JsString(env.getDaikokuUrl(
                       ctx.tenant,
                       s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"
-                    )
+                    ))
                   )
                 )
                 _ <-
@@ -435,11 +436,11 @@ class TeamController(
                         "mail.create.team.token.body",
                         ctx.tenant,
                         Map(
-                          "team" -> teamToSave.name,
-                          "link" -> env.getDaikokuUrl(
+                          "team" -> JsString(teamToSave.name),
+                          "link" -> JsString(env.getDaikokuUrl(
                             ctx.tenant,
                             s"/api/teams/${teamToSave.humanReadableId}/_verify?token=$cipheredValidationToken"
-                          )
+                          ))
                         )
                       )
                       _ <- ctx.tenant.mailer.send(
@@ -563,10 +564,10 @@ class TeamController(
                       "mail.team.access.body",
                       ctx.tenant,
                       Map(
-                        "user" -> ctx.user.name,
-                        "teamName" -> team.name,
-                        "link" -> env
-                          .getDaikokuUrl(ctx.tenant, "/notifications")
+                        "user" -> JsString(ctx.user.name),
+                        "teamName" -> JsString(team.name),
+                        "link" -> JsString(env
+                          .getDaikokuUrl(ctx.tenant, "/notifications"))
                       )
                     )
                   } yield {
@@ -743,9 +744,9 @@ class TeamController(
             "mail.team.invitation.body",
             ctx.tenant,
             Map(
-              "user" -> ctx.user.name,
-              "teamName" -> team.name,
-              "link" -> env.getDaikokuUrl(ctx.tenant, "/notifications")
+              "user" -> JsString(ctx.user.name),
+              "teamName" -> JsString(team.name),
+              "link" -> JsString(env.getDaikokuUrl(ctx.tenant, "/notifications"))
             )
           )
         } yield {

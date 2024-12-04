@@ -313,7 +313,7 @@ object CommonServices {
     }
   }
 
-  def getVisibleApis[A](
+  def getVisibleApis(
       teamId: Option[String] = None,
       research: String,
       selectedTeam: Option[String] = None,

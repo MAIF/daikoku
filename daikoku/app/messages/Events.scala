@@ -10,7 +10,7 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Translator
 import org.joda.time.DateTime
 import play.api.i18n.{I18nSupport, Lang, MessagesApi}
-import play.api.libs.json.{JsArray, JsNull, JsNumber, JsValue, Json}
+import play.api.libs.json.{JsArray, JsNull, JsNumber, JsString, JsValue, Json}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -123,7 +123,7 @@ class MessageActor(implicit
         "mail.new.message.title",
         tenant,
         Map(
-          "user" -> sender.get.name
+          "user" -> JsString(sender.get.name)
         )
       )
       body <- translator.translate("mail.new.message.body", tenant)

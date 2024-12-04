@@ -1,5 +1,6 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
+import cats.implicits.catsSyntaxOptionId
 import controllers.Assets
 import daikoku.BuildInfo
 import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
@@ -12,8 +13,10 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Errors
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.i18n.{I18nSupport, MessagesApi}
+import play.api.libs
 import play.api.libs.json._
 import play.api.mvc._
+import services.{CmsPage, CmsRequestRendering}
 
 import scala.collection.mutable
 import scala.concurrent.{ExecutionContext, Future}
@@ -186,8 +189,7 @@ class HomeController(
                   }
                 }
               )
-              println("matching routes")
-              matchingRoutes.foreach(p => println(p._1.mkString(", ")))
+
               if (matchingRoutes.nonEmpty)
                 matchingRoutes.map(p => (p._1.tail, p._2))
               else {
@@ -323,7 +325,14 @@ class HomeController(
           .findById(p.notFoundCmsPage.get)
           .flatMap {
             case Some(page) =>
-              page.render(ctx, req = None).map(res => Ok(res._1).as(res._2))
+              page.render(page.maybeWithoutUserToUserContext(ctx.tenant,
+                ctx.request.asInstanceOf[Request[libs.json.JsValue]].some,
+                ctx.user,
+                ctx.session,
+                ctx.impersonator,
+                ctx.isTenantAdmin,
+                ctx.apiCreationPermitted,
+                ctx.ctx), req = None).map(res => Ok(res._1).as(res._2))
             case _ =>
               Errors.craftResponseResult(
                 "Page not found !",
@@ -350,7 +359,14 @@ class HomeController(
       req: Option[CmsRequestRendering] = None,
       fields: Map[String, JsValue] = Map.empty[String, JsValue]
   ) = {
-    r.render(ctx, None, req = req, jsonToCombine = fields)
+    r.render(r.maybeWithoutUserToUserContext(ctx.tenant,
+        ctx.request.asInstanceOf[Request[libs.json.JsValue]].some,
+        ctx.user,
+        ctx.session,
+        ctx.impersonator,
+        ctx.isTenantAdmin,
+        ctx.apiCreationPermitted,
+        ctx.ctx), None, req = req, fields = fields, jsonToCombine = fields)
       .map(res => {
         Ok(res._1).as(res._2)
       })

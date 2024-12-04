@@ -6,10 +6,7 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  _TeamMemberOnly,
-  _TenantAdminAccessTenant
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
@@ -22,6 +19,7 @@ import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
 import sangria.macros.derive._
 import sangria.schema.{Context, _}
 import sangria.validation.ValueCoercionViolation
+import services.CmsPage
 import storage._
 
 import java.util.concurrent.TimeUnit

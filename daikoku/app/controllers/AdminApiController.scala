@@ -23,6 +23,7 @@ import play.api.http.HttpEntity
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
 import play.api.mvc._
+import services.CmsPage
 import storage.drivers.postgres.PostgresDataStore
 import storage.{DataStore, Repo}
 

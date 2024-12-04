@@ -11,6 +11,7 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsObject, Json}
 import play.api.libs.ws.WSResponse
+import services.CmsPage
 
 import java.util.Base64
 import scala.concurrent.duration.DurationInt

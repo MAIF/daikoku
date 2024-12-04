@@ -1,26 +1,25 @@
 package fr.maif.otoroshi.daikoku.utils
 
 import org.apache.pekko.http.scaladsl.util.FastFuture
-import fr.maif.otoroshi.daikoku.domain.Tenant
+import fr.maif.otoroshi.daikoku.domain.{CmsPageId, Tenant}
 import fr.maif.otoroshi.daikoku.env.Env
 import play.api.i18n.{Lang, MessagesApi}
-import play.api.libs.json.Json
+import play.api.libs.json.{JsArray, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, Json}
+import services.CmsPage
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 class Translator {
 
   private def getTranslation(
       key: String,
-      tenant: Tenant,
-      args: Map[String, String] = Map.empty
+      tenant: Tenant
   )(implicit
       messagesApi: MessagesApi,
       language: String,
       env: Env
   ): Future[String]= {
     implicit val ec = env.defaultExecutionContext
-    implicit val mat = env.defaultMaterializer
 
     env.dataStore.translationRepo
       .forTenant(tenant)
@@ -34,7 +33,7 @@ class Translator {
   def translate(
       key: String,
       tenant: Tenant,
-      args: Map[String, String] = Map.empty
+      args: Map[String, JsValue] = Map.empty
   )(implicit
       messagesApi: MessagesApi,
       language: String,
@@ -48,20 +47,54 @@ class Translator {
         .findOne(Json.obj("_id" -> s".mails.$key.${language.toLowerCase}".replaceAll("\\.", "-")))
         .flatMap {
           case None =>
-            getTranslation(key, tenant, args)
+            getTranslation(key, tenant)
           case Some(cmsPage) =>
             FastFuture.successful(cmsPage.body)
 
         }
     } else {
-      getTranslation(key, tenant, args)
+      getTranslation(key, tenant)
     }
 
-    body.map { value =>
+    renderTranslationAsCmsPage(body, tenant, args)
+  }
+
+  def renderTranslationAsCmsPage(value: Future[String],
+                                 tenant: Tenant,
+                                 args: Map[String, JsValue] = Map.empty)
+  (implicit
+      env: Env,
+      messagesApi: MessagesApi
+  ): Future[String] = {
+    implicit val ec: ExecutionContext = env.defaultExecutionContext
+    value.map(value => replaceVariables(value, args))
+      .flatMap(content => {
+          val page = CmsPage(
+            id = CmsPageId(IdGenerator.token(32)),
+            tenant = tenant.id,
+            visible = true,
+            authenticated = false,
+            name = "#generated",
+            forwardRef = None,
+            tags = List(),
+            metadata = Map(),
+            contentType = "text/html",
+            body = content,
+            path = Some("/")
+          )
+
+        page.render(
+          page.maybeWithoutUserToUserContext(tenant),
+          req = None,
+          fields = args
+        )
+    }.map(_._1))
+  }
+
+  def replaceVariables(value: String, args: Map[String, JsValue]): String = {
       args.foldLeft(value) { (acc, a) =>
-        acc.replace(s"[${a._1}]", a._2)
+        acc.replace(s"[${a._1}]", a._2.toString)
       }
-    }
   }
 
    def _getMailTemplate(key: String, tenant: Tenant)(implicit
@@ -79,19 +112,19 @@ class Translator {
        .flatMap {
          case None =>
            tenant.mailerSettings match {
-             case None => translate(key, tenant, Map("email" -> defaultTemplate))
+             case None => translate(key, tenant, Map("email" -> JsString(defaultTemplate)))
              case Some(mailer) =>
                mailer.template
                  .map(t => FastFuture.successful(t))
                  .getOrElse(
-                   translate(key, tenant, Map("email" -> defaultTemplate))
+                   translate(key, tenant, Map("email" -> JsString(defaultTemplate)))
                  )
            }
          case Some(translation) => FastFuture.successful(translation.value)
        }
    }
 
-  def getMailTemplate(key: String, tenant: Tenant)(implicit
+  def getMailTemplate(key: String, tenant: Tenant, args: Map[String, JsValue])(implicit
       language: String,
       env: Env,
       messagesApi: MessagesApi
@@ -104,7 +137,7 @@ class Translator {
         .flatMap {
           case None => _getMailTemplate(key, tenant)
           case Some(cmsPage) =>
-            FastFuture.successful(cmsPage.body)
+            renderTranslationAsCmsPage(FastFuture.successful(cmsPage.body), tenant, args)
         }
   }
 }

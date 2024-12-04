@@ -6,21 +6,12 @@ import fr.maif.otoroshi.daikoku.audit.KafkaConfig
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
-  Accepted,
-  Pending,
-  Rejected
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.otoroshi.daikoku.domain.ThirdPartySubscriptionInformations.StripeSubscriptionInformations
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiIdFormat,
-  TeamIdFormat,
-  TenantIdFormat
-}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
@@ -28,8 +19,8 @@ import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import fr.maif.otoroshi.daikoku.utils._
 import org.joda.time.DateTime
 import play.api.libs.json._
+import services.{CmsFile, CmsPage, CmsRequestRendering}
 
-import java.util
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}

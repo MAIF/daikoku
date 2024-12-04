@@ -404,8 +404,8 @@ class AuditActor(implicit
               "mail.apikey.rotation.body",
               tenant,
               Map(
-                "apiName" -> api.name,
-                "planName" -> plan.customName.getOrElse(plan.typeName)
+                "apiName" -> JsString(api.name),
+                "planName" -> JsString(plan.customName.getOrElse(plan.typeName))
               )
             )
           )

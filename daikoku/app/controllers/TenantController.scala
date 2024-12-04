@@ -572,20 +572,20 @@ class TenantController(
                 "mail.contact.sender",
                 ctx.tenant,
                 Map(
-                  "user" -> name,
-                  "email" -> email,
-                  "subject" -> subject,
-                  "body" -> sanitizeBody
+                  "user" -> JsString(name),
+                  "email" -> JsString(email),
+                  "subject" -> JsString(subject),
+                  "body" -> JsString(sanitizeBody)
                 )
               )
               mailToContact <- translator.translate(
                 "mail.contact.contact",
                 ctx.tenant,
                 Map(
-                  "user" -> name,
-                  "email" -> email,
-                  "subject" -> subject,
-                  "body" -> sanitizeBody
+                  "user" -> JsString(name),
+                  "email" -> JsString(email),
+                  "subject" -> JsString(subject),
+                  "body" -> JsString(sanitizeBody)
                 )
               )
               _ <- ctx.tenant.mailer.send(

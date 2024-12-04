@@ -89,6 +89,26 @@ case class DaikokuTenantActionContext[A](
   override def user: User = null
 }
 
+case class DaikokuInternalActionMaybeWithoutUserContext[A](
+    requestPath: String,
+    requestQueryString: Map[String, Seq[String]],
+    requestMethod: String,
+    requestHeaders: Map[String, String],
+    user: Option[User],
+    tenant: Tenant,
+    session: Option[UserSession],
+    impersonator: Option[User],
+    isTenantAdmin: Boolean,
+    apiCreationPermitted: Boolean = false,
+    ctx: TrieMap[String, String] = new TrieMap[String, String]()
+) {
+  def setCtxValue(key: String, value: Any): Unit = {
+    if (value != null) {
+      ctx.put(key, value.toString)
+    }
+  }
+}
+
 case class DaikokuActionMaybeWithoutUserContext[A](
     request: Request[A],
     user: Option[User],

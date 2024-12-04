@@ -1083,8 +1083,8 @@ class ApiService(
                 "mail.apikey.refresh.body",
                 tenant,
                 Map(
-                  "apiName" -> api.name,
-                  "planName" -> plan.customName.getOrElse(plan.typeName)
+                  "apiName" -> JsString(api.name),
+                  "planName" -> JsString(plan.customName.getOrElse(plan.typeName))
                 )
               )
             } yield {
@@ -1704,10 +1704,10 @@ class ApiService(
             "mail.apikey.demand.body",
             tenant,
             Map(
-              "user" -> user.name,
-              "apiName" -> api.name,
-              "link" -> notificationUrl,
-              "team" -> demandTeam.name
+              "user" -> JsString(user.name),
+              "apiName" -> JsString(api.name),
+              "link" -> JsString(notificationUrl),
+              "team" -> JsString(demandTeam.name)
             )
           )
         } yield {
@@ -1955,11 +1955,11 @@ class ApiService(
                   "mail.subscription.validation.body",
                   tenant,
                   Map(
-                    "urlAccept" -> env.getDaikokuUrl(tenant, pathAccept),
-                    "urlDecline" -> env.getDaikokuUrl(tenant, pathDecline),
-                    "user" -> user.name,
-                    "team" -> team.name,
-                    "body" -> template.getOrElse("")
+                    "urlAccept" -> JsString(env.getDaikokuUrl(tenant, pathAccept)),
+                    "urlDecline" -> JsString(env.getDaikokuUrl(tenant, pathDecline)),
+                    "user" -> JsString(user.name),
+                    "team" -> JsString(team.name),
+                    "body" -> JsString(template.getOrElse(""))
                   )
                 )
                 .flatMap(body =>
@@ -2094,12 +2094,12 @@ class ApiService(
                 "mail.checkout.body",
                 tenant,
                 Map(
-                  "api.name" -> api.name,
-                  "api.plan" -> plan.customName.getOrElse(plan.typeName),
-                  "link" -> env.getDaikokuUrl(
+                  "api.name" -> JsString(api.name),
+                  "api.plan" -> JsString(plan.customName.getOrElse(plan.typeName)),
+                  "link" -> JsString(env.getDaikokuUrl(
                     tenant,
                     s"/api/subscription/team/${team.id.value}/demands/${demand.id.value}/_run"
-                  )
+                  ))
                 )
               )
             )
@@ -2218,13 +2218,13 @@ class ApiService(
                     "mail.api.subscription.acceptation.body",
                     tenant,
                     Map(
-                      "user" -> from.name,
-                      "apiName" -> api.name,
-                      "link" -> env.getDaikokuUrl(
+                      "user" -> JsString(from.name),
+                      "apiName" -> JsString(api.name),
+                      "link" -> JsString(env.getDaikokuUrl(
                         tenant,
                         s"/${team.humanReadableId}/settings/apikeys/${api.humanReadableId}/${api.currentVersion.value}"
-                      ), //todo => better url
-                      "team" -> demandTeam.name
+                      )), //todo => better url
+                      "team" -> JsString(demandTeam.name)
                     )
                   )
                 } yield {
@@ -2597,10 +2597,10 @@ class ApiService(
               "mail.api.subscription.rejection.body",
               tenant,
               Map(
-                "user" -> from.name,
-                "apiName" -> api.name,
-                "team" -> team.name,
-                "message" -> maybeMessage.getOrElse("")
+                "user" -> JsString(from.name),
+                "apiName" -> JsString(api.name),
+                "team" -> JsString(team.name),
+                "message" -> JsString(maybeMessage.getOrElse(""))
               )
             )
           } yield {

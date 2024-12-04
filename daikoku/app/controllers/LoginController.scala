@@ -3,12 +3,7 @@ package fr.maif.otoroshi.daikoku.ctrls
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import com.google.common.base.Charsets
 import controllers.Assets
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuTenantAction,
-  DaikokuTenantActionContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithoutUser, DaikokuTenantAction, DaikokuTenantActionContext}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
@@ -21,7 +16,7 @@ import org.apache.commons.codec.binary.Base32
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsObject, JsString, JsValue, Json}
 import play.api.mvc._
 
 import java.net.URLEncoder
@@ -512,17 +507,17 @@ class LoginController(
                     title <- translator.translate(
                       "mail.new.user.title",
                       ctx.tenant,
-                      Map("tenant" -> ctx.tenant.name)
+                      Map("tenant" -> JsString(ctx.tenant.name))
                     )
                     body <- translator.translate(
                       "mail.new.user.body",
                       ctx.tenant,
                       Map(
-                        "tenant" -> ctx.tenant.name,
-                        "link" -> env.getDaikokuUrl(
+                        "tenant" -> JsString(ctx.tenant.name),
+                        "link" -> JsString(env.getDaikokuUrl(
                           ctx.tenant,
                           s"/account/validate?id=$randomId"
-                        )
+                        ))
                       )
                     )
                   } yield {

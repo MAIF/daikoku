@@ -5,11 +5,7 @@ import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
@@ -18,13 +14,8 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{ApiService, Translator}
 import play.api.i18n.I18nSupport
-import play.api.libs.json.{JsArray, JsObject, JsValue, Json}
-import play.api.mvc.{
-  AbstractController,
-  AnyContent,
-  ControllerComponents,
-  Result
-}
+import play.api.libs.json.{JsArray, JsObject, JsString, JsValue, Json}
+import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Result}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -404,14 +395,14 @@ class NotificationController(
                       translator.translate(
                         "mail.api.access.rejection.body",
                         ctx.tenant,
-                        Map("apiName" -> unrecognizedApi)
+                        Map("apiName" -> JsString(unrecognizedApi))
                       )
                     }
                 case Some(api) =>
                   translator.translate(
                     "mail.api.access.rejection.body",
                     ctx.tenant,
-                    Map("apiName" -> api.name)
+                    Map("apiName" -> JsString(api.name))
                   )
               }
           case TeamAccess(team) =>
@@ -426,14 +417,14 @@ class NotificationController(
                       translator.translate(
                         "mail.team.access.rejection.body",
                         ctx.tenant,
-                        Map("teamName" -> unrecognizedApi)
+                        Map("teamName" -> JsString(unrecognizedApi))
                       )
                     }
                 case Some(team) =>
                   translator.translate(
                     "mail.team.access.rejection.body",
                     ctx.tenant,
-                    Map("teamName" -> team.name)
+                    Map("teamName" -> JsString(team.name))
                   )
               }
           case TeamInvitation(team, user) =>
@@ -452,8 +443,8 @@ class NotificationController(
                       "mail.user.invitation.rejection.body",
                       ctx.tenant,
                       Map(
-                        "user" -> unrecognizedUser,
-                        "teamName" -> unrecognizedTeam
+                        "user" -> JsString(unrecognizedUser),
+                        "teamName" -> JsString(unrecognizedTeam)
                       )
                     )
                   }).flatten
@@ -469,8 +460,8 @@ class NotificationController(
                               "mail.user.invitation.rejection.body",
                               ctx.tenant,
                               Map(
-                                "teamName" -> team.name,
-                                "user" -> unrecognizedUser
+                                "teamName" -> JsString(team.name),
+                                "user" -> JsString(unrecognizedUser)
                               )
                             )
                           }
@@ -479,7 +470,7 @@ class NotificationController(
                         translator.translate(
                           "mail.user.invitation.rejection.body",
                           ctx.tenant,
-                          Map("user" -> user.name, "teamName" -> team.name)
+                          Map("user" -> JsString(user.name), "teamName" -> JsString(team.name))
                         )
                     }
               }
@@ -524,10 +515,10 @@ class NotificationController(
                 "mail.api.subscription.rejection.body",
                 ctx.tenant,
                 Map(
-                  "user" -> maybeUser.getOrElse(unknownUser),
-                  "team" -> team.map(_.name).getOrElse(unrecognizedTeam),
-                  "apiName" -> maybeApi.map(_.name).getOrElse(unrecognizedApi),
-                  "message" -> maybeMessage.getOrElse("")
+                  "user" -> JsString(maybeUser.getOrElse(unknownUser)),
+                  "team" -> JsString(team.map(_.name).getOrElse(unrecognizedTeam)),
+                  "apiName" -> JsString(maybeApi.map(_.name).getOrElse(unrecognizedApi)),
+                  "message" -> JsString(maybeMessage.getOrElse(""))
                 )
               )
             } yield body
@@ -550,8 +541,8 @@ class NotificationController(
                 "mail.api.transfer.ownership.rejection.body",
                 ctx.tenant,
                 Map(
-                  "apiName" -> api.map(_.name).getOrElse(unrecognizedApi),
-                  "teamName" -> team.map(_.name).getOrElse(unrecognizedTeam)
+                  "apiName" -> JsString(api.map(_.name).getOrElse(unrecognizedApi)),
+                  "teamName" -> JsString(team.map(_.name).getOrElse(unrecognizedTeam))
                 )
               )
             }
@@ -613,8 +604,8 @@ class NotificationController(
                       "mail.user.invitation.rejection.body",
                       ctx.tenant,
                       Map(
-                        "teamName" -> unrecognizedTeam,
-                        "user" -> unrecognizedUser
+                        "teamName" -> JsString(unrecognizedTeam),
+                        "user" -> JsString(unrecognizedUser)
                       )
                     )
                   }).flatten
@@ -631,8 +622,8 @@ class NotificationController(
                               "mail.user.invitation.rejection.body",
                               ctx.tenant,
                               Map(
-                                "teamName" -> team.name,
-                                "user" -> unrecognizedUser
+                                "teamName" -> JsString(team.name),
+                                "user" -> JsString(unrecognizedUser)
                               )
                             )
                           }
@@ -640,7 +631,7 @@ class NotificationController(
                         translator.translate(
                           "mail.user.invitation.rejection.body",
                           ctx.tenant,
-                          Map("user" -> user.name, "teamName" -> team.name)
+                          Map("user" -> JsString(user.name), "teamName" -> JsString(team.name))
                         )
                     }
               }
@@ -757,7 +748,7 @@ class NotificationController(
           body <- translator.translate(
             "mail.api.access.acceptation.body",
             tenant,
-            Map("apiName" -> api.name, "user" -> sender.name)
+            Map("apiName" -> JsString(api.name), "user" -> JsString(sender.name))
           )
         } yield {
           tenant.mailer.send(title, Seq(admin.email), body, tenant)
@@ -791,7 +782,7 @@ class NotificationController(
       body <- translator.translate(
         "mail.team.access.acceptation.body",
         tenant,
-        Map("teamName" -> team.name)
+        Map("teamName" -> JsString(team.name))
       )
       _ <- tenant.mailer.send(title, Seq(sender.email), body, tenant)
     } yield Right(())
@@ -836,8 +827,8 @@ class NotificationController(
           "mail.user.invitation.acceptation.body",
           tenant,
           Map(
-            "user" -> invitedUser.name,
-            "teamName" -> team.name
+            "user" -> JsString(invitedUser.name),
+            "teamName" -> JsString(team.name)
           )
         )
       )

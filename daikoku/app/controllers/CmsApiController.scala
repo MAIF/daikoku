@@ -3,22 +3,9 @@ package fr.maif.otoroshi.daikoku.ctrls
 import cats.data.EitherT
 import cats.implicits.toBifunctorOps
 import controllers.{AppError, Assets}
-import fr.maif.otoroshi.daikoku.actions.{
-  ApiActionContext,
-  CmsApiAction,
-  DaikokuActionMaybeWithoutUser
-}
-import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
+import fr.maif.otoroshi.daikoku.actions.{ApiActionContext, CmsApiAction, DaikokuActionMaybeWithoutUser}
 import fr.maif.otoroshi.daikoku.domain.json.{CmsFileFormat, CmsPageFormat}
-import fr.maif.otoroshi.daikoku.domain.{
-  CmsPage,
-  CmsPageId,
-  Tenant,
-  TenantMode,
-  User,
-  UserSession
-}
+import fr.maif.otoroshi.daikoku.domain.{CmsPageId, Tenant, TenantMode, User}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider.{OAuth2, Otoroshi}
@@ -34,6 +21,7 @@ import org.apache.pekko.util.ByteString
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
+import services.CmsPage
 import storage.{DataStore, Repo}
 
 import scala.collection.concurrent.TrieMap
@@ -89,7 +77,6 @@ class CmsApiController(
       case raw: AnyContentAsRaw =>
         Source.single(raw.raw.asBytes().getOrElse(ByteString.empty))
       case e =>
-        println(e)
         throw new IllegalArgumentException("Request body is not raw data")
     }
   }

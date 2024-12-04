@@ -1,7 +1,6 @@
 package storage
 
 import org.apache.pekko.NotUsed
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.Source
 import org.apache.pekko.util.ByteString
@@ -9,6 +8,7 @@ import cats.data.OptionT
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import play.api.libs.json._
+import services.CmsPage
 
 import scala.concurrent.{ExecutionContext, Future}
 
