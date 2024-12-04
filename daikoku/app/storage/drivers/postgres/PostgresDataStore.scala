@@ -1693,9 +1693,10 @@ abstract class PostgresRepo[Of, Id <: ValueType](
       query: JsObject,
       page: Int,
       pageSize: Int,
-      sort: Option[JsObject] = None
+      sort: Option[JsObject] = None,
+      order: Option[SortingOrder] = None
   )(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] =
-    super.findWithPagination(query, page, pageSize, sort)
+    super.findWithPagination(query, page, pageSize, sort, order)
 }
 
 abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
@@ -1930,13 +1931,15 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
       query: JsObject,
       page: Int,
       pageSize: Int,
-      sort: Option[JsObject] = None
+      sort: Option[JsObject] = None,
+      order: Option[SortingOrder] = None
   )(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] =
     super.findWithPagination(
       query ++ Json.obj("_tenant" -> tenant.value),
       page,
       pageSize,
-      sort
+      sort,
+      order
     )
 }
 
@@ -2264,7 +2267,8 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       query: JsObject,
       page: Int,
       pageSize: Int,
-      sort: Option[JsObject] = None
+      sort: Option[JsObject] = None,
+      order : Option[SortingOrder] = None
   )(implicit
       ec: ExecutionContext
   ): Future[(Seq[Of], Long)] = {
@@ -2308,7 +2312,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
 
         if (query.values.isEmpty)
           reactivePg.querySeq(
-            s"SELECT * FROM $tableName ORDER BY ${sortedKeys.mkString(",")} ASC LIMIT $$1 OFFSET $$2",
+            s"SELECT * FROM $tableName ORDER BY ${sortedKeys.mkString(",")} ${order.map(_.name).getOrElse(Asc.name)} LIMIT $$1 OFFSET $$2",
             Seq(Integer.valueOf(pageSize), Integer.valueOf(page * pageSize))
           ) { row =>
             rowToJson(row, format)
@@ -2317,7 +2321,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
           val (sql, params) = convertQuery(query)
           reactivePg.querySeq(
             s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys
-              .mkString(",")} ASC ${if (pageSize > 0)
+              .mkString(",")} ${order.map(_.name).getOrElse(Asc.name)} ${if (pageSize > 0)
               s"LIMIT ${Integer.valueOf(pageSize)}"
             else ""} OFFSET ${Integer.valueOf(page * pageSize)}",
             params.map {

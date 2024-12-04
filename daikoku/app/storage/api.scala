@@ -12,6 +12,18 @@ import play.api.libs.json._
 
 import scala.concurrent.{ExecutionContext, Future}
 
+sealed trait SortingOrder {
+  def name: String
+}
+
+case object Desc extends SortingOrder {
+  def name: String = "DESC"
+}
+case object Asc extends SortingOrder {
+  def name: String = "ASC"
+}
+
+
 trait TenantCapableRepo[Of, Id <: ValueType] {
   def forTenant(tenant: Tenant): Repo[Of, Id] = forTenant(tenant.id)
 
@@ -75,7 +87,8 @@ trait Repo[Of, Id <: ValueType] {
       query: JsObject,
       page: Int,
       pageSize: Int,
-      sort: Option[JsObject] = None
+      sort: Option[JsObject] = None,
+      order: Option[SortingOrder] = None
   )(implicit
       ec: ExecutionContext
   ): Future[(Seq[Of], Long)]

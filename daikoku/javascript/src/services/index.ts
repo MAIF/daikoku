@@ -28,6 +28,7 @@ import {
   IApi,
   IApiExtended,
   IApiPost,
+  IApiPostCursor,
   IConsumption,
   IDocDetail,
   IDocPage,
@@ -1062,7 +1063,7 @@ export const createUserFromLDAP = (teamId: any, email: any) =>
     }),
   });
 
-export const getAPIPosts = (apiId: any, version: any, offset = 0, limit = -1) =>
+export const getAPIPosts = (apiId: string, version: string, offset: number = 0, limit: number = -1): PromiseWithError<IApiPostCursor> =>
   customFetch(`/api/apis/${apiId}/${version}/posts?offset=${offset}&limit=${limit}`);
 
 export const getAllAPIPosts = (
@@ -1700,7 +1701,6 @@ export const graphql = {
               plan {
                 _id
                 customName
-                typeName
               }
               parentSubscriptionId {
                 _id
@@ -1758,7 +1758,6 @@ export const graphql = {
               plan {
                 _id
                 customName
-                typeName
               }
             }
             ... on ApiSubscriptionReject {
@@ -1774,7 +1773,6 @@ export const graphql = {
               plan {
                 _id
                 customName
-                typeName
               }
               message
             }

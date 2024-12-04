@@ -5,24 +5,14 @@ import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Flow, JsonFraming, Sink, Source}
 import org.apache.pekko.util.ByteString
-import cats.Id
 import cats.data.EitherT
 import cats.implicits.{catsSyntaxOptionId, toTraverseOps}
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.audit.config.ElasticAnalyticsConfig
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Private
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
@@ -41,6 +31,7 @@ import play.api.i18n.I18nSupport
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
 import play.api.mvc._
+import storage.{Desc}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -3580,13 +3571,17 @@ class ApiController(
               )
             ),
             offset,
-            limit
+            limit,
+            Json.obj("lastModificationAt" -> 1).some,
+            Desc.some
           )
           .map(data =>
             Right(
               Json.obj(
                 "posts" -> JsArray(data._1.map(_.asJson)),
-                "total" -> data._2
+                "total" -> data._2,
+                "nextCursor" -> (if ((offset + limit) < data._2) offset + limit else JsNull),
+                "prevCursor" -> (if (offset < limit) JsNull else offset - limit )
               )
             )
           )

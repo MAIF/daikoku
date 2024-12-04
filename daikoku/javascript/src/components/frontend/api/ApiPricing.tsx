@@ -1169,22 +1169,6 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
   return (
     <div className='usage-plan-form-panel-content'>
       <div className="usage-plan-form">
-        <ToggleFormPartButton
-          value={quotasDisplayed}
-          action={setQuotasDisplayed}
-          falseLabel={translate("usage.plan.form.quotas.selector.false.label")}
-          falseDescription={translate("usage.plan.form.quotas.selector.false.description")}
-          trueLabel={translate("usage.plan.form.quotas.selector.true.label")}
-          trueDescription={translate("usage.plan.form.quotas.selector.true.description")}
-        />
-        <ToggleFormPartButton
-          value={billingDisplayed}
-          action={setBillingDisplayed}
-          falseLabel={translate("usage.plan.form.pricing.selector.false.label")}
-          falseDescription={translate("usage.plan.form.pricing.selector.false.description")}
-          trueLabel={translate("usage.plan.form.pricing.selector.true.label")}
-          trueDescription={translate("usage.plan.form.pricing.selector.true.description")}
-        />
         <MemoizedForm
           schema={baseSchema}
           flow={baseFlow}
@@ -1202,6 +1186,22 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
           flow={customizationFlow}
           onSubmit={setPlan}
           plan={plan}
+        />
+        <ToggleFormPartButton
+          value={quotasDisplayed}
+          action={setQuotasDisplayed}
+          falseLabel={translate("usage.plan.form.quotas.selector.false.label")}
+          falseDescription={translate("usage.plan.form.quotas.selector.false.description")}
+          trueLabel={translate("usage.plan.form.quotas.selector.true.label")}
+          trueDescription={translate("usage.plan.form.quotas.selector.true.description")}
+        />
+        <ToggleFormPartButton
+          value={billingDisplayed}
+          action={setBillingDisplayed}
+          falseLabel={translate("usage.plan.form.pricing.selector.false.label")}
+          falseDescription={translate("usage.plan.form.pricing.selector.false.description")}
+          trueLabel={translate("usage.plan.form.pricing.selector.true.label")}
+          trueDescription={translate("usage.plan.form.pricing.selector.true.description")}
         />
         {quotasDisplayed &&
           <MemoizedForm

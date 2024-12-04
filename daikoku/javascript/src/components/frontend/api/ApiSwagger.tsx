@@ -2,7 +2,6 @@ import { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { SwaggerUIBundle } from 'swagger-ui-dist';
 import More from 'react-feather/dist/icons/more-vertical';
-import { toast } from 'sonner';
 
 
 

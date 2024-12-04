@@ -2469,6 +2469,22 @@ object SchemaDefinition {
         )
       )
     )
+    lazy val ApiSubscriptionTransferSuccessType = new PossibleObject(
+      ObjectType(
+        "ApiSubscriptionTransferSuccess",
+        "A notification triggered when a checkout session is available",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiSubscriptionTransferSuccess
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiSubscriptionTransferSuccess
+        ](
+          Field("subscription", StringType, resolve = _.value.subscription.value)
+        )
+      )
+    )
 
     lazy val NotificationInterfaceType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
@@ -2579,7 +2595,8 @@ object SchemaDefinition {
             TransferApiOwnershipType,
             ApiSubscriptionRejectType,
             ApiSubscriptionAcceptType,
-            CheckoutForSubscriptionType
+            CheckoutForSubscriptionType,
+            ApiSubscriptionTransferSuccessType
           )
         )
       )

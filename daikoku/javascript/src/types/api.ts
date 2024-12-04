@@ -498,6 +498,12 @@ export interface IFastApi {
   subscriptionsWithPlan: Array<IFastSubscription>;
 }
 
+export interface IApiPostCursor {
+  posts: Array<IApiPost>
+  total: number
+  nextCursor: number
+  prevCursor: number
+}
 export interface IApiPost {
   _id: string;
   _humanReadableId: string;
