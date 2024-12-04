@@ -7,9 +7,10 @@ import * as Services from '../../../../services';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import classNames from 'classnames';
 import { GlobalContext } from '../../../../contexts/globalContext';
+import { ModalContext } from '../../../../contexts/modalContext';
 
 export const DarkModeActivator = (props: { className: string }) => {
-  const {theme, toggleTheme } = useContext(GlobalContext);
+  const { theme, toggleTheme } = useContext(GlobalContext);
 
   return (
     <div className={classNames("block__entry__link cursor-pointer", props.className)} onClick={() => toggleTheme()}>
@@ -23,21 +24,29 @@ export const SettingsPanel = ({ }) => {
 
   const { translate, isTranslationMode } = useContext(I18nContext);
   const { tenant, connectedUser, impersonator, isTenantAdmin, reloadContext } = useContext(GlobalContext);
+  const { confirm } = useContext(ModalContext)
 
   useEffect(() => {
     Services.getDaikokuVersion().then((res) => setVersion(res.version));
   }, []);
 
   const reset = () => {
-    fetch('/api/reset', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: '',
-    }).then(() => {
-      window.location.reload();
-    });
+    confirm({
+      message: translate('setting.panel.reset.confirm.message')
+    })
+      .then((ok) => {
+        if (ok) {
+          fetch('/api/reset', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: '',
+          }).then(() => {
+            window.location.reload();
+          });
+        }
+      })
   };
 
   const isMaintenanceMode = tenant?.tenantMode !== 'Default' && !isTranslationMode;
@@ -89,22 +98,22 @@ export const SettingsPanel = ({ }) => {
             <div className="dropdown-divider" />
           </div>
         )}
-        <div className="mb-3 block">
+        {(connectedUser.isDaikokuAdmin || isTenantAdmin) && <div className="mb-3 block">
           <div className="mb-1 block__category">{translate('actions')}</div>
           <div className="ms-2 block__entries block__border d-flex flex-column">
-            {connectedUser.isDaikokuAdmin && (
-              <span className="block__entry__link" onClick={reset}>
-                {translate('Reset')}
-              </span>
-            )}
             {isTenantAdmin && (
               <span className="block__entry__link" onClick={toggleMaintenanceMode}>
                 {translate(isMaintenanceMode ? 'Disable maintenance' : 'Maintenance mode')}
               </span>
             )}
+            {connectedUser.isDaikokuAdmin && (
+              <span className="block__entry__link danger" onClick={reset}>
+                {translate('Reset')}
+              </span>
+            )}
           </div>
           <div className="dropdown-divider" />
-        </div>
+        </div>}
         <div className="mb-3 block">
           <div className="mb-1 block__category">{translate('version')}</div>
           <div className="ms-2 block__entries block__border d-flex flex-column">

@@ -1399,5 +1399,6 @@
   "subscription.copy.apikey.label": "ClientId:ClientToken",
   "subscription.copy.apikey.help": "Copier les identifiants sous la forme clientId:clientSecret",
   "subscription.copy.token.label": "Jeton",
-  "subscription.copy.token.help": "Copier le jeton Daikoku, utilisable pour récupérer les identifiants par API"
+  "subscription.copy.token.help": "Copier le jeton Daikoku, utilisable pour récupérer les identifiants par API",
+  "setting.panel.reset.confirm.message": "Êtes-vous sûr de vouloir réinitialiser les données de votre organisation ?"
 }
