@@ -197,325 +197,500 @@ daikoku generate documentation --filename=my-new-documentation-page \
 
 # CMS Directives
 
-## daikoku-user
-
-`parameters`: 
-- string user id
-```html
-{{#daikoku-user "{{userId}}"}}
-  <div>
-    <span>{{user.name}}</span>
-    <img src="{{user.picture}}" />
-  </div>
-{{/daikoku-user}}
-```
-
-## daikoku-owned-apis
-
-`parameters`
-- visibility: can be Private | Public | All
-```html
-{{#daikoku-owned-apis visibility="Private"}}
-  <span>Mon api : {{api.name}}</span>
-{{/daikoku-owned-apis}}
-```
-
-## daikoku-owned-api
-`parameters`: 
-- String API id
-- The API version is optional, but it defaults to 1.0.0 when not specified.
-      
-```html
-{{#daikoku-owned-api "{{apiId}}" version="1.0.0"}}
-  <span>Mon api : {{api.name}}</span>
-{{/daikoku-owned-api}}
-```
-
-## daikoku-json-owned-apis
-`parameters`: 
-- Visibility : Private, Public or All
-```html
-{{#daikoku-json-owned-apis visibility="Private"}}
-
-{{/daikoku-json-owned-apis}}
-```
+<details>
+  <summary>
+  daikoku-user
+  </summary>
+  Parameters
+  <ul>
+    <li>string user id</li>
+  </ul>
   
-## daikoku-json-owned-api
-`parameters`: 
-- The API id, string value expected
-- The API version is optional, but it defaults to 1.0.0 when not specified.
+  ```html
+  {{#daikoku-user "{{userId}}"}}
+    <div>
+      <span>{{user.name}}</span>
+      <img src="{{user.picture}}" />
+    </div>
+  {{/daikoku-user}}
+  ```
+</details>
 
-```html
-{{#daikoku-json-owned-api "{{apiId}}" version="1.0.0"}}
-{{/daikoku-json-owned-api}}
-```
 
-## daikoku-owned-teams
+<details>
+  <summary>
+  daikoku-owned-apis
+  </summary>
+  Parameters
+  <ul>
+    <li>visibility: can be Private | Public | All</li>
+  </ul>
+  
+  ```html
+  {{#daikoku-owned-apis visibility="Private"}}
+    <span>Mon api : {{api.name}}</span>
+  {{/daikoku-owned-apis}}
+  ```
+</details>
 
-```html
-{{#daikoku-owned-teams}}
-  <span>Ma team : {{team.name}}
-{{/daikoku-owned-teams}}
-```
+<details>
+  <summary>
+  daikoku-owned-api
+  </summary>
+  Parameters
+  <ul>
+    <li>String API id</li>
+    <li>The API version is optional, but it defaults to 1.0.0 when not specified.</li>
+  </ul>
+      
+  ```html
+  {{#daikoku-owned-api "{{apiId}}" version="1.0.0"}}
+    <span>Mon api : {{api.name}}</span>
+  {{/daikoku-owned-api}}
+  ```
+</details>
 
-## daikoku-owned-team
-`parameters`: 
-- The team ID, string value expected"
-```html
-{{#daikoku-owned-team "{{teamId}}"}}
-  <span>Mon team : {{team.name}}</span>
-{{/daikoku-owned-team}}
-```
+<details>
+  <summary>
+  daikoku-json-owned-apis
+  </summary>
+  Parameters
+  <ul>
+    <li>Visibility : Private, Public or All</li>
+  </ul>
 
-## daikoku-json-owned-teams
+  ```html
+  {{#daikoku-json-owned-apis visibility="Private"}}
 
-```html
-{{daikoku-json-owned-teams}}
-```
+  {{/daikoku-json-owned-apis}}
+  ```
+</details>
+  
+<details>
+  <summary>
+  daikoku-json-owned-api
+  </summary>
+  Parameters
+  <ul>
+    <li>The API id, string value expected</li>
+    <li>The API version is optional, but it defaults to 1.0.0 when not specified.</li>
+  </ul>
 
-## daikoku-json-owned-team
-`parameters`: 
-- The Team ID, String value expected
+  ```html
+  {{#daikoku-json-owned-api "{{apiId}}" version="1.0.0"}}
+  {{/daikoku-json-owned-api}}
+  ```
+</details>
+
+<details>
+  <summary>
+  daikoku-owned-teams
+  </summary>
+
+  ```html
+  {{#daikoku-owned-teams}}
+    <span>Ma team : {{team.name}}
+  {{/daikoku-owned-teams}}
+  ```
+</details>
+
+<details>
+  <summary>
+  daikoku-owned-team
+  </summary>
+  Parameters
+  <ul>
+    <li>The team ID, string value expected </li>
+  </ul>
+  
+  ```html
+  {{#daikoku-owned-team "{{teamId}}"}}
+    <span>Mon team : {{team.name}}</span>
+  {{/daikoku-owned-team}}
+  ```
+</details>
+
+
+<details>
+  <summary>
+  daikoku-json-owned-teams
+  </summary>
+
+  ```html
+  {{daikoku-json-owned-teams}}
+  ```
+</details>
+
+<details>
+  <summary>
+  daikoku-json-owned-team
+  </summary>
+  Parameters
+  <ul>
+    <li>The Team ID, String value expected</li>
+  </ul>
+
+  ```html
+  {{#daikoku-json-owned-team "{{teamId}}"}}
+
+  {{/daikoku-json-owned-team}}
+  ```
+</details>
+
+<details>
+  <summary>
+  tenant
+  </summary>
+
+  ```html
+  {{tenant.name}}     <li>{{tenant.style.description}}
+  ```
+</details>
+
+<details>
+  <summary>
+  is_admin
+  </summary>
         
-```html
-{{#daikoku-json-owned-team "{{teamId}}"}}
-
-{{/daikoku-json-owned-team}}
-```
-
-## tenant
-
-```html
-{{tenant.name}} - {{tenant.style.description}}
-```
-
-## is_admin
-        
-```html
-{{is_admin}}
-```
+  ```html
+  {{is_admin}}
+  ```
+</details>
     
-## connected
+<details>
+  <summary>
+  connected
+  </summary>
         
-```html
-{{connected}}
-```
+  ```html
+  {{connected}}
+  ```
+</details>
 
-## user
+<details>
+  <summary>
+  user
+  </summary>
 
-When you have an user returned from directive, you can use the following fields
+  When you have an user returned from directive, you can use the following fields
       
-  - `name`
-  - `email`
-  - `_id`
-  - `_humandReadableId`
-  - `picture`
-  - `isDaikokuAdmin`
-  - `starredApis`
+    - `name`
+    - `email`
+    - `_id`
+    - `_humandReadableId`
+    - `picture`
+    - `isDaikokuAdmin`
+    - `starredApis`
 
-```html
-<div>
-  {{user.name}} - {{user.email}}
-</div>
-```
+  ```html
+  <div>
+    {{user.name}} - {{user.email}}
+  </div>
+  ```
+</details>
 
-## request
-```html
-<div>
-  {{request.path}} - {{request.method}} - {{request.headers}}
-</div>
-```
-
-## daikoku-css
-```html
-<div>
-  {{daikoku-css}}
-</div>
-```
-
-## for
-`parameters`: 
-- the fieldname used in the helper content
-        
-```
-{{#for '{{team.users}}' field='myuser' }}
-  {{myuser.userId}}
-{{/for}}
-```
-
-## size
-        
-```html
-{{size '{{team.users}}'}}
-```
-
-## ifeq
-
-```html
-{{#ifeq "{{plan.type}}" "FreeWithoutQuotas"}}
-  You'll pay nothing and do whatever you want
-{{/ifeq}}
-```
-
-## ifnoteq
-      
-```html
-{{#ifnoteq "{{plan.type}}" "FreeWithoutQuotas"}}
-  You'll pay nothing and do whatever you want
-{{/ifnoteq}}
-```
-
-## getOrElse
-        
-```html
-{{getOrElse "{{plan.customName}}" "Un plan"}}
-```
-
-## translate
-
-```html
-{{translate 'Logout'}}
-```
-
-## daikoku-query-param
-`parameters`: 
-- the name of the query param
-
-```html        
-{{daikoku-query-param 'my-query-param'}}
-```
-
-
-## daikoku-template-wrapper
-`parameters`: 
-- Block path
-- List of key=value usable in content
-
-```html
-{{#daikoku-template-wrapper '<wrapper-id>' <named-parameter>="<value>" }} 
+<details>
+  <summary>
+  request
+  </summary>
   
-{{/daikoku-template-wrapper}}"
-```
+  ```html
+  <div>
+    {{request.path}} - {{request.method}} - {{request.headers}}
+  </div>
+  ```
+</details>
 
+<details>
+  <summary>
+  daikoku-css
+  </summary>
+  
+  ```html
+  <div>
+    {{daikoku-css}}
+  </div>
+  ```
+</details>
 
-## daikoku-apis
-
-```html
-{{#daikoku-apis}}
-  <span>Api : {{api.name}}</span>
-{{/daikoku-apis}}
-```
-
-## daikoku-api
-
-`parameters`: 
-- API id, String value expected
-
-```html
-{{#daikoku-api "{{apiId}}" version="1.0.0"}}
-  <span>Mon api : {{api.name}}</span>
-{{/daikoku-api}}"
-```
-
-## daikoku-json-apis
-
-```html
-{{daikoku-json-apis}}
-```
-
-## daikoku-json-api
-
-`parameters`: 
-- API Id, String value expected
-
-```html
-{{#daikoku-json-api "{{apiId}}" version="1.0.0"}}
-
-{{/daikoku-json-api}}
-```
-
-## daikoku-teams
-
-```html
-{{#daikoku-teams}}
-  <span>Team : {{team.name}}</span>
-{{/daikoku-teams}}
-```
-
-## daikoku-team
-
-`parameters`: 
-- Team Id, String value expected
+<details>
+  <summary>
+  for
+  </summary>
+  Parameters
+  <ul>
+    <li>the fieldname used in the helper content</li>
+  </ul>
         
-```html
-{{#daikoku-team "{{<teamId>}}"}}
-  <span>My team : {{team.name}}</span>
-{{/daikoku-team}}
-```
+  ```
+  {{#for '{{team.users}}' field='myuser' }}
+    {{myuser.userId}}
+  {{/for}}
+  ```
+</details>
 
-
-## daikoku-json-teams
-
-```html
-{{daikoku-json-teams}}
-```
-
-## daikoku-json-team
-
-`parameters`:
-- Team Id, String value expected
+<details>
+  <summary>
+  size
+  </summary>
         
-```html
-{{#daikoku-json-team "{{<teamId>}}"}}
+  ```html
+  {{size '{{team.users}}'}}
+  ```
+</details>
 
-{{/daikoku-json-team}}
-```
+<details>
+  <summary>
+  ifeq
+  </summary>
 
-## daikoku-documentations
+  ```html
+  {{#ifeq "{{plan.type}}" "FreeWithoutQuotas"}}
+    You'll pay nothing and do whatever you want
+  {{/ifeq}}
+  ```
+</details>
 
-`parameters`: 
-- API id, String value expected
+<details>
+  <summary>
+  ifnoteq
+  </summary>
+      
+  ```html
+  {{#ifnoteq "{{plan.type}}" "FreeWithoutQuotas"}}
+    You'll pay nothing and do whatever you want
+  {{/ifnoteq}}
+  ```
+</details>
+
+<details>
+  <summary>
+  getOrElse
+  </summary>
         
-```html
-{{#daikoku-documentations "{{<apiId>}}"}}
-  <span>{{documentation.title}}</span>
-{{/daikoku-documentations}}
-```
+  ```html
+  {{getOrElse "{{plan.customName}}" "Un plan"}}
+  ```
+</details>
 
-## daikoku-documentations-page
+<details>
+  <summary>
+  translate
+  </summary>
+
+  ```html
+  {{translate 'Logout'}}
+  ```
+</details>
+
+<details>
+  <summary>
+  daikoku-query-param
+  </summary>
+  Parameters
+  <ul>
+    <li>the name of the query param</li>
+  </ul>
+
+  ```html        
+  {{daikoku-query-param 'my-query-param'}}
+  ```
+</details>
+
+
+<details>
+  <summary>
+  daikoku-template-wrapper
+  </summary>
+  Parameters
+  <ul>
+    <li>Block path</li>
+    <li>List of key=value usable in content</li>
+  </ul>
+
+  ```html
+  {{#daikoku-template-wrapper '<wrapper-id>' <named-parameter>="<value>" }} 
+    
+  {{/daikoku-template-wrapper}}"
+  ```
+</details>
+
+
+<details>
+  <summary>
+  daikoku-apis
+  </summary>
+
+  ```html
+  {{#daikoku-apis}}
+    <span>Api : {{api.name}}</span>
+  {{/daikoku-apis}}
+  ```
+</details>
+
+<details>
+  <summary>
+  daikoku-api
+  </summary>
+  Parameters
+  <ul>
+    <li>API id, String value expected</li>
+  </ul>
+
+  ```html
+  {{#daikoku-api "{{apiId}}" version="1.0.0"}}
+    <span>Mon api : {{api.name}}</span>
+  {{/daikoku-api}}"
+  ```
+</details>
+
+<details>
+  <summary>
+  daikoku-json-apis
+  </summary>
+
+  ```html
+  {{daikoku-json-apis}}
+  ```
+</details>
+
+<details>
+  <summary>
+  daikoku-json-api
+  </summary>
+  Parameters
+  <ul>
+    <li>API Id, String value expected</li>
+  </ul>
+
+  ```html
+  {{#daikoku-json-api "{{apiId}}" version="1.0.0"}}
+
+  {{/daikoku-json-api}}
+  ```
+</details>
+
+<details>
+  <summary>
+  daikoku-teams
+  </summary>
+
+  ```html
+  {{#daikoku-teams}}
+    <span>Team : {{team.name}}</span>
+  {{/daikoku-teams}}
+  ```
+</details>
+
+<details>
+  <summary>
+  daikoku-team
+  </summary>
+  Parameters
+  <ul>
+    <li>Team Id, String value expected</li>
+  </ul>
         
-`parameters`: 
-- API ID, String value expected
-- Page ID as String value
+  ```html
+  {{#daikoku-team "{{<teamId>}}"}}
+    <span>My team : {{team.name}}</span>
+  {{/daikoku-team}}
+  ```
+</details>
+
+
+<details>
+  <summary>
+  daikoku-json-teams
+  </summary>
+
+  ```html
+  {{daikoku-json-teams}}
+  ```
+</details>
+
+<details>
+  <summary>
+  daikoku-json-team
+  </summary>
+  Parameters
+  <ul>
+    <li>Team Id, String value expected</li>
+  </ul>
         
-```html
-{{#daikoku-documentations-page "<apiId>" page="<pageId>"}}
-  {{documentation.content}}
-{{/daikoku-documentations-page}}
-```
+  ```html
+  {{#daikoku-json-team "{{<teamId>}}"}}
 
-## daikoku-documentations-page-id
-       
-`parameters`: 
-- Team ID, String value expected
-- The named page parameter corresponding to the id of the expected page
+  {{/daikoku-json-team}}
+  ```
 
-```html
-{{#daikoku-documentations-page-id "<apiId>" page="<pageId>"}}
-  {{content}}
-{{/daikoku-documentations-page-id}}"
-```
+</details>
 
-## daikoku-plans
+<details>
+  <summary>
+  daikoku-documentations
+  </summary>
+  Parameters
+  <ul>
+    <li>API id, String value expected</li>
+  </ul>
         
-`parameters`: 
-- API ID
+  ```html
+  {{#daikoku-documentations "{{<apiId>}}"}}
+    <span>{{documentation.title}}</span>
+  {{/daikoku-documentations}}
+  ```
+</details>
 
-```html
-{{#daikoku-plans "<apiId>"}}
-  <span>{{plan.type}}</span>
-{{/daikoku-plans}}
-```
+<details>
+  <summary>
+  daikoku-documentations-page
+  </summary>
+  Parameters
+  <ul>
+    <li>API ID, String value expected</li>
+    <li>Page ID as String value</li>
+  </ul>
+        
+  ```html
+  {{#daikoku-documentations-page "<apiId>" page="<pageId>"}}
+    {{documentation.content}}
+  {{/daikoku-documentations-page}}
+  ```
+</details>
+
+<details>
+  <summary>
+  daikoku-documentations-page-id
+  </summary>
+  Parameters
+  <ul>
+    <li>Team ID, String value expected</li>
+    <li>The named page parameter corresponding to the id of the expected page</li>
+  </ul>
+
+  ```html
+  {{#daikoku-documentations-page-id "<apiId>" page="<pageId>"}}
+    {{content}}
+  {{/daikoku-documentations-page-id}}"
+  ```
+</details>
+
+<details>
+  <summary>
+  daikoku-plans
+  </summary>
+  Parameters
+  <ul>
+    <li>API ID</li>
+  </ul>
+
+  ```html
+  {{#daikoku-plans "<apiId>"}}
+    <span>{{plan.type}}</span>
+  {{/daikoku-plans}}
+  ```
+</details>
 
 # License
 
