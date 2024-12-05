@@ -143,7 +143,6 @@ export const TeamApiKeysForApi = () => {
     };
 
     const toggleApiKey = (subscription: ISubscription) => {
-      console.debug("toggle")
       return Services.archiveApiKey(
         currentTeam._id,
         subscription._id,

@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import difference from 'lodash/difference';
 import find from 'lodash/find';
-import React, { useContext, useEffect } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { Link, useMatch, useNavigate } from 'react-router-dom';
 
 import { I18nContext, ModalContext } from '../../../contexts';
@@ -38,6 +38,7 @@ import { ApiDocumentation } from './ApiDocumentation';
 import { ApiRedoc } from './ApiRedoc';
 import { ApiSwagger } from './ApiSwagger';
 import { ApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
+import { Form, type } from '@maif/react-forms';
 
 export const currency = (plan?: IBaseUsagePlan) => {
   if (!plan) {
@@ -55,6 +56,7 @@ type ApiPricingCardProps = {
     plan: IUsagePlan;
     apiKey?: ISubscription;
     motivation?: object;
+    customName?: string;
   }) => Promise<void>;
   myTeams: Array<ITeamSimple>;
   ownerTeam: ITeamSimple;
@@ -69,14 +71,13 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     openLoginOrRegisterModal,
     openApiKeySelectModal,
     openCustomModal,
-    close,
-    openRightPanel
+    close
   } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
   const { connectedUser, tenant } = useContext(GlobalContext);
 
-  const showApiKeySelectModal = (team: string) => {
+  const showApiKeySelectModal = (team: string, customName?: string) => {
     const { plan } = props;
 
     //FIXME: not bwaaagh !!
@@ -87,6 +88,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     const askForApikeys = (
       team: string,
       plan: IUsagePlan,
+      customName?: string,
       apiKey?: ISubscription
     ) => {
       const adminStep = plan.subscriptionProcess.find((s) =>
@@ -97,12 +99,12 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           title: translate('motivations.modal.title'),
           schema: adminStep.schema,
           onSubmit: (motivation: object) =>
-            props.askForApikeys({ team, plan, apiKey, motivation }),
+            props.askForApikeys({ team, plan, apiKey, motivation, customName }),
           actionLabel: translate('Send'),
           value: apiKey?.customMetadata,
         });
       } else {
-        props.askForApikeys({ team, plan: plan, apiKey }).then(() => close());
+        props.askForApikeys({ team, plan: plan, apiKey, customName }).then(() => close());
       }
     };
 
@@ -161,14 +163,14 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
             filteredApiKeys.length <= 0
           ) {
-            askForApikeys(team, plan);
+            askForApikeys(team, plan, customName);
           } else {
             openApiKeySelectModal({
               plan,
               apiKeys: filteredApiKeys,
-              onSubscribe: () => askForApikeys(team, plan),
+              onSubscribe: () => askForApikeys(team, plan, customName),
               extendApiKey: (apiKey: ISubscription) =>
-                askForApikeys(team, plan, apiKey),
+                askForApikeys(team, plan, customName, apiKey),
             });
           }
         }
@@ -229,50 +231,50 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     })
   }
 
-//   const displaySubscription = () => {
-//     Services.getMySubscriptions(props.api._id, props.api.currentVersion)
-//       .then(r => {
-//         openRightPanel({
-//           title: "test",
-//           content: <div>
-//             {r.subscriptions.map(subscription => {
-//               return (
-//                 <ApiKeyCard
-//                   api={props.api}
-//                   apiLink={""}
-//                   statsLink={`/`}
-//                   key={subscription.apiKey.clientId}
-//                   subscription={{
-//                     ...subscription, 
-//                     parentUp: false,
-//                     planType: "",
-//                     planName: "planname",
-//                     apiName: "apiName",
-//                     _humanReadableId: "hrid",
-//                     children: []
-// }}
-//                   subscribedApis={[]}
-//                   updateCustomName={() => Promise.resolve()}
-//                   toggle={console.debug}
-//                   makeUniqueApiKey={console.debug}
-//                   deleteApiKey={console.debug}
-//                   toggleRotation={(
-//                     plan,
-//                     enabled,
-//                     rotationEvery,
-//                     gracePeriod
-//                   ) =>
-//                     Promise.resolve()
-//                   }
-//                   regenerateSecret={console.debug}
-//                   transferKey={console.debug}
-//                 />
-//               )
-//             })}
-//           </div>
-//         })
-//       })
-//   }
+  //   const displaySubscription = () => {
+  //     Services.getMySubscriptions(props.api._id, props.api.currentVersion)
+  //       .then(r => {
+  //         openRightPanel({
+  //           title: "test",
+  //           content: <div>
+  //             {r.subscriptions.map(subscription => {
+  //               return (
+  //                 <ApiKeyCard
+  //                   api={props.api}
+  //                   apiLink={""}
+  //                   statsLink={`/`}
+  //                   key={subscription.apiKey.clientId}
+  //                   subscription={{
+  //                     ...subscription, 
+  //                     parentUp: false,
+  //                     planType: "",
+  //                     planName: "planname",
+  //                     apiName: "apiName",
+  //                     _humanReadableId: "hrid",
+  //                     children: []
+  // }}
+  //                   subscribedApis={[]}
+  //                   updateCustomName={() => Promise.resolve()}
+  //                   toggle={console.debug}
+  //                   makeUniqueApiKey={console.debug}
+  //                   deleteApiKey={console.debug}
+  //                   toggleRotation={(
+  //                     plan,
+  //                     enabled,
+  //                     rotationEvery,
+  //                     gracePeriod
+  //                   ) =>
+  //                     Promise.resolve()
+  //                   }
+  //                   regenerateSecret={console.debug}
+  //                   transferKey={console.debug}
+  //                 />
+  //               )
+  //             })}
+  //           </div>
+  //         })
+  //       })
+  //   }
 
   return (
     <div
@@ -438,11 +440,13 @@ type ITeamSelector = {
   pendingTeams: Array<string>;
   acceptedTeams: Array<string>;
   allowMultipleDemand?: boolean;
-  showApiKeySelectModal: (teamId: string) => void;
+  showApiKeySelectModal: (teamId: string, customName?: string) => void;
   plan: IUsagePlan;
 };
 
 const TeamSelector = (props: ITeamSelector) => {
+  const [customName, setCustomName] = useState<string>();
+
   const { translate } = useContext(I18nContext);
   const { close } = useContext(ModalContext);
   const navigate = useNavigate();
@@ -481,7 +485,7 @@ const TeamSelector = (props: ITeamSelector) => {
                   })}
                   onClick={() => {
                     return allowed
-                      ? props.showApiKeySelectModal(team._id)
+                      ? props.showApiKeySelectModal(team._id, customName)
                       : () => { };
                   }}
                 >
@@ -510,6 +514,22 @@ const TeamSelector = (props: ITeamSelector) => {
               );
             })}
         </div>
+        <div className="modal-description mt-2">
+          {translate("api.pricing.subscription.custom.name.help")}
+        </div>
+        <Form
+          schema={{
+            customName: {
+              type: type.string,
+              label: null,
+            }
+          }}
+          onSubmit={data => setCustomName(data.customName)}
+          options={{
+            autosubmit: true,
+            actions: { submit: { display: false } }
+          }}
+        />
       </div>
     </div>
   );
@@ -526,6 +546,7 @@ type ApiPricingProps = {
     plan: IUsagePlan;
     apiKey?: ISubscription;
     motivation?: object;
+    customName?: string;
   }) => Promise<void>;
 };
 

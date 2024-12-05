@@ -184,11 +184,12 @@ export const askForApiKey = (
   apiId: string,
   teamId: string,
   planId: string,
-  motivation?: object
+  motivation?: object,
+  customName?: string
 ): Promise<SubscriptionReturn> => {
   return customFetch(`/api/apis/${apiId}/plan/${planId}/team/${teamId}/_subscribe`, {
     method: 'POST',
-    body: JSON.stringify({ motivation }),
+    body: JSON.stringify({ motivation, customName }),
   });
 };
 

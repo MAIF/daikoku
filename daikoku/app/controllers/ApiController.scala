@@ -1250,7 +1250,8 @@ class ApiController(
           customReadOnly = customReadOnly,
           adminCustomName = adminCustomName,
           motivation = motivation,
-          parentSubscriptionId = Some(ApiSubscriptionId(apiKeyId))
+          parentSubscriptionId = Some(ApiSubscriptionId(apiKeyId)),
+          customName = None
         )
       }
     }
@@ -1267,6 +1268,7 @@ class ApiController(
         implicit val language: String = ctx.request.getLanguage(ctx.tenant)
         implicit val currentUser: User = ctx.user
 
+        val customName = ctx.request.body.getBodyField[String]("customName")
         val motivation = ctx.request.body.getBodyField[JsObject]("motivation")
         val customMaxPerSecond =
           ctx.request.body.getBodyField[Long]("customMaxPerSecond")
@@ -1292,7 +1294,8 @@ class ApiController(
           customMaxPerMonth = customMaxPerMonth,
           customReadOnly = customReadOnly,
           adminCustomName = adminCustomName,
-          motivation = motivation
+          motivation = motivation,
+          customName = customName
         )
       }
     }

@@ -19,6 +19,7 @@ import {
 } from '../../../types';
 import { isSubscriptionProcessIsAutomatic, Option } from '../../utils';
 import { GlobalContext } from '../../../contexts/globalContext';
+import { type } from '@maif/react-forms';
 
 type FastApiCardProps = {
   team: ITeamSimple;
@@ -72,18 +73,19 @@ export const FastApiCard = (props: FastApiCardProps) => {
     apiId: string,
     team: ITeamSimple,
     plan: IFastPlan,
+    customName?: string,
     apiKey?: ISubscription
   ) => {
     const apiKeyDemand = (motivation?: object) =>
       apiKey
         ? Services.extendApiKey(
-            apiId,
-            apiKey._id,
-            team._id,
-            plan._id,
-            motivation
-          )
-        : Services.askForApiKey(apiId, team._id, plan._id, motivation);
+          apiId,
+          apiKey._id,
+          team._id,
+          plan._id,
+          motivation
+        )
+        : Services.askForApiKey(apiId, team._id, plan._id, motivation, customName);
 
     const adminStep = plan.subscriptionProcess.find((s) =>
       isValidationStepTeamAdmin(s)
@@ -93,19 +95,20 @@ export const FastApiCard = (props: FastApiCardProps) => {
         title: translate('motivations.modal.title'),
         schema: adminStep.schema,
         onSubmit: (motivation) => {
-          apiKeyDemand(motivation).then((response) => {
-            if (isError(response)) {
-              toast.error(response.error);
-            } else {
-              toast.info(
-                translate({
-                  key: 'subscription.plan.waiting',
-                  replacements: [plan.customName!, team.name],
-                })
-              );
-              queryClient.invalidateQueries({ queryKey: ['data'] });
-            }
-          });
+          apiKeyDemand(motivation)
+            .then((response) => {
+              if (isError(response)) {
+                toast.error(response.error);
+              } else {
+                toast.info(
+                  translate({
+                    key: 'subscription.plan.waiting',
+                    replacements: [plan.customName!, team.name],
+                  })
+                );
+                queryClient.invalidateQueries({ queryKey: ['data'] });
+              }
+            });
         },
         actionLabel: translate('Send'),
         value: apiKey?.customMetadata
@@ -188,14 +191,43 @@ export const FastApiCard = (props: FastApiCardProps) => {
               !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
               filteredApiKeys.length <= 0
             ) {
-              subscribe(apiId, team, plan);
+              openFormModal({
+                title: translate("api.pricing.subscription.custom.name.help"),
+                schema: {
+                  customName: {
+                    type: type.string,
+                    label: translate("Custom Name"),
+                  }
+                },
+                onSubmit: data => subscribe(apiId, team, plan, data.customName),
+                actionLabel: translate(
+                  isSubscriptionProcessIsAutomatic(plan)
+                    ? 'Get API key'
+                    : 'Request API key'
+                )
+              })
+
             } else {
               openApiKeySelectModal({
                 plan,
                 apiKeys: filteredApiKeys,
-                onSubscribe: () => subscribe(apiId, team, plan),
+                onSubscribe: () => openFormModal({
+                  title: translate("api.pricing.subscription.custom.name.help"),
+                  schema: {
+                    customName: {
+                      type: type.string,
+                      label: translate("Custom Name"),
+                    }
+                  },
+                  onSubmit: data => subscribe(apiId, team, plan, data.customName),
+                  actionLabel: translate(
+                    isSubscriptionProcessIsAutomatic(plan)
+                      ? 'Get API key'
+                      : 'Request API key'
+                  )
+                }),
                 extendApiKey: (apiKey: ISubscription) =>
-                  subscribe(apiId, team, plan, apiKey),
+                  subscribe(apiId, team, plan, undefined, apiKey),
               });
             }
           }
@@ -301,24 +333,24 @@ export const FastApiCard = (props: FastApiCardProps) => {
                     )}
                     {((!subscriptionsCount && !isPending) ||
                       plan.allowMultipleKeys) && (
-                      <button
-                        style={{ whiteSpace: 'nowrap' }}
-                        className={'btn btn-sm btn-outline-info'}
-                        onClick={() =>
-                          subscribeOrExtends(
-                            selectedApi.api._id,
-                            props.team,
-                            plan
-                          )
-                        }
-                      >
-                        {translate(
-                          isSubscriptionProcessIsAutomatic(plan)
-                            ? 'Get API key'
-                            : 'Request API key'
-                        )}
-                      </button>
-                    )}
+                        <button
+                          style={{ whiteSpace: 'nowrap' }}
+                          className={'btn btn-sm btn-outline-info'}
+                          onClick={() =>
+                            subscribeOrExtends(
+                              selectedApi.api._id,
+                              props.team,
+                              plan
+                            )
+                          }
+                        >
+                          {translate(
+                            isSubscriptionProcessIsAutomatic(plan)
+                              ? 'Get API key'
+                              : 'Request API key'
+                          )}
+                        </button>
+                      )}
                     {isPending && (
                       <button
                         style={{ whiteSpace: 'nowrap' }}

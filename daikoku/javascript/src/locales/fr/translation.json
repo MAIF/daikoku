@@ -1401,5 +1401,6 @@
   "subscription.copy.token.label": "Jeton",
   "subscription.copy.token.help": "Copier le jeton Daikoku, utilisable pour récupérer les identifiants par API",
   "setting.panel.reset.confirm.message": "Êtes-vous sûr de vouloir réinitialiser les données de votre organisation ?",
-  "api.pricing.created.subscription.panel.title": "Votre clé d'API est prête"
+  "api.pricing.created.subscription.panel.title": "Votre clé d'API est prête",
+  "api.pricing.subscription.custom.name.help": "Vous pouvez attribuer un nom à votre clé pour la retrouver plus facilement (facultatif)."
 }

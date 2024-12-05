@@ -68,7 +68,7 @@ export const FastItemView = (props: FastItemViewProps) => {
       {props.viewMode === 'APIKEY' && props.planInfo && props.subscriptions &&
         <div className="card">
           <div className="card-header flex-column">         
-                {props.planInfo.customName}
+            {props.subscriptions[idxSubscription].customName || props.planInfo.customName}
             <span
               className="badge bg-secondary" style={{fontSize:"12px"}}
             >

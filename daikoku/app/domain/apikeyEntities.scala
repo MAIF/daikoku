@@ -307,7 +307,8 @@ case class SubscriptionDemand(
     customMaxPerSecond: Option[Long] = None,
     customMaxPerDay: Option[Long] = None,
     customMaxPerMonth: Option[Long] = None,
-    adminCustomName: Option[String] = None
+    adminCustomName: Option[String] = None,
+    customName: Option[String] = None
 ) extends CanJson[SubscriptionDemand] {
   override def asJson: JsValue = json.SubscriptionDemandFormat.writes(this)
 }
