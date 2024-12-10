@@ -202,8 +202,6 @@ sealed trait OtoroshiSyncNotificationAction extends NotificationAction {
 object NotificationAction {
   case class ApiAccess(api: ApiId, team: TeamId) extends NotificationAction
 
-  case class TeamAccess(team: TeamId) extends NotificationAction
-
   case class TeamInvitation(team: TeamId, user: UserId)
       extends NotificationAction
 

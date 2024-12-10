@@ -466,11 +466,6 @@ export const deleteTenant = (id: string) =>
     method: 'DELETE',
   });
 
-export const askToJoinTeam = (team: any) =>
-  customFetch(`/api/teams/${team}/join`, {
-    method: 'POST',
-  });
-
 export const askForApiAccess = (teams: string[], apiId: string) =>
   customFetch(`/api/apis/${apiId}/access`, {
     method: 'POST',

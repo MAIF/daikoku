@@ -3198,7 +3198,6 @@ object json {
       override def reads(json: JsValue) =
         (json \ "type").as[String] match {
           case "ApiAccess"       => ApiAccessFormat.reads(json)
-          case "TeamAccess"      => TeamAccessFormat.reads(json)
           case "ApiSubscription" => ApiSubscriptionDemandFormat.reads(json)
           case "ApiSubscriptionReject" =>
             ApiSubscriptionRejectFormat.reads(json)
@@ -3230,10 +3229,6 @@ object json {
           case p: ApiAccess =>
             ApiAccessFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiAccess"
-            )
-          case p: TeamAccess =>
-            TeamAccessFormat.writes(p).as[JsObject] ++ Json.obj(
-              "type" -> "TeamAccess"
             )
           case p: ApiSubscriptionDemand =>
             ApiSubscriptionDemandFormat.writes(p).as[JsObject] ++ Json.obj(
@@ -3429,23 +3424,6 @@ object json {
     override def writes(o: ApiAccess): JsValue =
       Json.obj(
         "api" -> ApiIdFormat.writes(o.api),
-        "team" -> TeamIdFormat.writes(o.team)
-      )
-  }
-  val TeamAccessFormat = new Format[TeamAccess] {
-    override def reads(json: JsValue): JsResult[TeamAccess] =
-      Try {
-        JsSuccess(
-          TeamAccess(
-            team = (json \ "team").as(TeamIdFormat)
-          )
-        )
-      } recover {
-        case e => JsError(e.getMessage)
-      } get
-
-    override def writes(o: TeamAccess): JsValue =
-      Json.obj(
         "team" -> TeamIdFormat.writes(o.team)
       )
   }

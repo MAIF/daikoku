@@ -483,19 +483,18 @@ class LoginController(
               FastFuture.successful(BadRequest(Json.obj("error" -> msg)))
             case Right(_) =>
               val randomId = IdGenerator.token(128)
+              val accountCreation = AccountCreation(
+                id = DatastoreId(IdGenerator.token(32)),
+                randomId = randomId,
+                email = email,
+                name = name,
+                avatar = avatar,
+                password = BCrypt.hashpw(password, BCrypt.gensalt()),
+                creationDate = DateTime.now(),
+                validUntil = DateTime.now().plusMinutes(15)
+              )
               env.dataStore.accountCreationRepo
-                .save(
-                  AccountCreation(
-                    id = DatastoreId(IdGenerator.token(32)),
-                    randomId = randomId,
-                    email = email,
-                    name = name,
-                    avatar = avatar,
-                    password = BCrypt.hashpw(password, BCrypt.gensalt()),
-                    creationDate = DateTime.now(),
-                    validUntil = DateTime.now().plusMinutes(15)
-                  )
-                )
+                .save(accountCreation)
                 .flatMap { _ =>
                   val host = ctx.request.headers
                     .get("Otoroshi-Proxied-Host")
@@ -517,7 +516,8 @@ class LoginController(
                         "link" -> JsString(env.getDaikokuUrl(
                           ctx.tenant,
                           s"/account/validate?id=$randomId"
-                        ))
+                        )),
+                        "tenant_data" -> accountCreation.asJson
                       )
                     )
                   } yield {

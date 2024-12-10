@@ -2750,25 +2750,6 @@ object SchemaDefinition {
         )
       )
     )
-    lazy val TeamAccessType = new PossibleObject(
-      ObjectType(
-        "TeamAccess",
-        "A team access notification action",
-        interfaces[(DataStore, DaikokuActionContext[JsValue]), TeamAccess](
-          NotificationActionType
-        ),
-        fields[(DataStore, DaikokuActionContext[JsValue]), TeamAccess](
-          Field(
-            "team",
-            OptionType(TeamObjectType),
-            resolve = ctx =>
-              ctx.ctx._1.teamRepo
-                .forTenant(ctx.ctx._2.tenant)
-                .findById(ctx.value.team)
-          )
-        )
-      )
-    )
     lazy val TeamInvitationType = new PossibleObject(
       ObjectType(
         "TeamInvitation",
@@ -3360,7 +3341,6 @@ object SchemaDefinition {
           resolve = _.value.action,
           possibleTypes = List(
             ApiAccessType,
-            TeamAccessType,
             TeamInvitationType,
             ApiSubscriptionDemandType,
             OtoroshiSyncSubscriptionErrorType,

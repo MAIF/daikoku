@@ -2961,7 +2961,12 @@ class ApiController(
                 "user" -> JsString(ctx.user.name),
                 "apiName" -> JsString(api.name),
                 "teamName" -> JsString(team.name),
-                "link" -> JsString(env.getDaikokuUrl(ctx.tenant, "/notifications"))
+                "link" -> JsString(env.getDaikokuUrl(ctx.tenant, "/notifications")),
+                "api_data" -> api.asJson,
+                "consumer_team_data" -> team.asJson,
+                "producer_team_data" -> maybeOwnerteam.map(_.asJson).getOrElse(Json.obj()),
+                "user_data" -> ctx.user.asSimpleJson,
+                "notification_data" -> notification.asJson
               )
             )
           } yield {
@@ -3609,7 +3614,7 @@ class ApiController(
       )(teamId, ctx) { _ =>
         val postId = ApiPostId(IdGenerator.token(32))
 
-        val body = ApiPost(
+        val newPost = ApiPost(
           id = postId,
           tenant = ctx.tenant.id,
           lastModificationAt = DateTime.now(),
@@ -3617,150 +3622,119 @@ class ApiController(
           content = (ctx.request.body \ "content").as[String]
         )
 
-        env.dataStore.apiPostRepo
-          .forTenant(ctx.tenant.id)
-          .save(body)
-          .flatMap {
-            case true =>
-              env.dataStore.apiRepo
-                .forTenant(ctx.tenant.id)
-                .findByIdNotDeleted(apiId)
-                .flatMap {
-                  case Some(api) =>
-                    env.dataStore.apiRepo
-                      .forTenant(ctx.tenant.id)
-                      .save(api.copy(posts = api.posts ++ Seq(postId)))
-                      .flatMap {
-                        case true =>
-                          val tenantLanguage: String =
-                            ctx.tenant.defaultLanguage.getOrElse("en")
-                          for {
-                            subs <-
-                              env.dataStore.apiSubscriptionRepo
-                                .forTenant(ctx.tenant.id)
-                                .find(Json.obj("api" -> apiId))
-                            api <-
-                              env.dataStore.apiRepo
-                                .forTenant(ctx.tenant.id)
-                                .findByIdNotDeleted(apiId)
-                            _ <- Future.sequence(
-                              subs
-                                .toSet[ApiSubscription]
-                                .map(sub =>
-                                  env.dataStore.notificationRepo
-                                    .forTenant(ctx.tenant.id)
-                                    .save(
-                                      Notification(
-                                        id = NotificationId(
-                                          IdGenerator.token(32)
-                                        ),
-                                        tenant = ctx.tenant.id,
-                                        sender = ctx.user.asNotificationSender,
-                                        action =
-                                          NotificationAction.NewPostPublished(
-                                            teamId,
-                                            api.map(_.name).getOrElse("")
-                                          ),
-                                        notificationType =
-                                          NotificationType.AcceptOnly,
-                                        team = Some(sub.team)
-                                      )
-                                    )
-                                )
-                            )
-                            subTeams <- {
-                              val teamIds = subs
-                                .toSet[ApiSubscription]
-                                .map(_.team)
-                              env.dataStore.teamRepo
-                                .forTenant(ctx.tenant)
-                                .find(
-                                  Json.obj(
-                                    "_id" -> Json.obj(
-                                      "$in" -> JsArray(
-                                        teamIds.map(_.asJson).toList
-                                      )
-                                    )
-                                  )
-                                )
-                            }
-                            members <-
-                              subTeams
-                                .traverse { t =>
-                                  env.dataStore.userRepo
-                                    .find(
-                                      Json
-                                        .obj(
-                                          "_id" -> Json.obj(
-                                            "$in" -> JsArray(
-                                              t.users
-                                                .filter(
-                                                  _.teamPermission == TeamPermission.Administrator
-                                                )
-                                                .map(_.userId.asJson)
-                                                .toList
-                                            )
-                                          ),
-                                          "_deleted" -> false
-                                        )
-                                    )
-                                }
-                                .map(_.flatten)
-                            _ <- Future.sequence(members.map { member =>
-                              implicit val language: String =
-                                member.defaultLanguage.getOrElse(tenantLanguage)
-                              (for {
-                                title <- translator.translate(
-                                  "mail.create.post.title",
-                                  ctx.tenant
-                                )
-                                body <- translator.translate(
-                                  "mail.create.post.body",
-                                  ctx.tenant,
-                                  Map(
-                                    "user" -> JsString(ctx.user.name),
-                                    "apiName" -> JsString(api.get.humanReadableId),
-                                    "teamName" -> JsString(api.get.team.value), //not sure
-                                    "link" -> JsString(env.getDaikokuUrl(
-                                      ctx.tenant,
-                                      "/" + api.get.team.value + "/" + api.get.humanReadableId + "/" + api.get.currentVersion.value + "/news"
-                                    )) //same
-                                  )
-                                )
-                              } yield {
-                                ctx.tenant.mailer.send(
-                                  title,
-                                  Seq(member.email),
-                                  body,
-                                  ctx.tenant
-                                )
-                              }).flatten
-                            })
-                          } yield {
-                            Ok(Json.obj("created" -> true))
-                          }
-                        case false =>
-                          FastFuture.successful(
-                            BadRequest(
-                              Json.obj("error" -> "Failed to create post")
-                            )
-                          )
-                      }
-                  case None =>
-                    AppLogger.error("Api not found after post creation")
-                    FastFuture.successful(
-                      NotFound(
-                        Json.obj(
-                          "error" -> "Failed to create post : Api not found"
-                        )
+        def sendMailToTeamAdmins(team: Team, api: Api, post: ApiPost, ownerTeam: Team): EitherT[Future, AppError, Unit] = {
+          val tenantLanguage: String = ctx.tenant.defaultLanguage.getOrElse("en")
+
+          for {
+            members <- EitherT.liftF[Future, AppError, Seq[User]](env.dataStore.userRepo
+              .find(
+                Json
+                  .obj(
+                    "_id" -> Json.obj(
+                      "$in" -> JsArray(
+                        team.users
+                          .filter(_.teamPermission == TeamPermission.Administrator)
+                          .map(_.userId.asJson)
+                          .toList
                       )
+                    ),
+                    "_deleted" -> false
+                  )
+              ))
+            _ <- EitherT.liftF[Future, AppError, Seq[Future[Unit]]](Future.sequence(members.map { member =>
+              implicit val language: String =
+                member.defaultLanguage.getOrElse(tenantLanguage)
+              for {
+                title <- translator.translate(
+                  "mail.create.post.title",
+                  ctx.tenant
+                )
+                body <- translator.translate(
+                  "mail.create.post.body",
+                  ctx.tenant,
+                  Map(
+                    "user" -> JsString(ctx.user.name),
+                    "apiName" -> JsString(api.humanReadableId),
+                    "teamName" -> JsString(api.team.value), //not sure
+                    "link" -> JsString(env.getDaikokuUrl(
+                      ctx.tenant,
+                      "/" + api.team.value + "/" + api.humanReadableId + "/" + api.currentVersion.value + "/news"
+                    )), //same
+                    "user_data" -> ctx.user.asSimpleJson,
+                    "api_data" -> api.asJson,
+                    "consumer_team_data" -> team.asJson,
+                    "producer_team_data" -> ownerTeam.asJson,
+                    "post_data" -> post.asJson
+                  )
+                )
+              } yield {
+                ctx.tenant.mailer.send(
+                  title,
+                  Seq(member.email),
+                  body,
+                  ctx.tenant
+                )
+              }
+            }))
+          } yield ()
+        }
+
+        (for {
+          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiPostRepo
+            .forTenant(ctx.tenant.id)
+            .save(newPost))
+          api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
+            .forTenant(ctx.tenant.id)
+            .findByIdNotDeleted(apiId), AppError.ApiNotFound)
+          ownerTeam <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo
+            .forTenant(ctx.tenant.id)
+            .findByIdNotDeleted(api.team), AppError.TeamNotFound)
+          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
+            .forTenant(ctx.tenant.id)
+            .save(api.copy(posts = api.posts ++ Seq(postId))))
+          subs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](env.dataStore.apiSubscriptionRepo
+            .forTenant(ctx.tenant.id)
+            .find(Json.obj("api" -> apiId)))
+          _ <- EitherT.liftF[Future, AppError, Set[Boolean]](Future.sequence(
+            subs
+              .toSet[ApiSubscription]
+              .map(sub =>
+                env.dataStore.notificationRepo
+                  .forTenant(ctx.tenant.id)
+                  .save(
+                    Notification(
+                      id = NotificationId(
+                        IdGenerator.token(32)
+                      ),
+                      tenant = ctx.tenant.id,
+                      sender = ctx.user.asNotificationSender,
+                      action =
+                        NotificationAction.NewPostPublished(
+                          teamId,
+                          api.name
+                        ),
+                      notificationType =
+                        NotificationType.AcceptOnly,
+                      team = Some(sub.team)
                     )
-                }
-            case false =>
-              FastFuture.successful(
-                BadRequest(Json.obj("error" -> "Failed to create post"))
+                  )
+              )))
+          subTeams <- EitherT.liftF[Future, AppError, Seq[Team]](env.dataStore.teamRepo
+            .forTenant(ctx.tenant)
+            .find(
+              Json.obj(
+                "_id" -> Json.obj(
+                  "$in" -> JsArray(
+                    subs.map(_.team).map(_.asJson).toList
+                  )
+                )
               )
-          }
+            ))
+          _ <-  EitherT.pure[Future, AppError](subTeams.foreach(t => sendMailToTeamAdmins(t, api, newPost, ownerTeam)))
+
+        } yield Ok(Json.obj("created" -> true)))
+          .leftMap(_.render())
+          .merge
       }
     }
 
@@ -4140,7 +4114,11 @@ class ApiController(
                                                 "link" -> JsString(env.getDaikokuUrl(
                                                   ctx.tenant,
                                                   "/" + api.team.value + "/" + api.humanReadableId + "/" + api.currentVersion.value + "/issues"
-                                                )) //same
+                                                )), //same
+                                                "user_data" -> ctx.user.asSimpleJson,
+                                                "api_data" -> api.asJson,
+                                                "producer_team_data" -> maybeOwnerteam.map(_.asJson).getOrElse(Json.obj()),
+                                                "issue_data" -> issue.asJson
                                               )
                                             )
                                           } yield {

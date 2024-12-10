@@ -1,17 +1,8 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiSubscriptionAccept,
-  ApiSubscriptionDemand,
-  TeamAccess,
-  TeamInvitation
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiSubscriptionAccept, TeamInvitation}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
-  Administrator,
-  ApiEditor,
-  TeamUser
-}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import org.joda.time.DateTime
@@ -627,41 +618,6 @@ class TeamControllerSpec()
         s"/api/teams/${teamOwnerId.value}/_full"
       )(tenant, session)
       respGet.status mustBe 403
-    }
-
-    "ask for join a team" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(userAdmin, randomUser),
-        teams = Seq(
-          teamConsumer.copy(
-            users = Set(UserWithPermission(userTeamAdminId, Administrator))
-          )
-        )
-      )
-      val session = loginWithBlocking(randomUser, tenant)
-      val resp =
-        httpJsonCallBlocking(
-          path = s"/api/teams/${teamConsumerId.value}/join",
-          method = "POST"
-        )(tenant, session)
-      resp.status mustBe 200
-
-      val adminSession = loginWithBlocking(userAdmin, tenant)
-      val respNotifications =
-        httpJsonCallBlocking(
-          s"/api/teams/${teamConsumerId.value}/notifications"
-        )(tenant, adminSession)
-      respNotifications.status mustBe 200
-      val notifications =
-        fr.maif.otoroshi.daikoku.domain.json.SeqNotificationFormat
-          .reads((respNotifications.json \ "notifications").as[JsArray])
-      notifications.isSuccess mustBe true
-      notifications.get.length mustBe 1
-      val notif = notifications.get.head
-      notif.action mustBe TeamAccess(teamConsumerId)
-      notif.sender.id.get mustBe randomUser.id
-      notif.team.get mustBe teamConsumerId
     }
 
     "not add or delete user" in {

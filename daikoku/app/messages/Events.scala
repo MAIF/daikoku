@@ -126,7 +126,12 @@ class MessageActor(implicit
           "user" -> JsString(sender.get.name)
         )
       )
-      body <- translator.translate("mail.new.message.body", tenant)
+      body <- translator.translate("mail.new.message.body", tenant, Map(
+        "body" -> JsString(message.message),
+        "user_data" -> sender.get.asSimpleJson,
+        "message_data" -> message.asJson,
+        "tenant_data" -> tenant.asJson
+      ))
       _ <- Future.sequence(
         emails.map(email => tenant.mailer.send(title, Seq(email), body, tenant))
       )

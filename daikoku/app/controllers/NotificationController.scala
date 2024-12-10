@@ -1,11 +1,13 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.data.EitherT
-import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
@@ -13,9 +15,15 @@ import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, TeamUser}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{ApiService, Translator}
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.i18n.I18nSupport
-import play.api.libs.json.{JsArray, JsObject, JsString, JsValue, Json}
-import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Result}
+import play.api.libs.json._
+import play.api.mvc.{
+  AbstractController,
+  AnyContent,
+  ControllerComponents,
+  Result
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -257,7 +265,7 @@ class NotificationController(
   def acceptNotification(notificationId: String) =
     DaikokuAction.async(parse.json) { ctx =>
       import cats.data._
-      import cats.implicits._
+        import cats.implicits._
 
       implicit val c = ctx
 
@@ -281,10 +289,6 @@ class NotificationController(
                     teamRequestId,
                     notification.sender
                   )
-                )
-              case TeamAccess(_) =>
-                EitherT(
-                  acceptTeamAccess(ctx.tenant, team.get, notification.sender)
                 )
               case ApiSubscriptionDemand(
                     apiId,
@@ -377,111 +381,71 @@ class NotificationController(
       AuditTrailEvent(
         s"@{user.name} has rejected a notifications for team @{team.name} - @{team.id} => @{notification.id}"
       )
-    )(teamId.value, ctx) { team =>
+    )(teamId.value, ctx) { ownerTeam =>
       {
 
         ctx.setCtxValue("notification.id", notification.id)
 
         val mailBody: Future[String] = notification.action match {
-          case ApiAccess(api, _) =>
-            env.dataStore.apiRepo
-              .forTenant(ctx.tenant.id)
-              .findByIdNotDeleted(api)
-              .flatMap {
-                case None =>
-                  translator
-                    .translate("unrecognized.api", ctx.tenant)
-                    .flatMap { unrecognizedApi =>
-                      translator.translate(
-                        "mail.api.access.rejection.body",
-                        ctx.tenant,
-                        Map("apiName" -> JsString(unrecognizedApi))
-                      )
-                    }
-                case Some(api) =>
-                  translator.translate(
-                    "mail.api.access.rejection.body",
-                    ctx.tenant,
-                    Map("apiName" -> JsString(api.name))
+          case ApiAccess(api, team) =>
+            (for {
+              api <- env.dataStore.apiRepo
+                .forTenant(ctx.tenant.id)
+                .findByIdNotDeleted(api)
+              consumerTeam <- env.dataStore.teamRepo
+                .forTenant(ctx.tenant.id)
+                .findByIdNotDeleted(team)
+              recipient <- notification.sender.id.map(id => env.dataStore.userRepo
+                .findByIdNotDeleted(id)).getOrElse(FastFuture.successful(None))
+              unrecognizedApi <- translator
+                .translate("unrecognized.api", ctx.tenant)
+            } yield
+                translator.translate(
+                  "mail.api.access.rejection.body",
+                  ctx.tenant,
+                  Map(
+                    "apiName" -> JsString(api.map(_.name).getOrElse(unrecognizedApi)),
+                    "user" -> JsString(notification.sender.name),
+                    "recipient_data" -> recipient.map(_.asJson).getOrElse(Json.obj()),
+                    "tenant_data" -> ctx.tenant.asJson,
+                    "api_data" -> api.map(_.asJson).getOrElse(Json.obj()),
+                    "consumer_team_data" -> consumerTeam.map(_.asJson).getOrElse(Json.obj()),
+                    "producer_team_data" -> ownerTeam.asJson,
+                    "notification_data" -> notification.asJson
                   )
-              }
-          case TeamAccess(team) =>
-            env.dataStore.teamRepo
-              .forTenant(ctx.tenant.id)
-              .findByIdNotDeleted(team)
-              .flatMap {
-                case None =>
-                  translator
-                    .translate("unrecognized.team", ctx.tenant)
-                    .flatMap { unrecognizedApi =>
-                      translator.translate(
-                        "mail.team.access.rejection.body",
-                        ctx.tenant,
-                        Map("teamName" -> JsString(unrecognizedApi))
-                      )
-                    }
-                case Some(team) =>
-                  translator.translate(
-                    "mail.team.access.rejection.body",
-                    ctx.tenant,
-                    Map("teamName" -> JsString(team.name))
-                  )
-              }
-          case TeamInvitation(team, user) =>
-            env.dataStore.teamRepo
-              .forTenant(ctx.tenant.id)
-              .findByIdNotDeleted(team)
-              .flatMap {
-                case None =>
-                  (for {
-                    unrecognizedUser <-
-                      translator.translate("unrecognized.user", ctx.tenant)
-                    unrecognizedTeam <-
-                      translator.translate("unrecognized.team", ctx.tenant)
-                  } yield {
-                    translator.translate(
-                      "mail.user.invitation.rejection.body",
-                      ctx.tenant,
-                      Map(
-                        "user" -> JsString(unrecognizedUser),
-                        "teamName" -> JsString(unrecognizedTeam)
-                      )
-                    )
-                  }).flatten
-                case Some(team) =>
-                  env.dataStore.userRepo
-                    .findByIdNotDeleted(user)
-                    .flatMap {
-                      case None =>
-                        translator
-                          .translate("unrecognized.user", ctx.tenant)
-                          .flatMap { unrecognizedUser =>
-                            translator.translate(
-                              "mail.user.invitation.rejection.body",
-                              ctx.tenant,
-                              Map(
-                                "teamName" -> JsString(team.name),
-                                "user" -> JsString(unrecognizedUser)
-                              )
-                            )
-                          }
+                )
+              ).flatten
 
-                      case Some(user) =>
-                        translator.translate(
-                          "mail.user.invitation.rejection.body",
-                          ctx.tenant,
-                          Map("user" -> JsString(user.name), "teamName" -> JsString(team.name))
-                        )
-                    }
-              }
-          case ApiSubscriptionDemand(api, _, team, demand, step, _, _) =>
+          case notif: TeamInvitation =>
+            (for {
+              user <- env.dataStore.userRepo
+                .findByIdNotDeleted(notif.user)
+              recipient <- notification.sender.id.map(id => env.dataStore.userRepo
+                .findByIdNotDeleted(id)).getOrElse(FastFuture.successful(None))
+              unrecognizedUser <-
+                translator.translate("unrecognized.user", ctx.tenant)
+
+            } yield translator.translate(
+              "mail.user.invitation.rejection.body",
+              ctx.tenant,
+              Map(
+                "user" -> JsString(notification.sender.name),
+                "teamName" -> JsString(notification.sender.name),
+                "user_data" -> user.map(_.asJson).getOrElse(JsString(unrecognizedUser)).as[JsValue],
+                "recipient_data" -> recipient.map(_.asJson).getOrElse(Json.obj()),
+                "tenant_data" -> ctx.tenant.asJson,
+                "producer_team_data" -> ownerTeam.asJson,
+                "notification_data" -> notification.asJson,
+              )
+            )).flatten
+          case notif: ApiSubscriptionDemand =>
             for {
               _ <-
                 apiService
                   .declineSubscriptionDemand(
                     ctx.tenant,
-                    demand,
-                    step,
+                    notif.demand,
+                    notif.step,
                     ctx.user.asNotificationSender,
                     maybeMessage
                   )
@@ -489,24 +453,23 @@ class NotificationController(
               team <-
                 env.dataStore.teamRepo
                   .forTenant(ctx.tenant)
-                  .findByIdNotDeleted(team)
+                  .findByIdNotDeleted(notif.team)
               maybeApi <-
                 env.dataStore.apiRepo
                   .forTenant(ctx.tenant.id)
-                  .findByIdNotDeleted(api)
+                  .findByIdNotDeleted(notif.api)
+              maybePlan <-
+                env.dataStore.usagePlanRepo
+                  .forTenant(ctx.tenant.id)
+                  .findByIdNotDeleted(notif.plan)
               maybeDemand <-
                 env.dataStore.subscriptionDemandRepo
                   .forTenant(ctx.tenant)
-                  .findByIdNotDeleted(demand)
+                  .findByIdNotDeleted(notif.demand)
               unknownUser <-
                 translator.translate("unrecognized.team", ctx.tenant)
-              maybeUser <- maybeDemand match {
-                case Some(d) =>
-                  env.dataStore.userRepo
-                    .findByIdNotDeleted(d.from)
-                    .map(_.map(_.name))
-                case None => FastFuture.successful(Some(unknownUser))
-              }
+              maybeUser <- maybeDemand.map(d => env.dataStore.userRepo.findByIdNotDeleted(d.from))
+                .getOrElse(FastFuture.successful(None))
               unrecognizedApi <-
                 translator.translate("unrecognized.api", ctx.tenant)
               unrecognizedTeam <-
@@ -515,10 +478,15 @@ class NotificationController(
                 "mail.api.subscription.rejection.body",
                 ctx.tenant,
                 Map(
-                  "user" -> JsString(maybeUser.getOrElse(unknownUser)),
+                  "user" -> JsString(maybeUser.map(_.name).getOrElse(unknownUser)),
                   "team" -> JsString(team.map(_.name).getOrElse(unrecognizedTeam)),
                   "apiName" -> JsString(maybeApi.map(_.name).getOrElse(unrecognizedApi)),
-                  "message" -> JsString(maybeMessage.getOrElse(""))
+                  "message" -> JsString(maybeMessage.getOrElse("")),
+                  "api_data" -> maybeApi.map(_.asJson).getOrElse(JsString(unrecognizedApi)).as[JsValue],
+                  "usagePlan_data" -> maybePlan.map(_.asJson).getOrElse(Json.obj()),
+                  "producer_team_data" -> ownerTeam.asJson,
+                  "consumer_team_data" -> team.map(_.asJson).getOrElse(JsString(unrecognizedTeam)).as[JsValue],
+                  "user_data" -> maybeUser.map(_.asSimpleJson).getOrElse(Json.obj())
                 )
               )
             } yield body
@@ -542,7 +510,10 @@ class NotificationController(
                 ctx.tenant,
                 Map(
                   "apiName" -> JsString(api.map(_.name).getOrElse(unrecognizedApi)),
-                  "teamName" -> JsString(team.map(_.name).getOrElse(unrecognizedTeam))
+                  "teamName" -> JsString(team.map(_.name).getOrElse(unrecognizedTeam)),
+                  "producer_team_data" -> ownerTeam.asJson,
+                  "requested_team_data" -> team.map(_.asJson).getOrElse(Json.obj()),
+                  "api_data" -> api.map(_.asJson).getOrElse(Json.obj()),
                 )
               )
             }
@@ -710,6 +681,12 @@ class NotificationController(
           .findByIdNotDeleted(apiId.value),
         ApiNotFound
       )
+      ownerTeam <- EitherT.fromOptionF(
+        env.dataStore.teamRepo
+          .forTenant(tenant.id)
+          .findByIdNotDeleted(api.team),
+        TeamNotFound
+      )
       team <- EitherT.fromOptionF(
         env.dataStore.teamRepo
           .forTenant(tenant.id)
@@ -748,7 +725,13 @@ class NotificationController(
           body <- translator.translate(
             "mail.api.access.acceptation.body",
             tenant,
-            Map("apiName" -> JsString(api.name), "user" -> JsString(sender.name))
+            Map(
+              "apiName" -> JsString(api.name),
+              "user" -> JsString(sender.name),
+              "producer_team_data" -> ownerTeam.asJson,
+              "consumer_team_data" -> team.asJson,
+              "api_data" -> api.asJson,
+            )
           )
         } yield {
           tenant.mailer.send(title, Seq(admin.email), body, tenant)
@@ -757,35 +740,6 @@ class NotificationController(
     } yield ()
 
     result.value
-  }
-
-  def acceptTeamAccess(
-      tenant: Tenant,
-      team: Team,
-      sender: NotificationSender
-  ): Future[Either[AppError, Unit]] = {
-    implicit val lang: String =
-      tenant.defaultLanguage.getOrElse(
-        "en"
-      ) //todo: get user defaultlanguage if possible
-    for {
-      _ <-
-        env.dataStore.teamRepo
-          .forTenant(tenant.id)
-          .save(
-            team.copy(
-              users =
-                team.users ++ Set(UserWithPermission(sender.id.get, TeamUser))
-            )
-          ) //impossible to not have a userId
-      title <- translator.translate("mail.acceptation.title", tenant)
-      body <- translator.translate(
-        "mail.team.access.acceptation.body",
-        tenant,
-        Map("teamName" -> JsString(team.name))
-      )
-      _ <- tenant.mailer.send(title, Seq(sender.email), body, tenant)
-    } yield Right(())
   }
 
   def acceptTeamInvitation(
@@ -828,7 +782,9 @@ class NotificationController(
           tenant,
           Map(
             "user" -> JsString(invitedUser.name),
-            "teamName" -> JsString(team.name)
+            "teamName" -> JsString(team.name),
+            "user_data" -> invitedUser.asSimpleJson,
+            "team_data" -> team.asJson
           )
         )
       )

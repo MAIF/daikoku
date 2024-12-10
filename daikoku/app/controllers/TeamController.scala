@@ -198,7 +198,10 @@ class TeamController(
                     "link" -> JsString(env.getDaikokuUrl(
                       ctx.tenant,
                       s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"
-                    ))
+                    )),
+                    "team_data" -> team.asJson,
+                    "recipient_data" -> ctx.user.asJson,
+                    "tenant_data" -> ctx.tenant.asJson
                   )
                 )
               )
@@ -345,11 +348,15 @@ class TeamController(
                   "mail.create.team.token.body",
                   ctx.tenant,
                   Map(
+                    "objTeam" -> team.asJson,
                     "team" -> JsString(team.name),
                     "link" -> JsString(env.getDaikokuUrl(
                       ctx.tenant,
                       s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"
-                    ))
+                    )),
+                    "team_data" -> team.asJson,
+                    "recipient_data" -> ctx.user.asJson,
+                    "tenant_data" -> ctx.tenant.asJson
                   )
                 )
                 _ <-
@@ -436,11 +443,15 @@ class TeamController(
                         "mail.create.team.token.body",
                         ctx.tenant,
                         Map(
-                          "team" -> JsString(teamToSave.name),
+                          "objTeam" -> team.asJson,
+                          "team" -> JsString(team.name),
                           "link" -> JsString(env.getDaikokuUrl(
                             ctx.tenant,
-                            s"/api/teams/${teamToSave.humanReadableId}/_verify?token=$cipheredValidationToken"
-                          ))
+                            s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"
+                          )),
+                          "team_data" -> team.asJson,
+                          "recipient_data" -> ctx.user.asJson,
+                          "tenant_data" -> ctx.tenant.asJson
                         )
                       )
                       _ <- ctx.tenant.mailer.send(
@@ -503,84 +514,6 @@ class TeamController(
           .leftMap(_.render())
           .map(_ => Ok(Json.obj("done" -> true)))
           .merge
-      }
-    }
-
-  def askForJoinTeam(teamId: String) =
-    DaikokuAction.async { ctx =>
-      PublicUserAccess(
-        AuditTrailEvent(
-          s"@{user.name} has asked to join team @{team.name} - @{team.id}"
-        )
-      )(ctx) {
-
-        env.dataStore.teamRepo
-          .forTenant(ctx.tenant.id)
-          .findById(teamId)
-          .flatMap {
-            case Some(team) if team.`type` == TeamType.Personal =>
-              FastFuture.successful(
-                Forbidden(
-                  Json.obj("error" -> "Team type doesn't accept to be join")
-                )
-              )
-            case Some(team) if team.`type` == TeamType.Admin =>
-              FastFuture.successful(
-                Forbidden(
-                  Json.obj("error" -> "Team type doesn't accept to be join")
-                )
-              )
-            case Some(team) =>
-              val notification = Notification(
-                id = NotificationId(IdGenerator.token(32)),
-                tenant = ctx.tenant.id,
-                team = Some(team.id),
-                sender = ctx.user.asNotificationSender,
-                action = NotificationAction.TeamAccess(team.id)
-              )
-
-              for {
-                notificationRepo <-
-                  env.dataStore.notificationRepo
-                    .forTenantF(ctx.tenant.id)
-                saved <- notificationRepo.save(notification)
-                admins <-
-                  env.dataStore.userRepo
-                    .find(
-                      Json.obj(
-                        "_deleted" -> false,
-                        "_id" -> Json.obj(
-                          "$in" -> JsArray(team.admins().map(_.asJson).toSeq)
-                        )
-                      )
-                    )
-                _ <- Future.sequence(admins.map(admin => {
-                  implicit val language: String = admin.defaultLanguage
-                    .getOrElse(ctx.tenant.defaultLanguage.getOrElse("en"))
-                  (for {
-                    title <-
-                      translator.translate("mail.team.access.title", ctx.tenant)
-                    body <- translator.translate(
-                      "mail.team.access.body",
-                      ctx.tenant,
-                      Map(
-                        "user" -> JsString(ctx.user.name),
-                        "teamName" -> JsString(team.name),
-                        "link" -> JsString(env
-                          .getDaikokuUrl(ctx.tenant, "/notifications"))
-                      )
-                    )
-                  } yield {
-                    ctx.tenant.mailer
-                      .send(title, Seq(admin.email), body, ctx.tenant)
-                  }).flatten
-                }))
-              } yield {
-                Ok(Json.obj("done" -> saved))
-              }
-            case None =>
-              Future.successful(NotFound(Json.obj("error" -> "Team not found")))
-          }
       }
     }
 
@@ -746,7 +679,10 @@ class TeamController(
             Map(
               "user" -> JsString(ctx.user.name),
               "teamName" -> JsString(team.name),
-              "link" -> JsString(env.getDaikokuUrl(ctx.tenant, "/notifications"))
+              "link" -> JsString(env.getDaikokuUrl(ctx.tenant, "/notifications")),
+              "user_data" -> ctx.user.asSimpleJson,
+              "team_data" -> team.asJson,
+              "recipient_data" -> user.asSimpleJson,
             )
           )
         } yield {

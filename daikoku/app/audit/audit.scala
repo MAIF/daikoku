@@ -359,8 +359,8 @@ class AuditActor(implicit
         te.evt match {
           case _: AuditTrailEvent     => false
           case _: JobEvent            => false
-          case _: AlertEvent          => true
-          case _: ApiKeyRotationEvent => false
+          case _: AlertEvent          => false
+          case _: ApiKeyRotationEvent => true
         }
       }
       .mapAsync(10) { event =>
@@ -405,7 +405,11 @@ class AuditActor(implicit
               tenant,
               Map(
                 "apiName" -> JsString(api.name),
-                "planName" -> JsString(plan.customName.getOrElse(plan.typeName))
+                "planName" -> JsString(plan.customName.getOrElse(plan.typeName)),
+                "api_data" -> api.asJson,
+                "usagePlan_data" -> plan.asJson,
+                "subscription_data" -> subscription.asJson,
+                "consumer_team_data" -> team.asJson
               )
             )
           )
