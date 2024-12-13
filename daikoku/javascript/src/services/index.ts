@@ -1665,12 +1665,6 @@ export const graphql = {
                 name
               }
             }
-            ... on TeamAccess {
-              team {
-                _id
-                name
-              }
-            }
             ... on TeamInvitation {
               team {
                 _id

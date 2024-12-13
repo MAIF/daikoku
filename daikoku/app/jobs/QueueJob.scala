@@ -117,7 +117,6 @@ class QueueJob(
             Json.obj(
               "$in" -> JsArray(
                 Seq(
-                  "TeamAccess",
                   "TeamInvitation",
                   "ApiSubscription",
                   "ApiSubscriptionAccept",
