@@ -1,13 +1,13 @@
 package fr.maif.otoroshi.daikoku.utils
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.domain.{CmsPageId, Tenant}
 import fr.maif.otoroshi.daikoku.env.Env
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.i18n.{Lang, MessagesApi}
-import play.api.libs.json.{JsArray, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, Json}
+import play.api.libs.json.{JsString, JsValue, Json}
 import services.CmsPage
 
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 
 class Translator {
 
@@ -67,7 +67,8 @@ class Translator {
       messagesApi: MessagesApi
   ): Future[String] = {
     implicit val ec: ExecutionContext = env.defaultExecutionContext
-    value.map(value => replaceVariables(value, args))
+    value
+      .map(value => replaceVariables(value, args))
       .flatMap(content => {
           val page = CmsPage(
             id = CmsPageId(IdGenerator.token(32)),
@@ -93,18 +94,19 @@ class Translator {
 
   def replaceVariables(value: String, args: Map[String, JsValue]): String = {
       args.foldLeft(value) { (acc, a) =>
-        acc.replace(s"[${a._1}]", a._2.toString)
+        acc.replace(s"[${a._1}]", a._2 match {
+          case JsString(value) => value
+          case value => value.toString()
+        })
       }
   }
 
-   def _getMailTemplate(key: String, tenant: Tenant)(implicit
+   def _getMailTemplate(key: String, tenant: Tenant, args: Map[String, JsValue])(implicit
       language: String,
       env: Env,
       messagesApi: MessagesApi
   ): Future[String] = {
      implicit val ec: ExecutionContext = env.defaultExecutionContext
-
-     val defaultTemplate = "{{email}}"
 
      env.dataStore.translationRepo
        .forTenant(tenant)
@@ -112,12 +114,12 @@ class Translator {
        .flatMap {
          case None =>
            tenant.mailerSettings match {
-             case None => translate(key, tenant, Map("email" -> JsString(defaultTemplate)))
+             case None => translate(key, tenant, args)
              case Some(mailer) =>
                mailer.template
                  .map(t => FastFuture.successful(t))
                  .getOrElse(
-                   translate(key, tenant, Map("email" -> JsString(defaultTemplate)))
+                   translate(key, tenant, args)
                  )
            }
          case Some(translation) => FastFuture.successful(translation.value)
@@ -132,12 +134,12 @@ class Translator {
     implicit val ec: ExecutionContext = env.defaultExecutionContext
 
     env.dataStore.cmsRepo
-        .forTenant(tenant)
-        .findOne(Json.obj("_id" -> s".mails.root.$key.${language.toLowerCase}".replaceAll("\\.", "-")))
-        .flatMap {
-          case None => _getMailTemplate(key, tenant)
-          case Some(cmsPage) =>
-            renderTranslationAsCmsPage(FastFuture.successful(cmsPage.body), tenant, args)
-        }
+      .forTenant(tenant)
+      .findOne(Json.obj("_id" -> s".mails.root.$key.${language.toLowerCase}".replaceAll("\\.", "-")))
+      .flatMap {
+        case None => _getMailTemplate(key, tenant, args)
+        case Some(cmsPage) =>
+          renderTranslationAsCmsPage(FastFuture.successful(cmsPage.body), tenant, args)
+      }
   }
 }

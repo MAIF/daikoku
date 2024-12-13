@@ -10,6 +10,7 @@ import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.{Api, ApiDocumentationPage, ApiWithCount, CanJson, CmsPageId, CommonServices, Team, TeamType, Tenant, TenantId, User, UserId, UserSession, json}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
@@ -1212,7 +1213,7 @@ case class CmsPage(
               }
             )
 
-        if (template.contains("{{apis}")) {
+        if (template.contains("{{apis}}")) {
           contextBuilder = contextBuilder.combine("apis", Json.stringify(JsArray(Await
               .result(env.dataStore.apiRepo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
               .map(a => {
@@ -1223,7 +1224,7 @@ case class CmsPage(
               }))))
         }
 
-        if (template.contains("{{teams}")) {
+        if (template.contains("{{teams}}")) {
           contextBuilder = contextBuilder.combine("teams", Json.stringify(JsArray(Await
               .result(env.dataStore.teamRepo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
               .map(a => {
@@ -1231,7 +1232,7 @@ case class CmsPage(
               }))))
         }
 
-         if (template.contains("{{users}")) {
+         if (template.contains("{{users}}")) {
           contextBuilder = contextBuilder.combine("users", Json.stringify(JsArray(Await
               .result(env.dataStore.userRepo.findAllNotDeleted(), 10.seconds)
               .map(_.toUiPayload()))))

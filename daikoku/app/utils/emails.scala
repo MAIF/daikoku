@@ -1,15 +1,15 @@
 package fr.maif.otoroshi.daikoku.utils
 
+import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.env.Env
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.http.scaladsl.util.FastFuture.EnhancedFuture
-import fr.maif.otoroshi.daikoku.domain._
 import org.owasp.html.HtmlPolicyBuilder
 import play.api.Logger
 import play.api.i18n.MessagesApi
 import play.api.libs.json._
 import play.api.libs.ws.{WSAuthScheme, WSClient}
 
-import fr.maif.otoroshi.daikoku.env.Env
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -179,8 +179,8 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
 
   import jakarta.mail._
   import jakarta.mail.internet._
-  import java.util.Date
-  import java.util.Properties
+
+  import java.util.{Date, Properties}
 
   lazy val logger = Logger("daikoku-mailer")
 
