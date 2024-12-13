@@ -19,7 +19,7 @@ import classNames from 'classnames';
 import 'highlight.js/styles/monokai.css';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { CmsViewer } from '../CmsViewer';
-import { ApiKeyCard, SimpleApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
+import { SimpleApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
 
 (window as any).hljs = hljs;
 

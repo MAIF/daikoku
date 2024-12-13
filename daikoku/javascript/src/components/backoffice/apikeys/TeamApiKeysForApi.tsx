@@ -362,11 +362,12 @@ export const TeamApiKeysForApi = () => {
           ? subscriptions
           : subscriptions.filter((subs) => {
             return subs.apiKey.clientName === search ||
-            subs.apiKey.clientId === search ||
-            subs.customName?.toLocaleLowerCase() === search.toLocaleLowerCase() ||
+              subs.apiKey.clientId === search ||
+              subs.customName?.toLocaleLowerCase() === search.toLocaleLowerCase() ||
               formatPlanType(subs.planType, translate)
                 .toLowerCase()
-                .includes(search.toLocaleLowerCase())
+                .includes(search.toLocaleLowerCase()) ||
+              subs.tags.map(t => t.toLocaleLowerCase()).includes(search.toLocaleLowerCase())
           });
 
       const sorted = sortBy(filteredApiKeys, ['plan', 'customName', 'parent']);
@@ -448,6 +449,7 @@ export const TeamApiKeysForApi = () => {
                         }
                         regenerateSecret={() => regenerateApiKeySecret(subscription)}
                         transferKey={() => transferApiKey(subscription)}
+                        handleTagClick={(tag) => setSearched(tag)}
                       />
                     );
                   }}
@@ -486,6 +488,7 @@ type ApiKeyCardProps = {
   currentTeam?: ITeamSimple;
   subscribedApis: Array<IApi>;
   transferKey: () => void;
+  handleTagClick: (tag: string) => void
 };
 
 export const ApiKeyCard = ({
@@ -501,7 +504,8 @@ export const ApiKeyCard = ({
   deleteApiKey,
   transferKey,
   currentTeam,
-  subscribedApis
+  subscribedApis,
+  handleTagClick
 }: ApiKeyCardProps) => {
   const apiKeyValues = {
     apikey: `${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`,
@@ -663,7 +667,11 @@ export const ApiKeyCard = ({
               })}>
                 {subscription.validUntil && translate({
                   key: 'subscription.valid.until', replacements: [moment(subscription.validUntil).format(translate('moment.date.format.without.hours'))]
-                })}</span></div>
+                })}</span>
+            </div>
+            <div>
+              {subscription.tags.map(t => (<span className='badge badge-custom me-1 cursor-pointer' onClick={() => handleTagClick(t)}>{t}</span>))}
+            </div>
           </div>
         </div>
         <div className="api-subscriptions__links">
@@ -868,7 +876,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
             </BeautifulTitle>
           </div>
           <div className='api-subscription__infos__creation'>{
-            translate("subscription.for")} 
+            translate("subscription.for")}
             <span className='ms-1 underline'>{props.api.name}</span>/<span className='me-1 underline'>{props.plan.customName}</span>
             {translate({
               key: 'subscription.created.at', replacements: [moment(props.subscription.createdAt).format(translate('moment.date.format.without.hours'))]

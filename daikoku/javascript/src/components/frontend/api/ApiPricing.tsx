@@ -37,7 +37,6 @@ import { formatPlanType } from '../../utils/formatters';
 import { ApiDocumentation } from './ApiDocumentation';
 import { ApiRedoc } from './ApiRedoc';
 import { ApiSwagger } from './ApiSwagger';
-import { ApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
 import { Form, type } from '@maif/react-forms';
 
 export const currency = (plan?: IBaseUsagePlan) => {
