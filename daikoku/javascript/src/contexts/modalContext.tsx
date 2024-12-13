@@ -205,6 +205,7 @@ const useModal = () => {
   }
 
   const openRightPanel = (p: IRightPanelProps) => {
+    console.debug({p})
     setRightPanelContent(p)
   }
 

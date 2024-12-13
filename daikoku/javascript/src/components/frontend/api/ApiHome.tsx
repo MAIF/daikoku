@@ -243,15 +243,14 @@ export const ApiHome = ({
     );
   };
 
-  const askForApikeys = ({ team, plan, apiKey, motivation, customName }:
-    { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object, customName?: string }) => {
+  const askForApikeys = ({ team, plan, apiKey, motivation }: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }) => {
     const planName = formatPlanType(plan, translate);
 
     if (api) {
       return (
         apiKey
           ? Services.extendApiKey(api._id, apiKey._id, team, plan._id, motivation)
-          : Services.askForApiKey(api._id, team, plan._id, motivation, customName)
+          : Services.askForApiKey(api._id, team, plan._id, motivation)
       ).then((result) => {
 
         if (isError(result)) {

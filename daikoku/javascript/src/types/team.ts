@@ -69,7 +69,6 @@ export interface IFastTeam {
 export interface IFastApiSubscription {
   integrationToken: string;
   apiKey: IFastApiKey;
-  customName?: string
 }
 
 export interface IFastApiKey {

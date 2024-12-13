@@ -199,8 +199,7 @@ class ApiService(
       adminCustomName: Option[String] = None,
       thirdPartySubscriptionInformations: Option[
         ThirdPartySubscriptionInformations
-      ],
-      customName: Option[String]
+      ]
   ): Future[Either[AppError, ApiSubscription]] = {
     def createKey(
         api: Api,
@@ -263,7 +262,7 @@ class ApiService(
             team = team.id,
             api = api.id,
             by = user.id,
-            customName = customName,
+            customName = None,
             rotation = plan.autoRotation.map(rotation =>
               ApiSubscriptionRotation(enabled = rotation)
             ),
@@ -2229,8 +2228,7 @@ class ApiService(
                 customReadOnly = demand.customReadOnly,
                 adminCustomName = demand.adminCustomName,
                 thirdPartySubscriptionInformations =
-                  maybeSubscriptionInformations,
-                customName = demand.customName
+                  maybeSubscriptionInformations
               )
             )
             administrators <- EitherT.liftF(
@@ -2320,8 +2318,7 @@ class ApiService(
       customMaxPerDay: Option[Long],
       customMaxPerMonth: Option[Long],
       customReadOnly: Option[Boolean],
-      adminCustomName: Option[String],
-      customName: Option[String]
+      adminCustomName: Option[String]
   )(implicit language: String, currentUser: User) = {
     import cats.implicits._
 
@@ -2479,8 +2476,7 @@ class ApiService(
         customMaxPerDay,
         customMaxPerMonth,
         customReadOnly,
-        adminCustomName,
-        customName
+        adminCustomName
       )
     } yield result
 
@@ -2500,8 +2496,7 @@ class ApiService(
       customMaxPerDay: Option[Long],
       customMaxPerMonth: Option[Long],
       customReadOnly: Option[Boolean],
-      adminCustomName: Option[String],
-      customName: Option[String]
+      adminCustomName: Option[String]
   )(implicit language: String): EitherT[Future, AppError, Result] = {
     import cats.implicits._
 
@@ -2527,8 +2522,7 @@ class ApiService(
                 plan,
                 team,
                 apiKeyId,
-                thirdPartySubscriptionInformations = None,
-                customName = customName
+                thirdPartySubscriptionInformations = None
               )
             ).map(s =>
               Ok(
@@ -2564,8 +2558,7 @@ class ApiService(
                       customMaxPerDay = customMaxPerDay,
                       customMaxPerMonth = customMaxPerMonth,
                       customReadOnly = customReadOnly,
-                      adminCustomName = adminCustomName,
-                      customName = customName
+                      adminCustomName = adminCustomName
                     )
                   )
               )

@@ -2920,10 +2920,6 @@ object json {
         "adminCustomName" -> o.adminCustomName
           .map(JsString.apply)
           .getOrElse(JsNull)
-          .as[JsValue],
-        "customName" -> o.customName
-          .map(JsString.apply)
-          .getOrElse(JsNull)
           .as[JsValue]
       )
 
@@ -2952,8 +2948,7 @@ object json {
             customMaxPerDay = (json \ "customMaxPerDay").asOpt[Long],
             customMaxPerMonth = (json \ "customMaxPerMonth").asOpt[Long],
             customReadOnly = (json \ "customReadOnly").asOpt[Boolean],
-            adminCustomName = (json \ "adminCustomName").asOpt[String],
-            customName = (json \ "customName").asOpt[String]
+            adminCustomName = (json \ "adminCustomName").asOpt[String]
           )
         )
       } recover {
