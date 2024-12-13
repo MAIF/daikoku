@@ -199,7 +199,9 @@ class ApiService(
       adminCustomName: Option[String] = None,
       thirdPartySubscriptionInformations: Option[
         ThirdPartySubscriptionInformations
-      ]
+      ],
+      customName: Option[String] = None,
+      tags: Option[Set[String]] = None
   ): Future[Either[AppError, ApiSubscription]] = {
     def createKey(
         api: Api,
@@ -262,7 +264,7 @@ class ApiService(
             team = team.id,
             api = api.id,
             by = user.id,
-            customName = None,
+            customName = customName,
             rotation = plan.autoRotation.map(rotation =>
               ApiSubscriptionRotation(enabled = rotation)
             ),
@@ -270,7 +272,7 @@ class ApiService(
             metadata = Some(
               JsObject(automaticMetadata.view.mapValues(i => JsString(i)).toSeq)
             ),
-            tags = Some(tunedApiKey.tags),
+            tags = tags.map(_ ++ tunedApiKey.tags).orElse(tunedApiKey.tags.some),
             customMetadata = customMetadata,
             customMaxPerSecond = customMaxPerSecond,
             customMaxPerDay = customMaxPerDay,
@@ -1758,6 +1760,8 @@ class ApiService(
       val customMaxPerMonth = (response \ "customMaxPerMonth").asOpt[Long]
       val customReadOnly = (response \ "customReadOnly").asOpt[Boolean]
       val adminCustomName = (response \ "adminCustomName").asOpt[String]
+      val customName = (response \ "customName").asOpt[String]
+      val tags = (response \ "tags").asOpt[Set[String]]
 
       for {
         _ <- _step.check()
@@ -1774,7 +1778,9 @@ class ApiService(
           customMaxPerSecond = customMaxPerSecond,
           customMaxPerDay = customMaxPerDay,
           customMaxPerMonth = customMaxPerMonth,
-          customReadOnly = customReadOnly
+          customReadOnly = customReadOnly,
+          customName = customName,
+          tags = tags
         )
         _ <- EitherT.liftF(
           env.dataStore.subscriptionDemandRepo
@@ -2227,8 +2233,9 @@ class ApiService(
                 customMaxPerMonth = demand.customMaxPerMonth,
                 customReadOnly = demand.customReadOnly,
                 adminCustomName = demand.adminCustomName,
-                thirdPartySubscriptionInformations =
-                  maybeSubscriptionInformations
+                thirdPartySubscriptionInformations = maybeSubscriptionInformations,
+                customName = demand.customName,
+                tags = demand.tags
               )
             )
             administrators <- EitherT.liftF(

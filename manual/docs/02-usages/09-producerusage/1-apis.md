@@ -64,17 +64,19 @@ A JSON response is awaited with a precise format.
 > it totally possible to calculate and give some metadata or custom property for the subscription to created
 > ```json
 > {
->   "accept": true,
->   "customMaxPerDay": 42,
->   "customMaxPerSecond": 42,
->   "customMaxPerMonth": 42,
->   "customMetadata": {
+>   "accept": true, //mendatory
+>   "customMaxPerDay": 42, //set quotas value for max request per day for API key
+>   "customMaxPerSecond": 42, //set Quotas value for max request per second for API key
+>   "customMaxPerMonth": 42, //set Quotas value for max request per Month for API key
+>   "customMetadata": { //set metadata (merge with automatic metadata) for API key
 >     "value1": 2,
 >     "value2": true,
 >     "value3": "foo"
 >   },
->   "adminCustomName": "foo-bar-apikey",
->   "customReadOnly": true
+>   "adminCustomName": "foo-bar-apikey", //admin custom name is a subscription name only visible by api producer
+>   "customReadOnly": true, //set readonly property for APIkey
+>   "customName": "bar-foo-apikey", //custom name is the subscription name visible by consumer (it can be overwritten by him)
+>   "tags": ["tag 1", "tag 2"] //merge tags with automatic tags and set tags of API key. be aware of tags are displayed for consumer in UI
 > }
 > ```
 > The body of the call contains a lot of data in the context: the subscription demand with the other step information, the API, the usage plan, the team and the aggregation in case of an aggregated apikey
