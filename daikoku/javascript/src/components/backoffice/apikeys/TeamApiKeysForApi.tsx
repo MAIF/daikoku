@@ -355,28 +355,18 @@ export const TeamApiKeysForApi = () => {
       const subscriptions = subsQuery.data;
       const subscribedApis = subApisQuery.data.data.apis;
 
-      const search = searched.trim().toLowerCase();
+      const search = searched.trim();
+
       const filteredApiKeys =
         search === ''
           ? subscriptions
           : subscriptions.filter((subs) => {
-            if (
-              subs.apiKey.clientName
-                .replace('-', ' ')
+            return subs.apiKey.clientName === search ||
+            subs.apiKey.clientId === search ||
+            subs.customName?.toLocaleLowerCase() === search.toLocaleLowerCase() ||
+              formatPlanType(subs.planType, translate)
                 .toLowerCase()
-                .includes(search)
-            ) {
-              return true;
-            } else if (
-              subs.customName &&
-              subs.customName.toLowerCase().includes(search)
-            ) {
-              return true;
-            } else {
-              return formatPlanType(subs.planType, translate)
-                .toLowerCase()
-                .includes(search);
-            }
+                .includes(search.toLocaleLowerCase())
           });
 
       const sorted = sortBy(filteredApiKeys, ['plan', 'customName', 'parent']);
