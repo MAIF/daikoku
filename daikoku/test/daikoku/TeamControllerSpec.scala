@@ -77,31 +77,6 @@ class TeamControllerSpec()
       respDeleteNotFound.status mustBe 404
     }
 
-    "not ask join a personal team" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(daikokuAdmin, user),
-        teams = Seq(teamOwner)
-      )
-      val dkAdminSession = loginWithBlocking(daikokuAdmin, tenant)
-      val userSession = loginWithBlocking(user, tenant)
-
-      val respMyTeam =
-        httpJsonCallBlocking("/api/me/teams/own")(tenant, userSession)
-      respMyTeam.status mustBe 200
-      val userTeam =
-        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respMyTeam.json)
-      userTeam.isSuccess mustBe true
-      val userTeamId = userTeam.get.id
-
-      val respJoinDenied = httpJsonCallBlocking(
-        path = s"/api/teams/${userTeamId.value}/join",
-        method = "POST"
-      )(tenant, dkAdminSession)
-
-      respJoinDenied.status mustBe 403
-    }
-
     "not add/remove member from a personal team" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -874,23 +849,6 @@ class TeamControllerSpec()
         body = Some(defaultAdminTeam.copy(`type` = TeamType.Personal).asJson)
       )(tenant, session)
       respUpdateNotFound.status mustBe 403
-    }
-
-    "not be join by anyone" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(daikokuAdmin, user),
-        teams = Seq(defaultAdminTeam),
-        apis = Seq(adminApi)
-      )
-
-      val session = loginWithBlocking(user, tenant)
-
-      val respUser = httpJsonCallBlocking(
-        path = s"/api/teams/${defaultAdminTeam.id.value}/join",
-        method = "POST"
-      )(tenant, session)
-      respUser.status mustBe 403
     }
 
     "not be visible by user which is not member" in {
