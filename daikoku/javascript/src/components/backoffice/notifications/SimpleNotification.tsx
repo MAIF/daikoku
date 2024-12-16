@@ -409,7 +409,6 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
   };
 
   const fromFormatter = (action: any, sender: any) => {
-    console.debug({props, sender})
     switch (action.__typename) {
       case 'ApiAccess':
         return `${sender.name}/${props.notification.action.team?.name ?? translate("Unknown team") }`;

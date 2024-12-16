@@ -158,6 +158,7 @@ export const SideBar = () => {
                 })}
                 to="/notifications"
                 title={translate('Access to the notifications')}
+                aria-label={translate('Access to the notifications')}
               >
                 <Bell />
               </Link>

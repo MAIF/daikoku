@@ -71,6 +71,7 @@ test('aggregation security works', async ({ page, request }) => {
   await page.getByText('Environments').click();
   await page.locator('.usage-plan__card').filter({ hasText: 'prod' }).getByRole('button').click();
   await page.getByText('Consumers').click();
+  await page.getByLabel('Close the panel').click();
   await page.getByLabel('APIs list').click();
 
   await page.getByRole('heading', { name: 'Child API' }).click();
@@ -87,9 +88,10 @@ test('aggregation security works', async ({ page, request }) => {
   await page.getByRole('button', { name: ' Subscribe using an existing' }).click();
   await expect(page.getByText('Parent API/prod')).toBeVisible();
   await page.getByText('Parent API/prod').click();
+  await page.getByLabel('Close the panel').click();
   // await expect(page.getByText('API key to plan Free without')).toBeVisible();
 
-  await page.getByLabel('APIs list').click();
+  await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByText('Consumers', { exact: true }).click();
   await page.getByText('API keys').click();
   await expect(page.getByRole('cell', { name: 'Child API' })).toBeVisible();

@@ -20,7 +20,7 @@ export const TeamApiSettings = ({ api, currentTeam }: TeamApiSettingsProps) => {
   const { confirm } = useContext(ModalContext);
   const navigate = useNavigate();
 
-  const transferOwnership = ({team}: any) => {
+  const transferOwnership = ({team}: {team: ITeamSimple}) => {
 
     Services.transferApiOwnership(team, api.team, api._id).then((r) => {
       if (r.notify) {
@@ -41,13 +41,13 @@ export const TeamApiSettings = ({ api, currentTeam }: TeamApiSettingsProps) => {
       optionsFrom: Services.teams(currentTeam)
         .then((teams) => {
           if (!isError(teams)) {
-            return sortBy(teams.filter((team: any) => team._id !== api.team), 'name')
+            return sortBy(teams.filter((team) => team._id !== api.team), 'name')
           } else {
             return []
           }
         }
         ),
-      transformer: (team: any) => ({
+      transformer: (team: ITeamSimple) => ({
         label: team.name,
         value: team._id
       }),

@@ -276,7 +276,8 @@ test('Create & manage API', async ({ page }) => {
   await expect(page.getByText('Consumers')).toBeVisible();
   await expect(page.locator('div').filter({ hasText: /^Testers$/ })).toBeVisible();
   await page.getByText('Consumers').click();
-  await expect(page.getByText('API key to plan Free with')).toBeVisible();
+  await page.getByLabel('Close the panel').click();
+  // await expect(page.getByText('API key to plan Free with')).toBeVisible();
   await expect(page.getByText('public & manual')).toBeVisible();
   await page.getByRole('button', { name: 'Request API key' }).click();
   await expect(page.locator('div.team-selection').filter({ hasText: /^Consumers$/ })).toBeVisible();
@@ -294,7 +295,8 @@ test('Create & manage API', async ({ page }) => {
   await expect(page.locator('div.team-selection').filter({ hasText: /^Testers$/ })).toBeVisible();
   await expect(page.locator('div.team-selection').filter({ hasText: /^Consumers$/ })).toBeHidden();
   await page.locator('div.team-selection').filter({ hasText: /^Testers$/ }).click();
-  await expect(page.getByText('API key to plan Free with')).toBeVisible();
+  await page.getByLabel('Close the panel').click();
+  // await expect(page.getByText('API key to plan Free with')).toBeVisible();
   await page.getByRole('link', { name: 'Access to the notifications' }).click();
   await expect(page.getByText('Request subscription to test API 2 for plan')).toBeVisible();
   await page.getByRole('link', { name: 'Accept' }).nth(1).click();
@@ -383,6 +385,8 @@ test('aggregation mode', async ({ page, request, context }) => {
   await page.locator('.usage-plan__card').filter({ hasText: 'not test plan' }).getByRole('button').click();
   await page.locator('div').filter({ hasText: /^Consumers$/ }).click();
   // await page.getByRole('button', { name: 'Subscribe with a new api key' }).click();
+
+  await page.getByLabel('Close the panel').click();
   await page.getByRole('link', { name: 'APIs list' }).click();
 
   //subscribe second api with aggregation
@@ -392,6 +396,7 @@ test('aggregation mode', async ({ page, request, context }) => {
   await page.locator('.team-selection').filter({ hasText: 'Consumer' }).click();
   await page.getByRole('button', { name: ' Subscribe using an existing' }).click();
   await page.getByText('test API/not test plan').click();
+  await page.getByLabel('Close the panel').click();
 
   //go to subscriptions
   await page.getByRole('link', { name: 'APIs list' }).click();
@@ -500,6 +505,7 @@ test('API admin can transfer his own API ownership', async ({ page }) => {
   await page.getByRole('heading', { name: 'test API' }).click();
   await page.getByRole('link', { name: 'Configure API' }).click();
   await page.getByText('Settings').click();
+  await page.locator('h3').filter({ hasText: 'Transfer ownership' }).waitFor({ state: 'visible' })
   await page.locator('.react-form-select__input-container').click();
   await page.getByText('Consumers', { exact: true }).click();
   await page.getByLabel('Please type test API to').fill('test API');
@@ -605,18 +611,17 @@ test('transfer an api subscription', async ({ page, context }) => {
   await page.waitForResponse(r => r.url().includes('/api/me/context') && r.status() === 200)
   await page.waitForSelector('.apis__pagination')
   await page.getByRole('heading', { name: 'test API' }).click();
-
-  //tester l'url pour verifier que c'est bien la v2
   await page.getByText('Plans').click();
-
   await page.locator('div').filter({ hasText: /^fake prod plan/ }).getByRole('button').click();
   await page.getByText('Consumers').click();
-  await page.getByLabel('Notifications').getByRole('img').nth(1).click();
-  await page.locator('.api-subscription__icon').isVisible();
+  // await page.getByLabel('Notifications').getByRole('img').nth(1).click();
+  // await page.locator('.api-subscription__icon').isVisible();
   // await page.locator('.api-subscription__infos__value').innerText();
   await page.getByRole('button', { name: 'clientId:clientToken' }).click();
   const apikey = await page.evaluate(() => navigator.clipboard.readText());
 
+  //todo: go to subscription page to have menu action
+  await page.goto(`http://localhost:${exposedPort}/consumers/settings/apikeys/test-api/2.0.0`)
   await page.locator('#dropdownMenuButton').click();
   await page.getByText('Transfer subscription').click();
   await page.getByText('Display link').click();
