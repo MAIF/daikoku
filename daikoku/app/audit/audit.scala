@@ -405,7 +405,9 @@ class AuditActor(implicit
               tenant,
               Map(
                 "apiName" -> JsString(api.name),
-                "planName" -> JsString(plan.customName.getOrElse(plan.typeName)),
+                "planName" -> JsString(
+                  plan.customName.getOrElse(plan.typeName)
+                ),
                 "api_data" -> api.asJson,
                 "usagePlan_data" -> plan.asJson,
                 "subscription_data" -> subscription.asJson,

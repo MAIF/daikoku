@@ -195,10 +195,12 @@ class TeamController(
                   Map(
                     "objTeam" -> team.asJson,
                     "team" -> JsString(team.name),
-                    "link" -> JsString(env.getDaikokuUrl(
-                      ctx.tenant,
-                      s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"
-                    )),
+                    "link" -> JsString(
+                      env.getDaikokuUrl(
+                        ctx.tenant,
+                        s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"
+                      )
+                    ),
                     "team_data" -> team.asJson,
                     "recipient_data" -> ctx.user.asJson,
                     "tenant_data" -> ctx.tenant.asJson
@@ -350,10 +352,12 @@ class TeamController(
                   Map(
                     "objTeam" -> team.asJson,
                     "team" -> JsString(team.name),
-                    "link" -> JsString(env.getDaikokuUrl(
-                      ctx.tenant,
-                      s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"
-                    )),
+                    "link" -> JsString(
+                      env.getDaikokuUrl(
+                        ctx.tenant,
+                        s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"
+                      )
+                    ),
                     "team_data" -> team.asJson,
                     "recipient_data" -> ctx.user.asJson,
                     "tenant_data" -> ctx.tenant.asJson
@@ -445,10 +449,12 @@ class TeamController(
                         Map(
                           "objTeam" -> team.asJson,
                           "team" -> JsString(team.name),
-                          "link" -> JsString(env.getDaikokuUrl(
-                            ctx.tenant,
-                            s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"
-                          )),
+                          "link" -> JsString(
+                            env.getDaikokuUrl(
+                              ctx.tenant,
+                              s"/api/teams/${team.humanReadableId}/_verify?token=$cipheredValidationToken"
+                            )
+                          ),
                           "team_data" -> team.asJson,
                           "recipient_data" -> ctx.user.asJson,
                           "tenant_data" -> ctx.tenant.asJson
@@ -679,10 +685,12 @@ class TeamController(
             Map(
               "user" -> JsString(ctx.user.name),
               "teamName" -> JsString(team.name),
-              "link" -> JsString(env.getDaikokuUrl(ctx.tenant, "/notifications")),
+              "link" -> JsString(
+                env.getDaikokuUrl(ctx.tenant, "/notifications")
+              ),
               "user_data" -> ctx.user.asSimpleJson,
               "team_data" -> team.asJson,
-              "recipient_data" -> user.asSimpleJson,
+              "recipient_data" -> user.asSimpleJson
             )
           )
         } yield {

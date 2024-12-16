@@ -3,7 +3,12 @@ package fr.maif.otoroshi.daikoku.ctrls
 import cats.implicits.catsSyntaxOptionId
 import controllers.Assets
 import daikoku.BuildInfo
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest,
+  DaikokuActionMaybeWithoutUser,
+  DaikokuActionMaybeWithoutUserContext
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
 import fr.maif.otoroshi.daikoku.domain._
@@ -157,53 +162,56 @@ class HomeController(
 
       val params = mutable.Map[String, JsValue]()
 
-      (paths
-        .foldLeft(
-          formatted_paths
-        ) { (paths, path) =>
-          {
-            if (paths.isEmpty || matched)
-              paths
-            else {
-              val matchingRoutes: Seq[(Array[String], CmsPage)] = paths.filter(
-                p => {
-                  if (p._1.isEmpty) {
-                    false
-                  } else {
-                    val path_path = p._1.head
-                    if (path_path == path || path_path == "*") {
-                      true
+      (
+        paths
+          .foldLeft(
+            formatted_paths
+          ) { (paths, path) =>
+            {
+              if (paths.isEmpty || matched)
+                paths
+              else {
+                val matchingRoutes: Seq[(Array[String], CmsPage)] =
+                  paths.filter(p => {
+                    if (p._1.isEmpty) {
+                      false
                     } else {
-                      val pattern = new Regex("\\[\\w+\\]")
+                      val path_path = p._1.head
+                      if (path_path == path || path_path == "*") {
+                        true
+                      } else {
+                        val pattern = new Regex("\\[\\w+\\]")
 
-                      pattern.findFirstMatchIn(path_path) match {
-                        case Some(matched) =>
-                          val key = matched.matched.substring(1, matched.matched.length - 1)
-                          params += (key -> JsString(path))
+                        pattern.findFirstMatchIn(path_path) match {
+                          case Some(matched) =>
+                            val key = matched.matched
+                              .substring(1, matched.matched.length - 1)
+                            params += (key -> JsString(path))
 
-                          true
-                        case None =>
-                          false
+                            true
+                          case None =>
+                            false
+                        }
                       }
                     }
-                  }
-                }
-              )
+                  })
 
-              if (matchingRoutes.nonEmpty)
-                matchingRoutes.map(p => (p._1.tail, p._2))
-              else {
-                val matchingRoute = paths.find(p => p._1.isEmpty)
-                if (matchingRoute.nonEmpty && !strictMode) {
-                  matched = true
-                  Seq(matchingRoute.get)
-                } else
-                  Seq()
+                if (matchingRoutes.nonEmpty)
+                  matchingRoutes.map(p => (p._1.tail, p._2))
+                else {
+                  val matchingRoute = paths.find(p => p._1.isEmpty)
+                  if (matchingRoute.nonEmpty && !strictMode) {
+                    matched = true
+                    Seq(matchingRoute.get)
+                  } else
+                    Seq()
+                }
               }
             }
           }
-        }
-        .map(_._2), params.toMap)
+          .map(_._2),
+        params.toMap
+      )
     }
   }
 
@@ -220,8 +228,9 @@ class HomeController(
             )) =>
           redirectToLoginPage(ctx)
         case Some(r) if !r.visible() => cmsPageNotFound(ctx)
-        case Some(page)              => render(ctx, page.toCmsPage(ctx.tenant.id), Some(req), req.fields)
-        case None                    => cmsPageNotFound(ctx)
+        case Some(page) =>
+          render(ctx, page.toCmsPage(ctx.tenant.id), Some(req), req.fields)
+        case None => cmsPageNotFound(ctx)
       }
     }
 
@@ -288,8 +297,13 @@ class HomeController(
               redirectToLoginPage(ctx)
             case Some(page) =>
               val uri = ctx.request.uri
-              if (uri.contains("/mails/") && !uri.contains("/mails/root/tenant-mail-template")) {
-                env.dataStore.cmsRepo.forTenant(ctx.tenant)
+              if (
+                uri.contains("/mails/") && !uri.contains(
+                  "/mails/root/tenant-mail-template"
+                )
+              ) {
+                env.dataStore.cmsRepo
+                  .forTenant(ctx.tenant)
                   .findById("-mails-root-tenant-mail-template-fr")
                   .flatMap {
                     case None => render(ctx, page)
@@ -325,14 +339,21 @@ class HomeController(
           .findById(p.notFoundCmsPage.get)
           .flatMap {
             case Some(page) =>
-              page.render(page.maybeWithoutUserToUserContext(ctx.tenant,
-                ctx.request.asInstanceOf[Request[libs.json.JsValue]].some,
-                ctx.user,
-                ctx.session,
-                ctx.impersonator,
-                ctx.isTenantAdmin,
-                ctx.apiCreationPermitted,
-                ctx.ctx), req = None).map(res => Ok(res._1).as(res._2))
+              page
+                .render(
+                  page.maybeWithoutUserToUserContext(
+                    ctx.tenant,
+                    ctx.request.asInstanceOf[Request[libs.json.JsValue]].some,
+                    ctx.user,
+                    ctx.session,
+                    ctx.impersonator,
+                    ctx.isTenantAdmin,
+                    ctx.apiCreationPermitted,
+                    ctx.ctx
+                  ),
+                  req = None
+                )
+                .map(res => Ok(res._1).as(res._2))
             case _ =>
               Errors.craftResponseResult(
                 "Page not found !",
@@ -359,14 +380,22 @@ class HomeController(
       req: Option[CmsRequestRendering] = None,
       fields: Map[String, JsValue] = Map.empty[String, JsValue]
   ) = {
-    r.render(r.maybeWithoutUserToUserContext(ctx.tenant,
-        ctx.request.asInstanceOf[Request[libs.json.JsValue]].some,
-        ctx.user,
-        ctx.session,
-        ctx.impersonator,
-        ctx.isTenantAdmin,
-        ctx.apiCreationPermitted,
-        ctx.ctx), None, req = req, fields = fields, jsonToCombine = fields)
+    r.render(
+        r.maybeWithoutUserToUserContext(
+          ctx.tenant,
+          ctx.request.asInstanceOf[Request[libs.json.JsValue]].some,
+          ctx.user,
+          ctx.session,
+          ctx.impersonator,
+          ctx.isTenantAdmin,
+          ctx.apiCreationPermitted,
+          ctx.ctx
+        ),
+        None,
+        req = req,
+        fields = fields,
+        jsonToCombine = fields
+      )
       .map(res => {
         Ok(res._1).as(res._2)
       })
@@ -435,7 +464,6 @@ class HomeController(
 //        FastFuture.successful(Ok(Json.obj("token" -> token)))
 //      }
 //    }
-
 
   private val contentTypeToExtension = Map(
     "application/json" -> "json",

@@ -5,17 +5,48 @@ import com.github.jknack.handlebars.{Context, Handlebars, Options}
 import controllers.AppError
 import controllers.AppError.toJson
 import domain.JsonNodeValueResolver
-import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuActionMaybeWithoutUserContext, DaikokuInternalActionMaybeWithoutUserContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuActionContext,
+  DaikokuActionMaybeWithoutUserContext,
+  DaikokuInternalActionMaybeWithoutUserContext
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
-import fr.maif.otoroshi.daikoku.domain.{Api, ApiDocumentationPage, ApiWithCount, CanJson, CmsPageId, CommonServices, Team, TeamType, Tenant, TenantId, User, UserId, UserSession, json}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
+  _TeamMemberOnly,
+  _UberPublicUserAccess
+}
+import fr.maif.otoroshi.daikoku.domain.{
+  Api,
+  ApiDocumentationPage,
+  ApiWithCount,
+  CanJson,
+  CmsPageId,
+  CommonServices,
+  Team,
+  TeamType,
+  Tenant,
+  TenantId,
+  User,
+  UserId,
+  UserSession,
+  json
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
-import play.api.libs.json.{JsArray, JsBoolean, JsNull, JsNumber, JsObject, JsString, JsValue, Json}
+import play.api.libs.json.{
+  JsArray,
+  JsBoolean,
+  JsNull,
+  JsNumber,
+  JsObject,
+  JsString,
+  JsValue,
+  Json
+}
 import play.api.mvc.{AnyContent, Request}
 import storage.TenantCapableRepo
 
@@ -80,7 +111,11 @@ case class CmsFile(
   }
 }
 
-case class CmsRequestRendering(content: Seq[CmsFile], current_page: String, fields: Map[String, JsValue])
+case class CmsRequestRendering(
+    content: Seq[CmsFile],
+    current_page: String,
+    fields: Map[String, JsValue]
+)
 
 case class CmsPage(
     id: CmsPageId,
@@ -285,9 +320,9 @@ case class CmsPage(
     )
   }
 
-
   def maybeWithoutUserToUserContextConverter(
-      ctx: DaikokuInternalActionMaybeWithoutUserContext[_]): DaikokuActionContext[JsValue] = {
+      ctx: DaikokuInternalActionMaybeWithoutUserContext[_]
+  ): DaikokuActionContext[JsValue] = {
     DaikokuActionContext(
       request = null,
       user = ctx.user.getOrElse(
@@ -808,7 +843,6 @@ case class CmsPage(
         if (!path.startsWith("/"))
           path = s"/$path"
 
-
         s"/_${path}"
     }
   }
@@ -1121,7 +1155,7 @@ case class CmsPage(
     }).foldLeft(context) { (acc, item) =>
       if (item._1 == "email") {
         val content = Await.result(
-        CmsPage(
+          CmsPage(
             id = CmsPageId(IdGenerator.token(32)),
             tenant = tenant,
             visible = true,
@@ -1138,7 +1172,9 @@ case class CmsPage(
             fields = fields - "email",
             jsonToCombine = jsonToCombine - "email",
             req = None
-        ), 10.seconds)
+          ),
+          10.seconds
+        )
         acc.combine(item._1, content._1)
       } else {
         acc.combine(item._1, item._2)
@@ -1193,49 +1229,89 @@ case class CmsPage(
         }
 
         var contextBuilder = Context
-            .newBuilder(this)
-            .resolver(JsonNodeValueResolver.INSTANCE)
-            .combine("tenant", ctx.tenant.asJson)
-            .combine("is_admin", ctx.isTenantAdmin)
-            .combine("connected", ctx.user.map(!_.isGuest).getOrElse(false))
-            .combine("user", ctx.user.map(u => u.asSimpleJson).getOrElse(""))
-            .combine("request", Json.obj(
+          .newBuilder(this)
+          .resolver(JsonNodeValueResolver.INSTANCE)
+          .combine("tenant", ctx.tenant.asJson)
+          .combine("is_admin", ctx.isTenantAdmin)
+          .combine("connected", ctx.user.map(!_.isGuest).getOrElse(false))
+          .combine("user", ctx.user.map(u => u.asSimpleJson).getOrElse(""))
+          .combine(
+            "request",
+            Json.obj(
               "path" -> ctx.requestPath,
               "method" -> ctx.requestMethod,
               "headers" -> ctx.requestHeaders
-            ))
-            .combine(
-              "daikoku-css", {
-                if (env.config.isDev)
-                  s"http://localhost:3000/daikoku.css"
-                else if (env.config.isProd)
-                  s"${env.getDaikokuUrl(ctx.tenant, "/assets/react-app/daikoku.min.css")}"
-              }
             )
+          )
+          .combine(
+            "daikoku-css", {
+              if (env.config.isDev)
+                s"http://localhost:3000/daikoku.css"
+              else if (env.config.isProd)
+                s"${env.getDaikokuUrl(ctx.tenant, "/assets/react-app/daikoku.min.css")}"
+            }
+          )
 
         if (template.contains("{{apis}}")) {
-          contextBuilder = contextBuilder.combine("apis", Json.stringify(JsArray(Await
-              .result(env.dataStore.apiRepo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
-              .map(a => {
-                a.copy(
-                  description = a.description.replaceAll("\n", "\\n"),
-                  smallDescription = a.smallDescription.replaceAll("\n", "\\n"))
-                  .asJson
-              }))))
+          contextBuilder = contextBuilder.combine(
+            "apis",
+            Json.stringify(
+              JsArray(
+                Await
+                  .result(
+                    env.dataStore.apiRepo
+                      .forTenant(ctx.tenant)
+                      .findAllNotDeleted(),
+                    10.seconds
+                  )
+                  .map(a => {
+                    a.copy(
+                        description = a.description.replaceAll("\n", "\\n"),
+                        smallDescription =
+                          a.smallDescription.replaceAll("\n", "\\n")
+                      )
+                      .asJson
+                  })
+              )
+            )
+          )
         }
 
         if (template.contains("{{teams}}")) {
-          contextBuilder = contextBuilder.combine("teams", Json.stringify(JsArray(Await
-              .result(env.dataStore.teamRepo.forTenant(ctx.tenant).findAllNotDeleted(), 10.seconds)
-              .map(a => {
-                a.copy(description = a.description.replaceAll("\n", "\\n")).asJson
-              }))))
+          contextBuilder = contextBuilder.combine(
+            "teams",
+            Json.stringify(
+              JsArray(
+                Await
+                  .result(
+                    env.dataStore.teamRepo
+                      .forTenant(ctx.tenant)
+                      .findAllNotDeleted(),
+                    10.seconds
+                  )
+                  .map(a => {
+                    a.copy(description = a.description.replaceAll("\n", "\\n"))
+                      .asJson
+                  })
+              )
+            )
+          )
         }
 
-         if (template.contains("{{users}}")) {
-          contextBuilder = contextBuilder.combine("users", Json.stringify(JsArray(Await
-              .result(env.dataStore.userRepo.findAllNotDeleted(), 10.seconds)
-              .map(_.toUiPayload()))))
+        if (template.contains("{{users}}")) {
+          contextBuilder = contextBuilder.combine(
+            "users",
+            Json.stringify(
+              JsArray(
+                Await
+                  .result(
+                    env.dataStore.userRepo.findAllNotDeleted(),
+                    10.seconds
+                  )
+                  .map(_.toUiPayload())
+              )
+            )
+          )
         }
 
         val context = combineFieldsToContext(

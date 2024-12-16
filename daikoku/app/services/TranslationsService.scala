@@ -27,7 +27,8 @@ class TranslationsService {
   ) = {
 
     implicit val ec: ExecutionContext = env.defaultExecutionContext
-    implicit val languages: Seq[String] = supportedLangs.availables.map(_.language)
+    implicit val languages: Seq[String] =
+      supportedLangs.availables.map(_.language)
 
     env.dataStore.translationRepo
       .forTenant(ctx.tenant.id)

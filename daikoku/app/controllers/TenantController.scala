@@ -562,53 +562,53 @@ class TenantController(
         val sanitizeBody = HtmlSanitizer.sanitize(mailBody)
 
         def sendMail(contact: String, contactData: JsValue): Future[Result] = {
-            for {
-              titleToSender <-
-                translator.translate("mail.contact.title", ctx.tenant)
-              titleToContact <-
-                translator.translate("mail.contact.title", ctx.tenant)
-              mailToSender <- translator.translate(
-                "mail.contact.sender",
-                ctx.tenant,
-                Map(
-                  "user" -> JsString(name),
-                  "email" -> JsString(email),
-                  "subject" -> JsString(subject),
-                  "body" -> JsString(sanitizeBody),
-                  "user_data" -> ctx.user.asSimpleJson,
-                  "contact_data" -> contactData
-                )
+          for {
+            titleToSender <-
+              translator.translate("mail.contact.title", ctx.tenant)
+            titleToContact <-
+              translator.translate("mail.contact.title", ctx.tenant)
+            mailToSender <- translator.translate(
+              "mail.contact.sender",
+              ctx.tenant,
+              Map(
+                "user" -> JsString(name),
+                "email" -> JsString(email),
+                "subject" -> JsString(subject),
+                "body" -> JsString(sanitizeBody),
+                "user_data" -> ctx.user.asSimpleJson,
+                "contact_data" -> contactData
               )
-              mailToContact <- translator.translate(
-                "mail.contact.contact",
-                ctx.tenant,
-                Map(
-                  "user" -> JsString(name),
-                  "email" -> JsString(email),
-                  "subject" -> JsString(subject),
-                  "body" -> JsString(sanitizeBody),
-                  "user_data" -> ctx.user.asSimpleJson,
-                  "user_data" -> ctx.user.asSimpleJson,
-                  "contact_data" -> contactData
-                )
+            )
+            mailToContact <- translator.translate(
+              "mail.contact.contact",
+              ctx.tenant,
+              Map(
+                "user" -> JsString(name),
+                "email" -> JsString(email),
+                "subject" -> JsString(subject),
+                "body" -> JsString(sanitizeBody),
+                "user_data" -> ctx.user.asSimpleJson,
+                "user_data" -> ctx.user.asSimpleJson,
+                "contact_data" -> contactData
               )
-              _ <- ctx.tenant.mailer.send(
-                titleToSender,
-                Seq(email),
-                mailToSender,
-                ctx.tenant
-              )
-              _ <- ctx.tenant.mailer.send(
-                titleToContact,
-                Seq(contact),
-                mailToContact,
-                ctx.tenant
-              )
-            } yield {
-              ctx.setCtxValue("contact", contact)
-              Ok(Json.obj("send" -> true))
-            }
+            )
+            _ <- ctx.tenant.mailer.send(
+              titleToSender,
+              Seq(email),
+              mailToSender,
+              ctx.tenant
+            )
+            _ <- ctx.tenant.mailer.send(
+              titleToContact,
+              Seq(contact),
+              mailToContact,
+              ctx.tenant
+            )
+          } yield {
+            ctx.setCtxValue("contact", contact)
+            Ok(Json.obj("send" -> true))
           }
+        }
 
         (teamId, apiId) match {
           case (Some(id), _) =>

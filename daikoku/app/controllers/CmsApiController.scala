@@ -3,7 +3,11 @@ package fr.maif.otoroshi.daikoku.ctrls
 import cats.data.EitherT
 import cats.implicits.toBifunctorOps
 import controllers.{AppError, Assets}
-import fr.maif.otoroshi.daikoku.actions.{ApiActionContext, CmsApiAction, DaikokuActionMaybeWithoutUser}
+import fr.maif.otoroshi.daikoku.actions.{
+  ApiActionContext,
+  CmsApiAction,
+  DaikokuActionMaybeWithoutUser
+}
 import fr.maif.otoroshi.daikoku.domain.json.{CmsFileFormat, CmsPageFormat}
 import fr.maif.otoroshi.daikoku.domain.{CmsPageId, Tenant, TenantMode, User}
 import fr.maif.otoroshi.daikoku.env.Env

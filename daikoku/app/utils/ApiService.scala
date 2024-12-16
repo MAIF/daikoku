@@ -272,7 +272,8 @@ class ApiService(
             metadata = Some(
               JsObject(automaticMetadata.view.mapValues(i => JsString(i)).toSeq)
             ),
-            tags = tags.map(_ ++ tunedApiKey.tags).orElse(tunedApiKey.tags.some),
+            tags =
+              tags.map(_ ++ tunedApiKey.tags).orElse(tunedApiKey.tags.some),
             customMetadata = customMetadata,
             customMaxPerSecond = customMaxPerSecond,
             customMaxPerDay = customMaxPerDay,
@@ -1086,7 +1087,9 @@ class ApiService(
                 tenant,
                 Map(
                   "apiName" -> JsString(api.name),
-                  "planName" -> JsString(plan.customName.getOrElse(plan.typeName)),
+                  "planName" -> JsString(
+                    plan.customName.getOrElse(plan.typeName)
+                  ),
                   "consumer_team_data" -> team.asJson,
                   "recipient_data" -> admin.asJson,
                   "api_data" -> api.asJson,
@@ -1642,7 +1645,9 @@ class ApiService(
         AppError.ApiNotFound
       )
       plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
-        env.dataStore.usagePlanRepo.forTenant(tenant).findByIdNotDeleted(demand.plan),
+        env.dataStore.usagePlanRepo
+          .forTenant(tenant)
+          .findByIdNotDeleted(demand.plan),
         AppError.PlanNotFound
       )
       user <- EitherT.fromOptionF(
@@ -1957,13 +1962,13 @@ class ApiService(
                 .findByIdNotDeleted(demand.team),
               AppError.TeamNotFound
             )
-            api <-  EitherT.fromOptionF(
+            api <- EitherT.fromOptionF(
               env.dataStore.apiRepo
                 .forTenant(tenant)
                 .findByIdNotDeleted(demand.api),
               AppError.ApiNotFound
             )
-            usagePlan <-  EitherT.fromOptionF(
+            usagePlan <- EitherT.fromOptionF(
               env.dataStore.usagePlanRepo
                 .forTenant(tenant)
                 .findByIdNotDeleted(demand.plan),
@@ -1997,8 +2002,12 @@ class ApiService(
                   "mail.subscription.validation.body",
                   tenant,
                   Map(
-                    "urlAccept" -> JsString(env.getDaikokuUrl(tenant, pathAccept)),
-                    "urlDecline" -> JsString(env.getDaikokuUrl(tenant, pathDecline)),
+                    "urlAccept" -> JsString(
+                      env.getDaikokuUrl(tenant, pathAccept)
+                    ),
+                    "urlDecline" -> JsString(
+                      env.getDaikokuUrl(tenant, pathDecline)
+                    ),
                     "user" -> JsString(user.name),
                     "team" -> JsString(team.name),
                     "body" -> JsString(template.getOrElse("")),
@@ -2154,11 +2163,15 @@ class ApiService(
                 tenant,
                 Map(
                   "api.name" -> JsString(api.name),
-                  "api.plan" -> JsString(plan.customName.getOrElse(plan.typeName)),
-                  "link" -> JsString(env.getDaikokuUrl(
-                    tenant,
-                    s"/api/subscription/team/${team.id.value}/demands/${demand.id.value}/_run"
-                  )),
+                  "api.plan" -> JsString(
+                    plan.customName.getOrElse(plan.typeName)
+                  ),
+                  "link" -> JsString(
+                    env.getDaikokuUrl(
+                      tenant,
+                      s"/api/subscription/team/${team.id.value}/demands/${demand.id.value}/_run"
+                    )
+                  ),
                   "producer_team_data" -> ownerTeam.asJson,
                   "consumer_team_data" -> team.asJson,
                   "user_data" -> user.asSimpleJson,
@@ -2233,7 +2246,8 @@ class ApiService(
                 customMaxPerMonth = demand.customMaxPerMonth,
                 customReadOnly = demand.customReadOnly,
                 adminCustomName = demand.adminCustomName,
-                thirdPartySubscriptionInformations = maybeSubscriptionInformations,
+                thirdPartySubscriptionInformations =
+                  maybeSubscriptionInformations,
                 customName = demand.customName,
                 tags = demand.tags
               )
@@ -2286,10 +2300,12 @@ class ApiService(
                     Map(
                       "user" -> JsString(from.name),
                       "apiName" -> JsString(api.name),
-                      "link" -> JsString(env.getDaikokuUrl(
-                        tenant,
-                        s"/${team.humanReadableId}/settings/apikeys/${api.humanReadableId}/${api.currentVersion.value}"
-                      )), //todo => better url
+                      "link" -> JsString(
+                        env.getDaikokuUrl(
+                          tenant,
+                          s"/${team.humanReadableId}/settings/apikeys/${api.humanReadableId}/${api.currentVersion.value}"
+                        )
+                      ), //todo => better url
                       "team" -> JsString(team.name),
                       "producer_team_data" -> ownerTeam.asJson,
                       "consumer_team_data" -> team.asJson,
@@ -2683,8 +2699,7 @@ class ApiService(
                 "usagePlan_data" -> usagePlan.asJson,
                 "producer_team_data" -> ownerTeam.asJson,
                 "consumer_team_data" -> team.asJson,
-                "user_data" -> from.asSimpleJson,
-
+                "user_data" -> from.asSimpleJson
               )
             )
           } yield {

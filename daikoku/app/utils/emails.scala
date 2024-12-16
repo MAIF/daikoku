@@ -56,7 +56,11 @@ class ConsoleMailer(settings: ConsoleMailerSettings) extends Mailer {
       language: String
   ): Future[Unit] = {
     translator
-      .getMailTemplate("tenant.mail.template", tenant, Map("email" -> JsString(body)))
+      .getMailTemplate(
+        "tenant.mail.template",
+        tenant,
+        Map("email" -> JsString(body))
+      )
       .map { templateBody =>
         logger.info(s"Sent email: ${Json.prettyPrint(
           Json.obj(
@@ -88,7 +92,11 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
   ): Future[Unit] = {
 
     translator
-      .getMailTemplate("tenant.mail.template", tenant, Map("email" -> JsString(body)))
+      .getMailTemplate(
+        "tenant.mail.template",
+        tenant,
+        Map("email" -> JsString(body))
+      )
       .map(templatedBody => {
         wsClient
           .url(if (settings.eu) {
@@ -102,7 +110,11 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
               "from" -> Seq(s"${settings.fromTitle} <${settings.fromEmail}>"),
               "to" -> Seq(to.mkString(", ")),
               "subject" -> Seq(title),
-              "html" -> Seq(templatedBody.replace("{{email}}", body).replace("[email]", body)),
+              "html" -> Seq(
+                templatedBody
+                  .replace("{{email}}", body)
+                  .replace("[email]", body)
+              ),
               "text" -> Seq(body)
             )
           )
@@ -132,7 +144,11 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
   ): Future[Unit] = {
 
     translator
-      .getMailTemplate("tenant.mail.template", tenant, Map("email" -> JsString(body)))
+      .getMailTemplate(
+        "tenant.mail.template",
+        tenant,
+        Map("email" -> JsString(body))
+      )
       .map(templatedBody => {
         wsClient
           .url(s"https://api.mailjet.com/v3.1/send")
@@ -159,7 +175,9 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
                     )
                   ),
                   "Subject" -> title,
-                  "HTMLPart" -> templatedBody.replace("{{email}}", body).replace("[email]", body)
+                  "HTMLPart" -> templatedBody
+                    .replace("{{email}}", body)
+                    .replace("[email]", body)
                   // TextPart
                 )
               )
@@ -194,7 +212,11 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
   ): Future[Unit] = {
 
     translator
-      .getMailTemplate("tenant.mail.template", tenant, Map("email" -> JsString(body)))
+      .getMailTemplate(
+        "tenant.mail.template",
+        tenant,
+        Map("email" -> JsString(body))
+      )
       .map(templatedBody => {
 
         val properties = new Properties()
@@ -219,7 +241,9 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
                   message.setSentDate(new Date())
                   message.setSubject(title)
                   message.setContent(
-                    templatedBody.replace("{{email}}", body).replace("[email]", body),
+                    templatedBody
+                      .replace("{{email}}", body)
+                      .replace("[email]", body),
                     "text/html; charset=utf-8"
                   )
 
@@ -256,7 +280,11 @@ class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
   ): Future[Unit] = {
 
     translator
-      .getMailTemplate("tenant.mail.template", tenant, Map("email" -> JsString(body)))
+      .getMailTemplate(
+        "tenant.mail.template",
+        tenant,
+        Map("email" -> JsString(body))
+      )
       .map(templatedBody => {
         ws.url(s"https://api.sendgrid.com/v3/mail/send")
           .withHttpHeaders(
@@ -278,7 +306,9 @@ class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
               "content" -> Json.arr(
                 Json.obj(
                   "type" -> "text/html",
-                  "value" -> templatedBody.replace("{{email}}", body).replace("[email]", body)
+                  "value" -> templatedBody
+                    .replace("{{email}}", body)
+                    .replace("[email]", body)
                 )
               )
             )

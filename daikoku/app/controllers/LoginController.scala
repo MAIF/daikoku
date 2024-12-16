@@ -3,7 +3,12 @@ package fr.maif.otoroshi.daikoku.ctrls
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import com.google.common.base.Charsets
 import controllers.Assets
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithoutUser, DaikokuTenantAction, DaikokuTenantActionContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithoutUser,
+  DaikokuTenantAction,
+  DaikokuTenantActionContext
+}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
@@ -513,10 +518,12 @@ class LoginController(
                       ctx.tenant,
                       Map(
                         "tenant" -> JsString(ctx.tenant.name),
-                        "link" -> JsString(env.getDaikokuUrl(
-                          ctx.tenant,
-                          s"/account/validate?id=$randomId"
-                        )),
+                        "link" -> JsString(
+                          env.getDaikokuUrl(
+                            ctx.tenant,
+                            s"/account/validate?id=$randomId"
+                          )
+                        ),
                         "tenant_data" -> accountCreation.asJson
                       )
                     )

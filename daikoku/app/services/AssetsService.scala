@@ -288,12 +288,20 @@ class AssetsService {
         )
       case Some(cfg) =>
         for {
-          slugs <- env.dataStore.assetRepo
-            .forTenant(ctx.tenant)
-            .findWithProjection(Json.obj(), Json.obj("slug" -> true, "_id" -> true))
-            .map(items => items.foldLeft(Map.empty[String, Option[String]]) { case (acc, item) =>
-              acc + ((item \ "_id").as[String] -> (item \ "slug").asOpt[String])
-            })
+          slugs <-
+            env.dataStore.assetRepo
+              .forTenant(ctx.tenant)
+              .findWithProjection(
+                Json.obj(),
+                Json.obj("slug" -> true, "_id" -> true)
+              )
+              .map(items =>
+                items.foldLeft(Map.empty[String, Option[String]]) {
+                  case (acc, item) =>
+                    acc + ((item \ "_id").as[String] -> (item \ "slug")
+                      .asOpt[String])
+                }
+              )
           assets <- env.assetsStore.listTenantAssets(ctx.tenant.id)(cfg)
         } yield {
           Ok(JsArray(assets.map(item => {
@@ -301,7 +309,7 @@ class AssetsService {
 
             (slugs.get(id) match {
               case Some(slug) => item.copy(slug = slug)
-              case None => item
+              case None       => item
             }).asJson
           })))
         }
