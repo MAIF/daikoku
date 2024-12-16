@@ -660,3 +660,19 @@ We'd like to thank all the contributors who worked on this release!
 
 - [@Zwiterrion](https://github.com/Zwiterrion)
 
+## [v18.1.0] - 2024-12-16
+
+## :star: New Features
+
+- HTTP process can setup custom name subscription [#788](https://github.com/MAIF/daikoku/issues/788)
+- User could give a customName at the subscription demand [#780](https://github.com/MAIF/daikoku/issues/780)
+- Display API Key immediately after creation in automatic case, without deeding to navigate to team View [#771](https://github.com/MAIF/daikoku/issues/771)
+
+## :beetle: Bug Fixes
+
+- report reset in a dangerous section of sidebar [#781](https://github.com/MAIF/daikoku/issues/781)
+- [Fast mode] - Subscription form is not fill with aggregated subscription metadata [#779](https://github.com/MAIF/daikoku/issues/779)
+- [Fast mode] - aggragtion apikey list avalaible is different than normal mode [#778](https://github.com/MAIF/daikoku/issues/778)
+- If API Status is bloqued, no more subscription sync [#777](https://github.com/MAIF/daikoku/issues/777)
+- NotificationList is broken after subscription transfert [#776](https://github.com/MAIF/daikoku/issues/776)
+
