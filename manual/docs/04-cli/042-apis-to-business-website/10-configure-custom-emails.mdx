@@ -543,14 +543,41 @@ This document provides a comprehensive overview of all Daikoku email events, the
     <li>
       <details>
         <summary>
-          A team admin sends an <strong>invitation</strong> to a user to become a new <strong>member</strong>
+          A team admin sends an <strong>invitation</strong> to a person, with an existing daikoku account, to become a new <strong>member</strong>
         </summary>
         <p>
-          <strong>This email is sent to a user when a team admin invites him to become a member of his team.</strong>
+          <strong>This email is sent to an existing user when a team admin invites him to become a member of his team.</strong>
         </p>
         
         <p>
-          <div><strong>Title</strong>: mail-rejection-title</div>
+          <div><strong>Title</strong>: mail-team-invitation-title</div>
+          <div><strong>Body</strong>: mail-team-invitation-body</div>
+        </p>
+
+        <p><strong>Parameters:</strong></p>
+        <ul>
+          <li><strong>teamName</strong>: The name of the team</li>
+          <li><strong>link</strong>: The link to accept invitation</li>
+          <li><strong>user</strong>: The name of the admin inviting</li>
+          <li><strong>sender_data</strong>: The user inviting as a JSON object</li>
+          <li><strong>recipient_data</strong>: The invited user, recipient of the email as a JSON object</li>
+          <li><strong>tenant_data</strong>: The tenant/organization as a JSON object</li>
+          <li><strong>team_data</strong>: The team as a JSON object</li>
+          <li><strong>notification_data</strong>: The notification as a JSON object</li>
+        </ul>
+      </details>
+    </li>
+    <li>
+      <details>
+        <summary>
+          A team admin sends an <strong>invitation</strong> to a person, without a daikoku account, to become a new <strong>member</strong>
+        </summary>
+        <p>
+          <strong>This email is sent to a person, without any daikouk account, when a team admin invites him to become a member of his team.</strong>
+        </p>
+        
+        <p>
+          <div><strong>Title</strong>: mail-user-invitation-title</div>
           <div><strong>Body</strong>: mail-user-invitation-body</div>
         </p>
 
