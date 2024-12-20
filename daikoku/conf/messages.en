@@ -96,3 +96,9 @@ mail.checkout.body = Your subscription demand for [api.name]/[api.plan] has been
 you can now checkout.\
 please click the following link to <a href="[link]">Checkout</a>
 mail.api.subscription.transfer.rejection.body = Your request to transfer to your subscription [subscription] has been rejected.
+mail.user.invitation.title = Join [teamName]
+mail.user.invitation.body=[sender] asked you to join [teamName] \
+</br>\
+Please click on the following link to join this team. \
+</br>\
+<a href="[link]">Click to join the team</a>

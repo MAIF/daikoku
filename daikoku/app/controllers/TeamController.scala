@@ -676,22 +676,28 @@ class TeamController(
           .orElse(ctx.tenant.defaultLanguage)
           .getOrElse("en")
 
+        val mailArgs = Map(
+          "user" -> JsString(ctx.user.name),
+          "teamName" -> JsString(team.name),
+          "link" -> JsString(
+            env.getDaikokuUrl(ctx.tenant, "/notifications")
+          ),
+          "recipient_data" -> user.asSimpleJson,
+          "sender_data" -> ctx.user.asSimpleJson,
+          "team_data" -> team.asJson,
+          "recipient_data" -> user.asSimpleJson,
+          "tenant_data" -> ctx.tenant.asJson,
+          "notification_data" -> notification.asJson
+        )
         (for {
           title <-
-            translator.translate("mail.team.invitation.title", ctx.tenant)
+            translator.translate("mail.team.invitation.title",
+              ctx.tenant,
+              mailArgs)
           body <- translator.translate(
             "mail.team.invitation.body",
             ctx.tenant,
-            Map(
-              "user" -> JsString(ctx.user.name),
-              "teamName" -> JsString(team.name),
-              "link" -> JsString(
-                env.getDaikokuUrl(ctx.tenant, "/notifications")
-              ),
-              "user_data" -> ctx.user.asSimpleJson,
-              "team_data" -> team.asJson,
-              "recipient_data" -> user.asSimpleJson
-            )
+            mailArgs
           )
         } yield {
           ctx.tenant.mailer.send(title, Seq(user.email), body, ctx.tenant)
@@ -767,67 +773,62 @@ class TeamController(
             FastFuture.successful(Ok(Json.obj("done" -> true)))
           }
         case None =>
+          implicit val language: String = ctx.tenant.defaultLanguage.getOrElse("en")
           val notificationId = NotificationId(IdGenerator.token(32))
           val invitedUser = createInvitedUser(team.name, notificationId.value)
-          env.dataStore.userRepo
-            .save(invitedUser)
-            .flatMap {
-              case true =>
-                implicit val lang: Lang = Lang("en")
-                val tenant = ctx.tenant
+          val link = env.getDaikokuUrl(ctx.tenant, s"/join?token=${invitedUser.invitation.get.token}")
 
-                env.dataStore.notificationRepo
-                  .forTenant(ctx.tenant)
-                  .save(
-                    Notification(
-                      id = notificationId,
-                      tenant = ctx.tenant.id,
-                      team = None,
-                      sender = ctx.user.asNotificationSender,
-                      action = NotificationAction
-                        .TeamInvitation(team.id, invitedUser.id)
-                    )
-                  )
-                  .flatMap {
-                    case true =>
-                      implicit val language: String =
-                        tenant.defaultLanguage.getOrElse("en")
+          val notification = Notification(
+            id = notificationId,
+            tenant = ctx.tenant.id,
+            team = None,
+            sender = ctx.user.asNotificationSender,
+            action = NotificationAction
+              .TeamInvitation(team.id, invitedUser.id)
+          )
 
-                      val link = env.getDaikokuUrl(
-                        ctx.tenant,
-                        s"/join?token=${invitedUser.invitation.get.token}"
-                      )
-                      tenant.mailer
-                        .send(
-                          s"Join ${team.name}",
-                          Seq(email),
-                          s"""
-                             |<p><b>${ctx.user.name}</b> asked you to join <b>${team.name}</b></p>
-                             |
-                             |<p>Please click on the following link to join this team.</p>
-                             |
-                             |<a href="$link">Click to join the team</a>
-                             |
-                          """.stripMargin,
-                          tenant
-                        )
-                        .flatMap { _ =>
-                          FastFuture.successful(
-                            Created(Json.obj("done" -> true))
-                          )
-                        }
-                    case false =>
-                      FastFuture.successful(
-                        BadRequest(
-                          Json.obj("error" -> "Failed to send invitation")
-                        )
-                      )
-                  }
-              case false =>
-                FastFuture.successful(
-                  BadRequest(Json.obj("error" -> "Failed to invit user"))
-                )
-            }
+          (for {
+            save <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.userRepo.save(invitedUser))
+            _ <- EitherT.cond[Future][AppError, Unit](save, (), AppError.UnexpectedError)
+            notifSave <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.notificationRepo
+              .forTenant(ctx.tenant).save(notification))
+            _ <- EitherT.cond[Future][AppError, Unit](notifSave, (), AppError.UnexpectedError)
+            title <- EitherT.liftF[Future, AppError, String](translator.translate(
+              "mail.user.invitation.title",
+              ctx.tenant,
+              Map(
+                "teamName" -> JsString(team.name),
+                "link" -> JsString(link),
+                "sender" -> JsString(ctx.user.name),
+                "sender_data" -> ctx.user.asSimpleJson,
+                "recipient_data" -> invitedUser.asSimpleJson,
+                "tenant_data" -> ctx.tenant.asJson,
+                "team_data" -> team.asJson,
+                "notification_data" -> notification.asJson
+              )
+            ))
+            body <- EitherT.liftF[Future, AppError, String](translator.translate(
+              "mail.user.invitation.body",
+              ctx.tenant,
+              Map(
+                "teamName" -> JsString(team.name),
+                "link" -> JsString(link),
+                "sender" -> JsString(ctx.user.name),
+                "sender_data" -> ctx.user.asSimpleJson,
+                "recipient_data" -> invitedUser.asSimpleJson,
+                "tenant_data" -> ctx.tenant.asJson,
+                "team_data" -> team.asJson,
+                "notification_data" -> notification.asJson
+              )
+            ))
+            _ <- EitherT.liftF[Future, AppError, Unit](ctx.tenant.mailer.send(
+              title,
+              Seq(email),
+              body,
+              ctx.tenant))
+          } yield Created(Json.obj("done" -> true)))
+            .leftMap(_.render())
+            .merge
       }
   }
 

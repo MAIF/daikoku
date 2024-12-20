@@ -92,3 +92,9 @@ mail.checkout.body = Votre demande de souscription pour l'api [api.name] et le p
 Vous pouvez effectuer maintenant le reglement.\
 Vous pouvez finaliser votre demande : <a href="[link]">Reglement</a>
 mail.api.subscription.transfer.rejection.body = Votre demande de transfert de le souscription [subscription] a été rejetée.
+mail.user.invitation.title = Rejoindre l'équipe [teamName]
+mail.user.invitation.body=[sender] vous propose de rejoindre son équipe [teamName] \
+</br>\
+Veuillez cliquer sur le lien suivant pour rejoindre cette équipe. \
+</br>\
+<a href="[link]">Cliquez pour rejoindre l'équipe/a>
