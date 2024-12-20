@@ -223,6 +223,13 @@ export const TeamApiKeysForApi = () => {
           onSubmit: ({ choice, childId }) => openFormModal(
             {
               title: translate("apikeys.delete.confirm.modal.title"),
+              description: <div className="alert alert-danger" role="alert">
+                <h4 className="alert-heading">{translate('Warning')}</h4>
+                <p>{translate("delete.subscription.confirm.modal.description.1")}</p>
+                <ul>
+                  <li>{translate("delete.subscription.confirm.modal.description.2")}</li>
+                </ul>
+              </div>,
               schema: {
                 validation: {
                   type: type.string,
@@ -246,6 +253,13 @@ export const TeamApiKeysForApi = () => {
         openFormModal(
           {
             title: translate("apikeys.delete.confirm.modal.title"),
+            description: <div className="alert alert-danger" role="alert">
+              <h4 className="alert-heading">{translate('Warning')}</h4>
+              <p>{translate("delete.subscription.confirm.modal.description.1")}</p>
+              <ul>
+                <li>{translate("delete.subscription.confirm.modal.description.2")}</li>
+              </ul>
+            </div>,
             schema: {
               validation: {
                 type: type.string,

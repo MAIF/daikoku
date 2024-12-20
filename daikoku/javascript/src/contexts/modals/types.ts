@@ -24,6 +24,7 @@ import { IApiKeySelectModalProps } from './ApiKeySelectModal';
 import { IApiSelectModalProps, IModalProps } from './ApiSelectModal';
 import { CustomSubscriptionData } from './SubscriptionMetadataModal';
 import { ICustomModalProps } from './CustomModal';
+import { ReactNode } from 'react';
 
 export interface IBaseModalProps {
   close: () => void;
@@ -102,6 +103,7 @@ export interface IFormModalProps<T> {
   options?: Option;
   actionLabel: string;
   noClose?: boolean;
+  description?: ReactNode
 }
 
 export type TestingApiKeyModalProps<T extends IWithTesting> = {

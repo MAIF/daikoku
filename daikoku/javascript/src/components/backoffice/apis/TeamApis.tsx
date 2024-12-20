@@ -89,7 +89,7 @@ export const TeamApis = () => {
                   key={`delete-${api._humanReadableId}`}
                   type="button"
                   className="btn btn-sm btn-outline-danger"
-                  title="Delete this Api"
+                  title={translate("Delete this Api")}
                   onClick={() => deleteApi(api)}
                 >
                   <i className="fas fa-trash" />

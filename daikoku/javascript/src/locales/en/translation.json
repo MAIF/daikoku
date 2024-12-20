@@ -1401,5 +1401,22 @@
     "subscription.copy.token.help": "Copy daikoku token, used for retrieve credentials by API",
     "setting.panel.reset.confirm.message": "Are you sure you want to reset your organization's data?",
     "api.pricing.created.subscription.panel.title": "Your API Key is Ready",
-    "right.panel.close.aria.label": "Close the panel"
+    "right.panel.close.aria.label": "Close the panel",
+    "delete.team.confirm.modal.description.1": "Are you sure you want to delete your team? This action is irreversible and will result in the deletion of:",
+    "delete.team.confirm.modal.description.2": "All subscriptions and API keys associated with your team.",
+    "delete.team.confirm.modal.description.3": "All APIs managed by your team.",
+    "delete.team.confirm.modal.description.4": "All subscriptions to the APIs managed by your team.",
+    "delete.api.confirm.modal.description.1": "Are you sure you want to delete this API? This action is irreversible and will result in the deletion of:",
+    "delete.api.confirm.modal.description.2": "All API keys associated with this API.",
+    "delete.user.confirm.modal.description.1": "Are you sure you want to delete this user? This action is irreversible and will result in the deletion of:",
+    "delete.user.confirm.modal.description.2": "All subscriptions and API keys associated with this user.",
+    "delete.user.confirm.modal.description.3": "All APIs managed by this user.",
+    "delete.user.confirm.modal.description.4": "All subscriptions to the APIs managed by this user.",
+    "delete.subscription.confirm.modal.description.1": "Are you sure you want to delete this subscription? This action is irreversible and will result in the deletion of:",
+    "delete.subscription.confirm.modal.description.2": "The API key associated with this subscription.",
+    "delete.plan.confirm.modal.description.1": "Are you sure you want to delete this Plan? This action is irreversible and will result in the deletion of:",
+    "delete.plan.confirm.modal.description.2": "All API keys associated with this plan.",
+    "delete.environment.confirm.modal.description.1": "Are you sure you want to delete this environment? This action is irreversible and will result in the deletion of:",
+    "delete.environment.confirm.modal.description.2": "All API keys associated with this environment.",
+    "delete.item.confirm.modal.confirm.label": "Type %s to confirm deletion"
 }

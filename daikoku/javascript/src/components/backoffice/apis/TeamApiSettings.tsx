@@ -17,10 +17,10 @@ type TeamApiSettingsProps = {
 export const TeamApiSettings = ({ api, currentTeam }: TeamApiSettingsProps) => {
 
   const { translate } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { confirm, openFormModal } = useContext(ModalContext);
   const navigate = useNavigate();
 
-  const transferOwnership = ({team}: {team: ITeamSimple}) => {
+  const transferOwnership = ({ team }: { team: ITeamSimple }) => {
 
     Services.transferApiOwnership(team, api.team, api._id).then((r) => {
       if (r.notify) {
@@ -66,47 +66,71 @@ export const TeamApiSettings = ({ api, currentTeam }: TeamApiSettingsProps) => {
   };
 
   const deleteApi = () => {
-    return confirm({ message: translate('delete.api.confirm') })
-      .then((ok) => {
-        if (ok) {
-          Services.deleteTeamApi(currentTeam._id, api._id)
-            .then(() => navigate(`/${currentTeam._humanReadableId}/settings/apis`))
-            .then(() => toast.success(translate('deletion successful')));
-        }
-      });
+    openFormModal({
+      title: translate('Confirm'),
+      description: <div className="alert alert-danger" role="alert">
+        <h4 className="alert-heading">{translate('Warning')}</h4>
+        <p>{translate("delete.api.confirm.modal.description.1")}</p>
+        <ul>
+          <li>{translate("delete.api.confirm.modal.description.2")}</li>
+        </ul>
+      </div>,
+      schema: {
+        confirm: {
+          type: type.string,
+          label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [api.name] }),
+          constraints: [
+            constraints.oneOf(
+              [api.name],
+              translate({ key: 'constraints.type.api.name', replacements: [api.name] })
+            ),
+          ],
+        },
+      },
+      onSubmit: () => Services.deleteTeamApi(currentTeam._id, api._id)
+        .then((r) => {
+          if (isError(r)) {
+            toast.error(r.error)
+          } else {
+            navigate(`/${currentTeam._humanReadableId}/settings/apis`)
+            toast.success(translate('deletion successful'))
+          }
+        }),
+      actionLabel: translate('Confirm')
+    })
   };
 
-    return (
-      <div>
-        <div
-          className="action mb-3"
-          style={{ border: '1px solid tomato', borderRadius: '4px', padding: '5px' }}
-        >
-          <h3>{translate('transfer.api.ownership.title')}</h3>
-          <i>{translate('transfer.api.ownership.description')}</i>
-          <Form
-            schema={transferSchema}
-            onSubmit={transferOwnership}
-            options={{ actions: { submit: { label: translate('Transfer') } } }}
-          />
+  return (
+    <div>
+      <div
+        className="action mb-3"
+        style={{ border: '1px solid tomato', borderRadius: '4px', padding: '5px' }}
+      >
+        <h3>{translate('transfer.api.ownership.title')}</h3>
+        <i>{translate('transfer.api.ownership.description')}</i>
+        <Form
+          schema={transferSchema}
+          onSubmit={transferOwnership}
+          options={{ actions: { submit: { label: translate('Transfer') } } }}
+        />
+      </div>
+      <div
+        className="action d-flex flex-row align-items-center"
+        style={{ border: '1px solid tomato', borderRadius: '4px', padding: '5px' }}
+      >
+        <div>
+          <h3>{translate('delete.api.title')}</h3>
+          <i>{translate('delete.api.description')}</i>
         </div>
-        <div
-          className="action d-flex flex-row align-items-center"
-          style={{ border: '1px solid tomato', borderRadius: '4px', padding: '5px' }}
-        >
-          <div>
-            <h3>{translate('delete.api.title')}</h3>
-            <i>{translate('delete.api.description')}</i>
-          </div>
-          <div className="flex-grow-1 text-end" style={{ paddingRight: '15px' }}>
-            <FeedbackButton
-              type="danger"
-              onPress={() => deleteApi()}
-              feedbackTimeout={1000}
-              disabled={false}
-            >{translate('Delete this Api')}</FeedbackButton>
-          </div>
+        <div className="flex-grow-1 text-end" style={{ paddingRight: '15px' }}>
+          <button
+            type="button"
+            className='btn btn-outline-danger me-2'
+            onClick={deleteApi}>
+            {translate('Delete')}
+          </button>
         </div>
       </div>
-    );
+    </div>
+  );
 };

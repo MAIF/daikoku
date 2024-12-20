@@ -1402,5 +1402,22 @@
   "subscription.copy.token.help": "Copier le jeton Daikoku, utilisable pour récupérer les identifiants par API",
   "setting.panel.reset.confirm.message": "Êtes-vous sûr de vouloir réinitialiser les données de votre organisation ?",
   "api.pricing.created.subscription.panel.title": "Votre clé d'API est prête",
-  "right.panel.close.aria.label": "Fermer le panneau latéral"
+  "right.panel.close.aria.label": "Fermer le panneau latéral",
+  "delete.team.confirm.modal.description.1": "Êtes-vous sûr de vouloir supprimer votre équipe ? Cette action est irréversible et entraînera la suppression de :",
+  "delete.team.confirm.modal.description.2": "Toutes les souscriptions et clés API associées à votre équipe.",
+  "delete.team.confirm.modal.description.3": "Toutes les API gérées par votre équipe.",
+  "delete.team.confirm.modal.description.4": "Toutes les souscriptions aux API gérées par votre équipe.",
+  "delete.api.confirm.modal.description.1": "Êtes-vous sûr de vouloir supprimer cette API ? Cette action est irréversible et entraînera la suppression de :",
+  "delete.api.confirm.modal.description.2": "Toutes les clés API associées à cette API.",
+  "delete.user.confirm.modal.description.1": "Êtes-vous sûr de vouloir supprimer cet utilisateur ? Cette action est irréversible et entraînera la suppression de :",
+  "delete.user.confirm.modal.description.2": "Toutes les souscriptions et clés API associées à cet utilisateur.",
+  "delete.user.confirm.modal.description.3": "Toutes les API gérées par cet utilisateur.",
+  "delete.user.confirm.modal.description.4": "Toutes les souscriptions aux API gérées par cet utilisateur.",
+  "delete.subscription.confirm.modal.description.1": "Êtes-vous sûr de vouloir supprimer cette souscription ? Cette action est irréversible et entraînera la suppression de :",
+  "delete.subscription.confirm.modal.description.2": "La clé API associée à cette souscription.",
+  "delete.plan.confirm.modal.description.1": "Êtes-vous sûr de vouloir supprimer ce plan ? Cette action est irréversible et entraînera la suppression de :",
+  "delete.plan.confirm.modal.description.2": "Toutes les clés API associées à ce plan.",
+  "delete.environment.confirm.modal.description.1": "Êtes-vous sûr de vouloir supprimer cet environnement ? Cette action est irréversible et entraînera la suppression de :",
+  "delete.environment.confirm.modal.description.2": "Toutes les clés API associées à cet environnement.",
+  "delete.item.confirm.modal.confirm.label": "Saisissez %s pour confirmer la suppression"
 }
