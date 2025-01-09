@@ -949,6 +949,58 @@ class NotificationController(
             Json.obj("$set" -> Json.obj("team" -> newTeam.id.asJson))
           )
       )
+      demands <- EitherT.liftF(
+        env.dataStore.subscriptionDemandRepo
+          .forTenant(tenant)
+          .findNotDeleted(
+            Json.obj(
+              "api" -> Json.obj("$in" -> JsArray(versions.map(_.id.asJson))),
+              "state" -> Json.obj(
+                "$in" -> Json.arr(
+                  SubscriptionDemandState.InProgress.name,
+                  SubscriptionDemandState.Waiting.name
+                )
+              )
+            )
+          )
+      )
+      _ <- EitherT.liftF(
+        Future.sequence(
+          demands
+            .map(sd =>
+              sd.copy(steps =
+                sd.steps.map(s =>
+                  s.copy(step = s.step match {
+                    case ValidationStep
+                          .TeamAdmin(id, _, title, schema, formatter) =>
+                      ValidationStep
+                        .TeamAdmin(id, newTeam.id, title, schema, formatter)
+                    case _ => s.step
+                  })
+                )
+              )
+            )
+            .map(t =>
+              env.dataStore.subscriptionDemandRepo
+                .forTenant(tenant)
+                .save(t)
+            )
+        )
+      )
+
+      _ <- EitherT.liftF(
+        env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .updateManyByQuery(
+            Json.obj(
+              "_deleted" -> false,
+              "action.type" -> "ApiSubscription",
+              "action.api" -> Json.obj("$in" -> JsArray(versions.map(_.id.asJson))),
+              "status.status" -> NotificationStatus.Pending.toString
+            ),
+            Json.obj("$set" -> Json.obj("team" -> teamId.asJson))
+          )
+      )
     } yield ()
 
     r.value
