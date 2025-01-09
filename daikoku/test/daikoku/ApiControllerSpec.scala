@@ -4178,22 +4178,14 @@ class ApiControllerSpec()
 
     /*
     The following test aims to verify the transfer of API ownership for all versions of an API.
-
     Steps:
-
-    (1) Set up the test environment with two versions of an API, each having a plan that requires admin validation for subscriptions.
-
-    (2) Generate two subscriptions for the "consumer" team. This should result in two notifications for the "owner" team and two subscription demands requiring validation for the "owner" team.
-
-    (3) Perform the ownership transfer from ownerTeam to consumerTeam.
-
+    1 - Set up the test environment with two versions of an API, each having a plan that requires admin validation for subscriptions.
+    2 - Generate two subscriptions for the "consumer" team. This should result in two notifications for the "owner" team and two subscription demands requiring validation for the "owner" team.
+    3 - Perform the ownership transfer from ownerTeam to consumerTeam.
     Test validation:
-
-    (4) Both API versions are now owned by the "consumer" team.
-
-    (5) The "consumer" team has two notifications for "ApiSubscriptionDemand."
-
-    (6) There are two subscription demands requiring validation for the "consumer" team.
+    4 - Both API versions are now owned by the "consumer" team.
+    5 - The "consumer" team has two notifications for "ApiSubscriptionDemand."
+    6 - There are two subscription demands requiring validation for the "consumer" team.
      */
     "transfer API ownership to another team (with all versions)" in {
       // 1
