@@ -5205,6 +5205,204 @@ class ApiControllerSpec()
 
       resultTestApis.get.length mustBe 2
     }
+
+    "have a lifecycle" in {
+      //use containerized otoroshi
+      //crate api & a subscription (in otoroshi)
+      val parentPlan = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val parentApi = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
+        defaultUsagePlan = UsagePlanId("parent.dev").some
+      )
+
+      val parentSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        plan = parentPlan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token"
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            isPrivate = false,
+            aggregationApiKeysSecurity = Some(true),
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
+        usagePlans = Seq(parentPlan, adminApiPlan),
+        apis = Seq(parentApi, adminApi),
+        subscriptions = Seq(parentSub)
+      )
+      //check if api is published
+      val maybeParentApi = Await.result(daikokuComponents.env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(parentApi.id), 5.second)
+      maybeParentApi mustBe defined
+      maybeParentApi.get.state mustBe ApiState.Published
+
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      def testApiVisibility(count: Int) = {
+        val respAllVisibleApi = httpJsonCallWithoutSessionBlocking(
+          path = s"/api/search",
+          "POST",
+          body = Some(
+            Json.obj(
+              "variables" -> Json.obj("teamId" -> teamOwnerId.value, "limit" -> 5, "offset" -> 0),
+              "query" ->
+                s"""
+                   |query AllVisibleApis ($$teamId: String, $$limit: Int, $$offset: Int) {
+                   |      visibleApis (teamId: $$teamId, limit: $$limit, offset: $$offset) {
+                   |        apis {
+                   |          api {
+                   |            _id
+                   |            state
+                   |          }
+                   |        }
+                   |        total
+                   |    }
+                   |}
+                   |""".stripMargin
+            )
+          )
+        )(tenant)
+        respAllVisibleApi.status mustBe 200
+        val response = (respAllVisibleApi.json \ "data" \ "visibleApis").as[JsObject]
+        logger.info(Json.prettyPrint(response))
+        (response \ "total").as[Int] mustBe count
+        (response \ "apis").as[JsArray].value.length mustBe count
+      }
+
+      //api is visible by anyone
+      testApiVisibility(1)
+
+      //check base key
+      val startingKey = httpJsonCallBlocking(
+        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+      (startingKey.json \ "enabled").as[Boolean] mustBe true
+      (startingKey.json \ "metadata").as[JsObject].keys.size mustBe 0
+
+      //manipulate subscription as admin
+      //- update plan metadata & check if metadata is in otoroshi
+      httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/subscriptions/${parentSub.id.value}",
+        method = "PUT",
+        body = Json.obj(
+          "customMetadata" -> Json.obj("foo" -> "bar")
+        ).some
+      )(tenant, session)
+      //- archiveKeyByOwner --> key is disable in oto
+      httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/subscriptions/${parentSub.id.value}/_archiveByOwner?enabled=false",
+        method = "PUT"
+      )(tenant, session)
+      //test in oto
+      val update1 = httpJsonCallBlocking(
+        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+      (update1.json \ "enabled").as[Boolean] mustBe false
+      (update1.json \ "metadata").as[JsObject].keys.filterNot(_.startsWith("daikoku_")).size mustBe 1
+
+      //update api as blocked
+      httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/apis/${parentApi.id.value}/${parentApi.currentVersion.value}",
+        method = "PUT",
+        body = parentApi.copy(state = ApiState.Blocked).asJson.some
+      )(tenant, session)
+
+      val maybeParentApiUpdated = Await.result(daikokuComponents.env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(parentApi.id), 5.second)
+      maybeParentApiUpdated mustBe defined
+      maybeParentApiUpdated.get.state mustBe ApiState.Blocked
+
+      //api is not visible by anyone
+      testApiVisibility(0)
+
+      //- update plan metadata & check if metadata is in otoroshi
+      httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/subscriptions/${parentSub.id.value}",
+        method = "PUT",
+        body = Json.obj(
+          "customMetadata" -> Json.obj("foo" -> "bar", "foofoo" -> "barbar")
+        ).some
+      )(tenant, session)
+      //- archiveKeyByOwner --> key is disable in oto
+      httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/subscriptions/${parentSub.id.value}/_archiveByOwner?enabled=true",
+        method = "PUT"
+      )(tenant, session)
+      //- archiveKeyByOwner --> key is disable in oto
+      val update2 = httpJsonCallBlocking(
+        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+      logger.info(Json.stringify(update2.json))
+      (update2.json \ "enabled").as[Boolean] mustBe true
+      (update2.json \ "metadata").as[JsObject].keys.filterNot(_.startsWith("daikoku_")).size mustBe 2
+    }
   }
 
   "a private plan" must {

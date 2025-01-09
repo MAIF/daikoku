@@ -529,7 +529,7 @@ object CommonServices {
                     case _ => ApiWithAuthorizations(api = api, plans = apiPlans)
                   })
               }
-            ApiWithCount(sortedApis, producerTeams, paginateApis._2)
+            ApiWithCount(sortedApis, producerTeams, sortedApis.size)
           }
         })
     }
