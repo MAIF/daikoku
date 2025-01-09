@@ -4322,7 +4322,7 @@ class ApiControllerSpec()
       acceptNotif.status mustBe 200
       (acceptNotif.json \ "done").as[Boolean] mustBe true
 
-      (4)
+      //4
       val respVerif =
         httpJsonCallBlocking(
           s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}"
