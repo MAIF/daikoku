@@ -485,7 +485,7 @@ class ApiService(
               .findOneNotDeleted(
                 Json.obj(
                   "_id" -> subscription.api.value,
-                  "state" -> ApiState.publishedJsonFilter
+//                  "state" -> ApiState.publishedJsonFilter
                 )
               ),
             AppError.EntityNotFound(
@@ -846,7 +846,7 @@ class ApiService(
           .findOneNotDeleted(
             Json.obj(
               "_id" -> subscription.api.value,
-              "state" -> ApiState.publishedJsonFilter
+//              "state" -> ApiState.publishedJsonFilter
             )
           ),
         AppError.ApiNotFound
@@ -974,8 +974,7 @@ class ApiService(
           }
           apk <- EitherT(computeOtoroshiApiKey(parentSubscription))
           _ <- EitherT(otoroshiClient.updateApiKey(apk))
-          _ <-
-            paymentClient.toggleStateThirdPartySubscription(updatedSubscription)
+          _ <- paymentClient.toggleStateThirdPartySubscription(updatedSubscription)
         } yield updatedSubscription.asSafeJson.as[JsObject]
 
         r.value
