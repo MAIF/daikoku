@@ -40,6 +40,7 @@ jobs:
         distribution: 'temurin'
         java-version: '21'
         # install node lts
+    - uses: sbt/setup-sbt@v1
     - name: setup node
       uses: actions/setup-node@v4
       with:
