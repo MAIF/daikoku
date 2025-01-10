@@ -488,6 +488,9 @@ object CommonServices {
                   )
                 )
           } yield {
+            val count = paginateApis._1.filter(api =>
+              api.isPublished || myTeams.exists(api.team == _.id)
+            ).size
             val sortedApis: Seq[ApiWithAuthorizations] = uniqueApisWithVersion
               .filter(api =>
                 api.isPublished || myTeams.exists(api.team == _.id)
@@ -529,7 +532,7 @@ object CommonServices {
                     case _ => ApiWithAuthorizations(api = api, plans = apiPlans)
                   })
               }
-            ApiWithCount(sortedApis, producerTeams, sortedApis.size)
+            ApiWithCount(sortedApis, producerTeams, count)
           }
         })
     }
