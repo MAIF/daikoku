@@ -676,3 +676,16 @@ We'd like to thank all the contributors who worked on this release!
 - If API Status is bloqued, no more subscription sync [#777](https://github.com/MAIF/daikoku/issues/777)
 - NotificationList is broken after subscription transfert [#776](https://github.com/MAIF/daikoku/issues/776)
 
+## [v18.1.1] - 2025-01-10
+
+## :star: New Features
+
+- Add better confirmation modal for deletion items [#790](https://github.com/MAIF/daikoku/issues/790)
+
+## :beetle: Bug Fixes
+
+- team invitation mail are not covered by the cms [#794](https://github.com/MAIF/daikoku/issues/794)
+- API subscription demands are not transfered after API ownership transfer [#792](https://github.com/MAIF/daikoku/issues/792)
+- Filter team is not available for non admin user in API list [#791](https://github.com/MAIF/daikoku/issues/791)
+- If API Status is bloqued, no more subscription sync [#777](https://github.com/MAIF/daikoku/issues/777)
+
