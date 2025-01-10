@@ -995,7 +995,8 @@ class NotificationController(
             Json.obj(
               "_deleted" -> false,
               "action.type" -> "ApiSubscription",
-              "action.api" -> Json.obj("$in" -> JsArray(versions.map(_.id.asJson))),
+              "action.api" -> Json
+                .obj("$in" -> JsArray(versions.map(_.id.asJson))),
               "status.status" -> NotificationStatus.Pending.toString
             ),
             Json.obj("$set" -> Json.obj("team" -> teamId.asJson))
