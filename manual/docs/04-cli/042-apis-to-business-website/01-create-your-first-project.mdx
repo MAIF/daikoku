@@ -24,7 +24,11 @@ The first step before running the website is to create a new environment.
 6. Run the following command in your terminal:
 
 ```sh
-daikoku environments --name=dev \
+daikoku cms init --name=<PROJECT_NAME>
+```
+
+```sh
+daikoku environments add --name=dev \
                      --server=http://localhost:5173 \
                      --apikey=<YOUR-APIKEY>
 ```
