@@ -29,6 +29,7 @@ import {
   PaginatedComponent,
   Spinner,
   apikey,
+  escapeRegExp,
   formatPlanType,
   read
 } from '../../utils';
@@ -266,7 +267,7 @@ export const TeamApiKeysForApi = () => {
                 label: translate({ key: "apikeys.delete.confirm.label", replacements: [`${subscription.apiName}/${subscription.customName ?? subscription.planName}`] }),
                 constraints: [
                   constraints.required(translate('constraints.required.value')),
-                  constraints.matches(new RegExp(`${subscription.apiName}/${subscription.customName ?? subscription.planName}`), translate('constraints.match.subscription'))
+                  constraints.matches(new RegExp(`${escapeRegExp(subscription.apiName)}/${escapeRegExp(subscription.customName) ?? escapeRegExp(subscription.planName)}`), translate('constraints.match.subscription'))
                 ],
                 defaultValue: ""
               }

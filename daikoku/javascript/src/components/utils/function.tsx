@@ -124,3 +124,14 @@ export const teamGQLToSimple = (team: ITeamFullGql): ITeamSimple => {
     users: team.users.map(({ user, teamPermission }) => ({ userId: user?.userId, teamPermission }))
   })
 }
+
+/**
+ * Escapes special characters in a string so it can be safely used in a regular expression.
+ * Escaped characters: . * + ? ^ $ { } ( ) | [ ] \ /
+ *
+ * @param {string} string - The string to escape.
+ * @returns {string} - The escaped string, safe for use in a regular expression.
+ */
+export const escapeRegExp = (string) => {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Échappe tous les caractères spéciaux
+}
