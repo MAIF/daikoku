@@ -4463,6 +4463,7 @@ class ApiController(
                   apiRepo
                     .exists(
                       Json.obj(
+                        "_deleted" -> false,
                         "currentVersion" -> newVersion,
                         "_humanReadableId" -> api.humanReadableId
                       )
