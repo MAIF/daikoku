@@ -1239,7 +1239,8 @@ class ApiControllerSpec()
       val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
@@ -1256,13 +1257,15 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.api.id}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
       resp.status mustBe 404
 
       val resp2 = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
       resp2.status mustBe 404
     }
@@ -3704,7 +3707,8 @@ class ApiControllerSpec()
       val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
@@ -3839,13 +3843,15 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userApiEditor, tenant)
       val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.api.id}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
       resp.status mustBe 404
 
       val resp2 = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
       resp2.status mustBe 404
     }
@@ -4574,7 +4580,8 @@ class ApiControllerSpec()
       val session = loginWithBlocking(user, tenant)
       val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
 
       resp.status mustBe 403
@@ -5853,7 +5860,8 @@ class ApiControllerSpec()
       val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
       resp.status mustBe 200
 
@@ -5917,7 +5925,8 @@ class ApiControllerSpec()
 
       val respDelete = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/apis/678",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
 
       respDelete.status mustBe 200
@@ -5993,7 +6002,8 @@ class ApiControllerSpec()
       val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${defaultAdminTeam.id.value}/apis/${adminApi.id.value}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
       resp.status mustBe 403
     }

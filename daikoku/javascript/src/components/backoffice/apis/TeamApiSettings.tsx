@@ -9,12 +9,14 @@ import * as Services from '../../../services';
 import { IApi, isError, ITeamSimple } from '../../../types';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { Spinner } from '../../utils/Spinner';
+import { nextTick } from 'node:process';
 
 type TeamApiSettingsProps = {
   api: IApi,
-  currentTeam: ITeamSimple
+  currentTeam: ITeamSimple,
+  versions: Array<string>
 }
-export const TeamApiSettings = ({ api, currentTeam }: TeamApiSettingsProps) => {
+export const TeamApiSettings = ({ api, currentTeam, versions }: TeamApiSettingsProps) => {
 
   const { translate } = useContext(I18nContext);
   const { confirm, openFormModal } = useContext(ModalContext);
@@ -66,6 +68,35 @@ export const TeamApiSettings = ({ api, currentTeam }: TeamApiSettingsProps) => {
   };
 
   const deleteApi = () => {
+    const confirm = {
+      confirm: {
+        type: type.string,
+        label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [api.name] }),
+        constraints: [
+          constraints.oneOf(
+            [api.name],
+            translate({ key: 'constraints.type.api.name', replacements: [api.name] })
+          ),
+        ],
+      },
+    }
+
+    const next = {
+      next: {
+        type: type.string,
+        label: translate("delete.api.confirm.modal.description.next.label"),
+        help: translate('delete.api.confirm.modal.description.next.help'),
+        format: format.select,
+        options: versions.filter(v => v !== api.currentVersion),
+        constraints: [
+          constraints.required(translate("constraints.required.value"))
+        ]
+      }
+    }
+
+    const schema = versions.length > 2 ? { ...confirm, ...next } : { ...confirm }
+    const automaticNextCurrentVersion = versions.length === 2 ? versions.filter(v => v !== api.currentVersion)[0] : undefined
+
     openFormModal({
       title: translate('Confirm'),
       description: <div className="alert alert-danger" role="alert">
@@ -74,28 +105,20 @@ export const TeamApiSettings = ({ api, currentTeam }: TeamApiSettingsProps) => {
         <ul>
           <li>{translate("delete.api.confirm.modal.description.2")}</li>
         </ul>
+        {automaticNextCurrentVersion && <strong>{translate({ key: 'delete.api.confirm.modal.description.next.version', replacements: [automaticNextCurrentVersion]})}</strong>}
       </div>,
-      schema: {
-        confirm: {
-          type: type.string,
-          label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [api.name] }),
-          constraints: [
-            constraints.oneOf(
-              [api.name],
-              translate({ key: 'constraints.type.api.name', replacements: [api.name] })
-            ),
-          ],
-        },
+      schema: schema,
+      onSubmit: ({ next }) => {
+        Services.deleteTeamApi(currentTeam._id, api._id, next)
+          .then((r) => {
+            if (isError(r)) {
+              toast.error(r.error)
+            } else {
+              navigate(`/${currentTeam._humanReadableId}/settings/apis`)
+              toast.success(translate('deletion successful'))
+            }
+          })
       },
-      onSubmit: () => Services.deleteTeamApi(currentTeam._id, api._id)
-        .then((r) => {
-          if (isError(r)) {
-            toast.error(r.error)
-          } else {
-            navigate(`/${currentTeam._humanReadableId}/settings/apis`)
-            toast.success(translate('deletion successful'))
-          }
-        }),
       actionLabel: translate('Confirm')
     })
   };

@@ -369,9 +369,10 @@ export const getOtoroshiRoutes = (tenantId: any, otoId: any) =>
 export const getOtoroshiApiKeys = (tenantId: any, otoId: any) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/apikeys`);
 
-export const deleteTeamApi = (teamId: any, id: any) =>
+export const deleteTeamApi = (teamId: string, id: string, next: string) =>
   customFetch(`/api/teams/${teamId}/apis/${id}`, {
     method: 'DELETE',
+    body: JSON.stringify({ next })
   });
 
 export const saveTeamApiWithId = (

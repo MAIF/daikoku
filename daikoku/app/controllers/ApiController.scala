@@ -2977,80 +2977,107 @@ class ApiController(
   }
 
   def deleteApiOfTeam(teamId: String, apiId: String) =
-    DaikokuAction.async { ctx =>
+    DaikokuAction.async(parse.json) { ctx =>
       implicit val mat: Materializer = env.defaultMaterializer
+      val body = ctx.request.body.as[JsObject]
+      val nextCurrentVersion = (body \ "next").asOpt[String]
+
       TeamApiEditorOnly(
         AuditTrailEvent(
           s"@{user.name} has delete api @{api.name} - @{api.id} of team @{team.name} - @{team.id}"
         )
       )(teamId, ctx) { team =>
-        env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .findOneNotDeleted(
-            Json.obj("_id" -> apiId, "team" -> team.id.asJson)
-          ) flatMap {
-          case None => AppError.ApiNotFound.renderF()
-          case Some(api) if api.visibility == ApiVisibility.AdminOnly =>
-            AppError.ForbiddenAction.renderF()
-          case Some(api) =>
-            Source(api.possibleUsagePlans.toList)
-              .mapAsync(1)(planId => {
-                for {
-                  subs <-
-                    env.dataStore.apiSubscriptionRepo
-                      .forTenant(ctx.tenant)
-                      .findNotDeleted(
-                        Json
-                          .obj("api" -> api.id.asJson, "plan" -> planId.asJson)
-                      )
-                  plan <-
-                    env.dataStore.usagePlanRepo
-                      .forTenant(ctx.tenant)
-                      .findById(planId)
-                } yield (plan.get, subs) //FIXME
-              })
-              .via(
-                apiService.deleteApiSubscriptionsAsFlow(
-                  tenant = ctx.tenant,
-                  apiOrGroupName = api.name,
-                  user = ctx.user
-                )
-              )
-              .runWith(
-                Sink.fold(Set.empty[UsagePlan])((set, plan) => set + plan)
-              )
-              .flatMap(plans =>
-                env.dataStore.operationRepo
-                  .forTenant(ctx.tenant)
-                  .insertMany(
-                    plans
-                      .map(plan =>
-                        Operation(
-                          DatastoreId(IdGenerator.token(24)),
-                          tenant = ctx.tenant.id,
-                          itemId = plan.id.value,
-                          itemType = ItemType.ThirdPartyProduct,
-                          action = OperationAction.Delete,
-                          payload = Json
-                            .obj(
-                              "paymentSettings" -> plan.paymentSettings
-                                .map(_.asJson)
-                                .getOrElse(JsNull)
-                                .as[JsValue]
-                            )
-                            .some
-                        )
-                      )
-                      .toSeq
-                  )
-              )
-              .flatMap(_ =>
-                env.dataStore.apiRepo
-                  .forTenant(ctx.tenant.id)
-                  .deleteByIdLogically(apiId)
-              )
-              .map(_ => Ok(Json.obj("done" -> true)))
+
+        def processNextCurrentVersion(api: Api, nextVersion: Option[String]): EitherT[Future, AppError, Unit] = {
+          if (nextVersion.isEmpty) {
+            return EitherT.pure[Future, AppError](())
+          }
+
+          for {
+            nextCurrentApi <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
+              .forTenant(ctx.tenant.id)
+              .findOneNotDeleted(
+                Json.obj("_humanReadableId" -> api.humanReadableId, "currentVersion" -> nextVersion.get)
+              ), AppError.ApiNotFound)
+            _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
+              .forTenant(ctx.tenant)
+              .save(nextCurrentApi.copy(isDefault = true, parent = None)))
+            _ <- EitherT.liftF[Future, AppError, Long](env.dataStore.apiRepo
+              .forTenant(ctx.tenant)
+              .updateManyByQuery(Json.obj(
+                "_deleted" -> false,
+                "_humanReadableId" -> api.humanReadableId,
+                "parent" -> api.id.asJson,
+                "_id" -> Json.obj("$ne" -> nextCurrentApi.id.asJson)
+              ), Json.obj("$set" -> Json.obj("parent" -> nextCurrentApi.id.asJson))))
+          } yield ()
         }
+
+
+
+        (for {
+          api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
+            .forTenant(ctx.tenant.id)
+            .findOneNotDeleted(
+              Json.obj("_id" -> apiId, "team" -> team.id.asJson)
+            ), AppError.ApiNotFound)
+          _ <- EitherT.cond[Future][AppError, Unit](api.visibility != ApiVisibility.AdminOnly, (), AppError.ForbiddenAction)
+          plans <- EitherT.liftF[Future, AppError, Set[UsagePlan]](Source(api.possibleUsagePlans.toList)
+            .mapAsync(1)(planId => {
+              for {
+                subs <-
+                  env.dataStore.apiSubscriptionRepo
+                    .forTenant(ctx.tenant)
+                    .findNotDeleted(
+                      Json
+                        .obj("api" -> api.id.asJson, "plan" -> planId.asJson)
+                    )
+                plan <-
+                  env.dataStore.usagePlanRepo
+                    .forTenant(ctx.tenant)
+                    .findById(planId)
+              } yield (plan.get, subs)
+            })
+            .via(
+              apiService.deleteApiSubscriptionsAsFlow(
+                tenant = ctx.tenant,
+                apiOrGroupName = api.name,
+                user = ctx.user
+              )
+            )
+            .runWith(
+              Sink.fold(Set.empty[UsagePlan])((set, plan) => set + plan)
+            ))
+          _ <- EitherT.liftF[Future, AppError, Long](env.dataStore.operationRepo
+            .forTenant(ctx.tenant)
+            .insertMany(
+              plans.map(plan =>
+                  Operation(
+                    DatastoreId(IdGenerator.token(24)),
+                    tenant = ctx.tenant.id,
+                    itemId = plan.id.value,
+                    itemType = ItemType.ThirdPartyProduct,
+                    action = OperationAction.Delete,
+                    payload = Json
+                      .obj(
+                        "paymentSettings" -> plan.paymentSettings
+                          .map(_.asJson)
+                          .getOrElse(JsNull)
+                          .as[JsValue]
+                      )
+                      .some
+                  )
+                )
+                .toSeq
+            ))
+          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
+            .forTenant(ctx.tenant.id)
+            .deleteByIdLogically(apiId))
+
+          _ <- processNextCurrentVersion(api, nextCurrentVersion)
+        } yield Ok(Json.obj("done" -> true)))
+          .leftMap(_.render())
+          .merge
       }
     }
 
