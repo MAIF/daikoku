@@ -1422,5 +1422,7 @@
   "delete.item.confirm.modal.confirm.label": "Saisissez %s pour confirmer la suppression",
   "delete.api.confirm.modal.description.next.version": "La version %s sera automatiquement définie comme la version courante de l'API",
   "delete.api.confirm.modal.description.next.label": "Nouvelle version courante",
-  "delete.api.confirm.modal.description.next.help": "La version que vous supprimez est la version courante de l'API. Veuillez sélectionner une version pour la remplacer"
+  "delete.api.confirm.modal.description.next.help": "La version que vous supprimez est la version courante de l'API. Veuillez sélectionner une version pour la remplacer",
+  "apis.list.apigroup.badge.label": "API group",
+  "apis.list.currentVersion.badge.label": "Version courante"
 }

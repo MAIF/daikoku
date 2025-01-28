@@ -94,7 +94,7 @@ export const TeamApiSettings = ({ api, currentTeam, versions }: TeamApiSettingsP
       }
     }
 
-    const schema = versions.length > 2 ? { ...confirm, ...next } : { ...confirm }
+    const schema = versions.length > 2 && api.isDefault ? { ...confirm, ...next } : { ...confirm }
     const automaticNextCurrentVersion = versions.length === 2 ? versions.filter(v => v !== api.currentVersion)[0] : undefined
 
     openFormModal({
