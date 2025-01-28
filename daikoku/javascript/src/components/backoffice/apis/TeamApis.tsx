@@ -138,7 +138,6 @@ export const TeamApis = () => {
         const schema = versions.length > 2 && api.isDefault ? { ...confirm, ...next } : { ...confirm }
         const automaticNextCurrentVersion = versions.length === 2 ? versions.filter(v => v !== api.currentVersion)[0] : undefined
 
-        //fixme: refresh le tableau apres suppression/update
         return openFormModal({
           title: translate('Confirm'),
           description: <div className="alert alert-danger" role="alert">
