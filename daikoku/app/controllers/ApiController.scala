@@ -3530,16 +3530,13 @@ class ApiController(
         env.dataStore.apiRepo
           .forTenant(ctx.tenant.id)
           .findWithProjection(Json.obj(), Json.obj("categories" -> true))
-          .map(tags =>
-            tags.map(tag =>
-              (tag \ "categories")
-                .asOpt[Seq[String]]
-                .map(_.toSet)
-                .getOrElse(Set.empty)
-            )
-          )
-          .map(_.toSet)
-          .map(_.flatten)
+          .map(projection => {
+            projection
+              .foldLeft(Set.empty[String])((list, item) => {
+                val categories = Json.parse((item \ "categories").as[String]).as[JsArray].value.map(_.as[String]).toSet
+                list ++ categories
+              })
+          })
           .map(categories => Ok(JsArray(categories.map(JsString.apply).toSeq)))
       }
     }
