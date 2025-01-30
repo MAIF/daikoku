@@ -5,6 +5,7 @@ import { Can, manage, api as API, ActionWithTeamSelector } from '../../utils';
 import StarsButton from './StarsButton';
 import { I18nContext } from '../../../contexts';
 import { IApiWithAuthorization, ITeamSimple, IUserSimple } from '../../../types';
+import { Link } from 'react-router-dom';
 
 export const ApiCard = (props: {
   user: IUserSimple
@@ -72,7 +73,7 @@ export const ApiCard = (props: {
 
   if (props.view === 'GRID') {
     return (
-      <div className="col-12 col-md-4">
+      <div className="col-12 col-md-4" role='listitem' aria-labelledby={api._humanReadableId}>
         <div className="card mb-4 shadow-sm api-card ">
           <div
             className={classNames('card-img-top card-link', { 'card-header': !api.image })}
@@ -94,12 +95,15 @@ export const ApiCard = (props: {
             </Can>
           </div>
           <div className="card-body plan-body d-flex flex-column">
-            <h4
-              className="cursor-pointer underline-on-hover a-fake"
-              onClick={props.redirectToApiPage}
-            >
-              {api.name}
-            </h4>
+            <Link to="/">
+              <h4
+                id={api._humanReadableId}
+                className="cursor-pointer underline-on-hover a-fake"
+                onClick={props.redirectToApiPage}
+              >
+                {api.name}
+              </h4>
+            </Link>
             <span className="flex-grow-1 api-description my-2">{api.smallDescription}</span>
             {props.teamVisible && team && (
               <small
@@ -117,10 +121,10 @@ export const ApiCard = (props: {
   }
 
   return (
-    <div className="row border-bottom py-4">
+    <div className="row border-bottom py-4" role='listitem' aria-labelledby={api._humanReadableId}>
       <div className="col-12 d-flex justify-content-between">
         <div className="cursor-pointer underline level2-link" onClick={props.redirectToApiPage}>
-          <h3>{`${api.name}${props.groupView && props.apiWithAutho.length > 1 ? ` - ${api.currentVersion}` : ''}`}</h3>
+          <h3 id={api._humanReadableId}>{`${api.name}${props.groupView && props.apiWithAutho.length > 1 ? ` - ${api.currentVersion}` : ''}`}</h3>
         </div>
         <div className="ms-2">
           <div className="btn_group d-flex align-items-start">

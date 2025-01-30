@@ -55,6 +55,13 @@ export const TeamApiInfos = ({
         flow={informationForm.adminFlow}
         onSubmit={save}
         value={api}
+        options={{
+          actions: {
+            submit: {
+              label: translate('Save')
+            }
+          }
+        }}
       />
     )
   }
@@ -66,6 +73,13 @@ export const TeamApiInfos = ({
       flow={informationForm.flow(expertMode)}
       onSubmit={save}
       value={api}
+      options={{
+        actions: {
+          submit: {
+            label: translate('Save')
+          }
+        }
+      }}
     />
   )
 };

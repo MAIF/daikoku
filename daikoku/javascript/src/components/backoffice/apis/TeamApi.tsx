@@ -71,7 +71,7 @@ const CreateNewVersionButton = ({
   };
 
   return (
-    <button onClick={promptVersion} className="btn btn-sm btn-outline-info ms-1">
+    <button onClick={promptVersion} className="btn btn-sm btn-outline-info ms-1" aria-label={translate('Create new version')}>
       <Plus />
     </button>
   );

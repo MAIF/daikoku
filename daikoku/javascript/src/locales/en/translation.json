@@ -1423,5 +1423,6 @@
     "delete.api.confirm.modal.description.next.label": "New current version",
     "delete.api.confirm.modal.description.next.help": "The version being deleted is the API's current version. Please select a replacement version",
     "apis.list.apigroup.badge.label": "API group",
-    "apis.list.currentVersion.badge.label": "Current version"
+    "apis.list.currentVersion.badge.label": "Current version",
+    "api.form.create.version.btn.aria.label": "Create new API version"
 }

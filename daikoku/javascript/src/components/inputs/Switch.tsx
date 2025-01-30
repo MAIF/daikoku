@@ -8,6 +8,7 @@ type Props = {
   onSwitch: (...args: any[]) => any;
   checked?: boolean;
   disabled?: boolean;
+  ariaLabel?: string
 };
 
 export function SwitchButton(props: Props) {
@@ -35,7 +36,7 @@ export function SwitchButton(props: Props) {
   const id = label ? label.replace(/\s/gi, '') : nanoid();
   return (
     <div
-      className={classNames('d-flex justify-content-center ', {
+      className={classNames('switch-button d-flex justify-content-center ', {
         'switch--loading': loading,
         'switch--loaded': !loading,
         'switch--disabled': props.disabled,
