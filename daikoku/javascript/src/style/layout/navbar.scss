@@ -398,3 +398,11 @@ a.navbar-brand,
     width: 100%;
   }
 }
+
+button.nav_item {
+  background-color: transparent;
+  margin: 0;
+  border: none;
+  // all: unset;
+  cursor: pointer;
+}

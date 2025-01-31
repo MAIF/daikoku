@@ -3022,6 +3022,7 @@ class ApiController(
               Json.obj("_id" -> apiId, "team" -> team.id.asJson)
             ), AppError.ApiNotFound)
           _ <- EitherT.cond[Future][AppError, Unit](api.visibility != ApiVisibility.AdminOnly, (), AppError.ForbiddenAction)
+          log = AppLogger.warn(s"[ApiController] :: DELETE API ${api.humanReadableId} BEGIN of subscriptions deletion")
           plans <- EitherT.liftF[Future, AppError, Set[UsagePlan]](Source(api.possibleUsagePlans.toList)
             .mapAsync(1)(planId => {
               for {
@@ -3051,7 +3052,7 @@ class ApiController(
           _ <- EitherT.liftF[Future, AppError, Long](env.dataStore.operationRepo
             .forTenant(ctx.tenant)
             .insertMany(
-              plans.map(plan =>
+              plans.filter(_.paymentSettings.isDefined).map(plan =>
                   Operation(
                     DatastoreId(IdGenerator.token(24)),
                     tenant = ctx.tenant.id,
@@ -3070,11 +3071,16 @@ class ApiController(
                 )
                 .toSeq
             ))
+          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.usagePlanRepo
+            .forTenant(ctx.tenant)
+            .deleteLogically(Json.obj("_id" -> Json.obj("$in" -> JsArray(api.possibleUsagePlans.map(_.asJson)))))
+          )
           _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
             .forTenant(ctx.tenant.id)
             .deleteByIdLogically(apiId))
 
           _ <- processNextCurrentVersion(api, nextCurrentVersion)
+          log = AppLogger.warn(s"[ApiController] :: DELETE API ${api.humanReadableId} Ended")
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())
           .merge

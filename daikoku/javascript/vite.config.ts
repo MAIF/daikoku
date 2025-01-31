@@ -15,6 +15,7 @@ export default defineConfig({
       "/_": "http://localhost:9000",
       "/cms": "http://localhost:9000",
       "/api/": "http://localhost:9000",
+      "/admin-api": "http://localhost:9000",
       "/cms-api": "http://localhost:9000",
       "/account": "http://localhost:9000",
       "/tenant-assets": "http://localhost:9000",

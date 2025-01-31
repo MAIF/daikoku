@@ -133,5 +133,8 @@ export const teamGQLToSimple = (team: ITeamFullGql): ITeamSimple => {
  * @returns {string} - The escaped string, safe for use in a regular expression.
  */
 export const escapeRegExp = (string) => {
+  if (!string) {
+    return undefined
+  }
   return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Échappe tous les caractères spéciaux
 }

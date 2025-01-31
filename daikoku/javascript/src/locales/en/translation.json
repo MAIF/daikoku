@@ -1424,5 +1424,11 @@
     "delete.api.confirm.modal.description.next.help": "The version being deleted is the API's current version. Please select a replacement version",
     "apis.list.apigroup.badge.label": "API group",
     "apis.list.currentVersion.badge.label": "Current version",
-    "api.form.create.version.btn.aria.label": "Create new API version"
+    "api.form.create.version.btn.aria.label": "Create new API version",
+    "sidebar.search.button.aria.label": "Open creation menu",
+    "sidebar.create.button.aria.label": "Open search",
+    "sidebar.more.button.aria.label": "Show more options",
+    "sidebar.messages.button.aria.label": "Open chat with an admin",
+    "sidebar.notifications.button.aria.label": "Open notification center",
+    "sidebar.dark.mode.button.aria.label": "Toggle light/dark mode"
 }
