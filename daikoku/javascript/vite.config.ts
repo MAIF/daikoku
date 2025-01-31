@@ -27,7 +27,8 @@ export default defineConfig({
       "/auth/OAuth2/login": "http://localhost:9000",
       "/logout": "http://localhost:9000",
       "/assets": "http://localhost:9000",
-      "/robots.txt": "http://localhost:9000"
+      "/robots.txt": "http://localhost:9000",
+      "/health": "http://localhost:9000",
     },
   },
   plugins: [react()],
