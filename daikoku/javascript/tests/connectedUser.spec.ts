@@ -170,7 +170,7 @@ test('Create & manage API', async ({ page }) => {
   await page.getByPlaceholder('Password').fill('password');
   await page.getByPlaceholder('Password').press('Enter');
   //create new API
-  await page.locator('div:nth-child(4) > .notification-link').first().click();
+  await page.getByRole('button', { name: 'Open creation menu' }).click();
   await page.locator('span').filter({ hasText: 'API' }).first().click();
   await page.locator('#portal-root div').filter({ hasText: /^Testers$/ }).click();
   await page.getByRole('button', { name: 'Published' }).click();
@@ -219,14 +219,14 @@ test('Create & manage API', async ({ page }) => {
   await page.getByPlaceholder('Max. requests per day').fill('1000');
   await page.getByPlaceholder('Max. requests per month').fill('1000');
   await page.getByRole('button', { name: 'Save' }).click();
-  //FIXME
+
   await page.getByRole('main').locator('i').click();
   await page.locator('#dropdownMenuButton').nth(1).click();
   await page.getByText('Edit plan').nth(1).click();
   await page.getByText('Process').click();
   await page.getByRole('button', { name: 'Add a first validation step' }).click();
   await page.getByRole('button', { name: 'Team admin' }).click();
-  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
   await page.locator('.sortable-item__draggable-container').filter({ hasText: 'ADMIN' }).hover()
 
   await page.getByRole('listitem').getByRole('button').first().click();
@@ -238,12 +238,12 @@ test('Create & manage API', async ({ page }) => {
   await page.getByRole('button', { name: 'Save' }).click();
   await page.getByRole('application').getByRole('button').nth(1).click();
   await page.getByRole('button', { name: 'Email' }).click();
-  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
   await page.getByRole('button', { name: 'Add' }).click();
   await page.locator('input[name="emails\\.0\\.value"]').click();
   await page.locator('input[name="emails\\.0\\.value"]').fill('validation@foo.bar');
   await page.getByLabel('message').fill('somebody wants an apikey...is it ok ?');
-  await page.getByRole('button', { name: 'Create' }).click();
+  await page.getByRole('button', { name: 'Create', exact: true }).click();
 
   //create last plan (private)
   await page.getByText('Plans').click();
@@ -429,7 +429,7 @@ test('aggregation mode', async ({ page, request, context }) => {
 
   await page.getByRole('button', { name: 'clientId:clientToken' }).click();
   const apikeyUniq = await page.evaluate(() => navigator.clipboard.readText());
-  console.log({apikey, apikey2, apikeyUniq})
+  console.log({ apikey, apikey2, apikeyUniq })
   await expect(apikeyUniq).not.toBe(apikey)
 
 
@@ -631,7 +631,7 @@ test('transfer an api subscription', async ({ page, context }) => {
   await page.getByText('Testers').click();
   await page.getByRole('button', { name: 'Confirm transfer' }).click();
 
-  await page.locator('.top__container').filter({hasText: 'Your teams'}).getByText('Testers').click();
+  await page.locator('.top__container').filter({ hasText: 'Your teams' }).getByText('Testers').click();
   await page.getByText('API keys').click();
   await page.getByRole('row', { name: 'test API 2.0.0 View API View' }).getByLabel('View APIkeys').click();
   expect(page.locator('.api-subscription__infos__name')).toHaveText("not test plan");
@@ -653,7 +653,7 @@ test('can setup subscription valid until for a subs to his apis', async ({ page 
 
   await page.goto(`http://localhost:${exposedPort}/testers/settings/apis/test-api/1.0.0/infos`)
   // await page.waitForResponse(r => r.url().includes('/_name') && r.status() === 200)
-  await page.locator('.block__entry__link').filter({ hasText: 'Subscriptions'}).click();
+  await page.locator('.block__entry__link').filter({ hasText: 'Subscriptions' }).click();
   await page.getByRole('row', { name: 'daikoku-api-key-test-api-not-test-plan-consumers-' }).getByRole('button', { name: 'Update metadata' }).click();
   await page.getByPlaceholder('mm/dd/yyyy').fill('11/18/2024');
   await page.locator('.modal-footer .btn-outline-success').filter({ hasText: 'Update' }).click();

@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 const adminApikeyId = 'admin_key_client_id';
 const adminApikeySecret = 'admin_key_client_secret';
 
-test.beforeEach(async ({page}) => {
+test.beforeEach(async ({ page }) => {
   console.log(`Running ${test.info().title}`);
   await fetch('http://localhost:9000/admin-api/state/reset', {
     method: 'POST',
@@ -11,8 +11,8 @@ test.beforeEach(async ({page}) => {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
     }
   })
-  .then(r => r.json())
-  .then(r => console.log({r}));
+    .then(r => r.json())
+    .then(r => console.log({ r }));
 })
 
 const exposedPort = process.env.EXPOSED_PORT || 5173
@@ -29,17 +29,17 @@ test('test a complete user journey', async ({ page }) => {
   // FIXME: find the fine selector to check user is connected
 
   //create a new team
-  await page.locator('div:nth-child(4) > .notification-link').first().click();
-  await page.getByRole('button', { name: '' }).first().click();
+  await page.getByRole('button', { name: 'Open creation menu' }).click();
+  await page.locator('span.block__entry__link').filter({ hasText: 'Team' }).first().click();
   await page.getByLabel('Name').fill('The A team');
   await page.getByLabel('Description').fill('the A team');
   await page.getByLabel('Team contact').fill('user@foo.bar');
   await page.getByRole('button', { name: 'Create' }).click();
   await expect(page.getByRole('list')).toContainText('Team The A team created successfully');
   await page.locator('.navbar-panel-background').click();
-
+  
   //create a new API
-  await page.locator('div:nth-child(4) > .notification-link').first().click();
+  await page.getByRole('button', { name: 'Open creation menu' }).click();
   await page.locator('span').filter({ hasText: 'API' }).first().click();
   await page.locator('div').filter({ hasText: /^The A team$/ }).nth(1).click();
 
@@ -119,7 +119,7 @@ test('test a complete user journey', async ({ page }) => {
   await page.getByRole('link', { name: 'APIs list' }).click();
   await expect(page.getByRole('main')).toContainText('second test api');
 
-  
+
   await page.locator('div').filter({ hasText: /^second test api/ }).getByLabel('star').click();
   await expect(page.locator('div').filter({ hasText: /^second test api/ }).locator('.star-button')).toContainText('1')
   await page.locator('div').filter({ hasText: /^second test api/ }).getByLabel('star').click();
@@ -134,7 +134,7 @@ test('test a complete user journey', async ({ page }) => {
   await page.locator('.team-selection__team:has-text("The A team")').click();
   //todo: wait subscription ok
   await page.waitForResponse(r => r.url().includes('/_subscribe') && r.status() === 200)
- 
+
   await page.goto(`http://localhost:${exposedPort}/apis`);
   await page.getByRole('heading', { name: 'second test api' }).click();
   // await page.getByText('Documentation').click();
