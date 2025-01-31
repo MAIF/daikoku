@@ -689,3 +689,12 @@ We'd like to thank all the contributors who worked on this release!
 - Filter team is not available for non admin user in API list [#791](https://github.com/MAIF/daikoku/issues/791)
 - If API Status is bloqued, no more subscription sync [#777](https://github.com/MAIF/daikoku/issues/777)
 
+## [v18.1.2] - 2025-01-31
+
+## :beetle: Bug Fixes
+
+- Some filter does'n work on apiList [#799](https://github.com/MAIF/daikoku/issues/799)
+- Delete an APIKey is impossible if custom name includes special character like [ or - [#798](https://github.com/MAIF/daikoku/issues/798)
+- Create a new categorie for API not working [#797](https://github.com/MAIF/daikoku/issues/797)
+- API is no more visible after version deletion [#796](https://github.com/MAIF/daikoku/issues/796)
+
