@@ -372,7 +372,7 @@ export const getOtoroshiApiKeys = (tenantId: any, otoId: any) =>
 export const deleteTeamApi = (teamId: string, id: string, next: string) =>
   customFetch(`/api/teams/${teamId}/apis/${id}`, {
     method: 'DELETE',
-    body: JSON.stringify({ next })
+    body: JSON.stringify({ next }),
   });
 
 export const saveTeamApiWithId = (

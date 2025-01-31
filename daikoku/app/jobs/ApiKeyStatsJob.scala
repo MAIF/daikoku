@@ -354,7 +354,8 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
                   .forTenant(tenant)
                   .save(apiKeyConsumption)
               _ <- apiKeyConsumption.state match {
-                case ApiKeyConsumptionState.Completed if subscription.thirdPartySubscriptionInformations.isDefined =>
+                case ApiKeyConsumptionState.Completed
+                    if subscription.thirdPartySubscriptionInformations.isDefined =>
                   env.dataStore.operationRepo
                     .forTenant(tenant)
                     .save(
