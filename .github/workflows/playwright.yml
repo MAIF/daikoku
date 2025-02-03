@@ -21,14 +21,15 @@ jobs:
         with:
           node-version: 22
 
+      - name: Move to javascript test directory
+        run: cd daikoku/javascript/tests
+
       - name: Docker Compose Action
-        working-directory: daikoku/javascript/tests
         uses: hoverkraft-tech/compose-action@v2.2.0
         with:
           compose-file: "docker-compose.yml"
 
       - name: Wait for API to be ready
-        working-directory: daikoku/javascript/tests
         run: |
           echo "Waiting for API to be up..."
           until curl --silent --fail http://localhost:13200/health; do
@@ -38,7 +39,6 @@ jobs:
           echo "API is ready!"
 
       - name: Run Playwright tests
-        working-directory: daikoku/javascript/tests
         run: |
           npm install @playwright/test
           npx playwright install --with-deps chromium
