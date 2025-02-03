@@ -3,10 +3,10 @@ name: Playwright Tests
 on:
   push:
     branches:
-      - main
+      - master
   pull_request:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 jobs:
@@ -20,14 +20,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-      
-      - name: Move to javascripts.test directory
-        run: cd daikoku/javascripts/tests
 
       - name: Docker Compose Action
+        working-directory: daikoku/javascript/tests
         uses: hoverkraft-tech/compose-action@v2.2.0
         with:
-          compose-file: "./daikoku/javascript/testsdocker-compose.yml"
+          compose-file: "docker-compose.yml"
 
       - name: Wait for API to be ready
         working-directory: daikoku/javascript/tests
