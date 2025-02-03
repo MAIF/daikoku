@@ -1,7 +1,7 @@
 use std::{
     fs::{self, File},
     io::Read,
-    path::PathBuf,
+    path::{Path, PathBuf},
     str::FromStr,
 };
 
@@ -18,6 +18,7 @@ use crate::{
 use bytes::Bytes;
 
 use hyper::header;
+use mime_guess::mime;
 use serde::{Deserialize, Serialize};
 use walkdir::WalkDir;
 
@@ -126,21 +127,24 @@ async fn add(
 
     let project = get_default_project()?;
 
-    let mut file = File::open(
-        PathBuf::from_str(&project.path)
-            .unwrap()
-            .join("assets")
-            .join(path.unwrap_or("".to_string()))
-            .join(filename),
-    )
-    .map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
+    let filepath = PathBuf::from_str(&project.path)
+        .unwrap()
+        .join("assets")
+        .join(path.unwrap_or("".to_string()))
+        .join(filename);
+    let mut file =
+        File::open(filepath.clone()).map_err(|err| DaikokuCliError::FileSystem(err.to_string()))?;
 
     let mut contents = Vec::new();
     let _ = file
         .read_to_end(&mut contents)
         .map_err(|err| DaikokuCliError::FileSystem(err.to_string()));
 
-    let _ = daikoku_cms_api_post(&url, Bytes::from(contents), false).await?;
+    let content_type = mime_guess::from_path(filepath.to_string_lossy().into_owned())
+        .first()
+        .unwrap_or(mime::APPLICATION_OCTET_STREAM);
+
+    let _ = daikoku_cms_api_post(&url, Bytes::from(contents), false, Some(content_type)).await?;
 
     logger::success("New asset has been pushed".to_string());
 
@@ -327,6 +331,7 @@ async fn sync() -> DaikokuResult<()> {
             DaikokuCliError::ParsingError("failed to convert assets to json array".to_string())
         })?),
         false,
+        None
     )
     .await?;
 

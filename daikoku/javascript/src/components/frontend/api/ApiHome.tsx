@@ -16,6 +16,7 @@ import { formatPlanType } from '../../utils/formatters';
 import { ApiDescription } from './ApiDescription';
 import { ApiHeader } from './ApiHeader';
 import { CmsViewer } from '../CmsViewer';
+import { SimpleApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
 
 type ApiHomeProps = {
   groupView?: boolean
@@ -24,7 +25,8 @@ export const ApiHome = ({
   groupView
 }: ApiHomeProps) => {
 
-  const { connectedUser, tenant, reloadContext } = useContext(GlobalContext)
+  const { connectedUser, tenant, reloadContext } = useContext(GlobalContext);
+  const { openCustomModal, openRightPanel } = useContext(ModalContext);
 
   const navigate = useNavigate();
   const defaultParams = useParams();
@@ -155,17 +157,16 @@ export const ApiHome = ({
           return toast.error(result.error);
         } else if (Services.isCheckoutUrl(result)) {
           window.location.href = result.checkoutUrl
-        } else if (result.creation === 'done') {
-          const teamName = myTeams.find((t) => t._id === result.subscription.team)!.name;
-          return toast.success(translate({ key: 'subscription.plan.accepted', replacements: [planName, teamName] }), {
-            actionButtonStyle: {
-              color: 'inherit',
-              backgroundColor: 'inherit'
-            },
-            action: <Navigation size='1.5rem' className="cursor-pointer"
-              onClick={() => navigate(`/${result.subscription.team}/settings/apikeys/${api._humanReadableId}/${api.currentVersion}`)} />,
-
-          });
+        } else if (Services.isCreationDone(result)) {
+          openRightPanel({
+            title: translate('api.pricing.created.subscription.panel.title'),
+            content: <SimpleApiKeyCard
+              api={api!}
+              plan={plan!}
+              apiTeam={ownerTeam!}
+              subscription={result.subscription}
+            />
+          })
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
           return toast.info(translate({ key: 'subscription.plan.waiting', replacements: [planName, teamName] }));
@@ -248,5 +249,4 @@ export const ApiHome = ({
         </div>
       </main>);
   }
-
 };

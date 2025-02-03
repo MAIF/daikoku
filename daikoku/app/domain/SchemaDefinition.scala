@@ -22,6 +22,7 @@ import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
 import sangria.macros.derive._
 import sangria.schema.{Context, _}
 import sangria.validation.ValueCoercionViolation
+import services.CmsPage
 import storage._
 
 import java.util.concurrent.TimeUnit
@@ -2002,25 +2003,6 @@ object SchemaDefinition {
         )
       )
     )
-    lazy val TeamAccessType = new PossibleObject(
-      ObjectType(
-        "TeamAccess",
-        "A team access notification action",
-        interfaces[(DataStore, DaikokuActionContext[JsValue]), TeamAccess](
-          NotificationActionType
-        ),
-        fields[(DataStore, DaikokuActionContext[JsValue]), TeamAccess](
-          Field(
-            "team",
-            OptionType(TeamObjectType),
-            resolve = ctx =>
-              ctx.ctx._1.teamRepo
-                .forTenant(ctx.ctx._2.tenant)
-                .findById(ctx.value.team)
-          )
-        )
-      )
-    )
     lazy val TeamInvitationType = new PossibleObject(
       ObjectType(
         "TeamInvitation",
@@ -2481,7 +2463,11 @@ object SchemaDefinition {
           (DataStore, DaikokuActionContext[JsValue]),
           ApiSubscriptionTransferSuccess
         ](
-          Field("subscription", StringType, resolve = _.value.subscription.value)
+          Field(
+            "subscription",
+            StringType,
+            resolve = _.value.subscription.value
+          )
         )
       )
     )
@@ -2580,7 +2566,6 @@ object SchemaDefinition {
           resolve = _.value.action,
           possibleTypes = List(
             ApiAccessType,
-            TeamAccessType,
             TeamInvitationType,
             ApiSubscriptionDemandType,
             OtoroshiSyncSubscriptionErrorType,
@@ -3034,23 +3019,6 @@ object SchemaDefinition {
           )
       )
 
-    val CmsHistoryType =
-      deriveObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsHistory](
-        ReplaceField(
-          "date",
-          Field("date", DateTimeUnitype, resolve = _.value.date)
-        ),
-        ReplaceField("diff", Field("diff", StringType, resolve = _.value.diff)),
-        ReplaceField(
-          "user",
-          Field(
-            "user",
-            OptionType(UserType),
-            resolve = ctx => ctx.ctx._1.userRepo.findById(ctx.value.user)
-          )
-        )
-      )
-
     lazy val CmsPageType
         : ObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsPage] =
       ObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsPage](
@@ -3087,7 +3055,6 @@ object SchemaDefinition {
             Field("metadata", MapType, resolve = _.value.metadata),
             Field("contentType", StringType, resolve = _.value.contentType),
             Field("body", StringType, resolve = _.value.body),
-            Field("draft", OptionType(StringType), resolve = _.value.draft),
             Field("path", OptionType(StringType), resolve = _.value.path),
             Field("exact", BooleanType, resolve = _.value.exact),
             Field(

@@ -35,7 +35,8 @@ class BadFileContentFromContentType()
 
 case class S3ListItem(
     content: ListBucketResultContents,
-    objectMetadata: ObjectMetadata
+    objectMetadata: ObjectMetadata,
+    slug: Option[String] = None
 ) {
   def asJson: JsValue =
     Json.obj(
@@ -57,7 +58,8 @@ case class S3ListItem(
         objectMetadata.metadata
           .filter(_.name().startsWith("x-amz-meta-"))
           .map(h => (h.name().replace("x-amz-meta-", ""), JsString(h.value())))
-      )
+      ),
+      "slug" -> slug
     )
 }
 

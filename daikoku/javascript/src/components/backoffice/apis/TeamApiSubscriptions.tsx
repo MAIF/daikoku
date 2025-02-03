@@ -287,9 +287,10 @@ export const TeamApiSubscriptions = ({
       meta: { style: { textAlign: "center" } },
       cell: (info) => {
         const sub = info.row.original;
-        return (
+        return (        
           <SwitchButton
             disabled={sub.parent && !sub.parent?.enabled}
+            ariaLabel="enable subscription"
             onSwitch={() =>
               Services.archiveSubscriptionByOwner(
                 currentTeam._id,
@@ -352,8 +353,9 @@ export const TeamApiSubscriptions = ({
                 key={`edit-meta-${sub._id}`}
                 type="button"
                 className="btn btn-sm btn-outline-primary btn-outline-danger me-1"
+                aria-label={translate("Refresh secret")}
                 onClick={() => regenerateSecret(sub)}
-              >
+                >
                 <i className="fas fa-sync" />
               </button>
             </BeautifulTitle>
@@ -362,6 +364,7 @@ export const TeamApiSubscriptions = ({
                 key={`edit-meta-${sub._id}`}
                 type="button"
                 className="btn btn-sm btn-outline-primary btn-outline-danger"
+                aria-label={translate("api.delete.subscription")}
                 onClick={() => deleteSubscription(sub)}
               >
                 <i className="fas fa-trash-alt"></i>

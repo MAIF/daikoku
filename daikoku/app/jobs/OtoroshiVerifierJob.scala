@@ -250,8 +250,8 @@ class OtoroshiVerifierJob(
               .forAllTenant()
               .findOneNotDeleted(
                 Json.obj(
-                  "_id" -> subscription.api.value,
-                  "state" -> ApiState.publishedJsonFilter
+                  "_id" -> subscription.api.value
+//                  "state" -> ApiState.publishedJsonFilter
                 )
               ),
             sendErrorNotification(
@@ -803,8 +803,8 @@ class OtoroshiVerifierJob(
                 .forAllTenant()
                 .findOneNotDeleted(
                   Json.obj(
-                    "_id" -> subscription.api.value,
-                    "state" -> ApiState.publishedJsonFilter
+                    "_id" -> subscription.api.value
+//                    "state" -> ApiState.publishedJsonFilter
                   )
                 ),
               sendErrorNotification(
@@ -964,8 +964,8 @@ class OtoroshiVerifierJob(
               .forAllTenant()
               .findOneNotDeleted(
                 Json.obj(
-                  "_id" -> subscription.api.value,
-                  "state" -> ApiState.publishedJsonFilter
+                  "_id" -> subscription.api.value
+//                  "state" -> ApiState.publishedJsonFilter
                 )
               ),
             sendErrorNotification(

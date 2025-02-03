@@ -133,7 +133,7 @@ export const TeamEditForm = ({
   const navigate = useNavigate();
 
   const { translate } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { confirm, openFormModal } = useContext(ModalContext);
 
   if (!team) {
     return null;
@@ -144,21 +144,39 @@ export const TeamEditForm = ({
   }, []);
 
   const confirmDelete = () => {
-    confirm({
-      message: translate('delete team'),
-      title: 'Delete team',
-    }).then((ok) => {
-      if (ok) {
-        Services.deleteTeam(team._id)
-          .then((r) => {
-            if (isError(r)) {
-              toast.error(r.error)
-            } else {
-              navigate("/apis")
-              toast.success(translate({ key: 'team.deleted.success', replacements: [team.name] }))
-            }
-          })
-      }
+    openFormModal({
+      title: translate('Confirm'),
+      description: <div className="alert alert-danger" role="alert">
+        <h4 className="alert-heading">{translate('Warning')}</h4>
+        <p>{translate("delete.team.confirm.modal.description.1")}</p>
+        <ul>
+          <li>{translate("delete.team.confirm.modal.description.2")}</li>
+          <li>{translate("delete.team.confirm.modal.description.3")}</li>
+          <li>{translate("delete.team.confirm.modal.description.4")}</li>
+        </ul>
+      </div>,
+      schema: {
+        confirm: {
+          type: type.string,
+          label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [team.name] }),
+          constraints: [
+            constraints.oneOf(
+              [team.name],
+              translate({ key: 'constraints.type.api.name', replacements: [team.name] })
+            ),
+          ],
+        },
+      },
+      onSubmit: () => Services.deleteTeam(team._id)
+        .then((r) => {
+          if (isError(r)) {
+            toast.error(r.error)
+          } else {
+            navigate("/apis")
+            toast.success(translate({ key: 'team.deleted.success', replacements: [team.name] }))
+          }
+        }),
+      actionLabel: translate('Confirm')
     })
   }
 

@@ -274,9 +274,8 @@ export const TeamApiGroup = () => {
                   })}
                   openApiSelectModal={() => alert({ message: 'oops' })}
                   setHeader={(planName) => setAdditionalHeader(planName)} />
-
               </div>)}
-              {tab === 'settings' && <TeamApiSettings api={_apiGroup} currentTeam={currentTeam} />}
+              {tab === 'settings' && <TeamApiSettings api={_apiGroup} currentTeam={currentTeam} versions={[]} />}
               {tab === 'stats' && !match && <TeamApiConsumption api={_apiGroup} apiGroup currentTeam={currentTeam} />}
               {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={_apiGroup} currentTeam={currentTeam} />)}
               {tab === 'subscriptions' && <TeamApiSubscriptions api={_apiGroup} currentTeam={currentTeam} />} {/* FIXME: a props APIGROUP has been removed...maybe add it in team api sub component */}

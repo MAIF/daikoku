@@ -8,17 +8,8 @@ import fr.maif.otoroshi.daikoku.actions.{
   CmsApiAction,
   DaikokuActionMaybeWithoutUser
 }
-import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
 import fr.maif.otoroshi.daikoku.domain.json.{CmsFileFormat, CmsPageFormat}
-import fr.maif.otoroshi.daikoku.domain.{
-  CmsPage,
-  CmsPageId,
-  Tenant,
-  TenantMode,
-  User,
-  UserSession
-}
+import fr.maif.otoroshi.daikoku.domain.{CmsPageId, Tenant, TenantMode, User}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider.{OAuth2, Otoroshi}
@@ -34,6 +25,7 @@ import org.apache.pekko.util.ByteString
 import play.api.Logger
 import play.api.libs.json._
 import play.api.mvc._
+import services.CmsPage
 import storage.{DataStore, Repo}
 
 import scala.collection.concurrent.TrieMap
@@ -89,7 +81,6 @@ class CmsApiController(
       case raw: AnyContentAsRaw =>
         Source.single(raw.raw.asBytes().getOrElse(ByteString.empty))
       case e =>
-        println(e)
         throw new IllegalArgumentException("Request body is not raw data")
     }
   }
@@ -159,27 +150,6 @@ class CmsApiController(
         NoContent
       }
     }
-
-//  def sync() =
-//    CmsApiAction.async(parse.json) { ctx =>
-//      val body = ctx.request.body
-//
-//      Future
-//        .sequence(
-//          body
-//            .as(Reads.seq(CmsFileFormat.reads))
-//            .map(page => {
-//              env.dataStore.cmsRepo
-//                .forTenant(ctx.tenant)
-//                .save(page.toCmsPage(ctx.tenant.id))
-//            })
-//        )
-//        .map(_ => NoContent)
-//        .recover {
-//          case e: Throwable =>
-//            BadRequest(Json.obj("error" -> e.getMessage))
-//        }
-//    }
 
   def health() =
     CmsApiAction.async { ctx =>

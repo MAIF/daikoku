@@ -1246,30 +1246,6 @@ class TenantControllerSpec()
       //redirect to error page
       resp.status mustBe 303
     }
-    "get a path param from cms page" in {
-      val page = defaultCmsPage.copy(
-        id = CmsPageId("foo-page"),
-        path = Some("/foo"),
-        body = "{{daikoku-path-param '0'}}"
-      )
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(tenantAdmin),
-        teams = Seq(defaultAdminTeam),
-        cmsPages = Seq(page),
-        apis = Seq(adminApi)
-      )
-
-      val session = loginWithBlocking(tenantAdmin, tenant)
-
-      val resp = httpJsonCallBlocking(
-        path = s"/_${page.path.get}/bar",
-        headers = Map("accept" -> "text/html")
-      )(tenant, session)
-
-      resp.status mustBe 200
-      resp.body mustBe "bar"
-    }
     "get the query params from cms page" in {
       val page = defaultCmsPage.copy(
         id = CmsPageId("query-params"),

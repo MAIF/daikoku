@@ -660,3 +660,41 @@ We'd like to thank all the contributors who worked on this release!
 
 - [@Zwiterrion](https://github.com/Zwiterrion)
 
+## [v18.1.0] - 2024-12-16
+
+## :star: New Features
+
+- HTTP process can setup custom name subscription [#788](https://github.com/MAIF/daikoku/issues/788)
+- User could give a customName at the subscription demand [#780](https://github.com/MAIF/daikoku/issues/780)
+- Display API Key immediately after creation in automatic case, without deeding to navigate to team View [#771](https://github.com/MAIF/daikoku/issues/771)
+
+## :beetle: Bug Fixes
+
+- report reset in a dangerous section of sidebar [#781](https://github.com/MAIF/daikoku/issues/781)
+- [Fast mode] - Subscription form is not fill with aggregated subscription metadata [#779](https://github.com/MAIF/daikoku/issues/779)
+- [Fast mode] - aggragtion apikey list avalaible is different than normal mode [#778](https://github.com/MAIF/daikoku/issues/778)
+- If API Status is bloqued, no more subscription sync [#777](https://github.com/MAIF/daikoku/issues/777)
+- NotificationList is broken after subscription transfert [#776](https://github.com/MAIF/daikoku/issues/776)
+
+## [v18.1.1] - 2025-01-10
+
+## :star: New Features
+
+- Add better confirmation modal for deletion items [#790](https://github.com/MAIF/daikoku/issues/790)
+
+## :beetle: Bug Fixes
+
+- team invitation mail are not covered by the cms [#794](https://github.com/MAIF/daikoku/issues/794)
+- API subscription demands are not transfered after API ownership transfer [#792](https://github.com/MAIF/daikoku/issues/792)
+- Filter team is not available for non admin user in API list [#791](https://github.com/MAIF/daikoku/issues/791)
+- If API Status is bloqued, no more subscription sync [#777](https://github.com/MAIF/daikoku/issues/777)
+
+## [v18.1.2] - 2025-01-31
+
+## :beetle: Bug Fixes
+
+- Some filter does'n work on apiList [#799](https://github.com/MAIF/daikoku/issues/799)
+- Delete an APIKey is impossible if custom name includes special character like [ or - [#798](https://github.com/MAIF/daikoku/issues/798)
+- Create a new categorie for API not working [#797](https://github.com/MAIF/daikoku/issues/797)
+- API is no more visible after version deletion [#796](https://github.com/MAIF/daikoku/issues/796)
+

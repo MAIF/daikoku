@@ -370,9 +370,10 @@ export const getOtoroshiRoutes = (tenantId: string, otoId: string) =>
 export const getOtoroshiApiKeys = (tenantId: string, otoId: string) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/apikeys`);
 
-export const deleteTeamApi = (teamId: string, id: string): PromiseWithError<ResponseDone> =>
+export const deleteTeamApi = (teamId: string, id: string, next: string) =>
   customFetch(`/api/teams/${teamId}/apis/${id}`, {
     method: 'DELETE',
+    body: JSON.stringify({ next }),
   });
 
 export const saveTeamApiWithId = (
@@ -464,11 +465,6 @@ export const saveTenant = (tenant: ITenantFull) =>
 export const deleteTenant = (id: string) =>
   customFetch(`/api/tenants/${id}`, {
     method: 'DELETE',
-  });
-
-export const askToJoinTeam = (team: any) =>
-  customFetch(`/api/teams/${team}/join`, {
-    method: 'POST',
   });
 
 export const askForApiAccess = (teams: string[], apiId: string) =>
@@ -1671,12 +1667,6 @@ export const graphql = {
                 name
               }
             }
-            ... on TeamAccess {
-              team {
-                _id
-                name
-              }
-            }
             ... on TeamInvitation {
               team {
                 _id
@@ -1906,7 +1896,6 @@ export const graphql = {
         cmsPage(id: "${id}") {
             name
             path
-            draft
             body
             exact
             visible
@@ -1922,7 +1911,6 @@ export const graphql = {
   query GetCmsPage {
       cmsPage(id: "${id}") {
           name
-          draft
           history {
             id
             date

@@ -13,7 +13,8 @@ export const FormModal = <T extends TBaseObject>({
   options,
   actionLabel,
   close,
-  noClose
+  noClose,
+  description
 }: IFormModalProps<T> & IBaseModalProps) => {
   const ref = useRef<FormRef>();
 
@@ -26,6 +27,7 @@ export const FormModal = <T extends TBaseObject>({
         <button type="button" className="btn-close" aria-label="Close" onClick={() => close()} />
       </div>
       <div className="modal-body">
+        {description && description}
         <Form
           ref={ref}
           schema={schema}

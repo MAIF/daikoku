@@ -22,6 +22,7 @@ import org.scalatestplus.play.components.OneServerPerSuiteWithComponents
 import play.api.libs.json.{JsArray, JsNull, JsObject, JsValue, Json}
 import play.api.libs.ws.{DefaultWSCookie, WSResponse}
 import play.api.{Application, BuiltInComponents, Logger}
+import services.CmsPage
 
 import java.io.File
 import java.nio.charset.StandardCharsets
@@ -1414,7 +1415,6 @@ object utils {
       forwardRef = None,
       tags = List(),
       metadata = Map(),
-      draft = "<h1>draft content</h1>",
       contentType = "text/html",
       body = "<h1>production content</h1>",
       path = Some("/" + IdGenerator.token(32))

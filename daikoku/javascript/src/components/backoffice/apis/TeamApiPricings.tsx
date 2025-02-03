@@ -477,17 +477,36 @@ const Card = ({
   creation,
 }: CardProps) => {
   const { translate, Translation } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { openFormModal } = useContext(ModalContext);
   const { tenant } = useContext(GlobalContext);
 
   const pricing = renderPricing(plan, translate);
 
   const deleteWithConfirm = () => {
-    confirm({ message: translate('delete.plan.confirm') }).then((ok) => {
-      if (ok) {
-        deletePlan();
-      }
-    });
+    openFormModal({
+          title: translate('Confirm'),
+          description: <div className="alert alert-danger" role="alert">
+            <h4 className="alert-heading">{translate('Warning')}</h4>
+            <p>{translate(`delete.${tenant.display === 'environment' ? 'envionment' : 'plan'}.confirm.modal.description.1`)}</p>
+            <ul>
+              <li>{translate(`delete.${tenant.display === 'environment' ? 'envionment' : 'plan'}.confirm.modal.description.2`)}</li>
+            </ul>
+          </div>,
+          schema: {
+            confirm: {
+              type: type.string,
+              label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [plan.customName || plan.type]}),
+              constraints: [
+                constraints.oneOf(
+                  [plan.customName || plan.type],
+                  translate({ key: 'constraints.type.api.name', replacements: [plan.customName || plan.type] })
+                ),
+              ],
+            },
+          },
+          onSubmit: () => deletePlan(),
+          actionLabel: translate('Confirm')
+        })
   };
 
   const noOtoroshi =

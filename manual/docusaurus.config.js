@@ -147,7 +147,17 @@ const config = {
       prism: {
         theme: prismThemes.github,
         darkTheme: prismThemes.dracula,
-        additionalLanguages: ["bash", "json"]
+        additionalLanguages: ["bash", "json"],
+        magicComments: [
+          {
+            className: 'code-block-error-line',
+            line: 'deletion',
+          },
+          {
+            className: 'code-block-success-line',
+            line: 'addition',
+          },
+        ]
       },
     }),
 };

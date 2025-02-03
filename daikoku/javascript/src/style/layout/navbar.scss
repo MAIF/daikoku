@@ -190,9 +190,18 @@ a.navbar-brand,
           border-radius: 4px;
           padding: .5rem;
 
+          &.danger {
+            color: $danger-color
+          }
+
           &:hover {
             background-color: $companion_text-hover-bg-color;
             color: $companion_text-hover-color;
+
+            &.danger {
+              background-color: $danger-color;
+              color: $companion_text-hover-color;
+            }
           }
         }
       }
@@ -388,4 +397,12 @@ a.navbar-brand,
   img {
     width: 100%;
   }
+}
+
+button.nav_item {
+  background-color: transparent;
+  margin: 0;
+  border: none;
+  // all: unset;
+  cursor: pointer;
 }

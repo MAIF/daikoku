@@ -146,3 +146,17 @@ export const cleanPromise = <T extends { [x: string]: any } | any[] | string | n
     }
     return obj;
   };
+
+/**
+ * Escapes special characters in a string so it can be safely used in a regular expression.
+ * Escaped characters: . * + ? ^ $ { } ( ) | [ ] \ /
+ *
+ * @param {string} string - The string to escape.
+ * @returns {string} - The escaped string, safe for use in a regular expression.
+ */
+export const escapeRegExp = (string) => {
+  if (!string) {
+    return undefined
+  }
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // Échappe tous les caractères spéciaux
+}

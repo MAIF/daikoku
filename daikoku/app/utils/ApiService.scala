@@ -190,7 +190,9 @@ class ApiService(
       adminCustomName: Option[String] = None,
       thirdPartySubscriptionInformations: Option[
         ThirdPartySubscriptionInformations
-      ]
+      ],
+      customName: Option[String] = None,
+      tags: Option[Set[String]] = None
   ): Future[Either[AppError, ApiSubscription]] = {
     def createKey(
         api: Api,
@@ -253,7 +255,7 @@ class ApiService(
             team = team.id,
             api = api.id,
             by = user.id,
-            customName = None,
+            customName = customName,
             rotation = plan.autoRotation.map(rotation =>
               ApiSubscriptionRotation(enabled = rotation)
             ),
@@ -261,7 +263,8 @@ class ApiService(
             metadata = Some(
               JsObject(automaticMetadata.view.mapValues(i => JsString(i)).toSeq)
             ),
-            tags = Some(tunedApiKey.tags),
+            tags =
+              tags.map(_ ++ tunedApiKey.tags).orElse(tunedApiKey.tags.some),
             customMetadata = customMetadata,
             customMaxPerSecond = customMaxPerSecond,
             customMaxPerDay = customMaxPerDay,
@@ -471,8 +474,8 @@ class ApiService(
               .forAllTenant()
               .findOneNotDeleted(
                 Json.obj(
-                  "_id" -> subscription.api.value,
-                  "state" -> ApiState.publishedJsonFilter
+                  "_id" -> subscription.api.value
+//                  "state" -> ApiState.publishedJsonFilter
                 )
               ),
             AppError.EntityNotFound(
@@ -832,8 +835,8 @@ class ApiService(
           .forAllTenant()
           .findOneNotDeleted(
             Json.obj(
-              "_id" -> subscription.api.value,
-              "state" -> ApiState.publishedJsonFilter
+              "_id" -> subscription.api.value
+//              "state" -> ApiState.publishedJsonFilter
             )
           ),
         AppError.ApiNotFound
@@ -1073,8 +1076,15 @@ class ApiService(
                 "mail.apikey.refresh.body",
                 tenant,
                 Map(
-                  "apiName" -> api.name,
-                  "planName" -> plan.customName
+                  "apiName" -> JsString(api.name),
+                  "planName" -> JsString(
+                    plan.customName.getOrElse(plan.typeName)
+                  ),
+                  "consumer_team_data" -> team.asJson,
+                  "recipient_data" -> admin.asJson,
+                  "api_data" -> api.asJson,
+                  "usagePlan_data" -> plan.asJson,
+                  "tenant_data" -> tenant.asJson
                 )
               )
             } yield {
@@ -1624,6 +1634,12 @@ class ApiService(
         env.dataStore.apiRepo.forTenant(tenant).findByIdNotDeleted(demand.api),
         AppError.ApiNotFound
       )
+      plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
+        env.dataStore.usagePlanRepo
+          .forTenant(tenant)
+          .findByIdNotDeleted(demand.plan),
+        AppError.PlanNotFound
+      )
       user <- EitherT.fromOptionF(
         env.dataStore.userRepo.findByIdNotDeleted(demand.from),
         AppError.UserNotFound()
@@ -1694,10 +1710,19 @@ class ApiService(
             "mail.apikey.demand.body",
             tenant,
             Map(
-              "user" -> user.name,
-              "apiName" -> api.name,
-              "link" -> notificationUrl,
-              "team" -> demandTeam.name
+              "user" -> JsString(user.name),
+              "apiName" -> JsString(api.name),
+              "link" -> JsString(notificationUrl),
+              "team" -> JsString(demandTeam.name),
+              "consumer_team_data" -> demandTeam.asJson,
+              "producer_team_data" -> apiTeam.asJson,
+              "notification_data" -> notification.asJson,
+              "user_data" -> user.asJson,
+              "recipient_data" -> admin.asJson,
+              "api_data" -> api.asJson,
+              "usagePlan_data" -> plan.asJson,
+              "subscriptionDemand_data" -> demand.asJson,
+              "tenant_data" -> tenant.asJson
             )
           )
         } yield {
@@ -1730,6 +1755,8 @@ class ApiService(
       val customMaxPerMonth = (response \ "customMaxPerMonth").asOpt[Long]
       val customReadOnly = (response \ "customReadOnly").asOpt[Boolean]
       val adminCustomName = (response \ "adminCustomName").asOpt[String]
+      val customName = (response \ "customName").asOpt[String]
+      val tags = (response \ "tags").asOpt[Set[String]]
 
       for {
         _ <- _step.check()
@@ -1746,7 +1773,9 @@ class ApiService(
           customMaxPerSecond = customMaxPerSecond,
           customMaxPerDay = customMaxPerDay,
           customMaxPerMonth = customMaxPerMonth,
-          customReadOnly = customReadOnly
+          customReadOnly = customReadOnly,
+          customName = customName,
+          tags = tags
         )
         _ <- EitherT.liftF(
           env.dataStore.subscriptionDemandRepo
@@ -1923,6 +1952,24 @@ class ApiService(
                 .findByIdNotDeleted(demand.team),
               AppError.TeamNotFound
             )
+            api <- EitherT.fromOptionF(
+              env.dataStore.apiRepo
+                .forTenant(tenant)
+                .findByIdNotDeleted(demand.api),
+              AppError.ApiNotFound
+            )
+            usagePlan <- EitherT.fromOptionF(
+              env.dataStore.usagePlanRepo
+                .forTenant(tenant)
+                .findByIdNotDeleted(demand.plan),
+              AppError.PlanNotFound
+            )
+            ownerTeam <- EitherT.fromOptionF(
+              env.dataStore.teamRepo
+                .forTenant(tenant)
+                .findByIdNotDeleted(api.team),
+              AppError.TeamNotFound
+            )
             _ <- EitherT.liftF(Future.sequence(emails.map(email => {
               val stepValidator = StepValidator(
                 id = DatastoreId(IdGenerator.token(32)),
@@ -1945,11 +1992,21 @@ class ApiService(
                   "mail.subscription.validation.body",
                   tenant,
                   Map(
-                    "urlAccept" -> env.getDaikokuUrl(tenant, pathAccept),
-                    "urlDecline" -> env.getDaikokuUrl(tenant, pathDecline),
-                    "user" -> user.name,
-                    "team" -> team.name,
-                    "body" -> template.getOrElse("")
+                    "urlAccept" -> JsString(
+                      env.getDaikokuUrl(tenant, pathAccept)
+                    ),
+                    "urlDecline" -> JsString(
+                      env.getDaikokuUrl(tenant, pathDecline)
+                    ),
+                    "user" -> JsString(user.name),
+                    "team" -> JsString(team.name),
+                    "body" -> JsString(template.getOrElse("")),
+                    "producer_team_data" -> ownerTeam.asJson,
+                    "consumer_team_data" -> team.asJson,
+                    "user_data" -> user.asSimpleJson,
+                    "api_data" -> api.asJson,
+                    "usagePlan_data" -> usagePlan.asJson,
+                    "subscriptionDemand_data" -> demand.asJson
                   )
                 )
                 .flatMap(body =>
@@ -2049,6 +2106,11 @@ class ApiService(
                   )
                 )
             )
+            user <- EitherT.fromOptionF[Future, AppError, User](
+              env.dataStore.userRepo
+                .findByIdNotDeleted(demand.from),
+              AppError.UserNotFound()
+            )
             team <- EitherT.fromOptionF[Future, AppError, Team](
               env.dataStore.teamRepo
                 .forTenant(tenant)
@@ -2060,6 +2122,12 @@ class ApiService(
                 .forTenant(tenant)
                 .findByIdNotDeleted(demand.api),
               AppError.ApiNotFound
+            )
+            ownerTeam <- EitherT.fromOptionF[Future, AppError, Team](
+              env.dataStore.teamRepo
+                .forTenant(tenant)
+                .findByIdNotDeleted(api.team),
+              AppError.TeamNotFound
             )
             plan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
               env.dataStore.usagePlanRepo
@@ -2084,12 +2152,22 @@ class ApiService(
                 "mail.checkout.body",
                 tenant,
                 Map(
-                  "api.name" -> api.name,
-                  "api.plan" -> plan.customName,
-                  "link" -> env.getDaikokuUrl(
-                    tenant,
-                    s"/api/subscription/team/${team.id.value}/demands/${demand.id.value}/_run"
-                  )
+                  "api.name" -> JsString(api.name),
+                  "api.plan" -> JsString(
+                    plan.customName.getOrElse(plan.typeName)
+                  ),
+                  "link" -> JsString(
+                    env.getDaikokuUrl(
+                      tenant,
+                      s"/api/subscription/team/${team.id.value}/demands/${demand.id.value}/_run"
+                    )
+                  ),
+                  "producer_team_data" -> ownerTeam.asJson,
+                  "consumer_team_data" -> team.asJson,
+                  "user_data" -> user.asSimpleJson,
+                  "api_data" -> api.asJson,
+                  "usagePlan_data" -> plan.asJson,
+                  "subscriptionDemand_data" -> demand.asJson
                 )
               )
             )
@@ -2117,6 +2195,12 @@ class ApiService(
               env.dataStore.apiRepo
                 .forTenant(tenant)
                 .findByIdNotDeleted(demand.api),
+              AppError.ApiNotFound
+            )
+            ownerTeam <- EitherT.fromOptionF(
+              env.dataStore.teamRepo
+                .forTenant(tenant)
+                .findByIdNotDeleted(api.team),
               AppError.ApiNotFound
             )
             team <- EitherT.fromOptionF(
@@ -2153,7 +2237,9 @@ class ApiService(
                 customReadOnly = demand.customReadOnly,
                 adminCustomName = demand.adminCustomName,
                 thirdPartySubscriptionInformations =
-                  maybeSubscriptionInformations
+                  maybeSubscriptionInformations,
+                customName = demand.customName,
+                tags = demand.tags
               )
             )
             administrators <- EitherT.liftF(
@@ -2191,12 +2277,6 @@ class ApiService(
                 .forTenant(tenant)
                 .save(newNotification)
             )
-            demandTeam <- EitherT.fromOptionF[Future, AppError, Team](
-              env.dataStore.teamRepo
-                .forTenant(tenant.id)
-                .findByIdNotDeleted(demand.team),
-              AppError.TeamNotFound
-            )
             _ <- EitherT.liftF(
               Future.sequence((administrators ++ Seq(from)).map(admin => {
                 implicit val language: String = admin.defaultLanguage
@@ -2208,13 +2288,21 @@ class ApiService(
                     "mail.api.subscription.acceptation.body",
                     tenant,
                     Map(
-                      "user" -> from.name,
-                      "apiName" -> api.name,
-                      "link" -> env.getDaikokuUrl(
-                        tenant,
-                        s"/${team.humanReadableId}/settings/apikeys/${api.humanReadableId}/${api.currentVersion.value}"
+                      "user" -> JsString(from.name),
+                      "apiName" -> JsString(api.name),
+                      "link" -> JsString(
+                        env.getDaikokuUrl(
+                          tenant,
+                          s"/${team.humanReadableId}/settings/apikeys/${api.humanReadableId}/${api.currentVersion.value}"
+                        )
                       ), //todo => better url
-                      "team" -> demandTeam.name
+                      "team" -> JsString(team.name),
+                      "producer_team_data" -> ownerTeam.asJson,
+                      "consumer_team_data" -> team.asJson,
+                      "user_data" -> from.asSimpleJson,
+                      "api_data" -> api.asJson,
+                      "usagePlan_data" -> plan.asJson,
+                      "subscription_data" -> subscription.asJson
                     )
                   )
                 } yield {
@@ -2451,7 +2539,7 @@ class ApiService(
               )
             ).map(s =>
               Ok(
-                Json.obj("creation" -> "done", "subscription" -> s.asSafeJson)
+                Json.obj("creation" -> "done", "subscription" -> s.asJson)
               )
             )
           case steps =>
@@ -2543,23 +2631,29 @@ class ApiService(
         env.dataStore.userRepo.findByIdNotDeleted(demand.from),
         AppError.UserNotFound()
       )
-      team <- EitherT.fromOptionF(
-        env.dataStore.teamRepo
-          .forTenant(tenant)
-          .findByIdNotDeleted(demand.team),
-        AppError.ApiNotFound
-      )
       api <- EitherT.fromOptionF(
         env.dataStore.apiRepo
           .forTenant(tenant)
           .findByIdNotDeleted(demand.api),
         AppError.ApiNotFound
       )
+      usagePlan <- EitherT.fromOptionF(
+        env.dataStore.usagePlanRepo
+          .forTenant(tenant)
+          .findByIdNotDeleted(demand.plan),
+        AppError.PlanNotFound
+      )
       team <- EitherT.fromOptionF(
         env.dataStore.teamRepo
           .forTenant(tenant)
           .findByIdNotDeleted(demand.team),
-        AppError.ApiNotFound
+        AppError.TeamNotFound
+      )
+      ownerTeam <- EitherT.fromOptionF(
+        env.dataStore.teamRepo
+          .forTenant(tenant)
+          .findByIdNotDeleted(api.team),
+        AppError.TeamNotFound
       )
       administrators <- EitherT.liftF(
         env.dataStore.userRepo
@@ -2587,10 +2681,15 @@ class ApiService(
               "mail.api.subscription.rejection.body",
               tenant,
               Map(
-                "user" -> from.name,
-                "apiName" -> api.name,
-                "team" -> team.name,
-                "message" -> maybeMessage.getOrElse("")
+                "user" -> JsString(from.name),
+                "apiName" -> JsString(api.name),
+                "team" -> JsString(team.name),
+                "message" -> JsString(maybeMessage.getOrElse("")),
+                "api_data" -> api.asJson,
+                "usagePlan_data" -> usagePlan.asJson,
+                "producer_team_data" -> ownerTeam.asJson,
+                "consumer_team_data" -> team.asJson,
+                "user_data" -> from.asSimpleJson
               )
             )
           } yield {

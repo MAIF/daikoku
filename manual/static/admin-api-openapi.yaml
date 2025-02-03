@@ -214,14 +214,6 @@ components:
         authenticatedCmsPage:
           type: string
           nullable: true
-        cacheTTL:
-          type: integer
-          format: int32
-          nullable: true
-        cmsHistoryLength:
-          type: integer
-          format: int32
-          nullable: true
         logo:
           type: string
           nullable: true

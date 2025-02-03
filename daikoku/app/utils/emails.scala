@@ -1,15 +1,15 @@
 package fr.maif.otoroshi.daikoku.utils
 
+import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.env.Env
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.http.scaladsl.util.FastFuture.EnhancedFuture
-import fr.maif.otoroshi.daikoku.domain._
 import org.owasp.html.HtmlPolicyBuilder
 import play.api.Logger
 import play.api.i18n.MessagesApi
 import play.api.libs.json._
 import play.api.libs.ws.{WSAuthScheme, WSClient}
 
-import fr.maif.otoroshi.daikoku.env.Env
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
@@ -55,16 +55,21 @@ class ConsoleMailer(settings: ConsoleMailerSettings) extends Mailer {
       env: Env,
       language: String
   ): Future[Unit] = {
-
     translator
-      .getMailTemplate("tenant.mail.template", tenant)
+      .getMailTemplate(
+        "tenant.mail.template",
+        tenant,
+        Map("email" -> JsString(body))
+      )
       .map { templateBody =>
         logger.info(s"Sent email: ${Json.prettyPrint(
           Json.obj(
             "from" -> s"Daikoku <daikoku@foo.bar>",
             "to" -> Seq(to.mkString(", ")),
             "subject" -> Seq(title),
-            "html" -> templateBody.replace("{{email}}", body)
+            "html" -> templateBody
+              .replace("{{email}}", body)
+              .replace("[email]", body)
           )
         )}")
         ()
@@ -87,7 +92,11 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
   ): Future[Unit] = {
 
     translator
-      .getMailTemplate("tenant.mail.template", tenant)
+      .getMailTemplate(
+        "tenant.mail.template",
+        tenant,
+        Map("email" -> JsString(body))
+      )
       .map(templatedBody => {
         wsClient
           .url(if (settings.eu) {
@@ -101,7 +110,11 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
               "from" -> Seq(s"${settings.fromTitle} <${settings.fromEmail}>"),
               "to" -> Seq(to.mkString(", ")),
               "subject" -> Seq(title),
-              "html" -> Seq(templatedBody.replace("{{email}}", body)),
+              "html" -> Seq(
+                templatedBody
+                  .replace("{{email}}", body)
+                  .replace("[email]", body)
+              ),
               "text" -> Seq(body)
             )
           )
@@ -131,7 +144,11 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
   ): Future[Unit] = {
 
     translator
-      .getMailTemplate("tenant.mail.template", tenant)
+      .getMailTemplate(
+        "tenant.mail.template",
+        tenant,
+        Map("email" -> JsString(body))
+      )
       .map(templatedBody => {
         wsClient
           .url(s"https://api.mailjet.com/v3.1/send")
@@ -158,7 +175,9 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
                     )
                   ),
                   "Subject" -> title,
-                  "HTMLPart" -> templatedBody.replace("{{email}}", body)
+                  "HTMLPart" -> templatedBody
+                    .replace("{{email}}", body)
+                    .replace("[email]", body)
                   // TextPart
                 )
               )
@@ -178,8 +197,8 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
 
   import jakarta.mail._
   import jakarta.mail.internet._
-  import java.util.Date
-  import java.util.Properties
+
+  import java.util.{Date, Properties}
 
   lazy val logger = Logger("daikoku-mailer")
 
@@ -193,7 +212,11 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
   ): Future[Unit] = {
 
     translator
-      .getMailTemplate("tenant.mail.template", tenant)
+      .getMailTemplate(
+        "tenant.mail.template",
+        tenant,
+        Map("email" -> JsString(body))
+      )
       .map(templatedBody => {
 
         val properties = new Properties()
@@ -218,7 +241,9 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
                   message.setSentDate(new Date())
                   message.setSubject(title)
                   message.setContent(
-                    templatedBody.replace("{{email}}", body),
+                    templatedBody
+                      .replace("{{email}}", body)
+                      .replace("[email]", body),
                     "text/html; charset=utf-8"
                   )
 
@@ -255,7 +280,11 @@ class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
   ): Future[Unit] = {
 
     translator
-      .getMailTemplate("tenant.mail.template", tenant)
+      .getMailTemplate(
+        "tenant.mail.template",
+        tenant,
+        Map("email" -> JsString(body))
+      )
       .map(templatedBody => {
         ws.url(s"https://api.sendgrid.com/v3/mail/send")
           .withHttpHeaders(
@@ -277,7 +306,9 @@ class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
               "content" -> Json.arr(
                 Json.obj(
                   "type" -> "text/html",
-                  "value" -> templatedBody.replace("{{email}}", body)
+                  "value" -> templatedBody
+                    .replace("{{email}}", body)
+                    .replace("[email]", body)
                 )
               )
             )

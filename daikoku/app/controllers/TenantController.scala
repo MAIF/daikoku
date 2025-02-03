@@ -560,50 +560,54 @@ class TenantController(
 
         val sanitizeBody = HtmlSanitizer.sanitize(mailBody)
 
-        def sendMail: String => Future[Result] =
-          (contact: String) => {
-            for {
-              titleToSender <-
-                translator.translate("mail.contact.title", ctx.tenant)
-              titleToContact <-
-                translator.translate("mail.contact.title", ctx.tenant)
-              mailToSender <- translator.translate(
-                "mail.contact.sender",
-                ctx.tenant,
-                Map(
-                  "user" -> name,
-                  "email" -> email,
-                  "subject" -> subject,
-                  "body" -> sanitizeBody
-                )
+        def sendMail(contact: String, contactData: JsValue): Future[Result] = {
+          for {
+            titleToSender <-
+              translator.translate("mail.contact.title", ctx.tenant)
+            titleToContact <-
+              translator.translate("mail.contact.title", ctx.tenant)
+            mailToSender <- translator.translate(
+              "mail.contact.sender",
+              ctx.tenant,
+              Map(
+                "user" -> JsString(name),
+                "email" -> JsString(email),
+                "subject" -> JsString(subject),
+                "body" -> JsString(sanitizeBody),
+                "user_data" -> ctx.user.asSimpleJson,
+                "contact_data" -> contactData
               )
-              mailToContact <- translator.translate(
-                "mail.contact.contact",
-                ctx.tenant,
-                Map(
-                  "user" -> name,
-                  "email" -> email,
-                  "subject" -> subject,
-                  "body" -> sanitizeBody
-                )
+            )
+            mailToContact <- translator.translate(
+              "mail.contact.contact",
+              ctx.tenant,
+              Map(
+                "user" -> JsString(name),
+                "email" -> JsString(email),
+                "subject" -> JsString(subject),
+                "body" -> JsString(sanitizeBody),
+                "user_data" -> ctx.user.asSimpleJson,
+                "user_data" -> ctx.user.asSimpleJson,
+                "contact_data" -> contactData
               )
-              _ <- ctx.tenant.mailer.send(
-                titleToSender,
-                Seq(email),
-                mailToSender,
-                ctx.tenant
-              )
-              _ <- ctx.tenant.mailer.send(
-                titleToContact,
-                Seq(contact),
-                mailToContact,
-                ctx.tenant
-              )
-            } yield {
-              ctx.setCtxValue("contact", contact)
-              Ok(Json.obj("send" -> true))
-            }
+            )
+            _ <- ctx.tenant.mailer.send(
+              titleToSender,
+              Seq(email),
+              mailToSender,
+              ctx.tenant
+            )
+            _ <- ctx.tenant.mailer.send(
+              titleToContact,
+              Seq(contact),
+              mailToContact,
+              ctx.tenant
+            )
+          } yield {
+            ctx.setCtxValue("contact", contact)
+            Ok(Json.obj("send" -> true))
           }
+        }
 
         (teamId, apiId) match {
           case (Some(id), _) =>
@@ -611,7 +615,7 @@ class TenantController(
               .forTenant(ctx.tenant)
               .findByIdNotDeleted(id)
               .flatMap {
-                case Some(team) => sendMail(team.contact)
+                case Some(team) => sendMail(team.contact, team.asJson)
                 case None =>
                   FastFuture.successful(
                     NotFound(Json.obj("error" -> "team not found"))
@@ -627,7 +631,7 @@ class TenantController(
                     .forTenant(ctx.tenant)
                     .findByIdNotDeleted(api.team)
                     .flatMap {
-                      case Some(team) => sendMail(team.contact)
+                      case Some(team) => sendMail(team.contact, team.asJson)
                       case None =>
                         FastFuture.successful(
                           NotFound(Json.obj("error" -> "team not found"))
@@ -638,7 +642,7 @@ class TenantController(
                     NotFound(Json.obj("error" -> "api not found"))
                   )
               }
-          case (None, None) => sendMail(ctx.tenant.contact)
+          case (None, None) => sendMail(ctx.tenant.contact, ctx.tenant.asJson)
         }
       }
     }

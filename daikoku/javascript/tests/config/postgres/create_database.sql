@@ -1,0 +1,1 @@
+create database daikoku_demo_komainu owner postgres;

@@ -1,5 +1,7 @@
 package fr.maif.otoroshi.daikoku.tests
 
+import cats.implicits.catsSyntaxOptionId
+import com.typesafe.config.ConfigFactory
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import org.scalatest.BeforeAndAfterEach
@@ -347,7 +349,8 @@ class GuestModeSpec()
       val respDelete = httpJsonCallWithoutSessionBlocking(
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant)
       respDelete.status mustBe 404
     }

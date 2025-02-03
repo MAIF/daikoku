@@ -9,12 +9,13 @@ import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IUserSimple, isError } from '../../../types';
 import { AvatarWithAction, Can, PaginatedComponent, daikoku, manage } from '../../utils';
+import { constraints, type } from '@maif/react-forms';
 
 export const UserList = () => {
   const { connectedUser } = useContext(GlobalContext);
   useDaikokuBackOffice();
 
-  const { alert, confirm } = useContext(ModalContext);
+  const { alert, confirm, openFormModal } = useContext(ModalContext);
 
   const [users, setUsers] = useState<Array<IUserSimple>>([]);
   const [search, setSearch] = useState<string>();
@@ -36,16 +37,40 @@ export const UserList = () => {
   };
 
   const removeUser = (user: IUserSimple) => {
-    confirm({ message: translate('remove.user.confirm'), okLabel: translate('Yes') })
-      .then((ok) => {
-        if (ok) {
-          Services.deleteUserById(user._id)
-            .then(() => {
-              toast.info(translate({ key: 'remove.user.success', replacements: [user.name] }));
-              updateUsers();
-            });
-        }
-      });
+    openFormModal({
+      title: translate('Confirm'),
+      description: <div className="alert alert-danger" role="alert">
+        <h4 className="alert-heading">{translate('Warning')}</h4>
+        <p>{translate("delete.user.confirm.modal.description.1")}</p>
+        <ul>
+          <li>{translate("delete.user.confirm.modal.description.2")}</li>
+          <li>{translate("delete.user.confirm.modal.description.3")}</li>
+          <li>{translate("delete.user.confirm.modal.description.4")}</li>
+        </ul>
+      </div>,
+      schema: {
+        confirm: {
+          type: type.string,
+          label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [user.name] }),
+          constraints: [
+            constraints.oneOf(
+              [user.name],
+              translate({ key: 'constraints.type.api.name', replacements: [user.name] })
+            ),
+          ],
+        },
+      },
+      onSubmit: () => Services.deleteUserById(user._id)
+        .then((r) => {
+          if (isError(r)) {
+            toast.error(r.error)
+          } else {
+            toast.success(translate({ key: 'remove.user.success', replacements: [user.name] }));
+            updateUsers();
+          }
+        }),
+      actionLabel: translate('Confirm')
+    })
   };
 
   const toggleAdmin = (member: IUserSimple) => {

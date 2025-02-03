@@ -281,28 +281,37 @@ class AssetsService {
   def listAssets[T](ctx: ApiActionContext[T])(implicit env: Env) = {
     implicit val ec = env.defaultExecutionContext
 
-    ctx.request.getQueryString("teamId") match {
-      case Some(teamId) =>
-        ctx.tenant.bucketSettings match {
-          case None =>
-            FastFuture.successful(
-              NotFound(Json.obj("error" -> "No bucket config found !"))
-            )
-          case Some(cfg) =>
-            env.assetsStore.listTenantAssets(ctx.tenant.id)(cfg).map { res =>
-              Ok(JsArray(res.map(_.asJson)))
-            }
-        }
+    ctx.tenant.bucketSettings match {
       case None =>
-        ctx.tenant.bucketSettings match {
-          case None =>
-            FastFuture.successful(
-              NotFound(Json.obj("error" -> "No bucket config found !"))
-            )
-          case Some(cfg) =>
-            env.assetsStore.listTenantAssets(ctx.tenant.id)(cfg).map { res =>
-              Ok(JsArray(res.map(_.asJson)))
-            }
+        FastFuture.successful(
+          NotFound(Json.obj("error" -> "No bucket config found !"))
+        )
+      case Some(cfg) =>
+        for {
+          slugs <-
+            env.dataStore.assetRepo
+              .forTenant(ctx.tenant)
+              .findWithProjection(
+                Json.obj(),
+                Json.obj("slug" -> true, "_id" -> true)
+              )
+              .map(items =>
+                items.foldLeft(Map.empty[String, Option[String]]) {
+                  case (acc, item) =>
+                    acc + ((item \ "_id").as[String] -> (item \ "slug")
+                      .asOpt[String])
+                }
+              )
+          assets <- env.assetsStore.listTenantAssets(ctx.tenant.id)(cfg)
+        } yield {
+          Ok(JsArray(assets.map(item => {
+            val id = item.content.key.split("/").last
+
+            (slugs.get(id) match {
+              case Some(slug) => item.copy(slug = slug)
+              case None       => item
+            }).asJson
+          })))
         }
     }
   }

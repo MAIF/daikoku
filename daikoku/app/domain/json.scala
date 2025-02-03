@@ -16,11 +16,6 @@ import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings
 import fr.maif.otoroshi.daikoku.domain.ThirdPartySubscriptionInformations.StripeSubscriptionInformations
 import fr.maif.otoroshi.daikoku.domain.UsagePlan._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiIdFormat,
-  TeamIdFormat,
-  TenantIdFormat
-}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
@@ -28,8 +23,8 @@ import fr.maif.otoroshi.daikoku.utils.StringImplicits._
 import fr.maif.otoroshi.daikoku.utils._
 import org.joda.time.DateTime
 import play.api.libs.json._
+import services.{CmsFile, CmsPage, CmsRequestRendering}
 
-import java.util
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
@@ -1569,14 +1564,11 @@ object json {
             notFoundCmsPage = (json \ "notFoundCmsPage").asOpt[String],
             authenticatedCmsPage =
               (json \ "authenticatedCmsPage").asOpt[String],
-            cmsHistoryLength =
-              (json \ "cmsHistoryLength").asOpt[Int].getOrElse(10),
             logo = (json \ "logo")
               .asOpt[String]
               .getOrElse("/assets/images/daikoku.svg"),
             footer = (json \ "footer")
-              .asOpt[String],
-            cacheTTL = (json \ "cacheTTL").asOpt[Int].getOrElse(60000)
+              .asOpt[String]
           )
         )
       } recover {
@@ -1613,9 +1605,7 @@ object json {
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "cacheTTL" -> o.cacheTTL,
         "homePageVisible" -> o.homePageVisible,
-        "cmsHistoryLength" -> o.cmsHistoryLength,
         "logo" -> o.logo,
         "footer" -> o.footer
           .map(JsString.apply)
@@ -2424,6 +2414,14 @@ object json {
         "adminCustomName" -> o.adminCustomName
           .map(JsString.apply)
           .getOrElse(JsNull)
+          .as[JsValue],
+        "customName" -> o.customName
+          .map(JsString.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "tags" -> o.tags
+          .map(t => JsArray(t.toSeq.map(JsString.apply)))
+          .getOrElse(JsNull)
           .as[JsValue]
       )
 
@@ -2452,7 +2450,9 @@ object json {
             customMaxPerDay = (json \ "customMaxPerDay").asOpt[Long],
             customMaxPerMonth = (json \ "customMaxPerMonth").asOpt[Long],
             customReadOnly = (json \ "customReadOnly").asOpt[Boolean],
-            adminCustomName = (json \ "adminCustomName").asOpt[String]
+            adminCustomName = (json \ "adminCustomName").asOpt[String],
+            customName = (json \ "customName").asOpt[String],
+            tags = (json \ "tags").asOpt[Set[String]]
           )
         )
       } recover {
@@ -2697,7 +2697,6 @@ object json {
       override def reads(json: JsValue) =
         (json \ "type").as[String] match {
           case "ApiAccess"       => ApiAccessFormat.reads(json)
-          case "TeamAccess"      => TeamAccessFormat.reads(json)
           case "ApiSubscription" => ApiSubscriptionDemandFormat.reads(json)
           case "ApiSubscriptionReject" =>
             ApiSubscriptionRejectFormat.reads(json)
@@ -2729,10 +2728,6 @@ object json {
           case p: ApiAccess =>
             ApiAccessFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiAccess"
-            )
-          case p: TeamAccess =>
-            TeamAccessFormat.writes(p).as[JsObject] ++ Json.obj(
-              "type" -> "TeamAccess"
             )
           case p: ApiSubscriptionDemand =>
             ApiSubscriptionDemandFormat.writes(p).as[JsObject] ++ Json.obj(
@@ -2928,23 +2923,6 @@ object json {
     override def writes(o: ApiAccess): JsValue =
       Json.obj(
         "api" -> ApiIdFormat.writes(o.api),
-        "team" -> TeamIdFormat.writes(o.team)
-      )
-  }
-  val TeamAccessFormat = new Format[TeamAccess] {
-    override def reads(json: JsValue): JsResult[TeamAccess] =
-      Try {
-        JsSuccess(
-          TeamAccess(
-            team = (json \ "team").as(TeamIdFormat)
-          )
-        )
-      } recover {
-        case e => JsError(e.getMessage)
-      } get
-
-    override def writes(o: TeamAccess): JsValue =
-      Json.obj(
         "team" -> TeamIdFormat.writes(o.team)
       )
   }
@@ -4044,28 +4022,6 @@ object json {
     override def writes(o: AssetId): JsValue = JsString(o.value)
   }
 
-  val CmsHistoryFormat = new Format[CmsHistory] {
-    override def writes(o: CmsHistory): JsValue =
-      Json.obj(
-        "id" -> o.id,
-        "date" -> DateTimeFormat.writes(o.date),
-        "diff" -> o.diff,
-        "user" -> UserIdFormat.writes(o.user)
-      )
-    override def reads(o: JsValue): JsResult[CmsHistory] =
-      Try {
-        CmsHistory(
-          id = (o \ "id").as[String],
-          date = (o \ "date").as(DateTimeFormat),
-          diff = (o \ "diff").as[String],
-          user = (o \ "user").as(UserIdFormat)
-        )
-      } match {
-        case Failure(exception) => JsError(exception.getMessage)
-        case Success(page)      => JsSuccess(page)
-      }
-  }
-
   val CmsFileFormat = new Format[CmsFile] {
     override def writes(o: CmsFile): JsValue =
       Json.obj(
@@ -4094,13 +4050,15 @@ object json {
     override def writes(o: CmsRequestRendering): JsValue =
       Json.obj(
         "content" -> o.content.map(CmsFileFormat.writes),
-        "current_page" -> o.current_page
+        "current_page" -> o.current_page,
+        "fields" -> o.fields
       )
     override def reads(json: JsValue): JsResult[CmsRequestRendering] =
       Try {
         CmsRequestRendering(
           content = (json \ "content").as(Reads.seq(CmsFileFormat.reads)),
-          current_page = (json \ "current_page").as[String]
+          current_page = (json \ "current_page").as[String],
+          fields = (json \ "fields").as[Map[String, JsValue]]
         )
       } match {
         case Failure(exception) => JsError(exception.getMessage)
@@ -4149,7 +4107,6 @@ object json {
           .getOrElse(JsNull)
           .as[JsValue],
         "body" -> o.body,
-        "draft" -> o.draft,
         "path" -> o.path.map(JsString.apply).getOrElse(JsNull).as[JsValue],
         "exact" -> o.exact,
         "lastPublishedDate" -> o.lastPublishedDate.map(DateTimeFormat.writes)
@@ -4169,7 +4126,6 @@ object json {
           metadata =
             (json \ "metadata").asOpt[Map[String, String]].getOrElse(Map.empty),
           body = (json \ "body").asOpt[String].getOrElse(""),
-          draft = (json \ "draft").asOpt[String].getOrElse(""),
           contentType =
             (json \ "contentType").asOpt[String].getOrElse("text/html"),
           forwardRef = (json \ "forwardRef")

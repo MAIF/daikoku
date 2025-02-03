@@ -26,9 +26,7 @@ mail.api.access.title=Demande d''accès à une API
 mail.api.access.body=[user] veut accéder a votre API [apiName] pour l''équipe [teamName]. \
   Vous recevez ce message car vous êtes administrateur de l''équipe propriétaire.\
   </br>\
-  vous pouvez vous connecter et accéder à vos notifications pour <a href="[link]" target="_blank">accepter ou rejeter cette demande</a>
-mail.team.access.title=Quelqu''un veut rejoindre votre équipe
-mail.team.access.body=[user] veut rejoindre votre équipe [teamName]. \
+  vous pouvez vous connecter et accéder à vos notifications pour <a href="[link]" target="_blank">accepter ou rejeter cette demande</a>\
    Vous recevez ce message car vous êtes administrateur de cette équipe. \
   </br>\
   <a href="[link]">Accepter/rejeter la demande</a>
@@ -47,9 +45,7 @@ mail.api.subscription.rejection.body= Nous regrettons de vous informer que votre
  [message].
 mail.api.subscription.acceptation.body=Nous avons le plaisir de vous informer que votre demande de souscription à l''API [apiName] pour l'équipe [team] a été acceptée. <br />\
     Vous pouvez dès maintenant vous connecter pour retrouver votre clé d'API <a href="[link] target="_blank">ici</href>.
-mail.team.access.rejection.body=Votre demande d''accès à l''équipe [teamName] a été rejetée.
-mail.team.access.acceptation.body=Votre demande d''accès à l''équipe [teamName] a été acceptée.
-mail.user.invitation.rejection.body=Votre invitation à [teamName] dans votre équipe [user] a été rejetée.
+mail.user.invitation.rejection.body=Votre invitation à [user] dans votre équipe [teamName] a été rejetée.
 mail.user.invitation.acceptation.body=[user] a accepté de rejoindre votre équipe [teamName].
 mail.api.transfer.ownership.rejection.body=Votre demande de trasfert de priopriété de l''API [apiName] à l''équipe [teamName] a été rejetée.
 mail.api.transfer.ownership.acceptation.body=Votre demande de transfert de priopriété de l''API [apiName] à l''équipe [teamName] a été acceptée.
@@ -96,3 +92,9 @@ mail.checkout.body = Votre demande de souscription pour l'api [api.name] et le p
 Vous pouvez effectuer maintenant le reglement.\
 Vous pouvez finaliser votre demande : <a href="[link]">Reglement</a>
 mail.api.subscription.transfer.rejection.body = Votre demande de transfert de le souscription [subscription] a été rejetée.
+mail.user.invitation.title = Rejoindre l'équipe [teamName]
+mail.user.invitation.body=[sender] vous propose de rejoindre son équipe [teamName] \
+</br>\
+Veuillez cliquer sur le lien suivant pour rejoindre cette équipe. \
+</br>\
+<a href="[link]">Cliquez pour rejoindre l'équipe/a>

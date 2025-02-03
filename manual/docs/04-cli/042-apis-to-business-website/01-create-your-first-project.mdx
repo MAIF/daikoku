@@ -1,0 +1,87 @@
+import HomeAPIs from '@site/static/img/home-apis.png';
+import Welcome from '@site/static/img/welcome.png';
+
+# Create your first project
+
+# Run Daikoku CLI in dev mode
+
+The first step before running the website is to create a new environment.
+
+1. First you need to be a tenant admin of your Daikoku instance.
+2. From your home page, navigate to the CMS API.
+
+<div style={{textAlign: 'center', maxWidth: 600 }}>
+  <img
+    src={HomeAPIs}
+    alt="Home APIs"
+  />
+</div>
+
+3. Navigate to the plans tab
+4. Click the `Get API key` button and select the default admin team
+5. Once validated, you can navigate to the default admin team back office to copy the api key (you can find it on the home page of your Daikoku, under `Your teams`, on the right side of your screen)
+
+6. Run the following command in your terminal:
+
+```sh
+daikoku cms init --name=<PROJECT_NAME>
+```
+
+```sh
+daikoku environments add --name=dev \
+                     --server=http://localhost:5173 \
+                     --apikey=<YOUR-APIKEY>
+```
+
+7. In order to preview your project files as a website while you work, you will need Daikoku to be running in development (dev) mode:
+
+```sh
+daikoku watch
+```
+
+Now you should see confirmation in the terminal that Daikoku CLI is running in dev mode. 🚀
+
+# View a preview of your website
+
+Your project files contain all the code necessary to display an Daikoku website, but the browser is responsible for displaying your code as web pages.
+
+(Daikoku CLI uses http://localhost:3333 by default if port 3333 is available.)
+
+Here’s what the Daikoku `Empty CMS` starter website should look like in the browser preview:
+
+<div style={{textAlign: 'center', maxWidth: 600, border: '1px solid #eee', marginBottom: '2rem' }}>
+  <img
+    src={Welcome}
+    alt="Welcome of new project"
+  />
+</div>
+
+:::tip
+Using the Daikoku CLI dev server
+
+While the Daikoku CLI server is running in dev mode, you will NOT be able to run commands in your terminal window. Instead, this pane will give you feedback as you preview your site.
+
+You can stop the dev server at any time and return to the command prompt by typing Ctrl + C in the terminal.
+
+Sometimes the dev server will stop on its own while you are working. If your live preview stops working, go back to the terminal and restart the dev server by typing npm run dev.
+:::
+
+
+# Open your project in VS Code
+
+Open VS Code. You will be prompted to open a folder. Choose the folder that you created during the setup wizard.
+
+Make sure the terminal is visible and that you can see the command prompt, such as:
+
+```sh
+user@machine:~/tutorial$
+```
+
+:::tip
+Keyboard shortcut
+
+To toggle the visibility of the terminal, use Ctrl + J (macOS: Cmd ⌘ + J).
+:::
+
+You can now use the terminal built right into this window, instead of your computer’s Terminal app, for the rest of this tutorial.
+

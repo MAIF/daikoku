@@ -21,7 +21,7 @@ import org.apache.commons.codec.binary.Base32
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
-import play.api.libs.json.{JsObject, JsValue, Json}
+import play.api.libs.json.{JsObject, JsString, JsValue, Json}
 import play.api.mvc._
 
 import java.net.URLEncoder
@@ -488,19 +488,18 @@ class LoginController(
               FastFuture.successful(BadRequest(Json.obj("error" -> msg)))
             case Right(_) =>
               val randomId = IdGenerator.token(128)
+              val accountCreation = AccountCreation(
+                id = DatastoreId(IdGenerator.token(32)),
+                randomId = randomId,
+                email = email,
+                name = name,
+                avatar = avatar,
+                password = BCrypt.hashpw(password, BCrypt.gensalt()),
+                creationDate = DateTime.now(),
+                validUntil = DateTime.now().plusMinutes(15)
+              )
               env.dataStore.accountCreationRepo
-                .save(
-                  AccountCreation(
-                    id = DatastoreId(IdGenerator.token(32)),
-                    randomId = randomId,
-                    email = email,
-                    name = name,
-                    avatar = avatar,
-                    password = BCrypt.hashpw(password, BCrypt.gensalt()),
-                    creationDate = DateTime.now(),
-                    validUntil = DateTime.now().plusMinutes(15)
-                  )
-                )
+                .save(accountCreation)
                 .flatMap { _ =>
                   val host = ctx.request.headers
                     .get("Otoroshi-Proxied-Host")
@@ -512,17 +511,20 @@ class LoginController(
                     title <- translator.translate(
                       "mail.new.user.title",
                       ctx.tenant,
-                      Map("tenant" -> ctx.tenant.name)
+                      Map("tenant" -> JsString(ctx.tenant.name))
                     )
                     body <- translator.translate(
                       "mail.new.user.body",
                       ctx.tenant,
                       Map(
-                        "tenant" -> ctx.tenant.name,
-                        "link" -> env.getDaikokuUrl(
-                          ctx.tenant,
-                          s"/account/validate?id=$randomId"
-                        )
+                        "tenant" -> JsString(ctx.tenant.name),
+                        "link" -> JsString(
+                          env.getDaikokuUrl(
+                            ctx.tenant,
+                            s"/account/validate?id=$randomId"
+                          )
+                        ),
+                        "tenant_data" -> accountCreation.asJson
                       )
                     )
                   } yield {

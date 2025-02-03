@@ -1,3 +1,6 @@
+use hyper::header::{HeaderValue, LOCATION};
+use regex::Regex;
+use std::collections::HashMap;
 use std::io::Read;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -6,7 +9,7 @@ use http_body_util::{BodyExt, Empty, Full};
 use hyper::body::Bytes;
 use hyper::server::conn::http1;
 use hyper::service::service_fn;
-use hyper::{header, Method};
+use hyper::{header, Method, StatusCode};
 use hyper::{Request, Response};
 
 use hyper_util::rt::TokioIo;
@@ -27,10 +30,16 @@ use super::environments::{
 pub(crate) const SESSION_EXPIRED: &[u8] = include_bytes!("../../templates/session_expired.html");
 const MANAGER_PAGE: &[u8] = include_bytes!("../../templates/manager.html");
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct RouterCmsPage {
     exact: bool,
     path: String,
+}
+
+#[derive(Debug)]
+struct UrlSearchParam {
+    key: String,
+    value: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -42,6 +51,7 @@ pub(crate) struct Summary {
 struct CmsRequestRendering {
     content: Vec<CmsFile>,
     current_page: String,
+    fields: HashMap<String, String>,
 }
 
 pub(crate) async fn run(
@@ -101,16 +111,26 @@ async fn watcher(
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     let uri = req.uri().path().to_string();
 
-    if uri.starts_with("/api/") || uri.starts_with("/tenant-assets/") {
-        logger::println("forward to api or /tenant-assets".to_string());
+    if uri.starts_with("/tenant-assets/") {
+        let redirect_url = "http://localhost:5173/tenant-assets/api3.jpeg";
+
+        let mut response = Response::new(Full::<Bytes>::new(Bytes::from("")));
+        *response.status_mut() = StatusCode::FOUND; // 302 status
+        response
+            .headers_mut()
+            .insert(LOCATION, HeaderValue::from_str(redirect_url).unwrap());
+
+        Ok(response)
+    } else if uri.starts_with("/api/") {
+        logger::println("forward to api".to_string());
         forward_api_call(uri, req, environment).await
     } else {
         let path = uri.replace("_/", "");
 
-        let root_source = req
+        let visualizer = req
             .uri()
             .query()
-            .map(|queries| queries.contains("root_source"))
+            .map(|queries| queries.contains("visualizer"))
             .unwrap_or(false);
 
         logger::println(format!("<green>Request received</> {}", &path));
@@ -127,12 +147,15 @@ async fn watcher(
         });
 
         match pages.iter().find(|page| page.path() == path) {
-            Some(page) => render_page(page, path, environment, root_source, authentication).await,
+            Some(page) => {
+                render_page(page, path, environment, visualizer, authentication, vec![]).await
+            }
             None => {
-                let strict_page = get_matching_routes(&path, get_pages(&router_pages, true), true);
+                let (strict_page, url_search_params) =
+                    get_matching_routes(&path, get_pages(&router_pages, true), true);
 
-                let result_page = if !strict_page.is_empty() {
-                    strict_page
+                let (result_page, url_search_params) = if !strict_page.is_empty() {
+                    (strict_page, url_search_params)
                 } else {
                     get_matching_routes(&path, get_pages(&router_pages, false), false)
                 };
@@ -150,8 +173,9 @@ async fn watcher(
                                         page,
                                         path,
                                         environment,
-                                        root_source,
+                                        visualizer,
                                         authentication,
+                                        url_search_params,
                                     )
                                     .await
                                 }
@@ -163,12 +187,52 @@ async fn watcher(
                                 pages.iter().find(|p| p.path() == res.path).unwrap(),
                                 path,
                                 environment,
-                                root_source,
+                                visualizer,
                                 authentication,
+                                url_search_params,
                             )
                             .await
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+fn find_page_from_path<'a>(path: String) -> Option<CmsFile> {
+    let Summary { pages } = read_cms_pages().unwrap();
+
+    let mut router_pages = vec![];
+
+    pages.iter().for_each(|p| {
+        router_pages.push(RouterCmsPage {
+            exact: p.exact(),
+            path: p.path(),
+        })
+    });
+
+    match pages.iter().find(|page| page.path() == path) {
+        Some(page) => Some(page.clone()),
+        None => {
+            let (strict_page, params) =
+                get_matching_routes(&path, get_pages(&router_pages, true), true);
+
+            let (result_page, _params) = if !strict_page.is_empty() {
+                (strict_page, params)
+            } else {
+                get_matching_routes(&path, get_pages(&router_pages, false), false)
+            };
+
+            if result_page.is_empty() {
+                None
+            } else {
+                match result_page.iter().nth(0) {
+                    None => None,
+                    Some(res) => pages
+                        .iter()
+                        .find(|p| p.path() == res.path)
+                        .map(|p| p.clone()),
                 }
             }
         }
@@ -189,13 +253,12 @@ async fn forward_api_call(
 
     let url: String = format!("{}{}", environment.server, uri);
 
-    let cookie = read_cookie_from_environment(true)?;
-
     let raw_req = Request::builder()
         .method(Method::from_str(&method).unwrap())
         .uri(&url)
         .header(header::HOST, &host)
-        .header(header::COOKIE, cookie);
+        .header("Accept", "*/*")
+        .header(header::COOKIE, read_cookie_from_environment(true)?);
 
     let req = if method == "GET" {
         raw_req.body(Empty::<Bytes>::new().boxed()).unwrap()
@@ -239,7 +302,9 @@ async fn forward_api_call(
 
     let (
         hyper::http::response::Parts {
-            headers: _, status, ..
+            headers: _headers,
+            status,
+            ..
         },
         body,
     ) = upstream_resp.into_parts();
@@ -247,6 +312,8 @@ async fn forward_api_call(
     let result: Vec<u8> = frame_to_bytes_body(body).await;
 
     let status = status.as_u16();
+
+    println!("{:?}", _headers);
 
     if status >= 300 && status < 400 {
         Ok(Response::new(Full::new(Bytes::from(
@@ -265,8 +332,9 @@ async fn render_page(
     page: &CmsFile,
     watch_path: String,
     environment: &Environment,
-    root_source: bool,
+    visualizer: bool,
     authentication: bool,
+    url_search_params: Vec<UrlSearchParam>,
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     logger::println(format!(
         "<green>Serve page</> {} {}",
@@ -274,13 +342,55 @@ async fn render_page(
         page.name
     ));
 
+    let mut current_page = page.path().clone();
+
     let project = cms::get_default_project()?;
 
-    let content = read_contents(&PathBuf::from(&project.path))?;
+    let mut content = read_contents(&PathBuf::from(&project.path))?;
+
+    let mut fields: HashMap<String, String> = HashMap::new();
+
+    for param in url_search_params {
+        fields.insert(param.key, param.value);
+    }
+
+    if watch_path.starts_with("/mails")
+        && !watch_path.starts_with("/mails/root/tenant-mail-template")
+    {
+        let language = if watch_path.contains("/fr") {
+            "fr"
+        } else {
+            "en"
+        };
+
+        let root_template = format!("/mails/root/tenant-mail-template/{}", language);
+
+        if let Some(root) = find_page_from_path(root_template) {
+            current_page = root.path().clone();
+        }
+
+        fields.insert("email".to_string(), page.content.clone());
+
+        content = content
+            .clone()
+            .iter_mut()
+            .map(|page| {
+                let input = page.content.clone();
+                let re = Regex::new(r"\[([^\]]+)\]").unwrap();
+                page.content = re
+                    .replace_all(&input, |caps: &regex::Captures| {
+                        format!("{{{{{}}}}}", &caps[1])
+                    })
+                    .to_string();
+                page.clone()
+            })
+            .collect();
+    }
 
     let body_obj = CmsRequestRendering {
         content: content.clone(),
-        current_page: page.path().clone(),
+        current_page,
+        fields,
     };
 
     let body = Bytes::from(
@@ -297,12 +407,6 @@ async fn render_page(
         "{}/_{}?force_reloading=true",
         environment.server, watch_path
     );
-
-    // let mut builder = Request::builder()
-    //     .method(Method::POST)
-    //     .uri(&url)
-    //     .header(header::HOST, &host)
-    //     .header(header::CONTENT_TYPE, "application/json");
 
     let mut builder = reqwest::Client::new()
         .post(url)
@@ -351,19 +455,16 @@ async fn render_page(
     } else if status >= 400 {
         Ok(Response::new(Full::new(Bytes::from(result))))
     } else {
-        if !root_source {
+        if !visualizer {
             Ok(Response::builder()
                 .header(header::CONTENT_TYPE, &page.content_type())
                 .body(Full::new(Bytes::from(result)))
                 .unwrap())
         } else {
             let src = String::from_utf8(result).unwrap();
-            // let source = html_escape::encode_text(&src);
-            // src.replace('"', "&quot;");
-            // .replace("&", "&amp;")
+
             let source = src.replace('"', "&quot;");
 
-            // let source = src.replace("\"", "&quot;");
             let children: String = if SourceExtension::from_str(&page.content_type()).unwrap()
                 == SourceExtension::HTML
             {
@@ -372,28 +473,8 @@ async fn render_page(
                 format!("<textarea readonly>{}</textarea>", src)
             };
 
-            // println!(
-            //     "{}",
-            //     String::from_utf8(MANAGER_PAGE.to_vec())
-            //         .unwrap()
-            //         .replace(
-            //             "{{components}}",
-            //             serde_json::to_string(
-            //                 &content
-            //                     .iter()
-            //                     .map(|file| file.to_ui_component())
-            //                     .collect::<Vec<UiCmsFile>>(),
-            //             )
-            //             .unwrap()
-            //             .as_str(),
-            //         )
-            //         .replace("{{children}}", children.as_str())
-            // );
-
             Ok(Response::builder()
-                // .header(header::CONTENT_TYPE, &page.content_type())
                 .header(header::CONTENT_TYPE, "text/html")
-                // .body(Full::new(Bytes::from(result)))
                 .body(Full::new(Bytes::from(
                     String::from_utf8(MANAGER_PAGE.to_vec())
                         .unwrap()
@@ -419,7 +500,7 @@ fn get_matching_routes<'a>(
     path: &'a String,
     cms_paths: Vec<(String, &'a RouterCmsPage)>,
     strict_mode: bool,
-) -> Vec<&'a RouterCmsPage> {
+) -> (Vec<RouterCmsPage>, Vec<UrlSearchParam>) {
     let str = path.clone().replace("/_", "").replace(".html", "");
     let paths = str
         .split("/")
@@ -427,71 +508,101 @@ fn get_matching_routes<'a>(
         .collect::<Vec<&str>>();
 
     if paths.is_empty() {
-        vec![]
+        (vec![], vec![])
     } else {
         let mut matched = false;
 
-        let mut init: Vec<(Vec<String>, &RouterCmsPage)> = vec![];
+        let mut formatted_paths: Vec<(Vec<String>, RouterCmsPage)> = vec![];
 
-        cms_paths.iter().for_each(|r| {
-            let page = r.1;
-
+        cms_paths.clone().iter().for_each(|r| {
             let mut current_path: Vec<String> =
                 r.0.replace("/_/", "")
                     .split("/")
                     .map(String::from)
                     .collect();
 
-            let path_suffix = if page.exact { "" } else { "*" }.to_string();
+            let path_suffix = if r.1.exact { "" } else { "*" }.to_string();
 
             current_path.push(path_suffix);
             current_path = current_path.into_iter().filter(|p| !p.is_empty()).collect();
 
             if !current_path.is_empty() {
-                init.push((current_path, page))
+                formatted_paths.push((current_path, r.1.clone()))
             }
         });
 
-        paths
-            .iter()
-            .fold(init, |acc: Vec<(Vec<String>, &RouterCmsPage)>, path| {
-                if acc.is_empty() || matched {
-                    acc
-                } else {
-                    let matching_routes: Vec<(Vec<String>, &RouterCmsPage)> = acc
-                        .iter()
-                        .filter(|p| {
-                            if p.0.is_empty() {
-                                false
-                            } else {
-                                let path_path = p.0.iter().nth(0).unwrap();
-                                path_path == path || path_path == "*"
-                            }
-                        })
-                        .map(|p| (p.0.to_vec(), p.1))
-                        .collect();
+        formatted_paths.sort_by(|a, b| a.0.len().cmp(&b.0.len()));
 
-                    if !matching_routes.is_empty() {
-                        matching_routes
-                            .iter()
-                            .map(|p| (p.0.to_vec().into_iter().skip(1).collect(), p.1))
-                            .collect()
-                    } else {
-                        match acc.iter().find(|p| p.0.is_empty()) {
-                            Some(matching_route) if !strict_mode => {
-                                matched = true;
-                                let mut results = Vec::new();
-                                results.push((matching_route.0.to_vec(), matching_route.1));
-                                results
+        let mut params: Vec<UrlSearchParam> = vec![];
+
+        (
+            paths
+                .iter()
+                .fold(
+                    formatted_paths,
+                    |acc: Vec<(Vec<String>, RouterCmsPage)>, path| {
+                        if acc.is_empty() || matched {
+                            acc
+                        } else {
+                            let matching_routes: Vec<(Vec<String>, RouterCmsPage)> = acc
+                                .iter()
+                                .filter(|p| {
+                                    if p.0.is_empty() {
+                                        false
+                                    } else {
+                                        let path_path = p.0.iter().nth(0).unwrap();
+
+                                        if path_path == path || path_path == "*" {
+                                            true
+                                        } else {
+                                            let pattern = r"\[\w+\]";
+                                            let regex: Regex = Regex::new(pattern).unwrap();
+
+                                            if let Some(cap) = regex.captures(&path_path) {
+                                                params.push(UrlSearchParam {
+                                                    value: path.to_string(),
+                                                    key: cap[0][1..cap[0].len() - 1].to_string(),
+                                                });
+
+                                                true
+                                            } else {
+                                                false
+                                            }
+                                        }
+                                    }
+                                })
+                                .map(|p| (p.0.to_vec(), p.1.clone()))
+                                .collect();
+
+                            if !matching_routes.is_empty() {
+                                matching_routes
+                                    .iter()
+                                    .map(|p| {
+                                        (p.0.to_vec().into_iter().skip(1).collect(), p.1.clone())
+                                    })
+                                    .collect()
+                            } else {
+                                match acc.iter().find(|p| p.0.is_empty()) {
+                                    Some(matching_route) if !strict_mode => {
+                                        matched = true;
+                                        let mut results = Vec::new();
+                                        results.push((
+                                            matching_route.0.to_vec(),
+                                            matching_route.1.clone(),
+                                        ));
+                                        results
+                                    }
+                                    _ => Vec::new(),
+                                }
                             }
-                            _ => Vec::new(),
                         }
-                    }
-                }
-            })
-            .into_iter()
-            .map(|f| f.1)
-            .collect()
+                    },
+                )
+                .into_iter()
+                .map(|page| page.1)
+                .collect(),
+            params,
+        )
     }
 }
 

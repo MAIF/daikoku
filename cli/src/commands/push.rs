@@ -111,7 +111,7 @@ async fn synchronization(body: &mut Vec<CmsFile>, dry_run: bool) -> DaikokuResul
     );
 
     if !dry_run {
-        daikoku_cms_api_post("/sync", body, true).await?;
+        daikoku_cms_api_post("/sync", body, true, None).await?;
     }
 
     Ok(())

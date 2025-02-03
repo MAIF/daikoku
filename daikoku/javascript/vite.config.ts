@@ -25,6 +25,7 @@ export default defineConfig({
       "/_": "http://localhost:9000",
       "/cms": "http://localhost:9000",
       "/api/": "http://localhost:9000",
+      "/admin-api": "http://localhost:9000",
       "/cms-api": "http://localhost:9000",
       "/account": "http://localhost:9000",
       "/tenant-assets": "http://localhost:9000",
@@ -36,7 +37,8 @@ export default defineConfig({
       "/auth/OAuth2/login": "http://localhost:9000",
       "/logout": "http://localhost:9000",
       "/assets": "http://localhost:9000",
-      "/robots.txt": "http://localhost:9000"
+      "/robots.txt": "http://localhost:9000",
+      "/health": "http://localhost:9000",
     },
   },
   plugins: [react()],

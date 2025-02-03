@@ -97,14 +97,6 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
             title={translate('Ask access to API')}
           />
         );
-      case 'TeamAccess':
-        return (
-          <i
-            className="fas fa-users"
-            style={{ marginRight: 5 }}
-            title={translate('Ask to join a team')}
-          />
-        );
       case 'TransferApiOwnership':
         return (
           <i
@@ -417,11 +409,9 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
   };
 
   const fromFormatter = (action: any, sender: any) => {
-    console.debug({props, sender})
     switch (action.__typename) {
       case 'ApiAccess':
         return `${sender.name}/${props.notification.action.team?.name ?? translate("Unknown team") }`;
-      case 'TeamAccess':
       case 'NewPostPublished':
       case 'NewIssueOpen':
       case 'NewCommentOnIssue':
@@ -475,11 +465,6 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
             {notification.action.__typename === 'ApiAccess' && (<div>
               <Translation i18nkey="notif.api.access" replacements={[(infos as any).api.name]}>
                 Request access to {(infos as any).api.name}
-              </Translation>
-            </div>)}
-            {notification.action.__typename === 'TeamAccess' && (<div>
-              <Translation i18nkey="notif.membership.team">
-                membership request to your team
               </Translation>
             </div>)}
             {notification.action.__typename === 'TransferApiOwnership' && (<div>

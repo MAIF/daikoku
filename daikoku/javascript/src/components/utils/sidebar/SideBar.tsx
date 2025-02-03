@@ -83,37 +83,38 @@ export const SideBar = () => {
 
           {!connectedUser.isGuest && (
             <>
-              <div className="nav_item mb-3 cursor-pointer">
+              <button className="nav_item mb-3 cursor-pointer">
                 <Search
                   className="notification-link notification-link-color"
+                  aria-label={translate('sidebar.search.button.aria.label')}
                   onClick={() => {
                     setPanelState(state.opened);
                     setPanelContent(<SearchPanel />);
                   }}
                 />
-              </div>
-              <div className="nav_item mb-3 cursor-pointer">
+              </button>
+              <button className="nav_item mb-3 cursor-pointer">
                 <Plus
                   className="notification-link notification-link-color"
-                  aria-label="create"
+                  aria-label={translate("sidebar.create.button.aria.label")}
                   onClick={() => {
                     setPanelState(state.opened);
                     setPanelContent(<AddPanel />);
                   }}
                 />
-              </div>
+              </button>
             </>
           )}
           {!connectedUser.isGuest && (
-            <div className="nav_item mb-3 cursor-pointer">
+            <button className="nav_item mb-3 cursor-pointer">
               <More
                 className="notification-link notification-link-color"
-                aria-label="create"
+                aria-label={translate("sidebar.more.button.aria.label")}
                 onClick={() => {
                   setPanelState(state.opened);
                   setPanelContent(<MorePanel />);
                 }} />
-            </div>
+            </button>
           )}
         </div>
 
@@ -133,13 +134,14 @@ export const SideBar = () => {
             </Link>
           )}
           {!connectedUser.isGuest && !isAdmin && (
-            <div
+            <button
               className={classNames(
-                'nav-item mb-3 notification-link notification-link-color messages-link cursor-pointer',
+                'nav_item mb-3 notification-link notification-link-color messages-link cursor-pointer',
                 {
                   'unread-notifications': totalUnread > 0,
                 }
               )}
+              aria-label={translate("sidebar.messages.button.aria.label")}
             >
               <MessageSquare
                 onClick={() => {
@@ -147,10 +149,12 @@ export const SideBar = () => {
                   setPanelContent(<MessagePanel />);
                 }}
               />
-            </div>
+            </button>
           )}
           {!connectedUser.isGuest && (
-            <div className="nav_item mb-3">
+            <button
+              className="nav_item mb-3"
+              aria-label={translate("sidebar.notifications.button.aria.label")}>
               <Link
                 className={classNames({
                   'notification-link notification-link-color': true,
@@ -158,14 +162,16 @@ export const SideBar = () => {
                 })}
                 to="/notifications"
                 title={translate('Access to the notifications')}
+                aria-label={translate('Access to the notifications')}
               >
                 <Bell />
               </Link>
-            </div>
+            </button>
           )}
-          <div className="nav_item mb-3">
-            <DarkModeActivator className="notification-link notification-link-color" />
-          </div>
+          <button className="nav_item mb-3"
+            aria-label={translate("sidebar.dark.mode.button.aria.label")}>
+            <DarkModeActivator className="notification-link notification-link-color"/>
+          </button>
 
           <div className="nav_item mb-3" style={{ color: '#fff' }}>
             <img

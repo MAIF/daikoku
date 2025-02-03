@@ -313,7 +313,7 @@ object CommonServices {
     }
   }
 
-  def getVisibleApis[A](
+  def getVisibleApis(
       teamId: Option[String] = None,
       research: String,
       selectedTeam: Option[String] = None,
@@ -424,7 +424,7 @@ object CommonServices {
                   .some
             parentFilter =
               if (groupOpt.isDefined) Json.obj()
-              else Json.obj("parent" -> JsNull)
+              else Json.obj("isDefault" -> true)
             adminApi =
               if (!userIsAdmin) None
               else Json.obj("visibility" -> ApiVisibility.AdminOnly.name).some
@@ -488,6 +488,8 @@ object CommonServices {
                   )
                 )
           } yield {
+            val count = paginateApis._1
+              .count(api => api.isPublished || myTeams.exists(api.team == _.id))
             val sortedApis: Seq[ApiWithAuthorizations] = uniqueApisWithVersion
               .filter(api =>
                 api.isPublished || myTeams.exists(api.team == _.id)
@@ -529,7 +531,7 @@ object CommonServices {
                     case _ => ApiWithAuthorizations(api = api, plans = apiPlans)
                   })
               }
-            ApiWithCount(sortedApis, producerTeams, paginateApis._2)
+            ApiWithCount(sortedApis, producerTeams, count)
           }
         })
     }

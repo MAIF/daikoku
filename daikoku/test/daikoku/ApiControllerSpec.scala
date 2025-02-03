@@ -11,7 +11,8 @@ import controllers.AppError
 import controllers.AppError.SubscriptionAggregationDisabled
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
   ApiAccess,
-  ApiSubscriptionDemand
+  ApiSubscriptionDemand,
+  TransferApiOwnership
 }
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -1234,7 +1235,8 @@ class ApiControllerSpec()
       val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
@@ -1251,13 +1253,15 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
       val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.api.id}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
       resp.status mustBe 404
 
       val resp2 = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
       resp2.status mustBe 404
     }
@@ -3651,7 +3655,8 @@ class ApiControllerSpec()
       val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
       resp.status mustBe 200
       (resp.json \ "done").as[Boolean] mustBe true
@@ -3784,13 +3789,15 @@ class ApiControllerSpec()
       val session = loginWithBlocking(userApiEditor, tenant)
       val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.api.id}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
       resp.status mustBe 404
 
       val resp2 = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
       resp2.status mustBe 404
     }
@@ -3956,7 +3963,91 @@ class ApiControllerSpec()
 
     }
 
-    "transfer API ownership to another team" in {
+//    "transfer API ownership to another team" in {
+//      setupEnvBlocking(
+//        tenants = Seq(tenant),
+//        users = Seq(userAdmin),
+//        teams = Seq(
+//          teamOwner.copy(
+//            users = Set(UserWithPermission(userTeamAdminId, Administrator))
+//          ),
+//          teamConsumer.copy(
+//            users = Set(UserWithPermission(userTeamAdminId, Administrator))
+//          )
+//        ),
+//        apis = Seq(defaultApi.api)
+//      )
+//
+//      val session = loginWithBlocking(userAdmin, tenant)
+//      val transfer = httpJsonCallBlocking(
+//        path =
+//          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/_transfer",
+//        method = "POST",
+//        body = Some(Json.obj("team" -> teamConsumer.id.value))
+//      )(tenant, session)
+//      transfer.status mustBe 200
+//      (transfer.json \ "notify").as[Boolean] mustBe true
+//
+//      val resp = httpJsonCallBlocking(s"/api/me/notifications")(tenant, session)
+//      resp.status mustBe 200
+//      (resp.json \ "count").as[Long] mustBe 1
+//      val eventualNotifications = json.SeqNotificationFormat.reads(
+//        (resp.json \ "notifications").as[JsArray]
+//      )
+//      eventualNotifications.isSuccess mustBe true
+//      val notification: Notification = eventualNotifications.get.head
+//
+//      val acceptNotif = httpJsonCallBlocking(
+//        path = s"/api/notifications/${notification.id.value}/accept",
+//        method = "PUT",
+//        body = Some(Json.obj())
+//      )(tenant, session)
+//      acceptNotif.status mustBe 200
+//      (acceptNotif.json \ "done").as[Boolean] mustBe true
+//      val respVerif =
+//        httpJsonCallBlocking(
+//          path =
+//            s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}"
+//        )(tenant, session)
+//      respVerif.status mustBe 200 //FIXME 404
+//      val eventualApi = json.ApiFormat.reads(respVerif.json)
+//      eventualApi.isSuccess mustBe true
+//      eventualApi.get.team mustBe teamConsumerId
+//    }
+
+    "transfer API ownership to another team with in progress demand" in {
+      val process = Seq(
+        ValidationStep.TeamAdmin(
+          id = IdGenerator.token,
+          team = defaultApi.api.team,
+          title = "Admin"
+        )
+      )
+      val plan = QuotasWithLimits(
+        id = UsagePlanId(IdGenerator.token),
+        tenant = tenant.id,
+        maxPerSecond = 10000,
+        maxPerDay = 10000,
+        maxPerMonth = 10000,
+        costPerMonth = BigDecimal(10.0),
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        trialPeriod = None,
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            OtoroshiSettingsId("default"),
+            Some(
+              AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = process,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false)
+      )
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(userAdmin),
@@ -3968,10 +4059,39 @@ class ApiControllerSpec()
             users = Set(UserWithPermission(userTeamAdminId, Administrator))
           )
         ),
-        apis = Seq(defaultApi.api)
+        apis = Seq(defaultApi.api.copy(possibleUsagePlans = Seq(plan.id))),
+        usagePlans = Seq(plan)
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
+      //demand apikey for consumer
+      val demand = httpJsonCallBlocking(
+        path =
+          s"/api/apis/${defaultApi.api.id.value}/plan/${plan.id.value}/team/${teamConsumerId.value}/_subscribe",
+        method = "POST",
+        body = Some(Json.obj("motivation" -> "pleaaase"))
+      )(tenant, session)
+      demand.status mustBe 200
+
+      //check notification for demand is saved for owner team
+      val notificationsForOwner = Await.result(
+        daikokuComponents.env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .findNotDeleted(Json.obj("team" -> teamOwnerId.asJson)),
+        5.seconds
+      )
+      notificationsForOwner.length mustBe 1
+      val notificationdemand = notificationsForOwner.head
+      //check notification for demand is saved for owner team
+      val notificationsForConsumer = Await.result(
+        daikokuComponents.env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .findNotDeleted(Json.obj("team" -> teamConsumerId.asJson)),
+        5.seconds
+      )
+      notificationsForConsumer.length mustBe 0
+
+      //transfer ownership for api from owner to consumer
       val transfer = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/_transfer",
@@ -3981,15 +4101,17 @@ class ApiControllerSpec()
       transfer.status mustBe 200
       (transfer.json \ "notify").as[Boolean] mustBe true
 
+      //accept transfer (2 notification available, transfer & demand)
       val resp = httpJsonCallBlocking(s"/api/me/notifications")(tenant, session)
       resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 1
+      (resp.json \ "count").as[Long] mustBe 2
       val eventualNotifications = json.SeqNotificationFormat.reads(
         (resp.json \ "notifications").as[JsArray]
       )
       eventualNotifications.isSuccess mustBe true
-      val notification: Notification = eventualNotifications.get.head
-
+      val notification: Notification = eventualNotifications.get
+        .filter(_.action.isInstanceOf[TransferApiOwnership])
+        .head
       val acceptNotif = httpJsonCallBlocking(
         path = s"/api/notifications/${notification.id.value}/accept",
         method = "PUT",
@@ -4002,17 +4124,100 @@ class ApiControllerSpec()
           path =
             s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}"
         )(tenant, session)
-      respVerif.status mustBe 200 //FIXME 404
+      respVerif.status mustBe 200
       val eventualApi = json.ApiFormat.reads(respVerif.json)
       eventualApi.isSuccess mustBe true
       eventualApi.get.team mustBe teamConsumerId
+
+      //verifier que la notif a bien été changé d'équipe
+      //check notification (O for owner)
+      val notificationsForOwner2 = Await.result(
+        daikokuComponents.env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .findNotDeleted(Json.obj("team" -> teamOwnerId.asJson)),
+        5.seconds
+      )
+      notificationsForOwner2.length mustBe 0
+      //check notification (2 for consumer, demand & transfer accepted)
+      val notificationsForConsumer2 = Await.result(
+        daikokuComponents.env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .findNotDeleted(Json.obj("team" -> teamConsumerId.asJson)),
+        5.seconds
+      )
+      notificationsForConsumer2.length mustBe 2
+      notificationsForConsumer2.count(_.id == notificationdemand.id) mustBe 1
+      //check notif is the original demand
+
+      //check also demand
+      val demands = Await.result(
+        daikokuComponents.env.dataStore.subscriptionDemandRepo
+          .forTenant(tenant)
+          .findNotDeleted(
+            Json.obj(
+              "api" -> defaultApi.api.id.asJson,
+              "team" -> teamConsumerId.asJson
+            )
+          ),
+        5.seconds
+      )
+      demands.length mustBe 1
     }
 
+    /*
+    The following test aims to verify the transfer of API ownership for all versions of an API.
+    Steps:
+    1 - Set up the test environment with two versions of an API, each having a plan that requires admin validation for subscriptions.
+    2 - Generate two subscriptions for the "consumer" team. This should result in two notifications for the "owner" team and two subscription demands requiring validation for the "owner" team.
+    3 - Perform the ownership transfer from ownerTeam to consumerTeam.
+    Test validation:
+    4 - Both API versions are now owned by the "consumer" team.
+    5 - The "consumer" team has two notifications for "ApiSubscriptionDemand."
+    6 - There are two subscription demands requiring validation for the "consumer" team.
+     */
     "transfer API ownership to another team (with all versions)" in {
+      // 1
+      val process = ValidationStep.TeamAdmin(
+        id = IdGenerator.token,
+        team = defaultApi.api.team,
+        title = "Admin"
+      )
+      val processV2 = process.copy(id = IdGenerator.token)
+      val plan = QuotasWithLimits(
+        id = UsagePlanId(IdGenerator.token),
+        tenant = tenant.id,
+        maxPerSecond = 10000,
+        maxPerDay = 10000,
+        maxPerMonth = 10000,
+        costPerMonth = BigDecimal(10.0),
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        trialPeriod = None,
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            OtoroshiSettingsId("default"),
+            Some(
+              AuthorizedEntities(groups = Set(OtoroshiServiceGroupId("12345")))
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq(process),
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false)
+      )
+      val plan2 = plan.copy(
+        id = UsagePlanId(IdGenerator.token),
+        customName = "plan 2".some,
+        subscriptionProcess = Seq(processV2)
+      )
       val defaultApiV2 =
         defaultApi.api.copy(
           id = ApiId(IdGenerator.token(32)),
-          currentVersion = Version("2.0.0")
+          currentVersion = Version("2.0.0"),
+          possibleUsagePlans = Seq(plan2.id)
         )
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -4025,10 +4230,79 @@ class ApiControllerSpec()
             users = Set(UserWithPermission(userTeamAdminId, Administrator))
           )
         ),
-        apis = Seq(defaultApi.api, defaultApiV2)
+        apis = Seq(
+          defaultApi.api.copy(possibleUsagePlans = Seq(plan.id)),
+          defaultApiV2
+        ),
+        usagePlans = Seq(plan, plan2)
       )
 
+      val versions = Seq(defaultApi.api, defaultApiV2)
+
       val session = loginWithBlocking(userAdmin, tenant)
+
+      //2
+      val demand = httpJsonCallBlocking(
+        path =
+          s"/api/apis/${defaultApi.api.id.value}/plan/${plan.id.value}/team/${teamConsumerId.value}/_subscribe",
+        method = "POST",
+        body = Some(Json.obj("motivation" -> "pleaaase"))
+      )(tenant, session)
+      demand.status mustBe 200
+      val demand2 = httpJsonCallBlocking(
+        path =
+          s"/api/apis/${defaultApiV2.id.value}/plan/${plan.id.value}/team/${teamConsumerId.value}/_subscribe",
+        method = "POST",
+        body = Some(Json.obj("motivation" -> "pleaaase"))
+      )(tenant, session)
+      demand2.status mustBe 200
+
+      //check notification for demand is saved for owner team
+      val notificationsForOwner = Await.result(
+        daikokuComponents.env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .findNotDeleted(Json.obj("team" -> teamOwnerId.asJson)),
+        5.seconds
+      )
+      notificationsForOwner.length mustBe 2
+      val notificationsdemand = notificationsForOwner
+      //check notification for demand is saved for owner team
+      val notificationsForConsumer = Await.result(
+        daikokuComponents.env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .findNotDeleted(Json.obj("team" -> teamConsumerId.asJson)),
+        5.seconds
+      )
+      notificationsForConsumer.length mustBe 0
+      //check also demand
+      val demandsForAllversion = Await.result(
+        daikokuComponents.env.dataStore.subscriptionDemandRepo
+          .forTenant(tenant)
+          .findNotDeleted(
+            Json.obj(
+              "api" -> Json.obj("$in" -> JsArray(versions.map(_.id.asJson))),
+              "state" -> Json.obj(
+                "$in" -> Json.arr(
+                  SubscriptionDemandState.InProgress.name,
+                  SubscriptionDemandState.Waiting.name
+                )
+              )
+            )
+          ),
+        5.seconds
+      )
+      demandsForAllversion.length mustBe 2
+      demandsForAllversion.count(d =>
+        d.steps
+          .map(_.step match {
+            case ValidationStep.TeamAdmin(_, team, _, _, _) =>
+              team === teamOwnerId
+            case _ => false
+          })
+          .forall(b => b)
+      ) mustBe 2
+
+      //3
       val transfer = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/_transfer",
@@ -4040,26 +4314,30 @@ class ApiControllerSpec()
 
       val resp = httpJsonCallBlocking(s"/api/me/notifications")(tenant, session)
       resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 1
+      (resp.json \ "count").as[Long] mustBe 3
+
       val eventualNotifications = json.SeqNotificationFormat.reads(
         (resp.json \ "notifications").as[JsArray]
       )
       eventualNotifications.isSuccess mustBe true
-      val notification: Notification = eventualNotifications.get.head
+      val transferNotification: Notification = eventualNotifications.get
+        .filter(_.action.isInstanceOf[TransferApiOwnership])
+        .head
 
       val acceptNotif = httpJsonCallBlocking(
-        path = s"/api/notifications/${notification.id.value}/accept",
+        path = s"/api/notifications/${transferNotification.id.value}/accept",
         method = "PUT",
         body = Some(Json.obj())
       )(tenant, session)
       acceptNotif.status mustBe 200
       (acceptNotif.json \ "done").as[Boolean] mustBe true
 
+      //4
       val respVerif =
         httpJsonCallBlocking(
           s"/api/teams/${teamConsumerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}"
         )(tenant, session)
-      respVerif.status mustBe 200 //FIXME 404
+      respVerif.status mustBe 200
       val eventualApi = json.ApiFormat.reads(respVerif.json)
       eventualApi.isSuccess mustBe true
       eventualApi.get.team mustBe teamConsumerId
@@ -4071,6 +4349,55 @@ class ApiControllerSpec()
       val eventualApi2 = json.ApiFormat.reads(respVerif.json)
       eventualApi2.isSuccess mustBe true
       eventualApi2.get.team mustBe teamConsumerId
+
+      //5
+      val notificationsForOwner2 = Await.result(
+        daikokuComponents.env.dataStore.notificationRepo
+          .forTenant(tenant)
+          .findNotDeleted(Json.obj("team" -> teamOwnerId.asJson)),
+        5.seconds
+      )
+      notificationsForOwner2.length mustBe 0
+      val notificationsForConsumer2 = Await
+        .result(
+          daikokuComponents.env.dataStore.notificationRepo
+            .forTenant(tenant)
+            .findNotDeleted(Json.obj("team" -> teamConsumerId.asJson)),
+          5.seconds
+        )
+        .filter(_.action.isInstanceOf[ApiSubscriptionDemand])
+      notificationsForConsumer2.length mustBe 2
+      notificationsForConsumer2.count(n =>
+        notificationsdemand.exists(_.id == n.id)
+      ) mustBe 2
+
+      //6
+      val demandsForAllversion2 = Await.result(
+        daikokuComponents.env.dataStore.subscriptionDemandRepo
+          .forTenant(tenant)
+          .findNotDeleted(
+            Json.obj(
+              "api" -> Json.obj("$in" -> JsArray(versions.map(_.id.asJson))),
+              "state" -> Json.obj(
+                "$in" -> Json.arr(
+                  SubscriptionDemandState.InProgress.name,
+                  SubscriptionDemandState.Waiting.name
+                )
+              )
+            )
+          ),
+        5.seconds
+      )
+      demandsForAllversion2.length mustBe 2
+      demandsForAllversion2.count(d =>
+        d.steps
+          .map(_.step match {
+            case ValidationStep.TeamAdmin(_, team, _, _, _) =>
+              team === teamConsumerId
+            case _ => false
+          })
+          .forall(b => b)
+      ) mustBe 2
     }
   }
 
@@ -4200,7 +4527,8 @@ class ApiControllerSpec()
       val session = loginWithBlocking(user, tenant)
       val resp = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
 
       resp.status mustBe 403
@@ -4910,6 +5238,236 @@ class ApiControllerSpec()
 
       resultTestApis.get.length mustBe 2
     }
+
+    "have a lifecycle" in {
+      //use containerized otoroshi
+      //crate api & a subscription (in otoroshi)
+      val parentPlan = FreeWithoutQuotas(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        currency = Currency("EUR"),
+        customName = None,
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val parentApi = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
+        defaultUsagePlan = UsagePlanId("parent.dev").some
+      )
+
+      val parentSub = ApiSubscription(
+        id = ApiSubscriptionId("parent_sub"),
+        tenant = tenant.id,
+        apiKey = parentApiKey,
+        plan = parentPlan.id,
+        createdAt = DateTime.now(),
+        team = teamConsumerId,
+        api = parentApi.id,
+        by = userTeamAdminId,
+        customName = None,
+        rotation = None,
+        integrationToken = "parent_token"
+      )
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            isPrivate = false,
+            aggregationApiKeysSecurity = Some(true),
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin),
+        teams = Seq(teamOwner, teamConsumer, defaultAdminTeam),
+        usagePlans = Seq(parentPlan, adminApiPlan),
+        apis = Seq(parentApi, adminApi),
+        subscriptions = Seq(parentSub)
+      )
+      //check if api is published
+      val maybeParentApi = Await.result(
+        daikokuComponents.env.dataStore.apiRepo
+          .forTenant(tenant)
+          .findByIdNotDeleted(parentApi.id),
+        5.second
+      )
+      maybeParentApi mustBe defined
+      maybeParentApi.get.state mustBe ApiState.Published
+
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      def testApiVisibility(count: Int) = {
+        val respAllVisibleApi = httpJsonCallWithoutSessionBlocking(
+          path = s"/api/search",
+          "POST",
+          body = Some(
+            Json.obj(
+              "variables" -> Json.obj(
+                "teamId" -> teamOwnerId.value,
+                "limit" -> 5,
+                "offset" -> 0
+              ),
+              "query" ->
+                s"""
+                   |query AllVisibleApis ($$teamId: String, $$limit: Int, $$offset: Int) {
+                   |      visibleApis (teamId: $$teamId, limit: $$limit, offset: $$offset) {
+                   |        apis {
+                   |          api {
+                   |            _id
+                   |            state
+                   |          }
+                   |        }
+                   |        total
+                   |    }
+                   |}
+                   |""".stripMargin
+            )
+          )
+        )(tenant)
+        respAllVisibleApi.status mustBe 200
+        val response =
+          (respAllVisibleApi.json \ "data" \ "visibleApis").as[JsObject]
+        logger.info(Json.prettyPrint(response))
+        (response \ "total").as[Int] mustBe count
+        (response \ "apis").as[JsArray].value.length mustBe count
+      }
+
+      //api is visible by anyone
+      testApiVisibility(1)
+
+      //check base key
+      val startingKey = httpJsonCallBlocking(
+        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+      (startingKey.json \ "enabled").as[Boolean] mustBe true
+      (startingKey.json \ "metadata").as[JsObject].keys.size mustBe 0
+
+      //manipulate subscription as admin
+      //- update plan metadata & check if metadata is in otoroshi
+      httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/subscriptions/${parentSub.id.value}",
+        method = "PUT",
+        body = Json
+          .obj(
+            "customMetadata" -> Json.obj("foo" -> "bar")
+          )
+          .some
+      )(tenant, session)
+      //- archiveKeyByOwner --> key is disable in oto
+      httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/subscriptions/${parentSub.id.value}/_archiveByOwner?enabled=false",
+        method = "PUT"
+      )(tenant, session)
+      //test in oto
+      val update1 = httpJsonCallBlocking(
+        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+      (update1.json \ "enabled").as[Boolean] mustBe false
+      (update1.json \ "metadata")
+        .as[JsObject]
+        .keys
+        .filterNot(_.startsWith("daikoku_"))
+        .size mustBe 1
+
+      //update api as blocked
+      httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${parentApi.id.value}/${parentApi.currentVersion.value}",
+        method = "PUT",
+        body = parentApi.copy(state = ApiState.Blocked).asJson.some
+      )(tenant, session)
+
+      val maybeParentApiUpdated = Await.result(
+        daikokuComponents.env.dataStore.apiRepo
+          .forTenant(tenant)
+          .findByIdNotDeleted(parentApi.id),
+        5.second
+      )
+      maybeParentApiUpdated mustBe defined
+      maybeParentApiUpdated.get.state mustBe ApiState.Blocked
+
+      //api is not visible by anyone
+      testApiVisibility(0)
+
+      //- update plan metadata & check if metadata is in otoroshi
+      httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/subscriptions/${parentSub.id.value}",
+        method = "PUT",
+        body = Json
+          .obj(
+            "customMetadata" -> Json.obj("foo" -> "bar", "foofoo" -> "barbar")
+          )
+          .some
+      )(tenant, session)
+      //- archiveKeyByOwner --> key is disable in oto
+      httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/subscriptions/${parentSub.id.value}/_archiveByOwner?enabled=true",
+        method = "PUT"
+      )(tenant, session)
+      //- archiveKeyByOwner --> key is disable in oto
+      val update2 = httpJsonCallBlocking(
+        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        baseUrl = "http://otoroshi-api.oto.tools",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+          "Host" -> "otoroshi-api.oto.tools"
+        ),
+        port = container.mappedPort(8080)
+      )(tenant, session)
+      logger.info(Json.stringify(update2.json))
+      (update2.json \ "enabled").as[Boolean] mustBe true
+      (update2.json \ "metadata")
+        .as[JsObject]
+        .keys
+        .filterNot(_.startsWith("daikoku_"))
+        .size mustBe 2
+    }
   }
 
   "a private plan" must {
@@ -5249,7 +5807,8 @@ class ApiControllerSpec()
       val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
       resp.status mustBe 200
 
@@ -5313,7 +5872,8 @@ class ApiControllerSpec()
 
       val respDelete = httpJsonCallBlocking(
         path = s"/api/teams/${teamOwnerId.value}/apis/678",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
 
       respDelete.status mustBe 200
@@ -5389,7 +5949,8 @@ class ApiControllerSpec()
       val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${defaultAdminTeam.id.value}/apis/${adminApi.id.value}",
-        method = "DELETE"
+        method = "DELETE",
+        body = Json.obj().some
       )(tenant, session)
       resp.status mustBe 403
     }

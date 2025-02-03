@@ -71,7 +71,7 @@ const CreateNewVersionButton = ({
   };
 
   return (
-    <button onClick={promptVersion} className="btn btn-sm btn-outline-info ms-1">
+    <button onClick={promptVersion} className="btn btn-sm btn-outline-info ms-1" aria-label={translate('Create new version')}>
       <Plus />
     </button>
   );
@@ -327,7 +327,7 @@ export const TeamApi = (props: { creation: boolean }) => {
               {tab === 'specification' && <TeamApiSwagger value={_api} save={save}/>}
               {tab === 'testing' && <TeamApiTesting value={_api} save={save} currentTeam={currentTeam}/>}
               {tab === 'news' && (<TeamApiPost team={currentTeam} api={_api} />)}
-              {tab === 'settings' && <TeamApiSettings api={_api} currentTeam={currentTeam} />}
+              {tab === 'settings' && <TeamApiSettings api={_api} currentTeam={currentTeam} versions={versions}/>}
               {tab === 'stats' && !match && <TeamApiConsumption api={_api} currentTeam={currentTeam} />}
               {tab === 'stats' && match && match.params.planId && (<TeamPlanConsumption api={_api} currentTeam={currentTeam} />)}
               {tab === 'subscriptions' && <TeamApiSubscriptions api={_api} currentTeam={currentTeam} />}

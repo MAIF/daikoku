@@ -165,16 +165,41 @@ export const TeamList = () => {
   };
 
 
-  const deleteTeam = (teamId: string) => {
-    confirm({ message: translate('delete team') })
-      .then((ok) => {
-        if (ok) {
-          Services.deleteTeam(teamId)
-            .then(() => {
-              queryClient.invalidateQueries({ queryKey: ['teams'] });
-            });
-        }
-      });
+  const deleteTeam = (team: ITeamFullGql) => {
+    openFormModal({
+      title: translate('Confirm'),
+      description: <div className="alert alert-danger" role="alert">
+        <h4 className="alert-heading">{translate('Warning')}</h4>
+        <p>{translate("delete.team.confirm.modal.description.1")}</p>
+        <ul>
+          <li>{translate("delete.team.confirm.modal.description.2")}</li>
+          <li>{translate("delete.team.confirm.modal.description.3")}</li>
+          <li>{translate("delete.team.confirm.modal.description.4")}</li>
+        </ul>
+      </div>,
+      schema: {
+        confirm: {
+          type: type.string,
+          label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [team.name] }),
+          constraints: [
+            constraints.oneOf(
+              [team.name],
+              translate({ key: 'constraints.type.api.name', replacements: [team.name] })
+            ),
+          ],
+        },
+      },
+      onSubmit: () => Services.deleteTeam(team._id)
+        .then((r) => {
+          if (isError(r)) {
+            toast.error(r.error)
+          } else {
+            queryClient.invalidateQueries({ queryKey: ['teams'] });
+            toast.success(translate({ key: 'team.deleted.success', replacements: [team.name] }))
+          }
+        }),
+      actionLabel: translate('Confirm')
+    })
   };
 
   const handleChange = (e) => {
@@ -196,7 +221,7 @@ export const TeamList = () => {
   const actions = (team: ITeamFullGql) => {
     const basicActions = [
       {
-        action: () => deleteTeam(team._id),
+        action: () => deleteTeam(team),
         variant: 'error',
         iconClass: 'fas fa-trash delete-icon',
         tooltip: translate('Delete team'),
@@ -251,7 +276,7 @@ export const TeamList = () => {
       {
         action: () => navigate(`/settings/teams/${team._humanReadableId}/members`),
         iconClass: 'fas fa-users',
-        tooltip: translate({key: "Member", plural: true}),
+        tooltip: translate({ key: "Member", plural: true }),
       },
     ];
   };
