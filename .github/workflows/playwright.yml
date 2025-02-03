@@ -19,6 +19,27 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - uses: sbt/setup-sbt@v1
+      - uses: coursier/cache-action@v6
+
+      - name: Installing dependencies
+        run: |
+          cd daikoku/javascript
+          rm -rf node_modules/
+          npm ci
+          npm run build
+        env:
+          NODE_OPTIONS: --max_old_space_size=4096
+      - name: initialize backend build
+        run: |
+          cd daikoku
+          sbt -Dsbt.color=always -Dsbt.supershell=false ';clean;compile;dist;assembly'
+          sbt 'docker:publishLocal'
 
       - name: Docker Compose Action
         uses: hoverkraft-tech/compose-action@v2.2.0

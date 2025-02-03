@@ -61,7 +61,7 @@ services:
     - 6379:6379
 
   daikoku:
-    image: maif/daikoku:18.1.2
+    image: maif/daikoku:latest
     networks:
       - basicsetup
     environment:
