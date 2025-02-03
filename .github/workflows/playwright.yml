@@ -1,12 +1,12 @@
 name: Playwright Tests
 
 on:
+  on: 
   push:
-    branches:
-      - master
-  pull_request:
-    branches:
-      - master
+    paths:
+      - 'daikoku/app/**'
+      - 'daikoku/javascript/**'
+      - '.github/workflows/playwright.yml'
   workflow_dispatch:
 
 jobs:
