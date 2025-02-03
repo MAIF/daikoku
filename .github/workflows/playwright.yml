@@ -39,8 +39,9 @@ jobs:
       - name: Run Playwright tests
         working-directory: daikoku/javascript/tests
         run: |
+          pwd
           npm install @playwright/test
           npx playwright install --with-deps chromium
-          npx playwright test --project chromium specs/
+          npx playwright test --project chromium daikoku/javascript/tests/specs/
         env:
           CI: true
