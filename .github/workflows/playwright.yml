@@ -1,0 +1,49 @@
+name: Playwright Tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      
+      - name: Move to javascripts.test directory
+        run: cd daikoku/javascripts/tests
+
+      - name: Docker Compose Action
+        uses: hoverkraft-tech/compose-action@v2.2.0
+        with:
+          compose-file: "./daikoku/javascript/testsdocker-compose.yml"
+
+      - name: Wait for API to be ready
+        working-directory: daikoku/javascript/tests
+        run: |
+          echo "Waiting for API to be up..."
+          until curl --silent --fail http://localhost:13200/health; do
+            printf '.'
+            sleep 2
+          done
+          echo "API is ready!"
+
+      - name: Run Playwright tests
+        working-directory: daikoku/javascript/tests
+        run: |
+          npm install @playwright/test
+          npx playwright install --with-deps chromium
+          npx playwright test --project chromium specs/
+        env:
+          CI: true

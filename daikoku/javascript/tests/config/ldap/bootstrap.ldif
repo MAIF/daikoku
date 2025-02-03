@@ -1,0 +1,75 @@
+# Admin user
+dn: cn=admin,dc=dundermifflin,dc=com
+objectClass: simpleSecurityObject
+objectClass: organizationalRole
+cn: admin
+userPassword: adminpassword
+description: LDAP Administrator
+
+# Organizational unit for Scranton branch
+dn: ou=scranton,dc=dundermifflin,dc=com
+objectClass: top
+objectClass: organizationalUnit
+ou: scranton
+
+# User: Michael Scott (Manager)
+dn: uid=001,ou=scranton,dc=dundermifflin,dc=com
+objectClass: inetOrgPerson
+cn: Michael Scott
+sn: Scott
+uid: 001
+mail: michael.scott@dundermifflin.com
+userPassword: password
+
+# User: Dwight Schrute (Employee)
+dn: uid=002,ou=scranton,dc=dundermifflin,dc=com
+objectClass: inetOrgPerson
+cn: Dwight Schrute
+sn: Schrute
+uid: 002
+mail: dwight.schrute@dundermifflin.com
+userPassword: password
+
+# User: Jim Halpert (Employee)
+dn: uid=003,ou=scranton,dc=dundermifflin,dc=com
+objectClass: inetOrgPerson
+cn: Jim Halpert
+sn: Halpert
+uid: 003
+mail: jim.halpert@dundermifflin.com
+userPassword: password
+
+# User: Pam Beesly (Employee)
+dn: uid=004,ou=scranton,dc=dundermifflin,dc=com
+objectClass: inetOrgPerson
+cn: Pam Beesly
+sn: Beesly
+uid: 004
+mail: pam.beesly@dundermifflin.com
+userPassword: password
+
+# User: Andy Bernard (Employee)
+dn: uid=005,ou=scranton,dc=dundermifflin,dc=com
+objectClass: inetOrgPerson
+cn: Andy Bernard
+sn: Bernard
+uid: 005
+mail: Andy.BERNARD@dundermifflin.com
+userPassword: password
+
+# Group: Managers
+dn: cn=managers,ou=scranton,dc=dundermifflin,dc=com
+objectClass: top
+objectClass: groupOfNames
+cn: managers
+member: uid=001,ou=scranton,dc=dundermifflin,dc=com
+
+# Group: Employees
+dn: cn=employees,ou=scranton,dc=dundermifflin,dc=com
+objectClass: top
+objectClass: groupOfNames
+cn: employees
+member: uid=002,ou=scranton,dc=dundermifflin,dc=com
+member: uid=003,ou=scranton,dc=dundermifflin,dc=com
+member: uid=004,ou=scranton,dc=dundermifflin,dc=com
+member: uid=005,ou=scranton,dc=dundermifflin,dc=com
