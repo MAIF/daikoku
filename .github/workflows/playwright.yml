@@ -38,7 +38,7 @@ jobs:
       - name: initialize backend build
         run: |
           cd daikoku
-          sbt -Dsbt.color=always -Dsbt.supershell=false ';clean;compile;dist;assembly'
+          sbt -Dsbt.color=always -Dsbt.supershell=false ';clean;compile;dist'
           sbt 'docker:publishLocal'
 
       - name: Docker Compose Action
