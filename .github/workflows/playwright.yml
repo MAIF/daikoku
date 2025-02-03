@@ -27,7 +27,6 @@ jobs:
           compose-file: "./daikoku/javascript/tests/docker-compose.yml"
 
       - name: Wait for API to be ready
-        working-directory: daikoku/javascript/tests
         run: |
           echo "Waiting for API to be up..."
           until curl --silent --fail http://localhost:13200/health; do
@@ -37,7 +36,6 @@ jobs:
           echo "API is ready!"
 
       - name: Run Playwright tests
-        working-directory: daikoku/javascript/tests
         run: |
           pwd
           npm install @playwright/test
