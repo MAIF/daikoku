@@ -1319,6 +1319,7 @@ export const graphql = {
           name
           possibleUsagePlans {
             _id
+            customName
             otoroshiTarget {
               otoroshiSettings
             }
@@ -1599,7 +1600,6 @@ export const graphql = {
         plan {
           _id
           customName
-          type
         }
         team {
           _id
@@ -1633,7 +1633,6 @@ export const graphql = {
           }
           plan {
             _id
-            type
             customName
           }
         }
@@ -1837,7 +1836,6 @@ export const graphql = {
               currency {
                 code
               }
-              type
               subscriptionProcess {
                 name
                 ... on TeamAdmin {
@@ -1847,27 +1845,6 @@ export const graphql = {
               }
               allowMultipleKeys
               aggregationApiKeysSecurity
-              ... on QuotasWithLimits {
-                costPerMonth
-                maxPerSecond
-                maxPerDay
-                maxPerMonth
-              }
-              ... on FreeWithQuotas {
-                maxPerSecond
-                maxPerDay
-                maxPerMonth
-              }
-              ... on QuotasWithoutLimits {
-                costPerMonth
-                costPerAdditionalRequest
-                maxPerSecond
-                maxPerDay
-                maxPerMonth
-              }
-              ... on PayPerUse {
-                costPerRequest
-              }
              }
             currentVersion
             team {

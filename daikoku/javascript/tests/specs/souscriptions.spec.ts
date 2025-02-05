@@ -39,7 +39,7 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await page.getByLabel('motivation').click();
   await page.getByLabel('motivation').fill('please');
   await page.getByRole('button', { name: 'Envoyer' }).click();
-  await expect(page.getByRole('status')).toContainText('La demande de clé d\'API au plan Gratuit avec quotas pour l\'équipe Vendeurs est en attente de validation');
+  await expect(page.getByRole('status')).toContainText('La demande de clé d\'API au plan prod pour l\'équipe Vendeurs est en attente de validation');
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.locator('h4')).toContainText('Vous avez 0 notifications');
   await page.getByRole('img', { name: 'user menu' }).click();
@@ -97,7 +97,7 @@ test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context 
   await page.getByLabel('motivation').click();
   await page.getByLabel('motivation').fill('please');
   await page.getByRole('button', { name: 'Envoyer' }).click();
-  await expect(page.getByRole('status')).toContainText('La demande de clé d\'API au plan Gratuit avec quotas pour l\'équipe Vendeurs est en attente de validation');
+  await expect(page.getByRole('status')).toContainText('La demande de clé d\'API au plan prod pour l\'équipe Vendeurs est en attente de validation');
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.locator('h4')).toContainText('Vous avez 0 notifications');
   await page.getByRole('img', { name: 'user menu' }).click();

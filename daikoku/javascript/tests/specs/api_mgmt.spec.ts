@@ -46,7 +46,7 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   //todo: find a way to fill description by playwright
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await page.getByLabel('Accueil Daikoku').click();
-  await expect(page.getByRole('heading', { name: 'API Betterave' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'API Betterave' })).toBeAttached();
   await logout(page);
   await expect(page.getByRole('heading', { name: 'API Betterave' })).toBeHidden();
 

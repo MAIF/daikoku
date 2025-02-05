@@ -2,21 +2,20 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import { GraphQLClient } from 'graphql-request';
 import { useContext, useEffect } from 'react';
-import Navigation from 'react-feather/dist/icons/navigation';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiSwagger } from '.';
-import { I18nContext, useApiFrontOffice } from '../../../contexts';
+import { I18nContext, ModalContext, useApiFrontOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IApi, ISubscription, ITeamFullGql, ITeamSimple, IUsagePlan, isError } from '../../../types';
+import { SimpleApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
 import { ActionWithTeamSelector, Can, CanIDoAction, Option, Spinner, apikey, manage, teamGQLToSimple } from '../../utils';
 import { formatPlanType } from '../../utils/formatters';
+import { CmsViewer } from '../CmsViewer';
 import { ApiDescription } from './ApiDescription';
 import { ApiHeader } from './ApiHeader';
-import { CmsViewer } from '../CmsViewer';
-import { SimpleApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
 
 type ApiHomeProps = {
   groupView?: boolean
@@ -25,8 +24,8 @@ export const ApiHome = ({
   groupView
 }: ApiHomeProps) => {
 
-  const { connectedUser, tenant, reloadContext } = useContext(GlobalContext);
-  const { openCustomModal, openRightPanel } = useContext(ModalContext);
+  const { connectedUser, tenant } = useContext(GlobalContext);
+  const { openRightPanel } = useContext(ModalContext);
 
   const navigate = useNavigate();
   const defaultParams = useParams();
@@ -163,13 +162,13 @@ export const ApiHome = ({
             content: <SimpleApiKeyCard
               api={api!}
               plan={plan!}
-              apiTeam={ownerTeam!}
+              apiTeam={ownerTeamQuery.data as ITeamSimple} //FIXME: maybe better code ;)
               subscription={result.subscription}
             />
           })
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
-          return toast.info(translate({ key: 'subscription.plan.waiting', replacements: [planName, teamName] }));
+          return toast.info(translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, teamName] }));
         }
 
       })

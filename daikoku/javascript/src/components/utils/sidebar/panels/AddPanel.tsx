@@ -8,16 +8,19 @@ import { ModalContext } from '../../../../contexts';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services';
-import { isError } from '../../../../types';
+import { isError, ITeamSimple } from '../../../../types';
 import { teamSchema } from '../../../backoffice/teams/TeamEdit';
 import { Form } from '@maif/react-forms';
 import { teamApiInfoForm } from '../../../backoffice/apis/TeamApiInfo';
+import { getApolloContext, gql } from '@apollo/client';
+import { IPage } from '../../../adminbackoffice/cms';
+import { actions } from 'xstate';
 
 export const AddPanel = () => {
   const { translate } = useContext(I18nContext);
   const { openFormModal, openTeamSelectorModal, openRightPanel, closeRightPanel } = useContext(ModalContext);
 
-  const { tenant, connectedUser, apiCreationPermitted, expertMode } = useContext(GlobalContext);
+  const { tenant, connectedUser, apiCreationPermitted, expertMode, toggleExpertMode } = useContext(GlobalContext);
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/*');
   const queryClient = useQueryClient();
@@ -65,33 +68,10 @@ export const AddPanel = () => {
         if (!team) {
           toast.warning('toast.no.team.found')
         } else {
-          const informationForm = teamApiInfoForm(translate, team, tenant);
-
-          return Services.fetchNewApi()
-            .then((e) => {
-              return { ...e, team: team._id };
-            })
-            .then((newApi) => openRightPanel({
-              title: translate('create.new.api.title'),
-              content: <div className="text-center">
-                <Form
-                  schema={informationForm.schema}
-                  flow={informationForm.flow(expertMode)} //todo: get real flow, for admin api for example
-                  onSubmit={(data) => {
-                    Promise.resolve(Services.createTeamApi(team._id, data))
-                      .then(() => closeRightPanel())
-                      .then(() => toast.success("api.created.successful.toast"))
-                      .then(() => queryClient.invalidateQueries({queryKey: ["data"]}))
-                  }}
-                  value={newApi}
-                />
-              </div>
-            }))
-          // .then((newApi) =>
-          //   navigate(`/${team?._humanReadableId}/settings/apis/${newApi._id}/infos`, {
-          //     state: { newApi },
-          //   })
-          // );
+          return openRightPanel({
+            title: translate('create.new.api.title'),
+            content: <ApiCreationRightPanel team={team} />
+          })
         }
 
       }
@@ -208,3 +188,71 @@ export const AddPanel = () => {
   }
 
 };
+
+const ApiCreationRightPanel = (props: { team: ITeamSimple }) => {
+  const { translate } = useContext(I18nContext);
+  const { closeRightPanel } = useContext(ModalContext);
+
+  const { tenant, connectedUser, apiCreationPermitted, expertMode, toggleExpertMode } = useContext(GlobalContext);
+  const { client } = useContext(getApolloContext());
+  const queryClient = useQueryClient();
+  const cmsPagesQuery = () => ({
+    query: gql`
+    query CmsPages {
+      pages {
+        id
+        name
+        path
+        contentType
+        lastPublishedDate
+        metadata
+      }
+    }
+  `,
+  });
+  const getCmsPages = (): Promise<Array<IPage>> =>
+    client!.query(cmsPagesQuery())
+      .then(res => res.data.pages as Array<IPage>)
+  const informationForm = teamApiInfoForm(translate, props.team, tenant, getCmsPages);
+
+  const newApiQuery = useQuery({
+    queryKey: ['newapi'],
+    queryFn: () => Services.fetchNewApi()
+      .then((e) => {
+        return { ...e, team: props.team._id };
+      })
+  })
+
+  if (newApiQuery.isLoading || !newApiQuery.data) {
+    return (
+      <div>loading ...</div>
+    )
+  }
+
+  return (
+    <div className="text-center">
+      <button onClick={() => toggleExpertMode()} className="btn btn-sm btn-outline-info">
+        {expertMode && translate('Standard mode')}
+        {!expertMode && translate('Expert mode')}
+      </button>
+      <Form
+        schema={informationForm.schema}
+        flow={informationForm.flow(expertMode)} //todo: get real flow, for admin api for example
+        onSubmit={(data) => {
+          Promise.resolve(Services.createTeamApi(props.team._id, data))
+          .then(() => queryClient.invalidateQueries({ queryKey: ["data"] }))
+          .then(() => toast.success("api.created.successful.toast"))
+          .then(() => closeRightPanel())
+        }}
+        value={newApiQuery.data}
+        options={{
+          actions: {
+            submit: {
+              label: translate('Save')
+            }
+          }
+        }}
+      />
+    </div>
+  )
+}

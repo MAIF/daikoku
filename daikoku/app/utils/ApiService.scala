@@ -1078,7 +1078,7 @@ class ApiService(
                 Map(
                   "apiName" -> JsString(api.name),
                   "planName" -> JsString(
-                    plan.customName.getOrElse(plan.typeName)
+                    plan.customName
                   ),
                   "consumer_team_data" -> team.asJson,
                   "recipient_data" -> admin.asJson,
@@ -2154,7 +2154,7 @@ class ApiService(
                 Map(
                   "api.name" -> JsString(api.name),
                   "api.plan" -> JsString(
-                    plan.customName.getOrElse(plan.typeName)
+                    plan.customName
                   ),
                   "link" -> JsString(
                     env.getDaikokuUrl(
