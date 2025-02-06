@@ -1,4 +1,4 @@
-import { Form, constraints, format, type } from '@maif/react-forms';
+import { Form, TBaseObject, constraints, format, type } from '@maif/react-forms';
 import { useQueryClient } from '@tanstack/react-query';
 import sortBy from 'lodash/sortBy';
 import { useContext, useEffect, useState } from 'react';
@@ -7,7 +7,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select';
 import { toast } from 'sonner';
 
-import { I18nContext, ModalContext } from '../../../contexts';
+import { I18nContext, IFormModalProps, ModalContext, TranslateParams } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
@@ -17,11 +17,8 @@ import { api as API, Can, manage } from '../../utils';
 import { reservedCharacters } from '../../utils/tenantUtils';
 import { IPage } from '../../adminbackoffice/cms';
 import { getApolloContext, gql } from '@apollo/client';
-
-type Version = {
-  label: string,
-  value: string
-}
+import { ApiFormRightPanel } from '../../utils/sidebar/panels/AddPanel';
+import { deleteApi } from '../../utils/apiUtils';
 
 type ApiHeaderProps = {
   api: IApi
@@ -42,7 +39,7 @@ export const ApiHeader = ({
   const { translate } = useContext(I18nContext);
   const { tenant, expertMode } = useContext(GlobalContext);
 
-  const [versions, setApiVersions] = useState<Array<Version>>([]);
+  const [versions, setApiVersions] = useState<Array<string>>([]);
 
   const createNewVersion = (newVersion: string) => {
     Services.createNewApiVersion(api._humanReadableId, ownerTeam._id, newVersion)
@@ -59,10 +56,7 @@ export const ApiHeader = ({
   useEffect(() => {
     Services.getAllApiVersions(ownerTeam._id, params.apiId! || params.apiGroupId!)
       .then((versions) =>
-        setApiVersions(versions.map((v) => ({
-          label: v,
-          value: v
-        })))
+        setApiVersions(versions)
       );
   }, []);
 
@@ -129,6 +123,63 @@ export const ApiHeader = ({
   //   )
   // }
 
+  // const deleteApi = () => {
+  //   const confirm = {
+  //     confirm: {
+  //       type: type.string,
+  //       label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [api.name] }),
+  //       constraints: [
+  //         constraints.oneOf(
+  //           [api.name],
+  //           translate({ key: 'constraints.type.api.name', replacements: [api.name] })
+  //         ),
+  //       ],
+  //     },
+  //   }
+
+  //   const next = {
+  //     next: {
+  //       type: type.string,
+  //       label: translate("delete.api.confirm.modal.description.next.label"),
+  //       help: translate('delete.api.confirm.modal.description.next.help'),
+  //       format: format.select,
+  //       options: versions.filter(v => v !== api.currentVersion),
+  //       constraints: [
+  //         constraints.required(translate("constraints.required.value"))
+  //       ]
+  //     }
+  //   }
+
+  //   const schema = versions.length > 2 && api.isDefault ? { ...confirm, ...next } : { ...confirm }
+  //   const automaticNextCurrentVersion = versions.length === 2 ? versions.filter(v => v !== api.currentVersion)[0] : undefined
+
+  //   console.debug({ automaticNextCurrentVersion, versions })
+  //   openFormModal({
+  //     title: translate('Confirm'),
+  //     description: <div className="alert alert-danger" role="alert">
+  //       <h4 className="alert-heading">{translate('Warning')}</h4>
+  //       <p>{translate("delete.api.confirm.modal.description.1")}</p>
+  //       <ul>
+  //         <li>{translate("delete.api.confirm.modal.description.2")}</li>
+  //       </ul>
+  //       {automaticNextCurrentVersion && <strong>{translate({ key: 'delete.api.confirm.modal.description.next.version', replacements: [automaticNextCurrentVersion] })}</strong>}
+  //     </div>,
+  //     schema: schema,
+  //     onSubmit: ({ next }) => {
+  //       Services.deleteTeamApi(ownerTeam._id, api._id, next || automaticNextCurrentVersion)
+  //         .then((r) => {
+  //           if (isError(r)) {
+  //             toast.error(r.error)
+  //           } else {
+  //             navigate(`/apis`)
+  //             toast.success(translate('deletion successful'))
+  //           }
+  //         })
+  //     },
+  //     actionLabel: translate('Confirm')
+  //   })
+  // };
+
   return (
     <section className="api__header col-12 mb-4 p-3 d-flex flex-row">
       <div className="container-fluid">
@@ -161,7 +212,7 @@ export const ApiHeader = ({
             <Select
               name="versions-selector"
               value={{ label: params.versionId, value: params.versionId }}
-              options={versions}
+              options={versions.map(label => ({ label, value: label }))}
               onChange={(e) =>
                 navigate(`/${params.teamId}/${params.apiId}/${e?.value}/${tab}`)
               }
@@ -184,26 +235,19 @@ export const ApiHeader = ({
             <span
               onClick={() => openRightPanel({
                 title: translate("update.api.details.panel.title"),
-                content: <div className="">
-                  <Form
-                    schema={informationForm.schema}
-                    flow={informationForm.flow(expertMode)} //todo: get real flow, for admin api for example
-                    onSubmit={(data) => {
-                      Services.saveTeamApi(ownerTeam._id, data, data.currentVersion)
-                        .then((response) => {
-                          if (!isError(response)) {
-                            queryClient.invalidateQueries({ queryKey: ["api"] });
-                            closeRightPanel();
-                            toast.success("update.api.successful.toast.label");
-                            navigate(`/${ownerTeam._humanReadableId}/${response._humanReadableId}/${response.currentVersion}/description`)
-                          } else {
-                            toast.error(response.error);
-                          }
-                        })
-                    }}
-                    value={api}
-                  />
-                </div>
+                content: <ApiFormRightPanel team={ownerTeam} handleSubmit={(api) =>
+                  Services.saveTeamApi(ownerTeam._id, api, api.currentVersion)
+                    .then((response) => {
+                      if (!isError(response)) {
+                        queryClient.invalidateQueries({ queryKey: ["api"] });
+                        toast.success("update.api.successful.toast.label");
+                        navigate(`/${ownerTeam._humanReadableId}/${response._humanReadableId}/${response.currentVersion}/description`)
+                      } else {
+                        toast.error(response.error);
+                      }
+                    })
+
+                } />
               })
               }
               className="dropdown-item cursor-pointer"
@@ -220,19 +264,11 @@ export const ApiHeader = ({
                 })
                 .then((newApi) => openRightPanel({
                   title: translate('api.home.create.api.form.title'),
-                  content: <div className="">
-                    <Form
-                      schema={informationForm.schema}
-                      flow={informationForm.flow(expertMode)} //todo: get real flow, for admin api for example
-                      onSubmit={(data) => {
-                        Services.createTeamApi(ownerTeam._id, data)
-                          .then(() => closeRightPanel())
-                          .then(() => toast.success("api.created.successful.toast"))
-                          .then(() => queryClient.invalidateQueries({ queryKey: ["data"] }))
-                      }}
-                      value={newApi}
-                    />
-                  </div>
+                  content: <ApiFormRightPanel team={ownerTeam} handleSubmit={(api) =>
+                    Services.createTeamApi(ownerTeam._id, api)
+                      .then(() => queryClient.invalidateQueries({ queryKey: ["data"] }))
+                      .then(() => toast.success("api.created.successful.toast"))
+                  } />
                 }))}
             >
               {translate("api.home.clone.api.btn.label")}
@@ -283,32 +319,20 @@ export const ApiHeader = ({
             </span>
             <span
               className="dropdown-item cursor-pointer btn-outline-danger"
-              onClick={() => openFormModal(
-                {
-                  title: translate("apikeys.delete.confirm.modal.title"),
-                  schema: {
-                    validation: {
-                      type: type.string,
-                      label: translate("vous voulez supprimer cette api, remplir avec le noim exatct de l'api puis confirmez"),
-                      constraints: [
-                        constraints.required(translate('constraints.required.value')),
-                        constraints.matches(new RegExp(`${api.name}`), translate('constraints.match.subscription'))
-                      ],
-                      defaultValue: ""
-                    }
-                  },
-                  actionLabel: translate('Confirm'),
-                  onSubmit: () => Services.deleteTeamApi(ownerTeam._id, api._id)
-                    .then(() => toast.success(translate('api.deletion.succesful')))
-                    .then(() => navigate('/apis'))
-                }
-              )}
+              onClick={() => deleteApi({ 
+                api, 
+                versions, 
+                team: ownerTeam, 
+                translate, 
+                openFormModal, 
+                handleSubmit: () => navigate('/apis')
+              })}
             >
-              {translate('api.home.delete.api.btn.label')}
-            </span>
-          </div>
-        </Can>
+            {translate('api.home.delete.api.btn.label')}
+          </span>
       </div>
-    </section>
+    </Can>
+      </div >
+    </section >
   );
 };

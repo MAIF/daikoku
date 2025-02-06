@@ -3179,6 +3179,7 @@ class ApiController(
                       .forTenant(ctx.tenant.id)
                       .exists(
                         Json.obj(
+                          "_deleted" -> false,
                           "_humanReadableId" -> api.humanReadableId,
                           "currentVersion" -> api.currentVersion.asJson,
                           "_id" -> Json.obj("$ne" -> api.id.value)
@@ -4437,8 +4438,9 @@ class ApiController(
           case Some(newVersion) =>
             val apiRepo = env.dataStore.apiRepo.forTenant(ctx.tenant.id)
             val generatedApiId = ApiId(IdGenerator.token(32))
+
             apiRepo
-              .findOne(
+              .findOneNotDeleted(
                 Json.obj(
                   "$or" -> Json.arr(
                     Json.obj("_humanReadableId" -> apiId),

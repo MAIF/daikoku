@@ -9,17 +9,15 @@ import { useLocation } from 'react-router-dom';
 
 export const RightPanel = () => {
   const { rightPanelContent, closeRightPanel } = useContext(ModalContext);
-  const { translate } = useContext(I18nContext);
   const location = useLocation();
 
 
-  useEffect(() => {
-    closeRightPanel();
-
-    return () => {
-      closeRightPanel()
-    };
-  }, [location]);
+  // useEffect(() => {
+  //   console.log('rightPanelContent updated:', rightPanelContent);
+  //   if (!rightPanelContent) {
+  //     closeRightPanel();
+  //   }
+  // }, [rightPanelContent]);
 
   const closeOnEsc = (e: any) => {
     if (e.key == 'Escape' || e.key == 'Esc') {

@@ -56,10 +56,10 @@ const init: TModalContext = {
   openAssetSelectorModal: () => { },
   openApiSelectModal: () => { },
   openApiKeySelectModal: () => { },
-  openCustomModal: () => {},
-  close: () => {},
-  openRightPanel: () => {},
-  closeRightPanel: () => {},
+  openCustomModal: () => { },
+  close: () => { },
+  openRightPanel: () => { },
+  closeRightPanel: () => { },
   rightPanelContent: undefined
 
 }
@@ -166,7 +166,7 @@ const ModalWrapper = (props: { children: JSX.Element, closeModal: () => void }) 
     <div>
       <div className="modal show" tabIndex={-1} role="dialog">
         <div className="modal-backdrop show" onClick={props.closeModal} />
-        <div className="modal-dialog modal-lg" style={{zIndex: 10000}} role="document">
+        <div className="modal-dialog modal-lg" style={{ zIndex: 10000 }} role="document">
           {props.children}
         </div>
       </div>

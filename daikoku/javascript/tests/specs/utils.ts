@@ -21,7 +21,7 @@ export const otoroshiProdPaperRouteId = "route_route_4e29a989-cef9-41d8-a64c-385
 export const otoroshiDevCommandRouteId = "route_route_3fdac0cf-ae98-4802-9729-1b4b06de32bc"
 export const otoroshiProdCommandRouteId = "route_route_cf6f8d3e-8c11-4b6f-b080-64fbd1b8a3ec"
 
-export const exposedPort = 5173;
+export const exposedPort = 13200;
 export const EMAIL_UI = "http://localhost:1080";
 export const ACCUEIL = `http://localhost:${exposedPort}/apis`
 
