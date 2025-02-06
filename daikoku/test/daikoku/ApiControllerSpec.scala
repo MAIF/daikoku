@@ -4023,17 +4023,17 @@ class ApiControllerSpec()
           title = "Admin"
         )
       )
-      val plan = QuotasWithLimits(
+      val plan = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        maxPerSecond = 10000,
-        maxPerDay = 10000,
-        maxPerMonth = 10000,
-        costPerMonth = BigDecimal(10.0),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        maxPerSecond = 10000L.some,
+        maxPerDay = 10000L.some,
+        maxPerMonth = 10000L.some,
+        costPerMonth = BigDecimal(10.0).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "quotas with limits",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -4183,17 +4183,17 @@ class ApiControllerSpec()
         title = "Admin"
       )
       val processV2 = process.copy(id = IdGenerator.token)
-      val plan = QuotasWithLimits(
+      val plan = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        maxPerSecond = 10000,
-        maxPerDay = 10000,
-        maxPerMonth = 10000,
-        costPerMonth = BigDecimal(10.0),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        maxPerSecond = 10000L.some,
+        maxPerDay = 10000L.some,
+        maxPerMonth = 10000L.some,
+        costPerMonth = BigDecimal(10.0).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "quotas with limit",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -4210,7 +4210,7 @@ class ApiControllerSpec()
       )
       val plan2 = plan.copy(
         id = UsagePlanId(IdGenerator.token),
-        customName = "plan 2".some,
+        customName = "plan 2",
         subscriptionProcess = Seq(processV2)
       )
       val defaultApiV2 =
@@ -5242,12 +5242,13 @@ class ApiControllerSpec()
     "have a lifecycle" in {
       //use containerized otoroshi
       //crate api & a subscription (in otoroshi)
-      val parentPlan = FreeWithoutQuotas(
+    //old free without quotas
+      val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        billingDuration = None,
+        currency = None,
+        customName = "Parent plan",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
