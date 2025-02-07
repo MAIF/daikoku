@@ -1,6 +1,6 @@
 import { constraints, format, TBaseObject, type } from "@maif/react-forms";
 import { IFormModalProps, TranslateParams } from "../../contexts";
-import { IApi, isError, ITeamSimple } from "../../types";
+import { IApi, IApiGQL, isError, ITeamSimple, ITenant } from "../../types";
 import * as Services from '../../services';
 import { toast } from "sonner";
 
@@ -68,3 +68,32 @@ schema: schema,
     actionLabel: translate('Confirm')
   })
 };
+
+export const apiGQLToLegitApi = (apiGQL: IApiGQL, tenant: ITenant): IApi => {
+  return {
+    _id: apiGQL._id,
+    _humanReadableId: apiGQL._humanReadableId,
+    _tenant: tenant._id,
+    _deleted: apiGQL._deleted,
+    lastUpdate: apiGQL.lastUpdate,
+    name: apiGQL.name,
+    smallDescription: apiGQL.smallDescription,
+    description: apiGQL.description,
+    currentVersion: apiGQL.currentVersion,
+    supportedVersions: [],
+    tags: apiGQL.tags,
+    categories: apiGQL.categories,
+    visibility: apiGQL.visibility,
+    possibleUsagePlans: apiGQL.possibleUsagePlans.map(plan => plan._id),
+    defaultUsagePlan: apiGQL.defaultUsagePlan,
+    authorizedTeams: apiGQL.authorizedTeams.map(team => team._id),
+    posts: [],
+    issues: [],
+    issuesTags: [],
+    stars: apiGQL.stars,
+    isDefault: true,
+    apis: apiGQL.apis.map(api => api._id),
+    state: apiGQL.state,
+    team: apiGQL.team._id
+  };
+}

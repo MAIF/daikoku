@@ -1333,38 +1333,31 @@ export const graphql = {
         api (id: $id) {
           _id
           _humanReadableId
+          _deleted
+          lastUpdate
           state
           currentVersion
           name
           smallDescription
           description
           tags
+          categories
           visibility
+          stars
           team {
             _id
             _humanReadableId
             name
           }
+          defaultUsagePlan
           possibleUsagePlans {
             _id
             customName
             customDescription
             visibility
-            ... on QuotasWithLimits {
-              maxPerSecond
-              maxPerDay
-              maxPerMonth
-            }
-            ... on FreeWithQuotas {
-              maxPerSecond
-              maxPerDay
-              maxPerMonth
-            }
-            ... on QuotasWithoutLimits {
-              maxPerSecond
-              maxPerDay
-              maxPerMonth
-            }
+            maxPerSecond
+            maxPerDay
+            maxPerMonth
             subscriptionProcess {
               name
                 ... on TeamAdmin {

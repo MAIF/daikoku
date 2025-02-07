@@ -116,16 +116,13 @@ export const TeamApiKeyConsumption = () => {
     },
   ];;
 
-  switch (subInf.data?.plan.type) {
-    case 'FreeWithQuotas':
-    case 'QuotasWithLimits':
-    case 'QuotasWithoutLimits':
+  if (subInf.data?.plan.maxPerDay ) {
       mappers = [
         ...mappers,
         {
           type: 'Custom',
           label: translate('Quotas consumptions'),
-          formatter: () => <Quotas currentTeam={currentTeam} typePlan={subInf.data!.plan.type} />,
+          formatter: () => <Quotas currentTeam={currentTeam} typePlan={subInf.data!.plan.customName} />,
         },
       ];
   }

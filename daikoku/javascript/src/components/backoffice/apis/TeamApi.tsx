@@ -288,7 +288,7 @@ export const TeamApi = (props: { creation: boolean }) => {
                   api={_api}
                   onSave={documentation => save({ ..._api, documentation })}
                   reloadState={() => reloadApi()}
-                  documentation={_api.documentation}
+                  documentation={_api.documentation!}
                   importPage={() => openApiDocumentationSelectModal({
                     api: _api,
                     teamId: currentTeam._id,

@@ -191,7 +191,7 @@ export type SubscriptionMetadataModalProps<T extends IWithTesting> = {
 
 export interface IApiDocumentationSelectModalProps {
   teamId: string;
-  api: IApi;
+  api: IWithTesting;
   getDocumentationPages: () => Promise<ResponseError | Array<IImportingDocumentation>>;
   onClose: () => void;
   importPages: (pages: Array<string>, linked?: boolean) => Promise<ResponseError | ResponseDone>;

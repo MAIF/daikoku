@@ -78,7 +78,7 @@ export const renderPlanInfo = (planInfo: IFastPlan | IUsagePlan) => {
             key: 'quotas.with.limits.desc',
             replacements:
               [planInfo.costPerMonth.toString(),
-              currency(planInfo),
+              currency(planInfo)!,
               planInfo.maxPerMonth.toString()
               ]
           })}
@@ -96,10 +96,10 @@ export const renderPlanInfo = (planInfo: IFastPlan | IUsagePlan) => {
             replacements:
               [
                 planInfo.costPerMonth!.toString(),
-                currency(planInfo),
+                currency(planInfo)!,
                 planInfo.maxPerMonth!.toString(),
                 planInfo.costPerRequest!.toString(),
-                currency(planInfo)
+                currency(planInfo)!
               ]
           })}
           You'll pay {planInfo.costPerMonth}
@@ -115,9 +115,9 @@ export const renderPlanInfo = (planInfo: IFastPlan | IUsagePlan) => {
         {translate({
           key: 'pay.per.use.desc.default', replacements:
             [planInfo.costPerMonth!.toString(),
-            currency(planInfo),
+            currency(planInfo) || "",
             planInfo.costPerRequest!.toString(),
-            currency(planInfo)
+            currency(planInfo) || ""
             ]
         })}
         {planInfo.costPerMonth === 0.0 &&

@@ -467,10 +467,10 @@ export const TeamApiSubscriptions = ({
 
     const options = usagePlans.flatMap((plan) => {
       return [
-        ...(plan.otoroshiTarget?.apikeyCustomization.customMetadata.map(
+        ...(plan.otoroshiTarget?.apikeyCustomization?.customMetadata.map(
           ({ key }) => key
         ) || []),
-        ...Object.keys(plan.otoroshiTarget?.apikeyCustomization.metadata || {}),
+        ...Object.keys(plan.otoroshiTarget?.apikeyCustomization?.metadata || {}),
       ];
     });
 

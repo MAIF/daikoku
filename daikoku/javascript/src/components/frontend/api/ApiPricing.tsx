@@ -1426,6 +1426,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
             {maybeTab === 'documentation' && (
               <ApiDocumentation
                 entity={plan}
+                api={props.api}
                 documentation={plan.documentation}
                 getDocPage={(pageId) =>
                   Services.getUsagePlanDocPage(props.api._id, plan._id, pageId)

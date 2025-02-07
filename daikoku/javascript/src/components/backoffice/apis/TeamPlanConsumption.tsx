@@ -172,7 +172,7 @@ const PlanInformations = (props: PlanInformationsProps) => {
     const plan = planRequest.data
 
     return (<h3>
-      {props.api.name} - {plan.customName || plan.type}
+      {props.api.name} - {plan.customName}
     </h3>);
   } else {
     return <div>Error while fetching usage plan</div>

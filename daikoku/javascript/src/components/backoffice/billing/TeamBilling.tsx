@@ -123,13 +123,13 @@ export const TeamBilling = () => {
 
     if (planQuery.isLoading) {
       return <Spinner />
-    } else if (planQuery.data && !isError(planQuery.data)) {
+    } else if (planQuery.data && !isError(planQuery.data) && planQuery.data.currency) {
       const usagePlan = planQuery.data;
       return (
         <PriceCartridge
           label={usagePlan.customName || formatPlanType(usagePlan, translate)}
           total={props.total}
-          currency={usagePlan.currency}
+          currency={usagePlan.currency!}
           fetchInvoices={() => Services.fetchInvoices(props.currentTeam._id, props.api._id, usagePlan._id, window.location.href)
             .then(({ url }) => window.location.href = url)} />
       );

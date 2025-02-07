@@ -43,7 +43,7 @@ export function TeamApiPost({
     },
   };
 
-  const [state, setState] = useState<any>({
+  const [state, setState] = useState<{posts: Array<IApiPost>, pagination: {limit: number, offset: number, total: number}}>({
     posts: [],
     pagination: {
       limit: 1,
@@ -53,27 +53,31 @@ export function TeamApiPost({
   });
 
   useEffect(() => {
-    if (location.pathname.split('/').slice(-1)[0] === 'news') loadPosts(0, 1, true);
+    if (location.pathname.split('/').slice(-1)[0] === 'news') {
+      loadPosts(0, 1, true);
+    }
   }, [params.versionId, location.pathname]);
 
   function loadPosts(offset = 0, limit = 1, reset = false) {
-    Services.getAPIPosts(api._humanReadableId, params.versionId, offset, limit)
+    Services.getAPIPosts(api._humanReadableId, params.versionId!, offset, limit)
       .then((data) => {
-        setState({
-          posts: [
-            ...(reset ? [] : state.posts),
-            ...data.posts
-              .filter((p: any) => !state.posts.find((o: any) => o._id === p._id))
-              .map((p: any) => ({
-                ...p,
-                isOpen: false
-              })),
-          ],
-          pagination: {
-            ...state.pagination,
-            total: data.total,
-          },
-        });
+        if (!isError(data)) {
+          setState({
+            posts: [
+              ...(reset ? [] : state.posts),
+              ...data.posts
+                .filter((p) => !state.posts.find((o) => o._id === p._id))
+                .map((p) => ({
+                  ...p,
+                  isOpen: false
+                })),
+            ],
+            pagination: {
+              ...state.pagination,
+              total: data.total,
+            },
+          });
+        }
       });
   }
 

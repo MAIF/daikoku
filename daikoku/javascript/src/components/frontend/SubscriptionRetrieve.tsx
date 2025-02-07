@@ -45,7 +45,7 @@ export const SubscriptionRetrieve = () => {
           key: "subscription.retrieve.select.team.modal.message",
           replacements: [
             data.ownerTeam.name,
-            `${data.subscription.customName ?? ""} (${data.api.name}/${data.plan.customName ?? data.plan.type})` 
+            `${data.subscription.customName ?? ""} (${data.api.name}/${data.plan.customName})` 
           ]
         }),
         teams: teamRequest.data,

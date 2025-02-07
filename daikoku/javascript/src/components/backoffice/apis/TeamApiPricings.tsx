@@ -484,29 +484,29 @@ const Card = ({
 
   const deleteWithConfirm = () => {
     openFormModal({
-          title: translate('Confirm'),
-          description: <div className="alert alert-danger" role="alert">
-            <h4 className="alert-heading">{translate('Warning')}</h4>
-            <p>{translate(`delete.${tenant.display === 'environment' ? 'envionment' : 'plan'}.confirm.modal.description.1`)}</p>
-            <ul>
-              <li>{translate(`delete.${tenant.display === 'environment' ? 'envionment' : 'plan'}.confirm.modal.description.2`)}</li>
-            </ul>
-          </div>,
-          schema: {
-            confirm: {
-              type: type.string,
-              label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [plan.customName || plan.type]}),
-              constraints: [
-                constraints.oneOf(
-                  [plan.customName || plan.type],
-                  translate({ key: 'constraints.type.api.name', replacements: [plan.customName || plan.type] })
-                ),
-              ],
-            },
-          },
-          onSubmit: () => deletePlan(),
-          actionLabel: translate('Confirm')
-        })
+      title: translate('Confirm'),
+      description: <div className="alert alert-danger" role="alert">
+        <h4 className="alert-heading">{translate('Warning')}</h4>
+        <p>{translate(`delete.${tenant.display === 'environment' ? 'envionment' : 'plan'}.confirm.modal.description.1`)}</p>
+        <ul>
+          <li>{translate(`delete.${tenant.display === 'environment' ? 'envionment' : 'plan'}.confirm.modal.description.2`)}</li>
+        </ul>
+      </div>,
+      schema: {
+        confirm: {
+          type: type.string,
+          label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [plan.customName] }),
+          constraints: [
+            constraints.oneOf(
+              [plan.customName],
+              translate({ key: 'constraints.type.api.name', replacements: [plan.customName] })
+            ),
+          ],
+        },
+      },
+      onSubmit: () => deletePlan(),
+      actionLabel: translate('Confirm')
+    })
   };
 
   const noOtoroshi =
@@ -744,9 +744,9 @@ export const TeamApiPricings = (props: Props) => {
           >
             {translate('Settings')}
           </span>
-          {mode === possibleMode.edition &&
+          {/* {mode === possibleMode.edition &&
             planForEdition &&
-            paidPlans.includes(planForEdition.type) && (
+            paidPlans.includes(planForEdition.type) && ( */}
               <span
                 className={classNames('submenu__entry__link', {
                   active: selectedTab === 'payment',
@@ -755,7 +755,7 @@ export const TeamApiPricings = (props: Props) => {
               >
                 {translate('Payment')}
               </span>
-            )}
+            {/* )} */}
           {mode === possibleMode.edition && (
             <span
               className={classNames('submenu__entry__link', {
@@ -943,19 +943,24 @@ export const TeamApiPricings = (props: Props) => {
   const getRightBillingFlow = (plan: IUsagePlan) => {
     if (!plan) {
       return [];
+    } else {
+      return payPerUseFlow;
     }
-    switch (plan.type) {
-      case 'FreeWithQuotas':
-        return freeWithQuotasFlow;
-      case 'QuotasWithLimits':
-        return quotasWithLimitsFlow;
-      case 'QuotasWithoutLimits':
-        return quotasWithoutLimitsFlow;
-      case 'PayPerUse':
-        return payPerUseFlow;
-      default:
-        return [];
-    }
+    //FIXME: not sure of me ;)
+
+
+    // switch (plan.type) {
+    //   case 'FreeWithQuotas':
+    //     return freeWithQuotasFlow;
+    //   case 'QuotasWithLimits':
+    //     return quotasWithLimitsFlow;
+    //   case 'QuotasWithoutLimits':
+    //     return quotasWithoutLimitsFlow;
+    //   case 'PayPerUse':
+    //     return payPerUseFlow;
+    //   default:
+    //     return [];
+    // }
   };
 
   const deletePlan = (plan: IUsagePlan) => {
@@ -984,7 +989,7 @@ export const TeamApiPricings = (props: Props) => {
     setCreation(false);
     setPlanForEdition(plan);
     setMode(possibleMode.edition);
-    props.setHeader(plan.customName || plan.type);
+    props.setHeader(plan.customName);
   };
 
   const makePlanDefault = (plan: IUsagePlan) => {
@@ -1079,16 +1084,6 @@ export const TeamApiPricings = (props: Props) => {
     setCreation(false);
   };
 
-  const planTypes = [
-    'FreeWithoutQuotas',
-    'FreeWithQuotas',
-    'QuotasWithLimits',
-    'QuotasWithoutLimits',
-    'PayPerUse',
-  ];
-
-  const paidPlans = ['QuotasWithLimits', 'QuotasWithoutLimits', 'PayPerUse'];
-
   const customNameSchemaPart = (plans: Array<IUsagePlan>, api: IApi) => {
     if (tenant.display === 'environment' && api.visibility !== 'AdminOnly') {
       const availablePlans = tenant.environments.filter((e) =>
@@ -1128,239 +1123,200 @@ export const TeamApiPricings = (props: Props) => {
     plans: IUsagePlan[],
     api: IApi
   ): Array<IMultistepsformStep<IUsagePlan>> => [
-    {
-      id: 'info',
-      label: 'Informations',
-      schema: {
-        type: {
-          type: type.string,
-          format: format.select,
-          label: translate('Type'),
-          onAfterChange: ({ rawValues, setValue, value, reset }: any) => {
-            Services.fetchNewPlan(value).then((newPlan) => {
-              const isDescIsDefault = Object.values(SUBSCRIPTION_PLAN_TYPES)
-                .map(({ defaultDescription }) => defaultDescription)
-                .some(
-                  (d) =>
-                    !rawValues.customDescription ||
-                    d === rawValues.customDescription
-                );
-              let customDescription = rawValues.customDescription;
-              if (isDescIsDefault) {
-                const planType = SUBSCRIPTION_PLAN_TYPES[value];
-                customDescription = planType.defaultDescription;
-              }
-
-              reset({
-                ...newPlan,
-                ...rawValues,
-                type: value,
-                customDescription,
-              });
-            });
+      {
+        id: 'info',
+        label: 'Informations',
+        schema: {
+          ...customNameSchemaPart(plans, props.api),
+          customDescription: {
+            type: type.string,
+            format: format.text,
+            label: translate('Description'),
+            placeholder: translate('Plan description'),
           },
-          options: planTypes,
-          transformer: (value: any) => ({
-            label: translate(value),
-            value,
-          }),
-          constraints: [
-            constraints.required(translate('constraints.required.type')),
-            constraints.oneOf(
-              planTypes,
-              translate('constraints.oneof.plan.type')
-            ),
-          ],
         },
-        ...customNameSchemaPart(plans, props.api),
-        customDescription: {
-          type: type.string,
-          format: format.text,
-          label: translate('Description'),
-          placeholder: translate('Plan description'),
-        },
+        flow: ['customName', 'customDescription'],
       },
-      flow: ['type', 'customName', 'customDescription'],
-    },
-    {
-      id: 'oto',
-      label: translate('Otoroshi Settings'),
-      schema: {
-        otoroshiTarget: {
-          type: type.object,
-          format: format.form,
-          label: translate('Otoroshi target'),
-          schema: {
-            otoroshiSettings: {
-              type: type.string,
-              format: format.select,
-              disabled:
-                !creation && !!planForEdition?.otoroshiTarget?.otoroshiSettings,
-              label: translate('Otoroshi instances'),
-              optionsFrom: Services.allSimpleOtoroshis(
-                props.tenant._id,
-                props.currentTeam
-              )
-                .then((r) => {
-                  console.log({ r });
-                  return r;
-                })
-                .then((r) => (isError(r) ? [] : r)),
-              transformer: (s: IOtoroshiSettings) => ({
-                label: s.url,
-                value: s._id,
-              }),
-            },
-            authorizedEntities: {
-              type: type.object,
-              visible: ({ rawValues }) =>
-                !!rawValues.otoroshiTarget.otoroshiSettings,
-              deps: ['otoroshiTarget.otoroshiSettings'],
-              render: (props) =>
-                OtoroshiEntitiesSelector({ ...props, translate }),
-              label: translate('Authorized entities'),
-              placeholder: translate('Authorized.entities.placeholder'),
-              help: translate('authorized.entities.help'),
+      {
+        id: 'oto',
+        label: translate('Otoroshi Settings'),
+        schema: {
+          otoroshiTarget: {
+            type: type.object,
+            format: format.form,
+            label: translate('Otoroshi target'),
+            schema: {
+              otoroshiSettings: {
+                type: type.string,
+                format: format.select,
+                disabled:
+                  !creation && !!planForEdition?.otoroshiTarget?.otoroshiSettings,
+                label: translate('Otoroshi instances'),
+                optionsFrom: Services.allSimpleOtoroshis(
+                  props.tenant._id,
+                  props.currentTeam
+                )
+                  .then((r) => {
+                    console.log({ r });
+                    return r;
+                  })
+                  .then((r) => (isError(r) ? [] : r)),
+                transformer: (s: IOtoroshiSettings) => ({
+                  label: s.url,
+                  value: s._id,
+                }),
+              },
+              authorizedEntities: {
+                type: type.object,
+                visible: ({ rawValues }) =>
+                  !!rawValues.otoroshiTarget.otoroshiSettings,
+                deps: ['otoroshiTarget.otoroshiSettings'],
+                render: (data) =>
+                  OtoroshiEntitiesSelector({ rawValues: data.rawValues!, onChange: data.onChange!, translate, ownerTeam: props.team }),
+                label: translate('Authorized entities'),
+                placeholder: translate('Authorized.entities.placeholder'),
+                help: translate('authorized.entities.help'),
+              },
             },
           },
         },
+        flow: ['otoroshiTarget', 'subscriptionProcess'],
       },
-      flow: ['otoroshiTarget', 'subscriptionProcess'],
-    },
-    {
-      id: 'customization',
-      label: translate('Otoroshi Customization'),
-      schema: {
-        otoroshiTarget: {
-          type: type.object,
-          format: format.form,
-          label: null,
-          schema: {
-            otoroshiSettings: {
-              type: type.string,
-              visible: false,
-            },
-            authorizedEntities: {
-              type: type.object,
-              visible: false,
-            },
-            apikeyCustomization: {
-              type: type.object,
-              format: format.form,
-              label: null,
-              schema: {
-                clientIdOnly: {
-                  type: type.bool,
-                  label: ({ rawValues }) => {
-                    if (rawValues.aggregationApiKeysSecurity) {
-                      return `${translate('Read only apikey')} (${translate('disabled.due.to.aggregation.security')})`;
-                    } else {
-                      return translate('Apikey with clientId only');
-                    }
+      {
+        id: 'customization',
+        label: translate('Otoroshi Customization'),
+        schema: {
+          otoroshiTarget: {
+            type: type.object,
+            format: format.form,
+            label: null,
+            schema: {
+              otoroshiSettings: {
+                type: type.string,
+                visible: false,
+              },
+              authorizedEntities: {
+                type: type.object,
+                visible: false,
+              },
+              apikeyCustomization: {
+                type: type.object,
+                format: format.form,
+                label: null,
+                schema: {
+                  clientIdOnly: {
+                    type: type.bool,
+                    label: ({ rawValues }) => {
+                      if (rawValues.aggregationApiKeysSecurity) {
+                        return `${translate('Read only apikey')} (${translate('disabled.due.to.aggregation.security')})`;
+                      } else {
+                        return translate('Apikey with clientId only');
+                      }
+                    },
+                    disabled: ({ rawValues }) =>
+                      !!rawValues.aggregationApiKeysSecurity,
+                    onChange: ({ setValue, value }) => {
+                      if (value) {
+                        setValue('aggregationApiKeysSecurity', false);
+                      }
+                    },
                   },
-                  disabled: ({ rawValues }) =>
-                    !!rawValues.aggregationApiKeysSecurity,
-                  onChange: ({ setValue, value }) => {
-                    if (value) {
-                      setValue('aggregationApiKeysSecurity', false);
-                    }
+                  readOnly: {
+                    type: type.bool,
+                    label: ({ rawValues }) => {
+                      if (rawValues.aggregationApiKeysSecurity) {
+                        return `${translate('Read only apikey')} (${translate('disabled.due.to.aggregation.security')})`;
+                      } else {
+                        return translate('Read only apikey');
+                      }
+                    },
+                    disabled: ({ rawValues }) =>
+                      !!rawValues.aggregationApiKeysSecurity,
+                    onChange: ({ setValue, value }) => {
+                      if (value) {
+                        setValue('aggregationApiKeysSecurity', false);
+                      }
+                    },
                   },
-                },
-                readOnly: {
-                  type: type.bool,
-                  label: ({ rawValues }) => {
-                    if (rawValues.aggregationApiKeysSecurity) {
-                      return `${translate('Read only apikey')} (${translate('disabled.due.to.aggregation.security')})`;
-                    } else {
-                      return translate('Read only apikey');
-                    }
+                  constrainedServicesOnly: {
+                    type: type.bool,
+                    label: translate('Constrained services only'),
                   },
-                  disabled: ({ rawValues }) =>
-                    !!rawValues.aggregationApiKeysSecurity,
-                  onChange: ({ setValue, value }) => {
-                    if (value) {
-                      setValue('aggregationApiKeysSecurity', false);
-                    }
+                  metadata: {
+                    type: type.object,
+                    label: translate('Automatic API key metadata'),
+                    help: translate('automatic.metadata.help'),
                   },
-                },
-                constrainedServicesOnly: {
-                  type: type.bool,
-                  label: translate('Constrained services only'),
-                },
-                metadata: {
-                  type: type.object,
-                  label: translate('Automatic API key metadata'),
-                  help: translate('automatic.metadata.help'),
-                },
-                customMetadata: {
-                  type: type.object,
-                  array: true,
-                  label: translate('Custom Apikey metadata'),
-                  defaultValue: [],
-                  render: (props) => (
-                    <CustomMetadataInput {...props} translate={translate} />
-                  ),
-                  help: translate('custom.metadata.help'),
-                },
-                tags: {
-                  type: type.string,
-                  array: true,
-                  label: translate('Apikey tags'),
-                  constraints: [
-                    constraints.required(
-                      translate('constraints.required.value')
+                  customMetadata: {
+                    type: type.object,
+                    array: true,
+                    label: translate('Custom Apikey metadata'),
+                    defaultValue: [],
+                    render: (props) => (
+                      <CustomMetadataInput {...props} translate={translate} />
                     ),
-                  ],
-                },
-                restrictions: {
-                  type: type.object,
-                  format: format.form,
-                  label: 'Restrictions',
-                  schema: {
-                    enabled: {
-                      type: type.bool,
-                      label: translate('Enable restrictions'),
-                    },
-                    allowLast: {
-                      type: type.bool,
-                      visible: ({ rawValues }) =>
-                        !!rawValues.otoroshiTarget.apikeyCustomization
-                          .restrictions.enabled,
-                      deps: [
-                        'otoroshiTarget.apikeyCustomization.restrictions.enabled',
-                      ],
-                      label: translate('Allow at last'),
-                      help: translate('allow.least.help'),
-                    },
-                    allowed: {
-                      label: translate('Allowed pathes'),
-                      visible: ({ rawValues }) =>
-                        rawValues.otoroshiTarget.apikeyCustomization
-                          .restrictions.enabled,
-                      deps: [
-                        'otoroshiTarget.apikeyCustomization.restrictions.enabled',
-                      ],
-                      ...pathes,
-                    },
-                    forbidden: {
-                      label: translate('Forbidden pathes'),
-                      visible: ({ rawValues }) =>
-                        rawValues.otoroshiTarget.apikeyCustomization
-                          .restrictions.enabled,
-                      deps: [
-                        'otoroshiTarget.apikeyCustomization.restrictions.enabled',
-                      ],
-                      ...pathes,
-                    },
-                    notFound: {
-                      label: translate('Not found pathes'),
-                      visible: ({ rawValues }) =>
-                        rawValues.otoroshiTarget.apikeyCustomization
-                          .restrictions.enabled,
-                      deps: [
-                        'otoroshiTarget.apikeyCustomization.restrictions.enabled',
-                      ],
-                      ...pathes,
+                    help: translate('custom.metadata.help'),
+                  },
+                  tags: {
+                    type: type.string,
+                    array: true,
+                    label: translate('Apikey tags'),
+                    constraints: [
+                      constraints.required(
+                        translate('constraints.required.value')
+                      ),
+                    ],
+                  },
+                  restrictions: {
+                    type: type.object,
+                    format: format.form,
+                    label: 'Restrictions',
+                    schema: {
+                      enabled: {
+                        type: type.bool,
+                        label: translate('Enable restrictions'),
+                      },
+                      allowLast: {
+                        type: type.bool,
+                        visible: ({ rawValues }) =>
+                          !!rawValues.otoroshiTarget.apikeyCustomization
+                            .restrictions.enabled,
+                        deps: [
+                          'otoroshiTarget.apikeyCustomization.restrictions.enabled',
+                        ],
+                        label: translate('Allow at last'),
+                        help: translate('allow.least.help'),
+                      },
+                      allowed: {
+                        label: translate('Allowed pathes'),
+                        visible: ({ rawValues }) =>
+                          rawValues.otoroshiTarget.apikeyCustomization
+                            .restrictions.enabled,
+                        deps: [
+                          'otoroshiTarget.apikeyCustomization.restrictions.enabled',
+                        ],
+                        ...pathes,
+                      },
+                      forbidden: {
+                        label: translate('Forbidden pathes'),
+                        visible: ({ rawValues }) =>
+                          rawValues.otoroshiTarget.apikeyCustomization
+                            .restrictions.enabled,
+                        deps: [
+                          'otoroshiTarget.apikeyCustomization.restrictions.enabled',
+                        ],
+                        ...pathes,
+                      },
+                      notFound: {
+                        label: translate('Not found pathes'),
+                        visible: ({ rawValues }) =>
+                          rawValues.otoroshiTarget.apikeyCustomization
+                            .restrictions.enabled,
+                        deps: [
+                          'otoroshiTarget.apikeyCustomization.restrictions.enabled',
+                        ],
+                        ...pathes,
+                      },
                     },
                   },
                 },
@@ -1369,55 +1325,54 @@ export const TeamApiPricings = (props: Props) => {
           },
         },
       },
-    },
-    {
-      id: 'quotas',
-      label: translate('Quotas'),
-      disabled: (plan) =>
-        plan.type === 'FreeWithoutQuotas' || plan.type === 'PayPerUse',
-      schema: {
-        maxPerSecond: {
-          type: type.number,
-          label: translate('Max. per second'),
-          placeholder: translate('Max. requests per second'),
-          props: {
-            step: 1,
-            min: 0,
+      {
+        id: 'quotas',
+        label: translate('Quotas'),
+        // disabled: (plan) =>
+        //   plan.type === 'FreeWithoutQuotas' || plan.type === 'PayPerUse',
+        schema: {
+          maxPerSecond: {
+            type: type.number,
+            label: translate('Max. per second'),
+            placeholder: translate('Max. requests per second'),
+            props: {
+              step: 1,
+              min: 0,
+            },
+            constraints: [
+              constraints.positive(translate('constraints.positive')),
+              constraints.integer(translate('constraints.integer')),
+            ],
           },
-          constraints: [
-            constraints.positive(translate('constraints.positive')),
-            constraints.integer(translate('constraints.integer')),
-          ],
-        },
-        maxPerDay: {
-          type: type.number,
-          label: translate('Max. per day'),
-          placeholder: translate('Max. requests per day'),
-          props: {
-            step: 1,
-            min: 0,
+          maxPerDay: {
+            type: type.number,
+            label: translate('Max. per day'),
+            placeholder: translate('Max. requests per day'),
+            props: {
+              step: 1,
+              min: 0,
+            },
+            constraints: [
+              constraints.positive(translate('constraints.positive')),
+              constraints.integer(translate('constraints.integer')),
+            ],
           },
-          constraints: [
-            constraints.positive(translate('constraints.positive')),
-            constraints.integer(translate('constraints.integer')),
-          ],
-        },
-        maxPerMonth: {
-          type: type.number,
-          label: translate('Max. per month'),
-          placeholder: translate('Max. requests per month'),
-          props: {
-            step: 1,
-            min: 0,
+          maxPerMonth: {
+            type: type.number,
+            label: translate('Max. per month'),
+            placeholder: translate('Max. requests per month'),
+            props: {
+              step: 1,
+              min: 0,
+            },
+            constraints: [
+              constraints.positive(translate('constraints.positive')),
+              constraints.integer(translate('constraints.integer')),
+            ],
           },
-          constraints: [
-            constraints.positive(translate('constraints.positive')),
-            constraints.integer(translate('constraints.integer')),
-          ],
         },
       },
-    },
-  ];
+    ];
 
   const billingSchema = {
     paymentSettings: {
@@ -1785,11 +1740,7 @@ export const TeamApiPricings = (props: Props) => {
               {queryPlans.data &&
                 !isError(queryPlans.data) &&
                 queryPlans.data
-                  .sort((a, b) =>
-                    (a.customName || a.type).localeCompare(
-                      b.customName || b.type
-                    )
-                  )
+                  .sort((a, b) => (a.customName).localeCompare(b.customName))
                   .map((plan) => (
                     <div key={plan._id} className="col-md-4">
                       <Card
@@ -2246,7 +2197,7 @@ const MotivationForm = (props: MotivationFormProps) => {
       try {
         maybeFormattedSchema =
           typeof schema === 'object' ? schema : JSON.parse(schema);
-      } catch (_) {}
+      } catch (_) { }
 
       setRealSchema(maybeFormattedSchema || {});
     }

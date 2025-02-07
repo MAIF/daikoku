@@ -7,7 +7,7 @@ import classNames from 'classnames';
 import { I18nContext, useApiGroupFrontOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
-import { ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, isError } from '../../../types';
+import { IApi, IApiGQL, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, isError } from '../../../types';
 import { formatPlanType } from '../../utils/formatters';
 import {
   ApiDescription,
@@ -19,9 +19,10 @@ import {
   ApiPost,
   ApiPricing,
 } from './';
+import { apiGQLToLegitApi } from '../../utils/apiUtils';
 
 export const ApiGroupHome = () => {
-  const [apiGroup, setApiGroup] = useState<any>();
+  const [apiGroup, setApiGroup] = useState<IApiGQL>();
   const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
   const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<ISubscriptionDemand>>([]);
   const [myTeams, setMyTeams] = useState<Array<ITeamSimple>>([]);
@@ -68,38 +69,38 @@ export const ApiGroupHome = () => {
                   swagger: {
                     label: translate('Swagger'),
                     action: () => {
-                      if (api.swagger.content) navigateTo('swagger');
+                      if (api?.swagger?.content) navigateTo('swagger');
                     },
                     className: {
                       active: match.params.tab === 'swagger',
-                      disabled: !api.swagger.content,
+                      disabled: !api?.swagger?.content,
                     },
                   },
                   testing: {
                     label: translate('Testing'),
                     action: () => {
-                      if (api.testing.enabled && tenant.display !== 'environment') navigateTo('testing');
+                      if (api?.testing?.enabled && tenant.display !== 'environment') navigateTo('testing');
                     },
                     className: {
                       active: match.params.tab === 'testing',
-                      disabled: tenant.display === 'environment' || !api.testing.enabled,
+                      disabled: tenant.display === 'environment' || !api?.testing?.enabled,
                     },
                   },
                   news: {
                     label: translate('News'),
                     action: () => {
-                      if (api.posts.length) navigateTo('news');
+                      if (api?.posts.length) navigateTo('news');
                     },
-                    className: { active: match.params.tab === 'news', disabled: !api.posts.length },
+                    className: { active: match.params.tab === 'news', disabled: !api?.posts.length },
                   },
                   issues: {
                     label: translate('Issues'),
                     action: () => {
-                      if (api.issues.length) navigateTo('issues');
+                      if (api?.issues.length) navigateTo('issues');
                     },
                     className: {
                       active: match.params.tab === 'issues' || match.params.tab === 'labels',
-                      disabled: !api.issues.length,
+                      disabled: !api?.issues.length,
                     },
                   },
                 },
@@ -171,7 +172,7 @@ export const ApiGroupHome = () => {
   const askForApikeys = ({ team, plan }: { team: string, plan: IUsagePlan }) => {
     const planName = formatPlanType(plan, translate);
 
-    return Services.askForApiKey(apiGroup._id, team, plan._id)
+    return Services.askForApiKey(apiGroup!._id, team, plan._id)
       .then((result) => {
         if (isError(result)) {
           return toast.error(result.error);
@@ -193,14 +194,15 @@ export const ApiGroupHome = () => {
     return null;
   }
 
+  const legitApiGroup = apiGQLToLegitApi(apiGroup!, tenant)
+
   return (
     <main role="main">
       {params.tab !== 'apis' && (
         <ApiHeader
-          api={apiGroup}
+          api={legitApiGroup}
           ownerTeam={ownerTeam}
-          connectedUser={connectedUser}
-          tab={params.tab}
+          tab={params.tab!}
         />
       )}
       <div className="album py-2 me-4 min-vh-100">
@@ -213,10 +215,10 @@ export const ApiGroupHome = () => {
             <ApiGroupApis apiGroup={apiGroup} ownerTeam={ownerTeam} subscriptions={subscriptions} />
           )}
           {params.tab === 'apis' && match && <ApiHome groupView />}
-          {params.tab === 'description' && <ApiDescription api={apiGroup} />}
+          {params.tab === 'description' && <ApiDescription api={legitApiGroup} ownerTeam={ownerTeam}/>}
           {params.tab === 'pricing' && (
             <ApiPricing
-              api={apiGroup}
+              api={legitApiGroup}
               myTeams={myTeams}
               ownerTeam={ownerTeam}
               subscriptions={subscriptions}
@@ -225,17 +227,21 @@ export const ApiGroupHome = () => {
             />
           )}
           {params.tab === 'documentation' && (
-            <ApiDocumentation documentation={apiGroup.documentation} getDocPage={(pageId) => Services.getApiDocPage(apiGroup._id, pageId)} api={apiGroup}/>
+            <ApiDocumentation
+              documentation={legitApiGroup.documentation}
+              getDocPage={(pageId) => Services.getApiDocPage(legitApiGroup._id, pageId)}
+              ownerTeam={ownerTeam}
+              entity={legitApiGroup}
+              api={legitApiGroup} />
           )}
           {params.tab === 'issues' && (
             <ApiIssue
-              api={apiGroup}
+              api={legitApiGroup}
               ownerTeam={ownerTeam}
-              connectedUser={connectedUser}
             />
           )}
           {params.tab === 'news' && (
-            <ApiPost api={apiGroup} ownerTeam={ownerTeam} versionId={apiGroup.currentVersion} />
+            <ApiPost api={legitApiGroup} ownerTeam={ownerTeam} versionId={legitApiGroup.currentVersion} />
           )}
         </div>
       </div>

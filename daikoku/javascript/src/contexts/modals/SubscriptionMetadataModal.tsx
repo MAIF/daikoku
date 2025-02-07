@@ -137,11 +137,11 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(
       label: translate({
         key: "mandatory.metadata.label",
         replacements: [
-          plan?.otoroshiTarget?.apikeyCustomization.customMetadata.length.toString() ||
+          plan?.otoroshiTarget?.apikeyCustomization?.customMetadata.length.toString() ||
             "",
         ],
       }),
-      schema: sortBy(plan?.otoroshiTarget?.apikeyCustomization.customMetadata, [
+      schema: sortBy(plan?.otoroshiTarget?.apikeyCustomization?.customMetadata, [
         "key",
       ])
         .map((meta: { key: string; possibleValues: Array<string> }) => {
@@ -211,7 +211,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(
       ([accMeta, accCustomMeta]: any, item: any) => {
         if (
           plan &&
-          plan.otoroshiTarget?.apikeyCustomization.customMetadata.some(
+          plan.otoroshiTarget?.apikeyCustomization?.customMetadata.some(
             (x: any) => x.key === item[0]
           )
         ) {

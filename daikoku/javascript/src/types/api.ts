@@ -19,10 +19,10 @@ export interface IWithTesting {
   testing?: ITesting;
   _id: string;
   name?: string;
-  // customName?: string;
+  customName?: string;
 }
 
-interface IBaseApi extends IWithSwagger, IWithTesting, IWithDocumentation {
+export interface IBaseApi extends IWithSwagger, IWithTesting, IWithDocumentation {
   _id: string;
   _humanReadableId: string;
   _tenant: string;
@@ -236,6 +236,13 @@ export interface IStripePaymentSettings extends IPaymentSettings {
 }
 
 export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, IWithDocumentation {
+  _id: string;
+  _tenant: string;
+  _deleted: boolean;
+  customDescription?: string;
+  customName: string;
+  subscriptionProcess: Array<IValidationStep>;
+  otoroshiTarget?: IOtoroshiTarget;
   allowMultipleKeys?: boolean;
   aggregationApiKeysSecurity?: boolean;
   integrationProcess: 'Automatic' | 'ApiKey';

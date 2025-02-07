@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { IApi, IDocPage, IDocumentation, IDocumentationPages, isError, ITeamSimple, IWithDocumentation, ResponseError } from '../../../types';
+import { IApi, IDocPage, IDocumentation, IDocumentationPages, isError, isUsagePlan, ITeamSimple, IWithDocumentation, ResponseError } from '../../../types';
 import { api as API, Can, manage, Spinner } from '../../utils';
 
 
@@ -114,13 +114,14 @@ type ApiDocumentationProps<T extends IWithDocumentation> = {
   documentation?: IDocumentation
   getDocPage: (pageId: string) => Promise<IDocPage | ResponseError>
   ownerTeam: ITeamSimple
-  entity: T
+  entity: T,
+  api: IApi
 }
 
 
 export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumentationProps<T>) => {
   const { Translation } = useContext(I18nContext);
-  const { openRightPanel, closeRightPanel, openApiDocumentationSelectModal } = useContext(ModalContext);
+  const { openRightPanel, openApiDocumentationSelectModal } = useContext(ModalContext);
   const { translate } = useContext(I18nContext);
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -191,14 +192,16 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
             <span
               className="dropdown-item cursor-pointer"
               onClick={() => openApiDocumentationSelectModal({
-                api: props.entity, //FIXME: oops
+                api: props.entity,
                 teamId: props.ownerTeam._id,
                 onClose: () => {
                   toast.success(translate('doc.page.import.successfull'));
                   // reloadApi() //todo: reload page
                 },
-                getDocumentationPages: () => Services.getAllApiDocumentation(props.ownerTeam._id, props.entity._id, props.entity.currentVersion), //FIXME: plan have no current version
-                importPages: (pages: Array<string>, linked?: boolean) => Services.importApiPages(props.ownerTeam._id, props.entity._id, pages, props.entity.currentVersion, linked) //FIXME: plan have no current version
+                getDocumentationPages: isUsagePlan(props.entity) ?
+                () => Services.getAllPlansDocumentation(props.ownerTeam._id, props.api._id, props.api.currentVersion) :
+                () => Services.getAllApiDocumentation(props.ownerTeam._id, props.entity._id, props.api.currentVersion),
+                importPages: (pages: Array<string>, linked?: boolean) => Services.importApiPages(props.ownerTeam._id, props.entity._id, pages, props.api.currentVersion, linked)
               })}
             >
               cloner une page
@@ -222,7 +225,7 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
               <i className="fas fa-chevron-right ms-1" />
             </button>)}
           </div>
-          <ApiDocPage pageId={pageId} getDocPage={props.getDocPage} />
+          <ApiDocPage pageId={pageId} getDocPage={props.getDocPage} api={props.api}/>
         </div >
       </div>)}
       {!pageId && (

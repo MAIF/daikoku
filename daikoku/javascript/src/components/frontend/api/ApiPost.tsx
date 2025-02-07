@@ -160,7 +160,7 @@ export function ApiPost(props: ApiPostProps) {
               <ArrowRight />
             </button>
           </div>
-          {postQuery.data.posts.map((post, i) => {
+          {(postQuery.data as IApiPostCursor).posts.map((post, i) => {
             return (
               <div key={i} className="jumbotron">
                 <div className="d-flex justify-content-between align-items-center">
