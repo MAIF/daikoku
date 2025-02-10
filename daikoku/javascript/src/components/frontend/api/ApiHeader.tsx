@@ -235,17 +235,19 @@ export const ApiHeader = ({
             <span
               onClick={() => openRightPanel({
                 title: translate("update.api.details.panel.title"),
-                content: <ApiFormRightPanel team={ownerTeam} handleSubmit={(api) =>
-                  Services.saveTeamApi(ownerTeam._id, api, api.currentVersion)
+                content: <ApiFormRightPanel team={ownerTeam} api={api} handleSubmit={(updatedApi) => {
+                  return Services.saveTeamApi(ownerTeam._id, updatedApi, api.currentVersion)
                     .then((response) => {
                       if (!isError(response)) {
                         queryClient.invalidateQueries({ queryKey: ["api"] });
-                        toast.success("update.api.successful.toast.label");
+                        toast.success(translate("update.api.successful.toast.label"));
                         navigate(`/${ownerTeam._humanReadableId}/${response._humanReadableId}/${response.currentVersion}/description`)
                       } else {
                         toast.error(response.error);
                       }
                     })
+                }
+
 
                 } />
               })
@@ -319,19 +321,19 @@ export const ApiHeader = ({
             </span>
             <span
               className="dropdown-item cursor-pointer btn-outline-danger"
-              onClick={() => deleteApi({ 
-                api, 
-                versions, 
-                team: ownerTeam, 
-                translate, 
-                openFormModal, 
+              onClick={() => deleteApi({
+                api,
+                versions,
+                team: ownerTeam,
+                translate,
+                openFormModal,
                 handleSubmit: () => navigate('/apis')
               })}
             >
-            {translate('api.home.delete.api.btn.label')}
-          </span>
-      </div>
-    </Can>
+              {translate('api.home.delete.api.btn.label')}
+            </span>
+          </div>
+        </Can>
       </div >
     </section >
   );

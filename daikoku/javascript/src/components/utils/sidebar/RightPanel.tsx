@@ -1,23 +1,15 @@
 import classNames from 'classnames';
-import { useContext, useEffect, useRef } from 'react';
+import { useContext, useEffect } from 'react';
 import X from 'react-feather/dist/icons/x';
 
-import { I18nContext, ModalContext } from '../../../contexts';
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 import { useLocation } from 'react-router-dom';
+import { ModalContext } from '../../../contexts';
 
 
 export const RightPanel = () => {
   const { rightPanelContent, closeRightPanel } = useContext(ModalContext);
   const location = useLocation();
-
-
-  // useEffect(() => {
-  //   console.log('rightPanelContent updated:', rightPanelContent);
-  //   if (!rightPanelContent) {
-  //     closeRightPanel();
-  //   }
-  // }, [rightPanelContent]);
 
   const closeOnEsc = (e: any) => {
     if (e.key == 'Escape' || e.key == 'Esc') {

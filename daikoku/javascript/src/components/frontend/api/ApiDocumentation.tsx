@@ -229,11 +229,9 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
         </div >
       </div>)}
       {!pageId && (
-        <div>
-          <span>
-            seems like you have not yet setup your api documentation
-          </span>
-          <button className='btn btn-outline-primary'>add a first page</button>
+        <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
+          <div>{translate('update.api.documentation.not.found.alert')}</div>
+          <button className="btn btn-outline-info" onClick={() => { }}>{translate('add.api.documention.btn.label')}</button>
         </div>
       )}
     </div>

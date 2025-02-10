@@ -16,6 +16,7 @@ import { formatPlanType } from '../../utils/formatters';
 import { CmsViewer } from '../CmsViewer';
 import { ApiDescription } from './ApiDescription';
 import { ApiHeader } from './ApiHeader';
+import { TeamApiConsumption, TeamApiSubscriptions, TeamPlanConsumption } from '../..';
 
 type ApiHomeProps = {
   groupView?: boolean
@@ -30,6 +31,9 @@ export const ApiHome = ({
   const navigate = useNavigate();
   const defaultParams = useParams();
   const apiGroupMatch = useMatch('/:teamId/apigroups/:apiGroupId/apis/:apiId/:versionId/:tab*');
+
+  const consumptionMatch = useMatch('/:teamId/:apiId/:version/consumption/plan/:planId');
+
   const params = Option(apiGroupMatch)
     .map((match: any) => match.params)
     .getOrElse(defaultParams);
@@ -182,7 +186,7 @@ export const ApiHome = ({
     return (
       Promise.resolve(Services.saveTeamApi((ownerTeamQuery.data as ITeamSimple)._id, api, api.currentVersion))
         .then(() => toast.success(translate('update.api.successful.toast.label')))
-        .then(() => queryClient.invalidateQueries({ queryKey: ['api']}))
+        .then(() => queryClient.invalidateQueries({ queryKey: ['api'] }))
     )
   }
 
@@ -214,17 +218,17 @@ export const ApiHome = ({
 
     return (
       <main role="main">
-          {api.customHeaderCmsPage ?
-              <CmsViewer pageId={api.customHeaderCmsPage} fields={{ api }} /> :
-                <ApiHeader api={api} ownerTeam={ownerTeam} tab={params.tab} />
-          }
-        <div className="album py-2 me-4 min-vh-100" style={{ position: 'relative' }}>
-          <div className={classNames({
-            'container-fluid': params.tab === 'swagger',
-            container: params.tab !== 'swagger'
+        {api.customHeaderCmsPage ?
+          <CmsViewer pageId={api.customHeaderCmsPage} fields={{ api }} /> :
+          <ApiHeader api={api} ownerTeam={ownerTeam} tab={params.tab} />
+        }
+        <div className="album me-4 min-vh-100" style={{ position: 'relative' }}>
+          <div className={classNames("p-4", {
+            // 'container-fluid': params.tab === 'swagger',
+            // container: params.tab !== 'swagger'
           })}>
-            <div className="row pt-3">
-              {params.tab === 'description' && (api.descriptionCmsPage ? <CmsViewer pageId={api.descriptionCmsPage} fields={{ api }} /> : <ApiDescription api={api} ownerTeam={ownerTeam}/>)}
+            <div className="row">
+              {params.tab === 'description' && (api.descriptionCmsPage ? <CmsViewer pageId={api.descriptionCmsPage} fields={{ api }} /> : <ApiDescription api={api} ownerTeam={ownerTeam} />)}
               {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam}
                 subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
               {params.tab === 'documentation' && <ApiDocumentation entity={api} ownerTeam={ownerTeam} api={api}
@@ -243,6 +247,10 @@ export const ApiHome = ({
                 swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`} swaggerConf={api.swagger} />)}
               {params.tab === 'news' && (<ApiPost api={api} ownerTeam={ownerTeam} versionId={params.versionId} />)}
               {(params.tab === 'issues' || params.tab === 'labels') && (<ApiIssue api={api} ownerTeam={ownerTeam} />)}
+              {(params.tab === 'subscriptions') && (<TeamApiSubscriptions api={api} currentTeam={ownerTeam} />)}
+              {params.tab === 'consumption' && !consumptionMatch && <TeamApiConsumption api={api} currentTeam={ownerTeam} />}
+              {params.tab === 'consumption' && consumptionMatch?.params.planId && (<TeamPlanConsumption api={api} currentTeam={ownerTeam} />)}
+
             </div>
           </div>
         </div>

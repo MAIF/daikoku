@@ -545,7 +545,7 @@ export const fetchNewIssue = () => customFetch('/api/entities/issue');
 export const fetchNewPlan = (): Promise<IUsagePlan> =>
   customFetch('/api/entities/plan');
 
-export const checkIfApiNameIsUnique = (name: any, id?: any) =>
+export const checkIfApiNameIsUnique = (name: string, id?: string) =>
   customFetch('/api/apis/_names', {
     method: 'POST',
     body: JSON.stringify({ name, id }),
@@ -1564,7 +1564,6 @@ export const graphql = {
       plan {
         _id
         customName
-        type
       }
       globalInformations {
         hits

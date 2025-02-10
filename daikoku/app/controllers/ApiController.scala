@@ -2521,48 +2521,36 @@ class ApiController(
     }
 
   def checkApiNameUniqueness(
-      id: Option[String],
+      maybeApiId: Option[String],
       name: String,
       tenant: TenantId
   ): Future[Boolean] = {
     val apiRepo = env.dataStore.apiRepo.forTenant(tenant)
     val maybeHumanReadableId = name.urlPathSegmentSanitized
 
-    id match {
-      case Some(value) =>
-        apiRepo
-          .findByIdNotDeleted(value)
-          .flatMap {
-            case None =>
-              apiRepo.exists(
-                Json.obj(
-                  "_humanReadableId" -> maybeHumanReadableId,
-                  "_deleted" -> false
-                )
-              )
-            case Some(api) =>
-              val v = api.parent match {
-                case Some(parent) => parent.value
-                case None         => value
-              }
-              apiRepo
-                .exists(
-                  Json.obj(
-                    "parent" -> JsNull,
-                    "_humanReadableId" -> maybeHumanReadableId,
-                    "_id" -> Json.obj("$ne" -> v)
-                  )
-                )
-          }
-      case None =>
-        apiRepo
-          .exists(
-            Json.obj(
-              "parent" -> JsNull,
-              "_humanReadableId" -> maybeHumanReadableId
-            )
-          )
+    def uniquenessQuery(excludedId: Option[String]): JsObject = {
+      Json.obj(
+        "_humanReadableId" -> maybeHumanReadableId,
+        "_deleted" -> false,
+        "parent" -> JsNull
+      ) ++ excludedId.map(id => Json.obj("_id" -> Json.obj("$ne" -> id))).getOrElse(Json.obj())
     }
+
+    maybeApiId match {
+      case Some(apiId) =>
+        apiRepo.findByIdNotDeleted(apiId).flatMap {
+          case None =>
+            apiRepo.exists(uniquenessQuery(None))
+
+          case Some(api) =>
+            val excludedId = api.parent.map(_.value).orElse(Some(apiId))
+            apiRepo.exists(uniquenessQuery(excludedId))
+        }
+
+      case None =>
+        apiRepo.exists(uniquenessQuery(None))
+    }
+
   }
 
   def verifyNameUniqueness() =
@@ -3144,115 +3132,84 @@ class ApiController(
           s"@{user.name} has updated an api on @{team.name} - @{team.id} (@{api.name} - @{api.id})"
         )
       )(teamId, ctx) { team =>
-        env.dataStore.apiRepo
-          .findByVersion(ctx.tenant, apiId, version) flatMap {
-          case None => FastFuture.successful(AppError.render(ApiNotFound))
-          case Some(oldApi) if oldApi.team != team.id =>
-            FastFuture.successful(AppError.render(ApiNotFound))
-          case Some(oldApi) =>
+        (for {
+          oldApi <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
+            .findByVersion(ctx.tenant, apiId, version), AppError.ApiNotFound)
+          _ <- EitherT.cond[Future][AppError, Unit](oldApi.team == team.id, (), AppError.ApiNotFound)
+          newApi <- EitherT.fromEither[Future][AppError, Api](
             ApiFormat.reads(finalBody) match {
-              case JsError(e) =>
-                FastFuture.successful(
-                  BadRequest(
-                    Json.obj(
-                      "error" -> "Error while parsing payload",
-                      "msg" -> e.toString()
-                    )
-                  )
-                )
-              case JsSuccess(api, _) =>
-                checkApiNameUniqueness(
-                  Some(api.id.value),
-                  api.name,
-                  ctx.tenant.id
-                ).flatMap {
-                  case true =>
-                    FastFuture.successful(
-                      Conflict(
-                        Json.obj(
-                          "error" -> "Resource with same name already exists"
-                        )
-                      )
-                    )
-                  case false =>
-                    env.dataStore.apiRepo
-                      .forTenant(ctx.tenant.id)
-                      .exists(
-                        Json.obj(
-                          "_deleted" -> false,
-                          "_humanReadableId" -> api.humanReadableId,
-                          "currentVersion" -> api.currentVersion.asJson,
-                          "_id" -> Json.obj("$ne" -> api.id.value)
-                        )
-                      )
-                      .flatMap {
-                        case true => AppError.renderF(ApiVersionConflict)
-                        case false =>
-                          for {
-                            _ <-
-                              env.dataStore.apiRepo
-                                .forTenant(ctx.tenant.id)
-                                .save(api)
-                            _ <- otoroshiSynchronisator.verify(
-                              Json.obj("api" -> api.id.value)
-                            ) //launch synhro to maybe update customeMetadata & authorizedEntities
-                            _ <- updateTagsOfIssues(ctx.tenant.id, api)
-                            _ <- updateAllHumanReadableId(ctx, api, oldApi)
-                            _ <- turnOffDefaultVersion(
-                              ctx,
-                              api,
-                              oldApi,
-                              api.humanReadableId,
-                              api.currentVersion.value
-                            )
-                            _ <- checkIssuesVersion(ctx, api, oldApi)
-                          } yield {
-                            ctx.setCtxValue("api.name", api.name)
-                            ctx.setCtxValue("api.id", api.id)
-
-                            Ok(api.asJson)
-                          }
-                      }
-                }
-
+              case JsError(errors)   => Left(AppError.ParsingPayloadError(errors.toString))
+              case JsSuccess(api, _) => Right(api)
             }
-        }
+          )
+          anotherApiHasSameName <- EitherT.liftF[Future, AppError, Boolean](checkApiNameUniqueness(
+            Some(newApi.id.value),
+            newApi.name,
+            ctx.tenant.id
+          ))
+          _ <- EitherT.cond[Future][AppError, Unit](!anotherApiHasSameName, (), AppError.NameAlreadyExists)
+          anotherApiHasSameVersion <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
+            .forTenant(ctx.tenant.id)
+            .exists(
+              Json.obj(
+                "_deleted" -> false,
+                "_humanReadableId" -> newApi.humanReadableId,
+                "currentVersion" -> newApi.currentVersion.asJson,
+                "_id" -> Json.obj("$ne" -> newApi.id.value)
+              )
+            ))
+          _ <- EitherT.cond[Future][AppError, Unit](!anotherApiHasSameVersion, (), AppError.ApiVersionConflict)
+          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
+              .forTenant(ctx.tenant.id)
+              .save(newApi))
+          _ <- EitherT.liftF[Future, AppError, Unit](otoroshiSynchronisator.verify(Json.obj("api" -> newApi.id.value)))
+          _ <- EitherT.liftF[Future, AppError, Seq[Boolean]](updateTagsOfIssues(ctx.tenant.id, newApi))
+          _ <- EitherT.liftF[Future, AppError, Long](updateAllHumanReadableId(ctx, newApi, oldApi))
+          _ <- EitherT.liftF[Future, AppError, Long](turnOffDefaultVersion(
+            ctx,
+            newApi,
+            oldApi,
+            newApi.humanReadableId,
+            newApi.currentVersion.value
+          ))
+          _ <- EitherT.liftF[Future, AppError, Long](updateIssuesApiVersion(ctx, newApi, oldApi))
+        } yield {
+          ctx.setCtxValue("api.name", newApi.name)
+          ctx.setCtxValue("api.id", newApi.id)
+
+          Ok(newApi.asJson)
+        })
+          .leftMap(_.render())
+          .merge
       }
     }
 
-  private def checkIssuesVersion(
+  private def updateIssuesApiVersion(
       ctx: DaikokuActionContext[JsValue],
       apiToSave: Api,
       oldApi: Api
   ) = {
-    if (oldApi.currentVersion != oldApi.currentVersion) {
+    AppLogger.info(s"${apiToSave.currentVersion} != ${oldApi.currentVersion}")
+    AppLogger.info(Json.stringify(Json.obj(
+      "_id" -> Json.obj("$in" -> apiToSave.issues.map(_.value)),
+      "apiVersion" -> oldApi.currentVersion.value
+    )))
+    AppLogger.info(Json.stringify(Json.obj("$set" -> Json.obj(
+      "apiVersion" -> apiToSave.currentVersion.value
+    ))))
+    if (apiToSave.currentVersion != oldApi.currentVersion) {
       env.dataStore.apiIssueRepo
         .forTenant(ctx.tenant.id)
-        .find(
-          Json.obj("_id" -> Json.obj("$in" -> apiToSave.issues.map(_.value)))
-        )
-        .map { issues =>
-          Future.sequence(
-            issues
-              .filter(issue =>
-                issue.apiVersion match {
-                  case None => true
-                  case Some(version) =>
-                    version == apiToSave.currentVersion.value
-                }
-              )
-              .map(issue =>
-                env.dataStore.apiIssueRepo
-                  .forTenant(ctx.tenant.id)
-                  .save(
-                    issue
-                      .copy(apiVersion = Some(apiToSave.currentVersion.value))
-                  )
-              )
-          )
-        }
+        .updateManyByQuery(
+          Json.obj(
+            "_id" -> Json.obj("$in" -> oldApi.issues.map(_.value)),
+            "apiVersion" -> oldApi.currentVersion.value
+          ),
+          Json.obj("$set" -> Json.obj(
+            "apiVersion" -> apiToSave.currentVersion.value
+          )))
     } else
-      FastFuture.successful(())
+      FastFuture.successful(0L)
   }
 
   private def updateAllHumanReadableId(
@@ -3263,19 +3220,14 @@ class ApiController(
     if (oldApi.name != apiToSave.name) {
       env.dataStore.apiRepo
         .forTenant(ctx.tenant.id)
-        .find(Json.obj("_humanReadableId" -> oldApi.humanReadableId))
-        .flatMap { apis =>
-          Future
-            .sequence(
-              apis.map(api =>
-                env.dataStore.apiRepo
-                  .forTenant(ctx.tenant.id)
-                  .save(api.copy(name = apiToSave.name))
-              )
-            )
-        }
+        .updateManyByQuery(
+          Json.obj("_humanReadableId" -> oldApi.humanReadableId),
+          Json.obj("$set" -> Json.obj(
+            "_humanReadableId" -> apiToSave.humanReadableId
+          ))
+        )
     } else
-      FastFuture.successful(())
+      FastFuture.successful(0L)
   }
 
   private def turnOffDefaultVersion(
@@ -3288,23 +3240,17 @@ class ApiController(
     if (apiToSave.isDefault && !oldApi.isDefault)
       env.dataStore.apiRepo
         .forTenant(ctx.tenant.id)
-        .find(
+        .updateManyByQuery(
           Json.obj(
             "_humanReadableId" -> humanReadableId,
             "currentVersion" -> Json.obj("$ne" -> version)
-          )
+          ),
+          Json.obj("$set" -> Json.obj(
+            "isDefault" -> false
+          ))
         )
-        .map { apis =>
-          Future.sequence(
-            apis.map(api =>
-              env.dataStore.apiRepo
-                .forTenant(ctx.tenant.id)
-                .save(api.copy(isDefault = false))
-            )
-          )
-        }
     else
-      FastFuture.successful(())
+      FastFuture.successful(0L)
   }
 
   private def updateTagsOfIssues(tenantId: TenantId, api: Api) = {
@@ -4636,12 +4582,7 @@ class ApiController(
           api <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
-              .findOne(
-                Json.obj(
-                  "_humanReadableId" -> apiId,
-                  "currentVersion" -> Json.obj("$ne" -> version)
-                )
-              ),
+              .findByIdNotDeleted(apiId),
             AppError.ApiNotFound
           )
           _ <- controlApiAndPlan(api)

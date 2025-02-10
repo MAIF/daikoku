@@ -56,9 +56,13 @@ export const TeamPlanConsumption = (props: TeamPlanConsumptionProps) => {
   const { translate } = useContext(I18nContext);
   const { client } = useContext(getApolloContext());
 
+  // const urlMatching = !!props.apiGroup
+  //   ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId'
+  //   : '/:teamId/settings/apis/:apiId/:version/stats/plan/:planId';
+
   const urlMatching = !!props.apiGroup
     ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId'
-    : '/:teamId/settings/apis/:apiId/:version/stats/plan/:planId';
+    : '/:teamId/:apiId/:version/consumption/plan/:planId';
   const match = useMatch(urlMatching);
 
   const mappers = [
@@ -125,7 +129,6 @@ export const TeamPlanConsumption = (props: TeamPlanConsumptionProps) => {
     <div>
       <div className="row">
         <div className="col">
-          <h1>Api Consumption</h1>
           <PlanInformations
             api={props.api}
             version={match?.params.version!}
@@ -164,7 +167,9 @@ type PlanInformationsProps = {
 }
 
 const PlanInformations = (props: PlanInformationsProps) => {
-  const planRequest = useQuery({ queryKey: ['plan'], queryFn: () => Services.planOfApi(props.currentTeam._id, props.api._id, props.version, props.planId) })
+  const planRequest = useQuery({ 
+    queryKey: ['plan'], 
+    queryFn: () => Services.planOfApi(props.currentTeam._id, props.api._id, props.version, props.planId) })
 
   if (planRequest.isLoading) {
     return <Spinner width="50" height="50" />;

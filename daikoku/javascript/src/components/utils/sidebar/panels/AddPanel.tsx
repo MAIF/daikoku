@@ -249,7 +249,7 @@ export const ApiFormRightPanel = (props: ApiFormRightPanelProps) => {
           props.handleSubmit(data)
             .then(() => closeRightPanel())
         }}
-        value={newApiQuery.data}
+        value={props.api || newApiQuery.data}
         options={{
           actions: {
             submit: {

@@ -564,6 +564,7 @@
     "signup.to.tenant": "Signup to %s",
     "api.creation.title.modal": "Select the team for which to create new API",
     "api.creation.description.modal": "You are going to create an API. For which team do you want to create it?",
+    "api.creation.title.panel.title": "API creation",
     "apigroup.creation.title.modal": "Select the team for which to create new APIs group",
     "apigroup.creation.description.modal": "You are going to create an APIs group. For which team do you want to create it?",
     "Set font family from asset": "Set font family from asset",
@@ -1484,5 +1485,9 @@
     "update.api.testing.delete.btn.label": "Delete testing configuration",
     "update.api.successful.toast.label": "API succesfully updated",
     "update.api.openapi.not.found.alert": "No API documentation configured.",
-    "update.api.testing.not.found.alert": "No API testing configured."
+    "update.api.testing.not.found.alert": "No API testing configured.",
+    "update.api.documentation.not.found.alert": "No API documenation configured",
+    "add.api.documention.btn.label": "Create your first documentaiton page",
+    "api.consumption.plan.btn.aria.label": "View the consumption of the %s plan",
+    "api.consumption.plan.btn.label": "View the consumption"
 }

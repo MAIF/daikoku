@@ -564,6 +564,7 @@
   "signup.to.tenant": "Inscription à %s",
   "api.creation.title.modal": "Sélectionnez l'équipe pour laquelle créer une nouvelle API",
   "api.creation.description.modal": "Vous allez créer une nouvelle API. Pour quelle équipe voulez-vous la créer ?",
+  "api.creation.title.panel.title": "Création d'une API",
   "apigroup.creation.title.modal": "Sélectionnez l'équipe pour laquelle créer un nouveau groupe d'APIs",
   "apigroup.creation.description.modal": "Vous allez créer un nouveau groupe d'API. Pour quelle équipe voulez-vous le créer ?",
   "Set font family from asset": "Définir la police de style depuis un asset",
@@ -1485,5 +1486,9 @@
   "update.api.testing.delete.btn.label": "Supprimer la configuration de test de l'API",
   "update.api.successful.toast.label": "API succesfully updated",
   "update.api.openapi.not.found.alert": "Aucune documentation d'API configurée.",
-  "update.api.testing.not.found.alert": "Aucun test d'API configuré."
+  "update.api.testing.not.found.alert": "Aucun test d'API configuré.",
+  "update.api.documentation.not.found.alert": "Aucune documentation d'API configuré.",
+  "add.api.documention.btn.label": "Créer une première page de documentation",
+  "api.consumption.plan.btn.aria.label": "Voir la consommation du plan %s",
+  "api.consumption.plan.btn.label": "Voir la consommation"
 }

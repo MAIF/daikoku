@@ -69,8 +69,11 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
         constraints.test(
           'name_already_exist',
           translate('api.already.exists'),
-          (name, context) =>
-            Services.checkIfApiNameIsUnique(name, context.parent._id).then((r) => !r.exists)
+          (name, context) => {
+            console.debug({context})
+            return Services.checkIfApiNameIsUnique(name, context.parent._id)
+              .then((r) => !r.exists)
+          }
         ),
       ],
     },

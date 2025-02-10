@@ -176,6 +176,24 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
               active: currentTab === 'issues' || currentTab === 'labels',
             },
           },
+          subscriptions: {
+            label: translate('Subscriptions'),
+            action: () => navigateTo('subscriptions'),
+            className: {
+              active: currentTab === 'subscriptions',
+              disabled: !userCanUpdateApi,
+              'd-none': !userCanUpdateApi
+            },
+          },
+          consumption: {
+            label: translate('Consumption'),
+            action: () => navigateTo('consumption'),
+            className: {
+              active: currentTab === 'consumption',
+              disabled: !userCanUpdateApi,
+              'd-none': !userCanUpdateApi
+            },
+          },
         },
       },
       actions: {

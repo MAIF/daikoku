@@ -205,3 +205,8 @@
 - [x] **(ASOAPI-10691)** => Consommateur - Demander étendre mes accès - en mode rapide  
   **Summary:** Demander une extension d'accès en mode rapide pour un consommateur.  
   **Expected result:** La demande d'extension est envoyée et consultée avec succès.
+
+- [x] **???** => Admin - Modification seulement du plan d'une admin-api
+- [x] **???** => Admin - transfert impossible d'une admin-api
+- [x] **???** => Admin - Modification seulement du plan d'une cms-api
+- [x] **???** => Login - login by another way than ldap (local, otoroshi)

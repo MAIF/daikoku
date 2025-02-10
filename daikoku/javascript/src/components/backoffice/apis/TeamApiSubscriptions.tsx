@@ -212,10 +212,7 @@ export const TeamApiSubscriptions = ({
         filterFn: (row, _, value) => {
           const sub = row.original;
 
-          const displayed: string =
-            sub.team._id === currentTeam._id
-              ? sub.customName || sub.apiKey.clientName
-              : sub.apiKey.clientName;
+          const displayed: string = sub.adminCustomName || sub.apiKey.clientName;
 
           return displayed
             .toLocaleLowerCase()
@@ -236,15 +233,15 @@ export const TeamApiSubscriptions = ({
             return (
               <div className="d-flex flex-row justify-content-between">
                 <span>{info.getValue()}</span>
-                  <BeautifulTitle title={title} html>
-                    <div className="badge badge-custom">A</div>
-                  </BeautifulTitle>
+                <BeautifulTitle title={title} html>
+                  <div className="badge badge-custom">A</div>
+                </BeautifulTitle>
               </div>
             );
           }
 
           return (
-              <span>{info.getValue()}</span>
+            <span>{info.getValue()}</span>
           );
         },
       }
@@ -287,7 +284,7 @@ export const TeamApiSubscriptions = ({
       meta: { style: { textAlign: "center" } },
       cell: (info) => {
         const sub = info.row.original;
-        return (        
+        return (
           <SwitchButton
             disabled={sub.parent && !sub.parent?.enabled}
             ariaLabel="enable subscription"
@@ -355,7 +352,7 @@ export const TeamApiSubscriptions = ({
                 className="btn btn-sm btn-outline-primary btn-outline-danger me-1"
                 aria-label={translate("Refresh secret")}
                 onClick={() => regenerateSecret(sub)}
-                >
+              >
                 <i className="fas fa-sync" />
               </button>
             </BeautifulTitle>
@@ -476,75 +473,73 @@ export const TeamApiSubscriptions = ({
 
     return (
       <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
-        <div className="px-2">
-          <div className="d-flex flex-row justify-content-start align-items-center mb-2">
-            <button
-              className="btn btn-sm btn-outline-info"
-              onClick={() =>
-                openFormModal({
-                  actionLabel: translate("Filter"),
-                  onSubmit: (data) => {
-                    setFilters(data);
-                  },
-                  schema: {
-                    metadata: {
-                      type: type.object,
-                      format: format.form,
-                      label: translate("Filter metadata"),
-                      array: true,
-                      schema: {
-                        key: {
-                          type: type.string,
-                          createOption: true,
-                        },
-                        value: {
-                          type: type.string,
-                        },
+        <div className="d-flex flex-row justify-content-start align-items-center mb-2">
+          <button
+            className="btn btn-sm btn-outline-info"
+            onClick={() =>
+              openFormModal({
+                actionLabel: translate("Filter"),
+                onSubmit: (data) => {
+                  setFilters(data);
+                },
+                schema: {
+                  metadata: {
+                    type: type.object,
+                    format: format.form,
+                    label: translate("Filter metadata"),
+                    array: true,
+                    schema: {
+                      key: {
+                        type: type.string,
+                        createOption: true,
+                      },
+                      value: {
+                        type: type.string,
                       },
                     },
-                    tags: {
-                      type: type.string,
-                      label: translate("Filter tags"),
-                      array: true,
-                    },
-                    clientIds: {
-                      type: type.string,
-                      array: true,
-                      label: translate("Filter Client Ids"),
-                    },
                   },
-                  title: translate("Filter data"),
-                  value: filters,
-                })
-              }
+                  tags: {
+                    type: type.string,
+                    label: translate("Filter tags"),
+                    array: true,
+                  },
+                  clientIds: {
+                    type: type.string,
+                    array: true,
+                    label: translate("Filter Client Ids"),
+                  },
+                },
+                title: translate("Filter data"),
+                value: filters,
+              })
+            }
+          >
+            {" "}
+            {translate("Filter")}{" "}
+          </button>
+          {!!filters && (
+            <div
+              className="clear cursor-pointer ms-1"
+              onClick={() => setFilters(undefined)}
             >
-              {" "}
-              {translate("Filter")}{" "}
-            </button>
-            {!!filters && (
-              <div
-                className="clear cursor-pointer ms-1"
-                onClick={() => setFilters(undefined)}
-              >
-                <i className="far fa-times-circle me-1" />
-                <Translation i18nkey="clear filter">clear filter</Translation>
-              </div>
-            )}
-          </div>
-          <div className="col-12">
-            <Table
-              defaultSort="adminCustomName"
-              columns={columns(usagePlans)}
-              fetchItems={() => {
-                if (subscriptionsQuery.isLoading || subscriptionsQuery.error) {
-                  return [];
-                } else {
-                  return subscriptionsQuery.data ?? [];
-                }
-              }}
-              ref={tableRef}
-            />
-          </div>
+              <i className="far fa-times-circle me-1" />
+              <Translation i18nkey="clear filter">clear filter</Translation>
+            </div>
+          )}
+        </div>
+        <div className="col-12">
+          <Table
+            defaultSort="adminCustomName"
+            columns={columns(usagePlans)}
+            fetchItems={() => {
+              if (subscriptionsQuery.isLoading || subscriptionsQuery.error) {
+                return [];
+              } else {
+                return subscriptionsQuery.data ?? [];
+              }
+            }}
+            ref={tableRef}
+          />
         </div>
       </Can>
     );
