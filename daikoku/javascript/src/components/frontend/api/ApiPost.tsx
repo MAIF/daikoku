@@ -11,8 +11,9 @@ import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services/index';
 import { converter } from '../../../services/showdown';
 import { IApi, IApiPost, IApiPostCursor, isError, ITeamSimple } from '../../../types';
-import { api as API, Can, manage } from '../../utils/permissions';
+import { api as API, Can, manage, CanIDoAction } from '../../utils/permissions';
 import { Spinner } from '../../utils/Spinner';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 type ApiPostProps = {
   api: IApi
@@ -24,6 +25,7 @@ type ApiPostProps = {
 export function ApiPost(props: ApiPostProps) {
   const { translate, language } = useContext(I18nContext);
   const { openRightPanel, closeRightPanel, confirm } = useContext(ModalContext);
+  const { connectedUser } = useContext(GlobalContext);
   const queryClient = useQueryClient();
 
   const [currentPage, setCurrentPage] = useState(0);
@@ -110,68 +112,77 @@ export function ApiPost(props: ApiPostProps) {
       />
   })
 
-  const isDataError = postQuery.data && !isError(postQuery.data);
-  return (
-    <div className="container-fluid">
-      <Can I={manage} a={API} team={props.ownerTeam}>
-        <More
-          className="a-fake"
-          aria-label={translate('update.api.testing.btn.label')}
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-          id={`${props.api._id}-dropdownMenuButton`}
-          style={{ position: "absolute", right: 0 }} />
-        <div className="dropdown-menu" aria-labelledby={`${props.api._id}-dropdownMenuButton`}>
-          {isDataError && <>
+  const isDataError = postQuery.data && isError(postQuery.data);
+
+
+  if (postQuery.isLoading) {
+    return (
+      <Spinner />
+    )
+  } else if (!!postQuery.data && !isError(postQuery.data)) {
+    const currentPost = (postQuery.data as IApiPostCursor).posts[0];
+
+    return (
+      <div className="container-fluid">
+        <Can I={manage} a={API} team={props.ownerTeam}>
+          <More
+            className="a-fake"
+            aria-label={translate('update.api.testing.btn.label')}
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            id={`${props.api._id}-dropdownMenuButton`}
+            style={{ position: "absolute", right: 0 }} />
+          <div className="dropdown-menu" aria-labelledby={`${props.api._id}-dropdownMenuButton`}>
+            {!isDataError && currentPost && <>
+              <span
+                onClick={() => createorUpdatePostForm(currentPost, false)}
+                className="dropdown-item cursor-pointer"
+              >
+                Modifier le post
+              </span>
+              <div className="dropdown-divider" />
+            </>}
+
             <span
-              onClick={() => createorUpdatePostForm((postQuery.data as IApiPostCursor).posts[0], false)}
+              onClick={() => createorUpdatePostForm(undefined, true)}
               className="dropdown-item cursor-pointer"
             >
-              Modifier le post
+              Créer un nouveau post
             </span>
-            <div className="dropdown-divider" />
-          </>}
-
-          <span
-            onClick={() => createorUpdatePostForm(undefined, true)}
-            className="dropdown-item cursor-pointer"
-          >
-            Créer un nouveau post
-          </span>
-          {isDataError && <>
-            <div className="dropdown-divider" />
-            <span
-              onClick={() => removePost((postQuery.data as IApiPostCursor).posts[0])}
-              className="dropdown-item cursor-pointer btn-outline-danger"
-            >
-              Supprimer le post
-            </span>
-          </>}
-        </div>
-      </Can>
-      {postQuery.isLoading && <Spinner />}
-      {isDataError && (
-        <>
-          <div className='d-flex flex-row justify-content-between'>
-            <button className="btn btn-outline-info" onClick={() => setCurrentPage((postQuery.data as IApiPostCursor).prevCursor || 0)}>
-              <ArrowLeft />
-            </button>
-            <button className="btn btn-outline-info" onClick={() => setCurrentPage((postQuery.data as IApiPostCursor).nextCursor || currentPage)}>
-              <ArrowRight />
-            </button>
+            {!isDataError && <>
+              <div className="dropdown-divider" />
+              <span
+                onClick={() => removePost(currentPost)}
+                className="dropdown-item cursor-pointer btn-outline-danger"
+              >
+                Supprimer le post
+              </span>
+            </>}
           </div>
-          {(postQuery.data as IApiPostCursor).posts.map((post, i) => {
-            return (
-              <div key={i} className="jumbotron">
-                <div className="d-flex justify-content-between align-items-center">
-                  <h1>{post.title}</h1>
-                  <span>{formatDate(post.lastModificationAt)}</span>
-                </div>
-                <div className="api-post" dangerouslySetInnerHTML={{ __html: converter.makeHtml(post.content) }} />
-              </div>)
-          })}
-        </>
-      )}
-    </div>
-  );
+        </Can>
+        <div className='d-flex flex-row justify-content-between'>
+          <button className="btn btn-outline-info" onClick={() => setCurrentPage((postQuery.data as IApiPostCursor).prevCursor || 0)}>
+            <ArrowLeft />
+          </button>
+          <button className="btn btn-outline-info" onClick={() => setCurrentPage((postQuery.data as IApiPostCursor).nextCursor || currentPage)}>
+            <ArrowRight />
+          </button>
+        </div>
+        {(postQuery.data as IApiPostCursor).posts.map((post, i) => {
+          return (
+            <div key={i} className="jumbotron">
+              <div className="d-flex justify-content-between align-items-center">
+                <h1>{post.title}</h1>
+                <span>{formatDate(post.lastModificationAt)}</span>
+              </div>
+              <div className="api-post" dangerouslySetInnerHTML={{ __html: converter.makeHtml(post.content) }} />
+            </div>)
+        })}
+      </div>
+    );
+  } else {
+    return (
+      <div>error while fetching data</div>
+    )
+  }
 }

@@ -18,6 +18,7 @@ export default defineConfig({
     //   host: '*.oto.tools',
     //   port: 5173,
     // },
+    // allowedHosts: ['test.oto.tools'],
     // watch: {
     //   usePolling: true,
     // },
