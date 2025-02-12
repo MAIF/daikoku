@@ -3172,7 +3172,6 @@ class ApiController(
             newApi.humanReadableId,
             newApi.currentVersion.value
           ))
-          _ <- EitherT.liftF[Future, AppError, Long](updateIssuesApiVersion(ctx, newApi, oldApi))
         } yield {
           ctx.setCtxValue("api.name", newApi.name)
           ctx.setCtxValue("api.id", newApi.id)
@@ -3183,34 +3182,6 @@ class ApiController(
           .merge
       }
     }
-
-  private def updateIssuesApiVersion(
-      ctx: DaikokuActionContext[JsValue],
-      apiToSave: Api,
-      oldApi: Api
-  ) = {
-    AppLogger.info(s"${apiToSave.currentVersion} != ${oldApi.currentVersion}")
-    AppLogger.info(Json.stringify(Json.obj(
-      "_id" -> Json.obj("$in" -> apiToSave.issues.map(_.value)),
-      "apiVersion" -> oldApi.currentVersion.value
-    )))
-    AppLogger.info(Json.stringify(Json.obj("$set" -> Json.obj(
-      "apiVersion" -> apiToSave.currentVersion.value
-    ))))
-    if (apiToSave.currentVersion != oldApi.currentVersion) {
-      env.dataStore.apiIssueRepo
-        .forTenant(ctx.tenant.id)
-        .updateManyByQuery(
-          Json.obj(
-            "_id" -> Json.obj("$in" -> oldApi.issues.map(_.value)),
-            "apiVersion" -> oldApi.currentVersion.value
-          ),
-          Json.obj("$set" -> Json.obj(
-            "apiVersion" -> apiToSave.currentVersion.value
-          )))
-    } else
-      FastFuture.successful(0L)
-  }
 
   private def updateAllHumanReadableId(
       ctx: DaikokuActionContext[JsValue],

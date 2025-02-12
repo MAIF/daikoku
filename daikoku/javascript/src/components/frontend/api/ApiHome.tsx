@@ -232,7 +232,8 @@ export const ApiHome = ({
               {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam}
                 subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
               {params.tab === 'documentation' && <ApiDocumentation entity={api} ownerTeam={ownerTeam} api={api}
-                documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)} />}
+                documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)}
+                refreshEntity={() => queryClient.invalidateQueries({ queryKey: ['api']})} />}
               {params.tab === 'testing' && (<ApiSwagger
                 _id={api._id}
                 testing={api.testing}

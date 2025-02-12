@@ -1,28 +1,56 @@
 /* eslint-disable react/display-name */
+import { getApolloContext, gql } from '@apollo/client';
+import { constraints, Flow, Form, format, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import asciidoctor from 'asciidoctor';
 import classNames from 'classnames';
 import hljs from 'highlight.js';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import More from 'react-feather/dist/icons/more-vertical';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { I18nContext, ModalContext } from '../../../contexts';
+import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import { IApi, IDocPage, IDocumentation, IDocumentationPages, isError, isUsagePlan, ITeamSimple, IWithDocumentation, ResponseError } from '../../../types';
-import { api as API, Can, manage, Spinner } from '../../utils';
-
+import { IPage } from '../../adminbackoffice/cms';
+import { AssetButton, longLoremIpsum, loremIpsum, TeamApiDocumentation } from '../../backoffice/apis/TeamApiDocumentation';
+import { api as API, BeautifulTitle, Can, manage, Spinner } from '../../utils';
+import { CmsViewer } from '../CmsViewer';
 
 import 'highlight.js/styles/monokai.css';
-import { CmsViewer } from '../CmsViewer';
+
+type ApiDocumentationProps<T extends IWithDocumentation> = {
+  documentation?: IDocumentation
+  getDocPage: (pageId: string) => Promise<IDocPage | ResponseError>
+  ownerTeam: ITeamSimple
+  entity: T,
+  api: IApi,
+  refreshEntity: () => void
+}
 
 type ApiDocumentationCartidgeProps = {
   documentation?: IDocumentation
   currentPageId?: string
   goTo: (pageId: string) => void
 }
+
+type ApiDocPageProps = {
+  pageId?: string,
+  api: IApi,
+  getDocPage: (id: string) => Promise<IDocPage | ResponseError>
+}
+
+type AwesomeContentViewerProp = {
+  contentType: string
+  remoteContent?: { url: string }
+  content?: string
+  cmsPage?: string
+  api: IApi,
+}
+
 export const ApiDocumentationCartidge = (props: ApiDocumentationCartidgeProps) => {
   const renderLinks = (pages?: IDocumentationPages, level: number = 0) => {
     if (!pages || !pages.length) {
@@ -53,11 +81,7 @@ export const ApiDocumentationCartidge = (props: ApiDocumentationCartidgeProps) =
   );
 }
 
-type ApiDocPageProps = {
-  pageId?: string,
-  api: IApi,
-  getDocPage: (id: string) => Promise<IDocPage | ResponseError>
-}
+
 const ApiDocPage = (props: ApiDocPageProps) => {
   const queryClient = useQueryClient();
   const pageRequest = useQuery({
@@ -110,27 +134,43 @@ const ApiDocPage = (props: ApiDocPageProps) => {
 
 }
 
-type ApiDocumentationProps<T extends IWithDocumentation> = {
-  documentation?: IDocumentation
-  getDocPage: (pageId: string) => Promise<IDocPage | ResponseError>
-  ownerTeam: ITeamSimple
-  entity: T,
-  api: IApi
-}
-
-
 export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumentationProps<T>) => {
   const { Translation } = useContext(I18nContext);
   const { openRightPanel, openApiDocumentationSelectModal } = useContext(ModalContext);
   const { translate } = useContext(I18nContext);
+  const { client } = useContext(getApolloContext());
 
   const [searchParams, setSearchParams] = useSearchParams();
+  const [view, setView] = useState<'documentation' | 'update'>(() => {
+    return (localStorage.getItem('view') as 'documentation' | 'update') || 'documentation';
+  });
 
-  const [updateView, setUpdateView] = useState(false);
+  useEffect(() => {
+    localStorage.setItem('view', view);
+  }, [view]);
 
-  const page = searchParams.get('page');
-  // const [pageId, setPageId] = useState(page || props.documentation?.pages[0].id);
-  const [pageId, setPageId] = useState<string>();
+
+  const [pageId, setPageId] = useState(searchParams.get('page') || props.documentation?.pages[0].id);
+
+  const cmsPagesQuery = () => ({
+    query: gql`
+      query CmsPages {
+        pages {
+          id
+          name
+          path
+          contentType
+          lastPublishedDate
+          metadata
+        }
+      }
+    `,
+  })
+
+
+  const getCmsPages = (): Promise<Array<IPage>> =>
+    client!.query(cmsPagesQuery())
+      .then(res => res.data.pages as Array<IPage>)
 
   const flattenDoc = (pages?: IDocumentationPages): Array<string> => {
     if (!pages) {
@@ -153,6 +193,145 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
   const next = orderedPages[idx + (pageId ? 1 : 2)];
   const prev = orderedPages[idx - 1];
 
+  const flow: Flow = [
+    'title',
+    'contentType',
+    'cmsPage',
+    'remoteContentEnabled',
+    'remoteContentUrl',
+    'remoteContentHeaders',
+    'content',
+  ];
+
+  const schema = (onSubmitAsset: (page: IDocPage) => void): Schema => {
+    return {
+      title: {
+        type: type.string,
+        label: translate('Page title'),
+        constraints: [
+          constraints.required(translate("constraints.required.name"))
+        ]
+      },
+      content: {
+        type: type.string,
+        format: format.markdown,
+        visible: ({
+          rawValues
+        }) => !rawValues.remoteContentEnabled && rawValues.contentType !== 'cms/page',
+        label: translate('Page content'),
+        props: {
+          height: '800px',
+          actions: (insert) => {
+            return <>
+              <button
+                type="button"
+                className="btn-for-descriptionToolbar"
+                aria-label={translate('Lorem Ipsum')}
+                title={translate('Lorem Ipsum')}
+                onClick={() => insert(loremIpsum)}
+              >
+                <i className={`fas fa-feather-alt`} />
+              </button>
+              <button
+                type="button"
+                className="btn-for-descriptionToolbar"
+                aria-label={translate('Long Lorem Ipsum')}
+                title={translate('Long Lorem Ipsum')}
+                onClick={() => insert(longLoremIpsum)}
+              >
+                <i className={`fas fa-feather`} />
+              </button>
+              <BeautifulTitle
+                place="bottom"
+                title={translate('image url from asset')}
+              >
+                <AssetChooserByModal
+                  typeFilter={MimeTypeFilter.image}
+                  onlyPreview
+                  tenantMode={false}
+                  team={props.ownerTeam}
+                  icon="fas fa-file-image"
+                  classNames="btn-for-descriptionToolbar"
+                  onSelect={(asset) => insert(asset.link)}
+                  label={translate("Insert URL")}
+                />
+              </BeautifulTitle>
+            </>;
+          }
+        }
+      },
+      remoteContentEnabled: {
+        type: type.bool,
+        label: translate('Remote content'),
+        visible: ({
+          rawValues
+        }) => rawValues.contentType !== 'cms/page',
+      },
+      contentType: {
+        type: type.string,
+        format: format.select,
+        label: translate('Content type'),
+        options: mimeTypes,
+      },
+      remoteContentUrl: {
+        type: type.string,
+        visible: ({
+          rawValues
+        }) => !!rawValues.remoteContentEnabled && rawValues.contentType !== 'cms/page',
+        label: translate('Content URL'),
+        render: ({
+          onChange,
+          value,
+          setValue,
+          rawValues
+        }: any) => {
+          return (
+            <div className='flex-grow-1 ms-3'>
+              <input className='mrf-input mb-3' value={value} onChange={onChange} />
+              <div className="col-12 d-flex justify-content-end">
+                <AssetButton onChange={onChange} team={props.ownerTeam} setValue={setValue} rawValues={rawValues} formModalProps={{
+                  title: translate('doc.page.update.modal.title'),
+                  flow: flow,
+                  schema: schema(onSubmitAsset),
+                  value: rawValues,
+                  onSubmit: onSubmitAsset,
+                  actionLabel: translate('Save')
+                }} />
+              </div>
+            </div>
+          )
+        }
+      },
+      cmsPage: {
+        type: type.string,
+        format: format.select,
+        label: translate('CMS Page'),
+        props: { isClearable: true },
+        optionsFrom: () => {
+          return getCmsPages()
+            .then(results => results
+              .filter(result => result.path.includes('documentations/'))
+              .sort((a, b) => a.path.includes(props.api._humanReadableId) ? 1 : b.path.includes(props.api._humanReadableId) ? 1 : -1))
+        },
+        transformer: page => ({
+          label: `${page.path}/${page.name}`,
+          value: page.id
+        }),
+        visible: ({
+          rawValues
+        }: any) => rawValues.contentType === 'cms/page',
+      },
+      remoteContentHeaders: {
+        type: type.object,
+        visible: ({
+          rawValues
+        }: any) => !!rawValues.remoteContentEnabled && rawValues.contentType !== 'cms/page',
+        label: translate('Content headers'),
+      },
+    }
+  };
+
+
   return (
     <div>
       <Can I={manage} a={API} team={props.ownerTeam}>
@@ -174,65 +353,79 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
           />
           <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
             <span
-              onClick={() => setUpdateView(true)}
+              onClick={() => setView(view === 'documentation' ? 'update' : 'documentation')}
               className="dropdown-item cursor-pointer"
             >
-              Modifier la documentation
-            </span>
-            <div className="dropdown-divider" />
-            <span
-              className="dropdown-item cursor-pointer"
-              onClick={() => openRightPanel({
-                title: "Ajouter une nouvelle page de doc",
-                content: <div>toto</div>
-              })}
-            >
-              Ajouter une page
-            </span>
-            <span
-              className="dropdown-item cursor-pointer"
-              onClick={() => openApiDocumentationSelectModal({
-                api: props.entity,
-                teamId: props.ownerTeam._id,
-                onClose: () => {
-                  toast.success(translate('doc.page.import.successfull'));
-                  // reloadApi() //todo: reload page
-                },
-                getDocumentationPages: isUsagePlan(props.entity) ?
-                () => Services.getAllPlansDocumentation(props.ownerTeam._id, props.api._id, props.api.currentVersion) :
-                () => Services.getAllApiDocumentation(props.ownerTeam._id, props.entity._id, props.api.currentVersion),
-                importPages: (pages: Array<string>, linked?: boolean) => Services.importApiPages(props.ownerTeam._id, props.entity._id, pages, props.api.currentVersion, linked)
-              })}
-            >
-              cloner une page
+              {view === 'documentation' ? 'Modifier la documentation' : 'Voir la documentation'}
             </span>
           </div>
         </div>
       </Can>
-      {pageId && (<div className='d-flex flex-row'>
-        <ApiDocumentationCartidge documentation={props.documentation} currentPageId={pageId} goTo={setPageId} />
-        <div className="col p-3 d-flex flex-column">
-          <div className={classNames("d-flex", {
-            'justify-content-between': !!prev,
-            'justify-content-end': !prev,
-          })}>
-            {prev && (<button className='btn btn-sm btn-outline-primary' onClick={() => setPageId(prev)}>
-              <i className="fas fa-chevron-left me-1" />
-              <Translation i18nkey="Previous page">Previous page</Translation>
-            </button>)}
-            {next && (<button className='btn btn-sm btn-outline-primary' onClick={() => setPageId(next)}>
-              <Translation i18nkey="Next page">Next page</Translation>
-              <i className="fas fa-chevron-right ms-1" />
-            </button>)}
-          </div>
-          <ApiDocPage pageId={pageId} getDocPage={props.getDocPage} api={props.api}/>
-        </div >
-      </div>)}
-      {!pageId && (
+
+      {view === 'documentation' && pageId && (
+        <div className='d-flex flex-row'>
+          <ApiDocumentationCartidge documentation={props.documentation} currentPageId={pageId} goTo={setPageId} />
+          <div className="col p-3 d-flex flex-column">
+            <div className={classNames("d-flex", {
+              'justify-content-between': !!prev,
+              'justify-content-end': !prev,
+            })}>
+              {prev && (<button className='btn btn-sm btn-outline-primary' onClick={() => setPageId(prev)}>
+                <i className="fas fa-chevron-left me-1" />
+                <Translation i18nkey="Previous page">Previous page</Translation>
+              </button>)}
+              {next && (<button className='btn btn-sm btn-outline-primary' onClick={() => setPageId(next)}>
+                <Translation i18nkey="Next page">Next page</Translation>
+                <i className="fas fa-chevron-right ms-1" />
+              </button>)}
+            </div>
+            <ApiDocPage pageId={pageId} getDocPage={props.getDocPage} api={props.api} />
+          </div >
+        </div>
+      )}
+
+      {view === 'documentation' && !pageId && (
         <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
           <div>{translate('update.api.documentation.not.found.alert')}</div>
-          <button className="btn btn-outline-info" onClick={() => { }}>{translate('add.api.documention.btn.label')}</button>
+          <button className="btn btn-outline-info"
+            onClick={() => openRightPanel({
+              title: "test creer page doc",
+              content: <Form
+                schema={schema(asset => console.debug({ asset }))}
+                flow={flow}
+                onSubmit={page => console.debug({ page })}
+              />
+            })}>
+            {translate('add.api.documention.btn.label')}
+          </button>
         </div>
+      )}
+
+      {view === 'update' && (
+        <TeamApiDocumentation
+          creationInProgress={false}
+          team={props.ownerTeam}
+          api={props.api}
+          onSave={documentation => Services.saveTeamApiWithId(
+            props.ownerTeam!._id,
+            { ...props.api, documentation },
+            props.api.currentVersion,
+            props.api._humanReadableId
+          )}
+          reloadState={() => Promise.resolve(props.refreshEntity())}
+          documentation={props.api.documentation!}
+          importPage={() => openApiDocumentationSelectModal({
+            api: props.api,
+            teamId: props.ownerTeam._id,
+            onClose: () => {
+              toast.success(translate('doc.page.import.successfull'));
+              props.refreshEntity()
+            },
+            getDocumentationPages: () => Services.getAllApiDocumentation(props.ownerTeam._id, props.api._id, props.api.currentVersion),
+            importPages: (pages: Array<string>, linked?: boolean) => Services.importApiPages(props.ownerTeam._id, props.api._id, pages, props.api.currentVersion, linked)
+          })}
+          importAuthorized={false}
+        />
       )}
     </div>
   )
@@ -405,13 +598,7 @@ const mimeTypes = [
   },
 ];
 
-type AwesomeContentViewerProp = {
-  contentType: string
-  remoteContent?: { url: string }
-  content?: string
-  cmsPage?: string
-  api: IApi,
-}
+
 const AwesomeContentViewer = (props: AwesomeContentViewerProp) => {
 
   if (props.cmsPage) {
