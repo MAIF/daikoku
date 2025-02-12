@@ -5,14 +5,13 @@ import { ACCUEIL, adminApikeyId, adminApikeySecret, dwhightPaperApiKeyId, expose
 
 
 test.beforeEach(async () => {
-  console.log(`Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`)
   await Promise.all([
     fetch(`http://localhost:${exposedPort}/admin-api/state/reset`, {
       method: 'POST',
       headers: {
         "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
       }
-    }).then(console.log),
+    }),
     fetch('http://localhost:1080/api/emails', {
       method: 'DELETE'
     }),

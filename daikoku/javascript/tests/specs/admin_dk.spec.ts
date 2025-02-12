@@ -12,7 +12,7 @@ test.beforeEach(async () => {
       headers: {
         "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
       }
-    }).then(console.log),
+    }),
     fetch('http://localhost:1080/api/emails', {
       method: 'DELETE'
     }),

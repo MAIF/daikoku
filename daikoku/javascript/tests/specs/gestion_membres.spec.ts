@@ -10,8 +10,6 @@ test.beforeEach(async () => {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`
     }
   })
-    .then(r => r.json())
-    .then(r => console.log({ r }))
     .then(() => fetch('http://localhost:1080/api/emails', {
       method: 'DELETE'
     }))
