@@ -30,8 +30,6 @@ export const CanIDoAction = (
   // else if (what === api && !apiCreationPermitted)
   //   return false
   else {
-    Option(isTenantAdmin).map((x) => x);
-
     const realPerm: number = Option(team)
       .map((t) => t.users)
       .flatMap((users: TeamUser[]) => Option(users.find((u) => u.userId === user._id)))

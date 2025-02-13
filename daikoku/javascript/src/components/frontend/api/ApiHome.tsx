@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import { GraphQLClient } from 'graphql-request';
-import { useContext, useEffect } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -16,7 +16,8 @@ import { formatPlanType } from '../../utils/formatters';
 import { CmsViewer } from '../CmsViewer';
 import { ApiDescription } from './ApiDescription';
 import { ApiHeader } from './ApiHeader';
-import { TeamApiConsumption, TeamApiSubscriptions, TeamPlanConsumption } from '../..';
+import { CanIDoActionForOneOfTeams, read, TeamApiConsumption, TeamApiSubscriptions, TeamPlanConsumption } from '../..';
+import { ApiSubscriptions } from './apikeys';
 
 type ApiHomeProps = {
   groupView?: boolean
@@ -101,47 +102,33 @@ export const ApiHome = ({
     { addMenu: () => { } } : useApiFrontOffice((apiQuery.data as IApi), (ownerTeamQuery.data as ITeamSimple));
 
   useEffect(() => {
-    if (apiQuery.data && !isError(apiQuery.data) && myTeamsQuery.data && mySubscriptionQuery.data && !groupView) {
+    if (apiQuery.data && !isError(apiQuery.data) && myTeamsQuery.data && mySubscriptionQuery.data && ownerTeamQuery.data && !isError(ownerTeamQuery.data) && !groupView) {
       const subscriptions = mySubscriptionQuery.data.subscriptions;
       const myTeams = myTeamsQuery.data;
       const api = apiQuery.data;
+      const ownerTeam = ownerTeamQuery.data
 
       const subscribingTeams = myTeams
         .filter((team) => subscriptions.some((sub) => sub.team === team._id))
         .map(teamGQLToSimple);
 
       const viewApiKeyLink = (
-        <Can I={manage} a={apikey} teams={subscribingTeams}>
-          <ActionWithTeamSelector
-            title={translate('teamapi.select.title')}
-            teams={subscribingTeams.filter((t) => CanIDoAction(connectedUser, manage, apikey, t))}
-            action={(teams) => {
-              const team = myTeams.find((t) => teams.includes(t._id));
-              if (!team) {
-                return;
-              }
-              navigate(
-                `/${team._humanReadableId}/settings/apikeys/${api?._humanReadableId}/${api?.currentVersion}`
-              );
-            }}
-            actionLabel={translate('View your api keys')}
-            allTeamSelector={false}
-          >
-            <span className="block__entry__link">
-              <Translation i18nkey="View your api keys">View your api keys</Translation>
-            </span>
-          </ActionWithTeamSelector>
+        <Can I={read} a={apikey} teams={subscribingTeams}>
+          <span
+            className="block__entry__link"
+            onClick={() => navigate(`/${ownerTeam._humanReadableId}/${api?._humanReadableId}/${api?.currentVersion}/apikeys`)}>
+            <Translation i18nkey="API keys">API keys</Translation>
+          </span>
         </Can>
       );
 
       addMenu({
         blocks: {
-          actions: { links: { viewApiKey: { label: 'view apikey', component: viewApiKeyLink } } },
+          links: { links: { viewApiKey: { label: 'view apikey', component: viewApiKeyLink } } },
         },
       });
     }
-  }, [mySubscriptionQuery.data, myTeamsQuery.data, apiQuery.data]);
-
+  }, [mySubscriptionQuery.data, myTeamsQuery.data, apiQuery.data, ownerTeamQuery.data]);
 
   const askForApikeys = ({ team, plan, apiKey, motivation }:
     { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }) => {
@@ -213,6 +200,9 @@ export const ApiHome = ({
     const subscriptions = mySubscriptionQuery.data!.subscriptions;
     const pendingSubscriptions = mySubscriptionQuery.data!.requests;
 
+    const subscribingTeams = myTeams
+      .filter((team) => subscriptions.some((sub) => sub.team === team._id));
+
 
     document.title = `${tenant.title} - ${api ? api.name : 'API'}`;
 
@@ -233,7 +223,7 @@ export const ApiHome = ({
                 subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
               {params.tab === 'documentation' && <ApiDocumentation entity={api} ownerTeam={ownerTeam} api={api}
                 documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)}
-                refreshEntity={() => queryClient.invalidateQueries({ queryKey: ['api']})} />}
+                refreshEntity={() => queryClient.invalidateQueries({ queryKey: ['api'] })} />}
               {params.tab === 'testing' && (<ApiSwagger
                 _id={api._id}
                 testing={api.testing}
@@ -251,6 +241,7 @@ export const ApiHome = ({
               {(params.tab === 'subscriptions') && (<TeamApiSubscriptions api={api} currentTeam={ownerTeam} />)}
               {params.tab === 'consumption' && !consumptionMatch && <TeamApiConsumption api={api} currentTeam={ownerTeam} />}
               {params.tab === 'consumption' && consumptionMatch?.params.planId && (<TeamPlanConsumption api={api} currentTeam={ownerTeam} />)}
+              {params.tab === 'apikeys' && (<ApiSubscriptions api={api} ownerTeam={ownerTeam} subscribingTeams={subscribingTeams}/>)}
 
             </div>
           </div>

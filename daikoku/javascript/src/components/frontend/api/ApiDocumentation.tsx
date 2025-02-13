@@ -150,7 +150,7 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
   }, [view]);
 
 
-  const [pageId, setPageId] = useState(searchParams.get('page') || props.documentation?.pages[0].id);
+  const [pageId, setPageId] = useState(searchParams.get('page') || props.documentation?.pages[0]?.id);
 
   const cmsPagesQuery = () => ({
     query: gql`

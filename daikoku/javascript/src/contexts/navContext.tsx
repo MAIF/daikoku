@@ -100,7 +100,7 @@ export const NavProvider = (props: PropsWithChildren) => {
 };
 
 export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
-  const { setMode, setOffice, setApi, setTeam, addMenu, setMenu } = useContext(NavContext);
+  const { setMode, setOffice, setApi, setTeam, addMenu, setMenu, menu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
   const { openContactModal } = useContext(ModalContext);
   const { connectedUser, tenant } = useContext(GlobalContext);
@@ -199,19 +199,6 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
       actions: {
         order: 2,
         links: {
-          edit: {
-            label: translate('edit'),
-            component: (
-              <Can I={manage} a={API} team={team}>
-                <Link
-                  to={`/${team?._humanReadableId}/settings/apis/${api?._humanReadableId}/${api?.currentVersion}/infos`}
-                  className="btn btn-sm btn-outline-primary mb-2"
-                >
-                  {translate('api.configuration.btn.label')}
-                </Link>
-              </Can>
-            ),
-          },
           contact: {
             component: (
               <button
@@ -240,7 +227,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
 
   useEffect(() => {
     if (params.tab) {
-      setMenu(schema(params.tab));
+      addMenu(schema(params.tab));
     }
   }, [params.tab, api, team]);
 
@@ -262,6 +249,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
 
   return { addMenu };
 };
+
 export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
   const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
@@ -321,19 +309,6 @@ export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
       actions: {
         order: 2,
         links: {
-          edit: {
-            label: translate('edit'),
-            component: (
-              <Can I={manage} a={API} team={team}>
-                <Link
-                  to={`/${team?._humanReadableId}/settings/apigroups/${apigroup?._humanReadableId}/infos`}
-                  className="btn btn-sm btn-outline-primary mb-2"
-                >
-                  {translate('apis.group.configuration.btn.label')}
-                </Link>
-              </Can>
-            ),
-          },
           contact: {
             label: translate('contact'),
             component: (
