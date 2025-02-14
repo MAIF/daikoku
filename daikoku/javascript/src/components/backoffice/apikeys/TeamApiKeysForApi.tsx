@@ -69,6 +69,7 @@ const DisplayLink = ({ value }: { value: string }) => {
 
 export const TeamApiKeysForApi = () => {
   const { isLoading, currentTeam, error } = useTeamBackOffice();
+  const { Translation } = useContext(I18nContext);
 
   const params = useParams();
 
@@ -98,12 +99,26 @@ export const TeamApiKeysForApi = () => {
   if (apiQuery.isLoading || teamQuery.isLoading) {
     return <Spinner />
   } else if (apiQuery.data && !isError(apiQuery.data) && teamQuery.data && !isError(teamQuery.data)) {
+    const apiLink = `/${teamQuery.data._humanReadableId}/${apiQuery.data._humanReadableId}/${apiQuery.data.currentVersion}/description`;
+
     return (
-      <ApiKeysListForApi
-        api={apiQuery.data!}
-        team={(currentTeam as ITeamSimple)}
-        ownerTeam={teamQuery.data}
-      />
+      <div>
+        <div className="col-12 d-flex align-items-center">
+          <h1>
+            <Translation i18nkey="Api keys for">Api keys for</Translation>
+            &nbsp;
+            <Link
+              to={apiLink}
+              className="cursor-pointer underline"
+            >{apiQuery.data!.name}</Link>
+          </h1>
+        </div>
+        <ApiKeysListForApi
+          api={apiQuery.data!}
+          team={(currentTeam as ITeamSimple)}
+          ownerTeam={teamQuery.data}
+        />
+      </div>
     )
   }
 
@@ -429,16 +444,6 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
     return (
       <Can I={read} a={apikey} team={props.team} dispatchError>
         <div className="row">
-          <div className="col-12 d-flex align-items-center">
-            <h1>
-              <Translation i18nkey="Api keys for">Api keys for</Translation>
-              &nbsp;
-              <Link
-                to={apiLink}
-                className="cursor-pointer underline"
-              >{props.api.name}</Link>
-            </h1>
-          </div>
           <div className="col-12 mt-2 mb-4">
             <input
               type="text"
