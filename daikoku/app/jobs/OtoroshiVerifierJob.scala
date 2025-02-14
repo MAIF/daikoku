@@ -440,7 +440,7 @@ class OtoroshiVerifierJob(
                   ),
                 restrictions = ApiKeyRestrictions(
                   enabled =
-                    apikey1.restrictions.enabled && apikey2.restrictions.enabled,
+                    apikey1.restrictions.enabled || apikey2.restrictions.enabled,
                   allowLast =
                     apikey1.restrictions.allowLast || apikey2.restrictions.allowLast,
                   allowed =
