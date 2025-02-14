@@ -1350,7 +1350,7 @@
   "apikeys.view.api": "Voir l'API",
   "apikeys.view.apikeys": "Voir les clés d'API",
   "subscription.for": "Souscription à",
-  "subscription.create.at": "Souscription créée le %s\"",
+  "subscription.created.at": "Souscription créée le %s\"",
   "subscription.valid.until": "valid until %s",
   "subscription.nota.part.1": "Consultez la documentation",
   "subscription.nota.part.2": "ou explorez",
