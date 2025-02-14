@@ -537,59 +537,68 @@ object CommonServices {
     }
   }
   def getAllTags(research: String)(implicit
-      ctx: DaikokuActionContext[_],
+      ctx: DaikokuActionContext[JsValue],
       env: Env,
       ec: ExecutionContext
   ): Future[Seq[String]] = {
     for {
-      apis <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findAllNotDeleted()
+      visibleApis <- getVisibleApis(research = "", limit = -1, offset = 0)
     } yield {
-      apis
-        .flatMap(api =>
-          api.tags.toSeq.filter(tag => tag.indexOf(research) != -1)
+      visibleApis
+        .map(apis =>
+          apis.apis
+            .flatMap(api =>
+              api.api.tags.toSeq.filter(tag => tag.indexOf(research) != -1)
+            )
+            .foldLeft(Map.empty[String, Int])((map, tag) => {
+              val nbOfMatching = map.get(tag) match {
+                case Some(count) => count + 1
+                case None        => 1
+              }
+              map + (tag -> nbOfMatching)
+
+            })
+            .toSeq
+            .sortBy(_._2)
+            .reverse
+            .map(a => a._1)
+            .take(5)
         )
-        .foldLeft(Map.empty[String, Int])((map, tag) => {
-          val nbOfMatching = map.get(tag) match {
-            case Some(count) => count + 1
-            case None        => 1
-          }
-          map + (tag -> nbOfMatching)
-
-        })
-        .toSeq
-        .sortBy(_._2)
-        .reverse
-        .map(a => a._1)
-        .take(5)
-
+        .getOrElse(Seq.empty)
     }
   }
 
   def getAllCategories(research: String)(implicit
-      ctx: DaikokuActionContext[_],
+      ctx: DaikokuActionContext[JsValue],
       env: Env,
       ec: ExecutionContext
   ): Future[Seq[String]] = {
     for {
-      apis <- env.dataStore.apiRepo.forTenant(ctx.tenant.id).findAllNotDeleted()
+      visibleApis <- getVisibleApis(research = "", limit = -1, offset = 0)
     } yield {
-      apis
-        .flatMap(api =>
-          api.categories.toSeq.filter(cat => cat.indexOf(research) != -1)
-        )
-        .foldLeft(Map.empty[String, Int])((map, cat) => {
-          val nbOfMatching = map.get(cat) match {
-            case Some(count) => count + 1
-            case None        => 1
-          }
-          map + (cat -> nbOfMatching)
+      visibleApis
+        .map(apis =>
+          apis.apis
+            .flatMap(api =>
+              api.api.categories.toSeq.filter(tag =>
+                tag.indexOf(research) != -1
+              )
+            )
+            .foldLeft(Map.empty[String, Int])((map, cat) => {
+              val nbOfMatching = map.get(cat) match {
+                case Some(count) => count + 1
+                case None        => 1
+              }
+              map + (cat -> nbOfMatching)
 
-        })
-        .toSeq
-        .sortBy(_._2)
-        .reverse
-        .map(a => a._1)
-        .take(5)
+            })
+            .toSeq
+            .sortBy(_._2)
+            .reverse
+            .map(a => a._1)
+            .take(5)
+        )
+        .getOrElse(Seq.empty)
     }
   }
 
