@@ -704,3 +704,9 @@ We'd like to thank all the contributors who worked on this release!
 
 - restrictions could'nt enabled [#806](https://github.com/MAIF/daikoku/issues/806)
 
+## [v18.1.5] - 2025-02-17
+
+## :beetle: Bug Fixes
+
+- no more pagination in api list, just 10 apis [#808](https://github.com/MAIF/daikoku/issues/808)
+
