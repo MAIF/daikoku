@@ -379,6 +379,11 @@ trait Repo[Of, Id <: ValueType] {
 
   def exists(id: Id)(implicit ec: ExecutionContext): Future[Boolean] =
     exists(Json.obj("_id" -> id.value))
+
+  def queryOne(query: String, params: Seq[AnyRef] = Seq.empty)(implicit ec: ExecutionContext): Future[Option[Of]]
+  def query(query: String, params: Seq[AnyRef] = Seq.empty)(implicit ec: ExecutionContext): Future[Seq[Of]]
+  def queryPaginated(query: String, params: Seq[AnyRef] = Seq.empty, offset: Int, limit: Int)(implicit ec: ExecutionContext): Future[(Seq[Of], Long)]
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

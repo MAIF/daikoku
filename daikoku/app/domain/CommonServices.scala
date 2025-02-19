@@ -330,217 +330,162 @@ object CommonServices {
     _UberPublicUserAccess(
       AuditTrailEvent(s"@{user.name} has accessed the list of visible apis")
     )(ctx) {
-      val userIsAdmin = ctx.user.isDaikokuAdmin || ctx.isTenantAdmin
-
-      val ownerTeamFilter = selectedTeam match {
-        case Some(_) => Json.obj("team" -> selectedTeam.map(JsString))
-        case None    => Json.obj()
-      }
-      val tagFilter = selectedTag match {
-        case Some(_) => Json.obj("tags" -> selectedTag.map(JsString))
-        case None    => Json.obj()
-      }
-      val catFilter = selectedCat match {
-        case Some(_) => Json.obj("categories" -> selectedCat.map(JsString))
-        case None    => Json.obj()
-      }
-      val teamRepo = env.dataStore.teamRepo.forTenant(ctx.tenant)
-      (teamId match {
-        case None => teamRepo.findAllNotDeleted()
-        case Some(id) =>
-          teamRepo.find(
-            Json.obj(
-              "$or" -> Json
-                .arr(Json.obj("_id" -> id), Json.obj("_humanReadableId" -> id))
-            )
-          )
-      }).map(teams =>
-          if (ctx.user.isDaikokuAdmin) teams
+      val tenant = ctx.tenant
+      val user = ctx.user
+      for {
+        myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)
+        apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
+        myCurrentRequests <-
+          if (user.isGuest) FastFuture.successful(Seq.empty)
           else
-            teams
-              .filter(team => team.users.exists(u => u.userId == ctx.user.id))
+            env.dataStore.notificationRepo
+              .forTenant(tenant.id)
+              .findNotDeleted(
+                Json.obj(
+                  "action.type" -> "ApiAccess",
+                  "action.team" -> Json
+                    .obj("$in" -> JsArray(myTeams.map(_.id.asJson))),
+                  "status.status" -> "Pending"
+                )
+              )
+        allVisibleApisSqlQuery =
+          s"""
+             |SELECT content
+             |FROM apis
+             |WHERE (
+             |  content ->> '_tenant' = '${ctx.tenant.id.value}' AND
+             |  (content ->> 'state' = 'published' OR
+             |   $$1 OR
+             |   content ->> 'team' IN ($$2))
+             |      AND
+             |  (case
+             |       WHEN $$3 THEN content ->> 'visibility' = '${ApiVisibility.Public.name}'
+             |       WHEN $$1 THEN TRUE
+             |       ELSE (content ->> 'visibility' IN ('${ApiVisibility.Public.name}', '${ApiVisibility.PublicWithAuthorizations.name}') OR (content ->> 'team' in ($$2)) OR (content -> 'authorizedTeams' ?| ARRAY[$$2]))
+             |      END) AND
+             |  (content ->> 'name' ~* COALESCE(NULLIF($$4, ''), '.*')) AND
+             |  (_deleted = false) AND
+             |  (COALESCE($$5, '') = '' OR content ->> 'team' = $$5) AND
+             |  (COALESCE($$6, '') = '' OR content -> 'tags' ? $$6) AND
+             |  (COALESCE($$7, '') = '' OR content -> 'categories' ? $$7) AND
+             |  (COALESCE($$8, '') = '' OR (content ->> '_id' IN (SELECT jsonb_array_elements_text(content -> 'apis')
+             |                                                    FROM apis
+             |                                                    WHERE _id = $$8))) AND
+             |  (content ->> 'isDefault')::boolean
+             |)
+             |ORDER BY LOWER(content ->> 'name')
+             |""".stripMargin
+        log = AppLogger.info(s"${Seq(
+          java.lang.Boolean.valueOf(user.isDaikokuAdmin),
+          myTeams.map(_.id.value).mkString(","),
+          java.lang.Boolean.valueOf(user.isGuest),
+          research,
+          selectedTeam.orNull,
+          selectedTag.orNull,
+          selectedCat.orNull,
+          groupOpt.orNull)}")
+        paginateApis <- apiRepo.queryPaginated(
+          allVisibleApisSqlQuery,
+          Seq(
+            java.lang.Boolean.valueOf(user.isDaikokuAdmin),
+            myTeams.map(_.id.value).mkString(","),
+            java.lang.Boolean.valueOf(user.isGuest),
+            research,
+            selectedTeam.orNull,
+            selectedTag.orNull,
+            selectedCat.orNull,
+            groupOpt.orNull),
+          offset, limit)
+
+        producerTeams <- env.dataStore.teamRepo.forTenant(ctx.tenant)
+          .query(
+            s"""
+               |with visible_apis as ($allVisibleApisSqlQuery)
+               |
+               |SELECT DISTINCT(teams.content) FROM visible_apis
+               |LEFT JOIN teams on teams._id = visible_apis.content ->> 'team'
+               |""".stripMargin,
+            Seq(
+              java.lang.Boolean.valueOf(user.isDaikokuAdmin),
+              myTeams.map(_.id.value).mkString(","),
+              java.lang.Boolean.valueOf(user.isGuest), research,
+              selectedTeam.orNull, selectedTag.orNull, selectedCat.orNull,
+              groupOpt.orNull))
+
+        uniqueApisWithVersion <- apiRepo.findNotDeleted(
+          Json.obj(
+            "_humanReadableId" -> Json.obj(
+              "$in" -> JsArray(
+                paginateApis._1.map(a => JsString(a.humanReadableId))
+              )
+            )
+          ),
+          sort = Some(Json.obj("name" -> 1))
         )
-        .flatMap(teams => {
-          val teamFilter =
-            if (teams.nonEmpty)
+        plans <-
+          env.dataStore.usagePlanRepo
+            .forTenant(ctx.tenant)
+            .findNotDeleted(
               Json.obj(
-                "team" -> Json.obj("$in" -> JsArray(teams.map(_.id.asJson)))
-              )
-            else Json.obj()
-          val tenant = ctx.tenant
-          val user = ctx.user
-          for {
-            myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)
-            apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
-            groupFilter <-
-              if (groupOpt.isDefined)
-                apiRepo.findByIdNotDeleted(groupOpt.get).map {
-                  case Some(api) =>
-                    Json.obj(
-                      "_id" -> Json.obj(
-                        "$in" -> JsArray(
-                          api.apis
-                            .map(apiIds => apiIds.map(_.asJson))
-                            .getOrElse(Set.empty)
-                            .toSeq
-                        )
-                      )
-                    )
-                  case None => Json.obj()
-                }
-              else FastFuture.successful(Json.obj())
-
-            myCurrentRequests <-
-              if (user.isGuest) FastFuture.successful(Seq.empty)
-              else
-                env.dataStore.notificationRepo
-                  .forTenant(tenant.id)
-                  .findNotDeleted(
-                    Json.obj(
-                      "action.type" -> "ApiAccess",
-                      "action.team" -> Json
-                        .obj("$in" -> JsArray(myTeams.map(_.id.asJson))),
-                      "status.status" -> "Pending"
-                    )
-                  )
-            publicApi = Json.obj("visibility" -> "Public").some
-            pwaApi =
-              if (user.isGuest) None
-              else Json.obj("visibility" -> "PublicWithAuthorizations").some
-            privateApi =
-              if (user.isGuest) None
-              else
-                Json
-                  .obj(
-                    "visibility" -> "Private",
-                    "$or" -> Json.arr(
-                      Json.obj(
-                        "authorizedTeams" -> Json
-                          .obj("$in" -> JsArray(myTeams.map(_.id.asJson)))
-                      ),
-                      teamFilter
-                    )
-                  )
-                  .some
-            parentFilter =
-              if (groupOpt.isDefined) Json.obj()
-              else Json.obj("isDefault" -> true)
-            adminApi =
-              if (!userIsAdmin) None
-              else Json.obj("visibility" -> ApiVisibility.AdminOnly.name).some
-            visibilityFilter = Json.obj(
-              "$or" -> JsArray(
-                Seq(publicApi, pwaApi, privateApi, adminApi)
-                  .filter(_.isDefined)
-                  .map(_.get)
-              )
-            )
-            producerTeams <-
-              apiRepo
-                .find(
-                  visibilityFilter ++ Json.obj(
-                    "name" -> Json.obj("$regex" -> research),
-                    "_deleted" -> false
-                  ) ++ ownerTeamFilter ++ tagFilter ++ catFilter ++ groupFilter ++ parentFilter
-                )
-                .map(apis => apis.map(_.team))
-                .flatMap(ids =>
-                  env.dataStore.teamRepo
-                    .forTenant(tenant)
-                    .find(
-                      Json.obj(
-                        "_id" -> Json.obj("$in" -> JsArray(ids.map(_.asJson)))
-                      )
-                    )
-                )
-
-            paginateApis <- apiRepo.findWithPagination(
-              visibilityFilter ++ Json.obj(
-                "name" -> Json.obj("$regex" -> research),
-                "_deleted" -> false
-              ) ++ ownerTeamFilter ++ tagFilter ++ catFilter ++ groupFilter ++ parentFilter,
-              offset,
-              limit,
-              Some(Json.obj("name" -> 1))
-            )
-            uniqueApisWithVersion <- apiRepo.findNotDeleted(
-              Json.obj(
-                "_humanReadableId" -> Json.obj(
+                "_id" -> Json.obj(
                   "$in" -> JsArray(
-                    paginateApis._1.map(a => JsString(a.humanReadableId))
+                    uniqueApisWithVersion
+                      .flatMap(_.possibleUsagePlans)
+                      .map(_.asJson)
                   )
                 )
-              ),
-              sort = Some(Json.obj("name" -> 1))
-            )
-            plans <-
-              env.dataStore.usagePlanRepo
-                .forTenant(ctx.tenant)
-                .findNotDeleted(
-                  Json.obj(
-                    "_id" -> Json.obj(
-                      "$in" -> JsArray(
-                        uniqueApisWithVersion
-                          .flatMap(_.possibleUsagePlans)
-                          .map(_.asJson)
-                      )
-                    )
-                  )
-                )
-          } yield {
-            val sortedApis: Seq[ApiWithAuthorizations] = uniqueApisWithVersion
-              .filter(api =>
-                api.isPublished || myTeams.exists(api.team == _.id)
               )
-              .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
-              .foldLeft(Seq.empty[ApiWithAuthorizations]) {
-                case (acc, api) =>
-                  val apiPlans = plans
-                    .filter(p => api.possibleUsagePlans.contains(p.id))
-                    .filter(p =>
-                      p.visibility == UsagePlanVisibility.Public || myTeams
-                        .exists(_.id == api.team)
-                    )
-                  val authorizations = myTeams
-                    .filter(t => t.`type` != TeamType.Admin)
-                    .foldLeft(Seq.empty[AuthorizationApi]) {
-                      case (acc, team) =>
-                        acc :+ AuthorizationApi(
-                          team = team.id.value,
-                          authorized = api.authorizedTeams
-                            .contains(team.id) || api.team == team.id,
-                          pending = myCurrentRequests
-                            .exists(notif =>
-                              notif.action
-                                .asInstanceOf[ApiAccess]
-                                .team == team.id && notif.action
-                                .asInstanceOf[ApiAccess]
-                                .api == api.id
-                            )
+            )
+      } yield {
+        val sortedApis: Seq[ApiWithAuthorizations] = uniqueApisWithVersion
+          .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
+          .foldLeft(Seq.empty[ApiWithAuthorizations]) {
+            case (acc, api) =>
+              val apiPlans = plans
+                .filter(p => api.possibleUsagePlans.contains(p.id))
+                .filter(p =>
+                  p.visibility == UsagePlanVisibility.Public || myTeams
+                    .exists(_.id == api.team)
+                )
+              val authorizations = myTeams
+                .filter(t => t.`type` != TeamType.Admin)
+                .foldLeft(Seq.empty[AuthorizationApi]) {
+                  case (acc, team) =>
+                    acc :+ AuthorizationApi(
+                      team = team.id.value,
+                      authorized = api.authorizedTeams
+                        .contains(team.id) || api.team == team.id,
+                      pending = myCurrentRequests
+                        .exists(notif =>
+                          notif.action
+                            .asInstanceOf[ApiAccess]
+                            .team == team.id && notif.action
+                            .asInstanceOf[ApiAccess]
+                            .api == api.id
                         )
-                    }
-                  acc :+ (api.visibility.name match {
-                    case "PublicWithAuthorizations" | "Private" =>
-                      ApiWithAuthorizations(
-                        api = api,
-                        plans = apiPlans,
-                        authorizations = authorizations
-                      )
-                    case _ => ApiWithAuthorizations(api = api, plans = apiPlans)
-                  })
-              }
-            ApiWithCount(sortedApis, producerTeams, paginateApis._2)
+                    )
+                }
+              acc :+ (api.visibility.name match {
+                case "PublicWithAuthorizations" | "Private" =>
+                  ApiWithAuthorizations(
+                    api = api,
+                    plans = apiPlans,
+                    authorizations = authorizations
+                  )
+                case _ => ApiWithAuthorizations(api = api, plans = apiPlans)
+              })
           }
-        })
+        ApiWithCount(sortedApis, producerTeams, paginateApis._2)
+      }
     }
   }
-  def getAllTags(research: String)(implicit
+  def getAllTags(research: String, groupOpt: Option[String])(implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
       ec: ExecutionContext
   ): Future[Seq[String]] = {
     for {
-      visibleApis <- getVisibleApis(research = "", limit = -1, offset = 0)
+      visibleApis <- getVisibleApis(research = "", limit = -1, offset = 0, groupOpt = groupOpt)
     } yield {
       visibleApis
         .map(apis =>
@@ -566,13 +511,13 @@ object CommonServices {
     }
   }
 
-  def getAllCategories(research: String)(implicit
+  def getAllCategories(research: String, groupOpt: Option[String])(implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
       ec: ExecutionContext
   ): Future[Seq[String]] = {
     for {
-      visibleApis <- getVisibleApis(research = "", limit = -1, offset = 0)
+      visibleApis <- getVisibleApis(research = "", limit = -1, offset = 0, groupOpt = groupOpt)
     } yield {
       visibleApis
         .map(apis =>

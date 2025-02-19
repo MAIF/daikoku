@@ -114,11 +114,11 @@ export const ApiList = (props: TApiList) => {
 
 
   const dataTags = useQuery({
-    queryKey: ["dataTags", researchTag],
+    queryKey: ["dataTags", researchTag, props.apiGroupId],
     queryFn: ({ queryKey }) => {
       return client!.query<{ allTags: Array<string> }>({
         query: Services.graphql.getAllTags,
-        variables: { research: queryKey[1] }
+        variables: { research: queryKey[1], groupId: queryKey[2] }
       }).then(({ data: { allTags } }) => {
         setTags(arrayStringToTOps(allTags))
         return arrayStringToTOps(allTags)
@@ -139,11 +139,11 @@ export const ApiList = (props: TApiList) => {
   })
 
   const dataCategories = useQuery({
-    queryKey: ["dataCategories", researchCat],
+    queryKey: ["dataCategories", researchCat, props.apiGroupId],
     queryFn: ({ queryKey }) => {
       return client!.query<{ allCategories: Array<string> }>({
         query: Services.graphql.getAllCategories,
-        variables: { research: queryKey[1] }
+        variables: { research: queryKey[1], groupId: queryKey[2] }
       }).then(({ data: { allCategories } }) => {
         setCategories(arrayStringToTOps(allCategories))
         return arrayStringToTOps(allCategories)
@@ -155,7 +155,7 @@ export const ApiList = (props: TApiList) => {
     queryFn: () => {
       return client!.query<{ allCategories: Array<string> }>({
         query: Services.graphql.getAllCategories,
-        variables: { research: "" }
+        variables: { research: ""}
       }).then(({ data: { allCategories } }) => {
         return arrayStringToTOps(allCategories)
       })

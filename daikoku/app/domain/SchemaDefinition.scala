@@ -4189,9 +4189,9 @@ object SchemaDefinition {
         Field(
           "allTags",
           ListType(StringType),
-          arguments = RESEARCH :: Nil,
+          arguments = RESEARCH :: GROUP_ID :: Nil,
           resolve = ctx => {
-            CommonServices.getAllTags(ctx.arg(RESEARCH))(ctx.ctx._2, env, e)
+            CommonServices.getAllTags(ctx.arg(RESEARCH), ctx.arg(GROUP_ID))(ctx.ctx._2, env, e)
           }
         )
       )
@@ -4202,10 +4202,10 @@ object SchemaDefinition {
         Field(
           "allCategories",
           ListType(StringType),
-          arguments = RESEARCH :: Nil,
+          arguments = RESEARCH :: GROUP_ID :: Nil,
           resolve = ctx => {
             CommonServices
-              .getAllCategories(ctx.arg(RESEARCH))(ctx.ctx._2, env, e)
+              .getAllCategories(ctx.arg(RESEARCH), ctx.arg(GROUP_ID))(ctx.ctx._2, env, e)
           }
         )
       )

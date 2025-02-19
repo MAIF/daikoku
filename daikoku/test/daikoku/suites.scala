@@ -1063,6 +1063,13 @@ object utils {
       customDescription = None,
       otoroshiTarget = None
     )
+    val cmsApiPlan = Admin(
+      id = UsagePlanId("admin"),
+      tenant = Tenant.Default,
+      customName = Some("cms"),
+      customDescription = None,
+      otoroshiTarget = None
+    )
     val adminApi = Api(
       id = ApiId(s"admin-api-tenant-${Tenant.Default.value}"),
       tenant = Tenant.Default,
@@ -1083,6 +1090,30 @@ object utils {
       possibleUsagePlans = Seq(adminApiPlan.id),
       defaultUsagePlan = UsagePlanId("admin").some,
       tags = Set("Administration"),
+      visibility = ApiVisibility.AdminOnly,
+      authorizedTeams = Seq(defaultAdminTeam.id)
+    )
+    val cmsApi = Api(
+      id = ApiId(s"cms-api-tenant-${Tenant.Default.value}"),
+      tenant = Tenant.Default,
+      team = defaultAdminTeam.id,
+      name = s"cms-api-tenant-${Tenant.Default.value}",
+      lastUpdate = DateTime.now(),
+      smallDescription = "cms api",
+      description = "cms api",
+      currentVersion = Version("1.0.0"),
+      state = ApiState.Published,
+      documentation = ApiDocumentation(
+        id = ApiDocumentationId(IdGenerator.token(32)),
+        tenant = Tenant.Default,
+        pages = Seq.empty[ApiDocumentationDetailPage],
+        lastModificationAt = DateTime.now()
+      ),
+      swagger = None,
+      possibleUsagePlans = Seq(cmsApiPlan.id),
+      defaultUsagePlan = cmsApiPlan.id.some,
+      tags = Set("cms"),
+      categories = Set("Administration"),
       visibility = ApiVisibility.AdminOnly,
       authorizedTeams = Seq(defaultAdminTeam.id)
     )

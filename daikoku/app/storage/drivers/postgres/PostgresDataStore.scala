@@ -1540,6 +1540,36 @@ abstract class PostgresRepo[Of, Id <: ValueType](
 
   private implicit lazy val logger: Logger = Logger(s"PostgresRepo")
 
+  override def query(query: String, params: Seq[AnyRef] = Seq.empty)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
+    logger.debug(s"$tableName.query($query)")
+    reactivePg.querySeq(query, params) {
+      rowToJson(_, format)
+    }
+  }
+
+  override def queryOne(query: String, params: Seq[AnyRef])(implicit ec: ExecutionContext): Future[Option[Of]] = {
+    logger.debug(s"$tableName.query($query)")
+    reactivePg.queryOne(query, params) {
+      rowToJson(_, format)
+    }
+  }
+
+  override def queryPaginated(query: String, params: Seq[AnyRef] = Seq.empty, offset: Int, limit: Int)(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
+    logger.debug(s"$tableName.query($query)")
+
+    for {
+      count <- reactivePg.queryOne(s"select count(*) as counter from ($query)_")(row => row.optLong("counter")).map {
+        case Some(l) => l
+        case None => 0L
+      }
+      values <- reactivePg.querySeq(s"$query LIMIT $limit OFFSET $offset", params){
+        rowToJson(_, format)
+      }
+    } yield (values, count)
+  }
+
+
+
   override def findRaw(
       query: JsObject,
       sort: Option[JsObject] = None,
@@ -1706,6 +1736,36 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 ) extends CommonRepo[Of, Id](env, reactivePg) {
 
   implicit val logger: Logger = Logger(s"PostgresTenantAwareRepo")
+
+  override def query(query: String, params: Seq[AnyRef] = Seq.empty)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
+    logger.debug(s"$tableName.query($query)")
+    reactivePg.querySeq(query, params) {
+      rowToJson(_, format)
+    }
+  }
+
+  override def queryOne(query: String, params: Seq[AnyRef])(implicit ec: ExecutionContext): Future[Option[Of]] = {
+    logger.debug(s"$tableName.query($query)")
+    reactivePg.queryOne(query, params) {
+      rowToJson(_, format)
+    }
+  }
+
+  override def queryPaginated(query: String, params: Seq[AnyRef] = Seq.empty, offset: Int, limit: Int)(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
+    logger.debug(s"$tableName.query($query)")
+
+    def legitLimit: String = if(limit == -1) "ALL" else s"$limit"
+
+    for {
+      count <- reactivePg.queryOne(s"select count(*) as counter from ($query)_", params)(row => row.optLong("counter")).map {
+        case Some(l) => l
+        case None => 0L
+      }
+      values <- reactivePg.querySeq(s"$query LIMIT $legitLimit OFFSET $offset", params){
+        rowToJson(_, format)
+      }
+    } yield (values, count)
+  }
 
   override def deleteByIdLogically(
       id: String
