@@ -267,7 +267,7 @@ object utils {
         translations: Seq[Translation] = Seq.empty
     ): Future[Unit] = {
       for {
-        _ <- waitForDaikokuSetup()
+//        _ <- waitForDaikokuSetup()
         _ <- flush()
         _ <- daikokuComponents.env.dataStore.userSessionRepo.deleteAll()
         log = logger.info("[DaikokuSpecHelper] :: insert tenant beginning")
