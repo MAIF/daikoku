@@ -84,7 +84,7 @@ class HomeController(
   def status() =
     DaikokuActionMaybeWithoutUser.async { ctx =>
       for {
-      maybeTenant <- env.dataStore.tenantRepo.findById(ctx.tenant.id)
+        maybeTenant <- env.dataStore.tenantRepo.findById(ctx.tenant.id)
       } yield {
         val isReady = maybeTenant.isDefined
         val databaseStatus = maybeTenant.map(_ => "OK").getOrElse("KO")
@@ -92,7 +92,7 @@ class HomeController(
           "status" -> (if (isReady) "ready" else "initializing"),
           "version" -> BuildInfo.version,
           "database" -> Json.obj(
-            "status" -> databaseStatus,
+            "status" -> databaseStatus
           ),
           "timestamp" -> java.time.Instant.now().toString
         )

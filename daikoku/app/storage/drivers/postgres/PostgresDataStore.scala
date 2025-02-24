@@ -694,8 +694,9 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
   override def apiSubscriptionTransferRepo: ApiSubscriptionTransferRepo =
     _apiSubscriptionTransferRepo
 
-
-  override def queryOneRaw(query: String, name: String, params: Seq[AnyRef])(implicit ec: ExecutionContext): Future[Option[JsObject]] = {
+  override def queryOneRaw(query: String, name: String, params: Seq[AnyRef])(
+      implicit ec: ExecutionContext
+  ): Future[Option[JsObject]] = {
     logger.debug(s"queryOneRaw($query)")
 
     for {
@@ -707,7 +708,9 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     }
   }
 
-  override def queryRaw(query: String, name: String, params: Seq[AnyRef])(implicit ec: ExecutionContext): Future[Seq[JsValue]] = {
+  override def queryRaw(query: String, name: String, params: Seq[AnyRef])(
+      implicit ec: ExecutionContext
+  ): Future[Seq[JsValue]] = {
     logger.debug(s"queryRaw($query)")
 
     for {
@@ -719,7 +722,9 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     }
   }
 
-  override def queryString(query: String, name: String, params: Seq[AnyRef])(implicit ec: ExecutionContext): Future[Seq[String]] = {
+  override def queryString(query: String, name: String, params: Seq[AnyRef])(
+      implicit ec: ExecutionContext
+  ): Future[Seq[String]] = {
     logger.debug(s"queryString($query)")
 
     for {
@@ -1577,35 +1582,48 @@ abstract class PostgresRepo[Of, Id <: ValueType](
 
   private implicit lazy val logger: Logger = Logger(s"PostgresRepo")
 
-  override def query(query: String, params: Seq[AnyRef] = Seq.empty)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
+  override def query(query: String, params: Seq[AnyRef] = Seq.empty)(implicit
+      ec: ExecutionContext
+  ): Future[Seq[Of]] = {
     logger.debug(s"$tableName.query($query)")
     reactivePg.querySeq(query, params) {
       rowToJson(_, format)
     }
   }
 
-  override def queryOne(query: String, params: Seq[AnyRef])(implicit ec: ExecutionContext): Future[Option[Of]] = {
+  override def queryOne(query: String, params: Seq[AnyRef])(implicit
+      ec: ExecutionContext
+  ): Future[Option[Of]] = {
     logger.debug(s"$tableName.queryOne($query)")
     reactivePg.queryOne(query, params) {
       rowToJson(_, format)
     }
   }
 
-  override def queryPaginated(query: String, params: Seq[AnyRef] = Seq.empty, offset: Int, limit: Int)(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
+  override def queryPaginated(
+      query: String,
+      params: Seq[AnyRef] = Seq.empty,
+      offset: Int,
+      limit: Int
+  )(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
     logger.debug(s"$tableName.queryPaginated($query)")
 
     for {
-      count <- reactivePg.queryOne(s"select count(*) as counter from ($query)_")(row => row.optLong("counter")).map {
-        case Some(l) => l
-        case None => 0L
-      }
-      values <- reactivePg.querySeq(s"$query LIMIT $limit OFFSET $offset", params){
-        rowToJson(_, format)
-      }
+      count <-
+        reactivePg
+          .queryOne(s"select count(*) as counter from ($query)_")(row =>
+            row.optLong("counter")
+          )
+          .map {
+            case Some(l) => l
+            case None    => 0L
+          }
+      values <-
+        reactivePg.querySeq(s"$query LIMIT $limit OFFSET $offset", params) {
+          rowToJson(_, format)
+        }
     } yield (values, count)
   }
-
-
 
   override def findRaw(
       query: JsObject,
@@ -1774,31 +1792,48 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
 
   implicit val logger: Logger = Logger(s"PostgresTenantAwareRepo")
 
-  override def query(query: String, params: Seq[AnyRef] = Seq.empty)(implicit ec: ExecutionContext): Future[Seq[Of]] = {
+  override def query(query: String, params: Seq[AnyRef] = Seq.empty)(implicit
+      ec: ExecutionContext
+  ): Future[Seq[Of]] = {
     logger.debug(s"$tableName.query($query)")
     reactivePg.querySeq(query, params) {
       rowToJson(_, format)
     }
   }
 
-  override def queryOne(query: String, params: Seq[AnyRef])(implicit ec: ExecutionContext): Future[Option[Of]] = {
+  override def queryOne(query: String, params: Seq[AnyRef])(implicit
+      ec: ExecutionContext
+  ): Future[Option[Of]] = {
     logger.debug(s"$tableName.query($query)")
     reactivePg.queryOne(query, params) {
       rowToJson(_, format)
     }
   }
 
-  override def queryPaginated(query: String, params: Seq[AnyRef] = Seq.empty, offset: Int, limit: Int)(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
+  override def queryPaginated(
+      query: String,
+      params: Seq[AnyRef] = Seq.empty,
+      offset: Int,
+      limit: Int
+  )(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
     logger.debug(s"$tableName.query($query)")
 
-    def legitLimit: String = if(limit == -1) null else s"$limit"
+    def legitLimit: String = if (limit == -1) null else s"$limit"
 
     for {
-      count <- reactivePg.queryOne(s"select count(*) as counter from ($query)_", params)(row => row.optLong("counter")).map {
-        case Some(l) => l
-        case None => 0L
-      }
-      values <- reactivePg.querySeq(s"$query LIMIT $legitLimit OFFSET $offset", params){
+      count <-
+        reactivePg
+          .queryOne(s"select count(*) as counter from ($query)_", params)(row =>
+            row.optLong("counter")
+          )
+          .map {
+            case Some(l) => l
+            case None    => 0L
+          }
+      values <- reactivePg.querySeq(
+        s"$query LIMIT $legitLimit OFFSET $offset",
+        params
+      ) {
         rowToJson(_, format)
       }
     } yield (values, count)

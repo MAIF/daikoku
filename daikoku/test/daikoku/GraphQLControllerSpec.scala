@@ -381,7 +381,14 @@ class GraphQLControllerSpec()
         state = ApiState.Published,
         possibleUsagePlans = Seq.empty,
         defaultUsagePlan = None,
-        apis = (apiList.map(_.api.id).toSet ++ Set(draftApi.id, pwaApi.id, privateApi.id, publicApiV1.id, publicApiV2.id, publicApiV3.id)).some
+        apis = (apiList.map(_.api.id).toSet ++ Set(
+          draftApi.id,
+          pwaApi.id,
+          privateApi.id,
+          publicApiV1.id,
+          publicApiV2.id,
+          publicApiV3.id
+        )).some
       )
 
       val unauthorizedUser = User(
@@ -407,19 +414,34 @@ class GraphQLControllerSpec()
         contact = "unauthorized_team@foo.test"
       )
 
-
-      val graphQlTenantAdminTeam = defaultAdminTeam.copy(id = TeamId("graphql-test-tenant-admin-team"), tenant = _tenant.id, name = "graphql-test-tenant-admin-team")
+      val graphQlTenantAdminTeam = defaultAdminTeam.copy(
+        id = TeamId("graphql-test-tenant-admin-team"),
+        tenant = _tenant.id,
+        name = "graphql-test-tenant-admin-team"
+      )
       setupEnvBlocking(
         tenants = Seq(_tenant),
         users = Seq(daikokuAdmin, userAdmin, user, unauthorizedUser),
-        teams =
-          Seq(graphQlTenantAdminTeam,
-            teamOwner.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))),
-            teamConsumer.copy(users = Set(UserWithPermission(user.id, Administrator))),
-            unauthorizedTeam),
+        teams = Seq(
+          graphQlTenantAdminTeam,
+          teamOwner.copy(users =
+            Set(UserWithPermission(userTeamAdminId, Administrator))
+          ),
+          teamConsumer
+            .copy(users = Set(UserWithPermission(user.id, Administrator))),
+          unauthorizedTeam
+        ),
         apis = Seq(
-          adminApi.copy(id = ApiId("admin-api-tenant-graphql-test"), tenant = _tenant.id, team = graphQlTenantAdminTeam.id),
-          cmsApi.copy(id = ApiId("cms-api-tenant-graphql-test"), tenant = _tenant.id, team = graphQlTenantAdminTeam.id),
+          adminApi.copy(
+            id = ApiId("admin-api-tenant-graphql-test"),
+            tenant = _tenant.id,
+            team = graphQlTenantAdminTeam.id
+          ),
+          cmsApi.copy(
+            id = ApiId("cms-api-tenant-graphql-test"),
+            tenant = _tenant.id,
+            team = graphQlTenantAdminTeam.id
+          ),
           draftApi,
           pwaApi,
           privateApi,
@@ -459,11 +481,13 @@ class GraphQLControllerSpec()
         "query" -> baseGraphQLQuery
       )
       val graphQlRequestAllVisibleAPisFroApiGroup = Json.obj(
-        "variables" -> Json.obj("limit" -> 20, "offset" -> 0, "groupId" -> "public_api_group"),
+        "variables" -> Json
+          .obj("limit" -> 20, "offset" -> 0, "groupId" -> "public_api_group"),
         "query" -> baseGraphQLQuery
       )
 
-      val daikokuAdminSession = loginWithBlocking(daikokuAdmin.copy(tenants = Set(_tenant.id)), _tenant)
+      val daikokuAdminSession =
+        loginWithBlocking(daikokuAdmin.copy(tenants = Set(_tenant.id)), _tenant)
       val teamOwnerAdminSession = loginWithBlocking(userAdmin, _tenant)
       val teamConsumerAdminSession = loginWithBlocking(user, _tenant)
       val unauthorizedUserSession = loginWithBlocking(unauthorizedUser, _tenant)
@@ -475,8 +499,8 @@ class GraphQLControllerSpec()
         body = graphQlRequestAllVisibleAPis.some
       )(_tenant, daikokuAdminSession)
       respDaikokuAdmin.status mustBe 200
-      (respDaikokuAdmin.json \ "data" \ "visibleApis" \ "total").as[Int] mustBe 17
-
+      (respDaikokuAdmin.json \ "data" \ "visibleApis" \ "total")
+        .as[Int] mustBe 17
 
       //10 public API + draft + private + pwa + versionedV3 + apigroup = 15
       val respOwnerAdmin = httpJsonCallBlocking(
@@ -494,7 +518,8 @@ class GraphQLControllerSpec()
         body = graphQlRequestAllVisibleAPis.some
       )(_tenant, teamConsumerAdminSession)
       respConsumerAdmin.status mustBe 200
-      (respConsumerAdmin.json \ "data" \ "visibleApis" \ "total").as[Int] mustBe 14
+      (respConsumerAdmin.json \ "data" \ "visibleApis" \ "total")
+        .as[Int] mustBe 14
 
       //10 public API + pwa + versionedV3 + apigroup = 13
       val respUnauthorizedAdmin = httpJsonCallBlocking(
@@ -503,7 +528,8 @@ class GraphQLControllerSpec()
         body = graphQlRequestAllVisibleAPis.some
       )(_tenant, unauthorizedUserSession)
       respUnauthorizedAdmin.status mustBe 200
-      (respUnauthorizedAdmin.json \ "data" \ "visibleApis" \ "total").as[Int] mustBe 13
+      (respUnauthorizedAdmin.json \ "data" \ "visibleApis" \ "total")
+        .as[Int] mustBe 13
 
       //10 public API + versionedV3 + apigroup = 12
       val respGuest = httpJsonCallWithoutSessionBlocking(
@@ -518,7 +544,6 @@ class GraphQLControllerSpec()
       //###### APIGROUP ########
       //########################
 
-
       //check usage of graphql query for apigroup
       //10 public API + draft + private + pwa + versionedV3 = 14
       val respApiGroupDaikokuAdmin = httpJsonCallBlocking(
@@ -527,7 +552,8 @@ class GraphQLControllerSpec()
         body = graphQlRequestAllVisibleAPisFroApiGroup.some
       )(_tenant, daikokuAdminSession)
       respApiGroupDaikokuAdmin.status mustBe 200
-      (respApiGroupDaikokuAdmin.json \ "data" \ "visibleApis" \ "total").as[Int] mustBe 14
+      (respApiGroupDaikokuAdmin.json \ "data" \ "visibleApis" \ "total")
+        .as[Int] mustBe 14
 
       //check usage of graphql query for apigroup
       //10 public API + draft + private + pwa + versionedV3 = 14
@@ -537,7 +563,8 @@ class GraphQLControllerSpec()
         body = graphQlRequestAllVisibleAPisFroApiGroup.some
       )(_tenant, teamOwnerAdminSession)
       respApiGroupOwner.status mustBe 200
-      (respApiGroupOwner.json \ "data" \ "visibleApis" \ "total").as[Int] mustBe 14
+      (respApiGroupOwner.json \ "data" \ "visibleApis" \ "total")
+        .as[Int] mustBe 14
 
       //check usage of graphql query for apigroup
       //10 public API + private + pwa + versionedV3 = 13
@@ -547,7 +574,8 @@ class GraphQLControllerSpec()
         body = graphQlRequestAllVisibleAPisFroApiGroup.some
       )(_tenant, teamConsumerAdminSession)
       respApiGroupConsumer.status mustBe 200
-      (respApiGroupConsumer.json \ "data" \ "visibleApis" \ "total").as[Int] mustBe 13
+      (respApiGroupConsumer.json \ "data" \ "visibleApis" \ "total")
+        .as[Int] mustBe 13
 
       //check usage of graphql query for apigroup
       //10 public API + pwa + versionedV3 = 12
@@ -557,7 +585,8 @@ class GraphQLControllerSpec()
         body = graphQlRequestAllVisibleAPisFroApiGroup.some
       )(_tenant, unauthorizedUserSession)
       respApiGroupUnauthorized.status mustBe 200
-      (respApiGroupUnauthorized.json \ "data" \ "visibleApis" \ "total").as[Int] mustBe 12
+      (respApiGroupUnauthorized.json \ "data" \ "visibleApis" \ "total")
+        .as[Int] mustBe 12
 
       //check usage of graphql query for apigroup
       //10 public API + versionedV3 = 11
@@ -567,7 +596,8 @@ class GraphQLControllerSpec()
         body = graphQlRequestAllVisibleAPisFroApiGroup.some
       )(_tenant)
       respApiGroupGuest.status mustBe 200
-      (respApiGroupGuest.json \ "data" \ "visibleApis" \ "total").as[Int] mustBe 11
+      (respApiGroupGuest.json \ "data" \ "visibleApis" \ "total")
+        .as[Int] mustBe 11
 
       //########################
       //###### FILTERS #########
@@ -582,49 +612,71 @@ class GraphQLControllerSpec()
       val respOwnerAdminByTags = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("limit" -> 20, "offset" -> 0, "selectedTag" -> "test_tag"),
-          "query" -> baseGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json
+              .obj("limit" -> 20, "offset" -> 0, "selectedTag" -> "test_tag"),
+            "query" -> baseGraphQLQuery
+          )
+          .some
       )(_tenant, teamOwnerAdminSession)
       respOwnerAdminByTags.status mustBe 200
-      (respOwnerAdminByTags.json \ "data" \ "visibleApis" \ "total").as[Int] mustBe 2
+      (respOwnerAdminByTags.json \ "data" \ "visibleApis" \ "total")
+        .as[Int] mustBe 2
 
       //filter by tags ==> 2 apis
       val respOwnerAdminByCats = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("limit" -> 20, "offset" -> 0, "selectedCategory" -> "test_category"),
-          "query" -> baseGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj(
+              "limit" -> 20,
+              "offset" -> 0,
+              "selectedCategory" -> "test_category"
+            ),
+            "query" -> baseGraphQLQuery
+          )
+          .some
       )(_tenant, teamOwnerAdminSession)
       respOwnerAdminByCats.status mustBe 200
-      (respOwnerAdminByCats.json \ "data" \ "visibleApis" \ "total").as[Int] mustBe 2
+      (respOwnerAdminByCats.json \ "data" \ "visibleApis" \ "total")
+        .as[Int] mustBe 2
 
       //filter by team ==> 14 apis
       val respOwnerAdminByTeam = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("limit" -> 20, "offset" -> 0, "selectedTeam" -> teamOwnerId.value),
-          "query" -> baseGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj(
+              "limit" -> 20,
+              "offset" -> 0,
+              "selectedTeam" -> teamOwnerId.value
+            ),
+            "query" -> baseGraphQLQuery
+          )
+          .some
       )(_tenant, teamOwnerAdminSession)
       respOwnerAdminByTeam.status mustBe 200
-      (respOwnerAdminByTeam.json \ "data" \ "visibleApis" \ "total").as[Int] mustBe 15
+      (respOwnerAdminByTeam.json \ "data" \ "visibleApis" \ "total")
+        .as[Int] mustBe 15
 
       //filter by team ==> 1 apis
       val respOwnerAdminByResearch = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("limit" -> 20, "offset" -> 0, "research" -> "api - 9"),
-          "query" -> baseGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json
+              .obj("limit" -> 20, "offset" -> 0, "research" -> "api - 9"),
+            "query" -> baseGraphQLQuery
+          )
+          .some
       )(_tenant, teamOwnerAdminSession)
       respOwnerAdminByResearch.status mustBe 200
-      (respOwnerAdminByResearch.json \ "data" \ "visibleApis" \ "total").as[Int] mustBe 1
+      (respOwnerAdminByResearch.json \ "data" \ "visibleApis" \ "total")
+        .as[Int] mustBe 1
     }
 
     "list all tags" in {
@@ -987,7 +1039,15 @@ class GraphQLControllerSpec()
         state = ApiState.Published,
         possibleUsagePlans = Seq.empty,
         defaultUsagePlan = None,
-        apis = (Set(simpleApi.id, draftApi.id, pwaApi.id, privateApi.id, publicApiV1.id, publicApiV2.id, publicApiV3.id)).some
+        apis = (Set(
+          simpleApi.id,
+          draftApi.id,
+          pwaApi.id,
+          privateApi.id,
+          publicApiV1.id,
+          publicApiV2.id,
+          publicApiV3.id
+        )).some
       )
 
       val unauthorizedUser = User(
@@ -1013,19 +1073,34 @@ class GraphQLControllerSpec()
         contact = "unauthorized_team@foo.test"
       )
 
-
-      val graphQlTenantAdminTeam = defaultAdminTeam.copy(id = TeamId("graphql-test-tenant-admin-team"), tenant = _tenant.id, name = "graphql-test-tenant-admin-team")
+      val graphQlTenantAdminTeam = defaultAdminTeam.copy(
+        id = TeamId("graphql-test-tenant-admin-team"),
+        tenant = _tenant.id,
+        name = "graphql-test-tenant-admin-team"
+      )
       setupEnvBlocking(
         tenants = Seq(_tenant),
         users = Seq(daikokuAdmin, userAdmin, user, unauthorizedUser),
-        teams =
-          Seq(graphQlTenantAdminTeam,
-            teamOwner.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))),
-            teamConsumer.copy(users = Set(UserWithPermission(user.id, Administrator))),
-            unauthorizedTeam),
+        teams = Seq(
+          graphQlTenantAdminTeam,
+          teamOwner.copy(users =
+            Set(UserWithPermission(userTeamAdminId, Administrator))
+          ),
+          teamConsumer
+            .copy(users = Set(UserWithPermission(user.id, Administrator))),
+          unauthorizedTeam
+        ),
         apis = Seq(
-          adminApi.copy(id = ApiId("admin-api-tenant-graphql-test"), tenant = _tenant.id, team = graphQlTenantAdminTeam.id),
-          cmsApi.copy(id = ApiId("cms-api-tenant-graphql-test"), tenant = _tenant.id, team = graphQlTenantAdminTeam.id),
+          adminApi.copy(
+            id = ApiId("admin-api-tenant-graphql-test"),
+            tenant = _tenant.id,
+            team = graphQlTenantAdminTeam.id
+          ),
+          cmsApi.copy(
+            id = ApiId("cms-api-tenant-graphql-test"),
+            tenant = _tenant.id,
+            team = graphQlTenantAdminTeam.id
+          ),
           simpleApi,
           draftApi,
           pwaApi,
@@ -1062,7 +1137,8 @@ class GraphQLControllerSpec()
            |}
            |""".stripMargin
 
-      val daikokuAdminSession = loginWithBlocking(daikokuAdmin.copy(tenants = Set(_tenant.id)), _tenant)
+      val daikokuAdminSession =
+        loginWithBlocking(daikokuAdmin.copy(tenants = Set(_tenant.id)), _tenant)
       val teamOwnerAdminSession = loginWithBlocking(userAdmin, _tenant)
       val teamConsumerAdminSession = loginWithBlocking(user, _tenant)
       val unauthorizedUserSession = loginWithBlocking(unauthorizedUser, _tenant)
@@ -1071,162 +1147,220 @@ class GraphQLControllerSpec()
       val respAllTagsDaikokuAdmin = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj(),
-          "query" -> allTagsGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj(),
+            "query" -> allTagsGraphQLQuery
+          )
+          .some
       )(_tenant, daikokuAdminSession)
       respAllTagsDaikokuAdmin.status mustBe 200
-      (respAllTagsDaikokuAdmin.json \ "data" \ "allTags").as[Seq[String]].length mustBe 8
+      (respAllTagsDaikokuAdmin.json \ "data" \ "allTags")
+        .as[Seq[String]]
+        .length mustBe 8
 
       //simpleTag + draftTag + privateTag + pwaTag + V3Tag + groupTag = 6
       val respAllTagsTeamOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj(),
-          "query" -> allTagsGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj(),
+            "query" -> allTagsGraphQLQuery
+          )
+          .some
       )(_tenant, teamOwnerAdminSession)
       respAllTagsTeamOwner.status mustBe 200
-      (respAllTagsTeamOwner.json \ "data" \ "allTags").as[Seq[String]].length mustBe 6
+      (respAllTagsTeamOwner.json \ "data" \ "allTags")
+        .as[Seq[String]]
+        .length mustBe 6
 
       //simpleTag + privateTag + pwaTag + V3Tag + groupTag = 5
       val respAllTagsTeamConsumer = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj(),
-          "query" -> allTagsGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj(),
+            "query" -> allTagsGraphQLQuery
+          )
+          .some
       )(_tenant, teamConsumerAdminSession)
       respAllTagsTeamConsumer.status mustBe 200
-      (respAllTagsTeamConsumer.json \ "data" \ "allTags").as[Seq[String]].length mustBe 5
+      (respAllTagsTeamConsumer.json \ "data" \ "allTags")
+        .as[Seq[String]]
+        .length mustBe 5
 
       //simpleTag + pwaTag + V3Tag + groupTag = 4
       val respAllTagsUnauthorized = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj(),
-          "query" -> allTagsGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj(),
+            "query" -> allTagsGraphQLQuery
+          )
+          .some
       )(_tenant, unauthorizedUserSession)
       respAllTagsUnauthorized.status mustBe 200
-      (respAllTagsUnauthorized.json \ "data" \ "allTags").as[Seq[String]].length mustBe 4
+      (respAllTagsUnauthorized.json \ "data" \ "allTags")
+        .as[Seq[String]]
+        .length mustBe 4
 
       //simpleTag + V3Tag + groupTag = 3
       val respAllTagsGuest = httpJsonCallWithoutSessionBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj(),
-          "query" -> allTagsGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj(),
+            "query" -> allTagsGraphQLQuery
+          )
+          .some
       )(_tenant)
       respAllTagsGuest.status mustBe 200
-      (respAllTagsGuest.json \ "data" \ "allTags").as[Seq[String]].length mustBe 3
+      (respAllTagsGuest.json \ "data" \ "allTags")
+        .as[Seq[String]]
+        .length mustBe 3
 
       //simpleTag + draftTag + privateTag + pwaTag + V3Tag = 5
       val respAllTagsWithGroupDaikokuAdmin = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
-          "query" -> allTagsGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
+            "query" -> allTagsGraphQLQuery
+          )
+          .some
       )(_tenant, daikokuAdminSession)
       respAllTagsWithGroupDaikokuAdmin.status mustBe 200
-      (respAllTagsWithGroupDaikokuAdmin.json \ "data" \ "allTags").as[Seq[String]].length mustBe 5
+      (respAllTagsWithGroupDaikokuAdmin.json \ "data" \ "allTags")
+        .as[Seq[String]]
+        .length mustBe 5
 
       //simpleTag + draftTag + privateTag + pwaTag + V3Tag = 5
       val respAllTagsWithGroupTeamOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
-          "query" -> allTagsGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
+            "query" -> allTagsGraphQLQuery
+          )
+          .some
       )(_tenant, teamOwnerAdminSession)
       respAllTagsWithGroupTeamOwner.status mustBe 200
-      (respAllTagsWithGroupTeamOwner.json \ "data" \ "allTags").as[Seq[String]].length mustBe 5
+      (respAllTagsWithGroupTeamOwner.json \ "data" \ "allTags")
+        .as[Seq[String]]
+        .length mustBe 5
 
       //simpleTag + privateTag + pwaTag + V3Tag = 4
       val respAllTagsWithGroupTeamConsumer = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
-          "query" -> allTagsGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
+            "query" -> allTagsGraphQLQuery
+          )
+          .some
       )(_tenant, teamConsumerAdminSession)
       respAllTagsWithGroupTeamConsumer.status mustBe 200
-      (respAllTagsWithGroupTeamConsumer.json \ "data" \ "allTags").as[Seq[String]].length mustBe 4
+      (respAllTagsWithGroupTeamConsumer.json \ "data" \ "allTags")
+        .as[Seq[String]]
+        .length mustBe 4
 
       //simpleTag + pwaTag + V3Tag = 3
       val respAllTagsWithgroupUnauthorized = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
-          "query" -> allTagsGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
+            "query" -> allTagsGraphQLQuery
+          )
+          .some
       )(_tenant, unauthorizedUserSession)
       respAllTagsWithgroupUnauthorized.status mustBe 200
-      (respAllTagsWithgroupUnauthorized.json \ "data" \ "allTags").as[Seq[String]].length mustBe 3
+      (respAllTagsWithgroupUnauthorized.json \ "data" \ "allTags")
+        .as[Seq[String]]
+        .length mustBe 3
 
       //simpleTag + V3Tag = 2
       val respAllTagsWithGroupGuest = httpJsonCallWithoutSessionBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
-          "query" -> allTagsGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
+            "query" -> allTagsGraphQLQuery
+          )
+          .some
       )(_tenant)
       respAllTagsWithGroupGuest.status mustBe 200
-      (respAllTagsWithGroupGuest.json \ "data" \ "allTags").as[Seq[String]].length mustBe 2
+      (respAllTagsWithGroupGuest.json \ "data" \ "allTags")
+        .as[Seq[String]]
+        .length mustBe 2
 
       //simpleTag =
       val respAllTagsWithResearchGuest = httpJsonCallWithoutSessionBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("research" -> "simple"),
-          "query" -> allTagsGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj("research" -> "simple"),
+            "query" -> allTagsGraphQLQuery
+          )
+          .some
       )(_tenant)
       respAllTagsWithResearchGuest.status mustBe 200
-      (respAllTagsWithResearchGuest.json \ "data" \ "allTags").as[Seq[String]].length mustBe 1
-      (respAllTagsWithResearchGuest.json \ "data" \ "allTags").as[Seq[String]].contains("simple-tag") mustBe true
+      (respAllTagsWithResearchGuest.json \ "data" \ "allTags")
+        .as[Seq[String]]
+        .length mustBe 1
+      (respAllTagsWithResearchGuest.json \ "data" \ "allTags")
+        .as[Seq[String]]
+        .contains("simple-tag") mustBe true
 
       //test limit
       val respAllTagsWithLimitTeamOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("limit" -> 2),
-          "query" -> allTagsGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj("limit" -> 2),
+            "query" -> allTagsGraphQLQuery
+          )
+          .some
       )(_tenant, teamOwnerAdminSession)
       respAllTagsWithLimitTeamOwner.status mustBe 200
-      (respAllTagsWithLimitTeamOwner.json \ "data" \ "allTags").as[Seq[String]].length mustBe 2
-      (respAllTagsWithLimitTeamOwner.json \ "data" \ "allTags").as[Seq[String]].toSet.subsetOf(Set("draft-tag", "group-tag")) mustBe true
+      (respAllTagsWithLimitTeamOwner.json \ "data" \ "allTags")
+        .as[Seq[String]]
+        .length mustBe 2
+      (respAllTagsWithLimitTeamOwner.json \ "data" \ "allTags")
+        .as[Seq[String]]
+        .toSet
+        .subsetOf(Set("draft-tag", "group-tag")) mustBe true
 
       //test offset
       val respAllTagsWithOffsetTeamOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("limit" -> 2, "offset"-> 2),
-          "query" -> allTagsGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj("limit" -> 2, "offset" -> 2),
+            "query" -> allTagsGraphQLQuery
+          )
+          .some
       )(_tenant, teamOwnerAdminSession)
       respAllTagsWithOffsetTeamOwner.status mustBe 200
-      (respAllTagsWithOffsetTeamOwner.json \ "data" \ "allTags").as[Seq[String]].length mustBe 2
-      (respAllTagsWithOffsetTeamOwner.json \ "data" \ "allTags").as[Seq[String]].toSet.subsetOf(Set("private-tag", "pwa-tag")) mustBe true
-
-
+      (respAllTagsWithOffsetTeamOwner.json \ "data" \ "allTags")
+        .as[Seq[String]]
+        .length mustBe 2
+      (respAllTagsWithOffsetTeamOwner.json \ "data" \ "allTags")
+        .as[Seq[String]]
+        .toSet
+        .subsetOf(Set("private-tag", "pwa-tag")) mustBe true
 
       //################## categories
 
@@ -1234,162 +1368,217 @@ class GraphQLControllerSpec()
       val respAllCatDaikokuAdmin = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj(),
-          "query" -> allCategoriesGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj(),
+            "query" -> allCategoriesGraphQLQuery
+          )
+          .some
       )(_tenant, daikokuAdminSession)
       respAllCatDaikokuAdmin.status mustBe 200
-      (respAllCatDaikokuAdmin.json \ "data" \ "allCategories").as[Seq[String]].length mustBe 7
+      (respAllCatDaikokuAdmin.json \ "data" \ "allCategories")
+        .as[Seq[String]]
+        .length mustBe 7
 
       //simpleTag + draftTag + privateTag + pwaTag + V3Tag + groupTag = 6
       val respAllCatTeamOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj(),
-          "query" -> allCategoriesGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj(),
+            "query" -> allCategoriesGraphQLQuery
+          )
+          .some
       )(_tenant, teamOwnerAdminSession)
       respAllCatTeamOwner.status mustBe 200
-      (respAllCatTeamOwner.json \ "data" \ "allCategories").as[Seq[String]].length mustBe 6
+      (respAllCatTeamOwner.json \ "data" \ "allCategories")
+        .as[Seq[String]]
+        .length mustBe 6
 
       //simpleTag + privateTag + pwaTag + V3Tag + groupTag = 5
       val respAllCatTeamConsumer = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj(),
-          "query" -> allCategoriesGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj(),
+            "query" -> allCategoriesGraphQLQuery
+          )
+          .some
       )(_tenant, teamConsumerAdminSession)
       respAllCatTeamConsumer.status mustBe 200
-      (respAllCatTeamConsumer.json \ "data" \ "allCategories").as[Seq[String]].length mustBe 5
+      (respAllCatTeamConsumer.json \ "data" \ "allCategories")
+        .as[Seq[String]]
+        .length mustBe 5
 
       //simpleTag + pwaTag + V3Tag + groupTag = 4
       val respAllCatUnauthorized = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj(),
-          "query" -> allCategoriesGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj(),
+            "query" -> allCategoriesGraphQLQuery
+          )
+          .some
       )(_tenant, unauthorizedUserSession)
       respAllCatUnauthorized.status mustBe 200
-      (respAllCatUnauthorized.json \ "data" \ "allCategories").as[Seq[String]].length mustBe 4
+      (respAllCatUnauthorized.json \ "data" \ "allCategories")
+        .as[Seq[String]]
+        .length mustBe 4
 
       //simpleTag + V3Tag + groupTag = 3
       val respAllCatGuest = httpJsonCallWithoutSessionBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj(),
-          "query" -> allCategoriesGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj(),
+            "query" -> allCategoriesGraphQLQuery
+          )
+          .some
       )(_tenant)
       respAllCatGuest.status mustBe 200
-      (respAllCatGuest.json \ "data" \ "allCategories").as[Seq[String]].length mustBe 3
-
+      (respAllCatGuest.json \ "data" \ "allCategories")
+        .as[Seq[String]]
+        .length mustBe 3
 
       //simpleTag + draftTag + privateTag + pwaTag + V3Tag = 5
       val respAllCatWithGroupDaikokuAdmin = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
-          "query" -> allCategoriesGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
+            "query" -> allCategoriesGraphQLQuery
+          )
+          .some
       )(_tenant, daikokuAdminSession)
       logger.info(Json.prettyPrint(respAllCatWithGroupDaikokuAdmin.json))
       respAllCatWithGroupDaikokuAdmin.status mustBe 200
-      (respAllCatWithGroupDaikokuAdmin.json \ "data" \ "allCategories").as[Seq[String]].length mustBe 5
+      (respAllCatWithGroupDaikokuAdmin.json \ "data" \ "allCategories")
+        .as[Seq[String]]
+        .length mustBe 5
 
       //simpleTag + draftTag + privateTag + pwaTag + V3Tag = 5
       val respAllCatWithGroupTeamOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
-          "query" -> allCategoriesGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
+            "query" -> allCategoriesGraphQLQuery
+          )
+          .some
       )(_tenant, teamOwnerAdminSession)
       respAllCatWithGroupTeamOwner.status mustBe 200
-      (respAllCatWithGroupTeamOwner.json \ "data" \ "allCategories").as[Seq[String]].length mustBe 5
+      (respAllCatWithGroupTeamOwner.json \ "data" \ "allCategories")
+        .as[Seq[String]]
+        .length mustBe 5
 
       //simpleTag + privateTag + pwaTag + V3Tag = 4
       val respAllCatWithGroupTeamConsumer = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
-          "query" -> allCategoriesGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
+            "query" -> allCategoriesGraphQLQuery
+          )
+          .some
       )(_tenant, teamConsumerAdminSession)
       respAllCatWithGroupTeamConsumer.status mustBe 200
-      (respAllCatWithGroupTeamConsumer.json \ "data" \ "allCategories").as[Seq[String]].length mustBe 4
+      (respAllCatWithGroupTeamConsumer.json \ "data" \ "allCategories")
+        .as[Seq[String]]
+        .length mustBe 4
 
       //simpleTag + pwaTag + V3Tag = 3
       val respAllCatWithGroupUnauthorized = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
-          "query" -> allCategoriesGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
+            "query" -> allCategoriesGraphQLQuery
+          )
+          .some
       )(_tenant, unauthorizedUserSession)
       respAllCatWithGroupUnauthorized.status mustBe 200
-      (respAllCatWithGroupUnauthorized.json \ "data" \ "allCategories").as[Seq[String]].length mustBe 3
+      (respAllCatWithGroupUnauthorized.json \ "data" \ "allCategories")
+        .as[Seq[String]]
+        .length mustBe 3
 
       //simpleTag + V3Tag = 2
       val respAllCatWithGroupGuest = httpJsonCallWithoutSessionBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
-          "query" -> allCategoriesGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj("groupId" -> apiGroup.id.asJson),
+            "query" -> allCategoriesGraphQLQuery
+          )
+          .some
       )(_tenant)
       respAllCatWithGroupGuest.status mustBe 200
-      (respAllCatWithGroupGuest.json \ "data" \ "allCategories").as[Seq[String]].length mustBe 2
-
+      (respAllCatWithGroupGuest.json \ "data" \ "allCategories")
+        .as[Seq[String]]
+        .length mustBe 2
 
       val respAllCatWithResearchGuest = httpJsonCallWithoutSessionBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("research" -> "simple"),
-          "query" -> allCategoriesGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj("research" -> "simple"),
+            "query" -> allCategoriesGraphQLQuery
+          )
+          .some
       )(_tenant)
       respAllCatWithResearchGuest.status mustBe 200
-      (respAllCatWithResearchGuest.json \ "data" \ "allCategories").as[Seq[String]].length mustBe 1
-
+      (respAllCatWithResearchGuest.json \ "data" \ "allCategories")
+        .as[Seq[String]]
+        .length mustBe 1
 
       //test limit
       val respAllCategoriesWithLimitTeamOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("limit" -> 2),
-          "query" -> allCategoriesGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj("limit" -> 2),
+            "query" -> allCategoriesGraphQLQuery
+          )
+          .some
       )(_tenant, teamOwnerAdminSession)
       respAllCategoriesWithLimitTeamOwner.status mustBe 200
-      (respAllCategoriesWithLimitTeamOwner.json \ "data" \ "allCategories").as[Seq[String]].length mustBe 2
-      (respAllCategoriesWithLimitTeamOwner.json \ "data" \ "allCategories").as[Seq[String]].toSet.subsetOf(Set("draft-category", "group-category")) mustBe true
+      (respAllCategoriesWithLimitTeamOwner.json \ "data" \ "allCategories")
+        .as[Seq[String]]
+        .length mustBe 2
+      (respAllCategoriesWithLimitTeamOwner.json \ "data" \ "allCategories")
+        .as[Seq[String]]
+        .toSet
+        .subsetOf(Set("draft-category", "group-category")) mustBe true
 
       //test offset
       val respAllCategoriesWithOffsetTeamOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
-        body = Json.obj(
-          "variables" -> Json.obj("limit" -> 2, "offset"-> 2),
-          "query" -> allCategoriesGraphQLQuery
-        ).some
+        body = Json
+          .obj(
+            "variables" -> Json.obj("limit" -> 2, "offset" -> 2),
+            "query" -> allCategoriesGraphQLQuery
+          )
+          .some
       )(_tenant, teamOwnerAdminSession)
       respAllCategoriesWithOffsetTeamOwner.status mustBe 200
-      (respAllCategoriesWithOffsetTeamOwner.json \ "data" \ "allCategories").as[Seq[String]].length mustBe 2
-      (respAllCategoriesWithOffsetTeamOwner.json \ "data" \ "allCategories").as[Seq[String]].toSet.subsetOf(Set("private-category", "pwa-category")) mustBe true
+      (respAllCategoriesWithOffsetTeamOwner.json \ "data" \ "allCategories")
+        .as[Seq[String]]
+        .length mustBe 2
+      (respAllCategoriesWithOffsetTeamOwner.json \ "data" \ "allCategories")
+        .as[Seq[String]]
+        .toSet
+        .subsetOf(Set("private-category", "pwa-category")) mustBe true
     }
 
   }

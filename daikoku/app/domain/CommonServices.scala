@@ -5,8 +5,19 @@ import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{TeamAdminOnly, _PublicUserAccess, _TeamAdminOnly, _TeamApiEditorOnly, _TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
+  TeamAdminOnly,
+  _PublicUserAccess,
+  _TeamAdminOnly,
+  _TeamApiEditorOnly,
+  _TeamMemberOnly,
+  _TenantAdminAccessTenant,
+  _UberPublicUserAccess
+}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.joda.time.DateTime
@@ -378,23 +389,33 @@ object CommonServices {
             selectedTeam.orNull,
             selectedTag.orNull,
             selectedCat.orNull,
-            groupOpt.orNull),
-          offset, limit)
+            groupOpt.orNull
+          ),
+          offset,
+          limit
+        )
 
-        producerTeams <- env.dataStore.teamRepo.forTenant(ctx.tenant)
-          .query(
-            s"""
+        producerTeams <-
+          env.dataStore.teamRepo
+            .forTenant(ctx.tenant)
+            .query(
+              s"""
                |with visible_apis as (${allVisibleApisSqlQuery(ctx.tenant)})
                |
                |SELECT DISTINCT(teams.content) FROM visible_apis
                |LEFT JOIN teams on teams._id = visible_apis.content ->> 'team'
                |""".stripMargin,
-            Seq(
-              java.lang.Boolean.valueOf(user.isDaikokuAdmin),
-              myTeams.map(_.id.value).mkString(","),
-              java.lang.Boolean.valueOf(user.isGuest), research,
-              selectedTeam.orNull, selectedTag.orNull, selectedCat.orNull,
-              groupOpt.orNull))
+              Seq(
+                java.lang.Boolean.valueOf(user.isDaikokuAdmin),
+                myTeams.map(_.id.value).mkString(","),
+                java.lang.Boolean.valueOf(user.isGuest),
+                research,
+                selectedTeam.orNull,
+                selectedTag.orNull,
+                selectedCat.orNull,
+                groupOpt.orNull
+              )
+            )
 
         uniqueApisWithVersion <- apiRepo.findNotDeleted(
           Json.obj(
@@ -463,17 +484,26 @@ object CommonServices {
       }
     }
   }
-  def getAllTags(research: String, groupOpt: Option[String], limit: Int, offset: Int)(implicit
+  def getAllTags(
+      research: String,
+      groupOpt: Option[String],
+      limit: Int,
+      offset: Int
+  )(implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
       ec: ExecutionContext
   ): Future[Seq[String]] = {
-    AppLogger.info(s"get all tag with limit $limit and offset $offset (resaerch = $research)")
+    AppLogger.info(
+      s"get all tag with limit $limit and offset $offset (resaerch = $research)"
+    )
     for {
       myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
-      tags <- env.dataStore.asInstanceOf[PostgresDataStore]
-        .queryString(
-          s"""
+      tags <-
+        env.dataStore
+          .asInstanceOf[PostgresDataStore]
+          .queryString(
+            s"""
              |with visible_apis as (${allVisibleApisSqlQuery(ctx.tenant)})
              |
              |SELECT tag
@@ -483,29 +513,42 @@ object CommonServices {
              |ORDER BY LOWER(tag)
              |LIMIT $$10 OFFSET $$11;
              |""".stripMargin,
-          "tag",
-          Seq(
-            java.lang.Boolean.valueOf(ctx.user.isDaikokuAdmin),
-            myTeams.map(_.id.value).mkString(","),
-            java.lang.Boolean.valueOf(ctx.user.isGuest), "",
-            null, null, null,
-            groupOpt.orNull,
-            research,
-            if(limit == -1) null else java.lang.Integer.valueOf(limit),
-            if(offset == -1) null else java.lang.Integer.valueOf(offset)))
+            "tag",
+            Seq(
+              java.lang.Boolean.valueOf(ctx.user.isDaikokuAdmin),
+              myTeams.map(_.id.value).mkString(","),
+              java.lang.Boolean.valueOf(ctx.user.isGuest),
+              "",
+              null,
+              null,
+              null,
+              groupOpt.orNull,
+              research,
+              if (limit == -1) null else java.lang.Integer.valueOf(limit),
+              if (offset == -1) null
+              else java.lang.Integer.valueOf(offset)
+            )
+          )
     } yield tags
   }
 
-  def getAllCategories(research: String, groupOpt: Option[String], limit: Int, offset: Int)(implicit
-                                                                                      ctx: DaikokuActionContext[JsValue],
-                                                                                      env: Env,
-                                                                                      ec: ExecutionContext
+  def getAllCategories(
+      research: String,
+      groupOpt: Option[String],
+      limit: Int,
+      offset: Int
+  )(implicit
+      ctx: DaikokuActionContext[JsValue],
+      env: Env,
+      ec: ExecutionContext
   ): Future[Seq[String]] = {
     for {
       myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
-      tags <- env.dataStore.asInstanceOf[PostgresDataStore]
-        .queryString(
-          s"""
+      tags <-
+        env.dataStore
+          .asInstanceOf[PostgresDataStore]
+          .queryString(
+            s"""
              |with visible_apis as (${allVisibleApisSqlQuery(ctx.tenant)})
              |
              |SELECT category
@@ -515,16 +558,22 @@ object CommonServices {
              |ORDER BY LOWER(category)
              |LIMIT $$10 OFFSET $$11;
              |""".stripMargin,
-          "category",
-          Seq(
-            java.lang.Boolean.valueOf(ctx.user.isDaikokuAdmin),
-            myTeams.map(_.id.value).mkString(","),
-            java.lang.Boolean.valueOf(ctx.user.isGuest), "",
-            null, null, null,
-            groupOpt.orNull,
-            research,
-            if(limit == -1) null else java.lang.Integer.valueOf(limit),
-            if(offset== -1) null else java.lang.Integer.valueOf(offset)))
+            "category",
+            Seq(
+              java.lang.Boolean.valueOf(ctx.user.isDaikokuAdmin),
+              myTeams.map(_.id.value).mkString(","),
+              java.lang.Boolean.valueOf(ctx.user.isGuest),
+              "",
+              null,
+              null,
+              null,
+              groupOpt.orNull,
+              research,
+              if (limit == -1) null else java.lang.Integer.valueOf(limit),
+              if (offset == -1) null
+              else java.lang.Integer.valueOf(offset)
+            )
+          )
     } yield tags
   }
 

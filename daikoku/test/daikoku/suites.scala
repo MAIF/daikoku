@@ -194,8 +194,7 @@ object utils {
           daikokuComponents.env.dataStore.translationRepo
             .forAllTenant()
             .deleteAll()
-      } yield (      logger.info("[DaikokuSpecHelper] :: flush database finished")
-        )
+      } yield (logger.info("[DaikokuSpecHelper] :: flush database finished"))
     }
 
     def setupEnvBlocking(
@@ -434,13 +433,23 @@ object utils {
                 Future.successful(logger.info("Daikoku is ready !"))
 
               case _ if attempt < maxRetries =>
-                logger.info(s"Daikoku is no ready (attempt $attempt/$maxRetries), retry in ${retryDelay.toMillis}ms...")
-                Future.unit.flatMap(_ =>
-                  scala.concurrent.Future(Thread.sleep(retryDelay.toMillis)) // Attente entre les appels
-                ).flatMap(_ => checkStatus(attempt + 1))
+                logger.info(
+                  s"Daikoku is no ready (attempt $attempt/$maxRetries), retry in ${retryDelay.toMillis}ms..."
+                )
+                Future.unit
+                  .flatMap(_ =>
+                    scala.concurrent.Future(
+                      Thread.sleep(retryDelay.toMillis)
+                    ) // Attente entre les appels
+                  )
+                  .flatMap(_ => checkStatus(attempt + 1))
 
               case _ =>
-                Future.failed(new RuntimeException("Timeout: Daikoku ne s'est pas initialisé à temps"))
+                Future.failed(
+                  new RuntimeException(
+                    "Timeout: Daikoku ne s'est pas initialisé à temps"
+                  )
+                )
             }
           }
       }
