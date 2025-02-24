@@ -1482,12 +1482,12 @@ export const graphql = {
       }
     }`),
   getAllTags: gql(`
-    query getAllTags ($research: String){
-      allTags (research: $research)
+    query getAllTags ($research: String, $groupId: String, $limit: Int, $offset: Int){
+      allTags (research: $research, groupId: $groupId, limit: $limit, offset: $offset)
     }`),
   getAllCategories: gql(`
-    query getAllCategories ($research: String){
-      allCategories (research: $research)
+    query getAllCategories ($research: String, $groupId: String, $limit: Int, $offset: Int){
+      allCategories (research: $research, groupId: $groupId, limit: $limit, offset: $offset)
     }`),
   getAllTeams: gql(`
   query getAllteams ($research: String, $limit: Int, $offset: Int) {

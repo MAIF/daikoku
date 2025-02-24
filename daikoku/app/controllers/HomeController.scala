@@ -81,6 +81,29 @@ class HomeController(
       assets.at("index.html").apply(ctx.request)
     }
 
+  def status() =
+    DaikokuActionMaybeWithoutUser.async { ctx =>
+      for {
+        maybeTenant <- env.dataStore.tenantRepo.findById(ctx.tenant.id)
+      } yield {
+        val isReady = maybeTenant.isDefined
+        val databaseStatus = maybeTenant.map(_ => "OK").getOrElse("KO")
+        val responseJson = Json.obj(
+          "status" -> (if (isReady) "ready" else "initializing"),
+          "version" -> BuildInfo.version,
+          "database" -> Json.obj(
+            "status" -> databaseStatus
+          ),
+          "timestamp" -> java.time.Instant.now().toString
+        )
+
+        if (isReady)
+          Ok(responseJson)
+        else
+          ServiceUnavailable(responseJson)
+      }
+    }
+
   def health() =
     DaikokuActionMaybeWithGuest { ctx =>
       ctx.request.headers.get("Otoroshi-Health-Check-Logic-Test") match {
