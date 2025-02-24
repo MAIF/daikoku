@@ -46,6 +46,7 @@ GET     /notifications/*path                            fr.maif.otoroshi.daikoku
 GET     /apis/*path                                     fr.maif.otoroshi.daikoku.ctrls.HomeController.indexWithPath(path)
 GET     /consumptions/*path                             fr.maif.otoroshi.daikoku.ctrls.HomeController.indexWithPath(path)
 GET     /health                                         fr.maif.otoroshi.daikoku.ctrls.HomeController.health()
+GET     /status                                         fr.maif.otoroshi.daikoku.ctrls.HomeController.status()
 GET     /api/versions/_daikoku                          fr.maif.otoroshi.daikoku.ctrls.HomeController.getDaikokuVersion()
 GET     /api/me/context                                 fr.maif.otoroshi.daikoku.ctrls.HomeController.getConnectedUser()
 

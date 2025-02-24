@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, StandardCopyOption}
 import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
+import scala.concurrent.impl.Promise
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.sys.process.ProcessLogger
 import scala.util.{Failure, Success, Try}
@@ -131,6 +132,7 @@ object utils {
     def flushBlocking(): Unit = flush().futureValue
 
     def flush(): Future[Unit] = {
+      logger.info("[DaikokuSpecHelper] :: flush database beginning")
       for {
         _ <- daikokuComponents.env.dataStore.tenantRepo.deleteAll()
         _ <- daikokuComponents.env.dataStore.passwordResetRepo.deleteAll()
@@ -192,7 +194,8 @@ object utils {
           daikokuComponents.env.dataStore.translationRepo
             .forAllTenant()
             .deleteAll()
-      } yield ()
+      } yield (      logger.info("[DaikokuSpecHelper] :: flush database finished")
+        )
     }
 
     def setupEnvBlocking(
@@ -264,8 +267,10 @@ object utils {
         translations: Seq[Translation] = Seq.empty
     ): Future[Unit] = {
       for {
+        _ <- waitForDaikokuSetup()
         _ <- flush()
         _ <- daikokuComponents.env.dataStore.userSessionRepo.deleteAll()
+        log = logger.info("[DaikokuSpecHelper] :: insert tenant beginning")
         _ <- Source(tenants.toList)
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.tenantRepo
@@ -273,6 +278,7 @@ object utils {
           )
           .toMat(Sink.ignore)(Keep.right)
           .run()
+        log = logger.info("[DaikokuSpecHelper] :: insert tenant finished")
         _ <- Source(users.toList)
           .mapAsync(1)(i =>
             daikokuComponents.env.dataStore.userRepo
@@ -414,6 +420,31 @@ object utils {
           .toMat(Sink.ignore)(Keep.right)
           .run()
       } yield ()
+    }
+
+    def waitForDaikokuSetup(): Future[Unit] = {
+      val maxRetries = 10
+      val retryDelay = 100.millis
+
+      def checkStatus(attempt: Int): Future[Unit] = {
+        httpJsonCallWithoutSession(path = "/status")(tenant)
+          .flatMap { response =>
+            (response.json \ "status").asOpt[String] match {
+              case Some("ready") =>
+                Future.successful(logger.info("Daikoku is ready !"))
+
+              case _ if attempt < maxRetries =>
+                logger.info(s"Daikoku is no ready (attempt $attempt/$maxRetries), retry in ${retryDelay.toMillis}ms...")
+                Future.unit.flatMap(_ =>
+                  scala.concurrent.Future(Thread.sleep(retryDelay.toMillis)) // Attente entre les appels
+                ).flatMap(_ => checkStatus(attempt + 1))
+
+              case _ =>
+                Future.failed(new RuntimeException("Timeout: Daikoku ne s'est pas initialisé à temps"))
+            }
+          }
+      }
+      checkStatus(1)
     }
 
     def logoutBlocking(user: User, on: Tenant): Unit =
@@ -1089,7 +1120,8 @@ object utils {
       swagger = None,
       possibleUsagePlans = Seq(adminApiPlan.id),
       defaultUsagePlan = UsagePlanId("admin").some,
-      tags = Set("Administration"),
+      tags = Set("admin"),
+      categories = Set("Administration"),
       visibility = ApiVisibility.AdminOnly,
       authorizedTeams = Seq(defaultAdminTeam.id)
     )

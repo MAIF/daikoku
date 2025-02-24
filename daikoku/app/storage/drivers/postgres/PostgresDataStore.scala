@@ -14,7 +14,7 @@ import io.vertx.core.buffer.Buffer
 import io.vertx.core.json.JsonObject
 import io.vertx.core.net.{PemKeyCertOptions, PemTrustOptions}
 import io.vertx.pgclient.{PgConnectOptions, PgPool, SslMode}
-import io.vertx.sqlclient.PoolOptions
+import io.vertx.sqlclient.{PoolOptions, Row}
 import play.api.libs.json._
 import play.api.{Configuration, Logger}
 import services.CmsPage
@@ -693,6 +693,43 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
 
   override def apiSubscriptionTransferRepo: ApiSubscriptionTransferRepo =
     _apiSubscriptionTransferRepo
+
+
+  override def queryOneRaw(query: String, name: String, params: Seq[AnyRef])(implicit ec: ExecutionContext): Future[Option[JsObject]] = {
+    logger.debug(s"queryOneRaw($query)")
+
+    for {
+      value <- reactivePg.queryOne(query = query, params = params) { row =>
+        row.optJsObject(name)
+      }
+    } yield {
+      value
+    }
+  }
+
+  override def queryRaw(query: String, name: String, params: Seq[AnyRef])(implicit ec: ExecutionContext): Future[Seq[JsValue]] = {
+    logger.debug(s"queryRaw($query)")
+
+    for {
+      value <- reactivePg.querySeq(query = query, params = params) { row =>
+        row.optJsObject(name)
+      }
+    } yield {
+      value
+    }
+  }
+
+  override def queryString(query: String, name: String, params: Seq[AnyRef])(implicit ec: ExecutionContext): Future[Seq[String]] = {
+    logger.debug(s"queryString($query)")
+
+    for {
+      value <- reactivePg.querySeq(query = query, params = params) { row =>
+        row.optString(name)
+      }
+    } yield {
+      value
+    }
+  }
 
   override def start(): Future[Unit] = {
     Future.successful(())
@@ -1548,14 +1585,14 @@ abstract class PostgresRepo[Of, Id <: ValueType](
   }
 
   override def queryOne(query: String, params: Seq[AnyRef])(implicit ec: ExecutionContext): Future[Option[Of]] = {
-    logger.debug(s"$tableName.query($query)")
+    logger.debug(s"$tableName.queryOne($query)")
     reactivePg.queryOne(query, params) {
       rowToJson(_, format)
     }
   }
 
   override def queryPaginated(query: String, params: Seq[AnyRef] = Seq.empty, offset: Int, limit: Int)(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
-    logger.debug(s"$tableName.query($query)")
+    logger.debug(s"$tableName.queryPaginated($query)")
 
     for {
       count <- reactivePg.queryOne(s"select count(*) as counter from ($query)_")(row => row.optLong("counter")).map {
@@ -1754,7 +1791,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
   override def queryPaginated(query: String, params: Seq[AnyRef] = Seq.empty, offset: Int, limit: Int)(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
     logger.debug(s"$tableName.query($query)")
 
-    def legitLimit: String = if(limit == -1) "ALL" else s"$limit"
+    def legitLimit: String = if(limit == -1) null else s"$limit"
 
     for {
       count <- reactivePg.queryOne(s"select count(*) as counter from ($query)_", params)(row => row.optLong("counter")).map {

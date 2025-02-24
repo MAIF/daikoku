@@ -29,6 +29,7 @@ export default defineConfig({
       "/assets": "http://localhost:9000",
       "/robots.txt": "http://localhost:9000",
       "/health": "http://localhost:9000",
+      "/status": "http://localhost:9000",
     },
   },
   plugins: [react()],

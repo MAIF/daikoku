@@ -5,23 +5,14 @@ import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  TeamAdminOnly,
-  _PublicUserAccess,
-  _TeamAdminOnly,
-  _TeamApiEditorOnly,
-  _TeamMemberOnly,
-  _TenantAdminAccessTenant,
-  _UberPublicUserAccess
-}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{TeamAdminOnly, _PublicUserAccess, _TeamAdminOnly, _TeamApiEditorOnly, _TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.joda.time.DateTime
 import play.api.libs.json._
+import storage.drivers.postgres.PostgresDataStore
+import storage.drivers.postgres.pgimplicits.EnhancedRow
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -313,6 +304,34 @@ object CommonServices {
     }
   }
 
+  def allVisibleApisSqlQuery(tenant: Tenant) =
+    s"""
+       |SELECT content
+       |FROM apis
+       |WHERE (
+       |  content ->> '_tenant' = '${tenant.id.value}' AND
+       |  (content ->> 'state' = 'published' OR
+       |   $$1 OR
+       |   content ->> 'team' IN ($$2))
+       |      AND
+       |  (case
+       |       WHEN $$3 THEN content ->> 'visibility' = '${ApiVisibility.Public.name}'
+       |       WHEN $$1 THEN TRUE
+       |       ELSE (content ->> 'visibility' IN ('${ApiVisibility.Public.name}', '${ApiVisibility.PublicWithAuthorizations.name}') OR (content ->> 'team' in ($$2)) OR (content -> 'authorizedTeams' ?| ARRAY[$$2]))
+       |      END) AND
+       |  (content ->> 'name' ~* COALESCE(NULLIF($$4, ''), '.*')) AND
+       |  (_deleted = false) AND
+       |  (COALESCE($$5, '') = '' OR content ->> 'team' = $$5) AND
+       |  (COALESCE($$6, '') = '' OR content -> 'tags' ? $$6) AND
+       |  (COALESCE($$7, '') = '' OR content -> 'categories' ? $$7) AND
+       |  (COALESCE($$8, '') = '' OR (content ->> '_id' IN (SELECT jsonb_array_elements_text(content -> 'apis')
+       |                                                    FROM apis
+       |                                                    WHERE _id = $$8))) AND
+       |  (content ->> 'isDefault')::boolean
+       |)
+       |ORDER BY LOWER(content ->> 'name')
+       |""".stripMargin
+
   def getVisibleApis(
       teamId: Option[String] = None,
       research: String,
@@ -348,44 +367,9 @@ object CommonServices {
                   "status.status" -> "Pending"
                 )
               )
-        allVisibleApisSqlQuery =
-          s"""
-             |SELECT content
-             |FROM apis
-             |WHERE (
-             |  content ->> '_tenant' = '${ctx.tenant.id.value}' AND
-             |  (content ->> 'state' = 'published' OR
-             |   $$1 OR
-             |   content ->> 'team' IN ($$2))
-             |      AND
-             |  (case
-             |       WHEN $$3 THEN content ->> 'visibility' = '${ApiVisibility.Public.name}'
-             |       WHEN $$1 THEN TRUE
-             |       ELSE (content ->> 'visibility' IN ('${ApiVisibility.Public.name}', '${ApiVisibility.PublicWithAuthorizations.name}') OR (content ->> 'team' in ($$2)) OR (content -> 'authorizedTeams' ?| ARRAY[$$2]))
-             |      END) AND
-             |  (content ->> 'name' ~* COALESCE(NULLIF($$4, ''), '.*')) AND
-             |  (_deleted = false) AND
-             |  (COALESCE($$5, '') = '' OR content ->> 'team' = $$5) AND
-             |  (COALESCE($$6, '') = '' OR content -> 'tags' ? $$6) AND
-             |  (COALESCE($$7, '') = '' OR content -> 'categories' ? $$7) AND
-             |  (COALESCE($$8, '') = '' OR (content ->> '_id' IN (SELECT jsonb_array_elements_text(content -> 'apis')
-             |                                                    FROM apis
-             |                                                    WHERE _id = $$8))) AND
-             |  (content ->> 'isDefault')::boolean
-             |)
-             |ORDER BY LOWER(content ->> 'name')
-             |""".stripMargin
-        log = AppLogger.info(s"${Seq(
-          java.lang.Boolean.valueOf(user.isDaikokuAdmin),
-          myTeams.map(_.id.value).mkString(","),
-          java.lang.Boolean.valueOf(user.isGuest),
-          research,
-          selectedTeam.orNull,
-          selectedTag.orNull,
-          selectedCat.orNull,
-          groupOpt.orNull)}")
+
         paginateApis <- apiRepo.queryPaginated(
-          allVisibleApisSqlQuery,
+          allVisibleApisSqlQuery(ctx.tenant),
           Seq(
             java.lang.Boolean.valueOf(user.isDaikokuAdmin),
             myTeams.map(_.id.value).mkString(","),
@@ -400,7 +384,7 @@ object CommonServices {
         producerTeams <- env.dataStore.teamRepo.forTenant(ctx.tenant)
           .query(
             s"""
-               |with visible_apis as ($allVisibleApisSqlQuery)
+               |with visible_apis as (${allVisibleApisSqlQuery(ctx.tenant)})
                |
                |SELECT DISTINCT(teams.content) FROM visible_apis
                |LEFT JOIN teams on teams._id = visible_apis.content ->> 'team'
@@ -479,70 +463,69 @@ object CommonServices {
       }
     }
   }
-  def getAllTags(research: String, groupOpt: Option[String])(implicit
+  def getAllTags(research: String, groupOpt: Option[String], limit: Int, offset: Int)(implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
       ec: ExecutionContext
   ): Future[Seq[String]] = {
+    AppLogger.info(s"get all tag with limit $limit and offset $offset (resaerch = $research)")
     for {
-      visibleApis <- getVisibleApis(research = "", limit = -1, offset = 0, groupOpt = groupOpt)
-    } yield {
-      visibleApis
-        .map(apis =>
-          apis.apis
-            .flatMap(api =>
-              api.api.tags.toSeq.filter(tag => tag.indexOf(research) != -1)
-            )
-            .foldLeft(Map.empty[String, Int])((map, tag) => {
-              val nbOfMatching = map.get(tag) match {
-                case Some(count) => count + 1
-                case None        => 1
-              }
-              map + (tag -> nbOfMatching)
-
-            })
-            .toSeq
-            .sortBy(_._2)
-            .reverse
-            .map(a => a._1)
-            .take(5)
-        )
-        .getOrElse(Seq.empty)
-    }
+      myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
+      tags <- env.dataStore.asInstanceOf[PostgresDataStore]
+        .queryString(
+          s"""
+             |with visible_apis as (${allVisibleApisSqlQuery(ctx.tenant)})
+             |
+             |SELECT tag
+             |FROM (SELECT DISTINCT jsonb_array_elements_text(content -> 'tags') AS tag
+             |            FROM visible_apis)_
+             |WHERE tag ~* COALESCE($$9, '')
+             |ORDER BY LOWER(tag)
+             |LIMIT $$10 OFFSET $$11;
+             |""".stripMargin,
+          "tag",
+          Seq(
+            java.lang.Boolean.valueOf(ctx.user.isDaikokuAdmin),
+            myTeams.map(_.id.value).mkString(","),
+            java.lang.Boolean.valueOf(ctx.user.isGuest), "",
+            null, null, null,
+            groupOpt.orNull,
+            research,
+            if(limit == -1) null else java.lang.Integer.valueOf(limit),
+            if(offset == -1) null else java.lang.Integer.valueOf(offset)))
+    } yield tags
   }
 
-  def getAllCategories(research: String, groupOpt: Option[String])(implicit
-      ctx: DaikokuActionContext[JsValue],
-      env: Env,
-      ec: ExecutionContext
+  def getAllCategories(research: String, groupOpt: Option[String], limit: Int, offset: Int)(implicit
+                                                                                      ctx: DaikokuActionContext[JsValue],
+                                                                                      env: Env,
+                                                                                      ec: ExecutionContext
   ): Future[Seq[String]] = {
     for {
-      visibleApis <- getVisibleApis(research = "", limit = -1, offset = 0, groupOpt = groupOpt)
-    } yield {
-      visibleApis
-        .map(apis =>
-          apis.apis
-            .flatMap(api =>
-              api.api.categories.toSeq.filter(tag =>
-                tag.indexOf(research) != -1
-              )
-            )
-            .foldLeft(Map.empty[String, Int])((map, cat) => {
-              val nbOfMatching = map.get(cat) match {
-                case Some(count) => count + 1
-                case None        => 1
-              }
-              map + (cat -> nbOfMatching)
-
-            })
-            .toSeq
-            .sortBy(_._2)
-            .reverse
-            .map(a => a._1)
-            .take(5)
-        )
-        .getOrElse(Seq.empty)
-    }
+      myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
+      tags <- env.dataStore.asInstanceOf[PostgresDataStore]
+        .queryString(
+          s"""
+             |with visible_apis as (${allVisibleApisSqlQuery(ctx.tenant)})
+             |
+             |SELECT category
+             |FROM (SELECT DISTINCT jsonb_array_elements_text(content -> 'categories') AS category
+             |            FROM visible_apis)_
+             |WHERE category ~* COALESCE($$9, '')
+             |ORDER BY LOWER(category)
+             |LIMIT $$10 OFFSET $$11;
+             |""".stripMargin,
+          "category",
+          Seq(
+            java.lang.Boolean.valueOf(ctx.user.isDaikokuAdmin),
+            myTeams.map(_.id.value).mkString(","),
+            java.lang.Boolean.valueOf(ctx.user.isGuest), "",
+            null, null, null,
+            groupOpt.orNull,
+            research,
+            if(limit == -1) null else java.lang.Integer.valueOf(limit),
+            if(offset== -1) null else java.lang.Integer.valueOf(offset)))
+    } yield tags
   }
 
   case class ApiWithTranslation(api: Api, translation: JsObject)

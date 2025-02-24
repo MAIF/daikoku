@@ -1487,12 +1487,12 @@ export const graphql = {
       }
     }`),
   getAllTags: gql(`
-    query getAllTags ($research: String, $groupId: String){
-      allTags (research: $research, groupId: $groupId)
+    query getAllTags ($research: String, $groupId: String, $limit: Int, $offset: Int){
+      allTags (research: $research, groupId: $groupId, limit: $limit, offset: $offset)
     }`),
   getAllCategories: gql(`
-    query getAllCategories ($research: String, $groupId: String){
-      allCategories (research: $research, groupId: $groupId)
+    query getAllCategories ($research: String, $groupId: String, $limit: Int, $offset: Int){
+      allCategories (research: $research, groupId: $groupId, limit: $limit, offset: $offset)
     }`),
   getAllTeams: gql(`
   query getAllteams ($research: String, $limit: Int, $offset: Int) {

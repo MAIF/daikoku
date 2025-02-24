@@ -118,7 +118,7 @@ export const ApiList = (props: TApiList) => {
     queryFn: ({ queryKey }) => {
       return client!.query<{ allTags: Array<string> }>({
         query: Services.graphql.getAllTags,
-        variables: { research: queryKey[1], groupId: queryKey[2] }
+        variables: { research: queryKey[1], groupId: queryKey[2], limit: 5 }
       }).then(({ data: { allTags } }) => {
         setTags(arrayStringToTOps(allTags))
         return arrayStringToTOps(allTags)
@@ -131,7 +131,7 @@ export const ApiList = (props: TApiList) => {
     queryFn: () => {
       return client!.query<{ allTags: Array<string> }>({
         query: Services.graphql.getAllTags,
-        variables: { research: "" }
+        variables: { research: "", limit: 5 }
       }).then(({ data: { allTags } }) => {
         return arrayStringToTOps(allTags)
       })
@@ -143,7 +143,7 @@ export const ApiList = (props: TApiList) => {
     queryFn: ({ queryKey }) => {
       return client!.query<{ allCategories: Array<string> }>({
         query: Services.graphql.getAllCategories,
-        variables: { research: queryKey[1], groupId: queryKey[2] }
+        variables: { research: queryKey[1], groupId: queryKey[2], limit: 5 }
       }).then(({ data: { allCategories } }) => {
         setCategories(arrayStringToTOps(allCategories))
         return arrayStringToTOps(allCategories)
@@ -155,7 +155,7 @@ export const ApiList = (props: TApiList) => {
     queryFn: () => {
       return client!.query<{ allCategories: Array<string> }>({
         query: Services.graphql.getAllCategories,
-        variables: { research: ""}
+        variables: { research: "", limit: 5}
       }).then(({ data: { allCategories } }) => {
         return arrayStringToTOps(allCategories)
       })

@@ -7,6 +7,7 @@ import org.apache.pekko.util.ByteString
 import cats.data.OptionT
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
+import io.vertx.sqlclient.Row
 import play.api.libs.json._
 import services.CmsPage
 
@@ -383,7 +384,6 @@ trait Repo[Of, Id <: ValueType] {
   def queryOne(query: String, params: Seq[AnyRef] = Seq.empty)(implicit ec: ExecutionContext): Future[Option[Of]]
   def query(query: String, params: Seq[AnyRef] = Seq.empty)(implicit ec: ExecutionContext): Future[Seq[Of]]
   def queryPaginated(query: String, params: Seq[AnyRef] = Seq.empty, offset: Int, limit: Int)(implicit ec: ExecutionContext): Future[(Seq[Of], Long)]
-
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -604,4 +604,10 @@ trait DataStore {
   def importFromStream(source: Source[ByteString, _]): Future[Unit]
 
   def clear(): Future[Unit]
+
+  def queryOneRaw(query: String, name: String, params: Seq[AnyRef] = Seq.empty)(implicit ec: ExecutionContext): Future[Option[JsValue]]
+
+  def queryRaw(query: String, name: String, params: Seq[AnyRef] = Seq.empty)(implicit ec: ExecutionContext): Future[Seq[JsValue]]
+
+  def queryString(query: String, name: String, params: Seq[AnyRef] = Seq.empty)(implicit ec: ExecutionContext): Future[Seq[String]]
 }
