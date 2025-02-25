@@ -1300,6 +1300,10 @@ export const graphql = {
           _humanReadableId
           currentVersion
           name
+          team {
+            name
+            _humanReadableId
+          }
           apis {
             api {
               _id

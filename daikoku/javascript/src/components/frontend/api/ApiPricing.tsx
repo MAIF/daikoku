@@ -1,11 +1,11 @@
-import { constraints, Flow, Form, format, Schema, type } from '@maif/react-forms';
+import { constraints, Flow, Form, format, FormRef, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
 import find from 'lodash/find';
 import { nanoid } from 'nanoid';
-import { memo, useContext, useEffect, useState } from 'react';
+import { forwardRef, memo, MutableRefObject, useContext, useEffect, useRef, useState } from 'react';
 import More from 'react-feather/dist/icons/more-vertical';
 import { Link, useMatch, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -187,8 +187,6 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             .filter(s => !tenant.environmentAggregationApiKeysSecurity || s.subscription.planName === plan.customName)
             .map((infos) => infos.subscription);
 
-            console.debug({filteredApiKeys})
-
           if (
             !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
             filteredApiKeys.length <= 0
@@ -262,16 +260,37 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
   }
 
   const editPlan = () => props.updatePlan(props.plan)
-  const deleteWithConfirm = () => confirm({
-    message: "ok ?"
-  }).then(ok => {
-    if (ok) {
-      Services.deletePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, props.plan)
-        .then(() => queryClient.invalidateQueries({ queryKey: ["plans"] }))
-        .then(() => toast.success(translate('delete.plan.sucessful')))
-    }
-  })
-    .then(closeRightPanel)
+
+  const deleteWithConfirm = () => {
+    const displayType = tenant.display === 'environment' ? 'environment' : 'plan'
+      openFormModal({
+        title: translate('Confirm'),
+        description: <div className="alert alert-danger" role="alert">
+          <h4 className="alert-heading">{translate('Warning')}</h4>
+          <p>{translate(`delete.${displayType}.confirm.modal.description.1`)}</p>
+          <ul>
+            <li>{translate(`delete.${displayType}.confirm.modal.description.2`)}</li>
+          </ul>
+        </div>,
+        schema: {
+          confirm: {
+            type: type.string,
+            label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [plan.customName] }),
+            constraints: [
+              constraints.oneOf(
+                [plan.customName],
+                translate({ key: 'constraints.type.api.name', replacements: [plan.customName] })
+              ),
+            ],
+          },
+        },
+        onSubmit: () => Services.deletePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, props.plan)
+          .then(() => queryClient.invalidateQueries({ queryKey: ["plans"] }))
+          .then(() => toast.success(translate({ key: `delete.${displayType}.successful.toast.label`, replacements: [plan.customName] })))
+          .then(() => closeRightPanel()),
+        actionLabel: translate('Confirm')
+      })
+    };
 
   const duplicatePlan = () => {
     const clone: IUsagePlan = {
@@ -1220,7 +1239,9 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
         />}
       </div>
       <div className="usage-plan-form--actions">
-        <button className='btn btn-outline-success' onClick={() => props.onSubmit(plan)}>{translate('Save')}</button>
+        <button className='btn btn-outline-success' onClick={() => {
+          props.onSubmit(plan)
+        }}>{translate('Save')}</button>
       </div>
     </div>
   )
@@ -1282,7 +1303,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
     if (creation) {
       return (
         Services.createPlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
-          .then(() => toast.success('create.plan.succesful.toast.label'))
+          .then(() => toast.success(translate({key: 'create.plan.succesful.toast.label', replacements: [plan.customName]})))
           .then(closeRightPanel)
           .then(() => queryClient.invalidateQueries({ queryKey: ['plans'] }))
       )

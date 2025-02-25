@@ -84,15 +84,15 @@ export const apiGQLToLegitApi = (apiGQL: IApiGQL, tenant: ITenant): IApi => {
     tags: apiGQL.tags,
     categories: apiGQL.categories,
     visibility: apiGQL.visibility,
-    possibleUsagePlans: apiGQL.possibleUsagePlans.map(plan => plan._id),
+    possibleUsagePlans: apiGQL.possibleUsagePlans ? apiGQL.possibleUsagePlans.map(plan => plan._id) : [],
     defaultUsagePlan: apiGQL.defaultUsagePlan,
-    authorizedTeams: apiGQL.authorizedTeams.map(team => team._id),
+    authorizedTeams: apiGQL.authorizedTeams ? apiGQL.authorizedTeams.map(team => team._id) : [],
     posts: [],
     issues: [],
     issuesTags: [],
     stars: apiGQL.stars,
     isDefault: true,
-    apis: apiGQL.apis.map(api => api._id),
+    apis: apiGQL.apis ? apiGQL.apis.map(api => api._id) : [],
     state: apiGQL.state,
     team: apiGQL.team._id
   };

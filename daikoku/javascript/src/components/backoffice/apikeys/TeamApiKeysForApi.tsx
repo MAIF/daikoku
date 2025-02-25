@@ -16,6 +16,7 @@ import {
 import * as Services from '../../../services';
 import {
   IApi,
+  IApiGQL,
   IRotation,
   ISubscription,
   ISubscriptionExtended,
@@ -33,6 +34,8 @@ import {
   formatPlanType,
   read
 } from '../../utils';
+import { apiGQLToLegitApi } from '../../utils/apiUtils';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 type ISubscriptionWithChildren = ISubscriptionExtended & {
   children: Array<ISubscriptionExtended>;
@@ -132,7 +135,8 @@ export const TeamApiKeysForApi = () => {
 type ApiKeysListForApiProps = {
   team: ITeamSimple
   api: IApi
-  ownerTeam: ITeamSimple
+  ownerTeam: ITeamSimple,
+  linkToChildren?: (api: IApi, teamHrId: string) => string
 }
 export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   const [searched, setSearched] = useState('');
@@ -141,6 +145,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   const { client } = useContext(getApolloContext());
   const { translate, Translation } = useContext(I18nContext);
   const { confirm, openFormModal, openCustomModal } = useContext(ModalContext);
+  const { tenant } = useContext(GlobalContext);
   const queryClient = useQueryClient();
 
 
@@ -157,7 +162,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   const subApisQuery = useQuery({
     queryKey: ['data', 'subscriptions', 'apis'],
     queryFn: () => {
-      return client?.query<{ apis: IApi[] }>({
+      return client?.query<{ apis: IApiGQL[] }>({
         query: Services.graphql.apisByIds,
         variables: {
           ids: [
@@ -492,6 +497,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                     regenerateSecret={() => regenerateApiKeySecret(subscription)}
                     transferKey={() => transferApiKey(subscription)}
                     handleTagClick={(tag) => setSearched(tag)}
+                    linkToChildren={props.linkToChildren}
                   />
                 );
               }}
@@ -524,9 +530,10 @@ type ApiKeyCardProps = {
   ) => Promise<void>;
   regenerateSecret: () => void;
   currentTeam?: ITeamSimple;
-  subscribedApis: Array<IApi>;
+  subscribedApis: Array<IApiGQL>;
   transferKey: () => void;
   handleTagClick: (tag: string) => void
+  linkToChildren?: (api: IApi, teamHrId: string) => string
 };
 
 export const ApiKeyCard = ({
@@ -543,7 +550,8 @@ export const ApiKeyCard = ({
   transferKey,
   currentTeam,
   subscribedApis,
-  handleTagClick
+  handleTagClick,
+  linkToChildren
 }: ApiKeyCardProps) => {
   const apiKeyValues = {
     apikey: `${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`,
@@ -551,10 +559,9 @@ export const ApiKeyCard = ({
     basicAuth: `Basic ${btoa(`${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`)}`,
   };
 
-  const [showAggregatePlan, setAggregatePlan] = useState(false);
-
   const { translate, Translation } = useContext(I18nContext);
-  const { openFormModal, openRightPanel } = useContext(ModalContext);
+  const { openFormModal, openRightPanel, closeRightPanel } = useContext(ModalContext);
+  const { tenant } = useContext(GlobalContext);
 
   const planQuery = useQuery({
     queryKey: ['plan', subscription.plan],
@@ -769,9 +776,12 @@ export const ApiKeyCard = ({
                       return (
                         <div key={aggregate._id}>
                           <Link
-                            to={`/${currentTeam?._humanReadableId}/settings/apikeys/${aggregate._humanReadableId}/${api!.currentVersion}`}
+                            onClick={closeRightPanel}
+                            to={linkToChildren ?
+                              linkToChildren(apiGQLToLegitApi(api!, tenant), api!.team._humanReadableId) :
+                              `/${currentTeam?._humanReadableId}/settings/apikeys/${aggregate._humanReadableId}/${api!.currentVersion}`}
                           >
-                            {`${aggregate.apiName}/${aggregate.planName || aggregate.planType}`}
+                            {`${aggregate.apiName}/${aggregate.planName}`}
                           </Link>
                         </div>
                       );
