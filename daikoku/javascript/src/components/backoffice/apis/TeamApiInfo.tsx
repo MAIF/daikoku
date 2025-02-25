@@ -1,8 +1,8 @@
-import React, { useContext } from 'react';
-import { type, constraints, format, Schema } from '@maif/react-forms';
-import * as Services from '../../../services';
+import { constraints, format, Schema, type } from '@maif/react-forms';
+import { useContext } from 'react';
 import { I18nContext } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
+import * as Services from '../../../services';
 import { ITeamSimple, ITenant } from '../../../types';
 import { IPage } from '../../adminbackoffice/cms';
 
@@ -41,17 +41,6 @@ const Image = ({
   );
 };
 
-const getTeams = (): Promise<Array<ITeamSimple>> => new Promise((resolve, reject) => {
-  setTimeout(() => {
-    const teams = [
-      { _id: '1', name: 'foo' },
-      { _id: '2', name: 'bar' },
-      { _id: '3', name: 'avengers' },
-    ]//@ts-ignore
-    resolve(teams);
-  }, 300);
-});
-
 const reservedVersionCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
 export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITenant, getCmsPages: () => Promise<Array<IPage>>) => {
   const schema: Schema = {
@@ -70,6 +59,7 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
           'name_already_exist',
           translate('api.already.exists'),
           (name, context) => {
+            console.debug({context})
             return Services.checkIfApiNameIsUnique(name, context.parent._id)
               .then((r) => !r.exists)
           }

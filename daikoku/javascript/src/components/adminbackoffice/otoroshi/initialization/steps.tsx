@@ -13,7 +13,7 @@ import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services';
 import { IApiKey, ISubscription } from '../../../../types/api';
 import { Table, TableRef } from '../../../inputs';
-import { BeautifulTitle, Option, formatPlanType, newPossibleUsagePlan } from '../../../utils';
+import { BeautifulTitle, Option, newPossibleUsagePlan } from '../../../utils';
 
 export const SelectionStepStep = (props: any) => {
   const { Translation } = useContext(I18nContext);
@@ -686,7 +686,7 @@ const ApiKey = (props: any) => {
     .map((a: any) => a.possibleUsagePlans)
     .getOrElse([])
     .map((pp: any) => ({
-      label: pp.customName || formatPlanType(pp, translate),
+      label: pp.customName,
       value: pp
     }));
 

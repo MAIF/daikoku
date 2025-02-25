@@ -69,13 +69,12 @@ export const AddPanel = () => {
           toast.warning('toast.no.team.found')
         } else {
           return openRightPanel({
-            title: translate('api.creation.title.right.panel'),
+            title: translate('api.creation.right.panel.title'),
             content: <ApiFormRightPanel team={team} handleSubmit={(api) => Services.createTeamApi(team._id, api)
               .then(() => queryClient.invalidateQueries({ queryKey: ["data"] }))
               .then(() => toast.success("api.created.successful.toast"))}/>
           })
         }
-
       }
     }
   };

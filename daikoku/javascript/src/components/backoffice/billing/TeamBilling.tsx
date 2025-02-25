@@ -12,7 +12,6 @@ import {
   Can,
   Spinner,
   formatCurrency,
-  formatPlanType,
   read,
   stat
 } from '../../utils';
@@ -127,7 +126,7 @@ export const TeamBilling = () => {
       const usagePlan = planQuery.data;
       return (
         <PriceCartridge
-          label={usagePlan.customName || formatPlanType(usagePlan, translate)}
+          label={usagePlan.customName}
           total={props.total}
           currency={usagePlan.currency!}
           fetchInvoices={() => Services.fetchInvoices(props.currentTeam._id, props.api._id, usagePlan._id, window.location.href)

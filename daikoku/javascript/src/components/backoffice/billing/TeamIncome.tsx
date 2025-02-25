@@ -5,7 +5,7 @@ import maxBy from 'lodash/maxBy';
 import * as Services from '../../../services';
 import { MonthPicker } from '../../inputs/monthPicker';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
-import { formatCurrency, formatPlanType, Spinner, Can, read, api } from '../../utils';
+import { formatCurrency, Spinner, Can, read, api } from '../../utils';
 import { I18nContext } from '../../../contexts';
 import { useTeamBackOffice } from '../../../contexts';
 import dayjs from 'dayjs';
@@ -203,7 +203,7 @@ export const TeamIncome = () => {
                       return (
                         <PriceCartridge
                           key={idx}
-                          label={usagePlan.customName || formatPlanType(usagePlan, translate)}
+                          label={usagePlan.customName}
                           total={billing.total}
                           currency={usagePlan.currency}
                           handleClick={() => setState({ ...state, selectedPlan: usagePlan })} />
@@ -214,8 +214,7 @@ export const TeamIncome = () => {
                   <div className="api__plans__consumption__header">
                     <h3 className="api__name">
                       {state.selectedApi.name} -{' '}
-                      {(state.selectedPlan as any).customName ||
-                        formatPlanType(state.selectedPlan, translate)}
+                      {(state.selectedPlan as any).customName}
                     </h3>
                     <i className="far fa-arrow-alt-circle-left quit" onClick={() => setState({ ...state, selectedPlan: undefined })} />
                   </div>

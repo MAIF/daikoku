@@ -1,17 +1,13 @@
-import Select from 'react-select';
-import { useContext, useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import sortBy from 'lodash/sortBy';
+import { useContext, useState } from 'react';
+import Select from 'react-select';
 
+import { useNavigate } from 'react-router-dom';
+import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IApi, isError, ISubscriptionExtended, ITeamSimple } from '../../../types';
+import { ApiKeysListForApi } from '../../backoffice/apikeys/TeamApiKeysForApi';
 import { Spinner } from '../../utils/Spinner';
-import { ApiKeyCard, ApiKeysListForApi } from '../../backoffice/apikeys/TeamApiKeysForApi';
-import { PaginatedComponent } from '../../utils/PaginatedComponent';
-import { I18nContext } from '../../../contexts';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { formatPlanType } from '../../utils/formatters';
-import { apikey, Can, read } from '../../utils/permissions';
 
 type ISubscriptionWithChildren = ISubscriptionExtended & {
   children: Array<ISubscriptionExtended>;

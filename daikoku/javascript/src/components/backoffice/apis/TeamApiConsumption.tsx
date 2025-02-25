@@ -4,11 +4,11 @@ import moment, { Moment } from 'moment';
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { useQuery } from "@tanstack/react-query";
 import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IApi, IGlobalInformations, isError, ITeamSimple, IUsagePlan } from '../../../types';
-import { Can, GlobalDataConsumption, OtoroshiStatsVizualization, Spinner, formatPlanType, read, renderPlanInfo, stat } from '../../utils';
-import { useQuery } from "@tanstack/react-query";
+import { Can, GlobalDataConsumption, OtoroshiStatsVizualization, read, Spinner, stat } from '../../utils';
 
 
 type IgqlConsumption = {

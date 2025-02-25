@@ -6,7 +6,6 @@ import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
 import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { ITeamSimple } from '../../../types';
-import { formatPlanType } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { Widget } from './widget';
 
@@ -80,7 +79,7 @@ export const LastDemandsExt = (props: LastDemandsProps) => {
               <div className='d-flex flex-row justify-content-between align-items-center widget-list-item'>
                 <div className='d-flex flex-column justify-content-between'>
                   <div className='item-title'><i className="fas fa-users me-2" />{d.team.name}</div>
-                  <div className='ms-1'>{d.api.name} / {d.plan.customName || formatPlanType(d.plan.type, translate)}</div>
+                  <div className='ms-1'>{d.api.name} / {d.plan.customName}</div>
                   {actualStep && <i>{actualStep.step.name} - {actualStep.step.title}</i>}
                 </div>
                 {reRunable && <FeedbackButton

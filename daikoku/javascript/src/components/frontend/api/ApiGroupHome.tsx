@@ -7,8 +7,8 @@ import classNames from 'classnames';
 import { I18nContext, useApiGroupFrontOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
-import { IApi, IApiGQL, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, isError } from '../../../types';
-import { formatPlanType } from '../../utils/formatters';
+import { IApiGQL, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, isError } from '../../../types';
+import { apiGQLToLegitApi } from '../../utils/apiUtils';
 import {
   ApiDescription,
   ApiDocumentation,
@@ -19,7 +19,6 @@ import {
   ApiPost,
   ApiPricing,
 } from './';
-import { apiGQLToLegitApi } from '../../utils/apiUtils';
 
 export const ApiGroupHome = () => {
   const [apiGroup, setApiGroup] = useState<IApiGQL>();
@@ -170,7 +169,6 @@ export const ApiGroupHome = () => {
   };
 
   const askForApikeys = ({ team, plan }: { team: string, plan: IUsagePlan }) => {
-    const planName = formatPlanType(plan, translate);
 
     return Services.askForApiKey(apiGroup!._id, team, plan._id)
       .then((result) => {
@@ -180,10 +178,10 @@ export const ApiGroupHome = () => {
           window.location.href = result.checkoutUrl
         } else if (result.creation === 'done') {
           const teamName = myTeams.find((t) => t._id === result.subscription.team)!.name;
-          return toast.success(translate({ key: 'subscription.plan.accepted', replacements: [planName, teamName] }));
+          return toast.success(translate({ key: 'subscription.plan.accepted', replacements: [plan.customName, teamName] }));
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
-          return toast.info(translate({ key: 'subscription.plan.waiting', replacements: [planName, teamName] }));
+          return toast.info(translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, teamName] }));
         }
       })
       .then(() => updateSubscriptions(apiGroup));

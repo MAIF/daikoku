@@ -1,13 +1,15 @@
-import { constraints, Flow, Form, format, FormRef, Schema, type } from '@maif/react-forms';
+import { constraints, Flow, Form, format, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
 import find from 'lodash/find';
 import { nanoid } from 'nanoid';
-import { forwardRef, memo, MutableRefObject, useContext, useEffect, useRef, useState } from 'react';
+import { memo, useContext, useEffect, useState } from 'react';
 import More from 'react-feather/dist/icons/more-vertical';
-import { Link, useMatch, useNavigate } from 'react-router-dom';
+import { Link, useMatch, useNavigate, useParams } from 'react-router-dom';
+import Select, { components } from 'react-select';
+import CreatableSelect from 'react-select/creatable';
 import { toast } from 'sonner';
 
 import { GraphQLClient } from 'graphql-request';
@@ -26,10 +28,8 @@ import {
   ITeamSimple,
   ITenantFull,
   IThirdPartyPaymentSettings,
-  IUsagePlan,
-  UsagePlanVisibility
+  IUsagePlan
 } from '../../../types';
-import { CustomMetadataInput, OtoroshiEntitiesSelector } from '../../backoffice/apis/TeamApiPricings';
 import {
   access,
   api as API,
@@ -47,6 +47,363 @@ import {
 import { ApiDocumentation } from './ApiDocumentation';
 import { ApiRedoc } from './ApiRedoc';
 import { ApiSwagger } from './ApiSwagger';
+
+type OtoroshiEntitiesSelectorProps = {
+  rawValues: any
+  onChange: (item: any) => void,
+  translate: (x: string) => string
+  ownerTeam: ITeamSimple
+}
+export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate, ownerTeam }: OtoroshiEntitiesSelectorProps) => {
+  const [loading, setLoading] = useState<boolean>(true);
+  const [groups, setGroups] = useState<Array<any>>([]);
+  const [services, setServices] = useState<Array<any>>([]);
+  const [routes, setRoutes] = useState<Array<any>>([]);
+  const [disabled, setDisabled] = useState<boolean>(true);
+  const [value, setValue] = useState<any>(undefined);
+
+  const { Translation } = useContext(I18nContext);
+
+  const params = useParams();
+
+  useEffect(() => {
+    const otoroshiTarget = rawValues.otoroshiTarget;
+
+    if (otoroshiTarget && otoroshiTarget.otoroshiSettings) {
+      Promise.all([
+        Services.getOtoroshiGroupsAsTeamAdmin(
+          ownerTeam._id,
+          rawValues.otoroshiTarget.otoroshiSettings
+        ),
+        Services.getOtoroshiServicesAsTeamAdmin(
+          ownerTeam._id,
+          rawValues.otoroshiTarget.otoroshiSettings
+        ),
+        Services.getOtoroshiRoutesAsTeamAdmin(
+          ownerTeam._id,
+          rawValues.otoroshiTarget.otoroshiSettings
+        ),
+      ])
+        .then(([groups, services, routes]) => {
+          if (!groups.error)
+            setGroups(
+              groups.map((g: any) => ({
+                label: g.name,
+                value: g.id,
+                type: 'group',
+              }))
+            );
+          else setGroups([]);
+          if (!services.error)
+            setServices(
+              services.map((g: any) => ({
+                label: g.name,
+                value: g.id,
+                type: 'service',
+              }))
+            );
+          else setServices([]);
+          if (!routes.error)
+            setRoutes(
+              routes.map((g: any) => ({
+                label: g.name,
+                value: g.id,
+                type: 'route',
+              }))
+            );
+          else setRoutes([]);
+        })
+        .catch(() => {
+          setGroups([]);
+          setServices([]);
+          setRoutes([]);
+        });
+    }
+    setDisabled(!otoroshiTarget || !otoroshiTarget.otoroshiSettings);
+  }, [rawValues?.otoroshiTarget?.otoroshiSettings]);
+
+  useEffect(() => {
+    if (groups && services && routes) {
+      setLoading(false);
+    }
+  }, [services, groups, routes]);
+
+  useEffect(() => {
+    if (
+      !!groups &&
+      !!services &&
+      !!routes &&
+      !!rawValues.otoroshiTarget.authorizedEntities
+    ) {
+      setValue(
+        [
+          ...rawValues.otoroshiTarget.authorizedEntities.groups.map(
+            (authGroup: any) =>
+              (groups as any).find((g: any) => g.value === authGroup)
+          ),
+          ...(rawValues.otoroshiTarget.authorizedEntities.services || []).map(
+            (authService: any) =>
+              (services as any).find((g: any) => g.value === authService)
+          ),
+          ...(rawValues.otoroshiTarget.authorizedEntities.routes || []).map(
+            (authRoute: any) =>
+              (routes as any).find((g: any) => g.value === authRoute)
+          ),
+        ].filter((f) => f)
+      );
+    }
+  }, [rawValues, groups, services, routes]);
+
+  const onValueChange = (v: any) => {
+    if (!v) {
+      onChange(null);
+      setValue(undefined);
+    } else {
+      const value = v.reduce(
+        (acc: any, entitie: any) => {
+          switch (entitie.type) {
+            case 'group':
+              return {
+                ...acc,
+                groups: [
+                  ...acc.groups,
+                  groups.find((g: any) => g.value === entitie.value).value,
+                ],
+              };
+            case 'service':
+              return {
+                ...acc,
+                services: [
+                  ...acc.services,
+                  services.find((s: any) => s.value === entitie.value).value,
+                ],
+              };
+            case 'route':
+              return {
+                ...acc,
+                routes: [
+                  ...acc.routes,
+                  routes.find((s: any) => s.value === entitie.value).value,
+                ],
+              };
+          }
+        },
+        { groups: [], services: [], routes: [] }
+      );
+      setValue([
+        ...value.groups.map((authGroup: any) =>
+          groups.find((g: any) => g.value === authGroup)
+        ),
+        ...value.services.map((authService: any) =>
+          services.find((g: any) => g.value === authService)
+        ),
+        ...value.routes.map((authRoute: any) =>
+          routes.find((g: any) => g.value === authRoute)
+        ),
+      ]);
+      onChange(value);
+    }
+  };
+
+  const groupedOptions = [
+    { label: 'Service groups', options: groups },
+    { label: 'Services', options: services },
+    { label: 'Routes', options: routes },
+  ];
+
+  const formatGroupLabel = (data) => (
+    <div className="groupStyles">
+      <span>{data.label}</span>
+      <span className="groupBadgeStyles">{data.options.length}</span>
+    </div>
+  );
+
+  return (
+    <div>
+      <Select
+        id={`input-label`}
+        isMulti
+        name={`search-label`}
+        isLoading={loading}
+        isDisabled={disabled && !loading}
+        placeholder={translate('Authorized.entities.placeholder')} //@ts-ignore //FIXME
+        components={(props: any) => <components.Group {...props} />}
+        formatGroupLabel={formatGroupLabel}
+        options={groupedOptions}
+        value={value}
+        onChange={onValueChange}
+        classNamePrefix="reactSelect"
+        className="reactSelect"
+      />
+      <div className="col-12 d-flex flex-row mt-3">
+        <div className="d-flex flex-column flex-grow-1">
+          <strong className="reactSelect__group-heading">
+            <Translation i18nkey="authorized.groups">
+              Services Groups
+            </Translation>
+          </strong>
+          {!!value &&
+            value
+              .filter((x: any) => x.type === 'group')
+              .map((g: any, idx: any) => (
+                <span className="p-2" key={idx}>
+                  {g.label}
+                </span>
+              ))}
+        </div>
+        <div className="d-flex flex-column flex-grow-1">
+          <strong className="reactSelect__group-heading">
+            <Translation i18nkey="authorized.services">Services</Translation>
+          </strong>
+          {!!value &&
+            value
+              .filter((x: any) => x.type === 'service')
+              .map((g: any, idx: any) => (
+                <span className="p-2" key={idx}>
+                  {g.label}
+                </span>
+              ))}
+        </div>
+        <div className="d-flex flex-column flex-grow-1">
+          <strong className="reactSelect__group-heading">
+            <Translation i18nkey="authorized.routes">Routes</Translation>
+          </strong>
+          {!!value &&
+            value
+              .filter((x: any) => x.type === 'route')
+              .map((g: any, idx: any) => (
+                <span className="p-2" key={idx}>
+                  {g.label}
+                </span>
+              ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export const CustomMetadataInput = (props: {
+  value?: Array<{ key: string; possibleValues: Array<string> }>;
+  onChange?: (param: any) => void;
+  setValue?: (key: string, data: any) => void;
+  translate: (key: string) => string;
+}) => {
+  const { alert } = useContext(ModalContext);
+
+  const changeValue = (possibleValues: any, key: string) => {
+    const oldValue = Option(props.value?.find((x) => x.key === key)).getOrElse({
+      key: '',
+      possibleValues: [],
+    });
+    const newValues = [
+      ...(props.value || []).filter((x) => x.key !== key),
+      { ...oldValue, key, possibleValues },
+    ];
+    props.onChange && props.onChange(newValues);
+  };
+
+  const changeKey = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    oldName: string
+  ) => {
+    if (e && e.preventDefault) e.preventDefault();
+
+    const oldValue = Option(
+      props.value?.find((x) => x.key === oldName)
+    ).getOrElse({ key: '', possibleValues: [] });
+    const newValues = [
+      ...(props.value || []).filter((x) => x.key !== oldName),
+      { ...oldValue, key: e.target.value },
+    ];
+    props.onChange && props.onChange(newValues);
+  };
+
+  const addFirst = (e: React.MouseEvent<HTMLElement>) => {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!props.value || props.value.length === 0) {
+      props.onChange && props.onChange([{ key: '', possibleValues: [] }]);
+      alert({
+        message: props.translate('custom.metadata.process.change.to.manual'),
+        title: props.translate('Information'),
+      });
+    }
+  };
+
+  const addNext = (e: React.MouseEvent<HTMLElement>) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const newItem = { key: '', possibleValues: [] };
+    const newValues = [...(props.value || []), newItem];
+    props.onChange && props.onChange(newValues);
+  };
+
+  const remove = (e: React.MouseEvent<HTMLElement>, key: string) => {
+    if (e && e.preventDefault) e.preventDefault();
+
+    props.onChange &&
+      props.onChange((props.value || []).filter((x: any) => x.key !== key));
+  };
+
+  return (
+    <div>
+      {!props.value?.length && (
+        <div className="col-sm-10">
+          <button
+            type="button"
+            className="btn btn-outline-info"
+            onClick={(e) => addFirst(e)}
+          >
+            <i className="fas fa-plus" />{' '}
+          </button>
+        </div>
+      )}
+
+      {(props.value || []).map(({ key, possibleValues }, idx) => (
+        <div key={idx} className="col-sm-10">
+          <div className="input-group">
+            <input
+              type="text"
+              className="form-control col-5 me-1"
+              value={key}
+              onChange={(e) => changeKey(e, key)}
+            />
+            <CreatableSelect
+              isMulti
+              onChange={(e) =>
+                changeValue(
+                  e.map(({ value }) => value),
+                  key
+                )
+              }
+              options={undefined}
+              value={possibleValues.map((value: any) => ({
+                label: value,
+                value,
+              }))}
+              className="input-select reactSelect flex-grow-1"
+              classNamePrefix="reactSelect"
+            />
+            <button
+              type="button"
+              className="input-group-text btn btn-outline-danger"
+              onClick={(e) => remove(e, key)}
+            >
+              <i className="fas fa-trash" />
+            </button>
+            {idx === (props.value?.length || 0) - 1 && (
+              <button
+                type="button"
+                className="input-group-text btn btn-outline-info"
+                onClick={addNext}
+              >
+                <i className="fas fa-plus" />{' '}
+              </button>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 export const currency = (plan?: IBaseUsagePlan) => {
   if (!plan) {

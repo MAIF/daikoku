@@ -141,36 +141,6 @@ export const renderPlanInfo = (planInfo: IFastPlan | IUsagePlan) => {
   }
 }
 
-export function formatPlanType(
-  plan: IBaseUsagePlan,
-  translate: (x: string | TranslateParams) => string
-): string
-
-export function formatPlanType(
-  plan: string,
-  translate: (x: string | TranslateParams) => string
-): string
-
-export function formatPlanType(
-  plan: any,
-  translate: (x: string | TranslateParams) => string
-): string {
-  switch (plan?.type || plan) {
-    case 'FreeWithoutQuotas':
-      return translate('FreeWithoutQuotas');
-    case 'FreeWithQuotas':
-      return translate('FreeWithQuotas');
-    case 'QuotasWithLimits':
-      return translate('QuotasWithLimits');
-    case 'QuotasWithoutLimits':
-      return translate('Quotas / pay per use');
-    case 'PayPerUse':
-      return translate('Pay per use');
-    default:
-      return '';
-  }
-};
-
 export const teamPermissions = {
   administrator: 'Administrator',
   ApiEditor: 'ApiEditor',

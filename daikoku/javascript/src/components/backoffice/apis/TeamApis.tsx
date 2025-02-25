@@ -9,7 +9,6 @@ import * as Services from '../../../services';
 import { IApi, ITeamSimple, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
 import { api as API, Can, Spinner, manage, read } from '../../utils';
-import { constraints, format, type } from '@maif/react-forms';
 import { deleteApi } from '../../utils/apiUtils';
 
 export const TeamApis = () => {
@@ -76,17 +75,9 @@ export const TeamApis = () => {
               className="btn btn-sm btn-outline-info me-1"
               title="View this Api"
             >
-              <i className="fas fa-eye" />
+              <i className="fas fa-share-from-square" />
             </Link>
             <Can I={manage} a={API} team={currentTeam}>
-              <Link
-                key={`edit-${api._humanReadableId}`}
-                to={editUrl}
-                className="btn btn-sm btn-outline-info me-1"
-                title="Edit this Api"
-              >
-                <i className="fas fa-pen" />
-              </Link>
               {api.visibility !== 'AdminOnly' && (
                 <button
                   key={`delete-${api._humanReadableId}`}

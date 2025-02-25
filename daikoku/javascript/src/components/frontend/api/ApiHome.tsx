@@ -12,7 +12,6 @@ import * as Services from '../../../services';
 import { IApi, ISubscription, ITeamFullGql, ITeamSimple, IUsagePlan, isError } from '../../../types';
 import { SimpleApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
 import { ActionWithTeamSelector, Can, CanIDoAction, Option, Spinner, apikey, manage, teamGQLToSimple } from '../../utils';
-import { formatPlanType } from '../../utils/formatters';
 import { CmsViewer } from '../CmsViewer';
 import { ApiDescription } from './ApiDescription';
 import { ApiHeader } from './ApiHeader';
@@ -132,7 +131,6 @@ export const ApiHome = ({
 
   const askForApikeys = ({ team, plan, apiKey, motivation }:
     { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }) => {
-    const planName = formatPlanType(plan, translate);
     const myTeams = myTeamsQuery.data || []
     const api = apiQuery.data as IApi
 

@@ -3,15 +3,12 @@ import { getApolloContext, gql } from '@apollo/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext } from 'react';
 
-import { I18nContext } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
-import { IState, ISubscriptionDemand, ITeamSimple, IUserSimple } from '../../../types';
-import { formatPlanType } from '../../utils';
+import { ITeamSimple } from '../../../types';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { Widget } from './widget';
-import { ModalContext } from '../../../contexts';
-import { Option } from '../../utils';
-import { GlobalContext } from '../../../contexts/globalContext';
 
 type LastDemandsProps = {
   team: ITeamSimple
@@ -28,7 +25,6 @@ export const LastDemands = (props: LastDemandsProps) => {
           }
           plan {
             customName
-            type
           }
           steps {
             id
@@ -90,7 +86,7 @@ export const LastDemands = (props: LastDemandsProps) => {
 
             return (
               <div className='d-flex flex-column justify-content-between align-items-center widget-list-item'>
-                <div className='item-title'>{`${d.api.name} / ${d.plan.customName || formatPlanType(d.plan.type, translate)}`}</div>
+                <div className='item-title'>{`${d.api.name} / ${d.plan.customName}`}</div>
                 <div className='d-flex justify-content-between w-100 my-2'>
                   {checkout && <FeedbackButton
                     type="primary"

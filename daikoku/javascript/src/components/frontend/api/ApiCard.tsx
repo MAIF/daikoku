@@ -128,15 +128,6 @@ export const ApiCard = (props: {
         </div>
         <div className="ms-2">
           <div className="btn_group d-flex align-items-start">
-            <Can I={manage} a={API} team={team}>
-              <button
-                className="btn btn-sm btn-outline-primary me-1 mb-1"
-                aria-label={translate("settings")}
-                onClick={props.redirectToEditPage}
-              >
-                <i className="fas fa-cog" />
-              </button>
-            </Can>
             {accessButton()}
             {!props.groupView && (
               <StarsButton

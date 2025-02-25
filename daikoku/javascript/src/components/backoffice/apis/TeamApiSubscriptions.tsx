@@ -4,18 +4,17 @@ import { createColumnHelper } from "@tanstack/react-table";
 import { useContext, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { ModalContext } from "../../../contexts";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { I18nContext, ModalContext } from "../../../contexts";
 import { CustomSubscriptionData } from "../../../contexts/modals/SubscriptionMetadataModal";
-import { I18nContext } from "../../../contexts";
 import * as Services from "../../../services";
 import {
   IApi,
   isError,
-  IState,
   ISubscriptionCustomization,
   ITeamSimple,
   IUsagePlan,
-  ResponseError,
+  ResponseError
 } from "../../../types";
 import { SwitchButton, Table, TableRef } from "../../inputs";
 import {
@@ -23,13 +22,10 @@ import {
   BeautifulTitle,
   Can,
   formatDate,
-  formatPlanType,
   manage,
   Option,
   Spinner,
 } from "../../utils";
-import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
-import { cp } from "fs";
 
 type TeamApiSubscriptionsProps = {
   api: IApi;
@@ -251,13 +247,13 @@ export const TeamApiSubscriptions = ({
       meta: { style: { textAlign: "left" } },
       cell: (info) =>
         Option(usagePlans.find((pp) => pp._id === info.getValue()._id))
-          .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
+          .map((p: IUsagePlan) => p.customName)
           .getOrNull(),
       filterFn: (row, columnId, value) => {
         const displayed: string = Option(
           usagePlans.find((pp) => pp._id === row.original.plan._id)
         )
-          .map((p: IUsagePlan) => p.customName || formatPlanType(p, translate))
+          .map((p: IUsagePlan) => p.customName)
           .getOrElse("");
 
         return displayed

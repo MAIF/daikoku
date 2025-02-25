@@ -1,11 +1,11 @@
 import { getApolloContext } from '@apollo/client';
 import { constraints, format, type } from '@maif/react-forms';
-import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import sortBy from 'lodash/sortBy';
 import moment from 'moment';
 import { useContext, useEffect, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import {
@@ -13,6 +13,7 @@ import {
   ModalContext,
   useTeamBackOffice,
 } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import {
   IApi,
@@ -31,11 +32,9 @@ import {
   Spinner,
   apikey,
   escapeRegExp,
-  formatPlanType,
   read
 } from '../../utils';
 import { apiGQLToLegitApi } from '../../utils/apiUtils';
-import { GlobalContext } from '../../../contexts/globalContext';
 
 type ISubscriptionWithChildren = ISubscriptionExtended & {
   children: Array<ISubscriptionExtended>;
@@ -422,9 +421,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
           return subs.apiKey.clientName === search ||
             subs.apiKey.clientId === search ||
             subs.customName?.toLocaleLowerCase() === search.toLocaleLowerCase() ||
-            formatPlanType(subs.planType, translate)
-              .toLowerCase()
-              .includes(search.toLocaleLowerCase()) ||
+            subs.planName.toLowerCase().includes(search.toLocaleLowerCase()) ||
             subs.tags.map(t => t.toLocaleLowerCase()).includes(search.toLocaleLowerCase())
         });
 
