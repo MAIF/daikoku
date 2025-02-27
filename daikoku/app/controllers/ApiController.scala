@@ -856,6 +856,7 @@ class ApiController(
           s"@{user.name} has accessed documentation page remote content for @{api.name} - @{api.id} - $pageId"
         )
       )(ctx) {
+        logger.info("héhé")
         env.dataStore.apiRepo
           .forTenant(ctx.tenant.id)
           .findByIdNotDeleted(apiId)
@@ -873,26 +874,18 @@ class ApiController(
                 .flatMap {
                   case None =>
                     FastFuture.successful(
-                      NotFound(Json.obj("error" -> "Page not found"))
+                      NotFound(Json.obj("error" -> "Page not found 1"))
                     )
                   case Some(page) =>
                     api.documentation match {
                       case doc
-                          if doc.pages.contains(
-                            page.id
-                          ) && page.remoteContentEnabled => {
-                        val disposition =
-                          ("Content-Disposition" -> s"""attachment; filename="content${extensions
-                            .getOrElse(page.contentType, ".txt")}"""")
+                          if doc.pages.exists(_.id == page.id) && page.remoteContentEnabled =>
+
                         var url = page.remoteContentUrl
                           .getOrElse(
                             "https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf"
                           )
                         if (url.startsWith("/")) {
-                          val host = ctx.request.headers
-                            .get("Otoroshi-Proxied-Host")
-                            .orElse(ctx.request.headers.get("X-Forwarded-Host"))
-                            .getOrElse(ctx.request.host)
                           url = env.getDaikokuUrl(ctx.tenant, s"$url")
                         }
                         if (url.contains("?")) {
@@ -921,10 +914,9 @@ class ApiController(
                               )
                               .as(page.contentType) //r.header("Content-Type").getOrElse(page.contentType))
                           }
-                      }
                       case _ =>
                         FastFuture.successful(
-                          NotFound(Json.obj("error" -> "Page not found"))
+                          NotFound(Json.obj("error" -> "Page not found 2"))
                         )
                     }
                 }
@@ -3313,7 +3305,7 @@ class ApiController(
           .flatMap {
             case None =>
               FastFuture.successful(
-                NotFound(Json.obj("error" -> "Page not found"))
+                NotFound(Json.obj("error" -> "Page not found 5"))
               )
             case Some(p) => {
               ApiDocumentationPageFormat.reads(ctx.request.body) match {

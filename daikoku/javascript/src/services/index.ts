@@ -33,6 +33,7 @@ import {
   IDocDetail,
   IDocPage,
   IDocumentation,
+  IDocumentationPage,
   IImportingDocumentation,
   IOtoroshiApiKey,
   ISubscription,
@@ -134,6 +135,9 @@ export const subscribedApis = (teamId: string): Promise<ResponseError | Array<IA
   customFetch(`/api/teams/${teamId}/subscribed-apis`);
 export const getApiDocPage = (api: string, id: string): PromiseWithError<IDocPage> =>
   customFetch(`/api/apis/${api}/pages/${id}`);
+export const getApiDocPageRemoteContent = (api: string, id: string): PromiseWithError<any> =>
+  fetch(`/api/apis/${api}/pages/${id}/content`);
+
 export const getUsagePlanDocPage = (
   apiId: string,
   planId: string,
@@ -538,6 +542,8 @@ export const fetchNewTeam = (): Promise<ITeamSimple> => customFetch('/api/entiti
 export const fetchNewApi = (): Promise<IApi> => customFetch('/api/entities/api');
 export const fetchNewApiDoc = (): Promise<IDocumentation> =>
   customFetch('/api/entities/api-documentation');
+export const fetchNewApiDocPage = (): Promise<IDocPage> =>
+  customFetch('/api/entities/api-documentation-page');
 export const fetchNewApiGroup = () => customFetch('/api/entities/apigroup');
 export const fetchNewUser = () => customFetch('/api/entities/user');
 export const fetchNewOtoroshi = () => customFetch('/api/entities/otoroshi');

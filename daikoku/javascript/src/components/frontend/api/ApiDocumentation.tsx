@@ -28,7 +28,8 @@ type ApiDocumentationProps<T extends IWithDocumentation> = {
   ownerTeam: ITeamSimple
   entity: T,
   api: IApi,
-  refreshEntity: () => void
+  refreshEntity: () => void,
+  savePages: (pages: IDocumentationPages) => void
 }
 
 type ApiDocumentationCartidgeProps = {
@@ -49,6 +50,7 @@ type AwesomeContentViewerProp = {
   content?: string
   cmsPage?: string
   api: IApi,
+  page: IDocPage
 }
 
 export const ApiDocumentationCartidge = (props: ApiDocumentationCartidgeProps) => {
@@ -116,7 +118,8 @@ const ApiDocPage = (props: ApiDocPageProps) => {
         <AwesomeContentViewer
           api={props.api}
           contentType={pageRequest.data.contentType}
-          remoteContent={{ url: pageRequest.data.remoteContentUrl! }} />
+          remoteContent={{ url: pageRequest.data.remoteContentUrl! }}
+          page={pageRequest.data} />
       )
     } else {
       return (
@@ -124,7 +127,8 @@ const ApiDocPage = (props: ApiDocPageProps) => {
           api={props.api}
           cmsPage={pageRequest.data.cmsPage}
           contentType={pageRequest.data.contentType}
-          content={pageRequest.data.content} />
+          content={pageRequest.data.content}
+          page={pageRequest.data} />
       )
     }
   } else {
@@ -136,7 +140,7 @@ const ApiDocPage = (props: ApiDocPageProps) => {
 
 export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumentationProps<T>) => {
   const { Translation } = useContext(I18nContext);
-  const { openRightPanel, openApiDocumentationSelectModal } = useContext(ModalContext);
+  const { openRightPanel, openApiDocumentationSelectModal, closeRightPanel } = useContext(ModalContext);
   const { translate } = useContext(I18nContext);
   const { client } = useContext(getApolloContext());
 
@@ -331,6 +335,33 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
     }
   };
 
+  const saveNewPage = (page: IDocPage) => {
+    console.debug("save page", page)
+    Services.createDocPage(props.ownerTeam._id, page)
+      .then(() => props.savePages([{
+        id: page._id,
+        title: page.title,
+        children: []
+      }]))
+      .then(props.refreshEntity)
+      .then(closeRightPanel)
+  }
+
+  const fetchNewPageAndUpdate = () => {
+    Services.fetchNewApiDocPage()
+      .then(page => {
+        openRightPanel({
+          title: "test creer page doc",
+          content: <Form
+            schema={schema(asset => console.debug({ asset }))}
+            flow={flow}
+            onSubmit={saveNewPage}
+            value={page}
+          />
+        })
+      })
+  }
+
 
   return (
     <div>
@@ -388,14 +419,7 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
         <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
           <div>{translate('update.api.documentation.not.found.alert')}</div>
           <button className="btn btn-outline-info"
-            onClick={() => openRightPanel({
-              title: "test creer page doc",
-              content: <Form
-                schema={schema(asset => console.debug({ asset }))}
-                flow={flow}
-                onSubmit={page => console.debug({ page })}
-              />
-            })}>
+            onClick={() => fetchNewPageAndUpdate()}>
             {translate('add.api.documention.btn.label')}
           </button>
         </div>
@@ -432,21 +456,27 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
 }
 
 const TypeNotSupportedYet = () => <h3>Content type not supported yet !</h3>;
-const Image = (props: any) => <img src={props.url} style={{ width: '100%' }} alt={props.alt} />;
-const Video = (props: any) => <video src={props.url} style={{ width: '100%' }} />;
-const Html = (props: any) => <iframe src={props.url} style={{ width: '100%', height: '100vh', border: 0 }} />;
-const Pdf = ({ url }: any) => {
+const Image = (props: RenderProps) => <img src={props.page.remoteContentUrl ?? ''} style={{ width: '100%' }} alt={props.page.title} />;
+const Video = (props: RenderProps) => <video controls style={{ width: '100%' }} >
+  <source src={props.page.remoteContentUrl ?? ''} type="video/webm" />
+</video>;
+const Pdf = (props: RenderProps) => {
   return (
-    <embed src={url} type="application/pdf" style={{ width: '100%', height: '100vh', border: 0 }} />
-  );
+    <object className=""
+      data={props.page.remoteContentUrl ?? ''}
+      style={{ width: '100%', height: '100vh', border: 0 }}
+    >
+    </object>
+  )
 };
 
-function Markdown(props: any) {
+type MarkdownProps = { api: IApi, page: IDocPage }
+function Markdown(props: MarkdownProps) {
   const [content, setContent] = useState<string>();
 
   useEffect(() => {
-    if (props.url) update(props.url);
-  }, [props.url]);
+    if (props.page.remoteContentUrl) update();
+  }, [props.page]);
 
   useEffect(() => {
     if (content)
@@ -455,34 +485,32 @@ function Markdown(props: any) {
       });
   }, [content]);
 
-  const update = (url: any) => {
-    fetch(url, {
-      method: 'GET',
-      credentials: 'include',
-    })
+  const update = () => {
+    Services.getApiDocPageRemoteContent(props.api._id, props.page._id)
       .then((r) => r.text())
       .then(setContent);
   };
 
-  if (!props.content && !content) {
+  if (!props.page.content && !content) {
     return null;
   }
   return (
     <div
       className="api-description"
       dangerouslySetInnerHTML={{
-        __html: converter.makeHtml(props.content || content),
+        // __html: converter.makeHtml(props.page.content || content),
+        __html: converter.makeHtml(props.page.remoteContentEnabled ? content : props.page.content),
       }}
     />
   );
 }
 
-function Asciidoc(props: any) {
+function Asciidoc(props: RenderProps) {
   const [content, setContent] = useState<string>();
 
   useEffect(() => {
-    if (props.url) update(props.url);
-  }, [props.url]);
+    if (props.page.remoteContentUrl) update();
+  }, [props.page]);
 
   useEffect(() => {
     if (content)
@@ -491,51 +519,50 @@ function Asciidoc(props: any) {
       });
   }, [content]);
 
-  const update = (url: any) => {
-    fetch(url, {
-      method: 'GET',
-      credentials: 'include',
-    })
+  const update = () => {
+    Services.getApiDocPageRemoteContent(props.api._id, props.page._id)
       .then((r) => r.text())
       .then(setContent);
   };
 
-  if (!props.content && !content) {
+  if (!props.page.content && !content) {
     return null;
   }
   const asciidoctorConverter = asciidoctor();
   return (
     <div
       className="api-description asciidoc"
+      style={{ width: "66%", overflow: "scroll" }}
       dangerouslySetInnerHTML={{
-        __html: asciidoctorConverter.convert(props.content || content) as string,
+        __html: asciidoctorConverter.convert((props.page.remoteContentEnabled ? content : props.page.content) ?? '') as string,
       }}
     />
   );
 }
 
-function OpenDocument(props: any) {
+function OpenDocument(props: RenderProps) {
   console.log(
-    `${window.location.origin}/assets/viewerjs/index.html#${window.location.origin}${props.url}`
+    `${window.location.origin}/assets/viewerjs/index.html#${window.location.origin}${props.page.remoteContentHeaders}`
   );
   return (
     <iframe
-      src={`/assets/viewerjs/index.html#${props.url}`}
+      src={`/assets/viewerjs/index.html#${props.page.remoteContentUrl}`}
       style={{ width: '100%', height: '100vh', border: 0 }}
     />
   );
 }
 
+type RenderProps = { api: IApi, page: IDocPage }
 const mimeTypes = [
   {
     label: '.adoc Ascii doctor',
     value: 'text/asciidoc',
-    render: (url?: any, content?: any) => <Asciidoc url={url} content={content} />,
+    render: ({ api, page }: RenderProps) => <Asciidoc api={api} page={page} />,
   },
   {
     label: '.avi Audio Video Interleaved file',
     value: 'video/x-msvideo',
-    render: (url: any) => <Video url={url} />,
+    render: ({ api, page }: RenderProps) => <Video api={api} page={page} />,
   },
   // {
   //   label: '.doc Microsoft Word file',
@@ -550,50 +577,63 @@ const mimeTypes = [
   {
     label: '.gif Graphics Interchange Format file',
     value: 'image/gif',
-    render: (url: any) => <Image url={url} />,
+    render: ({ api, page }: RenderProps) => <Image api={api} page={page} />,
   },
   {
     label: '.html HyperText Markup Language file',
     value: 'text/html',
-    render: (url: any, content: any) => (url ? <Html url={url} /> : <Markdown url={url} content={content} />),
+    render: ({ api, page }: RenderProps) => (page.remoteContentUrl ? <Markdown api={api} page={page} /> : <Markdown api={api} page={page} />),
   },
-  { label: '.jpg JPEG image', value: 'image/jpeg', render: (url: any) => <Image url={url} /> },
+  {
+    label: '.jpg JPEG image',
+    value: 'image/jpeg',
+    render: ({ api, page }: RenderProps) => <Image api={api} page={page} />
+  },
   {
     label: '.md	Markdown file',
     value: 'text/markdown',
-    render: (url: any, content: any) => <Markdown url={url} content={content} />,
+    render: ({ api, page }: RenderProps) => <Markdown api={api} page={page} />,
   },
-  { label: '.mpeg	MPEG video file ', value: 'video/mpeg', render: (url: any) => <Video url={url} /> },
+  {
+    label: '.mpeg	MPEG video file ',
+    value: 'video/mpeg',
+    render: ({ api, page }: RenderProps) => <Video api={api} page={page} />
+  },
   {
     label: '.odp OpenDocument presentation document ',
     value: 'application/vnd.oasis.opendocument.presentation',
-    render: (url: any) => <OpenDocument url={url} />,
+    render: ({ api, page }: RenderProps) => <OpenDocument api={api} page={page} />,
   },
   {
     label: '.ods OpenDocument spreadsheet document ',
     value: 'application/vnd.oasis.opendocument.spreadsheet',
-    render: (url: any) => <OpenDocument url={url} />,
+    render: ({ api, page }: RenderProps) => <OpenDocument api={api} page={page} />,
   },
   {
     label: '.odt OpenDocument text document ',
     value: 'application/vnd.oasis.opendocument.text',
-    render: (url: any) => <OpenDocument url={url} />,
+    render: ({ api, page }: RenderProps) => <OpenDocument api={api} page={page} />,
   },
   {
     label: '.png Portable Network Graphics',
     value: 'image/png',
-    render: (url: any) => <Image url={url} />,
+    render: ({ api, page }: RenderProps) => <Image api={api} page={page} />,
   },
   {
     label: '.pdf Adobe Portable Document Format (PDF)',
     value: 'application/pdf',
-    render: (url: any) => <Pdf url={url} />,
+    render: ({ api, page }: RenderProps) => <Pdf api={api} page={page} />,
   },
-  { label: '.webm WEBM video file ', value: 'video/webm', render: (url: any) => <Video url={url} /> },
   {
-    label: '.cms : Page from CMS', value: 'cms/page', render: (value, ...props) => {
-      console.log(value, props)
-      return value
+    label: '.webm WEBM video file ',
+    value: 'video/webm',
+    render: ({ api, page }: RenderProps) => <Video api={api} page={page} />
+  },
+  {
+    label: '.cms : Page from CMS',
+    value: 'cms/page',
+    render: ({ api, page }: RenderProps) => {
+      return page.remoteContentUrl
     }
   },
 ];
@@ -609,9 +649,9 @@ const AwesomeContentViewer = (props: AwesomeContentViewerProp) => {
     render: () => <TypeNotSupportedYet />,
   };
   if (props.remoteContent) {
-    return mimeType.render(props.remoteContent.url);
+    return mimeType.render({ api: props.api, page: props.page });
   } else if (props.content) {
-    return mimeType.render(null, props.content);
+    return mimeType.render({ api: props.api, page: props.page });
   } else {
     return <TypeNotSupportedYet />;
   }

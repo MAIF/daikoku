@@ -296,6 +296,7 @@ GET     /api/entities/tenant                            fr.maif.otoroshi.daikoku
 GET     /api/entities/team                              fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newTeam()
 GET     /api/entities/api                               fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newApi()
 GET     /api/entities/api-documentation                 fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newApiDocumentation()
+GET     /api/entities/api-documentation-page            fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newApiDocumentationPage()
 GET     /api/entities/apigroup                          fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newApiGroup()
 GET     /api/entities/user                              fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newUser()
 GET     /api/entities/otoroshi                          fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newOtoroshi()

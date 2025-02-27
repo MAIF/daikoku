@@ -128,7 +128,7 @@ class EntitiesController(
     DaikokuAction.async { ctx =>
       PublicUserAccess(
         AuditTrailEvent(
-          s"@{user.name} has asked for a template entity of type ApiDocumentationr"
+          s"@{user.name} has asked for a template entity of type ApiDocumentation"
         )
       )(ctx) {
         Ok(
@@ -138,6 +138,24 @@ class EntitiesController(
             lastModificationAt = DateTime.now(),
             pages = Seq.empty
           ).asJson
+        )
+      }
+    }
+
+  def newApiDocumentationPage() =
+    DaikokuAction.async { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} has asked for a template entity of type ApiDocumentationPage"
+        )
+      )(ctx) {
+        Ok(
+          ApiDocumentationPage(
+            id = ApiDocumentationPageId(IdGenerator.token(32)),
+            tenant = ctx.tenant.id,
+            title = "New page",
+            lastModificationAt = DateTime.now(),
+            content = "# New page").asJson
         )
       }
     }

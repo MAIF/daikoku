@@ -71,10 +71,10 @@ export const ApiDocumentationSelectModal = (props: IApiDocumentationSelectModalP
           {translate('Cancel')}
         </button>
         <button type="button" disabled={pagesQuery.isLoading || pagesQuery.isError} className="btn btn-outline-success" onClick={() => importPages(true)}>
-          {translate('Use same')}
+          {translate('documentation.import.page.reuse.btn.label')}
         </button>
         <button type="button" disabled={pagesQuery.isLoading || pagesQuery.isError} className="btn btn-outline-success" onClick={() => importPages(false)}>
-          {translate('Clone')}
+          {translate('documentation.import.page.clone.btn.label')}
         </button>
 
       </div>

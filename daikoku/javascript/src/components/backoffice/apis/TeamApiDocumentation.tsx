@@ -346,28 +346,18 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   }
 
   const addNewPage = () => {
-    const newPage: IDocPage = {
-      _id: nanoid(32),
-      _tenant: tenant._id,
-      _deleted: false,
-      _humanReadableId: 'new-page',
-      title: 'New page',
-      lastModificationAt: Date.now(),
-      content: '# New page\n\nA new page',
-      contentType: 'text/markdown',
-      remoteContentEnabled: false,
-      remoteContentUrl: null,
-      remoteContentHeaders: {}
-    }
+    Services.fetchNewApiDocPage()
+      .then(page => {
+        openFormModal({
+          title: translate('doc.page.create.modal.title'),
+          flow: flow,
+          schema: schema(saveNewPage),
+          value: page,
+          onSubmit: saveNewPage,
+          actionLabel: translate('Save')
+        })
+      })
 
-    openFormModal({
-      title: translate('doc.page.create.modal.title'),
-      flow: flow,
-      schema: schema(saveNewPage),
-      value: newPage,
-      onSubmit: saveNewPage,
-      actionLabel: translate('Save')
-    })
   }
 
   const saveNewPage = (page: IDocPage) => {
@@ -407,23 +397,6 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
     <div className="row">
       <div className="col-12 col-sm-6 col-lg-6">
         <div className="d-flex flex-column">
-          <div className="">
-            <div className="d-flex justify-content-between align-items-center">
-              <div className="btn-group ms-2">
-                <button onClick={addNewPage} type="button" className="btn btn-sm btn-outline-success">
-                  {translate('documentation.add.page.btn.label')}
-                </button>
-                {props.importAuthorized &&
-                  <button
-                    onClick={props.importPage}
-                    type="button"
-                    className="btn btn-sm btn-outline-info">
-                    <i className="fas fa-download" />
-                  </button>
-                }
-              </div>
-            </div>
-          </div>
           <div className='d-flex flex-column'>
             <DnDoc
               items={props.documentation?.pages || []}
@@ -431,6 +404,22 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
               updatePages={updatePages}
               confirmRemoveItem={() => (confirm({ message: translate('delete.documentation.page.confirm') }))}
               updateItem={updatePage} />
+            <div className="d-flex align-items-center gap-1">
+              <button onClick={addNewPage} type="button"
+                aria-label={translate(' documentation.add.page.btn.aria.label')}
+                className="flex-grow-1 btn btn-sm btn-outline-success fake-documentation-page-dnd">
+                {translate('documentation.add.page.btn.label')}
+              </button>
+              {props.importAuthorized &&
+                <button
+                  onClick={props.importPage}
+                  type="button"
+                  aria-label={translate(' documentation.import.page.btn.aria.label')}
+                  className="flex-grow-1 btn btn-sm btn-outline-info fake-documentation-page-dnd">
+                  {translate('documentation.import.page.btn.label')}
+                </button>
+              }
+            </div>
           </div>
         </div>
       </div>

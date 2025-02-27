@@ -221,7 +221,8 @@ export const ApiHome = ({
                 subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
               {params.tab === 'documentation' && <ApiDocumentation entity={api} ownerTeam={ownerTeam} api={api}
                 documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)}
-                refreshEntity={() => queryClient.invalidateQueries({ queryKey: ['api'] })} />}
+                refreshEntity={() => queryClient.invalidateQueries({ queryKey: ['api'] })}
+                savePages={(pages) => Services.saveTeamApi(ownerTeam._id, {...api, documentation: {...api.documentation!, pages}}, api.currentVersion)} />}
               {params.tab === 'testing' && (<ApiSwagger
                 _id={api._id}
                 testing={api.testing}
