@@ -557,7 +557,7 @@ export const ApiKeyCard = ({
   };
 
   const { translate, Translation } = useContext(I18nContext);
-  const { openFormModal, openRightPanel, closeRightPanel } = useContext(ModalContext);
+  const { openFormModal, openRightPanel, closeRightPanel, openCustomModal } = useContext(ModalContext);
   const { tenant } = useContext(GlobalContext);
 
   const planQuery = useQuery({
@@ -697,6 +697,19 @@ export const ApiKeyCard = ({
                   }}>
                   <i className="fa fa-copy me-1" />
                   {translate("subscription.copy.basic.auth.label")}
+                </button>
+              </BeautifulTitle>
+              <BeautifulTitle title={translate("subscription.display.credentials")}>
+                <button className='btn btn-sm btn-outline-info'
+                  aria-label={translate("subscription.display.credentials")}
+                  onClick={() => openCustomModal({
+                    title: _customName,
+                    content: <ul>
+                      <li><strong>{translate("clientId")}</strong>: {subscription.apiKey.clientId}</li>
+                      <li><strong>Client Secret</strong>: {subscription.apiKey.clientSecret}</li>
+                    </ul>
+                  })}>
+                  <i className="fa fa-eye" />
                 </button>
               </BeautifulTitle>
             </div>
