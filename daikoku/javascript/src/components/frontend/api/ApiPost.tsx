@@ -137,8 +137,9 @@ export function ApiPost(props: ApiPostProps) {
               <span
                 onClick={() => createorUpdatePostForm(currentPost, false)}
                 className="dropdown-item cursor-pointer"
+                aria-label={translate("api.post.update.post.btn.label")}
               >
-                Modifier le post
+                {translate('api.post.update.post.btn.label')}
               </span>
               <div className="dropdown-divider" />
             </>}
@@ -146,16 +147,18 @@ export function ApiPost(props: ApiPostProps) {
             <span
               onClick={() => createorUpdatePostForm(undefined, true)}
               className="dropdown-item cursor-pointer"
+              aria-label={translate('api.post.create.post.btn.label')}
             >
-              Créer un nouveau post
+              {translate('api.post.create.post.btn.label')}
             </span>
-            {!isDataError && <>
+            {!isDataError && currentPost && <>
               <div className="dropdown-divider" />
               <span
                 onClick={() => removePost(currentPost)}
                 className="dropdown-item cursor-pointer btn-outline-danger"
+                aria-label={translate('api.post.delete.post.btn.label')}
               >
-                Supprimer le post
+                {translate('api.post.delete.post.btn.label')}
               </span>
             </>}
           </div>
@@ -168,7 +171,13 @@ export function ApiPost(props: ApiPostProps) {
             <ArrowRight />
           </button>
         </div>
-        {(postQuery.data as IApiPostCursor).posts.map((post, i) => {
+        {!postQuery.data.posts.length && (
+          <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
+            <div>{translate('api.post.not.found.alert')}</div>
+            <button className="btn btn-outline-info" onClick={console.debug}>{translate('api.post.create.post.btn.label')}</button>
+          </div>
+        )}
+        {!!postQuery.data.posts.length && postQuery.data.posts.map((post, i) => {
           return (
             <div key={i} className="jumbotron">
               <div className="d-flex justify-content-between align-items-center">

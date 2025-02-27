@@ -160,7 +160,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             },
           },
           news: {
-            label: translate('News'),
+            label: translate('nav.section.news.label'),
             action: () => {
               if (userCanUpdateApi || api?.posts?.length) navigateTo('news');
             },

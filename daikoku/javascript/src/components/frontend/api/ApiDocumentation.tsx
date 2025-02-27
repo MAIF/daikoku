@@ -582,7 +582,7 @@ const mimeTypes = [
   {
     label: '.html HyperText Markup Language file',
     value: 'text/html',
-    render: ({ api, page }: RenderProps) => (page.remoteContentUrl ? <Markdown api={api} page={page} /> : <Markdown api={api} page={page} />),
+    render: ({ api, page }: RenderProps) => <Markdown api={api} page={page} />,
   },
   {
     label: '.jpg JPEG image',
