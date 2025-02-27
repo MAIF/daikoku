@@ -1506,5 +1506,6 @@
     "update.api.documentation.not.found.alert": "No API documenation configured",
     "add.api.documention.btn.label": "Create your first documentaiton page",
     "api.consumption.plan.btn.aria.label": "View the consumption of the %s plan",
-    "api.consumption.plan.btn.label": "View the consumption"
+    "api.consumption.plan.btn.label": "View the consumption",
+    "api.subscriptions.team.select.placeholder": "Select a team to view associated API keys"
 }

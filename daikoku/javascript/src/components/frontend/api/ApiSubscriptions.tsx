@@ -9,10 +9,6 @@ import { IApi, isError, ISubscriptionExtended, ITeamSimple } from '../../../type
 import { ApiKeysListForApi } from '../../backoffice/apikeys/TeamApiKeysForApi';
 import { Spinner } from '../../utils/Spinner';
 
-type ISubscriptionWithChildren = ISubscriptionExtended & {
-  children: Array<ISubscriptionExtended>;
-};
-
 type ApiSubscriptions = {
   api: IApi
   ownerTeam: ITeamSimple
@@ -36,10 +32,9 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
   return (
     <div>
       <Select
+        placeholder={translate('api.subscriptions.team.select.placeholder')}
         options={props.subscribingTeams.map(value => ({ label: value.name, value: value }))}
         onChange={t => setSelectedTeam(t?.value)} />
-
-      {!selectedTeam && (<span>please select a team</span>)}
 
       {subscriptionsQuery.isLoading && <Spinner />}
 

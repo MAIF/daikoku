@@ -16,7 +16,7 @@ import { CmsViewer } from '../CmsViewer';
 import { ApiDescription } from './ApiDescription';
 import { ApiHeader } from './ApiHeader';
 import { CanIDoActionForOneOfTeams, read, TeamApiConsumption, TeamApiSubscriptions, TeamPlanConsumption } from '../..';
-import { ApiSubscriptions } from './apikeys';
+import { ApiSubscriptions } from './ApiSubscriptions';
 
 type ApiHomeProps = {
   groupView?: boolean
