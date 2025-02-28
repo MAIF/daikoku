@@ -133,8 +133,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             },
             className: {
               active: currentTab === 'documentation',
-              disabled: tenant.display === 'environment' || !api?.documentation?.pages?.length && !userCanUpdateApi,
-              'd-none': tenant.display === 'environment' || !api?.documentation?.pages?.length && !userCanUpdateApi
+              disabled: api?.visibility === 'AdminOnly' || tenant.display === 'environment' || !api?.documentation?.pages?.length && !userCanUpdateApi,
+              'd-none': api?.visibility === 'AdminOnly' || tenant.display === 'environment' || !api?.documentation?.pages?.length && !userCanUpdateApi
             },
           },
           swagger: {
@@ -155,8 +155,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             },
             className: {
               active: currentTab === 'testing',
-              disabled: !userCanUpdateApi && (tenant.display === 'environment' || !api?.testing?.enabled),
-              'd-none': !userCanUpdateApi && (tenant.display === 'environment' || !api?.testing?.enabled)
+              disabled: api?.visibility === 'AdminOnly' || !userCanUpdateApi && (tenant.display === 'environment' || !api?.testing?.enabled),
+              'd-none': api?.visibility === 'AdminOnly' || !userCanUpdateApi && (tenant.display === 'environment' || !api?.testing?.enabled)
             },
           },
           news: {
@@ -166,8 +166,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             },
             className: {
               active: currentTab === 'news',
-              disabled: !userCanUpdateApi && !api?.posts?.length,
-              'd-none': !userCanUpdateApi && !api?.posts?.length,
+              disabled: api?.visibility === 'AdminOnly' || !userCanUpdateApi && !api?.posts?.length,
+              'd-none': api?.visibility === 'AdminOnly' || !userCanUpdateApi && !api?.posts?.length,
             },
           },
           issues: {
@@ -175,6 +175,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             action: () => navigateTo('issues'),
             className: {
               active: currentTab === 'issues' || currentTab === 'labels',
+              disabled: api?.visibility === 'AdminOnly',
+              'd-none': api?.visibility === 'AdminOnly'
             },
           },
           subscriptions: {

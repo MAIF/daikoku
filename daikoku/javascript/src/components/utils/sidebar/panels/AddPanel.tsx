@@ -220,6 +220,7 @@ export const ApiFormRightPanel = (props: ApiFormRightPanelProps) => {
       .then(res => res.data.pages as Array<IPage>)
   const informationForm = teamApiInfoForm(translate, props.team, tenant, getCmsPages);
 
+
   const newApiQuery = useQuery({
     queryKey: ['newapi'],
     queryFn: () => Services.fetchNewApi()
@@ -242,8 +243,8 @@ export const ApiFormRightPanel = (props: ApiFormRightPanelProps) => {
         {!expertMode && translate('Expert mode')}
       </button>
       <Form
-        schema={informationForm.schema}
-        flow={informationForm.flow(expertMode)} //todo: get real flow, for admin api for example
+        schema={props.api?.visibility === 'AdminOnly' ? informationForm.adminSchema :  informationForm.schema}
+        flow={props.api?.visibility === 'AdminOnly' ? informationForm.adminFlow : informationForm.flow(expertMode)}
         onSubmit={(data) => {
           props.handleSubmit(data)
             .then(() => closeRightPanel())

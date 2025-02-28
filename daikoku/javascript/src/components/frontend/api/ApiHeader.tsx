@@ -111,75 +111,6 @@ export const ApiHeader = ({
     },
   };
 
-  //FIXME: Beware of Admin API
-  // if (api.visibility === 'AdminOnly') {
-  //   return (
-  //     <Form
-  //       schema={informationForm.adminSchema}
-  //       flow={informationForm.adminFlow}
-  //       onSubmit={save}
-  //       value={api}
-  //     />
-  //   )
-  // }
-
-  // const deleteApi = () => {
-  //   const confirm = {
-  //     confirm: {
-  //       type: type.string,
-  //       label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [api.name] }),
-  //       constraints: [
-  //         constraints.oneOf(
-  //           [api.name],
-  //           translate({ key: 'constraints.type.api.name', replacements: [api.name] })
-  //         ),
-  //       ],
-  //     },
-  //   }
-
-  //   const next = {
-  //     next: {
-  //       type: type.string,
-  //       label: translate("delete.api.confirm.modal.description.next.label"),
-  //       help: translate('delete.api.confirm.modal.description.next.help'),
-  //       format: format.select,
-  //       options: versions.filter(v => v !== api.currentVersion),
-  //       constraints: [
-  //         constraints.required(translate("constraints.required.value"))
-  //       ]
-  //     }
-  //   }
-
-  //   const schema = versions.length > 2 && api.isDefault ? { ...confirm, ...next } : { ...confirm }
-  //   const automaticNextCurrentVersion = versions.length === 2 ? versions.filter(v => v !== api.currentVersion)[0] : undefined
-
-  //   console.debug({ automaticNextCurrentVersion, versions })
-  //   openFormModal({
-  //     title: translate('Confirm'),
-  //     description: <div className="alert alert-danger" role="alert">
-  //       <h4 className="alert-heading">{translate('Warning')}</h4>
-  //       <p>{translate("delete.api.confirm.modal.description.1")}</p>
-  //       <ul>
-  //         <li>{translate("delete.api.confirm.modal.description.2")}</li>
-  //       </ul>
-  //       {automaticNextCurrentVersion && <strong>{translate({ key: 'delete.api.confirm.modal.description.next.version', replacements: [automaticNextCurrentVersion] })}</strong>}
-  //     </div>,
-  //     schema: schema,
-  //     onSubmit: ({ next }) => {
-  //       Services.deleteTeamApi(ownerTeam._id, api._id, next || automaticNextCurrentVersion)
-  //         .then((r) => {
-  //           if (isError(r)) {
-  //             toast.error(r.error)
-  //           } else {
-  //             navigate(`/apis`)
-  //             toast.success(translate('deletion successful'))
-  //           }
-  //         })
-  //     },
-  //     actionLabel: translate('Confirm')
-  //   })
-  // };
-
   return (
     <section className="api__header col-12 mb-4 p-3 d-flex flex-row">
       <div className="container-fluid">
@@ -256,82 +187,84 @@ export const ApiHeader = ({
             >
               {translate("api.home.update.api.btn.label")}
             </span>
-            <div className="dropdown-divider" />
-            <span
-              className="dropdown-item cursor-pointer"
-              onClick={() => Services.fetchNewApi()
-                .then((e) => {
-                  const clonedApi: IApi = { ...e, team: ownerTeam._id, name: `${api.name} copy`, state: 'created' };
-                  return clonedApi
+            {api.visibility !== 'AdminOnly' && <>
+              <div className="dropdown-divider" />
+              <span
+                className="dropdown-item cursor-pointer"
+                onClick={() => Services.fetchNewApi()
+                  .then((e) => {
+                    const clonedApi: IApi = { ...e, team: ownerTeam._id, name: `${api.name} copy`, state: 'created' };
+                    return clonedApi
+                  })
+                  .then((newApi) => openRightPanel({
+                    title: translate('api.home.create.api.form.title'),
+                    content: <ApiFormRightPanel team={ownerTeam} handleSubmit={(api) =>
+                      Services.createTeamApi(ownerTeam._id, api)
+                        .then(() => queryClient.invalidateQueries({ queryKey: ["data"] }))
+                        .then(() => toast.success("api.created.successful.toast"))
+                    } />
+                  }))}
+              >
+                {translate("api.home.clone.api.btn.label")}
+              </span>
+              <span
+                className="dropdown-item cursor-pointer"
+                onClick={() => prompt({
+                  placeholder: translate('Version number'),
+                  title: translate('New version'),
+                  value: api.currentVersion,
+                  okLabel: translate('Create')
                 })
-                .then((newApi) => openRightPanel({
-                  title: translate('api.home.create.api.form.title'),
-                  content: <ApiFormRightPanel team={ownerTeam} handleSubmit={(api) =>
-                    Services.createTeamApi(ownerTeam._id, api)
-                      .then(() => queryClient.invalidateQueries({ queryKey: ["data"] }))
-                      .then(() => toast.success("api.created.successful.toast"))
-                  } />
-                }))}
-            >
-              {translate("api.home.clone.api.btn.label")}
-            </span>
-            <span
-              className="dropdown-item cursor-pointer"
-              onClick={() => prompt({
-                placeholder: translate('Version number'),
-                title: translate('New version'),
-                value: api.currentVersion,
-                okLabel: translate('Create')
-              })
-                .then((newVersion) => {
-                  if (newVersion) {
-                    if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
-                      toast.error(translate({ key: "semver.error.message", replacements: [reservedCharacters.join(' | ')] }));
-                    else
-                      createNewVersion(newVersion);
-                  }
+                  .then((newVersion) => {
+                    if (newVersion) {
+                      if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
+                        toast.error(translate({ key: "semver.error.message", replacements: [reservedCharacters.join(' | ')] }));
+                      else
+                        createNewVersion(newVersion);
+                    }
+                  })}
+              >
+                {translate("api.home.create.version.api.btn.label")}
+              </span>
+              <div className="dropdown-divider" />
+              <span
+                className="dropdown-item cursor-pointer btn-outline-danger"
+                onClick={() => openRightPanel({
+                  title: "api.transfer.title",
+                  content: <Form
+                    schema={transferSchema}
+                    onSubmit={(data) => {
+                      Services.transferApiOwnership(data.team, api.team, api._id)
+                        .then((r) => {
+                          if (r.notify) {
+                            toast.info(translate('team.transfer.notified'));
+                          } else if (r.error) {
+                            toast.error(r.error);
+                          } else {
+                            toast.error(translate('issues.on_error'));
+                          }
+                        })
+                        .then(closeRightPanel);
+                    }}
+                  />
                 })}
-            >
-              {translate("api.home.create.version.api.btn.label")}
-            </span>
-            <div className="dropdown-divider" />
-            <span
-              className="dropdown-item cursor-pointer btn-outline-danger"
-              onClick={() => openRightPanel({
-                title: "api.transfer.title",
-                content: <Form
-                  schema={transferSchema}
-                  onSubmit={(data) => {
-                    Services.transferApiOwnership(data.team, api.team, api._id)
-                      .then((r) => {
-                        if (r.notify) {
-                          toast.info(translate('team.transfer.notified'));
-                        } else if (r.error) {
-                          toast.error(r.error);
-                        } else {
-                          toast.error(translate('issues.on_error'));
-                        }
-                      })
-                      .then(closeRightPanel);
-                  }}
-                />
-              })}
-            >
-              {translate('api.home.transfer.api.btn.label')}
-            </span>
-            <span
-              className="dropdown-item cursor-pointer btn-outline-danger"
-              onClick={() => deleteApi({
-                api,
-                versions,
-                team: ownerTeam,
-                translate,
-                openFormModal,
-                handleSubmit: () => navigate('/apis')
-              })}
-            >
-              {translate('api.home.delete.api.btn.label')}
-            </span>
+              >
+                {translate('api.home.transfer.api.btn.label')}
+              </span>
+              <span
+                className="dropdown-item cursor-pointer btn-outline-danger"
+                onClick={() => deleteApi({
+                  api,
+                  versions,
+                  team: ownerTeam,
+                  translate,
+                  openFormModal,
+                  handleSubmit: () => navigate('/apis')
+                })}
+              >
+                {translate('api.home.delete.api.btn.label')}
+              </span>
+            </>}
           </div>
         </Can>
       </div >

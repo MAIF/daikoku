@@ -620,34 +620,34 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
 
   const deleteWithConfirm = () => {
     const displayType = tenant.display === 'environment' ? 'environment' : 'plan'
-      openFormModal({
-        title: translate('Confirm'),
-        description: <div className="alert alert-danger" role="alert">
-          <h4 className="alert-heading">{translate('Warning')}</h4>
-          <p>{translate(`delete.${displayType}.confirm.modal.description.1`)}</p>
-          <ul>
-            <li>{translate(`delete.${displayType}.confirm.modal.description.2`)}</li>
-          </ul>
-        </div>,
-        schema: {
-          confirm: {
-            type: type.string,
-            label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [plan.customName] }),
-            constraints: [
-              constraints.oneOf(
-                [plan.customName],
-                translate({ key: 'constraints.type.api.name', replacements: [plan.customName] })
-              ),
-            ],
-          },
+    openFormModal({
+      title: translate('Confirm'),
+      description: <div className="alert alert-danger" role="alert">
+        <h4 className="alert-heading">{translate('Warning')}</h4>
+        <p>{translate(`delete.${displayType}.confirm.modal.description.1`)}</p>
+        <ul>
+          <li>{translate(`delete.${displayType}.confirm.modal.description.2`)}</li>
+        </ul>
+      </div>,
+      schema: {
+        confirm: {
+          type: type.string,
+          label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [plan.customName] }),
+          constraints: [
+            constraints.oneOf(
+              [plan.customName],
+              translate({ key: 'constraints.type.api.name', replacements: [plan.customName] })
+            ),
+          ],
         },
-        onSubmit: () => Services.deletePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, props.plan)
-          .then(() => queryClient.invalidateQueries({ queryKey: ["plans"] }))
-          .then(() => toast.success(translate({ key: `delete.${displayType}.successful.toast.label`, replacements: [plan.customName] })))
-          .then(() => closeRightPanel()),
-        actionLabel: translate('Confirm')
-      })
-    };
+      },
+      onSubmit: () => Services.deletePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, props.plan)
+        .then(() => queryClient.invalidateQueries({ queryKey: ["plans"] }))
+        .then(() => toast.success(translate({ key: `delete.${displayType}.successful.toast.label`, replacements: [plan.customName] })))
+        .then(() => closeRightPanel()),
+      actionLabel: translate('Confirm')
+    })
+  };
 
   const duplicatePlan = () => {
     const clone: IUsagePlan = {
@@ -693,23 +693,25 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                   ? translate('pricing.edit.env.btn.label')
                   : translate('Edit plan')}
               </span>
-              <span
-                className="dropdown-item cursor-pointer"
-                onClick={duplicatePlan}
-              >
-                {tenant.display === 'environment'
-                  ? translate('pricing.clone.env.btn.label')
-                  : translate('Duplicate plan')}
-              </span>
-              <div className="dropdown-divider" />
-              <span
-                className="dropdown-item cursor-pointer btn-outline-danger"
-                onClick={deleteWithConfirm}
-              >
-                {tenant.display === 'environment'
-                  ? translate('pricing.delete.env.btn.label')
-                  : translate('Delete plan')}
-              </span>
+              {props.api.visibility !== 'AdminOnly' && <>
+                <span
+                  className="dropdown-item cursor-pointer"
+                  onClick={duplicatePlan}
+                >
+                  {tenant.display === 'environment'
+                    ? translate('pricing.clone.env.btn.label')
+                    : translate('Duplicate plan')}
+                </span>
+                <div className="dropdown-divider" />
+                <span
+                  className="dropdown-item cursor-pointer btn-outline-danger"
+                  onClick={deleteWithConfirm}
+                >
+                  {tenant.display === 'environment'
+                    ? translate('pricing.delete.env.btn.label')
+                    : translate('Delete plan')}
+                </span>
+              </>}
             </div>
           </div>
         </Can>
@@ -1565,30 +1567,30 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
           onSubmit={setPlan}
           plan={plan}
         />
-        <ToggleFormPartButton
+        {props.api.visibility !== 'AdminOnly' && <ToggleFormPartButton
           value={quotasDisplayed}
           action={setQuotasDisplayed}
           falseLabel={translate("usage.plan.form.quotas.selector.false.label")}
           falseDescription={translate("usage.plan.form.quotas.selector.false.description")}
           trueLabel={translate("usage.plan.form.quotas.selector.true.label")}
           trueDescription={translate("usage.plan.form.quotas.selector.true.description")}
-        />
-        <ToggleFormPartButton
+        />}
+        {props.api.visibility !== 'AdminOnly' && <ToggleFormPartButton
           value={billingDisplayed}
           action={setBillingDisplayed}
           falseLabel={translate("usage.plan.form.pricing.selector.false.label")}
           falseDescription={translate("usage.plan.form.pricing.selector.false.description")}
           trueLabel={translate("usage.plan.form.pricing.selector.true.label")}
           trueDescription={translate("usage.plan.form.pricing.selector.true.description")}
-        />
-        {quotasDisplayed &&
+        />}
+        {quotasDisplayed && props.api.visibility !== 'AdminOnly' && 
           <MemoizedForm
             schema={quotasSchema}
             flow={quotasFlowPart}
             onSubmit={setPlan}
             plan={plan}
           />}
-        {billingDisplayed && <MemoizedForm
+        {billingDisplayed && props.api.visibility !== 'AdminOnly' &&  <MemoizedForm
           schema={billingSchema}
           flow={billingFlow}
           onSubmit={setPlan}
@@ -1660,7 +1662,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
     if (creation) {
       return (
         Services.createPlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
-          .then(() => toast.success(translate({key: 'create.plan.succesful.toast.label', replacements: [plan.customName]})))
+          .then(() => toast.success(translate({ key: 'create.plan.succesful.toast.label', replacements: [plan.customName] })))
           .then(closeRightPanel)
           .then(() => queryClient.invalidateQueries({ queryKey: ['plans'] }))
       )
@@ -1854,10 +1856,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 plans={possibleUsagePlans}
               />
             ))}
-          <Can I={manage} a={API} team={props.ownerTeam}>
+          {props.api.visibility !== 'AdminOnly' && <Can I={manage} a={API} team={props.ownerTeam}>
             <div className='fake-pricing-card col-md-4 card-mb-4 card mb-4 shadow-sm usage-plan__card'
               onClick={createNewPlan} />
-          </Can>
+          </Can>}
         </div>
       );
     }

@@ -42,7 +42,7 @@ export const ApiDescription = ({
         className="api-description"
         dangerouslySetInnerHTML={{ __html: converter.makeHtml(api.description) }}
       />
-      <Can I={manage} a={API} team={ownerTeam}>
+      {api.visibility !== 'AdminOnly' && <Can I={manage} a={API} team={ownerTeam}>
         <More
           className="a-fake"
           aria-label={translate('update.api.description.btn.label')}
@@ -81,7 +81,7 @@ export const ApiDescription = ({
             {translate('api.home.update.description.btn.label')}
           </span>
         </div>
-      </Can>
+      </Can>}
     </div>
   );
 };

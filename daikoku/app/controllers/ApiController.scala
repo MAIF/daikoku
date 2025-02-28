@@ -856,7 +856,7 @@ class ApiController(
           s"@{user.name} has accessed documentation page remote content for @{api.name} - @{api.id} - $pageId"
         )
       )(ctx) {
-        logger.info("héhé")
+          logger.info("héhé")
         env.dataStore.apiRepo
           .forTenant(ctx.tenant.id)
           .findByIdNotDeleted(apiId)
@@ -4330,7 +4330,7 @@ class ApiController(
         AuditTrailEvent(
           s"@{user.name} has created new version (@{newVersion}) of api @{api.id} with @{team.name} - @{team.id}"
         )
-      )(teamId, ctx) { team =>
+      )(teamId, ctx) { _ =>
         val newVersion = (ctx.request.body \ "version").asOpt[String]
 
         ctx.setCtxValue("newVersion", newVersion)
@@ -4359,9 +4359,11 @@ class ApiController(
                 )
               )
               .flatMap {
-                case None => FastFuture.successful(AppError.render(ApiNotFound))
+                case None => AppError.ApiNotFound.renderF()
+                case Some(api) if api.visibility == ApiVisibility.AdminOnly =>
+                  AppError.ForbiddenAction.renderF()
                 case Some(api) if api.currentVersion.value == newVersion =>
-                  FastFuture.successful(AppError.render(ApiVersionConflict))
+                  ApiVersionConflict.renderF()
                 case Some(api) =>
                   apiRepo
                     .exists(
@@ -4373,9 +4375,7 @@ class ApiController(
                     )
                     .flatMap {
                       case true =>
-                        FastFuture.successful(
-                          AppError.render(ApiVersionConflict)
-                        )
+                        AppError.ApiVersionConflict.renderF()
                       case false =>
                         apiRepo
                           .save(
