@@ -139,3 +139,12 @@ a.card-link:active {
     font-size: 5rem;
   }
 }
+
+.api-group-info {
+  position: sticky;
+  bottom: 5px;
+  padding: 5px 10px;
+  color: $level1_text-color;
+  background-color: $level1_bg-color;
+  border-top: 1px solid $level3_text-color;
+}

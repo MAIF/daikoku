@@ -7,7 +7,6 @@ import { Footer, LoginPage, SideBar, tenant } from '../components/utils';
 import { ModalProvider, NavProvider } from '../contexts';
 
 import {
-  ApiGroupHome,
   ApiHome,
   FrontOffice,
   JoinTeam,
@@ -427,15 +426,6 @@ export const DaikokuApp = () => {
                   <Route
                     path="/:teamId/settings*"
                     element={<TeamBackOffice />}
-                  />
-
-                  <Route
-                    path=":teamId/apigroups/:apiGroupId/:tab/*"
-                    element={
-                      <FrontOfficeRoute>
-                        <ApiGroupHome />
-                      </FrontOfficeRoute>
-                    }
                   />
 
                   <Route

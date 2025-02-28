@@ -1,9 +1,9 @@
 import { constraints, format, Schema, type } from '@maif/react-forms';
 import { useContext } from 'react';
-import { I18nContext } from '../../../contexts';
+import { I18nContext, TranslateParams } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import * as Services from '../../../services';
-import { ITeamSimple, ITenant } from '../../../types';
+import { isError, ITeamSimple, ITenant } from '../../../types';
 import { IPage } from '../../adminbackoffice/cms';
 
 
@@ -42,7 +42,7 @@ const Image = ({
 };
 
 const reservedVersionCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
-export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITenant, getCmsPages: () => Promise<Array<IPage>>) => {
+export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) => string, team: ITeamSimple, tenant: ITenant, getCmsPages: () => Promise<Array<IPage>>, apigroup: boolean) => {
   const schema: Schema = {
     isDefault: {
       type: type.bool,
@@ -59,7 +59,7 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
           'name_already_exist',
           translate('api.already.exists'),
           (name, context) => {
-            console.debug({context})
+            console.debug({ context })
             return Services.checkIfApiNameIsUnique(name, context.parent._id)
               .then((r) => !r.exists)
           }
@@ -75,12 +75,7 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
       type: type.string,
       format: format.markdown,
       label: translate('Custom header'),
-      help: translate(
-        'api.custom.header.help',
-        false,
-        `Use {{title}} to insert API title, {{ description }} to insert API small description.
-         Add "btn-edit" class to link to admin API edition admin page.`
-      ),
+      help: translate('api.custom.header.help'),
       props: {
         theme: 'monokai',
       }, //@ts-ignore //FIXME
@@ -120,11 +115,10 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
       constraints: [
         constraints.test(
           'reservedChar',
-          translate(
-            'constraints.reserved.char.version',
-            false,
-            '',
-            reservedVersionCharacters.join(' ')
+          translate({
+            key: 'constraints.reserved.char.version',
+            replacements: [reservedVersionCharacters.join(' ')]
+          }
           ),
           (name) => (name || '').split('').every((c: any) => !reservedVersionCharacters.includes(c))
         ),
@@ -198,32 +192,28 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
         value: t._id
       }),
     },
-    // description: {
-    //   type: type.string,
-    //   format: format.markdown,
-    //   label: translate('Description'),
-    // },
-    //   descriptionCmsPage: {
-    //       type: type.string,
-    //       format: format.select,
-    //       label: translate('CMS Page'),
-    //       props: { isClearable: true },
-    //       optionsFrom: getCmsPages,
-    //       transformer: page => ({
-    //           label: `${page.name} - ${page.path}`,
-    //           value: page.id
-    //       }),
-    //   }
+    apis: {
+      type: type.string,
+      label: translate({ key: 'API', plural: true }),
+      format: format.select,
+      isMulti: true, //@ts-ignore
+      optionsFrom: () => Services.teamApis(team._id)
+        .then((apis) => !isError(apis) ? apis.filter((api) => !api.apis) : []),
+      transformer: (api) => ({
+        label: `${api.name} - ${api.currentVersion}`,
+        value: api._id
+      }),
+    },
   };
 
-  const simpleOrExpertMode = (entry: any, expert: any) => {//@ts-ignore
+  const simpleOrExpertMode = (entry: string, expert: boolean) => {//@ts-ignore
     return !!expert || !schema[entry]?.expert;
   };
 
-  const flow = (expert: any) => [
+  const flow = (expert: boolean, apigroup: boolean) => [
     {
       label: translate('Basic.informations'),
-      flow: ['state', 'name', 'smallDescription', 'image'].filter((entry) =>
+      flow: apigroup ? ['state', 'name', 'smallDescription', 'image', 'apis'] : ['state', 'name', 'smallDescription', 'image', 'apis'].filter((entry) =>
         simpleOrExpertMode(entry, expert)
       ),
       collapsed: false,
@@ -246,12 +236,7 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
       label: translate('Visibility'),
       flow: ['visibility', 'authorizedTeams'].filter((entry) => simpleOrExpertMode(entry, expert)),
       collapsed: true,
-    },
-    // {
-    //   label: translate('Description'),
-    //   flow: ['description', 'descriptionCmsPage'],
-    //   collapsed: true
-    // }
+    }
   ];
 
   const adminFlow = ['name', 'smallDescription'];
@@ -270,5 +255,5 @@ export const teamApiInfoForm = (translate: any, team: ITeamSimple, tenant: ITena
     },
   };
 
-  return { schema, flow: (expert: any) => flow(expert), adminFlow, adminSchema };
+  return { schema, flow: (expert: boolean) => flow(expert, apigroup), adminFlow, adminSchema };
 };

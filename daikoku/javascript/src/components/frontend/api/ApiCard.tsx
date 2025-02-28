@@ -15,7 +15,6 @@ export const ApiCard = (props: {
   myTeams: Array<ITeamSimple>
   askForApiAccess: (teams: Array<string>) => Promise<any>
   redirectToApiPage: () => void
-  redirectToEditPage: () => void
   handleTagSelect: (tag: string) => void
   handleTeamSelect : (team:  ITeamSimple ) => void
   toggleStar: () => void
@@ -84,15 +83,6 @@ export const ApiCard = (props: {
             )}
             {!api.image && <span>{api.name}</span>}
             {accessButton()}
-            <Can I={manage} a={API} team={team}>
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-primary btn-edit"
-                onClick={props.redirectToEditPage}
-              >
-                <i className="fas fa-pen" />
-              </button>
-            </Can>
           </div>
           <div className="card-body plan-body d-flex flex-column">
             <Link to="/">

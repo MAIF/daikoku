@@ -1,21 +1,21 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import { GraphQLClient } from 'graphql-request';
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiSwagger } from '.';
-import { I18nContext, ModalContext, useApiFrontOffice } from '../../../contexts';
+import { ApiGroupApis, TeamApiConsumption, TeamApiSubscriptions, TeamPlanConsumption, read } from '../..';
+import { I18nContext, ModalContext, NavContext, useApiFrontOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { IApi, ISubscription, ITeamFullGql, ITeamSimple, IUsagePlan, isError } from '../../../types';
 import { SimpleApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
-import { ActionWithTeamSelector, Can, CanIDoAction, Option, Spinner, apikey, manage, teamGQLToSimple } from '../../utils';
+import { Can, Option, Spinner, apikey, teamGQLToSimple } from '../../utils';
 import { CmsViewer } from '../CmsViewer';
 import { ApiDescription } from './ApiDescription';
 import { ApiHeader } from './ApiHeader';
-import { CanIDoActionForOneOfTeams, read, TeamApiConsumption, TeamApiSubscriptions, TeamPlanConsumption } from '../..';
 import { ApiSubscriptions } from './ApiSubscriptions';
 
 type ApiHomeProps = {
@@ -25,8 +25,9 @@ export const ApiHome = ({
   groupView
 }: ApiHomeProps) => {
 
-  const { connectedUser, tenant } = useContext(GlobalContext);
+  const { tenant } = useContext(GlobalContext);
   const { openRightPanel } = useContext(ModalContext);
+  const { apiGroup, setApiGroup } = useContext(NavContext);
 
   const navigate = useNavigate();
   const defaultParams = useParams();
@@ -97,8 +98,14 @@ export const ApiHome = ({
   });
 
 
-  const { addMenu } = groupView && apiQuery.data && !isError(apiQuery) && ownerTeamQuery.data && !isError(ownerTeamQuery.data) ?
-    { addMenu: () => { } } : useApiFrontOffice((apiQuery.data as IApi), (ownerTeamQuery.data as ITeamSimple));
+  const { addMenu, isAdminApi, isApiGroup } = groupView && apiQuery.data && !isError(apiQuery) && ownerTeamQuery.data && !isError(ownerTeamQuery.data) ?
+    { addMenu: () => { }, isAdminApi: false, isApiGroup: false } : useApiFrontOffice((apiQuery.data as IApi), (ownerTeamQuery.data as ITeamSimple));
+
+  useEffect(() => {
+    return () => {
+      setApiGroup(undefined)
+    }
+  }, [])
 
   useEffect(() => {
     if (apiQuery.data && !isError(apiQuery.data) && myTeamsQuery.data && mySubscriptionQuery.data && ownerTeamQuery.data && !isError(ownerTeamQuery.data) && !groupView) {
@@ -217,12 +224,13 @@ export const ApiHome = ({
           })}>
             <div className="row">
               {params.tab === 'description' && (api.descriptionCmsPage ? <CmsViewer pageId={api.descriptionCmsPage} fields={{ api }} /> : <ApiDescription api={api} ownerTeam={ownerTeam} />)}
+              {params.tab === 'apis' && (<ApiGroupApis apiGroup={api} ownerTeam={ownerTeam} />)}
               {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam}
                 subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
               {params.tab === 'documentation' && <ApiDocumentation entity={api} ownerTeam={ownerTeam} api={api}
                 documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)}
                 refreshEntity={() => queryClient.invalidateQueries({ queryKey: ['api'] })}
-                savePages={(pages) => Services.saveTeamApi(ownerTeam._id, {...api, documentation: {...api.documentation!, pages}}, api.currentVersion)} />}
+                savePages={(pages) => Services.saveTeamApi(ownerTeam._id, { ...api, documentation: { ...api.documentation!, pages } }, api.currentVersion)} />}
               {params.tab === 'testing' && (<ApiSwagger
                 _id={api._id}
                 testing={api.testing}
@@ -240,11 +248,24 @@ export const ApiHome = ({
               {(params.tab === 'subscriptions') && (<TeamApiSubscriptions api={api} currentTeam={ownerTeam} />)}
               {params.tab === 'consumption' && !consumptionMatch && <TeamApiConsumption api={api} currentTeam={ownerTeam} />}
               {params.tab === 'consumption' && consumptionMatch?.params.planId && (<TeamPlanConsumption api={api} currentTeam={ownerTeam} />)}
-              {params.tab === 'apikeys' && (<ApiSubscriptions api={api} ownerTeam={ownerTeam} subscribingTeams={subscribingTeams}/>)}
+              {params.tab === 'apikeys' && (<ApiSubscriptions api={api} ownerTeam={ownerTeam} subscribingTeams={subscribingTeams} />)}
 
             </div>
           </div>
         </div>
+        {apiGroup && (
+          <div className='d-flex justify-content-between align-items-center api-group-info'>
+            <span><i className='fas fa-circle-arrow-left cursor-pointer' onClick={() => {
+              setApiGroup(undefined);
+              navigate(`/${ownerTeam._humanReadableId}/${apiGroup._humanReadableId}/${apiGroup.currentVersion}/apis`)
+            }} />{apiGroup.name}</span>
+            <button className='btn btn-outline-info'
+              onClick={() => {
+                setApiGroup(undefined);
+                navigate(`/${ownerTeam._humanReadableId}/${apiGroup._humanReadableId}/${apiGroup.currentVersion}/apis`)
+              }}>retour</button>
+          </div>
+        )}
       </main>);
   }
 };

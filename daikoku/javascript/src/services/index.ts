@@ -1338,12 +1338,12 @@ export const graphql = {
         }
       }
     `),
-  apiByIdsWithPlans: gql(`
+  apiByIdsWithPlans: `
       query filteredApi ($id: String!) {
         api (id: $id) {
           _id
           _humanReadableId
-          _deleted
+          deleted
           lastUpdate
           state
           currentVersion
@@ -1359,7 +1359,9 @@ export const graphql = {
             _humanReadableId
             name
           }
-          defaultUsagePlan
+          defaultUsagePlan {
+            _id
+          }
           possibleUsagePlans {
             _id
             customName
@@ -1417,7 +1419,7 @@ export const graphql = {
           }
         }
       }
-    `),
+    `,
   myVisibleApis: gql(`
     query AllVisibleApis ($teamId: String, $research: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $limit: Int, $offset: Int, $groupId: String) {
       visibleApis (teamId: $teamId, research: $research, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, limit: $limit, offset: $offset, groupId: $groupId) {

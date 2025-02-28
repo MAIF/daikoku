@@ -78,7 +78,6 @@ export const ApiHeader = ({
   const getCmsPages = (): Promise<Array<IPage>> =>
     client!.query(cmsPagesQuery())
       .then(res => res.data.pages as Array<IPage>)
-  const informationForm = teamApiInfoForm(translate, ownerTeam, tenant, getCmsPages);
   const transferSchema = {
     team: {
       type: type.string,
@@ -166,7 +165,7 @@ export const ApiHeader = ({
             <span
               onClick={() => openRightPanel({
                 title: translate("update.api.details.panel.title"),
-                content: <ApiFormRightPanel team={ownerTeam} api={api} handleSubmit={(updatedApi) => {
+                content: <ApiFormRightPanel team={ownerTeam} api={api} apigroup={!!api.apis} handleSubmit={(updatedApi) => {
                   return Services.saveTeamApi(ownerTeam._id, updatedApi, api.currentVersion)
                     .then((response) => {
                       if (!isError(response)) {
@@ -193,21 +192,21 @@ export const ApiHeader = ({
                 className="dropdown-item cursor-pointer"
                 onClick={() => Services.fetchNewApi()
                   .then((e) => {
-                    const clonedApi: IApi = { ...e, team: ownerTeam._id, name: `${api.name} copy`, state: 'created' };
+                    const clonedApi: IApi = { ...api, _id: e._id, name: `${api.name} copy`, state: 'created' };
                     return clonedApi
                   })
                   .then((newApi) => openRightPanel({
                     title: translate('api.home.create.api.form.title'),
-                    content: <ApiFormRightPanel team={ownerTeam} handleSubmit={(api) =>
+                    content: <ApiFormRightPanel team={ownerTeam} api={newApi} apigroup={!!newApi.apis} handleSubmit={(api) =>
                       Services.createTeamApi(ownerTeam._id, api)
                         .then(() => queryClient.invalidateQueries({ queryKey: ["data"] }))
-                        .then(() => toast.success("api.created.successful.toast"))
+                        .then(() => toast.success("api.created.successful.toast")) //todo: move to new API
                     } />
                   }))}
               >
                 {translate("api.home.clone.api.btn.label")}
               </span>
-              <span
+              {!api.apis && <span
                 className="dropdown-item cursor-pointer"
                 onClick={() => prompt({
                   placeholder: translate('Version number'),
@@ -225,9 +224,9 @@ export const ApiHeader = ({
                   })}
               >
                 {translate("api.home.create.version.api.btn.label")}
-              </span>
+              </span>}
               <div className="dropdown-divider" />
-              <span
+              {!api.apis && <span
                 className="dropdown-item cursor-pointer btn-outline-danger"
                 onClick={() => openRightPanel({
                   title: "api.transfer.title",
@@ -250,7 +249,7 @@ export const ApiHeader = ({
                 })}
               >
                 {translate('api.home.transfer.api.btn.label')}
-              </span>
+              </span>}
               <span
                 className="dropdown-item cursor-pointer btn-outline-danger"
                 onClick={() => deleteApi({

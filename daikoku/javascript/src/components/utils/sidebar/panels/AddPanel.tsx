@@ -70,9 +70,9 @@ export const AddPanel = () => {
         } else {
           return openRightPanel({
             title: translate('api.creation.right.panel.title'),
-            content: <ApiFormRightPanel team={team} handleSubmit={(api) => Services.createTeamApi(team._id, api)
+            content: <ApiFormRightPanel team={team} apigroup={false} handleSubmit={(api) => Services.createTeamApi(team._id, api)
               .then(() => queryClient.invalidateQueries({ queryKey: ["data"] }))
-              .then(() => toast.success("api.created.successful.toast"))}/>
+              .then(() => toast.success(translate({ key: "api.created.successful.toast", replacements: [api.name] })))} />
           })
         }
       }
@@ -96,15 +96,16 @@ export const AddPanel = () => {
       } else {
         const team = myTeamsRequest.data.find((t) => teamId === t._id);
 
-        return Services.fetchNewApiGroup()
-          .then((e) => {
-            return { ...e, team: team?._id };
+        if (!team) {
+          toast.warning('toast.no.team.found')
+        } else {
+          return openRightPanel({
+            title: translate('apigroup.creation.right.panel.title'),
+            content: <ApiFormRightPanel team={team} apigroup={true} handleSubmit={(api) => Services.createTeamApi(team._id, api)
+              .then(() => queryClient.invalidateQueries({ queryKey: ["data"] }))
+              .then(() => toast.success(translate({ key: "apigroup.created.successful.toast", replacements: [api.name] })))} />
           })
-          .then((newApiGroup) =>
-            navigate(`/${team?._humanReadableId}/settings/apigroups/${newApiGroup._id}/infos`, {
-              state: { newApiGroup },
-            })
-          );
+        }
       }
     }
   };
@@ -190,12 +191,14 @@ export const AddPanel = () => {
 
 };
 
-type ApiFormRightPanelProps = { 
-  team: ITeamSimple, 
-  api?: IApi 
+type ApiFormRightPanelProps = {
+  team: ITeamSimple,
+  api?: IApi
   handleSubmit: (api: IApi) => Promise<any>
+  apigroup: boolean
 }
 export const ApiFormRightPanel = (props: ApiFormRightPanelProps) => {
+  console.debug({ props })
   const { translate } = useContext(I18nContext);
   const { closeRightPanel } = useContext(ModalContext);
 
@@ -218,21 +221,23 @@ export const ApiFormRightPanel = (props: ApiFormRightPanelProps) => {
   const getCmsPages = (): Promise<Array<IPage>> =>
     client!.query(cmsPagesQuery())
       .then(res => res.data.pages as Array<IPage>)
-  const informationForm = teamApiInfoForm(translate, props.team, tenant, getCmsPages);
 
+  const informationForm = teamApiInfoForm(translate, props.team, tenant, getCmsPages, props.apigroup);
 
   const newApiQuery = useQuery({
     queryKey: ['newapi'],
-    queryFn: () => Services.fetchNewApi()
+    queryFn: () => (props.apigroup ? Services.fetchNewApiGroup() : Services.fetchNewApi())
       .then((e) => {
-        return { ...e, team: props.team._id };
+        const newApi = { ...e, team: props.team._id };
+        console.debug({ newApi })
+        return newApi
       }),
     enabled: !props.api
   })
 
   if (!props.api && (newApiQuery.isLoading || !newApiQuery.data)) {
     return (
-      <div>loading ...</div>
+      <Spinner />
     )
   }
 
@@ -243,7 +248,7 @@ export const ApiFormRightPanel = (props: ApiFormRightPanelProps) => {
         {!expertMode && translate('Expert mode')}
       </button>
       <Form
-        schema={props.api?.visibility === 'AdminOnly' ? informationForm.adminSchema :  informationForm.schema}
+        schema={props.api?.visibility === 'AdminOnly' ? informationForm.adminSchema : informationForm.schema}
         flow={props.api?.visibility === 'AdminOnly' ? informationForm.adminFlow : informationForm.flow(expertMode)}
         onSubmit={(data) => {
           props.handleSubmit(data)

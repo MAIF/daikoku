@@ -494,9 +494,6 @@ object CommonServices {
       env: Env,
       ec: ExecutionContext
   ): Future[Seq[String]] = {
-    AppLogger.info(
-      s"get all tag with limit $limit and offset $offset (resaerch = $research)"
-    )
     for {
       myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
       tags <-

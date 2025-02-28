@@ -108,6 +108,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
   const params = useParams();
 
   const userCanUpdateApi = team?.users.find(u => u.userId === connectedUser._id && u.teamPermission !== teamPermissions.user)
+  const isAdminApi = api?.visibility === 'AdminOnly';
+  const isApiGroup = api?.apis
 
   const schema = (currentTab: string) => ({
     title: api?.name,
@@ -116,6 +118,15 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
       links: {
         order: 1,
         links: {
+          apis: {
+            label: translate('APIs'),
+            action: () => navigateTo('apis'),
+            className: { 
+              active: currentTab === 'apis',
+              disabled: !isApiGroup,
+              'd-none': !isApiGroup
+            },
+          },
           description: {
             label: translate('Description'),
             action: () => navigateTo('description'),
@@ -144,8 +155,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             },
             className: {
               active: currentTab === 'swagger',
-              disabled: !userCanUpdateApi && (tenant.display === 'environment' || !api?.swagger?.content && !api?.swagger?.url),
-              'd-none': !userCanUpdateApi && (tenant.display === 'environment' || !api?.swagger?.content && !api?.swagger?.url)
+              disabled: isApiGroup || (!userCanUpdateApi && (tenant.display === 'environment' || !api?.swagger?.content && !api?.swagger?.url)),
+              'd-none': isApiGroup || (!userCanUpdateApi && (tenant.display === 'environment' || !api?.swagger?.content && !api?.swagger?.url))
             },
           },
           testing: {
@@ -155,8 +166,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             },
             className: {
               active: currentTab === 'testing',
-              disabled: api?.visibility === 'AdminOnly' || !userCanUpdateApi && (tenant.display === 'environment' || !api?.testing?.enabled),
-              'd-none': api?.visibility === 'AdminOnly' || !userCanUpdateApi && (tenant.display === 'environment' || !api?.testing?.enabled)
+              disabled: isAdminApi || isApiGroup || !userCanUpdateApi && (tenant.display === 'environment' || !api?.testing?.enabled),
+              'd-none': isAdminApi || isApiGroup || !userCanUpdateApi && (tenant.display === 'environment' || !api?.testing?.enabled)
             },
           },
           news: {
@@ -166,8 +177,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             },
             className: {
               active: currentTab === 'news',
-              disabled: api?.visibility === 'AdminOnly' || !userCanUpdateApi && !api?.posts?.length,
-              'd-none': api?.visibility === 'AdminOnly' || !userCanUpdateApi && !api?.posts?.length,
+              disabled: isAdminApi || !userCanUpdateApi && !api?.posts?.length,
+              'd-none': isAdminApi || !userCanUpdateApi && !api?.posts?.length,
             },
           },
           issues: {
@@ -175,8 +186,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             action: () => navigateTo('issues'),
             className: {
               active: currentTab === 'issues' || currentTab === 'labels',
-              disabled: api?.visibility === 'AdminOnly',
-              'd-none': api?.visibility === 'AdminOnly'
+              disabled: isAdminApi,
+              'd-none': isAdminApi
             },
           },
           subscriptions: {
@@ -250,123 +261,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
     }
   }, [api, team]);
 
-  return { addMenu };
-};
-
-export const useApiGroupFrontOffice = (apigroup: any, team: any) => {
-  const { setMode, setOffice, setApiGroup, setTeam, addMenu, setMenu } = useContext(NavContext);
-  const { translate } = useContext(I18nContext);
-  const { openContactModal } = useContext(ModalContext);
-  const { connectedUser, tenant } = useContext(GlobalContext);
-  const navigate = useNavigate();
-  const params = useParams();
-
-  const schema = (currentTab: string) => ({
-    title: apigroup?.name,
-
-    blocks: {
-      links: {
-        order: 1,
-        links: {
-          apis: {
-            label: translate('APIs'),
-            action: () => navigateTo('apis'),
-            className: { active: currentTab === 'apis' },
-          },
-          description: {
-            label: translate('Description'),
-            action: () => navigateTo('description'),
-            className: { active: currentTab === 'description' },
-          },
-          pricings: {
-            label: tenant.display === 'environment' ? translate("navbar.environments.label") : translate({ key: 'Plan', plural: true }),
-            action: () => navigateTo('pricing'),
-            className: { active: currentTab === 'pricing' },
-          },
-          documentation: {
-            label: translate('Documentation'),
-            action: () => {
-              if (apigroup?.documentation?.pages?.length) navigateTo('documentation');
-            },
-            className: {
-              active: currentTab === 'documentation',
-              disabled: !apigroup?.documentation?.pages?.length,
-              'd-none': !apigroup?.documentation?.pages?.length,
-            },
-          },
-          news: {
-            label: translate('News'),
-            action: () => {
-              if (apigroup?.posts?.length) 'news';
-            },
-            className: { 
-              active: currentTab === 'news', 
-              disabled: !apigroup?.posts?.length, 
-              'd-none': !apigroup?.posts?.length 
-            },
-          },
-          issues: {
-            label: translate('Issues'),
-            action: () => navigateTo('issues'),
-            className: {
-              active: currentTab === 'issues' || currentTab === 'labels',
-            },
-          },
-        },
-      },
-      actions: {
-        order: 2,
-        links: {
-          contact: {
-            label: translate('contact'),
-            component: (
-              <button
-                className="btn btn-sm btn-outline-primary mb-2"
-                onClick={() =>
-                  openContactModal({
-                    name: connectedUser.name,
-                    email: connectedUser.email,
-                    team: apigroup.team,
-                    api: apigroup._id
-                  })
-                }
-              >
-                {translate({ key: `contact.team`, replacements: [team?.name] })}
-              </button>
-            ),
-          },
-        },
-      },
-    }
-  });
-
-  const navigateTo = (navTab: string) => {
-    navigate(`/${team._humanReadableId}/apigroups/${apigroup._humanReadableId}/${navTab}`);
-  };
-
-  useEffect(() => {
-    if (params.tab) {
-      setMenu(schema(params.tab));
-    }
-  }, [params.tab, apigroup, team]);
-
-  useEffect(() => {
-    if (apigroup && team) {
-      setMode(navMode.apiGroup);
-      setOffice(officeMode.front);
-      setApiGroup(apigroup);
-      setTeam(team);
-
-      return () => {
-        setMode(navMode.initial);
-        setApiGroup(undefined);
-        setTeam(undefined);
-        setMenu({});
-      };
-    }
-  }, [apigroup, team]);
-
-  return { addMenu };
+  return { addMenu, isAdminApi, isApiGroup };
 };
 
 export const useTeamBackOffice = () => {

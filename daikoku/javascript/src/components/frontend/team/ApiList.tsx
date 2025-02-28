@@ -37,7 +37,6 @@ type TApiList = {
   myTeams?: Array<ITeamSimple>,
   teamVisible: boolean,
   redirectToApiPage: (api: IApiWithAuthorization) => void,
-  redirectToEditPage: (api: IApiWithAuthorization) => void,
   apiGroupId?: string
 }
 
@@ -360,7 +359,6 @@ export const ApiList = (props: TApiList) => {
                         myTeams={props.myTeams || []}
                         askForApiAccess={(teams) => askForApiAccess(apiWithAuth, teams)}
                         redirectToApiPage={() => props.redirectToApiPage(apiWithAuth)}
-                        redirectToEditPage={() => props.redirectToEditPage(apiWithAuth)}
                         handleTagSelect={(tag) => setSelectedTag(tags.find((t) => t.value === tag))}
                         handleTeamSelect={(team) => (producers.length > 1 || !!selectedProducer) ? setSelectedProducer({ label: team.name, value: team._id }) : {}}
                         toggleStar={() => toggleStar(apiWithAuth)}
