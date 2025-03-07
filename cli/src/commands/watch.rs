@@ -243,12 +243,16 @@ async fn forward_api_call(
 
     let url: String = format!("{}{}", environment.server, uri);
 
-    let raw_req = Request::builder()
+    let mut raw_req = Request::builder()
         .method(Method::from_str(&method).unwrap())
         .uri(&url)
         .header(header::HOST, &host)
-        .header("Accept", "*/*")
-        .header(header::COOKIE, read_cookie_from_environment(true)?);
+        .header("Accept", "*/*");
+
+
+    if !uri.starts_with("/tenant-assets/") {
+        raw_req = raw_req.header(header::COOKIE, read_cookie_from_environment(true)?);
+    }
 
     let req = if method == "GET" {
         raw_req.body(Empty::<Bytes>::new().boxed()).unwrap()
