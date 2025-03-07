@@ -19,7 +19,7 @@ Each asset is save in the S3 of your Daikoku (you need to configure one if it ha
 daikoku assets push --filename=api.jpeg \
   --desc="Picture of API" \
   --title="API" \
-  --slug=api.jpeg
+  --slug=my-picture
 ```
 
 You can now use the asset on the CMS.
@@ -39,7 +39,7 @@ function MyAPIs() {
                     src="https://images.pexels.com/photos/1148820/pexels-photo-1148820.jpeg"
               <img
             // addition
-                    src="/tenant-assets/api.jpeg"
+                    src="/tenant-assets/my-picture"
 ```
 
 Check the browser preview again to notice what did (or, spoiler alert: did not!) change.

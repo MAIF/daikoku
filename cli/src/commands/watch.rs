@@ -111,18 +111,8 @@ async fn watcher(
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     let uri = req.uri().path().to_string();
 
-    if uri.starts_with("/tenant-assets/") {
-        let redirect_url = "http://localhost:5173/tenant-assets/api3.jpeg";
-
-        let mut response = Response::new(Full::<Bytes>::new(Bytes::from("")));
-        *response.status_mut() = StatusCode::FOUND; // 302 status
-        response
-            .headers_mut()
-            .insert(LOCATION, HeaderValue::from_str(redirect_url).unwrap());
-
-        Ok(response)
-    } else if uri.starts_with("/api/") {
-        logger::println("forward to api".to_string());
+    if uri.starts_with("/api/") || uri.starts_with("/tenant-assets/") {
+        logger::println("forward to api or /tenant-assets".to_string());
         forward_api_call(uri, req, environment).await
     } else {
         let path = uri.replace("_/", "");
