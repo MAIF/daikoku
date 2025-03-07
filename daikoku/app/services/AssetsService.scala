@@ -400,11 +400,13 @@ class AssetsService {
         val download = ctx.request.getQueryString("download").contains("true")
         val redirect = ctx.request.getQueryString("redirect").contains("true")
 
+        println("search with assetId", assetId)
         env.dataStore.assetRepo
           .forTenant(ctx.tenant)
           .findOne(Json.obj("slug" -> assetId))
           .map {
             case Some(asset) =>
+              println("find with slug", assetId)
               env.assetsStore.getTenantAssetPresignedUrl(
                 ctx.tenant.id,
                 asset.id
