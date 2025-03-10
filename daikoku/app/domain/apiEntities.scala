@@ -1209,7 +1209,7 @@ object ApiTemplate {
       id = ApiId(IdGenerator.token),
       tenant = tenant.id,
       team = team.id,
-      name = s"cms-api-tenant-${tenant.id.value}",
+      name = s"cms-api-tenant-${tenant.humanReadableId}",
       lastUpdate = DateTime.now(),
       smallDescription = "cms api",
       description =
