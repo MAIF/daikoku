@@ -140,11 +140,9 @@ type ApiKeysListForApiProps = {
 export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   const [searched, setSearched] = useState('');
 
-  // const location = useLocation();
   const { client } = useContext(getApolloContext());
-  const { translate, Translation } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
   const { confirm, openFormModal, openCustomModal } = useContext(ModalContext);
-  const { tenant } = useContext(GlobalContext);
   const queryClient = useQueryClient();
 
 
@@ -445,61 +443,59 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
     const apiLink = `/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/description`;
     return (
       <Can I={read} a={apikey} team={props.team} dispatchError>
-        <div className="row">
-          <div className="col-12 mt-2 mb-4">
-            <input
-              type="text"
-              className="form-control col-5"
-              placeholder={translate('Search your apiKey...')}
-              aria-label="Search your apikey"
-              value={searched}
-              onChange={(e) => setSearched(e.target.value)}
-            />
-          </div>
+        <div className="col-6 mt-4 mb-2">
+          <input
+            type="text"
+            className="form-control col-5"
+            placeholder={translate('Search your apiKey...')}
+            aria-label="Search your apikey"
+            value={searched}
+            onChange={(e) => setSearched(e.target.value)}
+          />
+        </div>
 
-          <div className="col-12">
-            <PaginatedComponent
-              items={sortedApiKeys}
-              count={5}
-              formatter={(subscription: ISubscriptionWithChildren) => {
-                return (
-                  <ApiKeyCard
-                    api={props.api}
-                    currentTeam={props.team}
-                    apiLink={apiLink}
-                    statsLink={`/${props.team._humanReadableId}/settings/apikeys/${props.api._id}/${props.api.currentVersion}/subscription/${subscription._id}/consumptions`}
-                    key={subscription.apiKey.clientId}
-                    subscription={subscription}
-                    subscribedApis={subscribedApis}
-                    updateCustomName={(name) =>
-                      updateCustomName(subscription, name)
-                    }
-                    toggle={() => toggleApiKey(subscription)}
-                    makeUniqueApiKey={() => makeUniqueApiKey(subscription)}
-                    deleteApiKey={() => deleteApiKey(subscription)}
-                    toggleRotation={(
+        <div className="col-12">
+          <PaginatedComponent
+            items={sortedApiKeys}
+            count={5}
+            formatter={(subscription: ISubscriptionWithChildren) => {
+              return (
+                <ApiKeyCard
+                  api={props.api}
+                  currentTeam={props.team}
+                  apiLink={apiLink}
+                  statsLink={`/${props.team._humanReadableId}/settings/apikeys/${props.api._id}/${props.api.currentVersion}/subscription/${subscription._id}/consumptions`}
+                  key={subscription.apiKey.clientId}
+                  subscription={subscription}
+                  subscribedApis={subscribedApis}
+                  updateCustomName={(name) =>
+                    updateCustomName(subscription, name)
+                  }
+                  toggle={() => toggleApiKey(subscription)}
+                  makeUniqueApiKey={() => makeUniqueApiKey(subscription)}
+                  deleteApiKey={() => deleteApiKey(subscription)}
+                  toggleRotation={(
+                    plan,
+                    enabled,
+                    rotationEvery,
+                    gracePeriod
+                  ) =>
+                    toggleApiKeyRotation(
+                      subscription,
                       plan,
                       enabled,
                       rotationEvery,
                       gracePeriod
-                    ) =>
-                      toggleApiKeyRotation(
-                        subscription,
-                        plan,
-                        enabled,
-                        rotationEvery,
-                        gracePeriod
-                      )
-                    }
-                    regenerateSecret={() => regenerateApiKeySecret(subscription)}
-                    transferKey={() => transferApiKey(subscription)}
-                    handleTagClick={(tag) => setSearched(tag)}
-                    linkToChildren={props.linkToChildren}
-                  />
-                );
-              }}
-            />
-          </div>
+                    )
+                  }
+                  regenerateSecret={() => regenerateApiKeySecret(subscription)}
+                  transferKey={() => transferApiKey(subscription)}
+                  handleTagClick={(tag) => setSearched(tag)}
+                  linkToChildren={props.linkToChildren}
+                />
+              );
+            }}
+          />
         </div>
       </Can>
     );

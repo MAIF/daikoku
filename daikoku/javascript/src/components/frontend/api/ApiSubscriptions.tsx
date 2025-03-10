@@ -17,11 +17,10 @@ type ApiSubscriptions = {
 
 
 export const ApiSubscriptions = (props: ApiSubscriptions) => {
-  const navigate = useNavigate();
 
   const { translate, Translation } = useContext(I18nContext);
 
-  const [selectedTeam, setSelectedTeam] = useState<ITeamSimple>()
+  const [selectedTeam, setSelectedTeam] = useState<ITeamSimple>(props.subscribingTeams[0])
 
   const subscriptionsQuery = useQuery({
     queryKey: ["subscriptions", selectedTeam?._id],
@@ -32,9 +31,29 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
   return (
     <div>
       <Select
+        className='col-3'
         placeholder={translate('api.subscriptions.team.select.placeholder')}
         options={props.subscribingTeams.map(value => ({ label: value.name, value: value }))}
-        onChange={t => setSelectedTeam(t?.value)} />
+        onChange={t => setSelectedTeam(t?.value!)}
+        value={{ label: selectedTeam.name, value: selectedTeam }}
+        styles={{
+          valueContainer: (baseStyles) => ({
+            ...baseStyles,
+            display: 'flex'
+          }),
+        }}
+        components={{
+          IndicatorSeparator: () => null,
+          SingleValue: (props) => {
+            return <div className='d-flex align-items-center m-0' style={{
+              gap: '.5rem'
+            }}>
+              <span className={`badge badge-custom`}>
+                {'TEAM'}
+              </span>{props.data.label}
+            </div>
+          }
+        }} />
 
       {subscriptionsQuery.isLoading && <Spinner />}
 

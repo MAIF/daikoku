@@ -27,7 +27,7 @@ export const ApiHome = ({
 
   const { tenant } = useContext(GlobalContext);
   const { openRightPanel } = useContext(ModalContext);
-  const { apiGroup, setApiGroup } = useContext(NavContext);
+  const { setApiGroup } = useContext(NavContext);
 
   const navigate = useNavigate();
   const defaultParams = useParams();
@@ -253,19 +253,6 @@ export const ApiHome = ({
             </div>
           </div>
         </div>
-        {apiGroup && (
-          <div className='d-flex justify-content-between align-items-center api-group-info'>
-            <span><i className='fas fa-circle-arrow-left cursor-pointer' onClick={() => {
-              setApiGroup(undefined);
-              navigate(`/${ownerTeam._humanReadableId}/${apiGroup._humanReadableId}/${apiGroup.currentVersion}/apis`)
-            }} />{apiGroup.name}</span>
-            <button className='btn btn-outline-info'
-              onClick={() => {
-                setApiGroup(undefined);
-                navigate(`/${ownerTeam._humanReadableId}/${apiGroup._humanReadableId}/${apiGroup.currentVersion}/apis`)
-              }}>retour</button>
-          </div>
-        )}
       </main>);
   }
 };
