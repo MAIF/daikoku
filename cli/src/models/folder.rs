@@ -9,7 +9,7 @@ use std::{
     str::FromStr,
 };
 
-use crate::logging::error::{DaikokuCliError, DaikokuResult};
+use crate::{logging::error::{DaikokuCliError, DaikokuResult}, utils::new_custom_ini_file};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub(crate) struct CmsFile {
@@ -158,7 +158,7 @@ fn read_api_folder(path: &PathBuf) -> DaikokuResult<Vec<CmsFile>> {
                     ".daikoku_data".to_string(),
                     ".metadata".to_string(),
                 );
-                let mut data = Ini::new();
+                let mut data = new_custom_ini_file();
                 let data = Ini::read(&mut data, daikoku_data_file.content).map_err(|_err| {
                     DaikokuCliError::FileSystem(format!(
                         "unable to read daikoku_data file in {:#?}",

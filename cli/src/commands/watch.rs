@@ -307,8 +307,6 @@ async fn forward_api_call(
 
     let status = status.as_u16();
 
-    println!("{:?}", _headers);
-
     if status >= 300 && status < 400 {
         Ok(Response::new(Full::new(Bytes::from(
             "Authentication needed! Refresh this page once done",
@@ -405,8 +403,14 @@ async fn render_page(
     let mut builder = reqwest::Client::new()
         .post(url)
         .header(header::HOST, host)
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(body);
+        .header(header::CONTENT_TYPE, "application/json");
+
+    
+    if let Ok(cookie) = read_cookie_from_environment(false) {
+        builder = builder.header(header::COOKIE, cookie);
+    }
+
+    builder = builder.body(body);
 
     if authentication && page.authenticated() {
         match read_cookie_from_environment(true) {
