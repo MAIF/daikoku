@@ -1367,6 +1367,7 @@
     "apikeys.view.apikeys": "View APIkeys",
     "subscription.for": "Subscription to",
     "subscription.created.at": "created on %s",
+    "subscription.extra.resources.label": "Additional accessible resources",
     "subscription.valid.until": "valid until %s",
     "subscription.nota.part.1": "Check out the documentation",
     "subscription.nota.part.2": "or explore",

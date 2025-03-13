@@ -150,7 +150,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
 
 
   const subsQuery = useQuery({
-    queryKey: ['data', 'subscriptions'],
+    queryKey: ['data', 'subscriptions', props.team, props.api],
     queryFn: () =>
       Services.getTeamSubscriptions(
         props.api._humanReadableId,
@@ -468,7 +468,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                   currentTeam={props.team}
                   apiLink={apiLink}
                   statsLink={`/${props.team._humanReadableId}/settings/apikeys/${props.api._id}/${props.api.currentVersion}/subscription/${subscription._id}/consumptions`}
-                  key={subscription.apiKey.clientId}
+                  key={subscription._id}
                   subscription={subscription}
                   subscribedApis={subscribedApis}
                   updateCustomName={(name) =>
@@ -632,10 +632,11 @@ export const ApiKeyCard = ({
     }
     `;
 
+    console.debug({team: currentTeam?._id, subscription})
   const detailQuery = useQuery({
-    queryKey: ['parent', subscription],
+    queryKey: ['parent', subscription._id, currentTeam?._id ?? 'no-team'],
     queryFn: () => customGraphQLClient.request<{ apiSubscriptionDetails: IApiSubscriptionDetails }>(API_SUBSCRIPTION_DETAIL_QUERY, {
-      subscriptionId: subscription._id, teamId: currentTeam?._id
+      subscriptionId: subscription._id, teamId: currentTeam?._id ?? 'no-team'
     }),
     select: d => d.apiSubscriptionDetails,
   })
@@ -819,7 +820,7 @@ export const ApiKeyCard = ({
                 })}</span>
             </div>
             <div className='api-subscription__infos__creation'>
-              other accessible resources : {getPartOfChildren(0, nbChildsDisplay)}
+              {!!detailQuery.data.accessibleResources.length && <span>{translate('subscription.extra.resources.label')} : {getPartOfChildren(0, nbChildsDisplay)}</span>}
               {detailQuery.data.accessibleResources.length > nbChildsDisplay && (<i className={classNames("ms-1 fas cursor-pointer a-fake", {
                 "fa-chevron-down": !more,
                 "fa-chevron-up": more,
