@@ -210,27 +210,56 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
     );
   };
 
-  const makeUniqueApiKey = (subscription: ISubscription) => {
-    confirm({
-      message: translate('team_apikey_for_api.ask_for_make_unique'),
-    }).then((ok) => {
-      if (ok)
-        Services.makeUniqueApiKey(props.team._id, subscription._id).then(
-          () => {
-            queryClient.invalidateQueries({
-              queryKey: ['data', 'subscriptions'],
-            });
-            toast.success(
-              translate(
-                'team_apikey_for_api.ask_for_make_unique.success_message'
-              )
-            );
+  const makeUniqueApiKey = (subscription: ISubscription, details: IApiSubscriptionDetails) => {
+
+    openFormModal(
+      {
+        title: translate("apikeys.delete.confirm.modal.title"),
+        description: <div className="alert alert-danger" role="alert">
+          <h4 className="alert-heading">{translate('Warning')}</h4>
+          <p>{translate('team_apikey_for_api.ask_for_make_unique')}</p>
+          <ul>
+            <li dangerouslySetInnerHTML={{ __html: translate({ key: 'team_apikey_for_api.ask_for_make_unique.2', replacements: [
+              `<strong>${details.parentSubscription?.api.name}/${details.parentSubscription?.plan.customName}</strong>`
+            ]})}}></li>
+            <li dangerouslySetInnerHTML={{
+              __html: translate({
+                key: 'team_apikey_for_api.ask_for_make_unique.3', replacements: [
+                  `<strong>${details.apiSubscription.api.name}/${details.apiSubscription.plan.customName}</strong>`
+                ]
+})}}></li>
+          </ul>
+        </div>,
+        schema: {
+          validation: {
+            type: type.string,
+            label: translate({ key: "apikeys.delete.confirm.label", replacements: [`${details.apiSubscription.api.name}/${subscription.customName ?? details.apiSubscription.plan.customName}`] }),
+            constraints: [
+              constraints.required(translate('constraints.required.value')),
+              constraints.matches(new RegExp(`${escapeRegExp(details.apiSubscription.api.name)}/${escapeRegExp(subscription.customName) ?? escapeRegExp(details.apiSubscription.plan.customName)}`), translate('constraints.match.subscription'))
+            ],
+            defaultValue: ""
           }
-        );
-    });
+        },
+        actionLabel: translate('Confirm'),
+        onSubmit: () => Services.makeUniqueApiKey(props.team._id, subscription._id)
+          .then(
+            () => {
+              queryClient.invalidateQueries({
+                queryKey: ['data', 'subscriptions'],
+              });
+              toast.success(
+                translate(
+                  'team_apikey_for_api.ask_for_make_unique.success_message'
+                )
+              );
+            }
+          )
+      }
+    )
   };
 
-  const deleteApiKey = (subscription: ISubscriptionWithChildren) => {
+  const deleteApiKey = (subscription: ISubscriptionWithChildren, details: IApiSubscriptionDetails) => {
     const afterDeletionFunction = () => {
       queryClient.invalidateQueries({
         queryKey: ["data", "subscriptions"],
@@ -277,9 +306,32 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
             description: <div className="alert alert-danger" role="alert">
               <h4 className="alert-heading">{translate('Warning')}</h4>
               <p>{translate("delete.subscription.confirm.modal.description.1")}</p>
-              <ul>
-                <li>{translate("delete.subscription.confirm.modal.description.2")}</li>
-              </ul>
+              {!details.parentSubscription && choice === 'delete' && <>
+                <p>{translate("delete.subscription.confirm.modal.description.parent.deleteAll")}</p>
+                <p>{translate("delete.subscription.confirm.modal.description.parent.deleteAll.list")}</p>
+                <ul>
+                  {details.accessibleResources.map(resource => (<li>{resource.apiSubscription.api.name}/{resource.apiSubscription.plan.customName}</li>))}
+                </ul>
+              </>}
+
+              {!details.parentSubscription && choice === 'extraction' && <>
+                <p>{translate("delete.subscription.confirm.modal.description.parent.splitChildren")}</p>
+                <p>{translate("delete.subscription.confirm.modal.description.parent.splitChildren.list")}</p>
+                <ul>
+                  {details.accessibleResources.map(resource => (<li>{resource.apiSubscription.api.name}/{resource.apiSubscription.plan.customName}</li>))}
+                </ul>
+              </>}
+
+              {!details.parentSubscription && choice === 'promotion' &&
+                <p dangerouslySetInnerHTML={{
+                  __html: translate({
+                    key: "delete.subscription.confirm.modal.description.parent.promoteChild",
+                    replacements: [
+                      `<strong>${details.accessibleResources.find(r => r.apiSubscription._id === childId)?.apiSubscription.api.name}/${details.accessibleResources.find(r => r.apiSubscription._id === childId)?.apiSubscription.plan.customName}</strong>`,
+                      `<strong>${details.apiSubscription.api.name}/${details.apiSubscription.plan.customName}</strong>`
+                    ]
+                  })
+                }}></p>}
             </div>,
             schema: {
               validation: {
@@ -308,7 +360,19 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
             <h4 className="alert-heading">{translate('Warning')}</h4>
             <p>{translate("delete.subscription.confirm.modal.description.1")}</p>
             <ul>
-              <li>{translate("delete.subscription.confirm.modal.description.2")}</li>
+              {!details.parentSubscription && <p>{translate("delete.subscription.confirm.modal.description.single")}</p>}
+              {!!details.parentSubscription &&
+                <li dangerouslySetInnerHTML={{
+                  __html:
+                    translate({
+                      key: "delete.subscription.confirm.modal.description.child",
+                      replacements: [
+                        `<strong>${details.parentSubscription.api.name
+                        } / ${details.parentSubscription.plan.customName}</strong>`,
+                        `<strong>${details.apiSubscription.api.name}/${details.apiSubscription.plan.customName}</strong>`,
+                      ]
+                    })
+                }}></li>}
             </ul>
           </div>,
           schema: {
@@ -475,8 +539,8 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
                     updateCustomName(subscription, name)
                   }
                   toggle={() => toggleApiKey(subscription)}
-                  makeUniqueApiKey={() => makeUniqueApiKey(subscription)}
-                  deleteApiKey={() => deleteApiKey(subscription)}
+                  makeUniqueApiKey={(details: IApiSubscriptionDetails) => makeUniqueApiKey(subscription, details)}
+                  deleteApiKey={(detail: IApiSubscriptionDetails) => deleteApiKey(subscription, detail)}
                   toggleRotation={(
                     plan,
                     enabled,
@@ -516,8 +580,8 @@ type ApiKeyCardProps = {
   statsLink: string;
   apiLink: string;
   toggle: () => void;
-  makeUniqueApiKey: () => void;
-  deleteApiKey: () => void;
+  makeUniqueApiKey: (details: IApiSubscriptionDetails) => void;
+  deleteApiKey: (details: IApiSubscriptionDetails) => void;
   toggleRotation: (
     plan: IUsagePlan,
     enabled: boolean,
@@ -632,7 +696,7 @@ export const ApiKeyCard = ({
     }
     `;
 
-    console.debug({team: currentTeam?._id, subscription})
+  console.debug({ team: currentTeam?._id, subscription })
   const detailQuery = useQuery({
     queryKey: ['parent', subscription._id, currentTeam?._id ?? 'no-team'],
     queryFn: () => customGraphQLClient.request<{ apiSubscriptionDetails: IApiSubscriptionDetails }>(API_SUBSCRIPTION_DETAIL_QUERY, {
@@ -914,13 +978,13 @@ export const ApiKeyCard = ({
             </span>}
             {subscription.parent && <span
               className="dropdown-item cursor-pointer danger"
-              onClick={makeUniqueApiKey}
+              onClick={() => makeUniqueApiKey(detailQuery.data)}
             >
               {translate("subscription.extract.button.label")}
             </span>}
             <span
               className="dropdown-item cursor-pointer danger"
-              onClick={deleteApiKey}
+              onClick={() => deleteApiKey(detailQuery.data)}
             >
               {translate("subscription.delete.button.label")}
             </span>

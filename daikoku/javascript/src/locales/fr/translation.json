@@ -955,7 +955,9 @@
   "disabled.due.to.aggregation.security": "désactivé en raison de l'activation de l'aggégation des clés",
   "I understood": "J'ai compris",
   "team_apikey_for_api.make_unique": "Rendre unique",
-  "team_apikey_for_api.ask_for_make_unique": "Êtes-vous sûr de vouloir séparer cette clé d'API de la clé parente et d'en créer une nouvelle ?",
+  "team_apikey_for_api.ask_for_make_unique": "Êtes-vous sûr de vouloir séparer cette clé d'API de la clé parente et d'en créer une nouvelle ? cette action est irréversible. Elle aura pour effet :",
+  "team_apikey_for_api.ask_for_make_unique.2": "La mise à jour de la souscription parent associée à l'API %s.",
+  "team_apikey_for_api.ask_for_make_unique.3": "La création d'une nouvelle souscription pour l'API %s.",
   "team_apikey_for_api.ask_for_make_unique.success_message": "La clé d'API a correctement été séparée de la clé parent.",
   "team_api_info.isDefault": "Utiliser comme dernière version",
   "request_api_access": "Vous devez être autorisé pour visualiser cette API.",
@@ -1435,8 +1437,20 @@
   "delete.user.confirm.modal.description.2": "Toutes les souscriptions et clés API associées à cet utilisateur.",
   "delete.user.confirm.modal.description.3": "Toutes les API gérées par cet utilisateur.",
   "delete.user.confirm.modal.description.4": "Toutes les souscriptions aux API gérées par cet utilisateur.",
-  "delete.subscription.confirm.modal.description.1": "Êtes-vous sûr de vouloir supprimer cette souscription ? Cette action est irréversible et entraînera la suppression de :",
-  "delete.subscription.confirm.modal.description.2": "La clé API associée à cette souscription.",
+  "delete.subscription.confirm.modal.description.1": "Êtes-vous sûr de vouloir supprimer cette souscription ? Cette action est irréversible.",
+
+  "delete.subscription.confirm.modal.description.single": "Cette action entraînera la suppression définitve de la clé d'API associée.",
+
+  "delete.subscription.confirm.modal.description.child": "La clé d'API parent associé à l'API %s sera mise à jour et ne permettra plus l'accès à l'APi %s.",
+
+  "delete.subscription.confirm.modal.description.parent.deleteAll": "Toutes les souscriptions et clés API associées seront également supprimées de manière irréversible.",
+  "delete.subscription.confirm.modal.description.parent.deleteAll.list": "Souscriptions concernées :",
+
+  "delete.subscription.confirm.modal.description.parent.promoteChild": "La souscription à %s a été désignée comme nouveau parent. Les ressources associées resteront inchangées sauf l'access à %s.",
+
+  "delete.subscription.confirm.modal.description.parent.splitChildren": "Les souscriptions enfants deviendront autonomes et de nouvelles clés d'API individuelles seront générées.",
+  "delete.subscription.confirm.modal.description.parent.splitChildren.list": "Nouvelles souscriptions générées pour les ressources :",
+
   "delete.plan.confirm.modal.description.1": "Êtes-vous sûr de vouloir supprimer ce plan ? Cette action est irréversible et entraînera la suppression de :",
   "delete.plan.confirm.modal.description.2": "Toutes les clés d'API associées à ce plan.",
   "delete.environment.confirm.modal.description.1": "Êtes-vous sûr de vouloir supprimer cet environnement ? Cette action est irréversible et entraînera la suppression de :",
