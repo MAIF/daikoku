@@ -696,7 +696,6 @@ export const ApiKeyCard = ({
     }
     `;
 
-  console.debug({ team: currentTeam?._id, subscription })
   const detailQuery = useQuery({
     queryKey: ['parent', subscription._id, currentTeam?._id ?? 'no-team'],
     queryFn: () => customGraphQLClient.request<{ apiSubscriptionDetails: IApiSubscriptionDetails }>(API_SUBSCRIPTION_DETAIL_QUERY, {
