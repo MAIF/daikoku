@@ -1791,6 +1791,29 @@ object SchemaDefinition {
       ReplaceField("total", Field("total", LongType, resolve = _.value.total))
     )
 
+    lazy val AccessibleResourceType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionAccessibleResource] =
+      ObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionAccessibleResource](
+        "ApiSubscriptionAccessibleResource",
+        "A Daikoku Api Subscription accessible resource",
+        () =>
+          fields[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionAccessibleResource](
+            Field("apiSubscription", ApiSubscriptionType, resolve = _.value.apiSubscription),
+            Field("api", ApiType, resolve = _.value.api),
+            Field("usagePlan", UsagePlanType, resolve = _.value.usagePlan)
+          ))
+
+    lazy val ApiSubscriptionDetailType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionDetail] =
+      ObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionDetail](
+        "ApiSubscriptionDetail",
+        "A Daikoku Api Subscription detail (with parent and accessible resources)",
+        () =>
+          fields[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionDetail](
+            Field("apiSubscription", ApiSubscriptionType, resolve = _.value.apiSubscription),
+            Field("parentSubscription", OptionType(ApiSubscriptionType), resolve = _.value.parentSubscription),
+            Field("accessibleResources", ListType(AccessibleResourceType), resolve = _.value.accessibleResources)
+
+          ))
+
     lazy val NotificationWithCountType = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       NotificationWithCount
@@ -3151,6 +3174,11 @@ object SchemaDefinition {
       OptionInputType(StringType),
       description = "The id of the team"
     )
+    val SUBSCRIPTION_ID = Argument(
+      "subscriptionId",
+      StringType,
+      description = "The id of the subscription"
+    )
     val TEAM_ID_NOT_OPT =
       Argument("teamId", StringType, description = "The id of the team")
     val PLAN_ID_OPT = Argument(
@@ -3367,6 +3395,11 @@ object SchemaDefinition {
           case Right(value) => value
           case Left(r)      => throw NotAuthorizedError(r.toString)
         }
+    }
+
+    def getSubscriptionDetails(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
+                               subscriptionId: String, teamId: String) = {
+      CommonServices.getApiSubscriptionDetails(subscriptionId, teamId)(ctx.ctx._2, env, e)
     }
 
     def apiQueryFields()
@@ -3708,6 +3741,27 @@ object SchemaDefinition {
         ctx => repo(ctx).forTenant(ctx.ctx._2.tenant)
       )
 
+    def getSubscriptionDetailsFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+      List(
+        Field(
+          "apiSubscriptionDetails",
+          ApiSubscriptionDetailType,
+          arguments =
+            SUBSCRIPTION_ID :: TEAM_ID_NOT_OPT :: Nil,
+          resolve = ctx => {
+            getSubscriptionDetails(
+              ctx,
+              ctx.arg(SUBSCRIPTION_ID),
+              ctx.arg(TEAM_ID_NOT_OPT)
+            ).map {
+              case Right(details) => details
+              case Left(error) =>
+                throw NotAuthorizedError(error.getErrorMessage())
+            }
+          }
+        )
+      )
+
     def allFields()
         : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
@@ -3748,7 +3802,7 @@ object SchemaDefinition {
       Schema(ObjectType("Query",
         () => fields[(DataStore, DaikokuActionContext[JsValue]), Unit](allFields() ++
           teamQueryFields() ++
-          apiQueryFields()++
+          apiQueryFields() ++
           apiWithSubscriptionsQueryFields() ++
           subscriptionDemandsForTeamAdmin() ++
           teamSubscriptionDemands() ++
@@ -3759,6 +3813,7 @@ object SchemaDefinition {
           teamIncomeQuery() ++
           myNotificationQuery() ++
           allTeamsQuery() ++
+          getSubscriptionDetailsFields() ++
           cmsPageFields():_*)
       )),
       DeferredResolver.fetchers(teamsFetcher, usersFetcher, apisFetcher)

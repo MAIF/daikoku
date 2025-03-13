@@ -18,6 +18,7 @@ import * as Services from '../../../services';
 import {
   IApi,
   IApiGQL,
+  IApiSubscriptionDetails,
   IRotation,
   ISubscription,
   ISubscriptionExtended,
@@ -35,6 +36,8 @@ import {
   read
 } from '../../utils';
 import { apiGQLToLegitApi } from '../../utils/apiUtils';
+import { GraphQLClient } from 'graphql-request';
+import { IApiSubscriptionGql } from '../apis/TeamApiSubscriptions';
 
 type ISubscriptionWithChildren = ISubscriptionExtended & {
   children: Array<ISubscriptionExtended>;
@@ -546,30 +549,105 @@ export const ApiKeyCard = ({
   handleTagClick,
   linkToChildren
 }: ApiKeyCardProps) => {
-  const apiKeyValues = {
-    apikey: `${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`,
-    token: subscription.integrationToken,
-    basicAuth: `Basic ${btoa(`${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`)}`,
-  };
-
-  const { translate, Translation } = useContext(I18nContext);
-  const { openFormModal, openRightPanel, closeRightPanel, openCustomModal } = useContext(ModalContext);
+  const { translate } = useContext(I18nContext);
+  const { openFormModal, closeRightPanel, openCustomModal } = useContext(ModalContext);
   const { tenant } = useContext(GlobalContext);
 
-  const planQuery = useQuery({
-    queryKey: ['plan', subscription.plan],
-    queryFn: () =>
-      Services.getVisiblePlan(api._id, api.currentVersion, subscription.plan),
-  });
+  const [more, setMore] = useState(false)
 
-  if (planQuery.isLoading) {
+  const graphqlEndpoint = `${window.location.origin}/api/search`;
+  const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
+  const API_SUBSCRIPTION_DETAIL_QUERY = `
+    query getApiSubscriptionDetails ($subscriptionId: String!, $teamId: String!) {
+      apiSubscriptionDetails (subscriptionId: $subscriptionId, teamId: $teamId) {
+        apiSubscription {
+          _id
+          api { name }
+          plan { 
+            customName
+            autoRotation
+          }
+          parent { _id }
+          customName
+        }
+        parentSubscription {
+          _id
+          customName
+          api {
+            _id
+            _humanReadableId
+            name
+            tenant {
+              id
+            }
+            team {
+              _id
+              _humanReadableId
+            }
+            currentVersion
+          }
+          plan {
+            customName
+          }
+        }
+        accessibleResources {
+          api {
+            _id
+            _humanReadableId
+            name
+            tenant { 
+              id 
+            }
+            team { 
+              _id
+              _humanReadableId
+            }
+            currentVersion
+          }
+          apiSubscription {
+            _id
+            customName
+            api { 
+              _id
+              name
+            }
+            tenant {
+              id
+            }
+            team {
+              _id
+              _humanReadableId
+            }
+            plan { 
+              _id  
+              customName 
+            }
+          }
+          usagePlan {
+            _id
+            customName
+          }
+        }
+      }
+    }
+    `;
+
+  const detailQuery = useQuery({
+    queryKey: ['parent', subscription],
+    queryFn: () => customGraphQLClient.request<{ apiSubscriptionDetails: IApiSubscriptionDetails }>(API_SUBSCRIPTION_DETAIL_QUERY, {
+      subscriptionId: subscription._id, teamId: currentTeam?._id
+    }),
+    select: d => d.apiSubscriptionDetails,
+  })
+
+  if (detailQuery.isLoading) {
     return (
       <div className="col-12 col-sm-6 col-md-4 mb-2">
         <Spinner />
       </div>
     );
-  } else if (planQuery.data && !isError(planQuery.data)) {
-    const plan = planQuery.data;
+  } else if (detailQuery.data) {
+    const plan = detailQuery.data.apiSubscription.plan;
 
     const settingsSchema = {
       enabled: {
@@ -615,7 +693,25 @@ export const ApiKeyCard = ({
 
     const disableRotation = api.visibility === 'AdminOnly' || !!plan.autoRotation;
 
-    const _customName = subscription.customName || planQuery.data.customName
+    const _customName = subscription.customName || plan.customName
+
+    const nbChildsDisplay = 2;
+    const getPartOfChildren = (start: number, end: number) => [...detailQuery.data.accessibleResources]
+      .splice(start, end)
+      .map((detail) => {
+        return (
+          <Link
+            key={`${subscription._id}-${detail.apiSubscription._id}`}
+            className='ms-1'
+            onClick={closeRightPanel}
+            to={linkToChildren ?
+              linkToChildren(apiGQLToLegitApi(detail.api, tenant), detail.api.team._humanReadableId) :
+              `/${currentTeam?._humanReadableId}/settings/apikeys/${detail.api._humanReadableId}/${api!.currentVersion}`}
+          >
+            {`${detail.api.name}/${detail.usagePlan.customName}`}
+          </Link>
+        );
+      })
 
     return (
       <div className='api-subscription'>
@@ -722,6 +818,14 @@ export const ApiKeyCard = ({
                   key: 'subscription.valid.until', replacements: [moment(subscription.validUntil).format(translate('moment.date.format.without.hours'))]
                 })}</span>
             </div>
+            <div className='api-subscription__infos__creation'>
+              other accessible resources : {getPartOfChildren(0, nbChildsDisplay)}
+              {detailQuery.data.accessibleResources.length > nbChildsDisplay && (<i className={classNames("ms-1 fas cursor-pointer a-fake", {
+                "fa-chevron-down": !more,
+                "fa-chevron-up": more,
+              })} onClick={() => setMore(!more)} />)}
+              {more && (<div className='ms-4'>{getPartOfChildren(nbChildsDisplay, detailQuery.data.accessibleResources.length)}</div>)}
+            </div>
             <div>
               {subscription.tags.map(t => (<span className='badge badge-custom me-1 cursor-pointer' onClick={() => handleTagClick(t)}>{t}</span>))}
             </div>
@@ -769,35 +873,6 @@ export const ApiKeyCard = ({
             >
               {translate("subscription.custom.name.update.label")}
             </span>
-
-            {subscription.children.length > 0 && <span
-              className="dropdown-item cursor-pointer"
-              onClick={() => openRightPanel({
-                title: translate('team_apikey_aggregatePlans_title'), content: <div className="text-center">
-                  <div>
-                    {subscription.children.map((aggregate) => {
-                      const api = subscribedApis.find(
-                        (a) => a._id === aggregate.api
-                      );
-                      return (
-                        <div key={aggregate._id}>
-                          <Link
-                            onClick={closeRightPanel}
-                            to={linkToChildren ?
-                              linkToChildren(apiGQLToLegitApi(api!, tenant), api!.team._humanReadableId) :
-                              `/${currentTeam?._humanReadableId}/settings/apikeys/${aggregate._humanReadableId}/${api!.currentVersion}`}
-                          >
-                            {`${aggregate.apiName}/${aggregate.planName}`}
-                          </Link>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              })}
-            >
-              {translate("subscription.show.aggregate.label")}
-            </span>}
             <div className="dropdown-divider" />
             {!subscription.parent && !disableRotation && <span
               className="dropdown-item cursor-pointer"

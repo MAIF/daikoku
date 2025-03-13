@@ -3922,6 +3922,62 @@ object json {
           "date" -> o.date
         )
     }
+
+  val ApiSubscriptionDetailFormat = new Format[ApiSubscriptionDetail] {
+    override def reads(json: JsValue): JsResult[ApiSubscriptionDetail] =
+      Try {
+        JsSuccess(
+          ApiSubscriptionDetail(
+            apiSubscription = (json \ "apiSubscription").as(ApiSubscriptionFormat),
+            parentSubscription = (json \ "parentSubscription").asOpt(ApiSubscriptionFormat),
+            accessibleResources = (json \ "accessibleResources").as(SeqApiSubscriptionAccessibleResourceFormat)
+          )
+        )
+      } recover {
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
+
+
+    override def writes(o: ApiSubscriptionDetail): JsValue =
+      Json.obj(
+        "apiSubscription" -> o.apiSubscription.asJson,
+        "parentSubscription" -> o.parentSubscription.map(_.asJson).getOrElse(JsNull).as[JsValue],
+        "accessibleResources" -> SeqApiSubscriptionAccessibleResourceFormat.writes(o.accessibleResources)
+      )
+  }
+
+  val ApiSubscriptionAccessibleResourceFormat = new Format[ApiSubscriptionAccessibleResource] {
+    override def reads(json: JsValue): JsResult[ApiSubscriptionAccessibleResource] =
+      Try {
+        JsSuccess(
+          ApiSubscriptionAccessibleResource(
+            apiSubscription = (json \ "apiSubscription").as(ApiSubscriptionFormat),
+            api = (json \ "api").as(ApiFormat),
+            usagePlan = (json \ "usagePlan").as(UsagePlanFormat)
+
+          )
+        )
+      } recover {
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiSubscriptionAccessibleResource): JsValue =
+      Json.obj(
+        "apiSubscription" -> o.apiSubscription.asJson,
+        "api" -> o.api.asJson,
+        "usagePlan" -> o.usagePlan.asJson
+      )
+  }
+
+  val SeqApiSubscriptionAccessibleResourceFormat = Format(
+    Reads.seq(ApiSubscriptionAccessibleResourceFormat),
+    Writes.seq(ApiSubscriptionAccessibleResourceFormat)
+  )
+
   val SeqOtoroshiSettingsFormat = Format(
     Reads.seq(OtoroshiSettingsFormat),
     Writes.seq(OtoroshiSettingsFormat)

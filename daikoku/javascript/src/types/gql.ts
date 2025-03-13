@@ -1,3 +1,4 @@
+import { IApiSubscriptionGql } from '../components';
 import { ApiState, IApi, IAuthorizedEntities, IIssuesTag } from './api';
 import { ITeamSimple, IUser, TeamPermission, TeamUser } from './team';
 import { ITenant } from './tenant';
@@ -62,4 +63,15 @@ export interface IApiGQL {
   apis: Array<IApi>;
   authorizedTeams: Array<{ _id: string; name: string }>;
   stars: number;
+}
+
+export interface IApiSubscriptionDetails {
+  apiSubscription: IApiSubscriptionGql
+  parentSubscription?: IApiSubscriptionGql
+  accessibleResources: Array<{
+    apiSubscription: IApiSubscriptionGql,
+    api: IApiGQL,
+    usagePlan: IUsagePlanGQL
+  }>
+
 }

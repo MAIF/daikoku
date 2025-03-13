@@ -10,6 +10,8 @@ import { CustomSubscriptionData } from "../../../contexts/modals/SubscriptionMet
 import * as Services from "../../../services";
 import {
   IApi,
+  IApiGQL,
+  IBaseUsagePlan,
   isError,
   ISubscriptionCustomization,
   ITeamSimple,
@@ -36,19 +38,14 @@ type SubscriptionsFilter = {
   tags: Array<string>;
   clientIds: Array<string>;
 };
-type LimitedPlan = {
-  _id: string;
-  customName?: string;
-  type: string;
-};
-interface IApiSubscriptionGql extends ISubscriptionCustomization {
+export interface IApiSubscriptionGql extends ISubscriptionCustomization {
   _id: string;
   apiKey: {
     clientName: string;
     clientId: string;
     clientSecret: string;
   };
-  plan: LimitedPlan;
+  plan: IUsagePlan;
   team: {
     _id: string;
     name: string;
@@ -56,9 +53,7 @@ interface IApiSubscriptionGql extends ISubscriptionCustomization {
   };
   createdAt: string;
   validUntil: number;
-  api: {
-    _id: string;
-  };
+  api: IApiGQL;
   customName: string;
   enabled: boolean;
   customMetadata?: JSON;
@@ -410,7 +405,7 @@ export const TeamApiSubscriptions = ({
         key: "secret.refresh.confirm",
         replacements: [
           sub.team.name,
-          plan.customName ? plan.customName : plan.type,
+          plan.customName,
         ],
       }),
       okLabel: translate("Yes"),
@@ -441,7 +436,7 @@ export const TeamApiSubscriptions = ({
         key: "api.delete.subscription.message",
         replacements: [
           sub.team.name,
-          sub.plan.customName ? sub.plan.customName : sub.plan.type,
+          sub.plan.customName,
         ],
       }),
       okLabel: translate("Yes"),

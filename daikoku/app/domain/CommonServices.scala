@@ -1,23 +1,13 @@
 package fr.maif.otoroshi.daikoku.domain
 
+import cats.data.EitherT
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  TeamAdminOnly,
-  _PublicUserAccess,
-  _TeamAdminOnly,
-  _TeamApiEditorOnly,
-  _TeamMemberOnly,
-  _TenantAdminAccessTenant,
-  _UberPublicUserAccess
-}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{TeamAdminOnly, _PublicUserAccess, _TeamAdminOnly, _TeamApiEditorOnly, _TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.joda.time.DateTime
@@ -782,6 +772,42 @@ object CommonServices {
       } yield {
         Right(subs)
       }
+    }
+  }
+
+  def getApiSubscriptionDetails(apiSubscriptionId: String, teamId: String)(
+    implicit
+    ctx: DaikokuActionContext[JsValue],
+    env: Env,
+    ec: ExecutionContext
+  ) = {
+    _TeamMemberOnly(
+      teamId,
+      AuditTrailEvent(
+        s"@{user.name} has accessed one api @{api.name} - @{api.id} of @{team.name} - @{team.id}"
+      )
+    )(ctx) { _ =>
+
+      val sql =
+        """
+          |SELECT row_to_json(_.*) as detail
+          |FROM (SELECT s.content as "apiSubscription",
+          |             a.content as api,
+          |             p.content as "usagePlan"
+          |      FROM api_subscriptions s
+          |               JOIN apis a ON s.content ->> 'api' = a._id
+          |               JOIN usage_plans p ON s.content ->> 'plan' = p._id
+          |      WHERE (s._id = $1 OR s.content ->> 'parent' = $1) AND s._id <> $2) _;
+          |""".stripMargin
+
+      (for {
+        sub <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findById(apiSubscriptionId), AppError.EntityNotFound("ApiSubscription"))
+        maybeParent <- sub.parent.map(p => EitherT.liftF[Future, AppError, Option[ApiSubscription]](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findById(p))).getOrElse(EitherT.pure[Future, AppError](None))
+        accessibleResources <- EitherT.liftF[Future, AppError, Seq[JsValue]](env.dataStore.queryRaw(sql, "detail", Seq(maybeParent.map(_.id.value).getOrElse(sub.id.value), sub.id.value)))
+          .map(r => json.SeqApiSubscriptionAccessibleResourceFormat.reads(JsArray(r)).getOrElse(Seq.empty))
+      } yield ApiSubscriptionDetail(apiSubscription = sub, parentSubscription = maybeParent, accessibleResources = accessibleResources))
+        .value
+
     }
   }
 
