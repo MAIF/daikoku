@@ -1,3 +1,4 @@
+import { yupResolver } from '@hookform/resolvers/yup';
 import { constraints, Flow, Form, format, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
@@ -5,14 +6,19 @@ import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
 import find from 'lodash/find';
 import { nanoid } from 'nanoid';
-import { memo, useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
+import MinusCircle from 'react-feather/dist/icons/minus-circle';
 import More from 'react-feather/dist/icons/more-vertical';
+import PlusCircle from 'react-feather/dist/icons/plus-circle';
+import { Controller, useFieldArray, useForm } from 'react-hook-form';
 import { Link, useMatch, useNavigate, useParams } from 'react-router-dom';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { toast } from 'sonner';
+import * as yup from 'yup';
 
 import { GraphQLClient } from 'graphql-request';
+import React from 'react';
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
@@ -30,12 +36,12 @@ import {
   IThirdPartyPaymentSettings,
   IUsagePlan
 } from '../../../types';
+import { Help } from '../../backoffice';
 import {
   access,
   api as API,
   apikey,
   Can,
-  cleanHash,
   isPublish,
   isSubscriptionProcessIsAutomatic,
   manage,
@@ -44,6 +50,7 @@ import {
   renderPricing,
   Spinner
 } from '../../utils';
+import { Collapse } from '../../utils/FormWithChoice';
 import { ApiDocumentation } from './ApiDocumentation';
 import { ApiRedoc } from './ApiRedoc';
 import { ApiSwagger } from './ApiSwagger';
@@ -282,10 +289,151 @@ export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate, owner
   );
 };
 
+type InternalState = { [x: string]: { key: string, value: any } };
+
+export const ObjectInput = (props: {
+  value?: object,
+  onChange?: (value: InternalState) => void,
+  defaultKeyValue?: { key: string, value: string },
+  className: string,
+  disabled?: boolean,
+  placeholderKey?: string,
+  placeholderValue?: string
+}) => {
+  const [internalState, setInternalState] = useState<InternalState>({})
+
+  useEffect(() => {
+    setInternalState(Object.fromEntries(
+      Object.entries(props.value || {})
+        .map(([key, value], idx) => [Date.now() + idx, { key, value }])
+    ))
+  }, [])
+
+  useEffect(() => {
+    if (props.value) {
+      const newState = props.value || {}
+
+      const previousState = Object.entries(internalState || {})
+        .reduce((acc, [_, item]) => {
+          if (item.key)
+            return ({ ...acc, [item.key]: item.value })
+          return acc
+        }, {})
+
+      if (newState !== previousState)
+        setInternalState(Object.fromEntries(
+          Object.entries(props.value || {})
+            .map(([key, value], idx) => [Date.now() + idx, { key, value }])
+        ))
+    }
+  }, [props.value])
+
+  const onChange = (state: InternalState) => {
+    props?.onChange?.(Object.values(state).reduce((acc, c) => ({
+      ...acc,
+      [c.key]: c.value
+    }), {}))
+  }
+
+  const changeValue = (id: string, newValue: string) => {
+    const newState = {
+      ...internalState,
+      [id]: { key: internalState[id].key, value: newValue }
+    }
+    setInternalState(newState)
+    onChange(newState)
+  };
+
+  const changeKey = (id: string, newValue: string) => {
+    const newState = {
+      ...internalState,
+      [id]: { key: newValue, value: internalState[id].value }
+    }
+    setInternalState(newState)
+    onChange(newState)
+  };
+
+  const addFirst = () => {
+    if (!internalState || Object.keys(internalState).length === 0) {
+      const newState = {
+        ...internalState,
+        [Date.now()]: props.defaultKeyValue || { key: '', value: '' }
+      }
+      setInternalState(newState)
+      onChange(newState)
+    }
+  };
+
+  const addNext = () => {
+    const newItem = props.defaultKeyValue || { key: '', value: '' };
+    const newState = {
+      ...internalState,
+      [Date.now()]: newItem
+    }
+    setInternalState(newState);
+    onChange(newState)
+  };
+
+  const remove = (removedId: string) => {
+    const newState = Object.fromEntries(Object.entries(internalState).filter(([id, _]) => id !== removedId))
+    setInternalState(newState)
+    onChange(newState)
+  };
+
+  return (
+    <div className={props.className}>
+      {Object.keys(internalState || {}).length === 0 && (
+        <button
+          disabled={props.disabled}
+          type="button"
+          className='mrf-flex mrf-btn mrf-btn_blue mrf-btn_sm'
+          onClick={addFirst}>
+          <PlusCircle />
+        </button>
+      )}
+      {Object.entries(internalState || {}).map(([id, { key, value }], idx) => (
+        <div className='mrf-flex mrf-mt_5' key={idx}>
+          <input
+            disabled={props.disabled}
+            type="text"
+            className='mrf-w_50 mrf-input'
+            placeholder={props.placeholderKey}
+            value={key}
+            onChange={e => changeKey(id, e.target.value)}
+          />
+          <input
+            disabled={props.disabled}
+            type="text"
+            className='mrf-w_50 mrf-input'
+            placeholder={props.placeholderValue}
+            value={value}
+            onChange={e => changeValue(id, e.target.value)}
+          />
+          <button
+            disabled={props.disabled}
+            type="button"
+            className='mrf-flex mrf-ai_center mrf-btn mrf-btn_red mrf-btn_sm mrf-ml_10'
+            onClick={() => remove(id)}>
+            <MinusCircle />
+          </button>
+          {idx === Object.keys(internalState).length - 1 && (
+            <button
+              disabled={props.disabled}
+              type="button"
+              className='mrf-flex mrf-ai_center mrf-btn mrf-btn_blue mrf-btn_sm mrf-ml_5'
+              onClick={addNext}>
+              <PlusCircle />
+            </button>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export const CustomMetadataInput = (props: {
   value?: Array<{ key: string; possibleValues: Array<string> }>;
-  onChange?: (param: any) => void;
-  setValue?: (key: string, data: any) => void;
+  onChange: (param: any) => void;
   translate: (key: string) => string;
 }) => {
   const { alert } = useContext(ModalContext);
@@ -437,24 +585,24 @@ type MemoizedFormProps = {
   onSubmit: (plan: IUsagePlan) => void
 }
 
-const MemoizedForm = memo((props: MemoizedFormProps) => {
-  return (
-    <Form
-      schema={props.schema}
-      flow={props.flow}
-      onSubmit={props.onSubmit}
-      value={props.plan}
-      options={{
-        autosubmit: true,
-        actions: {
-          submit: {
-            display: false
-          }
-        }
-      }}
-    />
-  )
-}, (newPlan, oldPlan) => cleanHash(oldPlan) === cleanHash(newPlan))
+// const MemoizedForm = memo((props: MemoizedFormProps) => {
+//   return (
+//     <Form
+//       schema={props.schema}
+//       flow={props.flow}
+//       onSubmit={props.onSubmit}
+//       value={props.plan}
+//       options={{
+//         autosubmit: true,
+//         actions: {
+//           submit: {
+//             display: false
+//           }
+//         }
+//       }}
+//     />
+//   )
+// }, (newPlan, oldPlan) => cleanHash(oldPlan) === cleanHash(newPlan))
 
 const ApiPricingCard = (props: ApiPricingCardProps) => {
   const { Translation } = useContext(I18nContext);
@@ -944,7 +1092,517 @@ type UsagePlanFormProps = {
   plans: Array<IUsagePlan>
   onSubmit: (plan: IUsagePlan) => void
 }
-const UsagePlanForm = (props: UsagePlanFormProps) => {
+
+const httpMethods = [
+  '*',
+  'GET',
+  'HEAD',
+  'POST',
+  'PUT',
+  'DELETE',
+  'CONNECT',
+  'OPTIONS',
+  'TRACE',
+  'PATCH',
+]
+type PathesArrayProps = {
+  name: string,
+  control: any,
+  label: string
+}
+function PathesArray(props: PathesArrayProps) {
+  const { fields, append, remove } = useFieldArray({
+    control: props.control,
+    name: props.name,
+  });
+
+  return (
+    <>
+      <h2 className="text-xl font-bold">{props.label}</h2>
+
+      <div className="d-flex flex-column gap-2 align-items-center col-6">
+        {fields.map((field, index) => (
+          <div key={field.id} className="d-flex gap-2 flex-grow-1">
+            <Controller
+              name={`${props.name}.${index}.method`}
+              control={props.control}
+              render={({ field }) => (
+                <Select
+                  {...field}
+                  options={httpMethods.map((method) => ({
+                    value: method,
+                    label: method,
+                  }))}
+                  onChange={(selected) => field.onChange(selected?.value)}
+                  value={{ value: field.value, label: field.value }}
+                  className="w-32"
+                />
+              )}
+            />
+
+            <Controller
+              name={`${props.name}.${index}.path`}
+              control={props.control}
+              render={({ field }) => (
+                <input {...field} className="border p-1 rounded flex-grow-1" />
+              )}
+            />
+
+            <button
+              type="button"
+              className="bg-red-500 text-white px-2 py-1 rounded"
+              onClick={() => remove(index)}
+            >
+              ❌
+            </button>
+          </div>
+        ))}
+        <button
+          type="button"
+          className="px-4 py-2 rounded"
+          onClick={() => append({ method: "GET", path: "" })}
+        >
+          Ajouter un Path
+        </button>
+      </div>
+
+    </>
+  );
+}
+
+export const UsagePlanForm = (props) => {
+  const { tenant } = useContext(GlobalContext);
+  const { translate } = useContext(I18nContext);
+
+  const teamsQuery = useQuery({
+    queryKey: ['teams'],
+    queryFn: () => Services.teams(props.ownerTeam)
+  })
+
+  const otoroshiQuery = useQuery({
+    queryKey: ['otoroshis'],
+    queryFn: () => Services.allSimpleOtoroshis(
+      tenant._id,
+      props.ownerTeam
+    ).then((r) => (isError(r) ? [] : r))
+  })
+
+  // 🎯 Définition du schéma de validation avec Yup
+  const schema = yup.object({
+    customName: yup.string().required(translate("constraints.required.value")),
+    customDescription: yup.string(),
+    visibility: yup.string().oneOf(["Public", "Private"], translate("constraints.invalid.choice")).required(),
+    authorizedTeams: yup.array().of(yup.string()),
+
+    maxPerSecond: yup.number().nullable().min(1, translate("constraints.positive")),
+    maxPerDay: yup.number().nullable().min(1, translate("constraints.positive")),
+    maxPerMonth: yup.number().nullable().min(1, translate("constraints.positive")),
+
+    costPerMonth: yup.number().nullable().min(0, translate("constraints.positive")),
+    costPerRequest: yup.number().nullable().min(0, translate("constraints.positive")),
+
+    otoroshiTarget: yup.object({
+      otoroshiSettings: yup.string(),
+      authorizedEntities: yup.array().of(yup.string()).nullable(),
+      apikeyCustomization: yup.object({
+        clientIdOnly: yup.boolean(),
+        readOnly: yup.boolean(),
+        constrainedServicesOnly: yup.boolean(),
+        metadata: yup.object(),
+        customMetadata: yup.array().of(yup.object({ key: yup.string(), possibleValues: yup.array().of(yup.string()) }).required()),
+        tags: yup.array().of(yup.string().required()),
+        restrictions: yup.object({
+          enabled: yup.boolean(),
+          allowLast: yup.boolean(),
+          allowed: yup.array().of(yup.object({ method: yup.string(), path: yup.string() })),
+          forbidden: yup.array().of(yup.object({ method: yup.string(), path: yup.string() })),
+          notFound: yup.array().of(yup.object({ method: yup.string(), path: yup.string() }))
+        })
+      })
+    }).nullable(),
+  });
+
+  const { control, handleSubmit, watch, setValue, getValues } = useForm({
+    defaultValues: props.plan,
+    resolver: yupResolver(schema),
+  });
+
+
+  const isPrivatePlan = watch('visibility') === 'Private'
+  const otoroshiSettings = watch('otoroshiTarget.otoroshiSettings')
+  const restrictions = watch('otoroshiTarget.apikeyCustomization.restrictions')
+
+
+  const [quotasDisplayed, setQuotasDisplayed] = useState(!!props.plan.maxPerMonth);
+  const [billingDisplayed, setBillingDisplayed] = useState(!!props.plan.costPerMonth);
+
+  useEffect(() => {
+    if (!quotasDisplayed) {
+      setValue("maxPerSecond", null);
+      setValue("maxPerDay", null);
+      setValue("maxPerMonth", null);
+    }
+  }, [quotasDisplayed]);
+
+  useEffect(() => {
+    if (!billingDisplayed) {
+      setValue("costPerMonth", null);
+      setValue("costPerRequest", null);
+    }
+  }, [billingDisplayed]);
+
+  const onSubmit = (data) => {
+    console.log("Formulaire soumis", data);
+    props.onSubmit(data);
+  };
+
+  const teams = teamsQuery.data ? (isError(teamsQuery.data) ? [] : teamsQuery.data) : []
+  const otoroshis = otoroshiQuery.data ?? []
+  return (
+    <form onSubmit={handleSubmit(onSubmit)} onError={console.error} className="usage-plan-form-panel-content">
+      <div className="usage-plan-form">
+
+        <Controller
+          name="customName"
+          control={control}
+          render={({ field, fieldState }) => (
+            <div>
+              <label>{translate('Name')}</label>
+              <input {...field} placeholder={translate('Plan name')} className="form-control" />
+              {fieldState.error && <p className="error">{fieldState.error.message}</p>}
+            </div>
+          )}
+        />
+
+        <Controller
+          name="customDescription"
+          control={control}
+          render={({ field }) => (
+            <div>
+              <label>{translate('Description')}</label>
+              <textarea {...field} placeholder={translate('Plan description')} className="form-control" />
+            </div>
+          )}
+        />
+
+        <Controller
+          name="visibility"
+          control={control}
+          render={({ field }) => (
+            <div>
+              <label>{translate('Visibility')}</label>
+              <ToggleFormPartButton
+                value={field.value === 'Public'}
+                action={(value) => {
+                  if (value)
+                    setValue('authorizedTeams', [])
+                  field.onChange(value ? 'Public' : 'Private')
+                }}
+                falseLabel={"Privé"}
+                falseDescription={"seules les équipe authorisé peuvent voir le plan"}
+                trueLabel={"Public"}
+                trueDescription={"tout l mon peux voir et souscrire"}
+              />
+            </div>
+          )}
+        />
+
+        {!!isPrivatePlan && <Controller
+          name="authorizedTeams"
+          control={control}
+          render={({ field }) => (
+            <div>
+              <label>{translate('Authorized teams')}</label>
+              <Help message={translate('usage.plan.form.authorized.teams.help')} />
+              <Select
+                {...field}
+                options={teams.map((team) => ({
+                  value: team._id,
+                  label: team.name,
+                }))}
+                isMulti
+                closeMenuOnSelect={false}
+                onChange={(selectedOptions) => {
+                  field.onChange(selectedOptions.map((option) => option.value));
+                }}
+                value={teams
+                  .filter((team) => field.value.includes(team._id))
+                  .map((team) => ({ value: team._id, label: team.name }))}
+              />
+            </div>
+          )}
+        />}
+
+        <Collapse label={translate('Otoroshi target')} errored={false} collapsed={true}>
+          <Controller
+            name="otoroshiTarget.otoroshiSettings"
+            control={control}
+            render={({ field }) => (
+              <div>
+                <label>{translate('Otoroshi instances')}</label>
+                <Select
+                  {...field}
+                  isDisabled={!props.creation && !!props.plan?.otoroshiTarget?.otoroshiSettings}
+                  options={otoroshis.map((o) => ({
+                    value: o._id,
+                    label: o.url,
+                  }))}
+                  onChange={(selectedOptions) => {
+                    field.onChange(selectedOptions?.value);
+                  }}
+                  value={
+                    Option(otoroshis.find((o) => o._id === field.value))
+                      .map(o => ({ value: field.value, label: o.url }))
+                      .getOrNull()
+                  }
+                />
+              </div>
+            )}
+          />
+          {!!otoroshiSettings && <Controller
+            name='otoroshiTarget.authorizedEntities'
+            control={control}
+            render={({ field }) => (<>
+              <label>{translate('Authorized entities')}</label>
+              <Help message={translate('authorized.entities.help')} />
+              <OtoroshiEntitiesSelector rawValues={getValues()} onChange={field.onChange} translate={translate} ownerTeam={props.ownerTeam} />
+            </>)}
+          />}
+        </Collapse>
+
+        {!!otoroshiSettings && <Collapse label={translate("usage.plan.form.customization.flow.label")} errored={false} collapsed={true}>
+
+          <Controller
+            name="otoroshiTarget.apikeyCustomization.clientIdOnly"
+            control={control}
+            render={({ field }) => (
+              <div>
+                <label>{translate('client id only')}</label>
+                <ToggleFormPartButton
+                  value={field.value}
+                  action={field.onChange}
+                  trueLabel={"client id only"}
+                  trueDescription={"pas besoin de secret"}
+                  falseLabel={"client id and client secret"}
+                  falseDescription={"il faut le id et le secret"}
+                />
+              </div>
+            )}
+          />
+
+          <Controller
+            name="otoroshiTarget.apikeyCustomization.readOnly"
+            control={control}
+            render={({ field }) => (
+              <div>
+                <label>{translate('clientIdOnly')}</label>
+                <ToggleFormPartButton
+                  value={field.value}
+                  action={field.onChange}
+                  trueLabel={"read only"}
+                  trueDescription={"just des get"}
+                  falseLabel={"read & write"}
+                  falseDescription={"RestFull"}
+                />
+              </div>
+            )}
+          />
+          <Controller
+            name="otoroshiTarget.apikeyCustomization.constrainedServicesOnly"
+            control={control}
+            render={({ field }) => (
+              <div>
+                <label>{translate('constrainedServicesOnly')}</label>
+                <ToggleFormPartButton
+                  value={field.value}
+                  action={field.onChange}
+                  trueLabel={"constrained Services only"}
+                  trueDescription={"faut expliquer plus clairement"}
+                  falseLabel={"open bar"}
+                  falseDescription={"idem"}
+                />
+              </div>
+            )}
+          />
+          <Controller
+            name="otoroshiTarget.apikeyCustomization.metadata"
+            control={control}
+            render={({ field }) => (
+              <div>
+                <label>{translate('metadata')}</label>
+                <ObjectInput value={field.value} onChange={field.onChange} className='' />
+              </div>
+            )}
+          />
+          <Controller
+            name="otoroshiTarget.apikeyCustomization.customMetadata"
+            control={control}
+            render={({ field }) => (
+              <div>
+                <label>{translate('customMetadata')}</label>
+                <CustomMetadataInput value={field.value} onChange={field.onChange} translate={translate} />
+              </div>
+            )}
+          />
+          <Controller
+            name="otoroshiTarget.apikeyCustomization.tags"
+            control={control}
+            render={({ field }) => (
+              <div>
+                <label>{translate('constrainedServicesOnly')}</label>
+                <CreatableSelect
+                  isMulti
+                  onChange={(e) => field.onChange(e.map(({ value }) => value))}
+                  options={undefined}
+                  value={field.value.map((value: any) => ({
+                    label: value,
+                    value,
+                  }))}
+                  className="input-select reactSelect flex-grow-1"
+                  classNamePrefix="reactSelect"
+                />
+              </div>
+            )}
+          />
+          <Controller
+            name="otoroshiTarget.apikeyCustomization.restrictions.enabled"
+            control={control}
+            render={({ field }) => (
+              <div>
+                <label>{translate('restrictions')}</label>
+                <ToggleFormPartButton
+                  value={field.value}
+                  action={field.onChange}
+                  trueLabel={"Enable restriction"}
+                  trueDescription={"faut expliquer plus clairement"}
+                  falseLabel={"Disable restriction"}
+                  falseDescription={"idem"}
+                />
+              </div>
+            )}
+          />
+
+          {restrictions.enabled && <>
+            <Controller
+              name="otoroshiTarget.apikeyCustomization.restrictions.allowLast"
+              control={control}
+              render={({ field }) => (
+                <div>
+                  <label>{translate('allowlast')}</label>
+                  <ToggleFormPartButton
+                    value={field.value}
+                    action={field.onChange}
+                    trueLabel={"allow Last"}
+                    trueDescription={"faut expliquer plus clairement"}
+                    falseLabel={"disallow Last"}
+                    falseDescription={"idem"}
+                  />
+                </div>
+              )}
+            />
+            
+
+            <PathesArray label="allowed" name="otoroshiTarget.apikeyCustomization.restrictions.allowed" control={control} />
+            <PathesArray label="forbiddden" name="otoroshiTarget.apikeyCustomization.restrictions.forbidden" control={control} />
+            <PathesArray label="not found" name="otoroshiTarget.apikeyCustomization.restrictions.notFound" control={control} />
+
+          </>}
+
+        </Collapse>}
+
+        {props.api.visibility !== 'AdminOnly' && <ToggleFormPartButton
+          value={quotasDisplayed}
+          action={() => setQuotasDisplayed((prev) => !prev)}
+          falseLabel={translate("usage.plan.form.quotas.selector.false.label")}
+          falseDescription={translate("usage.plan.form.quotas.selector.false.description")}
+          trueLabel={translate("usage.plan.form.quotas.selector.true.label")}
+          trueDescription={translate("usage.plan.form.quotas.selector.true.description")}
+        />}
+        {props.api.visibility !== 'AdminOnly' && <ToggleFormPartButton
+          value={billingDisplayed}
+          action={() => setBillingDisplayed((prev) => !prev)}
+          falseLabel={translate("usage.plan.form.pricing.selector.false.label")}
+          falseDescription={translate("usage.plan.form.pricing.selector.false.description")}
+          trueLabel={translate("usage.plan.form.pricing.selector.true.label")}
+          trueDescription={translate("usage.plan.form.pricing.selector.true.description")}
+        />}
+
+        {quotasDisplayed && (
+          <Collapse label="Quotas" collapsed={false} errored={false}>
+            <div className="d-flex gap-2">
+              <Controller
+                name="maxPerSecond"
+                control={control}
+                render={({ field }) => (
+                  <div className='flex-grow-1'>
+                    <label>{translate("usage.plan.form.max.request.second.label")}</label>
+                    <input type="number" {...field} className="form-control" />
+                  </div>
+                )}
+              />
+              <Controller
+                name="maxPerDay"
+                control={control}
+                render={({ field }) => (
+                  <div className='flex-grow-1'>
+                    <label>{translate("usage.plan.form.max.request.day.label")}</label>
+                    <input type="number" {...field} className="form-control" />
+                  </div>
+                )}
+              />
+              <Controller
+                name="maxPerMonth"
+                control={control}
+                render={({ field }) => (
+                  <div className='flex-grow-1'>
+                    <label>{translate("usage.plan.form.max.request.month.label")}</label>
+                    <input type="number" {...field} className="form-control" />
+                  </div>
+                )}
+              />
+            </div>
+          </Collapse>
+        )}
+
+        {billingDisplayed && (
+          <Collapse label="Billing" collapsed={false} errored={false}>
+            <div className="">
+              <div className="accordion-body">
+                <Controller
+                  name="costPerMonth"
+                  control={control}
+                  render={({ field }) => (
+                    <div>
+                      <label>{translate("usage.plan.form.cost.per.period.help")}</label>
+                      <input type="number" {...field} className="form-control" />
+                    </div>
+                  )}
+                />
+                <Controller
+                  name="costPerRequest"
+                  control={control}
+                  render={({ field }) => (
+                    <div>
+                      <label>{translate("Cost per request")}</label>
+                      <input type="number" {...field} className="form-control" />
+                    </div>
+                  )}
+                />
+              </div>
+            </div>
+          </Collapse>
+        )}
+
+        <button type="submit" className="btn btn-outline-success mt-4" onClick={() => console.debug(getValues())}>
+          {translate('Save')}
+        </button>
+      </div>
+    </form>
+  );
+};
+
+
+const _UsagePlanForm = (props: UsagePlanFormProps) => {
   const { tenant } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
@@ -953,59 +1611,36 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
 
   const [quotasDisplayed, setQuotasDisplayed] = useState<boolean>(!!props.plan.maxPerMonth);
   const [billingDisplayed, setBillingDisplayed] = useState<boolean>(!!props.plan.costPerMonth);
-  const [customizationDisplayed, setCustomizationDisplayed] = useState(!!props.plan.otoroshiTarget?.apikeyCustomization);
 
   useEffect(() => {
-    if (!quotasDisplayed && plan.maxPerSecond) {
-      setPlan({
-        ...plan,
-        maxPerSecond: undefined,
-        maxPerDay: undefined,
-        maxPerMonth: undefined
-      })
+    if (!quotasDisplayed) {
+      setPlan((prev) => {
+        if (!prev.maxPerSecond) return prev;
+        return {
+          ...prev,
+          maxPerSecond: undefined,
+          maxPerDay: undefined,
+          maxPerMonth: undefined
+        };
+      });
     }
-  }, [quotasDisplayed])
+  }, [quotasDisplayed]);
 
   useEffect(() => {
-    if (!billingDisplayed && plan.costPerMonth) {
-      setPlan({
-        ...plan,
-        costPerMonth: undefined,
-        costPerRequest: undefined,
-        paymentSettings: undefined,
-        currency: undefined,
-        trialPeriod: undefined
-      })
-    }
-  }, [billingDisplayed])
-
-  useEffect(() => {
-    if (!customizationDisplayed) {
-      setPlan({
-        ...plan,
-        allowMultipleKeys: undefined, autoRotation: undefined,
-        otoroshiTarget: {
-          ...plan.otoroshiTarget,
-          apikeyCustomization: {
-            clientIdOnly: false,
-            constrainedServicesOnly: false,
-            tags: [],
-            metadata: {},
-            customMetadata: [],
-            restrictions: {
-              enabled: false,
-              allowLast: false,
-              allowed: [],
-              forbidden: [],
-              notFound: []
-            },
-            validUntil: undefined
-          }
+    if (!billingDisplayed) {
+      setPlan((prev) => {
+        if (!prev.costPerMonth) return prev
+        return {
+          ...plan,
+          costPerMonth: undefined,
+          costPerRequest: undefined,
+          paymentSettings: undefined,
+          currency: undefined,
+          trialPeriod: undefined
         }
       })
     }
-  }, [customizationDisplayed])
-
+  }, [billingDisplayed])
 
   const baseFlow: Flow = [
     "customName",
@@ -1034,6 +1669,12 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
     flow: ["autoRotation", "allowMultipleKeys", "otoroshiTarget.apikeyCustomization", "integrationProcess"],
     collapsed: true
   }]
+
+  const computedFlow = useMemo(() => {
+    return [...baseFlow, ...otoroshiFlow, ...customizationFlow,
+    ...(quotasDisplayed ? quotasFlowPart : []),
+    ...(billingDisplayed ? billingFlow : [])];
+  }, [quotasDisplayed, billingDisplayed]);
 
   const queryFullTenant = useQuery({
     queryKey: ['full-tenant'],
@@ -1156,7 +1797,7 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
             message: translate('aggregation.api_key.security.notification'),
           }).then((ok) => {
             if (ok) {
-              setValue('otoroshiTarget.apikeyCustomization.readOnly', false);
+              setValue('otoroshiTarget.apikeyCustomizationapikeyCustomization.readOnly', false);
               setValue(
                 'otoroshiTarget.apikeyCustomization.clientIdOnly',
                 false
@@ -1546,10 +2187,28 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
     },
   };
 
+  const mergedSchema = useMemo(() => ({
+    ...baseSchema,
+    ...otoroshiSchema,
+    ...customizationSchema,
+    ...quotasSchema,
+    ...billingSchema
+  }), []);
+
+  // const MemoizedForm = React.memo(Form);
+
   return (
     <div className='usage-plan-form-panel-content'>
       <div className="usage-plan-form">
-        <MemoizedForm
+
+        <Form
+          schema={mergedSchema}
+          flow={computedFlow} //@ts-ignore
+          onSubmit={setPlan}
+          value={plan}
+        />
+
+        {/* <MemoizedForm
           schema={baseSchema}
           flow={baseFlow}
           onSubmit={setPlan}
@@ -1566,7 +2225,7 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
           flow={customizationFlow}
           onSubmit={setPlan}
           plan={plan}
-        />
+        /> */}
         {props.api.visibility !== 'AdminOnly' && <ToggleFormPartButton
           value={quotasDisplayed}
           action={setQuotasDisplayed}
@@ -1583,28 +2242,29 @@ const UsagePlanForm = (props: UsagePlanFormProps) => {
           trueLabel={translate("usage.plan.form.pricing.selector.true.label")}
           trueDescription={translate("usage.plan.form.pricing.selector.true.description")}
         />}
-        {quotasDisplayed && props.api.visibility !== 'AdminOnly' && 
+        {/* {quotasDisplayed && props.api.visibility !== 'AdminOnly' &&
           <MemoizedForm
             schema={quotasSchema}
             flow={quotasFlowPart}
             onSubmit={setPlan}
             plan={plan}
           />}
-        {billingDisplayed && props.api.visibility !== 'AdminOnly' &&  <MemoizedForm
+        {billingDisplayed && props.api.visibility !== 'AdminOnly' && <MemoizedForm
           schema={billingSchema}
           flow={billingFlow}
           onSubmit={setPlan}
           plan={plan}
-        />}
+        />} */}
       </div>
-      <div className="usage-plan-form--actions">
+      {/* <div className="usage-plan-form--actions">
         <button className='btn btn-outline-success' onClick={() => {
           props.onSubmit(plan)
         }}>{translate('Save')}</button>
-      </div>
+      </div> */}
     </div>
   )
 }
+
 type ToggleButtonProps = {
   action: (value: boolean) => void
   value: boolean
@@ -1616,20 +2276,13 @@ type ToggleButtonProps = {
 }
 
 const ToggleFormPartButton = (props: ToggleButtonProps) => {
-  const [value, setValue] = useState(props.value)
-
-  useEffect(() => {
-    props.action(value)
-  }, [value])
-
-
   return (
-    <div className='form-selector'>
-      <button className={classNames('btn btn-outline-info col-6', { active: value })} onClick={() => setValue(true)}>
+    <div className='form-selector mt-4'>
+      <button type='button' className={classNames('btn btn-outline-info col-6', { active: props.value })} onClick={() => props.action(true)}>
         <div className='label'>{props.trueLabel}</div>
         <div className='description'>{props.trueDescription}</div>
       </button>
-      <button className={classNames('btn btn-outline-info col-6', { active: !value })} onClick={() => setValue(false)}>
+      <button type='button' className={classNames('btn btn-outline-info col-6', { active: !props.value })} onClick={() => props.action(false)}>
         <div className='label'>{props.falseLabel}</div>
         <div className='description'>{props.falseDescription}</div>
       </button>
