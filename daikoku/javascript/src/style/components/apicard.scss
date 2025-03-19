@@ -129,9 +129,14 @@ a.card-link:active {
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  color: $card-header-bg-color;
 
   &:hover {
     background-color: $card-header-bg-color;
+
+    &:before {
+      color: $card-header-text-color;
+    }
   }
 
   &:before {

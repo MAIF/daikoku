@@ -4816,11 +4816,11 @@ class ApiController(
                 ) =>
               EitherT.leftT(AppError.ForbiddenAction)
             //Handle prices changes or payment settings deletion (addition is really forbidden)
-            case _ if oldPlan.paymentSettings != newPlan.paymentSettings =>
+            case _ if oldPlan.paymentSettings.isDefined && oldPlan.paymentSettings != newPlan.paymentSettings =>
               EitherT.leftT(AppError.ForbiddenAction)
-            case _ if oldPlan.costPerMonth != newPlan.costPerMonth =>
+            case _ if oldPlan.costPerMonth.isDefined && oldPlan.costPerMonth != newPlan.costPerMonth =>
               EitherT.leftT(AppError.ForbiddenAction)
-            case _ if oldPlan.costPerMonth != newPlan.costPerMonth || oldPlan.costPerRequest != newPlan
+            case _ if oldPlan.costPerRequest.isDefined && oldPlan.costPerRequest != newPlan
               .costPerRequest =>
               EitherT.leftT(AppError.ForbiddenAction)
             case _ if !ctx.tenant.aggregationApiKeysSecurity.exists(identity) &&

@@ -249,7 +249,7 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, 
   autoRotation?: boolean;
   rotation: boolean;
   currency?: ICurrency;
-  billingDuration: IBillingDuration;
+  billingDuration?: IBillingDuration;
   visibility: UsagePlanVisibility;
   authorizedTeams: Array<string>;
   costPerRequest?: number;

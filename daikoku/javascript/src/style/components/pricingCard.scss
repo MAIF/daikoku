@@ -1,0 +1,106 @@
+.usage-plan__card {
+  position: relative;
+  background-color: $level3_bg-color;
+  border-radius: 1rem;
+
+  width: 25%;
+
+  display: flex;
+  flex-direction: column;
+
+  .usage-plan__card__header {
+    padding: 1rem 1rem 1.5rem 1rem;
+    border-bottom: 1px solid $level2_text-color;
+
+    display: flex;
+    flex-direction: column;
+
+    height: 200px;
+
+    .usage-plan__card__title {
+      font-weight: bold;
+      padding-bottom: 1rem;
+      font-size: 1.5rem;
+    }
+
+    .usage-plan__card__description {
+      font-weight: lighter;
+      font-size: 1rem;
+    }
+
+    .usage-plan__card__action-button {
+      align-self: flex-end;
+
+      margin: 5px 10px;
+      width: 100%;
+      background-color: $card-header-bg-color;
+      color: $card-header-text-color;
+      border: 1px solid $level2_text-color;
+      border-radius: 5px;
+      padding: 10px;
+
+      &:hover {
+        color: $card-header-bg-color;
+        background-color: $card-header-text-color;
+
+        box-shadow: 3px 3px 0 $card-header-bg-color;
+      }
+
+      &:focus,
+      &:active {
+        color: $card-header-bg-color;
+        background-color: $card-header-text-color;
+        box-shadow: 1px 1px 0 $card-header-bg-color;
+        transform: translate(2px, 2px);
+      }
+    }
+  }
+
+  .usage-plan__card__body {
+    flex: 1;
+    padding: 0rem 1rem .5rem 1rem;
+
+
+
+    .usage-plan__card__feature {
+      padding-bottom: .5rem;
+      margin-top: 1rem;
+
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      &:last-child {
+        border: none;
+        padding-bottom: 0;
+      }
+
+      h4 {
+        font-weight: bold;
+        font-size: 1rem;
+        margin-bottom: 0;
+      }
+
+      .feature__description {
+        font-size: .9rem;
+        text-wrap: nowrap;
+      }
+
+      .edition-icon {
+        display: none;
+      }
+
+      &:hover {
+        cursor: pointer;
+
+        h4 {
+          text-decoration: underline;
+        }
+
+        .edition-icon {
+          display: block;
+        }
+      }
+    }
+  }
+}

@@ -760,18 +760,16 @@ object CommonServices {
         s"@{user.name} has acceeded to team (@{team.id}) subscription for api @{api.id}"
       )
     )(teamId, ctx) { _ =>
-      for {
-        api <-
-          env.dataStore.apiRepo
-            .findByVersion(ctx.tenant, apiId, version)
-        apiId = api.map((api) => api.id.value).get
+      (for {
+        api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
+            .findByVersion(ctx.tenant, apiId, version), AppError.ApiNotFound)
         subs <-
-          env.dataStore.apiSubscriptionRepo
+          EitherT.liftF[Future, AppError, Seq[ApiSubscription]](env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant)
-            .findNotDeleted(Json.obj("api" -> apiId))
+            .findNotDeleted(Json.obj("api" -> api.id.asJson)))
       } yield {
-        Right(subs)
-      }
+        subs
+      }).value
     }
   }
 

@@ -13,8 +13,14 @@ import {
 import find from "lodash/find";
 import { useContext } from "react";
 import { I18nContext } from "../../contexts";
-import { currency } from "../frontend";
 
+export const currency = (plan?: IBaseUsagePlan) => {
+  if (!plan) {
+    return ''; //todo: return undefined
+  }
+  const cur = find(currencies, (c) => c.code === plan.currency?.code);
+  return `${cur?.name}(${cur?.symbol})`;
+};
 
 
 export const Currency = ({ plan }: { plan: IUsagePlan | IFastPlan }) => {
