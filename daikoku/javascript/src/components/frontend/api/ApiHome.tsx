@@ -5,12 +5,12 @@ import { useContext, useEffect } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiSwagger } from '.';
+import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiSwagger, EnvironmentsDocumentation, EnvironmentsRedoc, EnvironmentsSwagger } from '.';
 import { ApiGroupApis, TeamApiConsumption, TeamApiSubscriptions, TeamPlanConsumption, read } from '../..';
 import { I18nContext, ModalContext, NavContext, useApiFrontOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
-import { IApi, ISubscription, ITeamFullGql, ITeamSimple, IUsagePlan, isError } from '../../../types';
+import { Display, IApi, ISubscription, ITeamFullGql, ITeamSimple, IUsagePlan, isError } from '../../../types';
 import { SimpleApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
 import { Can, Option, Spinner, apikey, teamGQLToSimple } from '../../utils';
 import { CmsViewer } from '../CmsViewer';
@@ -227,11 +227,12 @@ export const ApiHome = ({
               {params.tab === 'apis' && (<ApiGroupApis apiGroup={api} ownerTeam={ownerTeam} />)}
               {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam}
                 subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
-              {params.tab === 'documentation' && <ApiDocumentation entity={api} ownerTeam={ownerTeam} api={api}
+              {params.tab === 'documentation' && tenant.display == Display.default && <ApiDocumentation entity={api} ownerTeam={ownerTeam} api={api}
                 documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)}
                 refreshEntity={() => queryClient.invalidateQueries({ queryKey: ['api'] })}
                 savePages={(pages) => Services.saveTeamApi(ownerTeam._id, { ...api, documentation: { ...api.documentation!, pages } }, api.currentVersion)} />}
-              {params.tab === 'testing' && (<ApiSwagger
+              {params.tab === 'documentation' && tenant.display == Display.environment && <EnvironmentsDocumentation api={api} ownerTeam={ownerTeam}/>}
+              {params.tab === 'testing' && tenant.display === Display.default && (<ApiSwagger
                 _id={api._id}
                 testing={api.testing}
                 swagger={api.swagger}
@@ -241,8 +242,10 @@ export const ApiHome = ({
                 entity={api}
                 save={saveApi}
               />)}
-              {params.tab === 'swagger' && (<ApiRedoc save={saveApi} entity={api} ownerTeam={ownerTeam}
+              {params.tab === 'testing' && tenant.display === Display.environment && <EnvironmentsSwagger api={api} ownerTeam={ownerTeam}/>}
+              {params.tab === 'swagger' && tenant.display === Display.default && (<ApiRedoc save={saveApi} entity={api} ownerTeam={ownerTeam}
                 swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`} swaggerConf={api.swagger} />)}
+              {params.tab === 'swagger' && tenant.display === Display.environment && <EnvironmentsRedoc api={api} ownerTeam={ownerTeam}/>}
               {params.tab === 'news' && (<ApiPost api={api} ownerTeam={ownerTeam} versionId={params.versionId} />)}
               {(params.tab === 'issues' || params.tab === 'labels') && (<ApiIssue api={api} ownerTeam={ownerTeam} />)}
               {(params.tab === 'subscriptions') && (<TeamApiSubscriptions api={api} currentTeam={ownerTeam} />)}

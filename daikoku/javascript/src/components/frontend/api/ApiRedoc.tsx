@@ -1,19 +1,20 @@
-import { useContext, useEffect, useState } from 'react';
-import { RedocStandalone, SideNavStyleEnum } from 'redoc';
 import AsyncApiComponent from "@asyncapi/react-component/browser/index.js";
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useContext, useEffect, useState } from 'react';
 import More from 'react-feather/dist/icons/more-vertical';
-
+import Select from 'react-select';
+import { RedocStandalone, SideNavStyleEnum } from 'redoc';
+import * as Services from '../../../services';
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
-import { IApi, ISwagger, ITeamSimple, IWithSwagger, SpecificationType } from '../../../types';
+import { IApi, isError, ISwagger, ITeamSimple, IUsagePlan, IWithSwagger, SpecificationType } from '../../../types';
 import { Option } from '../../utils/Option';
 
 import "@asyncapi/react-component/styles/default.min.css";
-import { Spinner } from '../../utils/Spinner';
-import { Can, manage, api as API } from '../../utils';
 import { TeamApiSwagger } from '../../backoffice/apis/TeamApiSwagger';
-import { toast } from 'sonner';
+import { api as API, Can, manage } from '../../utils';
+import { Spinner } from '../../utils/Spinner';
 
 type ApiRedocProps<T extends IWithSwagger> = {
   swaggerUrl: string,
@@ -116,5 +117,73 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
         </div>
       )}
     </div>
+  }
+}
+type EnvironmentsRedocProps = {
+  api: IApi
+  ownerTeam: ITeamSimple
+}
+export const EnvironmentsRedoc = (props: EnvironmentsRedocProps) => {
+  const { translate } = useContext(I18nContext);
+
+  const [selectedEnvironment, setSelectedEnvironment] = useState<IUsagePlan>()
+
+  const queryClient = useQueryClient();
+  const environmentsQuery = useQuery({
+    queryKey: ['environments', props.api._id],
+    queryFn: () => Services.getVisiblePlans(props.api._id, props.api.currentVersion)
+      .then(r => {
+        if (isError(r)) {
+          return []
+        } else {
+          setSelectedEnvironment(r[0])
+          return r
+        }
+      }),
+  })
+
+  if (!selectedEnvironment && environmentsQuery.isLoading) {
+    return <Spinner />
+  } else if (selectedEnvironment && environmentsQuery.data) {
+    const environments: IUsagePlan[] = environmentsQuery.data
+
+    return (
+      <div className='d-flex flex-column'>
+        <Select
+          className='col-3'
+          placeholder={translate('api.subscriptions.team.select.placeholder')}
+          options={environments.map(value => ({ label: value.customName, value }))}
+          onChange={t => setSelectedEnvironment(t!.value)}
+          value={{ label: selectedEnvironment.customName, value: selectedEnvironment }}
+          styles={{
+            valueContainer: (baseStyles) => ({
+              ...baseStyles,
+              display: 'flex'
+            }),
+          }}
+          components={{
+            IndicatorSeparator: () => null,
+            SingleValue: (props) => {
+              return <div className='d-flex align-items-center m-0' style={{
+                gap: '.5rem'
+              }}>
+                <span className={`badge badge-custom`}>
+                  {'ENV'}
+                </span>{props.data.label}
+              </div>
+            }
+          }} />
+
+
+        <ApiRedoc
+          save={(updatedPlan) => Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, updatedPlan)}
+          entity={selectedEnvironment}
+          ownerTeam={props.ownerTeam}
+          swaggerUrl={`/api/teams/${props.ownerTeam._id}/${props.api._id}/${props.api.currentVersion}/plans/${selectedEnvironment._id}/swagger`}
+          swaggerConf={selectedEnvironment.swagger} />
+      </div>
+    )
+  } else {
+    return <div>An error occured while fetching environments </div>
   }
 }

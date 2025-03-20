@@ -274,7 +274,15 @@ class EntitiesController(
           allowMultipleKeys = Some(false),
           subscriptionProcess = Seq.empty,
           integrationProcess = IntegrationProcess.ApiKey,
-          autoRotation = Some(false)
+          autoRotation = Some(false),
+          documentation = if (ctx.tenant.display == TenantDisplay.Environment)
+            ApiDocumentation(
+              id = ApiDocumentationId(IdGenerator.token(32)),
+              tenant = ctx.tenant.id,
+              lastModificationAt = DateTime.now(),
+              pages = Seq.empty
+            ).some
+          else None
         ).asJson)
       }
     }

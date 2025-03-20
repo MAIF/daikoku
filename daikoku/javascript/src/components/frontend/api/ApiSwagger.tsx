@@ -1,18 +1,20 @@
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext, useEffect, useState } from 'react';
+import More from 'react-feather/dist/icons/more-vertical';
 import { useParams } from 'react-router-dom';
 import { SwaggerUIBundle } from 'swagger-ui-dist';
-import More from 'react-feather/dist/icons/more-vertical';
+import Select from 'react-select';
 
 
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
-import { IApi, ISwagger, ITeamSimple, ITesting, IWithSwagger, IWithTesting } from '../../../types';
-import { Can, manage, api as API } from '../../utils';
+import * as Services from '../../../services';
+import { IApi, isError, ISwagger, ITeamSimple, ITesting, IUsagePlan, IWithTesting } from '../../../types';
+import { TeamApiSwagger, TeamApiTesting } from '../../backoffice';
+import { api as API, Can, manage, Spinner } from '../../utils';
 
 import 'swagger-ui-dist/swagger-ui.css';
-import { Form, format, type } from '@maif/react-forms';
-import { TeamApiSwagger, TeamApiTesting } from '../../backoffice';
 
 
 type ApiSwaggerProps<T extends IWithTesting> = {
@@ -167,7 +169,7 @@ export function ApiSwagger<T extends IWithTesting>(props: ApiSwaggerProps<T>) {
           </span>}
           {props.entity.testing && <div className="dropdown-divider" />}
           {props.entity.testing && <span
-            onClick={() => props.save({...props.entity, testing: null})}
+            onClick={() => props.save({ ...props.entity, testing: null })}
             className="dropdown-item cursor-pointer btn-outline-danger"
           >
             {translate('update.api.testing.delete.btn.label')}
@@ -189,4 +191,77 @@ export function ApiSwagger<T extends IWithTesting>(props: ApiSwaggerProps<T>) {
       {props.swagger && props.testing && <div id="swagger-ui" style={{ width: '100%' }} />}
     </div>
   );
+}
+
+type EnvironmentsSwaggerProps = {
+  api: IApi
+  ownerTeam: ITeamSimple
+}
+export const EnvironmentsSwagger = (props: EnvironmentsSwaggerProps) => {
+  const { translate } = useContext(I18nContext);
+
+  const [selectedEnvironment, setSelectedEnvironment] = useState<IUsagePlan>()
+
+  const queryClient = useQueryClient();
+  const environmentsQuery = useQuery({
+    queryKey: ['environments', props.api._id],
+    queryFn: () => Services.getVisiblePlans(props.api._id, props.api.currentVersion)
+      .then(r => {
+        if (isError(r)) {
+          return []
+        } else {
+          setSelectedEnvironment(r[0])
+          return r
+        }
+      }),
+  })
+
+  if (!selectedEnvironment && environmentsQuery.isLoading) {
+    return <Spinner />
+  } else if (selectedEnvironment && environmentsQuery.data) {
+    const environments: IUsagePlan[] = environmentsQuery.data
+
+    return (
+      <div className='d-flex flex-column'>
+        <Select
+          className='col-3'
+          placeholder={translate('api.subscriptions.team.select.placeholder')}
+          options={environments.map(value => ({ label: value.customName, value }))}
+          onChange={t => setSelectedEnvironment(t!.value)}
+          value={{ label: selectedEnvironment.customName, value: selectedEnvironment }}
+          styles={{
+            valueContainer: (baseStyles) => ({
+              ...baseStyles,
+              display: 'flex'
+            }),
+          }}
+          components={{
+            IndicatorSeparator: () => null,
+            SingleValue: (props) => {
+              return <div className='d-flex align-items-center m-0' style={{
+                gap: '.5rem'
+              }}>
+                <span className={`badge badge-custom`}>
+                  {'ENV'}
+                </span>{props.data.label}
+              </div>
+            }
+          }} />
+
+
+        <ApiSwagger
+          _id={props.api._id}
+          testing={selectedEnvironment.testing}
+          swagger={selectedEnvironment.swagger}
+          swaggerUrl={`/api/teams/${props.ownerTeam._id}/${props.api._id}/${props.api.currentVersion}/plans/${selectedEnvironment._id}/swagger`}
+          callUrl={`/api/teams/${props.ownerTeam}/testing/${props.api._id}/plans/${selectedEnvironment._id}/call`}
+          ownerTeam={props.ownerTeam}
+          entity={selectedEnvironment}
+          save={(updatedPlan) => Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, updatedPlan)}
+        />
+      </div>
+    )
+  } else {
+    return <div>An error occured while fetching environments </div>
+  }
 }

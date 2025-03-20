@@ -5,22 +5,25 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import asciidoctor from 'asciidoctor';
 import classNames from 'classnames';
 import hljs from 'highlight.js';
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import More from 'react-feather/dist/icons/more-vertical';
 import { useSearchParams } from 'react-router-dom';
+import Select from 'react-select';
 import { toast } from 'sonner';
+
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { IApi, IDocPage, IDocumentation, IDocumentationPages, isError, isUsagePlan, ITeamSimple, IWithDocumentation, ResponseError } from '../../../types';
+import { IApi, IDocPage, IDocumentation, IDocumentationPages, isApi, isError, isUsagePlan, ITeamSimple, IUsagePlan, IWithDocumentation, ResponseError } from '../../../types';
 import { IPage } from '../../adminbackoffice/cms';
 import { AssetButton, longLoremIpsum, loremIpsum, TeamApiDocumentation } from '../../backoffice/apis/TeamApiDocumentation';
 import { api as API, BeautifulTitle, Can, manage, Spinner } from '../../utils';
 import { CmsViewer } from '../CmsViewer';
 
 import 'highlight.js/styles/monokai.css';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 type ApiDocumentationProps<T extends IWithDocumentation> = {
   documentation?: IDocumentation
@@ -139,9 +142,8 @@ const ApiDocPage = (props: ApiDocPageProps) => {
 }
 
 export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumentationProps<T>) => {
-  const { Translation } = useContext(I18nContext);
+  const { Translation, translate } = useContext(I18nContext);
   const { openRightPanel, openApiDocumentationSelectModal, closeRightPanel } = useContext(ModalContext);
-  const { translate } = useContext(I18nContext);
   const { client } = useContext(getApolloContext());
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -189,6 +191,11 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
       setSearchParams({ page: pageId })
     }
   }, [pageId])
+
+  useEffect(() => {
+    setPageId(props.documentation?.pages[0]?.id)
+  }, [props.documentation])
+  
 
 
   const orderedPages = flattenDoc(props.documentation?.pages)
@@ -430,14 +437,17 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
           creationInProgress={false}
           team={props.ownerTeam}
           api={props.api}
-          onSave={documentation => Services.saveTeamApiWithId(
-            props.ownerTeam!._id,
-            { ...props.api, documentation },
-            props.api.currentVersion,
-            props.api._humanReadableId
-          )}
+          //todo: passer le callback en props c'est plus simple
+          onSave={documentation => isUsagePlan(props.entity) ?
+            Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, { ...props.entity, documentation }) :
+            Services.saveTeamApiWithId(
+              props.ownerTeam!._id,
+              { ...props.api, documentation },
+              props.api.currentVersion,
+              props.api._humanReadableId
+            )}
           reloadState={() => Promise.resolve(props.refreshEntity())}
-          documentation={props.api.documentation!}
+          documentation={props.entity.documentation!}
           importPage={() => openApiDocumentationSelectModal({
             api: props.api,
             teamId: props.ownerTeam._id,
@@ -448,7 +458,7 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
             getDocumentationPages: () => Services.getAllApiDocumentation(props.ownerTeam._id, props.api._id, props.api.currentVersion),
             importPages: (pages: Array<string>, linked?: boolean) => Services.importApiPages(props.ownerTeam._id, props.api._id, pages, props.api.currentVersion, linked)
           })}
-          importAuthorized={false}
+          importAuthorized={isApi(props.entity)}
         />
       )}
     </div>
@@ -656,3 +666,74 @@ const AwesomeContentViewer = (props: AwesomeContentViewerProp) => {
     return <TypeNotSupportedYet />;
   }
 };
+
+type EnvironmentsDocumentationProps = {
+  api: IApi
+  ownerTeam: ITeamSimple
+}
+export const EnvironmentsDocumentation = (props: EnvironmentsDocumentationProps) => {
+  const { translate } = useContext(I18nContext);
+
+  const [selectedEnvironment, setSelectedEnvironment] = useState<IUsagePlan>()
+
+  const queryClient = useQueryClient();
+  const environmentsQuery = useQuery({
+    queryKey: ['environments', props.api._id],
+    queryFn: () => Services.getVisiblePlans(props.api._id, props.api.currentVersion)
+      .then(envs => {
+        if (isError(envs)) {
+          return []
+        } else {
+          setSelectedEnvironment(prev => !!prev ? envs.find(e => selectedEnvironment?._id === e._id) : envs[0])
+          return envs
+        }
+      }),
+  })
+
+  if (!selectedEnvironment && environmentsQuery.isLoading) {
+    return <Spinner />
+  } else if (selectedEnvironment && environmentsQuery.data) {
+    const environments: IUsagePlan[] = environmentsQuery.data
+
+    return (
+      <div className='d-flex flex-column'>
+        <Select
+          className='col-3'
+          placeholder={translate('api.subscriptions.team.select.placeholder')}
+          options={environments.map(value => ({ label: value.customName, value }))}
+          onChange={t => setSelectedEnvironment(t!.value)}
+          value={{ label: selectedEnvironment.customName, value: selectedEnvironment }}
+          styles={{
+            valueContainer: (baseStyles) => ({
+              ...baseStyles,
+              display: 'flex'
+            }),
+          }}
+          components={{
+            IndicatorSeparator: () => null,
+            SingleValue: (props) => {
+              return <div className='d-flex align-items-center m-0' style={{
+                gap: '.5rem'
+              }}>
+                <span className={`badge badge-custom`}>
+                  {'ENV'}
+                </span>{props.data.label}
+              </div>
+            }
+          }} />
+
+
+        <ApiDocumentation
+          entity={selectedEnvironment}
+          ownerTeam={props.ownerTeam}
+          api={props.api}
+          documentation={selectedEnvironment.documentation}
+          getDocPage={(pageId) => Services.getUsagePlanDocPage(props.api._id, selectedEnvironment._id, pageId)}
+          refreshEntity={() => queryClient.invalidateQueries({ queryKey: ['environments'] })}
+          savePages={(pages) => console.debug({ pages })} />
+      </div>
+    )
+  } else {
+    return <div>An error occured while fetching environments </div>
+  }
+}

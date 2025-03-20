@@ -276,7 +276,7 @@ export interface ICurrency {
   code: string;
 }
 
-interface IOtoroshiTarget {
+export interface IOtoroshiTarget {
   otoroshiSettings?: string;
   authorizedEntities?: IAuthorizedEntities;
   apikeyCustomization?: {
