@@ -1104,12 +1104,13 @@ object utils {
       otoroshiTarget = None,
       visibility = UsagePlanVisibility.Admin
     )
-    val cmsApiPlan = Admin(
+    val cmsApiPlan = UsagePlan(
       id = UsagePlanId("admin"),
       tenant = Tenant.Default,
-      customName = Some("cms"),
+      customName = "cms",
       customDescription = None,
-      otoroshiTarget = None
+      otoroshiTarget = None,
+      visibility = UsagePlanVisibility.Admin
     )
     val adminApi = Api(
       id = ApiId(s"admin-api-tenant-${Tenant.Default.value}"),

@@ -2,7 +2,6 @@ package fr.maif.otoroshi.daikoku.tests
 
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
@@ -27,12 +26,10 @@ class GraphQLControllerSpec()
       val apiList = (1 to 10)
         .map(id => {
           val planId = UsagePlanId(s"plan-$id-api-$id")
-          val plan = FreeWithoutQuotas(
+          val plan = UsagePlan(
             id = planId,
             tenant = _tenant.id,
-            billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-            currency = Currency("EUR"),
-            customName = None,
+            customName = s"Free with quotas $id",
             customDescription = None,
             otoroshiTarget = Some(
               OtoroshiTarget(
@@ -76,13 +73,10 @@ class GraphQLControllerSpec()
           ApiWithPlans(api, Seq(plan))
         })
 
-      val draftApiPlan = FreeWithoutQuotas(
+      val draftApiPlan = UsagePlan(
         id = UsagePlanId("draft_plan"),
         tenant = _tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
-        customDescription = None,
+        customName = "draft",
         otoroshiTarget = Some(
           OtoroshiTarget(
             OtoroshiSettingsId("default"),
@@ -122,13 +116,10 @@ class GraphQLControllerSpec()
         defaultUsagePlan = draftApiPlan.id.some
       )
 
-      val pwaApiPlan = FreeWithoutQuotas(
+      val pwaApiPlan = UsagePlan(
         id = UsagePlanId("pwa_plan"),
         tenant = _tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
-        customDescription = None,
+        customName = "pwa",
         otoroshiTarget = Some(
           OtoroshiTarget(
             OtoroshiSettingsId("default"),
@@ -169,12 +160,10 @@ class GraphQLControllerSpec()
         defaultUsagePlan = pwaApiPlan.id.some
       )
 
-      val privateApiPlan = FreeWithoutQuotas(
+      val privateApiPlan = UsagePlan(
         id = UsagePlanId("private_plan"),
         tenant = _tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "private",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -217,13 +206,10 @@ class GraphQLControllerSpec()
         defaultUsagePlan = privateApiPlan.id.some
       )
 
-      val publicApiPlanV1 = FreeWithoutQuotas(
+      val publicApiPlanV1 = UsagePlan(
         id = UsagePlanId("public_plan_V1"),
         tenant = _tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
-        customDescription = None,
+        customName = "public v1",
         otoroshiTarget = Some(
           OtoroshiTarget(
             OtoroshiSettingsId("default"),
@@ -264,13 +250,10 @@ class GraphQLControllerSpec()
         defaultUsagePlan = publicApiPlanV1.id.some
       )
 
-      val publicApiPlanV2 = FreeWithoutQuotas(
+      val publicApiPlanV2 = UsagePlan(
         id = UsagePlanId("public_plan_V2"),
         tenant = _tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
-        customDescription = None,
+        customName = "public v2",
         otoroshiTarget = Some(
           OtoroshiTarget(
             OtoroshiSettingsId("default"),
@@ -312,12 +295,10 @@ class GraphQLControllerSpec()
         parent = publicApiV1.id.some
       )
 
-      val publicApiPlanV3 = FreeWithoutQuotas(
+      val publicApiPlanV3 = UsagePlan(
         id = UsagePlanId("public_plan_V3"),
         tenant = _tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "public v3",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -682,13 +663,10 @@ class GraphQLControllerSpec()
     "list all tags" in {
       val _tenant = tenant.copy(isPrivate = false)
 
-      val simplePlan = FreeWithoutQuotas(
+      val simplePlan = UsagePlan(
         id = UsagePlanId(s"public-api-plan"),
         tenant = _tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
-        customDescription = None,
+        customName = "Free with quotas",
         otoroshiTarget = Some(
           OtoroshiTarget(
             OtoroshiSettingsId("default"),
@@ -729,12 +707,10 @@ class GraphQLControllerSpec()
         defaultUsagePlan = simplePlan.id.some
       )
 
-      val draftApiPlan = FreeWithoutQuotas(
+      val draftApiPlan = UsagePlan(
         id = UsagePlanId("draft_plan"),
         tenant = _tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "draft",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -776,12 +752,10 @@ class GraphQLControllerSpec()
         defaultUsagePlan = draftApiPlan.id.some
       )
 
-      val pwaApiPlan = FreeWithoutQuotas(
+      val pwaApiPlan = UsagePlan(
         id = UsagePlanId("pwa_plan"),
         tenant = _tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "pwa",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -824,12 +798,10 @@ class GraphQLControllerSpec()
         defaultUsagePlan = pwaApiPlan.id.some
       )
 
-      val privateApiPlan = FreeWithoutQuotas(
+      val privateApiPlan = UsagePlan(
         id = UsagePlanId("private_plan"),
         tenant = _tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "private",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -872,13 +844,10 @@ class GraphQLControllerSpec()
         defaultUsagePlan = privateApiPlan.id.some
       )
 
-      val publicApiPlanV1 = FreeWithoutQuotas(
+      val publicApiPlanV1 = UsagePlan(
         id = UsagePlanId("public_plan_V1"),
         tenant = _tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
-        customDescription = None,
+        customName = "public v1",
         otoroshiTarget = Some(
           OtoroshiTarget(
             OtoroshiSettingsId("default"),
@@ -920,13 +889,10 @@ class GraphQLControllerSpec()
         defaultUsagePlan = publicApiPlanV1.id.some
       )
 
-      val publicApiPlanV2 = FreeWithoutQuotas(
+      val publicApiPlanV2 = UsagePlan(
         id = UsagePlanId("public_plan_V2"),
         tenant = _tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
-        customDescription = None,
+        customName = "public v2",
         otoroshiTarget = Some(
           OtoroshiTarget(
             OtoroshiSettingsId("default"),
@@ -969,12 +935,10 @@ class GraphQLControllerSpec()
         parent = publicApiV1.id.some
       )
 
-      val publicApiPlanV3 = FreeWithoutQuotas(
+      val publicApiPlanV3 = UsagePlan(
         id = UsagePlanId("public_plan_V3"),
         tenant = _tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "public v3",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
