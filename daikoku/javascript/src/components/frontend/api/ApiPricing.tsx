@@ -6,9 +6,7 @@ import difference from 'lodash/difference';
 import { nanoid } from 'nanoid';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import Edit2 from 'react-feather/dist/icons/edit-2';
-import More from 'react-feather/dist/icons/more-vertical';
-import Settings from 'react-feather/dist/icons/settings';
-import { Link, useMatch, useNavigate } from 'react-router-dom';
+import { useMatch, useNavigate } from 'react-router-dom';
 import Select, { components } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { toast } from 'sonner';
@@ -43,14 +41,9 @@ import {
   isSubscriptionProcessIsAutomatic,
   manage,
   Option,
-  renderPlanInfo,
   renderPricing,
   Spinner
 } from '../../utils';
-import { ApiDocumentation } from './ApiDocumentation';
-import { ApiRedoc } from './ApiRedoc';
-import { ApiSwagger } from './ApiSwagger';
-import { fill } from 'lodash';
 
 type OtoroshiEntitiesSelectorProps = {
   rawValues: IOtoroshiTarget
@@ -1303,7 +1296,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
               </Link>
             </div>
           )} */}
-          
+
           <span className="usage-plan__card__feature" onClick={editQuotas}>
             <div>
               <h4>Quotas</h4>
@@ -1523,14 +1516,14 @@ export const ApiPricing = (props: ApiPricingProps) => {
         Services.createPlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
           .then(() => toast.success(translate({ key: 'create.plan.succesful.toast.label', replacements: [plan.customName] })))
           .then(closeRightPanel)
-          .then(() => queryClient.invalidateQueries({ queryKey: ['plans'] }))
+          .then(() => queryClient.invalidateQueries({ queryKey: ['plans', props.api.currentVersion] }))
       )
     } else {
       return (
         Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
           .then(() => toast.success(translate('update.plan.successful.toast.label')))
+          .then(() => queryClient.invalidateQueries({ queryKey: ['plans', props.api.currentVersion] }))
           .then(closeRightPanel)
-          .then(() => queryClient.invalidateQueries({ queryKey: ['plans'] }))
       )
 
     }
@@ -1748,125 +1741,38 @@ export const ApiPricing = (props: ApiPricingProps) => {
       );
     });
 
-    if (maybeEnv && maybeTab) {
-      const plan = usagePlansQuery.data.find((p) => p.customName === maybeEnv)!;
-      return (
-        <div>
-          <div className="d-flex flex-row">
-            <Link
-              to={`../../${props.api.currentVersion}/pricing`}
-              relative="path"
-            >
-              <i className="fa-regular fa-circle-left fa-lg cursor-pointer a-fake" />
-            </Link>
-            <h5 className="ms-3">{plan.customName}</h5>
-          </div>
-          <div className="d-flex flex-row justify-content-around mb-2">
-            <Link
-              to={`../../${props.api.currentVersion}/pricing/${plan.customName}/swagger`}
-              relative="path"
-              className={classNames('btn btn-sm btn-outline-primary mb-1', {
-                link__disabled: !plan.swagger?.content && !plan.swagger?.url,
-                disabled: !plan.swagger?.content && !plan.swagger?.url,
-              })}
-            >
-              swagger
-            </Link>
-            <Link
-              to={`../../${props.api.currentVersion}/pricing/${plan.customName}/testing`}
-              relative="path"
-              className={classNames('btn btn-sm btn-outline-primary mb-1', {
-                link__disabled: !plan.testing || !plan.testing.enabled,
-                disabled: !plan.testing || !plan.testing.enabled,
-              })}
-            >
-              test
-            </Link>
-            <Link
-              to={`../../${props.api.currentVersion}/pricing/${plan.customName}/documentation`}
-              relative="path"
-              className={classNames('btn btn-sm btn-outline-primary', {
-                link__disabled:
-                  !plan.documentation || !plan.documentation?.pages.length,
-                disabled:
-                  !plan.documentation || !plan.documentation?.pages.length,
-              })}
-            >
-              Documentation
-            </Link>
-          </div>
-          <div>
-            {maybeTab === 'swagger' && (
-              <ApiRedoc
-                entity={plan}
-                save={savePlan}
-                ownerTeam={props.ownerTeam}
-                swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${plan._id}/swagger`}
-                swaggerConf={plan.swagger}
-              />
-            )}
-            {maybeTab === 'documentation' && (
-              <ApiDocumentation
-                entity={plan}
-                api={props.api}
-                documentation={plan.documentation}
-                getDocPage={(pageId) =>
-                  Services.getUsagePlanDocPage(props.api._id, plan._id, pageId)
-                }
-                ownerTeam={props.ownerTeam}
-              />
-            )}
-            {maybeTab === 'testing' && (
-              <ApiSwagger
-                _id={plan._id}
-                testing={plan.testing}
-                swagger={plan.swagger}
-                swaggerUrl={`/api/teams/${props.api.team}/apis/${props.api._id}/${props.api.currentVersion}/plans/${plan._id}/swagger`}
-                callUrl={`/api/teams/${props.api.team}/testing/${props.api._id}/plans/${plan._id}/call`}
-                entity={plan}
-                ownerTeam={props.ownerTeam}
-                save={savePlan}
-              />
-            )}
-          </div>
-        </div>
-      );
-    } else {
-      return (
-        <div
-          className="d-flex flex-row pricing-content flex-wrap"
-          id="usage-plans__list"
-        >
-          {possibleUsagePlans
-            .sort((a, b) => a.customName.localeCompare(b.customName))
-            .map((plan) => (
-              <ApiPricingCard
-                api={props.api}
-                key={plan._id}
-                plan={plan}
-                myTeams={props.myTeams}
-                ownerTeam={props.ownerTeam}
-                subscriptions={props.subscriptions.filter(
-                  (subs) =>
-                    subs.api === props.api._id && subs.plan === plan._id
-                )}
-                inProgressDemands={props.inProgressDemands.filter(
-                  (demand) => demand.api === props.api._id && demand.plan === plan._id
-                )}
-                askForApikeys={props.askForApikeys}
-                updatePlan={updatePlan}
-                savePlan={savePlan}
-                plans={possibleUsagePlans}
-              />
-            ))}
-          {props.api.visibility !== 'AdminOnly' && <Can I={manage} a={API} team={props.ownerTeam}>
-            <div className='fake-pricing-card col-md-4 card-mb-4 card mb-4 shadow-sm usage-plan__card'
-              onClick={createNewPlan} />
-          </Can>}
-        </div>
-      );
-    }
-  } else {
-    return <div></div>;
+    return (
+      <div
+        className="d-flex flex-row pricing-content flex-wrap"
+        id="usage-plans__list"
+      >
+        {possibleUsagePlans
+          .sort((a, b) => a.customName.localeCompare(b.customName))
+          .map((plan) => (
+            <ApiPricingCard
+              api={props.api}
+              key={plan._id}
+              plan={plan}
+              myTeams={props.myTeams}
+              ownerTeam={props.ownerTeam}
+              subscriptions={props.subscriptions.filter(
+                (subs) =>
+                  subs.api === props.api._id && subs.plan === plan._id
+              )}
+              inProgressDemands={props.inProgressDemands.filter(
+                (demand) => demand.api === props.api._id && demand.plan === plan._id
+              )}
+              askForApikeys={props.askForApikeys}
+              updatePlan={updatePlan}
+              savePlan={savePlan}
+              plans={possibleUsagePlans}
+            />
+          ))}
+        {props.api.visibility !== 'AdminOnly' && <Can I={manage} a={API} team={props.ownerTeam}>
+          <div className='fake-pricing-card col-md-4 card-mb-4 card mb-4 shadow-sm usage-plan__card'
+            onClick={createNewPlan} />
+        </Can>}
+      </div>
+    );
   }
 };

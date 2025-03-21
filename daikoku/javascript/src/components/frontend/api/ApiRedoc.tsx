@@ -4,17 +4,18 @@ import { useContext, useEffect, useState } from 'react';
 import More from 'react-feather/dist/icons/more-vertical';
 import Select from 'react-select';
 import { RedocStandalone, SideNavStyleEnum } from 'redoc';
-import * as Services from '../../../services';
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
+import * as Services from '../../../services';
 import { IApi, isError, ISwagger, ITeamSimple, IUsagePlan, IWithSwagger, SpecificationType } from '../../../types';
-import { Option } from '../../utils/Option';
-
-import "@asyncapi/react-component/styles/default.min.css";
 import { TeamApiSwagger } from '../../backoffice/apis/TeamApiSwagger';
 import { api as API, Can, manage } from '../../utils';
+import { Option } from '../../utils/Option';
 import { Spinner } from '../../utils/Spinner';
+
+import "@asyncapi/react-component/styles/default.min.css";
+import { toast } from "sonner";
 
 type ApiRedocProps<T extends IWithSwagger> = {
   swaggerUrl: string,
@@ -40,7 +41,6 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
         .then(setSpec)
     }
   }, [props.swaggerUrl])
-
 
 
   const config = {
@@ -78,7 +78,10 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
     const openApiDocForm = () => openRightPanel({
       title: translate('update.api.details.panel.title'),
       content: <div>
-        <TeamApiSwagger value={props.entity} save={d => props.save(d).then(closeRightPanel)} />
+        <TeamApiSwagger
+          value={props.entity}
+          save={d => props.save(d)
+            .then(closeRightPanel)} />
       </div>
     })
 
@@ -108,7 +111,10 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
           </span>}
         </div>
       </Can>
-      {props.swaggerConf?.specificationType === SpecificationType.openapi && <RedocStandalone specUrl={props.swaggerUrl} options={{ downloadFileName, pathInMiddlePanel: true, sideNavStyle: SideNavStyleEnum.PathOnly, ...(props.swaggerConf?.additionalConf || {}) }} />}
+      {props.swaggerConf?.specificationType === SpecificationType.openapi &&
+        <RedocStandalone
+          specUrl={props.swaggerUrl}
+          options={{ downloadFileName, pathInMiddlePanel: true, sideNavStyle: SideNavStyleEnum.PathOnly, ...(props.swaggerConf?.additionalConf || {}) }} />}
       {props.swaggerConf?.specificationType === SpecificationType.asyncapi && <AsyncApiComponent schema={spec} config={config} />}
       {!props.swaggerConf && (
         <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
@@ -125,6 +131,7 @@ type EnvironmentsRedocProps = {
 }
 export const EnvironmentsRedoc = (props: EnvironmentsRedocProps) => {
   const { translate } = useContext(I18nContext);
+  const { closeRightPanel } = useContext(ModalContext);
 
   const [selectedEnvironment, setSelectedEnvironment] = useState<IUsagePlan>()
 
@@ -136,11 +143,20 @@ export const EnvironmentsRedoc = (props: EnvironmentsRedocProps) => {
         if (isError(r)) {
           return []
         } else {
-          setSelectedEnvironment(r[0])
+          setSelectedEnvironment(prev => prev ? r.find(e => e._id === prev._id) : r[0])
           return r
         }
       }),
   })
+
+  const savePlan = (plan: IUsagePlan) => {
+    return (
+      Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
+        .then(() => toast.success(translate('update.plan.successful.toast.label')))
+        .then(() => queryClient.invalidateQueries({ queryKey: ['environments'] }))
+        .then(closeRightPanel)
+    )
+  }
 
   if (!selectedEnvironment && environmentsQuery.isLoading) {
     return <Spinner />
@@ -156,6 +172,10 @@ export const EnvironmentsRedoc = (props: EnvironmentsRedocProps) => {
           onChange={t => setSelectedEnvironment(t!.value)}
           value={{ label: selectedEnvironment.customName, value: selectedEnvironment }}
           styles={{
+            menu: (baseStyles) => ({
+              ...baseStyles,
+              zIndex: 10
+            }),
             valueContainer: (baseStyles) => ({
               ...baseStyles,
               display: 'flex'
@@ -174,12 +194,11 @@ export const EnvironmentsRedoc = (props: EnvironmentsRedocProps) => {
             }
           }} />
 
-
         <ApiRedoc
-          save={(updatedPlan) => Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, updatedPlan)}
+          save={(updatedPlan) => savePlan(updatedPlan)}
           entity={selectedEnvironment}
           ownerTeam={props.ownerTeam}
-          swaggerUrl={`/api/teams/${props.ownerTeam._id}/${props.api._id}/${props.api.currentVersion}/plans/${selectedEnvironment._id}/swagger`}
+          swaggerUrl={`/api/teams/${props.ownerTeam._id}/apis/${props.api._id}/${props.api.currentVersion}/plans/${selectedEnvironment._id}/swagger?timestamp=${new Date().getTime()}`}
           swaggerConf={selectedEnvironment.swagger} />
       </div>
     )

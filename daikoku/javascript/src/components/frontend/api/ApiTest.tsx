@@ -15,9 +15,10 @@ import { TeamApiSwagger, TeamApiTesting } from '../../backoffice';
 import { api as API, Can, manage, Spinner } from '../../utils';
 
 import 'swagger-ui-dist/swagger-ui.css';
+import { toast } from 'sonner';
 
 
-type ApiSwaggerProps<T extends IWithTesting> = {
+type ApiTestProps<T extends IWithTesting> = {
   testing?: ITesting,
   swagger?: ISwagger,
   swaggerUrl: string,
@@ -27,7 +28,7 @@ type ApiSwaggerProps<T extends IWithTesting> = {
   entity: T
   save: (d: T) => Promise<any>
 }
-export function ApiSwagger<T extends IWithTesting>(props: ApiSwaggerProps<T>) {
+export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
 
   const { tenant, connectedUser } = useContext(GlobalContext)
 
@@ -60,7 +61,7 @@ export function ApiSwagger<T extends IWithTesting>(props: ApiSwaggerProps<T>) {
     } else {
       setState({ ...state, info: translate('api_swagger.try_it_error') })
     };
-  }, []);
+  }, [props.swaggerUrl]);
 
   const drawSwaggerUi = () => {
     if (props.swagger) {
@@ -197,7 +198,7 @@ type EnvironmentsSwaggerProps = {
   api: IApi
   ownerTeam: ITeamSimple
 }
-export const EnvironmentsSwagger = (props: EnvironmentsSwaggerProps) => {
+export const EnvironmentsTest = (props: EnvironmentsSwaggerProps) => {
   const { translate } = useContext(I18nContext);
 
   const [selectedEnvironment, setSelectedEnvironment] = useState<IUsagePlan>()
@@ -215,6 +216,14 @@ export const EnvironmentsSwagger = (props: EnvironmentsSwaggerProps) => {
         }
       }),
   })
+
+  const savePlan = (plan: IUsagePlan) => {
+      return (
+        Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
+          .then(() => toast.success(translate('update.plan.successful.toast.label')))
+          .then(() => queryClient.invalidateQueries({ queryKey: ['environments'] }))
+      )
+    }
 
   if (!selectedEnvironment && environmentsQuery.isLoading) {
     return <Spinner />
@@ -249,15 +258,15 @@ export const EnvironmentsSwagger = (props: EnvironmentsSwaggerProps) => {
           }} />
 
 
-        <ApiSwagger
+        <ApiTest
           _id={props.api._id}
           testing={selectedEnvironment.testing}
           swagger={selectedEnvironment.swagger}
-          swaggerUrl={`/api/teams/${props.ownerTeam._id}/${props.api._id}/${props.api.currentVersion}/plans/${selectedEnvironment._id}/swagger`}
-          callUrl={`/api/teams/${props.ownerTeam}/testing/${props.api._id}/plans/${selectedEnvironment._id}/call`}
+          swaggerUrl={`/api/teams/${props.ownerTeam._id}/apis/${props.api._id}/${props.api.currentVersion}/plans/${selectedEnvironment._id}/swagger?timestamp=${new Date().getTime()}`}
+          callUrl={`/api/teams/${props.ownerTeam._id}/testing/${props.api._id}/plans/${selectedEnvironment._id}/call`}
           ownerTeam={props.ownerTeam}
           entity={selectedEnvironment}
-          save={(updatedPlan) => Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, updatedPlan)}
+          save={savePlan}
         />
       </div>
     )

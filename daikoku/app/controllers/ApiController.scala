@@ -185,9 +185,14 @@ class ApiController(
       )(ctx) {
 
         def fetchSwagger(plan: UsagePlan): EitherT[Future, AppError, Result] = {
+          AppLogger.info(s"${plan.swagger}")
           plan.swagger match {
             case Some(SwaggerAccess(_, Some(content), _, _, _)) =>
-              EitherT.pure[Future, AppError](Ok(content).as("application/json"))
+              AppLogger.info(s"send swagger content $content")
+              val contentType =
+                if (content.startsWith("{")) "application/json"
+                else "application/yaml"
+              EitherT.pure[Future, AppError](Ok(content).as(contentType))
             case Some(SwaggerAccess(Some(url), None, headers, _, _)) =>
               val finalUrl =
                 if (url.startsWith("/")) env.getDaikokuUrl(ctx.tenant, url)
@@ -199,11 +204,14 @@ class ApiController(
                   .withHttpHeaders(headers.toSeq: _*)
                   .get()
                   .map { resp =>
-                    Right[AppError, Result](
+                    val contentType =
+                      if (resp.body.startsWith("{")) "application/json"
+                      else "application/yaml"
+                    Right(
                       Ok(resp.body).as(
                         resp
                           .header("Content-Type")
-                          .getOrElse("application/json")
+                          .getOrElse(contentType)
                       )
                     )
                   }
@@ -221,6 +229,7 @@ class ApiController(
           }
         }
 
+        AppLogger.info("BEGIN fetching swagger")
         (for {
           _ <- EitherT.cond[Future][AppError, Unit](
             !(ctx.tenant.apiReferenceHideForGuest

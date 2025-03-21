@@ -5,7 +5,7 @@ import { useContext, useEffect } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiSwagger, EnvironmentsDocumentation, EnvironmentsRedoc, EnvironmentsSwagger } from '.';
+import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiTest, EnvironmentsDocumentation, EnvironmentsRedoc, EnvironmentsTest } from '.';
 import { ApiGroupApis, TeamApiConsumption, TeamApiSubscriptions, TeamPlanConsumption, read } from '../..';
 import { I18nContext, ModalContext, NavContext, useApiFrontOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
@@ -231,8 +231,8 @@ export const ApiHome = ({
                 documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)}
                 refreshEntity={() => queryClient.invalidateQueries({ queryKey: ['api'] })}
                 savePages={(pages) => Services.saveTeamApi(ownerTeam._id, { ...api, documentation: { ...api.documentation!, pages } }, api.currentVersion)} />}
-              {params.tab === 'documentation' && tenant.display == Display.environment && <EnvironmentsDocumentation api={api} ownerTeam={ownerTeam}/>}
-              {params.tab === 'testing' && tenant.display === Display.default && (<ApiSwagger
+              {params.tab === 'documentation' && tenant.display == Display.environment && <EnvironmentsDocumentation api={api} ownerTeam={ownerTeam} />}
+              {params.tab === 'testing' && tenant.display === Display.default && (<ApiTest
                 _id={api._id}
                 testing={api.testing}
                 swagger={api.swagger}
@@ -242,10 +242,14 @@ export const ApiHome = ({
                 entity={api}
                 save={saveApi}
               />)}
-              {params.tab === 'testing' && tenant.display === Display.environment && <EnvironmentsSwagger api={api} ownerTeam={ownerTeam}/>}
-              {params.tab === 'swagger' && tenant.display === Display.default && (<ApiRedoc save={saveApi} entity={api} ownerTeam={ownerTeam}
-                swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`} swaggerConf={api.swagger} />)}
-              {params.tab === 'swagger' && tenant.display === Display.environment && <EnvironmentsRedoc api={api} ownerTeam={ownerTeam}/>}
+              {params.tab === 'testing' && tenant.display === Display.environment && <EnvironmentsTest api={api} ownerTeam={ownerTeam} />}
+              {params.tab === 'swagger' && tenant.display === Display.default && (<ApiRedoc
+                save={saveApi}
+                entity={api}
+                ownerTeam={ownerTeam}
+                swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`}
+                swaggerConf={api.swagger} />)}
+              {params.tab === 'swagger' && tenant.display === Display.environment && <EnvironmentsRedoc api={api} ownerTeam={ownerTeam} />}
               {params.tab === 'news' && (<ApiPost api={api} ownerTeam={ownerTeam} versionId={params.versionId} />)}
               {(params.tab === 'issues' || params.tab === 'labels') && (<ApiIssue api={api} ownerTeam={ownerTeam} />)}
               {(params.tab === 'subscriptions') && (<TeamApiSubscriptions api={api} currentTeam={ownerTeam} />)}
