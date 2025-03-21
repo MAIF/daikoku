@@ -217,12 +217,9 @@ export const ApiHome = ({
           <CmsViewer pageId={api.customHeaderCmsPage} fields={{ api }} /> :
           <ApiHeader api={api} ownerTeam={ownerTeam} tab={params.tab} />
         }
-        <div className="album me-4 min-vh-100" style={{ position: 'relative' }}>
-          <div className={classNames("p-4", {
-            // 'container-fluid': params.tab === 'swagger',
-            // container: params.tab !== 'swagger'
-          })}>
-            <div className="row">
+        <div className="album me-4 min-vh-100 p-4" style={{ position: 'relative' }}>
+          {/* <div className="p-4">
+            <div className="row"> */}
               {params.tab === 'description' && (api.descriptionCmsPage ? <CmsViewer pageId={api.descriptionCmsPage} fields={{ api }} /> : <ApiDescription api={api} ownerTeam={ownerTeam} />)}
               {params.tab === 'apis' && (<ApiGroupApis apiGroup={api} ownerTeam={ownerTeam} />)}
               {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam}
@@ -257,8 +254,8 @@ export const ApiHome = ({
               {params.tab === 'consumption' && consumptionMatch?.params.planId && (<TeamPlanConsumption api={api} currentTeam={ownerTeam} />)}
               {params.tab === 'apikeys' && (<ApiSubscriptions api={api} ownerTeam={ownerTeam} subscribingTeams={subscribingTeams} />)}
 
-            </div>
-          </div>
+            {/* </div>
+          </div> */}
         </div>
       </main>);
   }

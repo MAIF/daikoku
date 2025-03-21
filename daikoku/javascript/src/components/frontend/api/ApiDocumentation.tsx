@@ -6,7 +6,6 @@ import asciidoctor from 'asciidoctor';
 import classNames from 'classnames';
 import hljs from 'highlight.js';
 import { useContext, useEffect, useState } from 'react';
-import More from 'react-feather/dist/icons/more-vertical';
 import { useSearchParams } from 'react-router-dom';
 import Select from 'react-select';
 import { toast } from 'sonner';
@@ -195,7 +194,7 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
   useEffect(() => {
     setPageId(props.documentation?.pages[0]?.id)
   }, [props.documentation])
-  
+
 
 
   const orderedPages = flattenDoc(props.documentation?.pages)
@@ -371,33 +370,15 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
 
 
   return (
-    <div>
+    <div className="d-flex col flex-column p-3 section" style={{ position: 'relative' }}>
       <Can I={manage} a={API} team={props.ownerTeam}>
-        <div
-          className="dropdown"
-          style={{
-            position: 'absolute',
-            top: '0px',
-            right: '15px',
-            zIndex: '100',
-          }}
-        >
-          <More
-            className="fa fa-cog cursor-pointer dropdown-menu-button"
-            style={{ fontSize: '20px' }}
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-            id="dropdownMenuButton"
-          />
-          <div className="dropdown-menu" aria-labelledby="dropdownMenuButton">
-            <span
-              onClick={() => setView(view === 'documentation' ? 'update' : 'documentation')}
-              className="dropdown-item cursor-pointer"
-            >
-              {view === 'documentation' ? 'Modifier la documentation' : 'Voir la documentation'}
-            </span>
-          </div>
-        </div>
+        <button
+          className="btn btn-sm btn-outline-primary px-3"
+          aria-label={translate("api.home.config.api.aria.label")}
+          style={{ position: "absolute", right: 0, top: 0 }}
+          onClick={() => setView(view === 'documentation' ? 'update' : 'documentation')}>
+          {view === 'documentation' ? translate('api.home.config.api.documentation.btn.label.edit') : translate('api.home.config.api.documentation.btn.label.view')}
+        </button>
       </Can>
 
       {view === 'documentation' && pageId && (
@@ -696,9 +677,9 @@ export const EnvironmentsDocumentation = (props: EnvironmentsDocumentationProps)
     const environments: IUsagePlan[] = environmentsQuery.data
 
     return (
-      <div className='d-flex flex-column'>
+      <div className='d-flex flex-column p-3'>
         <Select
-          className='col-3'
+          className='col-3 mb-3'
           placeholder={translate('api.subscriptions.team.select.placeholder')}
           options={environments.map(value => ({ label: value.customName, value }))}
           onChange={t => setSelectedEnvironment(t!.value)}

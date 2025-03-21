@@ -1,24 +1,22 @@
-import { Form, TBaseObject, constraints, format, type } from '@maif/react-forms';
+import { getApolloContext, gql } from '@apollo/client';
+import { Form, constraints, format, type } from '@maif/react-forms';
 import { useQueryClient } from '@tanstack/react-query';
 import sortBy from 'lodash/sortBy';
 import { useContext, useEffect, useState } from 'react';
-import More from 'react-feather/dist/icons/more-vertical';
 import { useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select';
 import { toast } from 'sonner';
 
-import { I18nContext, IFormModalProps, ModalContext, TranslateParams } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import { IApi, ITeamSimple, isError } from '../../../types';
-import { teamApiInfoForm } from '../../backoffice/apis/TeamApiInfo';
-import { api as API, Can, manage } from '../../utils';
-import { reservedCharacters } from '../../utils/tenantUtils';
 import { IPage } from '../../adminbackoffice/cms';
-import { getApolloContext, gql } from '@apollo/client';
-import { ApiFormRightPanel } from '../../utils/sidebar/panels/AddPanel';
+import { api as API, Can, manage } from '../../utils';
 import { deleteApi } from '../../utils/apiUtils';
+import { ApiFormRightPanel } from '../../utils/sidebar/panels/AddPanel';
+import { reservedCharacters } from '../../utils/tenantUtils';
 
 type ApiHeaderProps = {
   api: IApi
@@ -111,7 +109,7 @@ export const ApiHeader = ({
   };
 
   return (
-    <section className="api__header col-12 mb-4 p-3 d-flex flex-row">
+    <section className="api__header col-12 mb-4 p-3 d-flex flex-row" style={{ position: 'relative' }}>
       <div className="container-fluid">
         {!api.header && (
           <>
@@ -154,17 +152,17 @@ export const ApiHeader = ({
           </div>
         )}
         <Can I={manage} a={API} team={ownerTeam}>
-          <More
-            className="a-fake"
-            aria-label={translate("api.home.config.api.aria.label")}
+          <button
+            className="btn btn-sm btn-outline-primary px-3"
             data-bs-toggle="dropdown"
             aria-expanded="false"
-            id={`${api._humanReadableId}-dropdownMenuButton`}
-          />
+            id={`${api._humanReadableId}-dropdownMenuButton`} >
+            {translate('api.home.config.api.btn.label')}
+          </button>
           <div className="dropdown-menu" aria-labelledby={`${api._humanReadableId}-dropdownMenuButton`}>
             <span
               onClick={() => openRightPanel({
-                title: translate("update.api.details.panel.title"),
+                title: translate("api.home.config.api.menu.configure"),
                 content: <ApiFormRightPanel team={ownerTeam} api={api} apigroup={!!api.apis} handleSubmit={(updatedApi) => {
                   return Services.saveTeamApi(ownerTeam._id, updatedApi, api.currentVersion)
                     .then((response) => {
@@ -176,12 +174,8 @@ export const ApiHeader = ({
                         toast.error(response.error);
                       }
                     })
-                }
-
-
-                } />
-              })
-              }
+                }} />
+              })}
               className="dropdown-item cursor-pointer"
             >
               {translate("api.home.update.api.btn.label")}
@@ -204,7 +198,7 @@ export const ApiHeader = ({
                     } />
                   }))}
               >
-                {translate("api.home.clone.api.btn.label")}
+                {translate("api.home.config.api.menu.clone")}
               </span>
               {!api.apis && <span
                 className="dropdown-item cursor-pointer"
@@ -223,13 +217,13 @@ export const ApiHeader = ({
                     }
                   })}
               >
-                {translate("api.home.create.version.api.btn.label")}
+                {translate("api.home.config.api.menu.new_version")}
               </span>}
               <div className="dropdown-divider" />
               {!api.apis && <span
-                className="dropdown-item cursor-pointer btn-outline-danger"
+                className="dropdown-item cursor-pointer danger"
                 onClick={() => openRightPanel({
-                  title: "api.transfer.title",
+                  title: translate('api.home.right.panel.transfer.title'),
                   content: <Form
                     schema={transferSchema}
                     onSubmit={(data) => {
@@ -245,13 +239,18 @@ export const ApiHeader = ({
                         })
                         .then(closeRightPanel);
                     }}
+                    options={{
+                      actions: {
+                        submit: { label: translate('Save') }
+                      }
+                    }}
                   />
                 })}
               >
-                {translate('api.home.transfer.api.btn.label')}
+                {translate('api.home.config.api.menu.transfer')}
               </span>}
               <span
-                className="dropdown-item cursor-pointer btn-outline-danger"
+                className="dropdown-item cursor-pointer danger"
                 onClick={() => deleteApi({
                   api,
                   versions,
@@ -261,7 +260,7 @@ export const ApiHeader = ({
                   handleSubmit: () => navigate('/apis')
                 })}
               >
-                {translate('api.home.delete.api.btn.label')}
+                {translate('api.home.config.api.menu.delete')}
               </span>
             </>}
           </div>

@@ -1190,7 +1190,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                   </span>
                   <div className="dropdown-divider" />
                   <span
-                    className="dropdown-item cursor-pointer btn-outline-danger"
+                    className="dropdown-item cursor-pointer danger"
                     onClick={deleteWithConfirm}
                   >
                     {tenant.display === 'environment'
@@ -1677,11 +1677,13 @@ export const ApiPricing = (props: ApiPricingProps) => {
         schema={basicInformationSchema(plan)}
         flow={basicInformationFlow}
         onSubmit={(plan: IUsagePlan) => savePlan(plan, creation)}
-        footer={({ valid }) => <div className='mt-3 d-flex gap-2 justify-content-end'>
-          <button className='btn btn-outline-danger' type='button' onClick={() => closeRightPanel()}>Cancel</button>
-          {creation && <button className='btn btn-outline-success' type='button' onClick={valid}>Save & update otoroshi settings</button>}
-          <button className='btn btn-outline-success'>Save</button>
-        </div>}
+        
+        options={{
+          actions: {
+            cancel: { display: true, label: translate('Cancel'), action: () => closeRightPanel()},
+            submit: { label: translate('Save') }
+          }
+        }}
       />
     })
   }

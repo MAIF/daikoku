@@ -4,16 +4,15 @@ import moment from 'moment';
 import { useContext, useState } from 'react';
 import ArrowLeft from 'react-feather/dist/icons/arrow-left';
 import ArrowRight from 'react-feather/dist/icons/arrow-right';
-import More from 'react-feather/dist/icons/more-vertical';
-
 import { toast } from 'sonner';
+
 import { I18nContext, ModalContext } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services/index';
 import { converter } from '../../../services/showdown';
 import { IApi, IApiPost, IApiPostCursor, isError, ITeamSimple } from '../../../types';
-import { api as API, Can, manage, CanIDoAction } from '../../utils/permissions';
+import { api as API, Can, manage } from '../../utils/permissions';
 import { Spinner } from '../../utils/Spinner';
-import { GlobalContext } from '../../../contexts/globalContext';
 
 type ApiPostProps = {
   api: IApi
@@ -103,12 +102,17 @@ export function ApiPost(props: ApiPostProps) {
   }
 
   const createorUpdatePostForm = (value?: IApiPost, creation: boolean = true) => openRightPanel({
-    title: creation ? "Create new post" : "Update post",
+    title: creation ? translate("api.home.config.api.news.menu.create") : translate("api.home.config.api.news.menu.update"),
     content:
       <Form
         schema={schema}
         onSubmit={publishPost}
         value={value}
+        options={{
+          actions: {
+            submit: { label: translate('Save')}
+          }
+        }}
       />
   })
 
@@ -123,44 +127,47 @@ export function ApiPost(props: ApiPostProps) {
     const currentPost = (postQuery.data as IApiPostCursor).posts[0];
 
     return (
-      <div className="container-fluid">
+      <div className="d-flex flex-column w-10" style={{position: 'relative'}}>
         <Can I={manage} a={API} team={props.ownerTeam}>
-          <More
-            className="a-fake"
-            aria-label={translate('update.api.testing.btn.label')}
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-            id={`${props.api._id}-dropdownMenuButton`}
-            style={{ position: "absolute", right: 0 }} />
-          <div className="dropdown-menu" aria-labelledby={`${props.api._id}-dropdownMenuButton`}>
-            {!isDataError && currentPost && <>
-              <span
-                onClick={() => createorUpdatePostForm(currentPost, false)}
-                className="dropdown-item cursor-pointer"
-                aria-label={translate("api.post.update.post.btn.label")}
-              >
-                {translate('api.post.update.post.btn.label')}
-              </span>
-              <div className="dropdown-divider" />
-            </>}
+          <div className="mb-2 d-flex justify-content-end">
+            <button
+              className="btn btn-sm btn-outline-primary px-3"
+              aria-label={translate('api.home.config.api.news.btn.label')}
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              id={`${props.api._id}-dropdownMenuButton`}>
+              {translate('api.home.config.api.news.btn.label')}
+            </button>
+            <div className="dropdown-menu" aria-labelledby={`${props.api._id}-dropdownMenuButton`}>
+              {!isDataError && currentPost && <>
+                <span
+                  onClick={() => createorUpdatePostForm(currentPost, false)}
+                  className="dropdown-item cursor-pointer"
+                  aria-label={translate("api.home.config.api.news.menu.update")}
+                >
+                  {translate('api.home.config.api.news.menu.update')}
+                </span>
+                <div className="dropdown-divider" />
+              </>}
 
-            <span
-              onClick={() => createorUpdatePostForm(undefined, true)}
-              className="dropdown-item cursor-pointer"
-              aria-label={translate('api.post.create.post.btn.label')}
-            >
-              {translate('api.post.create.post.btn.label')}
-            </span>
-            {!isDataError && currentPost && <>
-              <div className="dropdown-divider" />
               <span
-                onClick={() => removePost(currentPost)}
-                className="dropdown-item cursor-pointer btn-outline-danger"
-                aria-label={translate('api.post.delete.post.btn.label')}
+                onClick={() => createorUpdatePostForm(undefined, true)}
+                className="dropdown-item cursor-pointer"
+                aria-label={translate('api.home.config.api.news.menu.create')}
               >
-                {translate('api.post.delete.post.btn.label')}
+                {translate('api.home.config.api.news.menu.create')}
               </span>
-            </>}
+              {!isDataError && currentPost && <>
+                <div className="dropdown-divider" />
+                <span
+                  onClick={() => removePost(currentPost)}
+                  className="dropdown-item cursor-pointer danger"
+                  aria-label={translate('api.home.config.api.news.menu.delete')}
+                >
+                  {translate('api.home.config.api.news.menu.delete')}
+                </span>
+              </>}
+            </div>
           </div>
         </Can>
         <div className='d-flex flex-row justify-content-between'>

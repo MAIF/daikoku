@@ -1,11 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext, useEffect, useState } from 'react';
-import More from 'react-feather/dist/icons/more-vertical';
 import { useParams } from 'react-router-dom';
-import { SwaggerUIBundle } from 'swagger-ui-dist';
 import Select from 'react-select';
-
-
+import { toast } from 'sonner';
+import { SwaggerUIBundle } from 'swagger-ui-dist';
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
@@ -15,7 +13,6 @@ import { TeamApiSwagger, TeamApiTesting } from '../../backoffice';
 import { api as API, Can, manage, Spinner } from '../../utils';
 
 import 'swagger-ui-dist/swagger-ui.css';
-import { toast } from 'sonner';
 
 
 type ApiTestProps<T extends IWithTesting> = {
@@ -132,7 +129,7 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
     })
 
   const openApiDocForm = () => openRightPanel({
-    title: translate('update.api.details.panel.title'),
+    title: translate('api.home.spec.right.panel.title'),
     content: <div>
       <TeamApiSwagger value={props.entity} save={d => props.save(d).then(closeRightPanel)} />
     </div>
@@ -145,35 +142,39 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
   })
 
   return (
-    <div className="d-flex justify-content-center w-100">
+    <div className="d-flex justify-content-center w-10 p-3" style={{position: 'relative'}}>
       <Can I={manage} a={API} team={props.ownerTeam}>
-        <More
-          className="a-fake"
+        {/* <div className="mb-2 d-flex justify-content-end"> */}
+        <button
+          className="btn btn-sm btn-outline-primary px-3"
           aria-label={translate('update.api.testing.btn.label')}
           data-bs-toggle="dropdown"
           aria-expanded="false"
           id={`${props.entity._id}-dropdownMenuButton`}
-          style={{ position: "absolute", right: 0 }} />
+          style={{ position: 'absolute', right: 0, zIndex: 10000 }}>
+          {translate('api.home.config.api.test.btn.label')}
+        </button>
+        {/* </div> */}
 
         <div className="dropdown-menu" aria-labelledby={`${props.entity._id}-dropdownMenuButton`}>
           {!props.swagger && <span
             onClick={() => openApiDocForm()}
             className="dropdown-item cursor-pointer"
           >
-            {translate('update.api.openapi.btn.label')}
+            {translate('api.home.config.api.spec.btn.label')}
           </span>}
           {props.swagger && <span
             onClick={openTestingForm}
             className="dropdown-item cursor-pointer"
           >
-            {translate('update.api.testing.btn.label')}
+            {translate('api.home.config.api.test.menu.edit')}
           </span>}
           {props.entity.testing && <div className="dropdown-divider" />}
           {props.entity.testing && <span
             onClick={() => props.save({ ...props.entity, testing: null })}
-            className="dropdown-item cursor-pointer btn-outline-danger"
+            className="dropdown-item cursor-pointer danger"
           >
-            {translate('update.api.testing.delete.btn.label')}
+            {translate('api.home.config.api.test.menu.delete')}
           </span>}
         </div>
       </Can>
@@ -218,12 +219,12 @@ export const EnvironmentsTest = (props: EnvironmentsSwaggerProps) => {
   })
 
   const savePlan = (plan: IUsagePlan) => {
-      return (
-        Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
-          .then(() => toast.success(translate('update.plan.successful.toast.label')))
-          .then(() => queryClient.invalidateQueries({ queryKey: ['environments'] }))
-      )
-    }
+    return (
+      Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
+        .then(() => toast.success(translate('update.plan.successful.toast.label')))
+        .then(() => queryClient.invalidateQueries({ queryKey: ['environments'] }))
+    )
+  }
 
   if (!selectedEnvironment && environmentsQuery.isLoading) {
     return <Spinner />

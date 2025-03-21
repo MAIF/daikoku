@@ -76,7 +76,7 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
     return <></>
   } else {
     const openApiDocForm = () => openRightPanel({
-      title: translate('update.api.details.panel.title'),
+      title: translate('api.home.spec.right.panel.title'),
       content: <div>
         <TeamApiSwagger
           value={props.entity}
@@ -86,42 +86,46 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
     })
 
 
-    return <div>
+    return <div className="d-flex col flex-column section" style={{position: 'relative'}}>
       <Can I={manage} a={API} team={props.ownerTeam}>
-        <More
-          className="a-fake"
-          aria-label={translate('update.api.openapi.btn.label')}
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-          id={`${props.entity._id}-dropdownMenuButton`}
-          style={{ position: "absolute", right: 0 }} />
+          <button
+            className="btn btn-sm btn-outline-primary px-3"
+            aria-label={translate('update.api.openapi.btn.label')}
+            data-bs-toggle="dropdown"
+            aria-expanded="false"
+            id={`${props.entity._id}-dropdownMenuButton`}
+            style={{position: 'absolute', top: 10, right: 10, zIndex: 999}}>
+          {translate('api.home.config.api.spec.btn.label')}
+          </button>
         <div className="dropdown-menu" aria-labelledby={`${props.entity._id}-dropdownMenuButton`}>
           <span
             onClick={() => openApiDocForm()}
             className="dropdown-item cursor-pointer"
           >
-            {translate('update.api.openapi.btn.label')}
+            {translate('api.home.config.api.spec.menu.edit')}
           </span>
           {props.entity.swagger && <div className="dropdown-divider" />}
           {props.entity.swagger && <span
             onClick={() => props.save({ ...props.entity, swagger: null })}
-            className="dropdown-item cursor-pointer btn-outline-danger"
+            className="dropdown-item cursor-pointer danger"
           >
-            {translate('update.api.testing.delete.btn.label')}
+            {translate('api.home.config.api.spec.menu.delete')}
           </span>}
         </div>
       </Can>
-      {props.swaggerConf?.specificationType === SpecificationType.openapi &&
-        <RedocStandalone
-          specUrl={props.swaggerUrl}
-          options={{ downloadFileName, pathInMiddlePanel: true, sideNavStyle: SideNavStyleEnum.PathOnly, ...(props.swaggerConf?.additionalConf || {}) }} />}
-      {props.swaggerConf?.specificationType === SpecificationType.asyncapi && <AsyncApiComponent schema={spec} config={config} />}
-      {!props.swaggerConf && (
-        <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
-          <div>{translate('update.api.openapi.not.found.alert')}</div>
-          <button className="btn btn-outline-info" onClick={openApiDocForm}>{translate('update.api.openapi.btn.label')}</button>
-        </div>
-      )}
+      <div>
+        {props.swaggerConf?.specificationType === SpecificationType.openapi &&
+          <RedocStandalone
+            specUrl={props.swaggerUrl}
+            options={{ downloadFileName, pathInMiddlePanel: true, sideNavStyle: SideNavStyleEnum.PathOnly, ...(props.swaggerConf?.additionalConf || {}) }} />}
+        {props.swaggerConf?.specificationType === SpecificationType.asyncapi && <AsyncApiComponent schema={spec} config={config} />}
+        {!props.swaggerConf && (
+          <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
+            <div>{translate('update.api.openapi.not.found.alert')}</div>
+            <button className="btn btn-outline-info" onClick={openApiDocForm}>{translate('update.api.openapi.btn.label')}</button>
+          </div>
+        )}
+      </div>
     </div>
   }
 }

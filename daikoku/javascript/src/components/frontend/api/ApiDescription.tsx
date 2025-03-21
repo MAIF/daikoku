@@ -2,7 +2,6 @@ import { Form, format, type } from '@maif/react-forms';
 import { useQueryClient } from '@tanstack/react-query';
 import hljs from 'highlight.js';
 import { useContext, useEffect } from 'react';
-import More from 'react-feather/dist/icons/more-vertical';
 import { toast } from 'sonner';
 
 import { I18nContext, ModalContext } from '../../../contexts';
@@ -43,44 +42,38 @@ export const ApiDescription = ({
         dangerouslySetInnerHTML={{ __html: converter.makeHtml(api.description) }}
       />
       {api.visibility !== 'AdminOnly' && <Can I={manage} a={API} team={ownerTeam}>
-        <More
-          className="a-fake"
-          aria-label={translate('update.api.description.btn.label')}
-          data-bs-toggle="dropdown"
-          aria-expanded="false"
-          id={`${api._humanReadableId}-dropdownMenuButton`}
-          style={{ position: "absolute", right: 0 }} />
-        <div className="dropdown-menu" aria-labelledby={`${api._humanReadableId}-dropdownMenuButton`}>
-          <span
-            onClick={() => openRightPanel({
-              title: translate('update.api.details.panel.title'),
-              content: <div>
-                <Form
-                  schema={{
-                    description: {
-                      type: type.string,
-                      format: format.markdown,
-                      label: translate('Description'),
-                    },
-                  }}
-                  onSubmit={(data) => {
-                    Services.saveTeamApi(ownerTeam._id, data, data.currentVersion)
-                      .then(() => queryClient.invalidateQueries({ queryKey: ["api"] })) //todo: get the right keys
-                      .then(() => closeRightPanel())
-                      .then(() => toast.success("update.api.description.successful.toast.label"))
-                  }}
-                  value={api}
-                  options={{actions: {
-                    submit: {label: translate("Save")}
-                  }}}
-                />
-              </div>
-            })}
-            className="dropdown-item cursor-pointer"
-          >
-            {translate('api.home.update.description.btn.label')}
-          </span>
-        </div>
+        <button
+          className="btn btn-sm btn-outline-primary px-3"
+          aria-label={translate("api.home.config.api.aria.label")}
+          style={{ position: "absolute", right: 0, top: 0 }}
+          onClick={() => openRightPanel({
+            title: translate('api.home.description.right.panel.title'),
+            content: <div>
+              <Form
+                schema={{
+                  description: {
+                    type: type.string,
+                    format: format.markdown,
+                    label: translate('Description'),
+                  },
+                }}
+                onSubmit={(data) => {
+                  Services.saveTeamApi(ownerTeam._id, data, data.currentVersion)
+                    .then(() => queryClient.invalidateQueries({ queryKey: ["api"] })) //todo: get the right keys
+                    .then(() => closeRightPanel())
+                    .then(() => toast.success("update.api.description.successful.toast.label"))
+                }}
+                value={api}
+                options={{
+                  actions: {
+                    submit: { label: translate("Save") }
+                  }
+                }}
+              />
+            </div>
+          })} >
+          {translate('api.home.config.api.description.btn.label')}
+        </button>
       </Can>}
     </div>
   );
