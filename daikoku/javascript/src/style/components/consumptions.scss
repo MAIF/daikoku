@@ -1,4 +1,4 @@
-@import '../variables.scss';
+@use '../variables.scss';
 
 .data-vizualisation {
  // border: 1px solid lightgray;
@@ -9,7 +9,7 @@
     flex-direction: row;
     flex-wrap: nowrap;
     //height: 130px;
-    border-bottom: 1px solid $btn-border-color;
+    border-bottom: 1px solid variables.$btn-border-color;
 
     .data__navbar__tab {
       //width: 200px;
@@ -24,13 +24,13 @@
       border-top-right-radius: 0.25rem;
 
       &.data__navbar__tab--active {
-        color: $btn-text-color;
-        background-color: $btn-bg-color;
-        border: 1px solid $btn-border-color;
+        color: variables.$btn-text-color;
+        background-color: variables.$btn-bg-color;
+        border: 1px solid variables.$btn-border-color;
       }
       &:hover{
-        background-color: $btn-border-color;
-        color: $btn-bg-color;
+        background-color: variables.$btn-border-color;
+        color: variables.$btn-bg-color;
       }
 
       .ant-progress-outer {
@@ -83,8 +83,8 @@
     justify-content: center;
     align-items: flex-start;
 
-    color: $card-header-text-color;
-    background-color: $card-header-bg-color;
+    color: variables.$card-header-text-color;
+    background-color: variables.$card-header-bg-color;
     // font-family: Arial, Helvetica, "Open Sans", sans-serif, monospace;
     //font-size: 25pt;
     text-align: center;

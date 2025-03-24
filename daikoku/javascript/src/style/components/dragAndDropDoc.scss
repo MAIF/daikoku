@@ -1,3 +1,5 @@
+@use "../variables";
+
 .tree-item {
 
   border-radius: 4px;
@@ -5,9 +7,9 @@
   display: flex;
   align-items: center;
   padding: 10px 10px;
-  background-color: $level3_bg-color;
+  background-color: variables.$level3_bg-color;
   border: 1px solid #dedede;
-  color: $level3_text-color;
+  color: variables.$level3_text-color;
   box-sizing: border-box;
 
   margin-top: 5px;

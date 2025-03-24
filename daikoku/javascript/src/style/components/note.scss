@@ -1,3 +1,5 @@
+@use "../variables";
+
 
 .note {
   border: none;
@@ -8,8 +10,8 @@
   position: relative;
   // background-color: rgba(64, 120, 192, 0.1);
   // color: #0a0a0a;
-  background-color: $level1_bg-color;
-  color: $level1_text-color;
+  background-color: variables.$level1_bg-color;
+  color: variables.$level1_text-color;
 }
 
 .note-warning {

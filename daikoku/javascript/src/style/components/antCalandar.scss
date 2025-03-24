@@ -1,7 +1,7 @@
-@import '../variables.scss';
+@use '../variables.scss';
 
 .ant-calendar-range-picker-input{
-  color:$form-text-color;
+  color:variables.$form-text-color;
 }
 
 .ant-btn {

@@ -1,3 +1,5 @@
+@use "../variables";
+
 @use 'sass:color';
 
 button {
@@ -5,32 +7,32 @@ button {
 }
 
 .btn-outline {
-  color: $btn-bg-color !important;
-  background-color: $btn-text-color !important;
-  border-color: $btn-bg-color !important;
+  color: variables.$btn-bg-color !important;
+  background-color: variables.$btn-text-color !important;
+  border-color: variables.$btn-bg-color !important;
 
   &:hover {
-    color: $btn-bg-color !important;
-    background-color: $btn-text-color !important;
+    color: variables.$btn-bg-color !important;
+    background-color: variables.$btn-text-color !important;
   }
 
   &-primary {
-    color: $btn-text-color !important;
-    border-color: $btn-border-color !important;
-    background-color: $btn-bg-color !important;
+    color: variables.$btn-text-color !important;
+    border-color: variables.$btn-border-color !important;
+    background-color: variables.$btn-bg-color !important;
 
     // , :not(.btn-check) + .btn:active
     &.active,
     &:active {
-      color: $btn-bg-color !important;
-      background-color: $btn-border-color !important;
-      border-color: $btn-border-color !important;
+      color: variables.$btn-bg-color !important;
+      background-color: variables.$btn-border-color !important;
+      border-color: variables.$btn-border-color !important;
     }
 
     &:hover {
-      color: $btn-bg-color !important;
-      background-color: $btn-border-color !important;
-      border-color: $btn-border-color !important;
+      color: variables.$btn-bg-color !important;
+      background-color: variables.$btn-border-color !important;
+      border-color: variables.$btn-border-color !important;
 
     }
   }
@@ -38,23 +40,23 @@ button {
 
 .btn-danger {
   color: #fff;
-  border-color: $error-color;
-  background-color: $error-color;
+  border-color: variables.$error-color;
+  background-color: variables.$error-color;
 
   &-negative {
-    color: $error-color;
-    border-color: $error-color;
-    background-color: $btn-bg-color;
+    color: variables.$error-color;
+    border-color: variables.$error-color;
+    background-color: variables.$btn-bg-color;
 
     &:hover {
       color: #fff;
-      background-color: $error-color;
+      background-color: variables.$error-color;
     }
   }
 
   &:hover {
     color: #fff;
-    background-color: $error-color;
+    background-color: variables.$error-color;
   }
 }
 
@@ -95,42 +97,42 @@ button {
 .btn-outline-success,
 .btn-outline-success:focus {
   background-color: #fff;
-  color: $success-color;
-  border-color: $success-color;
+  color: variables.$success-color;
+  border-color: variables.$success-color;
 
   &:hover,
   &.active {
     color: #fff;
-    background-color: $success-color;
-    border-color: $success-color;
+    background-color: variables.$success-color;
+    border-color: variables.$success-color;
   }
 }
 
 .btn-outline-danger,
 .btn-outline-danger:focus {
   background-color: #fff;
-  color: $danger-color;
-  border-color: $danger-color;
+  color: variables.$danger-color;
+  border-color: variables.$danger-color;
 
   &:hover,
   &.active {
     color: #fff;
-    background-color: $danger-color;
-    border-color: $danger-color;
+    background-color: variables.$danger-color;
+    border-color: variables.$danger-color;
   }
 }
 
 .btn-outline-info,
 .btn-outline-info:focus {
   background-color: #fff;
-  color: $info-color;
-  border-color: $info-color;
+  color: variables.$info-color;
+  border-color: variables.$info-color;
 
   &:hover,
   &.active {
     color: #fff;
-    background-color: $info-color;
-    border-color: $info-color;
+    background-color: variables.$info-color;
+    border-color: variables.$info-color;
   }
 }
 
@@ -138,8 +140,8 @@ button {
 .btn-outline-info:not(:disabled):not(.disabled).active,
 .show>.btn-outline-info.dropdown-toggle {
   color: #fff;
-  border-color: $info-color;
-  background-color: $info-color;
+  border-color: variables.$info-color;
+  background-color: variables.$info-color;
 }
 
 .btn-for-descriptionToolbar {
@@ -196,8 +198,8 @@ button {
   border: '1px solid';
   overflow: hidden;
   box-sizing: content-box;
-  border-color: $btn-border-color;
-  background-color: $btn-border-color;
+  border-color: variables.$btn-border-color;
+  background-color: variables.$btn-border-color;
   font-size: 18px;
 }
 
@@ -214,16 +216,16 @@ button {
 }
 
 .aggregation-button {
-  border: 1px solid $level3_bg-color;
+  border: 1px solid variables.$level3_bg-color;
   min-height: 196px;
   border-radius: 8px;
-  color: $companion_text-color;
+  color: variables.$companion_text-color;
 
 
   &:hover {
-    background-color: $companion_text-hover-bg-color;
-    color: $companion_text-hover-color;
-    border-color: $companion_text-hover-bg-color;
+    background-color: variables.$companion_text-hover-bg-color;
+    color: variables.$companion_text-hover-color;
+    border-color: variables.$companion_text-hover-bg-color;
   }
 }
 
@@ -253,11 +255,11 @@ button {
     }
 
     &.active {
-      border-color: $info-color !important;
+      border-color: variables.$info-color !important;
       border-width: 2px;
 
       .label {
-        color: $info-color;
+        color: variables.$info-color;
       }
     }
 

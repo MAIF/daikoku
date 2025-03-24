@@ -1,6 +1,8 @@
+@use "../variables";
+
 .usage-plan__card {
   position: relative;
-  background-color: $level3_bg-color;
+  background-color: variables.$level3_bg-color;
   border-radius: 1rem;
 
   width: calc(25% - 15px);
@@ -9,7 +11,7 @@
   flex-direction: column;
 
   .dropdown-menu-button {
-    color: $card-header-bg-color;
+    color: variables.$card-header-bg-color;
     &:hover {
       color: color-mix(in srgb, var(--card-header-bg-color, #404040), white 30%);
     }
@@ -17,7 +19,7 @@
 
   .usage-plan__card__header {
     padding: 1rem 1rem 1.5rem 1rem;
-    border-bottom: 1px solid $level2_text-color;
+    border-bottom: 1px solid variables.$level2_text-color;
 
     display: flex;
     flex-direction: column;
@@ -40,19 +42,19 @@
 
       margin: 5px 10px;
       width: 100%;
-      background-color: $card-header-bg-color;
-      color: $card-header-text-color;
-      border: 1px solid $level2_text-color;
+      background-color: variables.$card-header-bg-color;
+      color: variables.$card-header-text-color;
+      border: 1px solid variables.$level2_text-color;
       border-radius: 5px;
       padding: 10px;
 
       position: relative;
 
       &:hover {
-        color: $card-header-bg-color;
-        background-color: $card-header-text-color;
+        color: variables.$card-header-bg-color;
+        background-color: variables.$card-header-text-color;
 
-        box-shadow: 3px 3px 0 $card-header-bg-color;
+        box-shadow: 3px 3px 0 variables.$card-header-bg-color;
       }
 
       &.inactive {
@@ -71,9 +73,9 @@
 
       &:focus,
       &:active {
-        color: $card-header-bg-color;
-        background-color: $card-header-text-color;
-        box-shadow: 1px 1px 0 $card-header-bg-color;
+        color: variables.$card-header-bg-color;
+        background-color: variables.$card-header-text-color;
+        box-shadow: 1px 1px 0 variables.$card-header-bg-color;
         transform: translate(2px, 2px);
       }
     }
@@ -88,9 +90,9 @@
     
         // margin: 5px 10px;
         width: 100%;
-        background-color: $card-header-bg-color;
-        color: $card-header-text-color;
-        border: 1px solid $level2_text-color;
+        background-color: variables.$card-header-bg-color;
+        color: variables.$card-header-text-color;
+        border: 1px solid variables.$level2_text-color;
         border-radius: 5px;
         padding: .5rem;
     
@@ -102,10 +104,10 @@
         width: fit-content;
     
         &:hover {
-          color: $card-header-bg-color;
-          background-color: $card-header-text-color;
+          color: variables.$card-header-bg-color;
+          background-color: variables.$card-header-text-color;
     
-          box-shadow: 3px 3px 0 $card-header-bg-color;
+          box-shadow: 3px 3px 0 variables.$card-header-bg-color;
         }
     
         &.inactive {
@@ -124,9 +126,9 @@
     
         &:focus,
         &:active {
-          color: $card-header-bg-color;
-          background-color: $card-header-text-color;
-          box-shadow: 1px 1px 0 $card-header-bg-color;
+          color: variables.$card-header-bg-color;
+          background-color: variables.$card-header-text-color;
+          box-shadow: 1px 1px 0 variables.$card-header-bg-color;
           transform: translate(2px, 2px);
         }
       }

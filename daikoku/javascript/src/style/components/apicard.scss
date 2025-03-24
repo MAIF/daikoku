@@ -1,16 +1,18 @@
+@use "../variables";
+
 .card {
-  background-color: $card-bg-color;
-  color: $card-text-color;
+  background-color: variables.$card-bg-color;
+  color: variables.$card-text-color;
 
   .card-body {
     border: none !important;
 
     .a-fake,
     a {
-      color: $card-link-color;
+      color: variables.$card-link-color;
 
       &:hover {
-        color: $card-link-hover-color;
+        color: variables.$card-link-hover-color;
       }
     }
 
@@ -30,10 +32,10 @@
   }
 
   #dropdownMenuButton {
-    color: $card-link-color;
+    color: variables.$card-link-color;
 
     &:hover {
-      color: $card-link-hover-color;
+      color: variables.$card-link-hover-color;
     }
   }
 }
@@ -44,8 +46,8 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  background-color: $card-header-bg-color;
-  color: $card-header-text-color;
+  background-color: variables.$card-header-bg-color;
+  color: variables.$card-header-text-color;
   font-family: Arial, Helvetica, "Open Sans", sans-serif, monospace;
   font-size: 25pt;
   text-align: center;
@@ -129,13 +131,13 @@ a.card-link:active {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: $card-header-bg-color;
+  color: variables.$card-header-bg-color;
 
   &:hover {
-    background-color: $card-header-bg-color;
+    background-color: variables.$card-header-bg-color;
 
     &:before {
-      color: $card-header-text-color;
+      color: variables.$card-header-text-color;
     }
   }
 
@@ -149,7 +151,7 @@ a.card-link:active {
   position: sticky;
   bottom: 5px;
   padding: 5px 10px;
-  color: $level1_text-color;
-  background-color: $level1_bg-color;
-  border-top: 1px solid $level3_text-color;
+  color: variables.$level1_text-color;
+  background-color: variables.$level1_bg-color;
+  border-top: 1px solid variables.$level3_text-color;
 }

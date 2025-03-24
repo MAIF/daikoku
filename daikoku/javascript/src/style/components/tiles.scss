@@ -1,3 +1,5 @@
+@use "../variables";
+
 
 .home-tiles>a:hover, .home-tiles>a:visited, .home-tiles>a:link, .home-tiles>a:active {
   text-decoration: none;
@@ -20,8 +22,8 @@
 .home-tile{
   flex: 1 1 49%;
   padding: 12px;
-  background-color: $sidebar-bg-color;
-  color:$sidebar-text-color;
+  background-color: variables.$sidebar-bg-color;
+  color:variables.$sidebar-text-color;
   margin-top: 5px;
   margin-right: 5px;
   display: flex;

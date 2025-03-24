@@ -1,3 +1,5 @@
+@use "../variables";
+
 .notification-link,
 .messages-link {
   display: flex;
@@ -6,13 +8,13 @@
   position: relative;
 
   &-color {
-    color: $sidebar-text-color;
+    color: variables.$sidebar-text-color;
     &:hover {
-      color: $sidebar-text-hover-color;
+      color: variables.$sidebar-text-hover-color;
       text-decoration: none;
 
       &::before {
-        border-color: $sidebar-text-hover-color;
+        border-color: variables.$sidebar-text-hover-color;
       }
     }
   }
@@ -26,7 +28,7 @@
   position: absolute;
   top: -3px;
   right: 3px;
-  background-color: $danger-color;
+  background-color: variables.$danger-color;
   border-radius: 50%;
   // border: 2px solid $navbar-text-color;
   box-sizing: content-box;

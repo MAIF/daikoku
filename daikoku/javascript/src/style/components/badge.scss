@@ -1,8 +1,10 @@
+@use "../variables";
+
 .badge-custom {
-  background-color: $badge-tags-bg-color;
-  color:$badge-tags-text-color;
+  background-color: variables.$badge-tags-bg-color;
+  color:variables.$badge-tags-text-color;
   &:hover{
-    background-color: $badge-tags-bg-hover-color;
+    background-color: variables.$badge-tags-bg-hover-color;
   }
 }
 

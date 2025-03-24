@@ -1,12 +1,14 @@
+@use "../variables";
+
 body {
   font-family: Custom, Raleway, Helvetica, sans-serif;
-  background-color: $level1_bg-color;
-  color: $level1_text-color;
+  background-color: variables.$level1_bg-color;
+  color: variables.$level1_text-color;
   font-size: 1rem;
 }
 
 main {
-  background-color: $level1_bg-color;
+  background-color: variables.$level1_bg-color;
 }
 
 [role="root-container"] {
@@ -22,13 +24,13 @@ main {
 }
 
 .danger-color {
-  color: $danger-color
+  color: variables.$danger-color
 }
 
 .section,
 .album {
-  background-color: $level2_bg-color;
-  color: $level2_text-color;
+  background-color: variables.$level2_bg-color;
+  color: variables.$level2_text-color;
 }
 
 //remove blue border on chrome
@@ -42,7 +44,7 @@ a {
 
 .a-fake,
 a {
-  color: $level1_link-color;
+  color: variables.$level1_link-color;
 }
 
 .a-fake,
@@ -58,7 +60,7 @@ a {
 
 .a-fake:hover,
 a:hover {
-  color: $level1_link-hover-color;
+  color: variables.$level1_link-hover-color;
 }
 
 .underline-on-hover:hover,
@@ -88,7 +90,7 @@ a.nav-link.active {
 }
 
 hr {
-  border-top-color: $form-border-color;
+  border-top-color: variables.$form-border-color;
 }
 
 .word-break {
@@ -167,7 +169,7 @@ img:hover+.changePicture,
 
     .nav-item.show .nav-link,
     .nav-link.active {
-      background-color: $btn-bg-color;
+      background-color: variables.$btn-bg-color;
     }
   }
 
@@ -200,64 +202,64 @@ img:hover+.changePicture,
 }
 
 .companion-link {
-  color: $companion_link-color;
+  color: variables.$companion_link-color;
 
   &:hover {
-    background-color: $companion_text-hover-bg-color;
-    color: $companion_text-hover-color;
+    background-color: variables.$companion_text-hover-bg-color;
+    color: variables.$companion_text-hover-color;
   }
 }
 
 .level1-link {
-  color: $level1_link-color;
+  color: variables.$level1_link-color;
 
   &:hover {
-    color: $level1_link-hover-color;
+    color: variables.$level1_link-hover-color;
   }
 }
 
 .level1 {
-  background-color: $level1_bg-color;
-  color: $level1_text-color;
+  background-color: variables.$level1_bg-color;
+  color: variables.$level1_text-color;
 }
 
 .level2 {
-  background-color: $level2_bg-color;
-  color: $level2_text-color;
+  background-color: variables.$level2_bg-color;
+  color: variables.$level2_text-color;
 }
 
 .level2-link {
-  color: $level2_link-color;
+  color: variables.$level2_link-color;
 
   &:hover {
-    color: $level2_link-hover-color;
+    color: variables.$level2_link-hover-color;
   }
 
   &__with-bg:hover {
     cursor: pointer;
-    background-color: $btn-border-color;
-    color: $btn-bg-color;
+    background-color: variables.$btn-border-color;
+    color: variables.$btn-bg-color;
   }
 
   &__active-bg {
-    color: $btn-text-color;
-    background-color: $btn-bg-color;
-    border: 1px solid $btn-border-color;
+    color: variables.$btn-text-color;
+    background-color: variables.$btn-bg-color;
+    border: 1px solid variables.$btn-border-color;
   }
 }
 
 
 .level3 {
-  background-color: $level3_bg-color;
-  color: $level3_text-color;
+  background-color: variables.$level3_bg-color;
+  color: variables.$level3_text-color;
 }
 
 .level3-link {
-  color: $level3_link-color;
+  color: variables.$level3_link-color;
 
   &:hover {
-    color: $level3_link-hover-color;
-    background-color: $level3_link-hover-bg-color;
+    color: variables.$level3_link-hover-color;
+    background-color: variables.$level3_link-hover-bg-color;
   }
 }
 
@@ -303,7 +305,7 @@ img:hover+.changePicture,
   transition: left 0.25s;
   position: absolute;
   background-color: #000;
-  color: $level1_text-color;
+  color: variables.$level1_text-color;
   top: 0;
   bottom: 0;
   left: 0;

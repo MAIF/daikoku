@@ -1,3 +1,5 @@
+@use "../variables";
+
 .right-panel-container {
   position: absolute;
   height: 100vh;
@@ -19,8 +21,8 @@
   z-index: 1000;
   top: 0;
   right: 0;
-  background-color: $companion_bg-color;
-  color: $companion_text-color;
+  background-color: variables.$companion_bg-color;
+  color: variables.$companion_text-color;
   filter: brightness(105%);
   transition: width .2s ease-in-out;
 
@@ -33,7 +35,7 @@
 
     &:hover {
       border-radius: 50%;
-      background-color: $companion_text-hover-bg-color;
+      background-color: variables.$companion_text-hover-bg-color;
       color: var(--companion-link-hover-text-color);
     }
   }

@@ -1,10 +1,11 @@
+@use "../variables";
 
 
 .organisation__header {
   //display: flex;
   position: relative;
-  background-color: $level2_bg-color;
-  color:$level2_text-color;
+  background-color: variables.$level2_bg-color;
+  color:variables.$level2_text-color;
   .organisation__avatar {
     width: 150px;
   }

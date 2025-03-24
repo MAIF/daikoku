@@ -1,5 +1,7 @@
+@use "../variables";
+
 .navDocumentation {
-    border-right: 1px solid $level2_link-color;
+    border-right: 1px solid variables.$level2_link-color;
   
     ul {
       list-style: none;
@@ -14,17 +16,17 @@
         padding: 0 0.5rem;
         display: block;
         width: 100%;
-        color: $companion_text-color;
+        color: variables.$companion_text-color;
         margin-bottom: 0.3rem;
   
         &:hover {
-          background-color: $companion_text-hover-bg-color;
-          color: $companion_text-hover-color;
+          background-color: variables.$companion_text-hover-bg-color;
+          color: variables.$companion_text-hover-color;
         }
   
         &.active {
-          background-color: $companion_text-hover-bg-color;
-          color: $companion_text-hover-color;
+          background-color: variables.$companion_text-hover-bg-color;
+          color: variables.$companion_text-hover-color;
         }
       }
     }

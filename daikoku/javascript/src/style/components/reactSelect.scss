@@ -1,25 +1,27 @@
+@use "../variables";
+
 .reactSelect__control{
-  background-color: $form-bg-color !important;
-  border-color: $form-border-color !important;
+  background-color: variables.$form-bg-color !important;
+  border-color: variables.$form-border-color !important;
 }
 .reactSelect__single-value, .reactSelect__value-container [class*="-Input"]{
-  color:$form-text-color !important;
+  color:variables.$form-text-color !important;
 }
 .reactSelect__menu{
-  background-color: $form-bg-color !important;
-  border-color: $form-border-color !important;
-  color:$form-text-color !important;
+  background-color: variables.$form-bg-color !important;
+  border-color: variables.$form-border-color !important;
+  color:variables.$form-text-color !important;
 }
 
 .reactSelect__option--is-focused{
-  background-color: $form-select-focused-color !important;
-  color:$form-select-focused-text-color !important;
+  background-color: variables.$form-select-focused-color !important;
+  color:variables.$form-select-focused-text-color !important;
 }
 
 .react-form-select__option--is-selected,
 .reactSelect__option--is-selected{
-  background-color: $form-select-focused-color !important;
-  color:$form-select-focused-text-color !important;
+  background-color: variables.$form-select-focused-color !important;
+  color:variables.$form-select-focused-text-color !important;
   font-weight: bolder!important;
 }
 
@@ -29,8 +31,8 @@
 
 .reactSelect__group-heading{
   padding: 10px;
-  background-color: $companion_text-hover-bg-color;
-  color : $companion_text-hover-color !important;
+  background-color: variables.$companion_text-hover-bg-color;
+  color : variables.$companion_text-hover-color !important;
 }
 .groupStyles {
   display: flex;

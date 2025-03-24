@@ -1,3 +1,5 @@
+@use "../variables";
+
 
 /* navbar & sidebar */
 .sidebar {
@@ -11,7 +13,7 @@
   /* Height of navbar */
   box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
   font-size: 14px;
-  background-color: $sidebar-bg-color;
+  background-color: variables.$sidebar-bg-color;
   @media screen and (max-width: 768px) {
       top: 55px;
   }
@@ -47,7 +49,7 @@
 
 .sidebar .nav-link {
   font-weight: 500;
-  color: $sidebar-text-color;
+  color: variables.$sidebar-text-color;
 }
 
 .sidebar .nav-link .fas {
@@ -56,12 +58,12 @@
 }
 
 .sidebar .nav-link.active,.sidebar .nav-link.active .fas  {
-  color: $companion_text-hover-color;
-  background-color: $companion_text-hover-bg-color;
+  color: variables.$companion_text-hover-color;
+  background-color: variables.$companion_text-hover-bg-color;
 }
 
 .sidebar .nav-link.active .nav-icon {
-  fill: $level2_link-color;
+  fill: variables.$level2_link-color;
 }
 
 .sidebar .nav-link:hover .feather,.sidebar .nav-link:hover .fas,

@@ -115,7 +115,6 @@ export const MyHome = () => {
           myTeams={myTeamsRequest.data}
           teamVisible={true}
           redirectToApiPage={redirectToApiPage}
-          redirectToEditPage={redirectToEditPage}
         />
       </main>
     );

@@ -1,14 +1,16 @@
+@use "../variables";
+
 .escape {
-    color: $error-color;
+    color: variables.$error-color;
 
     &:hover {
-        color: $error-color;
+        color: variables.$error-color;
     }
 }
 
 .accept {
-    color: $success-color;
+    color: variables.$success-color;
     &:hover {
-        color: $success-color;
+        color: variables.$success-color;
     }
 }

@@ -1,24 +1,26 @@
+@use "../variables";
+
 
 .nav-tabs {
-    border-color: $btn-border-color;
+    border-color: variables.$btn-border-color;
     gap: 5px;
   
     .nav-link {
-      background-color: $btn-text-color;
-      color: $btn-bg-color;
+      background-color: variables.$btn-text-color;
+      color: variables.$btn-bg-color;
     }
   
     .nav-link:hover,
     .nav-link:focus {
       cursor: pointer;
-      background-color: $btn-border-color;
-      color: $btn-bg-color;
+      background-color: variables.$btn-border-color;
+      color: variables.$btn-bg-color;
     }
   
     .nav-link.active,
     .nav-item.show .nav-link {
-      color: $btn-text-color;
-      background-color: $btn-bg-color;
-      border-color: $btn-border-color;
+      color: variables.$btn-text-color;
+      background-color: variables.$btn-bg-color;
+      border-color: variables.$btn-border-color;
     }
   }

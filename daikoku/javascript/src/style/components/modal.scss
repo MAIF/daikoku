@@ -1,6 +1,8 @@
+@use "../variables";
+
 .modal-header, .modal-content, .modal-body, .modal-footer{
-  background-color: $level1_bg-color;
-  color: $level1_text-color;
+  background-color: variables.$level1_bg-color;
+  color: variables.$level1_text-color;
 }
 
 .modal-footer .btn-danger{
@@ -21,7 +23,7 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  color: $level1_text-color;
+  color: variables.$level1_text-color;
 
   .team-selection {
     display: flex;
@@ -30,14 +32,14 @@
     width: 100%;
     padding: .5rem 1rem;
     border-bottom: 1px solid #dfdfdf;
-    color:$level1_link-color;
+    color:variables.$level1_link-color;
     &.team-selection__all-team {
       padding-bottom: 2rem;
     }
 
     &.selectable:hover {
       cursor: pointer;
-      color:$level1_link-hover-color;
+      color:variables.$level1_link-hover-color;
     }
 
     &:last-child {
@@ -60,10 +62,10 @@
     width: 100%;
     padding: .5rem 1rem;
     border-bottom: 1px solid #dfdfdf;
-    color:$level1_link-color;
+    color:variables.$level1_link-color;
     &:hover {
       cursor: pointer;
-      color:$level1_link-hover-color;
+      color:variables.$level1_link-hover-color;
     }
 
     &:last-child {
