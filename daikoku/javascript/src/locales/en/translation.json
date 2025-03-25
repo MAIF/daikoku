@@ -1416,7 +1416,7 @@
     "subscription.copy.basic.auth.label": "basic auth.",
     "subscription.copy.basic.auth.aria.label": "Copy the Basic Auth encoded credentials",
     "subscription.copy.basic.auth.help": "Copy credentials as basic auth. value",
-    "subscription.copy.apikey.label": "clientId:clientToken",
+    "subscription.copy.apikey.label": "clientId:clientSecret",
     "subscription.copy.apikey.aria.label": "Copy the credentials",
     "subscription.copy.apikey.help": "Copy credentials as clientId:clientSecret",
     "subscription.copy.token.label": "token",

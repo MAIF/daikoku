@@ -294,6 +294,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
               .daysBetween(from.withTimeAtStartOfDay(), to)
               .getDays == 1
 
+            AppLogger.info(s"[syncConsumptionStatsForSubscription]: from $from to $to for ${subscription.id.value}")
             val id = maybeLastConsumption
               .map {
                 case c
@@ -307,7 +308,8 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
               consumption <- otoroshiClient.getApiKeyConsumption(
                 subscription.apiKey.clientId,
                 from.getMillis.toString,
-                to.toDateTime.getMillis.toString
+                to.toDateTime.getMillis.toString,
+                failOnError = plan.costPerMonth.isDefined
               )
               quotas <-
                 otoroshiClient.getApiKeyQuotas(subscription.apiKey.clientId)
@@ -387,19 +389,21 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
             }
         }
         .runWith(Sink.seq)
-        .recover {
-          case e =>
-            AppLogger.error(
-              "[apikey stats job] Error during sync consumption",
-              e
-            )
-            Seq.empty
-        }
-    }.recover {
-      case e =>
-        AppLogger.error("[apikey stats job] Error during sync consumptions", e)
-        Seq.empty
-    }).getOrElse(FastFuture.successful(Seq.empty[ApiKeyConsumption])).flatten
+//        .recover {
+//          case e =>
+//            AppLogger.error(
+//              "[apikey stats job] Error during sync consumption",
+//              e
+//            )
+//            Seq.empty
+//        }
+    })
+//      .recover {
+//      case e =>
+//        AppLogger.error("[apikey stats job] Error during sync consumptions", e)
+//        Seq.empty
+//    })
+      .getOrElse(FastFuture.successful(Seq.empty[ApiKeyConsumption])).flatten
   }
 
   def computeBilling(

@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import jQuery from 'jquery';
 import { useContext } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Toaster } from 'sonner';
+import { toast, Toaster } from 'sonner';
 
 import { DaikokuApp } from './apps';
 import { GlobalContext, GlobalContextProvider } from './contexts/globalContext';
@@ -47,7 +47,7 @@ const ToasterComponent = () => {
   const { theme } = useContext(GlobalContext)
 
   return (
-    <Toaster richColors position="top-right" theme={theme.toLocaleLowerCase() as 'light' | 'dark'} />
+    <Toaster richColors position="top-right" theme={theme.toLocaleLowerCase() as 'light' | 'dark'}/>
   )
 }
 
@@ -58,6 +58,9 @@ root.render(
       <GlobalContextProvider>
         <I18nProvider>
           <ToasterComponent />
+          <button onClick={() => toast.success('My first toast')}>
+            Give me a toast
+          </button>
           <DaikokuApp />
         </I18nProvider>
       </GlobalContextProvider>

@@ -806,7 +806,7 @@ export const ApiKeyCard = ({
             <div className='d-flex gap-2'>
               <BeautifulTitle title={translate("subscription.copy.apikey.help")}>
                 <button className='btn btn-sm btn-outline-info'
-                  aria-label={translate("subscription.copy.apikey.aria-label")}
+                  aria-label={translate("subscription.copy.apikey.aria.label")}
                   onClick={() => {
                     navigator.clipboard
                       .writeText(`${subscription.apiKey.clientId}:${subscription.apiKey.clientSecret}`)

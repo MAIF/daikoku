@@ -2996,8 +2996,19 @@ class ApiController(
               Json.obj("_id" -> apiId, "team" -> team.id.asJson)
             ), AppError.ApiNotFound)
           _ <- EitherT.cond[Future][AppError, Unit](api.visibility != ApiVisibility.AdminOnly, (), AppError.ForbiddenAction)
-          log = AppLogger.warn(s"[ApiController] :: DELETE API ${api.humanReadableId} BEGIN of subscriptions deletion")
-          plans <- EitherT.liftF[Future, AppError, Set[UsagePlan]](Source(api.possibleUsagePlans.toList)
+          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo.forTenant(ctx.tenant)
+            .save(api.copy(state = ApiState.Blocked))
+          )
+          _ <- EitherT.liftF[Future, AppError, Long](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
+            .updateManyByQuery(Json.obj(
+              "api" -> api.id.asJson
+            ), Json.obj(
+              "$set" -> Json.obj(
+                "enabled" -> false
+              )
+            )))
+
+          plans <- EitherT[Future, AppError, Set[UsagePlan]](Source(api.possibleUsagePlans.toList)
             .mapAsync(1)(planId => {
               for {
                 subs <-
@@ -3020,9 +3031,12 @@ class ApiController(
                 user = ctx.user
               )
             )
-            .runWith(
-              Sink.fold(Set.empty[UsagePlan])((set, plan) => set + plan)
-            ))
+            .runWith(Sink.fold(Set.empty[UsagePlan])((set, plan) => set + plan))
+            .map(Right(_))
+            .recover { case ex =>
+              AppLogger.error("[source] :: ça fail")
+              Left(AppError.OtoroshiError(Json.obj("error" -> ex.getMessage)))})
+
           _ <- EitherT.liftF[Future, AppError, Long](env.dataStore.operationRepo
             .forTenant(ctx.tenant)
             .insertMany(
@@ -3056,6 +3070,15 @@ class ApiController(
           _ <- processNextCurrentVersion(api, nextCurrentVersion)
           log = AppLogger.warn(s"[ApiController] :: DELETE API ${api.humanReadableId} Ended")
         } yield Ok(Json.obj("done" -> true)))
+          .recover(d => {
+            AppLogger.error(d.getErrorMessage())
+            AppLogger.error("on block l'api et les soucription")
+
+
+
+
+            d.render()
+          })
           .leftMap(_.render())
           .merge
       }

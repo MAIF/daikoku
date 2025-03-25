@@ -313,12 +313,12 @@ object CommonServices {
        |  content ->> '_tenant' = '${tenant.id.value}' AND
        |  (content ->> 'state' = 'published' OR
        |   $$1 OR
-       |   content ->> 'team' IN ($$2))
+       |   content ->> 'team' = ANY($$2::text[]))
        |      AND
        |  (case
        |       WHEN $$3 THEN content ->> 'visibility' = '${ApiVisibility.Public.name}'
        |       WHEN $$1 THEN TRUE
-       |       ELSE (content ->> 'visibility' IN ('${ApiVisibility.Public.name}', '${ApiVisibility.PublicWithAuthorizations.name}') OR (content ->> 'team' in ($$2)) OR (content -> 'authorizedTeams' ?| ARRAY[$$2]))
+       |       ELSE (content ->> 'visibility' IN ('${ApiVisibility.Public.name}', '${ApiVisibility.PublicWithAuthorizations.name}') OR (content ->> 'team' = ANY ($$2::text[])) OR (content -> 'authorizedTeams' ?| ARRAY[$$2]))
        |      END) AND
        |  (content ->> 'name' ~* COALESCE(NULLIF($$4, ''), '.*')) AND
        |  (_deleted = false) AND
@@ -373,7 +373,7 @@ object CommonServices {
           allVisibleApisSqlQuery(ctx.tenant),
           Seq(
             java.lang.Boolean.valueOf(user.isDaikokuAdmin),
-            myTeams.map(_.id.value).mkString(","),
+            myTeams.map(_.id.value).toArray,
             java.lang.Boolean.valueOf(user.isGuest),
             research,
             selectedTeam.orNull,
@@ -397,7 +397,7 @@ object CommonServices {
                |""".stripMargin,
               Seq(
                 java.lang.Boolean.valueOf(user.isDaikokuAdmin),
-                myTeams.map(_.id.value).mkString(","),
+                myTeams.map(_.id.value).toArray,
                 java.lang.Boolean.valueOf(user.isGuest),
                 research,
                 selectedTeam.orNull,
@@ -503,7 +503,7 @@ object CommonServices {
             "tag",
             Seq(
               java.lang.Boolean.valueOf(ctx.user.isDaikokuAdmin),
-              myTeams.map(_.id.value).mkString(","),
+              myTeams.map(_.id.value).toArray,
               java.lang.Boolean.valueOf(ctx.user.isGuest),
               "",
               null,
@@ -548,7 +548,7 @@ object CommonServices {
             "category",
             Seq(
               java.lang.Boolean.valueOf(ctx.user.isDaikokuAdmin),
-              myTeams.map(_.id.value).mkString(","),
+              myTeams.map(_.id.value).toArray,
               java.lang.Boolean.valueOf(ctx.user.isGuest),
               "",
               null,

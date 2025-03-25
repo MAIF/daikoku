@@ -325,15 +325,19 @@ class OtoroshiClient(env: Env) {
     }
   }
 
-  def getApiKeyConsumption(clientId: String, from: String, to: String)(implicit
+  def getApiKeyConsumption(clientId: String, from: String, to: String, failOnError: Boolean = false)(implicit
       otoroshiSettings: OtoroshiSettings
   ): Future[JsObject] = {
     client(s"/api/stats?apikey=$clientId&from=$from&to=$to").get().map { resp =>
       if (resp.status == 200) {
         resp.json.as[JsObject]
+      } else if (failOnError) {
+        throw new RuntimeException(
+          s"Error while getting otoroshi apikey stats: ${resp.status} - ${resp.body}"
+        )
       } else {
         AppLogger.error(
-          s"Error while getting otoroshi apikey stats: ${resp.status} - ${resp.body}"
+          s"[Get consumptions] :: Error while getting otoroshi apikey stats: ${resp.status} - ${resp.body}"
         )
         Json.obj(
           "hits" -> Json.obj("count" -> 0),
@@ -362,7 +366,7 @@ class OtoroshiClient(env: Env) {
         resp.json.as[JsObject]
       } else {
         AppLogger.error(
-          s"Error while getting otoroshi apikey stats: ${resp.status} - ${resp.body}"
+          s"[get Quotas] :: Error while getting otoroshi apikey stats: ${resp.status} - ${resp.body}"
         )
         ApiKeyQuotas(
           authorizedCallsPerSec = 0,

@@ -60,8 +60,8 @@ schema: schema,
         if (isError(r)) {
           toast.error(r.error)
         } else {
-          handleSubmit()
           toast.success(translate('deletion successful'))
+          handleSubmit()
         }
       })
   },

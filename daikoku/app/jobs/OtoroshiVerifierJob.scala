@@ -755,7 +755,6 @@ class OtoroshiVerifierJob(
             _.filterNot(sub => adminApi.possibleUsagePlans.contains(sub.plan))
           )
       )
-
     } yield subscriptions
 
     val _allParentSubscriptions = r

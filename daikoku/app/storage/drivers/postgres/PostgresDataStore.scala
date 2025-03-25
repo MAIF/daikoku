@@ -1607,6 +1607,7 @@ abstract class PostgresRepo[Of, Id <: ValueType](
       limit: Int
   )(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
     logger.debug(s"$tableName.queryPaginated($query)")
+    logger.debug(s"[PARAMS] :: ${params.mkString(" - ")}")
 
     for {
       count <-
@@ -1818,6 +1819,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
       limit: Int
   )(implicit ec: ExecutionContext): Future[(Seq[Of], Long)] = {
     logger.debug(s"$tableName.query($query)")
+    logger.debug(s"[PARAMS] :: ${params.mkString(" - ")}")
 
     def legitLimit: String = if (limit == -1) null else s"$limit"
 
