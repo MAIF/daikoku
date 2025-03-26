@@ -3509,11 +3509,13 @@ object json {
       Try {
         JsSuccess(
           ApiKeyQuotas(
-            authorizedCallsPerSec =
-              (json \ "authorizedCallsPerSec").as(LongFormat),
-            currentCallsPerSec = (json \ "currentCallsPerSec").as(LongFormat),
+            authorizedCallsPerSec = (json \ "authorizedCallsPerWindow").asOpt(LongFormat)
+              .getOrElse((json \ "authorizedCallsPerSec").as(LongFormat)),
+            currentCallsPerSec = (json \ "throttlingCallsPerWindow").asOpt(LongFormat)
+              .getOrElse((json \ "currentCallsPerSec").as(LongFormat)),
             remainingCallsPerSec =
-              (json \ "remainingCallsPerSec").as(LongFormat),
+              (json \ "remainingCallsPerWindow").asOpt(LongFormat)
+                .getOrElse((json \ "remainingCallsPerSec").as(LongFormat)),
             authorizedCallsPerDay =
               (json \ "authorizedCallsPerDay").as(LongFormat),
             currentCallsPerDay = (json \ "currentCallsPerDay").as(LongFormat),
