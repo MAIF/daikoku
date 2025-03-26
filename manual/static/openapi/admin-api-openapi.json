@@ -305,11 +305,6 @@
             "type": "string",
             "nullable": true
           },
-          "cacheTTL": {
-            "type": "integer",
-            "format": "int32",
-            "nullable": true
-          },
           "logo": {
             "type": "string",
             "nullable": true
@@ -867,7 +862,7 @@
               "properties": {
                 "otoroshiSettingsId": {
                   "type": "string"
-                }, 
+                },
                 "authorizedEntities": {
                   "$ref": "#/components/schemas/AuthorizedEntities"
                 }
@@ -2481,87 +2476,50 @@
           "language"
         ]
       },
-      "UsagePlan.Admin": {
+      "UsagePlan": {
         "description": "UsagePlan",
         "properties": {
-          "type": {
+          "_id": {
+            "type": "string"
+          },
+          "_tenant": {
+            "type": "string"
+          },
+          "_deleted": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Currency",
+            "nullable": true
+          },
+          "customName": {
+            "type": "string"
+          },
+          "customDescription": {
+            "type": "string",
+            "nullable": true
+          },
+          "otoroshiTarget": {
+            "$ref": "#/components/schemas/OtoroshiTarget",
+            "nullable": true
+          },
+          "billingDuration": {
+            "$ref": "#/components/schemas/BillingDuration",
+            "nullable": true
+          },
+          "allowMultipleKeys": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "visibility": {
             "type": "string",
             "enum": [
+              "Public",
+              "Private",
               "Admin"
             ]
           },
-          "_id": {
-            "type": "string"
-          },
-          "_tenant": {
-            "type": "string"
-          },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "otoroshiTarget": {
-            "$ref": "#/components/schemas/OtoroshiTarget",
-            "nullable": true
-          },
-          "aggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": false
-          }
-        },
-        "required": [
-          "_id",
-          "_tenant"
-        ]
-      },
-      "UsagePlan.FreeWithoutQuotas": {
-        "description": "UsagePlan",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "FreeWithoutQuotas"
-            ]
-          },
-          "_id": {
-            "type": "string"
-          },
-          "_tenant": {
-            "type": "string"
-          },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "currency": {
-            "$ref": "#/components/schemas/Currency"
-          },
-          "customName": {
-            "type": "string",
-            "nullable": true
-          },
-          "customDescription": {
-            "type": "string",
-            "nullable": true
-          },
-          "otoroshiTarget": {
-            "$ref": "#/components/schemas/OtoroshiTarget",
-            "nullable": true
-          },
-          "billingDuration": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "allowMultipleKeys": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "visibility": {
-            "type": "string",
-            "enum": [
-              "Public",
-              "Private"
-            ]
-          },
           "authorizedTeams": {
             "type": "array",
             "items": {
@@ -2613,533 +2571,35 @@
           "documentation": {
             "nullable": true,
             "$ref": "#/components/schemas/ApiDocumentation"
-          }
-        },
-        "required": [
-          "_id",
-          "_tenant",
-          "currency",
-          "billingDuration",
-          "subscriptionProcess",
-          "integrationProcess"
-        ]
-      },
-      "UsagePlan.FreeWithQuotas": {
-        "description": "UsagePlan",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "FreeWithoutQuotas"
-            ]
-          },
-          "_id": {
-            "type": "string"
-          },
-          "_tenant": {
-            "type": "string"
-          },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
           },
           "maxPerSecond": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "nullable": true
           },
           "maxPerDay": {
             "type": "integer",
-            "format": "int64"
+            "format": "int64",
+            "nullable": true
           },
           "maxPerMonth": {
             "type": "integer",
-            "format": "int64"
-          },
-          "currency": {
-            "$ref": "#/components/schemas/Currency"
-          },
-          "customName": {
-            "type": "string",
-            "nullable": true
-          },
-          "customDescription": {
-            "type": "string",
-            "nullable": true
-          },
-          "otoroshiTarget": {
-            "$ref": "#/components/schemas/OtoroshiTarget",
-            "nullable": true
-          },
-          "billingDuration": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "allowMultipleKeys": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "visibility": {
-            "type": "string",
-            "enum": [
-              "Public",
-              "Private"
-            ]
-          },
-          "authorizedTeams": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "autoRotation": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "subscriptionProcess": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.Email"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.TeamAdmin"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.Payment"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.HttpRequest"
-                }
-              ]
-            }
-          },
-          "integrationProcess": {
-            "type": "string",
-            "enum": [
-              "Automatic",
-              "ApiKey"
-            ]
-          },
-          "aggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": false
-          },
-          "swagger": {
-            "nullable": true,
-            "$ref": "#/components/schemas/SwaggerAccess"
-          },
-          "testing": {
-            "nullable": true,
-            "$ref": "#/components/schemas/Testing"
-          },
-          "documentation": {
-            "nullable": true,
-            "$ref": "#/components/schemas/ApiDocumentation"
-          }
-        },
-        "required": [
-          "_id",
-          "_tenant",
-          "maxPerSecond",
-          "maxPerDay",
-          "maxPerMonth",
-          "currency",
-          "billingDuration",
-          "subscriptionProcess",
-          "integrationProcess"
-        ]
-      },
-      "UsagePlan.QuotasWithLimits": {
-        "description": "UsagePlan",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "FreeWithoutQuotas"
-            ]
-          },
-          "_id": {
-            "type": "string"
-          },
-          "_tenant": {
-            "type": "string"
-          },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "maxPerSecond": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "maxPerDay": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "maxPerMonth": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "costPerMonth": {
-            "type": "integer",
-            "format": "float64"
-          },
-          "trialPeriod": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "currency": {
-            "$ref": "#/components/schemas/Currency"
-          },
-          "customName": {
-            "type": "string",
-            "nullable": true
-          },
-          "customDescription": {
-            "type": "string",
-            "nullable": true
-          },
-          "otoroshiTarget": {
-            "$ref": "#/components/schemas/OtoroshiTarget",
-            "nullable": true
-          },
-          "billingDuration": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "allowMultipleKeys": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "visibility": {
-            "type": "string",
-            "enum": [
-              "Public",
-              "Private"
-            ]
-          },
-          "authorizedTeams": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "autoRotation": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "subscriptionProcess": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.Email"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.TeamAdmin"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.Payment"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.HttpRequest"
-                }
-              ]
-            }
-          },
-          "integrationProcess": {
-            "type": "string",
-            "enum": [
-              "Automatic",
-              "ApiKey"
-            ]
-          },
-          "aggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": false
-          },
-          "swagger": {
-            "nullable": true,
-            "$ref": "#/components/schemas/SwaggerAccess"
-          },
-          "testing": {
-            "nullable": true,
-            "$ref": "#/components/schemas/Testing"
-          },
-          "documentation": {
-            "nullable": true,
-            "$ref": "#/components/schemas/ApiDocumentation"
-          }
-        },
-        "required": [
-          "_id",
-          "_tenant",
-          "maxPerSecond",
-          "maxPerDay",
-          "maxPerMonth",
-          "costPerMonth",
-          "trialPeriod",
-          "currency",
-          "billingDuration",
-          "subscriptionProcess",
-          "integrationProcess"
-        ]
-      },
-      "UsagePlan.QuotasWithoutLimits": {
-        "description": "UsagePlan",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "FreeWithoutQuotas"
-            ]
-          },
-          "_id": {
-            "type": "string"
-          },
-          "_tenant": {
-            "type": "string"
-          },
-          "_deleted": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "maxPerSecond": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "maxPerDay": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "maxPerMonth": {
-            "type": "integer",
-            "format": "int64"
-          },
-          "costPerMonth": {
-            "type": "integer",
-            "format": "float64"
-          },
-          "costPerAdditionalRequest": {
-            "type": "integer",
-            "format": "float64"
-          },
-          "trialPeriod": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "currency": {
-            "$ref": "#/components/schemas/Currency"
-          },
-          "customName": {
-            "type": "string",
-            "nullable": true
-          },
-          "customDescription": {
-            "type": "string",
-            "nullable": true
-          },
-          "otoroshiTarget": {
-            "$ref": "#/components/schemas/OtoroshiTarget",
-            "nullable": true
-          },
-          "billingDuration": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "allowMultipleKeys": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "visibility": {
-            "type": "string",
-            "enum": [
-              "Public",
-              "Private"
-            ]
-          },
-          "authorizedTeams": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "autoRotation": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "subscriptionProcess": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.Email"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.TeamAdmin"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.Payment"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.HttpRequest"
-                }
-              ]
-            }
-          },
-          "integrationProcess": {
-            "type": "string",
-            "enum": [
-              "Automatic",
-              "ApiKey"
-            ]
-          },
-          "aggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": false
-          },
-          "swagger": {
-            "nullable": true,
-            "$ref": "#/components/schemas/SwaggerAccess"
-          },
-          "testing": {
-            "nullable": true,
-            "$ref": "#/components/schemas/Testing"
-          },
-          "documentation": {
-            "nullable": true,
-            "$ref": "#/components/schemas/ApiDocumentation"
-          },
-          "paymentSettings": {
-            "nullable": true,
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/PaymentSettings.Stripe"
-              }
-            ]
-          }
-        },
-        "required": [
-          "_id",
-          "_tenant",
-          "maxPerSecond",
-          "maxPerDay",
-          "maxPerMonth",
-          "costPerMonth",
-          "trialPeriod",
-          "costPerAdditionalRequest",
-          "currency",
-          "billingDuration",
-          "subscriptionProcess",
-          "integrationProcess"
-        ]
-      },
-      "UsagePlan.PayPerUse": {
-        "description": "UsagePlan",
-        "properties": {
-          "type": {
-            "type": "string",
-            "enum": [
-              "FreeWithoutQuotas"
-            ]
-          },
-          "_id": {
-            "type": "string"
-          },
-          "_tenant": {
-            "type": "string"
-          },
-          "_deleted": {
-            "type": "boolean",
+            "format": "int64",
             "nullable": true
           },
           "costPerMonth": {
             "type": "integer",
-            "format": "float64"
+            "format": "float64",
+            "nullable": true
           },
           "costPerRequest": {
             "type": "integer",
-            "format": "float64"
+            "format": "float64",
+            "nullable": true
           },
           "trialPeriod": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "billingDuration": {
-            "$ref": "#/components/schemas/BillingDuration"
-          },
-          "currency": {
-            "$ref": "#/components/schemas/Currency"
-          },
-          "customName": {
-            "type": "string",
+            "$ref": "#/components/schemas/BillingDuration",
             "nullable": true
-          },
-          "customDescription": {
-            "type": "string",
-            "nullable": true
-          },
-          "otoroshiTarget": {
-            "$ref": "#/components/schemas/OtoroshiTarget",
-            "nullable": true
-          },
-          "allowMultipleKeys": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "visibility": {
-            "type": "string",
-            "enum": [
-              "Public",
-              "Private"
-            ]
-          },
-          "authorizedTeams": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "autoRotation": {
-            "type": "boolean",
-            "nullable": true
-          },
-          "subscriptionProcess": {
-            "type": "array",
-            "items": {
-              "oneOf": [
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.Email"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.TeamAdmin"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.Payment"
-                },
-                {
-                  "$ref": "#/components/schemas/SubscriptionDemandStep.HttpRequest"
-                }
-              ]
-            }
-          },
-          "integrationProcess": {
-            "type": "string",
-            "enum": [
-              "Automatic",
-              "ApiKey"
-            ]
-          },
-          "aggregationApiKeysSecurity": {
-            "type": "boolean",
-            "nullable": false
-          },
-          "swagger": {
-            "nullable": true,
-            "$ref": "#/components/schemas/SwaggerAccess"
-          },
-          "testing": {
-            "nullable": true,
-            "$ref": "#/components/schemas/Testing"
-          },
-          "documentation": {
-            "nullable": true,
-            "$ref": "#/components/schemas/ApiDocumentation"
           },
           "paymentSettings": {
             "nullable": true,
@@ -3153,11 +2613,7 @@
         "required": [
           "_id",
           "_tenant",
-          "costPerMonth",
-          "trialPeriod",
-          "costPerRequest",
-          "currency",
-          "billingDuration",
+          "customName",
           "subscriptionProcess",
           "integrationProcess"
         ]
@@ -7852,22 +7308,7 @@
                     "$ref": "#/components/schemas/patch"
                   },
                   {
-                    "$ref": "#/components/schemas/UsagePlan.Admin"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.FreeWithoutQuotas"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.FreeWithQuotas"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.QuotasWithLimits"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.QuotasWithoutLimits"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.PayPerUse"
+                    "$ref": "#/components/schemas/UsagePlan"
                   }
                 ]
               }
@@ -7922,26 +7363,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.Admin"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.FreeWithoutQuotas"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.FreeWithQuotas"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.QuotasWithLimits"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.QuotasWithoutLimits"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.PayPerUse"
-                  }
-                ]
+                "$ref": "#/components/schemas/UsagePlan"
               }
             }
           }
@@ -7994,29 +7416,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "items": {
-                    "oneOf": [
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.Admin"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.FreeWithoutQuotas"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.FreeWithQuotas"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.QuotasWithLimits"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.QuotasWithoutLimits"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.PayPerUse"
-                      }
-                    ]
-                  }
+                  "$ref": "#/components/schemas/UsagePlan"
                 }
               }
             }
@@ -8069,26 +7469,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "oneOf": [
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.Admin"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.FreeWithoutQuotas"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.FreeWithQuotas"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.QuotasWithLimits"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.QuotasWithoutLimits"
-                      },
-                      {
-                        "$ref": "#/components/schemas/UsagePlan.PayPerUse"
-                      }
-                    ]
+                    "$ref": "#/components/schemas/UsagePlan"
                   }
                 }
               }
@@ -8117,26 +7498,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "oneOf": [
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.Admin"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.FreeWithoutQuotas"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.FreeWithQuotas"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.QuotasWithLimits"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.QuotasWithoutLimits"
-                  },
-                  {
-                    "$ref": "#/components/schemas/UsagePlan.PayPerUse"
-                  }
-                ]
+                "$ref": "#/components/schemas/UsagePlan"
               }
             }
           }
@@ -8148,26 +7510,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "oneOf": [
-                    {
-                      "$ref": "#/components/schemas/UsagePlan.Admin"
-                    },
-                    {
-                      "$ref": "#/components/schemas/UsagePlan.FreeWithoutQuotas"
-                    },
-                    {
-                      "$ref": "#/components/schemas/UsagePlan.FreeWithQuotas"
-                    },
-                    {
-                      "$ref": "#/components/schemas/UsagePlan.QuotasWithLimits"
-                    },
-                    {
-                      "$ref": "#/components/schemas/UsagePlan.QuotasWithoutLimits"
-                    },
-                    {
-                      "$ref": "#/components/schemas/UsagePlan.PayPerUse"
-                    }
-                  ]
+                  "$ref": "#/components/schemas/UsagePlan"
                 }
               }
             }

@@ -1,4 +1,4 @@
-openapi: '3.0.2'
+openapi: 3.0.2
 externalDocs:
   description: Find out more about Daikoku
   url: https://maif.github.io/daikoku/
@@ -214,10 +214,6 @@ components:
         authenticatedCmsPage:
           type: string
           nullable: true
-        cacheTTL:
-          type: integer
-          format: int32
-          nullable: true
         logo:
           type: string
           nullable: true
@@ -226,14 +222,14 @@ components:
           nullable: true
     ThirdPartyPaymentSettings.StripeSettings:
       description: Stripe settings
-      properties: 
-        _id: 
+      properties:
+        _id:
           type: string
-        name: 
+        name:
           type: string
-        publicKey: 
+        publicKey:
           type: string
-        secretKey: 
+        secretKey:
           type: string
       required:
         - _id
@@ -261,8 +257,8 @@ components:
         - host
     MailerSettings.ConsoleMailerSettings:
       description: MailerSettings
-      properties: 
-        type: 
+      properties:
+        type:
           type: string
           enum:
             - console
@@ -273,8 +269,8 @@ components:
         - type
     MailerSettings.MailgunSettings:
       description: MailgunSettings
-      properties: 
-        type: 
+      properties:
+        type:
           type: string
           enum:
             - mailgun
@@ -300,8 +296,8 @@ components:
         - fromEmail
     MailerSettings.MailjetSettings:
       description: MailgunSettings
-      properties: 
-        type: 
+      properties:
+        type:
           type: string
           enum:
             - mailjet
@@ -324,8 +320,8 @@ components:
         - fromEmail
     MailerSettings.SendgridSettings:
       description: SendgridSettings
-      properties: 
-        type: 
+      properties:
+        type:
           type: string
           enum:
             - sendgrid
@@ -345,19 +341,19 @@ components:
         - fromTitle
     MailerSettings.SimpleSMTPSettings:
       description: SimpleSMTPSettings
-      properties: 
-        type: 
+      properties:
+        type:
           type: string
           enum:
             - smtpClient
         template:
           type: string
           nullable: true
-        host: 
+        host:
           type: string
         port:
           type: string
-          additionalProperties: 
+          additionalProperties:
             oneOf:
               - type: integer
         fromTitle:
@@ -447,7 +443,6 @@ components:
           nullable: true
       required:
         - clusterUri
-        
     KafkaConfig:
       description: KafkaConfig
       properties:
@@ -611,12 +606,11 @@ components:
           type: array
           nullable: true
           items:
-            properties: 
+            properties:
               otoroshiSettingsId:
                 type: string
               authorizedEntities:
                 $ref: '#/components/schemas/AuthorizedEntities'
-
         apiKeyVisibility:
           type: string
           enum:
@@ -1007,10 +1001,10 @@ components:
         - integrationToken
     ThirdPartySubscriptionInformations.Stripe:
       description: ThirdPartySubscriptionInformations
-      properties: 
+      properties:
         subscriptionId:
           type: string
-        primaryElementId: 
+        primaryElementId:
           type: string
           nullable: true
         meteredElementId:
@@ -1112,23 +1106,23 @@ components:
             - $ref: '#/components/schemas/NotificationStatus.Pending'
         action:
           oneOf:
-            -  $ref: '#/components/schemas/NotificationAction.ApiAccess'
-            -  $ref: '#/components/schemas/NotificationAction.TeamAccess'
-            -  $ref: '#/components/schemas/NotificationAction.ApiSubscription'
-            -  $ref: '#/components/schemas/NotificationAction.ApiSubscriptionReject'
-            -  $ref: '#/components/schemas/NotificationAction.ApiSubscriptionAccept'
-            -  $ref: '#/components/schemas/NotificationAction.OtoroshiSyncSubscriptionError'
-            -  $ref: '#/components/schemas/NotificationAction.OtoroshiSyncApiError'
-            -  $ref: '#/components/schemas/NotificationAction.ApiKeyDeletionInformation'
-            -  $ref: '#/components/schemas/NotificationAction.ApiKeyRotationInProgress'
-            -  $ref: '#/components/schemas/NotificationAction.ApiKeyRotationEnded'
-            -  $ref: '#/components/schemas/NotificationAction.TeamInvitation'
-            -  $ref: '#/components/schemas/NotificationAction.ApiKeyRefresh'
-            -  $ref: '#/components/schemas/NotificationAction.NewPostPublished'
-            -  $ref: '#/components/schemas/NotificationAction.NewIssueOpen'
-            -  $ref: '#/components/schemas/NotificationAction.NewCommentOnIssue'
-            -  $ref: '#/components/schemas/NotificationAction.TransferApiOwnership'
-            -  $ref: '#/components/schemas/NotificationAction.CheckoutForSubscription'
+            - $ref: '#/components/schemas/NotificationAction.ApiAccess'
+            - $ref: '#/components/schemas/NotificationAction.TeamAccess'
+            - $ref: '#/components/schemas/NotificationAction.ApiSubscription'
+            - $ref: '#/components/schemas/NotificationAction.ApiSubscriptionReject'
+            - $ref: '#/components/schemas/NotificationAction.ApiSubscriptionAccept'
+            - $ref: '#/components/schemas/NotificationAction.OtoroshiSyncSubscriptionError'
+            - $ref: '#/components/schemas/NotificationAction.OtoroshiSyncApiError'
+            - $ref: '#/components/schemas/NotificationAction.ApiKeyDeletionInformation'
+            - $ref: '#/components/schemas/NotificationAction.ApiKeyRotationInProgress'
+            - $ref: '#/components/schemas/NotificationAction.ApiKeyRotationEnded'
+            - $ref: '#/components/schemas/NotificationAction.TeamInvitation'
+            - $ref: '#/components/schemas/NotificationAction.ApiKeyRefresh'
+            - $ref: '#/components/schemas/NotificationAction.NewPostPublished'
+            - $ref: '#/components/schemas/NotificationAction.NewIssueOpen'
+            - $ref: '#/components/schemas/NotificationAction.NewCommentOnIssue'
+            - $ref: '#/components/schemas/NotificationAction.TransferApiOwnership'
+            - $ref: '#/components/schemas/NotificationAction.CheckoutForSubscription'
       required:
         - _id
         - _tenant
@@ -1137,10 +1131,10 @@ components:
         - action
     NotificationAction.ApiAccess:
       description: NotificationAction apiAccess
-      properties: 
-        api: 
+      properties:
+        api:
           type: string
-        team: 
+        team:
           type: string
       required:
         - api
@@ -1148,28 +1142,28 @@ components:
         - sender
     NotificationAction.TeamAccess:
       description: NotificationAction teamAccess
-      properties: 
-        team: 
+      properties:
+        team:
           type: string
       required:
         - team
     NotificationAction.ApiSubscription:
       description: NotificationAction teamAccess
-      properties: 
-        api: 
+      properties:
+        api:
           type: string
-        plan: 
+        plan:
           type: string
-        team: 
+        team:
           type: string
         demand:
           type: string
         step:
           type: string
-        parentSubscriptionId: 
+        parentSubscriptionId:
           type: string
           nullable: true
-        motivation: 
+        motivation:
           type: string
           nullable: true
       required:
@@ -1185,7 +1179,7 @@ components:
           type: string
         plan:
           type: string
-        team: 
+        team:
           type: string
         message:
           type: string
@@ -1201,7 +1195,7 @@ components:
           type: string
         plan:
           type: string
-        team: 
+        team:
           type: string
       required:
         - api
@@ -1209,8 +1203,8 @@ components:
         - team
     NotificationAction.OtoroshiSyncSubscriptionError:
       description: NotificationAction OtoroshiSyncSubscriptionError
-      properties: 
-        subscription: 
+      properties:
+        subscription:
           type: string
         message:
           type: string
@@ -1219,8 +1213,8 @@ components:
         - message
     NotificationAction.OtoroshiSyncApiError:
       description: NotificationAction OtoroshiSyncApiError
-      properties: 
-        api: 
+      properties:
+        api:
           type: string
         message:
           type: string
@@ -1229,8 +1223,8 @@ components:
         - message
     NotificationAction.ApiKeyDeletionInformation:
       description: NotificationAction ApiKeyDeletionInformation
-      properties: 
-        api: 
+      properties:
+        api:
           type: string
         clientId:
           type: string
@@ -1239,8 +1233,8 @@ components:
         - clientId
     NotificationAction.ApiKeyRotationInProgress:
       description: NotificationAction ApiKeyRotationInProgress
-      properties: 
-        clientId: 
+      properties:
+        clientId:
           type: string
         api:
           type: string
@@ -1252,8 +1246,8 @@ components:
         - plan
     NotificationAction.ApiKeyRotationEnded:
       description: NotificationAction ApiKeyRotationEnded
-      properties: 
-        clientId: 
+      properties:
+        clientId:
           type: string
         api:
           type: string
@@ -1265,8 +1259,8 @@ components:
         - plan
     NotificationAction.TeamInvitation:
       description: NotificationAction teamAccess
-      properties: 
-        team: 
+      properties:
+        team:
           type: string
         user:
           type: string
@@ -1275,8 +1269,8 @@ components:
         - user
     NotificationAction.ApiKeyRefresh:
       description: NotificationAction ApiKeyRefresh
-      properties: 
-        subscription: 
+      properties:
+        subscription:
           type: string
         api:
           type: string
@@ -1288,8 +1282,8 @@ components:
         - plan
     NotificationAction.NewPostPublished:
       description: NotificationAction NewPostPublished
-      properties: 
-        apiName: 
+      properties:
+        apiName:
           type: string
           nullable: true
         teamId:
@@ -1298,8 +1292,8 @@ components:
         - teamId
     NotificationAction.NewIssueOpen:
       description: NotificationAction NewIssueOpen
-      properties: 
-        apiName: 
+      properties:
+        apiName:
           type: string
         teamId:
           type: string
@@ -1311,8 +1305,8 @@ components:
         - linkTo
     NotificationAction.NewCommentOnIssue:
       description: NotificationAction NewCommentOnIssue
-      properties: 
-        apiName: 
+      properties:
+        apiName:
           type: string
         teamId:
           type: string
@@ -1324,17 +1318,17 @@ components:
         - linkTo
     NotificationAction.TransferApiOwnership:
       description: NotificationAction TransferApiOwnership
-      properties: 
+      properties:
         api:
           type: string
-        team: 
+        team:
           type: string
       required:
         - api
         - team
     NotificationAction.CheckoutForSubscription:
       description: NotificationAction teamAccess
-      properties: 
+      properties:
         demand:
           type: string
         api:
@@ -1350,8 +1344,8 @@ components:
         - step
     NotificationStatus.Pending:
       description: NotificationStatus pending
-      properties: 
-        status: 
+      properties:
+        status:
           type: string
           enum:
             - Pending
@@ -1359,8 +1353,8 @@ components:
         - status
     NotificationStatus.Accepted:
       description: NotificationStatus pending
-      properties: 
-        status: 
+      properties:
+        status:
           type: string
           enum:
             - Accepted
@@ -1372,8 +1366,8 @@ components:
         - date
     NotificationStatus.Rejected:
       description: NotificationStatus pending
-      properties: 
-        status: 
+      properties:
+        status:
           type: string
           enum:
             - Rejected
@@ -1618,12 +1612,12 @@ components:
         - sender
     MessageType.Tenant:
       description: MessageType for Tenant administrators
-      properties: 
-        type: 
+      properties:
+        type:
           type: string
           enum:
             - tenant
-        value: 
+        value:
           type: string
           description: the id of the tenant
     ApiIssue:
@@ -1740,67 +1734,42 @@ components:
         - key
         - value
         - language
-    UsagePlan.Admin:
+    UsagePlan:
       description: UsagePlan
-      properties: 
-        type:
+      properties:
+        _id:
+          type: string
+        _tenant:
+          type: string
+        _deleted:
+          type: boolean
+          nullable: true
+        currency:
+          $ref: '#/components/schemas/Currency'
+          nullable: true
+        customName:
+          type: string
+        customDescription:
+          type: string
+          nullable: true
+        otoroshiTarget:
+          $ref: '#/components/schemas/OtoroshiTarget'
+          nullable: true
+        billingDuration:
+          $ref: '#/components/schemas/BillingDuration'
+          nullable: true
+        allowMultipleKeys:
+          type: boolean
+          nullable: true
+        visibility:
           type: string
           enum:
+            - Public
+            - Private
             - Admin
-        _id:
-          type: string
-        _tenant: 
-          type: string
-        _deleted:
-          type: boolean
-          nullable: true
-        otoroshiTarget:
-          $ref: '#/components/schemas/OtoroshiTarget'
-          nullable: true
-        aggregationApiKeysSecurity:
-          type: boolean
-          nullable: false
-      required:
-        - _id
-        - _tenant
-    UsagePlan.FreeWithoutQuotas:
-      description: UsagePlan
-      properties: 
-        type:
-          type: string
-          enum:
-            - FreeWithoutQuotas
-        _id:
-          type: string
-        _tenant: 
-          type: string
-        _deleted:
-          type: boolean
-          nullable: true
-        currency:
-          $ref: '#/components/schemas/Currency'
-        customName:
-          type: string
-          nullable: true
-        customDescription:
-          type: string
-          nullable: true
-        otoroshiTarget:
-          $ref: '#/components/schemas/OtoroshiTarget'
-          nullable: true
-        billingDuration:
-          $ref: '#/components/schemas/BillingDuration'
-        allowMultipleKeys:
-          type: boolean
-          nullable: true
-        visibility:
-          type: string
-          enum:
-            - Public
-            - Private
         authorizedTeams:
           type: array
-          items: 
+          items:
             type: string
         autoRotation:
           type: boolean
@@ -1830,368 +1799,29 @@ components:
         documentation:
           nullable: true
           $ref: '#/components/schemas/ApiDocumentation'
-      required:
-        - _id
-        - _tenant
-        - currency
-        - billingDuration
-        - subscriptionProcess
-        - integrationProcess
-    UsagePlan.FreeWithQuotas:
-      description: UsagePlan
-      properties: 
-        type:
-          type: string
-          enum:
-            - FreeWithoutQuotas
-        _id:
-          type: string
-        _tenant: 
-          type: string
-        _deleted:
-          type: boolean
-          nullable: true
         maxPerSecond:
           type: integer
           format: int64
+          nullable: true
         maxPerDay:
           type: integer
           format: int64
+          nullable: true
         maxPerMonth:
           type: integer
           format: int64
-        currency:
-          $ref: '#/components/schemas/Currency'
-        customName:
-          type: string
-          nullable: true
-        customDescription:
-          type: string
-          nullable: true
-        otoroshiTarget:
-          $ref: '#/components/schemas/OtoroshiTarget'
-          nullable: true
-        billingDuration:
-          $ref: '#/components/schemas/BillingDuration'
-        allowMultipleKeys:
-          type: boolean
-          nullable: true
-        visibility:
-          type: string
-          enum:
-            - Public
-            - Private
-        authorizedTeams:
-          type: array
-          items: 
-            type: string
-        autoRotation:
-          type: boolean
-          nullable: true
-        subscriptionProcess:
-          type: array
-          items:
-            oneOf:
-              - $ref: '#/components/schemas/SubscriptionDemandStep.Email'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.TeamAdmin'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.Payment'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.HttpRequest'
-        integrationProcess:
-          type: string
-          enum:
-            - Automatic
-            - ApiKey
-        aggregationApiKeysSecurity:
-          type: boolean
-          nullable: false
-        swagger:
-          nullable: true
-          $ref: '#/components/schemas/SwaggerAccess'
-        testing:
-          nullable: true
-          $ref: '#/components/schemas/Testing'
-        documentation:
-          nullable: true
-          $ref: '#/components/schemas/ApiDocumentation'
-      required:
-        - _id
-        - _tenant
-        - maxPerSecond
-        - maxPerDay
-        - maxPerMonth
-        - currency
-        - billingDuration
-        - subscriptionProcess
-        - integrationProcess
-    UsagePlan.QuotasWithLimits:
-      description: UsagePlan
-      properties: 
-        type:
-          type: string
-          enum:
-            - FreeWithoutQuotas
-        _id:
-          type: string
-        _tenant: 
-          type: string
-        _deleted:
-          type: boolean
-          nullable: true
-        maxPerSecond:
-          type: integer
-          format: int64
-        maxPerDay:
-          type: integer
-          format: int64
-        maxPerMonth:
-          type: integer
-          format: int64
-        costPerMonth:
-          type: integer
-          format: float64
-        trialPeriod:
-          $ref: '#/components/schemas/BillingDuration'
-        currency:
-          $ref: '#/components/schemas/Currency'
-        customName:
-          type: string
-          nullable: true
-        customDescription:
-          type: string
-          nullable: true
-        otoroshiTarget:
-          $ref: '#/components/schemas/OtoroshiTarget'
-          nullable: true
-        billingDuration:
-          $ref: '#/components/schemas/BillingDuration'
-        allowMultipleKeys:
-          type: boolean
-          nullable: true
-        visibility:
-          type: string
-          enum:
-            - Public
-            - Private
-        authorizedTeams:
-          type: array
-          items: 
-            type: string
-        autoRotation:
-          type: boolean
-          nullable: true
-        subscriptionProcess:
-          type: array
-          items:
-            oneOf:
-              - $ref: '#/components/schemas/SubscriptionDemandStep.Email'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.TeamAdmin'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.Payment'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.HttpRequest'
-        integrationProcess:
-          type: string
-          enum:
-            - Automatic
-            - ApiKey
-        aggregationApiKeysSecurity:
-          type: boolean
-          nullable: false
-        swagger:
-          nullable: true
-          $ref: '#/components/schemas/SwaggerAccess'
-        testing:
-          nullable: true
-          $ref: '#/components/schemas/Testing'
-        documentation:
-          nullable: true
-          $ref: '#/components/schemas/ApiDocumentation'
-      required:
-        - _id
-        - _tenant
-        - maxPerSecond
-        - maxPerDay
-        - maxPerMonth
-        - costPerMonth
-        - trialPeriod
-        - currency
-        - billingDuration
-        - subscriptionProcess
-        - integrationProcess
-    UsagePlan.QuotasWithoutLimits:
-      description: UsagePlan
-      properties: 
-        type:
-          type: string
-          enum:
-            - FreeWithoutQuotas
-        _id:
-          type: string
-        _tenant: 
-          type: string
-        _deleted:
-          type: boolean
-          nullable: true
-        maxPerSecond:
-          type: integer
-          format: int64
-        maxPerDay:
-          type: integer
-          format: int64
-        maxPerMonth:
-          type: integer
-          format: int64
-        costPerMonth:
-          type: integer
-          format: float64
-        costPerAdditionalRequest:
-          type: integer
-          format: float64
-        trialPeriod:
-          $ref: '#/components/schemas/BillingDuration'
-        currency:
-          $ref: '#/components/schemas/Currency'
-        customName:
-          type: string
-          nullable: true
-        customDescription:
-          type: string
-          nullable: true
-        otoroshiTarget:
-          $ref: '#/components/schemas/OtoroshiTarget'
-          nullable: true
-        billingDuration:
-          $ref: '#/components/schemas/BillingDuration'
-        allowMultipleKeys:
-          type: boolean
-          nullable: true
-        visibility:
-          type: string
-          enum:
-            - Public
-            - Private
-        authorizedTeams:
-          type: array
-          items: 
-            type: string
-        autoRotation:
-          type: boolean
-          nullable: true
-        subscriptionProcess:
-          type: array
-          items:
-            oneOf:
-              - $ref: '#/components/schemas/SubscriptionDemandStep.Email'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.TeamAdmin'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.Payment'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.HttpRequest'
-        integrationProcess:
-          type: string
-          enum:
-            - Automatic
-            - ApiKey
-        aggregationApiKeysSecurity:
-          type: boolean
-          nullable: false
-        swagger:
-          nullable: true
-          $ref: '#/components/schemas/SwaggerAccess'
-        testing:
-          nullable: true
-          $ref: '#/components/schemas/Testing'
-        documentation:
-          nullable: true
-          $ref: '#/components/schemas/ApiDocumentation'
-        paymentSettings:
-          nullable: true
-          oneOf:
-            - $ref: '#/components/schemas/PaymentSettings.Stripe'
-      required:
-        - _id
-        - _tenant
-        - maxPerSecond
-        - maxPerDay
-        - maxPerMonth
-        - costPerMonth
-        - trialPeriod
-        - costPerAdditionalRequest
-        - currency
-        - billingDuration
-        - subscriptionProcess
-        - integrationProcess
-    UsagePlan.PayPerUse:
-      description: UsagePlan
-      properties: 
-        type:
-          type: string
-          enum:
-            - FreeWithoutQuotas
-        _id:
-          type: string
-        _tenant: 
-          type: string
-        _deleted:
-          type: boolean
           nullable: true
         costPerMonth:
           type: integer
           format: float64
+          nullable: true
         costPerRequest:
           type: integer
           format: float64
+          nullable: true
         trialPeriod:
           $ref: '#/components/schemas/BillingDuration'
-        billingDuration:
-          $ref: '#/components/schemas/BillingDuration'
-        currency:
-          $ref: '#/components/schemas/Currency'
-        customName:
-          type: string
           nullable: true
-        customDescription:
-          type: string
-          nullable: true
-        otoroshiTarget:
-          $ref: '#/components/schemas/OtoroshiTarget'
-          nullable: true
-        allowMultipleKeys:
-          type: boolean
-          nullable: true
-        visibility:
-          type: string
-          enum:
-            - Public
-            - Private
-        authorizedTeams:
-          type: array
-          items: 
-            type: string
-        autoRotation:
-          type: boolean
-          nullable: true
-        subscriptionProcess:
-          type: array
-          items:
-            oneOf:
-              - $ref: '#/components/schemas/SubscriptionDemandStep.Email'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.TeamAdmin'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.Payment'
-              - $ref: '#/components/schemas/SubscriptionDemandStep.HttpRequest'
-        integrationProcess:
-          type: string
-          enum:
-            - Automatic
-            - ApiKey
-        aggregationApiKeysSecurity:
-          type: boolean
-          nullable: false
-        swagger:
-          nullable: true
-          $ref: '#/components/schemas/SwaggerAccess'
-        testing:
-          nullable: true
-          $ref: '#/components/schemas/Testing'
-        documentation:
-          nullable: true
-          $ref: '#/components/schemas/ApiDocumentation'
         paymentSettings:
           nullable: true
           oneOf:
@@ -2199,11 +1829,7 @@ components:
       required:
         - _id
         - _tenant
-        - costPerMonth
-        - trialPeriod
-        - costPerRequest
-        - currency
-        - billingDuration
+        - customName
         - subscriptionProcess
         - integrationProcess
     Currency:
@@ -2415,7 +2041,7 @@ components:
         - metadata
     SubscriptionDemandStep.Email:
       description: SubscriptionDemandState by Email
-      properties: 
+      properties:
         type:
           type: string
           enum:
@@ -2439,7 +2065,7 @@ components:
         - title
     SubscriptionDemandStep.TeamAdmin:
       description: SubscriptionDemandState by team admin
-      properties: 
+      properties:
         type:
           type: string
           enum:
@@ -2460,7 +2086,7 @@ components:
         - title
     SubscriptionDemandStep.Payment:
       description: SubscriptionDemandState by payment
-      properties: 
+      properties:
         type:
           type: string
           enum:
@@ -2478,7 +2104,7 @@ components:
         - title
     SubscriptionDemandStep.HttpRequest:
       description: SubscriptionDemandState by Http request
-      properties: 
+      properties:
         type:
           type: string
           enum:
@@ -5107,12 +4733,7 @@ paths:
             schema:
               oneOf:
                 - $ref: '#/components/schemas/patch'
-                - $ref: '#/components/schemas/UsagePlan.Admin'
-                - $ref: '#/components/schemas/UsagePlan.FreeWithoutQuotas'
-                - $ref: '#/components/schemas/UsagePlan.FreeWithQuotas'
-                - $ref: '#/components/schemas/UsagePlan.QuotasWithLimits'
-                - $ref: '#/components/schemas/UsagePlan.QuotasWithoutLimits'
-                - $ref: '#/components/schemas/UsagePlan.PayPerUse'
+                - $ref: '#/components/schemas/UsagePlan'
       responses:
         '204':
           description: No Content
@@ -5145,13 +4766,7 @@ paths:
         content:
           application/json:
             schema:
-              oneOf:
-                - $ref: '#/components/schemas/UsagePlan.Admin'
-                - $ref: '#/components/schemas/UsagePlan.FreeWithoutQuotas'
-                - $ref: '#/components/schemas/UsagePlan.FreeWithQuotas'
-                - $ref: '#/components/schemas/UsagePlan.QuotasWithLimits'
-                - $ref: '#/components/schemas/UsagePlan.QuotasWithoutLimits'
-                - $ref: '#/components/schemas/UsagePlan.PayPerUse'
+              $ref: '#/components/schemas/UsagePlan'
       responses:
         '204':
           description: No Content
@@ -5184,15 +4799,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                items:
-                  oneOf:
-                    - $ref: '#/components/schemas/UsagePlan.Admin'
-                    - $ref: '#/components/schemas/UsagePlan.FreeWithoutQuotas'
-                    - $ref: '#/components/schemas/UsagePlan.FreeWithQuotas'
-                    - $ref: '#/components/schemas/UsagePlan.QuotasWithLimits'
-                    - $ref: '#/components/schemas/UsagePlan.QuotasWithoutLimits'
-                    - $ref: '#/components/schemas/UsagePlan.PayPerUse'
+                $ref: '#/components/schemas/UsagePlan'
         '401':
           description: unauthorized
           content:
@@ -5225,13 +4832,7 @@ paths:
               schema:
                 type: array
                 items:
-                  oneOf:
-                    - $ref: '#/components/schemas/UsagePlan.Admin'
-                    - $ref: '#/components/schemas/UsagePlan.FreeWithoutQuotas'
-                    - $ref: '#/components/schemas/UsagePlan.FreeWithQuotas'
-                    - $ref: '#/components/schemas/UsagePlan.QuotasWithLimits'
-                    - $ref: '#/components/schemas/UsagePlan.QuotasWithoutLimits'
-                    - $ref: '#/components/schemas/UsagePlan.PayPerUse'
+                  $ref: '#/components/schemas/UsagePlan'
         '401':
           description: unauthorized
           content:
@@ -5248,13 +4849,7 @@ paths:
         content:
           application/json:
             schema:
-              oneOf:
-                - $ref: '#/components/schemas/UsagePlan.Admin'
-                - $ref: '#/components/schemas/UsagePlan.FreeWithoutQuotas'
-                - $ref: '#/components/schemas/UsagePlan.FreeWithQuotas'
-                - $ref: '#/components/schemas/UsagePlan.QuotasWithLimits'
-                - $ref: '#/components/schemas/UsagePlan.QuotasWithoutLimits'
-                - $ref: '#/components/schemas/UsagePlan.PayPerUse'
+              $ref: '#/components/schemas/UsagePlan'
       operationId: usage-plans.create
       responses:
         '201':
@@ -5262,13 +4857,7 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
-                  - $ref: '#/components/schemas/UsagePlan.Admin'
-                  - $ref: '#/components/schemas/UsagePlan.FreeWithoutQuotas'
-                  - $ref: '#/components/schemas/UsagePlan.FreeWithQuotas'
-                  - $ref: '#/components/schemas/UsagePlan.QuotasWithLimits'
-                  - $ref: '#/components/schemas/UsagePlan.QuotasWithoutLimits'
-                  - $ref: '#/components/schemas/UsagePlan.PayPerUse'
+                $ref: '#/components/schemas/UsagePlan'
         '400':
           description: bad entity format
           content:
@@ -5796,13 +5385,12 @@ paths:
               oneOf:
                 - $ref: '#/components/schemas/GraphQLQuery'
       responses:
-        "200":
-          description: "successful operation"
+        '200':
+          description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GraphQLResponse"
-      
+                $ref: '#/components/schemas/GraphQLResponse'
       tags:
         - GraphQL
   /admin-api/schema:
@@ -5818,13 +5406,12 @@ paths:
               oneOf:
                 - $ref: '#/components/schemas/GraphQLQuery'
       responses:
-        "200":
-          description: "successful operation"
+        '200':
+          description: successful operation
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GraphQLSchema"
-      
+                $ref: '#/components/schemas/GraphQLSchema'
       tags:
         - GraphQL
   /admin-api/credentials/{token}/plans:
@@ -5840,9 +5427,9 @@ paths:
           required: true
           description: integration token
       responses:
-        200:
+        '200':
           description: success
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/OtoroshiApiKey' 
+                $ref: '#/components/schemas/OtoroshiApiKey'
