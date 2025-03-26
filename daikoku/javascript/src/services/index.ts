@@ -394,7 +394,7 @@ export const saveTeamApiWithId = (
 export const saveTeamApi = (teamId: string, api: IApi, version: string) =>
   saveTeamApiWithId(teamId, api, version, api._humanReadableId);
 
-export const createTeamApi = (teamId: string, api: IApi) =>
+export const createTeamApi = (teamId: string, api: IApi): PromiseWithError<IApi> =>
   customFetch(`/api/teams/${teamId}/apis`, {
     method: 'POST',
     body: JSON.stringify(api),

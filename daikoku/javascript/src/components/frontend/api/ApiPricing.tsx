@@ -1514,7 +1514,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
     if (creation) {
       return (
         Services.createPlan(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
-          .then(() => toast.success(translate({ key: 'create.plan.succesful.toast.label', replacements: [plan.customName] })))
+          .then(() => toast.success(translate({ key: 'create.plan.successful.toast.label', replacements: [plan.customName] })))
           .then(closeRightPanel)
           .then(() => queryClient.invalidateQueries({ queryKey: ['plans', props.api.currentVersion] }))
       )

@@ -71,8 +71,20 @@ export const AddPanel = () => {
           return openRightPanel({
             title: translate('api.creation.right.panel.title'),
             content: <ApiFormRightPanel team={team} apigroup={false} handleSubmit={(api) => Services.createTeamApi(team._id, api)
-              .then(() => queryClient.invalidateQueries({ queryKey: ["data"] }))
-              .then(() => toast.success(translate({ key: "api.created.successful.toast", replacements: [api.name] })))} />
+              .then((maybeApi) => {
+                queryClient.invalidateQueries({ queryKey: ["data"] })
+                return maybeApi
+              })
+              .then((maybeApi) => {
+                toast.success(translate({ key: "api.created.successful.toast", replacements: [api.name] }))
+                return maybeApi
+              })
+              .then((maybeApi) => {
+                if (!isError(maybeApi)) {
+                  navigate(`${team._humanReadableId}/${maybeApi._humanReadableId}/${maybeApi.currentVersion}/description`)
+                }
+              })
+            } />
           })
         }
       }
@@ -102,8 +114,20 @@ export const AddPanel = () => {
           return openRightPanel({
             title: translate('apigroup.creation.right.panel.title'),
             content: <ApiFormRightPanel team={team} apigroup={true} handleSubmit={(api) => Services.createTeamApi(team._id, api)
-              .then(() => queryClient.invalidateQueries({ queryKey: ["data"] }))
-              .then(() => toast.success(translate({ key: "apigroup.created.successful.toast", replacements: [api.name] })))} />
+              .then((maybeApi) => {
+                queryClient.invalidateQueries({ queryKey: ["data"] })
+                return maybeApi
+              })
+              .then((maybeApi) => {
+                toast.success(translate({ key: "apigroup.created.successful.toast", replacements: [api.name] }))
+                return maybeApi
+              })
+              .then((maybeApi) => {
+                if (!isError(maybeApi)) {
+                  navigate(`${team._humanReadableId}/${maybeApi._humanReadableId}/${maybeApi.currentVersion}/description`)
+                }
+              })
+            } />
           })
         }
       }
