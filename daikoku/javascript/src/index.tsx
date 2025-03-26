@@ -58,9 +58,6 @@ root.render(
       <GlobalContextProvider>
         <I18nProvider>
           <ToasterComponent />
-          <button onClick={() => toast.success('My first toast')}>
-            Give me a toast
-          </button>
           <DaikokuApp />
         </I18nProvider>
       </GlobalContextProvider>
