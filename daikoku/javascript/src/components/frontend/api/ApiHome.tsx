@@ -1,5 +1,4 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import classNames from 'classnames';
 import { GraphQLClient } from 'graphql-request';
 import { useContext, useEffect } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
@@ -213,49 +212,41 @@ export const ApiHome = ({
 
     return (
       <main role="main">
-        {api.customHeaderCmsPage ?
-          <CmsViewer pageId={api.customHeaderCmsPage} fields={{ api }} /> :
-          <ApiHeader api={api} ownerTeam={ownerTeam} tab={params.tab} />
-        }
+        <ApiHeader api={api} ownerTeam={ownerTeam} tab={params.tab} />
         <div className="album me-4 min-vh-100 p-4" style={{ position: 'relative' }}>
-          {/* <div className="p-4">
-            <div className="row"> */}
-              {params.tab === 'description' && (api.descriptionCmsPage ? <CmsViewer pageId={api.descriptionCmsPage} fields={{ api }} /> : <ApiDescription api={api} ownerTeam={ownerTeam} />)}
-              {params.tab === 'apis' && (<ApiGroupApis apiGroup={api} ownerTeam={ownerTeam} />)}
-              {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam}
-                subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
-              {params.tab === 'documentation' && tenant.display == Display.default && <ApiDocumentation entity={api} ownerTeam={ownerTeam} api={api}
-                documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)}
-                refreshEntity={() => queryClient.invalidateQueries({ queryKey: ['api'] })}
-                savePages={(pages) => Services.saveTeamApi(ownerTeam._id, { ...api, documentation: { ...api.documentation!, pages } }, api.currentVersion)} />}
-              {params.tab === 'documentation' && tenant.display == Display.environment && <EnvironmentsDocumentation api={api} ownerTeam={ownerTeam} />}
-              {params.tab === 'testing' && tenant.display === Display.default && (<ApiTest
-                _id={api._id}
-                testing={api.testing}
-                swagger={api.swagger}
-                swaggerUrl={`/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger`}
-                callUrl={`/api/teams/${ownerTeam._id}/testing/${api._id}/call`}
-                ownerTeam={ownerTeam}
-                entity={api}
-                save={saveApi}
-              />)}
-              {params.tab === 'testing' && tenant.display === Display.environment && <EnvironmentsTest api={api} ownerTeam={ownerTeam} />}
-              {params.tab === 'swagger' && tenant.display === Display.default && (<ApiRedoc
-                save={saveApi}
-                entity={api}
-                ownerTeam={ownerTeam}
-                swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`}
-                swaggerConf={api.swagger} />)}
-              {params.tab === 'swagger' && tenant.display === Display.environment && <EnvironmentsRedoc api={api} ownerTeam={ownerTeam} />}
-              {params.tab === 'news' && (<ApiPost api={api} ownerTeam={ownerTeam} versionId={params.versionId} />)}
-              {(params.tab === 'issues' || params.tab === 'labels') && (<ApiIssue api={api} ownerTeam={ownerTeam} />)}
-              {(params.tab === 'subscriptions') && (<TeamApiSubscriptions api={api} currentTeam={ownerTeam} />)}
-              {params.tab === 'consumption' && !consumptionMatch && <TeamApiConsumption api={api} currentTeam={ownerTeam} />}
-              {params.tab === 'consumption' && consumptionMatch?.params.planId && (<TeamPlanConsumption api={api} currentTeam={ownerTeam} />)}
-              {params.tab === 'apikeys' && (<ApiSubscriptions api={api} ownerTeam={ownerTeam} subscribingTeams={subscribingTeams} />)}
-
-            {/* </div>
-          </div> */}
+          {params.tab === 'description' && (api.descriptionCmsPage ? <CmsViewer pageId={api.descriptionCmsPage} fields={{ api }} /> : <ApiDescription api={api} ownerTeam={ownerTeam} />)}
+          {params.tab === 'apis' && (<ApiGroupApis apiGroup={api} ownerTeam={ownerTeam} />)}
+          {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam}
+            subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
+          {params.tab === 'documentation' && tenant.display == Display.default && <ApiDocumentation entity={api} ownerTeam={ownerTeam} api={api}
+            documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)}
+            refreshEntity={() => queryClient.invalidateQueries({ queryKey: ['api'] })}
+            savePages={(pages) => Services.saveTeamApi(ownerTeam._id, { ...api, documentation: { ...api.documentation!, pages } }, api.currentVersion)} />}
+          {params.tab === 'documentation' && tenant.display == Display.environment && <EnvironmentsDocumentation api={api} ownerTeam={ownerTeam} />}
+          {params.tab === 'testing' && tenant.display === Display.default && (<ApiTest
+            _id={api._id}
+            testing={api.testing}
+            swagger={api.swagger}
+            swaggerUrl={`/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger`}
+            callUrl={`/api/teams/${ownerTeam._id}/testing/${api._id}/call`}
+            ownerTeam={ownerTeam}
+            entity={api}
+            save={saveApi}
+          />)}
+          {params.tab === 'testing' && tenant.display === Display.environment && <EnvironmentsTest api={api} ownerTeam={ownerTeam} />}
+          {params.tab === 'swagger' && tenant.display === Display.default && (<ApiRedoc
+            save={saveApi}
+            entity={api}
+            ownerTeam={ownerTeam}
+            swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`}
+            swaggerConf={api.swagger} />)}
+          {params.tab === 'swagger' && tenant.display === Display.environment && <EnvironmentsRedoc api={api} ownerTeam={ownerTeam} />}
+          {params.tab === 'news' && (<ApiPost api={api} ownerTeam={ownerTeam} versionId={params.versionId} />)}
+          {(params.tab === 'issues' || params.tab === 'labels') && (<ApiIssue api={api} ownerTeam={ownerTeam} />)}
+          {(params.tab === 'subscriptions') && (<TeamApiSubscriptions api={api} currentTeam={ownerTeam} />)}
+          {params.tab === 'consumption' && !consumptionMatch && <TeamApiConsumption api={api} currentTeam={ownerTeam} />}
+          {params.tab === 'consumption' && consumptionMatch?.params.planId && (<TeamPlanConsumption api={api} currentTeam={ownerTeam} />)}
+          {params.tab === 'apikeys' && (<ApiSubscriptions api={api} ownerTeam={ownerTeam} subscribingTeams={subscribingTeams} />)}
         </div>
       </main>);
   }

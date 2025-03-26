@@ -9,7 +9,6 @@ import { ModalContext } from '../../../contexts';
 
 export const RightPanel = () => {
   const { rightPanelContent, closeRightPanel } = useContext(ModalContext);
-  const location = useLocation();
 
   const closeOnEsc = (e: any) => {
     if (e.key == 'Escape' || e.key == 'Esc') {

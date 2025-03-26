@@ -17,6 +17,7 @@ import { api as API, Can, manage } from '../../utils';
 import { deleteApi } from '../../utils/apiUtils';
 import { ApiFormRightPanel } from '../../utils/sidebar/panels/AddPanel';
 import { reservedCharacters } from '../../utils/tenantUtils';
+import { CmsViewer } from '../CmsViewer';
 
 type ApiHeaderProps = {
   api: IApi
@@ -110,7 +111,8 @@ export const ApiHeader = ({
 
   return (
     <section className="api__header col-12 mb-4 p-3 d-flex flex-row" style={{ position: 'relative' }}>
-      <div className="container-fluid">
+      {!!api.customHeaderCmsPage && <CmsViewer pageId={api.customHeaderCmsPage} fields={{ api }} />}
+      {!api.customHeaderCmsPage && <div className="container-fluid">
         {!api.header && (
           <>
             <h1 className="jumbotron-heading" style={{ position: 'relative' }}>
@@ -133,7 +135,7 @@ export const ApiHeader = ({
             }}
           />
         )}
-      </div>
+      </div>}
       <div className='d-flex flex-row gap-1 align-items-center' style={{ position: 'absolute', top: 10, right: 10 }}>
         {versions.length > 1 && tab !== 'issues' && (
           <div style={{ minWidth: '125px', fontSize: 'initial' }}>

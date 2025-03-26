@@ -59,7 +59,7 @@ export const ApiDescription = ({
                 }}
                 onSubmit={(data) => {
                   Services.saveTeamApi(ownerTeam._id, data, data.currentVersion)
-                    .then(() => queryClient.invalidateQueries({ queryKey: ["api"] })) //todo: get the right keys
+                    .then(() => queryClient.invalidateQueries({ queryKey: ["api"] }))
                     .then(() => closeRightPanel())
                     .then(() => toast.success(translate("update.api.description.successful.toast.label")))
                 }}
