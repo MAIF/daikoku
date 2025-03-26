@@ -192,11 +192,16 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
         value: t._id
       }),
     },
+  };
+
+  const apiGroupSchemaAddon = {
     apis: {
       type: type.string,
       label: translate({ key: 'API', plural: true }),
       format: format.select,
-      isMulti: true, //@ts-ignore
+      visible: apigroup,
+      defaultValue: apigroup ? [] : null,
+      isMulti: true,
       optionsFrom: () => Services.teamApis(team._id)
         .then((apis) => !isError(apis) ? apis.filter((api) => !api.apis) : []),
       transformer: (api) => ({
@@ -204,7 +209,7 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
         value: api._id
       }),
     },
-  };
+  }
 
   const simpleOrExpertMode = (entry: string, expert: boolean) => {//@ts-ignore
     return !!expert || !schema[entry]?.expert;
@@ -255,5 +260,10 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
     },
   };
 
-  return { schema, flow: (expert: boolean) => flow(expert, apigroup), adminFlow, adminSchema };
+  return {
+    schema: apigroup ? { ...schema, ...apiGroupSchemaAddon } : schema,
+    flow: (expert: boolean) => flow(expert, apigroup),
+    adminFlow,
+    adminSchema
+  };
 };
