@@ -1089,15 +1089,15 @@ class GraphQLControllerSpec()
 
       val allTagsGraphQLQuery =
         s"""
-           |query getAllTags ($$research: String, $$groupId: String, $$limit: Int, $$offset: Int){
-           |  allTags (research: $$research, groupId: $$groupId, limit: $$limit, offset: $$offset)
+           |query getAllTags ($$research: String, $$groupId: String, $$selectedTeam: String, $$selectedTag: String, $$selectedCategory: String, $$filter: String, $$limit: Int, $$offset: Int){
+           |  allTags (research: $$research, groupId: $$groupId, selectedTeam: $$selectedTeam, selectedTag: $$selectedTag, selectedCategory: $$selectedCategory, filter: $$filter, limit: $$limit, offset: $$offset)
            |}
            |""".stripMargin
 
       val allCategoriesGraphQLQuery =
         s"""
-           |query getAllCategories ($$research: String, $$groupId: String, $$limit: Int, $$offset: Int){
-           |  allCategories (research: $$research, groupId: $$groupId, limit: $$limit, offset: $$offset)
+           |query getAllCategories ($$research: String, $$groupId: String, $$selectedTeam: String, $$selectedTag: String, $$selectedCategory: String, $$filter: String, $$limit: Int, $$offset: Int){
+           |  allCategories (research: $$research, groupId: $$groupId, selectedTeam: $$selectedTeam, selectedTag: $$selectedTag, selectedCategory: $$selectedCategory, filter: $$filter, limit: $$limit, offset: $$offset)
            |}
            |""".stripMargin
 
@@ -1273,7 +1273,7 @@ class GraphQLControllerSpec()
         "POST",
         body = Json
           .obj(
-            "variables" -> Json.obj("research" -> "simple"),
+            "variables" -> Json.obj("filter" -> "simple"),
             "query" -> allTagsGraphQLQuery
           )
           .some
@@ -1494,7 +1494,7 @@ class GraphQLControllerSpec()
         "POST",
         body = Json
           .obj(
-            "variables" -> Json.obj("research" -> "simple"),
+            "variables" -> Json.obj("filter" -> "simple"),
             "query" -> allCategoriesGraphQLQuery
           )
           .some
