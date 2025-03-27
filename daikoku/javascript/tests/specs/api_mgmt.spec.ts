@@ -52,7 +52,7 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
 
   await loginAs(JIM, page);
   await page.getByRole('listitem', { name: 'API Betterave' }).getByRole('heading').click();
-  await page.getByRole('button', { name: 'Gérer l\'API' }).click();
+  await page.getByRole('button', { name: 'Configurer' }).click();
   await page.getByText('Configurer').click();
   await page.getByRole('button', { name: 'Publiée' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
@@ -69,7 +69,7 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   // await page.getByRole('heading', { name: 'API Betterave' }).click();
   // await page.getByLabel('Liste des APIs').click();
   // await page.locator('div.row.py-4', { hasText: 'API Betterave' }).getByLabel('paramètres').click();
-  await page.getByRole('button', { name: 'Gérer l\'API' }).click();
+  await page.getByRole('button', { name: 'Configurer' }).click();
   await page.getByText('Configurer').click();
   await page.getByRole('button', { name: 'Bloquée' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
@@ -83,13 +83,13 @@ test('[ASOAPI-10597] [ASOAPI-10599] - créer/supprimer une version d\'une API', 
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('listitem', { name: 'API papier' }).getByRole('heading').click();
-  await page.getByRole('button', { name: 'Gérer l\'API' }).click();
+  await page.getByRole('button', { name: 'Configurer' }).click();
   await page.getByText('Créer une nouvelle version').click();
   await page.getByPlaceholder('Numéro de version').fill('2.0.0');
   await page.getByRole('button', { name: 'Créer' }).click();
   // await expect(page.getByRole('status')).toContainText('La nouvelle version de l\'API a été créée avec succès');
 
-  await page.getByRole('button', { name: "Gérer l\'API" }).click();
+  await page.getByRole('button', { name: "Configurer" }).click();
   await page.getByText('Configurer').click();
   await page.getByLabel('Desc. courte').fill('Le catalogue de Papier de Dunder Mifflin dans sa deuxieme version');
   await page.getByRole('button', { name: 'Enregistrer' }).click();
@@ -101,7 +101,7 @@ test('[ASOAPI-10597] [ASOAPI-10599] - créer/supprimer une version d\'une API', 
   await expect(page.url()).toContain('api-papier/2.0.0');
 
   //supprimer la version
-  await page.getByRole('button', { name: 'Gérer l\'API' }).click();
+  await page.getByRole('button', { name: 'Configurer' }).click();
   // await page.getByRole('link', { name: 'Configurer l\'API' }).click();
   // await page.getByText('Paramètres').click();
   await page.getByText('Supprimer').click();
@@ -152,7 +152,7 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('listitem', { name: 'API papier' }).getByRole('heading').click();
-  await page.getByRole('button', { name: "Gérer l\'API" }).click();
+  await page.getByRole('button', { name: "Configurer" }).click();
   await page.getByText('Supprimer').click();
   await page.getByLabel('Saisissez API papier pour').click();
   await page.getByLabel('Saisissez API papier pour').fill('API papier');
