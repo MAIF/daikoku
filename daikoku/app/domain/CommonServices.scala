@@ -476,7 +476,11 @@ object CommonServices {
   }
   def getAllTags(
       research: String,
+      selectedTeam: Option[String] = None,
+      selectedTag: Option[String] = None,
+      selectedCat: Option[String] = None,
       groupOpt: Option[String],
+      filter: String,
       limit: Int,
       offset: Int
   )(implicit
@@ -505,12 +509,12 @@ object CommonServices {
               java.lang.Boolean.valueOf(ctx.user.isDaikokuAdmin),
               myTeams.map(_.id.value).toArray,
               java.lang.Boolean.valueOf(ctx.user.isGuest),
-              "",
-              null,
-              null,
-              null,
-              groupOpt.orNull,
               research,
+              selectedTeam.orNull,
+              selectedTag.orNull,
+              selectedCat.orNull,
+              groupOpt.orNull,
+              filter,
               if (limit == -1) null else java.lang.Integer.valueOf(limit),
               if (offset == -1) null
               else java.lang.Integer.valueOf(offset)
@@ -521,7 +525,11 @@ object CommonServices {
 
   def getAllCategories(
       research: String,
+      selectedTeam: Option[String] = None,
+      selectedTag: Option[String] = None,
+      selectedCat: Option[String] = None,
       groupOpt: Option[String],
+      filter: String,
       limit: Int,
       offset: Int
   )(implicit
@@ -550,12 +558,12 @@ object CommonServices {
               java.lang.Boolean.valueOf(ctx.user.isDaikokuAdmin),
               myTeams.map(_.id.value).toArray,
               java.lang.Boolean.valueOf(ctx.user.isGuest),
-              "",
-              null,
-              null,
-              null,
-              groupOpt.orNull,
               research,
+              selectedTeam.orNull,
+              selectedTag.orNull,
+              selectedCat.orNull,
+              groupOpt.orNull,
+              filter,
               if (limit == -1) null else java.lang.Integer.valueOf(limit),
               if (offset == -1) null
               else java.lang.Integer.valueOf(offset)

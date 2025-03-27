@@ -3143,6 +3143,12 @@ object SchemaDefinition {
       description = "This is a the string of a research",
       defaultValue = ""
     )
+    val FILTER: Argument[String] = Argument(
+      "filter",
+      StringType,
+      description = "This is a the string for filtering request",
+      defaultValue = ""
+    )
     val SELECTED_TAG = Argument(
       "selectedTag",
       OptionInputType(StringType),
@@ -3432,13 +3438,17 @@ object SchemaDefinition {
         Field(
           "allTags",
           ListType(StringType),
-          arguments = RESEARCH :: GROUP_ID :: LIMIT :: OFFSET :: Nil,
+          arguments = RESEARCH :: SELECTED_TEAM :: SELECTED_TAG :: SELECTED_CAT :: GROUP_ID :: FILTER :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             CommonServices.getAllTags(
-              ctx.arg(RESEARCH),
-              ctx.arg(GROUP_ID),
-              ctx.arg(LIMIT),
-              ctx.arg(OFFSET)
+              research = ctx.arg(RESEARCH),
+              selectedTeam = ctx.arg(SELECTED_TEAM),
+              selectedTag =ctx.arg(SELECTED_TAG),
+              selectedCat = ctx.arg(SELECTED_CAT),
+              groupOpt = ctx.arg(GROUP_ID),
+              filter = ctx.arg(FILTER),
+              limit = ctx.arg(LIMIT),
+              offset = ctx.arg(OFFSET)
             )(ctx.ctx._2, env, e)
           }
         )
@@ -3450,14 +3460,18 @@ object SchemaDefinition {
         Field(
           "allCategories",
           ListType(StringType),
-          arguments = RESEARCH :: GROUP_ID :: LIMIT :: OFFSET :: Nil,
+          arguments = RESEARCH :: SELECTED_TEAM :: SELECTED_TAG :: SELECTED_CAT :: GROUP_ID :: FILTER :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             CommonServices
               .getAllCategories(
-                ctx.arg(RESEARCH),
-                ctx.arg(GROUP_ID),
-                ctx.arg(LIMIT),
-                ctx.arg(OFFSET)
+                research = ctx.arg(RESEARCH),
+                selectedTeam = ctx.arg(SELECTED_TEAM),
+                selectedTag = ctx.arg(SELECTED_TAG),
+                selectedCat = ctx.arg(SELECTED_CAT),
+                groupOpt = ctx.arg(GROUP_ID),
+                filter = ctx.arg(FILTER),
+                limit = ctx.arg(LIMIT),
+                offset = ctx.arg(OFFSET)
               )(ctx.ctx._2, env, e)
           }
         )

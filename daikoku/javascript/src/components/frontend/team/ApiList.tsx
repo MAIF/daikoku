@@ -25,6 +25,8 @@ import { toast } from "sonner";
 import { GlobalContext } from "../../../contexts/globalContext";
 import * as Services from "../../../services";
 import { FilterPreview, Spinner, arrayStringToTOps, teamGQLToSimple } from "../../utils";
+import { GraphQLClient } from "graphql-request";
+import { filter } from "lodash";
 
 const GRID = 'GRID';
 const LIST = 'LIST';
@@ -42,13 +44,13 @@ type TApiList = {
 
 export const ApiList = (props: TApiList) => {
 
-  const { client } = useContext(getApolloContext());
+  const graphqlEndpoint = `${window.location.origin}/api/search`;
+  const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
+
   const queryClient = useQueryClient();
 
   const { translate } = useContext(I18nContext);
   const navigate = useNavigate();
-
-
 
   const { connectedUser, reloadContext } = useContext(GlobalContext);
   const location = useLocation();
@@ -87,10 +89,9 @@ export const ApiList = (props: TApiList) => {
       connectedUser._id,
       location.pathname],
     queryFn: ({ queryKey }) => {
-      return client!.query<{ visibleApis: IApiAuthoWithCount }>({
-        query: Services.graphql.myVisibleApis,
-        fetchPolicy: "no-cache",
-        variables: {
+      return customGraphQLClient.request<{ visibleApis: IApiAuthoWithCount }>(
+        Services.graphql.myVisibleApis,
+        {
           teamId: queryKey[1],
           research: queryKey[2],
           selectedTag: queryKey[3],
@@ -99,63 +100,115 @@ export const ApiList = (props: TApiList) => {
           offset: queryKey[6],
           groupId: queryKey[7],
           selectedTeam: queryKey[8]
+        }).then(({ visibleApis }) => {
+          setApisWithAuth(visibleApis.apis)
+          setProducers(visibleApis.producers.map(p => ({ label: p.name, value: p._id })))
+          return visibleApis
         }
-      }).then(({ data: { visibleApis } }) => {
-        setApisWithAuth(visibleApis.apis)
-        setProducers(visibleApis.producers.map(p => ({ label: p.name, value: p._id })))
-        return visibleApis
-      }
-      )
+        )
     },
-    enabled: !!client,
     gcTime: 0
   })
 
 
   const dataTags = useQuery({
-    queryKey: ["dataTags", researchTag, props.apiGroupId],
-    queryFn: ({ queryKey }) => {
-      return client!.query<{ allTags: Array<string> }>({
-        query: Services.graphql.getAllTags,
-        variables: { research: queryKey[1], groupId: queryKey[2], limit: 5 }
-      }).then(({ data: { allTags } }) => {
-        setTags(arrayStringToTOps(allTags))
-        return arrayStringToTOps(allTags)
-      })
-    }
+    queryKey: ["dataTags", 
+      researchTag,
+      props.apiGroupId, 
+      selectedTag?.value,
+      selectedCategory?.value,
+      selectedProducer?.value,
+      searched
+    ],
+    queryFn: ({ queryKey }) => customGraphQLClient.request<{ allTags: Array<string> }>(
+      Services.graphql.getAllTags,
+      { 
+        research: queryKey[6], 
+        groupId: queryKey[2],
+        selectedTag: queryKey[3],
+        selectedCategory: queryKey[4], 
+        selectedTeam: queryKey[5], 
+        filter: queryKey[1],
+        limit: 5 }
+    ).then(({ allTags }) => {
+      setTags(arrayStringToTOps(allTags))
+      return arrayStringToTOps(allTags)
+    })
   })
 
   const bestTags = useQuery({
-    queryKey: ["bestTags"],
-    queryFn: () => {
-      return client!.query<{ allTags: Array<string> }>({
-        query: Services.graphql.getAllTags,
-        variables: { research: "", limit: 5 }
-      }).then(({ data: { allTags } }) => {
+    queryKey: ["bestTags", 
+      researchTag,
+      props.apiGroupId,
+      selectedTag?.value,
+      selectedCategory?.value,
+      selectedProducer?.value,
+      searched
+    ],
+    queryFn: ({ queryKey }) => {
+      return customGraphQLClient.request<{ allTags: Array<string> }>(
+        Services.graphql.getAllTags,
+        {
+          research: queryKey[6],
+          groupId: queryKey[2],
+          selectedTag: queryKey[3],
+          selectedCategory: queryKey[4],
+          selectedTeam: queryKey[5],
+          filter: queryKey[1],
+          limit: 5 }
+      ).then(({ allTags }) => {
         return arrayStringToTOps(allTags)
       })
     }
   })
 
   const dataCategories = useQuery({
-    queryKey: ["dataCategories", researchCat, props.apiGroupId],
+    queryKey: ["dataCategories", 
+      researchCat, 
+      props.apiGroupId,
+      selectedTag?.value,
+      selectedCategory?.value,
+      selectedProducer?.value,
+      searched
+    ],
     queryFn: ({ queryKey }) => {
-      return client!.query<{ allCategories: Array<string> }>({
-        query: Services.graphql.getAllCategories,
-        variables: { research: queryKey[1], groupId: queryKey[2], limit: 5 }
-      }).then(({ data: { allCategories } }) => {
+      return customGraphQLClient.request<{ allCategories: Array<string> }>(
+        Services.graphql.getAllCategories,
+        {
+          research: queryKey[6],
+          groupId: queryKey[2],
+          selectedTag: queryKey[3],
+          selectedCategory: queryKey[4], 
+          selectedTeam: queryKey[5],
+          filter: queryKey[1], 
+          limit: 5 }
+      ).then(({ allCategories }) => {
         setCategories(arrayStringToTOps(allCategories))
         return arrayStringToTOps(allCategories)
       })
     }
   })
   const bestCategories = useQuery({
-    queryKey: ["bestCategories"],
-    queryFn: () => {
-      return client!.query<{ allCategories: Array<string> }>({
-        query: Services.graphql.getAllCategories,
-        variables: { research: "", limit: 5}
-      }).then(({ data: { allCategories } }) => {
+    queryKey: ["bestCategories", 
+      researchTag,
+      props.apiGroupId,
+      selectedTag?.value,
+      selectedCategory?.value,
+      selectedProducer?.value,
+      searched
+    ],
+    queryFn: ({ queryKey }) => {
+      return customGraphQLClient.request<{ allCategories: Array<string> }>(
+        Services.graphql.getAllCategories,
+        { 
+          research: queryKey[6],
+          groupId: queryKey[2],
+          selectedTag: queryKey[3],
+          selectedCategory: queryKey[4], 
+          selectedTeam: queryKey[5],
+          filter: queryKey[1],
+          limit: 5 }
+      ).then(({ allCategories }) => {
         return arrayStringToTOps(allCategories)
       })
     }

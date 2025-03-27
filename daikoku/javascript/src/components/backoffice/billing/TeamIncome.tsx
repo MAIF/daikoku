@@ -9,8 +9,9 @@ import { formatCurrency, Spinner, Can, read, api } from '../../utils';
 import { I18nContext } from '../../../contexts';
 import { useTeamBackOffice } from '../../../contexts';
 import dayjs from 'dayjs';
-import { ITeamSimple, isError } from '../../../types';
+import { IApiAuthoWithCount, ITeamSimple, isError } from '../../../types';
 import { toast } from 'sonner';
+import { GraphQLClient } from 'graphql-request';
 
 
 type TeamIncomeGql = {
@@ -35,6 +36,10 @@ export const TeamIncome = () => {
   const { isLoading, currentTeam, error } = useTeamBackOffice();
   const { translate, Translation } = useContext(I18nContext);
 
+  const graphqlEndpoint = `${window.location.origin}/api/search`;
+  const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
+
+  const [date, setDate] = useState(dayjs())
   const [state, setState] = useState<{
     consumptions: Array<TeamIncomeGql>,
     consumptionsByApi: Array<any>,
@@ -52,7 +57,6 @@ export const TeamIncome = () => {
       apis: [],
     });
 
-  const [date, setDate] = useState(dayjs())
 
   useEffect(() => {
     if (currentTeam && !isError(currentTeam)) {
@@ -61,35 +65,28 @@ export const TeamIncome = () => {
     }
   }, [currentTeam]);
 
-  const { client } = useContext(getApolloContext());
-
   const getBillingData = (date: dayjs.Dayjs) => {
-    if (!client) {
-      return;
-    }
     setState({ ...state, loading: true });
     Promise.all([
-      client!.query<{ teamIncomes: Array<TeamIncomeGql> }>({
-        query: Services.graphql.getTeamIncome,
-        fetchPolicy: "no-cache",
-        variables: {
+      customGraphQLClient.request<{ teamIncomes: Array<TeamIncomeGql> }>(
+        Services.graphql.getTeamIncome,
+        {
           teamId: (currentTeam as ITeamSimple)._id,
           from: date.startOf('month').valueOf(),
           to: date.endOf('month').valueOf()
         }
-      }).then(({ data: { teamIncomes } }) => {
+      ).then(({ teamIncomes }) => {
         return teamIncomes
       }),
-      client.query({
-        query: Services.graphql.myVisibleApis,
-        variables: { teamId: (currentTeam as ITeamSimple)._id },
-      }),
+      customGraphQLClient.request<{ visibleApis: IApiAuthoWithCount }>(
+        Services.graphql.myVisibleApis,
+        { teamId: (currentTeam as ITeamSimple)._id },
+      ),
     ]).then(
       ([
         consumptions,
-        {
-          data: { visibleApis: { apis } },
-        },
+        { visibleApis: { apis } },
+        ,
       ]) => {
         const consumptionsByApi = getConsumptionsByApi(consumptions);
         setState({

@@ -1420,7 +1420,7 @@ export const graphql = {
         }
       }
     `,
-  myVisibleApis: gql(`
+  myVisibleApis: (`
     query AllVisibleApis ($teamId: String, $research: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $limit: Int, $offset: Int, $groupId: String) {
       visibleApis (teamId: $teamId, research: $research, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, limit: $limit, offset: $offset, groupId: $groupId) {
         apis {
@@ -1493,13 +1493,13 @@ export const graphql = {
         total
       }
     }`),
-  getAllTags: gql(`
-    query getAllTags ($research: String, $groupId: String, $limit: Int, $offset: Int){
-      allTags (research: $research, groupId: $groupId, limit: $limit, offset: $offset)
+  getAllTags: (`
+    query getAllTags ($research: String, $groupId: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $filter: String, $limit: Int, $offset: Int){
+      allTags (research: $research, groupId: $groupId, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, filter: $filter, limit: $limit, offset: $offset)
     }`),
-  getAllCategories: gql(`
-    query getAllCategories ($research: String, $groupId: String, $limit: Int, $offset: Int){
-      allCategories (research: $research, groupId: $groupId, limit: $limit, offset: $offset)
+  getAllCategories: (`
+    query getAllCategories ($research: String, $groupId: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $filter: String, $limit: Int, $offset: Int){
+      allCategories (research: $research, groupId: $groupId, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, filter: $filter, limit: $limit, offset: $offset)
     }`),
   getAllTeams: gql(`
   query getAllteams ($research: String, $limit: Int, $offset: Int) {
@@ -1537,7 +1537,7 @@ export const graphql = {
       total
     }
   }`),
-  getTeamIncome: gql(`
+  getTeamIncome: `
   query getTeamIncome ($teamId: String!, $from: Long, $to: Long) {
     teamIncomes (teamId: $teamId, from: $from, to: $to) {
       api {
@@ -1557,7 +1557,7 @@ export const graphql = {
       from
       to
     }
-  }`),
+  }`,
   getApiConsumptions: gql(`
   query getApiConsumptions ($apiId: String!, $teamId: String!, $from: Long, $to: Long, $planId: String) {
     apiConsumptions (id: $apiId, teamId: $teamId, from: $from, to: $to, planIdOpt: $planId) {
