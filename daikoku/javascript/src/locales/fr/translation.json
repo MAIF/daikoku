@@ -1483,6 +1483,9 @@
   "api.home.config.api.news.menu.update": "Mettre à jour la publication",
   "api.home.config.api.news.menu.create": "Créer une publication",
   "api.home.config.api.news.menu.delete": "Supprimer la publication",
+
+  "api.home.add.api.to.favorite": "Ajouter cette API aux favoris",
+  "api.home.remove.api.to.favorite": "retirer cette API des favoris",
   
   "api.home.config.api.aria.label": "Configuration",
   "api.home.update.api.btn.label": "Configurer",

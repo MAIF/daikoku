@@ -121,10 +121,8 @@ export const ApiCard = (props: {
             {accessButton()}
             {!props.groupView && (
               <StarsButton
-                stars={api.stars}
                 starred={props.user.starredApis.includes(api._id)}
                 toggleStar={props.toggleStar}
-                connectedUser={props.connectedUser}
               />
             )}
           </div>
