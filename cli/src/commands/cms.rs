@@ -21,7 +21,7 @@ use crate::{
     },
     models::folder::{Ext, SourceExtension},
     process,
-    utils::absolute_path,
+    utils::{absolute_path, new_custom_ini_file},
     CmsCommands, Commands,
 };
 
@@ -319,7 +319,7 @@ fn get_home() -> DaikokuResult<PathBuf> {
 }
 
 fn read(last_attempt: bool) -> DaikokuResult<Ini> {
-    let mut config = Ini::new();
+    let mut config = new_custom_ini_file();
 
     match config.load(&get_path()?) {
         Ok(_) => Ok(config),
@@ -332,7 +332,7 @@ fn read(last_attempt: bool) -> DaikokuResult<Ini> {
 }
 
 fn remove_cms() -> DaikokuResult<()> {
-    let mut config = Ini::new();
+    let mut config = new_custom_ini_file();
     config.clear();
     match config.write(&get_path()?) {
         Ok(_) => {
@@ -574,7 +574,7 @@ pub(crate) fn create_api_folder(
 
             created.push(item.human_readable_id.clone());
 
-            let mut config: Ini = Ini::new();
+            let mut config: Ini = new_custom_ini_file();
             config.set(&"default", "id", Some(item._id.clone()));
             let _ = config.write(file_path.clone().join(".daikoku_data"));
 
@@ -619,7 +619,7 @@ pub(crate) fn create_mail_folder(
             .clone()
             .join(get_mail_page_path(&item._id.clone().replace(".", "-"), is_root_mail).unwrap());
 
-        let mut config: Ini = Ini::new();
+        let mut config: Ini = new_custom_ini_file();
 
         config.set(&"default", "id", Some(item._id.clone()));
 

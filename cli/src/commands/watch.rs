@@ -111,18 +111,8 @@ async fn watcher(
 ) -> Result<Response<Full<Bytes>>, DaikokuCliError> {
     let uri = req.uri().path().to_string();
 
-    if uri.starts_with("/tenant-assets/") {
-        let redirect_url = "http://localhost:5173/tenant-assets/api3.jpeg";
-
-        let mut response = Response::new(Full::<Bytes>::new(Bytes::from("")));
-        *response.status_mut() = StatusCode::FOUND; // 302 status
-        response
-            .headers_mut()
-            .insert(LOCATION, HeaderValue::from_str(redirect_url).unwrap());
-
-        Ok(response)
-    } else if uri.starts_with("/api/") {
-        logger::println("forward to api".to_string());
+    if uri.starts_with("/api/") || uri.starts_with("/tenant-assets/") {
+        logger::println("forward to api or /tenant-assets".to_string());
         forward_api_call(uri, req, environment).await
     } else {
         let path = uri.replace("_/", "");
@@ -253,12 +243,16 @@ async fn forward_api_call(
 
     let url: String = format!("{}{}", environment.server, uri);
 
-    let raw_req = Request::builder()
+    let mut raw_req = Request::builder()
         .method(Method::from_str(&method).unwrap())
         .uri(&url)
         .header(header::HOST, &host)
-        .header("Accept", "*/*")
-        .header(header::COOKIE, read_cookie_from_environment(true)?);
+        .header("Accept", "*/*");
+
+
+    if !uri.starts_with("/tenant-assets/") {
+        raw_req = raw_req.header(header::COOKIE, read_cookie_from_environment(true)?);
+    }
 
     let req = if method == "GET" {
         raw_req.body(Empty::<Bytes>::new().boxed()).unwrap()
@@ -312,8 +306,6 @@ async fn forward_api_call(
     let result: Vec<u8> = frame_to_bytes_body(body).await;
 
     let status = status.as_u16();
-
-    println!("{:?}", _headers);
 
     if status >= 300 && status < 400 {
         Ok(Response::new(Full::new(Bytes::from(
@@ -411,8 +403,14 @@ async fn render_page(
     let mut builder = reqwest::Client::new()
         .post(url)
         .header(header::HOST, host)
-        .header(header::CONTENT_TYPE, "application/json")
-        .body(body);
+        .header(header::CONTENT_TYPE, "application/json");
+
+    
+    if let Ok(cookie) = read_cookie_from_environment(false) {
+        builder = builder.header(header::COOKIE, cookie);
+    }
+
+    builder = builder.body(body);
 
     if authentication && page.authenticated() {
         match read_cookie_from_environment(true) {

@@ -5,7 +5,7 @@ use crate::{
         error::{DaikokuCliError, DaikokuResult},
         logger,
     },
-    utils::apply_credentials_mask,
+    utils::{apply_credentials_mask, new_custom_ini_file},
     EnvironmentsCommands,
 };
 use configparser::ini::Ini;
@@ -71,7 +71,7 @@ fn get_secrets_path() -> DaikokuResult<String> {
 }
 
 fn read_environments() -> DaikokuResult<Ini> {
-    let mut config = Ini::new();
+    let mut config = new_custom_ini_file();
 
     match config.load(&get_environments_path()?) {
         Ok(_) => Ok(config),
@@ -80,7 +80,7 @@ fn read_environments() -> DaikokuResult<Ini> {
 }
 
 fn read_secrets() -> DaikokuResult<Ini> {
-    let mut config = Ini::new();
+    let mut config = new_custom_ini_file();
 
     match config.load(&get_secrets_path()?) {
         Ok(_) => Ok(config),
@@ -252,14 +252,6 @@ async fn configure(apikey: Option<String>, cookie: Option<String>) -> DaikokuRes
     Ok(())
 }
 
-pub(crate) fn format_cookie(str: String) -> String {
-    if str.starts_with("daikoku-session=") {
-        str.to_string()
-    } else {
-        format!("daikoku-session={}", str)
-    }
-}
-
 pub(crate) fn read_cookie_from_environment(failed_if_not_present: bool) -> DaikokuResult<String> {
     let config: Ini = read_environments()?;
 
@@ -267,7 +259,7 @@ pub(crate) fn read_cookie_from_environment(failed_if_not_present: bool) -> Daiko
         let secrets: Ini = read_secrets()?;
         secrets
             .get(&environment, "cookie")
-            .map(|cookie| Ok(format_cookie(cookie)))
+            .map(Ok)
             .unwrap_or(if failed_if_not_present {
                 Err(DaikokuCliError::Configuration(
                     "Missing cookie on default environment. Run daikoku login".to_string(),

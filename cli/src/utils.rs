@@ -3,6 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use configparser::ini::{Ini, IniDefault};
 use http_body_util::BodyExt;
 use std::io::Read;
 
@@ -78,4 +79,10 @@ pub(crate) fn apply_credentials_mask(credential: &String, show_full_credentials:
     } else {
         credential.as_str()[1..10].to_string() + "*******"
     }
+}
+
+pub(crate) fn new_custom_ini_file() -> Ini {
+    let mut defaults: IniDefault = Default::default();
+    defaults.comment_symbols = vec![];
+    Ini::new_from_defaults(defaults)
 }
