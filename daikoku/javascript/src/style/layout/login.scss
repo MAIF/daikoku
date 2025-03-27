@@ -1,4 +1,4 @@
-@import '../variables.scss';
+@use '../variables.scss';
 
 /* login */
 .login #app {
@@ -9,8 +9,8 @@
 
       .organisation__header {
         position: relative;
-        background-color: $level2_bg-color;
-        color:$level2_text-color;
+        background-color: variables.$level2_bg-color;
+        color:variables.$level2_text-color;
         margin-bottom: 15px;
         padding-bottom: 15px;
 
@@ -20,7 +20,7 @@
       }
       .form-container{
 
-        background-color: $level2_bg-color;
+        background-color: variables.$level2_bg-color;
       }
       form {
         padding: 5px 15px;

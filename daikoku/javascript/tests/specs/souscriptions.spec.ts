@@ -39,7 +39,7 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await page.getByLabel('motivation').click();
   await page.getByLabel('motivation').fill('please');
   await page.getByRole('button', { name: 'Envoyer' }).click();
-  await expect(page.getByRole('status')).toContainText('La demande de clé d\'API au plan Gratuit avec quotas pour l\'équipe Vendeurs est en attente de validation');
+  await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('La demande de clé d\'API au plan prod pour l\'équipe Vendeurs est en attente de validation');
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.locator('h4')).toContainText('Vous avez 0 notifications');
   await page.getByRole('img', { name: 'user menu' }).click();
@@ -65,8 +65,7 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await page.getByText('Clés d\'API').click();
   await page.getByRole('row', { name: 'API papier' }).getByLabel('Voir les clés d\'API').click();
   await expect(page.locator('h1')).toContainText('API papier');
-  await expect(page.getByRole('main')).toContainText('prod');
-  await page.locator('.api-subscription', { hasText: 'prod' }).getByRole('button', { name: 'ClientId:ClientToken' }).click();
+  await page.locator('.api-subscription', { hasText: 'prod' }).getByRole('button', { name: 'Copier le clientId et le clientSecret' }).click();
   const apikey = await page.evaluate(() => navigator.clipboard.readText());
   const [clientId, clientSecret] = apikey.split(":", 2)
 
@@ -97,7 +96,7 @@ test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context 
   await page.getByLabel('motivation').click();
   await page.getByLabel('motivation').fill('please');
   await page.getByRole('button', { name: 'Envoyer' }).click();
-  await expect(page.getByRole('status')).toContainText('La demande de clé d\'API au plan Gratuit avec quotas pour l\'équipe Vendeurs est en attente de validation');
+  await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('La demande de clé d\'API au plan prod pour l\'équipe Vendeurs est en attente de validation');
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.locator('h4')).toContainText('Vous avez 0 notifications');
   await page.getByRole('img', { name: 'user menu' }).click();
@@ -154,7 +153,7 @@ test('[ASOAPI-10161] - Demander une extension d\apikey - process automatique', a
   await expect(page.locator('td', { 'hasText': 'APi papier' })).toBeVisible();
   await page.locator('tr', { hasText: 'API papier' }).getByLabel('Voir les clés d\'API').click();
   await expect(page.getByRole('main')).toContainText('dev');
-  await page.getByRole('button', { name: 'ClientId:ClientToken' }).click();
+  await page.getByRole('button', { name: 'Copier le clientId' }).click();
   const apikey = await page.evaluate(() => navigator.clipboard.readText());
   const papierApiKey = apikey.split(":", 2);
   const [clientId, clientSecret] = papierApiKey;
@@ -162,7 +161,7 @@ test('[ASOAPI-10161] - Demander une extension d\apikey - process automatique', a
   await page.locator('tr', { hasText: 'API Commande' }).getByLabel('Voir les clés d\'API').click();
   await expect(page.getByRole('main')).toContainText('dev');
   await page.locator('.api-subscription', { hasText: 'dev' })
-    .getByRole('button', { name: 'ClientId:ClientToken' }).click();
+    .getByRole('button', { name: 'Copier le clientId' }).click();
   const _apikey = await page.evaluate(() => navigator.clipboard.readText());
   const commandeApiKey = _apikey.split(":", 2);
 
@@ -190,7 +189,7 @@ test('[ASOAPI-10161] - Demander une extension d\apikey - process manuel', async 
   await loginAs(JIM, page);
   await page.getByRole('heading', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  await page.locator('.card', { hasText: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click();
+  await page.locator('.usage-plan__card', { hasText: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click();
   await page.getByText('Logistique').click();
   await page.getByRole('button', { name: 'Souscrire en étendant' }).click();
   await page.getByText('API Commande/prod').click();
@@ -217,14 +216,14 @@ test('[ASOAPI-10161] - Demander une extension d\apikey - process manuel', async 
   await expect(page.locator('td', { 'hasText': 'API papier' })).toBeVisible();
   await page.locator('tr', { hasText: 'API papier' }).getByLabel('Voir les clés d\'API').click();
   await expect(page.getByRole('main')).toContainText('prod');
-  await page.locator('.api-subscription', { hasText: 'prod' }).getByRole('button', { name: 'ClientId:ClientToken' }).click();
+  await page.locator('.api-subscription', { hasText: 'prod' }).getByRole('button', { name: 'Copier le clientId' }).click();
   const apikey = await page.evaluate(() => navigator.clipboard.readText());
   const papierApiKey = apikey.split(":", 2);
   const [clientId, clientSecret] = papierApiKey;
   await page.getByText('Clés d\'API').click();
   await page.locator('tr', { hasText: 'API Commande' }).getByLabel('Voir les clés d\'API').click();
   await expect(page.getByRole('main')).toContainText('prod');
-  await page.locator('.api-subscription', { hasText: 'prod' }).getByRole('button', { name: 'ClientId:ClientToken' }).click();
+  await page.locator('.api-subscription', { hasText: 'prod' }).getByRole('button', { name: 'Copier le clientId' }).click();
   const _apikey = await page.evaluate(() => navigator.clipboard.readText());
   const commandeApiKey = _apikey.split(":", 2);
 
@@ -267,7 +266,7 @@ test('[ASOAPI-10691] - Demander une extension d\apikey - fast mode', async ({ pa
   await expect(page.locator('td', { 'hasText': 'APi papier' })).toBeVisible();
   await page.locator('tr', { hasText: 'API papier' }).getByLabel('Voir les clés d\'API').click();
   await expect(page.getByRole('main')).toContainText('dev');
-  await page.getByRole('button', { name: 'ClientId:ClientToken' }).click();
+  await page.getByRole('button', { name: 'Copier le clientId' }).click();
   const apikey = await page.evaluate(() => navigator.clipboard.readText());
   const papierApiKey = apikey.split(":", 2);
   const [clientId, clientSecret] = papierApiKey;
@@ -275,7 +274,7 @@ test('[ASOAPI-10691] - Demander une extension d\apikey - fast mode', async ({ pa
   await page.locator('tr', { hasText: 'API Commande' }).getByLabel('Voir les clés d\'API').click();
   await expect(page.getByRole('main')).toContainText('dev');
   await page.locator('.api-subscription', { hasText: 'dev' })
-    .getByRole('button', { name: 'ClientId:ClientToken' }).click();
+    .getByRole('button', { name: 'Copier le clientId' }).click();
   const _apikey = await page.evaluate(() => navigator.clipboard.readText());
   const commandeApiKey = _apikey.split(":", 2);
 
@@ -303,7 +302,7 @@ test('[ASOAPI-10164] - Demander une extension d\apikey - process manuel - refus'
   await loginAs(JIM, page);
   await page.getByRole('heading', { name: 'API papier' }).click();
   await page.getByText('Environnements').click();
-  await page.locator('.card', { hasText: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click();
+  await page.locator('.usage-plan__card', { hasText: 'prod' }).getByRole('button', { name: 'Demander une clé d\'API' }).click();
   await page.getByText('Logistique').click();
   await page.getByRole('button', { name: 'Souscrire en étendant' }).click();
   await page.getByText('API Commande/prod').click();
@@ -346,7 +345,7 @@ test('[ASOAPI-10164] - Demander une extension d\apikey - process manuel - refus'
   await expect(page.locator('td', { 'hasText': 'API papier' })).not.toBeVisible();
   await page.locator('tr', { hasText: 'API Commande' }).getByLabel('Voir les clés d\'API').click();
   await expect(page.getByRole('main')).toContainText('prod');
-  await page.locator('.api-subscription', { hasText: 'prod' }).getByRole('button', { name: 'ClientId:ClientToken' }).click();
+  await page.locator('.api-subscription', { hasText: 'prod' }).getByRole('button', { name: 'Copier le clientId' }).click();
   const apikey = await page.evaluate(() => navigator.clipboard.readText());
   const [clientId, clientSecret] = apikey.split(":", 2);
 
@@ -377,7 +376,7 @@ test('[ASOAPI-10421] - Renommer sa clé d\'api', async ({ page, context }) => {
   await page.getByText('Mettre à jour le nom perso.').nth(1).click();
   await page.getByPlaceholder('Nom personnalisé').fill('logistique - api commande - environnement dev');
   await page.getByRole('button', { name: 'Enregistrer' }).click();
-  await expect(page.getByRole('status')).toContainText('Le nom personnalisé de votre souscription a été mis à jour avec succès');
+  await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('Le nom personnalisé de votre souscription a été mis à jour avec succès');
   await expect(page.getByRole('main')).toContainText('logistique - api commande - environnement dev');
 })
 
@@ -386,7 +385,7 @@ test('[ASOAPI-10414] - [producteur] - Renommer une clé d\'api', async ({ page, 
 
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
-  await page.locator('div').filter({ hasText: /^API Commande0$/ }).getByLabel('paramètres').click();
+  await page.getByRole('listitem', { name: 'API Commande' }).getByRole('heading').click();
   await page.getByText('Souscriptions').click();
   const oldName = await page.locator('td', { hasText: 'commande-prod' }).innerText();
   await expect(page.locator('tbody')).toContainText('daikoku-api-key-api-commande-prod-logistique-1737463823426-1.0.0');
@@ -405,7 +404,6 @@ test('[ASOAPI-10398 ASOAPI-10399] - [producteur] - désactiver/activer une clé 
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('heading', { name: 'API Commande' }).click();
-  await page.getByRole('link', { name: 'Configurer l\'API' }).click();
   await page.getByText('Souscriptions').click();
   await page.getByRole('row', { name: 'api-commande-prod' }).locator('label.switch--item').click();
   //wait return of api
@@ -446,14 +444,13 @@ test('[ASOAPI-10400] - [producteur] - supprimer definitivement une clé d\'api',
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('heading', { name: 'API Commande' }).click();
-  await page.getByRole('link', { name: 'Configurer l\'API' }).click();
   await page.getByText('Souscriptions').click();
   await page.getByRole('row', { name: 'api-commande-prod' })
     .getByRole('button', { name: 'Supprimer la souscription' })
     .click();
   await expect(page.locator('h5')).toContainText('Suppression d\'une souscription');
   await page.getByRole('button', { name: 'Oui' }).click();
-  await expect(page.getByRole('status')).toContainText('Souscription supprimée.');
+  await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('Souscription supprimée.');
   //test in otoroshi
   const maybeKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${logistiqueCommandeProdApiKeyId}`, {
     method: 'GET',
@@ -732,7 +729,7 @@ test('[] - [Consommateur] - supprimer une clé avec extension avec promotion des
   await page.locator('.api-subscription', { hasText: 'dev' }).getByText('Supprimer').click();
   await page.getByRole('button', { name: 'Choisir un enfant de la souscription qui sera promu' }).click();
   await page.locator('.react-form-select__input-container').click();
-  await page.getByText('API Commande/dev', { exact: true }).click();
+  await page.locator('.react-form-select__option', { hasText: 'API Commande/dev' }).click();
   await page.getByRole('button', { name: 'Supprimer', exact: true }).click();
   await page.getByLabel('Pour confirmer la suppression').fill('API papier/dev');
   await page.getByRole('button', { name: 'Confirmation' }).click();
@@ -807,7 +804,7 @@ test('[] - [Consommateur] - supprimer une clé avec extension avec extraction de
   await expect(maybeDeletedKey.status).toBe(404);
   await page.getByText('Clés d\'API').click();
   await page.getByRole('row', { name: 'API Commande' }).getByLabel('Voir les clés d\'API').click();
-  await page.getByRole('button', { name: 'ClientId:ClientToken' }).click();
+  await page.getByRole('button', { name: 'Copier le clientId' }).click();
   const apikey = await page.evaluate(() => navigator.clipboard.readText());
   const [clientId, clientSecret] = apikey.split(":", 2);
 
@@ -841,7 +838,7 @@ test('[ASOAP-10604] - [Consommateur] - transférer une clé d\'api à une autre 
   await page.locator('div.api-subscription', { hasText: 'prod' }).locator('#dropdownMenuButton').click();
   await page.locator('div.api-subscription', { hasText: 'prod' }).getByText('Transférer la souscription').click();
   await page.getByRole('button', { name: 'Copier le lien' }).click();
-  
+
   const link = await page.evaluate(() => navigator.clipboard.readText());
   await page.goto(link);
   await page.getByText('Vendeurs').click();

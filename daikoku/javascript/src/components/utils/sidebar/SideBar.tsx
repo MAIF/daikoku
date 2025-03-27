@@ -75,7 +75,7 @@ export const SideBar = () => {
               to="/apis"
               title={translate("API.list")}
               aria-label={translate("API.list")}
-              className="mb-3 brand"
+              className="notification-link notification-link-color"
             >
               <RectangleList />
             </Link>

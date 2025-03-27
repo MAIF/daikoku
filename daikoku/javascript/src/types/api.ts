@@ -6,7 +6,12 @@ import { ITeamFullGql } from './gql';
 
 export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked' | 'deleted';
 
+export interface IWithDocumentation {
+  _id: string;
+  documentation?: IDocumentation;
+}
 export interface IWithSwagger {
+  _id: string;
   swagger?: ISwagger;
 }
 
@@ -17,7 +22,7 @@ export interface IWithTesting {
   customName?: string;
 }
 
-interface IBaseApi extends IWithSwagger, IWithTesting {
+export interface IBaseApi extends IWithSwagger, IWithTesting, IWithDocumentation {
   _id: string;
   _humanReadableId: string;
   _tenant: string;
@@ -32,7 +37,6 @@ interface IBaseApi extends IWithSwagger, IWithTesting {
   description: string;
   currentVersion: string;
   supportedVersions: Array<string>;
-  documentation: IDocumentation;
   tags: Array<string>;
   categories: Array<string>;
   visibility: 'Public' | 'Private' | 'PublicWithAuthorisation' | 'AdminOnly';
@@ -209,15 +213,17 @@ export interface IBaseUsagePlan {
   _id: string;
   _tenant: string;
   _deleted: boolean;
-  type: string;
   customDescription?: string;
-  customName?: string;
+  customName: string;
   subscriptionProcess: Array<IValidationStep>;
-  currency: ICurrency;
+  currency?: ICurrency;
   otoroshiTarget?: IOtoroshiTarget;
 }
 
-export type UsagePlanVisibility = 'Public' | 'Private';
+export enum UsagePlanVisibility {
+  public = 'Public',
+  private = 'Private'
+}
 
 export interface IPaymentSettings {
   thirdPartyPaymentSettingsId: string;
@@ -229,51 +235,30 @@ export interface IStripePaymentSettings extends IPaymentSettings {
   priceIds: Array<string>;
 }
 
-export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting {
+export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, IWithDocumentation {
+  _id: string;
+  _tenant: string;
+  _deleted: boolean;
+  customDescription?: string;
+  customName: string;
+  subscriptionProcess: Array<IValidationStep>;
+  otoroshiTarget?: IOtoroshiTarget;
   allowMultipleKeys?: boolean;
   aggregationApiKeysSecurity?: boolean;
   integrationProcess: 'Automatic' | 'ApiKey';
   autoRotation?: boolean;
   rotation: boolean;
-  currency: ICurrency;
-  billingDuration: IBillingDuration;
+  currency?: ICurrency;
+  billingDuration?: IBillingDuration;
   visibility: UsagePlanVisibility;
   authorizedTeams: Array<string>;
+  costPerRequest?: number;
   costPerMonth?: number;
   maxPerMonth?: number;
   maxPerSecond?: number;
   maxPerDay?: number;
   paymentSettings?: IPaymentSettings;
-  documentation?: IDocumentation;
-}
-
-export interface IUsagePlanAdmin extends IUsagePlan {}
-
-export interface IUsagePlanFreeWithoutQuotas extends IUsagePlan {}
-export interface IUsagePlanFreeWithQuotas extends IUsagePlanFreeWithoutQuotas {
-  maxPerSecond: number;
-  maxPerDay: number;
-  maxPerMonth: number;
-}
-export interface IUsagePlanQuotasWithLimits extends IUsagePlanFreeWithQuotas {
-  costPerMonth: number;
-  trialPeriod: IBillingDuration;
-}
-export interface IUsagePlanQuotasWitoutLimit extends IUsagePlanQuotasWithLimits {
-  costPerAdditionalRequest: number;
-}
-export interface IUsagePlanPayPerUse extends IUsagePlan {
-  costPerMonth: number;
-  costPerRequest: number;
-  trialPeriod: IBillingDuration;
-
-  currency: ICurrency;
-  billingDuration: IBillingDuration;
-  visibility: 'Public' | 'Private';
-  authorizedTeams: Array<string>;
-  autoRotation?: boolean;
-  integrationProcess: 'Automatic' | 'ApiKey';
-  rotation: boolean;
+  trialPeriod?: IBillingDuration
 }
 
 export interface IAuthorizedEntities {
@@ -291,10 +276,10 @@ export interface ICurrency {
   code: string;
 }
 
-interface IOtoroshiTarget {
+export interface IOtoroshiTarget {
   otoroshiSettings?: string;
   authorizedEntities?: IAuthorizedEntities;
-  apikeyCustomization: {
+  apikeyCustomization?: {
     clientIdOnly: boolean;
     constrainedServicesOnly: boolean;
     tags: Array<string>;
@@ -399,20 +384,20 @@ export interface IBaseSubscription {
   parentUp: boolean;
 }
 
-export const isPayPerUse = (obj: IUsagePlan | IFastPlan): obj is IUsagePlanPayPerUse => {
-  return (<IUsagePlanPayPerUse>obj).costPerRequest !== undefined;
+export const isPayPerUse = (plan: IUsagePlan | IFastPlan) => {
+  return !!plan.costPerRequest && !plan.maxPerMonth;
 };
 
 export const isQuotasWitoutLimit = (
-  obj: IUsagePlan | IFastPlan
-): obj is IUsagePlanQuotasWitoutLimit => {
-  return (<IUsagePlanQuotasWitoutLimit>obj).costPerAdditionalRequest !== undefined;
+  plan: IUsagePlan | IFastPlan
+) => {
+  return !!plan.costPerRequest && !!plan.maxPerMonth;
 };
 
 export const isMiniFreeWithQuotas = (
-  obj: IUsagePlan | IFastPlan
-): obj is IUsagePlanFreeWithQuotas => {
-  return (<IUsagePlanFreeWithQuotas>obj).maxPerSecond !== undefined;
+  plan: IUsagePlan | IFastPlan
+) => {
+  return !!plan.maxPerSecond && !plan.costPerMonth;
 };
 
 export type ResponseError = {
@@ -462,7 +447,6 @@ export interface ISubscriptionExtended extends ISubscription {
 
 export interface ISubscriptionWithApiInfo extends ISubscription {
   apiName: string;
-  planType: string;
   planName: string;
 }
 
@@ -520,6 +504,12 @@ export interface IFastApi {
   subscriptionsWithPlan: Array<IFastSubscription>;
 }
 
+export interface IApiPostCursor {
+  posts: Array<IApiPost>
+  total: number
+  nextCursor: number
+  prevCursor: number
+}
 export interface IApiPost {
   _id: string;
   _humanReadableId: string;

@@ -1,14 +1,13 @@
 import { nanoid } from 'nanoid';
-import { ITenant, IUsagePlanFreeWithQuotas } from '../../types';
+import { ITenant, IUsagePlan, UsagePlanVisibility } from '../../types';
 
 export const newPossibleUsagePlan = (
   customName: string,
   tenant: ITenant
-): IUsagePlanFreeWithQuotas => ({
+): IUsagePlan => ({
   _id: nanoid(32),
   _tenant: tenant._id,
   _deleted: false,
-  type: 'FreeWithQuotas',
   currency: { code: 'EUR' },
   customName,
   customDescription: 'Free plan with limited number of calls per day and per month',
@@ -20,8 +19,7 @@ export const newPossibleUsagePlan = (
     value: 1,
     unit: 'Month',
   },
-
-  visibility: 'Public',
+  visibility: UsagePlanVisibility.public,
   subscriptionProcess: [],
   integrationProcess: 'ApiKey',
   rotation: false,

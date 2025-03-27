@@ -61,9 +61,10 @@ export const MyHome = () => {
 
   const redirectToApiPage = (apiWithAutho: IApiWithAuthorization) => {
     const api = apiWithAutho.api
-    const route = (version: string) => api.apis
-      ? `/${api.team._humanReadableId}/apigroups/${api._humanReadableId}/apis`
-      : `/${api.team._humanReadableId}/${api._humanReadableId}/${version}/description`;
+    // const route = (version: string) => api.apis
+    //   ? `/${api.team._humanReadableId}/apigroups/${api._humanReadableId}/apis`
+    //   : `/${api.team._humanReadableId}/${api._humanReadableId}/${v
+    const route = (version: string) =>  `/${api.team._humanReadableId}/${api._humanReadableId}/${version}/description`;
 
     if (api.isDefault) {
       navigate(route(api.currentVersion));
@@ -114,7 +115,6 @@ export const MyHome = () => {
           myTeams={myTeamsRequest.data}
           teamVisible={true}
           redirectToApiPage={redirectToApiPage}
-          redirectToEditPage={redirectToEditPage}
         />
       </main>
     );

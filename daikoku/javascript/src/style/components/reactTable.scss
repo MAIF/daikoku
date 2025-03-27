@@ -1,3 +1,5 @@
+@use "../variables";
+
 .reactTableV7--small {
 	font-size: 12px !important;
 }
@@ -69,7 +71,7 @@
 .ReactTable {
 		border: none !important;
 		font-size: 14px;
-		background-color: $form-bg-color;
+		background-color: variables.$form-bg-color;
 	}
 	.ReactTable input {
 		border-radius: 4px;
@@ -119,7 +121,7 @@
 	}
 
 	.ReactTable a {
-		color : $companion_text-color;
+		color : variables.$companion_text-color;
 	}
 
 	.ReactTable a:hover {

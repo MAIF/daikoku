@@ -102,8 +102,8 @@ const ApiKeysView = (props: ApiKeysViewProps) => {
           .sort(
             (a, b) =>
               a.apiName.localeCompare(b.apiName) ||
-              (a.customName || a.planType).localeCompare(
-                b.customName || b.planType
+              (a.customName || a.planName).localeCompare(
+                b.customName || b.planName
               )
           )
           .map((apiKey) => {
@@ -113,9 +113,8 @@ const ApiKeysView = (props: ApiKeysViewProps) => {
                 className="team-selection team-selection__team selectable mt-1"
                 onClick={() => props.extendApiKey(apiKey)}
               >
-                <span className="ms-2">{`${apiKey.apiName}/${
-                  apiKey.customName || apiKey.planName || apiKey.planType
-                }`}</span>
+                <span className="ms-2">{`${apiKey.apiName}/${apiKey.customName || apiKey.planName || apiKey.planName
+                  }`}</span>
               </div>
             );
           })}

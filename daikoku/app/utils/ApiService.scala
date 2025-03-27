@@ -1,9 +1,5 @@
 package fr.maif.otoroshi.daikoku.utils
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
-import org.apache.pekko.{Done, NotUsed}
 import cats.Monad
 import cats.data.{EitherT, OptionT}
 import cats.implicits.catsSyntaxOptionId
@@ -12,22 +8,24 @@ import controllers.AppError._
 import fr.maif.otoroshi.daikoku.actions.ApiActionContext
 import fr.maif.otoroshi.daikoku.ctrls.PaymentClient
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
-import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.SeqApiFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
-import fr.maif.otoroshi.daikoku.utils.StringImplicits._
+import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
+import org.apache.pekko.{Done, NotUsed}
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
 import play.api.libs.json._
 import play.api.mvc.Result
 import play.api.mvc.Results.Ok
 
-import scala.:+
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Try
 
@@ -93,7 +91,6 @@ class ApiService(
         clientId = IdGenerator.token(32),
         clientSecret = IdGenerator.token(64),
         clientName = s"daikoku-api-key-${api.humanReadableId}-${plan.customName
-          .getOrElse(plan.typeName)
           .urlPathSegmentSanitized}-${team.humanReadableId}-${System
           .currentTimeMillis()}-${api.currentVersion.value}"
       )
@@ -167,18 +164,12 @@ class ApiService(
         plan.autoRotation.map(enabled => ApiKeyRotation(enabled = enabled))
     )
 
-    plan match {
-      case p: FreeWithQuotas =>
+    (plan.maxPerSecond, plan.maxPerDay, plan.maxPerMonth) match {
+      case (Some(maxPerSecond), Some(maxPerDay), Some(maxPerMonth)) =>
         apiKey.copy(
-          throttlingQuota = customMaxPerSecond.getOrElse(p.maxPerSecond),
-          dailyQuota = customMaxPerDay.getOrElse(p.maxPerDay),
-          monthlyQuota = customMaxPerMonth.getOrElse(p.maxPerMonth)
-        )
-      case p: QuotasWithLimits =>
-        apiKey.copy(
-          throttlingQuota = customMaxPerSecond.getOrElse(p.maxPerSecond),
-          dailyQuota = customMaxPerDay.getOrElse(p.maxPerDay),
-          monthlyQuota = customMaxPerMonth.getOrElse(p.maxPerMonth)
+          throttlingQuota = customMaxPerSecond.getOrElse(maxPerSecond),
+          dailyQuota = customMaxPerDay.getOrElse(maxPerDay),
+          monthlyQuota = customMaxPerMonth.getOrElse(maxPerMonth)
         )
       case _ => apiKey
     }
@@ -357,7 +348,6 @@ class ApiService(
       val clientSecret = IdGenerator.token(64)
       val clientName =
         s"daikoku-api-key-${api.humanReadableId}-${plan.customName
-          .getOrElse(plan.typeName)
           .urlPathSegmentSanitized}-${team.humanReadableId}-${System.currentTimeMillis()}"
       val apiSubscription = ApiSubscription(
         id = ApiSubscriptionId(IdGenerator.token(32)),
@@ -588,13 +578,13 @@ class ApiService(
               .map(_.apikeyCustomization.restrictions)
               .getOrElse(ApiKeyRestrictions()),
             throttlingQuota = subscription.customMaxPerSecond
-              .orElse(plan.maxRequestPerSecond)
+              .orElse(plan.maxPerSecond)
               .getOrElse(infos.apk.throttlingQuota),
             dailyQuota = subscription.customMaxPerDay
-              .orElse(plan.maxRequestPerDay)
+              .orElse(plan.maxPerDay)
               .getOrElse(infos.apk.dailyQuota),
             monthlyQuota = subscription.customMaxPerMonth
-              .orElse(plan.maxRequestPerMonth)
+              .orElse(plan.maxPerMonth)
               .getOrElse(infos.apk.monthlyQuota),
             authorizedEntities = plan.otoroshiTarget
               .flatMap(_.authorizedEntities)
@@ -1070,7 +1060,7 @@ class ApiService(
                     .ApiKeyRefresh(
                       subscription.customName.getOrElse(apiKey.clientName),
                       api.name,
-                      plan.customName.getOrElse(plan.typeName)
+                      plan.customName
                     ),
                   notificationType = NotificationType.AcceptOnly
                 )
@@ -1088,7 +1078,7 @@ class ApiService(
                 Map(
                   "apiName" -> JsString(api.name),
                   "planName" -> JsString(
-                    plan.customName.getOrElse(plan.typeName)
+                    plan.customName
                   ),
                   "consumer_team_data" -> team.asJson,
                   "recipient_data" -> admin.asJson,
@@ -1237,11 +1227,11 @@ class ApiService(
   ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
     (for {
       //get parent ApiSubscription
-      parentSubscriptionId <- EitherT.fromOption[Future](
+      parentSubscriptionId <- EitherT.fromOption[Future][AppError, ApiSubscriptionId](
         subscription.parent,
         MissingParentSubscription
       )
-      parentSubscription <- EitherT.fromOptionF(
+      parentSubscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant.id)
           .findByIdNotDeleted(parentSubscriptionId),
@@ -1249,12 +1239,12 @@ class ApiService(
       )
 
       //get otoroshi aggregate apiKey
-      oldApiKey <- EitherT(
+      oldApiKey <- EitherT[Future, AppError, ActualOtoroshiApiKey](
         otoroshiClient.getApikey(parentSubscription.apiKey.clientId)
       )
 
       //get all child subscriptions except subscription to extract
-      childsSubscription <- EitherT.liftF(
+      childsSubscription <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
           .findNotDeleted(
@@ -1266,7 +1256,7 @@ class ApiService(
       )
 
       //get team
-      team <- EitherT.fromOptionF(
+      team <- EitherT.fromOptionF[Future, AppError, Team](
         env.dataStore.teamRepo
           .forTenant(tenant.id)
           .findById(parentSubscription.team),
@@ -1274,13 +1264,13 @@ class ApiService(
       )
 
       //create new OtoroshiApiKey from parent sub
-      parentApi <- EitherT.fromOptionF(
+      parentApi <- EitherT.fromOptionF[Future, AppError, Api](
         env.dataStore.apiRepo
           .forTenant(tenant)
           .findById(parentSubscription.api),
         AppError.ApiNotFound
       )
-      parentPlan <- EitherT.fromOptionF(
+      parentPlan <- EitherT.fromOptionF[Future, AppError, UsagePlan](
         env.dataStore.usagePlanRepo
           .forTenant(tenant)
           .findByIdNotDeleted(parentSubscription.plan),
@@ -2164,7 +2154,7 @@ class ApiService(
                 Map(
                   "api.name" -> JsString(api.name),
                   "api.plan" -> JsString(
-                    plan.customName.getOrElse(plan.typeName)
+                    plan.customName
                   ),
                   "link" -> JsString(
                     env.getDaikokuUrl(
@@ -2900,7 +2890,6 @@ class ApiService(
       )
       newApk = apk.copy(
         clientName = s"daikoku-api-key-${api.humanReadableId}-${plan.customName
-          .getOrElse(plan.typeName)
           .urlPathSegmentSanitized}-${newTeam.humanReadableId}-${System
           .currentTimeMillis()}-${api.currentVersion.value}",
         metadata =

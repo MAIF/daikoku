@@ -161,7 +161,7 @@ object AppError {
         "conflict, Api have already setup apikey rotation"
       case EntityConflict(entityName) =>
         s"Conflict with $entityName"
-      case ForbiddenAction => "You're not authorized to do this action"
+      case ForbiddenAction => "This action is forbidden"
       case TeamForbidden   => "You're not part of this team"
       case ApiKeyCustomMetadataNotPrivided =>
         "You need to provide custom metadata"

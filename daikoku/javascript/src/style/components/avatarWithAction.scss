@@ -1,3 +1,5 @@
+@use "../variables";
+
 .avatar__container {
     width: 100px;
     height: 100px;
@@ -131,7 +133,7 @@
 }
 
 .delete-icon:hover {
-    color: $danger-color;
+    color: variables.$danger-color;
 }
 
 .bf-tooltip {

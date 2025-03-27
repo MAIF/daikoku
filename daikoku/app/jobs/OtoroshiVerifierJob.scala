@@ -363,13 +363,13 @@ class OtoroshiVerifierJob(
               .map(_.apikeyCustomization.restrictions)
               .getOrElse(ApiKeyRestrictions()),
             throttlingQuota = subscription.customMaxPerSecond
-              .orElse(plan.maxRequestPerSecond)
+              .orElse(plan.maxPerSecond)
               .getOrElse(infos.apk.throttlingQuota),
             dailyQuota = subscription.customMaxPerDay
-              .orElse(plan.maxRequestPerDay)
+              .orElse(plan.maxPerDay)
               .getOrElse(infos.apk.dailyQuota),
             monthlyQuota = subscription.customMaxPerMonth
-              .orElse(plan.maxRequestPerMonth)
+              .orElse(plan.maxPerMonth)
               .getOrElse(infos.apk.monthlyQuota),
             authorizedEntities = plan.otoroshiTarget
               .flatMap(_.authorizedEntities)
@@ -755,7 +755,6 @@ class OtoroshiVerifierJob(
             _.filterNot(sub => adminApi.possibleUsagePlans.contains(sub.plan))
           )
       )
-
     } yield subscriptions
 
     val _allParentSubscriptions = r
@@ -1069,7 +1068,7 @@ class OtoroshiVerifierJob(
                 action = NotificationAction.ApiKeyRotationInProgress(
                   apk.clientId,
                   api.name,
-                  plan.customName.getOrElse(plan.typeName)
+                  plan.customName
                 ),
                 notificationType = NotificationType.AcceptOnly
               ).some
@@ -1093,7 +1092,7 @@ class OtoroshiVerifierJob(
                 action = NotificationAction.ApiKeyRotationEnded(
                   apk.clientId,
                   api.name,
-                  plan.customName.getOrElse(plan.typeName)
+                  plan.customName
                 ),
                 notificationType = NotificationType.AcceptOnly
               ).some

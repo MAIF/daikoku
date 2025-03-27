@@ -1,11 +1,11 @@
 import { getApolloContext } from '@apollo/client';
 import { constraints, format, type } from '@maif/react-forms';
-import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
 import sortBy from 'lodash/sortBy';
 import moment from 'moment';
 import { useContext, useEffect, useState } from 'react';
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
 import {
@@ -13,9 +13,12 @@ import {
   ModalContext,
   useTeamBackOffice,
 } from '../../../contexts';
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import {
   IApi,
+  IApiGQL,
+  IApiSubscriptionDetails,
   IRotation,
   ISubscription,
   ISubscriptionExtended,
@@ -30,9 +33,11 @@ import {
   Spinner,
   apikey,
   escapeRegExp,
-  formatPlanType,
   read
 } from '../../utils';
+import { apiGQLToLegitApi } from '../../utils/apiUtils';
+import { GraphQLClient } from 'graphql-request';
+import { IApiSubscriptionGql } from '../apis/TeamApiSubscriptions';
 
 type ISubscriptionWithChildren = ISubscriptionExtended & {
   children: Array<ISubscriptionExtended>;
@@ -62,16 +67,21 @@ const DisplayLink = ({ value }: { value: string }) => {
   )
 }
 
+///###########################
+///###########################
+///###########################
+///###########################
+
 export const TeamApiKeysForApi = () => {
   const { isLoading, currentTeam, error } = useTeamBackOffice();
-  const [searched, setSearched] = useState('');
+  const { Translation } = useContext(I18nContext);
 
-  const location = useLocation();
   const params = useParams();
-  const { client } = useContext(getApolloContext());
-  const { translate, Translation } = useContext(I18nContext);
-  const { confirm, openFormModal, openCustomModal } = useContext(ModalContext);
-  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (currentTeam && !isError(currentTeam))
+      document.title = `${currentTeam.name} - ApiKeys`;
+  }, [currentTeam]);
 
   const apiQuery = useQuery({
     queryKey: ['data', 'visibleApi', params.apiId, params.versionId],
@@ -79,16 +89,6 @@ export const TeamApiKeysForApi = () => {
       Services.getTeamVisibleApi(
         (currentTeam as ITeamSimple)._id,
         params.apiId!,
-        params.versionId!
-      ),
-    enabled: !!currentTeam && !isError(currentTeam),
-  }); //FIXME: not real IAPI (betterApis with plans & pendingPlans)
-  const subsQuery = useQuery({
-    queryKey: ['data', 'subscriptions'],
-    queryFn: () =>
-      Services.getTeamSubscriptions(
-        params.apiId!,
-        (currentTeam as ITeamSimple)._id,
         params.versionId!
       ),
     enabled: !!currentTeam && !isError(currentTeam),
@@ -100,10 +100,69 @@ export const TeamApiKeysForApi = () => {
     enabled: !!apiQuery.data && !isError(apiQuery.data),
   });
 
+
+  if (apiQuery.isLoading || teamQuery.isLoading) {
+    return <Spinner />
+  } else if (apiQuery.data && !isError(apiQuery.data) && teamQuery.data && !isError(teamQuery.data)) {
+    const apiLink = `/${teamQuery.data._humanReadableId}/${apiQuery.data._humanReadableId}/${apiQuery.data.currentVersion}/description`;
+
+    return (
+      <div>
+        <div className="col-12 d-flex align-items-center">
+          <h1>
+            <Translation i18nkey="Api keys for">Api keys for</Translation>
+            &nbsp;
+            <Link
+              to={apiLink}
+              className="cursor-pointer underline"
+            >{apiQuery.data!.name}</Link>
+          </h1>
+        </div>
+        <ApiKeysListForApi
+          api={apiQuery.data!}
+          team={(currentTeam as ITeamSimple)}
+          ownerTeam={teamQuery.data}
+        />
+      </div>
+    )
+  }
+
+}
+
+//  ####################################
+//  ####################################
+//  ####################################
+//  ####################################
+
+type ApiKeysListForApiProps = {
+  team: ITeamSimple
+  api: IApi
+  ownerTeam: ITeamSimple,
+  linkToChildren?: (api: IApi, teamHrId: string) => string
+}
+export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
+  const [searched, setSearched] = useState('');
+
+  const { client } = useContext(getApolloContext());
+  const { translate } = useContext(I18nContext);
+  const { confirm, openFormModal, openCustomModal } = useContext(ModalContext);
+  const queryClient = useQueryClient();
+
+
+  const subsQuery = useQuery({
+    queryKey: ['data', 'subscriptions', props.team, props.api],
+    queryFn: () =>
+      Services.getTeamSubscriptions(
+        props.api._humanReadableId,
+        props.team._id,
+        props.api.currentVersion
+      ),
+  });
+
   const subApisQuery = useQuery({
     queryKey: ['data', 'subscriptions', 'apis'],
     queryFn: () => {
-      return client?.query<{ apis: IApi[] }>({
+      return client?.query<{ apis: IApiGQL[] }>({
         query: Services.graphql.apisByIds,
         variables: {
           ids: [
@@ -121,51 +180,70 @@ export const TeamApiKeysForApi = () => {
     queryClient.invalidateQueries({ queryKey: ['data'] });
   }, [location]);
 
-  useEffect(() => {
-    if (currentTeam && !isError(currentTeam))
-      document.title = `${currentTeam.name} - ApiKeys`;
-  }, [currentTeam]);
+  const updateCustomName = (
+    subscription: ISubscription,
+    customName: string
+  ) => {
+    return Services.updateSubscriptionCustomName(
+      props.team,
+      subscription,
+      customName
+    ).then(() => {
+      toast.success(translate("subscription.custom.name.successfuly.updated"))
+      queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] })
+    });
+  };
 
-  if (isLoading) {
-    return <Spinner />;
-  } else if (currentTeam && !isError(currentTeam)) {
-    const updateCustomName = (
-      subscription: ISubscription,
-      customName: string
-    ) => {
-      return Services.updateSubscriptionCustomName(
-        currentTeam,
-        subscription,
-        customName
-      ).then(() => {
-        toast.success(translate("subscription.custom.name.successfuly.updated"))
-        queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] })
-      });
-    };
-
-    const toggleApiKey = (subscription: ISubscription) => {
-      console.debug("toggle")
-      return Services.archiveApiKey(
-        currentTeam._id,
-        subscription._id,
-        !subscription.enabled
-      ).then(() => {
-        if (subscription.enabled) {
-          toast.success(translate("subscription.successfully.disabled"))
-        } else {
-          toast.success(translate("subscription.successfully.enabled"))
-        }
-        queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] })
+  const toggleApiKey = (subscription: ISubscription) => {
+    return Services.archiveApiKey(
+      props.team._id,
+      subscription._id,
+      !subscription.enabled
+    ).then(() => {
+      if (subscription.enabled) {
+        toast.success(translate("subscription.successfully.disabled"))
+      } else {
+        toast.success(translate("subscription.successfully.enabled"))
       }
-      );
-    };
+      queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] })
+    }
+    );
+  };
 
-    const makeUniqueApiKey = (subscription: ISubscription) => {
-      confirm({
-        message: translate('team_apikey_for_api.ask_for_make_unique'),
-      }).then((ok) => {
-        if (ok)
-          Services.makeUniqueApiKey(currentTeam._id, subscription._id).then(
+  const makeUniqueApiKey = (subscription: ISubscription, details: IApiSubscriptionDetails) => {
+
+    openFormModal(
+      {
+        title: translate("apikeys.delete.confirm.modal.title"),
+        description: <div className="alert alert-danger" role="alert">
+          <h4 className="alert-heading">{translate('Warning')}</h4>
+          <p>{translate('team_apikey_for_api.ask_for_make_unique')}</p>
+          <ul>
+            <li dangerouslySetInnerHTML={{ __html: translate({ key: 'team_apikey_for_api.ask_for_make_unique.2', replacements: [
+              `<strong>${details.parentSubscription?.api.name}/${details.parentSubscription?.plan.customName}</strong>`
+            ]})}}></li>
+            <li dangerouslySetInnerHTML={{
+              __html: translate({
+                key: 'team_apikey_for_api.ask_for_make_unique.3', replacements: [
+                  `<strong>${details.apiSubscription.api.name}/${details.apiSubscription.plan.customName}</strong>`
+                ]
+})}}></li>
+          </ul>
+        </div>,
+        schema: {
+          validation: {
+            type: type.string,
+            label: translate({ key: "apikeys.delete.confirm.label", replacements: [`${details.apiSubscription.api.name}/${subscription.customName ?? details.apiSubscription.plan.customName}`] }),
+            constraints: [
+              constraints.required(translate('constraints.required.value')),
+              constraints.matches(new RegExp(`${escapeRegExp(details.apiSubscription.api.name)}/${escapeRegExp(subscription.customName) ?? escapeRegExp(details.apiSubscription.plan.customName)}`), translate('constraints.match.subscription'))
+            ],
+            defaultValue: ""
+          }
+        },
+        actionLabel: translate('Confirm'),
+        onSubmit: () => Services.makeUniqueApiKey(props.team._id, subscription._id)
+          .then(
             () => {
               queryClient.invalidateQueries({
                 queryKey: ['data', 'subscriptions'],
@@ -176,90 +254,84 @@ export const TeamApiKeysForApi = () => {
                 )
               );
             }
-          );
-      });
-    };
-
-    const deleteApiKey = (subscription: ISubscriptionWithChildren) => {
-      const afterDeletionFunction = () => {
-        queryClient.invalidateQueries({
-          queryKey: ["data", "subscriptions"],
-        });
-        toast.success(
-          translate("apikeys.delete.success.message")
-        );
+          )
       }
-      if (subscription.children.length) {
-        openFormModal({
-          title: translate("apikeys.delete.modal.title"),
-          schema: {
-            choice: {
-              type: type.string,
-              format: format.buttonsSelect,
-              label: translate("apikeys.delete.choice.label"),
-              options: [
-                {
-                  label: translate("apikeys.delete.choice.promotion"),
-                  value: "promotion"
-                },
-                {
-                  label: translate("apikeys.delete.choice.extraction"),
-                  value: "extraction"
-                },
-                {
-                  label: translate("apikeys.delete.choice.delete"),
-                  value: "delete"
-                },
-              ]
-            },
-            childId: {
-              type: type.string,
-              format: format.select,
-              label: translate("apikeys.delete.child.label"),
-              options: subscription.children,
-              transformer: (s: ISubscriptionExtended) => ({ value: s._id, label: `${s.apiName}/${s.planName}` }),
-              visible: (d) => d.rawValues.choice === 'promotion',
-            }
-          },
-          onSubmit: ({ choice, childId }) => openFormModal(
-            {
-              title: translate("apikeys.delete.confirm.modal.title"),
-              description: <div className="alert alert-danger" role="alert">
-                <h4 className="alert-heading">{translate('Warning')}</h4>
-                <p>{translate("delete.subscription.confirm.modal.description.1")}</p>
-                <ul>
-                  <li>{translate("delete.subscription.confirm.modal.description.2")}</li>
-                </ul>
-              </div>,
-              schema: {
-                validation: {
-                  type: type.string,
-                  label: translate({ key: "apikeys.delete.confirm.label", replacements: [`${subscription.apiName}/${subscription.customName ?? subscription.planName}`] }),
-                  constraints: [
-                    constraints.required(translate('constraints.required.value')),
-                    constraints.matches(new RegExp(`${subscription.apiName}/${subscription.customName ?? subscription.planName}`), translate('constraints.match.subscription'))
-                  ],
-                  defaultValue: ""
-                }
+    )
+  };
+
+  const deleteApiKey = (subscription: ISubscriptionWithChildren, details: IApiSubscriptionDetails) => {
+    const afterDeletionFunction = () => {
+      queryClient.invalidateQueries({
+        queryKey: ["data", "subscriptions"],
+      });
+      toast.success(
+        translate("apikeys.delete.success.message")
+      );
+    }
+    if (subscription.children.length) {
+      openFormModal({
+        title: translate("apikeys.delete.modal.title"),
+        schema: {
+          choice: {
+            type: type.string,
+            format: format.buttonsSelect,
+            label: translate("apikeys.delete.choice.label"),
+            options: [
+              {
+                label: translate("apikeys.delete.choice.promotion"),
+                value: "promotion"
               },
-              actionLabel: translate('Confirm'),
-              onSubmit: d => Services.deleteApiSubscription(currentTeam._id, subscription._id, choice, childId)
-                .then(afterDeletionFunction)
-            }
-          ),
-          actionLabel: translate('Delete'),
-          noClose: true
-        })
-      } else {
-        openFormModal(
+              {
+                label: translate("apikeys.delete.choice.extraction"),
+                value: "extraction"
+              },
+              {
+                label: translate("apikeys.delete.choice.delete"),
+                value: "delete"
+              },
+            ]
+          },
+          childId: {
+            type: type.string,
+            format: format.select,
+            label: translate("apikeys.delete.child.label"),
+            options: subscription.children,
+            transformer: (s: ISubscriptionExtended) => ({ value: s._id, label: `${s.apiName}/${s.planName}` }),
+            visible: (d) => d.rawValues.choice === 'promotion',
+          }
+        },
+        onSubmit: ({ choice, childId }) => openFormModal(
           {
             title: translate("apikeys.delete.confirm.modal.title"),
             description: <div className="alert alert-danger" role="alert">
               <h4 className="alert-heading">{translate('Warning')}</h4>
               <p>{translate("delete.subscription.confirm.modal.description.1")}</p>
-              <ul>
-                <li>{translate("delete.subscription.confirm.modal.description.2")}</li>
-              </ul>
+              {!details.parentSubscription && choice === 'delete' && <>
+                <p>{translate("delete.subscription.confirm.modal.description.parent.deleteAll")}</p>
+                <p>{translate("delete.subscription.confirm.modal.description.parent.deleteAll.list")}</p>
+                <ul>
+                  {details.accessibleResources.map(resource => (<li>{resource.apiSubscription.api.name}/{resource.apiSubscription.plan.customName}</li>))}
+                </ul>
+              </>}
+
+              {!details.parentSubscription && choice === 'extraction' && <>
+                <p>{translate("delete.subscription.confirm.modal.description.parent.splitChildren")}</p>
+                <p>{translate("delete.subscription.confirm.modal.description.parent.splitChildren.list")}</p>
+                <ul>
+                  {details.accessibleResources.map(resource => (<li>{resource.apiSubscription.api.name}/{resource.apiSubscription.plan.customName}</li>))}
+                </ul>
+              </>}
+
+              {!details.parentSubscription && choice === 'promotion' &&
+                <p dangerouslySetInnerHTML={{
+                  __html: translate({
+                    key: "delete.subscription.confirm.modal.description.parent.promoteChild",
+                    replacements: [
+                      `<strong>${details.accessibleResources.find(r => r.apiSubscription._id === childId)?.apiSubscription.api.name}/${details.accessibleResources.find(r => r.apiSubscription._id === childId)?.apiSubscription.plan.customName}</strong>`,
+                      `<strong>${details.apiSubscription.api.name}/${details.apiSubscription.plan.customName}</strong>`
+                    ]
+                  })
+                }}></p>}
             </div>,
             schema: {
               validation: {
@@ -267,219 +339,235 @@ export const TeamApiKeysForApi = () => {
                 label: translate({ key: "apikeys.delete.confirm.label", replacements: [`${subscription.apiName}/${subscription.customName ?? subscription.planName}`] }),
                 constraints: [
                   constraints.required(translate('constraints.required.value')),
-                  constraints.matches(new RegExp(`${escapeRegExp(subscription.apiName)}/${escapeRegExp(subscription.customName) ?? escapeRegExp(subscription.planName)}`), translate('constraints.match.subscription'))
+                  constraints.matches(new RegExp(`${subscription.apiName}/${subscription.customName ?? subscription.planName}`), translate('constraints.match.subscription'))
                 ],
                 defaultValue: ""
               }
             },
             actionLabel: translate('Confirm'),
-            onSubmit: d => Services.deleteApiSubscription(currentTeam._id, subscription._id, "delete")
+            onSubmit: d => Services.deleteApiSubscription(props.team._id, subscription._id, choice, childId)
               .then(afterDeletionFunction)
           }
-        )
-      }
-    };
-
-    const toggleApiKeyRotation = (
-      subscription: ISubscription,
-      plan: IUsagePlan,
-      enabled: boolean,
-      rotationEvery: number,
-      gracePeriod: number
-    ) => {
-      if (plan.autoRotation) {
-        toast.error(translate('rotation.error.message'));
-        return Promise.resolve();
-      }
-
-      return Services.toggleApiKeyRotation(
-        currentTeam._id,
-        subscription._id,
-        enabled,
-        rotationEvery,
-        gracePeriod
-      ).then((r) => {
-        toast.success(translate("subscription.rotation.successfully.setup"))
-        queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] });
-      });
-    };
-
-    const regenerateApiKeySecret = (subscription: ISubscription) => {
-      return confirm({ message: translate('reset.secret.confirm') })
-        .then(
-          (ok) => {
-            if (ok) {
-              Services.regenerateApiKeySecret(
-                currentTeam._id,
-                subscription._id
-              ).then(() => {
-                queryClient.invalidateQueries({
-                  queryKey: ['data', 'subscriptions'],
-                });
-                toast.success(translate('secret reseted successfully'));
-              });
+        ),
+        actionLabel: translate('Delete'),
+        noClose: true
+      })
+    } else {
+      openFormModal(
+        {
+          title: translate("apikeys.delete.confirm.modal.title"),
+          description: <div className="alert alert-danger" role="alert">
+            <h4 className="alert-heading">{translate('Warning')}</h4>
+            <p>{translate("delete.subscription.confirm.modal.description.1")}</p>
+            <ul>
+              {!details.parentSubscription && <p>{translate("delete.subscription.confirm.modal.description.single")}</p>}
+              {!!details.parentSubscription &&
+                <li dangerouslySetInnerHTML={{
+                  __html:
+                    translate({
+                      key: "delete.subscription.confirm.modal.description.child",
+                      replacements: [
+                        `<strong>${details.parentSubscription.api.name
+                        } / ${details.parentSubscription.plan.customName}</strong>`,
+                        `<strong>${details.apiSubscription.api.name}/${details.apiSubscription.plan.customName}</strong>`,
+                      ]
+                    })
+                }}></li>}
+            </ul>
+          </div>,
+          schema: {
+            validation: {
+              type: type.string,
+              label: translate({ key: "apikeys.delete.confirm.label", replacements: [`${subscription.apiName}/${subscription.customName ?? subscription.planName}`] }),
+              constraints: [
+                constraints.required(translate('constraints.required.value')),
+                constraints.matches(new RegExp(`${escapeRegExp(subscription.apiName)}/${escapeRegExp(subscription.customName) ?? escapeRegExp(subscription.planName)}`), translate('constraints.match.subscription'))
+              ],
+              defaultValue: ""
             }
-          }
-        );
-    };
+          },
+          actionLabel: translate('Confirm'),
+          onSubmit: d => Services.deleteApiSubscription(props.team._id, subscription._id, "delete")
+            .then(afterDeletionFunction)
+        }
+      )
+    }
+  };
 
-    const transferApiKey = (subscription: ISubscription) => {
-      return Services.getSubscriptionTransferLink(currentTeam._id, subscription._id)
-        .then((response) => {
-          if (isError(response)) {
+  const toggleApiKeyRotation = (
+    subscription: ISubscription,
+    plan: IUsagePlan,
+    enabled: boolean,
+    rotationEvery: number,
+    gracePeriod: number
+  ) => {
+    if (plan.autoRotation) {
+      toast.error(translate('rotation.error.message'));
+      return Promise.resolve();
+    }
 
-          } else {
-            openCustomModal({
-              title: translate("subscriptions.transfer.modal.title"),
-              content: <DisplayLink value={response.link} />,
-              actions: (close) => <button className='btn btn-outline-info' onClick={() => {
-                navigator.clipboard
-                  .writeText(response.link)
-                  .then(() => {
-                    toast.info(translate('credential.copy.success'))
-                    close()
-                  })
-                  .catch(() =>
-                    toast.warning(translate('credential.copy.error'))
-                  );
-              }}><i className='fas fa-link me-1' />{translate("subscriptions.copy.link.button.label")}</button>
-            })
+    return Services.toggleApiKeyRotation(
+      props.team._id,
+      subscription._id,
+      enabled,
+      rotationEvery,
+      gracePeriod
+    ).then((r) => {
+      toast.success(translate("subscription.rotation.successfully.setup"))
+      queryClient.invalidateQueries({ queryKey: ['data', 'subscriptions'] });
+    });
+  };
+
+  const regenerateApiKeySecret = (subscription: ISubscription) => {
+    return confirm({ message: translate('reset.secret.confirm') })
+      .then(
+        (ok) => {
+          if (ok) {
+            Services.regenerateApiKeySecret(
+              props.team._id,
+              subscription._id
+            ).then(() => {
+              queryClient.invalidateQueries({
+                queryKey: ['data', 'subscriptions'],
+              });
+              toast.success(translate('secret reseted successfully'));
+            });
           }
         }
-        )
-    }
-
-    if (
-      apiQuery.isLoading ||
-      subsQuery.isLoading ||
-      teamQuery.isLoading ||
-      subApisQuery.isLoading
-    ) {
-      return <Spinner />;
-    } else if (
-      apiQuery.data &&
-      subsQuery.data &&
-      teamQuery.data &&
-      subApisQuery.data &&
-      !isError(apiQuery.data) &&
-      !isError(subsQuery.data) &&
-      !isError(teamQuery.data) &&
-      !isError(subApisQuery.data)
-    ) {
-      const api = apiQuery.data;
-      const apiTeam = teamQuery.data;
-      const subscriptions = subsQuery.data;
-      const subscribedApis = subApisQuery.data.data.apis;
-
-      const search = searched.trim();
-
-      const filteredApiKeys =
-        search === ''
-          ? subscriptions
-          : subscriptions.filter((subs) => {
-            return subs.apiKey.clientName === search ||
-              subs.apiKey.clientId === search ||
-              subs.customName?.toLocaleLowerCase() === search.toLocaleLowerCase() ||
-              formatPlanType(subs.planType, translate)
-                .toLowerCase()
-                .includes(search.toLocaleLowerCase()) ||
-              subs.tags.map(t => t.toLocaleLowerCase()).includes(search.toLocaleLowerCase())
-          });
-
-      const sorted = sortBy(filteredApiKeys, ['plan', 'customName', 'parent']);
-      const sortedApiKeys = sorted
-        .filter((f) => f.parent)
-        .reduce<Array<ISubscriptionWithChildren>>(
-          (acc, sub) => {
-            return acc.find((a) => a._id === sub.parent)
-              ? acc.map((a) => {
-                if (a._id === sub.parent) a.children.push(sub);
-                return a;
-              })
-              : [...acc, { ...sub, children: [] }];
-          },
-          sorted
-            .filter((f) => !f.parent)
-            .map((sub) => ({ ...sub, children: [] }))
-        );
-
-      const apiLink = `/${apiTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`;
-      return (
-        <Can I={read} a={apikey} team={currentTeam} dispatchError>
-          {api && apiTeam ? (
-            <div className="row">
-              <div className="col-12 d-flex align-items-center">
-                <h1>
-                  <Translation i18nkey="Api keys for">Api keys for</Translation>
-                  &nbsp;
-                  <Link
-                    to={apiLink}
-                    className="cursor-pointer underline"
-                  >{api.name}</Link>
-                </h1>
-              </div>
-              <div className="col-12 mt-2 mb-4">
-                <input
-                  type="text"
-                  className="form-control col-5"
-                  placeholder={translate('Search your apiKey...')}
-                  aria-label="Search your apikey"
-                  value={searched}
-                  onChange={(e) => setSearched(e.target.value)}
-                />
-              </div>
-
-              <div className="col-12">
-                <PaginatedComponent
-                  items={sortedApiKeys}
-                  count={5}
-                  formatter={(subscription: ISubscriptionWithChildren) => {
-                    return (
-                      <ApiKeyCard
-                        api={api}
-                        currentTeam={currentTeam}
-                        apiLink={apiLink}
-                        statsLink={`/${currentTeam._humanReadableId}/settings/apikeys/${params.apiId}/${params.versionId}/subscription/${subscription._id}/consumptions`}
-                        key={subscription.apiKey.clientId}
-                        subscription={subscription}
-                        subscribedApis={subscribedApis}
-                        updateCustomName={(name) =>
-                          updateCustomName(subscription, name)
-                        }
-                        toggle={() => toggleApiKey(subscription)}
-                        makeUniqueApiKey={() => makeUniqueApiKey(subscription)}
-                        deleteApiKey={() => deleteApiKey(subscription)}
-                        toggleRotation={(
-                          plan,
-                          enabled,
-                          rotationEvery,
-                          gracePeriod
-                        ) =>
-                          toggleApiKeyRotation(
-                            subscription,
-                            plan,
-                            enabled,
-                            rotationEvery,
-                            gracePeriod
-                          )
-                        }
-                        regenerateSecret={() => regenerateApiKeySecret(subscription)}
-                        transferKey={() => transferApiKey(subscription)}
-                        handleTagClick={(tag) => setSearched(tag)}
-                      />
-                    );
-                  }}
-                />
-              </div>
-            </div>
-          ) : null}
-        </Can>
       );
-    } else {
-      return <div>an error occured</div>;
-    }
+  };
+
+  const transferApiKey = (subscription: ISubscription) => {
+    return Services.getSubscriptionTransferLink(props.team._id, subscription._id)
+      .then((response) => {
+        if (isError(response)) {
+
+        } else {
+          openCustomModal({
+            title: translate("subscriptions.transfer.modal.title"),
+            content: <DisplayLink value={response.link} />,
+            actions: (close) => <button className='btn btn-outline-info' onClick={() => {
+              navigator.clipboard
+                .writeText(response.link)
+                .then(() => {
+                  toast.info(translate('credential.copy.success'))
+                  close()
+                })
+                .catch(() =>
+                  toast.warning(translate('credential.copy.error'))
+                );
+            }}><i className='fas fa-link me-1' />{translate("subscriptions.copy.link.button.label")}</button>
+          })
+        }
+      }
+      )
+  }
+
+  if (
+    subsQuery.isLoading ||
+    subApisQuery.isLoading
+  ) {
+    return <Spinner />;
+  } else if (
+    subsQuery.data &&
+    subApisQuery.data &&
+    !isError(subsQuery.data) &&
+    !isError(subApisQuery.data)
+  ) {
+    const subscriptions = subsQuery.data;
+    const subscribedApis = subApisQuery.data.data.apis;
+
+    const search = searched.trim();
+
+    const filteredApiKeys =
+      search === ''
+        ? subscriptions
+        : subscriptions.filter((subs) => {
+          return subs.apiKey.clientName === search ||
+            subs.apiKey.clientId === search ||
+            subs.customName?.toLocaleLowerCase() === search.toLocaleLowerCase() ||
+            subs.planName.toLowerCase().includes(search.toLocaleLowerCase()) ||
+            subs.tags.map(t => t.toLocaleLowerCase()).includes(search.toLocaleLowerCase())
+        });
+
+    const sorted = sortBy(filteredApiKeys, ['plan', 'customName', 'parent']);
+    const sortedApiKeys = sorted
+      .filter((f) => f.parent)
+      .reduce<Array<ISubscriptionWithChildren>>(
+        (acc, sub) => {
+          return acc.find((a) => a._id === sub.parent)
+            ? acc.map((a) => {
+              if (a._id === sub.parent) a.children.push(sub);
+              return a;
+            })
+            : [...acc, { ...sub, children: [] }];
+        },
+        sorted
+          .filter((f) => !f.parent)
+          .map((sub) => ({ ...sub, children: [] }))
+      );
+
+    const apiLink = `/${props.ownerTeam._humanReadableId}/${props.api._humanReadableId}/${props.api.currentVersion}/description`;
+    return (
+      <Can I={read} a={apikey} team={props.team} dispatchError>
+        <div className="col-6 mt-4 mb-2">
+          <input
+            type="text"
+            className="form-control col-5"
+            placeholder={translate('Search your apiKey...')}
+            aria-label="Search your apikey"
+            value={searched}
+            onChange={(e) => setSearched(e.target.value)}
+          />
+        </div>
+
+        <div className="col-12">
+          <PaginatedComponent
+            items={sortedApiKeys}
+            count={5}
+            formatter={(subscription: ISubscriptionWithChildren) => {
+              return (
+                <ApiKeyCard
+                  api={props.api}
+                  currentTeam={props.team}
+                  apiLink={apiLink}
+                  statsLink={`/${props.team._humanReadableId}/settings/apikeys/${props.api._id}/${props.api.currentVersion}/subscription/${subscription._id}/consumptions`}
+                  key={subscription._id}
+                  subscription={subscription}
+                  subscribedApis={subscribedApis}
+                  updateCustomName={(name) =>
+                    updateCustomName(subscription, name)
+                  }
+                  toggle={() => toggleApiKey(subscription)}
+                  makeUniqueApiKey={(details: IApiSubscriptionDetails) => makeUniqueApiKey(subscription, details)}
+                  deleteApiKey={(detail: IApiSubscriptionDetails) => deleteApiKey(subscription, detail)}
+                  toggleRotation={(
+                    plan,
+                    enabled,
+                    rotationEvery,
+                    gracePeriod
+                  ) =>
+                    toggleApiKeyRotation(
+                      subscription,
+                      plan,
+                      enabled,
+                      rotationEvery,
+                      gracePeriod
+                    )
+                  }
+                  regenerateSecret={() => regenerateApiKeySecret(subscription)}
+                  transferKey={() => transferApiKey(subscription)}
+                  handleTagClick={(tag) => setSearched(tag)}
+                  linkToChildren={props.linkToChildren}
+                />
+              );
+            }}
+          />
+        </div>
+      </Can>
+    );
   } else {
-    toast.error(error?.message || currentTeam?.error);
+    return <div>an error occured</div>;
   }
 };
 
@@ -492,8 +580,8 @@ type ApiKeyCardProps = {
   statsLink: string;
   apiLink: string;
   toggle: () => void;
-  makeUniqueApiKey: () => void;
-  deleteApiKey: () => void;
+  makeUniqueApiKey: (details: IApiSubscriptionDetails) => void;
+  deleteApiKey: (details: IApiSubscriptionDetails) => void;
   toggleRotation: (
     plan: IUsagePlan,
     enabled: boolean,
@@ -502,9 +590,10 @@ type ApiKeyCardProps = {
   ) => Promise<void>;
   regenerateSecret: () => void;
   currentTeam?: ITeamSimple;
-  subscribedApis: Array<IApi>;
+  subscribedApis: Array<IApiGQL>;
   transferKey: () => void;
   handleTagClick: (tag: string) => void
+  linkToChildren?: (api: IApi, teamHrId: string) => string
 };
 
 export const ApiKeyCard = ({
@@ -521,33 +610,108 @@ export const ApiKeyCard = ({
   transferKey,
   currentTeam,
   subscribedApis,
-  handleTagClick
+  handleTagClick,
+  linkToChildren
 }: ApiKeyCardProps) => {
-  const apiKeyValues = {
-    apikey: `${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`,
-    token: subscription.integrationToken,
-    basicAuth: `Basic ${btoa(`${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`)}`,
-  };
+  const { translate } = useContext(I18nContext);
+  const { openFormModal, closeRightPanel, openCustomModal } = useContext(ModalContext);
+  const { tenant } = useContext(GlobalContext);
 
-  const [showAggregatePlan, setAggregatePlan] = useState(false);
+  const [more, setMore] = useState(false)
 
-  const { translate, Translation } = useContext(I18nContext);
-  const { openFormModal, openRightPanel } = useContext(ModalContext);
+  const graphqlEndpoint = `${window.location.origin}/api/search`;
+  const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
+  const API_SUBSCRIPTION_DETAIL_QUERY = `
+    query getApiSubscriptionDetails ($subscriptionId: String!, $teamId: String!) {
+      apiSubscriptionDetails (subscriptionId: $subscriptionId, teamId: $teamId) {
+        apiSubscription {
+          _id
+          api { name }
+          plan { 
+            customName
+            autoRotation
+          }
+          parent { _id }
+          customName
+        }
+        parentSubscription {
+          _id
+          customName
+          api {
+            _id
+            _humanReadableId
+            name
+            tenant {
+              id
+            }
+            team {
+              _id
+              _humanReadableId
+            }
+            currentVersion
+          }
+          plan {
+            customName
+          }
+        }
+        accessibleResources {
+          api {
+            _id
+            _humanReadableId
+            name
+            tenant { 
+              id 
+            }
+            team { 
+              _id
+              _humanReadableId
+            }
+            currentVersion
+          }
+          apiSubscription {
+            _id
+            customName
+            api { 
+              _id
+              name
+            }
+            tenant {
+              id
+            }
+            team {
+              _id
+              _humanReadableId
+            }
+            plan { 
+              _id  
+              customName 
+            }
+          }
+          usagePlan {
+            _id
+            customName
+          }
+        }
+      }
+    }
+    `;
 
-  const planQuery = useQuery({
-    queryKey: ['plan', subscription.plan],
-    queryFn: () =>
-      Services.getVisiblePlan(api._id, api.currentVersion, subscription.plan),
-  });
+  const detailQuery = useQuery({
+    queryKey: ['parent', subscription._id, currentTeam?._id ?? 'no-team'],
+    queryFn: () => customGraphQLClient.request<{ apiSubscriptionDetails: IApiSubscriptionDetails }>(API_SUBSCRIPTION_DETAIL_QUERY, {
+      subscriptionId: subscription._id, teamId: currentTeam?._id ?? 'no-team'
+    }),
+    select: d => d.apiSubscriptionDetails,
+  })
 
-  if (planQuery.isLoading) {
+  if (detailQuery.isLoading) {
     return (
       <div className="col-12 col-sm-6 col-md-4 mb-2">
         <Spinner />
       </div>
     );
-  } else if (planQuery.data && !isError(planQuery.data)) {
-    const plan = planQuery.data;
+  } else if (detailQuery.data) {
+    const plan = detailQuery.data.apiSubscription.plan;
 
     const settingsSchema = {
       enabled: {
@@ -591,13 +755,27 @@ export const ApiKeyCard = ({
       }
     };
 
-    const disableRotation =
-      api.visibility === 'AdminOnly' || !!plan.autoRotation;
+    const disableRotation = api.visibility === 'AdminOnly' || !!plan.autoRotation;
 
+    const _customName = subscription.customName || plan.customName
 
-    const _customName = subscription.customName ||
-      planQuery.data.customName ||
-      planQuery.data.type
+    const nbChildsDisplay = 2;
+    const getPartOfChildren = (start: number, end: number) => [...detailQuery.data.accessibleResources]
+      .splice(start, end)
+      .map((detail) => {
+        return (
+          <Link
+            key={`${subscription._id}-${detail.apiSubscription._id}`}
+            className='ms-1'
+            onClick={closeRightPanel}
+            to={linkToChildren ?
+              linkToChildren(apiGQLToLegitApi(detail.api, tenant), detail.api.team._humanReadableId) :
+              `/${currentTeam?._humanReadableId}/settings/apikeys/${detail.api._humanReadableId}/${api!.currentVersion}`}
+          >
+            {`${detail.api.name}/${detail.usagePlan.customName}`}
+          </Link>
+        );
+      })
 
     return (
       <div className='api-subscription'>
@@ -627,48 +805,67 @@ export const ApiKeyCard = ({
             <div className='api-subscription__infos__name'>{_customName}</div>
             <div className='d-flex gap-2'>
               <BeautifulTitle title={translate("subscription.copy.apikey.help")}>
-                <button className='btn btn-sm btn-outline-info' onClick={() => {
-                  navigator.clipboard
-                    .writeText(`${subscription.apiKey.clientId}:${subscription.apiKey.clientSecret}`)
-                    .then(() =>
-                      toast.info(translate('credential.copy.success'))
-                    )
-                    .catch(() =>
-                      toast.warning(translate('credential.copy.error'))
-                    );
-                }}>
+                <button className='btn btn-sm btn-outline-info'
+                  aria-label={translate("subscription.copy.apikey.aria.label")}
+                  onClick={() => {
+                    navigator.clipboard
+                      .writeText(`${subscription.apiKey.clientId}:${subscription.apiKey.clientSecret}`)
+                      .then(() =>
+                        toast.info(translate('credential.copy.success'))
+                      )
+                      .catch(() =>
+                        toast.warning(translate('credential.copy.error'))
+                      );
+                  }}>
                   <i className="fa fa-copy me-1" />
                   {translate("subscription.copy.apikey.label")}
                 </button>
               </BeautifulTitle>
               <BeautifulTitle title={translate("subscription.copy.token.help")}>
-                <button className='btn btn-sm btn-outline-info' onClick={() => {
-                  navigator.clipboard
-                    .writeText(subscription.integrationToken)
-                    .then(() =>
-                      toast.info(translate('credential.copy.success'))
-                    )
-                    .catch(() =>
-                      toast.warning(translate('credential.copy.error'))
-                    );
-                }}>
+                <button className='btn btn-sm btn-outline-info'
+                  aria-label={translate("subscription.copy.tokan.aria-label")}
+                  onClick={() => {
+                    navigator.clipboard
+                      .writeText(subscription.integrationToken)
+                      .then(() =>
+                        toast.info(translate('credential.copy.success'))
+                      )
+                      .catch(() =>
+                        toast.warning(translate('credential.copy.error'))
+                      );
+                  }}>
                   <i className="fa fa-copy me-1" />
                   {translate("subscription.copy.token.label")}
                 </button>
               </BeautifulTitle>
               <BeautifulTitle title={translate("subscription.copy.basic.auth.help")}>
-                <button className='btn btn-sm btn-outline-info' onClick={() => {
-                  navigator.clipboard
-                    .writeText(`Basic ${btoa(`${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`)}`)
-                    .then(() =>
-                      toast.info(translate('credential.copy.success'))
-                    )
-                    .catch(() =>
-                      toast.warning(translate('credential.copy.error'))
-                    );
-                }}>
+                <button className='btn btn-sm btn-outline-info'
+                  aria-label={translate("subscription.copy.basic.auth.aria-label")}
+                  onClick={() => {
+                    navigator.clipboard
+                      .writeText(`Basic ${btoa(`${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`)}`)
+                      .then(() =>
+                        toast.info(translate('credential.copy.success'))
+                      )
+                      .catch(() =>
+                        toast.warning(translate('credential.copy.error'))
+                      );
+                  }}>
                   <i className="fa fa-copy me-1" />
                   {translate("subscription.copy.basic.auth.label")}
+                </button>
+              </BeautifulTitle>
+              <BeautifulTitle title={translate("subscription.display.credentials")}>
+                <button className='btn btn-sm btn-outline-info'
+                  aria-label={translate("subscription.display.credentials")}
+                  onClick={() => openCustomModal({
+                    title: _customName,
+                    content: <ul>
+                      <li><strong>{translate("clientId")}</strong>: {subscription.apiKey.clientId}</li>
+                      <li><strong>Client Secret</strong>: {subscription.apiKey.clientSecret}</li>
+                    </ul>
+                  })}>
+                  <i className="fa fa-eye" />
                 </button>
               </BeautifulTitle>
             </div>
@@ -684,6 +881,14 @@ export const ApiKeyCard = ({
                 {subscription.validUntil && translate({
                   key: 'subscription.valid.until', replacements: [moment(subscription.validUntil).format(translate('moment.date.format.without.hours'))]
                 })}</span>
+            </div>
+            <div className='api-subscription__infos__creation'>
+              {!!detailQuery.data.accessibleResources.length && <span>{translate('subscription.extra.resources.label')} : {getPartOfChildren(0, nbChildsDisplay)}</span>}
+              {detailQuery.data.accessibleResources.length > nbChildsDisplay && (<i className={classNames("ms-1 fas cursor-pointer a-fake", {
+                "fa-chevron-down": !more,
+                "fa-chevron-up": more,
+              })} onClick={() => setMore(!more)} />)}
+              {more && (<div className='ms-4'>{getPartOfChildren(nbChildsDisplay, detailQuery.data.accessibleResources.length)}</div>)}
             </div>
             <div>
               {subscription.tags.map(t => (<span className='badge badge-custom me-1 cursor-pointer' onClick={() => handleTagClick(t)}>{t}</span>))}
@@ -732,32 +937,6 @@ export const ApiKeyCard = ({
             >
               {translate("subscription.custom.name.update.label")}
             </span>
-
-            {subscription.children.length > 0 && <span
-              className="dropdown-item cursor-pointer"
-              onClick={() => openRightPanel({
-                title: translate('team_apikey_aggregatePlans_title'), content: <div className="text-center">
-                  <div>
-                    {subscription.children.map((aggregate) => {
-                      const api = subscribedApis.find(
-                        (a) => a._id === aggregate.api
-                      );
-                      return (
-                        <div key={aggregate._id}>
-                          <Link
-                            to={`/${currentTeam?._humanReadableId}/settings/apikeys/${aggregate._humanReadableId}/${api!.currentVersion}`}
-                          >
-                            {`${aggregate.apiName}/${aggregate.planName || aggregate.planType}`}
-                          </Link>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              })}
-            >
-              {translate("subscription.show.aggregate.label")}
-            </span>}
             <div className="dropdown-divider" />
             {!subscription.parent && !disableRotation && <span
               className="dropdown-item cursor-pointer"
@@ -798,13 +977,13 @@ export const ApiKeyCard = ({
             </span>}
             {subscription.parent && <span
               className="dropdown-item cursor-pointer danger"
-              onClick={makeUniqueApiKey}
+              onClick={() => makeUniqueApiKey(detailQuery.data)}
             >
               {translate("subscription.extract.button.label")}
             </span>}
             <span
               className="dropdown-item cursor-pointer danger"
-              onClick={deleteApiKey}
+              onClick={() => deleteApiKey(detailQuery.data)}
             >
               {translate("subscription.delete.button.label")}
             </span>

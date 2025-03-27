@@ -128,7 +128,7 @@ class EntitiesController(
     DaikokuAction.async { ctx =>
       PublicUserAccess(
         AuditTrailEvent(
-          s"@{user.name} has asked for a template entity of type ApiDocumentationr"
+          s"@{user.name} has asked for a template entity of type ApiDocumentation"
         )
       )(ctx) {
         Ok(
@@ -138,6 +138,24 @@ class EntitiesController(
             lastModificationAt = DateTime.now(),
             pages = Seq.empty
           ).asJson
+        )
+      }
+    }
+
+  def newApiDocumentationPage() =
+    DaikokuAction.async { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} has asked for a template entity of type ApiDocumentationPage"
+        )
+      )(ctx) {
+        Ok(
+          ApiDocumentationPage(
+            id = ApiDocumentationPageId(IdGenerator.token(32)),
+            tenant = ctx.tenant.id,
+            title = "New page",
+            lastModificationAt = DateTime.now(),
+            content = "# New page").asJson
         )
       }
     }
@@ -232,134 +250,40 @@ class EntitiesController(
       }
     }
 
-  def newPlan(planType: String): Action[AnyContent] =
+  def newPlan(): Action[AnyContent] =
     DaikokuAction.async { ctx =>
       PublicUserAccess(
         AuditTrailEvent(
           s"@{user.name} has asked for a template entity of type Plan"
         )
       )(ctx) {
-        planType match {
-          case "Admin" =>
-            Ok(
-              UsagePlan
-                .Admin(
-                  id = UsagePlanId(IdGenerator.token(32)),
-                  tenant = ctx.tenant.id,
-                  otoroshiTarget = None
-                )
-                .asJson
-            )
-          case "PayPerUse" =>
-            Ok(
-              UsagePlan
-                .PayPerUse(
-                  id = UsagePlanId(IdGenerator.token(32)),
-                  tenant = ctx.tenant.id,
-                  costPerRequest = BigDecimal(0),
-                  costPerMonth = BigDecimal(0),
-                  billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-                  trialPeriod = None,
-                  currency = Currency("EUR"),
-                  customName = None,
-                  customDescription = None,
-                  otoroshiTarget = None,
-                  allowMultipleKeys = Some(false),
-                  visibility = Private,
-                  autoRotation = Some(false),
-                  subscriptionProcess = Seq.empty,
-                  integrationProcess = IntegrationProcess.ApiKey
-                )
-                .asJson
-            )
-          case "FreeWithQuotas" =>
-            Ok(
-              UsagePlan
-                .FreeWithQuotas(
-                  id = UsagePlanId(IdGenerator.token(32)),
-                  tenant = ctx.tenant.id,
-                  maxPerSecond = 0,
-                  maxPerDay = 0,
-                  maxPerMonth = 0,
-                  billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-                  currency = Currency("EUR"),
-                  customName = None,
-                  customDescription = None,
-                  otoroshiTarget = None,
-                  allowMultipleKeys = Some(false),
-                  subscriptionProcess = Seq.empty,
-                  integrationProcess = IntegrationProcess.ApiKey,
-                  autoRotation = Some(false)
-                )
-                .asJson
-            )
-          case "FreeWithoutQuotas" =>
-            Ok(
-              UsagePlan
-                .FreeWithoutQuotas(
-                  id = UsagePlanId(IdGenerator.token(32)),
-                  tenant = ctx.tenant.id,
-                  billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-                  currency = Currency("EUR"),
-                  customName = None,
-                  customDescription = None,
-                  otoroshiTarget = None,
-                  allowMultipleKeys = Some(false),
-                  subscriptionProcess = Seq.empty,
-                  integrationProcess = IntegrationProcess.ApiKey,
-                  autoRotation = Some(false)
-                )
-                .asJson
-            )
-          case "QuotasWithLimits" =>
-            Ok(
-              UsagePlan
-                .QuotasWithLimits(
-                  id = UsagePlanId(IdGenerator.token(32)),
-                  tenant = ctx.tenant.id,
-                  maxPerSecond = 0,
-                  maxPerDay = 0,
-                  maxPerMonth = 0,
-                  costPerMonth = BigDecimal(0),
-                  billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-                  trialPeriod = None,
-                  currency = Currency("EUR"),
-                  customName = None,
-                  customDescription = None,
-                  otoroshiTarget = None,
-                  allowMultipleKeys = Some(false),
-                  subscriptionProcess = Seq.empty,
-                  integrationProcess = IntegrationProcess.ApiKey,
-                  autoRotation = Some(false)
-                )
-                .asJson
-            )
-          case "QuotasWithoutLimits" =>
-            Ok(
-              UsagePlan
-                .QuotasWithoutLimits(
-                  id = UsagePlanId(IdGenerator.token(32)),
-                  tenant = ctx.tenant.id,
-                  maxPerSecond = 0,
-                  maxPerDay = 0,
-                  maxPerMonth = 0,
-                  costPerMonth = BigDecimal(0),
-                  costPerAdditionalRequest = BigDecimal(0),
-                  billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-                  trialPeriod = None,
-                  currency = Currency("EUR"),
-                  customName = None,
-                  customDescription = None,
-                  otoroshiTarget = None,
-                  allowMultipleKeys = Some(true),
-                  subscriptionProcess = Seq.empty,
-                  integrationProcess = IntegrationProcess.ApiKey,
-                  autoRotation = Some(false)
-                )
-                .asJson
-            )
-          case _ => BadRequest(Json.obj("error" -> "Unrecognized type of plan"))
-        }
+        Ok(UsagePlan(
+          id = UsagePlanId(IdGenerator.token(32)),
+          tenant = ctx.tenant.id,
+          maxPerSecond = None,
+          maxPerDay = None,
+          maxPerMonth = None,
+          costPerMonth = None,
+          costPerRequest = None,
+          billingDuration = None,
+          trialPeriod = None,
+          currency = None,
+          customName = "new usage plan",
+          customDescription = None,
+          otoroshiTarget = None,
+          allowMultipleKeys = Some(false),
+          subscriptionProcess = Seq.empty,
+          integrationProcess = IntegrationProcess.ApiKey,
+          autoRotation = Some(false),
+          documentation = if (ctx.tenant.display == TenantDisplay.Environment)
+            ApiDocumentation(
+              id = ApiDocumentationId(IdGenerator.token(32)),
+              tenant = ctx.tenant.id,
+              lastModificationAt = DateTime.now(),
+              pages = Seq.empty
+            ).some
+          else None
+        ).asJson)
       }
     }
 }

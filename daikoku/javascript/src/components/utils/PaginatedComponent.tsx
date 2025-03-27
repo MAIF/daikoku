@@ -33,7 +33,7 @@ export const PaginatedComponent = (props: Props) => {
 
   const pagedItems = props.items.slice(offset, offset + pageNumber);
 
-  return (<div className="section p-2">
+  return (<div className="section">
     <div className="flex-column">
       {(props as any).help && (<i className="far fa-question-circle ms-1 cursor-pointer" style={{ fontSize: '20px' }} onClick={() => (props as any).help()} />)}
       <div className={classNames('d-flex flex-wrap', {

@@ -4,14 +4,12 @@ import com.github.tomakehurst.wiremock.WireMockServer
 import com.github.tomakehurst.wiremock.client.WireMock
 import com.github.tomakehurst.wiremock.client.WireMock._
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration._
-import com.typesafe.config.ConfigFactory
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import org.joda.time.DateTime
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.{Configuration, Logger}
 import play.api.libs.json.{JsArray, JsObject, Json}
 
 import scala.util.Random
@@ -289,19 +287,19 @@ class ConsumptionControllerSpec()
                 Json.stringify(
                   ApiKeyQuotas(
                     authorizedCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0),
+                      plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
                     remainingCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
+                      plan.maxPerSecond.getOrElse(0L) - callPerSec,
+                    authorizedCallsPerDay = plan.maxPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
-                    remainingCallsPerDay = plan.maxRequestPerDay
+                    remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
                     authorizedCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0),
+                      plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
                     remainingCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
+                      plan.maxPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -352,7 +350,6 @@ class ConsumptionControllerSpec()
       )
 
       val plan = defaultApi.plans.find(p => p.id == payPerUsePlanId).get
-      val otoroshiTarget = plan.otoroshiTarget
 
       val callPerSec = 100L
       val callPerDay = 1000L
@@ -381,19 +378,19 @@ class ConsumptionControllerSpec()
                 Json.stringify(
                   ApiKeyQuotas(
                     authorizedCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0),
+                      plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
                     remainingCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
+                      plan.maxPerSecond.getOrElse(0L) - callPerSec,
+                    authorizedCallsPerDay = plan.maxPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
-                    remainingCallsPerDay = plan.maxRequestPerDay
+                    remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
                     authorizedCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0),
+                      plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
                     remainingCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
+                      plan.maxPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -443,7 +440,6 @@ class ConsumptionControllerSpec()
       )
 
       val plan = defaultApi.plans.find(p => p.id == payPerUsePlanId).get
-      val otoroshiTarget = plan.otoroshiTarget
 
       val callPerSec = 100L
       val callPerDay = 1000L
@@ -472,19 +468,19 @@ class ConsumptionControllerSpec()
                 Json.stringify(
                   ApiKeyQuotas(
                     authorizedCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0),
+                      plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
                     remainingCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
+                      plan.maxPerSecond.getOrElse(0L) - callPerSec,
+                    authorizedCallsPerDay = plan.maxPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
-                    remainingCallsPerDay = plan.maxRequestPerDay
+                    remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
                     authorizedCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0),
+                      plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
                     remainingCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
+                      plan.maxPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -533,7 +529,6 @@ class ConsumptionControllerSpec()
 
       val plan =
         defaultApi.plans.find(p => p.id == payPerUsePlanId).get
-      val otoroshiTarget = plan.otoroshiTarget
 
       val callPerSec = 100L
       val callPerDay = 1000L
@@ -562,19 +557,19 @@ class ConsumptionControllerSpec()
                 Json.stringify(
                   ApiKeyQuotas(
                     authorizedCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0),
+                      plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
                     remainingCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
+                      plan.maxPerSecond.getOrElse(0L) - callPerSec,
+                    authorizedCallsPerDay = plan.maxPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
-                    remainingCallsPerDay = plan.maxRequestPerDay
+                    remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
                     authorizedCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0),
+                      plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
                     remainingCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
+                      plan.maxPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -737,7 +732,6 @@ class ConsumptionControllerSpec()
 
       val plan =
         defaultApi.plans.find(p => p.id == payPerUsePlanId).get
-      val otoroshiTarget = plan.otoroshiTarget
 
       val callPerSec = 100L
       val callPerDay = 1000L
@@ -766,19 +760,19 @@ class ConsumptionControllerSpec()
                 Json.stringify(
                   ApiKeyQuotas(
                     authorizedCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0),
+                      plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
                     remainingCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
+                      plan.maxPerSecond.getOrElse(0L) - callPerSec,
+                    authorizedCallsPerDay = plan.maxPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
-                    remainingCallsPerDay = plan.maxRequestPerDay
+                    remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
                     authorizedCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0),
+                      plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
                     remainingCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
+                      plan.maxPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -812,7 +806,6 @@ class ConsumptionControllerSpec()
 
       val plan =
         defaultApi.plans.find(p => p.id == payPerUsePlanId).get
-      val otoroshiTarget = plan.otoroshiTarget
 
       val callPerSec = 100L
       val callPerDay = 1000L
@@ -841,19 +834,19 @@ class ConsumptionControllerSpec()
                 Json.stringify(
                   ApiKeyQuotas(
                     authorizedCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0),
+                      plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
                     remainingCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
+                      plan.maxPerSecond.getOrElse(0L) - callPerSec,
+                    authorizedCallsPerDay = plan.maxPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
-                    remainingCallsPerDay = plan.maxRequestPerDay
+                    remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
                     authorizedCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0),
+                      plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
                     remainingCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
+                      plan.maxPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -887,7 +880,6 @@ class ConsumptionControllerSpec()
 
       val plan =
         defaultApi.plans.find(p => p.id == payPerUsePlanId).get
-      val otoroshiTarget = plan.otoroshiTarget
 
       val callPerSec = 100L
       val callPerDay = 1000L
@@ -916,19 +908,19 @@ class ConsumptionControllerSpec()
                 Json.stringify(
                   ApiKeyQuotas(
                     authorizedCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0),
+                      plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
                     remainingCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
+                      plan.maxPerSecond.getOrElse(0L) - callPerSec,
+                    authorizedCallsPerDay = plan.maxPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
-                    remainingCallsPerDay = plan.maxRequestPerDay
+                    remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
                     authorizedCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0),
+                      plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
                     remainingCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
+                      plan.maxPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )
@@ -961,7 +953,6 @@ class ConsumptionControllerSpec()
 
       val plan =
         defaultApi.plans.find(p => p.id == payPerUsePlanId).get
-      val otoroshiTarget = plan.otoroshiTarget
 
       val callPerSec = 100L
       val callPerDay = 1000L
@@ -990,19 +981,19 @@ class ConsumptionControllerSpec()
                 Json.stringify(
                   ApiKeyQuotas(
                     authorizedCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0),
+                      plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
                     remainingCallsPerSec =
-                      plan.maxRequestPerSecond.getOrElse(0L) - callPerSec,
-                    authorizedCallsPerDay = plan.maxRequestPerDay.getOrElse(0),
+                      plan.maxPerSecond.getOrElse(0L) - callPerSec,
+                    authorizedCallsPerDay = plan.maxPerDay.getOrElse(0),
                     currentCallsPerDay = callPerDay,
-                    remainingCallsPerDay = plan.maxRequestPerDay
+                    remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
                     authorizedCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0),
+                      plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
                     remainingCallsPerMonth =
-                      plan.maxRequestPerMonth.getOrElse(0L) - callPerMonth
+                      plan.maxPerMonth.getOrElse(0L) - callPerMonth
                   ).asJson
                 )
               )

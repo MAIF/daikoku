@@ -1,23 +1,13 @@
 package fr.maif.otoroshi.daikoku.domain
 
+import cats.data.EitherT
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  TeamAdminOnly,
-  _PublicUserAccess,
-  _TeamAdminOnly,
-  _TeamApiEditorOnly,
-  _TeamMemberOnly,
-  _TenantAdminAccessTenant,
-  _UberPublicUserAccess
-}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{TeamAdminOnly, _PublicUserAccess, _TeamAdminOnly, _TeamApiEditorOnly, _TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.joda.time.DateTime
@@ -323,12 +313,12 @@ object CommonServices {
        |  content ->> '_tenant' = '${tenant.id.value}' AND
        |  (content ->> 'state' = 'published' OR
        |   $$1 OR
-       |   content ->> 'team' IN ($$2))
+       |   content ->> 'team' = ANY($$2::text[]))
        |      AND
        |  (case
        |       WHEN $$3 THEN content ->> 'visibility' = '${ApiVisibility.Public.name}'
        |       WHEN $$1 THEN TRUE
-       |       ELSE (content ->> 'visibility' IN ('${ApiVisibility.Public.name}', '${ApiVisibility.PublicWithAuthorizations.name}') OR (content ->> 'team' in ($$2)) OR (content -> 'authorizedTeams' ?| ARRAY[$$2]))
+       |       ELSE (content ->> 'visibility' IN ('${ApiVisibility.Public.name}', '${ApiVisibility.PublicWithAuthorizations.name}') OR (content ->> 'team' = ANY ($$2::text[])) OR (content -> 'authorizedTeams' ?| ARRAY[$$2]))
        |      END) AND
        |  (content ->> 'name' ~* COALESCE(NULLIF($$4, ''), '.*')) AND
        |  (_deleted = false) AND
@@ -383,13 +373,13 @@ object CommonServices {
           allVisibleApisSqlQuery(ctx.tenant),
           Seq(
             java.lang.Boolean.valueOf(user.isDaikokuAdmin),
-            myTeams.map(_.id.value).mkString(","),
+            myTeams.map(_.id.value).toArray,
             java.lang.Boolean.valueOf(user.isGuest),
             research,
             selectedTeam.orNull,
             selectedTag.orNull,
             selectedCat.orNull,
-            groupOpt.orNull
+            groupOpt.orNull,
           ),
           offset,
           limit
@@ -407,13 +397,13 @@ object CommonServices {
                |""".stripMargin,
               Seq(
                 java.lang.Boolean.valueOf(user.isDaikokuAdmin),
-                myTeams.map(_.id.value).mkString(","),
+                myTeams.map(_.id.value).toArray,
                 java.lang.Boolean.valueOf(user.isGuest),
                 research,
                 selectedTeam.orNull,
                 selectedTag.orNull,
                 selectedCat.orNull,
-                groupOpt.orNull
+                groupOpt.orNull,
               )
             )
 
@@ -443,7 +433,13 @@ object CommonServices {
             )
       } yield {
         val sortedApis: Seq[ApiWithAuthorizations] = uniqueApisWithVersion
-          .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
+          .sortWith { (a, b) =>
+            (user.starredApis.contains(a.id), user.starredApis.contains(b.id)) match {
+              case (true, false) => true
+              case (false, true) => false
+              case _ => a.name.compareToIgnoreCase(b.name) < 0
+            }
+          }
           .foldLeft(Seq.empty[ApiWithAuthorizations]) {
             case (acc, api) =>
               val apiPlans = plans
@@ -486,7 +482,11 @@ object CommonServices {
   }
   def getAllTags(
       research: String,
+      selectedTeam: Option[String] = None,
+      selectedTag: Option[String] = None,
+      selectedCat: Option[String] = None,
       groupOpt: Option[String],
+      filter: String,
       limit: Int,
       offset: Int
   )(implicit
@@ -494,9 +494,6 @@ object CommonServices {
       env: Env,
       ec: ExecutionContext
   ): Future[Seq[String]] = {
-    AppLogger.info(
-      s"get all tag with limit $limit and offset $offset (resaerch = $research)"
-    )
     for {
       myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
       tags <-
@@ -516,14 +513,14 @@ object CommonServices {
             "tag",
             Seq(
               java.lang.Boolean.valueOf(ctx.user.isDaikokuAdmin),
-              myTeams.map(_.id.value).mkString(","),
+              myTeams.map(_.id.value).toArray,
               java.lang.Boolean.valueOf(ctx.user.isGuest),
-              "",
-              null,
-              null,
-              null,
-              groupOpt.orNull,
               research,
+              selectedTeam.orNull,
+              selectedTag.orNull,
+              selectedCat.orNull,
+              groupOpt.orNull,
+              filter,
               if (limit == -1) null else java.lang.Integer.valueOf(limit),
               if (offset == -1) null
               else java.lang.Integer.valueOf(offset)
@@ -534,7 +531,11 @@ object CommonServices {
 
   def getAllCategories(
       research: String,
+      selectedTeam: Option[String] = None,
+      selectedTag: Option[String] = None,
+      selectedCat: Option[String] = None,
       groupOpt: Option[String],
+      filter: String,
       limit: Int,
       offset: Int
   )(implicit
@@ -561,14 +562,14 @@ object CommonServices {
             "category",
             Seq(
               java.lang.Boolean.valueOf(ctx.user.isDaikokuAdmin),
-              myTeams.map(_.id.value).mkString(","),
+              myTeams.map(_.id.value).toArray,
               java.lang.Boolean.valueOf(ctx.user.isGuest),
-              "",
-              null,
-              null,
-              null,
-              groupOpt.orNull,
               research,
+              selectedTeam.orNull,
+              selectedTag.orNull,
+              selectedCat.orNull,
+              groupOpt.orNull,
+              filter,
               if (limit == -1) null else java.lang.Integer.valueOf(limit),
               if (offset == -1) null
               else java.lang.Integer.valueOf(offset)
@@ -773,18 +774,52 @@ object CommonServices {
         s"@{user.name} has acceeded to team (@{team.id}) subscription for api @{api.id}"
       )
     )(teamId, ctx) { _ =>
-      for {
-        api <-
-          env.dataStore.apiRepo
-            .findByVersion(ctx.tenant, apiId, version)
-        apiId = api.map((api) => api.id.value).get
+      (for {
+        api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
+            .findByVersion(ctx.tenant, apiId, version), AppError.ApiNotFound)
         subs <-
-          env.dataStore.apiSubscriptionRepo
+          EitherT.liftF[Future, AppError, Seq[ApiSubscription]](env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant)
-            .findNotDeleted(Json.obj("api" -> apiId))
+            .findNotDeleted(Json.obj("api" -> api.id.asJson)))
       } yield {
-        Right(subs)
-      }
+        subs
+      }).value
+    }
+  }
+
+  def getApiSubscriptionDetails(apiSubscriptionId: String, teamId: String)(
+    implicit
+    ctx: DaikokuActionContext[JsValue],
+    env: Env,
+    ec: ExecutionContext
+  ) = {
+    _TeamMemberOnly(
+      teamId,
+      AuditTrailEvent(
+        s"@{user.name} has accessed one api @{api.name} - @{api.id} of @{team.name} - @{team.id}"
+      )
+    )(ctx) { _ =>
+
+      val sql =
+        """
+          |SELECT row_to_json(_.*) as detail
+          |FROM (SELECT s.content as "apiSubscription",
+          |             a.content as api,
+          |             p.content as "usagePlan"
+          |      FROM api_subscriptions s
+          |               JOIN apis a ON s.content ->> 'api' = a._id
+          |               JOIN usage_plans p ON s.content ->> 'plan' = p._id
+          |      WHERE (s._id = $1 OR s.content ->> 'parent' = $1) AND s._id <> $2) _;
+          |""".stripMargin
+
+      (for {
+        sub <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findById(apiSubscriptionId), AppError.EntityNotFound("ApiSubscription"))
+        maybeParent <- sub.parent.map(p => EitherT.liftF[Future, AppError, Option[ApiSubscription]](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findById(p))).getOrElse(EitherT.pure[Future, AppError](None))
+        accessibleResources <- EitherT.liftF[Future, AppError, Seq[JsValue]](env.dataStore.queryRaw(sql, "detail", Seq(maybeParent.map(_.id.value).getOrElse(sub.id.value), sub.id.value)))
+          .map(r => json.SeqApiSubscriptionAccessibleResourceFormat.reads(JsArray(r)).getOrElse(Seq.empty))
+      } yield ApiSubscriptionDetail(apiSubscription = sub, parentSubscription = maybeParent, accessibleResources = accessibleResources))
+        .value
+
     }
   }
 

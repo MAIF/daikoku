@@ -25,6 +25,8 @@ import { toast } from "sonner";
 import { GlobalContext } from "../../../contexts/globalContext";
 import * as Services from "../../../services";
 import { FilterPreview, Spinner, arrayStringToTOps, teamGQLToSimple } from "../../utils";
+import { GraphQLClient } from "graphql-request";
+import { filter } from "lodash";
 
 const GRID = 'GRID';
 const LIST = 'LIST';
@@ -37,19 +39,18 @@ type TApiList = {
   myTeams?: Array<ITeamSimple>,
   teamVisible: boolean,
   redirectToApiPage: (api: IApiWithAuthorization) => void,
-  redirectToEditPage: (api: IApiWithAuthorization) => void,
   apiGroupId?: string
 }
 
 export const ApiList = (props: TApiList) => {
 
-  const { client } = useContext(getApolloContext());
+  const graphqlEndpoint = `${window.location.origin}/api/search`;
+  const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
+
   const queryClient = useQueryClient();
 
   const { translate } = useContext(I18nContext);
   const navigate = useNavigate();
-
-
 
   const { connectedUser, reloadContext } = useContext(GlobalContext);
   const location = useLocation();
@@ -71,8 +72,7 @@ export const ApiList = (props: TApiList) => {
   const [tags, setTags] = useState<TOptions>([]);
   const [categories, setCategories] = useState<TOptions>([]);
 
-  const [view, setView] = useState<'LIST' | 'GRID'>(LIST);
-  const pageNumber = view === GRID ? 12 : 10;
+  const pageNumber = 10;
 
 
   const dataRequest = useQuery({
@@ -88,10 +88,9 @@ export const ApiList = (props: TApiList) => {
       connectedUser._id,
       location.pathname],
     queryFn: ({ queryKey }) => {
-      return client!.query<{ visibleApis: IApiAuthoWithCount }>({
-        query: Services.graphql.myVisibleApis,
-        fetchPolicy: "no-cache",
-        variables: {
+      return customGraphQLClient.request<{ visibleApis: IApiAuthoWithCount }>(
+        Services.graphql.myVisibleApis,
+        {
           teamId: queryKey[1],
           research: queryKey[2],
           selectedTag: queryKey[3],
@@ -99,64 +98,116 @@ export const ApiList = (props: TApiList) => {
           limit: queryKey[5],
           offset: queryKey[6],
           groupId: queryKey[7],
-          selectedTeam : queryKey[8]
+          selectedTeam: queryKey[8]
+        }).then(({ visibleApis }) => {
+          setApisWithAuth(visibleApis.apis)
+          setProducers(visibleApis.producers.map(p => ({ label: p.name, value: p._id })))
+          return visibleApis
         }
-      }).then(({ data: { visibleApis } }) => {
-        setApisWithAuth(visibleApis.apis)
-        setProducers(visibleApis.producers.map(p => ({label: p.name, value: p._id})))
-        return visibleApis
-      }
-      )
+        )
     },
-    enabled: !!client,
     gcTime: 0
   })
 
 
   const dataTags = useQuery({
-    queryKey: ["dataTags", researchTag, props.apiGroupId],
-    queryFn: ({ queryKey }) => {
-      return client!.query<{ allTags: Array<string> }>({
-        query: Services.graphql.getAllTags,
-        variables: { research: queryKey[1], groupId: queryKey[2], limit: 5 }
-      }).then(({ data: { allTags } }) => {
-        setTags(arrayStringToTOps(allTags))
-        return arrayStringToTOps(allTags)
-      })
-    }
+    queryKey: ["dataTags", 
+      researchTag,
+      props.apiGroupId, 
+      selectedTag?.value,
+      selectedCategory?.value,
+      selectedProducer?.value,
+      searched
+    ],
+    queryFn: ({ queryKey }) => customGraphQLClient.request<{ allTags: Array<string> }>(
+      Services.graphql.getAllTags,
+      { 
+        research: queryKey[6], 
+        groupId: queryKey[2],
+        selectedTag: queryKey[3],
+        selectedCategory: queryKey[4], 
+        selectedTeam: queryKey[5], 
+        filter: queryKey[1],
+        limit: 5 }
+    ).then(({ allTags }) => {
+      setTags(arrayStringToTOps(allTags))
+      return arrayStringToTOps(allTags)
+    })
   })
 
   const bestTags = useQuery({
-    queryKey: ["bestTags"],
-    queryFn: () => {
-      return client!.query<{ allTags: Array<string> }>({
-        query: Services.graphql.getAllTags,
-        variables: { research: "", limit: 5 }
-      }).then(({ data: { allTags } }) => {
+    queryKey: ["bestTags", 
+      researchTag,
+      props.apiGroupId,
+      selectedTag?.value,
+      selectedCategory?.value,
+      selectedProducer?.value,
+      searched
+    ],
+    queryFn: ({ queryKey }) => {
+      return customGraphQLClient.request<{ allTags: Array<string> }>(
+        Services.graphql.getAllTags,
+        {
+          research: queryKey[6],
+          groupId: queryKey[2],
+          selectedTag: queryKey[3],
+          selectedCategory: queryKey[4],
+          selectedTeam: queryKey[5],
+          filter: queryKey[1],
+          limit: 5 }
+      ).then(({ allTags }) => {
         return arrayStringToTOps(allTags)
       })
     }
   })
 
   const dataCategories = useQuery({
-    queryKey: ["dataCategories", researchCat, props.apiGroupId],
+    queryKey: ["dataCategories", 
+      researchCat, 
+      props.apiGroupId,
+      selectedTag?.value,
+      selectedCategory?.value,
+      selectedProducer?.value,
+      searched
+    ],
     queryFn: ({ queryKey }) => {
-      return client!.query<{ allCategories: Array<string> }>({
-        query: Services.graphql.getAllCategories,
-        variables: { research: queryKey[1], groupId: queryKey[2], limit: 5 }
-      }).then(({ data: { allCategories } }) => {
+      return customGraphQLClient.request<{ allCategories: Array<string> }>(
+        Services.graphql.getAllCategories,
+        {
+          research: queryKey[6],
+          groupId: queryKey[2],
+          selectedTag: queryKey[3],
+          selectedCategory: queryKey[4], 
+          selectedTeam: queryKey[5],
+          filter: queryKey[1], 
+          limit: 5 }
+      ).then(({ allCategories }) => {
         setCategories(arrayStringToTOps(allCategories))
         return arrayStringToTOps(allCategories)
       })
     }
   })
   const bestCategories = useQuery({
-    queryKey: ["bestCategories"],
-    queryFn: () => {
-      return client!.query<{ allCategories: Array<string> }>({
-        query: Services.graphql.getAllCategories,
-        variables: { research: "", limit: 5}
-      }).then(({ data: { allCategories } }) => {
+    queryKey: ["bestCategories", 
+      researchTag,
+      props.apiGroupId,
+      selectedTag?.value,
+      selectedCategory?.value,
+      selectedProducer?.value,
+      searched
+    ],
+    queryFn: ({ queryKey }) => {
+      return customGraphQLClient.request<{ allCategories: Array<string> }>(
+        Services.graphql.getAllCategories,
+        { 
+          research: queryKey[6],
+          groupId: queryKey[2],
+          selectedTag: queryKey[3],
+          selectedCategory: queryKey[4], 
+          selectedTeam: queryKey[5],
+          filter: queryKey[1],
+          limit: 5 }
+      ).then(({ allCategories }) => {
         return arrayStringToTOps(allCategories)
       })
     }
@@ -228,7 +279,7 @@ export const ApiList = (props: TApiList) => {
   const toggleStar = (apiWithAuthorization: IApiWithAuthorization) => {
     Services.toggleStar(apiWithAuthorization.api._id)
       .then(() => {
-        queryClient.invalidateQueries({queryKey: ['data']})
+        queryClient.invalidateQueries({ queryKey: ['data'] })
         reloadContext()
       });
   };
@@ -252,20 +303,20 @@ export const ApiList = (props: TApiList) => {
           />
         </div>
         {(producers.length > 1 || !!selectedProducer) && <Select
-            name="team-selector"
-            className="team__selector filter__select reactSelect col-6 col-sm mb-2"
-            value={selectedProducer ? selectedProducer : null}
-            placeholder={translate('apiList.team.search')}
-            aria-label={translate('apiList.team.search')}
-            isClearable={true}
-            options={producers || []}
-            onChange={(e: SingleValue<TOption>) => {
-              setSelectedProducer(e || undefined);
-              setPage(0)
-              setOffset(0)
+          name="team-selector"
+          className="team__selector filter__select reactSelect col-6 col-sm mb-2"
+          value={selectedProducer ? selectedProducer : null}
+          placeholder={translate('apiList.team.search')}
+          aria-label={translate('apiList.team.search')}
+          isClearable={true}
+          options={producers || []}
+          onChange={(e: SingleValue<TOption>) => {
+            setSelectedProducer(e || undefined);
+            setPage(0)
+            setOffset(0)
 
-            }}
-            classNamePrefix="reactSelect"
+          }}
+          classNamePrefix="reactSelect"
         />}
         <Select
           name="tag-selector"
@@ -302,33 +353,6 @@ export const ApiList = (props: TApiList) => {
           classNamePrefix="reactSelect"
         />
       </div>
-      <div className="row mb-2 view-selectors">
-        <div className="col-12 col-sm-9 d-flex justify-content-end">
-          <button
-            className={classNames('btn btn-sm btn-outline-primary me-2', { active: view === LIST })}
-            onClick={() => {
-              setView(LIST)
-              setPage(0)
-              setOffset(0)
-            }}
-            aria-label={translate('view.list')}
-
-          >
-            <List />
-          </button>
-          <button
-            className={classNames('btn btn-sm btn-outline-primary', { active: view === GRID })}
-            onClick={() => {
-              setView(GRID)
-              setPage(0)
-              setOffset(0)
-            }}
-            aria-label={translate('view.grid')}
-          >
-            <Grid />
-          </button>
-        </div>
-      </div>
       <div className="row">
         <div
           className={classNames('section d-flex flex-column', {
@@ -340,11 +364,7 @@ export const ApiList = (props: TApiList) => {
           {apisWithAuth && dataRequest.data &&
             <>
               <div
-                className={classNames('d-flex justify-content-between p-3', {
-                  'flex-column': view === LIST,
-                  'flex-wrap': view === GRID,
-                  row: view === GRID,
-                })}
+              className='d-flex justify-content-between p-3 flex-column'
               >
                 <FilterPreview count={dataRequest.data.total} clearFilter={clearFilter} searched={searched} selectedTag={selectedTag} selectedProducer={selectedProducer} selectedCategory={selectedCategory} />
 
@@ -360,12 +380,10 @@ export const ApiList = (props: TApiList) => {
                         myTeams={props.myTeams || []}
                         askForApiAccess={(teams) => askForApiAccess(apiWithAuth, teams)}
                         redirectToApiPage={() => props.redirectToApiPage(apiWithAuth)}
-                        redirectToEditPage={() => props.redirectToEditPage(apiWithAuth)}
                         handleTagSelect={(tag) => setSelectedTag(tags.find((t) => t.value === tag))}
-                        handleTeamSelect={(team) => (producers.length > 1 || !!selectedProducer) ? setSelectedProducer( {label: team.name, value: team._id} ) : {}}
+                        handleTeamSelect={(team) => (producers.length > 1 || !!selectedProducer) ? setSelectedProducer({ label: team.name, value: team._id }) : {}}
                         toggleStar={() => toggleStar(apiWithAuth)}
                         handleCategorySelect={(category) => setSelectedCategory(categories.find((c) => c.value === category))}
-                        view={view}
                         connectedUser={connectedUser}
                         groupView={props.groupView}
                         key={apiWithAuth.api._id}

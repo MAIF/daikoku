@@ -8,12 +8,15 @@ import { TeamApiIssueTags } from './TeamApiIssueTags';
 import * as Services from '../../../../services';
 import { Can, manage, api as API } from '../../../utils';
 import { I18nContext } from '../../../../contexts';
-import { IApi, isError } from '../../../../types';
+import { IApi, isError, ITeamSimple } from '../../../../types';
+import { GlobalContext } from '../../../../contexts/globalContext';
 
-export function ApiIssue({
-  ownerTeam,
-  ...props
-}: any) {
+type ApiIssueProps = {
+  api: IApi,
+  ownerTeam: ITeamSimple
+}
+export const ApiIssue = (props: ApiIssueProps) => {
+  const { connectedUser } = useContext(GlobalContext);
   const { issueId, versionId } = useParams();
   const [api, setRootApi] = useState<IApi>();
 
@@ -32,7 +35,7 @@ export function ApiIssue({
   }, []);
 
   const onChange = (editedApi: any) => {
-    Services.saveTeamApi(ownerTeam._id, editedApi, versionId!)
+    Services.saveTeamApi(props.ownerTeam._id, editedApi, versionId!)
       .then((res) => {
         if (!isError(res)) {
           setRootApi(res)
@@ -41,7 +44,7 @@ export function ApiIssue({
       .then(() => toast.success(translate('Api saved')));
   };
 
-  const basePath = `/${ownerTeam._humanReadableId}/${api ? (api as any)._humanReadableId : ''}/${versionId}`;
+  const basePath = `/${props.ownerTeam._humanReadableId}/${api ? (api as any)._humanReadableId : ''}/${versionId}`;
 
   const showLabels = location.pathname.endsWith('labels');
 
@@ -50,7 +53,7 @@ export function ApiIssue({
   if (showLabels)
     return (
       <div className="container-fluid">
-        <Can I={manage} a={API} team={ownerTeam} orElse={<Navigate to="/" />}>
+        <Can I={manage} a={API} team={props.ownerTeam} orElse={<Navigate to="/" />}>
           <TeamApiIssueTags value={api} onChange={onChange} basePath={`${basePath}/issues`} />
         </Can>
       </div>
@@ -64,9 +67,9 @@ export function ApiIssue({
           element={
             <ApiTimelineIssue
               issueId={issueId!}
-              team={ownerTeam}
+              team={props.ownerTeam}
               api={api}
-              connectedUser={props.connectedUser}
+              connectedUser={connectedUser}
               basePath={basePath}
               onChange={onChange}
             />
@@ -75,7 +78,7 @@ export function ApiIssue({
         <Route
           path="/"
           element={
-            <ApiIssues filter={filter} api={api} selectedVersion={selectedVersion} ownerTeam={ownerTeam} setSelectedVersion={setSelectedVersion} setFilter={setFilter} />
+            <ApiIssues filter={filter} api={api} selectedVersion={selectedVersion} ownerTeam={props.ownerTeam} setSelectedVersion={setSelectedVersion} setFilter={setFilter} />
           }
         />
       </Routes>

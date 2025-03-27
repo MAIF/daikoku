@@ -106,22 +106,22 @@ export function SortableTree({
 
 
   const previousItems = usePrevious(items)
-  
-  useEffect(() => {
-    if (isFirstRender.current) {
-      isFirstRender.current = false;
-      return;
-    } else if (!isEqual(items, previousItems)) {
-      handleUpdateItems(items)
-    }
-  }, [items])
+
+  // useEffect(() => {
+  //   if (isFirstRender.current) {
+  //     isFirstRender.current = false;
+  //     return;
+  //   } else if (!isEqual(items, previousItems)) {
+  //     // handleUpdateItems(items)
+  //   }
+  // }, [items, defaultItems])
 
   useEffect(() => {
-    if (!isFirstRender.current) {
-      setItems(defaultItems)
-    }
+    // if (!isFirstRender.current) {
+    setItems(defaultItems)
+    // }
   }, [defaultItems])
-  
+
 
 
   const flattenedItems = useMemo(() => {
@@ -247,6 +247,8 @@ export function SortableTree({
           </DragOverlay>,
           document.body
         )}
+        <button className='mt-4 flex-grow-1 btn btn-sm btn-outline-success fake-documentation-page-dnd'
+          onClick={() => handleUpdateItems(items)} >save</button>
       </SortableContext>
     </DndContext>
   );

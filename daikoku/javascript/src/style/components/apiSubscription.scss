@@ -1,3 +1,5 @@
+@use "../variables";
+
 @keyframes pulseBig {
   0% {
     opacity: 0.5;
@@ -20,8 +22,8 @@
   gap: 1rem;
 
 
-  border: 1px solid $level3_text-color;
-  background-color: $level3_bg-color;
+  border: 1px solid variables.$level3_text-color;
+  background-color: variables.$level3_bg-color;
   border-radius: 0.375rem;
   padding: 1rem 1rem 0 1rem;
   margin-bottom: 10px;
@@ -48,7 +50,7 @@
     }
 
     .api-subscription__value__type {
-      border: 1px solid $level1_link-color;
+      border: 1px solid variables.$level1_link-color;
       border-radius: 1.9rem;
       padding: 0 0.25rem;
       display: flex;
@@ -68,11 +70,11 @@
       margin-left: .5rem;
 
       &.enabled {
-        background-color: $success-color;
+        background-color: variables.$success-color;
       }
 
       &.disabled {
-        background-color: $error-color;
+        background-color: variables.$error-color;
       }
     }
 
@@ -105,7 +107,7 @@
     }
 
     .api-subscription__infos__state {
-      color: $success-color;
+      color: variables.$success-color;
     }
     .api-subscription__infos__creation {
       font-size: 14px;
@@ -129,6 +131,6 @@
   word-wrap: break-word;
   word-break: keep-all;
 
-  background-color: $level2_bg-color;
-  color: $level2_text-color;
+  background-color: variables.$level2_bg-color;
+  color: variables.$level2_text-color;
 }

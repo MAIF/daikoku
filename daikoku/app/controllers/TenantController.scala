@@ -12,7 +12,6 @@ import fr.maif.otoroshi.daikoku.actions.{
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.TenantFormat
 import fr.maif.otoroshi.daikoku.env.Env

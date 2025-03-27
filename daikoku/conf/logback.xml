@@ -37,6 +37,7 @@
   <logger name="AuditTrailPurgeJob" level="INFO"/>
   <logger name="otoroshi-reactive-pg-kv" level="INFO"/>
   <logger name="PostgresDataStore" level="INFO"/>
+  <logger name="PostgresRepo" level="INFO"/>
   <logger name="PostgresTenantAwareRepo" level="INFO"/>
   <logger name="CommonPostgresRepo" level="INFO"/>
   <logger name="OtoroshiDeletionJob" level="INFO"/>

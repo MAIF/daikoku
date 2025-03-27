@@ -15,12 +15,10 @@ export const ApiCard = (props: {
   myTeams: Array<ITeamSimple>
   askForApiAccess: (teams: Array<string>) => Promise<any>
   redirectToApiPage: () => void
-  redirectToEditPage: () => void
   handleTagSelect: (tag: string) => void
-  handleTeamSelect : (team:  ITeamSimple ) => void
+  handleTeamSelect: (team: ITeamSimple) => void
   toggleStar: () => void
   handleCategorySelect: (category: string) => void
-  view: 'LIST' | 'GRID'
   connectedUser: IUserSimple
   groupView?: boolean
   apiId?: string
@@ -71,79 +69,20 @@ export const ApiCard = (props: {
     return null;
   };
 
-  if (props.view === 'GRID') {
-    return (
-      <div className="col-12 col-md-4" role='listitem' aria-labelledby={api._humanReadableId}>
-        <div className="card mb-4 shadow-sm api-card ">
-          <div
-            className={classNames('card-img-top card-link', { 'card-header': !api.image })}
-            data-holder-rendered="true"
-          >
-            {api.image && (
-              <img style={{ height: '100%', width: '100%' }} src={api.image} alt={api.name} />
-            )}
-            {!api.image && <span>{api.name}</span>}
-            {accessButton()}
-            <Can I={manage} a={API} team={team}>
-              <button
-                type="button"
-                className="btn btn-sm btn-outline-primary btn-edit"
-                onClick={props.redirectToEditPage}
-              >
-                <i className="fas fa-pen" />
-              </button>
-            </Can>
-          </div>
-          <div className="card-body plan-body d-flex flex-column">
-            <Link to="/">
-              <h4
-                id={api._humanReadableId}
-                className="cursor-pointer underline-on-hover a-fake"
-                onClick={props.redirectToApiPage}
-              >
-                {api.name}
-              </h4>
-            </Link>
-            <span className="flex-grow-1 api-description my-2">{api.smallDescription}</span>
-            {props.teamVisible && team && (
-              <small
-                className="cursor-pointer underline-on-hover a-fake d-flex align-items-center justify-content-end"
-                onClick={() => props.handleTeamSelect(team)}
-              >
-                <img alt="avatar" src={team.avatar} style={{ marginRight: 5, width: 20 }} />
-                {team.name}
-              </small>
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  const starred = props.user.starredApis.includes(api._id)
   return (
-    <div className="row border-bottom py-4" role='listitem' aria-labelledby={api._humanReadableId}>
+    <div className={classNames("row border-bottom py-4 api-card", { starred })} role='listitem' aria-labelledby={api._humanReadableId}>
       <div className="col-12 d-flex justify-content-between">
         <div className="cursor-pointer underline level2-link" onClick={props.redirectToApiPage}>
           <h3 id={api._humanReadableId}>{`${api.name}${props.groupView && props.apiWithAutho.length > 1 ? ` - ${api.currentVersion}` : ''}`}</h3>
         </div>
         <div className="ms-2">
           <div className="btn_group d-flex align-items-start">
-            <Can I={manage} a={API} team={team}>
-              <button
-                className="btn btn-sm btn-outline-primary me-1 mb-1"
-                aria-label={translate("settings")}
-                onClick={props.redirectToEditPage}
-              >
-                <i className="fas fa-cog" />
-              </button>
-            </Can>
             {accessButton()}
             {!props.groupView && (
               <StarsButton
-                stars={api.stars}
-                starred={props.user.starredApis.includes(api._id)}
+                starred={starred}
                 toggleStar={props.toggleStar}
-                connectedUser={props.connectedUser}
               />
             )}
           </div>

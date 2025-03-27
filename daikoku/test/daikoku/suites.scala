@@ -1096,19 +1096,21 @@ object utils {
       authorizedOtoroshiEntities = None,
       contact = "admin@daikoku.io"
     )
-    val adminApiPlan = Admin(
+    val adminApiPlan = UsagePlan(
       id = UsagePlanId("admin"),
       tenant = Tenant.Default,
-      customName = Some("admin"),
+      customName = "admin",
       customDescription = None,
-      otoroshiTarget = None
+      otoroshiTarget = None,
+      visibility = UsagePlanVisibility.Admin
     )
-    val cmsApiPlan = Admin(
+    val cmsApiPlan = UsagePlan(
       id = UsagePlanId("admin"),
       tenant = Tenant.Default,
-      customName = Some("cms"),
+      customName = "cms",
       customDescription = None,
-      otoroshiTarget = None
+      otoroshiTarget = None,
+      visibility = UsagePlanVisibility.Admin
     )
     val adminApi = Api(
       id = ApiId(s"admin-api-tenant-${Tenant.Default.value}"),
@@ -1176,12 +1178,13 @@ object utils {
       integrationToken = IdGenerator.token(64)
     )
 
-    val adminApi2plan = Admin(
+    val adminApi2plan = UsagePlan(
       id = UsagePlanId("admin"),
       tenant = TenantId("tenant2"),
-      customName = Some("admin"),
+      customName = "admin",
       customDescription = None,
-      otoroshiTarget = None
+      otoroshiTarget = None,
+      visibility = UsagePlanVisibility.Admin
     )
     val adminApi2 = Api(
       id = ApiId(s"admin-api-tenant-tenant-II"),
@@ -1291,12 +1294,12 @@ object utils {
         docIds: Seq[ApiDocumentationDetailPage]
     ): ApiWithPlans = {
       val plans = Seq(
-        FreeWithoutQuotas(
+        UsagePlan(
           id = UsagePlanId("1"),
           tenant = tenant,
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-          currency = Currency("EUR"),
-          customName = None,
+          billingDuration = None,
+          currency = None,
+          customName = "Free without quotas",
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(
@@ -1313,15 +1316,15 @@ object utils {
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
-        FreeWithQuotas(
+        UsagePlan(
           id = UsagePlanId("2"),
           tenant = tenant,
-          maxPerSecond = 2000,
-          maxPerDay = 2000,
-          maxPerMonth = 2000,
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-          currency = Currency("EUR"),
-          customName = None,
+          maxPerSecond = 2000L.some,
+          maxPerDay = 2000L.some,
+          maxPerMonth = 2000L.some,
+          billingDuration = None,
+          currency = None,
+          customName = "Free with quotas",
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(
@@ -1338,17 +1341,17 @@ object utils {
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
-        QuotasWithLimits(
+        UsagePlan(
           UsagePlanId("3"),
           tenant = tenant,
-          maxPerSecond = 10000,
-          maxPerDay = 10000,
-          maxPerMonth = 10000,
-          costPerMonth = BigDecimal(10.0),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          maxPerSecond = 10000L.some,
+          maxPerDay = 10000L.some,
+          maxPerMonth = 10000L.some,
+          costPerMonth = BigDecimal(10.0).some,
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
           trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
+          currency = Currency("EUR").some,
+          customName = "Quotas With Limits",
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(
@@ -1365,18 +1368,18 @@ object utils {
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
-        QuotasWithoutLimits(
+        UsagePlan(
           UsagePlanId("4"),
           tenant = tenant,
-          maxPerSecond = 10000,
-          maxPerDay = 10000,
-          maxPerMonth = 10000,
-          costPerAdditionalRequest = BigDecimal(0.015),
-          costPerMonth = BigDecimal(10.0),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          maxPerSecond = 10000L.some,
+          maxPerDay = 10000L.some,
+          maxPerMonth = 10000L.some,
+          costPerRequest = BigDecimal(0.015).some,
+          costPerMonth = BigDecimal(10.0).some,
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
           trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
+          currency = Currency("EUR").some,
+          customName = "Quotas Without Limits",
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(
@@ -1393,15 +1396,15 @@ object utils {
           integrationProcess = IntegrationProcess.ApiKey,
           autoRotation = Some(false)
         ),
-        PayPerUse(
+        UsagePlan(
           id = UsagePlanId("5"),
           tenant = tenant,
-          costPerRequest = BigDecimal(10.0),
-          costPerMonth = BigDecimal(0.02),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          costPerRequest = BigDecimal(10.0).some,
+          costPerMonth = BigDecimal(0.02).some,
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
           trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
+          currency = Currency("EUR").some,
+          customName = "Pay Per Use",
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(

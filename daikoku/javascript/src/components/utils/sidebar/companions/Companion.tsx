@@ -61,7 +61,7 @@ export const Companion = () => {
                           key: `${nanoid()}-link-${idx}-${linkidx}`,
                         });
                       }
-                      return (<>
+                      return (<React.Fragment key={linkidx}>
                         {link}
                         {entry.childs && (<div className="entry__submenu d-flex flex-column" key={`${nanoid()}-submenu-${idx}`}>
                           {Object.values(entry.childs)
@@ -82,7 +82,7 @@ export const Companion = () => {
                               }
                             })}
                         </div>)}
-                      </>);
+                      </React.Fragment>);
                     })}
               </div>
             </div>);

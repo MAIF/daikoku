@@ -834,12 +834,10 @@ class ApiControllerSpec()
           )
         )
       )
-      val planToCreate = UsagePlan.FreeWithoutQuotas(
+      val planToCreate = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "free without quotas",
         customDescription = None,
         otoroshiTarget = None,
         allowMultipleKeys = Some(false),
@@ -1023,12 +1021,10 @@ class ApiControllerSpec()
     }
 
     "delete an api subscription from an api of his team" in {
-      val plan = FreeWithoutQuotas(
+      val plan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "free without quotas",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -1296,12 +1292,10 @@ class ApiControllerSpec()
 
     "not subscribe to an api for many reasons" in {
 
-      val planUnauthorizedApi = FreeWithoutQuotas(
+      val planUnauthorizedApi = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "Free without quotas",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -1388,12 +1382,10 @@ class ApiControllerSpec()
     }
 
     "get subscription informations" in {
-      val plan = FreeWithoutQuotas(
+      val plan = UsagePlan(
         id = UsagePlanId("1"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = Some("new plan name"),
+        customName = "new plan name",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -1452,12 +1444,10 @@ class ApiControllerSpec()
     }
 
     "update a subscription to his api" in {
-      val plan = FreeWithoutQuotas(
+      val plan = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = Some("new plan name"),
+        customName = "new plan name",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -1508,9 +1498,9 @@ class ApiControllerSpec()
         clientSecret = sub.apiKey.clientSecret,
         clientName = sub.apiKey.clientName,
         authorizedEntities = otoroshiTarget.get.authorizedEntities.value,
-        throttlingQuota = plan.maxRequestPerSecond.getOrElse(10L),
-        dailyQuota = plan.maxRequestPerDay.getOrElse(10L),
-        monthlyQuota = plan.maxRequestPerMonth.getOrElse(10L),
+        throttlingQuota = plan.maxPerSecond.getOrElse(10L),
+        dailyQuota = plan.maxPerDay.getOrElse(10L),
+        monthlyQuota = plan.maxPerMonth.getOrElse(10L),
         restrictions = ApiKeyRestrictions(),
         metadata = Map(),
         rotation = None
@@ -1582,12 +1572,10 @@ class ApiControllerSpec()
     }
 
     "not update a subscription to another api (even if it's own)" in {
-      val plan = FreeWithoutQuotas(
+      val plan = UsagePlan(
         id = UsagePlanId("1"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = Some("new plan name"),
+        customName = "new plan name",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -1633,9 +1621,9 @@ class ApiControllerSpec()
         clientSecret = sub.apiKey.clientSecret,
         clientName = sub.apiKey.clientName,
         authorizedEntities = otoroshiTarget.get.authorizedEntities.value,
-        throttlingQuota = plan.maxRequestPerSecond.getOrElse(10L),
-        dailyQuota = plan.maxRequestPerDay.getOrElse(10L),
-        monthlyQuota = plan.maxRequestPerMonth.getOrElse(10L),
+        throttlingQuota = plan.maxPerSecond.getOrElse(10L),
+        dailyQuota = plan.maxPerDay.getOrElse(10L),
+        monthlyQuota = plan.maxPerMonth.getOrElse(10L),
         restrictions = ApiKeyRestrictions(),
         metadata = Map(),
         rotation = None
@@ -1685,17 +1673,17 @@ class ApiControllerSpec()
     }
 
     "not accept subscription without custom metadata if plan requires it" in {
-      val plan = QuotasWithLimits(
+      val plan = UsagePlan(
         id = UsagePlanId("3"),
         tenant = tenant.id,
-        maxPerSecond = 10000,
-        maxPerMonth = 10000,
-        maxPerDay = 10000,
-        costPerMonth = BigDecimal(10.0),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        maxPerSecond = 10000L.some,
+        maxPerMonth = 10000L.some,
+        maxPerDay = 10000L.some,
+        costPerMonth = BigDecimal(10.0).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "QuotasWithLimits",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -1918,12 +1906,10 @@ class ApiControllerSpec()
       Await.result(cleanOtoroshiServer(container.mappedPort(8080)), 5.seconds)
 
       //setup dk
-      val usagePlan = FreeWithoutQuotas(
+      val usagePlan = UsagePlan(
         id = UsagePlanId("test.plan"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "FreeWithoutQuotas",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -2041,12 +2027,10 @@ class ApiControllerSpec()
     }
 
     "not transfer child subscriptions to another team but parent subscription" in {
-      val parentPlanProd = FreeWithoutQuotas(
+      val parentPlanProd = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -2064,12 +2048,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlanProd = FreeWithoutQuotas(
+      val childPlanProd = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -2165,12 +2147,10 @@ class ApiControllerSpec()
     }
 
     "not transfer child subscriptions to another team which have already a parent subscription" in {
-      val parentPlanProd = FreeWithoutQuotas(
+      val parentPlanProd = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -2188,12 +2168,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlanProd = FreeWithoutQuotas(
+      val childPlanProd = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -2332,12 +2310,10 @@ class ApiControllerSpec()
       respRetrieve.status mustBe 409
     }
     "not transfer child subscriptions to another team which have already a child subscription" in {
-      val parentPlanProd = FreeWithoutQuotas(
+      val parentPlanProd = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -2355,12 +2331,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlanProd = FreeWithoutQuotas(
+      val childPlanProd = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -2500,12 +2474,10 @@ class ApiControllerSpec()
     }
 
     "transfer child subscriptions to another team which have already a subscription when parent plan allow it" in {
-      val parentPlanProd = FreeWithoutQuotas(
+      val parentPlanProd = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -2523,12 +2495,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlanProd = FreeWithoutQuotas(
+      val childPlanProd = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -2667,12 +2637,10 @@ class ApiControllerSpec()
       respRetrieve.status mustBe 200
     }
     "transfer child subscriptions to another team which have already a subscription when child plan allow it" in {
-      val parentPlanProd = FreeWithoutQuotas(
+      val parentPlanProd = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -2690,12 +2658,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlanProd = FreeWithoutQuotas(
+      val childPlanProd = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -2836,12 +2802,10 @@ class ApiControllerSpec()
     }
 
     "not transfer subscriptions to another team unauthorized on parent api" in {
-      val parentPlanProd = FreeWithoutQuotas(
+      val parentPlanProd = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -2859,12 +2823,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlanProd = FreeWithoutQuotas(
+      val childPlanProd = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -2976,12 +2938,10 @@ class ApiControllerSpec()
       respRetrieve.status mustBe 401
     }
     "not transfer subscriptions to another team unauthorized on parent plan" in {
-      val parentPlanProd = FreeWithoutQuotas(
+      val parentPlanProd = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -3001,12 +2961,10 @@ class ApiControllerSpec()
         visibility = UsagePlanVisibility.Private,
         authorizedTeams = Seq(teamOwner.id)
       )
-      val childPlanProd = FreeWithoutQuotas(
+      val childPlanProd = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -3117,12 +3075,10 @@ class ApiControllerSpec()
     }
 
     "not transfer subscriptions to another team unauthorized on child api" in {
-      val parentPlanProd = FreeWithoutQuotas(
+      val parentPlanProd = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -3140,12 +3096,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlanProd = FreeWithoutQuotas(
+      val childPlanProd = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -3257,12 +3211,10 @@ class ApiControllerSpec()
       respRetrieve.status mustBe 401
     }
     "not transfer subscriptions to another team unauthorized on child plan" in {
-      val parentPlanProd = FreeWithoutQuotas(
+      val parentPlanProd = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -3280,12 +3232,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlanProd = FreeWithoutQuotas(
+      val childPlanProd = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -3398,12 +3348,10 @@ class ApiControllerSpec()
     }
 
     "setup validUntil date for a subscription to his api" in {
-      val parentPlan = FreeWithoutQuotas(
+      val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "Free without quotas",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -3716,12 +3664,10 @@ class ApiControllerSpec()
     }
 
     "delete an api subscription from an api of his team" in {
-      val plan = FreeWithoutQuotas(
+      val plan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "Free without quotas",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -3911,12 +3857,13 @@ class ApiControllerSpec()
         possibleUsagePlans = Seq.empty
       )
 
-      val adminPlan = Admin(
+      val adminPlan = UsagePlan(
         id = UsagePlanId("admin"),
         tenant = tenant.id,
-        customName = Some("admin"),
+        customName = "admin",
         customDescription = None,
-        otoroshiTarget = None
+        otoroshiTarget = None,
+        visibility = UsagePlanVisibility.Admin
       )
 
       setupEnvBlocking(
@@ -4076,17 +4023,17 @@ class ApiControllerSpec()
           title = "Admin"
         )
       )
-      val plan = QuotasWithLimits(
+      val plan = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        maxPerSecond = 10000,
-        maxPerDay = 10000,
-        maxPerMonth = 10000,
-        costPerMonth = BigDecimal(10.0),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        maxPerSecond = 10000L.some,
+        maxPerDay = 10000L.some,
+        maxPerMonth = 10000L.some,
+        costPerMonth = BigDecimal(10.0).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "quotas with limits",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -4236,17 +4183,17 @@ class ApiControllerSpec()
         title = "Admin"
       )
       val processV2 = process.copy(id = IdGenerator.token)
-      val plan = QuotasWithLimits(
+      val plan = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        maxPerSecond = 10000,
-        maxPerDay = 10000,
-        maxPerMonth = 10000,
-        costPerMonth = BigDecimal(10.0),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        maxPerSecond = 10000L.some,
+        maxPerDay = 10000L.some,
+        maxPerMonth = 10000L.some,
+        costPerMonth = BigDecimal(10.0).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "quotas with limit",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -4263,7 +4210,7 @@ class ApiControllerSpec()
       )
       val plan2 = plan.copy(
         id = UsagePlanId(IdGenerator.token),
-        customName = "plan 2".some,
+        customName = "plan 2",
         subscriptionProcess = Seq(processV2)
       )
       val defaultApiV2 =
@@ -4889,17 +4836,17 @@ class ApiControllerSpec()
 
   "a subscription" should {
     "be not available right now if plan's subscription process is manual" in {
-      val plan = QuotasWithLimits(
+      val plan = UsagePlan(
         id = UsagePlanId("1"),
         tenant = tenant.id,
-        maxPerSecond = 10000,
-        maxPerDay = 10000,
-        maxPerMonth = 10000,
-        costPerMonth = BigDecimal(10.0),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        maxPerSecond = 10000L.some,
+        maxPerDay = 10000L.some,
+        maxPerMonth = 10000L.some,
+        costPerMonth = BigDecimal(10.0).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "QuotasWithLimits",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -5295,12 +5242,13 @@ class ApiControllerSpec()
     "have a lifecycle" in {
       //use containerized otoroshi
       //crate api & a subscription (in otoroshi)
-      val parentPlan = FreeWithoutQuotas(
+    //old free without quotas
+      val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        billingDuration = None,
+        currency = None,
+        customName = "Parent plan",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -5525,15 +5473,15 @@ class ApiControllerSpec()
 
   "a private plan" must {
     "be subscribed by the owner team" in {
-      val plan = PayPerUse(
+      val plan = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        costPerMonth = BigDecimal(10.0),
-        costPerRequest = BigDecimal(0.02),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        costPerMonth = BigDecimal(10.0).some,
+        costPerRequest = BigDecimal(0.02).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "PayPerUse",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -5579,15 +5527,15 @@ class ApiControllerSpec()
     }
 
     "not be subscribed by another team then the owner team" in {
-      val plan = PayPerUse(
+      val plan = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        costPerMonth = BigDecimal(10.0),
-        costPerRequest = BigDecimal(0.02),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        costPerMonth = BigDecimal(10.0).some,
+        costPerRequest = BigDecimal(0.02).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "PayPerUse",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -5627,15 +5575,15 @@ class ApiControllerSpec()
     }
 
     "adds all teams subscribed in authorized team after inverting visibility" in {
-      val plan = PayPerUse(
+      val plan = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        costPerMonth = BigDecimal(10.0),
-        costPerRequest = BigDecimal(0.02),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        costPerMonth = BigDecimal(10.0).some,
+        costPerRequest = BigDecimal(0.02).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "PayPerUse",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -5704,15 +5652,15 @@ class ApiControllerSpec()
 
   "a deletion of a plan" must {
     "delete all subscriptions" in {
-      val plan = PayPerUse(
+      val plan = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        costPerMonth = BigDecimal(10.0),
-        costPerRequest = BigDecimal(0.02),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        costPerMonth = BigDecimal(10.0).some,
+        costPerRequest = BigDecimal(0.02).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "PayPerUse",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -5791,15 +5739,15 @@ class ApiControllerSpec()
 
   "a deletion of a api" must {
     "delete all subscriptions" in {
-      val plan = PayPerUse(
+      val plan = UsagePlan(
         id = UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        costPerMonth = BigDecimal(10.0),
-        costPerRequest = BigDecimal(0.02),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        costPerMonth = BigDecimal(10.0).some,
+        costPerRequest = BigDecimal(0.02).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "PayPerUse",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -6012,7 +5960,7 @@ class ApiControllerSpec()
 
       val updatedAdminPlan = adminApiPlan
         .copy(
-          customName = Some("test"),
+          customName = "test",
           customDescription = Some("test"),
           otoroshiTarget = Some(
             OtoroshiTarget(
@@ -6067,8 +6015,8 @@ class ApiControllerSpec()
 
       val adminPlan = result.get
 
-      adminPlan.customName.get mustBe "Administration plan"
-      adminPlan.customDescription.get mustBe "access to admin api"
+      adminPlan.customName mustBe adminApiPlan.customName
+      adminPlan.customDescription mustBe adminApiPlan.customDescription
       adminPlan.otoroshiTarget.isDefined mustBe true
       adminPlan.otoroshiTarget.get.otoroshiSettings mustBe OtoroshiSettingsId(
         "wiremock"
@@ -6949,20 +6897,9 @@ class ApiControllerSpec()
       )
       wireMockServer.isRunning mustBe true
 
-      val updatedPlans = defaultApi.plans.map {
-        case p: Admin => p.copy(aggregationApiKeysSecurity = Some(true))
-        case p: FreeWithoutQuotas =>
-          p.copy(aggregationApiKeysSecurity = Some(true))
-        case p: FreeWithQuotas =>
-          p.copy(aggregationApiKeysSecurity = Some(true))
-        case p: QuotasWithLimits =>
-          p.copy(aggregationApiKeysSecurity = Some(true))
-        case p: QuotasWithoutLimits =>
-          p.copy(aggregationApiKeysSecurity = Some(true))
-        case p: PayPerUse =>
-          p.copy(aggregationApiKeysSecurity = Some(true))
-        case p => p
-      }
+      val updatedPlans = defaultApi.plans
+        .map(_.copy(aggregationApiKeysSecurity = Some(true)))
+
 
       updatedPlans.foreach(plan => {
         val resp = httpJsonCallBlocking(
@@ -6986,18 +6923,18 @@ class ApiControllerSpec()
       val parentSubId = ApiSubscriptionId("parent")
       val parentApiKeyClientId = "clientId"
 
-      val copiedPlan = QuotasWithoutLimits(
+      val copiedPlan = UsagePlan(
         UsagePlanId(IdGenerator.token),
         tenant = tenant.id,
-        maxPerSecond = 10000,
-        maxPerDay = 10000,
-        maxPerMonth = 10000,
-        costPerAdditionalRequest = BigDecimal(0.015),
-        costPerMonth = BigDecimal(10.0),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+        maxPerSecond = 10000L.some,
+        maxPerDay = 10000L.some,
+        maxPerMonth = 10000L.some,
+        costPerRequest = BigDecimal(0.015).some,
+        costPerMonth = BigDecimal(10.0).some,
+        billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
         trialPeriod = None,
-        currency = Currency("EUR"),
-        customName = None,
+        currency = Currency("EUR").some,
+        customName = "QuotasWithoutLimits",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -7372,8 +7309,7 @@ class ApiControllerSpec()
         users = Seq(user),
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = defaultApi.plans.map {
-          case p: Admin => p.copy(aggregationApiKeysSecurity = Some(true))
-          case p: FreeWithoutQuotas =>
+          case p if !p.isPaymentDefined && p.visibility != UsagePlanVisibility.Admin =>
             p.copy(
               aggregationApiKeysSecurity = Some(true),
               otoroshiTarget = Some(
@@ -7387,15 +7323,8 @@ class ApiControllerSpec()
                 )
               )
             )
-          case p: FreeWithQuotas =>
+          case p =>
             p.copy(aggregationApiKeysSecurity = Some(true))
-          case p: QuotasWithLimits =>
-            p.copy(aggregationApiKeysSecurity = Some(true))
-          case p: QuotasWithoutLimits =>
-            p.copy(aggregationApiKeysSecurity = Some(true))
-          case p: PayPerUse =>
-            p.copy(aggregationApiKeysSecurity = Some(true))
-          case p => p
         },
         apis = Seq(
           defaultApi.api
@@ -7431,12 +7360,10 @@ class ApiControllerSpec()
         ] mustBe "The subscribed plan has another otoroshi of the parent plan"
     }
     "update aggregated APIkey do not erase authorizedEntities" in {
-      val parentPlan = FreeWithoutQuotas(
+      val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "parent.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -7454,12 +7381,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlan = FreeWithoutQuotas(
+      val childPlan = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "FreeWithoutQuotas",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -7578,12 +7503,10 @@ class ApiControllerSpec()
       strings.contains(parentRouteId) mustBe true
     }
     "update plan in aggregated APIkey do not erase authorizedEntities" in {
-      val parentPlan = FreeWithoutQuotas(
+      val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "parent.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -7601,12 +7524,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlan = FreeWithoutQuotas(
+      val childPlan = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "child.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -7770,12 +7691,10 @@ class ApiControllerSpec()
       strings2.size mustBe 3
     }
     "be disable entirely by disabling parent subscription" in {
-      val parentPlan = FreeWithoutQuotas(
+      val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "parent.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -7793,12 +7712,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlan = FreeWithoutQuotas(
+      val childPlan = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "child.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -7816,12 +7733,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlan2 = FreeWithoutQuotas(
+      val childPlan2 = UsagePlan(
         id = UsagePlanId("child2.dev"),
         tenant = tenant.id,
-        currency = Currency("EUR"),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        customName = None,
+        customName = "child2.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -7959,12 +7874,10 @@ class ApiControllerSpec()
       (respVerifOtoParent.json \ "enabled").as[Boolean] mustBe false
     }
     "be disable by part by disabling child subscription" in {
-      val parentPlan = FreeWithoutQuotas(
+      val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "parent.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -7982,12 +7895,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlan = FreeWithoutQuotas(
+      val childPlan = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "child.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -8005,12 +7916,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlan2 = FreeWithoutQuotas(
+      val childPlan2 = UsagePlan(
         id = UsagePlanId("child2.dev"),
         tenant = tenant.id,
-        currency = Currency("EUR"),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        customName = None,
+        customName = "child2.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -8186,12 +8095,10 @@ class ApiControllerSpec()
     }
 
     "be disable entirely by disabling parent subscription by owner" in {
-      val parentPlan = FreeWithoutQuotas(
+      val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "parent.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -8209,12 +8116,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlan = FreeWithoutQuotas(
+      val childPlan = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "child.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -8232,12 +8137,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlan2 = FreeWithoutQuotas(
+      val childPlan2 = UsagePlan(
         id = UsagePlanId("child2.dev"),
         tenant = tenant.id,
-        currency = Currency("EUR"),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        customName = None,
+        customName = "child2.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -8375,12 +8278,10 @@ class ApiControllerSpec()
       (respVerifOtoParent.json \ "enabled").as[Boolean] mustBe false
     }
     "be disable by part by disabling child subscription by owner" in {
-      val parentPlan = FreeWithoutQuotas(
+      val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "parent.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -8398,12 +8299,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlan = FreeWithoutQuotas(
+      val childPlan = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "child.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -8421,12 +8320,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlan2 = FreeWithoutQuotas(
+      val childPlan2 = UsagePlan(
         id = UsagePlanId("child2.dev"),
         tenant = tenant.id,
-        currency = Currency("EUR"),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        customName = None,
+        customName = "child2.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -8603,12 +8500,10 @@ class ApiControllerSpec()
     }
 
     "be deleted entirely by deleting the parent sub" in {
-      val parentPlan = FreeWithoutQuotas(
+      val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "parent.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -8626,12 +8521,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlan = FreeWithoutQuotas(
+      val childPlan = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "child.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -8649,12 +8542,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlan2 = FreeWithoutQuotas(
+      val childPlan2 = UsagePlan(
         id = UsagePlanId("child2.dev"),
         tenant = tenant.id,
-        currency = Currency("EUR"),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        customName = None,
+        customName = "child2.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -8825,12 +8716,10 @@ class ApiControllerSpec()
       respVerifOtoParent.status mustBe 404
     }
     "be kept in part by deleting the parent sub (first child become parent)" in {
-      val parentPlan = FreeWithoutQuotas(
+      val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "parent.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -8848,12 +8737,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlan = FreeWithoutQuotas(
+      val childPlan = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "child.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -8871,12 +8758,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlan2 = FreeWithoutQuotas(
+      val childPlan2 = UsagePlan(
         id = UsagePlanId("child2.dev"),
         tenant = tenant.id,
-        currency = Currency("EUR"),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        customName = None,
+        customName = "child2.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -9085,12 +8970,10 @@ class ApiControllerSpec()
       (preMetadata \ "foo").as[String] mustBe "bar"
     }
     "be exploded in parts by deleting the parent sub" in {
-      val parentPlan = FreeWithoutQuotas(
+      val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "parent.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -9108,12 +8991,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlan = FreeWithoutQuotas(
+      val childPlan = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = None,
+        customName = "child.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -9131,12 +9012,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlan2 = FreeWithoutQuotas(
+      val childPlan2 = UsagePlan(
         id = UsagePlanId("child2.dev"),
         tenant = tenant.id,
-        currency = Currency("EUR"),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        customName = None,
+        customName = "child2.dev",
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -9392,12 +9271,10 @@ class ApiControllerSpec()
     }
 
     "be controlled by a security tenant in environment mode" in {
-      val parentPlanProd = FreeWithoutQuotas(
+      val parentPlanProd = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -9415,12 +9292,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlanProd = FreeWithoutQuotas(
+      val childPlanProd = UsagePlan(
         id = UsagePlanId("child.dev"),
         tenant = tenant.id,
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        currency = Currency("EUR"),
-        customName = envModeProd.some,
+        customName = envModeProd,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(
@@ -9438,12 +9313,10 @@ class ApiControllerSpec()
         autoRotation = Some(false),
         aggregationApiKeysSecurity = Some(true)
       )
-      val childPlanDev = FreeWithoutQuotas(
+      val childPlanDev = UsagePlan(
         id = UsagePlanId("child2.dev"),
         tenant = tenant.id,
-        currency = Currency("EUR"),
-        billingDuration = BillingDuration(1, BillingTimeUnit.Month),
-        customName = envModeDev.some,
+        customName = envModeDev,
         customDescription = None,
         otoroshiTarget = Some(
           OtoroshiTarget(

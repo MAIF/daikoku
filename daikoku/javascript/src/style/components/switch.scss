@@ -1,3 +1,5 @@
+@use "../variables";
+
 /* The switch - the box around the slider */
 .switch {
   position: relative;
@@ -45,14 +47,14 @@
 }
 
 input:checked + .slider {
-  background-color: $success-color;
+  background-color: variables.$success-color;
 }
 input:not(:checked) + .slider {
-  background-color: $error-color;
+  background-color: variables.$error-color;
 }
 
 input:focus + .slider {
-  box-shadow: 0 0 1px $success-color;
+  box-shadow: 0 0 1px variables.$success-color;
 }
 
 input:disabled + .slider {

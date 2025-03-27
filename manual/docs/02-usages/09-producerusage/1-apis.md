@@ -42,13 +42,14 @@ You can define a plan as the **default plan**, as it's possible to **make it pri
 It's possible to **allow multiple API keys** for a plan (by default, a team can only have one API key).
 It's possible to **allow API keys aggregation**
 
-It's important to choose a type of plan :
+:::info
+Since version `18.2.0` plans no longer have predefined types.
+:::
 
-* **free without quotas**: a plan with an unlimited number of calls per day and per month.
-* **free with quotas**: a plan with a limited number of calls per day and per month. Quotas will be set by default and can be overwritten.
-* **quotas with limits**: a priced plan with a limited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost by month can be set. 
-* **quotas without limit**: a priced plan with an unlimited number of calls per day and per month. Quotas will be set by default but can be overwritten. A fixed cost per month can be set. The cost per additional requests can be set.
-* **pay per use**: a plan priced on usage. A fixed cost per month can be set. The cost per additional requests can be set.
+Plans in Daikoku are fully configurable. 
+Each plan can define **quotas** (e.g., number of allowed requests per windows/sec, day or month) and **pricing** settings (e.g., fixed monthly costs, per-request pricing). 
+
+By combining these options, you can create plans tailored to different use cases, whether free, quota-based, or pay-per-use, without being constrained by predefined categories.
 
 The subscription process in Daikoku offers flexibility, allowing users to customize their validation steps. There are three possible types of steps:
 

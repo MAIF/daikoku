@@ -1,13 +1,12 @@
 import { useContext, useEffect } from 'react';
-import { Navigate } from 'react-router';
-import { BrowserRouter, Route, BrowserRouter as Router, Routes, createBrowserRouter, RouterProvider, useSearchParams } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router';
+import { BrowserRouter, Route, BrowserRouter as Router, Routes, createBrowserRouter, RouterProvider, ScrollRestoration, useSearchParams } from 'react-router-dom';
 
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
 import { Footer, LoginPage, SideBar, tenant } from '../components/utils';
 import { ModalProvider, NavProvider } from '../contexts';
 
 import {
-  ApiGroupHome,
   ApiHome,
   FrontOffice,
   JoinTeam,
@@ -427,15 +426,6 @@ export const DaikokuApp = () => {
                   <Route
                     path="/:teamId/settings*"
                     element={<TeamBackOffice />}
-                  />
-
-                  <Route
-                    path=":teamId/apigroups/:apiGroupId/:tab/*"
-                    element={
-                      <FrontOfficeRoute>
-                        <ApiGroupHome />
-                      </FrontOfficeRoute>
-                    }
                   />
 
                   <Route

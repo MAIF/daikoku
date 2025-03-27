@@ -296,11 +296,12 @@ GET     /api/entities/tenant                            fr.maif.otoroshi.daikoku
 GET     /api/entities/team                              fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newTeam()
 GET     /api/entities/api                               fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newApi()
 GET     /api/entities/api-documentation                 fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newApiDocumentation()
+GET     /api/entities/api-documentation-page            fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newApiDocumentationPage()
 GET     /api/entities/apigroup                          fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newApiGroup()
 GET     /api/entities/user                              fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newUser()
 GET     /api/entities/otoroshi                          fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newOtoroshi()
 GET     /api/entities/issue                             fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newIssue()
-GET     /api/entities/plan                              fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newPlan(planType: String)
+GET     /api/entities/plan                              fr.maif.otoroshi.daikoku.ctrls.EntitiesController.newPlan()
 
 POST    /api/jobs/otoroshi/_sync                        fr.maif.otoroshi.daikoku.ctrls.JobsController.otoroshiSyncJob()
 POST    /api/jobs/stats/_sync                           fr.maif.otoroshi.daikoku.ctrls.JobsController.apikeysStatsSyncJob()

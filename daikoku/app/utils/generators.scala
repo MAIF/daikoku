@@ -1,7 +1,8 @@
 package fr.maif.otoroshi.daikoku.utils
 
-import java.util.concurrent.atomic.AtomicLong
+import org.apache.pekko.http.scaladsl.ConnectionContext.https
 
+import java.util.concurrent.atomic.AtomicLong
 import scala.util.Random
 
 class IdGenerator(generatorId: Long) {

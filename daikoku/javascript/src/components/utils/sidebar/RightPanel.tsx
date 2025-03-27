@@ -1,18 +1,14 @@
 import classNames from 'classnames';
 import { useContext, useEffect } from 'react';
-import ArrowRight from 'react-feather/dist/icons/arrow-right';
+import X from 'react-feather/dist/icons/x';
 
-import { I18nContext, ModalContext } from '../../../contexts';
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
+import { useLocation } from 'react-router-dom';
+import { ModalContext } from '../../../contexts';
 
 
 export const RightPanel = () => {
   const { rightPanelContent, closeRightPanel } = useContext(ModalContext);
-  const { translate } = useContext(I18nContext);
-
-
-  useEffect(() => {
-    closeRightPanel();
-  }, [location]);
 
   const closeOnEsc = (e: any) => {
     if (e.key == 'Escape' || e.key == 'Esc') {
@@ -30,33 +26,39 @@ export const RightPanel = () => {
   }, []);
 
   return (
-    <div className="right-panel-container">
-      <div
-        className={classNames('right-panel', {
-          opened: rightPanelContent,
-          closed: !rightPanelContent,
-        })}
-      >
-        <div className="m-2 p-2 ">
+    <div className={classNames("right-panel-container", { opened: rightPanelContent })}>
+      <PanelGroup direction='horizontal'>
+        <Panel defaultSize={25} maxSize={65}>
           <div
-            className="cursor-pointer right-panel__back d-flex align-items-center justify-content-center companion-link"
+            className={classNames('right-panel-background', {
+              opened: rightPanelContent,
+              closed: !rightPanelContent,
+            })}
             onClick={closeRightPanel}
-            aria-label={translate("right.panel.close.aria.label")} >
-            <ArrowRight />
+          />
+
+        </Panel>
+        <PanelResizeHandle />
+        <Panel defaultSize={75} minSize={35}>
+          <div
+            className={classNames('right-panel', {
+              opened: rightPanelContent,
+              closed: !rightPanelContent,
+            })}
+          >
+            <div className="m-2 p-2 ">
+              <div className="cursor-pointer right-panel__back d-flex align-items-center justify-content-center companion-link">
+                <X className="" onClick={closeRightPanel} />
+              </div>
+              {rightPanelContent?.title}
+            </div>
+            <div className="m-2 p-2">
+              {rightPanelContent?.content}
+            </div>
           </div>
-          {rightPanelContent?.title}
-        </div>
-        <div className="m-2 p-2">
-          {rightPanelContent?.content}
-        </div>
-      </div>
-      <div
-        className={classNames('right-panel-background', {
-          opened: rightPanelContent,
-          closed: !rightPanelContent,
-        })}
-        onClick={closeRightPanel}
-      />
+        </Panel>
+      </PanelGroup>
+
     </div>
   );
 };

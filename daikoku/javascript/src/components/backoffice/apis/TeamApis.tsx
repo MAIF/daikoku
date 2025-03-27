@@ -9,7 +9,7 @@ import * as Services from '../../../services';
 import { IApi, ITeamSimple, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
 import { api as API, Can, Spinner, manage, read } from '../../utils';
-import { constraints, format, type } from '@maif/react-forms';
+import { deleteApi } from '../../utils/apiUtils';
 
 export const TeamApis = () => {
   const { isLoading, currentTeam, error } = useTeamBackOffice()
@@ -75,24 +75,16 @@ export const TeamApis = () => {
               className="btn btn-sm btn-outline-info me-1"
               title="View this Api"
             >
-              <i className="fas fa-eye" />
+              <i className="fas fa-share-from-square" />
             </Link>
             <Can I={manage} a={API} team={currentTeam}>
-              <Link
-                key={`edit-${api._humanReadableId}`}
-                to={editUrl}
-                className="btn btn-sm btn-outline-info me-1"
-                title="Edit this Api"
-              >
-                <i className="fas fa-pen" />
-              </Link>
               {api.visibility !== 'AdminOnly' && (
                 <button
                   key={`delete-${api._humanReadableId}`}
                   type="button"
                   className="btn btn-sm btn-outline-danger"
                   title={translate("Delete this Api")}
-                  onClick={() => deleteApi(api)}
+                  onClick={() => getVersionsAndDeleteApi(api)}
                 >
                   <i className="fas fa-trash" />
                 </button>
@@ -104,66 +96,14 @@ export const TeamApis = () => {
     }),
   ];
 
-  const deleteApi = (api: IApi) => {
-
+  const getVersionsAndDeleteApi = (api: IApi) => {
     const team = currentTeam as ITeamSimple
+
     Services.getAllApiVersions(team._id, api._id)
-      .then(versions => {
-        const confirm = {
-          confirm: {
-            type: type.string,
-            label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [api.name] }),
-            constraints: [
-              constraints.oneOf(
-                [api.name],
-                translate({ key: 'constraints.type.api.name', replacements: [api.name] })
-              ),
-            ],
-          },
-        }
-
-        const next = {
-          next: {
-            type: type.string,
-            label: translate("delete.api.confirm.modal.description.next.label"),
-            help: translate('delete.api.confirm.modal.description.next.help'),
-            format: format.select,
-            options: versions.filter(v => v !== api.currentVersion),
-            constraints: [
-              constraints.required(translate("constraints.required.value"))
-            ]
-          }
-        }
-
-        const schema = versions.length > 2 && api.isDefault ? { ...confirm, ...next } : { ...confirm }
-        const automaticNextCurrentVersion = versions.length === 2 ? versions.filter(v => v !== api.currentVersion)[0] : undefined
-
-        return openFormModal({
-          title: translate('Confirm'),
-          description: <div className="alert alert-danger" role="alert">
-            <h4 className="alert-heading">{translate('Warning')}</h4>
-            <p>{translate("delete.api.confirm.modal.description.1")}</p>
-            <ul>
-              <li>{translate("delete.api.confirm.modal.description.2")}</li>
-            </ul>
-            {automaticNextCurrentVersion && <strong>{translate({ key: 'delete.api.confirm.modal.description.next.version', replacements: [automaticNextCurrentVersion] })}</strong>}
-          </div>,
-          schema: schema,
-          onSubmit: ({ next }) => {
-            Services.deleteTeamApi(team._id, api._id, next)
-              .then((r) => {
-                if (isError(r)) {
-                  toast.error(r.error)
-                } else {
-                  table.current?.update();
-                  toast.success(translate('deletion successful'))
-                }
-              })
-          },
-          actionLabel: translate('Confirm')
-        })
-      })
-  };
+      .then(versions => deleteApi({
+        api, versions, team, translate, openFormModal, handleSubmit: () => table.current?.update()
+      }))
+  }
 
   if (isLoading) {
     return <Spinner />

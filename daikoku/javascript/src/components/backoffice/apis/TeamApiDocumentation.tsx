@@ -47,8 +47,8 @@ const mimeTypes = [
   { label: '.css fichier css', value: 'text/css' },
 ];
 
-const loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.';
-const longLoremIpsum = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.
+export const loremIpsum = 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.';
+export const longLoremIpsum = `Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus gravida convallis leo et aliquet. Aenean venenatis, elit et dignissim scelerisque, urna dui mollis nunc, id eleifend velit sem et ante. Quisque pharetra sed tellus id finibus. In quis porta libero. Nunc egestas eros elementum lacinia blandit. Donec nisi lacus, tristique vel blandit in, sodales eget lacus. Phasellus ultrices magna vel odio vestibulum, a rhoncus nunc ornare. Sed laoreet finibus arcu vitae aliquam. Aliquam quis ex dui.
 
 Cras ut ultrices quam. Nulla eu purus sed turpis consequat sodales. Aenean vitae efficitur velit, vel accumsan felis. Curabitur aliquam odio dictum urna convallis faucibus. Vivamus eu dignissim lorem. Donec sed hendrerit massa. Suspendisse volutpat, nisi at fringilla consequat, eros lacus aliquam metus, eu convallis nulla mauris quis lacus. Aliquam ultricies, mi eget feugiat vestibulum, enim nunc eleifend nisi, nec tincidunt turpis elit id diam. Nunc placerat accumsan tincidunt. Nulla ut interdum dui. Praesent venenatis cursus aliquet. Nunc pretium rutrum felis nec pharetra.
 
@@ -65,7 +65,7 @@ type AssetButtonProps = {
   rawValues: IDocPage,
   formModalProps: IFormModalProps<IDocPage>
 }
-const AssetButton = (props: AssetButtonProps) => {
+export const AssetButton = (props: AssetButtonProps) => {
   const { translate } = useContext(I18nContext);
   const { openFormModal } = useContext(ModalContext)
 
@@ -346,28 +346,18 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
   }
 
   const addNewPage = () => {
-    const newPage: IDocPage = {
-      _id: nanoid(32),
-      _tenant: tenant._id,
-      _deleted: false,
-      _humanReadableId: 'new-page',
-      title: 'New page',
-      lastModificationAt: Date.now(),
-      content: '# New page\n\nA new page',
-      contentType: 'text/markdown',
-      remoteContentEnabled: false,
-      remoteContentUrl: null,
-      remoteContentHeaders: {}
-    }
+    Services.fetchNewApiDocPage()
+      .then(page => {
+        openFormModal({
+          title: translate('doc.page.create.modal.title'),
+          flow: flow,
+          schema: schema(saveNewPage),
+          value: page,
+          onSubmit: saveNewPage,
+          actionLabel: translate('Save')
+        })
+      })
 
-    openFormModal({
-      title: translate('doc.page.create.modal.title'),
-      flow: flow,
-      schema: schema(saveNewPage),
-      value: newPage,
-      onSubmit: saveNewPage,
-      actionLabel: translate('Save')
-    })
   }
 
   const saveNewPage = (page: IDocPage) => {
@@ -405,34 +395,29 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
 
   return (
     <div className="row">
-      <div className="col-12 col-sm-6 col-lg-6">
-        <div className="d-flex flex-column">
-          <div className="">
-            <div className="d-flex justify-content-between align-items-center">
-              <div className="btn-group ms-2">
-                <button onClick={addNewPage} type="button" className="btn btn-sm btn-outline-success">
-                  {translate('documentation.add.page.btn.label')}
-                </button>
-                {props.importAuthorized &&
-                  <button
-                    onClick={props.importPage}
-                    type="button"
-                    className="btn btn-sm btn-outline-info">
-                    <i className="fas fa-download" />
-                  </button>
-                }
-              </div>
-            </div>
-          </div>
-          <div className='d-flex flex-column'>
-            <DnDoc
-              items={props.documentation?.pages || []}
-              deletePage={deletePage}
-              updatePages={updatePages}
-              confirmRemoveItem={() => (confirm({ message: translate('delete.documentation.page.confirm') }))}
-              updateItem={updatePage} />
-          </div>
+      <div className="col-12 col-sm-6 col-lg-6 d-flex flex-column">
+        <div className="d-flex align-items-center gap-1 mt-4">
+          <button onClick={addNewPage} type="button"
+            aria-label={translate(' documentation.add.page.btn.aria.label')}
+            className="flex-grow-1 btn btn-sm btn-outline-success fake-documentation-page-dnd">
+            {translate('documentation.add.page.btn.label')}
+          </button>
+          {props.importAuthorized &&
+            <button
+              onClick={props.importPage}
+              type="button"
+              aria-label={translate(' documentation.import.page.btn.aria.label')}
+              className="flex-grow-1 btn btn-sm btn-outline-info fake-documentation-page-dnd">
+              {translate('documentation.import.page.btn.label')}
+            </button>
+          }
         </div>
+        <DnDoc
+          items={props.documentation?.pages || []}
+          deletePage={deletePage}
+          updatePages={updatePages}
+          confirmRemoveItem={() => (confirm({ message: translate('delete.documentation.page.confirm') }))}
+          updateItem={updatePage} />
       </div>
     </div>
   );

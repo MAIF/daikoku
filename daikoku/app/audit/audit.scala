@@ -406,7 +406,7 @@ class AuditActor(implicit
               Map(
                 "apiName" -> JsString(api.name),
                 "planName" -> JsString(
-                  plan.customName.getOrElse(plan.typeName)
+                  plan.customName
                 ),
                 "api_data" -> api.asJson,
                 "usagePlan_data" -> plan.asJson,

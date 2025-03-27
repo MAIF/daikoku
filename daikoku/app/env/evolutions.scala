@@ -6,18 +6,8 @@ import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiDocumentationPageFormat,
-  ApiFormat,
-  ApiSubscriptionFormat,
-  SeqApiDocumentationDetailPageFormat,
-  TeamFormat,
-  TeamIdFormat,
-  TenantFormat,
-  UserFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, UserFormat}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.joda.time.DateTime
@@ -26,6 +16,7 @@ import services.CmsPage
 import storage.DataStore
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 sealed trait EvolutionScript {
   def version: String
@@ -1150,6 +1141,52 @@ object evolution_1750 extends EvolutionScript {
     }
 }
 
+object evolution_1820 extends EvolutionScript {
+  override def version: String = "18.2.0"
+
+  override def script: (
+    Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+    ) => Future[Done] =
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - update plan.customName since it is mandatory value"
+      )
+
+      implicit val executionContext: ExecutionContext = ec
+
+      def getOldTypeOfPlan(rawPlan: JsValue): (String, JsValue, JsValue) = {
+        (rawPlan \ "type").as[String] match {
+          case "FreeWithoutQuotas" => ((rawPlan \ "customName").asOpt[String].getOrElse("Free with quotas"), JsNull, JsNull)
+          case "FreeWithQuotas" => ((rawPlan \ "customName").asOpt[String].getOrElse("Free with quotas"), JsNull, JsNull)
+          case "QuotasWithLimits" => ((rawPlan \ "customName").asOpt[String].getOrElse("Quotas with limits"), (rawPlan \ "currency").as[JsValue], (rawPlan \ "billingDuration").as[JsValue])
+          case "QuotasWithoutLimits" => ((rawPlan \ "customName").asOpt[String].getOrElse("Quotas without limits"), (rawPlan \ "currency").as[JsValue], (rawPlan \ "billingDuration").as[JsValue])
+          case "PayPerUse" => ((rawPlan \ "customName").asOpt[String].getOrElse("Pay per use"), (rawPlan \ "currency").as[JsValue], (rawPlan \ "billingDuration").as[JsValue])
+          case "Admin" => ((rawPlan \ "customName").asOpt[String].getOrElse("Admin"), JsNull, JsNull)
+        }
+      }
+
+      dataStore.usagePlanRepo.forAllTenant().streamAllRaw()
+        .map(rawPlan => {
+          val (customName, currency, billingDuration) = getOldTypeOfPlan(rawPlan)
+          json.UsagePlanFormat.reads(rawPlan.as[JsObject] ++ Json.obj("customName" -> customName, "currency" -> currency, "billingDuration" -> billingDuration)).get
+        })
+        .mapAsync(10)(plan => {
+          dataStore.usagePlanRepo.forAllTenant().save(plan)
+        })
+        .runWith(Sink.ignore)(mat)
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -1167,7 +1204,8 @@ object evolutions {
       evolution_1613_b,
       evolution_1630,
       evolution_1634,
-      evolution_1750
+      evolution_1750,
+      evolution_1820
     )
   def run(
       dataStore: DataStore,

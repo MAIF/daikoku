@@ -4,10 +4,11 @@ import moment, { Moment } from 'moment';
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import { useQuery } from "@tanstack/react-query";
 import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
-import { IApi, IGlobalInformations, ITeamSimple, IUsagePlan } from '../../../types';
-import { Can, GlobalDataConsumption, OtoroshiStatsVizualization, formatPlanType, read, renderPlanInfo, stat } from '../../utils';
+import { IApi, IGlobalInformations, isError, ITeamSimple, IUsagePlan } from '../../../types';
+import { Can, GlobalDataConsumption, OtoroshiStatsVizualization, read, Spinner, stat } from '../../utils';
 
 
 type IgqlConsumption = {
@@ -69,7 +70,13 @@ export const TeamApiConsumption = ({
 
   const { translate } = useContext(I18nContext);
 
-  const mappers = [
+  const usagePlansQuery = useQuery({
+    queryKey: ['plans', api.currentVersion],
+    queryFn: () =>
+      Services.getVisiblePlans(api._id, api.currentVersion),
+  });
+
+  const mappers = (plans: IUsagePlan[]) => [
     {
       type: 'LineChart',
       label: (data: Array<IgqlConsumption>) => {
@@ -77,7 +84,7 @@ export const TeamApiConsumption = ({
         return translate({ key: 'data.in.plus.hits', replacements: [totalHits] });
       },
       title: translate('Data In'),
-      formatter: (data: Array<IgqlConsumption>) => data.reduce((acc:Array<{date: string, count: number}>, item: IgqlConsumption) => {
+      formatter: (data: Array<IgqlConsumption>) => data.reduce((acc: Array<{ date: string, count: number }>, item: IgqlConsumption) => {
         const date = moment(item.to).format('DD MMM.');
         const value = acc.find((a: any) => a.date === date) || { count: 0 };
         return [...acc.filter((a: any) => a.date !== date), { date, count: value.count + item.globalInformations.hits }];
@@ -89,7 +96,7 @@ export const TeamApiConsumption = ({
       type: 'RoundChart',
       label: translate('Hits by apikey'),
       title: translate('Hits by apikey'),
-      formatter: (data: Array<IgqlConsumption>) => data.reduce((acc: Array<{clientId: string, name: string, count: number}>, item: IgqlConsumption) => {
+      formatter: (data: Array<IgqlConsumption>) => data.reduce((acc: Array<{ clientId: string, name: string, count: number }>, item: IgqlConsumption) => {
         const value = acc.find((a: any) => a.clientId === item.clientId) || { count: 0 };
         const name = `${item.team.name}/${item.plan.customName || item.plan.type}`;
         return [
@@ -107,7 +114,7 @@ export const TeamApiConsumption = ({
     {
       label: translate({ key: 'Plan', plural: true }),
       formatter: (data: Array<IgqlConsumption>) => <div className="row">
-        {api.possibleUsagePlans.map((plan: any) => <div key={plan._id} className="col-sm-4 col-lg-3">
+        {plans.map((plan: IUsagePlan) => <div key={plan._id} className="col-sm-4 col-lg-3">
           <PlanLightConsumption
             api={api}
             team={currentTeam}
@@ -121,7 +128,7 @@ export const TeamApiConsumption = ({
                   `/${currentTeam._humanReadableId}/settings/apigroups/${api._humanReadableId}/stats/plan/${plan._id}`
                 )
                 : navigate(
-                  `/${currentTeam._humanReadableId}/settings/apis/${api._humanReadableId}/${api.currentVersion}/stats/plan/${plan._id}`
+                  `/${currentTeam._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/consumption/plan/${plan._id}`
                 )
             }
           />
@@ -134,36 +141,41 @@ export const TeamApiConsumption = ({
     document.title = `${currentTeam.name} - ${translate('API consumption')}`;
   }, []);
 
-  return (
-    <Can I={read} a={stat} team={currentTeam} dispatchError={true}>
-      {!!api && (
-        <div className="d-flex col flex-column pricing-content">
-          <div className="row">
-            <div className="col section p-2">
-              <OtoroshiStatsVizualization
-                sync={() => Services.syncApiConsumption(api._id, currentTeam._id)}
-                fetchData={(from: Moment , to: Moment ) =>
-                  client!.query<{ apiConsumptions: Array<IgqlConsumption>}>({
-                  query: Services.graphql.getApiConsumptions,
-                  fetchPolicy: "no-cache",
-                  variables: {
-                    apiId: api._id,
-                    teamId: currentTeam._id,
-                    from: from.valueOf(),
-                    to: to.from.valueOf()
+  if (usagePlansQuery.isLoading) {
+    return (<Spinner />)
+  } else if (usagePlansQuery.data && !isError(usagePlansQuery.data)) {
+    return (
+      <Can I={read} a={stat} team={currentTeam} dispatchError={true}>
+        {!!api && (
+          <div className="d-flex col flex-column pricing-content">
+            <div className="row">
+              <div className="col section p-2">
+                <OtoroshiStatsVizualization
+                  sync={() => Services.syncApiConsumption(api._id, currentTeam._id)}
+                  fetchData={(from: Moment, to: Moment) =>
+                    client!.query<{ apiConsumptions: Array<IgqlConsumption> }>({
+                      query: Services.graphql.getApiConsumptions,
+                      fetchPolicy: "no-cache",
+                      variables: {
+                        apiId: api._id,
+                        teamId: currentTeam._id,
+                        from: from.valueOf(),
+                        to: to.from.valueOf()
+                      }
+                    }).then(({ data: { apiConsumptions } }) => {
+                      return apiConsumptions
+                    })
                   }
-                }).then(({data: {apiConsumptions}}) => {
-                  return apiConsumptions
-                })
-                }
-                mappers={mappers}
-              />
+                  mappers={mappers(usagePlansQuery.data as IUsagePlan[])}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      )}
-    </Can>
-  );
+        )}
+      </Can>
+    );
+  }
+
 };
 type PlanLightConsumptionType = {
   api: IApi,
@@ -178,27 +190,24 @@ type PlanLightConsumptionType = {
   handleClick: () => void
 }
 const PlanLightConsumption = (props: PlanLightConsumptionType) => {
+
   const { translate } = useContext(I18nContext);
 
-
-  const plan = props.plan;
-  const customName = plan.customName;
-  const customDescription = plan.customDescription;
   return (
     <div
-      className={classNames('card mb-3 shadow-sm consumptions-plan')}
-      onClick={props.handleClick}
+      className={classNames('card mb-3 shadow-sm')}
     >
-      <div className="card-img-top card-data" data-holder-rendered="true">
-        <GlobalDataConsumption data={props.data} />
+      <div className="card-img-top card-header" data-holder-rendered="true">
+        <h3>{props.plan.customName}</h3>
       </div>
       <div className="card-body">
-        {customName && <h3>{customName}</h3>}
-        {!customName && <h3>{formatPlanType(plan, translate)}</h3>}
-        <p className="card-text text-justify">
-          {customDescription && <span>{customDescription}</span>}
-          {!customDescription && renderPlanInfo(plan)}
-        </p>
+        <GlobalDataConsumption data={props.data} />
+        <div className="mt-2 d-flex flex-row justify-content-center">
+          <button
+            aria-label={translate({ key: 'api.consumption.plan.btn.aria.label', replacements: [props.plan.customName] })}
+            className="btn btn-outline-primary mx-auto"
+            onClick={props.handleClick}>{translate("api.consumption.plan.btn.label")}</button>
+        </div>
       </div>
     </div>
   );

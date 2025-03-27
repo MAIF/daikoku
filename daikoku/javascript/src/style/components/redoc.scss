@@ -1,6 +1,8 @@
+@use "../variables";
+
 .redoc-wrap{
-    color: $level2_text-color !important;
+    color: variables.$level2_text-color !important;
     h1, h2, h3 {
-      color: $level2_text-color !important;
+      color: variables.$level2_text-color !important;
     }
   }

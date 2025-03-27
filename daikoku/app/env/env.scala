@@ -1,36 +1,28 @@
 package fr.maif.otoroshi.daikoku.env
 
-import org.apache.pekko.actor.{ActorRef, ActorSystem, PoisonPill}
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.{FileIO, Keep, Sink, Source}
 import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.{JWT, JWTVerifier}
 import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.FreeWithoutQuotas
-import fr.maif.otoroshi.daikoku.domain.{
-  DatastoreId,
-  ReportsInfo,
-  TeamApiKeyVisibility,
-  Tenant
-}
+import fr.maif.otoroshi.daikoku.domain.{DatastoreId, ReportsInfo, TeamApiKeyVisibility, Tenant}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._
 import io.vertx.pgclient.PgPool
 import org.apache.pekko.Done
+import org.apache.pekko.actor.{ActorRef, ActorSystem, PoisonPill}
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.{FileIO, Keep, Sink, Source}
 import org.joda.time.DateTime
 import play.api.ApplicationLoader.Context
 import play.api.i18n.MessagesApi
 import play.api.libs.ws.WSClient
 import play.api.mvc.EssentialFilter
 import play.api.{Configuration, Environment}
-import play.core.server.PekkoHttpServer
 import storage.DataStore
 import storage.drivers.postgres.PostgresDataStore
-
 import java.nio.file.Paths
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, ExecutionContext, Future}

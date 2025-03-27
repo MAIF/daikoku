@@ -6,12 +6,9 @@ import { toast } from 'sonner';
 import { I18nContext, useTeamBackOffice } from "../../contexts";
 import { ITeamSimple, isError } from "../../types";
 import {
-  TeamApi,
-  TeamApiGroup,
   TeamApiKeyConsumption,
   TeamApiKeys,
   TeamApiKeysForApi,
-  TeamApis,
   TeamAssets,
   TeamBilling,
   TeamConsumption,
@@ -21,6 +18,7 @@ import {
 } from "../backoffice";
 import { Spinner } from "../utils";
 import { LastDemands, LastDemandsExt } from "./widgets";
+import { TeamApis } from "./apis/TeamApis";
 
 const BackOfficeContent = (props: PropsWithChildren) => {
 
@@ -104,18 +102,6 @@ export const TeamBackOffice = () => {
             />
             <Route path={`/apikeys`} element={<TeamApiKeys />} />
             <Route path={`/members`} element={<TeamMembers />} />
-            <Route
-              path={`/apis/:apiId/:versionId/:tab/*`}
-              element={<TeamApi creation={false} />}
-            />
-            <Route
-              path={`/apis/:apiId/:tab`}
-              element={<TeamApi creation={true} />}
-            />
-            <Route
-              path={`/apigroups/:apiGroupId/:tab/*`}
-              element={<TeamApiGroup />}
-            />
             <Route path={`/apis`} element={<TeamApis />} />
             <Route path="/dashboard" element={<TeamBackOfficeHome />} />
           </Routes>

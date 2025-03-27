@@ -93,7 +93,6 @@ export const TeamHome = () => {
           }))}
           teamVisible={false}
           redirectToApiPage={redirectToApiPage}
-          redirectToEditPage={redirectToEditPage}
           teamId={params.teamId}
         />
       </main>

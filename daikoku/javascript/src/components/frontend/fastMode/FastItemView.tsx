@@ -1,14 +1,12 @@
 import { useContext, useState } from "react";
-import Eye from 'react-feather/dist/icons/eye';
-import EyeOff from 'react-feather/dist/icons/eye-off';
 import ArrowLeft from 'react-feather/dist/icons/arrow-left';
 import ArrowRight from 'react-feather/dist/icons/arrow-right';
+import Eye from 'react-feather/dist/icons/eye';
+import EyeOff from 'react-feather/dist/icons/eye-off';
 
 import { I18nContext } from "../../../contexts";
 import { IFastApiSubscription, IFastPlan } from "../../../types";
 import {
-  BeautifulTitle,
-  formatPlanType,
   renderPlanInfo,
   renderPricing
 } from "../../utils";
@@ -42,7 +40,7 @@ export const FastItemView = (props: FastItemViewProps) => {
       {props.viewMode === 'PLAN' && props.planInfo &&
         <div className="card shadow-sm">
           <div className="card-img-top card-link card-header" data-holder-rendered="true">
-            <span>{props.planInfo.customName || formatPlanType(props.planInfo, translate)}</span>
+            <span>{props.planInfo.customName}</span>
           </div>
           <div className="card-body plan-body d-flex flex-column">
             <p className="card-text text-justify">
@@ -67,13 +65,8 @@ export const FastItemView = (props: FastItemViewProps) => {
       }
       {props.viewMode === 'APIKEY' && props.planInfo && props.subscriptions &&
         <div className="card">
-          <div className="card-header flex-column">         
-                {props.planInfo.customName}
-            <span
-              className="badge bg-secondary" style={{fontSize:"12px"}}
-            >
-              Type : {formatPlanType(props.planInfo, translate)}
-            </span>
+          <div className="card-header flex-column">
+            {props.planInfo.customName}
           </div>
           <div className="card-body" style={{ margin: 0 }}>
             <div className="row">
@@ -163,9 +156,9 @@ export const FastItemView = (props: FastItemViewProps) => {
             )}
             {props.subscriptions && props.subscriptions.length > 1 && (
               <div className="d-flex flex-row justify-content-between">
-                <ArrowLeft className="cursor-pointer" onClick={handlePreviousSubs}/>
+                <ArrowLeft className="cursor-pointer" onClick={handlePreviousSubs} />
                 <div>{`${idxSubscription + 1}/${props.subscriptions.length}`}</div>
-                <ArrowRight className="cursor-pointer" onClick={handleNextSubs}/>
+                <ArrowRight className="cursor-pointer" onClick={handleNextSubs} />
               </div>
             )}
           </div>

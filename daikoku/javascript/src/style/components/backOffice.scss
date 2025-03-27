@@ -1,3 +1,5 @@
+@use "../variables";
+
 .tbo__dasboard {
   display: flex;
   flex-direction: row;
@@ -8,8 +10,8 @@
     height: 300px;
     overflow-y: scroll;
     border-radius: 4px;
-    background-color: $level2_bg-color;
-    color: $level2_text-color;
+    background-color: variables.$level2_bg-color;
+    color: variables.$level2_text-color;
   }
 
   .small {
@@ -32,15 +34,15 @@
     // border-color: $btn-border-color;
     // background-color: $btn-bg-color;
     // color: $btn-text-color;
-    background-color: $level2_bg-color;
-    color: $level2_text-color;
+    background-color: variables.$level2_bg-color;
+    color: variables.$level2_text-color;
     text-align: center;
   }
 
   .widget-list-default-item,
   .widget-list-item {
-    background-color: $level3_bg-color;
-    color: $level3_text-color;
+    background-color: variables.$level3_bg-color;
+    color: variables.$level3_text-color;
     margin: 10px;
     border-left: 2px solid #fff;
     min-height: 30px;

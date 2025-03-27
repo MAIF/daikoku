@@ -517,7 +517,6 @@ test('API admin can transfer his own API ownership', async ({ page }) => {
   await page.getByRole('link', { name: 'APIs list' }).click();
   await page.locator('h3').filter({ hasText: 'test API' }).waitFor({ state: 'visible' })
   const consumerSelector = page.locator('small').filter({ hasText: 'Consumers' })
-  // console.log(consumerSelector)
   await consumerSelector.click();
   await expect(page.locator('h3')).toContainText('test API');
 });

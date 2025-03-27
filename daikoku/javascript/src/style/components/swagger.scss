@@ -1,11 +1,13 @@
+@use "../variables";
+
 .swagger-ui .info hgroup.main a {
     word-break: break-all;
   }
   
   .swagger-ui {
-    color: $sidebar-text-color;
+    color: variables.$sidebar-text-color;
     .btn {
-      color: $sidebar-text-color;
+      color: variables.$sidebar-text-color;
     }
   }
   
@@ -13,6 +15,6 @@
     hgroup h4,
     .errors h4,
     .errors small {
-      color: $sidebar-text-color;
+      color: variables.$sidebar-text-color;
     }
   }

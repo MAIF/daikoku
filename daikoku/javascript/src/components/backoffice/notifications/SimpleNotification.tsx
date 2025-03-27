@@ -1,14 +1,13 @@
-import React, { useContext } from 'react';
-import moment from 'moment';
-import { useNavigate } from 'react-router-dom';
 import { constraints, format, type } from '@maif/react-forms';
+import moment from 'moment';
+import { useContext } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-import { formatPlanType, Option } from '../../utils';
-import { I18nContext } from '../../../contexts';
-import { ModalContext } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
-import { FeedbackButton } from '../../utils/FeedbackButton';
 import { isError, ITesting } from '../../../types';
+import { Option } from '../../utils';
+import { FeedbackButton } from '../../utils/FeedbackButton';
 
 type LimitedTeam = {
   _id: string
@@ -475,7 +474,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
               <Translation i18nkey="notif.api.subscription" replacements={[
                 (infos as any).api.name,
                 (infos as any).api.currentVersion,
-                Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate)),
+                (infos as any).plan.customName,
               ]}>
                 Request subscription to {(infos as any).api.name}-{(infos as any).api.currentVersion} for plan {(infos as any).plan}
               </Translation>
@@ -485,14 +484,14 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
               replacements: [
                 (infos as any).api.name, 
                 (infos as any).api.currentVersion, 
-                Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate))]
+                (infos as any).plan.customName]
             })}
             {notification.action.__typename === 'ApiSubscriptionAccept' && translate({
               key: 'notif.api.demand.accept',
               replacements: [
                 (infos as any).api.name, 
                 (infos as any).api.currentVersion, 
-                Option((infos as any).plan.customName).getOrElse(formatPlanType((infos as any).plan, translate))]
+                (infos as any).plan.customName]
             })}
             {notification.action.__typename === 'ApiKeyDeletionInformation' && (<div>
               <Translation i18nkey="notif.apikey.deletion" replacements={[notification.action.clientId, notification.action.apiName]}>

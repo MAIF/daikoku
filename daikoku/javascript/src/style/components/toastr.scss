@@ -1,3 +1,5 @@
+@use "../variables";
+
 // @import '../variables';
 
 [data-sonner-toaster][data-theme='light'] {
@@ -5,8 +7,8 @@
   --normal-border: var(--gray4);
   --normal-text: var(--gray12);
 
-  --success-bg: #{$success-color};
-  --success-border: #{$success-color};
+  --success-bg: #{variables.$success-color};
+  --success-border: #{variables.$success-color};
   --success-text: #FFF;
 
   --info-bg: hsl(208, 100%, 97%);
@@ -17,8 +19,8 @@
   --warning-border: hsl(49, 91%, 91%);
   --warning-text: hsl(31, 92%, 45%);
 
-  --error-bg: #{$error-color};
-  --error-border: #{$error-color};
+  --error-bg: #{variables.$error-color};
+  --error-border: #{variables.$error-color};
   --error-text: #FFF;
 }
 

@@ -1,126 +1,21 @@
-import { getApolloContext } from '@apollo/client';
-import hljs from 'highlight.js';
-import { useContext, useEffect, useState } from 'react';
-import Navigation from 'react-feather/dist/icons/navigation';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { GraphQLClient } from 'graphql-request';
+import { useContext, useEffect } from 'react';
 import { useMatch, useNavigate, useParams } from 'react-router-dom';
-import Select from 'react-select';
 import { toast } from 'sonner';
 
-import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiSwagger } from '.';
-import { I18nContext, ModalContext, useApiFrontOffice } from '../../../contexts';
-import * as Services from '../../../services';
-import { converter } from '../../../services/showdown';
-import { IApi, ISubscription, ISubscriptionDemand, ITeamSimple, IUsagePlan, isError } from '../../../types';
-import { ActionWithTeamSelector, Can, CanIDoAction, Option, apikey, manage } from '../../utils';
-import { formatPlanType } from '../../utils/formatters';
-import StarsButton from './StarsButton';
-
-import classNames from 'classnames';
-import 'highlight.js/styles/monokai.css';
+import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiTest, EnvironmentsDocumentation, EnvironmentsRedoc, EnvironmentsTest } from '.';
+import { ApiGroupApis, TeamApiConsumption, TeamApiSubscriptions, TeamPlanConsumption, read } from '../..';
+import { I18nContext, ModalContext, NavContext, useApiFrontOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
-import { CmsViewer } from '../CmsViewer';
+import * as Services from '../../../services';
+import { Display, IApi, ISubscription, ITeamFullGql, ITeamSimple, IUsagePlan, isError } from '../../../types';
 import { SimpleApiKeyCard } from '../../backoffice/apikeys/TeamApiKeysForApi';
-
-(window as any).hljs = hljs;
-
-export const ApiDescription = ({
-  api
-}: { api: IApi }) => {
-  useEffect(() => {
-    (window as any).$('pre code').each((i: any, block: any) => {
-      hljs.highlightElement(block);
-    });
-  }, []);
-
-  return (
-    <div className="d-flex col flex-column p-3 section">
-      <div
-        className="api-description"
-        dangerouslySetInnerHTML={{ __html: converter.makeHtml(api.description) }}
-      />
-    </div>
-  );
-};
-
-type Version = {
-  label: string,
-  value: string
-}
-
-export const ApiHeader = ({
-  api,
-  ownerTeam,
-  connectedUser,
-  toggleStar,
-  tab
-}: any) => {
-  const navigate = useNavigate();
-  const params = useParams();
-
-  const [versions, setApiVersions] = useState<Array<Version>>([]);
-
-  useEffect(() => {
-    Services.getAllApiVersions(ownerTeam._id, params.apiId! || params.apiGroupId!)
-      .then((versions) =>
-        setApiVersions(versions.map((v) => ({
-          label: v,
-          value: v
-        })))
-      );
-  }, []);
-
-  if (api.header) {
-    const apiHeader = api.header
-      .replace('{{title}}', api.name)
-      .replace('{{description}}', api.smallDescription);
-
-    return (
-      <section className="api__header col-12 mb-4">
-        <div
-          className="api-description"
-          dangerouslySetInnerHTML={{ __html: converter.makeHtml(apiHeader) }}
-        />
-      </section>
-    );
-  } else {
-    return (
-      <section className="api__header col-12 mb-4 p-3">
-        <div className="container-fluid">
-          <h1 className="jumbotron-heading" style={{ position: 'relative' }}>
-            {api.name}
-            <div
-              style={{ position: 'absolute', right: 0, bottom: 0 }}
-              className="d-flex align-items-center"
-            >
-              {versions.length > 1 && tab !== 'issues' && (
-                <div style={{ minWidth: '125px', fontSize: 'initial' }}>
-                  <Select
-                    name="versions-selector"
-                    value={{ label: params.versionId, value: params.versionId }}
-                    options={versions}
-                    onChange={(e) =>
-                      navigate(`/${params.teamId}/${params.apiId}/${e?.value}/${tab}`)
-                    }
-                    classNamePrefix="reactSelect"
-                    className="me-2"
-                    menuPlacement="auto"
-                    menuPosition="fixed"
-                  />
-                </div>
-              )}
-              <StarsButton
-                stars={api.stars}
-                starred={connectedUser.starredApis.includes(api._id)}
-                toggleStar={toggleStar}
-              />
-            </div>
-          </h1>
-          <p className="lead">{api.smallDescription}</p>
-        </div>
-      </section>
-    );
-  }
-};
+import { Can, Option, Spinner, apikey, teamGQLToSimple } from '../../utils';
+import { CmsViewer } from '../CmsViewer';
+import { ApiDescription } from './ApiDescription';
+import { ApiHeader } from './ApiHeader';
+import { ApiSubscriptions } from './ApiSubscriptions';
 
 type ApiHomeProps = {
   groupView?: boolean
@@ -128,123 +23,122 @@ type ApiHomeProps = {
 export const ApiHome = ({
   groupView
 }: ApiHomeProps) => {
-  const [api, setApi] = useState<IApi>();
-  const [subscriptions, setSubscriptions] = useState<Array<ISubscription>>([]);
-  const [pendingSubscriptions, setPendingSubscriptions] = useState<Array<ISubscriptionDemand>>([]);
-  const [ownerTeam, setOwnerTeam] = useState<ITeamSimple>();
-  const [myTeams, setMyTeams] = useState<Array<any>>([]);
-  const [showAccessModal, setAccessModalError] = useState<any>();
-  const [showGuestModal, setGuestModal] = useState(false);
 
-  const { connectedUser, tenant, reloadContext } = useContext(GlobalContext);
-  const { openCustomModal, openRightPanel } = useContext(ModalContext);
+  const { tenant } = useContext(GlobalContext);
+  const { openRightPanel } = useContext(ModalContext);
+  const { setApiGroup } = useContext(NavContext);
 
   const navigate = useNavigate();
   const defaultParams = useParams();
   const apiGroupMatch = useMatch('/:teamId/apigroups/:apiGroupId/apis/:apiId/:versionId/:tab*');
+
+  const consumptionMatch = useMatch('/:teamId/:apiId/:version/consumption/plan/:planId');
+
   const params = Option(apiGroupMatch)
     .map((match: any) => match.params)
     .getOrElse(defaultParams);
 
   const { translate, Translation } = useContext(I18nContext);
-  const { openLoginOrRegisterModal } = useContext(ModalContext);
-  const { client } = useContext(getApolloContext());
 
-  const { addMenu } = groupView ? { addMenu: () => { } } : useApiFrontOffice(api, ownerTeam);
+  const queryClient = useQueryClient();
+  const apiQuery = useQuery({
+    queryKey: ["api", params.apiId, params.versionId],
+    queryFn: () => Services.getVisibleApi(params.apiId, params.versionId)
+  })
 
-  useEffect(() => {
-    updateSubscriptions(params.apiId);
-  }, [params.apiId, params.versionId]);
+  const visibleApisQuery = useQuery({
+    queryKey: ["api", "visibleApis"],
+    queryFn: () => Services.getVisibleApi(params.apiId, params.versionId)
+  })
 
-  useEffect(() => {
-    if (api) {
-      Services.team(api.team)
-        .then((ownerTeam) => {
-          if (!isError(ownerTeam)) {
-            setOwnerTeam(ownerTeam)
-          }
-        });
+  const mySubscriptionQuery = useQuery({
+    queryKey: ["mySubscription"],
+    queryFn: () => Services.getMySubscriptions(params.apiId, params.versionId)
+  })
+
+  const ownerTeamQuery = useQuery({
+    queryKey: ["ownerTeam", apiQuery.data],
+    queryFn: () => Services.team((apiQuery.data as IApi).team),
+    enabled: apiQuery.isSuccess && !!apiQuery.data
+  })
+
+  const graphqlEndpoint = `${window.location.origin}/api/search`;
+  const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
+
+  const MY_TEAMS_QUERY = `
+  query MyTeams {
+    myTeams {
+      name
+      _humanReadableId
+      _id
+      tenant {
+        id
+      }
+      type
+      apiKeyVisibility
+      apisCreationPermission
+      verified
+      users {
+        user {
+          userId: id
+        }
+        teamPermission
+      }
     }
-  }, [api, params.versionId]);
+  }
+`;
+
+  const myTeamsQuery = useQuery({
+    queryKey: ["myTeamsGQL"],
+    queryFn: () => customGraphQLClient.request<{ myTeams: Array<ITeamFullGql> }>(MY_TEAMS_QUERY),
+    select: d => d.myTeams,
+    enabled: true, // Assure que la requête est activée
+    refetchOnWindowFocus: false, // Désactive le refetch automatique pour tester
+  });
+
+
+  const { addMenu, isAdminApi, isApiGroup } = groupView && apiQuery.data && !isError(apiQuery) && ownerTeamQuery.data && !isError(ownerTeamQuery.data) ?
+    { addMenu: () => { }, isAdminApi: false, isApiGroup: false } : useApiFrontOffice((apiQuery.data as IApi), (ownerTeamQuery.data as ITeamSimple));
 
   useEffect(() => {
-    if (myTeams && subscriptions && !groupView) {
+    return () => {
+      setApiGroup(undefined)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (apiQuery.data && !isError(apiQuery.data) && myTeamsQuery.data && mySubscriptionQuery.data && ownerTeamQuery.data && !isError(ownerTeamQuery.data) && !groupView) {
+      const subscriptions = mySubscriptionQuery.data.subscriptions;
+      const myTeams = myTeamsQuery.data;
+      const api = apiQuery.data;
+      const ownerTeam = ownerTeamQuery.data
+
       const subscribingTeams = myTeams
-        .filter((team) => subscriptions.some((sub) => sub.team === team._id));
+        .filter((team) => subscriptions.some((sub) => sub.team === team._id))
+        .map(teamGQLToSimple);
+
       const viewApiKeyLink = (
-        <Can I={manage} a={apikey} teams={subscribingTeams}>
-          <ActionWithTeamSelector
-            title={translate('teamapi.select.title')}
-            teams={subscribingTeams.filter((t) => CanIDoAction(connectedUser, manage, apikey, t))}
-            action={(teams) => {
-              const team = myTeams.find((t) => teams.includes(t._id));
-              if (!team) {
-                return;
-              }
-              navigate(
-                `/${team._humanReadableId}/settings/apikeys/${api?._humanReadableId}/${api?.currentVersion}`
-              );
-            }}
-            actionLabel={translate('View your api keys')}
-            allTeamSelector={false}
-          >
-            <span className="block__entry__link">
-              <Translation i18nkey="View your api keys">View your api keys</Translation>
-            </span>
-          </ActionWithTeamSelector>
+        <Can I={read} a={apikey} teams={subscribingTeams}>
+          <span
+            className="block__entry__link"
+            onClick={() => navigate(`/${ownerTeam._humanReadableId}/${api?._humanReadableId}/${api?.currentVersion}/apikeys`)}>
+            <Translation i18nkey="API keys">API keys</Translation>
+          </span>
         </Can>
       );
 
       addMenu({
         blocks: {
-          actions: { links: { viewApiKey: { label: 'view apikey', component: viewApiKeyLink } } },
+          links: { links: { viewApiKey: { label: 'view apikey', component: viewApiKeyLink } } },
         },
       });
     }
-  }, [subscriptions, myTeams]);
+  }, [mySubscriptionQuery.data, myTeamsQuery.data, apiQuery.data, ownerTeamQuery.data]);
 
-  const updateSubscriptions = (apiId: string) => {
-    //FIXME: handle case if appolo client is not setted
-    if (!client) {
-      return;
-    }
-    Promise.all([
-      Services.getVisibleApi(apiId, params.versionId),
-      Services.getMySubscriptions(apiId, params.versionId),
-      client.query({
-        query: Services.graphql.myTeams,
-      }),
-    ]).then(
-      ([
-        api,
-        { subscriptions, requests },
-        {
-          data: { myTeams },
-        },
-      ]) => {
-        if (isError(api)) {
-          toast.error(api.error) //FIXME [#609] better error management
-        } else {
-          setApi(api);
-          setSubscriptions(subscriptions);
-          setPendingSubscriptions(requests);
-          setMyTeams(
-            myTeams.map((team) => ({
-              ...team,
-
-              users: team.users.map((us) => ({
-                ...us,
-                ...us.user
-              }))
-            }))
-          );
-        }
-      }
-    );
-  };
-
-  const askForApikeys = ({ team, plan, apiKey, motivation }: { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }) => {
-    const planName = formatPlanType(plan, translate);
+  const askForApikeys = ({ team, plan, apiKey, motivation }:
+    { team: string, plan: IUsagePlan, apiKey?: ISubscription, motivation?: object }) => {
+    const myTeams = myTeamsQuery.data || []
+    const api = apiQuery.data as IApi
 
     if (api) {
       return (
@@ -263,114 +157,97 @@ export const ApiHome = ({
             content: <SimpleApiKeyCard
               api={api!}
               plan={plan!}
-              apiTeam={ownerTeam!}
+              apiTeam={ownerTeamQuery.data as ITeamSimple} //FIXME: maybe better code ;)
               subscription={result.subscription}
             />
           })
         } else if (result.creation === 'waiting') {
           const teamName = myTeams.find((t) => t._id === team)!.name;
-          return toast.info(translate({ key: 'subscription.plan.waiting', replacements: [planName, teamName] }));
+          return toast.info(translate({ key: 'subscription.plan.waiting', replacements: [plan.customName, teamName] }));
         }
 
       })
-        .then(() => updateSubscriptions(api._id));
+        .then(() => queryClient.invalidateQueries({ queryKey: ["mySubscription"] }));
     } else {
       return Promise.reject(false)
     }
   };
 
-  const toggleStar = () => {
-    if (api) {
-      Services.toggleStar(api._id)
-        .then(() => reloadContext());
-    }
-  };
-
-  if (showGuestModal) {
-    openLoginOrRegisterModal({
-      tenant,
-      showOnlyMessage: true,
-      message: translate('guest_user_not_allowed')
-    })
+  const saveApi = (api: IApi) => {
+    return (
+      Promise.resolve(Services.saveTeamApi((ownerTeamQuery.data as ITeamSimple)._id, api, api.currentVersion))
+        .then(() => toast.success(translate('update.api.successful.toast.label')))
+        .then(() => queryClient.invalidateQueries({ queryKey: ['api'] }))
+    )
   }
 
-  if (showAccessModal) {
-    const teams = showAccessModal.api.myTeams.filter((t: any) => t.type !== 'Admin');
-    const pendingTeams = showAccessModal.api.authorizations
-      .filter((auth: any) => auth.pending)
-      .map((auth: any) => auth.team);
-    const authorizedTeams = showAccessModal.api.authorizations
-      .filter((auth: any) => auth.authorized)
-      .map((auth: any) => auth.team);
+  if (
+    apiQuery.isLoading ||
+    mySubscriptionQuery.isLoading ||
+    ownerTeamQuery.isLoading ||
+    myTeamsQuery.isLoading ||
+    visibleApisQuery.isLoading
+  ) {
+    return (
+      <Spinner />
+    )
+  } else if (
+    apiQuery.data && !isError(apiQuery.data) ||
+    mySubscriptionQuery.data &&
+    ownerTeamQuery.data && !isError(ownerTeamQuery.data) &&
+    myTeamsQuery.data &&
+    visibleApisQuery.data && !isError(visibleApisQuery.data)
+  ) {
+    const api = apiQuery.data as IApi;
+    const ownerTeam = ownerTeamQuery.data as ITeamSimple;
+    const myTeams = myTeamsQuery.data!.map(teamGQLToSimple);
+    const subscriptions = mySubscriptionQuery.data!.subscriptions;
+    const pendingSubscriptions = mySubscriptionQuery.data!.requests;
 
-    return (<div className="mx-auto mt-3 d-flex flex-column justify-content-center">
-      <h1 style={{ margin: 0 }}>{translate(showAccessModal.error)}</h1>
-      {(teams.length === 1 &&
-        (pendingTeams.includes(teams[0]._id) || authorizedTeams.includes(teams[0]._id))) ||
-        showAccessModal.api.authorizations.every((auth: any) => auth.pending && !auth.authorized) ? (<>
-          <h2 className="text-center my-3">{translate('request_already_pending')}</h2>
-          <button className="btn btn-outline-info mx-auto" style={{ width: 'fit-content' }} onClick={() => navigate(-1)}>
-            {translate('go_back')}
-          </button>
-        </>) : (<>
-          <span className="text-center my-3">{translate('request_api_access')}</span>
-          <ActionWithTeamSelector
-            title={translate("api.access.modal.title")}
-            description={translate({ key: 'api.access.request', replacements: [params.apIid] })}
-            pendingTeams={pendingTeams}
-            acceptedTeams={authorizedTeams}
-            teams={teams}
-            actionLabel={translate('Ask access to API')}
-            action={(teams) => {
-              Services.askForApiAccess(teams, showAccessModal.api._id).then((_) => {
-                toast.info(translate({ key: 'ask.api.access.info', replacements: showAccessModal.api.name }));
-                updateSubscriptions(showAccessModal.api._id);
-              });
-            }}>
-            <button className="btn btn-outline-success mx-auto" style={{ width: 'fit-content' }}>
-              {translate({ key: 'notif.api.access', replacements: [params.apiId] })}
-            </button>
-          </ActionWithTeamSelector>
-        </>)}
-    </div>);
-  }
+    const subscribingTeams = myTeams
+      .filter((team) => subscriptions.some((sub) => sub.team === team._id));
 
-  if (!api || !ownerTeam) {
-    return null;
-  }
-  const teamId = params.teamId;
 
-  document.title = `${tenant.title} - ${api ? api.name : 'API'}`;
+    document.title = `${tenant.title} - ${api ? api.name : 'API'}`;
 
-  return (<main role="main">
-
-    {api.customHeaderCmsPage ?
-      <CmsViewer pageId={api.customHeaderCmsPage} fields={{ api }} /> :
-      <ApiHeader api={api} ownerTeam={ownerTeam} connectedUser={connectedUser} toggleStar={toggleStar} tab={params.tab} />}
-
-    <div className="album py-2 me-4 min-vh-100">
-      <div className={classNames({
-        'container-fluid': params.tab === 'swagger',
-        container: params.tab !== 'swagger'
-      })}>
-        <div className="row pt-3">
-          {params.tab === 'description' &&
-            (api.descriptionCmsPage ? <CmsViewer pageId={api.descriptionCmsPage} fields={{ api }} /> : <ApiDescription api={api} />)}
-          {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam} subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
-          {params.tab === 'documentation' && <ApiDocumentation api={api} documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)} />}
-          {params.tab === 'testing' && (<ApiSwagger
+    return (
+      <main role="main">
+        <ApiHeader api={api} ownerTeam={ownerTeam} tab={params.tab} />
+        <div className="album me-4 min-vh-100 p-4" style={{ position: 'relative' }}>
+          {params.tab === 'description' && (api.descriptionCmsPage ? <CmsViewer pageId={api.descriptionCmsPage} fields={{ api }} /> : <ApiDescription api={api} ownerTeam={ownerTeam} />)}
+          {params.tab === 'apis' && (<ApiGroupApis apiGroup={api} ownerTeam={ownerTeam} />)}
+          {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam}
+            subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
+          {params.tab === 'documentation' && tenant.display == Display.default && <ApiDocumentation entity={api} ownerTeam={ownerTeam} api={api}
+            documentation={api.documentation} getDocPage={(pageId) => Services.getApiDocPage(api._id, pageId)}
+            refreshEntity={() => queryClient.invalidateQueries({ queryKey: ['api'] })}
+            savePages={(pages) => Services.saveTeamApi(ownerTeam._id, { ...api, documentation: { ...api.documentation!, pages } }, api.currentVersion)} />}
+          {params.tab === 'documentation' && tenant.display == Display.environment && <EnvironmentsDocumentation api={api} ownerTeam={ownerTeam} />}
+          {params.tab === 'testing' && tenant.display === Display.default && (<ApiTest
             _id={api._id}
             testing={api.testing}
             swagger={api.swagger}
             swaggerUrl={`/api/teams/${params.teamId}/apis/${params.apiId}/${params.versionId}/swagger`}
             callUrl={`/api/teams/${ownerTeam._id}/testing/${api._id}/call`}
+            ownerTeam={ownerTeam}
+            entity={api}
+            save={saveApi}
           />)}
-          {params.tab === 'swagger' && (<ApiRedoc
-            swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`} swaggerConf={api.swagger} />)}
+          {params.tab === 'testing' && tenant.display === Display.environment && <EnvironmentsTest api={api} ownerTeam={ownerTeam} />}
+          {params.tab === 'swagger' && tenant.display === Display.default && (<ApiRedoc
+            save={saveApi}
+            entity={api}
+            ownerTeam={ownerTeam}
+            swaggerUrl={`/api/teams/${api.team}/apis/${api._id}/${api.currentVersion}/swagger`}
+            swaggerConf={api.swagger} />)}
+          {params.tab === 'swagger' && tenant.display === Display.environment && <EnvironmentsRedoc api={api} ownerTeam={ownerTeam} />}
           {params.tab === 'news' && (<ApiPost api={api} ownerTeam={ownerTeam} versionId={params.versionId} />)}
-          {(params.tab === 'issues' || params.tab === 'labels') && (<ApiIssue api={api} onChange={(editedApi: any) => setApi(editedApi)} ownerTeam={ownerTeam} connectedUser={connectedUser} />)}
+          {(params.tab === 'issues' || params.tab === 'labels') && (<ApiIssue api={api} ownerTeam={ownerTeam} />)}
+          {(params.tab === 'subscriptions') && (<TeamApiSubscriptions api={api} currentTeam={ownerTeam} />)}
+          {params.tab === 'consumption' && !consumptionMatch && <TeamApiConsumption api={api} currentTeam={ownerTeam} />}
+          {params.tab === 'consumption' && consumptionMatch?.params.planId && (<TeamPlanConsumption api={api} currentTeam={ownerTeam} />)}
+          {params.tab === 'apikeys' && (<ApiSubscriptions api={api} ownerTeam={ownerTeam} subscribingTeams={subscribingTeams} />)}
         </div>
-      </div>
-    </div>
-  </main>);
+      </main>);
+  }
 };

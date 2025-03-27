@@ -32,16 +32,16 @@ services:
     command: --copy-service
     restart: unless-stopped
   postgres:
-    image: postgres:latest
-    networks:
-      - basicsetup
-    environment:
-      - POSTGRES_PASSWORD=postgres
-      - POSTGRES_USER=postgres
-    volumes:
-      - ./config/postgres/create_database.sql:/docker-entrypoint-initdb.d/create_database.sql
-    ports:
-      - 5442:5432
+   image: postgres:latest
+   networks:
+     - basicsetup
+   environment:
+     - POSTGRES_PASSWORD=postgres
+     - POSTGRES_USER=postgres
+   volumes:
+     - ./config/postgres/create_database.sql:/docker-entrypoint-initdb.d/create_database.sql
+   ports:
+     - 5442:5432
 
   smtp:
     image: reachfive/fake-smtp-server:latest
@@ -61,27 +61,27 @@ services:
     - 6379:6379
 
   daikoku:
-    image: maif/daikoku:latest
-    networks:
-      - basicsetup
-    environment:
-      - DAIKOKU_INIT_ADMIN_PASSWORD=password
-      - DAIKOKU_OTOROSHI_SYNC_CRON=false
-      - DAIKOKU_TENANT_PROVIDER=Hostname
-      # - DAIKOKU_INIT_HOST=daikoku.oto.tools
-      - DAIKOKU_POSTGRES_DATABASE=daikoku_demo_komainu
-      - DAIKOKU_POSTGRES_HOST=postgres
-      - DAIKOKU_EXPOSED_ON=13200
-      - DAIKOKU_INIT_DATA_FROM=/usr/app/daikoku/imports/daikoku_state.ndjson
-      - DAIKOKU_MODE=test
-    ports:
-      - 13200:8080
-    volumes:
-      - ./config/daikoku:/usr/app/daikoku/imports
-    depends_on:
-      - postgres
-      - smtp
-      - openldap
+   image: maif/daikoku:latest
+   networks:
+     - basicsetup
+   environment:
+     - DAIKOKU_INIT_ADMIN_PASSWORD=password
+     - DAIKOKU_OTOROSHI_SYNC_CRON=false
+     - DAIKOKU_TENANT_PROVIDER=Hostname
+     # - DAIKOKU_INIT_HOST=daikoku.oto.tools
+     - DAIKOKU_POSTGRES_DATABASE=daikoku_demo_komainu
+     - DAIKOKU_POSTGRES_HOST=postgres
+     - DAIKOKU_EXPOSED_ON=13200
+     - DAIKOKU_INIT_DATA_FROM=/usr/app/daikoku/imports/daikoku_state.ndjson
+     - DAIKOKU_MODE=test
+   ports:
+     - 13200:8080
+   volumes:
+     - ./config/daikoku:/usr/app/daikoku/imports
+   depends_on:
+     - postgres
+     - smtp
+     - openldap
 
   otoroshi:
     image: maif/otoroshi:16.22.0
@@ -101,21 +101,7 @@ services:
       - 8080:8080
     depends_on:
       - redis
-      # - daikoku
       - faker
-
-  # nginx:
-  #   image: nginx
-  #   networks:
-  #     - basicsetup
-  #   expose:
-  #     - 8080
-  #   ports:
-  #     - 80:8080
-  #   volumes:
-  #     - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
-  #   depends_on:
-  #     - otoroshi
 
 networks:
   basicsetup:

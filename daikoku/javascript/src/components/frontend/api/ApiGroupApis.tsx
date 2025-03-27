@@ -2,20 +2,21 @@ import { getApolloContext } from '@apollo/client';
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { GlobalContext } from '../../../contexts/globalContext';
+import { NavContext } from '../../../contexts';
 import * as Services from '../../../services';
-import { converter } from '../../../services/showdown';
-import { IApiWithAuthorization, ITeamSimple } from '../../../types';
-import { api as API, CanIDoAction, manage } from '../../utils';
+import { IApi, IApiWithAuthorization, ITeamSimple } from '../../../types';
 import { ApiList } from '../team';
 
+type ApiGroupApisProps = {
+  apiGroup: IApi
+  ownerTeam: ITeamSimple
+}
 export const ApiGroupApis = ({
-  apiGroup
-}: any) => {
+  apiGroup,
+  ownerTeam
+}: ApiGroupApisProps) => {
+  const { setApiGroup } = useContext(NavContext);
   const navigate = useNavigate();
-
-  const { connectedUser, apiCreationPermitted } = useContext(GlobalContext);
-
   const [myTeams, setMyTeams] = useState<Array<ITeamSimple>>([]);
 
   const { client } = useContext(getApolloContext());
@@ -45,42 +46,17 @@ export const ApiGroupApis = ({
   }, [apiGroup]);
 
   const redirectToApiPage = (apiWithAuthorization: IApiWithAuthorization) => {
-    navigate(`${apiWithAuthorization.api._humanReadableId}/${apiWithAuthorization.api.currentVersion}/description`);
-  };
-
-
-
-  const redirectToEditPage = (apiWithAuthorization: IApiWithAuthorization) => {
-    const url = apiWithAuthorization.api.apis
-      ? `/${apiWithAuthorization.api.team._humanReadableId}/settings/apigroups/${apiWithAuthorization.api._humanReadableId}/infos`
-      : `/${apiWithAuthorization.api.team._humanReadableId}/settings/apis/${apiWithAuthorization.api._humanReadableId}/${apiWithAuthorization.api.currentVersion}/infos`;
-    navigate(url);
+    setApiGroup(apiGroup)
+    navigate(`/${ownerTeam._humanReadableId}/${apiWithAuthorization.api._humanReadableId}/${apiWithAuthorization.api.currentVersion}/description`);
   };
 
   return (
-    <main role="main">
-      <section className="organisation__header col-12 mb-4 p-3">
-        <div className="container">
-          <div className="row text-center">
-            <div className="col-sm-7 d-flex flex-column justify-content-center">
-              <h1 className="jumbotron-heading">{apiGroup.name}</h1>
-              <div
-                dangerouslySetInnerHTML={{
-                  __html: converter.makeHtml(apiGroup.smallDescription || ''),
-                }}
-              ></div>
-            </div>
-          </div>
-        </div>
-      </section>
-      <ApiList
-        myTeams={myTeams}
-        teamVisible={true}
-        redirectToApiPage={redirectToApiPage}
-        redirectToEditPage={redirectToEditPage}
-        groupView={true}
-        apiGroupId={apiGroup._id}
-      />
-    </main>
+    <ApiList
+      myTeams={myTeams}
+      teamVisible={true}
+      redirectToApiPage={redirectToApiPage}
+      groupView={true}
+      apiGroupId={apiGroup._id}
+    />
   );
 };

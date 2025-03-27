@@ -1,10 +1,13 @@
+@use "sass:color";
+@use "../variables";
+
 .navbar-brand {
   font-size: 18px;
 }
 
 a.navbar-brand,
 #teamSelector:hover {
-  color: $sidebar-text-color;
+  color: variables.$sidebar-text-color;
 }
 
 .navbar .Select.has-value.Select--single>.Select-control .Select-value .Select-value-label,
@@ -13,7 +16,7 @@ a.navbar-brand,
 }
 
 .navbar {
-  background-color: $sidebar-bg-color;
+  background-color: variables.$sidebar-bg-color;
   // padding: .5rem 1rem;
 }
 
@@ -26,29 +29,29 @@ a.navbar-brand,
 }
 
 .dropdown-menu {
-  background-color: $level3_bg-color;
+  background-color: variables.$level3_bg-color;
 }
 
 .dropdown-item {
-  color: $level3_link-color;
+  color: variables.$level3_link-color;
 
   &:hover {
-    background-color: $level3_link-hover-bg-color;
-    color: $level3_link-hover-color
+    background-color: variables.$level3_link-hover-bg-color;
+    color: variables.$level3_link-hover-color
   }
 
   &.danger {
-    color: $danger-color;
+    color: variables.$danger-color;
 
     &:hover {
-        background-color: $danger-color;
+        background-color: variables.$danger-color;
         color: #fff;
       }
   }
 }
 
 .dropdown-divider {
-  border-color: $level3_link-color;
+  border-color: variables.$level3_link-color;
 
 }
 
@@ -70,9 +73,9 @@ a.navbar-brand,
 .general-search>div {
   border-top-left-radius: 0;
   border-bottom-left-radius: 0;
-  background-color: $form-bg-color;
-  color: $form-text-color;
-  border-color: $form-border-color;
+  background-color: variables.$form-bg-color;
+  color: variables.$form-text-color;
+  border-color: variables.$form-border-color;
 }
 
 .full-width-select {
@@ -120,8 +123,8 @@ a.navbar-brand,
   z-index: 1000;
   top: 0;
   left: 55px;
-  background-color: $companion_bg-color;
-  color: $companion_text-color;
+  background-color: variables.$companion_bg-color;
+  color: variables.$companion_text-color;
   filter: brightness(105%);
   transition: width .2s ease-in-out;
 
@@ -140,7 +143,7 @@ a.navbar-brand,
 
     &:hover {
       border-radius: 50%;
-      background-color: $companion_text-hover-bg-color;
+      background-color: variables.$companion_text-hover-bg-color;
       color: var(--companion-link-hover-text-color);
     }
   }
@@ -174,7 +177,7 @@ a.navbar-brand,
   .blocks {
     .block {
       .block__category {
-        color: $companion_text-color;
+        color: variables.$companion_text-color;
         text-transform: capitalize;
         font-weight: 600;
         font-size: 12px;
@@ -184,23 +187,23 @@ a.navbar-brand,
         .block__entry__link {
           cursor: pointer;
           font-size: 14px;
-          color: $companion_link-color;
+          color: variables.$companion_link-color;
           margin-top: 5px;
           margin-bottom: 5px;
           border-radius: 4px;
           padding: .5rem;
 
           &.danger {
-            color: $danger-color
+            color: variables.$danger-color
           }
 
           &:hover {
-            background-color: $companion_text-hover-bg-color;
-            color: $companion_text-hover-color;
+            background-color: variables.$companion_text-hover-bg-color;
+            color: variables.$companion_text-hover-color;
 
             &.danger {
-              background-color: $danger-color;
-              color: $companion_text-hover-color;
+              background-color: variables.$danger-color;
+              color: variables.$companion_text-hover-color;
             }
           }
         }
@@ -213,7 +216,7 @@ a.navbar-brand,
 
 .navbar-companion {
   z-index: 10;
-  background-color: $companion_bg-color;
+  background-color: variables.$companion_bg-color;
   filter: brightness(105%);
   height: 100vh;
   position: relative;
@@ -248,7 +251,7 @@ a.navbar-brand,
       // text-overflow: ellipsis;
       white-space: nowrap;
       line-height: 1.14286;
-      color: $companion_text-color;
+      color: variables.$companion_text-color;
       font-weight: 600;
 
       h3 {
@@ -266,15 +269,15 @@ a.navbar-brand,
           .block__entry__link {
             cursor: pointer;
             font-size: 14px;
-            color: $companion_link-color;
+            color: variables.$companion_link-color;
             margin-bottom: 5px;
             line-height: 40px;
             border-radius: 4px;
             padding-left: .5rem;
 
             &.active {
-              background-color: $companion_text-hover-bg-color;
-              color: $companion_text-hover-color;
+              background-color: variables.$companion_text-hover-bg-color;
+              color: variables.$companion_text-hover-color;
             }
 
             &.disabled {
@@ -283,15 +286,15 @@ a.navbar-brand,
             }
 
             &:not(.disabled):hover {
-              background-color: $companion_text-hover-bg-color;
-              color: $companion_text-hover-color;
+              background-color: variables.$companion_text-hover-bg-color;
+              color: variables.$companion_text-hover-color;
             }
           }
 
           .submenu__entry__link {
             cursor: pointer;
             font-size: 14px;
-            color: $companion_link-color;
+            color: variables.$companion_link-color;
             margin-bottom: 4px;
             line-height: 35px;
             padding-left: .5rem;
@@ -302,19 +305,19 @@ a.navbar-brand,
             &.active {
               // border-bottom: 1px solid $companion_text-hover-bg-color;
               // color: $companion_text-hover-color;
-              background-color: $companion_text-hover-bg-color;
-              color: $companion_text-hover-color;
+              background-color: variables.$companion_text-hover-bg-color;
+              color: variables.$companion_text-hover-color;
             }
 
             &.disabled {
-              color: lighten(#000, 50%);
+              color: color.adjust(#000, $lightness: 50%);
               cursor: default;
             }
 
             &:hover {
               // border-bottom: 1px solid $companion_text-hover-bg-color;
-              background-color: $companion_text-hover-bg-color;
-              color: $companion_text-hover-color;
+              background-color: variables.$companion_text-hover-bg-color;
+              color: variables.$companion_text-hover-color;
             }
           }
 
@@ -368,24 +371,24 @@ a.navbar-brand,
 .page__menu__entry {
   cursor: pointer;
   font-size: 14px;
-  color: $sidebar-text-color;
+  color: variables.$sidebar-text-color;
   margin-bottom: 5px;
   line-height: 40px;
   border-radius: 4px;
   padding-left: .5rem;
 
   &.active {
-    background-color: $companion_text-hover-bg-color;
-    color: $companion_text-hover-color;
+    background-color: variables.$companion_text-hover-bg-color;
+    color: variables.$companion_text-hover-color;
   }
 
   &.disabled {
-    color: lighten(#000, 50%);
+    color: color.adjust(#000, $lightness: 50%);
     cursor: default;
   }
 
   &:hover {
-    background-color: $companion_text-hover-bg-color;
+    background-color: variables.$companion_text-hover-bg-color;
     color: var(--menu-text-hover-color, #fff);
   }
 }

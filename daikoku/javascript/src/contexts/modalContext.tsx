@@ -1,7 +1,8 @@
 import { TBaseObject } from "@maif/react-forms";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { IWithTesting } from "../types";
 import { Alert } from "./modals/Alert";
 import { ApiDocumentationSelectModal } from "./modals/ApiDocumentationSelectModal";
 import { ApiKeySelectModal, IApiKeySelectModalProps } from "./modals/ApiKeySelectModal";
@@ -9,6 +10,7 @@ import { ApiSelectModal, IApiSelectModalProps, IModalProps } from "./modals/ApiS
 import { AssetSelectorModal } from "./modals/AssetsChooserModal";
 import { Confirm } from "./modals/Confirm";
 import { ContactModal } from "./modals/ContactModal";
+import { CustomModal } from "./modals/CustomModal";
 import { FormModal } from "./modals/FormModal";
 import { JoinTeamInvitationModal } from "./modals/JoinTeamInvitationModal";
 import { LoginOrRegisterModal } from "./modals/LoginOrRegisterModal";
@@ -35,8 +37,6 @@ import {
   TestingApiKeyModalProps,
   TModalContext
 } from "./modals/types";
-import { CustomModal } from "./modals/CustomModal";
-import { IWithTesting } from "../types";
 
 
 const init: TModalContext = {
@@ -56,17 +56,17 @@ const init: TModalContext = {
   openAssetSelectorModal: () => { },
   openApiSelectModal: () => { },
   openApiKeySelectModal: () => { },
-  openCustomModal: () => {},
-  close: () => {},
-  openRightPanel: () => {},
-  closeRightPanel: () => {},
+  openCustomModal: () => { },
+  close: () => { },
+  openRightPanel: () => { },
+  closeRightPanel: () => { },
   rightPanelContent: undefined
 
 }
 
 export const ModalContext = React.createContext<TModalContext>(init);
 
-export const ModalProvider = (props: { children: JSX.Element | Array<JSX.Element> }) => {
+export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
   const { open, close, modal, modalContent, openRightPanel, closeRightPanel, rightPanelContent } = useModal();
 
   const alert = (props: AlertModalProps) => new Promise<void>((success) => {
@@ -154,7 +154,7 @@ export const ModalProvider = (props: { children: JSX.Element | Array<JSX.Element
       rightPanelContent
     }}>
       <Modal modal={modal} modalContent={modalContent} />
-      {props.children}
+      {children}
     </ModalContext.Provider>
   );
 }
@@ -166,7 +166,7 @@ const ModalWrapper = (props: { children: JSX.Element, closeModal: () => void }) 
     <div>
       <div className="modal show" tabIndex={-1} role="dialog">
         <div className="modal-backdrop show" onClick={props.closeModal} />
-        <div className="modal-dialog modal-lg" style={{zIndex: 10000}} role="document">
+        <div className="modal-dialog modal-lg" style={{ zIndex: 10000 }} role="document">
           {props.children}
         </div>
       </div>
@@ -189,7 +189,7 @@ const Modal = ({ modal, modalContent }) => {
 const useModal = () => {
   const [modal, setModal] = useState(false);
   const [modalContent, setModalContent] = useState<JSX.Element>();
-  const [rightPanelContent, setRightPanelContent] = useState<IRightPanelProps>()
+  const [rightPanelContent, setRightPanelContent] = useState<IRightPanelProps>();
 
   const open = (content: JSX.Element) => {
     setModal(true)
@@ -205,7 +205,6 @@ const useModal = () => {
   }
 
   const openRightPanel = (p: IRightPanelProps) => {
-    console.debug({p})
     setRightPanelContent(p)
   }
 

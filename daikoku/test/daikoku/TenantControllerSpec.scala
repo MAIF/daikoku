@@ -959,7 +959,7 @@ class TenantControllerSpec()
 
       val session = loginWithBlocking(tenantAdmin, tenant)
 
-      var respTest = httpJsonCallBlocking(
+      val respTest = httpJsonCallBlocking(
         s"/api/tenants/${tenant2.id.value}/admins"
       )(tenant, session)
       respTest.status mustBe 403

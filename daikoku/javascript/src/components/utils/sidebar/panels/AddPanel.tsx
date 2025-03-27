@@ -8,14 +8,19 @@ import { ModalContext } from '../../../../contexts';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services';
-import { isError } from '../../../../types';
+import { IApi, isError, ITeamSimple } from '../../../../types';
 import { teamSchema } from '../../../backoffice/teams/TeamEdit';
+import { Form } from '@maif/react-forms';
+import { teamApiInfoForm } from '../../../backoffice/apis/TeamApiInfo';
+import { getApolloContext, gql } from '@apollo/client';
+import { IPage } from '../../../adminbackoffice/cms';
+import { actions } from 'xstate';
 
 export const AddPanel = () => {
   const { translate } = useContext(I18nContext);
-  const { openFormModal, openTeamSelectorModal } = useContext(ModalContext);
+  const { openFormModal, openTeamSelectorModal, openRightPanel, closeRightPanel } = useContext(ModalContext);
 
-  const { tenant, connectedUser, apiCreationPermitted } = useContext(GlobalContext);
+  const { tenant, connectedUser, apiCreationPermitted, expertMode, toggleExpertMode } = useContext(GlobalContext);
   const navigate = useNavigate();
   const match = useMatch('/:teamId/settings/*');
   const queryClient = useQueryClient();
@@ -60,15 +65,28 @@ export const AddPanel = () => {
       } else {
         const team = myTeamsRequest.data.find((t) => teamId === t._id);
 
-        return Services.fetchNewApi()
-          .then((e) => {
-            return { ...e, team: team?._id };
+        if (!team) {
+          toast.warning('toast.no.team.found')
+        } else {
+          return openRightPanel({
+            title: translate('api.creation.right.panel.title'),
+            content: <ApiFormRightPanel team={team} apigroup={false} handleSubmit={(api) => Services.createTeamApi(team._id, api)
+              .then((maybeApi) => {
+                queryClient.invalidateQueries({ queryKey: ["data"] })
+                return maybeApi
+              })
+              .then((maybeApi) => {
+                toast.success(translate({ key: "api.created.successful.toast", replacements: [api.name] }))
+                return maybeApi
+              })
+              .then((maybeApi) => {
+                if (!isError(maybeApi)) {
+                  navigate(`${team._humanReadableId}/${maybeApi._humanReadableId}/${maybeApi.currentVersion}/description`)
+                }
+              })
+            } />
           })
-          .then((newApi) =>
-            navigate(`/${team?._humanReadableId}/settings/apis/${newApi._id}/infos`, {
-              state: { newApi },
-            })
-          );
+        }
       }
     }
   };
@@ -90,15 +108,28 @@ export const AddPanel = () => {
       } else {
         const team = myTeamsRequest.data.find((t) => teamId === t._id);
 
-        return Services.fetchNewApiGroup()
-          .then((e) => {
-            return { ...e, team: team?._id };
+        if (!team) {
+          toast.warning('toast.no.team.found')
+        } else {
+          return openRightPanel({
+            title: translate('apigroup.creation.right.panel.title'),
+            content: <ApiFormRightPanel team={team} apigroup={true} handleSubmit={(api) => Services.createTeamApi(team._id, api)
+              .then((maybeApi) => {
+                queryClient.invalidateQueries({ queryKey: ["data"] })
+                return maybeApi
+              })
+              .then((maybeApi) => {
+                toast.success(translate({ key: "apigroup.created.successful.toast", replacements: [api.name] }))
+                return maybeApi
+              })
+              .then((maybeApi) => {
+                if (!isError(maybeApi)) {
+                  navigate(`${team._humanReadableId}/${maybeApi._humanReadableId}/${maybeApi.currentVersion}/description`)
+                }
+              })
+            } />
           })
-          .then((newApiGroup) =>
-            navigate(`/${team?._humanReadableId}/settings/apigroups/${newApiGroup._id}/infos`, {
-              state: { newApiGroup },
-            })
-          );
+        }
       }
     }
   };
@@ -183,3 +214,79 @@ export const AddPanel = () => {
   }
 
 };
+
+type ApiFormRightPanelProps = {
+  team: ITeamSimple,
+  api?: IApi
+  handleSubmit: (api: IApi) => Promise<any>
+  apigroup: boolean
+}
+export const ApiFormRightPanel = (props: ApiFormRightPanelProps) => {
+  console.debug({ props })
+  const { translate } = useContext(I18nContext);
+  const { closeRightPanel } = useContext(ModalContext);
+
+  const { tenant, expertMode, toggleExpertMode } = useContext(GlobalContext);
+  const { client } = useContext(getApolloContext());
+  const cmsPagesQuery = () => ({
+    query: gql`
+    query CmsPages {
+      pages {
+        id
+        name
+        path
+        contentType
+        lastPublishedDate
+        metadata
+      }
+    }
+  `,
+  });
+  const getCmsPages = (): Promise<Array<IPage>> =>
+    client!.query(cmsPagesQuery())
+      .then(res => res.data.pages as Array<IPage>)
+
+  const informationForm = teamApiInfoForm(translate, props.team, tenant, getCmsPages, props.apigroup);
+
+  const newApiQuery = useQuery({
+    queryKey: ['newapi'],
+    queryFn: () => (props.apigroup ? Services.fetchNewApiGroup() : Services.fetchNewApi())
+      .then((e) => {
+        const newApi = { ...e, team: props.team._id };
+        console.debug({ newApi })
+        return newApi
+      }),
+    enabled: !props.api
+  })
+
+  if (!props.api && (newApiQuery.isLoading || !newApiQuery.data)) {
+    return (
+      <Spinner />
+    )
+  }
+
+  return (
+    <div className="">
+      <button onClick={() => toggleExpertMode()} className="btn btn-sm btn-outline-info">
+        {expertMode && translate('Standard mode')}
+        {!expertMode && translate('Expert mode')}
+      </button>
+      <Form
+        schema={props.api?.visibility === 'AdminOnly' ? informationForm.adminSchema : informationForm.schema}
+        flow={props.api?.visibility === 'AdminOnly' ? informationForm.adminFlow : informationForm.flow(expertMode)}
+        onSubmit={(data) => {
+          props.handleSubmit(data)
+            .then(() => closeRightPanel())
+        }}
+        value={props.api || newApiQuery.data}
+        options={{
+          actions: {
+            submit: {
+              label: translate('Save')
+            }
+          }
+        }}
+      />
+    </div>
+  )
+}

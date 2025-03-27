@@ -1,7 +1,9 @@
+@use "../variables";
+
 .recharts{
-  background-color: $level2_bg-color;
+  background-color: variables.$level2_bg-color;
 }
 
 h4.recharts{
-  color:$level2_text-color;
+  color:variables.$level2_text-color;
 }

@@ -1,7 +1,7 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.otoroshi.daikoku.domain.UsagePlan.{FreeWithoutQuotas, PayPerUse}
+import fr.maif.otoroshi.daikoku.domain.UsagePlan
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
@@ -5327,15 +5327,15 @@ class AdminApiControllerSpec
       }
 
       "POST :: BadRequest" in {
-        val plan = PayPerUse(
+        val plan = UsagePlan(
           id = UsagePlanId(IdGenerator.token(10)),
           tenant = tenant.id,
-          costPerRequest = BigDecimal(10.0),
-          costPerMonth = BigDecimal(0.02),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          costPerRequest = BigDecimal(10.0).some,
+          costPerMonth = BigDecimal(0.02).some,
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
           trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
+          currency = Currency("EUR").some,
+          customName = "PayPerUse",
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(
@@ -5421,15 +5421,15 @@ class AdminApiControllerSpec
       }
 
       "PUT :: Not Found" in {
-        val plan = PayPerUse(
+        val plan = UsagePlan(
           id = UsagePlanId(IdGenerator.token(10)),
           tenant = tenant.id,
-          costPerRequest = BigDecimal(10.0),
-          costPerMonth = BigDecimal(0.02),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          costPerRequest = BigDecimal(10.0).some,
+          costPerMonth = BigDecimal(0.02).some,
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
           trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
+          currency = Currency("EUR").some,
+          customName = "PayPerUse",
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(
@@ -5481,15 +5481,15 @@ class AdminApiControllerSpec
       }
 
       "GET :: Ok" in {
-        val plan = PayPerUse(
+        val plan = UsagePlan(
           id = UsagePlanId(IdGenerator.token(10)),
           tenant = tenant.id,
-          costPerRequest = BigDecimal(10.0),
-          costPerMonth = BigDecimal(0.02),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          costPerRequest = BigDecimal(10.0).some,
+          costPerMonth = BigDecimal(0.02).some,
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
           trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
+          currency = Currency("EUR").some,
+          customName = "PayPerUse",
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(
@@ -5525,15 +5525,15 @@ class AdminApiControllerSpec
       }
 
       "POST :: Created" in {
-        val plan = PayPerUse(
+        val plan = UsagePlan(
           id = UsagePlanId(IdGenerator.token(10)),
           tenant = tenant.id,
-          costPerRequest = BigDecimal(10.0),
-          costPerMonth = BigDecimal(0.02),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          costPerRequest = BigDecimal(10.0).some,
+          costPerMonth = BigDecimal(0.02).some,
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
           trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
+          currency = Currency("EUR").some,
+          customName = "PayPerUse",
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(
@@ -5577,15 +5577,15 @@ class AdminApiControllerSpec
           .as[JsObject] - "testing" - "swagger"
       }
       "PUT :: No Content" in {
-        val plan = PayPerUse(
+        val plan = UsagePlan(
           id = UsagePlanId(IdGenerator.token(10)),
           tenant = tenant.id,
-          costPerRequest = BigDecimal(10.0),
-          costPerMonth = BigDecimal(0.02),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          costPerRequest = BigDecimal(10.0).some,
+          costPerMonth = BigDecimal(0.02).some,
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
           trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
+          currency = Currency("EUR").some,
+          customName = "PayPerUse",
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(
@@ -5609,7 +5609,7 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = Seq(plan)
         )
-        val updated = plan.copy(costPerMonth = BigDecimal(13))
+        val updated = plan.copy(costPerMonth = BigDecimal(13).some)
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans/${plan.id.value}",
           method = "PUT",
@@ -5629,15 +5629,15 @@ class AdminApiControllerSpec
           .as[JsObject] - "testing" - "swagger"
       }
       "PATCH :: No Content" in {
-        val plan = PayPerUse(
+        val plan = UsagePlan(
           id = UsagePlanId(IdGenerator.token(10)),
           tenant = tenant.id,
-          costPerRequest = BigDecimal(10.0),
-          costPerMonth = BigDecimal(0.02),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          costPerRequest = BigDecimal(10.0).some,
+          costPerMonth = BigDecimal(0.02).some,
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
           trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
+          currency = Currency("EUR").some,
+          customName = "PayPerUse",
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(
@@ -5661,7 +5661,7 @@ class AdminApiControllerSpec
           apis = Seq(defaultApi.api),
           usagePlans = Seq(plan)
         )
-        val updated = plan.copy(costPerMonth = BigDecimal(13))
+        val updated = plan.copy(costPerMonth = BigDecimal(13).some)
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/usage-plans/${plan.id.value}",
           method = "PATCH",
@@ -5689,15 +5689,15 @@ class AdminApiControllerSpec
           .as[JsObject] - "testing" - "swagger"
       }
       "DELETE :: Ok" in {
-        val plan = PayPerUse(
+        val plan = UsagePlan(
           id = UsagePlanId(IdGenerator.token(10)),
           tenant = tenant.id,
-          costPerRequest = BigDecimal(10.0),
-          costPerMonth = BigDecimal(0.02),
-          billingDuration = BillingDuration(1, BillingTimeUnit.Month),
+          costPerRequest = BigDecimal(10.0).some,
+          costPerMonth = BigDecimal(0.02).some,
+          billingDuration = BillingDuration(1, BillingTimeUnit.Month).some,
           trialPeriod = None,
-          currency = Currency("EUR"),
-          customName = None,
+          currency = Currency("EUR").some,
+          customName = "PayPerUse",
           customDescription = None,
           otoroshiTarget = Some(
             OtoroshiTarget(

@@ -28,10 +28,12 @@ import {
   IApi,
   IApiExtended,
   IApiPost,
+  IApiPostCursor,
   IConsumption,
   IDocDetail,
   IDocPage,
   IDocumentation,
+  IDocumentationPage,
   IImportingDocumentation,
   IOtoroshiApiKey,
   ISubscription,
@@ -133,6 +135,9 @@ export const subscribedApis = (teamId: string): Promise<ResponseError | Array<IA
   customFetch(`/api/teams/${teamId}/subscribed-apis`);
 export const getApiDocPage = (api: string, id: string): PromiseWithError<IDocPage> =>
   customFetch(`/api/apis/${api}/pages/${id}`);
+export const getApiDocPageRemoteContent = (api: string, id: string): PromiseWithError<any> =>
+  fetch(`/api/apis/${api}/pages/${id}/content`);
+
 export const getUsagePlanDocPage = (
   apiId: string,
   planId: string,
@@ -348,25 +353,25 @@ export const createOtoroshiSettings = (tenantId: any, oto: any) =>
     body: JSON.stringify(oto),
   });
 
-export const getOtoroshiGroups = (tenantId: any, otoId: any) =>
+export const getOtoroshiGroups = (tenantId: string, otoId: string) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/groups`);
 
-export const getOtoroshiGroupsAsTeamAdmin = (teamId: any, otoId: any) =>
+export const getOtoroshiGroupsAsTeamAdmin = (teamId: string, otoId: string) =>
   customFetch(`/api/teams/${teamId}/tenant/otoroshis/${otoId}/groups`);
 
-export const getOtoroshiServicesAsTeamAdmin = (teamId: any, otoId: any) =>
+export const getOtoroshiServicesAsTeamAdmin = (teamId: string, otoId: string) =>
   customFetch(`/api/teams/${teamId}/tenant/otoroshis/${otoId}/services`);
 
-export const getOtoroshiRoutesAsTeamAdmin = (teamId: any, otoId: any) =>
+export const getOtoroshiRoutesAsTeamAdmin = (teamId: string, otoId: string) =>
   customFetch(`/api/teams/${teamId}/tenant/otoroshis/${otoId}/routes`);
 
-export const getOtoroshiServices = (tenantId: any, otoId: any) =>
+export const getOtoroshiServices = (tenantId: string, otoId: string) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/services`);
 
-export const getOtoroshiRoutes = (tenantId: any, otoId: any) =>
+export const getOtoroshiRoutes = (tenantId: string, otoId: string) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/routes`);
 
-export const getOtoroshiApiKeys = (tenantId: any, otoId: any) =>
+export const getOtoroshiApiKeys = (tenantId: string, otoId: string) =>
   customFetch(`/api/tenants/${tenantId}/otoroshis/${otoId}/apikeys`);
 
 export const deleteTeamApi = (teamId: string, id: string, next: string) =>
@@ -389,7 +394,7 @@ export const saveTeamApiWithId = (
 export const saveTeamApi = (teamId: string, api: IApi, version: string) =>
   saveTeamApiWithId(teamId, api, version, api._humanReadableId);
 
-export const createTeamApi = (teamId: string, api: IApi) =>
+export const createTeamApi = (teamId: string, api: IApi): PromiseWithError<IApi> =>
   customFetch(`/api/teams/${teamId}/apis`, {
     method: 'POST',
     body: JSON.stringify(api),
@@ -534,17 +539,19 @@ export const getTenantNames = (ids: any) =>
 
 export const fetchNewTenant = () => customFetch('/api/entities/tenant');
 export const fetchNewTeam = (): Promise<ITeamSimple> => customFetch('/api/entities/team');
-export const fetchNewApi = () => customFetch('/api/entities/api');
+export const fetchNewApi = (): Promise<IApi> => customFetch('/api/entities/api');
 export const fetchNewApiDoc = (): Promise<IDocumentation> =>
   customFetch('/api/entities/api-documentation');
+export const fetchNewApiDocPage = (): Promise<IDocPage> =>
+  customFetch('/api/entities/api-documentation-page');
 export const fetchNewApiGroup = () => customFetch('/api/entities/apigroup');
 export const fetchNewUser = () => customFetch('/api/entities/user');
 export const fetchNewOtoroshi = () => customFetch('/api/entities/otoroshi');
 export const fetchNewIssue = () => customFetch('/api/entities/issue');
-export const fetchNewPlan = (planType: string): Promise<IUsagePlan> =>
-  customFetch(`/api/entities/plan?planType=${planType}`);
+export const fetchNewPlan = (): Promise<IUsagePlan> =>
+  customFetch('/api/entities/plan');
 
-export const checkIfApiNameIsUnique = (name: any, id?: any) =>
+export const checkIfApiNameIsUnique = (name: string, id?: string) =>
   customFetch('/api/apis/_names', {
     method: 'POST',
     body: JSON.stringify({ name, id }),
@@ -1058,7 +1065,7 @@ export const createUserFromLDAP = (teamId: any, email: any) =>
     }),
   });
 
-export const getAPIPosts = (apiId: any, version: any, offset = 0, limit = -1) =>
+export const getAPIPosts = (apiId: string, version: string, offset: number = 0, limit: number = -1): PromiseWithError<IApiPostCursor> =>
   customFetch(`/api/apis/${apiId}/${version}/posts?offset=${offset}&limit=${limit}`);
 
 export const getAllAPIPosts = (
@@ -1299,6 +1306,10 @@ export const graphql = {
           _humanReadableId
           currentVersion
           name
+          team {
+            name
+            _humanReadableId
+          }
           apis {
             api {
               _id
@@ -1318,6 +1329,7 @@ export const graphql = {
           name
           possibleUsagePlans {
             _id
+            customName
             otoroshiTarget {
               otoroshiSettings
             }
@@ -1326,43 +1338,38 @@ export const graphql = {
         }
       }
     `),
-  apiByIdsWithPlans: gql(`
+  apiByIdsWithPlans: `
       query filteredApi ($id: String!) {
         api (id: $id) {
           _id
           _humanReadableId
+          deleted
+          lastUpdate
           state
           currentVersion
           name
           smallDescription
           description
           tags
+          categories
           visibility
+          stars
           team {
             _id
             _humanReadableId
             name
+          }
+          defaultUsagePlan {
+            _id
           }
           possibleUsagePlans {
             _id
             customName
             customDescription
             visibility
-            ... on QuotasWithLimits {
-              maxPerSecond
-              maxPerDay
-              maxPerMonth
-            }
-            ... on FreeWithQuotas {
-              maxPerSecond
-              maxPerDay
-              maxPerMonth
-            }
-            ... on QuotasWithoutLimits {
-              maxPerSecond
-              maxPerDay
-              maxPerMonth
-            }
+            maxPerSecond
+            maxPerDay
+            maxPerMonth
             subscriptionProcess {
               name
                 ... on TeamAdmin {
@@ -1412,8 +1419,8 @@ export const graphql = {
           }
         }
       }
-    `),
-  myVisibleApis: gql(`
+    `,
+  myVisibleApis: (`
     query AllVisibleApis ($teamId: String, $research: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $limit: Int, $offset: Int, $groupId: String) {
       visibleApis (teamId: $teamId, research: $research, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, limit: $limit, offset: $offset, groupId: $groupId) {
         apis {
@@ -1438,7 +1445,7 @@ export const graphql = {
               currency {
                 code
               }
-              type
+              visibility
             }
             currentVersion
             team {
@@ -1486,13 +1493,13 @@ export const graphql = {
         total
       }
     }`),
-  getAllTags: gql(`
-    query getAllTags ($research: String, $groupId: String, $limit: Int, $offset: Int){
-      allTags (research: $research, groupId: $groupId, limit: $limit, offset: $offset)
+  getAllTags: (`
+    query getAllTags ($research: String, $groupId: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $filter: String, $limit: Int, $offset: Int){
+      allTags (research: $research, groupId: $groupId, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, filter: $filter, limit: $limit, offset: $offset)
     }`),
-  getAllCategories: gql(`
-    query getAllCategories ($research: String, $groupId: String, $limit: Int, $offset: Int){
-      allCategories (research: $research, groupId: $groupId, limit: $limit, offset: $offset)
+  getAllCategories: (`
+    query getAllCategories ($research: String, $groupId: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $filter: String, $limit: Int, $offset: Int){
+      allCategories (research: $research, groupId: $groupId, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, filter: $filter, limit: $limit, offset: $offset)
     }`),
   getAllTeams: gql(`
   query getAllteams ($research: String, $limit: Int, $offset: Int) {
@@ -1530,7 +1537,7 @@ export const graphql = {
       total
     }
   }`),
-  getTeamIncome: gql(`
+  getTeamIncome: `
   query getTeamIncome ($teamId: String!, $from: Long, $to: Long) {
     teamIncomes (teamId: $teamId, from: $from, to: $to) {
       api {
@@ -1550,7 +1557,7 @@ export const graphql = {
       from
       to
     }
-  }`),
+  }`,
   getApiConsumptions: gql(`
   query getApiConsumptions ($apiId: String!, $teamId: String!, $from: Long, $to: Long, $planId: String) {
     apiConsumptions (id: $apiId, teamId: $teamId, from: $from, to: $to, planIdOpt: $planId) {
@@ -1569,7 +1576,6 @@ export const graphql = {
       plan {
         _id
         customName
-        type
       }
       globalInformations {
         hits
@@ -1598,7 +1604,6 @@ export const graphql = {
         plan {
           _id
           customName
-          type
         }
         team {
           _id
@@ -1632,7 +1637,6 @@ export const graphql = {
           }
           plan {
             _id
-            type
             customName
           }
         }
@@ -1690,7 +1694,6 @@ export const graphql = {
               plan {
                 _id
                 customName
-                typeName
               }
               parentSubscriptionId {
                 _id
@@ -1748,7 +1751,6 @@ export const graphql = {
               plan {
                 _id
                 customName
-                typeName
               }
             }
             ... on ApiSubscriptionReject {
@@ -1764,7 +1766,6 @@ export const graphql = {
               plan {
                 _id
                 customName
-                typeName
               }
               message
             }
@@ -1839,7 +1840,6 @@ export const graphql = {
               currency {
                 code
               }
-              type
               subscriptionProcess {
                 name
                 ... on TeamAdmin {
@@ -1849,27 +1849,6 @@ export const graphql = {
               }
               allowMultipleKeys
               aggregationApiKeysSecurity
-              ... on QuotasWithLimits {
-                costPerMonth
-                maxPerSecond
-                maxPerDay
-                maxPerMonth
-              }
-              ... on FreeWithQuotas {
-                maxPerSecond
-                maxPerDay
-                maxPerMonth
-              }
-              ... on QuotasWithoutLimits {
-                costPerMonth
-                costPerAdditionalRequest
-                maxPerSecond
-                maxPerDay
-                maxPerMonth
-              }
-              ... on PayPerUse {
-                costPerRequest
-              }
              }
             currentVersion
             team {

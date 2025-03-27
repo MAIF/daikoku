@@ -2,12 +2,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import React, {
   PropsWithChildren,
   useEffect,
-  useLayoutEffect,
   useState,
 } from 'react';
 
 import { Spinner } from '../components/utils/Spinner';
-import { parseAsHtml } from '../components/utils/tenantUtils';
 import * as Services from '../services/index';
 import {
   AuthProvider,
