@@ -1,3 +1,4 @@
+@use "sass:color";
 @use "../variables";
 
 .card {
@@ -81,37 +82,6 @@ a.card-link:active {
   }
 }
 
-.api-card {
-  .plan-body {
-    max-height: 250px;
-  }
-
-  .api-description {
-    white-space: pre-wrap;
-    overflow: scroll;
-  }
-
-  .card-img-top {
-    button.btn {
-      display: none;
-      position: absolute;
-
-      &.btn-edit {
-        top: 10px;
-        right: 10px;
-      }
-    }
-  }
-
-  &:hover {
-    .card-img-top {
-      button.btn {
-        display: block;
-      }
-    }
-  }
-}
-
 .card-img-top:hover .btn {
   display: block;
 }
@@ -154,4 +124,23 @@ a.card-link:active {
   color: variables.$level1_text-color;
   background-color: variables.$level1_bg-color;
   border-top: 1px solid variables.$level3_text-color;
+}
+
+.api-card {
+
+  &:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+    border-radius: 5px;
+  }
+
+  .favorite-btn {
+    display: none;
+  }
+
+  &.starred,
+  &:hover {
+    .favorite-btn {
+      display: block;
+    }
+  }
 }

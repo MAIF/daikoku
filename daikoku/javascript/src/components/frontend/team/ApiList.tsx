@@ -72,8 +72,7 @@ export const ApiList = (props: TApiList) => {
   const [tags, setTags] = useState<TOptions>([]);
   const [categories, setCategories] = useState<TOptions>([]);
 
-  const [view, setView] = useState<'LIST' | 'GRID'>(LIST);
-  const pageNumber = view === GRID ? 12 : 10;
+  const pageNumber = 10;
 
 
   const dataRequest = useQuery({
@@ -354,33 +353,6 @@ export const ApiList = (props: TApiList) => {
           classNamePrefix="reactSelect"
         />
       </div>
-      <div className="row mb-2 view-selectors">
-        <div className="col-12 col-sm-9 d-flex justify-content-end">
-          <button
-            className={classNames('btn btn-sm btn-outline-primary me-2', { active: view === LIST })}
-            onClick={() => {
-              setView(LIST)
-              setPage(0)
-              setOffset(0)
-            }}
-            aria-label={translate('view.list')}
-
-          >
-            <List />
-          </button>
-          <button
-            className={classNames('btn btn-sm btn-outline-primary', { active: view === GRID })}
-            onClick={() => {
-              setView(GRID)
-              setPage(0)
-              setOffset(0)
-            }}
-            aria-label={translate('view.grid')}
-          >
-            <Grid />
-          </button>
-        </div>
-      </div>
       <div className="row">
         <div
           className={classNames('section d-flex flex-column', {
@@ -392,11 +364,7 @@ export const ApiList = (props: TApiList) => {
           {apisWithAuth && dataRequest.data &&
             <>
               <div
-                className={classNames('d-flex justify-content-between p-3', {
-                  'flex-column': view === LIST,
-                  'flex-wrap': view === GRID,
-                  row: view === GRID,
-                })}
+              className='d-flex justify-content-between p-3 flex-column'
               >
                 <FilterPreview count={dataRequest.data.total} clearFilter={clearFilter} searched={searched} selectedTag={selectedTag} selectedProducer={selectedProducer} selectedCategory={selectedCategory} />
 
@@ -416,7 +384,6 @@ export const ApiList = (props: TApiList) => {
                         handleTeamSelect={(team) => (producers.length > 1 || !!selectedProducer) ? setSelectedProducer({ label: team.name, value: team._id }) : {}}
                         toggleStar={() => toggleStar(apiWithAuth)}
                         handleCategorySelect={(category) => setSelectedCategory(categories.find((c) => c.value === category))}
-                        view={view}
                         connectedUser={connectedUser}
                         groupView={props.groupView}
                         key={apiWithAuth.api._id}

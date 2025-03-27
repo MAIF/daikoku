@@ -1460,8 +1460,6 @@
     "sidebar.messages.button.aria.label": "Open chat with an admin",
     "sidebar.notifications.button.aria.label": "Open notification center",
     "sidebar.dark.mode.button.aria.label": "Toggle light/dark mode",
-
-
     "api.home.config.api.btn.label": "Manage",
     "api.home.config.api.menu.configure": "Configure",
     "api.home.config.api.menu.clone": "Duplicate",
@@ -1469,27 +1467,23 @@
     "api.home.config.api.menu.transfer": "Transfer",
     "api.home.config.api.menu.delete": "Delete",
     "api.home.right.panel.transfer.title": "Transfer API",
-
     "api.home.config.api.description.btn.label": "Edit description",
     "api.home.description.right.panel.title": "Edit description",
-
     "api.home.config.api.documentation.btn.label.view": "View documentation",
     "api.home.config.api.documentation.btn.label.edit": "Edit documentation",
-
     "api.home.config.api.spec.btn.label": "Manage API specification",
     "api.home.config.api.spec.menu.edit": "Edit",
     "api.home.config.api.spec.menu.delete": "Delete",
     "api.home.spec.right.panel.title": "Edit API specification",
-
     "api.home.config.api.test.btn.label": "Manage test configuration",
     "api.home.config.api.test.menu.edit": "Edit",
     "api.home.config.api.test.menu.delete": "Delete",
-
     "api.home.config.api.news.btn.label": "Manage publications",
     "api.home.config.api.news.menu.update": "Update publication",
     "api.home.config.api.news.menu.create": "Create publication",
     "api.home.config.api.news.menu.delete": "Delete publication",
-
+    "api.home.add.api.to.favorite": "Add this API to favorites",
+    "api.home.remove.api.to.favorite": "Remove this API from favorites",
     "api.home.config.api.aria.label": "Configuration",
     "api.home.update.api.btn.label": "Edit",
     "api.home.clone.api.btn.label": "Duplicate",
@@ -1500,7 +1494,6 @@
     "api.home.create.api.form.title": "Create new Api",
     "api.home.transfer.api.form.title": "Transfer %s ownership",
     "api.home.update.description.form.title": "Update Api description",
-
     "api.home.update.plan.form.title": "Edit usage plan configuration",
     "api.home.create.plan.form.title": "Create new usage plan",
     "api.home.create.plan.modal.title": "Create new usage plan",

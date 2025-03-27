@@ -379,7 +379,7 @@ object CommonServices {
             selectedTeam.orNull,
             selectedTag.orNull,
             selectedCat.orNull,
-            groupOpt.orNull
+            groupOpt.orNull,
           ),
           offset,
           limit
@@ -403,7 +403,7 @@ object CommonServices {
                 selectedTeam.orNull,
                 selectedTag.orNull,
                 selectedCat.orNull,
-                groupOpt.orNull
+                groupOpt.orNull,
               )
             )
 
@@ -433,7 +433,13 @@ object CommonServices {
             )
       } yield {
         val sortedApis: Seq[ApiWithAuthorizations] = uniqueApisWithVersion
-          .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
+          .sortWith { (a, b) =>
+            (user.starredApis.contains(a.id), user.starredApis.contains(b.id)) match {
+              case (true, false) => true
+              case (false, true) => false
+              case _ => a.name.compareToIgnoreCase(b.name) < 0
+            }
+          }
           .foldLeft(Seq.empty[ApiWithAuthorizations]) {
             case (acc, api) =>
               val apiPlans = plans
