@@ -1,11 +1,10 @@
-import React, { useContext } from 'react';
 import classNames from 'classnames';
+import { useContext } from 'react';
 
-import { Can, manage, api as API, ActionWithTeamSelector } from '../../utils';
-import StarsButton from './StarsButton';
 import { I18nContext } from '../../../contexts';
 import { IApiWithAuthorization, ITeamSimple, IUserSimple } from '../../../types';
-import { Link } from 'react-router-dom';
+import { ActionWithTeamSelector } from '../../utils';
+import StarsButton from './StarsButton';
 
 export const ApiCard = (props: {
   user: IUserSimple
@@ -71,10 +70,11 @@ export const ApiCard = (props: {
 
   const starred = props.user.starredApis.includes(api._id)
   return (
-    <div className={classNames("row border-bottom py-4 api-card", { starred })} role='listitem' aria-labelledby={api._humanReadableId}>
-      <div className="col-12 d-flex justify-content-between">
-        <div className="cursor-pointer underline level2-link" onClick={props.redirectToApiPage}>
-          <h3 id={api._humanReadableId}>{`${api.name}${props.groupView && props.apiWithAutho.length > 1 ? ` - ${api.currentVersion}` : ''}`}</h3>
+    <div className={classNames("row border-bottom py-4 api-card", { starred, deprecated: api.state === 'deprecated' })} role='listitem' aria-labelledby={api._humanReadableId}>
+      <div className="col-12 d-flex justify-content-between api-card__header">
+        <div className="d-flex align-items-center" onClick={props.redirectToApiPage}>
+          <h3 className='cursor-pointer underline level2-link' id={api._humanReadableId}>{`${api.name}${props.groupView && props.apiWithAutho.length > 1 ? ` - ${api.currentVersion}` : ''}`}</h3>
+          {api.state === 'deprecated' && <span className='ms-3 badge text-bg-danger'>deprecated</span>}
         </div>
         <div className="ms-2">
           <div className="btn_group d-flex align-items-start">

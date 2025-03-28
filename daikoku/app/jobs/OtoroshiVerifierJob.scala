@@ -482,7 +482,7 @@ class OtoroshiVerifierJob(
         .updateApiKey(infos.computedApk)(infos.otoroshiSettings)
         .map {
           case Right(_) if infos.apk.asOtoroshiApiKey != infos.parent.apiKey =>
-            synclogger.info(
+            synclogger.debug(
               s"Successfully updated api key: ${infos.apk.clientId} - ${infos.apk.clientName} on ${infos.otoroshiSettings.host}"
             )
             env.dataStore.apiSubscriptionRepo
@@ -540,7 +540,7 @@ class OtoroshiVerifierJob(
                   )
               )
           case Right(_) =>
-            synclogger.info(
+            synclogger.debug(
               s"Successfully updated api key metadata: ${infos.apk.clientId} - ${infos.apk.clientName} on ${infos.otoroshiSettings.host}"
             )
             env.dataStore.apiSubscriptionRepo
@@ -574,7 +574,7 @@ class OtoroshiVerifierJob(
         }
     } else {
       FastFuture.successful(
-        synclogger.info(
+        synclogger.debug(
           s"No need to update api key: ${infos.apk.clientName} on ${infos.otoroshiSettings.host}"
         )
       )

@@ -25,7 +25,7 @@ export const ApiHome = ({
 }: ApiHomeProps) => {
 
   const { tenant } = useContext(GlobalContext);
-  const { openRightPanel } = useContext(ModalContext);
+  const { openRightPanel, alert } = useContext(ModalContext);
   const { setApiGroup } = useContext(NavContext);
 
   const navigate = useNavigate();
@@ -99,6 +99,19 @@ export const ApiHome = ({
 
   const { addMenu, isAdminApi, isApiGroup } = groupView && apiQuery.data && !isError(apiQuery) && ownerTeamQuery.data && !isError(ownerTeamQuery.data) ?
     { addMenu: () => { }, isAdminApi: false, isApiGroup: false } : useApiFrontOffice((apiQuery.data as IApi), (ownerTeamQuery.data as ITeamSimple));
+
+  useEffect(() => {
+    if (apiQuery.data && !isError(apiQuery.data)) {
+      const api = apiQuery.data
+
+      if (api.state === 'deprecated') {
+        //todo: get html from config if necessary
+        alert({
+          title: 'Cette API est dépréciée', message: `Cette API est marquée comme dépréciée et pourrait ne plus être maintenue. 
+          Nous vous recommandons de vérifier les alternatives disponibles et d’anticiper une éventuelle migration.`})
+      }
+    }
+  }, [apiQuery.data])
 
   useEffect(() => {
     return () => {

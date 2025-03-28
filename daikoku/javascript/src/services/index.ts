@@ -1428,6 +1428,7 @@ export const graphql = {
             name
             _humanReadableId
             _id
+            state
             tags
             categories
             stars

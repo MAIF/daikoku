@@ -311,7 +311,7 @@ object CommonServices {
        |FROM apis
        |WHERE (
        |  content ->> '_tenant' = '${tenant.id.value}' AND
-       |  (content ->> 'state' = 'published' OR
+       |  (content ->> 'state' IN ('published', 'deprecated') OR
        |   $$1 OR
        |   content ->> 'team' = ANY($$2::text[]))
        |      AND
