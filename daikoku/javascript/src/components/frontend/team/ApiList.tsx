@@ -72,7 +72,7 @@ export const ApiList = (props: TApiList) => {
   const [tags, setTags] = useState<TOptions>([]);
   const [categories, setCategories] = useState<TOptions>([]);
 
-  const pageNumber = 10;
+  const apiNbDisplayed = 10;
 
 
   const dataRequest = useQuery({
@@ -81,7 +81,7 @@ export const ApiList = (props: TApiList) => {
       searched,
       selectedTag?.value,
       selectedCategory?.value,
-      pageNumber,
+      apiNbDisplayed,
       offset,
       props.apiGroupId,
       selectedProducer?.value,
@@ -399,7 +399,7 @@ export const ApiList = (props: TApiList) => {
                   nextLabel={translate('Next')}
                   breakLabel="..."
                   breakClassName={'break'}
-                  pageCount={Math.ceil(dataRequest.data.total / pageNumber)}
+                  pageCount={Math.ceil(dataRequest.data.total / apiNbDisplayed)}
                   marginPagesDisplayed={1}
                   pageRangeDisplayed={5}
                   onPageChange={handlePageClick}
