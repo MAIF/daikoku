@@ -381,7 +381,7 @@ object CommonServices {
             selectedCat.orNull,
             groupOpt.orNull,
           ),
-          offset,
+          offset * limit,
           limit
         )
 
