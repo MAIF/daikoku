@@ -24,7 +24,7 @@ export const FastMode = () => {
     return <Spinner />
   } else if (myTeamsRequest.data && !isError(myTeamsRequest.data)) {
     return (
-      <main role="main">
+      <main role="main" className="flex-grow-1">
         <section className="organisation__header col-12 mb-4 p-3">
           <div className="container-fluid">
             <h1 className="jumbotron-heading">{translate('fastMode.title')}</h1>

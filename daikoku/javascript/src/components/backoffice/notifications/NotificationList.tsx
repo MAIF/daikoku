@@ -199,7 +199,7 @@ export const NotificationList = () => {
 
     return () => reloadUnreadNotificationsCount()
   }, [])
-  
+
 
   const rejectNotification = (notificationId: string, message?: string) => {
     setState({
@@ -299,7 +299,7 @@ export const NotificationList = () => {
   };
 
   const notifByTeams = groupBy(state.notifications, 'team._id');
-  return <>
+  return <div className='flex-grow-1'>
     <div className="row">
       <h1>
         <Translation i18nkey="Notifications" isPlural={true}>
@@ -344,6 +344,6 @@ export const NotificationList = () => {
         </div>
       </div>
     )}
-  </>;
+  </div>;
 
 };

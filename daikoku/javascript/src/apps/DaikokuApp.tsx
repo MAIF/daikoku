@@ -1,5 +1,5 @@
 import { useContext, useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router';
+import { Navigate, Outlet, useLocation } from 'react-router';
 import { BrowserRouter, Route, BrowserRouter as Router, Routes, createBrowserRouter, RouterProvider, ScrollRestoration, useSearchParams } from 'react-router-dom';
 
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
@@ -48,6 +48,13 @@ import { MessagesEvents } from '../services/messages';
 import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
 import { AnonymousReporting } from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
 import { RightPanel } from '../components/utils/sidebar/RightPanel';
+
+const RouteWithFooterLayout = () => (
+  <>
+    <Outlet />
+    <Footer isBackOffice={false} />
+  </>
+);
 
 export const DaikokuApp = () => {
   const { connectedUser, tenant } = useContext(GlobalContext)
@@ -148,7 +155,7 @@ export const DaikokuApp = () => {
             <div className="d-flex flex-row">
               <SideBar />
               <RightPanel />
-              <div className="wrapper flex-grow-1 container-fluid">
+              <div className="wrapper flex-grow-1 container-fluid d-flex flex-column">
                 <Routes>
                   <Route
                     path='/error'
@@ -160,14 +167,6 @@ export const DaikokuApp = () => {
                     path='/response'
                     element={
                       <Response />
-                    }
-                  />
-                  <Route
-                    path="/me"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate('My profile')}`}>
-                        <MyProfile />
-                      </RouteWithTitle>
                     }
                   />
                   <Route
@@ -200,44 +199,77 @@ export const DaikokuApp = () => {
                       <LoginPage />
                     }
                   />
-                  <Route
-                    path="/notifications*"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate('Notifications')}`}>
-                        <NotificationList />
-                      </RouteWithTitle>
-                    }
-                  />
+                  <Route element={<RouteWithFooterLayout />}>
+                    <Route path="/apis" element={<FrontOfficeRoute title={`${tenant.title} - ${translate('Apis')}`}>
+                      <MyHome />
+                    </FrontOfficeRoute>} />
+                    <Route path="/notifications*" element={<RouteWithTitle title={`${tenant.title} - ${translate('Notifications')}`}>
+                      <NotificationList />
+                    </RouteWithTitle>} />
+                    <Route path="/me" element={<RouteWithTitle title={`${tenant.title} - ${translate('My profile')}`}>
+                      <MyProfile />
+                    </RouteWithTitle>} />
+                    <Route path="/:teamId/settings" element={<TeamBackOffice />} />
+                    <Route
+                      path="/join"
+                      element={
+                        <FrontOfficeRoute title={`${tenant.title} - ${translate('Join team')}`}>
+                          <JoinTeam />
+                        </FrontOfficeRoute>
+                      }
+                    />
+                    <Route
+                      path="/"
+                      element={
+                        <FrontOfficeRoute title={`${tenant.title} - ${translate('Home')}`}>
+                          <MaybeHomePage tenant={tenant} />
+                        </FrontOfficeRoute>
+                      }
+                    />
+                    <Route
+                      path="/:teamId/:apiId/:versionId/:tab/*"
+                      element={
+                        <FrontOfficeRoute>
+                          <ApiHome />
+                        </FrontOfficeRoute>
+                      }
+                    />
+
+                    <Route
+                      path="/:teamId"
+                      element={
+                        <FrontOfficeRoute>
+                          <TeamHome />
+                        </FrontOfficeRoute>
+                      }
+                    />
+                    <Route
+                      path='/subscriptions/_retrieve'
+                      element={
+                        <FrontOfficeRoute>
+                          <SubscriptionRetrieve />
+                        </FrontOfficeRoute>
+                      }
+                    />
+                    <Route
+                      path="/apis/fast"
+                      element={
+                        <RouteWithTitle title={
+                          translate({
+                            key: "fastMode.title.page",
+                            replacements: [tenant.title || tenant.name]
+                          })}>
+                          <FastMode />
+                        </RouteWithTitle>
+                      }
+                    />
+                  </Route>
                   <Route
                     path="/atomicDesign"
                     element={
                       <RouteWithTitle title={`${tenant.title} - ${translate('Notifications')}`}>
                         <AtomicDesign />
                       </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/join"
-                    element={
-                      <FrontOfficeRoute title={`${tenant.title} - ${translate('Join team')}`}>
-                        <JoinTeam />
-                      </FrontOfficeRoute>
-                    }
-                  />
-                  <Route
-                    path="/apis"
-                    element={
-                      <FrontOfficeRoute title={`${tenant.title} - ${translate('Apis')}`}>
-                        <MyHome />
-                      </FrontOfficeRoute>
-                    }
-                  />
-                  <Route
-                    path="/"
-                    element={
-                      <FrontOfficeRoute title={`${tenant.title} - ${translate('Home')}`}>
-                        <MaybeHomePage tenant={tenant} />
-                      </FrontOfficeRoute>
                     }
                   />
                   <Route
@@ -386,18 +418,6 @@ export const DaikokuApp = () => {
                     }
                   />
                   <Route
-                    path="/apis/fast"
-                    element={
-                      <RouteWithTitle title={
-                        translate({
-                          key: "fastMode.title.page",
-                          replacements: [tenant.title || tenant.name]
-                        })}>
-                        <FastMode />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
                     path="/settings/pages*"
                     element={
                       <RouteWithTitle
@@ -422,46 +442,9 @@ export const DaikokuApp = () => {
                       />
                     )
                   )}
-
-                  <Route
-                    path="/:teamId/settings*"
-                    element={<TeamBackOffice />}
-                  />
-
-                  <Route
-                    path="/:teamId/:apiId/:versionId/:tab/*"
-                    element={
-                      <FrontOfficeRoute>
-                        <ApiHome />
-                      </FrontOfficeRoute>
-                    }
-                  />
-
-                  <Route
-                    path="/:teamId"
-                    element={
-                      <FrontOfficeRoute>
-                        <TeamHome />
-                      </FrontOfficeRoute>
-                    }
-                  />
-                  <Route
-                    path='/subscriptions/_retrieve'
-                    element={
-                      <FrontOfficeRoute>
-                        <SubscriptionRetrieve />
-                      </FrontOfficeRoute>
-                    }
-                  />
                 </Routes>
               </div>
             </div>
-            <Routes>
-              {['/settings', '/notifications', '/me', '/:teamId/settings'].map((r) => (
-                <Route key={r} path={r} element={<></>} />
-              ))}
-              <Route path="*" element={<Footer isBackOffice={false} />} />
-            </Routes>
           </ModalProvider>
 
         </NavProvider>

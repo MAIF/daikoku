@@ -44,9 +44,9 @@ a.navbar-brand,
     color: variables.$danger-color;
 
     &:hover {
-        background-color: variables.$danger-color;
-        color: #fff;
-      }
+      background-color: variables.$danger-color;
+      color: #fff;
+    }
   }
 }
 
@@ -342,9 +342,10 @@ a.navbar-brand,
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background-color: #fff;
+    background-color: variables.$companion_bg-color;
     color: #000;
     border: 1px solid rgba($color: #000000, $alpha: 0.1);
+    color: variables.$sidebar-text-color;
 
     svg {
       height: 14px;
@@ -352,7 +353,7 @@ a.navbar-brand,
 
     &:hover {
       // background-color: $navbar-bg-color;
-      color: #fff;
+      color: variables.$sidebar-text-hover-color;
       border: 1px solid rgba(0, 0, 0, .1);
     }
   }

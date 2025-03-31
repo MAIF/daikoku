@@ -93,7 +93,7 @@ export const MyHome = () => {
     )
   } else if (myTeamsRequest.data && !isError(myTeamsRequest.data)) {
     return (
-      <main role="main">
+      <main className='flex-grow-1' role="main">
         <section className="organisation__header col-12 mb-4 p-3">
           <div className="row text-center">
             <div className="col-sm-4">

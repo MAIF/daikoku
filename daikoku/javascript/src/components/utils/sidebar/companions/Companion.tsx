@@ -22,7 +22,7 @@ export const Companion = () => {
     return null;
   }
 
-  return (<div className={classNames('navbar-companion me-3', {
+  return (<div className={classNames('navbar-companion', {
     opened: companionState === state.opened,
     closed: companionState === state.closed,
   })}>

@@ -14,7 +14,7 @@ export const Footer = (props: { isBackOffice: boolean }) => {
 
   return (
     <footer
-      className={classNames('footer row', {
+      className={classNames('footer row mt-2', {
         'back-office-footer': props.isBackOffice,
       })}
       dangerouslySetInnerHTML={{ __html: converter.makeHtml(tenant.footer) }}
