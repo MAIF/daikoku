@@ -1256,6 +1256,11 @@
   "Process": "Process",
   "api.pricings.no.step.explanation": "Il semble qu'il n'y ait pas de processus de validation de la demande d'abonnement au processus",
   "api.pricings.add.first.step.btn.label": "Ajouter une première étape de validation",
+  "api.pricings.quotas.value": "%s req./sec, %s req./jour, %s req./mois",
+  "api.pricings.pricing.label": "Tarif",
+  "api.pricings.otoroshi.target.value.none": "Aucun",
+  "api.pricings.process.value.none": "Aucun",
+  "api.pricings.process.value": "%s étapes",
   "api.documentation.clone.page.modal.title": "Import des pages de documentation",
   "api.documentation.clone.page.placeholder": "Sélectionnez toutes les pages à cloner",
   "demand.delete.modal.message": "Voulez-vous vraiment supprimer cette demande de souscription ?",
@@ -1462,7 +1467,6 @@
   "sidebar.messages.button.aria.label": "Ouvrir le chat avec un admin",
   "sidebar.notifications.button.aria.label": "Ouvrir le centre de notifications",
   "sidebar.dark.mode.button.aria.label": "Activer le mode clair/sombre",
-
   "api.home.config.api.btn.label": "Configurer",
   "api.home.config.api.menu.configure": "Configurer",
   "api.home.config.api.menu.clone": "Dupliquer",
@@ -1486,10 +1490,8 @@
   "api.home.config.api.news.menu.update": "Mettre à jour la publication",
   "api.home.config.api.news.menu.create": "Créer une publication",
   "api.home.config.api.news.menu.delete": "Supprimer la publication",
-
   "api.home.add.api.to.favorite": "Ajouter cette API aux favoris",
   "api.home.remove.api.to.favorite": "retirer cette API des favoris",
-  
   "api.home.config.api.aria.label": "Configuration",
   "api.home.update.api.btn.label": "Configurer",
   "api.home.clone.api.btn.label": "Dupliquer",

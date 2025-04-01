@@ -1264,50 +1264,16 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           </div>
         </div>
         <div className="usage-plan__card__body d-flex flex-column">
-          {/* {tenant.display === 'environment' && (
-            <div className="d-flex flex-row justify-content-between mt-2">
-              <Link
-                to={`./${props.plan.customName}/swagger`}
-                relative="path"
-                className={classNames('usage-plan__card__action-button', {
-                  inactive:
-                    !props.plan.swagger?.url && !props.plan.swagger?.content,
-                })}
-              >
-                swagger
-              </Link>
-              <Link
-                to={`./${props.plan.customName}/testing`}
-                relative="path"
-                className={classNames('usage-plan__card__action-button', {
-                  inactive: !props.plan.testing?.enabled,
-                })}
-              >
-                test
-              </Link>
-              <Link
-                to={`./${props.plan.customName}/documentation`}
-                relative="path"
-                className={classNames('usage-plan__card__action-button', {
-                  inactive: !props.plan.documentation?.pages.length,
-                })}
-              >
-                Documentation
-              </Link>
-            </div>
-          )} */}
-
           <span className="usage-plan__card__feature" onClick={editQuotas}>
             <div>
-              <h4>Quotas</h4>
+              <h4>{translate('Quotas')}</h4>
               <div className='feature__description'>
                 {!plan.maxPerMonth && translate('plan.limits.unlimited')}
-                {!!plan.maxPerMonth && (
-                  <span>
-                    {plan.maxPerSecond} req./sec, {plan.maxPerMonth}{' '}
-                    req./month
-                  </span>
-                )}
+                {!!plan.maxPerMonth && translate({
+                  key: 'api.pricings.quotas.value', replacements: [
+                    String(plan.maxPerSecond), String(plan.maxPerDay), String(plan.maxPerMonth)
+                  ]
+                })}
               </div>
             </div>
             <Can I={manage} a={API} team={props.ownerTeam}>
@@ -1328,10 +1294,10 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           </span>
           <span className="usage-plan__card__feature" onClick={editOtoroshiTarget}>
             <div>
-              <h4>otoroshi target</h4>
+              <h4>{translate("otoroshi target")}</h4>
               <span className='feature__description'>
                 {plan.otoroshiTarget?.otoroshiSettings && (fullTenant?.otoroshiSettings.find(o => o._id === plan.otoroshiTarget?.otoroshiSettings)?.url)}
-                {!plan.otoroshiTarget?.otoroshiSettings && 'aucun'}
+                {!plan.otoroshiTarget?.otoroshiSettings && translate('api.pricings.otoroshi.target.value.none')}
               </span>
             </div>
 
@@ -1341,8 +1307,10 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           </span>
           <span className="usage-plan__card__feature" onClick={editProcess}>
             <div>
-              <h4>Process</h4>
-              <span className='feature__description'>{plan.subscriptionProcess.length ? `${plan.subscriptionProcess.length} steps` : 'aucun'}</span>
+              <h4>{translate('Process')}</h4>
+              <span className='feature__description'>{plan.subscriptionProcess.length ?
+                translate({ key: 'api.pricings.process.value', replacements: [String(plan.subscriptionProcess.length)] }) :
+                translate('api.pricings.process.value.none')}</span>
             </div>
             <Can I={manage} a={API} team={props.ownerTeam}>
               <Edit2 className="edition-icon" />
@@ -1677,10 +1645,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
         schema={basicInformationSchema(plan)}
         flow={basicInformationFlow}
         onSubmit={(plan: IUsagePlan) => savePlan(plan, creation)}
-        
+
         options={{
           actions: {
-            cancel: { display: true, label: translate('Cancel'), action: () => closeRightPanel()},
+            cancel: { display: true, label: translate('Cancel'), action: () => closeRightPanel() },
             submit: { label: translate('Save') }
           }
         }}
