@@ -508,103 +508,101 @@ export const MyProfile = () => {
   }
 
   return (
-    <div className="container-fluid">
-      <div className="row">
-        <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
-          <li className="nav-item">
-            <span
-              className={`nav-link cursor-pointer ${tab === 'infos' ? 'active' : ''}`}
-              onClick={() => setTab('infos')}
-            >
-              <Translation i18nkey="Informations">Informations</Translation>
-            </span>
-          </li>
-          <li className="nav-item">
-            <span
-              className={`nav-link cursor-pointer ${tab === 'security' ? 'active' : ''}`}
-              onClick={() => setTab('security')}
-            >
-              <Translation i18nkey="Security">AccountSecurity</Translation>
-            </span>
-          </li>
-        </ul>
-        {tab === 'infos' && (
-          <Form
-            flow={formFlow}
-            //@ts-ignore //FIXME: ???
-            schema={formSchema}
-            value={user}
-            onSubmit={save}
-            footer={({ valid }) => {
-              return (
-                <div className="d-flex mt-3" style={{ justifyContent: 'flex-end' }}>
-                  <button
-                    type="button"
-                    className="btn btn-outline-danger"
-                    style={{ marginLeft: 5 }}
-                    onClick={removeUser}
-                  >
-                    <i className="fas fa-trash me-1" />
-                    <Translation i18nkey="Delete my profile">Delete my profile</Translation>
-                  </button>
-                  <button
-                    style={{ marginLeft: 5 }}
-                    type="button"
-                    className="btn btn-outline-success"
-                    onClick={valid}
-                  >
-                    <span>
-                      <i className="fas fa-save me-1" />
-                      <Translation i18nkey="Save">Save</Translation>
-                    </span>
-                  </button>
-                </div>
-              );
-            }}
-          />
-        )}
-        {tab === 'security' && (
-          <div className="row">
-            <div className="col-sm-6">
-              <div className="row">
-                <h4>
-                  <Translation i18nkey="profile.security.updatePassword">
-                    Update password
-                  </Translation>
-                </h4>
-                <Form
-                  schema={changePasswordSchema}
-                  onSubmit={updatePassword}
-                  footer={({ valid }) => {
-                    return (
-                      <div className="d-flex justify-content-end">
-                        <button
-                          type="button"
-                          className="btn btn-outline-success my-2"
-                          onClick={valid}
-                        >
-                          <span>
-                            <Translation i18nkey="profile.security.updatePassword">
-                              Update password
-                            </Translation>
-                          </span>
-                        </button>
-                        {/* TODO: forgot password link */}
-                      </div>
-                    );
-                  }}
-                />
+    <main role="main" className='flex-grow-1'>
+      <ul className="nav nav-tabs flex-column flex-sm-row mb-3 mt-3">
+        <li className="nav-item">
+          <span
+            className={`nav-link cursor-pointer ${tab === 'infos' ? 'active' : ''}`}
+            onClick={() => setTab('infos')}
+          >
+            <Translation i18nkey="Informations">Informations</Translation>
+          </span>
+        </li>
+        <li className="nav-item">
+          <span
+            className={`nav-link cursor-pointer ${tab === 'security' ? 'active' : ''}`}
+            onClick={() => setTab('security')}
+          >
+            <Translation i18nkey="Security">AccountSecurity</Translation>
+          </span>
+        </li>
+      </ul>
+      {tab === 'infos' && (
+        <Form
+          flow={formFlow}
+          //@ts-ignore //FIXME: ???
+          schema={formSchema}
+          value={user}
+          onSubmit={save}
+          footer={({ valid }) => {
+            return (
+              <div className="d-flex mt-3" style={{ justifyContent: 'flex-end' }}>
+                <button
+                  type="button"
+                  className="btn btn-outline-danger"
+                  style={{ marginLeft: 5 }}
+                  onClick={removeUser}
+                >
+                  <i className="fas fa-trash me-1" />
+                  <Translation i18nkey="Delete my profile">Delete my profile</Translation>
+                </button>
+                <button
+                  style={{ marginLeft: 5 }}
+                  type="button"
+                  className="btn btn-outline-success"
+                  onClick={valid}
+                >
+                  <span>
+                    <i className="fas fa-save me-1" />
+                    <Translation i18nkey="Save">Save</Translation>
+                  </span>
+                </button>
               </div>
-            </div>
-            <div className="col-sm-6">
+            );
+          }}
+        />
+      )}
+      {tab === 'security' && (
+        <div className="row">
+          <div className="col-sm-6">
+            <div className="row">
               <h4>
-                <Translation i18nkey="2fa">Two-factor authentication</Translation>
+                <Translation i18nkey="profile.security.updatePassword">
+                  Update password
+                </Translation>
               </h4>
-              <TwoFactorAuthentication user={user} />
+              <Form
+                schema={changePasswordSchema}
+                onSubmit={updatePassword}
+                footer={({ valid }) => {
+                  return (
+                    <div className="d-flex justify-content-end">
+                      <button
+                        type="button"
+                        className="btn btn-outline-success my-2"
+                        onClick={valid}
+                      >
+                        <span>
+                          <Translation i18nkey="profile.security.updatePassword">
+                            Update password
+                          </Translation>
+                        </span>
+                      </button>
+                      {/* TODO: forgot password link */}
+                    </div>
+                  );
+                }}
+              />
             </div>
           </div>
-        )}
-      </div>
-    </div>
+          <div className="col-sm-6">
+            <h4>
+              <Translation i18nkey="2fa">Two-factor authentication</Translation>
+            </h4>
+            <TwoFactorAuthentication user={user} />
+          </div>
+        </div>
+      )}
+    </main>
   );
 };
