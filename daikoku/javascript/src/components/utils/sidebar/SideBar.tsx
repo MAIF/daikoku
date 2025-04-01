@@ -57,6 +57,10 @@ export const SideBar = () => {
 
   const isAdmin = connectedUser.isDaikokuAdmin || isTenantAdmin;
 
+  if (location.pathname === '/') {
+    return null;
+  }
+
   return (
     <div className="navbar-container d-flex flex-row">
       <div className="navbar d-flex flex-column p-2 align-items-center justify-content-between">

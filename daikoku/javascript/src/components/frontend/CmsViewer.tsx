@@ -18,7 +18,7 @@ export function CmsViewer({ pageId, fields }: CmsViewerProps) {
     }, [pageId, fields])
 
     if (cmsPage)
-        return <div dangerouslySetInnerHTML={{ __html: cmsPage, }} />
+        return <div className="flex-grow-1" dangerouslySetInnerHTML={{ __html: cmsPage, }} />
 
     return null
 }   

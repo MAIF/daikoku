@@ -5,11 +5,11 @@ import { I18nContext } from '../../contexts/i18n-context';
 
 import { GlobalContext } from '../../contexts/globalContext';
 import { ITenant } from '../../types';
+import { CmsViewer } from './CmsViewer';
 
 export const MaybeHomePage = ({
   tenant
 }: { tenant: ITenant }) => {
-  const { connectedUser } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
 
   const navigate = useNavigate();
@@ -33,13 +33,13 @@ export const MaybeHomePage = ({
       return
     }
 
-
-    if (!tenant.homePageVisible || connectedUser?._humanReadableId) {
+    console.log('homePageVisible', tenant.homePageVisible);
+    if (!tenant.homePageVisible) {
       navigate('/apis');
     }
   }, []);
 
-  return null;
+  return <CmsViewer pageId={tenant.homeCmsPage!} />;
 
   // return (
   //   <div className="row">

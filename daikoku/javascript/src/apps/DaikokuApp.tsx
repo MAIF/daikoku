@@ -1,9 +1,9 @@
 import { useContext, useEffect } from 'react';
-import { Navigate, Outlet, useLocation } from 'react-router';
+import { Navigate, Outlet } from 'react-router';
 import { BrowserRouter, Route, BrowserRouter as Router, Routes, createBrowserRouter, RouterProvider, ScrollRestoration, useSearchParams } from 'react-router-dom';
 
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
-import { Footer, LoginPage, SideBar, tenant } from '../components/utils';
+import { Footer, LoginPage, SideBar } from '../components/utils';
 import { ModalProvider, NavProvider } from '../contexts';
 
 import {
@@ -199,6 +199,14 @@ export const DaikokuApp = () => {
                       <LoginPage />
                     }
                   />
+                  <Route
+                    path="/"
+                    element={
+                      <FrontOfficeRoute title={`${tenant.title} - ${translate('Home')}`}>
+                        <MaybeHomePage tenant={tenant} />
+                      </FrontOfficeRoute>
+                    }
+                  />
                   <Route element={<RouteWithFooterLayout />}>
                     <Route path="/apis" element={<FrontOfficeRoute title={`${tenant.title} - ${translate('Apis')}`}>
                       <MyHome />
@@ -215,14 +223,6 @@ export const DaikokuApp = () => {
                       element={
                         <FrontOfficeRoute title={`${tenant.title} - ${translate('Join team')}`}>
                           <JoinTeam />
-                        </FrontOfficeRoute>
-                      }
-                    />
-                    <Route
-                      path="/"
-                      element={
-                        <FrontOfficeRoute title={`${tenant.title} - ${translate('Home')}`}>
-                          <MaybeHomePage tenant={tenant} />
                         </FrontOfficeRoute>
                       }
                     />

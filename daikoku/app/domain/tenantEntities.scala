@@ -430,6 +430,7 @@ case class Tenant(
       "defaultLanguage" -> defaultLanguage
         .fold(JsNull.as[JsValue])(JsString.apply),
       "homePageVisible" -> style.exists(_.homePageVisible),
+      "homeCmsPage" -> style.flatMap(_.homeCmsPage).map(JsString).getOrElse(JsNull).as[JsValue],
       "creationSecurity" -> creationSecurity
         .map(JsBoolean)
         .getOrElse(JsBoolean(false))

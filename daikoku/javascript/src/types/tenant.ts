@@ -176,6 +176,7 @@ export interface ITenant {
   authProvider: AuthProvider;
   defaultMessage?: string;
   homePageVisible: boolean;
+  homeCmsPage?: string;
   mode: DaikokuMode;
   tenantMode: TenanMode;
   display: Display;

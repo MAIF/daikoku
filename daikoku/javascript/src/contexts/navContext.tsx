@@ -121,7 +121,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
           apis: {
             label: translate('APIs'),
             action: () => navigateTo('apis'),
-            className: { 
+            className: {
               active: currentTab === 'apis',
               disabled: !isApiGroup,
               'd-none': !isApiGroup
@@ -144,8 +144,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             },
             className: {
               active: currentTab === 'documentation',
-              // disabled: api?.visibility === 'AdminOnly' || tenant.display === 'environment' || !api?.documentation?.pages?.length && !userCanUpdateApi,
-              // 'd-none': api?.visibility === 'AdminOnly' || tenant.display === 'environment' || !api?.documentation?.pages?.length && !userCanUpdateApi
+              disabled: api?.visibility === 'AdminOnly' || (!userCanUpdateApi && tenant.display === 'environment' || !api?.documentation?.pages?.length && !userCanUpdateApi),
+              'd-none': api?.visibility === 'AdminOnly' || (!userCanUpdateApi && tenant.display === 'environment' || !api?.documentation?.pages?.length && !userCanUpdateApi)
             },
           },
           swagger: {
@@ -155,8 +155,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             },
             className: {
               active: currentTab === 'swagger',
-              // disabled: isApiGroup || (!userCanUpdateApi && (tenant.display === 'environment' || !api?.swagger?.content && !api?.swagger?.url)),
-              // 'd-none': isApiGroup || (!userCanUpdateApi && (tenant.display === 'environment' || !api?.swagger?.content && !api?.swagger?.url))
+              disabled: isApiGroup || (!userCanUpdateApi && (tenant.display === 'environment' || !api?.swagger?.content && !api?.swagger?.url)),
+              'd-none': isApiGroup || (!userCanUpdateApi && (tenant.display === 'environment' || !api?.swagger?.content && !api?.swagger?.url))
             },
           },
           testing: {
@@ -166,8 +166,8 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             },
             className: {
               active: currentTab === 'testing',
-              // disabled: isAdminApi || isApiGroup || !userCanUpdateApi && (tenant.display === 'environment' || !api?.testing?.enabled),
-              // 'd-none': isAdminApi || isApiGroup || !userCanUpdateApi && (tenant.display === 'environment' || !api?.testing?.enabled)
+              disabled: isAdminApi || isApiGroup || !userCanUpdateApi && (tenant.display === 'environment' || !api?.testing?.enabled),
+              'd-none': isAdminApi || isApiGroup || !userCanUpdateApi && (tenant.display === 'environment' || !api?.testing?.enabled)
             },
           },
           news: {
