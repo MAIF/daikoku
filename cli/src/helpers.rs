@@ -136,13 +136,16 @@ async fn daikoku_cms_api_get_internal(
         .await
         .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?;
 
+    let status = resp.status().as_u16();
+    let response = resp
+        .bytes()
+        .await
+        .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?
+        .to_vec();
+
     Ok(CmsApiResponse {
-        status: resp.status().as_u16(),
-        response: resp
-            .bytes()
-            .await
-            .map_err(|err| DaikokuCliError::DaikokuStrError(err.to_string()))?
-            .to_vec(),
+        status: status,
+        response: response,
     })
 }
 

@@ -160,19 +160,33 @@ async fn add(name: String, server: String, overwrite: bool, apikey: String) -> D
         return Err(DaikokuCliError::Configuration("configuration already exists. you maybe want to use --overwrite=true parameter to overwrite contents".to_string()));
     }
 
-    if !can_join_daikoku(&server, Some(&apikey)).await? {
+    let formatted_server = if server.ends_with("/") {
+        let mut chars = server.chars();
+        chars.next_back();
+        chars.into_iter().collect()
+    } else {
+        server
+    };
+
+    let formatted_apikey = if apikey.contains("Basic ") {
+        apikey.replace("Basic ", "")
+    } else {
+        apikey
+    };
+
+    if !can_join_daikoku(&formatted_server, Some(&formatted_apikey)).await? {
         return Err(DaikokuCliError::Configuration(
             "failed to save configuration. The specified Daikoku server can not be reached"
                 .to_string(),
         ));
     }
 
-    config.set(&name, "server", Some(server));
+    config.set(&name, "server", Some(formatted_server));
     config.set("default", "environment", Some(name.clone()));
     config.set(name.clone().as_str(), "name", Some(name.clone()));
 
     let mut secrets: Ini = read_secrets()?;
-    secrets.set(name.clone().as_str(), "apikey", Some(apikey));
+    secrets.set(name.clone().as_str(), "apikey", Some(formatted_apikey));
 
     secrets
         .write(&get_secrets_path()?)

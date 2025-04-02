@@ -136,14 +136,18 @@ class CmsApiController(
   def sync() =
     CmsApiAction.async(parse.json) { ctx =>
       for {
-        _ <- env.dataStore.cmsRepo.forTenant(ctx.tenant).deleteAll()
+//        _ <- env.dataStore.cmsRepo.forTenant(ctx.tenant).deleteAll()
         _ <- Future.sequence(
           ctx.request.body
             .as(Reads.seq(CmsFileFormat.reads))
             .map(page => {
-              env.dataStore.cmsRepo
+              println(s"synchronize ${page.id()} - ${page.name} - ${page.path()}")
+                env.dataStore.cmsRepo
                 .forTenant(ctx.tenant)
-                .save(page.toCmsPage(ctx.tenant.id))
+                .deleteById(page.id())
+                  .map(_ => env.dataStore.cmsRepo
+                .forTenant(ctx.tenant)
+                .save(page.toCmsPage(ctx.tenant.id)))
             })
         )
       } yield {

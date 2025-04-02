@@ -86,7 +86,7 @@ export const CMSOffice = () => {
         </div>
       </div>
 
-      <Pages pages={cmsPages} />
+      <Pages pages={cmsPages} reload={reload}/>
     </div>);
   };
 

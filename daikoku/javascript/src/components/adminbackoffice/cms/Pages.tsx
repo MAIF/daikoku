@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { IPage } from '..';
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../contexts';
+import * as Services from '../../../services';
 import { Table, TableRef } from '../../inputs';
 
 export const CONTENT_TYPES = [
@@ -18,9 +19,11 @@ export const CONTENT_TYPES = [
 
 type PagesProps = {
   pages: Array<IPage>
+  reload: any
 }
 export const Pages = ({
-  pages
+  pages,
+  reload
 }: PagesProps) => {
   const table = useRef<TableRef>()
   const { translate } = useContext(I18nContext);
@@ -30,6 +33,8 @@ export const Pages = ({
       //@ts-ignore
       table.current.setPageSize(500)
   }, [table])
+
+  const { confirm, alert } = useContext(ModalContext);
 
   const navigate = useNavigate();
 
@@ -91,6 +96,28 @@ export const Pages = ({
                 <i className="fas fa-pen" />
               </button>
             </Link>
+            <button
+              type="button"
+              className="btn btn-sm btn-outline-danger me-1"
+              title={translate('Delete page')}
+              onClick={e => {
+                e.stopPropagation();
+                confirm({ message: translate('Delete page') })
+                  .then((ok) => {
+                    if (ok) {
+                      Services.removeCmsPage(value.id).then((res) => {
+                        if (res.error)
+                          alert({ message: res });
+                        else {
+                          reload()
+                        }
+                      });
+                    }
+                  });
+              }}
+            >
+              <i className="fas fa-trash" />
+            </button>
             {value.path && <Link
               to={itemPath}
               target="_blank"

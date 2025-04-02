@@ -33,7 +33,6 @@ export const MaybeHomePage = ({
       return
     }
 
-    console.log('homePageVisible', tenant.homePageVisible);
     if (!tenant.homePageVisible) {
       navigate('/apis');
     }

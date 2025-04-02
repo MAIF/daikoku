@@ -219,15 +219,20 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
           <h4 className="alert-heading">{translate('Warning')}</h4>
           <p>{translate('team_apikey_for_api.ask_for_make_unique')}</p>
           <ul>
-            <li dangerouslySetInnerHTML={{ __html: translate({ key: 'team_apikey_for_api.ask_for_make_unique.2', replacements: [
-              `<strong>${details.parentSubscription?.api.name}/${details.parentSubscription?.plan.customName}</strong>`
-            ]})}}></li>
+            <li dangerouslySetInnerHTML={{
+              __html: translate({
+                key: 'team_apikey_for_api.ask_for_make_unique.2', replacements: [
+                  `<strong>${details.parentSubscription?.api.name}/${details.parentSubscription?.plan.customName}</strong>`
+                ]
+              })
+            }}></li>
             <li dangerouslySetInnerHTML={{
               __html: translate({
                 key: 'team_apikey_for_api.ask_for_make_unique.3', replacements: [
                   `<strong>${details.apiSubscription.api.name}/${details.apiSubscription.plan.customName}</strong>`
                 ]
-})}}></li>
+              })
+            }}></li>
           </ul>
         </div>,
         schema: {
@@ -779,7 +784,7 @@ export const ApiKeyCard = ({
 
     return (
       <div className='api-subscription'>
-        <div className="api-subscription__container flex-column flex-xl-row">
+        <div className="api-subscription__container flex-column flex-xl-row gap-3">
           <div className='api-subscription__icon flex-row flex-xl-column'>
             {subscription.children.length === 0 && <i className={"fa-solid icon fa-key"} />}
             {subscription.children.length > 0 && <svg
@@ -853,6 +858,23 @@ export const ApiKeyCard = ({
                   }}>
                   <i className="fa fa-copy me-1" />
                   {translate("subscription.copy.basic.auth.label")}
+                </button>
+              </BeautifulTitle>
+              <BeautifulTitle title={translate("subscription.copy.cli.auth.help")}>
+                <button className='btn btn-sm btn-outline-info'
+                  aria-label={translate("subscription.copy.cli.auth.aria-label")}
+                  onClick={() => {
+                    navigator.clipboard
+                      .writeText(`Basic ${btoa(`${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`)}`)
+                      .then(() =>
+                        toast.info(translate('credential.copy.success'))
+                      )
+                      .catch(() =>
+                        toast.warning(translate('credential.copy.error'))
+                      );
+                  }}>
+                  <i className="fa fa-copy me-1" />
+                  {translate("subscription.copy.cli.auth.label")}
                 </button>
               </BeautifulTitle>
               <BeautifulTitle title={translate("subscription.display.credentials")}>
@@ -1020,7 +1042,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
 
   return (
     <div className='api-subscription'>
-      <div className="api-subscription__container flex-column flex-xl-row">
+      <div className="api-subscription__container flex-column flex-xl-row gap-3">
         <div className='api-subscription__infos'>
           <div className='api-subscription__infos__name'>{_customName}</div>
           <div className='d-flex gap-2'>
@@ -1067,6 +1089,23 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
               }}>
                 <i className="fa fa-copy me-1" />
                 {translate("subscription.copy.basic.auth.label")}
+              </button>
+            </BeautifulTitle>
+            <BeautifulTitle title={translate("subscription.copy.cli.auth.help")}>
+              <button className='btn btn-sm btn-outline-info'
+                aria-label={translate("subscription.copy.cli.auth.aria-label")}
+                onClick={() => {
+                  navigator.clipboard
+                    .writeText(`Basic ${btoa(`${props.subscription.apiKey?.clientId}:${props.subscription.apiKey?.clientSecret}`)}`)
+                    .then(() =>
+                      toast.info(translate('credential.copy.success'))
+                    )
+                    .catch(() =>
+                      toast.warning(translate('credential.copy.error'))
+                    );
+                }}>
+                <i className="fa fa-copy me-1" />
+                {translate("subscription.copy.cli.auth.label")}
               </button>
             </BeautifulTitle>
           </div>

@@ -9,14 +9,17 @@ use std::{
     str::FromStr,
 };
 
-use crate::{logging::error::{DaikokuCliError, DaikokuResult}, utils::new_custom_ini_file};
+use crate::{
+    logging::error::{DaikokuCliError, DaikokuResult},
+    utils::new_custom_ini_file,
+};
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub(crate) struct CmsFile {
     pub(crate) name: String,
     pub(crate) content: String,
     pub(crate) metadata: HashMap<String, String>,
-    pub(crate) daikoku_data: Option<HashMap<String, Option<String>>>,
+    pub(crate) daikoku_data: Option<HashMap<String, String>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -165,20 +168,55 @@ fn read_api_folder(path: &PathBuf) -> DaikokuResult<Vec<CmsFile>> {
                         daikoku_data_path
                     ))
                 })?;
-                let default_section = data
-                    .get("default")
-                    .map(|value| value.clone())
-                    .unwrap_or(HashMap::new());
+                let mut default_section: HashMap<String, String> = HashMap::new();
+
+                data.get("default").map(|values| {
+                    values.iter().for_each(|value| {
+                        default_section.insert(
+                            value.0.to_string(),
+                            value.1.clone().unwrap_or("".to_string()),
+                        );
+                    })
+                });
 
                 daikoku_data = Some(default_section);
             } else {
                 if let Some(extension) = entry.clone().path().extension() {
+                    let file_path = entry.clone().into_path().clone();
                     let mut new_file = read_file(
-                        entry.clone().into_path(),
-                        f_name,
+                        file_path.clone(),
+                        f_name.clone(),
                         extension.to_string_lossy().into_owned(),
                     );
-                    new_file.daikoku_data = daikoku_data.clone();
+
+                    let out_daikoku_data = daikoku_data.clone();
+
+                    new_file.daikoku_data = match out_daikoku_data {
+                        Some(data) => {
+                            let mut new_file_metadata = data.clone();
+                            let identifier = new_file_metadata.get("id");
+
+                            let custom_file_path = file_path.clone();
+                            let file_identifier = custom_file_path
+                                .iter()
+                                .rev()
+                                .nth(1)
+                                .unwrap()
+                                .to_str()
+                                .unwrap();
+
+                            new_file_metadata.insert(
+                                "id".to_string(),
+                                identifier
+                                    .map(|id| id.to_owned() + file_identifier)
+                                    .unwrap_or(file_identifier.to_string())
+                                    .to_string(),
+                            );
+                            Some(new_file_metadata)
+                        }
+                        None => out_daikoku_data,
+                    };
+
                     pages.push(new_file);
                 }
             }

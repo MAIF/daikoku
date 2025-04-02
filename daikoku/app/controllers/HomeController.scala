@@ -459,6 +459,23 @@ class HomeController(
       )
     }
 
+  def deleteCmsPage(id: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(AuditTrailEvent("@{user.name} has removed a cms page"))(
+        ctx.tenant.id.value,
+        ctx
+      ) { (tenant, _) =>
+        env.dataStore.cmsRepo
+          .forTenant(tenant)
+          .deleteByIdLogically(id)
+          .map {
+            case true => Ok(Json.obj("created" -> true))
+            case false =>
+              BadRequest(Json.obj("error" -> "Unable to remove the cms page"))
+          }
+      }
+    }
+
   def getCmsPage(id: String) =
     DaikokuAction.async { ctx =>
       TenantAdminOnly(

@@ -10,8 +10,7 @@ use crate::{
 
 use super::{
     cms::{
-        self, create_api_folder, create_mail_folder, Api, CmsPage, IntlTranslationBody,
-        TenantMailBody, EXCLUDE_API,
+        self, create_api_folder, create_mail_folder, Api, CmsPage, IntlTranslationBody, EXCLUDE_API,
     },
     environments::{get_default_environment, read_apikey_from_secrets},
 };

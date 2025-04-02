@@ -217,7 +217,7 @@ export const DaikokuApp = () => {
                     <Route path="/me" element={<RouteWithTitle title={`${tenant.title} - ${translate('My profile')}`}>
                       <MyProfile />
                     </RouteWithTitle>} />
-                    <Route path="/:teamId/settings" element={<TeamBackOffice />} />
+                    <Route path="/:teamId/settings*" element={<TeamBackOffice />} />
                     <Route
                       path="/join"
                       element={

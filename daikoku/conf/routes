@@ -6,6 +6,7 @@ GET     /_/*path                                        fr.maif.otoroshi.daikoku
 POST    /_*path                                         fr.maif.otoroshi.daikoku.ctrls.HomeController.renderCmsPageFromBody(path)
 GET     /cms/pages/:id                                  fr.maif.otoroshi.daikoku.ctrls.HomeController.cmsPageById(id)
 POST    /cms/pages/:id                                  fr.maif.otoroshi.daikoku.ctrls.HomeController.advancedRenderCmsPageById(id)
+DELETE  /api/cms/pages/:id                              fr.maif.otoroshi.daikoku.ctrls.HomeController.deleteCmsPage(id)
 
 POST    /cms-api/sync                                   fr.maif.otoroshi.daikoku.ctrls.CmsApiController.sync()
 GET     /cms-api/health                                 fr.maif.otoroshi.daikoku.ctrls.CmsApiController.health()
