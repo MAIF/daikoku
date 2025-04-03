@@ -38,14 +38,5 @@ export const MaybeHomePage = ({
     }
   }, []);
 
-  return <CmsViewer pageId={tenant.homeCmsPage!} />;
-
-  // return (
-  //   <div className="row">
-  //     <div
-  //       className="tenant-home-page"
-  //       dangerouslySetInnerHTML={{ __html: converter.makeHtml(tenant.unloggedHome || '') }}
-  //     />
-  //   </div>
-  // );
+  return null;
 };

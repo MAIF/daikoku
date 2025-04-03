@@ -61,7 +61,24 @@ class HomeController(
 
   def index() =
     DaikokuActionMaybeWithoutUser.async { ctx =>
-      assets.at("index.html").apply(ctx.request)
+
+      ctx.tenant.style match {
+        case Some(value) if value.homePageVisible =>
+          (value.homeCmsPage, value.notFoundCmsPage) match {
+            case (Some(pageId), _) =>
+              cmsPageByIdWithoutAction(ctx, pageId)
+            case (_, Some(notFoundPage)) =>
+              cmsPageByIdWithoutAction(ctx, notFoundPage)
+            case _ if env.config.isDev =>
+              FastFuture.successful(Redirect(env.getDaikokuUrl(ctx.tenant, "/apis")))
+            case _ =>
+              assets.at("index.html").apply(ctx.request)
+          }
+        case _ if env.config.isDev =>
+          FastFuture.successful(Redirect(env.getDaikokuUrl(ctx.tenant, "/apis")))
+        case _=>
+          assets.at("index.html").apply(ctx.request)
+      }
     }
 
   def indexForRobots() =

@@ -330,6 +330,7 @@ class StateAdminApiController(
           (),
           AppError.SecurityError("Action not avalaible")
         )
+        log = AppLogger.warn("##############  RESET ################")
         _ <- EitherT.liftF[Future, AppError, Unit](env.dataStore.clear())
         _ <- EitherT.liftF[Future, AppError, Done](
           env.initDatastore(ctx.request.getQueryString("path"))

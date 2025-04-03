@@ -412,11 +412,11 @@ class DaikokuEnv(
                 if path.startsWith("http://") || path
                   .startsWith("https://") =>
               AppLogger.warn(
-                s"Main dataStore seems to be empty, importing from $path ..."
+                s"Main dataStore seems to be empty, importing from http resource $path ..."
               )
               implicit val ec: ExecutionContext = defaultExecutionContext
               implicit val env: DaikokuEnv = this
-              val initialDataFu = wsClient
+              wsClient
                 .url(path)
                 .withHttpHeaders(config.init.data.headers.toSeq: _*)
                 .withMethod("GET")
@@ -432,16 +432,14 @@ class DaikokuEnv(
                       )
                     )
                 }
-              Await.result(initialDataFu, 10 seconds)
             case Some(path) =>
               AppLogger.warn(
                 s"Main dataStore seems to be empty, importing from $path ..."
               )
               implicit val ec: ExecutionContext = defaultExecutionContext
               implicit val env: DaikokuEnv = this
-              val initialDataFu =
-                dataStore.importFromStream(FileIO.fromPath(Paths.get(path)))
-              Await.result(initialDataFu, 10 seconds)
+
+              dataStore.importFromStream(FileIO.fromPath(Paths.get(path)))
             case _ =>
               import fr.maif.otoroshi.daikoku.domain._
               import fr.maif.otoroshi.daikoku.login._
@@ -525,7 +523,7 @@ class DaikokuEnv(
                 personalToken = Some(IdGenerator.token(32)),
                 defaultLanguage = None
               )
-              val initialDataFu = for {
+              for {
                 _ <- Future.sequence(
                   evolutions.list.map(e =>
                     dataStore.evolutionRepo.save(
@@ -549,7 +547,6 @@ class DaikokuEnv(
                     .save(adminApiDefaultTenant)
                 _ <-
                   dataStore.usagePlanRepo
-                    .forTenant(tenant.id)
                     .save(adminApiDefaultPlan)
                 _ <-
                   dataStore.apiRepo
@@ -560,18 +557,18 @@ class DaikokuEnv(
                     .forTenant(tenant.id)
                     .save(cmsPlan)
                 _ <- dataStore.userRepo.save(user)
-              } yield ()
+              } yield {
+                AppLogger.warn("")
+                AppLogger.warn(
+                  s"You can log in with admin@daikoku.io / ${config.init.admin.password}"
+                )
+                AppLogger.warn("")
+                AppLogger.warn(
+                  "Please avoid using the default tenant for anything else than configuring Daikoku"
+                )
+                AppLogger.warn("")
+              }
 
-              Await.result(initialDataFu, 10 seconds)
-              AppLogger.warn("")
-              AppLogger.warn(
-                s"You can log in with admin@daikoku.io / ${config.init.admin.password}"
-              )
-              AppLogger.warn("")
-              AppLogger.warn(
-                "Please avoid using the default tenant for anything else than configuring Daikoku"
-              )
-              AppLogger.warn("")
           }
         }
       } else {

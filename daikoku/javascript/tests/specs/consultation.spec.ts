@@ -1,7 +1,7 @@
 import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 import { JIM } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, HOME, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
 
 
 test.beforeEach(async () => {
@@ -58,3 +58,89 @@ test('[ASOAPI-10151] - Consulter l\'offre API', async ({ page }) => {
   await page.getByText('supprimer les filtres').click();
   await expect(page.getByLabel('API papier')).toBeVisible();
 });
+
+test('CMS home page', async ({ page }) => {
+  await page.goto(HOME);
+  await (expect(page).toHaveURL(ACCUEIL))
+  await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
+  await (expect(page).toHaveURL(ACCUEIL))
+  await page.getByRole('link', { name: 'Liste des APIs' }).click();
+  await (expect(page).toHaveURL(ACCUEIL))
+
+  const cmspage = {
+    "_id": "-",
+      "body": "\n\n<!DOCTYPE html>\n<html lang=\"en\">\n\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <meta http-equiv=\"X-UA-Compatible\" content=\"ie=edge\">\n    <title>My CMS</title>\n    <link rel=\"stylesheet\" href=\"./style.css\">\n</head>\n\n<body>\n    <main>\n        <h1>Welcome to your CMS</h1>\n    </main>\n</body>\n\n</html>",
+        "name": "page.html",
+          "path": "/",
+            "tags": [],
+              "exact": true,
+                "_tenant": "default",
+                  "picture": null,
+                    "visible": true,
+                      "_deleted": false,
+                        "metadata": {
+      "from": "cli",
+        "_name": "page.html",
+          "_path": "/",
+            "_exact": "true",
+              "_content_type": "text/html",
+                "_authenticated": "false"
+    },
+    "forwardRef": null,
+      "contentType": "text/html",
+        "authenticated": false,
+          "lastPublishedDate": null
+  }
+
+  await (fetch(`http://localhost:${exposedPort}/admin-api/cms-pages`, {
+    method: 'POST',
+    headers: {
+      "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(cmspage)
+  }))
+
+
+  await (fetch(`http://localhost:${exposedPort}/admin-api/tenants/default`, {
+    method: 'PATCH',
+    headers: {
+      "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify([
+      {
+        "op": "replace",
+        "path": "/style/homePageVisible", 
+        "value": true
+      },
+      {
+        "op": "replace",
+        "path": "/style/homeCmsPage",
+        "value": "-"
+      }
+    ])
+  }))
+
+  await page.goto(HOME);
+  await (expect(page).toHaveURL(HOME))
+  await page.goto(ACCUEIL);
+  await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
+  await (expect(page).toHaveURL(HOME))
+  await page.goto(ACCUEIL);
+  await page.getByRole('link', { name: 'Liste des APIs' }).click();
+  await (expect(page).toHaveURL(ACCUEIL))
+
+
+  //2 - with cms page
+  //go to / => display cms page
+  // in /apis => clik to logo => redirect to cms page
+  // in a page ==> click apilist button => redirect to list
+})
+
+test('api props', ({ page }) => {
+  //vertifier quoi est dispo pour un user normal
+  //user "normal" -> si pas de [doc, swagger, test] -> lien non dispo
+  //user "admin" -> si pas de [doc, swagger, test] -> lien dispo
+  //
+})

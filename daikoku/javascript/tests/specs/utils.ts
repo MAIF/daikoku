@@ -24,6 +24,7 @@ export const otoroshiProdCommandRouteId = "route_route_cf6f8d3e-8c11-4b6f-b080-6
 export const exposedPort = process.env.EXPOSED_PORT || 5173;
 export const EMAIL_UI = "http://localhost:1080";
 export const ACCUEIL = `http://localhost:${exposedPort}/apis`
+export const HOME = `http://localhost:${exposedPort}/`
 
 export const loginAs = async (user: IUser, page: Page) => {
   await page.getByRole('img', { name: 'user menu' }).click();
