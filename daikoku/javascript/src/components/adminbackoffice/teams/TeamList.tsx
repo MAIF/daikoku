@@ -225,6 +225,7 @@ export const TeamList = () => {
         variant: 'error',
         iconClass: 'fas fa-trash delete-icon',
         tooltip: translate('Delete team'),
+        ariaLabel: translate('Delete team'),
       },
       {
         redirect: () => Promise.all([
@@ -263,6 +264,7 @@ export const TeamList = () => {
           .catch((error: ResponseError) => alert({ title: translate('Error'), message: error.error })),
         iconClass: 'fas fa-pen',
         tooltip: translate('Edit team'),
+        ariaLabel: translate('Edit team'),
         actionLabel: translate('Create')
       },
     ];
@@ -291,7 +293,7 @@ export const TeamList = () => {
     <div className="row">
       <div className="col">
         <div className="d-flex justify-content-between align-items-center">
-          <h1>
+          <h1 id="title">
             <Translation i18nkey="Teams">Teams</Translation>
           </h1>
           <div className="col-5">
@@ -304,14 +306,14 @@ export const TeamList = () => {
           </div>
         </div>
         {!dataRequest.isLoading && !dataRequest.isError && dataRequest.data &&
-          <div className="d-flex flex-wrap section">{
+          <div className="d-flex flex-wrap section" role="list" aria-labelledby="title">{
             dataRequest.data.teams.map((team) => {
               return (
                 <AvatarWithAction key={team._id} avatar={team.avatar} infos={<>
                   <span className=" section team__name text-truncate">{team.name}</span>
                 </>} actions={actions(team)} />)
             })}
-            <div className="avatar-with-action new-team-button">
+            <div className="avatar-with-action new-team-button" aria-label={translate('Create a new team')}>
               <div className="container">
                 <div className="avatar__container"
                   title={translate('Create a new team')}

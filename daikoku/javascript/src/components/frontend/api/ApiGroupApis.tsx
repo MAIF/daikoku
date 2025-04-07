@@ -2,10 +2,10 @@ import { getApolloContext } from '@apollo/client';
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { NavContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IApi, IApiWithAuthorization, ITeamSimple } from '../../../types';
 import { ApiList } from '../team';
+import { NavContext } from '../../../contexts/navUtils';
 
 type ApiGroupApisProps = {
   apiGroup: IApi

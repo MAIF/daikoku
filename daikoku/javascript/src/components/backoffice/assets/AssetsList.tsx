@@ -71,9 +71,10 @@ const maybeCreateThumbnail = (id: any, file: any) => {
           ctx?.drawImage(img, 0, 0, 128, 128);
           const base64 = canvas.toDataURL();
           canvas.toBlob((blob) => {
-            Services.storeThumbnail(id, blob).then(() => {
-              s(base64);
-            });
+            Services.storeThumbnail(id, blob)
+              .then(() => {
+                s(base64);
+              });
           });
         };
         img.src = event.target?.result as string;
@@ -211,23 +212,28 @@ export const AssetsList = ({
 
   const columnHelper = createColumnHelper<IAsset>()
   const columns = [
-    columnHelper.accessor(row => row.meta.filename || '--', {
+    columnHelper.accessor(row => row.meta.filename, {
+      id: 'filename',
       header: translate('Filename'),
       meta: { style: { textAlign: 'left' } },
     }),
-    columnHelper.accessor(row => row.meta.title || '--', {
+    columnHelper.accessor(row => row.meta.title, {
+      id: 'title',
       header: translate('Title'),
       meta: { style: { textAlign: 'left' } },
     }),
-    columnHelper.accessor(row => row.slug || '--', {
+    columnHelper.accessor(row => row.slug, {
+      id: 'slug',
       header: translate('Slug'),
       meta: { style: { textAlign: 'left' } },
     }),
-    columnHelper.accessor(row => row.meta.desc || '--', {
+    columnHelper.accessor(row => row.meta.desc, {
+      id: 'desc',
       header: translate('Description'),
       meta: { style: { textAlign: 'left' } },
     }),
     columnHelper.display({
+      id: 'thumbnail',
       header: translate('Thumbnail'),
       meta: { style: { textAlign: 'left' } },
       enableSorting: false,
@@ -256,11 +262,13 @@ export const AssetsList = ({
         }
       },
     }),
-    columnHelper.accessor(row => row.contentType || '--', {
+    columnHelper.accessor(row => row.contentType, {
+      id: 'content-type',
       header: translate('Content-Type'),
       meta: { style: { textAlign: 'left' } },
     }),
     columnHelper.display({
+      id: 'actions',
       header: translate('Actions'),
       meta: { style: { textAlign: 'center', width: '180px' } },
       enableSorting: false,
@@ -452,6 +460,7 @@ export const AssetsList = ({
             columns={columns}
             fetchItems={() => fetchAssets()}
             ref={tableRef}
+            defaultSort='title'
           />
         </div>
       </div>

@@ -3,12 +3,7 @@ package fr.maif.otoroshi.daikoku.ctrls
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.apache.pekko.util.ByteString
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest,
-  DaikokuTenantAction
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuTenantAction}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.{Asset, AssetId}
@@ -21,13 +16,8 @@ import org.apache.pekko.stream.connectors.s3.ObjectMetadata
 import play.api.http.HttpEntity
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  BodyParser,
-  ControllerComponents
-}
+import play.api.mvc.Results.{NotFound, Ok}
+import play.api.mvc.{AbstractController, Action, AnyContent, BodyParser, ControllerComponents}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
@@ -282,42 +272,28 @@ class TeamAssetsController(
                   env.assetsStore
                     .getAsset(ctx.tenant.id, team.id, AssetId(assetId))(cfg)
                     .map {
-                      case Some((source, meta)) =>
-                        val filename = meta.metadata
+                      case (_, bytes, _) if bytes.isEmpty =>
+                        NotFound(Json.obj("error" -> "Asset empty!"))
+                      case (metadata, _, source) =>
+                        val filename = metadata.metadata
                           .filter(_.name().startsWith("x-amz-meta-"))
                           .find(_.name() == "x-amz-meta-filename")
                           .map(_.value())
                           .getOrElse("asset.txt")
-                        val disposition =
-                          ("Content-Disposition" -> s"""attachment; filename="$filename"""")
-                        if (
-                          ctx.request
-                            .getQueryString("download")
-                            .exists(_ == "true")
-                        ) {
-                          Ok.sendEntity(
-                              HttpEntity.Streamed(
-                                source,
-                                None,
-                                meta.contentType
-                                  .map(Some.apply)
-                                  .getOrElse(Some("application/octet-stream"))
-                              )
-                            )
-                            .withHeaders(disposition)
-                        } else {
-                          Ok.sendEntity(
-                            HttpEntity.Streamed(
-                              source,
-                              None,
-                              meta.contentType
-                                .map(Some.apply)
-                                .getOrElse(Some("application/octet-stream"))
-                            )
+
+                        val response = Ok.sendEntity(
+                          HttpEntity.Streamed(
+                            source,
+                            None,
+                            metadata.contentType
+                              .map(Some.apply)
+                              .getOrElse(Some("application/octet-stream"))
                           )
-                        }
-                      case None =>
-                        NotFound(Json.obj("error" -> "Asset not found!"))
+                        )
+
+                        if (ctx.request.getQueryString("download").contains("true")) response.withHeaders(
+                          "Content-Disposition" -> s"""attachment; filename="$filename""""
+                        ) else response
                     }
               }
         }
@@ -474,37 +450,28 @@ class UserAssetsController(
             env.assetsStore
               .getUserAsset(ctx.tenant.id, ctx.user.id, AssetId(assetId))(cfg)
               .map {
-                case Some((source, meta)) =>
-                  val filename = meta.metadata
+                case (_, bytes, _) if bytes.isEmpty =>
+                  NotFound(Json.obj("error" -> "Asset empty!"))
+                case (metadata, _, source) =>
+                  val filename = metadata.metadata
                     .filter(_.name().startsWith("x-amz-meta-"))
                     .find(_.name() == "x-amz-meta-filename")
                     .map(_.value())
-                    .getOrElse("asset.jpg")
-                  val disposition =
-                    ("Content-Disposition" -> s"""attachment; filename="$filename"""")
-                  if (ctx.request.getQueryString("download").contains("true")) {
-                    Ok.sendEntity(
-                        HttpEntity.Streamed(
-                          source,
-                          None,
-                          meta.contentType
-                            .map(Some.apply)
-                            .getOrElse(Some("application/octet-stream"))
-                        )
-                      )
-                      .withHeaders(disposition)
-                  } else {
-                    Ok.sendEntity(
-                      HttpEntity.Streamed(
-                        source,
-                        None,
-                        meta.contentType
-                          .map(Some.apply)
-                          .getOrElse(Some("application/octet-stream"))
-                      )
+                    .getOrElse("asset.txt")
+
+                  val response = Ok.sendEntity(
+                    HttpEntity.Streamed(
+                      source,
+                      None,
+                      metadata.contentType
+                        .map(Some.apply)
+                        .getOrElse(Some("application/octet-stream"))
                     )
-                  }
-                case None => NotFound(Json.obj("error" -> "Asset not found!"))
+                  )
+
+                  if (ctx.request.getQueryString("download").contains("true")) response.withHeaders(
+                    "Content-Disposition" -> s"""attachment; filename="$filename""""
+                  ) else response
               }
         }
     }
@@ -527,10 +494,6 @@ class AssetsThumbnailController(
   def storeAsset(id: String) =
     DaikokuAction.async(bodyParser) { ctx =>
       PublicUserAccess(AuditTrailEvent(s"@{user.name} stores thumbnail"))(ctx) {
-        val contentType = ctx.request.headers
-          .get("Asset-Content-Type")
-          .orElse(ctx.request.contentType)
-          .getOrElse("image/png")
         val assetId = AssetId(id)
         ctx.tenant.bucketSettings match {
           case None =>
@@ -560,17 +523,18 @@ class AssetsThumbnailController(
           env.assetsStore
             .getThumbnail(ctx.tenant.id, AssetId(assetId))(cfg)
             .map {
-              case Some((source, meta)) =>
+              case (_, bytes, _) if bytes.isEmpty =>
+                NotFound(Json.obj("error" -> "Asset empty!"))
+              case (metadata, _, source) =>
                 Ok.sendEntity(
                   HttpEntity.Streamed(
                     source,
                     None,
-                    meta.contentType
+                    metadata.contentType
                       .map(Some.apply)
                       .getOrElse(Some("application/octet-stream"))
                   )
                 )
-              case None => NotFound(Json.obj("error" -> "Asset not found!"))
             }
       }
     }

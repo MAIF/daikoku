@@ -5,16 +5,13 @@ import com.amazonaws.client.builder.AwsClientBuilder.EndpointConfiguration
 import com.amazonaws.services.s3.AmazonS3ClientBuilder
 import com.amazonaws.{ClientConfiguration, HttpMethod, SdkClientException}
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.http.scaladsl.model.{
-  ContentType,
-  ContentTypes,
-  HttpHeader
-}
+import org.apache.pekko.http.scaladsl.model.{ContentType, ContentTypes, HttpHeader}
 import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.connectors.s3._
 import org.apache.pekko.stream.connectors.s3.headers.CannedAcl
 import org.apache.pekko.stream.connectors.s3.scaladsl.S3
-import org.apache.pekko.stream.connectors.s3._
 import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
 import org.apache.pekko.util.ByteString
 import org.apache.pekko.{Done, NotUsed}
@@ -234,14 +231,9 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
 
   def getAsset(tenant: TenantId, team: TeamId, asset: AssetId)(implicit
       conf: S3Configuration
-  ): Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
-    val none: Option[(Source[ByteString, NotUsed], ObjectMetadata)] = None
-    S3.getObject(
-        conf.bucket,
-        s"/${tenant.value}/teams/${team.value}/assets/${asset.value}"
-      )
-      .withAttributes(s3ClientSettingsAttrs)
-      .runFold(none)((opt, _) => opt)
+  ): S3response = {
+    val key = s"/${tenant.value}/teams/${team.value}/assets/${asset.value}"
+    getAsset(key)
   }
 
   def checkBucket()(implicit conf: S3Configuration): Future[BucketAccess] = {
@@ -343,13 +335,29 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
       .run()
   }
 
-  def getTenantAsset(tenant: TenantId, asset: AssetId)(implicit
-      conf: S3Configuration
-  ): Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
-    val none: Option[(Source[ByteString, NotUsed], ObjectMetadata)] = None
-    S3.getObject(conf.bucket, s"/${tenant.value}/tenant-assets/${asset.value}")
-      .withAttributes(s3ClientSettingsAttrs)
-      .runFold(none)((opt, _) => opt)
+
+  type S3response = Future[(ObjectMetadata, ByteString, Source[ByteString, Future[ObjectMetadata]])]
+  def getAsset(key: String)(implicit
+                            conf: S3Configuration
+  ): S3response = {
+    val s3Source =
+      S3.getObject(conf.bucket, key)
+        .withAttributes(s3ClientSettingsAttrs)
+    val (metaF, byteF): (Future[ObjectMetadata], Future[ByteString]) = s3Source.toMat(Sink.fold(ByteString.empty)(_ ++ _))(Keep.both).run()
+
+    for {
+      meta <- metaF
+      bytes <- byteF
+    } yield {
+      (meta, bytes, s3Source)
+    }
+  }
+
+  def getTenantAsset(tenant: TenantId, asset: AssetId)
+                    (implicit conf: S3Configuration): S3response = {
+    val key = s"/${tenant.value}/tenant-assets/${asset.value}"
+    getAsset(key)
+
   }
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -388,21 +396,17 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
   }
 
   def getUserAsset(tenant: TenantId, user: UserId, asset: AssetId)(implicit
-      conf: S3Configuration
-  ): Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
-    val none: Option[(Source[ByteString, NotUsed], ObjectMetadata)] = None
-    S3.getObject(conf.bucket, s"/users/${asset.value}")
-      .withAttributes(s3ClientSettingsAttrs)
-      .runFold(none)((opt, _) => opt)
+                                                                   conf: S3Configuration
+  ): S3response = {
+    val key = s"/users/${asset.value}"
+    getAsset(key)
   }
 
   def getThumbnail(tenant: TenantId, asset: AssetId)(implicit
       conf: S3Configuration
-  ): Future[Option[(Source[ByteString, NotUsed], ObjectMetadata)]] = {
-    val none: Option[(Source[ByteString, NotUsed], ObjectMetadata)] = None
-    S3.getObject(conf.bucket, s"/${tenant.value}/thumbnails/${asset.value}")
-      .withAttributes(s3ClientSettingsAttrs)
-      .runFold(none)((opt, _) => opt)
+  ): S3response = {
+    val key = s"/${tenant.value}/thumbnails/${asset.value}"
+    getAsset(key)
   }
 
   def storeThumbnail(

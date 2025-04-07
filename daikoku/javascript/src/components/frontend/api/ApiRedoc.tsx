@@ -86,17 +86,17 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
     })
 
 
-    return <div className="d-flex col flex-column section" style={{position: 'relative'}}>
+    return <div className="d-flex col flex-column section" style={{ position: 'relative' }}>
       <Can I={manage} a={API} team={props.ownerTeam}>
-          <button
-            className="btn btn-sm btn-outline-primary px-3"
-            aria-label={translate('update.api.openapi.btn.label')}
-            data-bs-toggle="dropdown"
-            aria-expanded="false"
-            id={`${props.entity._id}-dropdownMenuButton`}
-            style={{position: 'absolute', top: 10, right: 10, zIndex: 999}}>
+        <button
+          className="btn btn-sm btn-outline-primary px-3"
+          aria-label={translate('update.api.openapi.btn.label')}
+          data-bs-toggle="dropdown"
+          aria-expanded="false"
+          id={`${props.entity._id}-dropdownMenuButton`}
+          style={{ position: 'absolute', top: 10, right: 10, zIndex: 100 }}>
           {translate('api.home.config.api.spec.btn.label')}
-          </button>
+        </button>
         <div className="dropdown-menu" aria-labelledby={`${props.entity._id}-dropdownMenuButton`}>
           <span
             onClick={() => openApiDocForm()}
@@ -120,10 +120,12 @@ export function ApiRedoc<T extends IWithSwagger>(props: ApiRedocProps<T>) {
             options={{ downloadFileName, pathInMiddlePanel: true, sideNavStyle: SideNavStyleEnum.PathOnly, ...(props.swaggerConf?.additionalConf || {}) }} />}
         {props.swaggerConf?.specificationType === SpecificationType.asyncapi && <AsyncApiComponent schema={spec} config={config} />}
         {!props.swaggerConf && (
-          <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
-            <div>{translate('update.api.openapi.not.found.alert')}</div>
-            <button className="btn btn-outline-info" onClick={openApiDocForm}>{translate('update.api.openapi.btn.label')}</button>
-          </div>
+          <Can I={manage} a={API} team={props.ownerTeam}>
+            <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
+              <div>{translate('update.api.openapi.not.found.alert')}</div>
+              <button className="btn btn-outline-info" onClick={openApiDocForm}>{translate('update.api.openapi.btn.label')}</button>
+            </div>
+          </Can>
         )}
       </div>
     </div>
@@ -147,7 +149,7 @@ export const EnvironmentsRedoc = (props: EnvironmentsRedocProps) => {
         if (isError(r)) {
           return []
         } else {
-          setSelectedEnvironment(prev => prev ? r.find(e => e._id === prev._id) : r[0])
+          setSelectedEnvironment(prev => prev ? r.find(e => e._id === prev._id) : r.find(e => !!e.swagger) || r[0])
           return r
         }
       }),

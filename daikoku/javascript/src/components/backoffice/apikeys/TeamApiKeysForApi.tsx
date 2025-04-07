@@ -782,6 +782,8 @@ export const ApiKeyCard = ({
         );
       })
 
+    const isApiCMS = api.visibility === "AdminOnly" && api.name.includes("cms");
+
     return (
       <div className='api-subscription'>
         <div className="api-subscription__container flex-column flex-xl-row gap-3">
@@ -809,7 +811,7 @@ export const ApiKeyCard = ({
           <div className='api-subscription__infos'>
             <div className='api-subscription__infos__name'>{_customName}</div>
             <div className='d-flex gap-2'>
-              <BeautifulTitle title={translate("subscription.copy.apikey.help")}>
+              {!isApiCMS && <BeautifulTitle title={translate("subscription.copy.apikey.help")}>
                 <button className='btn btn-sm btn-outline-info'
                   aria-label={translate("subscription.copy.apikey.aria.label")}
                   onClick={() => {
@@ -825,8 +827,8 @@ export const ApiKeyCard = ({
                   <i className="fa fa-copy me-1" />
                   {translate("subscription.copy.apikey.label")}
                 </button>
-              </BeautifulTitle>
-              <BeautifulTitle title={translate("subscription.copy.token.help")}>
+              </BeautifulTitle>}
+              {!isApiCMS && <BeautifulTitle title={translate("subscription.copy.token.help")}>
                 <button className='btn btn-sm btn-outline-info'
                   aria-label={translate("subscription.copy.tokan.aria-label")}
                   onClick={() => {
@@ -842,8 +844,8 @@ export const ApiKeyCard = ({
                   <i className="fa fa-copy me-1" />
                   {translate("subscription.copy.token.label")}
                 </button>
-              </BeautifulTitle>
-              <BeautifulTitle title={translate("subscription.copy.basic.auth.help")}>
+              </BeautifulTitle>}
+              {!isApiCMS && <BeautifulTitle title={translate("subscription.copy.basic.auth.help")}>
                 <button className='btn btn-sm btn-outline-info'
                   aria-label={translate("subscription.copy.basic.auth.aria-label")}
                   onClick={() => {
@@ -859,8 +861,8 @@ export const ApiKeyCard = ({
                   <i className="fa fa-copy me-1" />
                   {translate("subscription.copy.basic.auth.label")}
                 </button>
-              </BeautifulTitle>
-              <BeautifulTitle title={translate("subscription.copy.cli.auth.help")}>
+              </BeautifulTitle>}
+              {isApiCMS && <BeautifulTitle title={translate("subscription.copy.cli.auth.help")}>
                 <button className='btn btn-sm btn-outline-info'
                   aria-label={translate("subscription.copy.cli.auth.aria-label")}
                   onClick={() => {
@@ -876,8 +878,8 @@ export const ApiKeyCard = ({
                   <i className="fa fa-copy me-1" />
                   {translate("subscription.copy.cli.auth.label")}
                 </button>
-              </BeautifulTitle>
-              <BeautifulTitle title={translate("subscription.display.credentials")}>
+              </BeautifulTitle>}
+              {!isApiCMS && <BeautifulTitle title={translate("subscription.display.credentials")}>
                 <button className='btn btn-sm btn-outline-info'
                   aria-label={translate("subscription.display.credentials")}
                   onClick={() => openCustomModal({
@@ -889,7 +891,7 @@ export const ApiKeyCard = ({
                   })}>
                   <i className="fa fa-eye" />
                 </button>
-              </BeautifulTitle>
+              </BeautifulTitle>}
             </div>
             <div className='api-subscription__infos__creation'>{
               translate("subscription.for")}

@@ -283,6 +283,7 @@ const Avatar = ({
             }`}
           style={{
             width: 100,
+            height: 100,
             borderRadius: '50%',
             backgroundColor: 'white',
           }}
@@ -403,9 +404,9 @@ export const MyProfile = () => {
       render: (v) => Avatar({ ...v, tenant: tenant }),
       constraints: [
         constraints.required(translate('constraints.required.avatar')),
-        constraints.url(
-          translate({ key: 'constraints.format.url', replacements: [translate('Avatar')] })
-        ),
+        // constraints.url(
+        //   translate({ key: 'constraints.format.url', replacements: [translate('Avatar')] })
+        // ),
       ],
     },
     defaultLanguage: {

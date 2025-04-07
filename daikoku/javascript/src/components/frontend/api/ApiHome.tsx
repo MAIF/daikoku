@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 import { ApiDocumentation, ApiIssue, ApiPost, ApiPricing, ApiRedoc, ApiTest, EnvironmentsDocumentation, EnvironmentsRedoc, EnvironmentsTest } from '.';
 import { ApiGroupApis, TeamApiConsumption, TeamApiSubscriptions, TeamPlanConsumption, read } from '../..';
-import { I18nContext, ModalContext, NavContext, useApiFrontOffice } from '../../../contexts';
+import { I18nContext, ModalContext, useApiFrontOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { Display, IApi, ISubscription, ITeamFullGql, ITeamSimple, IUsagePlan, isError } from '../../../types';
@@ -16,6 +16,7 @@ import { CmsViewer } from '../CmsViewer';
 import { ApiDescription } from './ApiDescription';
 import { ApiHeader } from './ApiHeader';
 import { ApiSubscriptions } from './ApiSubscriptions';
+import { NavContext } from '../../../contexts/navUtils';
 
 type ApiHomeProps = {
   groupView?: boolean
@@ -62,6 +63,19 @@ export const ApiHome = ({
     enabled: apiQuery.isSuccess && !!apiQuery.data
   })
 
+  const environmentsQuery = useQuery({
+    queryKey: ['environments-apihome', params.apiId],
+    queryFn: () => Services.getVisiblePlans(params.apiId, params.versionId)
+        .then(envs => {
+          if (isError(envs)) {
+            return []
+          } else {
+            return envs
+          }
+        }),
+    enabled: tenant.display === 'environment'
+    })
+
   const graphqlEndpoint = `${window.location.origin}/api/search`;
   const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
 
@@ -97,8 +111,9 @@ export const ApiHome = ({
   });
 
 
-  const { addMenu, isAdminApi, isApiGroup } = groupView && apiQuery.data && !isError(apiQuery) && ownerTeamQuery.data && !isError(ownerTeamQuery.data) ?
-    { addMenu: () => { }, isAdminApi: false, isApiGroup: false } : useApiFrontOffice((apiQuery.data as IApi), (ownerTeamQuery.data as ITeamSimple));
+  const { addMenu } = groupView && apiQuery.data && !isError(apiQuery) && ownerTeamQuery.data && !isError(ownerTeamQuery.data) ?
+    { addMenu: () => { } } :
+    useApiFrontOffice((apiQuery.data as IApi), (ownerTeamQuery.data as ITeamSimple), (environmentsQuery.data || []));
 
   useEffect(() => {
     return () => {
@@ -122,14 +137,14 @@ export const ApiHome = ({
           <span
             className="block__entry__link"
             onClick={() => navigate(`/${ownerTeam._humanReadableId}/${api?._humanReadableId}/${api?.currentVersion}/apikeys`)}>
-            <Translation i18nkey="API keys">API keys</Translation>
+            <Translation i18nkey="API keys">{translate({ key: 'API key', plural: true })}</Translation>
           </span>
         </Can>
       );
 
       addMenu({
         blocks: {
-          links: { links: { viewApiKey: { label: 'view apikey', component: viewApiKeyLink } } },
+          links: { links: { viewApiKey: { component: viewApiKeyLink } } },
         },
       });
     }
@@ -244,8 +259,6 @@ export const ApiHome = ({
           {params.tab === 'news' && (<ApiPost api={api} ownerTeam={ownerTeam} versionId={params.versionId} />)}
           {(params.tab === 'issues' || params.tab === 'labels') && (<ApiIssue api={api} ownerTeam={ownerTeam} />)}
           {(params.tab === 'subscriptions') && (<TeamApiSubscriptions api={api} currentTeam={ownerTeam} />)}
-          {params.tab === 'consumption' && !consumptionMatch && <TeamApiConsumption api={api} currentTeam={ownerTeam} />}
-          {params.tab === 'consumption' && consumptionMatch?.params.planId && (<TeamPlanConsumption api={api} currentTeam={ownerTeam} />)}
           {params.tab === 'apikeys' && (<ApiSubscriptions api={api} ownerTeam={ownerTeam} subscribingTeams={subscribingTeams} />)}
         </div>
       </main>);

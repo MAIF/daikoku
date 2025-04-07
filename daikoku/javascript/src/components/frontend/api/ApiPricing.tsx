@@ -1151,6 +1151,8 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       <div
         className="col-md-3 mb-4 shadow-sm usage-plan__card"
         data-usage-plan={plan.customName}
+        role='listitem'
+        aria-labelledby={`${plan._id}-title`}
       >
         <div
           className="usage-plan__card__header"
@@ -1201,7 +1203,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
               </div>
             </div>
           </Can>
-          <div className='overflow-hidden usage-plan__card__title'>{plan.customName}</div>
+          <div className='overflow-hidden usage-plan__card__title' id={`${plan._id}-title`}>{plan.customName}</div>
           <p className="usage-plan__card__description text-justify flex-grow-1">
             {customDescription && <span>{customDescription}</span>}
           </p>
@@ -1715,6 +1717,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
       <div
         className="d-flex flex-row pricing-content flex-wrap"
         id="usage-plans__list"
+        role="list"
+        aria-label={translate(`api.pricings.list.${tenant.display === 'default' ? 'plans' : 'environments'}.aria.label`)}
       >
         {possibleUsagePlans
           .sort((a, b) => a.customName.localeCompare(b.customName))

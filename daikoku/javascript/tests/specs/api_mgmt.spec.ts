@@ -199,3 +199,42 @@ test('[ASOAPI-10692] - désactiver une API', async ({ page }) => {
   //todo: wait #800 (https://github.com/MAIF/daikoku/issues/800)
 });
 
+test('sécuriser la création d\'API à l\'aide de la securité de tenant associé', async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+  await page.getByRole('button', { name: 'Ouvrir le menu de création' }).click();
+  await page.locator('span').filter({ hasText: 'API' }).first().click();
+  await page.locator('div').filter({ hasText: /^Vendeurs$/ }).click();
+  await page.getByRole('button', { name: 'Publiée' }).click();
+  await page.getByRole('textbox', { name: 'Nom' }).fill('Vente de papier API');
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await page.getByLabel('Accueil Daikoku').click();
+  await expect(page.getByRole('heading', { name: 'Vente de papier API' })).toBeVisible();
+  await page.getByRole('img', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Dunder Mifflin' }).click();
+  await page.getByText('Sécurité').click();
+  await page.locator('form div').filter({ hasText: 'Sécurité - création d\'API' })
+    .getByRole('checkbox').check();
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await page.getByText('Équipes', { exact: true }).click();
+  await page.getByRole('listitem', { name: 'API Division' }).hover();
+  await page.getByRole('listitem', { name: 'API Division' })
+    .getByLabel('Modifier l\'équipe').click();
+  await page.locator('div').filter({ hasText: /^Autorisation de création d'APIs$/ })
+    .getByRole('checkbox').check();
+  await page.getByRole('button', { name: 'Mettre à jour' }).click();
+  await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
+  await page.getByRole('button', { name: 'Ouvrir le menu de création' }).click();
+  await page.locator('span').filter({ hasText: 'API' }).first().click();
+  await expect(page.getByRole('dialog')).toBeVisible();
+  await expect(page.getByRole('dialog')).toContainText('API Division');
+  await expect(page.getByRole('dialog')).not.toContainText('Vendeurs');
+  await page.getByRole('button', { name: 'Fermer' }).click();
+  await logout(page);
+
+  await loginAs(JIM, page);
+  await page.getByRole('button', { name: 'Ouvrir le menu de création' }).click();
+  await page.locator('span').filter({ hasText: 'API' }).first().click();
+  await expect(page.getByRole('dialog')).toBeHidden();
+});
+

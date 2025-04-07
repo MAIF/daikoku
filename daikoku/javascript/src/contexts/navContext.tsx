@@ -1,63 +1,17 @@
-import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import merge from 'lodash/merge';
 import React, { PropsWithChildren, useContext, useEffect, useState } from 'react';
-import { Link, useLocation, useMatch, useNavigate, useParams } from 'react-router-dom';
+import { useMatch, useNavigate, useParams } from 'react-router-dom';
 
-import { api as API, Can, manage, teamPermissions } from '../components/utils';
+import { teamPermissions } from '../components/utils';
 import { I18nContext } from '../contexts';
 import * as Services from '../services/index';
-import { IApi, ITeamSimple, ITenant, SpecificationType, isError } from '../types';
+import { IApi, ITeamSimple, ITenant, IUsagePlan, isError, isUsagePlan } from '../types';
 import { GlobalContext } from './globalContext';
 import { ModalContext } from './modalContext';
-import { toast } from 'sonner';
+import { NavContext, navMode, officeMode, TNavContext } from './navUtils';
 
 
-export enum navMode {
-  initial = 'INITIAL',
-  api = 'API',
-  apiGroup = 'API_GROUP',
-  user = 'USER',
-  daikoku = 'DAIKOKU',
-  tenant = 'TENANT',
-  team = 'TEAM',
-};
-
-export enum officeMode {
-  front = 'FRONT',
-  back = 'BACK',
-};
-const initNavContext = {
-  menu: {},
-  addMenu: () => { },
-  setMenu: () => { },
-  mode: navMode.api,
-  setMode: () => { },
-  office: officeMode.front,
-  setOffice: () => { },
-  setApi: () => { },
-  setApiGroup: () => { },
-  setTeam: () => { },
-  setTenant: () => { },
-}
-
-type TNavContext = {
-  menu: object,
-  addMenu: (m: object) => void,
-  setMenu: (m: object) => void,
-  mode?: navMode,
-  setMode: (m: navMode) => void,
-  office: officeMode,
-  setOffice: (o: officeMode) => void,
-  api?: IApi,
-  setApi: (api?: IApi) => void,
-  apiGroup?: IApi,
-  setApiGroup: (apigroup?: IApi) => void,
-  team?: ITeamSimple,
-  setTeam: (team?: ITeamSimple) => void,
-  tenant?: ITenant,
-  setTenant: (tenant?: ITenant) => void,
-}
-export const NavContext = React.createContext<TNavContext>(initNavContext);
 
 export const NavProvider = (props: PropsWithChildren) => {
   const [mode, setMode] = useState(navMode.initial);
@@ -99,7 +53,7 @@ export const NavProvider = (props: PropsWithChildren) => {
   );
 };
 
-export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
+export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsagePlan[]) => {
   const { setMode, setOffice, setApi, setTeam, addMenu, setMenu, menu } = useContext(NavContext);
   const { translate } = useContext(I18nContext);
   const { openContactModal } = useContext(ModalContext);
@@ -107,9 +61,34 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
   const navigate = useNavigate();
   const params = useParams();
 
-  const userCanUpdateApi = team?.users.find(u => u.userId === connectedUser._id && u.teamPermission !== teamPermissions.user)
+  const userCanUpdateApi = team?.users.some(u => u.userId === connectedUser._id && u.teamPermission !== teamPermissions.user)
   const isAdminApi = api?.visibility === 'AdminOnly';
   const isApiGroup = api?.apis
+
+  const shouldDisplayDocumentation = userCanUpdateApi || (
+    !connectedUser.isGuest &&
+    (
+      tenant.display === 'environment' ? plans?.some(p => !!p.documentation) :
+        !!api?.documentation?.pages?.length
+    )
+  )
+  const shouldDisplayOpenApi = userCanUpdateApi || (
+    !connectedUser.isGuest &&
+    (
+      tenant.display === 'environment' ? plans?.some(p => p.swagger?.content || p.swagger?.url) :
+        (api?.swagger?.content || api?.swagger?.url)
+    )
+  )
+  const shouldDisplayTest = userCanUpdateApi || (
+    !connectedUser.isGuest &&
+    (
+      tenant.display === 'environment' ? plans?.some(p => !!p.testing?.enabled) :
+        !!api?.testing?.enabled
+    )
+  )
+  const shouldDisplayNews = userCanUpdateApi || (
+    !connectedUser.isGuest && !!api?.posts.length
+  )
 
   const schema = (currentTab: string) => ({
     title: api?.name,
@@ -140,45 +119,45 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
           documentation: {
             label: translate('Documentation'),
             action: () => {
-              if (api?.documentation?.pages?.length || userCanUpdateApi) navigateTo('documentation');
+              if (shouldDisplayDocumentation) navigateTo('documentation');
             },
             className: {
               active: currentTab === 'documentation',
-              disabled: api?.visibility === 'AdminOnly' || (!userCanUpdateApi && tenant.display === 'environment' || !api?.documentation?.pages?.length && !userCanUpdateApi),
-              'd-none': api?.visibility === 'AdminOnly' || (!userCanUpdateApi && tenant.display === 'environment' || !api?.documentation?.pages?.length && !userCanUpdateApi)
+              disabled: !shouldDisplayDocumentation,
+              'd-none': !shouldDisplayDocumentation
             },
           },
           swagger: {
             label: translate('Swagger'),
             action: () => {
-              if (userCanUpdateApi || api?.swagger?.content || api?.swagger?.url) navigateTo('swagger');
+              if (shouldDisplayOpenApi) navigateTo('swagger');
             },
             className: {
               active: currentTab === 'swagger',
-              disabled: isApiGroup || (!userCanUpdateApi && (tenant.display === 'environment' || !api?.swagger?.content && !api?.swagger?.url)),
-              'd-none': isApiGroup || (!userCanUpdateApi && (tenant.display === 'environment' || !api?.swagger?.content && !api?.swagger?.url))
+              disabled: !shouldDisplayOpenApi,
+              'd-none': !shouldDisplayOpenApi
             },
           },
           testing: {
             label: translate('Testing'),
             action: () => {
-              if (userCanUpdateApi || api?.testing?.enabled) navigateTo('testing');
+              if (shouldDisplayTest) navigateTo('testing');
             },
             className: {
               active: currentTab === 'testing',
-              disabled: isAdminApi || isApiGroup || !userCanUpdateApi && (tenant.display === 'environment' || !api?.testing?.enabled),
-              'd-none': isAdminApi || isApiGroup || !userCanUpdateApi && (tenant.display === 'environment' || !api?.testing?.enabled)
+              disabled: !shouldDisplayTest,
+              'd-none': !shouldDisplayTest
             },
           },
           news: {
             label: translate('nav.section.news.label'),
             action: () => {
-              if (userCanUpdateApi || api?.posts?.length) navigateTo('news');
+              if (shouldDisplayNews) navigateTo('news');
             },
             className: {
               active: currentTab === 'news',
-              disabled: isAdminApi || !userCanUpdateApi && !api?.posts?.length,
-              'd-none': isAdminApi || !userCanUpdateApi && !api?.posts?.length,
+              disabled: !shouldDisplayNews,
+              'd-none': !shouldDisplayNews,
             },
           },
           issues: {
@@ -195,15 +174,6 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple) => {
             action: () => navigateTo('subscriptions'),
             className: {
               active: currentTab === 'subscriptions',
-              disabled: !userCanUpdateApi,
-              'd-none': !userCanUpdateApi
-            },
-          },
-          consumption: {
-            label: translate('Consumption'),
-            action: () => navigateTo('consumption'),
-            className: {
-              active: currentTab === 'consumption',
               disabled: !userCanUpdateApi,
               'd-none': !userCanUpdateApi
             },
@@ -359,7 +329,7 @@ export const useTeamBackOffice = () => {
       setMode(navMode.team);
       setOffice(officeMode.back);
       setTeam(queryTeam.data);
-      setMenu(schema(match?.params['tab'], queryTeam.data));
+      setMenu(schema(match?.params['tab']!, queryTeam.data));
     }
   }, [queryTeam.data]);
 

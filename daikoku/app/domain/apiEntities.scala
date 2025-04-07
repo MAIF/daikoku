@@ -830,7 +830,7 @@ object ApiTemplate {
       id = ApiId(IdGenerator.token),
       tenant = tenant.id,
       team = team.id,
-      name = s"cms-api-tenant-${tenant.humanReadableId}",
+      name = s"cms API",
       lastUpdate = DateTime.now(),
       smallDescription = "cms api",
       description =
@@ -871,7 +871,7 @@ object ApiTemplate {
       id = ApiId(s"admin-api-tenant-${tenant.humanReadableId}"),
       tenant = tenant.id,
       team = team.id,
-      name = s"admin-api-tenant-${tenant.humanReadableId}",
+      name = s"admin API",
       lastUpdate = DateTime.now(),
       smallDescription = "admin api",
       description =

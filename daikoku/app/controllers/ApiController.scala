@@ -185,10 +185,8 @@ class ApiController(
       )(ctx) {
 
         def fetchSwagger(plan: UsagePlan): EitherT[Future, AppError, Result] = {
-          AppLogger.info(s"${plan.swagger}")
           plan.swagger match {
             case Some(SwaggerAccess(_, Some(content), _, _, _)) =>
-              AppLogger.info(s"send swagger content $content")
               val contentType =
                 if (content.startsWith("{")) "application/json"
                 else "application/yaml"
@@ -229,7 +227,6 @@ class ApiController(
           }
         }
 
-        AppLogger.info("BEGIN fetching swagger")
         (for {
           _ <- EitherT.cond[Future][AppError, Unit](
             !(ctx.tenant.apiReferenceHideForGuest

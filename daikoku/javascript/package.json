@@ -61,7 +61,7 @@
     "react-step-wizard": "5.3.11",
     "react-tooltip": "5.27.1",
     "recharts": "2.12.7",
-    "redoc": "2.1.5",
+    "redoc": "2.4.0",
     "set-value": "4.1.0",
     "showdown": "2.1.0",
     "sonner": "^2.0.1",
@@ -89,7 +89,7 @@
     "rollup-plugin-visualizer": "^5.12.0",
     "sass": "^1.86.0",
     "typescript": "^5.8.2",
-    "vite": "^6.2.3",
+    "vite": "6.2.4",
     "vite-plugin-simple-html": "^0.2.0"
   }
 }

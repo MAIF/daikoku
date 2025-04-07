@@ -178,7 +178,7 @@ export const SideBar = () => {
 
           <div className="nav_item mb-3" style={{ color: '#fff' }}>
             <img
-              style={{ width: '35px', ...impersonatorStyle }}
+              style={{ width: '35px', height: '35px', ...impersonatorStyle }}
               src={connectedUser.picture}
               className="logo-anonymous user-logo"
               onClick={() => {

@@ -48,19 +48,19 @@ export const AvatarWithAction = (props: Props) => {
       );
     } else if (action.link) {
       ActionComponent = (
-        <a href={action.link}>
+        <a href={action.link} aria-label={action.ariaLabel}>
           <i className={action.iconClass} onClick={() => handleAction(action.action)} />
         </a>
       );
     } else if (action.redirect) {
       ActionComponent = (
-        <span onClick={() => action.redirect()}>
+        <span onClick={() => action.redirect()} aria-label={action.ariaLabel}>
           <i className={action.iconClass} />
         </span>
       );
     } else {
       ActionComponent = (
-        <i className={action.iconClass} onClick={() => handleAction(action.action)} />
+        <i className={action.iconClass} onClick={() => handleAction(action.action)} aria-label={action.ariaLabel} />
       );
     }
 
@@ -78,14 +78,15 @@ export const AvatarWithAction = (props: Props) => {
     );
   };
 
+  const id = nanoid()
   return (
-    <div className="avatar-with-action">
+    <div className="avatar-with-action" role='listitem' aria-labelledby={id}>
       <div className="container">
         <div className="overlay" />
         <div className="avatar__container">
           <img src={props.avatar} alt="avatar" className="avatar-with-action__avatar" />
         </div>
-        <div className="avatar-with-action__infos">{props.infos}</div>
+        <div className="avatar-with-action__infos" id={id}>{props.infos}</div>
         {!secondaryActions.length && props.actions.map((action, idx) => getAction(action, idx))}
         {!!secondaryActions.length && secondaryActions.map((action, idx) => getAction(action, idx))}
       </div>

@@ -342,7 +342,6 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
   };
 
   const saveNewPage = (page: IDocPage) => {
-    console.debug("save page", page)
     Services.createDocPage(props.ownerTeam._id, page)
       .then(() => props.savePages([{
         id: page._id,
@@ -357,7 +356,7 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
     Services.fetchNewApiDocPage()
       .then(page => {
         openRightPanel({
-          title: "test creer page doc",
+          title: translate("doc.page.create.modal.title"),
           content: <Form
             schema={schema(asset => console.debug({ asset }))}
             flow={flow}
@@ -404,13 +403,15 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
       )}
 
       {view === 'documentation' && !pageId && (
-        <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
-          <div>{translate('update.api.documentation.not.found.alert')}</div>
-          <button className="btn btn-outline-info"
-            onClick={() => fetchNewPageAndUpdate()}>
-            {translate('add.api.documention.btn.label')}
-          </button>
-        </div>
+        <Can I={manage} a={API} team={props.ownerTeam}>
+          <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
+            <div>{translate('update.api.documentation.not.found.alert')}</div>
+            <button className="btn btn-outline-info"
+              onClick={() => fetchNewPageAndUpdate()}>
+              {translate('add.api.documention.btn.label')}
+            </button>
+          </div>
+        </Can>
       )}
 
       {view === 'update' && (
@@ -665,11 +666,22 @@ export const EnvironmentsDocumentation = (props: EnvironmentsDocumentationProps)
         if (isError(envs)) {
           return []
         } else {
-          setSelectedEnvironment(prev => !!prev ? envs.find(e => selectedEnvironment?._id === e._id) : envs[0])
+          setSelectedEnvironment(prev => !!prev ? envs.find(e => selectedEnvironment?._id === e._id) : envs.find(e => !!e.documentation) || envs[0])
           return envs
         }
       }),
   })
+
+  const saveEnvironmentDocumentation = (pages: IDocumentationPages) => {
+    if (selectedEnvironment && selectedEnvironment.documentation) {
+      return Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion,
+        { ...selectedEnvironment, documentation: { ...selectedEnvironment.documentation, pages } })
+    } else if (selectedEnvironment) {
+      return Services.fetchNewApiDoc()
+        .then(documentation => Services.updatePlan(props.ownerTeam._id, props.api._id, props.api.currentVersion,
+          { ...selectedEnvironment, documentation: { ...documentation, pages } }))
+    }
+  }
 
   if (!selectedEnvironment && environmentsQuery.isLoading) {
     return <Spinner />
@@ -711,7 +723,7 @@ export const EnvironmentsDocumentation = (props: EnvironmentsDocumentationProps)
           documentation={selectedEnvironment.documentation}
           getDocPage={(pageId) => Services.getUsagePlanDocPage(props.api._id, selectedEnvironment._id, pageId)}
           refreshEntity={() => queryClient.invalidateQueries({ queryKey: ['environments'] })}
-          savePages={(pages) => console.debug({ pages })} />
+          savePages={(pages) => saveEnvironmentDocumentation(pages)} />
       </div>
     )
   } else {

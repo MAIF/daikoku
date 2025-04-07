@@ -421,54 +421,32 @@ class AssetsService {
                 NotFound(Json.obj("error" -> "Asset not found!"))
               )
             case Some(url) if redirect => FastFuture.successful(Redirect(url))
-            case Some(_) if download =>
+            case Some(_) =>
               env.assetsStore
                 .getTenantAsset(ctx.tenant.id, AssetId(assetId))(cfg)
                 .map {
-                  case None =>
-                    NotFound(Json.obj("error" -> "Asset not found!"))
-                  case Some((source, meta)) =>
-                    val filename = meta.metadata
+                  case (_, bytes, _) if bytes.isEmpty =>
+                    NotFound(Json.obj("error" -> "Asset empty!"))
+                  case (metadata, _, source) =>
+                    val filename = metadata.metadata
                       .filter(_.name().startsWith("x-amz-meta-"))
                       .find(_.name() == "x-amz-meta-filename")
                       .map(_.value())
                       .getOrElse("asset.txt")
 
-                    Ok.sendEntity(
+                    val response = Ok.sendEntity(
                         HttpEntity.Streamed(
                           source,
                           None,
-                          meta.contentType
+                          metadata.contentType
                             .map(Some.apply)
                             .getOrElse(Some("application/octet-stream"))
                         )
                       )
-                      .withHeaders(
+
+                      if (download) response.withHeaders(
                         "Content-Disposition" -> s"""attachment; filename="$filename""""
-                      )
-                }
-            case Some(url) =>
-              env.wsClient
-                .url(url)
-                .withRequestTimeout(10.minutes)
-                .get()
-                .map(resp => {
-                  resp.status match {
-                    case 200 =>
-                      Ok.sendEntity(
-                        HttpEntity.Streamed(
-                          resp.bodyAsSource,
-                          None,
-                          Option(resp.contentType)
-                        )
-                      )
-                    case _ =>
-                      NotFound(Json.obj("error" -> "Asset not found!"))
-                  }
-                })
-                .recover {
-                  case err =>
-                    InternalServerError(Json.obj("error" -> err.getMessage))
+                      ) else response
                 }
           }
     }

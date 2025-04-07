@@ -37,6 +37,6 @@ export const loginAs = async (user: IUser, page: Page) => {
 
 export const logout = async (page: Page) => {
   await page.getByRole('img', { name: 'user menu' }).click();
-  await page.locator('.block__entry__link').filter({ hasText: 'Déconnexion' }).click();
+  await page.getByRole('link', { name: 'Déconnexion' }).click();
   await page.getByLabel('API papier').waitFor({ state: 'visible' });
 }

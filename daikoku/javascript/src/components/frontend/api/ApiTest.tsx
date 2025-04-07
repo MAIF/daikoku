@@ -142,7 +142,7 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
   })
 
   return (
-    <div className="d-flex justify-content-center w-10 p-3" style={{position: 'relative'}}>
+    <div className="d-flex justify-content-center w-10 p-3" style={{ position: 'relative' }}>
       <Can I={manage} a={API} team={props.ownerTeam}>
         {/* <div className="mb-2 d-flex justify-content-end"> */}
         <button
@@ -151,7 +151,7 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
           data-bs-toggle="dropdown"
           aria-expanded="false"
           id={`${props.entity._id}-dropdownMenuButton`}
-          style={{ position: 'absolute', right: 0, zIndex: 10000 }}>
+          style={{ position: 'absolute', right: 0, zIndex: 100 }}>
           {translate('api.home.config.api.test.btn.label')}
         </button>
         {/* </div> */}
@@ -179,16 +179,20 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
         </div>
       </Can>
       {!props.swagger && (
-        <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
-          <div>{translate('update.api.openapi.not.found.alert')}</div>
-          <button className="btn btn-outline-info" onClick={openApiDocForm}>{translate('update.api.openapi.btn.label')}</button>
-        </div>
+        <Can I={manage} a={API} team={props.ownerTeam}>
+          <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
+            <div>{translate('update.api.openapi.not.found.alert')}</div>
+            <button className="btn btn-outline-info" onClick={openApiDocForm}>{translate('update.api.openapi.btn.label')}</button>
+          </div>
+        </Can>
       )}
       {props.swagger && !props.testing && (
-        <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
-          <div>{translate('update.api.testing.not.found.alert')}</div>
-          <button className="btn btn-outline-info" onClick={openTestingForm}>{translate('update.api.testing.btn.label')}</button>
-        </div>
+        <Can I={manage} a={API} team={props.ownerTeam}>
+          <div className={`alert alert-info col-6 text-center mx-auto`} role='alert'>
+            <div>{translate('update.api.testing.not.found.alert')}</div>
+            <button className="btn btn-outline-info" onClick={openTestingForm}>{translate('update.api.testing.btn.label')}</button>
+          </div>
+        </Can>
       )}
       {props.swagger && props.testing && <div id="swagger-ui" style={{ width: '100%' }} />}
     </div>
@@ -212,7 +216,7 @@ export const EnvironmentsTest = (props: EnvironmentsSwaggerProps) => {
         if (isError(r)) {
           return []
         } else {
-          setSelectedEnvironment(r[0])
+          setSelectedEnvironment(r.find(e => e.testing?.enabled) || r[0])
           return r
         }
       }),

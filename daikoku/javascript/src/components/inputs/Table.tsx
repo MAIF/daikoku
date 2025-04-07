@@ -80,9 +80,9 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
     getFacetedUniqueValues: getFacetedUniqueValues(),
     getFacetedMinMaxValues: getFacetedMinMaxValues(),
     initialState: {
-      sorting: [
-        {id: props.defaultSort || "", desc: !!props.defaultSortDesc}
-      ]
+      sorting: props.defaultSort
+        ? [{ id: props.defaultSort, desc: !!props.defaultSortDesc }]
+        : []
     }
   });
 

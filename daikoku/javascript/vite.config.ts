@@ -25,6 +25,8 @@ export default defineConfig({
     proxy: {
       "/_": "http://localhost:9000",
       "/cms": "http://localhost:9000",
+      "/asset-thumbnails": "http://localhost:9000",
+      "/team-assets": "http://localhost:9000",
       "/api/": "http://localhost:9000",
       "/admin-api": "http://localhost:9000",
       "/cms-api": "http://localhost:9000",
@@ -41,20 +43,8 @@ export default defineConfig({
       "/robots.txt": "http://localhost:9000",
       "/health": "http://localhost:9000",
       "/status": "http://localhost:9000",
+      "/user-avatar": "http://localhost:9000",
       "^/$": "http://localhost:9000",
-      // "/": {
-      //   target: 'http://localhost:9000',
-      //   changeOrigin: true,
-      //   rewrite: path => {
-      //     console.log(`rewrite path ${path}`)
-      //     return path === '/' ? '/apis' : path
-      //   }
-      // },
-      // '/api': {
-      //   target: 'http://localhost:5000',
-      //   changeOrigin: true,
-      //   rewrite: path => path.replace(/^\/api/, '')
-      // }
     },
   },
   plugins: [react()],
