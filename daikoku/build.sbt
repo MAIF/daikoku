@@ -69,7 +69,7 @@ libraryDependencies ++= Seq(
   "org.playframework" %% "play-pekko-http2-support" % "3.0.0",
   //pekko
   "org.apache.pekko" %% "pekko-connectors-kafka" % "1.0.0",
-  "org.apache.pekko" %% "pekko-connectors-s3" % "1.1.0",
+  "org.apache.pekko" %% "pekko-connectors-s3" % "1.0.1",
 
 
   "com.auth0" % "java-jwt" % "4.4.0",
