@@ -47,7 +47,7 @@ const ToasterComponent = () => {
   const { theme } = useContext(GlobalContext)
 
   return (
-    <Toaster richColors position="top-right" theme={theme.toLocaleLowerCase() as 'light' | 'dark'}/>
+    <Toaster richColors position="top-right" theme={theme.toLocaleLowerCase() as 'light' | 'dark'} containerAriaLabel='notifications'/>
   )
 }
 

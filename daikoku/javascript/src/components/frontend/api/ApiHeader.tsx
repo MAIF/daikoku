@@ -158,114 +158,135 @@ export const ApiHeader = ({
             className="btn btn-sm btn-outline-primary px-3"
             data-bs-toggle="dropdown"
             aria-expanded="false"
+            aria-haspopup="menu"
+            aria-controls="api-action-menu"
             id={`${api._humanReadableId}-dropdownMenuButton`} >
             {translate('api.home.config.api.btn.label')}
           </button>
-          <div className="dropdown-menu" aria-labelledby={`${api._humanReadableId}-dropdownMenuButton`}>
-            <span
-              onClick={() => openRightPanel({
-                title: translate("api.home.config.api.menu.configure"),
-                content: <ApiFormRightPanel team={ownerTeam} api={api} apigroup={!!api.apis} handleSubmit={(updatedApi) => {
-                  return Services.saveTeamApi(ownerTeam._id, updatedApi, api.currentVersion)
-                    .then((response) => {
-                      if (!isError(response)) {
-                        queryClient.invalidateQueries({ queryKey: ["api"] });
-                        toast.success(translate("update.api.successful.toast.label"));
-                        navigate(`/${ownerTeam._humanReadableId}/${response._humanReadableId}/${response.currentVersion}/description`)
-                      } else {
-                        toast.error(response.error);
-                      }
-                    })
-                }} />
-              })}
-              className="dropdown-item cursor-pointer"
-            >
-              {translate("api.home.update.api.btn.label")}
-            </span>
-            {api.visibility !== 'AdminOnly' && <>
-              <div className="dropdown-divider" />
-              <span
-                className="dropdown-item cursor-pointer"
-                onClick={() => Services.fetchNewApi()
-                  .then((e) => {
-                    const clonedApi: IApi = { ...api, _id: e._id, name: `${api.name} copy`, state: 'created' };
-                    return clonedApi
-                  })
-                  .then((newApi) => openRightPanel({
-                    title: translate('api.home.create.api.form.title'),
-                    content: <ApiFormRightPanel team={ownerTeam} api={newApi} apigroup={!!newApi.apis} handleSubmit={(api) =>
-                      Services.createTeamApi(ownerTeam._id, api)
-                        .then(() => queryClient.invalidateQueries({ queryKey: ["data"] }))
-                        .then(() => toast.success("api.created.successful.toast")) //todo: move to new API
-                    } />
-                  }))}
-              >
-                {translate("api.home.config.api.menu.clone")}
-              </span>
-              {!api.apis && <span
-                className="dropdown-item cursor-pointer"
-                onClick={() => prompt({
-                  placeholder: translate('Version number'),
-                  title: translate('New version'),
-                  value: api.currentVersion,
-                  okLabel: translate('Create')
-                })
-                  .then((newVersion) => {
-                    if (newVersion) {
-                      if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
-                        toast.error(translate({ key: "semver.error.message", replacements: [reservedCharacters.join(' | ')] }));
-                      else
-                        createNewVersion(newVersion);
-                    }
-                  })}
-              >
-                {translate("api.home.config.api.menu.new_version")}
-              </span>}
-              <div className="dropdown-divider" />
-              {!api.apis && <span
-                className="dropdown-item cursor-pointer danger"
+          <ul
+            role="menu"
+            id="api-action-menu"
+            className="dropdown-menu"
+            aria-labelledby={`${api._humanReadableId}-dropdownMenuButton`}>
+            <li role='none'>
+              <button
+                role='menuitem'
                 onClick={() => openRightPanel({
-                  title: translate('api.home.right.panel.transfer.title'),
-                  content: <Form
-                    schema={transferSchema}
-                    onSubmit={(data) => {
-                      Services.transferApiOwnership(data.team, api.team, api._id)
-                        .then((r) => {
-                          if (r.notify) {
-                            toast.info(translate('team.transfer.notified'));
-                          } else if (r.error) {
-                            toast.error(r.error);
-                          } else {
-                            toast.error(translate('issues.on_error'));
-                          }
-                        })
-                        .then(closeRightPanel);
-                    }}
-                    options={{
-                      actions: {
-                        submit: { label: translate('Save') }
+                  title: translate("api.home.config.api.menu.configure"),
+                  content: <ApiFormRightPanel team={ownerTeam} api={api} apigroup={!!api.apis} handleSubmit={(updatedApi) => {
+                    return Services.saveTeamApi(ownerTeam._id, updatedApi, api.currentVersion)
+                      .then((response) => {
+                        if (!isError(response)) {
+                          queryClient.invalidateQueries({ queryKey: ["api"] });
+                          toast.success(translate("update.api.successful.toast.label"));
+                          navigate(`/${ownerTeam._humanReadableId}/${response._humanReadableId}/${response.currentVersion}/description`)
+                        } else {
+                          toast.error(response.error);
+                        }
+                      })
+                  }} />
+                })}
+                className="dropdown-item cursor-pointer"
+              >
+                {translate("api.home.update.api.btn.label")}
+              </button>
+            </li>
+            {api.visibility !== 'AdminOnly' && <>
+              <div className="dropdown-divider" role='none' />
+              <li role='none'>
+                <button
+                  role='menuitem'
+                  className="dropdown-item cursor-pointer"
+                  onClick={() => Services.fetchNewApi()
+                    .then((e) => {
+                      const clonedApi: IApi = { ...api, _id: e._id, name: `${api.name} copy`, state: 'created' };
+                      return clonedApi
+                    })
+                    .then((newApi) => openRightPanel({
+                      title: translate('api.home.create.api.form.title'),
+                      content: <ApiFormRightPanel team={ownerTeam} api={newApi} apigroup={!!newApi.apis} handleSubmit={(api) =>
+                        Services.createTeamApi(ownerTeam._id, api)
+                          .then(() => queryClient.invalidateQueries({ queryKey: ["data"] }))
+                          .then(() => toast.success("api.created.successful.toast")) //todo: move to new API
+                      } />
+                    }))}
+                >
+                  {translate("api.home.config.api.menu.clone")}
+                </button>
+              </li>
+              {!api.apis && <li role='none'>
+                <button
+                  role='menuitem'
+                  className="dropdown-item cursor-pointer"
+                  onClick={() => prompt({
+                    placeholder: translate('Version number'),
+                    title: translate('New version'),
+                    value: api.currentVersion,
+                    okLabel: translate('Create')
+                  })
+                    .then((newVersion) => {
+                      if (newVersion) {
+                        if ((newVersion || '').split('').find((c) => reservedCharacters.includes(c)))
+                          toast.error(translate({ key: "semver.error.message", replacements: [reservedCharacters.join(' | ')] }));
+                        else
+                          createNewVersion(newVersion);
                       }
-                    }}
-                  />
-                })}
-              >
-                {translate('api.home.config.api.menu.transfer')}
-              </span>}
-              <span
-                className="dropdown-item cursor-pointer danger"
-                onClick={() => deleteApi({
-                  api,
-                  versions,
-                  team: ownerTeam,
-                  translate,
-                  openFormModal,
-                  handleSubmit: () => navigate('/apis')
-                })}
-              >
-                {translate('api.home.config.api.menu.delete')}
-              </span>
+                    })}
+                >
+                  {translate("api.home.config.api.menu.new_version")}
+                </button>
+              </li>}
+              <div className="dropdown-divider" role='none'/>
+              {!api.apis && <li role='none'>
+                <button
+                  role='menuitem'
+                  className="dropdown-item cursor-pointer danger"
+                  onClick={() => openRightPanel({
+                    title: translate('api.home.right.panel.transfer.title'),
+                    content: <Form
+                      schema={transferSchema}
+                      onSubmit={(data) => {
+                        Services.transferApiOwnership(data.team, api.team, api._id)
+                          .then((r) => {
+                            if (r.notify) {
+                              toast.info(translate('team.transfer.notified'));
+                            } else if (r.error) {
+                              toast.error(r.error);
+                            } else {
+                              toast.error(translate('issues.on_error'));
+                            }
+                          })
+                          .then(closeRightPanel);
+                      }}
+                      options={{
+                        actions: {
+                          submit: { label: translate('Save') }
+                        }
+                      }}
+                    />
+                  })}
+                >
+                  {translate('api.home.config.api.menu.transfer')}
+                </button>
+              </li>}
+              <li role='none'>
+                <button
+                  role='menuitem'
+                  className="dropdown-item cursor-pointer danger"
+                  onClick={() => deleteApi({
+                    api,
+                    versions,
+                    team: ownerTeam,
+                    translate,
+                    openFormModal,
+                    handleSubmit: () => navigate('/apis')
+                  })}
+                >
+                  {translate('api.home.config.api.menu.delete')}
+                </button>
+              </li>
             </>}
-          </div>
+          </ul>
         </Can>
       </div >
     </section >

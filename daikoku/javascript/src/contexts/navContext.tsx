@@ -116,7 +116,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
             action: () => navigateTo('pricing'),
             className: { active: currentTab === 'pricing' },
           },
-          documentation: {
+          documentation: shouldDisplayDocumentation ? {
             label: translate('Documentation'),
             action: () => {
               if (shouldDisplayDocumentation) navigateTo('documentation');
@@ -126,7 +126,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
               disabled: !shouldDisplayDocumentation,
               'd-none': !shouldDisplayDocumentation
             },
-          },
+          } : {},
           swagger: {
             label: translate('Swagger'),
             action: () => {

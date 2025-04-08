@@ -32,6 +32,7 @@ export function ApiPost(props: ApiPostProps) {
   const postQuery = useQuery({
     queryKey: ['posts', currentPage],
     queryFn: () => Services.getAPIPosts(props.api._humanReadableId, props.versionId, currentPage, 1),
+    enabled: !connectedUser.isGuest
   })
 
   const schema: Schema = {
@@ -118,6 +119,9 @@ export function ApiPost(props: ApiPostProps) {
 
   const isDataError = postQuery.data && isError(postQuery.data);
 
+  if (connectedUser.isGuest) {
+    return null;
+  }
 
   if (postQuery.isLoading) {
     return (
