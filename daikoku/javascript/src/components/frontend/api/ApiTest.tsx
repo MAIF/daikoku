@@ -1,6 +1,5 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext, useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
 import Select from 'react-select';
 import { toast } from 'sonner';
 import { SwaggerUIBundle } from 'swagger-ui-dist';
@@ -35,7 +34,7 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
 
   const [state, setState] = useState<{ error?: string, info?: string }>({});
 
-  const params = useParams();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (!!props.testing?.enabled) {
@@ -134,11 +133,16 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
       <TeamApiSwagger value={props.entity} save={d => props.save(d).then(closeRightPanel)} />
     </div>
   })
-  //FIXME: teamAPiTesting does not work on right panel right now
+
   const openTestingForm = () => openRightPanel({
     title: "Update api",
     content:
-      <TeamApiTesting currentTeam={props.ownerTeam} value={props.entity} save={d => props.save(d).then(closeRightPanel)} />
+      <TeamApiTesting
+        _id={props._id}
+        currentTeam={props.ownerTeam}
+        value={props.entity}
+        save={d => props.save(d)
+          .then(() => closeRightPanel())} />
   })
 
   return (
@@ -194,7 +198,8 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
           </div>
         </Can>
       )}
-      {props.swagger && props.testing && <div id="swagger-ui" style={{ width: '100%' }} />}
+      {props.swagger && props.testing?.enabled && <div id="swagger-ui" style={{ width: '100%' }} />}
+      {(!props.swagger || !props.testing?.enabled) && null}
     </div>
   );
 }
@@ -234,7 +239,6 @@ export const EnvironmentsTest = (props: EnvironmentsSwaggerProps) => {
     return <Spinner />
   } else if (selectedEnvironment && environmentsQuery.data) {
     const environments: IUsagePlan[] = environmentsQuery.data
-
     return (
       <div className='d-flex flex-column'>
         <Select

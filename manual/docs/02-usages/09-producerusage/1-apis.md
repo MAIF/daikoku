@@ -160,9 +160,22 @@ An additional configuration allow to
 
 You can enable the testing for your API.
 
-> The testing is based on the openAPI definition of your API. Beware of set up the right host for your testing service.
+> API testing is powered by the OpenAPI definition you provide.
 
-Click on the `Generate a dedicated testing key in Otoroshi` to choose an Otoroshi instance and service group or service which is used to receive the testing APIkey. Then, just follow the instructions displayed on UI?
+Before anything else, you must provide a Test server URL.
+This URL will be used as the base endpoint for all API calls made through the Swagger UI. Without it, testing cannot be activated.
+
+There are two ways to authenticate your test calls:
+
+Using otoroshi:
+Generate a dedicated testing API key in Otoroshi by clicking the `Generate a dedicated testing key in Otoroshi` button. You will be prompted to select an Otoroshi instance and the route (or service group) associated with your test environment.
+
+:::note
+If you're using this method, ensure that the "apikey mandatory tags" module is enabled on the selected route in Otoroshi, and that the expected tag (displayed in the configuration modal) is correctly set.
+:::
+
+Using Basic Auth or simple apikey:
+Alternatively, you can provide a username and password that will be used in each test request.
 
 #### Configure your openAPI
 

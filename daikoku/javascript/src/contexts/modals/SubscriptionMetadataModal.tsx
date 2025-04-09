@@ -77,7 +77,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(
     }
   };
 
-  let schema = {
+  const schema = {
     customMetadata: {
       type: type.object,
       label: translate("Additional metadata"),
@@ -299,6 +299,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(
       </div>
     );
   } else {
+    console.debug({apiQuery, planQuery})
     return <div>Error while fetching metadata</div>;
   }
 };

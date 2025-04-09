@@ -702,6 +702,8 @@ class OtoroshiSettingsController(
 
     maybeUrl match {
       case Some(finalUrl) =>
+        AppLogger.warn(finalUrl)
+        AppLogger.warn(s"$finalHeaders")
         val builder = env.wsClient
           .url(finalUrl)
           .withHttpHeaders(finalHeaders.toSeq: _*)

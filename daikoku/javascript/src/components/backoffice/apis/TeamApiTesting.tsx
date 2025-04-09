@@ -15,6 +15,7 @@ interface TeamApiTestingProps<T extends IWithTesting> {
   // metadata: object,
   plan?: IUsagePlan,
   api?: IApi
+  _id: string
 }
 
 export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProps<T>) => {
@@ -60,7 +61,7 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
       },
       config: testing?.config,
       value: props.value,
-      api: props.api ? props.api._id : props.value._id,
+      api: props._id,
       plan: isUsagePlan(props.value) ? props.value._id : undefined,
       description: <div>Description</div>,
       noClose: true
@@ -136,8 +137,9 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
   };
 
   return (
-    <div className="d-flex">
+    <div className="d-flex gap-3">
       <Form
+        className='col-6'
         ref={props.reference}
         schema={schema}
         onSubmit={(testing) => props.save({ ...props.value, testing })}
@@ -170,18 +172,12 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
               alignItems: 'flex-start',
             }}
           >
-            <p>
-              <Translation i18nkey="otoroshi.test.key.modal.description">
-                In order to make everything work, you'll have to add a tags match (OneTageIn /
-                AllTagIn) in your service descriptor in the 'Api Keys Constraints' section. Make
-                sure this service descriptor is the right one for testing and not a production
-                system.
-              </Translation>
-            </p>
-            <p>
-              <Translation i18nkey="otoroshi.test.key.modal.tag.name">
-                The tag you need to add is the following
-              </Translation>
+            <p className='alert alert-info'>
+              {translate("otoroshi.test.key.modal.description.1")}
+              <ol>
+                <li>{translate("otoroshi.test.key.modal.description.2")}</li>
+                <li>{translate("otoroshi.test.key.modal.description.3")}</li>
+              </ol>
             </p>
             <div
               style={{
@@ -197,6 +193,9 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
             >
               {testing?.config?.tag || 'no tag :('}
             </div>
+            <p className='alert alert-warning'>
+              {translate("otoroshi.test.key.modal.description.4")}
+            </p>
           </div>
           <div className="d-flex justify-content-center align-items-center flex-grow-1">
             <button className="btn btn-outline-danger" onClick={deleteOtoroshiKey}>
