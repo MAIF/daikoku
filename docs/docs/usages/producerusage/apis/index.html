@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.7.0">
 <title data-rh="true">Managing APIs | Daikoku</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://maif.github.io/daikoku/img/daikoku-mini.jpg"><meta data-rh="true" name="twitter:image" content="https://maif.github.io/daikoku/img/daikoku-mini.jpg"><meta data-rh="true" property="og:url" content="https://maif.github.io/daikoku/docs/usages/producerusage/apis"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Managing APIs | Daikoku"><meta data-rh="true" name="description" content="Create a new API"><meta data-rh="true" property="og:description" content="Create a new API"><link data-rh="true" rel="icon" href="/daikoku/img/daikoku-mini.svg"><link data-rh="true" rel="canonical" href="https://maif.github.io/daikoku/docs/usages/producerusage/apis"><link data-rh="true" rel="alternate" href="https://maif.github.io/daikoku/docs/usages/producerusage/apis" hreflang="en"><link data-rh="true" rel="alternate" href="https://maif.github.io/daikoku/docs/usages/producerusage/apis" hreflang="x-default"><link rel="stylesheet" href="/daikoku/assets/css/styles.98544a2c.css">
-<script src="/daikoku/assets/js/runtime~main.97a08261.js" defer="defer"></script>
+<script src="/daikoku/assets/js/runtime~main.5446f01a.js" defer="defer"></script>
 <script src="/daikoku/assets/js/main.0bd0776c.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -115,9 +115,16 @@ An additional configuration allow to</p>
 <h3 class="anchor anchorWithStickyNavbar_LWe7" id="testing">Testing<a href="#testing" class="hash-link" aria-label="Direct link to Testing" title="Direct link to Testing">​</a></h3>
 <p>You can enable the testing for your API.</p>
 <blockquote>
-<p>The testing is based on the openAPI definition of your API. Beware of set up the right host for your testing service.</p>
+<p>API testing is powered by the OpenAPI definition you provide.</p>
 </blockquote>
-<p>Click on the <code>Generate a dedicated testing key in Otoroshi</code> to choose an Otoroshi instance and service group or service which is used to receive the testing APIkey. Then, just follow the instructions displayed on UI?</p>
+<p>Before anything else, you must provide a Test server URL.
+This URL will be used as the base endpoint for all API calls made through the Swagger UI. Without it, testing cannot be activated.</p>
+<p>There are two ways to authenticate your test calls:</p>
+<p>Using otoroshi:
+Generate a dedicated testing API key in Otoroshi by clicking the <code>Generate a dedicated testing key in Otoroshi</code> button. You will be prompted to select an Otoroshi instance and the route (or service group) associated with your test environment.</p>
+<div class="theme-admonition theme-admonition-note admonition_xJq3 alert alert--secondary"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M6.3 5.69a.942.942 0 0 1-.28-.7c0-.28.09-.52.28-.7.19-.18.42-.28.7-.28.28 0 .52.09.7.28.18.19.28.42.28.7 0 .28-.09.52-.28.7a1 1 0 0 1-.7.3c-.28 0-.52-.11-.7-.3zM8 7.99c-.02-.25-.11-.48-.31-.69-.2-.19-.42-.3-.69-.31H6c-.27.02-.48.13-.69.31-.2.2-.3.44-.31.69h1v3c.02.27.11.5.31.69.2.2.42.31.69.31h1c.27 0 .48-.11.69-.31.2-.19.3-.42.31-.69H8V7.98v.01zM7 2.3c-3.14 0-5.7 2.54-5.7 5.68 0 3.14 2.56 5.7 5.7 5.7s5.7-2.55 5.7-5.7c0-3.15-2.56-5.69-5.7-5.69v.01zM7 .98c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.12-7-7 3.14-7 7-7z"></path></svg></span>note</div><div class="admonitionContent_BuS1"><p>If you&#x27;re using this method, ensure that the &quot;apikey mandatory tags&quot; module is enabled on the selected route in Otoroshi, and that the expected tag (displayed in the configuration modal) is correctly set.</p></div></div>
+<p>Using Basic Auth or simple apikey:
+Alternatively, you can provide a username and password that will be used in each test request.</p>
 <h4 class="anchor anchorWithStickyNavbar_LWe7" id="configure-your-openapi">Configure your openAPI<a href="#configure-your-openapi" class="hash-link" aria-label="Direct link to Configure your openAPI" title="Direct link to Configure your openAPI">​</a></h4>
 <p>Your openAPI has to be configured to accept apikey from Basic authentication header or from the <code>Otoroshi-Client-Id</code> and <code>Otoroshi-Client-Secret</code> headers.</p>
 <p>If you have changed the Otoroshi headers to pass the apikey don&#x27;t forget to apply the changes on your openAPI.</p>
