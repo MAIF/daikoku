@@ -222,7 +222,6 @@ type ApiFormRightPanelProps = {
   apigroup: boolean
 }
 export const ApiFormRightPanel = (props: ApiFormRightPanelProps) => {
-  console.debug({ props })
   const { translate } = useContext(I18nContext);
   const { closeRightPanel } = useContext(ModalContext);
 
@@ -253,7 +252,6 @@ export const ApiFormRightPanel = (props: ApiFormRightPanelProps) => {
     queryFn: () => (props.apigroup ? Services.fetchNewApiGroup() : Services.fetchNewApi())
       .then((e) => {
         const newApi = { ...e, team: props.team._id };
-        console.debug({ newApi })
         return newApi
       }),
     enabled: !props.api

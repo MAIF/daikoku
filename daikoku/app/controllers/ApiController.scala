@@ -475,18 +475,31 @@ class ApiController(
       }
     }
 
+  object UserLevel extends Enumeration {
+    type UserLevel = Value
+    val Admin, User, Guest = Value
+  }
+
   def getApi(api: Api, ctx: DaikokuActionContext[AnyContent]) = {
     import cats.implicits._
 
-    def control(myTeams: Seq[Team]): EitherT[Future, AppError, Unit] = {
+    def control(myTeams: Seq[Team]): EitherT[Future, AppError, UserLevel.UserLevel] = {
       if (
         (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
           .intersect(myTeams.map(_.id))
           .nonEmpty) && (api.isPublished || myTeams.exists(_.id == api.team))
       ) {
-        EitherT.pure[Future, AppError](())
+        if (ctx.user.isDaikokuAdmin) {
+          EitherT.pure[Future, AppError](UserLevel.Admin)
+        } else if (myTeams.exists(t => t.id == api.team && t.users.exists(u => u.userId == ctx.user.id && u.teamPermission != TeamPermission.TeamUser))) {
+          EitherT.pure[Future, AppError](UserLevel.Admin)
+        } else if (ctx.user.isGuest) {
+          EitherT.pure[Future, AppError](UserLevel.Guest)
+        } else {
+          EitherT.pure[Future, AppError](UserLevel.User)
+        }
       } else {
-        EitherT.leftT[Future, Unit](AppError.ApiUnauthorized)
+        EitherT.leftT[Future, UserLevel.UserLevel](AppError.ApiUnauthorized)
       }
     }
 
@@ -494,7 +507,7 @@ class ApiController(
       myTeams <- EitherT.liftF[Future, AppError, Seq[Team]](
         env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
       )
-      _ <- control(myTeams)
+      level <- control(myTeams)
       pendingRequests <- EitherT.liftF[Future, AppError, Seq[Notification]](
         env.dataStore.notificationRepo
           .forTenant(ctx.tenant.id)
@@ -519,8 +532,12 @@ class ApiController(
           )
       )
     } yield {
-      val betterApi = api.asJson
-        .as[JsObject] ++ Json.obj(
+      val jsonApi: JsValue = level match {
+        case UserLevel.Guest => api.asGuestJson(ctx.tenant.apiReferenceHideForGuest.getOrElse(true))
+        case _ => api.asJson
+      }
+
+      val betterApi = jsonApi.as[JsObject] ++ Json.obj(
         "pendingRequests" -> JsArray(
           pendingRequests.map(_.asJson)
         )
@@ -647,6 +664,20 @@ class ApiController(
           }
         }
 
+        def getUserLevel(api: Api,
+                         myTeams: Seq[Team],
+                         plans: Seq[UsagePlan]): EitherT[Future, AppError, UserLevel.UserLevel] = {
+          if (ctx.user.isDaikokuAdmin) {
+            EitherT.pure[Future, AppError](UserLevel.Admin)
+          } else if (myTeams.exists(t => t.id == api.team && t.users.exists(u => u.userId == ctx.user.id && u.teamPermission != TeamPermission.TeamUser))) {
+            EitherT.pure[Future, AppError](UserLevel.Admin)
+          } else if (ctx.user.isGuest) {
+            EitherT.pure[Future, AppError](UserLevel.Guest)
+          } else {
+            EitherT.pure[Future, AppError](UserLevel.User)
+          }
+        }
+
         (for {
           api <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo.findByVersion(ctx.tenant, apiId, version),
@@ -659,9 +690,20 @@ class ApiController(
             env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
           )
           filteredPlans <- controlAndGet(api, myTeams, plans)
+          level <- getUserLevel(api, myTeams, plans)
         } yield {
           ctx.setCtxValue("api.name", api.name)
-          Ok(json.SeqUsagePlanFormat.writes(filteredPlans))
+
+          val jsonPlans = level match {
+            case UserLevel.Admin => json.SeqUsagePlanFormat.writes(filteredPlans)
+            case UserLevel.User => JsArray(filteredPlans.map(p => p.asJson.as[JsObject] - "subscriptionProcess" - "testing" +
+              ("testing" -> p.testing.map(_.asSafeJson).getOrElse(Json.obj())) +
+              ("subscriptionProcess" -> JsArray(p.subscriptionProcess.map(process => Json.obj("type" -> process.name))))))
+            case UserLevel.Guest if ctx.tenant.apiReferenceHideForGuest.getOrElse(true) => JsArray(filteredPlans.map(_.asJson.as[JsObject] - "otoroshiTarget" - "documentation" - "SubscriptionProcess" - "testing" - "swagger"))
+            case UserLevel.Guest => JsArray(filteredPlans.map(_.asJson.as[JsObject] - "otoroshiTarget" - "documentation" - "subscriptionProcess" - "testing"))
+          }
+
+          Ok(jsonPlans)
         }).leftMap(_.render())
           .merge
       }
@@ -2493,8 +2535,8 @@ class ApiController(
       CommonServices
         .apiOfTeam(teamId, apiId, version)(ctx, env, ec)
         .map {
-          case Right(api)  => Ok(api.api.asJson.as[JsObject] ++ api.translation)
-          case Left(error) => AppError.render(error)
+          case Right(api)  => Ok(api.asJson)
+          case Left(error) => error.render()
         }
     }
 

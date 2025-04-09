@@ -7,6 +7,7 @@ import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.JsArray
+import scala.concurrent.duration.{FiniteDuration, _}
 
 class EnvironmentDisplayMode()
     extends PlaySpec
@@ -27,6 +28,9 @@ class EnvironmentDisplayMode()
     )
 
   "a usage  plan" must {
+    "run" in {
+      await(5 second)
+    }
     "have a custom name as an avalaible environment" in {
 
       val api = generateApi("0", tenant.id, teamOwnerId, Seq.empty).api

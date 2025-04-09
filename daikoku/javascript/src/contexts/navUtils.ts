@@ -1,5 +1,5 @@
 import React from "react";
-import { IApi, ITeamSimple, ITenant } from "../types";
+import { IApi, INavMenu, ITeamSimple, ITenant } from "../types";
 
 export enum navMode {
   initial = 'INITIAL',
@@ -17,7 +17,16 @@ export enum officeMode {
 };
 
 const initNavContext = {
-  menu: {},
+  menu: {blocks: {
+      links: {
+        order: 1,
+        links: {}
+      },
+      actions: {
+        order: 1,
+        links: {}
+      }
+    }},
   addMenu: () => { },
   setMenu: () => { },
   mode: navMode.api,
@@ -31,9 +40,9 @@ const initNavContext = {
 }
 
 export type TNavContext = {
-  menu: any,
+  menu: INavMenu,
   addMenu: (m: object) => void,
-  setMenu: (m: object) => void,
+  setMenu: (m: INavMenu) => void,
   mode?: navMode,
   setMode: (m: navMode) => void,
   office: officeMode,

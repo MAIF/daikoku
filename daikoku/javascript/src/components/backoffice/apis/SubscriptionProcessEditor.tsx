@@ -228,7 +228,6 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
   const { translate } = useContext(I18nContext);
   const { openCustomModal, openFormModal, close } = useContext(ModalContext);
 
-  console.debug({plan: props.plan})
   const [draft, setDraft] = useState(props.plan)
 
   const editProcess = (name: IValidationStepType, index: number) => {

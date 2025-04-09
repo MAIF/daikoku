@@ -578,13 +578,11 @@ object CommonServices {
     } yield tags
   }
 
-  case class ApiWithTranslation(api: Api, translation: JsObject)
-
   def apiOfTeam(teamId: String, apiId: String, version: String)(implicit
       ctx: DaikokuActionContext[_],
       env: Env,
       ec: ExecutionContext
-  ): Future[Either[AppError, ApiWithTranslation]] =
+  ): Future[Either[AppError, Api]] =
     _TeamMemberOnly(
       teamId,
       AuditTrailEvent(
@@ -600,34 +598,16 @@ object CommonServices {
         "currentVersion" -> version
       )
 
-      env.dataStore.apiRepo
-        .forTenant(ctx.tenant.id)
-        .findOneNotDeleted(query)
-        .flatMap {
-          case Some(api) =>
-            ctx.setCtxValue("api.id", api.id)
-            ctx.setCtxValue("api.name", api.name)
+      (for {
+        api <- EitherT.fromOptionF(env.dataStore.apiRepo
+          .forTenant(ctx.tenant.id)
+          .findOneNotDeleted(query), AppError.ApiNotFound)
+      } yield {
+        ctx.setCtxValue("api.id", api.id)
+        ctx.setCtxValue("api.name", api.name)
 
-            env.dataStore.translationRepo
-              .forTenant(ctx.tenant)
-              .find(Json.obj("element.id" -> api.id.asJson))
-              .flatMap(translations => {
-                val translationAsJsObject = translations
-                  .groupBy(t => t.language)
-                  .map {
-                    case (k, v) =>
-                      Json.obj(
-                        k -> JsObject(v.map(t => t.key -> JsString(t.value)))
-                      )
-                  }
-                  .fold(Json.obj())(_ deepMerge _)
-                val translation =
-                  Json.obj("translation" -> translationAsJsObject)
-                FastFuture
-                  .successful(Right(ApiWithTranslation(api, translation)))
-              })
-          case None => FastFuture.successful(Left(AppError.ApiNotFound))
-        }
+        api
+      }).value
     }
 
   def myTeams()(implicit

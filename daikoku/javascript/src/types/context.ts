@@ -39,3 +39,30 @@ export interface IAnonymousState {
   id: string;
   date?: number;
 }
+
+export interface INavMenu {
+  title?: string;
+  blocks: {
+    links: {
+      order: number;
+      links: Record<string, IMenuLink | false>;
+    };
+    actions?: {
+      order: number;
+      links: Record<string, {
+        component: JSX.Element;
+      }>;
+    };
+  };
+};
+
+export interface IMenuLink {
+  label: string;
+  action: () => void;
+  className?: {
+    active?: boolean;
+    disabled?: boolean;
+  };
+  childs?: Record<string, IMenuLink>
+  visible?: boolean
+};

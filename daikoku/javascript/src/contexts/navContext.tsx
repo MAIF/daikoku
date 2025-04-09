@@ -6,18 +6,29 @@ import { useMatch, useNavigate, useParams } from 'react-router-dom';
 import { teamPermissions } from '../components/utils';
 import { I18nContext } from '../contexts';
 import * as Services from '../services/index';
-import { IApi, ITeamSimple, ITenant, IUsagePlan, isError, isUsagePlan } from '../types';
+import { IApi, INavMenu, ITeamSimple, ITenant, IUsagePlan, isError, isUsagePlan } from '../types';
 import { GlobalContext } from './globalContext';
 import { ModalContext } from './modalContext';
 import { NavContext, navMode, officeMode, TNavContext } from './navUtils';
 
-
+const fakeMenu = {
+  blocks: {
+    links: {
+      order: 1,
+      links: {}
+    },
+    actions: {
+      order: 1,
+      links: {}
+    }
+  }
+}
 
 export const NavProvider = (props: PropsWithChildren) => {
   const [mode, setMode] = useState(navMode.initial);
   const [office, setOffice] = useState(officeMode.front);
 
-  const [menu, setMenu] = useState({});
+  const [menu, setMenu] = useState<INavMenu>(fakeMenu);
 
   const [api, setApi] = useState<IApi>();
   const [apiGroup, setApiGroup] = useState<IApi>();
@@ -73,7 +84,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
     )
   )
   const shouldDisplayOpenApi = userCanUpdateApi || (
-    !connectedUser.isGuest &&
+    (!connectedUser.isGuest || !tenant.apiReferenceHideForGuest) &&
     (
       tenant.display === 'environment' ? plans?.some(p => p.swagger?.content || p.swagger?.url) :
         (api?.swagger?.content || api?.swagger?.url)
@@ -90,20 +101,18 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
     !connectedUser.isGuest && !!api?.posts.length
   )
 
-  const schema = (currentTab: string) => ({
+  const schema = (currentTab: string): INavMenu => ({
     title: api?.name,
 
     blocks: {
       links: {
         order: 1,
         links: {
-          apis: {
+          apis: !!isApiGroup && {
             label: translate('APIs'),
             action: () => navigateTo('apis'),
             className: {
               active: currentTab === 'apis',
-              disabled: !isApiGroup,
-              'd-none': !isApiGroup
             },
           },
           description: {
@@ -116,66 +125,46 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
             action: () => navigateTo('pricing'),
             className: { active: currentTab === 'pricing' },
           },
-          documentation: shouldDisplayDocumentation ? {
+          documentation: !!shouldDisplayDocumentation && {
             label: translate('Documentation'),
-            action: () => {
-              if (shouldDisplayDocumentation) navigateTo('documentation');
-            },
+            action: () => navigateTo('documentation'),
             className: {
               active: currentTab === 'documentation',
-              disabled: !shouldDisplayDocumentation,
-              'd-none': !shouldDisplayDocumentation
-            },
-          } : {},
-          swagger: {
+            }
+          },
+          swagger: !!shouldDisplayOpenApi && {
             label: translate('Swagger'),
-            action: () => {
-              if (shouldDisplayOpenApi) navigateTo('swagger');
-            },
+            action: () => navigateTo('swagger'),
             className: {
               active: currentTab === 'swagger',
-              disabled: !shouldDisplayOpenApi,
-              'd-none': !shouldDisplayOpenApi
             },
           },
-          testing: {
+          testing: !!shouldDisplayTest && {
             label: translate('Testing'),
-            action: () => {
-              if (shouldDisplayTest) navigateTo('testing');
-            },
+            action: () => navigateTo('testing'),
             className: {
               active: currentTab === 'testing',
-              disabled: !shouldDisplayTest,
-              'd-none': !shouldDisplayTest
             },
           },
-          news: {
+          news: !!shouldDisplayNews && {
             label: translate('nav.section.news.label'),
-            action: () => {
-              if (shouldDisplayNews) navigateTo('news');
-            },
+            action: () => navigateTo('news'),
             className: {
               active: currentTab === 'news',
-              disabled: !shouldDisplayNews,
-              'd-none': !shouldDisplayNews,
             },
           },
-          issues: {
+          issues: !!isAdminApi && {
             label: translate('Issues'),
             action: () => navigateTo('issues'),
             className: {
               active: currentTab === 'issues' || currentTab === 'labels',
-              disabled: isAdminApi,
-              'd-none': isAdminApi
             },
           },
-          subscriptions: {
+          subscriptions: !!userCanUpdateApi && {
             label: translate('Subscriptions'),
             action: () => navigateTo('subscriptions'),
             className: {
               active: currentTab === 'subscriptions',
-              disabled: !userCanUpdateApi,
-              'd-none': !userCanUpdateApi
             },
           },
         },
@@ -226,7 +215,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
         setMode(navMode.initial);
         setApi(undefined);
         setTeam(undefined);
-        setMenu({});
+        setMenu(fakeMenu);
       };
     }
   }, [api, team]);
@@ -253,7 +242,7 @@ export const useTeamBackOffice = () => {
     enabled: !!teamId
   })
 
-  const schema = (currentTab: string, team: ITeamSimple) => ({
+  const schema = (currentTab: string, team: ITeamSimple): INavMenu => ({
     title: team.name,
     blocks: {
       links: {
@@ -337,7 +326,7 @@ export const useTeamBackOffice = () => {
     return () => {
       setMode(navMode.initial);
       setTeam(undefined);
-      setMenu({});
+      setMenu(fakeMenu);
     };
   }, []);
 
@@ -483,7 +472,7 @@ export const useTenantBackOffice = (maybeTenant?: ITenant) => {
     return () => {
       setMode(navMode.initial);
       setTenant(undefined);
-      setMenu({});
+      setMenu(fakeMenu);
     };
   }, [tenant, match]);
 
@@ -498,7 +487,7 @@ export const useDaikokuBackOffice = (props?: { creation?: boolean }) => {
   const match = useMatch('/settings/:tab/*');
   const matchEdition = useMatch('/settings/tenants/:id/:tabs')
 
-  const schema = (currentTab?: string, subTab?: string) => {
+  const schema = (currentTab?: string, subTab?: string): INavMenu => {
     return ({
       blocks: {
         links: {
@@ -589,7 +578,7 @@ export const useDaikokuBackOffice = (props?: { creation?: boolean }) => {
 
     return () => {
       setMode(navMode.initial);
-      setMenu({});
+      setMenu(fakeMenu);
     };
   }, [match, matchEdition]);
 
@@ -638,7 +627,7 @@ export const useUserBackOffice = () => {
 
     return () => {
       setMode(navMode.initial);
-      setMenu({});
+      setMenu(fakeMenu);
     };
   }, []);
 

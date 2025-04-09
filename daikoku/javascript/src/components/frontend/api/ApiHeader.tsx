@@ -13,7 +13,7 @@ import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
 import { IApi, ITeamSimple, isError } from '../../../types';
 import { IPage } from '../../adminbackoffice/cms';
-import { api as API, Can, manage } from '../../utils';
+import { api as API, Can, CanIDoAction, manage } from '../../utils';
 import { deleteApi } from '../../utils/apiUtils';
 import { ApiFormRightPanel } from '../../utils/sidebar/panels/AddPanel';
 import { reservedCharacters } from '../../utils/tenantUtils';
@@ -36,7 +36,7 @@ export const ApiHeader = ({
   const queryClient = useQueryClient();
   const { openRightPanel, closeRightPanel, prompt, openFormModal } = useContext(ModalContext);
   const { translate } = useContext(I18nContext);
-  const { tenant, expertMode } = useContext(GlobalContext);
+  const { tenant, expertMode, connectedUser } = useContext(GlobalContext);
 
   const [versions, setApiVersions] = useState<Array<string>>([]);
 
@@ -82,7 +82,7 @@ export const ApiHeader = ({
       type: type.string,
       label: translate('new.owner'),
       format: format.select,
-      optionsFrom: Services.teams(ownerTeam)
+      optionsFrom: () => Services.teams(ownerTeam)
         .then((teams) => {
           if (!isError(teams)) {
             return sortBy(teams.filter((team: any) => team._id !== api.team), 'name')

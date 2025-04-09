@@ -102,7 +102,6 @@ export function ApiTest<T extends IWithTesting>(props: ApiTestProps<T>) {
     //} else if (canCreate && props.testing.auth === "Basic") {
     //  // TODO: create a key dedicated for tests and use it
     //} else
-    console.debug(props.testing)
     if (props.testing?.auth === 'ApiKey') {
       // window.ui.preauthorizeApiKey('api_key', 'hello');
       // console.log('ApiKey', props.testing.name, props.testing.username)

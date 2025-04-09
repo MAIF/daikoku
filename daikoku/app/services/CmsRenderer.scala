@@ -257,7 +257,7 @@ case class CmsPage(
                       options.fn.text(),
                       fields = fields,
                       jsonToCombine =
-                        jsonToCombine ++ Map("api" -> api.api.asJson),
+                        jsonToCombine ++ Map("api" -> api.asJson),
                       req = req
                     )
                   case Left(error) => AppError.render(error)
@@ -291,7 +291,7 @@ case class CmsPage(
                   ec
                 )
                 .map {
-                  case Right(api)  => api.api.asJson
+                  case Right(api)  => api.asJson
                   case Left(error) => AppError.render(error)
                 },
               10.seconds

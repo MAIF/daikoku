@@ -3,7 +3,7 @@ package fr.maif.otoroshi.daikoku.domain
 import cats.data.EitherT
 import cats.syntax.option._
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.domain.json.{SeqIssueIdFormat, SeqPostIdFormat, SeqTeamIdFormat, SetApiTagFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{SeqIssueIdFormat, SeqPostIdFormat, SeqTeamIdFormat, SetApiTagFormat, TestingConfigFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, ReplaceAllWith}
@@ -585,6 +585,11 @@ case class Testing(
     config: Option[TestingConfig] = None
 ) extends CanJson[Testing] {
   override def asJson: JsValue = json.TestingFormat.writes(this)
+
+  def asSafeJson: JsObject = Json.obj(
+    "enabled" -> enabled,
+
+  )
 }
 
 sealed trait ApiState {
@@ -644,6 +649,12 @@ case class Api(
 ) extends CanJson[User] {
   def humanReadableId = name.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiFormat.writes(this)
+  def asGuestJson(hideOpenApiForGuest: Boolean): JsValue = {
+    val baseJson = json.ApiFormat.writes(this).as[JsObject] - "documentation" - "testing"
+    if (hideOpenApiForGuest) baseJson - "swagger" else baseJson
+
+  }
+
   def asSimpleJson: JsValue =
     Json.obj(
       "_id" -> id.asJson,

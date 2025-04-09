@@ -1294,30 +1294,29 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             </Can>
 
           </span>
-          <span className="usage-plan__card__feature" onClick={editOtoroshiTarget}>
-            <div>
-              <h4>{translate("otoroshi target")}</h4>
-              <span className='feature__description'>
-                {plan.otoroshiTarget?.otoroshiSettings && (fullTenant?.otoroshiSettings.find(o => o._id === plan.otoroshiTarget?.otoroshiSettings)?.url)}
-                {!plan.otoroshiTarget?.otoroshiSettings && translate('api.pricings.otoroshi.target.value.none')}
-              </span>
-            </div>
-
-            <Can I={manage} a={API} team={props.ownerTeam}>
+          <Can I={manage} a={API} team={props.ownerTeam}>
+            <span className="usage-plan__card__feature" onClick={editOtoroshiTarget}>
+              <div>
+                <h4>{translate("otoroshi target")}</h4>
+                <span className='feature__description'>
+                  {plan.otoroshiTarget?.otoroshiSettings && (fullTenant?.otoroshiSettings.find(o => o._id === plan.otoroshiTarget?.otoroshiSettings)?.url)}
+                  {!plan.otoroshiTarget?.otoroshiSettings && translate('api.pricings.otoroshi.target.value.none')}
+                </span>
+              </div>
               <Edit2 className="edition-icon" />
-            </Can>
-          </span>
-          <span className="usage-plan__card__feature" onClick={editProcess}>
-            <div>
-              <h4>{translate('Process')}</h4>
-              <span className='feature__description'>{plan.subscriptionProcess.length ?
-                translate({ key: 'api.pricings.process.value', replacements: [String(plan.subscriptionProcess.length)] }) :
-                translate('api.pricings.process.value.none')}</span>
-            </div>
-            <Can I={manage} a={API} team={props.ownerTeam}>
+            </span>
+          </Can>
+          <Can I={manage} a={API} team={props.ownerTeam}>
+            <span className="usage-plan__card__feature" onClick={editProcess}>
+              <div>
+                <h4>{translate('Process')}</h4>
+                <span className='feature__description'>{plan.subscriptionProcess.length ?
+                  translate({ key: 'api.pricings.process.value', replacements: [String(plan.subscriptionProcess.length)] }) :
+                  translate('api.pricings.process.value.none')}</span>
+              </div>
               <Edit2 className="edition-icon" />
-            </Can>
-          </span>
+            </span>
+          </Can>
         </div>
       </div>
     );
@@ -1559,7 +1558,8 @@ export const ApiPricing = (props: ApiPricingProps) => {
       visible: ({ rawValues }) => rawValues['visibility'] !== 'Public',
       deps: ['visibility'],
       label: translate('Authorized teams'),
-      optionsFrom: Services.teams(props.ownerTeam).then(r => isError(r) ? [] : r),
+      optionsFrom: () => Services.teams(props.ownerTeam)
+        .then(r => isError(r) ? [] : r),
       transformer: (t: ITeamSimple) => ({
         label: t.name,
         value: t._id,
