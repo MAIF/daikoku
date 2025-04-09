@@ -8,25 +8,12 @@ import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import com.google.common.base.Charsets
 import controllers.AppError
+import controllers.AppError.InternalServerError
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  AuthorizedEntitiesFormat,
-  OtoroshiSettingsFormat,
-  OtoroshiSettingsIdFormat,
-  TestingConfigFormat
-}
-import fr.maif.otoroshi.daikoku.domain.{
-  ActualOtoroshiApiKey,
-  Api,
-  ApiKeyRestrictions,
-  AuthorizedEntities,
-  OtoroshiSettings,
-  Testing,
-  TestingAuth,
-  UsagePlan
-}
+import fr.maif.otoroshi.daikoku.domain.json.{AuthorizedEntitiesFormat, OtoroshiSettingsFormat, OtoroshiSettingsIdFormat, TestingConfigFormat}
+import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, Api, ApiKeyRestrictions, AuthorizedEntities, OtoroshiSettings, Testing, TestingAuth, UsagePlan}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
@@ -36,14 +23,9 @@ import org.joda.time.DateTime
 import play.api.http.HttpEntity
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{
-  AbstractController,
-  BodyParser,
-  ControllerComponents,
-  Request,
-  Result
-}
+import play.api.mvc.{AbstractController, BodyParser, ControllerComponents, Request, Result}
 
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 
 class OtoroshiSettingsController(
@@ -688,73 +670,45 @@ class OtoroshiSettingsController(
       }
     }
 
-  private def hasBody(request: Request[_]): Boolean =
-    (request.method, request.headers.get("Content-Length")) match {
-      case ("GET", Some(_))    => true
-      case ("GET", None)       => false
-      case ("HEAD", Some(_))   => true
-      case ("HEAD", None)      => false
-      case ("PATCH", _)        => true
-      case ("POST", _)         => true
-      case ("PUT", _)          => true
-      case ("DELETE", Some(_)) => true
-      case ("DELETE", None)    => false
-      case _                   => true
+  private def makeCall(_body: JsValue, maybeTesting: Option[Testing], id: String): Future[Either[AppError, Result]] = {
+    val headers = (_body \ "headers")
+      .asOpt[Map[String, String]]
+      .getOrElse(Map.empty[String, String])
+    val method =
+      (_body \ "method").asOpt[String].getOrElse("GET")
+    val body = (_body \ "body").asOpt[String]
+    val swaggerUrl = (_body \ "url").as[String]
+
+    val headerOpt = headers.find(_._2 == s"fake-$id")
+    val maybeUrl = maybeTesting match {
+      case Some(Testing(url, _, _, _, _, _, _)) =>
+        val path = Uri(swaggerUrl).path.toString()
+        url.map(u => s"$u$path")
+      case _ => None
+    }
+    val finalHeaders: Map[String, String] = {
+      maybeTesting match {
+        case Some(Testing(_, _, auth, _, username, _, _))
+          if auth.name == TestingAuth.ApiKey.name && headerOpt.isDefined =>
+          headers - headerOpt.get._1 + (headerOpt.get._1 -> username
+            .getOrElse(""))
+        case Some(Testing(_, _, auth, _, username, password, _))
+          if auth.name == TestingAuth.Basic.name =>
+          headers - "Authorization" + ("Authorization" -> s"Basic ${Base64
+            .encodeBase64String(s"${username.getOrElse("")}:${password.getOrElse("")}".getBytes(Charsets.UTF_8))}")
+        case _ => headers
+      }
     }
 
-  def fakeApiCall(teamId: String, apiId: String) =
-    DaikokuAction.async(parse.json) { ctx =>
-      import scala.concurrent.duration._
-
-      def makeCall(api: Api): Future[Either[AppError, Result]] = {
-        val url = (ctx.request.body \ "url").as[String]
-        val headers = (ctx.request.body \ "headers")
-          .asOpt[Map[String, String]]
-          .getOrElse(Map.empty[String, String])
-        val method =
-          (ctx.request.body \ "method").asOpt[String].getOrElse("GET")
-        val body = (ctx.request.body \ "body").asOpt[String]
-        val credentials = (ctx.request.body \ "credentials")
-          .asOpt[String]
-          .getOrElse("same-origin")
-        val uri = Uri(url)
-        val queryOpt = uri
-          .query()
-          .toIndexedSeq
-          .find(_._2 == s"fake-${api.id.value}")
-        val headerOpt = headers.find(_._2 == s"fake-${api.id.value}")
-        val finalUrl = api.testing match {
-          case Some(Testing(_, auth, _, username, _, _))
-              if queryOpt.isDefined && auth.name == TestingAuth.ApiKey.name =>
-            url
-              .replace(
-                s"&${queryOpt.get._1}=fake-${api.id.value}",
-                s"&${queryOpt.get._1}=$username"
-              )
-              .replace(
-                s"?${queryOpt.get._1}=fake-${api.id.value}",
-                s"?${queryOpt.get._1}=$username"
-              )
-          case _ => url
-        }
-        val finalHeaders: Map[String, String] =
-          api.testing match {
-            case Some(Testing(_, auth, _, username, _, _))
-                if auth.name == TestingAuth.ApiKey.name && headerOpt.isDefined =>
-              headers - headerOpt.get._1 + (headerOpt.get._1 -> username
-                .getOrElse(""))
-            case Some(Testing(_, auth, _, username, password, _))
-                if auth.name == TestingAuth.Basic.name =>
-              headers - "Authorization" + ("Authorization" -> s"Basic ${Base64
-                .encodeBase64String(s"${username.getOrElse("")}:$password".getBytes(Charsets.UTF_8))}")
-            case _ => headers
-          }
+    maybeUrl match {
+      case Some(finalUrl) =>
         val builder = env.wsClient
           .url(finalUrl)
           .withHttpHeaders(finalHeaders.toSeq: _*)
           .withFollowRedirects(false)
           .withMethod(method)
           .withRequestTimeout(30.seconds)
+
         body
           .map(b =>
             builder.withBody(play.api.libs.ws.InMemoryBody(ByteString(b)))
@@ -770,10 +724,7 @@ class OtoroshiSettingsController(
               .sendEntity(
                 HttpEntity.Streamed(
                   Source.lazySource(() => res.bodyAsSource),
-                  res.headers
-                    .get("Content-Length")
-                    .flatMap(_.lastOption)
-                    .map(_.toInt),
+                  None,
                   res.headers
                     .get("Content-Type")
                     .flatMap(_.headOption)
@@ -791,10 +742,16 @@ class OtoroshiSettingsController(
           }
           .map(Right(_))
           .recover {
-            case e => Left(AppError.InternalServerError(e.getMessage))
+            case e =>
+              Left(AppError.InternalServerError(e.getMessage))
           }
-      }
+      case None =>
+        FastFuture.successful(Left(AppError.EntityNotFound("test server url")))
+    }
+  }
 
+  def fakeApiCall(teamId: String, apiId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
       (for {
         team <- EitherT.fromOptionF(
           env.dataStore.teamRepo
@@ -815,7 +772,7 @@ class OtoroshiSettingsController(
           (),
           AppError.ForbiddenAction
         )
-        result <- EitherT(makeCall(api))
+        result <- EitherT(makeCall(ctx.request.body, api.testing, api.id.value))
       } yield result)
         .leftMap(_.render())
         .merge
@@ -823,98 +780,6 @@ class OtoroshiSettingsController(
 
   def fakePlanCall(teamId: String, apiId: String, planId: String) =
     DaikokuAction.async(parse.json) { ctx =>
-      import scala.concurrent.duration._
-
-      def makeCall(plan: UsagePlan): Future[Either[AppError, Result]] = {
-        //todo: pattern matching on plan.testing
-
-        val url = (ctx.request.body \ "url").as[String]
-        val headers = (ctx.request.body \ "headers")
-          .asOpt[Map[String, String]]
-          .getOrElse(Map.empty[String, String])
-        val method =
-          (ctx.request.body \ "method").asOpt[String].getOrElse("GET")
-        val body = (ctx.request.body \ "body").asOpt[String]
-        val credentials = (ctx.request.body \ "credentials")
-          .asOpt[String]
-          .getOrElse("same-origin")
-        val uri = Uri(url)
-        val queryOpt = uri
-          .query()
-          .toIndexedSeq
-          .find(_._2 == s"fake-${plan.id.value}")
-        val headerOpt = headers.find(_._2 == s"fake-${plan.id.value}")
-        val username = plan.testing.flatMap(_.username).get
-        val password = plan.testing.flatMap(_.password).get
-        val finalUrl = plan.testing.map(_.auth).get match {
-          case TestingAuth.ApiKey if queryOpt.isDefined =>
-            url
-              .replace(
-                s"&${queryOpt.get._1}=fake-${plan.id.value}",
-                s"&${queryOpt.get._1}=$username"
-              )
-              .replace(
-                s"?${queryOpt.get._1}=fake-${plan.id.value}",
-                s"?${queryOpt.get._1}=$username"
-              )
-          // case TestingAuth.ApiKey if queryOpt.isDefined && url.contains("?") => (url + "&" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
-          // case TestingAuth.ApiKey if queryOpt.isDefined && !url.contains("?") => (url + "?" + queryOpt.get._1 + "=" + username).replace(s"&${queryOpt.get._1}=fake-${api.id.value}", "").replace(s"?${queryOpt.get._1}=fake-${api.id.value}", "")
-          case _ => url
-        }
-        val finalHeaders: Map[String, String] =
-          plan.testing.map(_.auth).get match {
-            case TestingAuth.ApiKey if headerOpt.isDefined =>
-              headers - headerOpt.get._1 + (headerOpt.get._1 -> username)
-            case TestingAuth.Basic =>
-              headers - "Authorization" + ("Authorization" -> s"Basic ${Base64
-                .encodeBase64String(s"${username}:${password}".getBytes(Charsets.UTF_8))}")
-            case _ => headers
-          }
-        val builder = env.wsClient
-          .url(finalUrl)
-          .withHttpHeaders(finalHeaders.toSeq: _*)
-          .withFollowRedirects(false)
-          .withMethod(method)
-          .withRequestTimeout(30.seconds)
-        body
-          .map(b =>
-            builder.withBody(play.api.libs.ws.InMemoryBody(ByteString(b)))
-          )
-          .getOrElse(builder)
-          .stream()
-          .map { res =>
-            val ctype = res.headers
-              .get("Content-Type")
-              .flatMap(_.headOption)
-              .getOrElse("application/json")
-            Status(res.status)
-              .sendEntity(
-                HttpEntity.Streamed(
-                  Source.lazySource(() => res.bodyAsSource),
-                  res.headers
-                    .get("Content-Length")
-                    .flatMap(_.lastOption)
-                    .map(_.toInt),
-                  res.headers
-                    .get("Content-Type")
-                    .flatMap(_.headOption)
-                )
-              )
-              .withHeaders(
-                res.headers.view
-                  .mapValues(_.head)
-                  .toSeq
-                  .filter(_._1 != "Content-Type")
-                  .filter(_._1 != "Content-Length")
-                  .filter(_._1 != "Transfer-Encoding"): _*
-              )
-              .as(ctype)
-          }
-          .map(Right(_))
-          .recover {
-            case e => Left(AppError.InternalServerError(e.getMessage))
-          }
-      }
 
       (for {
         team <- EitherT.fromOptionF(
@@ -947,7 +812,7 @@ class OtoroshiSettingsController(
           (),
           AppError.ForbiddenAction
         )
-        result <- EitherT(makeCall(plan))
+        result <- EitherT(makeCall(ctx.request.body, plan.testing, plan.id.value))
       } yield result)
         .leftMap(_.render())
         .merge

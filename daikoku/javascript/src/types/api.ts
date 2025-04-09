@@ -99,9 +99,7 @@ export interface IApiAuthoWithCount {
 
 export interface ITesting {
   enabled: boolean;
-  auth: {
-    name: 'ApiKey' | 'Basic';
-  };
+  auth: 'ApiKey' | 'Basic';
   name?: string;
   username?: string;
   password?: string;

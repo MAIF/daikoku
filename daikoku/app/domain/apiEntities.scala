@@ -576,6 +576,7 @@ case class TestingConfig(
 }
 
 case class Testing(
+    url: Option[String] = None,
     enabled: Boolean = false,
     auth: TestingAuth = TestingAuth.Basic,
     name: Option[String] = None,

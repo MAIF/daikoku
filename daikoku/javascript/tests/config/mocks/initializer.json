@@ -2,11 +2,11 @@
   {
     "httpRequest": {
       "method": "GET",
-      "path": "/users"
+      "path": "/types"
     },
     "httpResponse": {
       "statusCode": 200,
-      "body": "[{\"id\":1,\"firstname\":\"Georges\",\"lastname\":\"Harrison\",\"job\":\"Guitarist\", \"avatar\": \"https://upload.wikimedia.org/wikipedia/commons/thumb/4/45/George_Harrison_1974_%28cropped%29.jpg/1200px-George_Harrison_1974_%28cropped%29.jpg\"},{\"id\":2,\"firstname\":\"John\",\"lastname\":\"Lennon\",\"job\":\"Guitarist\", \"avatar\": \"https://www.toupie.org/Photos/Lennon.jpg\"},{\"id\":3,\"firstname\":\"Paul\",\"lastname\":\"McCartney\",\"job\":\"Bassist\", \"avatar\":\"https://upload.wikimedia.org/wikipedia/commons/thumb/0/00/Paul_McCartney_Headshot_%28cropped%29.jpg/170px-Paul_McCartney_Headshot_%28cropped%29.jpg\"},{\"id\":4,\"firstname\":\"Ringo\",\"lastname\":\"Star\",\"job\":\"Drummer\", \"avatar\": \"https://toutelaculture.com/wp-content/uploads/2011/03/img2793.jpeg\"}]",
+      "body": "[{\"id\":\"papier_recycle\",\"name\":\"Papier recyclé 90g\",\"price\":0.12,\"description\":\"Papier écologique adapté à l’impression N&B\"},{\"id\":\"papier_glace\",\"name\":\"Papier glacé 120g\",\"price\":0.18,\"description\":\"Idéal pour les impressions couleur de haute qualité\"},{\"id\":\"papier_brouillon\",\"name\":\"Papier brouillon 70g\",\"price\":0.05,\"description\":\"Papier économique pour les impressions temporaires\"}]",
       "headers": {
         "Content-Type": [
           "application/json"

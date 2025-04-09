@@ -200,6 +200,7 @@ object json {
           Try {
             JsSuccess(
               Testing(
+                url = (json \ "url").asOpt[String],
                 enabled = (json \ "enabled").asOpt[Boolean].getOrElse(false),
                 auth =
                   (json \ "auth").asOpt[String].filter(_.trim.nonEmpty) match {
@@ -225,6 +226,9 @@ object json {
 
     override def writes(o: Testing): JsValue =
       Json.obj(
+        "url" -> o.url.map(JsString.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
         "enabled" -> o.enabled,
         "auth" -> o.auth.name,
         "name" -> o.name.map(JsString.apply).getOrElse(JsNull).as[JsValue],

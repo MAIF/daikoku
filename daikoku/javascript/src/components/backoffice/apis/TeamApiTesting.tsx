@@ -1,4 +1,4 @@
-import { Form, FormRef, format, type } from '@maif/react-forms';
+import { Form, FormRef, Schema, constraints, format, type } from '@maif/react-forms';
 import { nanoid } from 'nanoid';
 import { MutableRefObject, useContext } from 'react';
 
@@ -94,7 +94,14 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
     .map((t: ITesting) => t.config)
     .exists((c: ITestingConfig) => c.otoroshiSettings);
 
-  const schema = {
+  const schema: Schema = {
+    url: {
+      type: type.string,
+      label: translate('Test server url'),
+      constraints: [
+        constraints.required()
+      ]
+    },
     enabled: {
       type: type.bool,
       label: translate('Enabled'),
@@ -105,8 +112,8 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
       format: format.buttonsSelect,
       label: translate('Auth. type'),
       options: [
-        { label: 'ApiKey', value: 'ApiKey' },
-        { label: 'Basic', value: 'Basic' },
+        { label: translate('API key'), value: 'ApiKey' },
+        { label: translate('Basic auth.'), value: 'Basic' },
       ],
     },
     name: {
@@ -116,7 +123,7 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
     },
     username: {
       type: type.string,
-      label: translate('Client Id'),
+      label: ({ rawValues }) => rawValues.auth === 'Basic' ? translate('Client Id') : translate('API key'),
       constraints: [],
     },
     password: {
@@ -124,6 +131,7 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
       format: format.password,
       label: translate('Client secret'),
       constraints: [],
+      visible: ({ rawValues }) => rawValues.auth === 'Basic'
     },
   };
 
