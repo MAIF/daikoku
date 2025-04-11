@@ -38,13 +38,13 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.getByPlaceholder('New Api').fill('API Betterave');
   await page.getByLabel('Desc. courte').fill("Ce n'est pas une blague Dwight. Jim ❤️");
   await page.getByText('Versions et tags').click();
-
   await page.locator('div.mrf-mt_10').filter({ hasText: "Tags" }).getByRole('button', { name: "Add" }).click();
   await page.locator('input[name="tags\\.0\\.value"]').fill('prod');
   await page.locator('div.mrf-mt_10').filter({ hasText: "Tags" }).getByRole('button', { name: "Add" }).click();
   await page.locator('input[name="tags\\.1\\.value"]').fill('important');
   //todo: find a way to fill description by playwright
   await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.locator('h1')).toContainText('API Betterave');
   await page.getByLabel('Accueil Daikoku').click();
   await expect(page.getByRole('heading', { name: 'API Betterave' })).toBeAttached();
   await logout(page);
@@ -206,10 +206,11 @@ test('sécuriser la création d\'API à l\'aide de la securité de tenant associ
   await loginAs(MICHAEL, page);
   await page.getByRole('button', { name: 'Ouvrir le menu de création' }).click();
   await page.locator('span').filter({ hasText: 'API' }).first().click();
-  await page.locator('div').filter({ hasText: /^Vendeurs$/ }).click();
+  await page.getByRole('dialog').getByRole('listitem', { name: 'Vendeurs'}).click();
   await page.getByRole('button', { name: 'Publiée' }).click();
   await page.getByRole('textbox', { name: 'Nom' }).fill('Vente de papier API');
   await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.locator('h1')).toContainText('Vente de papier API');
   await page.getByLabel('Accueil Daikoku').click();
   await expect(page.getByRole('heading', { name: 'Vente de papier API' })).toBeVisible();
   await page.getByRole('img', { name: 'user menu' }).click();
@@ -229,9 +230,11 @@ test('sécuriser la création d\'API à l\'aide de la securité de tenant associ
   await page.getByRole('button', { name: 'Ouvrir le menu de création' }).click();
   await page.locator('span').filter({ hasText: 'API' }).first().click();
   await expect(page.getByRole('dialog')).toBeVisible();
-  await expect(page.getByRole('dialog')).toContainText('API Division');
-  await expect(page.getByRole('dialog')).not.toContainText('Vendeurs');
-  await page.getByRole('button', { name: 'Fermer' }).click();
+  await expect(page.getByRole('dialog').getByRole('listitem')).toHaveCount(1);
+  await expect(page.getByRole('dialog').getByRole('listitem', {name: 'API Division'})).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('listitem', {name: 'Vendeurs'})).toBeHidden();
+
+  await page.getByRole('dialog').locator('.modal-footer').getByRole('button', { name: 'Fermer' }).first().click();
   await logout(page);
 
   await loginAs(JIM, page);

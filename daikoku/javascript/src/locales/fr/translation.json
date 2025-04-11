@@ -780,6 +780,7 @@
   "Get API key": "Obtenir une clé d'API",
   "Request API key": "Demander une clé d'API",
   "otoroshi.testing.delete.confirm": "Êtes-vous certain de vouloir supprimer ces paramètres de test ?",
+  "api.testing.url.label": "Url de test",
   "Select a auth type": "Sélectionner un type d'Auth.",
   "testing.key.creation": "Utiliser Otoroshi pour créer une clé d'API de test",
   "Delete Testing ApiKey": "Supprimer la clé d'API de test",

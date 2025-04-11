@@ -82,29 +82,34 @@ export const TeamSelectorModal = ({ title, description, teams, pendingTeams = []
   return (
     <div className="modal-content">
       <div className="modal-header">
-        <h5 className="modal-title">{title}</h5>
-        <button type="button" className="btn-close" aria-label="Close" onClick={close} />
+        <h5 className="modal-title" id='modal-title'>{title}</h5>
+        <button type="button" className="btn-close" aria-label={translate("Close")} onClick={close} />
       </div>
       <div className="modal-body">
-        <div className="modal-description">{description}</div>
-        <div className="team-selection__container">
+        <div className="modal-description" id="modal-description">{description}</div>
+        <div className="team-selection__container" role='list' aria-labelledby='modal-title' aria-describedby='modal-description'>
           {!!allTeamSelector && !!allTeams.length && (
-            <div
+            <button
+              role='listitem'
               key={'all'}
-              className="team-selection team-selection__all-team selectable"
+              className="team-selection team-selection__all-team selectable btn"
               onClick={() => toggleAllTeam()}
             >
               {selectedTeams.length === allTeams.length ? <CheckSquare /> : <Square />}
               <span className="ms-2">
                 <Translation i18nkey="All">All</Translation>
               </span>
-            </div>
+            </button>
           )}
           {teams.map((team) => {
+            const teamName = getTeamLabel(team);
             return (
-              <div
+              <button
+                type='button'
+                role='listitem'
+                aria-label={teamName}
                 key={team._id}
-                className={classNames('team-selection team-selection__team', {
+                className={classNames('team-selection team-selection__team btn', {
                   selectable:
                     allowMultipleDemand ||
                     (!pendingTeams.includes(team._id) && !acceptedTeams.includes(team._id)),
@@ -116,14 +121,14 @@ export const TeamSelectorModal = ({ title, description, teams, pendingTeams = []
                 onClick={() => doTeamAction(team)}
               >
                 {getButton(team)}
-                <span className="ms-2">{getTeamLabel(team)}</span>
-              </div>
+                <span className="ms-2">{teamName}</span>
+              </button>
             );
           })}
         </div>
       </div>
       <div className="modal-footer">
-        <button type="button" className="btn btn-outline-danger" onClick={close}>
+        <button type="button" className="btn btn-outline-danger" onClick={close} aria-label={translate('Close')}>
           {translate('Close')}
         </button>
         {!!allTeamSelector && (
@@ -133,6 +138,7 @@ export const TeamSelectorModal = ({ title, description, teams, pendingTeams = []
               disabled: !selectedTeams.length,
             })}
             onClick={() => finalAction()}
+            aria-label={actionLabel}
           >
             {actionLabel}
           </button>

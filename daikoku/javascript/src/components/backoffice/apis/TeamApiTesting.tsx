@@ -98,7 +98,7 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
   const schema: Schema = {
     url: {
       type: type.string,
-      label: translate('Test server url'),
+      label: translate('api.testing.url.label'),
       constraints: [
         constraints.required()
       ]

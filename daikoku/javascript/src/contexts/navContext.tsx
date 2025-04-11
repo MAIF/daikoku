@@ -83,6 +83,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
         !!api?.documentation?.pages?.length
     )
   )
+  console.debug(connectedUser.isGuest, tenant.display, plans?.some(p => !!p.documentation), plans?.map(p => p.documentation))
   const shouldDisplayOpenApi = userCanUpdateApi || (
     (!connectedUser.isGuest || !tenant.apiReferenceHideForGuest) &&
     (
@@ -153,7 +154,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
               active: currentTab === 'news',
             },
           },
-          issues: !!isAdminApi && {
+          issues: {
             label: translate('Issues'),
             action: () => navigateTo('issues'),
             className: {
