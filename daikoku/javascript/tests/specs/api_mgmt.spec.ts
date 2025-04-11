@@ -87,7 +87,7 @@ test('[ASOAPI-10597] [ASOAPI-10599] - créer/supprimer une version d\'une API', 
   await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Créer une nouvelle version' }).click();
   await page.getByPlaceholder('Numéro de version').fill('2.0.0');
   await page.getByRole('button', { name: 'Créer' }).click();
-  await expect(page).toHaveURL("http://localhost:5173/pP61PigzFffXTu4TX3BmvAB6iUIHY9oj/api-papier/2.0.0/description")
+  await expect(page).toHaveURL(`http://localhost:${exposedPort}/pP61PigzFffXTu4TX3BmvAB6iUIHY9oj/api-papier/2.0.0/description`)
 
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0);
   

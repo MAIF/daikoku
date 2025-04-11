@@ -1208,7 +1208,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             {customDescription && <span>{customDescription}</span>}
           </p>
           <div className="d-flex justify-content-between align-items-center flex-wrap usage-plan__card__subscription">
-            {(!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined) && props.api.visibility !== 'AdminOnly' && (
+            {!connectedUser.isGuest && (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined) && props.api.visibility !== 'AdminOnly' && (
               <button
                 type="button"
                 className="usage-plan__card__action-button inactive"
