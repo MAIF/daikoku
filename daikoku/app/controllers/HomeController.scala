@@ -61,7 +61,7 @@ class HomeController(
 
   def index() =
     DaikokuActionMaybeWithoutUser.async { ctx =>
-
+      AppLogger.info(ctx.tenant.style.flatMap(_.homeCmsPage).getOrElse("pas de cms page"))
       ctx.tenant.style match {
         case Some(value) if value.homePageVisible =>
           (value.homeCmsPage, value.notFoundCmsPage) match {

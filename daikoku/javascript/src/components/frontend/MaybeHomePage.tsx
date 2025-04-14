@@ -36,7 +36,7 @@ export const MaybeHomePage = ({
     if (!tenant.homePageVisible) {
       navigate('/apis');
     }
-  }, []);
+  }, [tenant]);
 
   return null;
 };

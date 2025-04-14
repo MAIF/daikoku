@@ -61,15 +61,15 @@ test('[ASOAPI-10151] - Consulter l\'offre API', async ({ page }) => {
 
 test('Utiliser les liens de redirection vers la page d\'accueil', async ({ page }) => {
   await page.goto(HOME);
-  await (expect(page).toHaveURL(ACCUEIL))
+  await expect(page).toHaveURL(ACCUEIL)
   await page.getByRole('heading', { name: 'API papier' }).click();
-  await (expect(page).not.toHaveURL(ACCUEIL))
+  await expect(page).not.toHaveURL(ACCUEIL)
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
-  await (expect(page).toHaveURL(ACCUEIL))
+  await expect(page).toHaveURL(ACCUEIL)
   await page.getByRole('heading', { name: 'API papier' }).click();
-  await (expect(page).not.toHaveURL(ACCUEIL))
+  await expect(page).not.toHaveURL(ACCUEIL)
   await page.getByRole('link', { name: 'Liste des APIs' }).click();
-  await (expect(page).toHaveURL(ACCUEIL))
+  await expect(page).toHaveURL(ACCUEIL)
 
   const cmspage = {
     "_id": "-",
@@ -96,17 +96,17 @@ test('Utiliser les liens de redirection vers la page d\'accueil', async ({ page 
     "lastPublishedDate": null
   }
 
-  await (fetch(`http://localhost:${exposedPort}/admin-api/cms-pages`, {
+  await fetch(`http://localhost:${exposedPort}/admin-api/cms-pages`, {
     method: 'POST',
     headers: {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`,
       "Content-Type": "application/json"
     },
     body: JSON.stringify(cmspage)
-  }))
+  })
 
 
-  await (fetch(`http://localhost:${exposedPort}/admin-api/tenants/default`, {
+  await fetch(`http://localhost:${exposedPort}/admin-api/tenants/default`, {
     method: 'PATCH',
     headers: {
       "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`,
@@ -124,19 +124,20 @@ test('Utiliser les liens de redirection vers la page d\'accueil', async ({ page 
         "value": "-"
       }
     ])
-  }))
+  })
 
   await page.goto(HOME);
-  await (expect(page).toHaveURL(HOME))
+  await page.reload();
+  await expect(page).toHaveURL(HOME)
   await page.getByRole('link', { name: 'voir les apis' }).click();
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
-  await (expect(page).toHaveURL(HOME))
+  await expect(page).toHaveURL(HOME)
   await page.getByRole('link', { name: 'voir les apis' }).click();
-  await (expect(page).toHaveURL(ACCUEIL))
+  await expect(page).toHaveURL(ACCUEIL)
   await page.getByRole('heading', { name: 'API papier' }).click();
-  await (expect(page).not.toHaveURL(HOME))
+  await expect(page).not.toHaveURL(HOME)
   await page.getByRole('link', { name: 'Liste des APIs' }).click();
-  await (expect(page).toHaveURL(ACCUEIL))
+  await expect(page).toHaveURL(ACCUEIL)
 })
 
 test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
