@@ -891,6 +891,11 @@ object utils {
         .withRequestTimeout(10.seconds)
         .withMethod("GET")
         .execute()
+        .map(r => {
+          logger.info(s"### otoroshi clean response ${r.statusText}")
+          logger.info(Json.stringify(r.json))
+          r
+        })
         .map(_.json.as[JsArray].value.toSeq)
 
       for {
