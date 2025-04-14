@@ -50,10 +50,10 @@ class EnvironmentDisplayMode()
         apis = Seq(api.copy(tenant= t.id))
       )
 
-      val devPlan = createPlan("dev", tenant2)
-      val devPlan2 = createPlan("dev", tenant2)
-      val preprodplan = createPlan("preprod", tenant2)
-      val nonePlan = createPlan("None", tenant2)
+      val devPlan = createPlan("dev", t)
+      val devPlan2 = createPlan("dev", t)
+      val preprodplan = createPlan("preprod", t)
+      val nonePlan = createPlan("None", t)
 
       val session = loginWithBlocking(userAdmin, t)
 
@@ -91,38 +91,39 @@ class EnvironmentDisplayMode()
     }
 
     "be deleted if associated env is deleted" in {
-
-      val devPlan = createPlan("dev", tenant2)
-      val prodPlan = createPlan("prod", tenant2)
-
-      val api = generateApi("0", tenant.id, teamOwnerId, Seq.empty).api
-        .copy(possibleUsagePlans = Seq(devPlan.id, prodPlan.id))
-
-      val _tenant = tenant.copy(
+      val t = tenant2.copy(
         display = TenantDisplay.Environment,
         environments = Set("dev", "prod")
       )
+
+      val devPlan = createPlan("dev", t)
+      val prodPlan = createPlan("prod", t)
+
+      val api = generateApi("0", t.id, teamOwnerId, Seq.empty).api
+        .copy(possibleUsagePlans = Seq(devPlan.id, prodPlan.id))
+
       setupEnvBlocking(
-        tenants = Seq(_tenant),
-        teams = Seq(teamOwner, defaultAdminTeam),
-        users = Seq(tenantAdmin),
+        tenants = Seq(t),
+        teams = Seq(teamOwner, defaultAdminTeam, tenant2AdminTeam),
+        users = Seq(tenantAdmin, user),
         usagePlans = Seq(devPlan, prodPlan),
         apis = Seq(api)
       )
 
-      val session = loginWithBlocking(tenantAdmin, tenant)
+      //user is admin for tenant2
+      val session = loginWithBlocking(user, t)
 
       // can create plan with avalaible env
       val respUpdateTenant = httpJsonCallBlocking(
-        s"/api/tenants/${tenant.id.value}",
+        s"/api/tenants/${t.id.value}",
         method = "PUT",
-        body = _tenant.copy(environments = Set("prod")).asJson.some
-      )(_tenant, session)
+        body = t.copy(environments = Set("prod")).asJson.some
+      )(t, session)
       respUpdateTenant.status mustBe 200
 
       val respVerif = httpJsonCallBlocking(
         s"/api/me/visible-apis/${api.id.value}"
-      )(tenant, session)
+      )(t, session)
       respVerif.status mustBe 200
       (respVerif.json \ "possibleUsagePlans").as[JsArray].value.size mustBe 1
       val uniqPlan = (respVerif.json \ "possibleUsagePlans")
