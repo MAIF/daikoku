@@ -1,12 +1,13 @@
 package daikoku
 
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.otoroshi.daikoku.domain.{IntegrationProcess, TenantDisplay, UsagePlan, UsagePlanId}
+import fr.maif.otoroshi.daikoku.domain.{IntegrationProcess, Tenant, TenantDisplay, UsagePlan, UsagePlanId}
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.JsArray
+import play.api.libs.json.{JsArray, Json}
+
 import scala.concurrent.duration.{FiniteDuration, _}
 
 class EnvironmentDisplayMode()
@@ -14,7 +15,7 @@ class EnvironmentDisplayMode()
     with DaikokuSpecHelper
     with IntegrationPatience {
 
-  def createPlan(name: String): UsagePlan =
+  def createPlan(name: String, tenant: Tenant): UsagePlan =
     UsagePlan(
       id = UsagePlanId(IdGenerator.token),
       tenant = tenant.id,
@@ -36,40 +37,39 @@ class EnvironmentDisplayMode()
       val api = generateApi("0", tenant.id, teamOwnerId, Seq.empty).api
         .copy(possibleUsagePlans = Seq.empty)
 
-      val t = tenant.copy(
+      val t = tenant2.copy(
         display = TenantDisplay.Environment,
         environments = Set("dev", "prod")
       )
 
       setupEnvBlocking(
-        tenants = Seq(t),
-        teams = Seq(teamOwner),
+        tenants = Seq(t, tenant),
+        teams = Seq(teamOwner.copy(tenant = t.id)),
         users = Seq(userAdmin),
         usagePlans = Seq(),
-        apis = Seq(api)
+        apis = Seq(api.copy(tenant= t.id))
       )
 
-      val devPlan = createPlan("dev")
-      val devPlan2 = createPlan("dev")
-      val preprodplan = createPlan("preprod")
-      val nonePlan = createPlan("None")
+      val devPlan = createPlan("dev", tenant2)
+      val devPlan2 = createPlan("dev", tenant2)
+      val preprodplan = createPlan("preprod", tenant2)
+      val nonePlan = createPlan("None", tenant2)
 
-      val session = loginWithBlocking(userAdmin, tenant)
+      val session = loginWithBlocking(userAdmin, t)
 
       // can create plan with avalaible env
       val respDev = httpJsonCallBlocking(
         s"/api/teams/${teamOwner.id.value}/apis/${api.id.value}/${api.currentVersion.value}/plan",
         method = "POST",
         body = devPlan.asJson.some
-      )(tenant, session)
+      )(t, session)
       respDev.status mustBe 201
-
       // can create plan with avalaible env
       val respDev2 = httpJsonCallBlocking(
         s"/api/teams/${teamOwner.id.value}/apis/${api.id.value}/${api.currentVersion.value}/plan",
         method = "POST",
         body = devPlan2.asJson.some
-      )(tenant, session)
+      )(t, session)
       respDev2.status mustBe 409
 
       // can't create plan with unknown env name
@@ -77,7 +77,7 @@ class EnvironmentDisplayMode()
         s"/api/teams/${teamOwner.id.value}/apis/${api.id.value}/${api.currentVersion.value}/plan",
         method = "POST",
         body = preprodplan.asJson.some
-      )(tenant, session)
+      )(t, session)
       respPreprod.status mustBe 409
 
       // can't create plan with no custom name
@@ -85,15 +85,15 @@ class EnvironmentDisplayMode()
         s"/api/teams/${teamOwner.id.value}/apis/${api.id.value}/${api.currentVersion.value}/plan",
         method = "POST",
         body = nonePlan.asJson.some
-      )(tenant, session)
+      )(t, session)
       respNone.status mustBe 409
 
     }
 
     "be deleted if associated env is deleted" in {
 
-      val devPlan = createPlan("dev")
-      val prodPlan = createPlan("prod")
+      val devPlan = createPlan("dev", tenant2)
+      val prodPlan = createPlan("prod", tenant2)
 
       val api = generateApi("0", tenant.id, teamOwnerId, Seq.empty).api
         .copy(possibleUsagePlans = Seq(devPlan.id, prodPlan.id))

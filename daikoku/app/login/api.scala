@@ -149,7 +149,8 @@ object TenantHelper {
       case TenantProvider.Local =>
         // Try to find user id early, maybe we should cache it then
         val tenantIdF: Future[TenantId] =
-          request.session.get("sessionId") match {
+          request.session.get("sessionId").orElse(request.getQueryString("sessionId")) match {
+
             case None =>
               FastFuture.successful(Tenant.Default)
             case Some(sessionId) =>

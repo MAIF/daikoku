@@ -515,7 +515,7 @@ object utils {
                   .save(t)
                   .map(_ => t)
               )
-              .flatMap { team =>
+              .flatMap { _ =>
                 val session = UserSession(
                   id = DatastoreId(IdGenerator.token(32)),
                   userId = user.id,
@@ -532,6 +532,7 @@ object utils {
                 )
                 daikokuComponents.env.dataStore.userSessionRepo
                   .save(session)
+                  .map(_ => daikokuComponents.env.dataStore.userRepo.save(user.copy(lastTenant = on.id.some)))
                   .map { _ =>
                     session
                   }

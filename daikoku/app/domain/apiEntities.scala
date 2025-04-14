@@ -3,8 +3,9 @@ package fr.maif.otoroshi.daikoku.domain
 import cats.data.EitherT
 import cats.syntax.option._
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.domain.json.{SeqIssueIdFormat, SeqPostIdFormat, SeqTeamIdFormat, SetApiTagFormat, TestingConfigFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{CurrencyFormat, SeqIssueIdFormat, SeqPostIdFormat, SeqTeamIdFormat, SetApiTagFormat, TestingConfigFormat}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, ReplaceAllWith}
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -316,14 +317,13 @@ case class UsagePlan(
       .collect(_.customName)
     //FIXME: check conflict with extisting name in case of creation but
     (apiVisibility, tenant.display) match {
-      case (ApiVisibility.AdminOnly, _) => EitherT.pure[Future, AppError](())
       case (_, TenantDisplay.Environment) =>
         EitherT.cond[Future](
-          !existingNames.contains(customName),
+          !existingNames.contains(customName) && tenant.environments.contains(customName),
           (),
           AppError.EntityConflict("Plan custom name")
         )
-      case (_, TenantDisplay.Default) => EitherT.pure[Future, AppError](())
+      case _ => EitherT.pure[Future, AppError](())
     }
   }
 

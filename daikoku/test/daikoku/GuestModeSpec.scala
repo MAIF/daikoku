@@ -208,9 +208,12 @@ class GuestModeSpec()
         path = s"/api/me/visible-apis/${publicApi.id.value}"
       )(publicTenant)
       resp.status mustBe 200
-      val api = fr.maif.otoroshi.daikoku.domain.json.ApiFormat.reads(resp.json)
-      api.isSuccess mustBe true
-      api.get.id mustBe publicApi.id
+
+      (resp.json \ "_id").as[String] mustBe publicApi.id.value
+      val excludedKeys = Set("documentation", "swagger", "testing", "subscriptionProcess")
+      val includedKeys = Set("_id", "team", "possibleUsagePlans", "name", "description", "currentVersion", "tags", "categories")
+      excludedKeys.forall(k => !resp.json.as[JsObject].keys.contains(k))
+      includedKeys.forall(k => resp.json.as[JsObject].keys.contains(k))
 
       val respError = httpJsonCallWithoutSessionBlocking(
         path = s"/api/me/visible-apis/${privateApi.id.value}"
