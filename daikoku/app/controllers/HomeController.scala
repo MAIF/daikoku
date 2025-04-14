@@ -97,6 +97,10 @@ class HomeController(
     DaikokuActionMaybeWithoutUser.async { ctx =>
       assets.at("index.html").apply(ctx.request)
     }
+  def indexWithoutPath() =
+    DaikokuActionMaybeWithoutUser.async { ctx =>
+      assets.at("index.html").apply(ctx.request)
+    }
 
   def status() =
     DaikokuActionMaybeWithoutUser.async { ctx =>
