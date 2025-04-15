@@ -716,3 +716,22 @@ We'd like to thank all the contributors who worked on this release!
 
 - no more pagination in api list, just 10 apis [#808](https://github.com/MAIF/daikoku/issues/808)
 
+## [v18.2.0] - 2025-04-15
+
+## :star: New Features
+
+- Use favorite button to pin favorite api in apiHome [#819](https://github.com/MAIF/daikoku/issues/819)
+- Create Complete Documentation for the CMS [#774](https://github.com/MAIF/daikoku/issues/774)
+
+## :beetle: Bug Fixes
+
+- CLI: Pushed API files, but they didn't update. [#832](https://github.com/MAIF/daikoku/issues/832)
+- s3 issues [#829](https://github.com/MAIF/daikoku/issues/829)
+- Offset incorrect for ApiLIst pagination [#828](https://github.com/MAIF/daikoku/issues/828)
+- Footer display weirdly [#827](https://github.com/MAIF/daikoku/issues/827)
+- accept new format for ototoshi quotas [#818](https://github.com/MAIF/daikoku/issues/818)
+- Missing Cookie Transmission to Daikoku for Logged-In Users [#814](https://github.com/MAIF/daikoku/issues/814)
+- API Testing with APIkey is broken ? [#811](https://github.com/MAIF/daikoku/issues/811)
+- Subscription is deleted even if consumption is not retrieve [#801](https://github.com/MAIF/daikoku/issues/801)
+- [APi transfer] - subscription demand notification are not transfer with the API [#782](https://github.com/MAIF/daikoku/issues/782)
+
