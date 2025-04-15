@@ -286,8 +286,7 @@ class ConsumptionControllerSpec()
               .withBody(
                 Json.stringify(
                   ApiKeyQuotas(
-                    authorizedCallsPerSec =
-                      plan.maxPerSecond.getOrElse(0),
+                    authorizedCallsPerSec = plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
                     remainingCallsPerSec =
                       plan.maxPerSecond.getOrElse(0L) - callPerSec,
@@ -295,8 +294,7 @@ class ConsumptionControllerSpec()
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
-                    authorizedCallsPerMonth =
-                      plan.maxPerMonth.getOrElse(0),
+                    authorizedCallsPerMonth = plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
                     remainingCallsPerMonth =
                       plan.maxPerMonth.getOrElse(0L) - callPerMonth
@@ -377,8 +375,7 @@ class ConsumptionControllerSpec()
               .withBody(
                 Json.stringify(
                   ApiKeyQuotas(
-                    authorizedCallsPerSec =
-                      plan.maxPerSecond.getOrElse(0),
+                    authorizedCallsPerSec = plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
                     remainingCallsPerSec =
                       plan.maxPerSecond.getOrElse(0L) - callPerSec,
@@ -386,8 +383,7 @@ class ConsumptionControllerSpec()
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
-                    authorizedCallsPerMonth =
-                      plan.maxPerMonth.getOrElse(0),
+                    authorizedCallsPerMonth = plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
                     remainingCallsPerMonth =
                       plan.maxPerMonth.getOrElse(0L) - callPerMonth
@@ -467,8 +463,7 @@ class ConsumptionControllerSpec()
               .withBody(
                 Json.stringify(
                   ApiKeyQuotas(
-                    authorizedCallsPerSec =
-                      plan.maxPerSecond.getOrElse(0),
+                    authorizedCallsPerSec = plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
                     remainingCallsPerSec =
                       plan.maxPerSecond.getOrElse(0L) - callPerSec,
@@ -476,8 +471,7 @@ class ConsumptionControllerSpec()
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
-                    authorizedCallsPerMonth =
-                      plan.maxPerMonth.getOrElse(0),
+                    authorizedCallsPerMonth = plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
                     remainingCallsPerMonth =
                       plan.maxPerMonth.getOrElse(0L) - callPerMonth
@@ -556,8 +550,7 @@ class ConsumptionControllerSpec()
               .withBody(
                 Json.stringify(
                   ApiKeyQuotas(
-                    authorizedCallsPerSec =
-                      plan.maxPerSecond.getOrElse(0),
+                    authorizedCallsPerSec = plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
                     remainingCallsPerSec =
                       plan.maxPerSecond.getOrElse(0L) - callPerSec,
@@ -565,8 +558,7 @@ class ConsumptionControllerSpec()
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
-                    authorizedCallsPerMonth =
-                      plan.maxPerMonth.getOrElse(0),
+                    authorizedCallsPerMonth = plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
                     remainingCallsPerMonth =
                       plan.maxPerMonth.getOrElse(0L) - callPerMonth
@@ -759,8 +751,7 @@ class ConsumptionControllerSpec()
               .withBody(
                 Json.stringify(
                   ApiKeyQuotas(
-                    authorizedCallsPerSec =
-                      plan.maxPerSecond.getOrElse(0),
+                    authorizedCallsPerSec = plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
                     remainingCallsPerSec =
                       plan.maxPerSecond.getOrElse(0L) - callPerSec,
@@ -768,8 +759,7 @@ class ConsumptionControllerSpec()
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
-                    authorizedCallsPerMonth =
-                      plan.maxPerMonth.getOrElse(0),
+                    authorizedCallsPerMonth = plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
                     remainingCallsPerMonth =
                       plan.maxPerMonth.getOrElse(0L) - callPerMonth
@@ -833,8 +823,7 @@ class ConsumptionControllerSpec()
               .withBody(
                 Json.stringify(
                   ApiKeyQuotas(
-                    authorizedCallsPerSec =
-                      plan.maxPerSecond.getOrElse(0),
+                    authorizedCallsPerSec = plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
                     remainingCallsPerSec =
                       plan.maxPerSecond.getOrElse(0L) - callPerSec,
@@ -842,8 +831,7 @@ class ConsumptionControllerSpec()
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
-                    authorizedCallsPerMonth =
-                      plan.maxPerMonth.getOrElse(0),
+                    authorizedCallsPerMonth = plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
                     remainingCallsPerMonth =
                       plan.maxPerMonth.getOrElse(0L) - callPerMonth
@@ -907,8 +895,7 @@ class ConsumptionControllerSpec()
               .withBody(
                 Json.stringify(
                   ApiKeyQuotas(
-                    authorizedCallsPerSec =
-                      plan.maxPerSecond.getOrElse(0),
+                    authorizedCallsPerSec = plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
                     remainingCallsPerSec =
                       plan.maxPerSecond.getOrElse(0L) - callPerSec,
@@ -916,8 +903,7 @@ class ConsumptionControllerSpec()
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
-                    authorizedCallsPerMonth =
-                      plan.maxPerMonth.getOrElse(0),
+                    authorizedCallsPerMonth = plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
                     remainingCallsPerMonth =
                       plan.maxPerMonth.getOrElse(0L) - callPerMonth
@@ -980,8 +966,7 @@ class ConsumptionControllerSpec()
               .withBody(
                 Json.stringify(
                   ApiKeyQuotas(
-                    authorizedCallsPerSec =
-                      plan.maxPerSecond.getOrElse(0),
+                    authorizedCallsPerSec = plan.maxPerSecond.getOrElse(0),
                     currentCallsPerSec = callPerSec,
                     remainingCallsPerSec =
                       plan.maxPerSecond.getOrElse(0L) - callPerSec,
@@ -989,8 +974,7 @@ class ConsumptionControllerSpec()
                     currentCallsPerDay = callPerDay,
                     remainingCallsPerDay = plan.maxPerDay
                       .getOrElse(0L) - callPerDay,
-                    authorizedCallsPerMonth =
-                      plan.maxPerMonth.getOrElse(0),
+                    authorizedCallsPerMonth = plan.maxPerMonth.getOrElse(0),
                     currentCallsPerMonth = callPerMonth,
                     remainingCallsPerMonth =
                       plan.maxPerMonth.getOrElse(0L) - callPerMonth

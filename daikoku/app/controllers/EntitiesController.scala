@@ -155,7 +155,8 @@ class EntitiesController(
             tenant = ctx.tenant.id,
             title = "New page",
             lastModificationAt = DateTime.now(),
-            content = "# New page").asJson
+            content = "# New page"
+          ).asJson
         )
       }
     }
@@ -257,33 +258,36 @@ class EntitiesController(
           s"@{user.name} has asked for a template entity of type Plan"
         )
       )(ctx) {
-        Ok(UsagePlan(
-          id = UsagePlanId(IdGenerator.token(32)),
-          tenant = ctx.tenant.id,
-          maxPerSecond = None,
-          maxPerDay = None,
-          maxPerMonth = None,
-          costPerMonth = None,
-          costPerRequest = None,
-          billingDuration = None,
-          trialPeriod = None,
-          currency = None,
-          customName = "new usage plan",
-          customDescription = None,
-          otoroshiTarget = None,
-          allowMultipleKeys = Some(false),
-          subscriptionProcess = Seq.empty,
-          integrationProcess = IntegrationProcess.ApiKey,
-          autoRotation = Some(false),
-          documentation = if (ctx.tenant.display == TenantDisplay.Environment)
-            ApiDocumentation(
-              id = ApiDocumentationId(IdGenerator.token(32)),
-              tenant = ctx.tenant.id,
-              lastModificationAt = DateTime.now(),
-              pages = Seq.empty
-            ).some
-          else None
-        ).asJson)
+        Ok(
+          UsagePlan(
+            id = UsagePlanId(IdGenerator.token(32)),
+            tenant = ctx.tenant.id,
+            maxPerSecond = None,
+            maxPerDay = None,
+            maxPerMonth = None,
+            costPerMonth = None,
+            costPerRequest = None,
+            billingDuration = None,
+            trialPeriod = None,
+            currency = None,
+            customName = "new usage plan",
+            customDescription = None,
+            otoroshiTarget = None,
+            allowMultipleKeys = Some(false),
+            subscriptionProcess = Seq.empty,
+            integrationProcess = IntegrationProcess.ApiKey,
+            autoRotation = Some(false),
+            documentation =
+              if (ctx.tenant.display == TenantDisplay.Environment)
+                ApiDocumentation(
+                  id = ApiDocumentationId(IdGenerator.token(32)),
+                  tenant = ctx.tenant.id,
+                  lastModificationAt = DateTime.now(),
+                  pages = Seq.empty
+                ).some
+              else None
+          ).asJson
+        )
       }
     }
 }

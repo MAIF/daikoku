@@ -1,10 +1,7 @@
 import { nanoid } from 'nanoid';
 import { ITenant, IUsagePlan, UsagePlanVisibility } from '../../types';
 
-export const newPossibleUsagePlan = (
-  customName: string,
-  tenant: ITenant
-): IUsagePlan => ({
+export const newPossibleUsagePlan = (customName: string, tenant: ITenant): IUsagePlan => ({
   _id: nanoid(32),
   _tenant: tenant._id,
   _deleted: false,

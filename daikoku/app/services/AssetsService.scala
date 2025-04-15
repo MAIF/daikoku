@@ -435,18 +435,20 @@ class AssetsService {
                       .getOrElse("asset.txt")
 
                     val response = Ok.sendEntity(
-                        HttpEntity.Streamed(
-                          source,
-                          None,
-                          metadata.contentType
-                            .map(Some.apply)
-                            .getOrElse(Some("application/octet-stream"))
-                        )
+                      HttpEntity.Streamed(
+                        source,
+                        None,
+                        metadata.contentType
+                          .map(Some.apply)
+                          .getOrElse(Some("application/octet-stream"))
                       )
+                    )
 
-                      if (download) response.withHeaders(
+                    if (download)
+                      response.withHeaders(
                         "Content-Disposition" -> s"""attachment; filename="$filename""""
-                      ) else response
+                      )
+                    else response
                 }
           }
     }

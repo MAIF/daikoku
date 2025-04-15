@@ -12,8 +12,22 @@ import controllers.AppError.InternalServerError
 import fr.maif.otoroshi.daikoku.actions.DaikokuAction
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.json.{AuthorizedEntitiesFormat, OtoroshiSettingsFormat, OtoroshiSettingsIdFormat, TestingConfigFormat}
-import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, Api, ApiKeyRestrictions, AuthorizedEntities, OtoroshiSettings, Testing, TestingAuth, UsagePlan}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  AuthorizedEntitiesFormat,
+  OtoroshiSettingsFormat,
+  OtoroshiSettingsIdFormat,
+  TestingConfigFormat
+}
+import fr.maif.otoroshi.daikoku.domain.{
+  ActualOtoroshiApiKey,
+  Api,
+  ApiKeyRestrictions,
+  AuthorizedEntities,
+  OtoroshiSettings,
+  Testing,
+  TestingAuth,
+  UsagePlan
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
@@ -23,7 +37,13 @@ import org.joda.time.DateTime
 import play.api.http.HttpEntity
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
-import play.api.mvc.{AbstractController, BodyParser, ControllerComponents, Request, Result}
+import play.api.mvc.{
+  AbstractController,
+  BodyParser,
+  ControllerComponents,
+  Request,
+  Result
+}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
@@ -670,7 +690,11 @@ class OtoroshiSettingsController(
       }
     }
 
-  private def makeCall(_body: JsValue, maybeTesting: Option[Testing], id: String): Future[Either[AppError, Result]] = {
+  private def makeCall(
+      _body: JsValue,
+      maybeTesting: Option[Testing],
+      id: String
+  ): Future[Either[AppError, Result]] = {
     val headers = (_body \ "headers")
       .asOpt[Map[String, String]]
       .getOrElse(Map.empty[String, String])
@@ -689,13 +713,14 @@ class OtoroshiSettingsController(
     val finalHeaders: Map[String, String] = {
       maybeTesting match {
         case Some(Testing(_, _, auth, _, username, _, _))
-          if auth.name == TestingAuth.ApiKey.name && headerOpt.isDefined =>
+            if auth.name == TestingAuth.ApiKey.name && headerOpt.isDefined =>
           headers - headerOpt.get._1 + (headerOpt.get._1 -> username
             .getOrElse(""))
         case Some(Testing(_, _, auth, _, username, password, _))
-          if auth.name == TestingAuth.Basic.name =>
+            if auth.name == TestingAuth.Basic.name =>
           headers - "Authorization" + ("Authorization" -> s"Basic ${Base64
-            .encodeBase64String(s"${username.getOrElse("")}:${password.getOrElse("")}".getBytes(Charsets.UTF_8))}")
+            .encodeBase64String(s"${username.getOrElse("")}:${password
+              .getOrElse("")}".getBytes(Charsets.UTF_8))}")
         case _ => headers
       }
     }
@@ -782,7 +807,6 @@ class OtoroshiSettingsController(
 
   def fakePlanCall(teamId: String, apiId: String, planId: String) =
     DaikokuAction.async(parse.json) { ctx =>
-
       (for {
         team <- EitherT.fromOptionF(
           env.dataStore.teamRepo
@@ -814,7 +838,8 @@ class OtoroshiSettingsController(
           (),
           AppError.ForbiddenAction
         )
-        result <- EitherT(makeCall(ctx.request.body, plan.testing, plan.id.value))
+        result <-
+          EitherT(makeCall(ctx.request.body, plan.testing, plan.id.value))
       } yield result)
         .leftMap(_.render())
         .merge

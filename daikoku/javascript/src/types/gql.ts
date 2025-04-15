@@ -32,11 +32,11 @@ type IUsagePlanGQL = {
   maxPerSecond: number;
   maxPerDay: number;
   maxPerMonth: number;
-  subscriptionProcess: Array<{ name: string }>
+  subscriptionProcess: Array<{ name: string }>;
   allowMutlipleApikeys: boolean;
   otoroshiTarget: {
     otoroshiSettings: string;
-    authorizedEntitites: Array<IAuthorizedEntities>
+    authorizedEntitites: Array<IAuthorizedEntities>;
   };
   aggregationApiKeysSecurity: boolean;
 };
@@ -66,12 +66,11 @@ export interface IApiGQL {
 }
 
 export interface IApiSubscriptionDetails {
-  apiSubscription: IApiSubscriptionGql
-  parentSubscription?: IApiSubscriptionGql
+  apiSubscription: IApiSubscriptionGql;
+  parentSubscription?: IApiSubscriptionGql;
   accessibleResources: Array<{
-    apiSubscription: IApiSubscriptionGql,
-    api: IApiGQL,
-    usagePlan: IUsagePlanGQL
-  }>
-
+    apiSubscription: IApiSubscriptionGql;
+    api: IApiGQL;
+    usagePlan: IUsagePlanGQL;
+  }>;
 }

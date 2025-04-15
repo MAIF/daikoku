@@ -921,7 +921,9 @@ case class CmsPage(
           .result(
             getApi(ctx, parentId, id, fields, jsonToCombine, req).flatMap {
               case Some(api) =>
-                env.dataStore.usagePlanRepo.findByApi(tenant, api).map(s => s.sortBy(_.customName))
+                env.dataStore.usagePlanRepo
+                  .findByApi(tenant, api)
+                  .map(s => s.sortBy(_.customName))
               case None => FastFuture.successful(Seq.empty)
             },
             10.seconds

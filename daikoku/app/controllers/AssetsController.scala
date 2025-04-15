@@ -3,7 +3,12 @@ package fr.maif.otoroshi.daikoku.ctrls
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.apache.pekko.util.ByteString
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuTenantAction}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest,
+  DaikokuTenantAction
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.{Asset, AssetId}
@@ -17,7 +22,13 @@ import play.api.http.HttpEntity
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.libs.streams.Accumulator
 import play.api.mvc.Results.{NotFound, Ok}
-import play.api.mvc.{AbstractController, Action, AnyContent, BodyParser, ControllerComponents}
+import play.api.mvc.{
+  AbstractController,
+  Action,
+  AnyContent,
+  BodyParser,
+  ControllerComponents
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
@@ -291,9 +302,15 @@ class TeamAssetsController(
                           )
                         )
 
-                        if (ctx.request.getQueryString("download").contains("true")) response.withHeaders(
-                          "Content-Disposition" -> s"""attachment; filename="$filename""""
-                        ) else response
+                        if (
+                          ctx.request
+                            .getQueryString("download")
+                            .contains("true")
+                        )
+                          response.withHeaders(
+                            "Content-Disposition" -> s"""attachment; filename="$filename""""
+                          )
+                        else response
                     }
               }
         }
@@ -469,9 +486,11 @@ class UserAssetsController(
                     )
                   )
 
-                  if (ctx.request.getQueryString("download").contains("true")) response.withHeaders(
-                    "Content-Disposition" -> s"""attachment; filename="$filename""""
-                  ) else response
+                  if (ctx.request.getQueryString("download").contains("true"))
+                    response.withHeaders(
+                      "Content-Disposition" -> s"""attachment; filename="$filename""""
+                    )
+                  else response
               }
         }
     }

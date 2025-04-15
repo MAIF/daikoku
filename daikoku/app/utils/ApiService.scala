@@ -90,9 +90,9 @@ class ApiService(
       OtoroshiApiKey(
         clientId = IdGenerator.token(32),
         clientSecret = IdGenerator.token(64),
-        clientName = s"daikoku-api-key-${api.humanReadableId}-${plan.customName
-          .urlPathSegmentSanitized}-${team.humanReadableId}-${System
-          .currentTimeMillis()}-${api.currentVersion.value}"
+        clientName =
+          s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${System
+            .currentTimeMillis()}-${api.currentVersion.value}"
       )
     )
 
@@ -347,8 +347,7 @@ class ApiService(
       val clientId = IdGenerator.token(32)
       val clientSecret = IdGenerator.token(64)
       val clientName =
-        s"daikoku-api-key-${api.humanReadableId}-${plan.customName
-          .urlPathSegmentSanitized}-${team.humanReadableId}-${System.currentTimeMillis()}"
+        s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${System.currentTimeMillis()}"
       val apiSubscription = ApiSubscription(
         id = ApiSubscriptionId(IdGenerator.token(32)),
         tenant = tenant.id,
@@ -1227,16 +1226,18 @@ class ApiService(
   ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
     (for {
       //get parent ApiSubscription
-      parentSubscriptionId <- EitherT.fromOption[Future][AppError, ApiSubscriptionId](
-        subscription.parent,
-        MissingParentSubscription
-      )
-      parentSubscription <- EitherT.fromOptionF[Future, AppError, ApiSubscription](
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant.id)
-          .findByIdNotDeleted(parentSubscriptionId),
-        MissingParentSubscription
-      )
+      parentSubscriptionId <-
+        EitherT.fromOption[Future][AppError, ApiSubscriptionId](
+          subscription.parent,
+          MissingParentSubscription
+        )
+      parentSubscription <-
+        EitherT.fromOptionF[Future, AppError, ApiSubscription](
+          env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant.id)
+            .findByIdNotDeleted(parentSubscriptionId),
+          MissingParentSubscription
+        )
 
       //get otoroshi aggregate apiKey
       oldApiKey <- EitherT[Future, AppError, ActualOtoroshiApiKey](
@@ -1244,16 +1245,17 @@ class ApiService(
       )
 
       //get all child subscriptions except subscription to extract
-      childsSubscription <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
-        env.dataStore.apiSubscriptionRepo
-          .forTenant(tenant)
-          .findNotDeleted(
-            Json.obj(
-              "parent" -> parentSubscriptionId.asJson,
-              "_id" -> Json.obj("$ne" -> subscription.id.asJson)
+      childsSubscription <-
+        EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
+          env.dataStore.apiSubscriptionRepo
+            .forTenant(tenant)
+            .findNotDeleted(
+              Json.obj(
+                "parent" -> parentSubscriptionId.asJson,
+                "_id" -> Json.obj("$ne" -> subscription.id.asJson)
+              )
             )
-          )
-      )
+        )
 
       //get team
       team <- EitherT.fromOptionF[Future, AppError, Team](
@@ -2889,9 +2891,9 @@ class ApiService(
         otoroshiClient.getApikey(subscription.apiKey.clientId)(otoroshiSettings)
       )
       newApk = apk.copy(
-        clientName = s"daikoku-api-key-${api.humanReadableId}-${plan.customName
-          .urlPathSegmentSanitized}-${newTeam.humanReadableId}-${System
-          .currentTimeMillis()}-${api.currentVersion.value}",
+        clientName =
+          s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${newTeam.humanReadableId}-${System
+            .currentTimeMillis()}-${api.currentVersion.value}",
         metadata =
           apk.metadata + ("daikoku_transfer_to_team_id" -> newTeam.id.value) + ("daikoku_transfer_to_team" -> newTeam.name)
       )

@@ -3,7 +3,14 @@ package fr.maif.otoroshi.daikoku.domain
 import cats.data.EitherT
 import cats.syntax.option._
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.domain.json.{CurrencyFormat, SeqIssueIdFormat, SeqPostIdFormat, SeqTeamIdFormat, SetApiTagFormat, TestingConfigFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  CurrencyFormat,
+  SeqIssueIdFormat,
+  SeqPostIdFormat,
+  SeqTeamIdFormat,
+  SetApiTagFormat,
+  TestingConfigFormat
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
@@ -235,36 +242,38 @@ case class BasePaymentInformation(
 }
 
 case class UsagePlan(
-                             id: UsagePlanId,
-                             tenant: TenantId,
-                             customName: String,
-                             deleted: Boolean = false,
-                             maxPerSecond: Option[Long] = None,
-                             maxPerDay: Option[Long] = None,
-                             maxPerMonth: Option[Long] = None,
-                             costPerRequest: Option[BigDecimal] = None,
-                             costPerMonth: Option[BigDecimal] = None,
-                             trialPeriod: Option[BillingDuration] = None,
-                             currency: Option[Currency] = None,
-                             billingDuration: Option[BillingDuration] = None,
-                             customDescription: Option[String] = None,
-                             otoroshiTarget: Option[OtoroshiTarget] = None,
-                             allowMultipleKeys: Option[Boolean] = None,
-                             autoRotation: Option[Boolean] = None,
-                             integrationProcess: IntegrationProcess = IntegrationProcess.ApiKey,
-                             aggregationApiKeysSecurity: Option[Boolean] = Some(false),
-                             paymentSettings: Option[PaymentSettings] = None,
-                             swagger: Option[SwaggerAccess] = None,
-                             testing: Option[Testing] = None,
-                             documentation: Option[ApiDocumentation] = None,
-                             subscriptionProcess: Seq[ValidationStep] = Seq.empty,
-                             visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-                             authorizedTeams: Seq[TeamId] = Seq.empty
-                           ) extends CanJson[UsagePlan] {
-  def costFor(requests: Long): BigDecimal = (costPerMonth, costPerRequest) match {
-    case (Some(_costPerMonth), Some(_costPerRequest)) => _costPerMonth + (requests * _costPerRequest)
-    case (_, _) => 0
-  }
+    id: UsagePlanId,
+    tenant: TenantId,
+    customName: String,
+    deleted: Boolean = false,
+    maxPerSecond: Option[Long] = None,
+    maxPerDay: Option[Long] = None,
+    maxPerMonth: Option[Long] = None,
+    costPerRequest: Option[BigDecimal] = None,
+    costPerMonth: Option[BigDecimal] = None,
+    trialPeriod: Option[BillingDuration] = None,
+    currency: Option[Currency] = None,
+    billingDuration: Option[BillingDuration] = None,
+    customDescription: Option[String] = None,
+    otoroshiTarget: Option[OtoroshiTarget] = None,
+    allowMultipleKeys: Option[Boolean] = None,
+    autoRotation: Option[Boolean] = None,
+    integrationProcess: IntegrationProcess = IntegrationProcess.ApiKey,
+    aggregationApiKeysSecurity: Option[Boolean] = Some(false),
+    paymentSettings: Option[PaymentSettings] = None,
+    swagger: Option[SwaggerAccess] = None,
+    testing: Option[Testing] = None,
+    documentation: Option[ApiDocumentation] = None,
+    subscriptionProcess: Seq[ValidationStep] = Seq.empty,
+    visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
+    authorizedTeams: Seq[TeamId] = Seq.empty
+) extends CanJson[UsagePlan] {
+  def costFor(requests: Long): BigDecimal =
+    (costPerMonth, costPerRequest) match {
+      case (Some(_costPerMonth), Some(_costPerRequest)) =>
+        _costPerMonth + (requests * _costPerRequest)
+      case (_, _) => 0
+    }
 
   def addAutorizedTeam(teamId: TeamId): UsagePlan =
     this.copy(authorizedTeams = authorizedTeams :+ teamId)
@@ -284,9 +293,9 @@ case class UsagePlan(
     )
 
   def addSubscriptionStep(
-                           step: ValidationStep,
-                           idx: Option[Int] = None
-                         ): UsagePlan = {
+      step: ValidationStep,
+      idx: Option[Int] = None
+  ): UsagePlan = {
     idx match {
       case Some(value) =>
         val (front, back) = this.subscriptionProcess.splitAt(value)
@@ -297,21 +306,21 @@ case class UsagePlan(
   }
 
   def removeSubscriptionStep(
-                              predicate: ValidationStep => Boolean
-                            ): UsagePlan = this
+      predicate: ValidationStep => Boolean
+  ): UsagePlan = this
 
   def addDocumentationPages(
-                             pages: Seq[ApiDocumentationDetailPage]
-                           ): UsagePlan =
+      pages: Seq[ApiDocumentationDetailPage]
+  ): UsagePlan =
     this.copy(documentation =
       documentation.map(d => d.copy(pages = d.pages ++ pages))
     )
 
   def checkCustomName(
-                       tenant: Tenant,
-                       plans: Seq[UsagePlan],
-                       apiVisibility: ApiVisibility
-                     )(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
+      tenant: Tenant,
+      plans: Seq[UsagePlan],
+      apiVisibility: ApiVisibility
+  )(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
     val existingNames = plans
       .filter(_.id != id)
       .collect(_.customName)
@@ -319,7 +328,8 @@ case class UsagePlan(
     (apiVisibility, tenant.display) match {
       case (_, TenantDisplay.Environment) =>
         EitherT.cond[Future](
-          !existingNames.contains(customName) && tenant.environments.contains(customName),
+          !existingNames.contains(customName) && tenant.environments
+            .contains(customName),
           (),
           AppError.EntityConflict("Plan custom name")
         )
@@ -328,8 +338,8 @@ case class UsagePlan(
   }
 
   def checkAuthorizedEntities(
-                               team: Team
-                             )(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
+      team: Team
+  )(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
     otoroshiTarget match {
       case Some(otoroshiTarget) if team.authorizedOtoroshiEntities.isDefined =>
         val teamAuthorizedEntities = team.authorizedOtoroshiEntities.get
@@ -378,10 +388,11 @@ case class UsagePlan(
     }
   }
 
-  def isPaymentDefined = (costPerMonth, currency, billingDuration) match {
-    case (Some(_), Some(_), Some(_)) => true
-    case _ => false
-  }
+  def isPaymentDefined =
+    (costPerMonth, currency, billingDuration) match {
+      case (Some(_), Some(_), Some(_)) => true
+      case _                           => false
+    }
 
   override def asJson: JsValue = json.UsagePlanFormat.writes(this)
 }
@@ -586,10 +597,10 @@ case class Testing(
 ) extends CanJson[Testing] {
   override def asJson: JsValue = json.TestingFormat.writes(this)
 
-  def asSafeJson: JsObject = Json.obj(
-    "enabled" -> enabled,
-
-  )
+  def asSafeJson: JsObject =
+    Json.obj(
+      "enabled" -> enabled
+    )
 }
 
 sealed trait ApiState {
@@ -650,7 +661,8 @@ case class Api(
   def humanReadableId = name.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiFormat.writes(this)
   def asGuestJson(hideOpenApiForGuest: Boolean): JsValue = {
-    val baseJson = json.ApiFormat.writes(this).as[JsObject] - "documentation" - "testing"
+    val baseJson =
+      json.ApiFormat.writes(this).as[JsObject] - "documentation" - "testing"
     if (hideOpenApiForGuest) baseJson - "swagger" else baseJson
 
   }

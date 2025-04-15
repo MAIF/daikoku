@@ -361,10 +361,12 @@ class PaymentClient(
                 )
               )
         }
-      case _ => EitherT.leftT[Future, PaymentSettings](AppError.PaymentError("Basic payment information is not setted up")) //todo: better error message
+      case _ =>
+        EitherT.leftT[Future, PaymentSettings](
+          AppError.PaymentError("Basic payment information is not setted up")
+        ) //todo: better error message
 
     }
-
 
   }
 

@@ -43,76 +43,78 @@ class NotificationControllerSpec()
     action = ApiAccess(defaultApi.api.id, teamConsumerId)
   )
 
-  val ApiSubscriptionSafeFormat: Format[ApiSubscription] = new Format[ApiSubscription] {
-    override def reads(json: JsValue): JsResult[ApiSubscription] =
-      Try {
-        JsSuccess(
-          ApiSubscription(
-            id = (json \ "_id").as(ApiSubscriptionIdFormat),
-            tenant = (json \ "_tenant").as(TenantIdFormat),
-            deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
-            apiKey = OtoroshiApiKey("***", "***", "***"),
-            plan = (json \ "plan").as(UsagePlanIdFormat),
-            team = (json \ "team").as(TeamIdFormat),
-            api = (json \ "api").as(ApiIdFormat),
-            createdAt = (json \ "createdAt").as(DateTimeFormat),
-            by = (json \ "by").as(UserIdFormat),
-            customName = (json \ "customName").asOpt[String],
-            enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
-            rotation =
-              (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat),
-            integrationToken = "***",
-            customMetadata = (json \ "customMetadata").asOpt[JsObject],
-            customMaxPerSecond =
-              (json \ "customMaxPerSecond").asOpt(LongFormat),
-            customMaxPerDay = (json \ "customMaxPerDay").asOpt(LongFormat),
-            customMaxPerMonth = (json \ "customMaxPerMonth").asOpt(LongFormat),
-            customReadOnly = (json \ "customReadOnly").asOpt[Boolean]
+  val ApiSubscriptionSafeFormat: Format[ApiSubscription] =
+    new Format[ApiSubscription] {
+      override def reads(json: JsValue): JsResult[ApiSubscription] =
+        Try {
+          JsSuccess(
+            ApiSubscription(
+              id = (json \ "_id").as(ApiSubscriptionIdFormat),
+              tenant = (json \ "_tenant").as(TenantIdFormat),
+              deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
+              apiKey = OtoroshiApiKey("***", "***", "***"),
+              plan = (json \ "plan").as(UsagePlanIdFormat),
+              team = (json \ "team").as(TeamIdFormat),
+              api = (json \ "api").as(ApiIdFormat),
+              createdAt = (json \ "createdAt").as(DateTimeFormat),
+              by = (json \ "by").as(UserIdFormat),
+              customName = (json \ "customName").asOpt[String],
+              enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
+              rotation =
+                (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat),
+              integrationToken = "***",
+              customMetadata = (json \ "customMetadata").asOpt[JsObject],
+              customMaxPerSecond =
+                (json \ "customMaxPerSecond").asOpt(LongFormat),
+              customMaxPerDay = (json \ "customMaxPerDay").asOpt(LongFormat),
+              customMaxPerMonth =
+                (json \ "customMaxPerMonth").asOpt(LongFormat),
+              customReadOnly = (json \ "customReadOnly").asOpt[Boolean]
+            )
           )
+        } recover {
+          case e => JsError(e.getMessage)
+        } get
+      override def writes(o: ApiSubscription): JsValue =
+        Json.obj(
+          "_id" -> ApiSubscriptionIdFormat.writes(o.id),
+          "_tenant" -> o.tenant.asJson,
+          "_deleted" -> o.deleted,
+          "apiKey" -> OtoroshiApiKeyFormat.writes(o.apiKey),
+          "plan" -> UsagePlanIdFormat.writes(o.plan),
+          "team" -> TeamIdFormat.writes(o.team),
+          "api" -> ApiIdFormat.writes(o.api),
+          "createdAt" -> DateTimeFormat.writes(o.createdAt),
+          "by" -> UserIdFormat.writes(o.by),
+          "customName" -> o.customName
+            .map(id => JsString(id))
+            .getOrElse(JsNull)
+            .as[JsValue],
+          "enabled" -> o.enabled,
+          "rotation" -> o.rotation
+            .map(ApiSubscriptionyRotationFormat.writes)
+            .getOrElse(JsNull)
+            .as[JsValue],
+          "integrationToken" -> o.integrationToken,
+          "customMetadata" -> o.customMetadata,
+          "customMaxPerSecond" -> o.customMaxPerSecond
+            .map(JsNumber(_))
+            .getOrElse(JsNull)
+            .as[JsValue],
+          "customMaxPerDay" -> o.customMaxPerDay
+            .map(JsNumber(_))
+            .getOrElse(JsNull)
+            .as[JsValue],
+          "customMaxPerMonth" -> o.customMaxPerMonth
+            .map(JsNumber(_))
+            .getOrElse(JsNull)
+            .as[JsValue],
+          "customReadOnly" -> o.customReadOnly
+            .map(JsBoolean.apply)
+            .getOrElse(JsNull)
+            .as[JsValue]
         )
-      } recover {
-        case e => JsError(e.getMessage)
-      } get
-    override def writes(o: ApiSubscription): JsValue =
-      Json.obj(
-        "_id" -> ApiSubscriptionIdFormat.writes(o.id),
-        "_tenant" -> o.tenant.asJson,
-        "_deleted" -> o.deleted,
-        "apiKey" -> OtoroshiApiKeyFormat.writes(o.apiKey),
-        "plan" -> UsagePlanIdFormat.writes(o.plan),
-        "team" -> TeamIdFormat.writes(o.team),
-        "api" -> ApiIdFormat.writes(o.api),
-        "createdAt" -> DateTimeFormat.writes(o.createdAt),
-        "by" -> UserIdFormat.writes(o.by),
-        "customName" -> o.customName
-          .map(id => JsString(id))
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "enabled" -> o.enabled,
-        "rotation" -> o.rotation
-          .map(ApiSubscriptionyRotationFormat.writes)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "integrationToken" -> o.integrationToken,
-        "customMetadata" -> o.customMetadata,
-        "customMaxPerSecond" -> o.customMaxPerSecond
-          .map(JsNumber(_))
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "customMaxPerDay" -> o.customMaxPerDay
-          .map(JsNumber(_))
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "customMaxPerMonth" -> o.customMaxPerMonth
-          .map(JsNumber(_))
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "customReadOnly" -> o.customReadOnly
-          .map(JsBoolean.apply)
-          .getOrElse(JsNull)
-          .as[JsValue]
-      )
-  }
+    }
   val SeqApiSubscriptionSafeFormat: Format[Seq[ApiSubscription]] =
     Format(
       Reads.seq(ApiSubscriptionSafeFormat),

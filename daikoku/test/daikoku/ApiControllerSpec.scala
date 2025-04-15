@@ -5242,7 +5242,7 @@ class ApiControllerSpec()
     "have a lifecycle" in {
       //use containerized otoroshi
       //crate api & a subscription (in otoroshi)
-    //old free without quotas
+      //old free without quotas
       val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
@@ -6900,7 +6900,6 @@ class ApiControllerSpec()
       val updatedPlans = defaultApi.plans
         .map(_.copy(aggregationApiKeysSecurity = Some(true)))
 
-
       updatedPlans.foreach(plan => {
         val resp = httpJsonCallBlocking(
           path =
@@ -7309,7 +7308,8 @@ class ApiControllerSpec()
         users = Seq(user),
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = defaultApi.plans.map {
-          case p if !p.isPaymentDefined && p.visibility != UsagePlanVisibility.Admin =>
+          case p
+              if !p.isPaymentDefined && p.visibility != UsagePlanVisibility.Admin =>
             p.copy(
               aggregationApiKeysSecurity = Some(true),
               otoroshiTarget = Some(

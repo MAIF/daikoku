@@ -24,7 +24,6 @@ case object Asc extends SortingOrder {
   def name: String = "ASC"
 }
 
-
 trait TenantCapableRepo[Of, Id <: ValueType] {
   def forTenant(tenant: Tenant): Repo[Of, Id] = forTenant(tenant.id)
 

@@ -1,7 +1,13 @@
 package daikoku
 
 import cats.implicits.catsSyntaxOptionId
-import fr.maif.otoroshi.daikoku.domain.{IntegrationProcess, Tenant, TenantDisplay, UsagePlan, UsagePlanId}
+import fr.maif.otoroshi.daikoku.domain.{
+  IntegrationProcess,
+  Tenant,
+  TenantDisplay,
+  UsagePlan,
+  UsagePlanId
+}
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.scalatest.concurrent.IntegrationPatience
@@ -47,7 +53,7 @@ class EnvironmentDisplayMode()
         teams = Seq(teamOwner.copy(tenant = t.id)),
         users = Seq(userAdmin),
         usagePlans = Seq(),
-        apis = Seq(api.copy(tenant= t.id))
+        apis = Seq(api.copy(tenant = t.id))
       )
 
       val devPlan = createPlan("dev", t)

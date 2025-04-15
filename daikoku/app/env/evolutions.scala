@@ -7,7 +7,16 @@ import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, UserFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiDocumentationPageFormat,
+  ApiFormat,
+  ApiSubscriptionFormat,
+  SeqApiDocumentationDetailPageFormat,
+  TeamFormat,
+  TeamIdFormat,
+  TenantFormat,
+  UserFormat
+}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.joda.time.DateTime
@@ -1146,18 +1155,18 @@ object evolution_1820 extends EvolutionScript {
   override def version: String = "18.2.0"
 
   override def script: (
-    Option[DatastoreId],
+      Option[DatastoreId],
       DataStore,
       Materializer,
       ExecutionContext,
       OtoroshiClient
-    ) => Future[Done] =
+  ) => Future[Done] =
     (
-      _: Option[DatastoreId],
-      dataStore: DataStore,
-      mat: Materializer,
-      ec: ExecutionContext,
-      _: OtoroshiClient
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        mat: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
     ) => {
       AppLogger.info(
         s"Begin evolution $version - update plan.customName since it is mandatory value"
@@ -1167,19 +1176,68 @@ object evolution_1820 extends EvolutionScript {
 
       def getOldTypeOfPlan(rawPlan: JsValue): (String, JsValue, JsValue) = {
         (rawPlan \ "type").as[String] match {
-          case "FreeWithoutQuotas" => ((rawPlan \ "customName").asOpt[String].getOrElse("Free with quotas"), JsNull, JsNull)
-          case "FreeWithQuotas" => ((rawPlan \ "customName").asOpt[String].getOrElse("Free with quotas"), JsNull, JsNull)
-          case "QuotasWithLimits" => ((rawPlan \ "customName").asOpt[String].getOrElse("Quotas with limits"), (rawPlan \ "currency").as[JsValue], (rawPlan \ "billingDuration").as[JsValue])
-          case "QuotasWithoutLimits" => ((rawPlan \ "customName").asOpt[String].getOrElse("Quotas without limits"), (rawPlan \ "currency").as[JsValue], (rawPlan \ "billingDuration").as[JsValue])
-          case "PayPerUse" => ((rawPlan \ "customName").asOpt[String].getOrElse("Pay per use"), (rawPlan \ "currency").as[JsValue], (rawPlan \ "billingDuration").as[JsValue])
-          case "Admin" => ((rawPlan \ "customName").asOpt[String].getOrElse("Admin"), JsNull, JsNull)
+          case "FreeWithoutQuotas" =>
+            (
+              (rawPlan \ "customName")
+                .asOpt[String]
+                .getOrElse("Free with quotas"),
+              JsNull,
+              JsNull
+            )
+          case "FreeWithQuotas" =>
+            (
+              (rawPlan \ "customName")
+                .asOpt[String]
+                .getOrElse("Free with quotas"),
+              JsNull,
+              JsNull
+            )
+          case "QuotasWithLimits" =>
+            (
+              (rawPlan \ "customName")
+                .asOpt[String]
+                .getOrElse("Quotas with limits"),
+              (rawPlan \ "currency").as[JsValue],
+              (rawPlan \ "billingDuration").as[JsValue]
+            )
+          case "QuotasWithoutLimits" =>
+            (
+              (rawPlan \ "customName")
+                .asOpt[String]
+                .getOrElse("Quotas without limits"),
+              (rawPlan \ "currency").as[JsValue],
+              (rawPlan \ "billingDuration").as[JsValue]
+            )
+          case "PayPerUse" =>
+            (
+              (rawPlan \ "customName").asOpt[String].getOrElse("Pay per use"),
+              (rawPlan \ "currency").as[JsValue],
+              (rawPlan \ "billingDuration").as[JsValue]
+            )
+          case "Admin" =>
+            (
+              (rawPlan \ "customName").asOpt[String].getOrElse("Admin"),
+              JsNull,
+              JsNull
+            )
         }
       }
 
-      dataStore.usagePlanRepo.forAllTenant().streamAllRaw()
+      dataStore.usagePlanRepo
+        .forAllTenant()
+        .streamAllRaw()
         .map(rawPlan => {
-          val (customName, currency, billingDuration) = getOldTypeOfPlan(rawPlan)
-          json.UsagePlanFormat.reads(rawPlan.as[JsObject] ++ Json.obj("customName" -> customName, "currency" -> currency, "billingDuration" -> billingDuration)).get
+          val (customName, currency, billingDuration) =
+            getOldTypeOfPlan(rawPlan)
+          json.UsagePlanFormat
+            .reads(
+              rawPlan.as[JsObject] ++ Json.obj(
+                "customName" -> customName,
+                "currency" -> currency,
+                "billingDuration" -> billingDuration
+              )
+            )
+            .get
         })
         .mapAsync(10)(plan => {
           dataStore.usagePlanRepo.forAllTenant().save(plan)

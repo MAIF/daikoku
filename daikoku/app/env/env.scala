@@ -5,7 +5,12 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.{JWT, JWTVerifier}
 import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
-import fr.maif.otoroshi.daikoku.domain.{DatastoreId, ReportsInfo, TeamApiKeyVisibility, Tenant}
+import fr.maif.otoroshi.daikoku.domain.{
+  DatastoreId,
+  ReportsInfo,
+  TeamApiKeyVisibility,
+  Tenant
+}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._

@@ -226,7 +226,8 @@ object json {
 
     override def writes(o: Testing): JsValue =
       Json.obj(
-        "url" -> o.url.map(JsString.apply)
+        "url" -> o.url
+          .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
         "enabled" -> o.enabled,
@@ -759,7 +760,8 @@ object json {
             costPerMonth = (json \ "costPerMonth").asOpt[BigDecimal],
             costPerRequest = (json \ "costPerRequest").asOpt[BigDecimal],
             trialPeriod = (json \ "trialPeriod").asOpt(BillingDurationFormat),
-            billingDuration = (json \ "billingDuration").asOpt(BillingDurationFormat),
+            billingDuration =
+              (json \ "billingDuration").asOpt(BillingDurationFormat),
             currency = (json \ "currency").asOpt(CurrencyFormat),
             customName = (json \ "customName").as[String],
             customDescription = (json \ "customDescription").asOpt[String],
@@ -776,9 +778,9 @@ object json {
               .asOpt[Boolean],
             subscriptionProcess =
               (json \ "subscriptionProcess").as(SeqValidationStepFormat),
-            integrationProcess =
-              (json \ "integrationProcess").asOpt(IntegrationProcessFormat)
-                .getOrElse(IntegrationProcess.ApiKey),
+            integrationProcess = (json \ "integrationProcess")
+              .asOpt(IntegrationProcessFormat)
+              .getOrElse(IntegrationProcess.ApiKey),
             aggregationApiKeysSecurity =
               (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
             paymentSettings =
@@ -786,7 +788,7 @@ object json {
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
             testing = (json \ "testing").asOpt(TestingFormat),
             documentation =
-              (json \ "documentation").asOpt(ApiDocumentationFormat),
+              (json \ "documentation").asOpt(ApiDocumentationFormat)
           )
         )
       } recover {
@@ -803,10 +805,22 @@ object json {
         "_deleted" -> o.deleted,
         "maxPerSecond" -> o.maxPerSecond,
         "maxPerDay" -> o.maxPerDay,
-        "maxPerMonth" -> o.maxPerMonth.map(JsNumber(_)).getOrElse(JsNull).as[JsValue],
-        "costPerMonth" -> o.costPerMonth.map(JsNumber(_)).getOrElse(JsNull).as[JsValue],
-        "costPerRequest" -> o.costPerRequest.map(JsNumber(_)).getOrElse(JsNull).as[JsValue],
-        "billingDuration" -> o.billingDuration.map(_.asJson).getOrElse(JsNull).as[JsValue],
+        "maxPerMonth" -> o.maxPerMonth
+          .map(JsNumber(_))
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "costPerMonth" -> o.costPerMonth
+          .map(JsNumber(_))
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "costPerRequest" -> o.costPerRequest
+          .map(JsNumber(_))
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "billingDuration" -> o.billingDuration
+          .map(_.asJson)
+          .getOrElse(JsNull)
+          .as[JsValue],
         "trialPeriod" -> o.trialPeriod
           .map(_.asJson)
           .getOrElse(JsNull)
@@ -1071,7 +1085,6 @@ object json {
         "priceIds" -> StripePriceIdsFormat.writes(o.priceIds)
       )
   }
-
 
   val OtoroshiApiKeyFormat = new Format[OtoroshiApiKey] {
     override def reads(json: JsValue): JsResult[OtoroshiApiKey] =
@@ -3513,13 +3526,15 @@ object json {
       Try {
         JsSuccess(
           ApiKeyQuotas(
-            authorizedCallsPerSec = (json \ "authorizedCallsPerWindow").asOpt(LongFormat)
+            authorizedCallsPerSec = (json \ "authorizedCallsPerWindow")
+              .asOpt(LongFormat)
               .getOrElse((json \ "authorizedCallsPerSec").as(LongFormat)),
-            currentCallsPerSec = (json \ "throttlingCallsPerWindow").asOpt(LongFormat)
+            currentCallsPerSec = (json \ "throttlingCallsPerWindow")
+              .asOpt(LongFormat)
               .getOrElse((json \ "currentCallsPerSec").as(LongFormat)),
-            remainingCallsPerSec =
-              (json \ "remainingCallsPerWindow").asOpt(LongFormat)
-                .getOrElse((json \ "remainingCallsPerSec").as(LongFormat)),
+            remainingCallsPerSec = (json \ "remainingCallsPerWindow")
+              .asOpt(LongFormat)
+              .getOrElse((json \ "remainingCallsPerSec").as(LongFormat)),
             authorizedCallsPerDay =
               (json \ "authorizedCallsPerDay").as(LongFormat),
             currentCallsPerDay = (json \ "currentCallsPerDay").as(LongFormat),
@@ -3934,9 +3949,13 @@ object json {
       Try {
         JsSuccess(
           ApiSubscriptionDetail(
-            apiSubscription = (json \ "apiSubscription").as(ApiSubscriptionFormat),
-            parentSubscription = (json \ "parentSubscription").asOpt(ApiSubscriptionFormat),
-            accessibleResources = (json \ "accessibleResources").as(SeqApiSubscriptionAccessibleResourceFormat)
+            apiSubscription =
+              (json \ "apiSubscription").as(ApiSubscriptionFormat),
+            parentSubscription =
+              (json \ "parentSubscription").asOpt(ApiSubscriptionFormat),
+            accessibleResources = (json \ "accessibleResources").as(
+              SeqApiSubscriptionAccessibleResourceFormat
+            )
           )
         )
       } recover {
@@ -3944,40 +3963,46 @@ object json {
           AppLogger.error(e.getMessage, e)
           JsError(e.getMessage)
       } get
-
 
     override def writes(o: ApiSubscriptionDetail): JsValue =
       Json.obj(
         "apiSubscription" -> o.apiSubscription.asJson,
-        "parentSubscription" -> o.parentSubscription.map(_.asJson).getOrElse(JsNull).as[JsValue],
-        "accessibleResources" -> SeqApiSubscriptionAccessibleResourceFormat.writes(o.accessibleResources)
+        "parentSubscription" -> o.parentSubscription
+          .map(_.asJson)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "accessibleResources" -> SeqApiSubscriptionAccessibleResourceFormat
+          .writes(o.accessibleResources)
       )
   }
 
-  val ApiSubscriptionAccessibleResourceFormat = new Format[ApiSubscriptionAccessibleResource] {
-    override def reads(json: JsValue): JsResult[ApiSubscriptionAccessibleResource] =
-      Try {
-        JsSuccess(
-          ApiSubscriptionAccessibleResource(
-            apiSubscription = (json \ "apiSubscription").as(ApiSubscriptionFormat),
-            api = (json \ "api").as(ApiFormat),
-            usagePlan = (json \ "usagePlan").as(UsagePlanFormat)
-
+  val ApiSubscriptionAccessibleResourceFormat =
+    new Format[ApiSubscriptionAccessibleResource] {
+      override def reads(
+          json: JsValue
+      ): JsResult[ApiSubscriptionAccessibleResource] =
+        Try {
+          JsSuccess(
+            ApiSubscriptionAccessibleResource(
+              apiSubscription =
+                (json \ "apiSubscription").as(ApiSubscriptionFormat),
+              api = (json \ "api").as(ApiFormat),
+              usagePlan = (json \ "usagePlan").as(UsagePlanFormat)
+            )
           )
-        )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
-      } get
+        } recover {
+          case e =>
+            AppLogger.error(e.getMessage, e)
+            JsError(e.getMessage)
+        } get
 
-    override def writes(o: ApiSubscriptionAccessibleResource): JsValue =
-      Json.obj(
-        "apiSubscription" -> o.apiSubscription.asJson,
-        "api" -> o.api.asJson,
-        "usagePlan" -> o.usagePlan.asJson
-      )
-  }
+      override def writes(o: ApiSubscriptionAccessibleResource): JsValue =
+        Json.obj(
+          "apiSubscription" -> o.apiSubscription.asJson,
+          "api" -> o.api.asJson,
+          "usagePlan" -> o.usagePlan.asJson
+        )
+    }
 
   val SeqApiSubscriptionAccessibleResourceFormat = Format(
     Reads.seq(ApiSubscriptionAccessibleResourceFormat),

@@ -872,7 +872,11 @@ object SchemaDefinition {
       () =>
         fields[(DataStore, DaikokuActionContext[JsValue]), UsagePlan](
           Field("_id", StringType, resolve = _.value.id.value),
-          Field("costPerMonth", OptionType(BigDecimalType), resolve = _.value.costPerMonth),
+          Field(
+            "costPerMonth",
+            OptionType(BigDecimalType),
+            resolve = _.value.costPerMonth
+          ),
           Field(
             "maxPerSecond",
             OptionType(LongType),
@@ -898,7 +902,11 @@ object SchemaDefinition {
             OptionType(BooleanType),
             resolve = _.value.autoRotation
           ),
-          Field("currency", OptionType(CurrencyType), resolve = _.value.currency),
+          Field(
+            "currency",
+            OptionType(CurrencyType),
+            resolve = _.value.currency
+          ),
           Field(
             "customName",
             OptionType(StringType),
@@ -1791,28 +1799,63 @@ object SchemaDefinition {
       ReplaceField("total", Field("total", LongType, resolve = _.value.total))
     )
 
-    lazy val AccessibleResourceType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionAccessibleResource] =
-      ObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionAccessibleResource](
+    lazy val AccessibleResourceType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      ApiSubscriptionAccessibleResource
+    ] =
+      ObjectType[
+        (DataStore, DaikokuActionContext[JsValue]),
+        ApiSubscriptionAccessibleResource
+      ](
         "ApiSubscriptionAccessibleResource",
         "A Daikoku Api Subscription accessible resource",
         () =>
-          fields[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionAccessibleResource](
-            Field("apiSubscription", ApiSubscriptionType, resolve = _.value.apiSubscription),
+          fields[
+            (DataStore, DaikokuActionContext[JsValue]),
+            ApiSubscriptionAccessibleResource
+          ](
+            Field(
+              "apiSubscription",
+              ApiSubscriptionType,
+              resolve = _.value.apiSubscription
+            ),
             Field("api", ApiType, resolve = _.value.api),
             Field("usagePlan", UsagePlanType, resolve = _.value.usagePlan)
-          ))
+          )
+      )
 
-    lazy val ApiSubscriptionDetailType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionDetail] =
-      ObjectType[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionDetail](
+    lazy val ApiSubscriptionDetailType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      ApiSubscriptionDetail
+    ] =
+      ObjectType[
+        (DataStore, DaikokuActionContext[JsValue]),
+        ApiSubscriptionDetail
+      ](
         "ApiSubscriptionDetail",
         "A Daikoku Api Subscription detail (with parent and accessible resources)",
         () =>
-          fields[(DataStore, DaikokuActionContext[JsValue]), ApiSubscriptionDetail](
-            Field("apiSubscription", ApiSubscriptionType, resolve = _.value.apiSubscription),
-            Field("parentSubscription", OptionType(ApiSubscriptionType), resolve = _.value.parentSubscription),
-            Field("accessibleResources", ListType(AccessibleResourceType), resolve = _.value.accessibleResources)
-
-          ))
+          fields[
+            (DataStore, DaikokuActionContext[JsValue]),
+            ApiSubscriptionDetail
+          ](
+            Field(
+              "apiSubscription",
+              ApiSubscriptionType,
+              resolve = _.value.apiSubscription
+            ),
+            Field(
+              "parentSubscription",
+              OptionType(ApiSubscriptionType),
+              resolve = _.value.parentSubscription
+            ),
+            Field(
+              "accessibleResources",
+              ListType(AccessibleResourceType),
+              resolve = _.value.accessibleResources
+            )
+          )
+      )
 
     lazy val NotificationWithCountType = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
@@ -3403,9 +3446,16 @@ object SchemaDefinition {
         }
     }
 
-    def getSubscriptionDetails(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
-                               subscriptionId: String, teamId: String) = {
-      CommonServices.getApiSubscriptionDetails(subscriptionId, teamId)(ctx.ctx._2, env, e)
+    def getSubscriptionDetails(
+        ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
+        subscriptionId: String,
+        teamId: String
+    ) = {
+      CommonServices.getApiSubscriptionDetails(subscriptionId, teamId)(
+        ctx.ctx._2,
+        env,
+        e
+      )
     }
 
     def apiQueryFields()
@@ -3438,12 +3488,13 @@ object SchemaDefinition {
         Field(
           "allTags",
           ListType(StringType),
-          arguments = RESEARCH :: SELECTED_TEAM :: SELECTED_TAG :: SELECTED_CAT :: GROUP_ID :: FILTER :: LIMIT :: OFFSET :: Nil,
+          arguments =
+            RESEARCH :: SELECTED_TEAM :: SELECTED_TAG :: SELECTED_CAT :: GROUP_ID :: FILTER :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             CommonServices.getAllTags(
               research = ctx.arg(RESEARCH),
               selectedTeam = ctx.arg(SELECTED_TEAM),
-              selectedTag =ctx.arg(SELECTED_TAG),
+              selectedTag = ctx.arg(SELECTED_TAG),
               selectedCat = ctx.arg(SELECTED_CAT),
               groupOpt = ctx.arg(GROUP_ID),
               filter = ctx.arg(FILTER),
@@ -3460,7 +3511,8 @@ object SchemaDefinition {
         Field(
           "allCategories",
           ListType(StringType),
-          arguments = RESEARCH :: SELECTED_TEAM :: SELECTED_TAG :: SELECTED_CAT :: GROUP_ID :: FILTER :: LIMIT :: OFFSET :: Nil,
+          arguments =
+            RESEARCH :: SELECTED_TEAM :: SELECTED_TAG :: SELECTED_CAT :: GROUP_ID :: FILTER :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             CommonServices
               .getAllCategories(
@@ -3755,7 +3807,8 @@ object SchemaDefinition {
         ctx => repo(ctx).forTenant(ctx.ctx._2.tenant)
       )
 
-    def getSubscriptionDetailsFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def getSubscriptionDetailsFields()
+        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "apiSubscriptionDetails",

@@ -325,7 +325,12 @@ class OtoroshiClient(env: Env) {
     }
   }
 
-  def getApiKeyConsumption(clientId: String, from: String, to: String, failOnError: Boolean = false)(implicit
+  def getApiKeyConsumption(
+      clientId: String,
+      from: String,
+      to: String,
+      failOnError: Boolean = false
+  )(implicit
       otoroshiSettings: OtoroshiSettings
   ): Future[JsObject] = {
     client(s"/api/stats?apikey=$clientId&from=$from&to=$to").get().map { resp =>

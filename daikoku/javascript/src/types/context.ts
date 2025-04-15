@@ -49,12 +49,15 @@ export interface INavMenu {
     };
     actions?: {
       order: number;
-      links: Record<string, {
-        component: JSX.Element;
-      }>;
+      links: Record<
+        string,
+        {
+          component: JSX.Element;
+        }
+      >;
     };
   };
-};
+}
 
 export interface IMenuLink {
   label: string;
@@ -63,6 +66,6 @@ export interface IMenuLink {
     active?: boolean;
     disabled?: boolean;
   };
-  childs?: Record<string, IMenuLink>
-  visible?: boolean
-};
+  childs?: Record<string, IMenuLink>;
+  visible?: boolean;
+}

@@ -220,7 +220,7 @@ export interface IBaseUsagePlan {
 
 export enum UsagePlanVisibility {
   public = 'Public',
-  private = 'Private'
+  private = 'Private',
 }
 
 export interface IPaymentSettings {
@@ -256,7 +256,7 @@ export interface IUsagePlan extends IBaseUsagePlan, IWithSwagger, IWithTesting, 
   maxPerSecond?: number;
   maxPerDay?: number;
   paymentSettings?: IPaymentSettings;
-  trialPeriod?: IBillingDuration
+  trialPeriod?: IBillingDuration;
 }
 
 export interface IAuthorizedEntities {
@@ -386,15 +386,11 @@ export const isPayPerUse = (plan: IUsagePlan | IFastPlan) => {
   return !!plan.costPerRequest && !plan.maxPerMonth;
 };
 
-export const isQuotasWitoutLimit = (
-  plan: IUsagePlan | IFastPlan
-) => {
+export const isQuotasWitoutLimit = (plan: IUsagePlan | IFastPlan) => {
   return !!plan.costPerRequest && !!plan.maxPerMonth;
 };
 
-export const isMiniFreeWithQuotas = (
-  plan: IUsagePlan | IFastPlan
-) => {
+export const isMiniFreeWithQuotas = (plan: IUsagePlan | IFastPlan) => {
   return !!plan.maxPerSecond && !plan.costPerMonth;
 };
 
@@ -503,10 +499,10 @@ export interface IFastApi {
 }
 
 export interface IApiPostCursor {
-  posts: Array<IApiPost>
-  total: number
-  nextCursor: number
-  prevCursor: number
+  posts: Array<IApiPost>;
+  total: number;
+  nextCursor: number;
+  prevCursor: number;
 }
 export interface IApiPost {
   _id: string;

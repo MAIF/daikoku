@@ -6,8 +6,19 @@ import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{TeamAdminOnly, _PublicUserAccess, _TeamAdminOnly, _TeamApiEditorOnly, _TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
+  TeamAdminOnly,
+  _PublicUserAccess,
+  _TeamAdminOnly,
+  _TeamApiEditorOnly,
+  _TeamMemberOnly,
+  _TenantAdminAccessTenant,
+  _UberPublicUserAccess
+}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiAccess,
+  ApiSubscriptionDemand
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.joda.time.DateTime
@@ -379,7 +390,7 @@ object CommonServices {
             selectedTeam.orNull,
             selectedTag.orNull,
             selectedCat.orNull,
-            groupOpt.orNull,
+            groupOpt.orNull
           ),
           offset * limit,
           limit
@@ -403,7 +414,7 @@ object CommonServices {
                 selectedTeam.orNull,
                 selectedTag.orNull,
                 selectedCat.orNull,
-                groupOpt.orNull,
+                groupOpt.orNull
               )
             )
 
@@ -434,10 +445,13 @@ object CommonServices {
       } yield {
         val sortedApis: Seq[ApiWithAuthorizations] = uniqueApisWithVersion
           .sortWith { (a, b) =>
-            (user.starredApis.contains(a.id), user.starredApis.contains(b.id)) match {
+            (
+              user.starredApis.contains(a.id),
+              user.starredApis.contains(b.id)
+            ) match {
               case (true, false) => true
               case (false, true) => false
-              case _ => a.name.compareToIgnoreCase(b.name) < 0
+              case _             => a.name.compareToIgnoreCase(b.name) < 0
             }
           }
           .foldLeft(Seq.empty[ApiWithAuthorizations]) {
@@ -599,9 +613,12 @@ object CommonServices {
       )
 
       (for {
-        api <- EitherT.fromOptionF(env.dataStore.apiRepo
-          .forTenant(ctx.tenant.id)
-          .findOneNotDeleted(query), AppError.ApiNotFound)
+        api <- EitherT.fromOptionF(
+          env.dataStore.apiRepo
+            .forTenant(ctx.tenant.id)
+            .findOneNotDeleted(query),
+          AppError.ApiNotFound
+        )
       } yield {
         ctx.setCtxValue("api.id", api.id)
         ctx.setCtxValue("api.name", api.name)
@@ -755,12 +772,16 @@ object CommonServices {
       )
     )(teamId, ctx) { _ =>
       (for {
-        api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
-            .findByVersion(ctx.tenant, apiId, version), AppError.ApiNotFound)
-        subs <-
-          EitherT.liftF[Future, AppError, Seq[ApiSubscription]](env.dataStore.apiSubscriptionRepo
+        api <- EitherT.fromOptionF[Future, AppError, Api](
+          env.dataStore.apiRepo
+            .findByVersion(ctx.tenant, apiId, version),
+          AppError.ApiNotFound
+        )
+        subs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
+          env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant)
-            .findNotDeleted(Json.obj("api" -> api.id.asJson)))
+            .findNotDeleted(Json.obj("api" -> api.id.asJson))
+        )
       } yield {
         subs
       }).value
@@ -768,10 +789,10 @@ object CommonServices {
   }
 
   def getApiSubscriptionDetails(apiSubscriptionId: String, teamId: String)(
-    implicit
-    ctx: DaikokuActionContext[JsValue],
-    env: Env,
-    ec: ExecutionContext
+      implicit
+      ctx: DaikokuActionContext[JsValue],
+      env: Env,
+      ec: ExecutionContext
   ) = {
     _TeamMemberOnly(
       teamId,
@@ -779,7 +800,6 @@ object CommonServices {
         s"@{user.name} has accessed one api @{api.name} - @{api.id} of @{team.name} - @{team.id}"
       )
     )(ctx) { _ =>
-
       val sql =
         """
           |SELECT row_to_json(_.*) as detail
@@ -793,12 +813,44 @@ object CommonServices {
           |""".stripMargin
 
       (for {
-        sub <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findById(apiSubscriptionId), AppError.EntityNotFound("ApiSubscription"))
-        maybeParent <- sub.parent.map(p => EitherT.liftF[Future, AppError, Option[ApiSubscription]](env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant).findById(p))).getOrElse(EitherT.pure[Future, AppError](None))
-        accessibleResources <- EitherT.liftF[Future, AppError, Seq[JsValue]](env.dataStore.queryRaw(sql, "detail", Seq(maybeParent.map(_.id.value).getOrElse(sub.id.value), sub.id.value)))
-          .map(r => json.SeqApiSubscriptionAccessibleResourceFormat.reads(JsArray(r)).getOrElse(Seq.empty))
-      } yield ApiSubscriptionDetail(apiSubscription = sub, parentSubscription = maybeParent, accessibleResources = accessibleResources))
-        .value
+        sub <- EitherT.fromOptionF[Future, AppError, ApiSubscription](
+          env.dataStore.apiSubscriptionRepo
+            .forTenant(ctx.tenant)
+            .findById(apiSubscriptionId),
+          AppError.EntityNotFound("ApiSubscription")
+        )
+        maybeParent <-
+          sub.parent
+            .map(p =>
+              EitherT.liftF[Future, AppError, Option[ApiSubscription]](
+                env.dataStore.apiSubscriptionRepo
+                  .forTenant(ctx.tenant)
+                  .findById(p)
+              )
+            )
+            .getOrElse(EitherT.pure[Future, AppError](None))
+        accessibleResources <-
+          EitherT
+            .liftF[Future, AppError, Seq[JsValue]](
+              env.dataStore.queryRaw(
+                sql,
+                "detail",
+                Seq(
+                  maybeParent.map(_.id.value).getOrElse(sub.id.value),
+                  sub.id.value
+                )
+              )
+            )
+            .map(r =>
+              json.SeqApiSubscriptionAccessibleResourceFormat
+                .reads(JsArray(r))
+                .getOrElse(Seq.empty)
+            )
+      } yield ApiSubscriptionDetail(
+        apiSubscription = sub,
+        parentSubscription = maybeParent,
+        accessibleResources = accessibleResources
+      )).value
 
     }
   }

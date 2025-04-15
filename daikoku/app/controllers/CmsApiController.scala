@@ -140,12 +140,14 @@ class CmsApiController(
           ctx.request.body
             .as(Reads.seq(CmsFileFormat.reads))
             .map(page => {
-                env.dataStore.cmsRepo
+              env.dataStore.cmsRepo
                 .forTenant(ctx.tenant)
                 .deleteById(page.id())
-                  .map(_ => env.dataStore.cmsRepo
-                .forTenant(ctx.tenant)
-                .save(page.toCmsPage(ctx.tenant.id)))
+                .map(_ =>
+                  env.dataStore.cmsRepo
+                    .forTenant(ctx.tenant)
+                    .save(page.toCmsPage(ctx.tenant.id))
+                )
             })
         )
       } yield {

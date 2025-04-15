@@ -294,7 +294,9 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
               .daysBetween(from.withTimeAtStartOfDay(), to)
               .getDays == 1
 
-            AppLogger.info(s"[syncConsumptionStatsForSubscription]: from $from to $to for ${subscription.id.value}")
+            AppLogger.info(
+              s"[syncConsumptionStatsForSubscription]: from $from to $to for ${subscription.id.value}"
+            )
             val id = maybeLastConsumption
               .map {
                 case c
@@ -398,12 +400,13 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
 //            Seq.empty
 //        }
     })
-//      .recover {
-//      case e =>
-//        AppLogger.error("[apikey stats job] Error during sync consumptions", e)
-//        Seq.empty
-//    })
-      .getOrElse(FastFuture.successful(Seq.empty[ApiKeyConsumption])).flatten
+    //      .recover {
+    //      case e =>
+    //        AppLogger.error("[apikey stats job] Error during sync consumptions", e)
+    //        Seq.empty
+    //    })
+      .getOrElse(FastFuture.successful(Seq.empty[ApiKeyConsumption]))
+      .flatten
   }
 
   def computeBilling(
@@ -428,10 +431,10 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
     }
 
     val from = plan.billingDuration.map(_.unit) match {
-      case Some(Year)  => DateTime.now().withDayOfYear(1).withTimeAtStartOfDay()
-      case Some(Hour)  => DateTime.now().withMinuteOfHour(1)
-      case Some(Day)   => DateTime.now().withTimeAtStartOfDay()
-      case _ => periodStart.withDayOfMonth(1).withTimeAtStartOfDay()
+      case Some(Year) => DateTime.now().withDayOfYear(1).withTimeAtStartOfDay()
+      case Some(Hour) => DateTime.now().withMinuteOfHour(1)
+      case Some(Day)  => DateTime.now().withTimeAtStartOfDay()
+      case _          => periodStart.withDayOfMonth(1).withTimeAtStartOfDay()
     }
 
     val to = periodEnd.plusMonths(1).withDayOfMonth(1).withTimeAtStartOfDay()
@@ -476,7 +479,8 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
                 costPerRequest
               )
             )
-          case _ if plan.visibility == UsagePlanVisibility.Admin => ApiKeyBilling(0, 0)
+          case _ if plan.visibility == UsagePlanVisibility.Admin =>
+            ApiKeyBilling(0, 0)
           case _ =>
             ApiKeyBilling(
               hits = hits + consumptions.map(_.hits).sum,

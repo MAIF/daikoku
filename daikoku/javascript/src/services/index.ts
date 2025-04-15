@@ -548,8 +548,7 @@ export const fetchNewApiGroup = () => customFetch('/api/entities/apigroup');
 export const fetchNewUser = () => customFetch('/api/entities/user');
 export const fetchNewOtoroshi = () => customFetch('/api/entities/otoroshi');
 export const fetchNewIssue = () => customFetch('/api/entities/issue');
-export const fetchNewPlan = (): Promise<IUsagePlan> =>
-  customFetch('/api/entities/plan');
+export const fetchNewPlan = (): Promise<IUsagePlan> => customFetch('/api/entities/plan');
 
 export const checkIfApiNameIsUnique = (name: string, id?: string) =>
   customFetch('/api/apis/_names', {
@@ -1065,7 +1064,12 @@ export const createUserFromLDAP = (teamId: any, email: any) =>
     }),
   });
 
-export const getAPIPosts = (apiId: string, version: string, offset: number = 0, limit: number = -1): PromiseWithError<IApiPostCursor> =>
+export const getAPIPosts = (
+  apiId: string,
+  version: string,
+  offset: number = 0,
+  limit: number = -1
+): PromiseWithError<IApiPostCursor> =>
   customFetch(`/api/apis/${apiId}/${version}/posts?offset=${offset}&limit=${limit}`);
 
 export const getAllAPIPosts = (
@@ -1420,7 +1424,7 @@ export const graphql = {
         }
       }
     `,
-  myVisibleApis: (`
+  myVisibleApis: `
     query AllVisibleApis ($teamId: String, $research: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $limit: Int, $offset: Int, $groupId: String) {
       visibleApis (teamId: $teamId, research: $research, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, limit: $limit, offset: $offset, groupId: $groupId) {
         apis {
@@ -1492,15 +1496,15 @@ export const graphql = {
         }
         total
       }
-    }`),
-  getAllTags: (`
+    }`,
+  getAllTags: `
     query getAllTags ($research: String, $groupId: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $filter: String, $limit: Int, $offset: Int){
       allTags (research: $research, groupId: $groupId, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, filter: $filter, limit: $limit, offset: $offset)
-    }`),
-  getAllCategories: (`
+    }`,
+  getAllCategories: `
     query getAllCategories ($research: String, $groupId: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $filter: String, $limit: Int, $offset: Int){
       allCategories (research: $research, groupId: $groupId, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, filter: $filter, limit: $limit, offset: $offset)
-    }`),
+    }`,
   getAllTeams: gql(`
   query getAllteams ($research: String, $limit: Int, $offset: Int) {
     teamsPagination (research: $research, limit: $limit, offset: $offset){

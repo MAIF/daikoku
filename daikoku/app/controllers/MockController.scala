@@ -645,13 +645,18 @@ class MockController(
                       authorizedCallsPerSec =
                         pp.maxPerSecond.getOrElse(Long.MaxValue),
                       currentCallsPerSec = callPerSec,
-                      remainingCallsPerSec = pp.maxPerSecond.getOrElse(Long.MaxValue) - callPerSec,
-                      authorizedCallsPerDay = pp.maxPerDay.getOrElse(Long.MaxValue),
+                      remainingCallsPerSec =
+                        pp.maxPerSecond.getOrElse(Long.MaxValue) - callPerSec,
+                      authorizedCallsPerDay =
+                        pp.maxPerDay.getOrElse(Long.MaxValue),
                       currentCallsPerDay = callPerDay,
-                      remainingCallsPerDay = pp.maxPerDay.getOrElse(Long.MaxValue) - callPerDay,
-                      authorizedCallsPerMonth = pp.maxPerMonth.getOrElse(Long.MaxValue),
+                      remainingCallsPerDay =
+                        pp.maxPerDay.getOrElse(Long.MaxValue) - callPerDay,
+                      authorizedCallsPerMonth =
+                        pp.maxPerMonth.getOrElse(Long.MaxValue),
                       currentCallsPerMonth = callPerMonth,
-                      remainingCallsPerMonth = pp.maxPerMonth.getOrElse(Long.MaxValue) - callPerMonth
+                      remainingCallsPerMonth =
+                        pp.maxPerMonth.getOrElse(Long.MaxValue) - callPerMonth
                     ).asJson
                   )
               }

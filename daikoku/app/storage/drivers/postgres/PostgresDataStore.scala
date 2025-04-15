@@ -2403,7 +2403,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       page: Int,
       pageSize: Int,
       sort: Option[JsObject] = None,
-      order : Option[SortingOrder] = None
+      order: Option[SortingOrder] = None
   )(implicit
       ec: ExecutionContext
   ): Future[(Seq[Of], Long)] = {
@@ -2447,7 +2447,8 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
 
         if (query.values.isEmpty)
           reactivePg.querySeq(
-            s"SELECT * FROM $tableName ORDER BY ${sortedKeys.mkString(",")} ${order.map(_.name).getOrElse(Asc.name)} LIMIT $$1 OFFSET $$2",
+            s"SELECT * FROM $tableName ORDER BY ${sortedKeys
+              .mkString(",")} ${order.map(_.name).getOrElse(Asc.name)} LIMIT $$1 OFFSET $$2",
             Seq(Integer.valueOf(pageSize), Integer.valueOf(page * pageSize))
           ) { row =>
             rowToJson(row, format)

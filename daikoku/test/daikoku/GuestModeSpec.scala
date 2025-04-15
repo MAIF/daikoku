@@ -210,8 +210,18 @@ class GuestModeSpec()
       resp.status mustBe 200
 
       (resp.json \ "_id").as[String] mustBe publicApi.id.value
-      val excludedKeys = Set("documentation", "swagger", "testing", "subscriptionProcess")
-      val includedKeys = Set("_id", "team", "possibleUsagePlans", "name", "description", "currentVersion", "tags", "categories")
+      val excludedKeys =
+        Set("documentation", "swagger", "testing", "subscriptionProcess")
+      val includedKeys = Set(
+        "_id",
+        "team",
+        "possibleUsagePlans",
+        "name",
+        "description",
+        "currentVersion",
+        "tags",
+        "categories"
+      )
       excludedKeys.forall(k => !resp.json.as[JsObject].keys.contains(k))
       includedKeys.forall(k => resp.json.as[JsObject].keys.contains(k))
 

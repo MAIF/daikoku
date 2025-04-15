@@ -532,7 +532,10 @@ object utils {
                 )
                 daikokuComponents.env.dataStore.userSessionRepo
                   .save(session)
-                  .map(_ => daikokuComponents.env.dataStore.userRepo.save(user.copy(lastTenant = on.id.some)))
+                  .map(_ =>
+                    daikokuComponents.env.dataStore.userRepo
+                      .save(user.copy(lastTenant = on.id.some))
+                  )
                   .map { _ =>
                     session
                   }

@@ -7,7 +7,11 @@ import com.amazonaws.{ClientConfiguration, HttpMethod, SdkClientException}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.apache.pekko.actor.ActorSystem
-import org.apache.pekko.http.scaladsl.model.{ContentType, ContentTypes, HttpHeader}
+import org.apache.pekko.http.scaladsl.model.{
+  ContentType,
+  ContentTypes,
+  HttpHeader
+}
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.connectors.s3._
 import org.apache.pekko.stream.connectors.s3.headers.CannedAcl
@@ -335,15 +339,17 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
       .run()
   }
 
-
-  type S3response = Future[(ObjectMetadata, ByteString, Source[ByteString, Future[ObjectMetadata]])]
+  type S3response = Future[
+    (ObjectMetadata, ByteString, Source[ByteString, Future[ObjectMetadata]])
+  ]
   def getAsset(key: String)(implicit
-                            conf: S3Configuration
+      conf: S3Configuration
   ): S3response = {
     val s3Source =
       S3.getObject(conf.bucket, key)
         .withAttributes(s3ClientSettingsAttrs)
-    val (metaF, byteF): (Future[ObjectMetadata], Future[ByteString]) = s3Source.toMat(Sink.fold(ByteString.empty)(_ ++ _))(Keep.both).run()
+    val (metaF, byteF): (Future[ObjectMetadata], Future[ByteString]) =
+      s3Source.toMat(Sink.fold(ByteString.empty)(_ ++ _))(Keep.both).run()
 
     for {
       meta <- metaF
@@ -353,8 +359,9 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
     }
   }
 
-  def getTenantAsset(tenant: TenantId, asset: AssetId)
-                    (implicit conf: S3Configuration): S3response = {
+  def getTenantAsset(tenant: TenantId, asset: AssetId)(implicit
+      conf: S3Configuration
+  ): S3response = {
     val key = s"/${tenant.value}/tenant-assets/${asset.value}"
     getAsset(key)
 
@@ -396,7 +403,7 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
   }
 
   def getUserAsset(tenant: TenantId, user: UserId, asset: AssetId)(implicit
-                                                                   conf: S3Configuration
+      conf: S3Configuration
   ): S3response = {
     val key = s"/users/${asset.value}"
     getAsset(key)
