@@ -228,10 +228,9 @@ fn read_api_folder(path: &PathBuf) -> DaikokuResult<Vec<CmsFile>> {
 fn read_file(file_path: PathBuf, file_name: String, extension: String) -> CmsFile {
     let content = fs::read_to_string(&file_path).unwrap();
 
-    let parts = &file_path
-        .as_os_str()
-        .to_str()
-        .unwrap()
+    let formatted = &file_path.as_os_str().to_str().unwrap().replace("\\", "/");
+
+    let parts = &formatted
         .split("src/")
         .last()
         .unwrap()
