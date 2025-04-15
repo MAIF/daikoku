@@ -1126,17 +1126,23 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         });
     };
 
-    const editQuotas = () => openRightPanel({
-      title: "quotas",
-      content: <QuotasForm ownerTeam={props.ownerTeam} plan={props.plan} savePlan={props.savePlan} />
-    })
-    const editPricing = () => openRightPanel({
-      title: "pricing",
-      content: <BillingForm
-        ownerTeam={props.ownerTeam}
-        plan={props.plan}
-        savePlan={setupPayment} />
-    })
+    const editQuotas = () => {
+      if (userCanUpadtePlan)
+        openRightPanel({
+          title: "quotas",
+          content: <QuotasForm ownerTeam={props.ownerTeam} plan={props.plan} savePlan={props.savePlan} />
+        })
+    }
+    const editPricing = () => {
+      if (userCanUpadtePlan)
+        openRightPanel({
+          title: "pricing",
+          content: <BillingForm
+            ownerTeam={props.ownerTeam}
+            plan={props.plan}
+            savePlan={setupPayment} />
+        })
+    }
     const editProcess = () => openRightPanel({
       title: "process",
       content: <SubscriptionProcessEditor
@@ -1146,6 +1152,8 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         tenant={fullTenant as ITenantFull}
       />
     })
+
+    const userCanUpadtePlan = CanIDoAction(connectedUser, manage, API, props.ownerTeam)
 
     return (
       <div
@@ -1266,7 +1274,9 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           </div>
         </div>
         <div className="usage-plan__card__body d-flex flex-column">
-          <span className="usage-plan__card__feature" onClick={editQuotas}>
+          <span className={classNames("usage-plan__card__feature", {
+            "no-decoration": !userCanUpadtePlan
+          })} onClick={editQuotas}>
             <div>
               <h4>{translate('Quotas')}</h4>
               <div className='feature__description'>
@@ -1282,7 +1292,9 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
               <Edit2 className="edition-icon" />
             </Can>
           </span>
-          <span className="usage-plan__card__feature" onClick={editPricing}>
+          <span className={classNames("usage-plan__card__feature", {
+            "no-decoration": !userCanUpadtePlan
+          })} onClick={editPricing}>
             <div>
               <h4>Tarif</h4>
               <span className='feature__description'>
@@ -1297,7 +1309,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           <Can I={manage} a={API} team={props.ownerTeam}>
             <span className="usage-plan__card__feature" onClick={editOtoroshiTarget}>
               <div>
-                <h4>{translate("otoroshi target")}</h4>
+                <h4>{translate("Otoroshi target")}</h4>
                 <span className='feature__description'>
                   {plan.otoroshiTarget?.otoroshiSettings && (fullTenant?.otoroshiSettings.find(o => o._id === plan.otoroshiTarget?.otoroshiSettings)?.url)}
                   {!plan.otoroshiTarget?.otoroshiSettings && translate('api.pricings.otoroshi.target.value.none')}
