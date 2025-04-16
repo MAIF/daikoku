@@ -176,7 +176,7 @@ object Tenant {
       contentType = contentType,
       body = body,
       path = s"/customization/$pageId.${if (contentType.contains("css")) "css"
-      else "javascript"}".some
+      else "js"}".some
     )
 
 }
