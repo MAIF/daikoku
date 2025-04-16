@@ -21,8 +21,15 @@ A robot.txt file is serve on the path /robot.txt by default, the file is empty, 
 
 Tenants could be customized in Daikoku.
 Logo, title, description can be changed.
+
 The client side can be customized with some CSS code or JS code, with overwriting CSS variables or with a CSS/JS file.
-Daikoku can be customized just by passing a new CSS color theme (this theme can be rewritten by using the dedicated page by clicking on the `Set color theme from UI` button)
+Daikoku can be customized just by passing a new CSS color theme.
+
+:::warning
+Since **v18.3.0** the file to customize your tenant must be sync with the **CLI**. Daikoku do not provide anymore UI to update your css, color theme or js. 
+
+You can find all the information to use the CLI [here](../../04-cli/041-informations/index.mdx)
+:::
 
 You can set a default message, visible for all users clicking on the message button, at the top of conversation modal.
 

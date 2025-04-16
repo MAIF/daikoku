@@ -64,11 +64,12 @@ daikoku environments add --name=<ENVIRONMENT_NAME> --server=<ENVIROMNENT_SERVER>
 > The Daikoku server has to be reachable and will be checked before saving the configuration
 
 
-you can sync the new project with your Daikoku instance and fetch mails and apis
+you can sync the new project with your Daikoku instance and fetch mails, apis & tenant customization
 
 ```sh
 daikoku pull apis
 daikoku pull mails
+daikoku pull customization
 ```
 
 you can start to develop and watch file changes
@@ -751,6 +752,7 @@ daikoku login
 ```sh
 daikoku pull apis
 daikoku pull mails
+daikoku pull customization
 ```
 
 # VERSION commands
