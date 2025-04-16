@@ -6,16 +6,9 @@ import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
+import fr.maif.otoroshi.daikoku.domain.Tenant.getCustomizationCmsPage
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiDocumentationPageFormat,
-  ApiFormat,
-  ApiSubscriptionFormat,
-  SeqApiDocumentationDetailPageFormat,
-  TeamFormat,
-  TeamIdFormat,
-  TenantFormat,
-  UserFormat
+import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, TenantIdFormat, UserFormat
 }
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
@@ -26,7 +19,7 @@ import storage.DataStore
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 sealed trait EvolutionScript {
   def version: String
@@ -1246,6 +1239,83 @@ object evolution_1820 extends EvolutionScript {
     }
 }
 
+object evolution_1830 extends EvolutionScript {
+  override def version: String = "18.3.0"
+
+  override def script: (
+    Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+    ) => Future[Done] =
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - update tenants to use cms pages"
+      )
+
+      implicit val executionContext: ExecutionContext = ec
+
+
+
+      dataStore.tenantRepo.streamAllRaw()
+        .map(rawTenant => {
+          val tenantId = (rawTenant \ "_id").as(TenantIdFormat)
+          val oldCss = (rawTenant \ "style" \ "css").as[String]
+          val oldTheme = (rawTenant \ "style" \ "colorTheme").as[String]
+          val oldJs = (rawTenant \ "style" \ "js").as[String]
+
+          AppLogger.info("step 1 done")
+
+          val cssPage = getCustomizationCmsPage(tenantId, "style", "text/css", oldCss)
+          val colorThemePage = getCustomizationCmsPage(tenantId, "color-theme", "text/css", oldTheme)
+          val jsPage = getCustomizationCmsPage(tenantId, "script", "text/javascript", oldJs)
+
+          AppLogger.info("step 2 done")
+
+          val _tenant = json.TenantFormat.reads(rawTenant.as[JsObject]
+            ++ Json.obj("style" -> json.DaikokuStyleFormat.reads((rawTenant \ "style").as[JsObject]
+            ++ Json.obj("cssCmsPage" -> cssPage.id.value, "jsCmsPage" -> jsPage.id.value, "colorThemeCmsPage" -> colorThemePage.id.value)).get.asJson))
+
+          AppLogger.info("step 3 done")
+          println(_tenant.isSuccess)
+          println(_tenant.isError)
+
+
+
+          val tenant = Try {
+            _tenant
+          }  recover {
+            case e =>
+              AppLogger.error(e.getMessage, e)
+              JsError(e.getMessage)
+          } get
+
+
+
+
+          (tenant.get, cssPage, colorThemePage, jsPage)
+        })
+        .mapAsync(1)(tuple => {
+          for {
+            _ <- dataStore.cmsRepo.forTenant(tuple._1).save(tuple._2)
+            _ <- dataStore.cmsRepo.forTenant(tuple._1).save(tuple._3)
+            _ <- dataStore.cmsRepo.forTenant(tuple._1).save(tuple._4)
+            _ <- dataStore.tenantRepo.save(tuple._1)
+          } yield ()
+        })
+        .runWith(Sink.ignore)(mat)
+    }
+}
+
+
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -1264,7 +1334,8 @@ object evolutions {
       evolution_1630,
       evolution_1634,
       evolution_1750,
-      evolution_1820
+      evolution_1820,
+      evolution_1830,
     )
   def run(
       dataStore: DataStore,

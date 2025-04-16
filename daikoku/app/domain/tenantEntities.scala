@@ -24,6 +24,7 @@ import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
 import play.api.libs.json._
 import play.api.mvc.Request
+import services.CmsPage
 import storage.TenantCapableRepo
 
 import java.util
@@ -33,19 +34,10 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 
 object Tenant {
   val Default: TenantId = TenantId("default")
-}
-
-/**
-  * Entity representing the UI style of the tenant
-  *
-  * @param js Javascript code injected in each page
-  * @param css CSS code injected in each page
-  * @param colorTheme CSS code to customize colors of the current tenant
-  */
-case class DaikokuStyle(
-    js: String = "",
-    css: String = "",
-    colorTheme: String = s""":root {
+  val jsCmsPageId = "tenant-js"
+  val cssCmsPageId = "tenant-css"
+  val colorThemePageId = "tenant-color-theme"
+  val colorTheme: String = s""":root {
   --error-color: #dc3545;
   --info-color: #17a2b8;
   --success-color: #65B741;
@@ -83,7 +75,7 @@ case class DaikokuStyle(
   --card_header-bg-color: #404040;
   --card_header-text-color: #fff;
   --card_bg-color: #282828;
-  --card_text-color: #fff; 
+  --card_text-color: #fff;
   --card_link-color: #97b0c7;
   --card_link-hover-color : #a9cbea;
 
@@ -165,7 +157,50 @@ case class DaikokuStyle(
   --form-select-heading-color: yellow;
   --form-select-hover-color: grey;
   --form-select-hover-text-color: white;
-}""",
+}"""
+
+  def getCustomizationCmsPage(
+      tenantId: TenantId,
+      pageId: String,
+      contentType: String,
+      body: String
+  ) = CmsPage(
+      id = CmsPageId(s"${tenantId.value}-$pageId"),
+      tenant = tenantId,
+      visible = true,
+      authenticated = false,
+      name = pageId,
+      forwardRef = None,
+      tags = List(),
+      metadata = Map(),
+      contentType = contentType,
+      body = body,
+      path = s"/customization/$pageId.${if (contentType.contains("css")) "css"
+      else "javascript"}".some
+    )
+
+}
+
+object DaikokuStyle {
+  def template(tenantId: TenantId) =
+    DaikokuStyle(
+      jsCmsPage = s"${tenantId.value}-script",
+      cssCmsPage = s"${tenantId.value}-style",
+      colorThemeCmsPage = s"${tenantId.value}-color-theme"
+    )
+}
+
+/**
+  * Entity representing the UI style of the tenant
+  *
+  * @param js Javascript code injected in each page
+  * @param css CSS code injected in each page
+  * @param colorTheme CSS code to customize colors of the current tenant
+  */
+case class DaikokuStyle(
+    jsCmsPage: String,
+    cssCmsPage: String,
+    colorThemeCmsPage: String,
     jsUrl: Option[String] = None,
     cssUrl: Option[String] = None,
     faviconUrl: Option[String] = None,
@@ -466,16 +501,6 @@ case class Tenant(
       "display" -> display.name,
       "environments" -> JsArray(environments.map(JsString.apply).toSeq),
       "loginProvider" -> authProvider.name,
-      "colorTheme" -> style
-        .map(_.colorTheme)
-        .map(JsString.apply)
-        .getOrElse(JsNull)
-        .as[JsValue],
-      "css" -> style
-        .map(_.css)
-        .map(JsString.apply)
-        .getOrElse(JsNull)
-        .as[JsValue],
       "cssUrl" -> style
         .flatMap(_.cssUrl)
         .map(JsString.apply)
@@ -486,7 +511,6 @@ case class Tenant(
         .map(JsString.apply)
         .getOrElse(JsNull)
         .as[JsValue],
-      "js" -> style.map(_.js).map(JsString.apply).getOrElse(JsNull).as[JsValue],
       "faviconUrl" -> favicon(),
       "fontFamilyUrl" -> style
         .flatMap(_.fontFamilyUrl)

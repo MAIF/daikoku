@@ -3,12 +3,7 @@ package fr.maif.otoroshi.daikoku.ctrls
 import cats.implicits.catsSyntaxOptionId
 import controllers.Assets
 import daikoku.BuildInfo
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuActionMaybeWithoutUserContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
 import fr.maif.otoroshi.daikoku.domain._
@@ -61,9 +56,6 @@ class HomeController(
 
   def index() =
     DaikokuActionMaybeWithoutUser.async { ctx =>
-      AppLogger.info(
-        ctx.tenant.style.flatMap(_.homeCmsPage).getOrElse("pas de cms page")
-      )
       ctx.tenant.style match {
         case Some(value) if value.homePageVisible =>
           (value.homeCmsPage, value.notFoundCmsPage) match {

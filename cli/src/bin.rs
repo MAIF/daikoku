@@ -204,6 +204,7 @@ pub enum PullCommands {
         id: Option<String>,
     },
     Mails {},
+    Customization {},
 }
 
 #[derive(Debug, Subcommand)]

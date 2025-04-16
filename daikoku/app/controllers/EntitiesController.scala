@@ -33,14 +33,15 @@ class EntitiesController(
           s"@{user.name} has asked for a template entity of type Tenant"
         )
       )(ctx) {
+        val tenantId = TenantId(IdGenerator.token(32))
         Ok(
           Tenant(
-            id = TenantId(IdGenerator.token(32)),
+            id = tenantId,
             name = "New organization",
             domain = "organization.foo.bar",
             contact = "contact@foo.bar",
             defaultLanguage = None,
-            style = Some(DaikokuStyle()),
+            style = Some(DaikokuStyle.template(tenantId)),
             mailerSettings = Some(ConsoleMailerSettings()),
             bucketSettings = None,
             authProvider = AuthProvider.Local,

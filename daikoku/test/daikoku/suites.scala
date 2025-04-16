@@ -1218,9 +1218,9 @@ object utils {
       name = "Test Corp.",
       domain = "localhost",
       style = Some(
-        DaikokuStyle(
-          title = "Test Corp."
-        )
+        DaikokuStyle.template(
+          Tenant.Default
+        ).copy(title = "Test Corp.")
       ),
       mailerSettings = Some(ConsoleMailerSettings()),
       authProvider = AuthProvider.Local,
@@ -1248,14 +1248,13 @@ object utils {
       contact = "contact@test-corp.foo.bar",
       tenantMode = TenantMode.Default.some
     )
+    private val tenant2Id: TenantId = TenantId("tenant2")
     val tenant2 = Tenant(
-      id = TenantId("tenant2"),
+      id = tenant2Id,
       name = "Test Corp. II",
       domain = "localhost.tenant2",
       style = Some(
-        DaikokuStyle(
-          title = "Test Corp. II"
-        )
+        DaikokuStyle.template(tenant2Id).copy(title = "Test Corp. II")
       ),
       mailerSettings = Some(ConsoleMailerSettings()),
       authProvider = AuthProvider.Local,

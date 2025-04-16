@@ -11,7 +11,7 @@ DELETE  /api/cms/pages/:id                              fr.maif.otoroshi.daikoku
 POST    /cms-api/sync                                   fr.maif.otoroshi.daikoku.ctrls.CmsApiController.sync()
 GET     /cms-api/health                                 fr.maif.otoroshi.daikoku.ctrls.CmsApiController.health()
 GET     /cms-api/version                                fr.maif.otoroshi.daikoku.ctrls.CmsApiController.version()
-GET     /cms-api/tenants/default                        fr.maif.otoroshi.daikoku.ctrls.CmsApiController.defaultTenant()
+GET     /cms-api/tenant/customization                   fr.maif.otoroshi.daikoku.ctrls.CmsApiController.tenantCustomization()
 
 GET     /cms-api/cli/redirect                           fr.maif.otoroshi.daikoku.ctrls.CmsApiController.redirectToLoginPage()
 GET     /cms-api/cli/login                              fr.maif.otoroshi.daikoku.ctrls.CmsApiController.getLoginToken()

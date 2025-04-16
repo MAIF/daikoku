@@ -8,6 +8,7 @@ import { I18nContext } from '../../../../contexts/i18n-context';
 import classNames from 'classnames';
 import { GlobalContext } from '../../../../contexts/globalContext';
 import { ModalContext } from '../../../../contexts/modalContext';
+import { DaikokuMode } from '../../../../types';
 
 export const DarkModeActivator = (props: { className: string }) => {
   const { theme, toggleTheme } = useContext(GlobalContext);
@@ -106,7 +107,7 @@ export const SettingsPanel = ({ }) => {
                 {translate(isMaintenanceMode ? 'Disable maintenance' : 'Maintenance mode')}
               </span>
             )}
-            {connectedUser.isDaikokuAdmin && (
+            {connectedUser.isDaikokuAdmin && tenant.mode === DaikokuMode.dev && (
               <span className="block__entry__link danger" onClick={reset}>
                 {translate('Reset')}
               </span>

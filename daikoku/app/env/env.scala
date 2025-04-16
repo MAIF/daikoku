@@ -25,9 +25,10 @@ import play.api.ApplicationLoader.Context
 import play.api.i18n.MessagesApi
 import play.api.libs.ws.WSClient
 import play.api.mvc.EssentialFilter
-import play.api.{Configuration, Environment}
+import play.api.{Configuration, Environment, Play}
 import storage.DataStore
 import storage.drivers.postgres.PostgresDataStore
+
 import java.nio.file.Paths
 import scala.concurrent.duration.{FiniteDuration, _}
 import scala.concurrent.{Await, ExecutionContext, Future}
@@ -483,7 +484,7 @@ class DaikokuEnv(
                 domain = config.init.host,
                 defaultLanguage = Some("En"),
                 style = Some(
-                  DaikokuStyle(
+                  DaikokuStyle.template(Tenant.Default).copy(
                     title = "Daikoku Default Tenant"
                   )
                 ),
@@ -563,6 +564,15 @@ class DaikokuEnv(
                     .forTenant(tenant.id)
                     .save(cmsPlan)
                 _ <- dataStore.userRepo.save(user)
+                publicFolderPath = environment.getFile("public").getPath
+                cssFilePath = s"$publicFolderPath/themes/default.css"
+                cssFileContent = scala.io.Source.fromFile(cssFilePath).mkString
+                _ <- dataStore.cmsRepo.forTenant(tenant.id)
+                  .save(Tenant.getCustomizationCmsPage(tenantId = tenant.id, pageId = "style", contentType = "text/css", body = ""))
+                _ <- dataStore.cmsRepo.forTenant(tenant.id)
+                  .save(Tenant.getCustomizationCmsPage(tenantId = tenant.id, pageId = "script", contentType = "text/javascript", body = ""))
+                _ <- dataStore.cmsRepo.forTenant(tenant.id)
+                  .save(Tenant.getCustomizationCmsPage(tenantId = tenant.id, pageId = "color-theme", contentType = "text/css", body = cssFileContent))
               } yield {
                 AppLogger.warn("")
                 AppLogger.warn(

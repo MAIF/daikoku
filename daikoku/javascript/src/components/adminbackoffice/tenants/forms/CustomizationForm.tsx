@@ -1,24 +1,105 @@
 import { getApolloContext, gql } from '@apollo/client';
 import { Flow, Form, FormRef, Schema, SchemaEntry, format, type } from '@maif/react-forms';
 import { UseMutationResult, useQuery } from '@tanstack/react-query';
-import { useContext, useRef } from 'react';
+import { useContext, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { ModalContext } from '../../../../contexts';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../../contexts/modals/AssetsChooserModal';
 import { ITenantFull } from '../../../../types';
+import { IPage } from '../../cms';
+import { GraphQLClient } from 'graphql-request';
+import Select from 'react-select';
+
+type CmsPagesSelectorProps = {
+  rawValues: any
+  onChange: (item: any) => void,
+  value: string
+}
+const CmsPageSelector = ({ rawValues, onChange, value }: CmsPagesSelectorProps) => {
+  const cmsPagesQuery = `
+      query CmsPages {
+        pages {
+          id
+          name
+          path
+          contentType
+          lastPublishedDate
+          metadata
+        }
+      }
+    `
+  const graphqlEndpoint = `${window.location.origin}/api/search`;
+  const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
+
+  const queryPages = useQuery({
+    queryKey: ['cmsPageSelector', 'pages'],
+    queryFn: () => customGraphQLClient.request<{ pages: Array<IPage> }>(
+      cmsPagesQuery
+    )
+  })
+
+  return (
+    <div>
+      <Select
+        id={`input-label`}
+        name={`search-label`}
+        isLoading={queryPages.isLoading}
+        options={queryPages.data?.pages.map(p => ({ label: `${p.path} - ${p.name}`, value: p.id }))}
+        value={queryPages.data?.pages.map(p => ({ label: `${p.path} - ${p.name}`, value: p.id })).find(p => p.value === value)}//@ts-ignore
+        onChange={({ value }) => onChange(value)}
+        classNamePrefix="reactSelect"
+        className="reactSelect"
+      />
+    </div>
+  )
+}
 
 
 export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
 
   const { translate } = useContext(I18nContext);
-  const { openSaveOrCancelModal } = useContext(ModalContext);
+  const { alert } = useContext(ModalContext);
   const { client } = useContext(getApolloContext());
 
   const formRef = useRef<FormRef>()
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const display = localStorage.getItem("display.migration.custom.style.alert")
+    if (!display || display !== "false") {
+      alert({
+        title: translate('migration.custom.style.alert.title'),
+        message: <div>
+          <div className='alert alert-danger mt-3'>
+            <div>{translate('migration.custom.style.alert.info.1')}</div>
+            <div className='ps-2' style={{ borderLeft: '1px solid black' }}>
+              <em>{translate('migration.custom.style.alert.info.2')}</em>
+            </div>
+            <div className='mt-3'>{translate('migration.custom.style.alert.info.3')}</div>
+            <div>{translate('migration.custom.style.alert.info.4')}</div>
+            <div className='mt-3' dangerouslySetInnerHTML={{
+              __html: translate({
+                key: 'migration.custom.style.alert.info.5', replacements: [
+                  `<a class="underline" target="_blank" href='https://maif.github.io/daikoku/docs/cli'>${translate('Documentation')}</a>`
+                ]
+              })
+            }} />
+
+          </div>
+          <label htmlFor="check" className='me-3'>
+            {translate('migration.custom.style.alert.hide')}
+          </label>
+          <input type='checkbox' id='check' onChange={e => {
+            if (e.target.value)
+              localStorage.setItem("display.migration.custom.style.alert", "false")
+          }} />
+        </div>
+      })
+    }
+  }, [tenant])
 
   const queryCMSPages = useQuery({
     queryKey: ['CMS pages'],
@@ -106,22 +187,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
     },
     logo: urlWithAssetButton(translate('Logo'), translate({ key: 'set.from.assets', replacements: [translate('set.logo')] }), MimeTypeFilter.image),
     cssUrl: urlWithAssetButton(translate('CSS URL'), translate({ key: 'set.from.assets', replacements: [translate('set.css')] }), MimeTypeFilter.css),
-    css: {
-      type: type.string,
-      format: format.code,
-      label: translate('CSS'),
-    },
-    colorTheme: {
-      type: type.string,
-      format: format.code,
-      label: translate('CSS color theme'),
-    },
     jsUrl: urlWithAssetButton(translate('Js URL'), translate({ key: 'set.from.assets', replacements: [translate('set.js')] }), MimeTypeFilter.javascript),
-    js: {
-      type: type.string,
-      format: format.code,
-      label: translate('Javascript')
-    },
     faviconUrl: urlWithAssetButton(translate('Favicon URL'), translate({ key: 'set.from.assets', replacements: [translate('set.favicon')] }), MimeTypeFilter.image),
     fontFamilyUrl: urlWithAssetButton(translate('Font family'), translate({ key: 'set.from.assets', replacements: [translate('set.font.family')] }), MimeTypeFilter.font),
     footer: {
@@ -145,7 +211,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
   const flow: Flow = [
     {
       label: translate('General'),
-      flow: ['title', 'description', 'logo', 'cssUrl', 'css', 'colorTheme', 'jsUrl', 'js', 'faviconUrl', 'fontFamilyUrl'],
+      flow: ['title', 'description', 'logo', 'cssUrl', 'jsUrl', 'faviconUrl', 'fontFamilyUrl'],
       collapsed: false
     },
     {
@@ -159,6 +225,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       collapsed: true
     }
   ]
+
 
   return (
     <Form

@@ -140,7 +140,16 @@ class CmsApiController(
           ctx.request.body
             .as(Reads.seq(CmsFileFormat.reads))
             .map(page => {
-              env.dataStore.cmsRepo
+              val path = page.path()
+              if (path.startsWith("/customization/")) {
+                env.dataStore.cmsRepo
+                  .forTenant(ctx.tenant)
+                  .delete(Json.obj("path" -> page.path()))
+                  .map(_ => env.dataStore.cmsRepo
+                    .forTenant(ctx.tenant)
+                    .save(page.toCmsPage(ctx.tenant.id).copy(id = CmsPageId(s"${ctx.tenant.id.value}-${page.name.split("\\.").head}"))))
+              } else {
+                env.dataStore.cmsRepo
                 .forTenant(ctx.tenant)
                 .deleteById(page.id())
                 .map(_ =>
@@ -148,6 +157,8 @@ class CmsApiController(
                     .forTenant(ctx.tenant)
                     .save(page.toCmsPage(ctx.tenant.id))
                 )
+              }
+              FastFuture.successful(())
             })
         )
       } yield {
@@ -185,24 +196,24 @@ class CmsApiController(
         }
     }
 
-  def defaultTenant() =
+  def tenantCustomization() =
     CmsApiAction.async { ctx =>
-      env.dataStore.translationRepo
-        .forTenant(ctx.tenant)
-        .find(Json.obj("element.id" -> ctx.tenant.id.asJson))
-        .map(translations => {
-          val translationAsJsObject = translations
-            .groupBy(t => t.language)
-            .map {
-              case (k, v) =>
-                Json
-                  .obj(k -> JsObject(v.map(t => t.key -> JsString(t.value))))
-            }
-            .fold(Json.obj())(_ deepMerge _)
-          val translation = Json.obj("translation" -> translationAsJsObject)
-          Ok(ctx.tenant.asJsonWithJwt.as[JsObject] ++ translation)
-        })
-    }
+        (for {
+          tenantStyle <- EitherT.fromOption[Future](ctx.tenant.style,  AppError.EntityNotFound("Tenant customization"))
+          cssPage <- EitherT.fromOptionF(env.dataStore.cmsRepo.forTenant(ctx.tenant).findById(tenantStyle.cssCmsPage),
+            AppError.EntityNotFound("css cms page"))
+          colorThemePage <- EitherT.fromOptionF(env.dataStore.cmsRepo.forTenant(ctx.tenant).findById(tenantStyle.colorThemeCmsPage),
+            AppError.EntityNotFound("color theme cms page"))
+          jsPage <- EitherT.fromOptionF(env.dataStore.cmsRepo.forTenant(ctx.tenant).findById(tenantStyle.jsCmsPage),
+            AppError.EntityNotFound("js cms page"))
+        } yield Ok(Json.arr(
+          cssPage.asJson,
+          colorThemePage.asJson,
+          jsPage.asJson,
+        )))
+          .leftMap(_.render())
+          .merge
+      }
 
   def findAll(): Action[AnyContent] =
     CmsApiAction.async { ctx =>

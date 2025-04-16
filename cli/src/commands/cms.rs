@@ -39,7 +39,7 @@ pub(crate) struct CmsPage {
     authenticated: bool,
     pub(crate) name: String,
     #[serde(alias = "contentType")]
-    content_type: String,
+    pub(crate) content_type: String,
     pub(crate) path: Option<String>,
     exact: bool,
     #[serde(alias = "lastPublishedDate")]

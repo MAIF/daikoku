@@ -95,26 +95,6 @@ export const GlobalContextProvider = (props: PropsWithChildren) => {
 
   useEffect(() => {
     if (currentUserQuery?.data && !isError(currentUserQuery?.data)) {
-      if (currentUserQuery.data.tenant.colorTheme) {
-        let style: HTMLStyleElement | null =
-          document.querySelector('style#color-theme');
-        if (!style) {
-          style = document.createElement('style');
-          style.id = 'color-theme';
-          document.head.appendChild(style);
-        }
-        style.innerText = currentUserQuery.data.tenant.colorTheme;
-      }
-      if (currentUserQuery.data.tenant.css) {
-        let style: HTMLStyleElement | null =
-          document.querySelector('style#custom-css');
-        if (!style) {
-          style = document.createElement('style');
-          style.id = 'custom-css';
-          document.head.appendChild(style);
-        }
-        style.innerText = currentUserQuery.data.tenant.css;
-      }
       if (currentUserQuery.data.tenant.fontFamilyUrl) {
         let style: HTMLStyleElement | null = document.querySelector(
           'style#custom-font-family'
@@ -141,16 +121,6 @@ export const GlobalContextProvider = (props: PropsWithChildren) => {
           document.head.appendChild(link);
         }
         link.href = currentUserQuery.data.tenant.cssUrl;
-      }
-      if (currentUserQuery.data.tenant.js) {
-        let script: HTMLScriptElement | null =
-          document.querySelector('script#custom-js');
-        if (!script) {
-          script = document.createElement('script');
-          script.id = 'custom-js';
-          document.body.appendChild(script);
-        }
-        script.innerText = currentUserQuery.data.tenant.js;
       }
       if (currentUserQuery.data.tenant.jsUrl) {
         let script: HTMLScriptElement | null = document.querySelector(

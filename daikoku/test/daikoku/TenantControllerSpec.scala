@@ -29,12 +29,13 @@ class TenantControllerSpec()
 
       val session = loginWithBlocking(daikokuAdmin, tenant)
 
+      val tenantId = TenantId(IdGenerator.token(32))
       val testTenant = Tenant(
-        id = TenantId(IdGenerator.token(32)),
+        id = tenantId,
         name = "test",
         domain = "test.foo.bar",
         defaultLanguage = None,
-        style = Some(DaikokuStyle()),
+        style = Some(DaikokuStyle.template(tenantId)),
         mailerSettings = Some(ConsoleMailerSettings()),
         bucketSettings = None,
         authProvider = AuthProvider.Local,
@@ -147,12 +148,13 @@ class TenantControllerSpec()
 
       val session = loginWithBlocking(daikokuAdmin, tenant)
 
+      val tenantId = TenantId(IdGenerator.token(32))
       val testTenant = Tenant(
-        id = TenantId(IdGenerator.token(32)),
+        id = tenantId,
         name = "test",
         domain = "test.foo.bar",
         defaultLanguage = None,
-        style = Some(DaikokuStyle()),
+        style = Some(DaikokuStyle.template(tenantId)),
         mailerSettings = Some(ConsoleMailerSettings()),
         bucketSettings = None,
         authProvider = AuthProvider.Local,
@@ -285,12 +287,13 @@ class TenantControllerSpec()
 
       val session = loginWithBlocking(daikokuAdmin, tenant)
 
+      val tenantId = TenantId(IdGenerator.token(32))
       val testTenant = Tenant(
-        id = TenantId(IdGenerator.token(32)),
+        id = tenantId,
         name = "test",
         domain = "test.foo.bar",
         defaultLanguage = None,
-        style = Some(DaikokuStyle()),
+        style = Some(DaikokuStyle.template(tenantId)),
         mailerSettings = Some(ConsoleMailerSettings()),
         bucketSettings = None,
         authProvider = AuthProvider.Local,
@@ -619,12 +622,13 @@ class TenantControllerSpec()
 
       val session = loginWithBlocking(tenantAdmin, tenant)
 
+      val tenantId = TenantId(IdGenerator.token(32))
       val testTenant = Tenant(
-        id = TenantId(IdGenerator.token(32)),
+        id = tenantId,
         name = "test",
         domain = "test.foo.bar",
         defaultLanguage = None,
-        style = Some(DaikokuStyle()),
+        style = Some(DaikokuStyle.template(tenantId)),
         mailerSettings = Some(ConsoleMailerSettings()),
         bucketSettings = None,
         authProvider = AuthProvider.Local,
@@ -1571,12 +1575,13 @@ class TenantControllerSpec()
 
       val session = loginWithBlocking(user, tenant)
 
+      val tenantId = TenantId(IdGenerator.token(32))
       val testTenant = Tenant(
-        id = TenantId(IdGenerator.token(32)),
+        id = tenantId,
         name = "test",
         domain = "test.foo.bar",
         defaultLanguage = None,
-        style = Some(DaikokuStyle()),
+        style = Some(DaikokuStyle.template(tenantId)),
         mailerSettings = Some(ConsoleMailerSettings()),
         bucketSettings = None,
         authProvider = AuthProvider.Local,

@@ -1,10 +1,12 @@
-use std::{io::Write, path::PathBuf};
+use std::{fs, io::Write, path::PathBuf, str::FromStr};
 
 use crate::{
     helpers::{
-        bytes_to_struct, bytes_to_vec_of_struct, daikoku_cms_api_get, raw_daikoku_cms_api_get,
+        bytes_to_struct, bytes_to_vec_of_struct, daikoku_cms_api_get,
+        map_error_to_filesystem_error, raw_daikoku_cms_api_get,
     },
     logging::{error::DaikokuResult, logger},
+    models::folder::{Ext, SourceExtension},
     PullCommands,
 };
 
@@ -24,6 +26,7 @@ pub(crate) async fn run(commands: PullCommands) -> DaikokuResult<()> {
     match commands {
         PullCommands::Apis { id } => apis_synchronization(&project, id).await?,
         PullCommands::Mails {} => mails_synchronization(&project).await?,
+        PullCommands::Customization {} => customization_synchronization(&project).await?,
     };
 
     logger::success("synchronization done".to_string());
@@ -60,7 +63,7 @@ async fn apis_synchronization(project: &cms::Project, api_id: Option<String>) ->
 }
 
 async fn mails_synchronization(project: &cms::Project) -> DaikokuResult<()> {
-    logger::loading(format!("<yellow>Pulling</> apis"));
+    logger::loading(format!("<yellow>Pulling</> mails"));
 
     let sources_path = PathBuf::from(project.path.clone()).join("src");
 
@@ -113,6 +116,53 @@ async fn mails_synchronization(project: &cms::Project) -> DaikokuResult<()> {
             }
         });
     }
+
+    logger::success(format!("<green>Pulling</> done"));
+
+    Ok(())
+}
+async fn customization_synchronization(project: &cms::Project) -> DaikokuResult<()> {
+    logger::loading(format!("<yellow>Pulling</> customization"));
+
+    let sources_path = PathBuf::from(project.path.clone())
+        .join("src")
+        .join("customization");
+
+    if !sources_path.exists() {
+        fs::create_dir_all(&sources_path).map_err(|err| map_error_to_filesystem_error(err, ""))?;
+    }
+
+    let customization_pages = bytes_to_vec_of_struct::<CmsPage>(
+        daikoku_cms_api_get("/tenant/customization").await?.response,
+    )?;
+
+    customization_pages
+        .iter()
+        .for_each(|item| println!("{:?}", item.name));
+
+    customization_pages.iter().for_each(|item| {
+        let file_path = sources_path.clone().join(format!(
+            "{}{}",
+            item.name,
+            SourceExtension::ext(&SourceExtension::from_str(&item.content_type).unwrap())
+        ));
+
+        println!("{:?}", file_path);
+
+        let file = std::fs::OpenOptions::new()
+            .write(true)
+            .truncate(true)
+            .create(true)
+            .open(file_path);
+
+        match file {
+            Ok(mut customization_file) => {
+                let _ = customization_file.write_all(item.content.clone().as_bytes());
+                let _ = customization_file.flush();
+            }
+            Err(error) => panic!("{:#?}", error),
+        }
+    });
 
     logger::success(format!("<green>Pulling</> done"));
 

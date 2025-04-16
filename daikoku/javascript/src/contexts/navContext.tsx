@@ -83,7 +83,6 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
         !!api?.documentation?.pages?.length
     )
   )
-  console.debug(connectedUser.isGuest, tenant.display, plans?.some(p => !!p.documentation), plans?.map(p => p.documentation))
   const shouldDisplayOpenApi = userCanUpdateApi || (
     (!connectedUser.isGuest || !tenant.apiReferenceHideForGuest) &&
     (

@@ -1560,11 +1560,9 @@ object json {
       Try {
         JsSuccess(
           DaikokuStyle(
-            js = (json \ "js").asOpt[String].getOrElse(""),
-            css = (json \ "css").asOpt[String].getOrElse(""),
-            colorTheme = (json \ "colorTheme")
-              .asOpt[String]
-              .getOrElse(DaikokuStyle().colorTheme),
+            jsCmsPage = (json \ "jsCmsPage").as[String],
+            cssCmsPage = (json \ "cssCmsPage").as[String],
+            colorThemeCmsPage = (json \ "colorThemeCmsPage").as[String],
             jsUrl = (json \ "jsUrl").asOpt[String],
             cssUrl = (json \ "cssUrl").asOpt[String],
             faviconUrl = (json \ "faviconUrl").asOpt[String],
@@ -1594,9 +1592,9 @@ object json {
 
     override def writes(o: DaikokuStyle): JsValue =
       Json.obj(
-        "css" -> o.css,
-        "colorTheme" -> o.colorTheme,
-        "js" -> o.js,
+        "cssCmsPage" -> o.cssCmsPage,
+        "colorThemeCmsPage" -> o.colorThemeCmsPage,
+        "jsCmsPage" -> o.jsCmsPage,
         "jsUrl" -> o.jsUrl.map(JsString.apply).getOrElse(JsNull).as[JsValue],
         "cssUrl" -> o.cssUrl.map(JsString.apply).getOrElse(JsNull).as[JsValue],
         "faviconUrl" -> o.faviconUrl
