@@ -1262,8 +1262,6 @@ object evolution_1830 extends EvolutionScript {
 
       implicit val executionContext: ExecutionContext = ec
 
-
-
       dataStore.tenantRepo.streamAllRaw()
         .map(rawTenant => {
           val tenantId = (rawTenant \ "_id").as(TenantIdFormat)
@@ -1271,23 +1269,13 @@ object evolution_1830 extends EvolutionScript {
           val oldTheme = (rawTenant \ "style" \ "colorTheme").as[String]
           val oldJs = (rawTenant \ "style" \ "js").as[String]
 
-          AppLogger.info("step 1 done")
-
           val cssPage = getCustomizationCmsPage(tenantId, "style", "text/css", oldCss)
           val colorThemePage = getCustomizationCmsPage(tenantId, "color-theme", "text/css", oldTheme)
           val jsPage = getCustomizationCmsPage(tenantId, "script", "text/javascript", oldJs)
 
-          AppLogger.info("step 2 done")
-
           val _tenant = json.TenantFormat.reads(rawTenant.as[JsObject]
             ++ Json.obj("style" -> json.DaikokuStyleFormat.reads((rawTenant \ "style").as[JsObject]
             ++ Json.obj("cssCmsPage" -> cssPage.id.value, "jsCmsPage" -> jsPage.id.value, "colorThemeCmsPage" -> colorThemePage.id.value)).get.asJson))
-
-          AppLogger.info("step 3 done")
-          println(_tenant.isSuccess)
-          println(_tenant.isError)
-
-
 
           val tenant = Try {
             _tenant
@@ -1296,9 +1284,6 @@ object evolution_1830 extends EvolutionScript {
               AppLogger.error(e.getMessage, e)
               JsError(e.getMessage)
           } get
-
-
-
 
           (tenant.get, cssPage, colorThemePage, jsPage)
         })
