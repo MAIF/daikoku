@@ -1650,7 +1650,7 @@ export const graphql = {
       }
     }
     `,
-  getMyNotifications: gql(`
+  getMyNotifications: `
     query getMyNotifications ($pageNumber : Int, $pageSize: Int) {
       myNotifications (pageNumber: $pageNumber, pageSize: $pageSize) {
         notifications {
@@ -1668,6 +1668,7 @@ export const graphql = {
           }
           action {
             ... on ApiAccess {
+              __typename
               api {
                 _id
                 name
@@ -1678,6 +1679,7 @@ export const graphql = {
               }
             }
             ... on TeamInvitation {
+            __typename
               team {
                 _id
                 name
@@ -1688,6 +1690,7 @@ export const graphql = {
               }
             }
             ... on ApiSubscriptionDemand {
+            __typename
               api {
                 _id
                 name
@@ -1717,25 +1720,30 @@ export const graphql = {
               }
             }
             ... on NewCommentOnIssue {
+            __typename
               linkTo
               apiName
             }
             ... on NewPostPublished {
+            __typename
               apiName
               team {
                 name
               }
             }
             ... on ApiKeyRefresh {
+            __typename
               subscriptionName
               apiName
               planName
             }
             ... on ApiKeyDeletionInformation {
+            __typename
               apiName
               clientId
             }
             ... on TransferApiOwnership {
+            __typename
               api {
                 _id
                 name
@@ -1746,6 +1754,7 @@ export const graphql = {
               }
             }
             ... on ApiSubscriptionAccept {
+            __typename
               team {
                 _id
                 name
@@ -1761,6 +1770,7 @@ export const graphql = {
               }
             }
             ... on ApiSubscriptionReject {
+            __typename
               team {
                 _id
                 name
@@ -1777,19 +1787,23 @@ export const graphql = {
               message
             }
             ... on OtoroshiSyncSubscriptionError {
+            __typename
               message
             }
             ... on ApiKeyRotationInProgress {
+            __typename
               clientId
               apiName
               planName
             }
             ... on ApiKeyRotationEnded {
+            __typename
               clientId
               apiName
               planName
             }
             ... on NewIssueOpen {
+            __typename
               linkTo
               apiName
             }
@@ -1800,14 +1814,17 @@ export const graphql = {
           }
           status {
             ... on NotificationStatusAccepted {
+            __typename
               date
               status
             }
             ... on NotificationStatusRejected {
+            __typename
               date
               status
             }
             ... on NotificationStatusPending {
+            __typename
               status
             }
 
@@ -1817,7 +1834,7 @@ export const graphql = {
         total
       }
     }
-    `),
+    `,
   getApisWithSubscription: gql(`
     query AccessibleApis ($teamId: String!, $research: String, $apiSubOnly: Boolean, $limit: Int, $offset: Int) {
       accessibleApis (teamId: $teamId, research: $research, apiSubOnly: $apiSubOnly , limit: $limit, offset: $offset) {
