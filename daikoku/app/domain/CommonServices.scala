@@ -341,7 +341,8 @@ object CommonServices {
        |                                                    WHERE _id = $$8))) AND
        |  (content ->> 'isDefault')::boolean
        |)
-       |ORDER BY LOWER(content ->> 'name')
+       |ORDER BY CASE WHEN content ->> '_id' = ANY ($$9::text[]) THEN 0 ELSE 1 END,
+       |LOWER(content ->> 'name')
        |""".stripMargin
 
   def getVisibleApis(
@@ -390,7 +391,8 @@ object CommonServices {
             selectedTeam.orNull,
             selectedTag.orNull,
             selectedCat.orNull,
-            groupOpt.orNull
+            groupOpt.orNull,
+            ctx.user.starredApis.map(_.value).toArray
           ),
           offset * limit,
           limit
@@ -414,7 +416,8 @@ object CommonServices {
                 selectedTeam.orNull,
                 selectedTag.orNull,
                 selectedCat.orNull,
-                groupOpt.orNull
+                groupOpt.orNull,
+                null
               )
             )
 
@@ -428,6 +431,11 @@ object CommonServices {
           ),
           sort = Some(Json.obj("name" -> 1))
         )
+        log1 = AppLogger.info("@@@ paginated APIS @@@")
+        log2 = AppLogger.info(paginateApis._1.map(_.name).mkString(" >> "))
+        log3 = AppLogger.info("@@@ @@@ @@@ @@@")
+        log31 = AppLogger.info("@@@ unique APIS @@@")
+        log4 = AppLogger.info(uniqueApisWithVersion.map(_.name).mkString(" >> "))
         plans <-
           env.dataStore.usagePlanRepo
             .forTenant(ctx.tenant)
@@ -520,9 +528,9 @@ object CommonServices {
              |SELECT tag
              |FROM (SELECT DISTINCT jsonb_array_elements_text(content -> 'tags') AS tag
              |            FROM visible_apis)_
-             |WHERE tag ~* COALESCE($$9, '')
+             |WHERE tag ~* COALESCE($$10, '')
              |ORDER BY LOWER(tag)
-             |LIMIT $$10 OFFSET $$11;
+             |LIMIT $$11 OFFSET $$12;
              |""".stripMargin,
             "tag",
             Seq(
@@ -534,6 +542,7 @@ object CommonServices {
               selectedTag.orNull,
               selectedCat.orNull,
               groupOpt.orNull,
+              null,
               filter,
               if (limit == -1) null else java.lang.Integer.valueOf(limit),
               if (offset == -1) null
@@ -583,6 +592,7 @@ object CommonServices {
               selectedTag.orNull,
               selectedCat.orNull,
               groupOpt.orNull,
+              null,
               filter,
               if (limit == -1) null else java.lang.Integer.valueOf(limit),
               if (offset == -1) null
