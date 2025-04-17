@@ -328,11 +328,11 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           },
           formatter: '[[motivation]]',
         };
-        return setDraft({
-            ...draft,
-            subscriptionProcess: [step, ...draft.subscriptionProcess],
-          })
-          // .then(() => close());
+        setDraft({
+          ...draft,
+          subscriptionProcess: [step, ...draft.subscriptionProcess],
+        })
+        return close();
       }
       case 'httpRequest': {
         const step: IValidationStepHttpRequest = {
@@ -490,136 +490,153 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
     setDraft({ ...draft, subscriptionProcess });
   };
 
-  if (!draft.subscriptionProcess.length) {
-    return (
-      <div className="d-flex flex-column align-items-center">
-        <div> {translate('api.pricings.no.step.explanation')}</div>
-        <button
-          className="btn btn-outline-primary my-2"
-          onClick={() => addProcess(0)}
-        >
-          {translate('api.pricings.add.first.step.btn.label')}
-        </button>
-      </div>
-    );
-  }
+  // if (!draft.subscriptionProcess.length) {
+  //   return (
+  //     <div className="d-flex flex-column align-items-center">
+  //       <div> {translate('api.pricings.no.step.explanation')}</div>
+  //       <button
+  //         className="btn btn-outline-primary my-2"
+  //         onClick={() => addProcess(0)}
+  //       >
+  //         {translate('api.pricings.add.first.step.btn.label')}
+  //       </button>
+  //     </div>
+  //   );
+  // }
 
   return (
-    <div className="d-flex flex-row align-items-center">
-      <button
-        className="btn btn-outline-primary sortable-list-btn"
-        onClick={() => addProcess(0)}
-      >
-        <Plus />
-      </button>
-      <SortableList
-        items={draft.subscriptionProcess}
-        onChange={(subscriptionProcess) =>
-          setDraft({ ...draft, subscriptionProcess })
-        }
-        className="flex-grow-1"
-        renderItem={(item, idx) => {
-          if (isValidationStepPayment(item)) {
-            return (
-              <FixedItem id={item.id}>
-                <ValidationStep
-                  index={idx + 1}
-                  step={item}
-                  tenant={props.tenant}
-                />
-              </FixedItem>
-            );
-          } else {
-            return (
-              <>
-                <SortableItem
-                  className="validation-step-container"
-                  action={
-                    <div
-                      className={classNames('d-flex flex-row', {
-                        'justify-content-between':
-                          !isValidationStepPayment(item),
-                        'justify-content-end': isValidationStepPayment(item),
-                      })}
-                    >
-                      {isValidationStepEmail(item) ? (
-                        <button
-                          className="btn btn-sm btn-outline-info"
-                          onClick={() => editMailStep(item)}
-                        >
-                          <Settings size={15} />
-                        </button>
-                      ) : (
-                        <></>
-                      )}
-                      {isValidationStepHttpRequest(item) ? (
-                        <button
-                          className="btn btn-sm btn-outline-info"
-                          onClick={() => editHttpRequestStep(item)}
-                        >
-                          <Settings size={15} />
-                        </button>
-                      ) : (
-                        <></>
-                      )}
-                      {isValidationStepTeamAdmin(item) ? (
-                        <button
-                          className="btn btn-sm btn-outline-info"
-                          onClick={() =>
-                            openCustomModal({
-                              title: translate('motivation.form.modal.title'),
-                              content: (
-                                <MotivationForm
-                                  value={item}
-                                  saveMotivation={({ schema, formatter }) => {
-                                    const step = { ...item, schema, formatter };
-                                    const updatedPlan = {
-                                      ...draft,
-                                      subscriptionProcess:
-                                        draft.subscriptionProcess.map(
-                                          (s) => (s.id === step.id ? step : s)
-                                        ),
-                                    };
-                                    setDraft(updatedPlan);
-                                  }}
-                                />
-                              ),
-                            })
-                          }
-                        >
-                          <Settings size={15} />
-                        </button>
-                      ) : (
-                        <></>
-                      )}
-                      <button
-                        className="btn btn-sm btn-outline-danger"
-                        onClick={() => deleteStep(item.id)}
-                      >
-                        <Trash size={15} />
-                      </button>
-                    </div>
-                  }
-                  id={item.id}
-                >
+    <div>
+      <div className="d-flex flex-row align-items-center">
+        {!!draft.subscriptionProcess.length && (
+          <button
+            className="btn btn-outline-primary sortable-list-btn"
+            onClick={() => addProcess(0)}
+          >
+            <Plus />
+          </button>
+        )}
+        {!draft.subscriptionProcess.length && (
+          <div className="d-flex flex-column align-items-center">
+            <div> {translate('api.pricings.no.step.explanation')}</div>
+            <button
+              className="btn btn-outline-primary my-2"
+              onClick={() => addProcess(0)}
+            >
+              {translate('api.pricings.add.first.step.btn.label')}
+            </button>
+          </div>
+        )}
+        <SortableList
+          items={draft.subscriptionProcess}
+          onChange={(subscriptionProcess) =>
+            setDraft({ ...draft, subscriptionProcess })
+          }
+          className="flex-grow-1"
+          renderItem={(item, idx) => {
+            if (isValidationStepPayment(item)) {
+              return (
+                <FixedItem id={item.id}>
                   <ValidationStep
                     index={idx + 1}
                     step={item}
                     tenant={props.tenant}
                   />
-                </SortableItem>
-                <button
-                  className="btn btn-outline-primary sortable-list-btn"
-                  onClick={() => addProcess(idx + 1)}
-                >
-                  <Plus />
-                </button>
-              </>
-            );
-          }
-        }}
-      />
-      <button className='btn btn-outline-success' onClick={() => props.savePlan(draft)}>save</button>
+                </FixedItem>
+              );
+            } else {
+              return (
+                <>
+                  <SortableItem
+                    className="validation-step-container"
+                    action={
+                      <div
+                        className={classNames('d-flex flex-row', {
+                          'justify-content-between':
+                            !isValidationStepPayment(item),
+                          'justify-content-end': isValidationStepPayment(item),
+                        })}
+                      >
+                        {isValidationStepEmail(item) ? (
+                          <button
+                            className="btn btn-sm btn-outline-info"
+                            onClick={() => editMailStep(item)}
+                          >
+                            <Settings size={15} />
+                          </button>
+                        ) : (
+                          <></>
+                        )}
+                        {isValidationStepHttpRequest(item) ? (
+                          <button
+                            className="btn btn-sm btn-outline-info"
+                            onClick={() => editHttpRequestStep(item)}
+                          >
+                            <Settings size={15} />
+                          </button>
+                        ) : (
+                          <></>
+                        )}
+                        {isValidationStepTeamAdmin(item) ? (
+                          <button
+                            className="btn btn-sm btn-outline-info"
+                            onClick={() =>
+                              openCustomModal({
+                                title: translate('motivation.form.modal.title'),
+                                content: (
+                                  <MotivationForm
+                                    value={item}
+                                    saveMotivation={({ schema, formatter }) => {
+                                      const step = { ...item, schema, formatter };
+                                      const updatedPlan = {
+                                        ...draft,
+                                        subscriptionProcess:
+                                          draft.subscriptionProcess.map(
+                                            (s) => (s.id === step.id ? step : s)
+                                          ),
+                                      };
+                                      setDraft(updatedPlan);
+                                    }}
+                                  />
+                                ),
+                              })
+                            }
+                          >
+                            <Settings size={15} />
+                          </button>
+                        ) : (
+                          <></>
+                        )}
+                        <button
+                          className="btn btn-sm btn-outline-danger"
+                          onClick={() => deleteStep(item.id)}
+                        >
+                          <Trash size={15} />
+                        </button>
+                      </div>
+                    }
+                    id={item.id}
+                  >
+                    <ValidationStep
+                      index={idx + 1}
+                      step={item}
+                      tenant={props.tenant}
+                    />
+                  </SortableItem>
+                  <button
+                    className="btn btn-outline-primary sortable-list-btn"
+                    onClick={() => addProcess(idx + 1)}
+                  >
+                    <Plus />
+                  </button>
+                </>
+              );
+            }
+          }}
+        />
+      </div>
+      {(!!draft.subscriptionProcess.length || !!props.plan.subscriptionProcess.length) && (
+        <button className='btn btn-outline-success' onClick={() => props.savePlan(draft)}>save</button>
+      )}
     </div>
   );
 };
