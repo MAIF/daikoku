@@ -15,12 +15,14 @@ import {
   TenanMode,
   isError,
 } from '../types';
+import { GraphQLClient } from 'graphql-request';
 
 type TGlobalContext = IStateContext & {
   reloadContext: () => void;
   toggleExpertMode: () => void;
   toggleTheme: () => void;
   reloadUnreadNotificationsCount: () => void;
+  customGraphQLClient: GraphQLClient
 };
 const initContext: TGlobalContext = {
   connectedUser: {
@@ -63,10 +65,12 @@ const initContext: TGlobalContext = {
   expertMode: JSON.parse(localStorage.getItem('expertMode') || 'false'),
   reloadContext: () => Promise.resolve(),
   reloadUnreadNotificationsCount: () => Promise.resolve(),
-  toggleExpertMode: () => {},
+  toggleExpertMode: () => { },
   loginAction: '',
   theme: localStorage.getItem('theme') || 'LIGHT',
-  toggleTheme: () => {},
+  toggleTheme: () => { },
+  graphQLEndpoint: "",
+  customGraphQLClient: new GraphQLClient("")
 };
 
 export const GlobalContext = React.createContext<TGlobalContext>(initContext);
@@ -181,6 +185,8 @@ export const GlobalContextProvider = (props: PropsWithChildren) => {
     }
   };
 
+  const customGraphQLClient = new GraphQLClient(currentUserQuery.data.graphQLEndpoint);
+
   return (
     <GlobalContext.Provider
       value={{
@@ -192,6 +198,7 @@ export const GlobalContextProvider = (props: PropsWithChildren) => {
         toggleTheme,
         unreadNotificationsCount: notificationCountQuery.data?.count || 0,
         reloadUnreadNotificationsCount,
+        customGraphQLClient
       }}
     >
       {props.children}

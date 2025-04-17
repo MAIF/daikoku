@@ -1,11 +1,8 @@
-import { getApolloContext } from "@apollo/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import classNames from 'classnames';
 import debounce from "lodash/debounce";
 import sortBy from 'lodash/sortBy';
 import { useContext, useEffect, useMemo, useState } from 'react';
-import Grid from 'react-feather/dist/icons/grid';
-import List from 'react-feather/dist/icons/list';
 import Pagination from 'react-paginate';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Select, { SingleValue } from 'react-select';
@@ -17,7 +14,6 @@ import {
   ITeamSimple,
   TOption,
   TOptions,
-  isError
 } from '../../../types';
 import { ApiCard } from '../api';
 
@@ -25,8 +21,6 @@ import { toast } from "sonner";
 import { GlobalContext } from "../../../contexts/globalContext";
 import * as Services from "../../../services";
 import { FilterPreview, Spinner, arrayStringToTOps, teamGQLToSimple } from "../../utils";
-import { GraphQLClient } from "graphql-request";
-import { filter } from "lodash";
 
 const GRID = 'GRID';
 const LIST = 'LIST';
@@ -43,16 +37,12 @@ type TApiList = {
 }
 
 export const ApiList = (props: TApiList) => {
-
-  const graphqlEndpoint = `${window.location.origin}/api/search`;
-  const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
-
   const queryClient = useQueryClient();
 
   const { translate } = useContext(I18nContext);
   const navigate = useNavigate();
 
-  const { connectedUser, reloadContext } = useContext(GlobalContext);
+  const { connectedUser, reloadContext, customGraphQLClient } = useContext(GlobalContext);
   const location = useLocation();
 
   const [searched, setSearched] = useState("");

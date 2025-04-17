@@ -9,6 +9,7 @@ import { getApolloContext, gql } from '@apollo/client';
 import { ModalContext, useUserBackOffice } from '../../../contexts';
 import { ITesting, isError } from '../../../types';
 import { GlobalContext } from '../../../contexts/globalContext';
+import { useQuery } from '@tanstack/react-query';
 
 type NotificationsGQL = {
   notifications: Array<NotificationGQL>
@@ -79,9 +80,17 @@ type NotificationGQL = {
 export const NotificationList = () => {
   useUserBackOffice();
   const { translate, Translation } = useContext(I18nContext);
-  const { reloadUnreadNotificationsCount } = useContext(GlobalContext)
+  const { reloadUnreadNotificationsCount, customGraphQLClient } = useContext(GlobalContext)
   const { alert } = useContext(ModalContext);
-  const { client } = useContext(getApolloContext());
+
+  const notificationListQuery = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => customGraphQLClient.request<{ myNotifications: NotificationsGQL }>(Services.graphql.getMyNotifications, {
+      pageNumber: state.page,
+      pageSize: state.pageSize
+    }),
+    select: data => data.myNotifications
+  })
 
   const [state, setState] = useState<{
     notifications: Array<NotificationGQL>
@@ -93,7 +102,6 @@ export const NotificationList = () => {
     pageSize: number
     count: number
     untreatedCount: number
-    loading: boolean
     nextIsPending: boolean
   }>({
     notifications: [],
@@ -104,246 +112,219 @@ export const NotificationList = () => {
     pageSize: 10,
     count: 0,
     untreatedCount: 0,
-    loading: true,
     nextIsPending: false,
     apis: []
   });
 
   const isUntreatedNotification = (n: NotificationGQL) => n.status.status === 'Pending';
 
-  useEffect(() => {
-    //FIXME: handle case if client is not defined
-    if (!client) {
-      return;
-    }
-    Promise.all([
-      client!.query<{ myNotifications: NotificationsGQL }>({
-        query: Services.graphql.getMyNotifications,
-        fetchPolicy: "no-cache",
-        variables: {
-          pageNumber: state.page,
-          pageSize: state.pageSize
-        }
-      }).then(({ data: { myNotifications } }) => {
-        return myNotifications
-      })
-    ]).then(
-      ([
-        notifications,
-
-      ]) => {
-        setState({
-          ...state,
-          untreatedNotifications: notifications.notifications.filter((n) => isUntreatedNotification(n)
-          ),
-          notifications: notifications.notifications,
-          count: notifications.total,
-          untreatedCount: notifications.total,
-          page: state.page + 1,
-          loading: false
-        });
-      }
-    );
-  }, []);
+  // useEffect(() => {
+  // setState({
+  //   ...state,
+  //   untreatedNotifications: notifications.notifications.filter((n) => isUntreatedNotification(n)
+  //   ),
+  //   notifications: notifications.notifications,
+  //   count: notifications.total,
+  //   untreatedCount: notifications.total,
+  //   page: state.page + 1,
+  //   loading: false
+  // });
+  // }
+  //   );
+  // }, []);
 
   const acceptNotification = (notificationId: string, values?: object): void => {
-    setState({
-      ...state,
-      notifications: state.notifications.map((n: any) => {
-        n.fade = n._id === notificationId;
-        return n;
-      }),
-    });
-    Services.acceptNotificationOfTeam(notificationId, values)
-      .then((res) => {
-        if (isError(res)) {
-          //@ts-ignore
-          alert({ message: res.error, title: translate('notification.accept.on_error.title') });
-        } else {
-          return Promise.resolve();
-        }
-      })
-      .then(() => client!.query<{ myNotifications: NotificationsGQL }>({
-        query: Services.graphql.getMyNotifications,
-        fetchPolicy: "no-cache",
-        variables: {
-          pageNumber: 0,
-          pageSize: state.notifications.length
-        }
-      }).then(({ data: { myNotifications } }) => {
-        return myNotifications
-      }))
-      .then(({ notifications, total }) =>
-        setState({
-          ...state,
-          notifications,
-          count: total,
-          untreatedCount: total,
-          untreatedNotifications: notifications.filter((n: NotificationGQL) => isUntreatedNotification(n)),
-        })
-      )
-      .then(reloadUnreadNotificationsCount);
+    //   setState({
+    //     ...state,
+    //     notifications: state.notifications.map((n: any) => {
+    //       n.fade = n._id === notificationId;
+    //       return n;
+    //     }),
+    //   });
+    //   Services.acceptNotificationOfTeam(notificationId, values)
+    //     .then((res) => {
+    //       if (isError(res)) {
+    //         //@ts-ignore
+    //         alert({ message: res.error, title: translate('notification.accept.on_error.title') });
+    //       } else {
+    //         return Promise.resolve();
+    //       }
+    //     })
+    //     .then(() => client!.query<{ myNotifications: NotificationsGQL }>({
+    //       query: Services.graphql.getMyNotifications,
+    //       fetchPolicy: "no-cache",
+    //       variables: {
+    //         pageNumber: 0,
+    //         pageSize: state.notifications.length
+    //       }
+    //     }).then(({ data: { myNotifications } }) => {
+    //       return myNotifications
+    //     }))
+    //     .then(({ notifications, total }) =>
+    //       setState({
+    //         ...state,
+    //         notifications,
+    //         count: total,
+    //         untreatedCount: total,
+    //         untreatedNotifications: notifications.filter((n: NotificationGQL) => isUntreatedNotification(n)),
+    //       })
+    //     )
+    //     .then(reloadUnreadNotificationsCount);
   };
 
-  useEffect(() => {
-    client!.query<{ myNotifications: NotificationsGQL }>({
-      query: Services.graphql.getMyNotifications,
-      fetchPolicy: "no-cache",
-      variables: {
-        pageNumber: 0,
-        pageSize: 10
-      }
-    }).then(({ data: { myNotifications } }) => {
-      return myNotifications
-    })
+  // useEffect(() => {
+  //   client!.query<{ myNotifications: NotificationsGQL }>({
+  //     query: Services.graphql.getMyNotifications,
+  //     fetchPolicy: "no-cache",
+  //     variables: {
+  //       pageNumber: 0,
+  //       pageSize: 10
+  //     }
+  //   }).then(({ data: { myNotifications } }) => {
+  //     return myNotifications
+  //   })
 
-    return () => reloadUnreadNotificationsCount()
-  }, [])
+  //   return () => reloadUnreadNotificationsCount()
+  // }, [])
 
 
   const rejectNotification = (notificationId: string, message?: string) => {
-    setState({
-      ...state,
-      notifications: state.notifications.map((n: any) => {
-        (n as any).fade = (n as any)._id === notificationId;
-        return n;
-      }),
-    });
-    Services.rejectNotificationOfTeam(notificationId, message)
-      .then(() => client!.query<{ myNotifications: NotificationsGQL }>({
-        query: Services.graphql.getMyNotifications,
-        fetchPolicy: "no-cache",
-        variables: {
-          pageNumber: 0,
-          pageSize: state.notifications.length
-        }
-      }).then(({ data: { myNotifications } }) => {
-        return myNotifications
-      }))
-      .then(({ notifications, total }) => {
-        setState({
-          ...state,
-          notifications,
-          count: total,
-          untreatedCount: total,
-          untreatedNotifications: notifications.filter((n: NotificationGQL) => isUntreatedNotification(n)),
-        });
-      })
-      .then(reloadUnreadNotificationsCount);
+    //   setState({
+    //     ...state,
+    //     notifications: state.notifications.map((n: any) => {
+    //       (n as any).fade = (n as any)._id === notificationId;
+    //       return n;
+    //     }),
+    //   });
+    //   Services.rejectNotificationOfTeam(notificationId, message)
+    //     .then(() => client!.query<{ myNotifications: NotificationsGQL }>({
+    //       query: Services.graphql.getMyNotifications,
+    //       fetchPolicy: "no-cache",
+    //       variables: {
+    //         pageNumber: 0,
+    //         pageSize: state.notifications.length
+    //       }
+    //     }).then(({ data: { myNotifications } }) => {
+    //       return myNotifications
+    //     }))
+    //     .then(({ notifications, total }) => {
+    //       setState({
+    //         ...state,
+    //         notifications,
+    //         count: total,
+    //         untreatedCount: total,
+    //         untreatedNotifications: notifications.filter((n: NotificationGQL) => isUntreatedNotification(n)),
+    //       });
+    //     })
+    //     .then(reloadUnreadNotificationsCount);
   };
 
-  useEffect(() => {
-    if (state.loading)
-      if (state.tab === 'all') {
-        Services.myAllNotifications(state.page, state.pageSize)
-          .then(({ notifications, count }) => setState({ ...state, notifications, count, loading: false }));
-      }
-      else {
-        client!.query<{ myNotifications: NotificationsGQL }>({
-          query: Services.graphql.getMyNotifications,
-          fetchPolicy: "no-cache",
-          variables: {
-            pageNumber: state.page,
-            pageSize: state.pageSize
-          }
-        }).then(({ data: { myNotifications } }) => {
-          return myNotifications
-        })
-          .then(({ notifications, total }) => setState({
-            ...state,
-            notifications,
-            count: total,
-            untreatedCount: total,
-            loading: false,
-          }));
-      }
-  }, [state.tab, state.page, state.loading])
+  // useEffect(() => {
+  //   if (state.loading)
+  //     if (state.tab === 'all') {
+  //       Services.myAllNotifications(state.page, state.pageSize)
+  //         .then(({ notifications, count }) => setState({ ...state, notifications, count, loading: false }));
+  //     }
+  //     else {
+  //       client!.query<{ myNotifications: NotificationsGQL }>({
+  //         query: Services.graphql.getMyNotifications,
+  //         fetchPolicy: "no-cache",
+  //         variables: {
+  //           pageNumber: state.page,
+  //           pageSize: state.pageSize
+  //         }
+  //       }).then(({ data: { myNotifications } }) => {
+  //         return myNotifications
+  //       })
+  //         .then(({ notifications, total }) => setState({
+  //           ...state,
+  //           notifications,
+  //           count: total,
+  //           untreatedCount: total,
+  //           loading: false,
+  //         }));
+  //     }
+  // }, [state.tab, state.page, state.loading])
 
 
   const moreBtnIsDisplay = () => !!state.count && state.count > state.notifications.length;
 
   const getMoreNotifications = () => {
-    if (state.tab === 'unread') {
-      setState({ ...state, nextIsPending: true });
-      client!.query<{ myNotifications: NotificationsGQL }>({
-        query: Services.graphql.getMyNotifications,
-        fetchPolicy: "no-cache",
-        variables: {
-          pageNumber: state.page,
-          pageSize: state.pageSize
-        }
-      }).then(({ data: { myNotifications } }) => {
-        return myNotifications
-      }).then(({ notifications, total }) =>
-        setState({
-          ...state,
-          notifications: [...state.notifications, ...notifications],
-          count: total,
-          untreatedCount: total,
-          page: state.page + 1,
-          nextIsPending: false,
-        })
-      );
-    } else if (state.tab === 'all') {
-      setState({ ...state, nextIsPending: true });
-      Services.myAllNotifications(state.page, state.pageSize).then(({ notifications, count }) =>
-        setState({
-          ...state,
-          notifications: [...state.notifications, ...notifications],
-          count,
-          page: state.page + 1,
-          nextIsPending: false,
-        })
-      );
-    }
+    //   if (state.tab === 'unread') {
+    //     setState({ ...state, nextIsPending: true });
+    //     client!.query<{ myNotifications: NotificationsGQL }>({
+    //       query: Services.graphql.getMyNotifications,
+    //       fetchPolicy: "no-cache",
+    //       variables: {
+    //         pageNumber: state.page,
+    //         pageSize: state.pageSize
+    //       }
+    //     }).then(({ data: { myNotifications } }) => {
+    //       return myNotifications
+    //     }).then(({ notifications, total }) =>
+    //       setState({
+    //         ...state,
+    //         notifications: [...state.notifications, ...notifications],
+    //         count: total,
+    //         untreatedCount: total,
+    //         page: state.page + 1,
+    //         nextIsPending: false,
+    //       })
+    //     );
+    //   } else if (state.tab === 'all') {
+    //     setState({ ...state, nextIsPending: true });
+    //     Services.myAllNotifications(state.page, state.pageSize).then(({ notifications, count }) =>
+    //       setState({
+    //         ...state,
+    //         notifications: [...state.notifications, ...notifications],
+    //         count,
+    //         page: state.page + 1,
+    //         nextIsPending: false,
+    //       })
+    //     );
+    //   }
   };
 
-  const notifByTeams = groupBy(state.notifications, 'team._id');
-  return <div className='flex-grow-1'>
-    <div className="row">
-      <h1>
-        <Translation i18nkey="Notifications" isPlural={true}>
-          Notifications
-        </Translation>{' '}
-        ({state.count})
-      </h1>
-    </div>
-    {state.loading && <Spinner />}
-    {!state.loading && (
-      <div className="row">
-        {state.notifications.length === 0 && (<div>
-          <h4>
-            <Translation i18nkey="no notification">You have 0 notification</Translation>
-          </h4>
-        </div>)}
-        <div className="col-10 offset-1">
-          <div className="home-tiles">
-            {Object.keys(notifByTeams).map((key) => {
-              const notifs = notifByTeams[key];
-              const team = notifs[0].team
-              return (<div key={key}>
-                <h2>{team ? team.name : translate('Personal')}</h2>
-                {notifs
-                  .sort((a, b) => {
-                    return b.date - a.date;
-                  })
-                  .map((notification) => (
-                    <SimpleNotification
-                      key={notification._id}
-                      notification={notification}
-                      accept={(values?: object) => acceptNotification(notification._id, values)}
-                      reject={(message?: string) => rejectNotification(notification._id, message)}
-                    />))}
-              </div>);
-            })}
+  if (notificationListQuery.isLoading) {
+    return (
+      <Spinner />
+    )
+  } else if (notificationListQuery.data) {
+    const { notifications, total } = notificationListQuery.data
+
+    // const notifByTeams = groupBy(notifications, 'team._id');
+
+    return (
+      <div className='flex-grow-1'>
+        <div className="row">
+          <h1>
+            {translate({key: "Notifications", plural: true})} ({total})
+          </h1>
+        </div>
+        <div className="row">
+          {total === 0 && (<div>
+            <h4>{translate("no notification")}</h4>
+          </div>)}
+          <div className="col-10 offset-1">
+            <div className="home-tiles">
+              {notifications
+                .map((notification) => {
+                  console.debug({notification})
+                  return <SimpleNotification
+                    key={notification._id}
+                    notification={notification}
+                    accept={(values?: object) => acceptNotification(notification._id, values)}
+                    reject={(message?: string) => rejectNotification(notification._id, message)}
+                  />})}
+            </div>
+            {(state as any).nextIsPending && <Spinner />}
+            {!(state as any).nextIsPending && moreBtnIsDisplay() && (<button className="btn btn-outline-primary my-2 ms-2" onClick={() => getMoreNotifications()}>
+              <Translation i18nkey="more">more</Translation>
+            </button>)}
           </div>
-          {(state as any).nextIsPending && <Spinner />}
-          {!(state as any).nextIsPending && moreBtnIsDisplay() && (<button className="btn btn-outline-primary my-2 ms-2" onClick={() => getMoreNotifications()}>
-            <Translation i18nkey="more">more</Translation>
-          </button>)}
         </div>
       </div>
-    )}
-  </div>;
+    );
+  }
 
 };
