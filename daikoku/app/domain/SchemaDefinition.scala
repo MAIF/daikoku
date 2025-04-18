@@ -3192,6 +3192,19 @@ object SchemaDefinition {
       description = "This is a the string for filtering request",
       defaultValue = ""
     )
+    val FILTER_TABLE: Argument[JsArray] = Argument(
+      "filterTable",
+      JsArrayType,
+      description = "This is a the json for filtering request",
+      defaultValue = "[]"
+    )
+    val SORTING_TABLE: Argument[JsArray] = Argument(
+      "sortingTable",
+      JsArrayType,
+      description = "This is a the json for sorting request",
+      defaultValue = "[]"
+    )
+
     val SELECTED_TAG = Argument(
       "selectedTag",
       OptionInputType(StringType),
@@ -3390,29 +3403,56 @@ object SchemaDefinition {
         ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
         apiId: String,
         teamId: String,
-        version: String
+        version: String,
+        filter: JsArray,
+        sorting: JsArray,
+        limit: Int,
+        offset: Int
     ) = {
       CommonServices
-        .getApiSubscriptions(teamId, apiId, version)(ctx.ctx._2, env, e)
+        .getApiSubscriptions(teamId, apiId, version, filter, sorting, limit, offset)(ctx.ctx._2, env, e)
         .map {
           case Left(value)  => throw NotAuthorizedError(value.toString)
           case Right(value) => value
         }
     }
 
+//    def _apiSubscriptionsQueryFields()
+//        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+//      List(
+//        Field(
+//          "apiApiSubscriptions",
+//          ListType(ApiSubscriptionType),
+//          arguments = ID :: TEAM_ID_NOT_OPT :: VERSION :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
+//          resolve = ctx => {
+//            getApiSubscriptions(
+//              ctx,
+//              ctx.arg(ID),
+//              ctx.arg(TEAM_ID_NOT_OPT),
+//              ctx.arg(VERSION),
+//              ctx.arg(LIMIT),
+//              ctx.arg(OFFSET)
+//            )
+//          }
+//        )
+//      )
     def apiSubscriptionsQueryFields()
         : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "apiApiSubscriptions",
           ListType(ApiSubscriptionType),
-          arguments = ID :: TEAM_ID_NOT_OPT :: VERSION :: Nil,
+          arguments = ID :: TEAM_ID_NOT_OPT :: VERSION :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             getApiSubscriptions(
               ctx,
               ctx.arg(ID),
               ctx.arg(TEAM_ID_NOT_OPT),
-              ctx.arg(VERSION)
+              ctx.arg(VERSION),
+              ctx.arg(FILTER_TABLE),
+              ctx.arg(SORTING_TABLE),
+              ctx.arg(LIMIT),
+              ctx.arg(OFFSET)
             )
           }
         )
@@ -3445,7 +3485,6 @@ object SchemaDefinition {
           case Left(r)      => throw NotAuthorizedError(r.toString)
         }
     }
-
     def getSubscriptionDetails(
         ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
         subscriptionId: String,

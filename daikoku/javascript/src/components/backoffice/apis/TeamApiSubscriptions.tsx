@@ -1,7 +1,9 @@
-import { getApolloContext } from "@apollo/client";
 import { format, type } from "@maif/react-forms";
-import { createColumnHelper } from "@tanstack/react-table";
-import { useContext, useEffect, useRef, useState } from "react";
+import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, PaginationState, SortingState, useReactTable } from "@tanstack/react-table";
+import classNames from "classnames";
+import { GraphQLClient } from "graphql-request";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import Pagination from 'react-paginate';
 import { toast } from "sonner";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -11,22 +13,19 @@ import * as Services from "../../../services";
 import {
   IApi,
   IApiGQL,
-  IBaseUsagePlan,
   isError,
   ISubscriptionCustomization,
   ITeamSimple,
   IUsagePlan,
   ResponseError
 } from "../../../types";
-import { SwitchButton, Table, TableRef } from "../../inputs";
+import { Filter, SwitchButton, TableRef } from "../../inputs";
 import {
   api as API,
   BeautifulTitle,
   Can,
   formatDate,
-  manage,
-  Option,
-  Spinner,
+  manage
 } from "../../utils";
 
 type TeamApiSubscriptionsProps = {
@@ -89,127 +88,51 @@ export const TeamApiSubscriptions = ({
   api,
   currentTeam,
 }: TeamApiSubscriptionsProps) => {
-  const { client } = useContext(getApolloContext());
   const queryClient = useQueryClient();
 
   const [filters, setFilters] = useState<SubscriptionsFilter>();
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  })
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
+    []
+  )
   const tableRef = useRef<TableRef>();
 
   const { translate, language, Translation } = useContext(I18nContext);
   const { confirm, openFormModal, openSubMetadataModal } =
     useContext(ModalContext);
 
-  const plansQuery = useQuery({
-    queryKey: ["plans"],
-    queryFn: () =>
-      Services.getAllPlanOfApi(api.team, api._id, api.currentVersion),
-  });
+  console.debug({ filters, columnFilters })
+
+  const graphqlEndpoint = `${window.location.origin}/api/search`;
+  const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
   const subscriptionsQuery = useQuery({
-    queryKey: ["subscriptions"],
-    queryFn: () =>
-      client!
-        .query<{ apiApiSubscriptions: Array<IApiSubscriptionGql> }>({
-          query: Services.graphql.getApiSubscriptions,
-          fetchPolicy: "no-cache",
-          variables: {
-            apiId: api._id,
-            teamId: currentTeam._id,
-            version: api.currentVersion,
-          },
-        })
-        .then(({ data: { apiApiSubscriptions } }) => {
-          if (
-            !filters ||
-            (!filters.tags.length &&
-              !Object.keys(filters.metadata).length &&
-              !filters.clientIds.length)
-          ) {
-            return apiApiSubscriptions;
-          } else {
-            const filterByMetadata = (subscription: IApiSubscriptionGql) => {
-              const meta = {
-                ...(subscription.metadata || {}),
-                ...(subscription.customMetadata || {}),
-              };
-
-              return (
-                !Object.keys(meta) ||
-                !filters.metadata.length ||
-                filters.metadata.every((item) => {
-                  const value = meta[item.key];
-                  return value && value.includes(item.value);
-                })
-              );
-            };
-
-            const filterByTags = (subscription: IApiSubscriptionGql) => {
-              return filters.tags.every((tag) =>
-                subscription.tags.includes(tag)
-              );
-            };
-
-            const filterByClientIds = (subscription: IApiSubscriptionGql) => {
-              return filters.clientIds.includes(subscription.apiKey.clientId);
-            };
-
-            return apiApiSubscriptions
-              .filter(filterByMetadata)
-              .filter(filterByTags)
-              .filter(filterByClientIds);
-          }
-        })
-        .then((apiApiSubscriptions) =>
-          Services.getSubscriptionsLastUsages(
-            api.team,
-            subscriptionsQuery.data?.map((s) => s._id) || []
-          ).then((lastUsages) => {
-            if (isError(lastUsages)) {
-              return subscriptionsQuery.data as IApiSubscriptionGqlWithUsage[];
-            } else {
-              return (apiApiSubscriptions ?? []).map(
-                (s) =>
-                  ({
-                    ...s,
-                    lastUsage: lastUsages.find((u) => u.subscription === s._id)
-                      ?.date,
-                  }) as IApiSubscriptionGqlWithUsage
-              );
-            }
-          })
-        ),
+    queryKey: ["subscriptions", filters, columnFilters, sorting],
+    queryFn: () => customGraphQLClient.request<{ apiApiSubscriptions: Array<IApiSubscriptionGql> }>(Services.graphql.getApiSubscriptions, {
+      apiId: api._id,
+      teamId: currentTeam._id,
+      version: api.currentVersion,
+      filterTable: JSON.stringify([...(columnFilters ?? []), ...Object.entries(filters ?? {}).map(([id, value]) => ({ id, value }))]),
+      sortingTable: JSON.stringify(sorting ?? []),
+      limit: pagination.pageIndex,
+      offset: pagination.pageSize,
+    }),
+    select: d => d.apiApiSubscriptions
   });
 
-  useEffect(() => {
-    document.title = `${currentTeam.name} - ${translate("Subscriptions")}`;
-  }, []);
-
-  useEffect(() => {
-    if (api && subscriptionsQuery.data) {
-      tableRef.current?.update();
-    }
-  }, [api, subscriptionsQuery.data]);
-  useEffect(() => {
-    tableRef.current?.update();
-  }, [filters]);
 
   const columnHelper = createColumnHelper<IApiSubscriptionGqlWithUsage>();
-  const columns = (usagePlans) => [
+  const columns = [
     columnHelper.accessor(
       (row) => row.adminCustomName || row.apiKey.clientName,
       {
-        id: "adminCustomName",
+        id: "subscription",
         header: translate("Name"),
         meta: { style: { textAlign: "left" } },
-        filterFn: (row, _, value) => {
-          const sub = row.original;
-
-          const displayed: string = sub.adminCustomName || sub.apiKey.clientName;
-
-          return displayed
-            .toLocaleLowerCase()
-            .includes(value.toLocaleLowerCase());
-        },
-        sortingFn: "basic",
+        enableColumnFilter: true,
         cell: (info) => {
           const sub = info.row.original;
           if (sub.parent) {
@@ -237,36 +160,17 @@ export const TeamApiSubscriptions = ({
         },
       }
     ),
-    columnHelper.accessor("plan", {
+    columnHelper.accessor(row => row.plan.customName, {
       header: translate("Plan"),
       meta: { style: { textAlign: "left" } },
-      cell: (info) =>
-        Option(usagePlans.find((pp) => pp._id === info.getValue()._id))
-          .map((p: IUsagePlan) => p.customName)
-          .getOrNull(),
-      filterFn: (row, columnId, value) => {
-        const displayed: string = Option(
-          usagePlans.find((pp) => pp._id === row.original.plan._id)
-        )
-          .map((p: IUsagePlan) => p.customName)
-          .getOrElse("");
-
-        return displayed
-          .toLocaleLowerCase()
-          .includes(value.toLocaleLowerCase());
-      },
+      cell: (info) => info.getValue(),
+      enableColumnFilter: true,
     }),
-    columnHelper.accessor("team", {
+    columnHelper.accessor(row => row.team.name, {
       header: translate("Team"),
       meta: { style: { textAlign: "left" } },
-      cell: (info) => info.getValue().name,
-      filterFn: (row, columnId, value) => {
-        const displayed: string = row.original.team.name;
-
-        return displayed
-          .toLocaleLowerCase()
-          .includes(value.toLocaleLowerCase());
-      },
+      cell: (info) => info.getValue(),
+      enableColumnFilter: true,
     }),
     columnHelper.accessor("enabled", {
       header: translate("Enabled"),
@@ -278,17 +182,16 @@ export const TeamApiSubscriptions = ({
         return (
           <SwitchButton
             disabled={sub.parent && !sub.parent?.enabled}
-            ariaLabel="enable subscription"
-            onSwitch={() =>
-              Services.archiveSubscriptionByOwner(
+            ariaLabel={translate("subscription.enable.button.label")}
+            onSwitch={(value) => {
+              return Services.archiveSubscriptionByOwner(
                 currentTeam._id,
                 sub._id,
-                !sub.enabled
-              ).then(() => {
-                tableRef.current?.update();
-                queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
-              })
-            }
+                value
+              )
+                .then(() => queryClient.invalidateQueries({ queryKey: ["subscriptions"] }))
+                .then(() => tableRef.current?.update())
+            }}
             checked={sub.enabled}
           />
         );
@@ -364,6 +267,30 @@ export const TeamApiSubscriptions = ({
     }),
   ];
 
+  const defaultData = useMemo(() => [], [])
+  console.debug(subscriptionsQuery.data ?? defaultData)
+  const table = useReactTable({
+    data: subscriptionsQuery.data ?? defaultData,
+    columns: columns,
+    rowCount: subscriptionsQuery.data?.length,
+    state: {
+      pagination,
+      columnFilters,
+      sorting
+    },
+    onPaginationChange: setPagination,
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  })
+
+  useEffect(() => {
+    document.title = `${currentTeam.name} - ${translate("Subscriptions")}`;
+  }, []);
+
   const updateMeta = (sub: IApiSubscriptionGql) => {
     return openSubMetadataModal({
       save: (updates: CustomSubscriptionData) => {
@@ -378,9 +305,6 @@ export const TeamApiSubscriptions = ({
       team: sub.team,
       subscription: sub,
       creationMode: false,
-      value: (plansQuery.data as Array<IUsagePlan>).find(
-        (p) => sub.plan._id === p._id
-      )!,
     });
   };
 
@@ -448,93 +372,117 @@ export const TeamApiSubscriptions = ({
     });
   };
 
-  if (plansQuery.isLoading) {
-    return <Spinner />;
-  } else if (plansQuery.data && !isError(plansQuery.data)) {
-    const usagePlans = plansQuery.data;
-
-    const options = usagePlans.flatMap((plan) => {
-      return [
-        ...(plan.otoroshiTarget?.apikeyCustomization?.customMetadata.map(
-          ({ key }) => key
-        ) || []),
-        ...Object.keys(plan.otoroshiTarget?.apikeyCustomization?.metadata || {}),
-      ];
-    });
-
-    return (
-      <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
-        <div className="d-flex flex-row justify-content-start align-items-center mb-2">
-          <button
-            className="btn btn-sm btn-outline-info"
-            onClick={() =>
-              openFormModal({
-                actionLabel: translate("Filter"),
-                onSubmit: (data) => {
-                  setFilters(data);
+  console.debug(table.getRowCount(), { rows: table.getRowModel().rows })
+  return (
+    <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
+      <div className="d-flex flex-row justify-content-start align-items-center mb-2">
+        <button
+          className="btn btn-sm btn-outline-info"
+          onClick={() =>
+            openFormModal({
+              actionLabel: translate("Filter"),
+              onSubmit: (data) => {
+                setFilters(data);
+                queryClient.invalidateQueries({ queryKey: ['subscriptions'] })
+              },
+              schema: {
+                metadata: {
+                  type: type.object,
+                  label: translate("Filter metadata"),
                 },
-                schema: {
-                  metadata: {
-                    type: type.object,
-                    format: format.form,
-                    label: translate("Filter metadata"),
-                    array: true,
-                    schema: {
-                      key: {
-                        type: type.string,
-                        createOption: true,
-                      },
-                      value: {
-                        type: type.string,
-                      },
-                    },
-                  },
-                  tags: {
-                    type: type.string,
-                    label: translate("Filter tags"),
-                    array: true,
-                  },
-                  clientIds: {
-                    type: type.string,
-                    array: true,
-                    label: translate("Filter Client Ids"),
-                  },
+                tags: {
+                  type: type.string,
+                  label: translate("Filter tags"),
+                  array: true,
                 },
-                title: translate("Filter data"),
-                value: filters,
-              })
-            }
+                clientIds: {
+                  type: type.string,
+                  array: true,
+                  label: translate("Filter Client Ids"),
+                },
+              },
+              title: translate("Filter data"),
+              value: filters,
+            })
+          }
+        >
+          {" "}
+          {translate("Filter")}{" "}
+        </button>
+        {!!filters && (
+          <div
+            className="clear cursor-pointer ms-1"
+            onClick={() => setFilters(undefined)}
           >
-            {" "}
-            {translate("Filter")}{" "}
-          </button>
-          {!!filters && (
-            <div
-              className="clear cursor-pointer ms-1"
-              onClick={() => setFilters(undefined)}
-            >
-              <i className="far fa-times-circle me-1" />
-              <Translation i18nkey="clear filter">clear filter</Translation>
-            </div>
-          )}
-        </div>
-        <div className="col-12">
-          <Table
-            defaultSort="adminCustomName"
-            columns={columns(usagePlans)}
-            fetchItems={() => {
-              if (subscriptionsQuery.isLoading || subscriptionsQuery.error) {
-                return [];
-              } else {
-                return subscriptionsQuery.data ?? [];
-              }
-            }}
-            ref={tableRef}
-          />
-        </div>
-      </Can>
-    );
-  } else {
-    return <div>error while fetching usage plan</div>;
-  }
+            <i className="far fa-times-circle me-1" />
+            <Translation i18nkey="clear filter">clear filter</Translation>
+          </div>
+        )}
+      </div>
+      <div className="col-12">
+        <table className="reactTableV7">
+          <thead>
+            {table.getHeaderGroups().map(headerGroup => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map(header => {
+                  return (
+                    <th
+                      key={header.id}
+                      colSpan={header.colSpan}
+                      className={classNames({
+                        '--sort-asc': header.column.getIsSorted() === 'asc',
+                        '--sort-desc': header.column.getIsSorted() === 'desc',
+                      })}>
+                      {header.isPlaceholder ? null : (
+                        <div onClick={header.column.getToggleSortingHandler()}>
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                        </div>
+                      )}
+                      {header.column.getCanFilter() && <div className='my-2'>
+                        <Filter column={header.column} table={table} />
+                      </div>}
+                    </th>
+                  )
+                })}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.map(row => {
+              return (
+                <tr key={row.id}>
+                  {row.getVisibleCells().map(cell => {
+                    return (
+                      <td key={cell.id}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </td>
+                    )
+                  })}
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+        <Pagination
+          previousLabel={translate('Previous')}
+          nextLabel={translate('Next')}
+          breakLabel={'...'}
+          breakClassName={'break'}
+          pageCount={table.getPageCount()}
+          marginPagesDisplayed={1}
+          pageRangeDisplayed={5}
+          onPageChange={(page) => table.setPageIndex(page.selected)}
+          containerClassName={'pagination'}
+          pageClassName={'page-selector'}
+          // forcePage={page => table.setPageIndex(page)}
+          activeClassName={'active'} />
+      </div>
+    </Can>
+  );
 };

@@ -431,11 +431,6 @@ object CommonServices {
           ),
           sort = Some(Json.obj("name" -> 1))
         )
-        log1 = AppLogger.info("@@@ paginated APIS @@@")
-        log2 = AppLogger.info(paginateApis._1.map(_.name).mkString(" >> "))
-        log3 = AppLogger.info("@@@ @@@ @@@ @@@")
-        log31 = AppLogger.info("@@@ unique APIS @@@")
-        log4 = AppLogger.info(uniqueApisWithVersion.map(_.name).mkString(" >> "))
         plans <-
           env.dataStore.usagePlanRepo
             .forTenant(ctx.tenant)
@@ -770,7 +765,7 @@ object CommonServices {
     }
   }
 
-  def getApiSubscriptions(teamId: String, apiId: String, version: String)(
+  def getApiSubscriptions(teamId: String, apiId: String, version: String, filters: JsArray, sorting: JsArray, limit: Int, offset: Int)(
       implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
@@ -781,16 +776,67 @@ object CommonServices {
         s"@{user.name} has acceeded to team (@{team.id}) subscription for api @{api.id}"
       )
     )(teamId, ctx) { _ =>
+
+      def getFiltervalue[T](key: String)(implicit fjs: Reads[T]): Option[T] = {
+        filters.value
+          .find(entry => {
+             entry.as[JsObject].value.exists(p => p._1 == "id" && p._2.as[String] == key)
+          })
+          .flatMap(v => v.as[JsObject].value.find(p => p._1 == "value").map(_._2.as[T]))
+      }
+
+      val defaultOrderClause = "ORDER BY COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') ASC"
+      val sortClause = sorting.head.asOpt[JsObject] match {
+        case Some(value) =>
+          val desc = value.value.get("desc") match {
+            case Some(json) if json.asOpt[Boolean].contains(true) => "DESC"
+            case _ => "ASC"
+          }
+
+          value.value.get("id").map(_.as[String]) match {
+            case Some(id) if id == "subscription" => s"ORDER BY COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') $desc"
+            case Some(id) if id == "plan" => s"ORDER BY p.content ->> 'customName' $desc"
+            case Some(id) if id == "team" => s"ORDER BY t.content ->> 'name' $desc"
+            case _ => defaultOrderClause
+          }
+        case None => defaultOrderClause
+      }
+
+      val query = s"""
+           |SELECT s.content
+           |from api_subscriptions s
+           |         LEFT JOIN teams t ON t._id = s.content ->> 'team'
+           |         LEFT JOIN usage_plans p ON p._id = s.content ->> 'plan'
+           |WHERE s.content ->> 'api' = $$1
+           |  AND COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') ~* COALESCE($$2::text, '')
+           |  AND (p.content ->> 'customName') ~* COALESCE($$3, '')
+           |  AND (t.content ->> 'name') ~* COALESCE($$4::text, '')
+           |  AND (s.content -> 'tags') @> COALESCE($$5::text::jsonb, '[]'::jsonb)
+           |  AND CASE
+           |          WHEN array_length($$6::text[], 1) IS NULL THEN true
+           |          ELSE s.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
+           |    END
+           |  AND s.content -> 'metadata' @> COALESCE($$7::jsonb, '{}'::jsonb)
+           |$sortClause
+           |LIMIT $$8 OFFSET $$9;
+           |""".stripMargin
+
+
       (for {
-        api <- EitherT.fromOptionF[Future, AppError, Api](
-          env.dataStore.apiRepo
-            .findByVersion(ctx.tenant, apiId, version),
-          AppError.ApiNotFound
-        )
         subs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
           env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant)
-            .findNotDeleted(Json.obj("api" -> api.id.asJson))
+            .query(query, Seq(
+              apiId,
+              getFiltervalue[String]("subscription").orNull[String],
+              getFiltervalue[String]("plan").orNull[String],
+              getFiltervalue[String]("team").orNull[String],
+              getFiltervalue[JsArray]("tags").map(Json.stringify(_)).orNull[String],
+              getFiltervalue[JsArray]("clientIds").map(_.value.map(_.as[String])).orNull,
+              getFiltervalue[JsObject]("metadatas").map(Json.stringify(_)).orNull[String],
+              java.lang.Integer.valueOf(10),
+              java.lang.Integer.valueOf(0)
+            ))
         )
       } yield {
         subs

@@ -186,7 +186,6 @@ export type SubscriptionMetadataModalProps<T extends IWithTesting> = {
   subscriptionDemand?: ISubscriptionDemand;
   description?: any;
   noClose?: boolean;
-  value: T;
 };
 
 export interface IApiDocumentationSelectModalProps {

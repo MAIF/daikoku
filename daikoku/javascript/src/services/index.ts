@@ -1596,9 +1596,9 @@ export const graphql = {
       to
     }
   }`),
-  getApiSubscriptions: gql(`
-    query getApiSubscriptions ($apiId: String!, $teamId: String!, $version: String!) {
-      apiApiSubscriptions (id: $apiId, teamId: $teamId, version: $version) {
+  getApiSubscriptions: `
+    query getApiSubscriptions ($apiId: String!, $teamId: String!, $version: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
+      apiApiSubscriptions (id: $apiId, teamId: $teamId, version: $version, filterTable: $filterTable, sortingTable: $sortingTable,  limit: $limit, offset: $offset) {
         _id
         apiKey {
           clientName
@@ -1646,7 +1646,7 @@ export const graphql = {
         }
       }
     }
-    `),
+    `,
   getMyNotifications: gql(`
     query getMyNotifications ($pageNumber : Int, $pageSize: Int) {
       myNotifications (pageNumber: $pageNumber, pageSize: $pageSize) {

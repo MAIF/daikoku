@@ -1,60 +1,90 @@
 import React, { useEffect, useState } from 'react';
 import classNames from 'classnames';
-import { nanoid } from 'nanoid';
 
 type Props = {
   className?: string;
-  label?: string;
   onSwitch: (...args: any[]) => any;
   checked?: boolean;
   disabled?: boolean;
   ariaLabel?: string
 };
 
-export function SwitchButton(props: Props) {
-  const [loading, setLoading] = useState(false);
+// export function _SwitchButton(props: Props) {
+//   const [loading, setLoading] = useState(false);
 
-  let switchRef: any;
+//   let switchRef: any;
 
-  useEffect(() => {
-    if (loading) {
-      const action = props.onSwitch(switchRef.checked);
-      if (action instanceof Promise) {
-        Promise.resolve(action).then(() => setLoading(false));
-      } else {
-        setLoading(false);
-      }
-    }
-  }, [loading]);
+//   useEffect(() => {
+//     if (loading) {
+//       const action = props.onSwitch(switchRef.checked);
+//       if (action instanceof Promise) {
+//         Promise.resolve(action).then(() => setLoading(false));
+//       } else {
+//         setLoading(false);
+//       }
+//     }
+//   }, [loading]);
 
-  const notifySwitch = () => {
-      setLoading(true);
+//   const notifySwitch = () => {
+//       setLoading(true);
     
-  };
+//   };
 
-  const { label } = props;
-  const id = label ? label.replace(/\s/gi, '') : nanoid();
+//   const { label } = props;
+//   const id = label ? label.replace(/\s/gi, '') : nanoid();
+//   return (
+//     <div
+//       className={classNames('switch-button d-flex justify-content-center ', {
+//         'switch--loading': loading,
+//         'switch--loaded': !loading,
+//         'switch--disabled': props.disabled,
+//       })}
+//     >
+//       <label className="switch--item" htmlFor={id}>
+//         {label && <div className="switch__label">{label}</div>}
+//         <input
+//           type="checkbox"
+//           id={id}
+//           ref={(ref) => (switchRef = ref)}
+//           checked={props.checked}
+//           style={{ display: 'none' }}
+//           onChange={() => notifySwitch()}
+//           disabled={props.disabled}
+//         />
+//         <span className="slider round" />
+//       </label>
+//     </div>
+//   );
+// }
+
+export const SwitchButton = (props: Props) => {
+  const [loading, setLoading] = useState(false)
+  const [active, setActive] = useState(props.checked)
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setLoading(true)
+
+    const checked = event.target.checked;
+    const action = props.onSwitch(checked);
+
+    if (action instanceof Promise) {
+      Promise.resolve(action)
+        .then(() => {
+          setLoading(false)
+          setActive(checked)
+        });
+    } else {
+      setLoading(false)
+      setActive(checked)
+    }
+  }
+
   return (
-    <div
-      className={classNames('switch-button d-flex justify-content-center ', {
-        'switch--loading': loading,
-        'switch--loaded': !loading,
-        'switch--disabled': props.disabled,
-      })}
-    >
-      <label className="switch--item" htmlFor={id}>
-        {label && <div className="switch__label">{label}</div>}
-        <input
-          type="checkbox"
-          id={id}
-          ref={(ref) => (switchRef = ref)}
-          checked={props.checked}
-          style={{ display: 'none' }}
-          onChange={() => notifySwitch()}
-          disabled={props.disabled}
-        />
-        <span className="slider round" />
+    <div className={classNames("switch-button-container", props.className, { loading, active, disabled: props.disabled })}>
+      <label className="switch-button">
+        <input type="checkbox" onChange={e => handleInputChange(e)} aria-label={props.ariaLabel} checked={active} disabled={props.disabled} />
+        <span className="slider round"></span>
       </label>
     </div>
-  );
+  )
 }
