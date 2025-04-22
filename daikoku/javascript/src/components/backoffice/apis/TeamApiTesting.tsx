@@ -60,7 +60,6 @@ export const TeamApiTesting = <T extends IWithTesting>(props: TeamApiTestingProp
         })
       },
       config: testing?.config,
-      value: props.value,
       api: props._id,
       plan: isUsagePlan(props.value) ? props.value._id : undefined,
       description: <div>Description</div>,

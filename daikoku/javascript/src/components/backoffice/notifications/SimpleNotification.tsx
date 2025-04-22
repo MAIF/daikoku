@@ -272,7 +272,6 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
                             if (!isError(demand)) {
                               openSubMetadataModal({
                                 save: props.accept,
-                                value: props.notification.action.api!,
                                 api: props.notification.action.api?._id,
                                 plan: props.notification.action.plan!._id,
                                 team: props.notification.action.team,
