@@ -2307,7 +2307,7 @@ class ApiController(
               .findByIdOrHrIdNotDeleted(subscriptionId),
             AppError.SubscriptionNotFound
           )
-          api <- EitherT.fromOptionF[Future, AppError, Api](
+          _ <- EitherT.fromOptionF[Future, AppError, Api](
             env.dataStore.apiRepo
               .forTenant(ctx.tenant)
               .findOneNotDeleted(

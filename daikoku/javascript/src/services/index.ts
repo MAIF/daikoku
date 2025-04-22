@@ -1600,6 +1600,7 @@ export const graphql = {
     query getApiSubscriptions ($apiId: String!, $teamId: String!, $version: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
       apiApiSubscriptions (id: $apiId, teamId: $teamId, version: $version, filterTable: $filterTable, sortingTable: $sortingTable,  limit: $limit, offset: $offset) {
         _id
+        lastUsage
         apiKey {
           clientName
           clientId

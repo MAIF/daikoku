@@ -6,14 +6,11 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  _TeamMemberOnly,
-  _TenantAdminAccessTenant
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.S3Configuration
+import fr.maif.otoroshi.daikoku.utils.{OtoroshiClient, S3Configuration}
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json._
@@ -127,7 +124,7 @@ object SchemaDefinition {
 
   case class NotAuthorizedError(message: String) extends Exception(message)
 
-  def getSchema(env: Env) = {
+  def getSchema(env: Env, otoroshiClient: OtoroshiClient) = {
     implicit val e = env.defaultExecutionContext
     implicit val en = env
 
@@ -1474,9 +1471,39 @@ object SchemaDefinition {
                     .findById(parent)
                 case None => None
               }
+          ),
+          Field(
+            "lastUsage",
+            OptionType(DateTimeUnitype),
+            resolve = ctx => getOtoroshiUsage(ctx.value)(ctx.ctx._2.tenant)
           )
         )
     )
+
+    def getOtoroshiUsage(
+                          subscription: ApiSubscription
+                        )(implicit tenant: Tenant): Future[Option[DateTime]] = {
+
+      val test = for {
+        plan <- EitherT.fromOptionF[Future, Option[DateTime], UsagePlan](env.dataStore.usagePlanRepo.forTenant(tenant).findById(subscription.plan),
+              None)
+        otoroshi <- EitherT.fromOption[Future][Option[DateTime], OtoroshiSettings](
+              tenant.otoroshiSettings.find(oto =>
+                plan.otoroshiTarget.exists(_.otoroshiSettings == oto.id)
+              ),
+              None
+            )
+        value: EitherT[Future, Option[DateTime], JsArray] = otoroshiClient.getSubscriptionLastUsage(Seq(subscription))(
+          otoroshi,
+          tenant
+        ).leftMap(_ => None)
+        usages <- value
+          } yield usages.value.headOption
+
+      test
+        .map(x => x.map(dateAsJson => json.DateTimeFormat.reads(dateAsJson).get))
+        .merge
+    }
 
     lazy val TestingAuthType = EnumType(
       "TestingAuth",

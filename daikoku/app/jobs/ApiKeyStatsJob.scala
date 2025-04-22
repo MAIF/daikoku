@@ -20,6 +20,7 @@ import play.api.libs.json._
 import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration._
 import scala.concurrent.{ExecutionContext, Future}
+import scala.math.Ordering.Implicits.infixOrderingOps
 
 class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
 
@@ -273,6 +274,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
           }
         )
         .getOrElse(subscription.createdAt.withTimeAtStartOfDay())
+        .max(DateTime.now().minusDays(60))
 
       Source(
         Days
@@ -288,7 +290,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
 
           (from, to)
         })
-        .mapAsync(1) {
+        .mapAsync(4) {
           case (from, to) =>
             val isCompleteConsumption = completed || Days
               .daysBetween(from.withTimeAtStartOfDay(), to)
@@ -313,7 +315,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
                 to.toDateTime.getMillis.toString,
                 failOnError = plan.costPerMonth.isDefined
               )
-              quotas <-
+              quotas <- //todo: do not call apiquoats if not today
                 otoroshiClient.getApiKeyQuotas(subscription.apiKey.clientId)
               billing <- computeBilling(
                 tenant.id,

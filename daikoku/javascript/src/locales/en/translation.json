@@ -1,8 +1,8 @@
 {
     "moment.locale": "en",
-    "moment.date.format": "YYYY, MMM. Do to HH:mm z",
-    "moment.date.format.without.hours": "DD MMM. YYYY",
-    "moment.date.format.short": "YYYY/MM/DD",
+    "moment.date.format": "yyyy, MMM. do to HH:mm z",
+    "moment.date.format.without.hours": "yyyy, MMM. do",
+    "moment.date.format.short": "yyyy/MM/dd",
     "your teams": "Your teams",
     "find team": "Find a team",
     "My profile": "My profile",

@@ -105,8 +105,6 @@ export const TeamApiSubscriptions = ({
   const { confirm, openFormModal, openSubMetadataModal } =
     useContext(ModalContext);
 
-  console.debug({ filters, columnFilters })
-
   const graphqlEndpoint = `${window.location.origin}/api/search`;
   const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
   const subscriptionsQuery = useQuery({
@@ -117,8 +115,8 @@ export const TeamApiSubscriptions = ({
       version: api.currentVersion,
       filterTable: JSON.stringify([...(columnFilters ?? []), ...Object.entries(filters ?? {}).map(([id, value]) => ({ id, value }))]),
       sortingTable: JSON.stringify(sorting ?? []),
-      limit: pagination.pageIndex,
-      offset: pagination.pageSize,
+      limit: pagination.pageSize,
+      offset: pagination.pageIndex * pagination.pageSize,
     }),
     select: d => d.apiApiSubscriptions
   });
@@ -204,7 +202,7 @@ export const TeamApiSubscriptions = ({
       cell: (info) => {
         const date = info.getValue();
         if (!!date) {
-          return formatDate(date, language);
+          return formatDate(date, translate('moment.locale'), translate('moment.date.format.without.hours'));
         }
         return translate("N/A");
       },
@@ -216,7 +214,7 @@ export const TeamApiSubscriptions = ({
       cell: (info) => {
         const date = info.getValue();
         if (!!date) {
-          return formatDate(date, language);
+          return formatDate(date, translate('moment.locale'), translate('moment.date.format'));
         }
         return translate("N/A");
       },
@@ -268,7 +266,6 @@ export const TeamApiSubscriptions = ({
   ];
 
   const defaultData = useMemo(() => [], [])
-  console.debug(subscriptionsQuery.data ?? defaultData)
   const table = useReactTable({
     data: subscriptionsQuery.data ?? defaultData,
     columns: columns,
@@ -372,7 +369,6 @@ export const TeamApiSubscriptions = ({
     });
   };
 
-  console.debug(table.getRowCount(), { rows: table.getRowModel().rows })
   return (
     <Can I={manage} a={API} dispatchError={true} team={currentTeam}>
       <div className="d-flex flex-row justify-content-start align-items-center mb-2">

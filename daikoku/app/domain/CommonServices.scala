@@ -816,7 +816,7 @@ object CommonServices {
            |          WHEN array_length($$6::text[], 1) IS NULL THEN true
            |          ELSE s.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
            |    END
-           |  AND s.content -> 'metadata' @> COALESCE($$7::jsonb, '{}'::jsonb)
+           |  AND s.content -> 'metadata' @> COALESCE($$7::text::jsonb, '{}'::jsonb)
            |$sortClause
            |LIMIT $$8 OFFSET $$9;
            |""".stripMargin
@@ -832,10 +832,10 @@ object CommonServices {
               getFiltervalue[String]("plan").orNull[String],
               getFiltervalue[String]("team").orNull[String],
               getFiltervalue[JsArray]("tags").map(Json.stringify(_)).orNull[String],
-              getFiltervalue[JsArray]("clientIds").map(_.value.map(_.as[String])).orNull,
-              getFiltervalue[JsObject]("metadatas").map(Json.stringify(_)).orNull[String],
-              java.lang.Integer.valueOf(10),
-              java.lang.Integer.valueOf(0)
+              getFiltervalue[JsArray]("clientIds").map(_.value.map(_.as[String]).toArray).orNull,
+              getFiltervalue[JsObject]("metadata").map(Json.stringify(_)).orNull[String],
+              java.lang.Integer.valueOf(limit),
+              java.lang.Integer.valueOf(offset)
             ))
         )
       } yield {

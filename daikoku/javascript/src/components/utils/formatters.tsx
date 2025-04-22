@@ -1,4 +1,7 @@
 import moment from 'moment';
+import {format} from "date-fns";
+import {fr, enUS} from "date-fns/locale"
+
 import { TranslateParams } from '../../contexts/i18n-context';
 
 import { currencies } from '../../services/currencies';
@@ -153,9 +156,20 @@ export const teamPermissions = {
   user: 'User',
 };
 
-export const formatDate = (date: number | string, language: string, format = 'l LT') => {
+const getLanguageFns = (language) => {
+  switch (language) {
+    case 'fr':
+      return fr;
+    case 'en':
+      return enUS
+    default:
+      return enUS;
+  }
+}
+export const formatDate = (date: number | string, language: string, formatAsString = 'l LT') => {
   moment.locale(language);
-  return moment(date).format(format);
+
+  return format(new Date(date), formatAsString, { locale: getLanguageFns(language) });
 };
 
 export const formatMessageDate = (date: any, language: any) => {
