@@ -10,6 +10,7 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _Te
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{OtoroshiClient, S3Configuration}
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{DateTime, DateTimeZone}
@@ -1484,24 +1485,26 @@ object SchemaDefinition {
                           subscription: ApiSubscription
                         )(implicit tenant: Tenant): Future[Option[DateTime]] = {
 
-      val test = for {
+      val maybeLastUsage = for {
         plan <- EitherT.fromOptionF[Future, Option[DateTime], UsagePlan](env.dataStore.usagePlanRepo.forTenant(tenant).findById(subscription.plan),
-              None)
+          None)
         otoroshi <- EitherT.fromOption[Future][Option[DateTime], OtoroshiSettings](
-              tenant.otoroshiSettings.find(oto =>
-                plan.otoroshiTarget.exists(_.otoroshiSettings == oto.id)
-              ),
-              None
-            )
+          tenant.otoroshiSettings.find(oto =>
+            plan.otoroshiTarget.exists(_.otoroshiSettings == oto.id)
+          ),
+          None
+        )
         value: EitherT[Future, Option[DateTime], JsArray] = otoroshiClient.getSubscriptionLastUsage(Seq(subscription))(
           otoroshi,
           tenant
         ).leftMap(_ => None)
         usages <- value
-          } yield usages.value.headOption
+      } yield {
+        usages.value.headOption
+      }
 
-      test
-        .map(x => x.map(dateAsJson => json.DateTimeFormat.reads(dateAsJson).get))
+      maybeLastUsage
+        .map(_.map(r => (r \ "date").as(json.DateTimeFormat)))
         .merge
     }
 
