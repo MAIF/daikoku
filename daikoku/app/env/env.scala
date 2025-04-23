@@ -484,9 +484,11 @@ class DaikokuEnv(
                 domain = config.init.host,
                 defaultLanguage = Some("En"),
                 style = Some(
-                  DaikokuStyle.template(Tenant.Default).copy(
-                    title = "Daikoku Default Tenant"
-                  )
+                  DaikokuStyle
+                    .template(Tenant.Default)
+                    .copy(
+                      title = "Daikoku Default Tenant"
+                    )
                 ),
                 contact = "contact@foo.bar",
                 mailerSettings = Some(ConsoleMailerSettings()),
@@ -567,12 +569,39 @@ class DaikokuEnv(
                 publicFolderPath = environment.getFile("public").getPath
                 cssFilePath = s"$publicFolderPath/themes/default.css"
                 cssFileContent = scala.io.Source.fromFile(cssFilePath).mkString
-                _ <- dataStore.cmsRepo.forTenant(tenant.id)
-                  .save(Tenant.getCustomizationCmsPage(tenantId = tenant.id, pageId = "style", contentType = "text/css", body = ""))
-                _ <- dataStore.cmsRepo.forTenant(tenant.id)
-                  .save(Tenant.getCustomizationCmsPage(tenantId = tenant.id, pageId = "script", contentType = "text/javascript", body = ""))
-                _ <- dataStore.cmsRepo.forTenant(tenant.id)
-                  .save(Tenant.getCustomizationCmsPage(tenantId = tenant.id, pageId = "color-theme", contentType = "text/css", body = cssFileContent))
+                _ <-
+                  dataStore.cmsRepo
+                    .forTenant(tenant.id)
+                    .save(
+                      Tenant.getCustomizationCmsPage(
+                        tenantId = tenant.id,
+                        pageId = "style",
+                        contentType = "text/css",
+                        body = ""
+                      )
+                    )
+                _ <-
+                  dataStore.cmsRepo
+                    .forTenant(tenant.id)
+                    .save(
+                      Tenant.getCustomizationCmsPage(
+                        tenantId = tenant.id,
+                        pageId = "script",
+                        contentType = "text/javascript",
+                        body = ""
+                      )
+                    )
+                _ <-
+                  dataStore.cmsRepo
+                    .forTenant(tenant.id)
+                    .save(
+                      Tenant.getCustomizationCmsPage(
+                        tenantId = tenant.id,
+                        pageId = "color-theme",
+                        contentType = "text/css",
+                        body = cssFileContent
+                      )
+                    )
               } yield {
                 AppLogger.warn("")
                 AppLogger.warn(

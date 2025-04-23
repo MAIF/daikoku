@@ -540,7 +540,8 @@ object CommonServices {
               null,
               filter,
               if (limit == -1) null else java.lang.Integer.valueOf(limit),
-              if (offset == -1) null else java.lang.Integer.valueOf(offset)
+              if (offset == -1) null
+              else java.lang.Integer.valueOf(offset)
             )
           )
     } yield tags
@@ -589,7 +590,8 @@ object CommonServices {
               null,
               filter,
               if (limit == -1) null else java.lang.Integer.valueOf(limit),
-              if (offset == -1) null else java.lang.Integer.valueOf(offset)
+              if (offset == -1) null
+              else java.lang.Integer.valueOf(offset)
             )
           )
     } yield tags
@@ -763,8 +765,15 @@ object CommonServices {
     }
   }
 
-  def getApiSubscriptions(teamId: String, apiId: String, version: String, filters: JsArray, sorting: JsArray, limit: Int, offset: Int)(
-      implicit
+  def getApiSubscriptions(
+      teamId: String,
+      apiId: String,
+      version: String,
+      filters: JsArray,
+      sorting: JsArray,
+      limit: Int,
+      offset: Int
+  )(implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
       ec: ExecutionContext
@@ -774,27 +783,35 @@ object CommonServices {
         s"@{user.name} has acceeded to team (@{team.id}) subscription for api @{api.id}"
       )
     )(teamId, ctx) { _ =>
-
       def getFiltervalue[T](key: String)(implicit fjs: Reads[T]): Option[T] = {
         filters.value
           .find(entry => {
-             entry.as[JsObject].value.exists(p => p._1 == "id" && p._2.as[String] == key)
+            entry
+              .as[JsObject]
+              .value
+              .exists(p => p._1 == "id" && p._2.as[String] == key)
           })
-          .flatMap(v => v.as[JsObject].value.find(p => p._1 == "value").map(_._2.as[T]))
+          .flatMap(v =>
+            v.as[JsObject].value.find(p => p._1 == "value").map(_._2.as[T])
+          )
       }
 
-      val defaultOrderClause = "ORDER BY COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') ASC"
+      val defaultOrderClause =
+        "ORDER BY COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') ASC"
       val sortClause = sorting.head.asOpt[JsObject] match {
         case Some(value) =>
           val desc = value.value.get("desc") match {
             case Some(json) if json.asOpt[Boolean].contains(true) => "DESC"
-            case _ => "ASC"
+            case _                                                => "ASC"
           }
 
           value.value.get("id").map(_.as[String]) match {
-            case Some(id) if id == "subscription" => s"ORDER BY COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') $desc"
-            case Some(id) if id == "plan" => s"ORDER BY p.content ->> 'customName' $desc"
-            case Some(id) if id == "team" => s"ORDER BY t.content ->> 'name' $desc"
+            case Some(id) if id == "subscription" =>
+              s"ORDER BY COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') $desc"
+            case Some(id) if id == "plan" =>
+              s"ORDER BY p.content ->> 'customName' $desc"
+            case Some(id) if id == "team" =>
+              s"ORDER BY t.content ->> 'name' $desc"
             case _ => defaultOrderClause
           }
         case None => defaultOrderClause
@@ -819,22 +836,30 @@ object CommonServices {
            |LIMIT $$8 OFFSET $$9;
            |""".stripMargin
 
-
       (for {
         subs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
           env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant)
-            .query(query, Seq(
-              apiId,
-              getFiltervalue[String]("subscription").orNull[String],
-              getFiltervalue[String]("plan").orNull[String],
-              getFiltervalue[String]("team").orNull[String],
-              getFiltervalue[JsArray]("tags").map(Json.stringify(_)).orNull[String],
-              getFiltervalue[JsArray]("clientIds").map(_.value.map(_.as[String]).toArray).orNull,
-              getFiltervalue[JsObject]("metadata").map(Json.stringify(_)).orNull[String],
-              java.lang.Integer.valueOf(limit),
-              java.lang.Integer.valueOf(offset)
-            ))
+            .query(
+              query,
+              Seq(
+                apiId,
+                getFiltervalue[String]("subscription").orNull[String],
+                getFiltervalue[String]("plan").orNull[String],
+                getFiltervalue[String]("team").orNull[String],
+                getFiltervalue[JsArray]("tags")
+                  .map(Json.stringify(_))
+                  .orNull[String],
+                getFiltervalue[JsArray]("clientIds")
+                  .map(_.value.map(_.as[String]).toArray)
+                  .orNull,
+                getFiltervalue[JsObject]("metadata")
+                  .map(Json.stringify(_))
+                  .orNull[String],
+                java.lang.Integer.valueOf(limit),
+                java.lang.Integer.valueOf(offset)
+              )
+            )
         )
       } yield {
         subs

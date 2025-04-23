@@ -6,7 +6,10 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
+  _TeamMemberOnly,
+  _TenantAdminAccessTenant
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
@@ -1482,22 +1485,30 @@ object SchemaDefinition {
     )
 
     def getOtoroshiUsage(
-                          subscription: ApiSubscription
-                        )(implicit tenant: Tenant): Future[Option[DateTime]] = {
+        subscription: ApiSubscription
+    )(implicit tenant: Tenant): Future[Option[DateTime]] = {
 
       val maybeLastUsage = for {
-        plan <- EitherT.fromOptionF[Future, Option[DateTime], UsagePlan](env.dataStore.usagePlanRepo.forTenant(tenant).findById(subscription.plan),
-          None)
-        otoroshi <- EitherT.fromOption[Future][Option[DateTime], OtoroshiSettings](
-          tenant.otoroshiSettings.find(oto =>
-            plan.otoroshiTarget.exists(_.otoroshiSettings == oto.id)
-          ),
+        plan <- EitherT.fromOptionF[Future, Option[DateTime], UsagePlan](
+          env.dataStore.usagePlanRepo
+            .forTenant(tenant)
+            .findById(subscription.plan),
           None
         )
-        value: EitherT[Future, Option[DateTime], JsArray] = otoroshiClient.getSubscriptionLastUsage(Seq(subscription))(
-          otoroshi,
-          tenant
-        ).leftMap(_ => None)
+        otoroshi <-
+          EitherT.fromOption[Future][Option[DateTime], OtoroshiSettings](
+            tenant.otoroshiSettings.find(oto =>
+              plan.otoroshiTarget.exists(_.otoroshiSettings == oto.id)
+            ),
+            None
+          )
+        value: EitherT[Future, Option[DateTime], JsArray] =
+          otoroshiClient
+            .getSubscriptionLastUsage(Seq(subscription))(
+              otoroshi,
+              tenant
+            )
+            .leftMap(_ => None)
         usages <- value
       } yield {
         usages.value.headOption
@@ -3440,7 +3451,15 @@ object SchemaDefinition {
         offset: Int
     ) = {
       CommonServices
-        .getApiSubscriptions(teamId, apiId, version, filter, sorting, limit, offset)(ctx.ctx._2, env, e)
+        .getApiSubscriptions(
+          teamId,
+          apiId,
+          version,
+          filter,
+          sorting,
+          limit,
+          offset
+        )(ctx.ctx._2, env, e)
         .map {
           case Left(value)  => throw NotAuthorizedError(value.toString)
           case Right(value) => value
@@ -3472,7 +3491,8 @@ object SchemaDefinition {
         Field(
           "apiApiSubscriptions",
           ListType(ApiSubscriptionType),
-          arguments = ID :: TEAM_ID_NOT_OPT :: VERSION :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
+          arguments =
+            ID :: TEAM_ID_NOT_OPT :: VERSION :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             getApiSubscriptions(
               ctx,

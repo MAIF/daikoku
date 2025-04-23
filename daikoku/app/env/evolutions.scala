@@ -8,7 +8,16 @@ import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.Tenant.getCustomizationCmsPage
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, TenantIdFormat, UserFormat
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiDocumentationPageFormat,
+  ApiFormat,
+  ApiSubscriptionFormat,
+  SeqApiDocumentationDetailPageFormat,
+  TeamFormat,
+  TeamIdFormat,
+  TenantFormat,
+  TenantIdFormat,
+  UserFormat
 }
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
@@ -1243,18 +1252,18 @@ object evolution_1830 extends EvolutionScript {
   override def version: String = "18.3.0"
 
   override def script: (
-    Option[DatastoreId],
+      Option[DatastoreId],
       DataStore,
       Materializer,
       ExecutionContext,
       OtoroshiClient
-    ) => Future[Done] =
+  ) => Future[Done] =
     (
-      _: Option[DatastoreId],
-      dataStore: DataStore,
-      mat: Materializer,
-      ec: ExecutionContext,
-      _: OtoroshiClient
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        mat: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
     ) => {
       AppLogger.info(
         s"Begin evolution $version - update tenants to use cms pages"
@@ -1262,24 +1271,49 @@ object evolution_1830 extends EvolutionScript {
 
       implicit val executionContext: ExecutionContext = ec
 
-      dataStore.tenantRepo.streamAllRaw()
+      dataStore.tenantRepo
+        .streamAllRaw()
         .map(rawTenant => {
           val tenantId = (rawTenant \ "_id").as(TenantIdFormat)
           val oldCss = (rawTenant \ "style" \ "css").as[String]
           val oldTheme = (rawTenant \ "style" \ "colorTheme").as[String]
           val oldJs = (rawTenant \ "style" \ "js").as[String]
 
-          val cssPage = getCustomizationCmsPage(tenantId, "style", "text/css", oldCss)
-          val colorThemePage = getCustomizationCmsPage(tenantId, "color-theme", "text/css", oldTheme)
-          val jsPage = getCustomizationCmsPage(tenantId, "script", "text/javascript", oldJs)
+          val cssPage =
+            getCustomizationCmsPage(tenantId, "style", "text/css", oldCss)
+          val colorThemePage = getCustomizationCmsPage(
+            tenantId,
+            "color-theme",
+            "text/css",
+            oldTheme
+          )
+          val jsPage = getCustomizationCmsPage(
+            tenantId,
+            "script",
+            "text/javascript",
+            oldJs
+          )
 
-          val _tenant = json.TenantFormat.reads(rawTenant.as[JsObject]
-            ++ Json.obj("style" -> json.DaikokuStyleFormat.reads((rawTenant \ "style").as[JsObject]
-            ++ Json.obj("cssCmsPage" -> cssPage.id.value, "jsCmsPage" -> jsPage.id.value, "colorThemeCmsPage" -> colorThemePage.id.value)).get.asJson))
+          val _tenant = json.TenantFormat.reads(
+            rawTenant.as[JsObject]
+              ++ Json.obj(
+                "style" -> json.DaikokuStyleFormat
+                  .reads(
+                    (rawTenant \ "style").as[JsObject]
+                      ++ Json.obj(
+                        "cssCmsPage" -> cssPage.id.value,
+                        "jsCmsPage" -> jsPage.id.value,
+                        "colorThemeCmsPage" -> colorThemePage.id.value
+                      )
+                  )
+                  .get
+                  .asJson
+              )
+          )
 
           val tenant = Try {
             _tenant
-          }  recover {
+          } recover {
             case e =>
               AppLogger.error(e.getMessage, e)
               JsError(e.getMessage)
@@ -1298,8 +1332,6 @@ object evolution_1830 extends EvolutionScript {
         .runWith(Sink.ignore)(mat)
     }
 }
-
-
 
 object evolutions {
   val list: List[EvolutionScript] =
@@ -1320,7 +1352,7 @@ object evolutions {
       evolution_1634,
       evolution_1750,
       evolution_1820,
-      evolution_1830,
+      evolution_1830
     )
   def run(
       dataStore: DataStore,

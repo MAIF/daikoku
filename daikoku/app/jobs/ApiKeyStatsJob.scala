@@ -238,6 +238,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
     }).flatten
   }
 
+// format: off
   /**
     * with an optional given consumption, which is la last consumption found in database
     * the consumption is calculated for every days between last consumption and now
@@ -310,9 +311,9 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
 
             for {
               consumption <- otoroshiClient.getApiKeyConsumption(
-                subscription.apiKey.clientId,
-                from.getMillis.toString,
-                to.toDateTime.getMillis.toString,
+                clientId = subscription.apiKey.clientId,
+                from  =from.getMillis.toString,
+                to = to.toDateTime.getMillis.toString,
                 failOnError = plan.costPerMonth.isDefined
               )
               quotas <- //todo: do not call apiquoats if not today
@@ -410,6 +411,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       .getOrElse(FastFuture.successful(Seq.empty[ApiKeyConsumption]))
       .flatten
   }
+// format: on
 
   def computeBilling(
       tenant: TenantId,

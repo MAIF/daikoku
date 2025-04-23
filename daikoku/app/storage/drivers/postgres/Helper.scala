@@ -305,12 +305,15 @@ object Helper {
   def rowToJson[Of](row: Row, format: Format[Of]): Option[Of] = {
     import pgimplicits._
 //    logger.warn(Json.stringify(row.optJsObject("content").getOrElse(Json.obj("error" -> "rien"))))
-    row.optJsObject("content").map(format.reads).map {
-      case JsSuccess(s, _) => s.some
-      case JsError(errors) =>
-        logger.error(errors.toString())
-        None
-    }
+    row
+      .optJsObject("content")
+      .map(format.reads)
+      .map {
+        case JsSuccess(s, _) => s.some
+        case JsError(errors) =>
+          logger.error(errors.toString())
+          None
+      }
       .collect {
         case Some(value) => value
       }

@@ -1218,9 +1218,11 @@ object utils {
       name = "Test Corp.",
       domain = "localhost",
       style = Some(
-        DaikokuStyle.template(
-          Tenant.Default
-        ).copy(title = "Test Corp.")
+        DaikokuStyle
+          .template(
+            Tenant.Default
+          )
+          .copy(title = "Test Corp.")
       ),
       mailerSettings = Some(ConsoleMailerSettings()),
       authProvider = AuthProvider.Local,
