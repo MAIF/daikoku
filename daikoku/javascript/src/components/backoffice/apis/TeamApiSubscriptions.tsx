@@ -180,7 +180,7 @@ export const TeamApiSubscriptions = ({
         return (
           <SwitchButton
             disabled={sub.parent && !sub.parent?.enabled}
-            ariaLabel={translate("subscription.enable.button.label")}
+            ariaLabel={sub.enabled ? translate("subscription.disable.button.label") : translate("subscription.enable.button.label")}
             onSwitch={(value) => {
               return Services.archiveSubscriptionByOwner(
                 currentTeam._id,

@@ -405,7 +405,7 @@ test('[ASOAPI-10398 ASOAPI-10399] - [producteur] - désactiver/activer une clé 
   await loginAs(MICHAEL, page);
   await page.getByRole('heading', { name: 'API Commande' }).click();
   await page.getByText('Souscriptions').click();
-  await page.getByRole('row', { name: 'api-commande-prod' }).locator('label.switch--item').click();
+  await page.getByRole('row', { name: 'api-commande-prod' }).getByRole('switch', { name: 'Désactiver la souscription'}).click();
   //wait return of api
   await page.waitForResponse(r => r.url().includes('/_archiveByOwner?enabled=false') && r.status() === 200);
   //test in otoroshi
@@ -421,7 +421,8 @@ test('[ASOAPI-10398 ASOAPI-10399] - [producteur] - désactiver/activer une clé 
   await expect(apiKey.enabled).toBe(false);
 
   await page.waitForTimeout(500);
-  await page.getByRole('row', { name: 'api-commande-prod' }).locator('label.switch--item').click();
+  await page.getByRole('row', { name: 'api-commande-prod' }).getByRole('switch', { name: 'Activer la souscription' }).click();
+
   //wait return of api
   const response = await page.waitForResponse(r => r.url().includes('/_archiveByOwner?enabled=true') && r.status() === 200);
   const r = await response.json()

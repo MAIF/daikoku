@@ -81,8 +81,25 @@ export const SwitchButton = (props: Props) => {
 
   return (
     <div className={classNames("switch-button-container", props.className, { loading, active, disabled: props.disabled })}>
-      <label className="switch-button">
-        <input type="checkbox" onChange={e => handleInputChange(e)} aria-label={props.ariaLabel} checked={active} disabled={props.disabled} />
+      <label className="switch-button"
+        role="switch"
+        aria-checked={active}
+        aria-label={props.ariaLabel}
+        tabIndex={props.disabled ? -1 : 0}
+        onKeyDown={(e) => {
+          if ((e.key === 'Enter' || e.key === ' ') && !props.disabled) {
+            e.preventDefault();
+            handleInputChange({
+              target: { checked: !active }
+            } as React.ChangeEvent<HTMLInputElement>)
+          }
+        }}>
+        <input type="checkbox"
+          onChange={handleInputChange}
+          checked={active}
+          disabled={props.disabled}
+          aria-hidden="true"
+          tabIndex={-1} />
         <span className="slider round"></span>
       </label>
     </div>

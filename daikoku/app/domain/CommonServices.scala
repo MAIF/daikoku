@@ -540,8 +540,7 @@ object CommonServices {
               null,
               filter,
               if (limit == -1) null else java.lang.Integer.valueOf(limit),
-              if (offset == -1) null
-              else java.lang.Integer.valueOf(offset)
+              if (offset == -1) null else java.lang.Integer.valueOf(offset)
             )
           )
     } yield tags
@@ -573,9 +572,9 @@ object CommonServices {
              |SELECT category
              |FROM (SELECT DISTINCT jsonb_array_elements_text(content -> 'categories') AS category
              |            FROM visible_apis)_
-             |WHERE category ~* COALESCE($$9, '')
+             |WHERE category ~* COALESCE($$10, '')
              |ORDER BY LOWER(category)
-             |LIMIT $$10 OFFSET $$11;
+             |LIMIT $$11 OFFSET $$12;
              |""".stripMargin,
             "category",
             Seq(
@@ -590,8 +589,7 @@ object CommonServices {
               null,
               filter,
               if (limit == -1) null else java.lang.Integer.valueOf(limit),
-              if (offset == -1) null
-              else java.lang.Integer.valueOf(offset)
+              if (offset == -1) null else java.lang.Integer.valueOf(offset)
             )
           )
     } yield tags
