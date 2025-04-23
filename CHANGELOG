@@ -735,3 +735,11 @@ We'd like to thank all the contributors who worked on this release!
 - Subscription is deleted even if consumption is not retrieve [#801](https://github.com/MAIF/daikoku/issues/801)
 - [APi transfer] - subscription demand notification are not transfer with the API [#782](https://github.com/MAIF/daikoku/issues/782)
 
+## [v18.2.1] - 2025-04-23
+
+## :beetle: Bug Fixes
+
+- Poor performance to enable/disable subscription in admin age [#845](https://github.com/MAIF/daikoku/issues/845)
+- Subscription process issue [#844](https://github.com/MAIF/daikoku/issues/844)
+- favorite apis does not appear on main page [#843](https://github.com/MAIF/daikoku/issues/843)
+
