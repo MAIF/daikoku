@@ -237,8 +237,7 @@ class CmsApiController(
           colorThemePage.asJson,
           jsPage.asJson
         )
-      )).leftMap(_.render())
-        .merge
+      )).leftMap(_.render()).merge
     }
 
   def findAll(): Action[AnyContent] =
