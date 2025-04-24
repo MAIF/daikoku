@@ -2,11 +2,12 @@ import { getApolloContext } from '@apollo/client';
 import { constraints, format, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
+import { GraphQLClient } from 'graphql-request';
 import sortBy from 'lodash/sortBy';
-import moment from 'moment';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { isBefore } from 'date-fns';
 
 import {
   I18nContext,
@@ -33,11 +34,10 @@ import {
   Spinner,
   apikey,
   escapeRegExp,
+  formatDate,
   read
 } from '../../utils';
 import { apiGQLToLegitApi } from '../../utils/apiUtils';
-import { GraphQLClient } from 'graphql-request';
-import { IApiSubscriptionGql } from '../apis/TeamApiSubscriptions';
 
 type ISubscriptionWithChildren = ISubscriptionExtended & {
   children: Array<ISubscriptionExtended>;
@@ -897,13 +897,13 @@ export const ApiKeyCard = ({
               translate("subscription.for")}
               <Link to={subscription.apiLink} className='ms-1 underline'>{subscription.apiName}</Link>/<Link to={subscription.planLink} className='me-1 underline'>{subscription.planName}</Link>
               {translate({
-                key: 'subscription.created.at', replacements: [moment(subscription.createdAt).format(translate('moment.date.format.without.hours'))]
+                key: 'subscription.created.at', replacements: [formatDate(subscription.createdAt, translate('date.locale'), translate('date.format.without.hours'))]
               })}
               <span className={classNames('ms-1', {
-                "danger-color": moment(subscription.validUntil).isBefore(moment())
+                "danger-color": subscription.validUntil && isBefore(new Date(subscription.validUntil), new Date())
               })}>
                 {subscription.validUntil && translate({
-                  key: 'subscription.valid.until', replacements: [moment(subscription.validUntil).format(translate('moment.date.format.without.hours'))]
+                  key: 'subscription.valid.until', replacements: [formatDate(subscription.validUntil, translate('date.locale'), translate('date.format.without.hours'))]
                 })}</span>
             </div>
             <div className='api-subscription__infos__creation'>
@@ -1116,13 +1116,13 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
             translate("subscription.for")}
             <span className='ms-1 underline'>{props.api.name}</span>/<span className='me-1 underline'>{props.plan.customName}</span>
             {translate({
-              key: 'subscription.created.at', replacements: [moment(props.subscription.createdAt).format(translate('moment.date.format.without.hours'))]
+              key: 'subscription.created.at', replacements: [formatDate(props.subscription.createdAt, translate('date.locale'),translate('date.format.without.hours'))]
             })}
             <span className={classNames('ms-1', {
-              "danger-color": moment(props.subscription.validUntil).isBefore(moment())
+              "danger-color": props.subscription.validUntil && isBefore(new Date(props.subscription.validUntil), new Date())
             })}>
               {props.subscription.validUntil && translate({
-                key: 'subscription.valid.until', replacements: [moment(props.subscription.validUntil).format(translate('moment.date.format.without.hours'))]
+                key: 'subscription.valid.until', replacements: [formatDate(props.subscription.validUntil, translate('date.locale'), translate('date.format.without.hours'))]
               })}</span></div>
         </div>
       </div>

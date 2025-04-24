@@ -1,8 +1,6 @@
 import { createColumnHelper } from '@tanstack/react-table';
-import { Row } from 'antd';
-import dayjs from 'dayjs';
-import moment from 'moment';
 import { useContext, useEffect, useRef, useState } from 'react';
+import { subHours } from 'date-fns';
 
 import { ModalContext, useTenantBackOffice } from '../../../contexts';
 import { I18nContext } from '../../../contexts';
@@ -10,7 +8,7 @@ import * as Services from '../../../services';
 import { IAuditTrailEvent, isError } from '../../../types';
 import { Table, TableRef } from '../../inputs';
 import { OtoDatePicker } from '../../inputs/datepicker';
-import { Can, manage, tenant } from '../../utils';
+import { Can, formatDate, manage, tenant } from '../../utils';
 
 export const AuditTrailList = () => {
   useTenantBackOffice();
@@ -20,8 +18,8 @@ export const AuditTrailList = () => {
   const { alert } = useContext(ModalContext);
   const { translate, Translation } = useContext(I18nContext);
 
-  const [from, setFrom] = useState(dayjs().subtract(1, 'hour'));
-  const [to, setTo] = useState(dayjs());
+  const [from, setFrom] = useState(subHours(new Date(), 1));
+  const [to, setTo] = useState(new Date());
   const page = 1;
   const size = 500;
 
@@ -34,7 +32,7 @@ export const AuditTrailList = () => {
       cell: (info) => {
         const item = info.getValue;
         const value = info.getValue['$long'] ? item['@timestamp']['$long'] : item['@timestamp']
-        return dayjs(value).format('YYYY-MM-DD HH:mm:ss.SSS');
+        return formatDate(value, translate('date.locale'),'yyyy-MM-dd HH:mm:ss.SSS');
       },
     }),
     columnHelper.accessor(row => row.user.name, {
@@ -79,7 +77,7 @@ export const AuditTrailList = () => {
     table.current?.update();
   }, [from, to, page]);
 
-  const updateDateRange = (from: dayjs.Dayjs, to: dayjs.Dayjs) => {
+  const updateDateRange = (from: Date, to: Date) => {
     setFrom(from);
     setTo(to);
   };

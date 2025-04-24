@@ -1,17 +1,15 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { getApolloContext } from '@apollo/client';
-import maxBy from 'lodash/maxBy';
-
-import * as Services from '../../../services';
-import { MonthPicker } from '../../inputs/monthPicker';
-import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
-import { formatCurrency, Spinner, Can, read, api } from '../../utils';
-import { I18nContext } from '../../../contexts';
-import { useTeamBackOffice } from '../../../contexts';
-import dayjs from 'dayjs';
-import { IApiAuthoWithCount, ITeamSimple, isError } from '../../../types';
-import { toast } from 'sonner';
 import { GraphQLClient } from 'graphql-request';
+import maxBy from 'lodash/maxBy';
+import { useContext, useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { startOfMonth, endOfMonth } from 'date-fns';
+
+import { I18nContext, useTeamBackOffice } from '../../../contexts';
+import * as Services from '../../../services';
+import { IApiAuthoWithCount, isError, ITeamSimple } from '../../../types';
+import { MonthPicker } from '../../inputs/monthPicker';
+import { api, Can, formatCurrency, formatDate, read, Spinner } from '../../utils';
+import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
 
 
 type TeamIncomeGql = {
@@ -39,7 +37,7 @@ export const TeamIncome = () => {
   const graphqlEndpoint = `${window.location.origin}/api/search`;
   const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
 
-  const [date, setDate] = useState(dayjs())
+  const [date, setDate] = useState(new Date())
   const [state, setState] = useState<{
     consumptions: Array<TeamIncomeGql>,
     consumptionsByApi: Array<any>,
@@ -65,15 +63,15 @@ export const TeamIncome = () => {
     }
   }, [currentTeam]);
 
-  const getBillingData = (date: dayjs.Dayjs) => {
+  const getBillingData = (date: Date) => {
     setState({ ...state, loading: true });
     Promise.all([
       customGraphQLClient.request<{ teamIncomes: Array<TeamIncomeGql> }>(
         Services.graphql.getTeamIncome,
         {
           teamId: (currentTeam as ITeamSimple)._id,
-          from: date.startOf('month').valueOf(),
-          to: date.endOf('month').valueOf()
+          from: startOfMonth(date).getDate(),
+          to: endOfMonth(date).getDate()
         }
       ).then(({ teamIncomes }) => {
         return teamIncomes
@@ -119,7 +117,7 @@ export const TeamIncome = () => {
   const total = state.consumptions
     .reduce((acc: number, curr: any) => acc + curr.billing.total, 0);
   const mostRecentConsumption = maxBy(state.consumptions, (c) => c.to);
-  const lastDate = mostRecentConsumption && dayjs((mostRecentConsumption as any).to).format('DD/MM/YYYY HH:mm');
+  const lastDate = mostRecentConsumption && formatDate(mostRecentConsumption.to, translate('date.locale'), translate('date.format'));
 
   if (isLoading) {
     return <Spinner />
@@ -142,7 +140,7 @@ export const TeamIncome = () => {
               <div className="col apis">
                 <div className="row month__and__total">
                   <div className="col-12 month__selector d-flex align-items-center">
-                    <MonthPicker updateDate={(date: dayjs.Dayjs) => {
+                    <MonthPicker updateDate={(date: Date) => {
                       setDate(date);
                       getBillingData(date);
                     }} value={date} />

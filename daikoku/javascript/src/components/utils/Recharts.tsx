@@ -1,6 +1,4 @@
-import React from 'react';
 import sortBy from 'lodash/sortBy';
-import moment from 'moment';
 
 import {
   AreaChart,
@@ -15,8 +13,13 @@ import {
   Cell,
   Legend,
 } from 'recharts';
+import { formatDate } from './formatters';
+import { I18nContext } from '../../contexts';
+import { useContext } from 'react';
 
 export function Histogram(props: any) {
+  const { translate } = useContext(I18nContext)
+
   const colors = [
     '#027cc3',
     '#95cf3d',
@@ -57,7 +60,7 @@ export function Histogram(props: any) {
           finalItem = {
             ...finalItem,
             ...{
-              name: moment(item[0]).format('YYYY-MM-DD HH:mm'),
+              name: formatDate(item[0], translate('date.locale'), translate('date.format')),
               [serie.name]: item[1],
             },
           };

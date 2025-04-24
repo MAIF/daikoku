@@ -1,52 +1,49 @@
-import moment from 'moment';
 import { nanoid } from 'nanoid';
-import React, { useContext, useEffect, useState } from 'react';
+import React, { PropsWithChildren, useContext, useEffect, useState } from 'react';
 
+import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import * as MessageEvents from '../../../services/messages';
-import { isError, IState, ITeamSimple, IUserSimple } from '../../../types';
+import { isError, ITeamSimple } from '../../../types';
+import { IChatClosedDate, IMessage } from '../../../types/chat';
 import { Option, partition } from '../../utils';
-import { GlobalContext } from '../../../contexts/globalContext';
 
 const initMessageContext = {
   messages: [],
   totalUnread: 0,
-  sendNewMessage: () => { },
-  readMessages: () => { },
-  adminTeam: {},
-  closeChat: () => { },
-  getPreviousMessages: () => { },
-  lastClosedDates: null,
+  sendNewMessage: (newMessage: string, participants: Array<string>, chat: string) => Promise.resolve(),
+  readMessages: (chat: string) => Promise.resolve(),
+  adminTeam: {} as ITeamSimple,
+  closeChat: (chat: string) => Promise.resolve(),
+  getPreviousMessages: (chat: string) => { },
+  lastClosedDates: undefined,
   loading: false,
-  createNewChat: () => { },
+  createNewChat: () => Promise.resolve(),
 }
 
 type TMessageContext = {
-  messages: any,
+  messages: Array<IMessage>,
   totalUnread: number,
-  sendNewMessage: any,
-  readMessages: any,
-  adminTeam: any,
-  closeChat: any,
-  getPreviousMessages: any,
-  lastClosedDates: any,
+  sendNewMessage: (newMessage: string, participants: Array<string>, chat: string) => Promise<void>,
+  readMessages: (chat: string) => Promise<void>,
+  adminTeam?: ITeamSimple,
+  closeChat: (chat: string) => Promise<void>,
+  getPreviousMessages: (chat: string) => void,
+  lastClosedDates?: Array<IChatClosedDate>,
   loading: boolean,
-  createNewChat: any,
+  createNewChat: (chat: string) => Promise<void>,
 }
 export const MessagesContext = React.createContext<TMessageContext>(initMessageContext);
 
-export const MessagesProvider = ({
-  children,
-}: { children: JSX.Element }) => {
-  const [messages, setMessages] = useState<Array<any>>([]);
+export const MessagesProvider = (props: PropsWithChildren) => {
+  const [messages, setMessages] = useState<Array<IMessage>>([]);
   const [adminTeam, setAdminTeam] = useState<ITeamSimple>();
-  const [receivedMessage, setReceivedMessage] = useState<any>(undefined);
+  const [receivedMessage, setReceivedMessage] = useState<IMessage>();
   const [totalUnread, setTotalUnread] = useState<number>(0);
-  const [lastClosedDates, setLastClosedDates] = useState<Array<any>>([]);
+  const [lastClosedDates, setLastClosedDates] = useState<Array<IChatClosedDate>>([]);
   const [loading, setLoading] = useState<boolean>(false);
 
   const { connectedUser } = useContext(GlobalContext)
-
   const sseId = nanoid(64);
 
   useEffect(() => {
@@ -56,7 +53,7 @@ export const MessagesProvider = ({
         .then((team) => {
           if (!isError(team)) {
             setAdminTeam(team);
-            if (team.users.some((u: any) => u.userId === connectedUser._id)) {
+            if (team.users.some((u) => u.userId === connectedUser._id)) {
               return Services.myMessages();
             }
           }
@@ -68,7 +65,7 @@ export const MessagesProvider = ({
           setLoading(false);
         });
 
-      MessageEvents.addCallback((m: any) => handleEvent(m), sseId);
+      MessageEvents.addCallback((m: IMessage) => handleEvent(m), sseId);
 
       return () => {
         MessageEvents.removeCallback(sseId);
@@ -78,15 +75,16 @@ export const MessagesProvider = ({
 
   useEffect(() => {
     if (receivedMessage) {
-      if ((lastClosedDates as any).every(({ chat }: any) => chat !== (receivedMessage as any).chat)) {
+      if (lastClosedDates.every(({ chat }) => chat !== receivedMessage.chat)) {
         setLoading(true);
-        Services.lastDateChat((receivedMessage as any).chat, moment().format('x')).then((date) => {
-          setLastClosedDates([
-            ...lastClosedDates.filter((item: any) => item.chat !== receivedMessage.chat),
-            { chat: receivedMessage.chat, date },
-          ]);
-          setLoading(false);
-        });
+        Services.lastDateChat(receivedMessage.chat, new Date().getTime())
+          .then((date) => {
+            setLastClosedDates([
+              ...lastClosedDates.filter(item => item.chat !== receivedMessage.chat),
+              { chat: receivedMessage.chat, date },
+            ]);
+            setLoading(false);
+          });
       }
       setMessages([receivedMessage, ...messages]);
       setReceivedMessage(undefined);
@@ -94,27 +92,28 @@ export const MessagesProvider = ({
   }, [receivedMessage, totalUnread]);
 
   useEffect(() => {
-    setTotalUnread(messages.filter((m) => !(m as any).readBy.includes(connectedUser._id)).length);
+    setTotalUnread(messages.filter((m) => !m.readBy.includes(connectedUser._id)).length);
   }, [messages]);
 
-  const handleEvent = (m: any) => {
+  const handleEvent = (m: IMessage) => {
     setReceivedMessage(m);
   };
 
-  const sendNewMessage = (newMessage: any, participants: any, chat: any) => {
+  const sendNewMessage = (newMessage: string, participants: Array<string>, chat: string) => {
     setLoading(true);
-    return Services.sendMessage(newMessage, participants, chat).then(() => setLoading(false));
+    return Services.sendMessage(newMessage, participants, chat)
+      .then(() => setLoading(false));
   };
 
-  const readMessages = (chat: any) => {
-    Services.setMessagesRead(chat)
+  const readMessages = (chat: string) => {
+    return Services.setMessagesRead(chat)
       .then(() => Services.myChatMessages(chat))
       .then((result) => {
-        const [filterMessages] = partition(messages, (m: any) => m.chat !== chat);
+        const [filterMessages] = partition(messages, (m) => m.chat !== chat);
 
         setMessages([...filterMessages, ...result.messages]);
         setLastClosedDates([
-          ...(lastClosedDates as any).filter((item: any) => item.chat !== chat),
+          ...(lastClosedDates).filter((item) => item.chat !== chat),
           ...result.previousClosedDates,
         ]);
       });
@@ -136,28 +135,30 @@ export const MessagesProvider = ({
       });
   };
 
-  const getPreviousMessages = (chat: any) => {
-    Option((lastClosedDates as any).find((item: any) => item.chat === chat))
-      .map((item: any) => item.date)
-      .fold(() => { }, (date: any) => {
+  const getPreviousMessages = (chat: string) => {
+    Option((lastClosedDates).find((item) => item.chat === chat))
+      .map((item) => item.date)
+      .fold(() => { }, (date) => {
         setLoading(true);
-        Services.myChatMessages(chat, date).then((result) => {
-          setMessages([...result.messages, ...messages]);
-          setLastClosedDates([
-            ...lastClosedDates.filter((item: any) => item.chat !== chat),
-            ...result.previousClosedDates,
-          ]);
-          setLoading(false);
-        });
+        Services.myChatMessages(chat, date)
+          .then((result) => {
+            setMessages([...result.messages, ...messages]);
+            setLastClosedDates([
+              ...lastClosedDates.filter((item) => item.chat !== chat),
+              ...result.previousClosedDates,
+            ]);
+            setLoading(false);
+          });
       });
   };
 
-  const createNewChat = (chat: any) => {
+  const createNewChat = (chat: string) => {
     setLoading(true);
-    return Services.lastDateChat(chat, moment().format('x')).then((date) => {
-      setLastClosedDates([...(lastClosedDates as any).filter((item: any) => item.chat !== chat), { chat, date }]);
-      setLoading(false);
-    });
+    return Services.lastDateChat(chat, new Date().getTime())
+      .then((date) => {
+        setLastClosedDates([...(lastClosedDates).filter((item) => item.chat !== chat), { chat, date }]);
+        setLoading(false);
+      });
   };
 
   return (
@@ -175,7 +176,7 @@ export const MessagesProvider = ({
         createNewChat,
       }}
     >
-      {children}
+      {props.children}
     </MessagesContext.Provider>
   );
 };

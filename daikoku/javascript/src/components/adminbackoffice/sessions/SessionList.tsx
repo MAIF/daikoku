@@ -1,4 +1,3 @@
-import moment from 'moment';
 import { useContext, useRef } from 'react';
 
 import * as Services from '../../../services';
@@ -9,7 +8,7 @@ import { I18nContext } from '../../../contexts/i18n-context';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { ISession } from '../../../types';
 import { Table, TableRef } from '../../inputs';
-import { Can, daikoku, manage } from '../../utils';
+import { Can, daikoku, formatDate, manage } from '../../utils';
 
 export const SessionList = () => {
   const { connectedUser } = useContext(GlobalContext)
@@ -31,11 +30,11 @@ export const SessionList = () => {
       header: translate('Impersonator'),
       meta: { style: { textAlign: 'left' } },
     }),
-    columnHelper.accessor(row => moment(row.created).format('YYYY-MM-DD HH:mm:ss.SSS'), {
+    columnHelper.accessor(row => formatDate(row.created, translate('date.locale'), translate('date.format.short.millis')), {
       header: translate('Created at'),
       meta: { style: { textAlign: 'left' } },
     }),
-    columnHelper.accessor(row => moment(row.expires).format('YYYY-MM-DD HH:mm:ss.SSS'), {
+    columnHelper.accessor(row => formatDate(row.expires, translate('date.locale'), translate('date.format.short.millis')), {
       header: translate('Expires'),
       meta: { style: { textAlign: 'left' } },
     }),

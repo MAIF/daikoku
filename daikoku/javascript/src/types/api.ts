@@ -1,5 +1,5 @@
 import { Schema } from '@maif/react-forms';
-import { IFastTeam, ITeamSimple } from './team';
+import { IFastTeam, ITeamSimple, IUserSimple } from './team';
 import { ThirdPartyPaymentType } from './tenant';
 import { INotification } from './types';
 import { ITeamFullGql } from './gql';
@@ -573,4 +573,27 @@ export interface IConsumption {
   from: number;
   to: number;
   state: 'inProgress' | 'completed';
+}
+
+export type Comment = {
+  by: string,
+  createdAt: number,
+  lastModificationAt: number,
+  content: string
+}
+export type Issue = {
+  _id: string,
+  _humanReadableId: string,
+  seqId: number,
+  _tenant: string,
+  _deleted: boolean,
+  lastModificationAt: number,
+  open: boolean,
+  createdAt: number,
+  closedAt: number,
+  apiVersion: string,
+  comments: Array<Comment>,
+  title: string,
+  by: IUserSimple,
+  tags: Array<IIssuesTag>
 }

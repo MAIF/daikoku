@@ -1,11 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Progress } from 'antd';
-import moment from 'moment';
 import { useContext, useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { BeautifulTitle, OtoroshiStatsVizualization } from '../..';
+import { BeautifulTitle, formatDate, OtoroshiStatsVizualization } from '../..';
 import { I18nContext, useTeamBackOffice } from '../../../contexts';
 import * as Services from '../../../services';
 import { ITeamSimple, ResponseError, isError } from "../../../types";
@@ -103,7 +102,7 @@ export const TeamApiKeyConsumption = () => {
       label: (data: any, max: any) => getLabelForDataIn(data, max),
       title: translate('Data In'),
       formatter: (data: any) => data.map((item: any) => ({
-        date: moment(item.from).format('DD MMM.'),
+        date: formatDate(item.from, translate('date.locale'), 'dd MMM.'),
         count: item.hits
       })),
       xAxis: 'date',

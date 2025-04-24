@@ -1,9 +1,14 @@
-import moment from 'moment';
-import {format} from "date-fns";
-import {fr, enUS} from "date-fns/locale"
+import { differenceInDays, differenceInMinutes, format, formatDistance } from "date-fns";
+import { enUS, fr } from "date-fns/locale";
 
+import frFRAntd from 'antd/es/date-picker/locale/fr_FR';
+import enUSAntd from 'antd/es/date-picker/locale/en_US';
+
+import find from "lodash/find";
+import { useContext } from "react";
+
+import { I18nContext } from "../../contexts";
 import { TranslateParams } from '../../contexts/i18n-context';
-
 import { currencies } from '../../services/currencies';
 import {
   IBaseUsagePlan,
@@ -12,10 +17,6 @@ import {
   isQuotasWitoutLimit,
   IUsagePlan,
 } from '../../types';
-
-import find from "lodash/find";
-import { useContext } from "react";
-import { I18nContext } from "../../contexts";
 
 export const currency = (plan?: IBaseUsagePlan) => {
   if (!plan) {
@@ -52,7 +53,6 @@ export const renderPricing = (plan: IFastPlan | IUsagePlan, translate: (params: 
   const req = translate('req.');
   const month = translate('month');
 
-  //FIXME: do not use old usage plan type
   if (isQuotasWitoutLimit(plan)) {
     pricing = `${formatCurrency(plan.costPerMonth)} ${getCurrencySymbol(plan.currency!.code)}/${month} + 
       ${formatCurrency(plan.costPerRequest)} ${getCurrencySymbol(plan.currency!.code)}/${req}`
@@ -156,35 +156,58 @@ export const teamPermissions = {
   user: 'User',
 };
 
-const getLanguageFns = (language) => {
-  switch (language) {
-    case 'fr':
+export const getLanguageFns = (language: string) => {
+  switch (true) {
+    case language.toLowerCase() === 'fr':
       return fr;
-    case 'en':
+    case language.toLocaleLowerCase() === 'en':
       return enUS
     default:
       return enUS;
   }
 }
-export const formatDate = (date: number | string, language: string, formatAsString = 'l LT') => {
-  moment.locale(language);
+export const getLanguageAntd = (language: string) => {
+  switch (true) {
+    case language.toLowerCase() === 'fr':
+      return frFRAntd;
+    case language.toLowerCase() === 'en':
+      return enUSAntd
+    default:
+      return enUSAntd;
+  }
+}
+export function formatDate(date: number | string, language: string, formatAsString): string;
 
-  return format(new Date(date), formatAsString, { locale: getLanguageFns(language) });
-};
+export function formatDate(date: Date, language: string, formatAsString: string): string;
 
-export const formatMessageDate = (date: any, language: any) => {
-  moment.locale(language);
-  const messageDate = moment.isMoment(date) ? date : moment(date);
-  const now = moment();
-  const diffToNow = now.diff(messageDate, 'day');
+export function formatDate(date: any, language: string, formatAsString: string) {
+  let realDate: Date;
+  switch (typeof date) {
+    case "object":
+      realDate = date
+    default:
+      realDate = new Date(date);
+      break;
+  }
+
+  console.debug({date, realDate, formatAsString})
+  return format(realDate, formatAsString, { locale: getLanguageFns(language) });
+}
+
+
+
+export const formatMessageDate = (date: number, language: string): string => {
+  const messageDate = new Date(date)
+  const now = new Date();
+  const diffToNow = differenceInDays(messageDate, now);
   if (diffToNow === 0) {
-    const minDiff = now.diff(messageDate, 'm');
-    return moment.duration(minDiff, 'm').humanize();
+    const minDiff = differenceInMinutes(messageDate, now);
+    return formatDistance(messageDate, now, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })
   } else if (diffToNow <= 7) {
-    return messageDate.format('ddd kk:mm');
-  } else if (messageDate.get('year') === now.get('year')) {
-    return messageDate.format('DD MMMM kk:mm');
+    return format(messageDate, 'ddd kk:mm');
+  } else if (messageDate.getFullYear() === now.getFullYear()) {
+    return format(messageDate, 'DD MMMM kk:mm');
   } else {
-    return messageDate.format('DD MMMM y kk:mm');
+    return format(messageDate, 'DD MMMM y kk:mm');
   }
 };

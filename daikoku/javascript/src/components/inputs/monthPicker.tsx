@@ -1,7 +1,10 @@
-import React, { useContext } from 'react';
-
 import DatePicker from 'antd/lib/date-picker';
+import { useContext } from 'react';
+import dateFnsGenerateConfig from 'rc-picker/lib/generate/dateFns'
+import { endOfMonth } from 'date-fns';
+
 import { I18nContext } from '../../contexts';
+import { getLanguageAntd } from '../utils';
 
 const getDateFormat = (language: string) => {
   switch (language.toUpperCase()) {
@@ -16,22 +19,30 @@ const getDateFormat = (language: string) => {
 export const MonthPicker = ({
   updateDate,
   value
-}: any) => {
+}: {
+  updateDate: (d: Date) => void,
+  value: Date
+}) => {
   const { language } = useContext(I18nContext);
 
   const dateFormat = getDateFormat(language);
 
-  const onChange = (newMonth: any) => {
-    if (newMonth && updateDate && !value.isSame(newMonth))  updateDate(newMonth.endOf('month'));
+  const onChange = (newMonth: Date) => {
+    if (newMonth && updateDate && value.getTime() !== newMonth.getTime())
+      updateDate(endOfMonth(newMonth));
   };
 
+  const MyDatePicker = DatePicker.generatePicker<Date>(dateFnsGenerateConfig)
+  const locale = getLanguageAntd(language)
+
   return (
-    <DatePicker
+    <MyDatePicker
       picker="month"
       defaultValue={value}
       onChange={onChange}
       format={dateFormat}
       onOk={(value) => value}
+      locale={locale}
     />
   );
 };

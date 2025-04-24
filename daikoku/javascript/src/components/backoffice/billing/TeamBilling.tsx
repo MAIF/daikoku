@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import dayjs from 'dayjs';
 import maxBy from 'lodash/maxBy';
 import { useContext, useEffect, useState } from 'react';
+import {startOfMonth, endOfMonth} from "date-fns";
 
 import { toast } from 'sonner';
 import { I18nContext, useTeamBackOffice } from '../../../contexts';
@@ -12,6 +12,7 @@ import {
   Can,
   Spinner,
   formatCurrency,
+  formatDate,
   read,
   stat
 } from '../../utils';
@@ -28,15 +29,16 @@ export const TeamBilling = () => {
   const { translate, Translation } = useContext(I18nContext);
 
   const [selectedApi, setSelectedApi] = useState<IApi>();
-  const [date, setDate] = useState(dayjs());
+  const [date, setDate] = useState(new Date());
+
 
   const queryClient = useQueryClient();
   const queryBillings = useQuery({
     queryKey: ['billings', date],
     queryFn: () => Services.getTeamBillings(
       (currentTeam as ITeamSimple)._id,
-      date.startOf('month').valueOf(),
-      date.endOf('month').valueOf()
+      startOfMonth(date).getDate(),
+      endOfMonth(date).getDate()
     ),
     enabled: currentTeam && !isError(currentTeam)
   });
@@ -141,7 +143,7 @@ export const TeamBilling = () => {
     if (queryBillings.data && !isError(queryBillings.data)) {
       const consumptions = queryBillings.data
       const mostRecentConsumption = maxBy(consumptions, (c) => c.to);
-      const lastDate = mostRecentConsumption && dayjs(mostRecentConsumption.to).format('DD/MM/YYYY HH:mm');
+      const lastDate = mostRecentConsumption && formatDate(mostRecentConsumption.to, translate('date.locale'), translate('date.format'));
 
       return (
         <i className="ms-1">

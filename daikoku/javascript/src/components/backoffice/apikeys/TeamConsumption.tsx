@@ -58,8 +58,9 @@ export const TeamConsumption = () => {
           <h1>{translate('Global stats')}</h1>
           <OtoroshiStatsVizualization
             sync={() => Services.syncTeamBilling(currentTeam._id)}
-            fetchData={(from: any, to: any) =>
-              Services.getTeamConsumptions(currentTeam._id, from.valueOf(), to.valueOf())
+            fetchData={(from, to) => {
+              return Services.getTeamConsumptions(currentTeam._id, from.getTime(), to.getTime())
+            }
             }
             mappers={mappers}
           />

@@ -202,7 +202,7 @@ export const TeamApiSubscriptions = ({
       cell: (info) => {
         const date = info.getValue();
         if (!!date) {
-          return formatDate(date, translate('moment.locale'), translate('moment.date.format.without.hours'));
+          return formatDate(date, translate('date.locale'), translate('date.format.without.hours'));
         }
         return translate("N/A");
       },
@@ -214,7 +214,7 @@ export const TeamApiSubscriptions = ({
       cell: (info) => {
         const date = info.getValue();
         if (!!date) {
-          return formatDate(date, translate('moment.locale'), translate('moment.date.format'));
+          return formatDate(date, translate('date.locale'), translate('date.format'));
         }
         return translate("N/A");
       },
