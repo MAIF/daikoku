@@ -241,7 +241,7 @@ export function ApiTimelineIssue({
       </div>
       <div>
         <span className="pe-1" style={styles.bold}>
-          {issue.by._humanReadableId}
+          {issue.by.name}
         </span>
         {translate('issues.opened_message')}{' '}
         {formatDate(issue.createdAt, translate('date.locale'), translate('date.format.without.hours'))} ·{' '}
@@ -320,7 +320,7 @@ function Comment({
       <div className="container">
         <div className="d-flex px-3 py-2" style={styles.commentHeader}>
           <span className="pe-1" style={styles.bold}>
-            {by._humanReadableId}
+            {by.name}
           </span>
           <span className="pe-1">{translate('issues.commented_on')}</span>
           {formatDate(createdAt, translate('date.locale'), translate('date.format.without.hours'))}
