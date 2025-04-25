@@ -3143,6 +3143,16 @@ object SchemaDefinition {
             Field("total", LongType, resolve = _.value._2)
           )
       )
+    lazy val ApiSubscriptionListType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), (Seq[ApiSubscription], Long)] =
+      ObjectType[(DataStore, DaikokuActionContext[JsValue]), (Seq[ApiSubscription], Long)](
+        "ApiSubscriptions",
+        "Api Subscriptions as a collection of subscriptions and the total of",
+        () =>
+          fields[(DataStore, DaikokuActionContext[JsValue]), (Seq[ApiSubscription], Long)](
+            Field("subscriptions", ListType(ApiSubscriptionType), resolve = _.value._1),
+            Field("total", LongType, resolve = _.value._2)
+          )
+      )
 
     lazy val CmsPageType
         : ObjectType[(DataStore, DaikokuActionContext[JsValue]), CmsPage] =
@@ -3510,7 +3520,7 @@ object SchemaDefinition {
       List(
         Field(
           "apiApiSubscriptions",
-          ListType(ApiSubscriptionType),
+          ApiSubscriptionListType,
           arguments =
             ID :: TEAM_ID_NOT_OPT :: VERSION :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {

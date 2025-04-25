@@ -1601,52 +1601,55 @@ export const graphql = {
   getApiSubscriptions: `
     query getApiSubscriptions ($apiId: String!, $teamId: String!, $version: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
       apiApiSubscriptions (id: $apiId, teamId: $teamId, version: $version, filterTable: $filterTable, sortingTable: $sortingTable,  limit: $limit, offset: $offset) {
-        _id
-        lastUsage
-        apiKey {
-          clientName
-          clientId
-          clientSecret
-        }
-        plan {
+        subscriptions {
           _id
-          customName
-        }
-        team {
-          _id
-          name
-          type
-        }
-        createdAt
-        validUntil
-        api {
-          _id
-          name
-        }
-        customName
-        enabled
-        tags
-        metadata
-        customMetadata
-        customMaxPerSecond
-        customMaxPerDay
-        customMaxPerMonth
-        customReadOnly
-        adminCustomName
-        parent {
-          _id
-          adminCustomName
-          enabled
-          validUntil
-          api {
-            _id
-            name
+          lastUsage
+          apiKey {
+            clientName
+            clientId
+            clientSecret
           }
           plan {
             _id
             customName
           }
+          team {
+            _id
+            name
+            type
+          }
+          createdAt
+          validUntil
+          api {
+            _id
+            name
+          }
+          customName
+          enabled
+          tags
+          metadata
+          customMetadata
+          customMaxPerSecond
+          customMaxPerDay
+          customMaxPerMonth
+          customReadOnly
+          adminCustomName
+          parent {
+            _id
+            adminCustomName
+            enabled
+            validUntil
+            api {
+              _id
+              name
+            }
+            plan {
+              _id
+              customName
+            }
+          }
         }
+        total
       }
     }
     `,

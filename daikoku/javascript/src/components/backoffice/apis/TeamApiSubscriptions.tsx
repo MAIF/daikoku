@@ -94,7 +94,7 @@ export const TeamApiSubscriptions = ({
     pageIndex: 0,
     pageSize: 10,
   })
-  const [sorting, setSorting] = useState<SortingState>([]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true}]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     []
   )
@@ -107,8 +107,8 @@ export const TeamApiSubscriptions = ({
   const graphqlEndpoint = `${window.location.origin}/api/search`;
   const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
   const subscriptionsQuery = useQuery({
-    queryKey: ["subscriptions", filters, columnFilters, sorting],
-    queryFn: () => customGraphQLClient.request<{ apiApiSubscriptions: Array<IApiSubscriptionGql> }>(Services.graphql.getApiSubscriptions, {
+    queryKey: ["subscriptions", filters, columnFilters, sorting, pagination],
+    queryFn: () => customGraphQLClient.request<{ apiApiSubscriptions: {subscriptions: Array<IApiSubscriptionGql>, total: number} }>(Services.graphql.getApiSubscriptions, {
       apiId: api._id,
       teamId: currentTeam._id,
       version: api.currentVersion,
@@ -266,9 +266,9 @@ export const TeamApiSubscriptions = ({
 
   const defaultData = useMemo(() => [], [])
   const table = useReactTable({
-    data: subscriptionsQuery.data ?? defaultData,
+    data: subscriptionsQuery.data?.subscriptions ?? defaultData,
     columns: columns,
-    rowCount: subscriptionsQuery.data?.length,
+    rowCount: subscriptionsQuery.data?.total,
     state: {
       pagination,
       columnFilters,
