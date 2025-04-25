@@ -1099,7 +1099,8 @@ export const savePost = (apiId: any, teamId: any, postId: any, content: any) =>
 
 export const getDaikokuVersion = () => customFetch('/api/versions/_daikoku');
 
-export const getAPIIssues = (apiId: string): PromiseWithError<Array<Issue>> => customFetch(`/api/apis/${apiId}/issues`);
+export const getAPIIssues = (apiId: string): PromiseWithError<Array<Issue>> =>
+  customFetch(`/api/apis/${apiId}/issues`);
 
 export const getAPIIssue = (apiId: string, issueId: string): PromiseWithError<Issue> =>
   customFetch(`/api/apis/${apiId}/issues/${issueId}`);
@@ -1939,7 +1940,7 @@ export const graphql = {
       total
     }
   }
-`
+`,
 };
 
 export const downloadCmsFiles = () =>

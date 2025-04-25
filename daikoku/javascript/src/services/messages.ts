@@ -54,17 +54,15 @@ export function removeCallback(id: any) {
 }
 
 export const fromMessagesToDialog = (messages: Array<IMessage>): Array<Array<IMessage>> =>
-  orderBy(messages, ['date'])
-    .reduce<Array<Array<IMessage>>>((dialog, message) => {
-      if (!dialog.length) {
-        return [[message]];
+  orderBy(messages, ['date']).reduce<Array<Array<IMessage>>>((dialog, message) => {
+    if (!dialog.length) {
+      return [[message]];
+    } else {
+      const l = last(dialog)!;
+      if (l.some((m) => m.sender === message.sender)) {
+        return [...dialog.slice(0, dialog.length - 1), [...l, message]];
       } else {
-        const l = last(dialog)!;
-        if (l.some((m) => m.sender === message.sender)) {
-          return [...dialog.slice(0, dialog.length - 1), [...l, message]];
-        } else {
-          return [...dialog, [message]];
-        }
+        return [...dialog, [message]];
       }
-    }, []);
-
+    }
+  }, []);

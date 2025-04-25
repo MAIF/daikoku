@@ -6,7 +6,11 @@ import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, KafkaConfig}
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{Accepted, Pending, Rejected}
+import fr.maif.otoroshi.daikoku.domain.NotificationStatus.{
+  Accepted,
+  Pending,
+  Rejected
+}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission._
 import fr.maif.otoroshi.daikoku.domain.TeamType.{Organization, Personal}
 import fr.maif.otoroshi.daikoku.domain.ThirdPartyPaymentSettings.StripeSettings

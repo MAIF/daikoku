@@ -80,7 +80,6 @@ export interface IUserAuditEvent {
   mail: string;
   name: string;
   isDaikokuAdmin: boolean;
-
 }
 export interface IAuditTrailEventGQL {
   _tenant: string;

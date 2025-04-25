@@ -96,8 +96,7 @@ object SchemaDefinition {
 
   val DateTimeUnitype = ScalarType[DateTime](
     "DateTime",
-    coerceOutput =
-      (date, _) => BigDecimalValue(BigDecimal(date.getMillis)),
+    coerceOutput = (date, _) => BigDecimalValue(BigDecimal(date.getMillis)),
     coerceUserInput = {
       case s: String => parseDate(s)
       case _         => Left(DateCoercionViolation)
@@ -3053,7 +3052,6 @@ object SchemaDefinition {
         "AuditEvent",
         "An audit event",
         () =>
-
           fields[(DataStore, DaikokuActionContext[JsValue]), JsObject](
             Field(
               "event_id",
@@ -3093,15 +3091,16 @@ object SchemaDefinition {
             Field(
               "user",
               OptionType(UserAuditEventType),
-              resolve = ctx => (ctx.value \ "user").asOpt(UserAuditEventTypeReader)
+              resolve =
+                ctx => (ctx.value \ "user").asOpt(UserAuditEventTypeReader)
             ),
             Field(
               "impersonator",
               OptionType(UserAuditEventType),
-              resolve =
-                ctx => (ctx.value \ "impersonator").toOption.flatMap {
+              resolve = ctx =>
+                (ctx.value \ "impersonator").toOption.flatMap {
                   case JsNull => None
-                  case value => UserAuditEventTypeReader.reads(value).asOpt
+                  case value  => UserAuditEventTypeReader.reads(value).asOpt
                 }
             ),
             Field(
@@ -3133,23 +3132,45 @@ object SchemaDefinition {
           )
       )
 
-    lazy val AuditTrailType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), (Seq[JsObject], Long)] =
-      ObjectType[(DataStore, DaikokuActionContext[JsValue]), (Seq[JsObject], Long)](
+    lazy val AuditTrailType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      (Seq[JsObject], Long)
+    ] =
+      ObjectType[
+        (DataStore, DaikokuActionContext[JsValue]),
+        (Seq[JsObject], Long)
+      ](
         "AuditTrail",
         "audit trail as a collection of audit event and the total of event",
         () =>
-          fields[(DataStore, DaikokuActionContext[JsValue]), (Seq[JsObject], Long)](
+          fields[
+            (DataStore, DaikokuActionContext[JsValue]),
+            (Seq[JsObject], Long)
+          ](
             Field("events", ListType(AuditEventType), resolve = _.value._1),
             Field("total", LongType, resolve = _.value._2)
           )
       )
-    lazy val ApiSubscriptionListType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), (Seq[ApiSubscription], Long)] =
-      ObjectType[(DataStore, DaikokuActionContext[JsValue]), (Seq[ApiSubscription], Long)](
+    lazy val ApiSubscriptionListType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      (Seq[ApiSubscription], Long)
+    ] =
+      ObjectType[
+        (DataStore, DaikokuActionContext[JsValue]),
+        (Seq[ApiSubscription], Long)
+      ](
         "ApiSubscriptions",
         "Api Subscriptions as a collection of subscriptions and the total of",
         () =>
-          fields[(DataStore, DaikokuActionContext[JsValue]), (Seq[ApiSubscription], Long)](
-            Field("subscriptions", ListType(ApiSubscriptionType), resolve = _.value._1),
+          fields[
+            (DataStore, DaikokuActionContext[JsValue]),
+            (Seq[ApiSubscription], Long)
+          ](
+            Field(
+              "subscriptions",
+              ListType(ApiSubscriptionType),
+              resolve = _.value._1
+            ),
             Field("total", LongType, resolve = _.value._2)
           )
       )
@@ -3494,12 +3515,15 @@ object SchemaDefinition {
         }
     }
 
-    def getAuditTrail(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
-                      from: Long, to: Long,
-                      filter: JsArray,
-                      sorting: JsArray,
-                      limit: Int,
-                      offset: Int) = {
+    def getAuditTrail(
+        ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
+        from: Long,
+        to: Long,
+        filter: JsArray,
+        sorting: JsArray,
+        limit: Int,
+        offset: Int
+    ) = {
       CommonServices
         .getAuditTrail(
           from,
@@ -3539,7 +3563,7 @@ object SchemaDefinition {
       )
 
     def getAuditTrailQueryFields()
-    : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "auditTrail",

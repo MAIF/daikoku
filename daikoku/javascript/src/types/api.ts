@@ -576,24 +576,24 @@ export interface IConsumption {
 }
 
 export type Comment = {
-  by: string,
-  createdAt: number,
-  lastModificationAt: number,
-  content: string
-}
+  by: string;
+  createdAt: number;
+  lastModificationAt: number;
+  content: string;
+};
 export type Issue = {
-  _id: string,
-  _humanReadableId: string,
-  seqId: number,
-  _tenant: string,
-  _deleted: boolean,
-  lastModificationAt: number,
-  open: boolean,
-  createdAt: number,
-  closedAt: number,
-  apiVersion: string,
-  comments: Array<Comment>,
-  title: string,
-  by: IUserSimple,
-  tags: Array<IIssuesTag>
-}
+  _id: string;
+  _humanReadableId: string;
+  seqId: number;
+  _tenant: string;
+  _deleted: boolean;
+  lastModificationAt: number;
+  open: boolean;
+  createdAt: number;
+  closedAt: number;
+  apiVersion: string;
+  comments: Array<Comment>;
+  title: string;
+  by: IUserSimple;
+  tags: Array<IIssuesTag>;
+};
