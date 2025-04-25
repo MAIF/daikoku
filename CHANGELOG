@@ -743,3 +743,10 @@ We'd like to thank all the contributors who worked on this release!
 - Subscription process issue [#844](https://github.com/MAIF/daikoku/issues/844)
 - favorite apis does not appear on main page [#843](https://github.com/MAIF/daikoku/issues/843)
 
+## [v18.2.2] - 2025-04-25
+
+## :beetle: Bug Fixes
+
+- audit trail table could not be filtered by date [#850](https://github.com/MAIF/daikoku/issues/850)
+- wrong pagination in api subscriptions page [#849](https://github.com/MAIF/daikoku/issues/849)
+
