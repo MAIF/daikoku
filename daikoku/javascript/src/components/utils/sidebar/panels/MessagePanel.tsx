@@ -43,7 +43,7 @@ export const MessagePanel = () => {
   };
 
   const sendMessage = () => {
-    if (newMessage.trim()) {
+    if (newMessage.trim() && adminTeam) {
       const chat = Option(messages[0])
         .map((m: any) => m.chat)
         .getOrElse(connectedUser._id);
@@ -121,7 +121,7 @@ export const MessagePanel = () => {
                   />
                 </div>
               )}
-              {Option(lastClosedDates.find((x: any) => x.chat === connectedUser._id)).exists(
+              {Option(lastClosedDates?.find((x) => x.chat === connectedUser._id)).exists(
                 (l: any) => l.date
               ) && (
                   <div className="d-flex flex-row justify-content-center my-1">
