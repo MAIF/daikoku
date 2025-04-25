@@ -1,21 +1,22 @@
 package fr.maif.otoroshi.daikoku.domain
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.data.EitherT
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
+  _TeamMemberOnly,
+  _TenantAdminAccessTenant
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{OtoroshiClient, S3Configuration}
-import org.joda.time.format.ISODateTimeFormat
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json._
-import sangria.ast.{IntValue, ObjectValue, StringValue, BigIntValue, BigDecimalValue}
+import sangria.ast.{BigDecimalValue, ObjectValue, StringValue}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
 import sangria.macros.derive._
 import sangria.schema.{Context, _}
@@ -3052,6 +3053,7 @@ object SchemaDefinition {
         "AuditEvent",
         "An audit event",
         () =>
+
           fields[(DataStore, DaikokuActionContext[JsValue]), JsObject](
             Field(
               "event_id",
@@ -3075,8 +3077,8 @@ object SchemaDefinition {
             ),
             Field(
               "event_timestamp",
-              OptionType(StringType),
-              resolve = ctx => (ctx.value \ "@timestamp").asOpt[String]
+              OptionType(LongType),
+              resolve = ctx => (ctx.value \ "@timestamp").asOpt[Long]
             ),
             Field(
               "id",
@@ -3091,8 +3093,16 @@ object SchemaDefinition {
             Field(
               "user",
               OptionType(UserAuditEventType),
+              resolve = ctx => (ctx.value \ "user").asOpt(UserAuditEventTypeReader)
+            ),
+            Field(
+              "impersonator",
+              OptionType(UserAuditEventType),
               resolve =
-                ctx => (ctx.value \ "user").asOpt(UserAuditEventTypeReader)
+                ctx => (ctx.value \ "impersonator").toOption.flatMap {
+                  case JsNull => None
+                  case value => UserAuditEventTypeReader.reads(value).asOpt
+                }
             ),
             Field(
               "verb",
@@ -3120,6 +3130,17 @@ object SchemaDefinition {
               OptionType(StringType),
               resolve = ctx => (ctx.value \ "authorized").asOpt[String]
             )
+          )
+      )
+
+    lazy val AuditTrailType: ObjectType[(DataStore, DaikokuActionContext[JsValue]), (Seq[JsObject], Long)] =
+      ObjectType[(DataStore, DaikokuActionContext[JsValue]), (Seq[JsObject], Long)](
+        "AuditTrail",
+        "audit trail as a collection of audit event and the total of event",
+        () =>
+          fields[(DataStore, DaikokuActionContext[JsValue]), (Seq[JsObject], Long)](
+            Field("events", ListType(AuditEventType), resolve = _.value._1),
+            Field("total", LongType, resolve = _.value._2)
           )
       )
 
@@ -3463,25 +3484,27 @@ object SchemaDefinition {
         }
     }
 
-//    def _apiSubscriptionsQueryFields()
-//        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
-//      List(
-//        Field(
-//          "apiApiSubscriptions",
-//          ListType(ApiSubscriptionType),
-//          arguments = ID :: TEAM_ID_NOT_OPT :: VERSION :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
-//          resolve = ctx => {
-//            getApiSubscriptions(
-//              ctx,
-//              ctx.arg(ID),
-//              ctx.arg(TEAM_ID_NOT_OPT),
-//              ctx.arg(VERSION),
-//              ctx.arg(LIMIT),
-//              ctx.arg(OFFSET)
-//            )
-//          }
-//        )
-//      )
+    def getAuditTrail(ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
+                      from: Long, to: Long,
+                      filter: JsArray,
+                      sorting: JsArray,
+                      limit: Int,
+                      offset: Int) = {
+      CommonServices
+        .getAuditTrail(
+          from,
+          to,
+          filter,
+          sorting,
+          limit,
+          offset
+        )(ctx.ctx._2, env, e)
+        .map {
+          case Left(value)  => throw NotAuthorizedError(value.toString)
+          case Right(value) => value
+        }
+    }
+
     def apiSubscriptionsQueryFields()
         : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
@@ -3496,6 +3519,28 @@ object SchemaDefinition {
               ctx.arg(ID),
               ctx.arg(TEAM_ID_NOT_OPT),
               ctx.arg(VERSION),
+              ctx.arg(FILTER_TABLE),
+              ctx.arg(SORTING_TABLE),
+              ctx.arg(LIMIT),
+              ctx.arg(OFFSET)
+            )
+          }
+        )
+      )
+
+    def getAuditTrailQueryFields()
+    : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+      List(
+        Field(
+          "auditTrail",
+          AuditTrailType,
+          arguments =
+            FROM :: TO :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
+          resolve = ctx => {
+            getAuditTrail(
+              ctx,
+              ctx.arg(FROM).getOrElse(DateTime.now().minusDays(1).getMillis),
+              ctx.arg(TO).getOrElse(DateTime.now().getMillis),
               ctx.arg(FILTER_TABLE),
               ctx.arg(SORTING_TABLE),
               ctx.arg(LIMIT),
@@ -3967,6 +4012,7 @@ object SchemaDefinition {
           myNotificationQuery() ++
           allTeamsQuery() ++
           getSubscriptionDetailsFields() ++
+          getAuditTrailQueryFields() ++
           cmsPageFields():_*)
       )),
       DeferredResolver.fetchers(teamsFetcher, usersFetcher, apisFetcher)

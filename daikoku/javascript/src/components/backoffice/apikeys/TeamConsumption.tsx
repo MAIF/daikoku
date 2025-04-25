@@ -59,7 +59,6 @@ export const TeamConsumption = () => {
           <OtoroshiStatsVizualization
             sync={() => Services.syncTeamBilling(currentTeam._id)}
             fetchData={(from, to) => {
-              console.debug({from, to})
               return Services.getTeamConsumptions(currentTeam._id, from.getTime(), to.getTime())
             }
             }

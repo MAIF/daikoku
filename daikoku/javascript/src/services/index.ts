@@ -1909,6 +1909,34 @@ export const graphql = {
       }
   }
 `,
+  getAuditTrail: `
+  query getAuditTrail ($from: Long!, $to: Long!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
+    auditTrail (from: $from, to: $to, filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset) {
+      events {
+        event_id
+        event_type
+        event_timestamp
+        url
+        verb
+        authorized
+        tenant {
+          _id
+          name
+        }
+        message
+        user {
+          _id
+          name
+        }
+        impersonator {
+          _id
+          name
+        }
+      }
+      total
+    }
+  }
+`
 };
 
 export const downloadCmsFiles = () =>

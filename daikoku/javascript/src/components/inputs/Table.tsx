@@ -290,7 +290,7 @@ export function Filter({
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       column.setFilterValue(filter)
-    }, 200);
+    }, 300);
     return () => clearTimeout(delayDebounceFn);
   }, [filter]);
 

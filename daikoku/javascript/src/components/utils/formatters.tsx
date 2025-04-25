@@ -190,7 +190,6 @@ export function formatDate(date: any, language: string, formatAsString: string) 
       break;
   }
 
-  console.debug({date, realDate, formatAsString})
   return format(realDate, formatAsString, { locale: getLanguageFns(language) });
 }
 

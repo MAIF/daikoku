@@ -1,30 +1,16 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import cats.data.EitherT
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  TeamAdminOnly,
-  _PublicUserAccess,
-  _TeamAdminOnly,
-  _TeamApiEditorOnly,
-  _TeamMemberOnly,
-  _TenantAdminAccessTenant,
-  _UberPublicUserAccess
-}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.ApiAccess
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.libs.json._
 import storage.drivers.postgres.PostgresDataStore
-import storage.drivers.postgres.pgimplicits.EnhancedRow
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -765,6 +751,19 @@ object CommonServices {
     }
   }
 
+  private def getFiltervalue[T](filters: JsArray, key: String)(implicit fjs: Reads[T]): Option[T] = {
+    filters.value
+      .find(entry => {
+        entry
+          .as[JsObject]
+          .value
+          .exists(p => p._1 == "id" && p._2.as[String] == key)
+      })
+      .flatMap(v =>
+        v.as[JsObject].value.find(p => p._1 == "value").map(_._2.as[T])
+      )
+  }
+
   def getApiSubscriptions(
       teamId: String,
       apiId: String,
@@ -783,18 +782,6 @@ object CommonServices {
         s"@{user.name} has acceeded to team (@{team.id}) subscription for api @{api.id}"
       )
     )(teamId, ctx) { _ =>
-      def getFiltervalue[T](key: String)(implicit fjs: Reads[T]): Option[T] = {
-        filters.value
-          .find(entry => {
-            entry
-              .as[JsObject]
-              .value
-              .exists(p => p._1 == "id" && p._2.as[String] == key)
-          })
-          .flatMap(v =>
-            v.as[JsObject].value.find(p => p._1 == "value").map(_._2.as[T])
-          )
-      }
 
       val defaultOrderClause =
         "ORDER BY COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') ASC"
@@ -844,16 +831,16 @@ object CommonServices {
               query,
               Seq(
                 apiId,
-                getFiltervalue[String]("subscription").orNull[String],
-                getFiltervalue[String]("plan").orNull[String],
-                getFiltervalue[String]("team").orNull[String],
-                getFiltervalue[JsArray]("tags")
+                getFiltervalue[String](filters, "subscription").orNull[String],
+                getFiltervalue[String](filters, "plan").orNull[String],
+                getFiltervalue[String](filters, "team").orNull[String],
+                getFiltervalue[JsArray](filters, "tags")
                   .map(Json.stringify(_))
                   .orNull[String],
-                getFiltervalue[JsArray]("clientIds")
+                getFiltervalue[JsArray](filters, "clientIds")
                   .map(_.value.map(_.as[String]).toArray)
                   .orNull,
-                getFiltervalue[JsObject]("metadata")
+                getFiltervalue[JsObject](filters, "metadata")
                   .map(Json.stringify(_))
                   .orNull[String],
                 java.lang.Integer.valueOf(limit),
@@ -1011,6 +998,97 @@ object CommonServices {
         )
       } yield {
         Right(NotificationWithCount(notifications._1, notifications._2))
+      }
+    }
+  }
+
+  def getAuditTrail(
+                     from: Long,
+                     to: Long,
+                     filters: JsArray,
+                     sorting: JsArray,
+                     limit: Int,
+                     offset: Int
+                   )(implicit
+                     ctx: DaikokuActionContext[JsValue],
+                     env: Env,
+                     ec: ExecutionContext
+                   ) = {
+    _TenantAdminAccessTenant(
+      AuditTrailEvent("@{user.name} has accessed to audit trail")
+    )(ctx) {
+
+      val defaultOrderClause =
+        "ORDER BY content ->> '@timestamp' ASC"
+      val sortClause = sorting.head.asOpt[JsObject] match {
+        case Some(value) =>
+          val desc = value.value.get("desc") match {
+            case Some(json) if json.asOpt[Boolean].contains(true) => "DESC"
+            case _                                                => "ASC"
+          }
+
+          value.value.get("id").map(_.as[String]) match {
+            case Some(id) if id == "user" =>
+              s"ORDER BY content -> 'user' ->> 'name' $desc"
+            case Some(id) if id == "date" =>
+              s"ORDER BY content ->> '@timestamp' $desc"
+            case _ => defaultOrderClause
+          }
+        case None => defaultOrderClause
+      }
+
+      val queryCount =
+        s"""
+           |select count(1) from audit_events
+           |WHERE (content ->> '@timestamp')::bigint >= $$1 AND (content ->> '@timestamp')::bigint <= $$2
+           |  AND (content -> 'user' ->> 'name') ~* COALESCE($$3::text, '')
+           |  AND (content -> 'user' ->> 'name') ~* COALESCE($$4::text, '')
+           |  AND (content ->> 'message') ~* COALESCE($$5::text, '')
+           |""".stripMargin
+      val query =
+        s"""
+           |select content from audit_events
+           |WHERE (content ->> '@timestamp')::bigint >= $$1 AND (content ->> '@timestamp')::bigint <= $$2
+           |  AND (content -> 'user' ->> 'name') ~* COALESCE($$3::text, '')
+           |  AND (content -> 'user' ->> 'name') ~* COALESCE($$4::text, '')
+           |  AND (content ->> 'message') ~* COALESCE($$5::text, '')
+           |$sortClause
+           |LIMIT $$6 OFFSET $$7;
+           |""".stripMargin
+
+      (for {
+        count <- EitherT.fromOptionF[Future, AppError, Long](
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneLong(queryCount, "count", Seq(
+              java.lang.Long.valueOf(from),
+              java.lang.Long.valueOf(to),
+              getFiltervalue[String](filters, "user").orNull[String],
+              getFiltervalue[String](filters, "impersonator").orNull[String],
+              getFiltervalue[String](filters, "message").orNull[String],
+            )), AppError.UnexpectedError
+        )
+        subs <- EitherT.liftF[Future, AppError, Seq[JsObject]](
+          env.dataStore.auditTrailRepo
+            .forTenant(ctx.tenant)
+            .query(
+              query,
+              Seq(
+                java.lang.Long.valueOf(from),
+                java.lang.Long.valueOf(to),
+                getFiltervalue[String](filters, "user").orNull[String],
+                getFiltervalue[String](filters, "impersonator").orNull[String],
+                getFiltervalue[String](filters, "message").orNull[String],
+                java.lang.Integer.valueOf(limit),
+                java.lang.Integer.valueOf(offset)
+              )
+            )
+        )
+      } yield {
+        (subs, count)
+      }).value.map {
+        case Left(_) => (Seq.empty, 0L)
+        case Right(auditTrail) => auditTrail
       }
     }
   }
