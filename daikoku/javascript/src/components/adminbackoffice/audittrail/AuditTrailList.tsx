@@ -30,9 +30,9 @@ export const AuditTrailList = () => {
       enableColumnFilter: false,
       meta: { style: { textAlign: 'left' } },
       cell: (info) => {
-        const item = info.getValue;
-        const value = info.getValue['$long'] ? item['@timestamp']['$long'] : item['@timestamp']
-        return formatDate(value, translate('date.locale'),'yyyy-MM-dd HH:mm:ss.SSS');
+        const item = info.getValue();
+        const value: number = item['$long'] ?? item
+        return formatDate(value, translate('date.locale'), translate('date.format.short.millis'));
       },
     }),
     columnHelper.accessor(row => row.user.name, {

@@ -862,6 +862,7 @@ object CommonServices {
             )
         )
       } yield {
+        ctx.setCtxValue("api.id", apiId)
         subs
       }).value
     }

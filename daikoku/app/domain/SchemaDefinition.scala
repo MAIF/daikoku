@@ -6,10 +6,7 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  _TeamMemberOnly,
-  _TenantAdminAccessTenant
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
@@ -18,7 +15,7 @@ import fr.maif.otoroshi.daikoku.utils.{OtoroshiClient, S3Configuration}
 import org.joda.time.format.ISODateTimeFormat
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json._
-import sangria.ast.{ObjectValue, StringValue}
+import sangria.ast.{IntValue, ObjectValue, StringValue, BigIntValue, BigDecimalValue}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
 import sangria.macros.derive._
 import sangria.schema.{Context, _}
@@ -99,7 +96,7 @@ object SchemaDefinition {
   val DateTimeUnitype = ScalarType[DateTime](
     "DateTime",
     coerceOutput =
-      (date, _) => StringValue(ISODateTimeFormat.dateTime().print(date)),
+      (date, _) => BigDecimalValue(BigDecimal(date.getMillis)),
     coerceUserInput = {
       case s: String => parseDate(s)
       case _         => Left(DateCoercionViolation)

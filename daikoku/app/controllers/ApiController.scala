@@ -2300,6 +2300,7 @@ class ApiController(
       )(teamId, ctx) { team =>
         import cats.implicits._
 
+        ctx.setCtxValue("subscription.id", subscriptionId)
         (for {
           sub <- EitherT.fromOptionF[Future, AppError, ApiSubscription](
             env.dataStore.apiSubscriptionRepo
@@ -3544,7 +3545,10 @@ class ApiController(
               env.dataStore.apiSubscriptionRepo
                 .forTenant(ctx.tenant)
                 .findNotDeleted(Json.obj("api" -> api.id.asJson))
-                .map(subs => Ok(JsArray(subs.map(_.asSafeJson))))
+                .map(subs => {
+                  ctx.setCtxValue("api.id", api.id.value)
+                  Ok(JsArray(subs.map(_.asSafeJson)))
+                })
             case None =>
               FastFuture.successful(
                 NotFound(Json.obj("error" -> "Api not found"))

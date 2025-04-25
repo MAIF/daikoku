@@ -55,7 +55,7 @@ class Period {
   };
 }
 
-const now = Date.now()
+const now = new Date()
 const periods = (translate: (params: string | TranslateParams) => string) => ({
   today: new Period({
     from: startOfDay(new Date()),
