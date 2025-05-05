@@ -707,6 +707,19 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       value
     }
   }
+  def queryOneLong(query: String, name: String, params: Seq[AnyRef])(implicit
+      ec: ExecutionContext
+  ): Future[Option[Long]] = {
+    logger.debug(s"queryOneRaw($query)")
+
+    for {
+      value <- reactivePg.queryOne(query = query, params = params) { row =>
+        row.optLong(name)
+      }
+    } yield {
+      value
+    }
+  }
 
   override def queryRaw(query: String, name: String, params: Seq[AnyRef])(
       implicit ec: ExecutionContext

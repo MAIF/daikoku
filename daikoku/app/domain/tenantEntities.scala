@@ -164,7 +164,8 @@ object Tenant {
       pageId: String,
       contentType: String,
       body: String
-  ) = CmsPage(
+  ) =
+    CmsPage(
       id = CmsPageId(s"${tenantId.value}-$pageId"),
       tenant = tenantId,
       visible = true,

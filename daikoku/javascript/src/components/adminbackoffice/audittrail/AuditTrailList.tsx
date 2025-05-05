@@ -1,53 +1,81 @@
-import { createColumnHelper } from '@tanstack/react-table';
-import { Row } from 'antd';
-import dayjs from 'dayjs';
-import moment from 'moment';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, PaginationState, SortingState, useReactTable } from "@tanstack/react-table";
+import classNames from 'classnames';
+import { subHours } from 'date-fns';
+import { GraphQLClient } from "graphql-request";
+import { useContext, useMemo, useState } from "react";
+import Pagination from 'react-paginate';
 
-import { ModalContext, useTenantBackOffice } from '../../../contexts';
-import { I18nContext } from '../../../contexts';
+import { I18nContext, ModalContext, useTenantBackOffice } from '../../../contexts';
 import * as Services from '../../../services';
-import { IAuditTrailEvent, isError } from '../../../types';
-import { Table, TableRef } from '../../inputs';
+import { IAuditTrailEventGQL } from '../../../types';
+import { Filter } from '../../inputs';
 import { OtoDatePicker } from '../../inputs/datepicker';
-import { Can, manage, tenant } from '../../utils';
+import { Can, formatDate, manage, tenant } from '../../utils';
 
 export const AuditTrailList = () => {
   useTenantBackOffice();
-
-  const table = useRef<TableRef>();
+  const queryClient = useQueryClient();
 
   const { alert } = useContext(ModalContext);
   const { translate, Translation } = useContext(I18nContext);
 
-  const [from, setFrom] = useState(dayjs().subtract(1, 'hour'));
-  const [to, setTo] = useState(dayjs());
-  const page = 1;
-  const size = 500;
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 10,
+  })
+  const [sorting, setSorting] = useState<SortingState>([{id: 'date', desc: true}]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
+    []
+  )
+  const [from, setFrom] = useState(subHours(new Date(), 1));
+  const [to, setTo] = useState(new Date());
 
-  const columnHelper = createColumnHelper<IAuditTrailEvent>();
+  const graphqlEndpoint = `${window.location.origin}/api/search`;
+  const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
+  const auditTrailQuery = useQuery({
+    queryKey: ["audits", from, to, columnFilters, sorting, pagination],
+    queryFn: () => customGraphQLClient.request<{ auditTrail: { events: Array<IAuditTrailEventGQL>, total: number } }>(Services.graphql.getAuditTrail, {
+      from: from.getTime(),
+      to: to.getTime(),
+      filterTable: JSON.stringify([...(columnFilters ?? [])]),
+      sortingTable: JSON.stringify(sorting ?? []),
+      limit: pagination.pageSize,
+      offset: pagination.pageIndex * pagination.pageSize,
+    }),
+    select: d => d.auditTrail
+  });
+
+
+  const columnHelper = createColumnHelper<IAuditTrailEventGQL>();
   const columns = [
-    columnHelper.accessor('@timestamp', {
+    columnHelper.accessor('event_timestamp', {
       header: translate('Date'),
+      id: 'date',
       enableColumnFilter: false,
       meta: { style: { textAlign: 'left' } },
       cell: (info) => {
-        const item = info.getValue;
-        const value = info.getValue['$long'] ? item['@timestamp']['$long'] : item['@timestamp']
-        return dayjs(value).format('YYYY-MM-DD HH:mm:ss.SSS');
+        const item = info.getValue();
+        const value: number = item['$long'] ?? item
+        return formatDate(value, translate('date.locale'), "dd/MM/yyyy HH:mm:ss.SSS OOOO");
       },
     }),
     columnHelper.accessor(row => row.user.name, {
+      id: 'user',
       header: translate('User'),
       meta: { style: { textAlign: 'left' } }
     }),
     columnHelper.accessor(row => row.impersonator?.name, {
+      id: 'impersonator',
       header: translate('Impersonator'),
+      enableSorting: false,
       meta: { style: { textAlign: 'left' } },
       cell: (info) => info.getValue() || ''
     }),
     columnHelper.accessor('message', {
+      id: 'message',
       header: translate('Message'),
+      enableSorting: false,
       meta: { style: { textAlign: 'left' } },
     }),
     columnHelper.display({
@@ -63,60 +91,113 @@ export const AuditTrailList = () => {
             className="btn btn-sm btn-outline-info"
             onClick={() => alert({
               title: translate('Event.details.modal.title'),
-              message: <pre style={{ backgroundColor: '#{"var(--level2_bg-color, #f8f9fa)"}', color:'#{"var(--level2_text-color, #6c757d)"}', padding: 10 }}>
+              message: <pre style={{ backgroundColor: '#{"var(--level2_bg-color, #f8f9fa)"}', color: '#{"var(--level2_text-color, #6c757d)"}', padding: 10 }}>
                 {JSON.stringify(value, null, 2)}
               </pre>
             })}
           >
-            Details
+            {translate('Event.details.modal.title')}
           </button>
         );
       },
     }),
   ];
 
-  useEffect(() => {
-    table.current?.update();
-  }, [from, to, page]);
+  const defaultData = useMemo(() => [], [])
+  const table = useReactTable({
+    data: auditTrailQuery.data?.events ?? defaultData,
+    columns: columns,
+    rowCount: auditTrailQuery.data?.total,
+    state: {
+      pagination,
+      columnFilters,
+      sorting
+    },
+    onPaginationChange: setPagination,
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+  })
 
-  const updateDateRange = (from: dayjs.Dayjs, to: dayjs.Dayjs) => {
+
+
+  const updateDateRange = (from: Date, to: Date) => {
     setFrom(from);
     setTo(to);
   };
 
-  const topBar = () => {
-    return <OtoDatePicker updateDateRange={updateDateRange} from={from} to={to} />;
-  };
-
-  const fetchItems = () => {
-    return Services.fetchAuditTrail(from.valueOf(), to.valueOf(), page, size)
-      .then((resp) => {
-        if (!isError(resp)) {
-          return resp.events
-        }
-        return resp
-      });
-  };
-
   return (
     <Can I={manage} a={tenant} dispatchError>
-      <div className="row">
-        <div className="col">
-          <h1><Translation i18nkey="Audit trail">Audit trail</Translation></h1>
-          <div className="section">
-            <div className="p-2">
-              <Table
-                columns={columns}
-                fetchItems={fetchItems}
-                ref={table}
-                defaultSort="date"
-                defaultSortDesc={true}
-                injectTopBar={topBar}
-              />
-            </div>
-          </div>
-        </div>
-      </div>
+      <main>
+        <h1>{translate('Audit trail')}</h1>
+        <section className="section p-2">
+          <OtoDatePicker updateDateRange={updateDateRange} from={from} to={to} />
+          <table className="reactTableV7 mt-3">
+            <thead>
+              {table.getHeaderGroups().map(headerGroup => (
+                <tr key={headerGroup.id}>
+                  {headerGroup.headers.map(header => {
+                    return (
+                      <th
+                        key={header.id}
+                        colSpan={header.colSpan}
+                        className={classNames({
+                          '--sort-asc': header.column.getIsSorted() === 'asc',
+                          '--sort-desc': header.column.getIsSorted() === 'desc',
+                        })}>
+                        {header.isPlaceholder ? null : (
+                          <div onClick={header.column.getToggleSortingHandler()}>
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                          </div>
+                        )}
+                        {header.column.getCanFilter() && <div className='my-2'>
+                          <Filter column={header.column} table={table} />
+                        </div>}
+                      </th>
+                    )
+                  })}
+                </tr>
+              ))}
+            </thead>
+            <tbody>
+              {table.getRowModel().rows.map(row => {
+                return (
+                  <tr key={row.id}>
+                    {row.getVisibleCells().map(cell => {
+                      return (
+                        <td key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </td>
+                      )
+                    })}
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+          <Pagination
+            previousLabel={translate('Previous')}
+            nextLabel={translate('Next')}
+            breakLabel={'...'}
+            breakClassName={'break'}
+            pageCount={table.getPageCount()}
+            marginPagesDisplayed={1}
+            pageRangeDisplayed={5}
+            onPageChange={(page) => table.setPageIndex(page.selected)}
+            containerClassName={'pagination'}
+            pageClassName={'page-selector'}
+            activeClassName={'active'} />
+        </section>
+      </main>
     </Can>
   );
 };

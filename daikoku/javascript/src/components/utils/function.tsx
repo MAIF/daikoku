@@ -4,9 +4,9 @@ import { IApi, IFastPlan, ITeamFullGql, ITeamSimple, IUsagePlan, TOption, TOptio
 
 import { I18nContext } from "../../contexts/i18n-context";
 
-export function partition(array: any, isValid: any) {
+export function partition<T>(array: Array<T>, isValid: (x: T) => boolean): Array<Array<T>> {
   return array.reduce(
-    ([pass, fail]: Array<any>, elem: any) => {
+    ([pass, fail]: Array<Array<T>>, elem: T) => {
       return isValid(elem) ? [[...pass, elem], fail] : [pass, [...fail, elem]];
     },
     [[], []]

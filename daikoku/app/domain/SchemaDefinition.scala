@@ -1,6 +1,5 @@
 package fr.maif.otoroshi.daikoku.domain
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
 import cats.data.EitherT
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
@@ -13,11 +12,11 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.S3Configuration
-import org.joda.time.format.ISODateTimeFormat
+import fr.maif.otoroshi.daikoku.utils.{OtoroshiClient, S3Configuration}
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.{DateTime, DateTimeZone}
 import play.api.libs.json._
-import sangria.ast.{ObjectValue, StringValue}
+import sangria.ast.{BigDecimalValue, ObjectValue, StringValue}
 import sangria.execution.deferred.{DeferredResolver, Fetcher, HasId}
 import sangria.macros.derive._
 import sangria.schema.{Context, _}
@@ -97,8 +96,7 @@ object SchemaDefinition {
 
   val DateTimeUnitype = ScalarType[DateTime](
     "DateTime",
-    coerceOutput =
-      (date, _) => StringValue(ISODateTimeFormat.dateTime().print(date)),
+    coerceOutput = (date, _) => BigDecimalValue(BigDecimal(date.getMillis)),
     coerceUserInput = {
       case s: String => parseDate(s)
       case _         => Left(DateCoercionViolation)
@@ -127,7 +125,7 @@ object SchemaDefinition {
 
   case class NotAuthorizedError(message: String) extends Exception(message)
 
-  def getSchema(env: Env) = {
+  def getSchema(env: Env, otoroshiClient: OtoroshiClient) = {
     implicit val e = env.defaultExecutionContext
     implicit val en = env
 
@@ -1474,9 +1472,49 @@ object SchemaDefinition {
                     .findById(parent)
                 case None => None
               }
+          ),
+          Field(
+            "lastUsage",
+            OptionType(DateTimeUnitype),
+            resolve = ctx => getOtoroshiUsage(ctx.value)(ctx.ctx._2.tenant)
           )
         )
     )
+
+    def getOtoroshiUsage(
+        subscription: ApiSubscription
+    )(implicit tenant: Tenant): Future[Option[DateTime]] = {
+
+      val maybeLastUsage = for {
+        plan <- EitherT.fromOptionF[Future, Option[DateTime], UsagePlan](
+          env.dataStore.usagePlanRepo
+            .forTenant(tenant)
+            .findById(subscription.plan),
+          None
+        )
+        otoroshi <-
+          EitherT.fromOption[Future][Option[DateTime], OtoroshiSettings](
+            tenant.otoroshiSettings.find(oto =>
+              plan.otoroshiTarget.exists(_.otoroshiSettings == oto.id)
+            ),
+            None
+          )
+        value: EitherT[Future, Option[DateTime], JsArray] =
+          otoroshiClient
+            .getSubscriptionLastUsage(Seq(subscription))(
+              otoroshi,
+              tenant
+            )
+            .leftMap(_ => None)
+        usages <- value
+      } yield {
+        usages.value.headOption
+      }
+
+      maybeLastUsage
+        .map(_.map(r => (r \ "date").as(json.DateTimeFormat)))
+        .merge
+    }
 
     lazy val TestingAuthType = EnumType(
       "TestingAuth",
@@ -3037,8 +3075,8 @@ object SchemaDefinition {
             ),
             Field(
               "event_timestamp",
-              OptionType(StringType),
-              resolve = ctx => (ctx.value \ "@timestamp").asOpt[String]
+              OptionType(LongType),
+              resolve = ctx => (ctx.value \ "@timestamp").asOpt[Long]
             ),
             Field(
               "id",
@@ -3055,6 +3093,15 @@ object SchemaDefinition {
               OptionType(UserAuditEventType),
               resolve =
                 ctx => (ctx.value \ "user").asOpt(UserAuditEventTypeReader)
+            ),
+            Field(
+              "impersonator",
+              OptionType(UserAuditEventType),
+              resolve = ctx =>
+                (ctx.value \ "impersonator").toOption.flatMap {
+                  case JsNull => None
+                  case value  => UserAuditEventTypeReader.reads(value).asOpt
+                }
             ),
             Field(
               "verb",
@@ -3082,6 +3129,49 @@ object SchemaDefinition {
               OptionType(StringType),
               resolve = ctx => (ctx.value \ "authorized").asOpt[String]
             )
+          )
+      )
+
+    lazy val AuditTrailType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      (Seq[JsObject], Long)
+    ] =
+      ObjectType[
+        (DataStore, DaikokuActionContext[JsValue]),
+        (Seq[JsObject], Long)
+      ](
+        "AuditTrail",
+        "audit trail as a collection of audit event and the total of event",
+        () =>
+          fields[
+            (DataStore, DaikokuActionContext[JsValue]),
+            (Seq[JsObject], Long)
+          ](
+            Field("events", ListType(AuditEventType), resolve = _.value._1),
+            Field("total", LongType, resolve = _.value._2)
+          )
+      )
+    lazy val ApiSubscriptionListType: ObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      (Seq[ApiSubscription], Long)
+    ] =
+      ObjectType[
+        (DataStore, DaikokuActionContext[JsValue]),
+        (Seq[ApiSubscription], Long)
+      ](
+        "ApiSubscriptions",
+        "Api Subscriptions as a collection of subscriptions and the total of",
+        () =>
+          fields[
+            (DataStore, DaikokuActionContext[JsValue]),
+            (Seq[ApiSubscription], Long)
+          ](
+            Field(
+              "subscriptions",
+              ListType(ApiSubscriptionType),
+              resolve = _.value._1
+            ),
+            Field("total", LongType, resolve = _.value._2)
           )
       )
 
@@ -3192,6 +3282,19 @@ object SchemaDefinition {
       description = "This is a the string for filtering request",
       defaultValue = ""
     )
+    val FILTER_TABLE: Argument[JsArray] = Argument(
+      "filterTable",
+      JsArrayType,
+      description = "This is a the json for filtering request",
+      defaultValue = "[]"
+    )
+    val SORTING_TABLE: Argument[JsArray] = Argument(
+      "sortingTable",
+      JsArrayType,
+      description = "This is a the json for sorting request",
+      defaultValue = "[]"
+    )
+
     val SELECTED_TAG = Argument(
       "selectedTag",
       OptionInputType(StringType),
@@ -3390,10 +3493,46 @@ object SchemaDefinition {
         ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
         apiId: String,
         teamId: String,
-        version: String
+        version: String,
+        filter: JsArray,
+        sorting: JsArray,
+        limit: Int,
+        offset: Int
     ) = {
       CommonServices
-        .getApiSubscriptions(teamId, apiId, version)(ctx.ctx._2, env, e)
+        .getApiSubscriptions(
+          teamId,
+          apiId,
+          version,
+          filter,
+          sorting,
+          limit,
+          offset
+        )(ctx.ctx._2, env, e)
+        .map {
+          case Left(value)  => throw NotAuthorizedError(value.toString)
+          case Right(value) => value
+        }
+    }
+
+    def getAuditTrail(
+        ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
+        from: Long,
+        to: Long,
+        filter: JsArray,
+        sorting: JsArray,
+        limit: Int,
+        offset: Int
+    ) = {
+      CommonServices
+        .getAuditTrail(
+          from,
+          to,
+          filter,
+          sorting,
+          limit,
+          offset
+        )(ctx.ctx._2, env, e)
         .map {
           case Left(value)  => throw NotAuthorizedError(value.toString)
           case Right(value) => value
@@ -3405,14 +3544,41 @@ object SchemaDefinition {
       List(
         Field(
           "apiApiSubscriptions",
-          ListType(ApiSubscriptionType),
-          arguments = ID :: TEAM_ID_NOT_OPT :: VERSION :: Nil,
+          ApiSubscriptionListType,
+          arguments =
+            ID :: TEAM_ID_NOT_OPT :: VERSION :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             getApiSubscriptions(
               ctx,
               ctx.arg(ID),
               ctx.arg(TEAM_ID_NOT_OPT),
-              ctx.arg(VERSION)
+              ctx.arg(VERSION),
+              ctx.arg(FILTER_TABLE),
+              ctx.arg(SORTING_TABLE),
+              ctx.arg(LIMIT),
+              ctx.arg(OFFSET)
+            )
+          }
+        )
+      )
+
+    def getAuditTrailQueryFields()
+        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+      List(
+        Field(
+          "auditTrail",
+          AuditTrailType,
+          arguments =
+            FROM :: TO :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
+          resolve = ctx => {
+            getAuditTrail(
+              ctx,
+              ctx.arg(FROM).getOrElse(DateTime.now().minusDays(1).getMillis),
+              ctx.arg(TO).getOrElse(DateTime.now().getMillis),
+              ctx.arg(FILTER_TABLE),
+              ctx.arg(SORTING_TABLE),
+              ctx.arg(LIMIT),
+              ctx.arg(OFFSET)
             )
           }
         )
@@ -3445,7 +3611,6 @@ object SchemaDefinition {
           case Left(r)      => throw NotAuthorizedError(r.toString)
         }
     }
-
     def getSubscriptionDetails(
         ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
         subscriptionId: String,
@@ -3881,6 +4046,7 @@ object SchemaDefinition {
           myNotificationQuery() ++
           allTeamsQuery() ++
           getSubscriptionDetailsFields() ++
+          getAuditTrailQueryFields() ++
           cmsPageFields():_*)
       )),
       DeferredResolver.fetchers(teamsFetcher, usersFetcher, apisFetcher)

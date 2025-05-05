@@ -1,12 +1,12 @@
 import { constraints, format, type } from '@maif/react-forms';
-import moment from 'moment';
 import { useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { formatDistanceToNow } from 'date-fns';
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { isError, ITesting } from '../../../types';
-import { Option } from '../../utils';
+import { formatDate, getLanguageFns, Option } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 
 type LimitedTeam = {
@@ -272,7 +272,6 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
                             if (!isError(demand)) {
                               openSubMetadataModal({
                                 save: props.accept,
-                                value: props.notification.action.api!,
                                 api: props.notification.action.api?._id,
                                 plan: props.notification.action.plan!._id,
                                 team: props.notification.action.team,
@@ -291,7 +290,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
                       style={{ height: '30px' }}
                       href="#"
                       title={translate('Reject')}
-                      aria-label={translate('Reject') }
+                      aria-label={translate('Reject')}
                       onClick={() => {
                         openFormModal<{ message: string }>({
                           title: translate('Message'),
@@ -385,9 +384,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
           return (
             <a
               className="btn disabled"
-              title={moment(date).format(
-                translate({ key: 'moment.date.format', defaultResponse: 'DD MMM. YYYY à HH:mm z' })
-              )}
+              title={formatDate(date!, translate('date.locale'), translate('date.format.short.seconds'))}
             >
               <i className="fas fa-check" />
             </a>
@@ -396,9 +393,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
           return (
             <a
               className="btn disabled"
-              title={moment(date).format(
-                translate({ key: 'moment.date.format', defaultResponse: 'DD MMM. YYYY à HH:mm z' })
-              )}
+              title={formatDate(date!, translate('date.locale'), translate('date.format.short.seconds'))}
             >
               <i className="fas fa-times" />
             </a>
@@ -410,7 +405,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
   const fromFormatter = (action: any, sender: any) => {
     switch (action.__typename) {
       case 'ApiAccess':
-        return `${sender.name}/${props.notification.action.team?.name ?? translate("Unknown team") }`;
+        return `${sender.name}/${props.notification.action.team?.name ?? translate("Unknown team")}`;
       case 'NewPostPublished':
       case 'NewIssueOpen':
       case 'NewCommentOnIssue':
@@ -448,8 +443,6 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
     infos = { api: api || { name: translate('Deleted API') }, plan };
   }
 
-  moment.locale(language);
-
   return (<div>
     <div className="alert section" role="alert">
       <div className="d-flex flex-column">
@@ -482,15 +475,15 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
             {notification.action.__typename === 'ApiSubscriptionReject' && translate({
               key: 'notif.api.demand.reject',
               replacements: [
-                (infos as any).api.name, 
-                (infos as any).api.currentVersion, 
+                (infos as any).api.name,
+                (infos as any).api.currentVersion,
                 (infos as any).plan.customName]
             })}
             {notification.action.__typename === 'ApiSubscriptionAccept' && translate({
               key: 'notif.api.demand.accept',
               replacements: [
-                (infos as any).api.name, 
-                (infos as any).api.currentVersion, 
+                (infos as any).api.name,
+                (infos as any).api.currentVersion,
                 (infos as any).plan.customName]
             })}
             {notification.action.__typename === 'ApiKeyDeletionInformation' && (<div>
@@ -574,7 +567,7 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
       <hr />
       <div className="d-flex justify-content-between" style={{ fontSize: 12 }}>
         <div className="">{fromFormatter(notification.action, notification.sender)}</div>
-        <div className="">{moment(notification.date).toNow(true)}</div>
+        <div className="">{formatDistanceToNow(notification.date, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })}</div>
       </div>
     </div>
   </div>);

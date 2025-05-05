@@ -1,6 +1,5 @@
 import { constraints, Form, format, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import moment from 'moment';
 import { useContext, useState } from 'react';
 import ArrowLeft from 'react-feather/dist/icons/arrow-left';
 import ArrowRight from 'react-feather/dist/icons/arrow-right';
@@ -13,6 +12,7 @@ import { converter } from '../../../services/showdown';
 import { IApi, IApiPost, IApiPostCursor, isError, ITeamSimple } from '../../../types';
 import { api as API, Can, manage } from '../../utils/permissions';
 import { Spinner } from '../../utils/Spinner';
+import { formatDate } from '../../utils/formatters';
 
 type ApiPostProps = {
   api: IApi
@@ -52,11 +52,6 @@ export function ApiPost(props: ApiPostProps) {
       ]
     },
   };
-
-  const formatDate = (lastModificationAt: string) => {
-    moment.locale(language);
-    return moment(lastModificationAt).format(translate('moment.date.format'))
-  }
 
   function savePost(post: any) {
     Services.savePost(props.api._id, props.ownerTeam._id, post._id, post)
@@ -111,7 +106,7 @@ export function ApiPost(props: ApiPostProps) {
         value={value}
         options={{
           actions: {
-            submit: { label: translate('Save')}
+            submit: { label: translate('Save') }
           }
         }}
       />
@@ -131,7 +126,7 @@ export function ApiPost(props: ApiPostProps) {
     const currentPost = (postQuery.data as IApiPostCursor).posts[0];
 
     return (
-      <div className="d-flex flex-column w-10" style={{position: 'relative'}}>
+      <div className="d-flex flex-column w-10" style={{ position: 'relative' }}>
         <Can I={manage} a={API} team={props.ownerTeam}>
           <div className="mb-2 d-flex justify-content-end">
             <button
@@ -193,7 +188,7 @@ export function ApiPost(props: ApiPostProps) {
             <div key={i} className="jumbotron">
               <div className="d-flex justify-content-between align-items-center">
                 <h1>{post.title}</h1>
-                <span>{formatDate(post.lastModificationAt)}</span>
+                <span>{formatDate(post.lastModificationAt, translate('date.locale'), translate('date.format'))}</span>
               </div>
               <div className="api-post" dangerouslySetInnerHTML={{ __html: converter.makeHtml(post.content) }} />
             </div>)

@@ -421,7 +421,7 @@ class OtoroshiClient(env: Env) {
                   "filter" -> Json.arr(
                     Json.obj(
                       "terms" -> Json.obj(
-                        "identity.identity" -> JsArray(
+                        "identity.identity.keyword" -> JsArray(
                           subscriptions.map(_.apiKey.clientId).map(JsString)
                         )
                       )
@@ -432,7 +432,7 @@ class OtoroshiClient(env: Env) {
               "aggs" -> Json.obj(
                 "lastUsages" -> Json.obj(
                   "terms" -> Json.obj(
-                    "field" -> "identity.identity"
+                    "field" -> "identity.identity.keyword"
                   ),
                   "aggs" -> Json.obj(
                     "latest" -> Json.obj(

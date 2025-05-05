@@ -304,7 +304,7 @@ object authorizations {
         .findOneNotDeleted(Json.obj("type" -> "Admin"))
         .flatMap {
           case _ if ctx.user.isDaikokuAdmin =>
-            ctx.setCtxValue("tenant.id", tenant.id)
+            ctx.setCtxValue("tenant.id", tenant.id.value)
             ctx.setCtxValue("tenant.name", tenant.name)
             f.andThen {
                 case _ =>
@@ -322,7 +322,7 @@ object authorizations {
               if team.users.exists(u =>
                 u.userId == ctx.user.id && u.teamPermission == Administrator
               ) =>
-            ctx.setCtxValue("tenant.id", tenant.id)
+            ctx.setCtxValue("tenant.id", tenant.id.value)
             ctx.setCtxValue("tenant.name", tenant.name)
             f.andThen {
                 case _ =>
@@ -340,7 +340,7 @@ object authorizations {
               if !team.users.exists(u =>
                 u.userId == ctx.user.id && u.teamPermission == Administrator
               ) =>
-            ctx.setCtxValue("team.id", tenant.id)
+            ctx.setCtxValue("team.id", tenant.id.value)
             ctx.setCtxValue("team.name", tenant.name)
             audit.logTenantAuditEvent(
               ctx.tenant,
@@ -502,7 +502,7 @@ object authorizations {
               .findOneNotDeleted(Json.obj("type" -> "Admin"))
               .flatMap {
                 case Some(team) if ctx.user.isDaikokuAdmin =>
-                  ctx.setCtxValue("tenant.id", tenant.id)
+                  ctx.setCtxValue("tenant.id", tenant.id.value)
                   ctx.setCtxValue("tenant.name", tenant.name)
                   f(tenant, team).andThen {
                     case _ =>
@@ -519,7 +519,7 @@ object authorizations {
                     if team.users.exists(u =>
                       u.userId == ctx.user.id && u.teamPermission == Administrator
                     ) =>
-                  ctx.setCtxValue("tenant.id", tenant.id)
+                  ctx.setCtxValue("tenant.id", tenant.id.value)
                   ctx.setCtxValue("tenant.name", tenant.name)
                   f(tenant, team).andThen {
                     case _ =>
@@ -536,7 +536,7 @@ object authorizations {
                     if !team.users.exists(u =>
                       u.userId == ctx.user.id && u.teamPermission == Administrator
                     ) =>
-                  ctx.setCtxValue("team.id", tenant.id)
+                  ctx.setCtxValue("team.id", tenant.id.value)
                   ctx.setCtxValue("team.name", tenant.name)
                   audit.logTenantAuditEvent(
                     ctx.tenant,
@@ -594,7 +594,7 @@ object authorizations {
         .findByIdOrHrId(teamId)
         .flatMap {
           case Some(team) if ctx.user.isDaikokuAdmin =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team)
               .andThen {
@@ -612,7 +612,7 @@ object authorizations {
           case Some(team)
               if ctx.user.tenants
                 .contains(ctx.tenant.id) && team.includeUser(ctx.user.id) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team)
               .andThen {
@@ -630,7 +630,7 @@ object authorizations {
           case Some(team)
               if ctx.user.tenants
                 .contains(ctx.tenant.id) && !team.includeUser(ctx.user.id) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             audit.logTenantAuditEvent(
               ctx.tenant,
@@ -683,7 +683,7 @@ object authorizations {
         .findByIdOrHrId(teamId)
         .flatMap {
           case Some(team) if ctx.user.isDaikokuAdmin =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team).andThen {
               case _ =>
@@ -697,7 +697,7 @@ object authorizations {
                 )
             }
           case Some(team) if !apiCreationPermitted(team) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             audit.logTenantAuditEvent(
               ctx.tenant,
@@ -713,7 +713,7 @@ object authorizations {
                 team.users.exists(u =>
                   u.userId == ctx.user.id && u.teamPermission == Administrator
                 ) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team).andThen {
               case _ =>
@@ -731,7 +731,7 @@ object authorizations {
                 team.users.exists(u =>
                   u.userId == ctx.user.id && u.teamPermission == ApiEditor
                 ) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team).andThen {
               case _ =>
@@ -748,7 +748,7 @@ object authorizations {
               if ctx.user.tenants.contains(ctx.tenant.id) && team.users.exists(
                 u => u.userId == ctx.user.id && u.teamPermission == TeamUser
               ) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             audit.logTenantAuditEvent(
               ctx.tenant,
@@ -789,7 +789,7 @@ object authorizations {
         .findByIdOrHrId(teamId)
         .flatMap {
           case Some(team) if ctx.user.isDaikokuAdmin =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team).andThen {
               case _ =>
@@ -803,7 +803,7 @@ object authorizations {
                 )
             }
           case Some(team) if !apiCreationPermitted(team) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             audit.logTenantAuditEvent(
               ctx.tenant,
@@ -821,7 +821,7 @@ object authorizations {
                 team.users.exists(u =>
                   u.userId == ctx.user.id && u.teamPermission == Administrator
                 ) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team).andThen {
               case _ =>
@@ -839,7 +839,7 @@ object authorizations {
                 team.users.exists(u =>
                   u.userId == ctx.user.id && u.teamPermission == ApiEditor
                 ) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team).andThen {
               case _ =>
@@ -856,7 +856,7 @@ object authorizations {
               if ctx.user.tenants.contains(ctx.tenant.id) && team.users.exists(
                 u => u.userId == ctx.user.id && u.teamPermission == TeamUser
               ) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             audit.logTenantAuditEvent(
               ctx.tenant,
@@ -895,7 +895,7 @@ object authorizations {
         .findByIdOrHrId(teamId)
         .flatMap {
           case Some(team) if ctx.user.isDaikokuAdmin =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team).andThen {
               case _ =>
@@ -912,7 +912,7 @@ object authorizations {
               if ctx.user.tenants.contains(ctx.tenant.id) && team.includeUser(
                 ctx.user.id
               ) && team.admins().contains(ctx.user.id) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team).andThen {
               case _ =>
@@ -929,7 +929,7 @@ object authorizations {
               if ctx.user.tenants.contains(ctx.tenant.id) && !(team.includeUser(
                 ctx.user.id
               ) && team.admins().contains(ctx.user.id)) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             audit.logTenantAuditEvent(
               ctx.tenant,
@@ -963,7 +963,7 @@ object authorizations {
         .findByIdOrHrId(teamId)
         .flatMap {
           case Some(team) if ctx.user.isDaikokuAdmin =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team).andThen {
               case _ =>
@@ -980,7 +980,7 @@ object authorizations {
               if ctx.user.tenants.contains(ctx.tenant.id) && team.includeUser(
                 ctx.user.id
               ) && team.admins().contains(ctx.user.id) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team).andThen {
               case _ =>
@@ -997,7 +997,7 @@ object authorizations {
               if ctx.user.tenants.contains(ctx.tenant.id) && !(team.includeUser(
                 ctx.user.id
               ) && team.admins().contains(ctx.user.id)) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             audit.logTenantAuditEvent(
               ctx.tenant,
@@ -1035,7 +1035,7 @@ object authorizations {
         .findByIdOrHrId(teamId)
         .flatMap {
           case Some(team) if ctx.user.isDaikokuAdmin =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team).andThen {
               case _ =>
@@ -1065,7 +1065,7 @@ object authorizations {
             val authorized: Boolean =
               authorizations.isTeamApiKeyVisible(team, ctx.user)
             if (authorized) {
-              ctx.setCtxValue("team.id", team.id)
+              ctx.setCtxValue("team.id", team.id.value)
               ctx.setCtxValue("team.name", team.name)
               f(team).andThen {
                 case _ =>
@@ -1124,7 +1124,7 @@ object authorizations {
       } yield {
         (team, tenantAdminTeam) match {
           case (Some(team), _) if ctx.user.isDaikokuAdmin =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team).andThen {
               case _ =>
@@ -1141,7 +1141,7 @@ object authorizations {
               if ctx.tenant.id == team.tenant && adminTeam.users.exists(u =>
                 u.userId == ctx.user.id && u.teamPermission == Administrator
               ) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team).andThen {
               case _ =>
@@ -1159,7 +1159,7 @@ object authorizations {
               if ctx.user.tenants.contains(ctx.tenant.id) && team.includeUser(
                 ctx.user.id
               ) && team.admins().contains(ctx.user.id) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team).andThen {
               case _ =>
@@ -1176,7 +1176,7 @@ object authorizations {
               if ctx.user.tenants.contains(ctx.tenant.id) && !(team.includeUser(
                 ctx.user.id
               ) && team.admins().contains(ctx.user.id)) =>
-            ctx.setCtxValue("team.id", team.id)
+            ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             audit.logTenantAuditEvent(
               ctx.tenant,

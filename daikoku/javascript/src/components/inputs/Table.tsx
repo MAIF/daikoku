@@ -85,6 +85,7 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
         : []
     }
   });
+  // console.debug(table.getRow().getValue('enabled'))
 
   useImperativeHandle(ref, () => ({
     update() {
@@ -139,7 +140,7 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
           }
         );
     } else {
-      setItems(resp);
+      setItems([...resp]);
       setLoading(false);
     }
   };
@@ -274,7 +275,7 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
   );
 }
 
-function Filter({
+export function Filter({
   column,
   table
 }: {
@@ -282,6 +283,17 @@ function Filter({
   table: ReactTable<any>;
 }) {
   const { translate } = useContext(I18nContext);
+
+
+  const [filter, setFilter] = useState<string>();
+
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      column.setFilterValue(filter)
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [filter]);
+
 
   const firstValue = table
     .getPreFilteredRowModel()
@@ -319,8 +331,8 @@ function Filter({
   ) : (
     <input
       type="text"
-      value={(columnFilterValue ?? "") as string}
-      onChange={(e) => column.setFilterValue(e.target.value)}
+      value={(filter ?? "")}
+      onChange={(e) => setFilter(e.target.value)}
       placeholder={translate('Search')}
       className="form-control form-control-sm"
     />

@@ -1,51 +1,13 @@
 import { getApolloContext } from "@apollo/client";
 import { useQuery } from '@tanstack/react-query';
-import moment from 'moment';
-import { Moment } from "moment/moment";
 import { useContext, useEffect } from 'react';
 import { useMatch } from 'react-router-dom';
 
 import { I18nContext, useTeamBackOffice } from '../../../contexts';
 import * as Services from '../../../services';
-import { IApi, ITeamSimple, isError } from '../../../types';
-import { OtoroshiStatsVizualization, Spinner } from '../../utils';
-
-type IGlobalInformations = {
-  avgDuration?: number,
-  avgOverhead?: number,
-  dataIn: number,
-  dataOut: number,
-  hits: number
-}
-type IgqlConsumption = {
-  globalInformations: IGlobalInformations,
-  api: {
-    _id: string
-  }
-  clientId: string
-
-  billing: {
-    hits: number,
-    total: number
-  }
-  from: Moment
-  plan: {
-    _id: string
-    customName: string
-    type: string
-  }
-
-  team: {
-    name: string
-  }
-  tenant: {
-    _id: string
-  }
-  to: Moment
-  _id: string
-
-
-}
+import { IApi, IGlobalInformations, ITeamSimple, isError } from '../../../types';
+import { formatDate, OtoroshiStatsVizualization, Spinner } from '../../utils';
+import { IgqlConsumption } from "./TeamApiConsumption";
 
 type TeamPlanConsumptionProps = {
   apiGroup?: boolean,
@@ -55,10 +17,6 @@ type TeamPlanConsumptionProps = {
 export const TeamPlanConsumption = (props: TeamPlanConsumptionProps) => {
   const { translate } = useContext(I18nContext);
   const { client } = useContext(getApolloContext());
-
-  // const urlMatching = !!props.apiGroup
-  //   ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId'
-  //   : '/:teamId/settings/apis/:apiId/:version/stats/plan/:planId';
 
   const urlMatching = !!props.apiGroup
     ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId'
@@ -73,10 +31,10 @@ export const TeamPlanConsumption = (props: TeamPlanConsumptionProps) => {
         return translate({ key: 'data.in.plus.hits', replacements: [totalHits] });
       },
       title: translate('Data In'),
-      formatter: (data: Array<IgqlConsumption>) => data.reduce((acc: any, item: IgqlConsumption) => {
-        const date = moment(item.to).format('DD MMM.');
-        const value = acc.find((a: any) => a.date === date) || { count: 0 };
-        return [...acc.filter((a: any) => a.date !== date), { date, count: value.count + item.globalInformations.hits }];
+      formatter: (data: Array<IgqlConsumption>) => data.reduce<Array<{date: string, count: number}>>((acc, item: IgqlConsumption) => {
+        const date = formatDate(item.to, translate('date.locale'), 'DD MMM.');
+        const value = acc.find((a) => a.date === date) || { count: 0 };
+        return [...acc.filter((a) => a.date !== date), { date, count: value.count + item.globalInformations.hits }];
       }, []),
       xAxis: 'date',
       yAxis: 'count',
@@ -106,18 +64,24 @@ export const TeamPlanConsumption = (props: TeamPlanConsumptionProps) => {
   const sumGlobalInformations = (data: Array<IgqlConsumption>) => {
     const globalInformations = data.map((d) => d.globalInformations);
 
-    const value = globalInformations.reduce((acc: any, item: any) => {
-      Object.keys(item).forEach((key) => (acc[key] = (acc[key] || 0) + item[key]));
+    const value = globalInformations.reduce<IGlobalInformations>((acc, item: IGlobalInformations) => {
+      Object.keys(item).forEach((key) => (acc[key] = (acc[key] ?? 0) + item[key]));
       return acc;
-    }, {});
+    }, {
+      avgDuration: 0,
+      avgOverhead: 0,
+      dataIn: 0,
+      dataOut: 0,
+      hits: 0
+    });
 
     const howManyDuration = globalInformations.filter((d) => !!d.avgDuration).length;
     const howManyOverhead = globalInformations.filter((d) => !!d.avgDuration).length;
 
     return {
       ...value,
-      avgDuration: value.avgDuration / howManyDuration,
-      avgOverhead: value.avgOverhead / howManyOverhead,
+      avgDuration: (value.avgDuration ?? 0) / howManyDuration,
+      avgOverhead: (value.avgOverhead ?? 0) / howManyOverhead,
     };
   };
 
@@ -138,7 +102,7 @@ export const TeamPlanConsumption = (props: TeamPlanConsumptionProps) => {
       </div>
       <OtoroshiStatsVizualization
         sync={() => Services.syncApiConsumption(match?.params.apiId, props.currentTeam._id)}
-        fetchData={(from: Moment, to: Moment) =>
+        fetchData={(from: Date, to: Date) =>
           client!.query<{ apiConsumptions: Array<IgqlConsumption> }>({
             query: Services.graphql.getApiConsumptions,
             fetchPolicy: "no-cache",
@@ -146,7 +110,7 @@ export const TeamPlanConsumption = (props: TeamPlanConsumptionProps) => {
               apiId: match?.params.apiId,
               teamId: props.currentTeam._id,
               from: from.valueOf(),
-              to: to.from.valueOf(),
+              to: to.valueOf(),
               planId: match?.params.planId
             }
           }).then(({ data: { apiConsumptions } }) => {

@@ -1,9 +1,13 @@
 package storage.drivers.postgres
 
+import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import io.vertx.sqlclient.Row
 import play.api.Logger
 import play.api.libs.json._
+
+import scala.reflect.ClassTag
+import scala.reflect.runtime.universe.typeOf
 
 object Helper {
 
@@ -300,10 +304,19 @@ object Helper {
 
   def rowToJson[Of](row: Row, format: Format[Of]): Option[Of] = {
     import pgimplicits._
-
-    row.optJsObject("content").map(format.reads).collect {
-      case JsSuccess(s, _) => s
-    }
+//    logger.warn(Json.stringify(row.optJsObject("content").getOrElse(Json.obj("error" -> "rien"))))
+    row
+      .optJsObject("content")
+      .map(format.reads)
+      .map {
+        case JsSuccess(s, _) => s.some
+        case JsError(errors) =>
+          logger.error(errors.toString())
+          None
+      }
+      .collect {
+        case Some(value) => value
+      }
   }
 
   val quotes = "\""

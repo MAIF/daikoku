@@ -1,4 +1,5 @@
 @use "../variables";
+@use "sass:color";
 
 body {
   font-family: Custom, Raleway, Helvetica, sans-serif;
@@ -237,7 +238,7 @@ img:hover+.changePicture,
 
   &__with-bg:hover {
     cursor: pointer;
-    background-color: variables.$btn-border-color;
+    background-color: color-mix(in srgb, variables.$level2_bg-color 90%, black);
     color: variables.$btn-bg-color;
   }
 

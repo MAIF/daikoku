@@ -1,17 +1,17 @@
 import { getApolloContext } from "@apollo/client";
 import classNames from 'classnames';
-import moment, { Moment } from 'moment';
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
 import { useQuery } from "@tanstack/react-query";
+import {startOfDay, addDays, format} from 'date-fns'
+
 import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IApi, IGlobalInformations, isError, ITeamSimple, IUsagePlan } from '../../../types';
-import { Can, GlobalDataConsumption, OtoroshiStatsVizualization, read, Spinner, stat } from '../../utils';
+import { Can, formatDate, GlobalDataConsumption, OtoroshiStatsVizualization, read, Spinner, stat } from '../../utils';
 
 
-type IgqlConsumption = {
+export type IgqlConsumption = {
   globalInformations: IGlobalInformations,
   api: {
     _id: string
@@ -22,7 +22,7 @@ type IgqlConsumption = {
     hits: number,
     total: number
   }
-  from: Moment
+  from: Date
   plan: {
     _id: string
     customName: string
@@ -35,7 +35,7 @@ type IgqlConsumption = {
   tenant: {
     _id: string
   }
-  to: Moment
+  to: Date
   _id: string
 
 
@@ -60,8 +60,8 @@ export const TeamApiConsumption = ({
   const [state] = useState({
     consumptions: null,
     period: {
-      from: moment().startOf('day'),
-      to: moment().add(1, 'day').startOf('day'),
+      from: startOfDay(new Date()),
+      to: startOfDay(addDays(new Date(), 1)),
     },
   });
   const { client } = useContext(getApolloContext());
@@ -85,9 +85,9 @@ export const TeamApiConsumption = ({
       },
       title: translate('Data In'),
       formatter: (data: Array<IgqlConsumption>) => data.reduce((acc: Array<{ date: string, count: number }>, item: IgqlConsumption) => {
-        const date = moment(item.to).format('DD MMM.');
-        const value = acc.find((a: any) => a.date === date) || { count: 0 };
-        return [...acc.filter((a: any) => a.date !== date), { date, count: value.count + item.globalInformations.hits }];
+        const date = formatDate(item.to, translate('date.locale'), 'DD MMM.');
+        const value = acc.find((a) => a.date === date) || { count: 0 };
+        return [...acc.filter((a) => a.date !== date), { date, count: value.count + item.globalInformations.hits }];
       }, []),
       xAxis: 'date',
       yAxis: 'count',
@@ -97,10 +97,10 @@ export const TeamApiConsumption = ({
       label: translate('Hits by apikey'),
       title: translate('Hits by apikey'),
       formatter: (data: Array<IgqlConsumption>) => data.reduce((acc: Array<{ clientId: string, name: string, count: number }>, item: IgqlConsumption) => {
-        const value = acc.find((a: any) => a.clientId === item.clientId) || { count: 0 };
+        const value = acc.find((a) => a.clientId === item.clientId) || { count: 0 };
         const name = `${item.team.name}/${item.plan.customName || item.plan.type}`;
         return [
-          ...acc.filter((a: any) => a.name !== item.clientId),
+          ...acc.filter((a) => a.name !== item.clientId),
           { clientId: item.clientId, name, count: value.count + item.globalInformations.hits },
         ];
       }, []),
@@ -152,19 +152,22 @@ export const TeamApiConsumption = ({
               <div className="col section p-2">
                 <OtoroshiStatsVizualization
                   sync={() => Services.syncApiConsumption(api._id, currentTeam._id)}
-                  fetchData={(from: Moment, to: Moment) =>
-                    client!.query<{ apiConsumptions: Array<IgqlConsumption> }>({
+                  fetchData={(from: Date, to: Date) => {
+                    const newLocal: Promise<IgqlConsumption[]> = client!.query<{ apiConsumptions: Array<IgqlConsumption>; }>({
                       query: Services.graphql.getApiConsumptions,
                       fetchPolicy: "no-cache",
                       variables: {
                         apiId: api._id,
                         teamId: currentTeam._id,
                         from: from.valueOf(),
-                        to: to.from.valueOf()
+                        to: to.valueOf()
                       }
                     }).then(({ data: { apiConsumptions } }) => {
-                      return apiConsumptions
-                    })
+                      return apiConsumptions;
+                    });
+                    return newLocal;
+                  }
+                    
                   }
                   mappers={mappers(usagePlansQuery.data as IUsagePlan[])}
                 />
@@ -184,8 +187,8 @@ type PlanLightConsumptionType = {
   plan: IUsagePlan,
   data: any
   period: {
-    from: Moment
-    to: Moment
+    from: Date
+    to: Date
   }
   handleClick: () => void
 }

@@ -249,9 +249,10 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
 
                   Try {
                     Transport.send(message)
-                    logger.info(
+                    logger.debug(
                       s"Alert email sent to : ${address.mkString("Array(", ", ", ")")}"
                     )
+                    logger.debug(s"title: $title -- body: $body")
                   } recover {
                     case e: Exception =>
                       logger.error("Error while sending alert email", e)

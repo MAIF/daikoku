@@ -36,6 +36,7 @@ import {
   IDocumentationPage,
   IImportingDocumentation,
   IOtoroshiApiKey,
+  Issue,
   ISubscription,
   ISubscriptionDemand,
   ISubscriptionExtended,
@@ -45,6 +46,7 @@ import {
   ResponseDone,
   ResponseError,
 } from '../types/api';
+import { IChatInfo } from '../types/chat';
 
 const HEADERS = {
   Accept: 'application/json',
@@ -950,14 +952,14 @@ export const removeAdminFromTenant = (tenantId: any, adminId: any) =>
     method: 'DELETE',
   });
 
-export const myMessages = () => customFetch('/api/me/messages');
+export const myMessages = (): Promise<IChatInfo> => customFetch('/api/me/messages');
 
-export const myChatMessages = (chat: any, date?: any) =>
+export const myChatMessages = (chat: string, date?: number): Promise<IChatInfo> =>
   customFetch(`/api/me/messages?chat=${chat}${date ? `&date=${date}` : ''}`);
 
-export const myAdminMessages = () => customFetch('/api/me/messages/admin');
+export const myAdminMessages = (): Promise<IChatInfo> => customFetch('/api/me/messages/admin');
 
-export const sendMessage = (message: any, participants: any, chat: any) =>
+export const sendMessage = (message: string, participants: string[], chat: string) =>
   customFetch('/api/messages/_send', {
     method: 'POST',
     body: JSON.stringify({
@@ -979,7 +981,7 @@ export const closeMessageChat = (chatId: string) =>
     method: 'DELETE',
   });
 
-export const lastDateChat = (chatId: any, date: any) =>
+export const lastDateChat = (chatId: string, date: number) =>
   customFetch(`/api/messages/${chatId}/last-date?date=${date}`);
 
 export const migrateMongoToPostgres = () =>
@@ -1097,12 +1099,13 @@ export const savePost = (apiId: any, teamId: any, postId: any, content: any) =>
 
 export const getDaikokuVersion = () => customFetch('/api/versions/_daikoku');
 
-export const getAPIIssues = (apiId: any) => customFetch(`/api/apis/${apiId}/issues`);
+export const getAPIIssues = (apiId: string): PromiseWithError<Array<Issue>> =>
+  customFetch(`/api/apis/${apiId}/issues`);
 
-export const getAPIIssue = (apiId: any, issueId: any) =>
+export const getAPIIssue = (apiId: string, issueId: string): PromiseWithError<Issue> =>
   customFetch(`/api/apis/${apiId}/issues/${issueId}`);
 
-export const createNewIssue = (apiId: any, teamId: any, issue: any) =>
+export const createNewIssue = (apiId: string, teamId: string, issue: Issue) =>
   customFetch(`/api/teams/${teamId}/apis/${apiId}/issues`, {
     method: 'POST',
     body: JSON.stringify(issue),
@@ -1596,57 +1599,61 @@ export const graphql = {
       to
     }
   }`),
-  getApiSubscriptions: gql(`
-    query getApiSubscriptions ($apiId: String!, $teamId: String!, $version: String!) {
-      apiApiSubscriptions (id: $apiId, teamId: $teamId, version: $version) {
-        _id
-        apiKey {
-          clientName
-          clientId
-          clientSecret
-        }
-        plan {
+  getApiSubscriptions: `
+    query getApiSubscriptions ($apiId: String!, $teamId: String!, $version: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
+      apiApiSubscriptions (id: $apiId, teamId: $teamId, version: $version, filterTable: $filterTable, sortingTable: $sortingTable,  limit: $limit, offset: $offset) {
+        subscriptions {
           _id
-          customName
-        }
-        team {
-          _id
-          name
-          type
-        }
-        createdAt
-        validUntil
-        api {
-          _id
-          name
-        }
-        customName
-        enabled
-        tags
-        metadata
-        customMetadata
-        customMaxPerSecond
-        customMaxPerDay
-        customMaxPerMonth
-        customReadOnly
-        adminCustomName
-        parent {
-          _id
-          adminCustomName
-          enabled
-          validUntil
-          api {
-            _id
-            name
+          lastUsage
+          apiKey {
+            clientName
+            clientId
+            clientSecret
           }
           plan {
             _id
             customName
           }
+          team {
+            _id
+            name
+            type
+          }
+          createdAt
+          validUntil
+          api {
+            _id
+            name
+          }
+          customName
+          enabled
+          tags
+          metadata
+          customMetadata
+          customMaxPerSecond
+          customMaxPerDay
+          customMaxPerMonth
+          customReadOnly
+          adminCustomName
+          parent {
+            _id
+            adminCustomName
+            enabled
+            validUntil
+            api {
+              _id
+              name
+            }
+            plan {
+              _id
+              customName
+            }
+          }
         }
+        total
       }
     }
-    `),
+    `,
   getMyNotifications: `
     query getMyNotifications ($pageNumber : Int, $pageSize: Int) {
       myNotifications (pageNumber: $pageNumber, pageSize: $pageSize) {
@@ -1921,6 +1928,34 @@ export const graphql = {
             }
           }
       }
+  }
+`,
+  getAuditTrail: `
+  query getAuditTrail ($from: Long!, $to: Long!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
+    auditTrail (from: $from, to: $to, filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset) {
+      events {
+        event_id
+        event_type
+        event_timestamp
+        url
+        verb
+        authorized
+        tenant {
+          _id
+          name
+        }
+        message
+        user {
+          _id
+          name
+        }
+        impersonator {
+          _id
+          name
+        }
+      }
+      total
+    }
   }
 `,
 };

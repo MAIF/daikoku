@@ -9,7 +9,7 @@ import fr.maif.otoroshi.daikoku.ctrls.playJson._
 import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.NotAuthorizedError
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import fr.maif.otoroshi.daikoku.utils.admin.DaikokuApiAction
 import org.joda.time.DateTime
 import play.api.Logger
@@ -31,14 +31,15 @@ class GraphQLController(
     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
     DaikokuApiAction: DaikokuApiAction,
     env: Env,
-    cc: ControllerComponents
+    cc: ControllerComponents,
+    otoroshiClient: OtoroshiClient
 ) extends AbstractController(cc)
     with I18nSupport {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
 
-  lazy val (schema, resolver) = SchemaDefinition.getSchema(env)
+  lazy val (schema, resolver) = SchemaDefinition.getSchema(env, otoroshiClient)
 
   val logger: Logger = Logger("GraphQLController")
 

@@ -299,7 +299,6 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(
       </div>
     );
   } else {
-    console.debug({apiQuery, planQuery})
     return <div>Error while fetching metadata</div>;
   }
 };

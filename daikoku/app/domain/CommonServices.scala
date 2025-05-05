@@ -1,30 +1,16 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import cats.data.EitherT
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  TeamAdminOnly,
-  _PublicUserAccess,
-  _TeamAdminOnly,
-  _TeamApiEditorOnly,
-  _TeamMemberOnly,
-  _TenantAdminAccessTenant,
-  _UberPublicUserAccess
-}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.ApiAccess
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
+import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.libs.json._
 import storage.drivers.postgres.PostgresDataStore
-import storage.drivers.postgres.pgimplicits.EnhancedRow
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -341,7 +327,8 @@ object CommonServices {
        |                                                    WHERE _id = $$8))) AND
        |  (content ->> 'isDefault')::boolean
        |)
-       |ORDER BY LOWER(content ->> 'name')
+       |ORDER BY CASE WHEN content ->> '_id' = ANY ($$9::text[]) THEN 0 ELSE 1 END,
+       |LOWER(content ->> 'name')
        |""".stripMargin
 
   def getVisibleApis(
@@ -390,7 +377,8 @@ object CommonServices {
             selectedTeam.orNull,
             selectedTag.orNull,
             selectedCat.orNull,
-            groupOpt.orNull
+            groupOpt.orNull,
+            ctx.user.starredApis.map(_.value).toArray
           ),
           offset * limit,
           limit
@@ -414,7 +402,8 @@ object CommonServices {
                 selectedTeam.orNull,
                 selectedTag.orNull,
                 selectedCat.orNull,
-                groupOpt.orNull
+                groupOpt.orNull,
+                null
               )
             )
 
@@ -520,9 +509,9 @@ object CommonServices {
              |SELECT tag
              |FROM (SELECT DISTINCT jsonb_array_elements_text(content -> 'tags') AS tag
              |            FROM visible_apis)_
-             |WHERE tag ~* COALESCE($$9, '')
+             |WHERE tag ~* COALESCE($$10, '')
              |ORDER BY LOWER(tag)
-             |LIMIT $$10 OFFSET $$11;
+             |LIMIT $$11 OFFSET $$12;
              |""".stripMargin,
             "tag",
             Seq(
@@ -534,6 +523,7 @@ object CommonServices {
               selectedTag.orNull,
               selectedCat.orNull,
               groupOpt.orNull,
+              null,
               filter,
               if (limit == -1) null else java.lang.Integer.valueOf(limit),
               if (offset == -1) null
@@ -569,9 +559,9 @@ object CommonServices {
              |SELECT category
              |FROM (SELECT DISTINCT jsonb_array_elements_text(content -> 'categories') AS category
              |            FROM visible_apis)_
-             |WHERE category ~* COALESCE($$9, '')
+             |WHERE category ~* COALESCE($$10, '')
              |ORDER BY LOWER(category)
-             |LIMIT $$10 OFFSET $$11;
+             |LIMIT $$11 OFFSET $$12;
              |""".stripMargin,
             "category",
             Seq(
@@ -583,6 +573,7 @@ object CommonServices {
               selectedTag.orNull,
               selectedCat.orNull,
               groupOpt.orNull,
+              null,
               filter,
               if (limit == -1) null else java.lang.Integer.valueOf(limit),
               if (offset == -1) null
@@ -760,8 +751,30 @@ object CommonServices {
     }
   }
 
-  def getApiSubscriptions(teamId: String, apiId: String, version: String)(
-      implicit
+  private def getFiltervalue[T](filters: JsArray, key: String)(implicit
+      fjs: Reads[T]
+  ): Option[T] = {
+    filters.value
+      .find(entry => {
+        entry
+          .as[JsObject]
+          .value
+          .exists(p => p._1 == "id" && p._2.as[String] == key)
+      })
+      .flatMap(v =>
+        v.as[JsObject].value.find(p => p._1 == "value").map(_._2.as[T])
+      )
+  }
+
+  def getApiSubscriptions(
+      teamId: String,
+      apiId: String,
+      version: String,
+      filters: JsArray,
+      sorting: JsArray,
+      limit: Int,
+      offset: Int
+  )(implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
       ec: ExecutionContext
@@ -771,19 +784,114 @@ object CommonServices {
         s"@{user.name} has acceeded to team (@{team.id}) subscription for api @{api.id}"
       )
     )(teamId, ctx) { _ =>
+      val defaultOrderClause =
+        "ORDER BY COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') ASC"
+      val sortClause = sorting.head.asOpt[JsObject] match {
+        case Some(value) =>
+          val desc = value.value.get("desc") match {
+            case Some(json) if json.asOpt[Boolean].contains(true) => "DESC"
+            case _                                                => "ASC"
+          }
+
+          value.value.get("id").map(_.as[String]) match {
+            case Some(id) if id == "subscription" =>
+              s"ORDER BY COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') $desc"
+            case Some(id) if id == "plan" =>
+              s"ORDER BY p.content ->> 'customName' $desc"
+            case Some(id) if id == "team" =>
+              s"ORDER BY t.content ->> 'name' $desc"
+            case _ => defaultOrderClause
+          }
+        case None => defaultOrderClause
+      }
+
+      val queryCount = s"""
+                     |SELECT count(1) as count
+                     |from api_subscriptions s
+                     |         LEFT JOIN teams t ON t._id = s.content ->> 'team'
+                     |         LEFT JOIN usage_plans p ON p._id = s.content ->> 'plan'
+                     |WHERE s.content ->> 'api' = $$1
+                     |  AND COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') ~* COALESCE($$2::text, '')
+                     |  AND (p.content ->> 'customName') ~* COALESCE($$3, '')
+                     |  AND (t.content ->> 'name') ~* COALESCE($$4::text, '')
+                     |  AND (s.content -> 'tags') @> COALESCE($$5::text::jsonb, '[]'::jsonb)
+                     |  AND CASE
+                     |          WHEN array_length($$6::text[], 1) IS NULL THEN true
+                     |          ELSE s.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
+                     |    END
+                     |  AND s.content -> 'metadata' @> COALESCE($$7::text::jsonb, '{}'::jsonb);
+                     |""".stripMargin
+      val query = s"""
+           |SELECT s.content
+           |from api_subscriptions s
+           |         LEFT JOIN teams t ON t._id = s.content ->> 'team'
+           |         LEFT JOIN usage_plans p ON p._id = s.content ->> 'plan'
+           |WHERE s.content ->> 'api' = $$1
+           |  AND COALESCE(s.content ->> 'adminCustomName', s.content -> 'apiKey' ->> 'clientName') ~* COALESCE($$2::text, '')
+           |  AND (p.content ->> 'customName') ~* COALESCE($$3, '')
+           |  AND (t.content ->> 'name') ~* COALESCE($$4::text, '')
+           |  AND (s.content -> 'tags') @> COALESCE($$5::text::jsonb, '[]'::jsonb)
+           |  AND CASE
+           |          WHEN array_length($$6::text[], 1) IS NULL THEN true
+           |          ELSE s.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
+           |    END
+           |  AND s.content -> 'metadata' @> COALESCE($$7::text::jsonb, '{}'::jsonb)
+           |$sortClause
+           |LIMIT $$8 OFFSET $$9;
+           |""".stripMargin
+
       (for {
-        api <- EitherT.fromOptionF[Future, AppError, Api](
-          env.dataStore.apiRepo
-            .findByVersion(ctx.tenant, apiId, version),
-          AppError.ApiNotFound
+        count <- EitherT.fromOptionF[Future, AppError, Long](
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneLong(
+              query = queryCount,
+              name = "count",
+              params = Seq(
+                apiId,
+                getFiltervalue[String](filters, "subscription").orNull[String],
+                getFiltervalue[String](filters, "plan").orNull[String],
+                getFiltervalue[String](filters, "team").orNull[String],
+                getFiltervalue[JsArray](filters, "tags")
+                  .map(Json.stringify(_))
+                  .orNull[String],
+                getFiltervalue[JsArray](filters, "clientIds")
+                  .map(_.value.map(_.as[String]).toArray)
+                  .orNull,
+                getFiltervalue[JsObject](filters, "metadata")
+                  .map(Json.stringify(_))
+                  .orNull[String]
+              )
+            ),
+          AppError.UnexpectedError
         )
         subs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
           env.dataStore.apiSubscriptionRepo
             .forTenant(ctx.tenant)
-            .findNotDeleted(Json.obj("api" -> api.id.asJson))
+            .query(
+              query,
+              Seq(
+                apiId,
+                getFiltervalue[String](filters, "subscription").orNull[String],
+                getFiltervalue[String](filters, "plan").orNull[String],
+                getFiltervalue[String](filters, "team").orNull[String],
+                getFiltervalue[JsArray](filters, "tags")
+                  .map(Json.stringify(_))
+                  .orNull[String],
+                getFiltervalue[JsArray](filters, "clientIds")
+                  .map(_.value.map(_.as[String]).toArray)
+                  .orNull,
+                getFiltervalue[JsObject](filters, "metadata")
+                  .map(Json.stringify(_))
+                  .orNull[String],
+                java.lang.Integer.valueOf(limit),
+                java.lang.Integer.valueOf(offset)
+              )
+            )
         )
       } yield {
-        subs
+        ctx.setCtxValue("api.id", apiId)
+        (subs, count)
       }).value
     }
   }
@@ -931,6 +1039,102 @@ object CommonServices {
         )
       } yield {
         Right(NotificationWithCount(notifications._1, notifications._2))
+      }
+    }
+  }
+
+  def getAuditTrail(
+      from: Long,
+      to: Long,
+      filters: JsArray,
+      sorting: JsArray,
+      limit: Int,
+      offset: Int
+  )(implicit
+      ctx: DaikokuActionContext[JsValue],
+      env: Env,
+      ec: ExecutionContext
+  ) = {
+    _TenantAdminAccessTenant(
+      AuditTrailEvent("@{user.name} has accessed to audit trail")
+    )(ctx) {
+
+      val defaultOrderClause =
+        "ORDER BY content ->> '@timestamp' ASC"
+      val sortClause = sorting.head.asOpt[JsObject] match {
+        case Some(value) =>
+          val desc = value.value.get("desc") match {
+            case Some(json) if json.asOpt[Boolean].contains(true) => "DESC"
+            case _                                                => "ASC"
+          }
+
+          value.value.get("id").map(_.as[String]) match {
+            case Some(id) if id == "user" =>
+              s"ORDER BY content -> 'user' ->> 'name' $desc"
+            case Some(id) if id == "date" =>
+              s"ORDER BY content ->> '@timestamp' $desc"
+            case _ => defaultOrderClause
+          }
+        case None => defaultOrderClause
+      }
+
+      val queryCount =
+        s"""
+           |select count(1) from audit_events
+           |WHERE (content ->> '@timestamp')::bigint >= $$1 AND (content ->> '@timestamp')::bigint <= $$2
+           |  AND (content -> 'user' ->> 'name') ~* COALESCE($$3::text, '')
+           |  AND (content -> 'user' ->> 'name') ~* COALESCE($$4::text, '')
+           |  AND (content ->> 'message') ~* COALESCE($$5::text, '')
+           |""".stripMargin
+      val query =
+        s"""
+           |select content from audit_events
+           |WHERE (content ->> '@timestamp')::bigint >= $$1 AND (content ->> '@timestamp')::bigint <= $$2
+           |  AND (content -> 'user' ->> 'name') ~* COALESCE($$3::text, '')
+           |  AND (content -> 'user' ->> 'name') ~* COALESCE($$4::text, '')
+           |  AND (content ->> 'message') ~* COALESCE($$5::text, '')
+           |$sortClause
+           |LIMIT $$6 OFFSET $$7;
+           |""".stripMargin
+
+      (for {
+        count <- EitherT.fromOptionF[Future, AppError, Long](
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneLong(
+              queryCount,
+              "count",
+              Seq(
+                java.lang.Long.valueOf(from),
+                java.lang.Long.valueOf(to),
+                getFiltervalue[String](filters, "user").orNull[String],
+                getFiltervalue[String](filters, "impersonator").orNull[String],
+                getFiltervalue[String](filters, "message").orNull[String]
+              )
+            ),
+          AppError.UnexpectedError
+        )
+        subs <- EitherT.liftF[Future, AppError, Seq[JsObject]](
+          env.dataStore.auditTrailRepo
+            .forTenant(ctx.tenant)
+            .query(
+              query,
+              Seq(
+                java.lang.Long.valueOf(from),
+                java.lang.Long.valueOf(to),
+                getFiltervalue[String](filters, "user").orNull[String],
+                getFiltervalue[String](filters, "impersonator").orNull[String],
+                getFiltervalue[String](filters, "message").orNull[String],
+                java.lang.Integer.valueOf(limit),
+                java.lang.Integer.valueOf(offset)
+              )
+            )
+        )
+      } yield {
+        (subs, count)
+      }).value.map {
+        case Left(_)           => (Seq.empty, 0L)
+        case Right(auditTrail) => auditTrail
       }
     }
   }

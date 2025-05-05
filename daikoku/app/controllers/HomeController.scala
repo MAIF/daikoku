@@ -3,7 +3,12 @@ package fr.maif.otoroshi.daikoku.ctrls
 import cats.implicits.catsSyntaxOptionId
 import controllers.Assets
 import daikoku.BuildInfo
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest, DaikokuActionMaybeWithoutUser, DaikokuActionMaybeWithoutUserContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest,
+  DaikokuActionMaybeWithoutUser,
+  DaikokuActionMaybeWithoutUserContext
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.TenantAdminOnly
 import fr.maif.otoroshi.daikoku.domain._

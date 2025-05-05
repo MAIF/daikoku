@@ -2,7 +2,7 @@ package fr.maif.otoroshi.daikoku.domain
 
 import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.JWT
-import fr.maif.otoroshi.daikoku.audit.KafkaConfig
+import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, KafkaConfig}
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._

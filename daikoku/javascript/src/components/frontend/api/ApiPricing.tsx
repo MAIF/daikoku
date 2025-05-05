@@ -4,7 +4,7 @@ import classNames from 'classnames';
 import cloneDeep from 'lodash/cloneDeep';
 import difference from 'lodash/difference';
 import { nanoid } from 'nanoid';
-import { useContext, useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import Edit2 from 'react-feather/dist/icons/edit-2';
 import { useMatch, useNavigate } from 'react-router-dom';
 import Select, { components } from 'react-select';
@@ -1097,7 +1097,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
   });
 
   const editOtoroshiTarget = () => openRightPanel({
-    title: "otoroshi",
+    title: translate('api.pricings.otoroshi.target.panel.title'),
     content: <Form
       schema={otoroshiSchema(props.plan)}
       value={plan.otoroshiTarget}
@@ -1129,14 +1129,14 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     const editQuotas = () => {
       if (userCanUpadtePlan)
         openRightPanel({
-          title: "quotas",
+          title: translate("api.pricings.quotas.panel.title"),
           content: <QuotasForm ownerTeam={props.ownerTeam} plan={props.plan} savePlan={props.savePlan} />
         })
     }
     const editPricing = () => {
       if (userCanUpadtePlan)
         openRightPanel({
-          title: "pricing",
+          title: translate("api.pricings.pricing.panel.title"),
           content: <BillingForm
             ownerTeam={props.ownerTeam}
             plan={props.plan}
@@ -1144,7 +1144,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         })
     }
     const editProcess = () => openRightPanel({
-      title: "process",
+      title: translate("api.pricings.subscription.process.panel.title"),
       content: <SubscriptionProcessEditor
         savePlan={plan => Promise.resolve(props.savePlan(plan))}
         plan={props.plan}

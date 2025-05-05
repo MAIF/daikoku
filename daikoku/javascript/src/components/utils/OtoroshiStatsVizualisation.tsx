@@ -1,25 +1,27 @@
-import React, { useContext, useEffect, useState } from 'react';
 import classNames from 'classnames';
-import { Histogram, RoundChart } from './Recharts';
-//@ts-ignore
-import moment, {Moment} from 'moment';
-import Select from 'react-select';
+import { addDays, endOfMonth, isEqual, startOfDay, startOfMonth, startOfToday, subDays, subMonths } from 'date-fns';
 import maxBy from 'lodash/maxBy';
-import { Line, LineChart, Tooltip, XAxis, YAxis, ResponsiveContainer } from 'recharts';
+import { useContext, useEffect, useState } from 'react';
+import Select from 'react-select';
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+
+import { I18nContext, TranslateParams } from '../../contexts';
+import { IConsumption, isError, ResponseError } from '../../types';
+import { IgqlConsumption } from '../backoffice/apis/TeamApiConsumption';
+import { Histogram, RoundChart } from './Recharts';
 import { Spinner } from './Spinner';
-import { I18nContext } from '../../contexts';
-import { IConsumption, ResponseError } from '../../types';
+import { formatDate } from './formatters';
 
 (Number.prototype as any).prettify = function () {
   return toString().replace(/(\d)(?=(\d{3})+(?!\d))/g, '');
 };
 
 class Period {
-  from: any;
-  label: any;
-  to: any;
-  unitTime: any;
-  value: any;
+  from: Date;
+  label: string;
+  to: Date;
+  unitTime: string;
+  value: string;
   constructor({
     from,
     to,
@@ -34,61 +36,62 @@ class Period {
     this.value = value;
   }
 
-  format = (consumptions: any) => {
+  format = (consumptions: IgqlConsumption[], translate: (params: string | TranslateParams) => string) => {
     let time = '';
-    if (consumptions && consumptions.length) {
-      const maxDate = maxBy(consumptions, (o) => (o as any).to);
-      if (maxDate && moment((maxDate as any).to).startOf('day').isSame(moment().startOf('day'))) {
-        time = moment((maxDate as any).to).format('HH:mm');
+    if (consumptions && consumptions.length) { //FIXME: test it becaus eit's weird
+      const maxDate = maxBy(consumptions, (o) => o.to)?.to;
+      if (maxDate && isEqual(startOfDay(maxDate), startOfToday())) {
+        time = formatDate(maxDate, translate('date.locale'),'HH:mm');
       }
     }
 
     if (this.unitTime === 'day') {
       if (this.value === 'TODAY') {
-        return `${this.from.format('D MMM. YYYY')} ${time}`;
+        return `${formatDate(this.from, translate('date.locale'), translate('date.format.short'))} ${time}`;
       }
-      return `${this.from.format('D MMM. YYYY')}`;
+      return formatDate(this.from, translate('date.locale'), translate('date.format.short'));
     }
-    return `${this.from.format('D MMM.')} - ${this.to().format('D MMM. YYYY')}`;
+    return `${formatDate(this.from, translate('date.locale'), translate('date.format.short'))} - ${formatDate(this.to, translate('date.locale'), translate('date.format.short')) }`;
   };
 }
 
-const periods = (translate: any) => ({
+const now = new Date()
+const periods = (translate: (params: string | TranslateParams) => string) => ({
   today: new Period({
-    from: moment().startOf('day'),
-    to: () => moment().add(1, 'day').startOf('day'),
+    from: startOfDay(new Date()),
+    to: startOfDay(addDays(new Date(), 1)),
     unitTime: 'day',
     label: translate('Today'),
     value: 'TODAY',
   }),
 
   yesterday: new Period({
-    from: moment().subtract(1, 'day').startOf('day'),
-    to: () => moment().startOf('day'),
+    from: startOfDay(subDays(now, 1)),
+    to: startOfDay(now),
     unitTime: 'day',
     label: translate('Yesterday'),
     value: 'YESTERDAY',
   }),
 
   last7days: new Period({
-    from: moment().subtract(7, 'days').startOf('day'),
-    to: () => moment(),
+    from: startOfDay(subDays(now, 7)),
+    to: now,
     unitTime: 'day',
     label: translate('Last 7 days'),
     value: 'LAST7',
   }),
 
   last30days: new Period({
-    from: moment().subtract(30, 'days').startOf('day'),
-    to: () => moment(),
+    from: startOfDay(subMonths(now, 1)),
+    to: now,
     unitTime: 'day',
     label: translate('Last 30 days'),
     value: 'LAST30',
   }),
 
   billingPeriod: new Period({
-    from: moment().startOf('month'),
-    to: () => moment().endOf('month'),
+    from: startOfMonth(now),
+    to: endOfMonth(now),
     unitTime: 'month',
     label: translate('Billing period'),
     value: 'BILLING',
@@ -101,39 +104,26 @@ type IGlobalInformations= {
   dataOut: number,
   hits: number
 }
-type IgqlConsumption = {
-  globalInformations: IGlobalInformations,
-  api: {
-    _id: string
-  }
-  billing: {
-    hits: number,
-    total: number
-  }
-  from: Moment
-  plan: {
-    _id: string
-  }
-  team: {
-    name: string
-  }
-  tenant: {
-    _id: string
-  }
-  to: Moment
-  _id: string
-}
+
 type Iprops = {
   sync: () => Promise<Array<IConsumption> | ResponseError>
-  fetchData: (from: Moment, to: Moment) => Promise<Array<IgqlConsumption>>
+  fetchData: (from: Date, to: Date) => Promise<Array<IgqlConsumption> | ResponseError>
   mappers: any
   forConsumer?: boolean
 }
+
+type State = {
+  tab: 0,
+  consumptions: Array<IgqlConsumption>,
+  period: Period,
+  loading: boolean,
+  error: boolean,
+}
 export function OtoroshiStatsVizualization(props: Iprops) {
   const { translate } = useContext(I18nContext);
-  const [state, setState] = useState<any>({
+  const [state, setState] = useState<State>({
     tab: 0,
-    consumptions: null,
+    consumptions: [],
     period: { ...periods(translate).today },
     loading: true,
     error: false,
@@ -156,7 +146,7 @@ export function OtoroshiStatsVizualization(props: Iprops) {
 
   const tabs = (value: any, label: any) => {
     const realLabel =
-      label instanceof Function
+      label instanceof Function //@ts-ignore //FIXME: WEIRD
         ? label(state.consumptions, getMaxCall(state.period.unitTime, state.consumptions?.plan))
         : label;
     return (
@@ -240,10 +230,10 @@ export function OtoroshiStatsVizualization(props: Iprops) {
   };
 
   useEffect(() => {
-    updateConsumption(state.period.from, state.period.to());
+    updateConsumption(state.period.from, state.period.to);
   }, [state.period]);
 
-  const updateConsumption = (from: any, to: any) => {
+  const updateConsumption = (from: Date, to: Date) => {
     setState({ ...state, loading: true });
     props
       .fetchData(from, to)
@@ -262,9 +252,9 @@ export function OtoroshiStatsVizualization(props: Iprops) {
     setState({ ...state, loading: true });
     props
       .sync()
-      .then(() => props.fetchData(from, to()))
-      .then((consumptions: any) => {
-        if (consumptions.error) {
+      .then(() => props.fetchData(from, to))
+      .then((consumptions) => {
+        if (isError(consumptions)) {
           setState({ ...state, error: true, loading: false });
         } else {
           setState({ ...state, consumptions, loading: false });
@@ -281,12 +271,12 @@ export function OtoroshiStatsVizualization(props: Iprops) {
           className="col col-sm-3 reactSelect period-select"
           value={{ value: state.period.value, label: state.period.label }}
           isClearable={false}
-          options={Object.values(periods(translate))}
+          options={Object.values(periods(translate))} //@ts-ignore //FIXME: weird
           onChange={(period) => setState({ ...state, period })}
           classNamePrefix="reactSelect"
         />
 
-        <span className="col ms-2 period-display">{state.period.format(state.consumptions)}</span>
+        <span className="col ms-2 period-display">{state.period.format(state.consumptions, translate)}</span>
           <button className="btn btn-outline-primary" onClick={sync}>
             <i className="fas fa-sync-alt" />
           </button>

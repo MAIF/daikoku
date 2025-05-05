@@ -1,20 +1,17 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { Form, constraints, format, type } from '@maif/react-forms';
-import moment from 'moment';
-//@ts-ignore
 import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
-//@ts-ignore
 import X from 'react-feather/dist/icons/x';
 import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select/creatable';
 
-import { api as API, manage } from '../../..';
+import { api as API, formatDate, manage } from '../../..';
 import { I18nContext } from '../../../../contexts';
 import * as Services from '../../../../services';
 import { converter } from '../../../../services/showdown';
 import { Can, getColorByBgColor, randomColor } from '../../../utils';
-import {IApi, ITeamSimple, IUserSimple} from '../../../../types';
+import { IApi, isError, Issue, ITeamSimple, IUserSimple } from '../../../../types';
 import { ModalContext } from '../../../../contexts';
 
 const styles = {
@@ -42,12 +39,6 @@ const styles = {
   },
 };
 
-type Issue = {
-  comments: Array<any>,
-  title: string,
-  by: IUserSimple
-}
-
 type Tag = { value: string, label: string }
 
 type IApiTimelineIssueProps = {
@@ -66,8 +57,8 @@ export function ApiTimelineIssue({
   api,
   basePath,
   onChange
-}: IApiTimelineIssueProps) {
-  const [issue, setIssue] = useState<Issue>({ title: '', comments: [], by: connectedUser });
+}: IApiTimelineIssueProps) { //@ts-ignore
+  const [issue, setIssue] = useState<Issue>({ title: '', comments: [], by: connectedUser, tags: [], apiVersion: api.currentVersion, createdAt: new Date().getTime() });
   const [editionMode, handleEdition] = useState(false);
   const [tags, setTags] = useState<Array<Tag>>([]);
 
@@ -79,15 +70,15 @@ export function ApiTimelineIssue({
   const { confirm, openFormModal } = useContext(ModalContext);
 
   useEffect(() => {
-    Services.getAPIIssue(api._humanReadableId, id)
+    Services.getAPIIssue(api._humanReadableId, id!)
       .then((res) => {
-        if (res.error) {
+        if (isError(res)) {
           navigate(`${basePath}/issues`);
         } else {
-          const entryTags = res.tags.map((tag: any) => ({
+          const entryTags = res.tags.map((tag) => ({
             value: tag.id,
             label: tag.name
-          }));
+          }));///@ts-ignore
           setIssue({ ...res, tags: entryTags });
           setTags(entryTags);
         }
@@ -96,7 +87,7 @@ export function ApiTimelineIssue({
 
   useEffect(() => {
     if (tags.length !== api.tags.length) {
-      updateIssue({ ...issue, tags: tags.map(t => (t as any).value) });
+      updateIssue({ ...issue, tags: tags.map(t => t.value) });
     }
   }, [tags])
 
@@ -172,7 +163,7 @@ export function ApiTimelineIssue({
     const closedIssue = {
       ...issue,
       open: false,
-      tags: (issue as any).tags.map((tag: any) => tag.value),
+      tags: issue.tags.map((tag: any) => tag.value),
     };
     updateIssue(closedIssue)
   }
@@ -250,10 +241,10 @@ export function ApiTimelineIssue({
       </div>
       <div>
         <span className="pe-1" style={styles.bold}>
-          {(issue as any).by ? (issue as any).by._humanReadableId : ''}
+          {issue.by.name}
         </span>
         {translate('issues.opened_message')}{' '}
-        {moment((issue as any).createdDate).format(translate('moment.date.format.without.hours'))} ·{' '}
+        {formatDate(issue.createdAt, translate('date.locale'), translate('date.format.without.hours'))} ·{' '}
         {issue.comments ? issue.comments.length : 0} {translate('issues.comments')}
       </div>
     </div>
@@ -302,7 +293,7 @@ export function ApiTimelineIssue({
 
 function Comment({
   by,
-  createdDate,
+  createdAt,
   content,
   editing,
   editComment,
@@ -329,10 +320,10 @@ function Comment({
       <div className="container">
         <div className="d-flex px-3 py-2" style={styles.commentHeader}>
           <span className="pe-1" style={styles.bold}>
-            {by._humanReadableId}
+            {by.name}
           </span>
           <span className="pe-1">{translate('issues.commented_on')}</span>
-          {moment(createdDate).format(translate('moment.date.format.without.hours'))}
+          {formatDate(createdAt, translate('date.locale'), translate('date.format.without.hours'))}
           {by._id === connectedUser._id && editing !== true && (
             <>
               {showActions ? (

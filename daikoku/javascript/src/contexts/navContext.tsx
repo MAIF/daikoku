@@ -72,7 +72,7 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
   const navigate = useNavigate();
   const params = useParams();
 
-  const userCanUpdateApi = team?.users.some(u => u.userId === connectedUser._id && u.teamPermission !== teamPermissions.user)
+  const userCanUpdateApi = connectedUser.isDaikokuAdmin || team?.users.some(u => u.userId === connectedUser._id && u.teamPermission !== teamPermissions.user)
   const isAdminApi = api?.visibility === 'AdminOnly';
   const isApiGroup = api?.apis
 

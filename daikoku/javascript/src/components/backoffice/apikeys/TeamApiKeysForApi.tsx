@@ -2,11 +2,12 @@ import { getApolloContext } from '@apollo/client';
 import { constraints, format, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
+import { GraphQLClient } from 'graphql-request';
 import sortBy from 'lodash/sortBy';
-import moment from 'moment';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
+import { isBefore } from 'date-fns';
 
 import {
   I18nContext,
@@ -33,11 +34,10 @@ import {
   Spinner,
   apikey,
   escapeRegExp,
+  formatDate,
   read
 } from '../../utils';
 import { apiGQLToLegitApi } from '../../utils/apiUtils';
-import { GraphQLClient } from 'graphql-request';
-import { IApiSubscriptionGql } from '../apis/TeamApiSubscriptions';
 
 type ISubscriptionWithChildren = ISubscriptionExtended & {
   children: Array<ISubscriptionExtended>;
@@ -897,13 +897,13 @@ export const ApiKeyCard = ({
               translate("subscription.for")}
               <Link to={subscription.apiLink} className='ms-1 underline'>{subscription.apiName}</Link>/<Link to={subscription.planLink} className='me-1 underline'>{subscription.planName}</Link>
               {translate({
-                key: 'subscription.created.at', replacements: [moment(subscription.createdAt).format(translate('moment.date.format.without.hours'))]
+                key: 'subscription.created.at', replacements: [formatDate(subscription.createdAt, translate('date.locale'), translate('date.format.without.hours'))]
               })}
               <span className={classNames('ms-1', {
-                "danger-color": moment(subscription.validUntil).isBefore(moment())
+                "danger-color": subscription.validUntil && isBefore(new Date(subscription.validUntil), new Date())
               })}>
                 {subscription.validUntil && translate({
-                  key: 'subscription.valid.until', replacements: [moment(subscription.validUntil).format(translate('moment.date.format.without.hours'))]
+                  key: 'subscription.valid.until', replacements: [formatDate(subscription.validUntil, translate('date.locale'), translate('date.format.without.hours'))]
                 })}</span>
             </div>
             <div className='api-subscription__infos__creation'>
@@ -1041,6 +1041,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
   const { translate } = useContext(I18nContext);
 
   const _customName = props.subscription.customName || props.plan.customName
+  const isApiCMS = props.api.visibility === "AdminOnly" && props.api.name.includes("cms");
 
   return (
     <div className='api-subscription'>
@@ -1048,7 +1049,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
         <div className='api-subscription__infos'>
           <div className='api-subscription__infos__name'>{_customName}</div>
           <div className='d-flex gap-2'>
-            <BeautifulTitle title={translate("subscription.copy.apikey.help")}>
+            {!isApiCMS && <BeautifulTitle title={translate("subscription.copy.apikey.help")}>
               <button className='btn btn-sm btn-outline-info' onClick={() => {
                 navigator.clipboard
                   .writeText(`${props.subscription.apiKey.clientId}:${props.subscription.apiKey.clientSecret}`)
@@ -1062,8 +1063,8 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
                 <i className="fa fa-copy me-1" />
                 {translate("subscription.copy.apikey.label")}
               </button>
-            </BeautifulTitle>
-            <BeautifulTitle title={translate("subscription.copy.token.help")}>
+            </BeautifulTitle>}
+            {!isApiCMS && <BeautifulTitle title={translate("subscription.copy.token.help")}>
               <button className='btn btn-sm btn-outline-info' onClick={() => {
                 navigator.clipboard
                   .writeText(props.subscription.integrationToken)
@@ -1077,8 +1078,8 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
                 <i className="fa fa-copy me-1" />
                 {translate("subscription.copy.token.label")}
               </button>
-            </BeautifulTitle>
-            <BeautifulTitle title={translate("subscription.copy.basic.auth.help")}>
+            </BeautifulTitle>}
+            {!isApiCMS && <BeautifulTitle title={translate("subscription.copy.basic.auth.help")}>
               <button className='btn btn-sm btn-outline-info' onClick={() => {
                 navigator.clipboard
                   .writeText(`Basic ${btoa(`${props.subscription.apiKey?.clientId}:${props.subscription.apiKey?.clientSecret}`)}`)
@@ -1092,8 +1093,8 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
                 <i className="fa fa-copy me-1" />
                 {translate("subscription.copy.basic.auth.label")}
               </button>
-            </BeautifulTitle>
-            <BeautifulTitle title={translate("subscription.copy.cli.auth.help")}>
+            </BeautifulTitle>}
+            {!!isApiCMS && <BeautifulTitle title={translate("subscription.copy.cli.auth.help")}>
               <button className='btn btn-sm btn-outline-info'
                 aria-label={translate("subscription.copy.cli.auth.aria-label")}
                 onClick={() => {
@@ -1109,19 +1110,19 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
                 <i className="fa fa-copy me-1" />
                 {translate("subscription.copy.cli.auth.label")}
               </button>
-            </BeautifulTitle>
+            </BeautifulTitle>}
           </div>
           <div className='api-subscription__infos__creation'>{
             translate("subscription.for")}
             <span className='ms-1 underline'>{props.api.name}</span>/<span className='me-1 underline'>{props.plan.customName}</span>
             {translate({
-              key: 'subscription.created.at', replacements: [moment(props.subscription.createdAt).format(translate('moment.date.format.without.hours'))]
+              key: 'subscription.created.at', replacements: [formatDate(props.subscription.createdAt, translate('date.locale'),translate('date.format.without.hours'))]
             })}
             <span className={classNames('ms-1', {
-              "danger-color": moment(props.subscription.validUntil).isBefore(moment())
+              "danger-color": props.subscription.validUntil && isBefore(new Date(props.subscription.validUntil), new Date())
             })}>
               {props.subscription.validUntil && translate({
-                key: 'subscription.valid.until', replacements: [moment(props.subscription.validUntil).format(translate('moment.date.format.without.hours'))]
+                key: 'subscription.valid.until', replacements: [formatDate(props.subscription.validUntil, translate('date.locale'), translate('date.format.without.hours'))]
               })}</span></div>
         </div>
       </div>
