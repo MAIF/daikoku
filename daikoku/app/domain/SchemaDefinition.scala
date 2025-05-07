@@ -1910,7 +1910,10 @@ object SchemaDefinition {
           resolve = _.value.notifications
         )
       ),
-      ReplaceField("total", Field("total", LongType, resolve = _.value.total))
+      ReplaceField("total", Field("total", LongType, resolve = _.value.total)),
+      ReplaceField("totalFiltered", Field("totalFiltered", LongType, resolve = _.value.totalFiltered)),
+      ReplaceField("totalByTypes", Field("totalByTypes", JsonType, resolve = _.value.totalByTypes)),
+      ReplaceField("totalByTeams", Field("totalByTeams", JsonType, resolve = _.value.totalByTeams)),
     )
 
     lazy val TeamWithCountType = deriveObjectType[
@@ -3467,10 +3470,12 @@ object SchemaDefinition {
 
     def getMyNotification(
         ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
-        page: Int,
-        pageSize: Int
+        filter: JsArray,
+        sort: JsArray,
+        limit: Int,
+        offset: Int
     ) = {
-      CommonServices.getMyNotification(page, pageSize)(ctx.ctx._2, env, e).map {
+      CommonServices.getMyNotification(filter, sort, limit, offset)(ctx.ctx._2, env, e).map {
         case Left(value)  => throw NotAuthorizedError(value.toString)
         case Right(value) => value
       }
@@ -3482,9 +3487,14 @@ object SchemaDefinition {
         Field(
           "myNotifications",
           NotificationWithCountType,
-          arguments = PAGE_NUMBER :: PAGE_SIZE :: Nil,
+          arguments = FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
-            getMyNotification(ctx, ctx.arg(PAGE_NUMBER), ctx.arg(PAGE_SIZE))
+            getMyNotification(
+              ctx,
+              ctx.arg(FILTER_TABLE),
+              ctx.arg(SORTING_TABLE),
+              ctx.arg(LIMIT),
+              ctx.arg(OFFSET))
           }
         )
       )

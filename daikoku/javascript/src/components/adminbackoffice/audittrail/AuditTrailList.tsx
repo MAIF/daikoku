@@ -12,13 +12,15 @@ import { IAuditTrailEventGQL } from '../../../types';
 import { Filter } from '../../inputs';
 import { OtoDatePicker } from '../../inputs/datepicker';
 import { Can, formatDate, manage, tenant } from '../../utils';
+import { GlobalContext } from "../../../contexts/globalContext";
 
 export const AuditTrailList = () => {
   useTenantBackOffice();
   const queryClient = useQueryClient();
 
   const { alert } = useContext(ModalContext);
-  const { translate, Translation } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
+  const { customGraphQLClient } = useContext(GlobalContext);
 
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
@@ -31,8 +33,7 @@ export const AuditTrailList = () => {
   const [from, setFrom] = useState(subHours(new Date(), 1));
   const [to, setTo] = useState(new Date());
 
-  const graphqlEndpoint = `${window.location.origin}/api/search`;
-  const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
+  
   const auditTrailQuery = useQuery({
     queryKey: ["audits", from, to, columnFilters, sorting, pagination],
     queryFn: () => customGraphQLClient.request<{ auditTrail: { events: Array<IAuditTrailEventGQL>, total: number } }>(Services.graphql.getAuditTrail, {

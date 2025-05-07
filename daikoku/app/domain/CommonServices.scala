@@ -7,6 +7,7 @@ import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.ApiAccess
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.libs.json._
@@ -1002,43 +1003,118 @@ object CommonServices {
     }
   }
 
-  def getMyNotification(page: Int, pageSize: Int)(implicit
+  def getMyNotification(filter: JsArray, sort: JsArray, limit: Int, offset: Int)(implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
       ec: ExecutionContext
   ) = {
     _PublicUserAccess(
       AuditTrailEvent(
-        s"@{user.name} has accessed to his count of unread notifications"
+        s"@{user.name} has accessed to his notifications"
       )
     )(ctx) {
+      val CTE = s"""
+               |WITH my_teams as (SELECT *
+               |                  FROM teams
+               |                  WHERE content -> 'users' @> '[{"userId": "${ctx.user.id.value}"}]')
+               |                  """
+
       for {
-        myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
-        notificationRepo <-
-          env.dataStore.notificationRepo
-            .forTenantF(ctx.tenant.id)
-        notifications <- notificationRepo.findWithPagination(
-          Json.obj(
-            "_deleted" -> false,
-            "$or" -> Json.arr(
-              Json.obj(
-                "team" -> Json.obj(
-                  "$in" -> JsArray(
-                    myTeams
-                      .filter(t => t.admins().contains(ctx.user.id))
-                      .map(_.id.asJson)
-                  )
-                )
-              ),
-              Json.obj("action.user" -> ctx.user.id.asJson)
-            ),
-            "status.status" -> NotificationStatus.Pending.toString
-          ),
-          page,
-          pageSize
-        )
+        notifications <- env.dataStore.notificationRepo
+          .forTenant(ctx.tenant)
+          .query(
+            s"""
+               |$CTE
+               |SELECT n.content
+               |FROM notifications n
+               |         JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |    OR n.content ->> 'team' = t._id::text)
+               |  AND (COALESCE($$1, '') = '' OR n.content -> 'action' ->> 'type' = ANY ($$1::text[]))
+               |  AND (COALESCE($$2, '') = '' OR t._id = ANY ($$2::text[]))
+               |  AND (COALESCE($$3, '') = '' OR n.content ->> 'notificationType' = ANY ($$3::text[]))
+               |LIMIT $$4 OFFSET $$5;
+               |""".stripMargin,
+            Seq(
+              null,
+              null,
+              null,
+              java.lang.Integer.valueOf(limit),
+              java.lang.Integer.valueOf(offset)
+            )
+          )
+        totalFiltered <- env.dataStore.asInstanceOf[PostgresDataStore]
+          .queryOneLong(
+            s"""
+               |$CTE
+               |SELECT count(1) as total_filtered
+               |FROM notifications n
+               |         JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |    OR n.content ->> 'team' = t._id::text)
+               |  AND (COALESCE($$1, '') = '' OR n.content -> 'action' ->> 'type' = ANY ($$1::text[]))
+               |  AND (COALESCE($$2, '') = '' OR t._id = ANY ($$2::text[]))
+               |  AND (COALESCE($$3, '') = '' OR n.content ->> 'notificationType' = ANY ($$3::text[]))
+               |LIMIT $$4 OFFSET $$5;
+               |""".stripMargin,
+            "total_filtered",
+            Seq(
+              null,
+              null,
+              null,
+              java.lang.Integer.valueOf(limit),
+              java.lang.Integer.valueOf(offset)
+            ))
+        total <- env.dataStore.asInstanceOf[PostgresDataStore]
+          .queryOneLong(
+            s"""
+               |$CTE
+               |SELECT count(1) as total
+               |FROM notifications n
+               |         JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |    OR n.content ->> 'team' = t._id::text);
+               |""".stripMargin,
+            "total",
+            Seq())
+        totalByTeams <- env.dataStore.asInstanceOf[PostgresDataStore]
+          .queryOneJsArray(
+            s"""
+               |$CTE
+               |select json_agg(row_to_json(_.*)) as total_by_teams
+               |from (SELECT n.content ->> 'team' AS team, COUNT(*) AS total
+               |      FROM notifications n
+               |               JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |          OR n.content ->> 'team' = t._id::text)
+               |      GROUP BY n.content ->> 'team'
+               |      ORDER BY total DESC) _;
+               |""".stripMargin,
+            "total_by_teams",
+            Seq())
+        totalByTypes <- env.dataStore.asInstanceOf[PostgresDataStore]
+          .queryOneJsArray(
+            s"""
+               |$CTE
+               |select json_agg(row_to_json(_.*)) as total_by_types
+               |from (SELECT n.content ->> 'notificationType' AS type, COUNT(*) AS total
+               |      FROM notifications n
+               |               JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |          OR n.content ->> 'team' = t._id::text)
+               |      GROUP BY n.content ->> 'notificationType'
+               |      ORDER BY total DESC) _;
+               |""".stripMargin,
+            "total_by_types",
+            Seq()
+          )
       } yield {
-        Right(NotificationWithCount(notifications._1, notifications._2))
+        Right(NotificationWithCount(
+          notifications = notifications,
+          total = total.getOrElse(0),
+          totalFiltered = totalFiltered.getOrElse(0),
+          totalByTypes = totalByTypes.getOrElse(Json.arr()),
+          totalByTeams = totalByTeams.getOrElse(Json.arr())))
       }
     }
   }

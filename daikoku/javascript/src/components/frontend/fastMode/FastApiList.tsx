@@ -1,4 +1,3 @@
-import { getApolloContext } from "@apollo/client";
 import { useQuery } from "@tanstack/react-query";
 import debounce from "lodash/debounce";
 import { useContext, useEffect, useMemo, useState } from "react";
@@ -11,6 +10,7 @@ import { IFastApi, IFastApiSubscription, IFastPlan, ITeamSimple } from "../../..
 import { FilterPreview, Spinner } from "../../utils";
 import { FastApiCard } from "./FastApiCard";
 import { FastItemView } from "./FastItemView";
+import { GlobalContext } from "../../../contexts/globalContext";
 
 
 
@@ -24,7 +24,7 @@ export type FastItemViewMode = 'PLAN' | 'APIKEY' | 'NONE';
 
 export const FastApiList = (props: FastApiListProps) => {
   const { translate } = useContext(I18nContext);
-  const { client } = useContext(getApolloContext());
+  const { customGraphQLClient } = useContext(GlobalContext);
 
   const [subscriptions, setSubscriptions] = useState<Array<IFastApiSubscription>>()
   const [planInfo, setPlanInfo] = useState<IFastPlan>();
@@ -46,22 +46,21 @@ export const FastApiList = (props: FastApiListProps) => {
       nbOfApis,
       offset],
     queryFn: ({ queryKey }) => {
-      return client!.query<{ accessibleApis: { apis: Array<IFastApi>, total: number } }>({
-        query: Services.graphql.getApisWithSubscription,
-        fetchPolicy: "no-cache",
-        variables: {
+      return customGraphQLClient.request<{ accessibleApis: { apis: Array<IFastApi>, total: number } }>(
+        Services.graphql.getApisWithSubscription,
+        {
           teamId: queryKey[1],
           research: queryKey[2],
           apiSubOnly: queryKey[3],
           limit: queryKey[4],
           offset: queryKey[5]
+        })
+        .then(({ accessibleApis }) => {
+          return accessibleApis
         }
-      }).then(({ data: { accessibleApis } }) => {
-        return accessibleApis
-      }
-      )
+        )
     },
-    enabled: !!props.team && !!client,
+    enabled: !!props.team,
     gcTime: 0
 
   })

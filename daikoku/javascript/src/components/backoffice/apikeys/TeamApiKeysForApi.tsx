@@ -1,13 +1,11 @@
-import { getApolloContext } from '@apollo/client';
 import { constraints, format, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import classNames from 'classnames';
-import { GraphQLClient } from 'graphql-request';
+import { isBefore } from 'date-fns';
 import sortBy from 'lodash/sortBy';
 import { useContext, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
-import { isBefore } from 'date-fns';
 
 import {
   I18nContext,
@@ -143,7 +141,7 @@ type ApiKeysListForApiProps = {
 export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   const [searched, setSearched] = useState('');
 
-  const { client } = useContext(getApolloContext());
+  const { customGraphQLClient } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
   const { confirm, openFormModal, openCustomModal } = useContext(ModalContext);
   const queryClient = useQueryClient();
@@ -162,16 +160,15 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
   const subApisQuery = useQuery({
     queryKey: ['data', 'subscriptions', 'apis'],
     queryFn: () => {
-      return client?.query<{ apis: IApiGQL[] }>({
-        query: Services.graphql.apisByIds,
-        variables: {
+      return customGraphQLClient.request<{ apis: IApiGQL[] }>(
+        Services.graphql.apisByIds,
+        {
           ids: [
             ...new Set(
               (subsQuery.data as Array<ISubscription>).map((s) => s.api)
             ),
           ],
-        },
-      });
+        })
     },
     enabled: !!subsQuery.data && !isError(subsQuery.data),
   });
@@ -480,7 +477,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
     !isError(subApisQuery.data)
   ) {
     const subscriptions = subsQuery.data;
-    const subscribedApis = subApisQuery.data.data.apis;
+    const subscribedApis = subApisQuery.data.apis;
 
     const search = searched.trim();
 
@@ -619,13 +616,12 @@ export const ApiKeyCard = ({
   linkToChildren
 }: ApiKeyCardProps) => {
   const { translate } = useContext(I18nContext);
+  const { customGraphQLClient } = useContext(GlobalContext);
   const { openFormModal, closeRightPanel, openCustomModal } = useContext(ModalContext);
   const { tenant } = useContext(GlobalContext);
 
   const [more, setMore] = useState(false)
 
-  const graphqlEndpoint = `${window.location.origin}/api/search`;
-  const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
   const API_SUBSCRIPTION_DETAIL_QUERY = `
     query getApiSubscriptionDetails ($subscriptionId: String!, $teamId: String!) {
       apiSubscriptionDetails (subscriptionId: $subscriptionId, teamId: $teamId) {

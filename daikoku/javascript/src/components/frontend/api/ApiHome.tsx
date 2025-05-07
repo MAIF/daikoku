@@ -25,7 +25,7 @@ export const ApiHome = ({
   groupView
 }: ApiHomeProps) => {
 
-  const { tenant } = useContext(GlobalContext);
+  const { tenant, customGraphQLClient } = useContext(GlobalContext);
   const { openRightPanel } = useContext(ModalContext);
   const { setApiGroup } = useContext(NavContext);
 
@@ -75,9 +75,6 @@ export const ApiHome = ({
         }),
     enabled: tenant.display === 'environment'
     })
-
-  const graphqlEndpoint = `${window.location.origin}/api/search`;
-  const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
 
   const MY_TEAMS_QUERY = `
   query MyTeams {

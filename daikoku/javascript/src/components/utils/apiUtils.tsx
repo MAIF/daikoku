@@ -1,6 +1,6 @@
 import { constraints, format, TBaseObject, type } from "@maif/react-forms";
 import { IFormModalProps, TranslateParams } from "../../contexts";
-import { IApi, IApiGQL, isError, ITeamSimple, ITenant } from "../../types";
+import { IApi, IApiGQL, isError, ITeamFullGql, ITeamSimple, ITenant } from "../../types";
 import * as Services from '../../services';
 import { toast } from "sonner";
 
@@ -45,26 +45,26 @@ export const deleteApi = ({ api, versions, team, translate, openFormModal, handl
 
   openFormModal({
     title: translate('Confirm'),
-    description: <div className="alert alert-danger" role = "alert" >
-      <h4 className="alert-heading"> { translate('Warning') } </h4>
-        < p > { translate("delete.api.confirm.modal.description.1") } </p>
-        < ul >
-        <li>{ translate("delete.api.confirm.modal.description.2") } </li>
-        </ul>
-      { automaticNextCurrentVersion && <strong>{ translate({ key: 'delete.api.confirm.modal.description.next.version', replacements: [automaticNextCurrentVersion] }) } </strong>}
-</div>,
-schema: schema,
-  onSubmit: ({ next }) => {
-    Services.deleteTeamApi(team._id, api._id, next || automaticNextCurrentVersion)
-      .then((r) => {
-        if (isError(r)) {
-          toast.error(r.error)
-        } else {
-          toast.success(translate('deletion successful'))
-          handleSubmit()
-        }
-      })
-  },
+    description: <div className="alert alert-danger" role="alert" >
+      <h4 className="alert-heading"> {translate('Warning')} </h4>
+      < p > {translate("delete.api.confirm.modal.description.1")} </p>
+      < ul >
+        <li>{translate("delete.api.confirm.modal.description.2")} </li>
+      </ul>
+      {automaticNextCurrentVersion && <strong>{translate({ key: 'delete.api.confirm.modal.description.next.version', replacements: [automaticNextCurrentVersion] })} </strong>}
+    </div>,
+    schema: schema,
+    onSubmit: ({ next }) => {
+      Services.deleteTeamApi(team._id, api._id, next || automaticNextCurrentVersion)
+        .then((r) => {
+          if (isError(r)) {
+            toast.error(r.error)
+          } else {
+            toast.success(translate('deletion successful'))
+            handleSubmit()
+          }
+        })
+    },
     actionLabel: translate('Confirm')
   })
 };

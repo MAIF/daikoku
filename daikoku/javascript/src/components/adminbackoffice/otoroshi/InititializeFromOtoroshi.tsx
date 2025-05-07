@@ -1,4 +1,3 @@
-import { getApolloContext, gql } from '@apollo/client';
 import { useMachine } from '@xstate/react';
 import orderBy from 'lodash/orderBy';
 import { useContext, useEffect, useState } from 'react';
@@ -43,7 +42,7 @@ type IVisibleApiGQL = {
 }
 
 export const InitializeFromOtoroshi = () => {
-  const { tenant } = useContext(GlobalContext);
+  const { tenant, customGraphQLClient } = useContext(GlobalContext);
   useTenantBackOffice();
 
   const [state, send] = useMachine<any>(theMachine);
@@ -56,17 +55,14 @@ export const InitializeFromOtoroshi = () => {
 
   const [step, setStep] = useState<number>(1);
 
-
-  const { client } = useContext(getApolloContext());
-
   const queryClient = useQueryClient();
   const queries = useQueries({
     queries: [
       {
         queryKey: [tenant._id, "teams"],
         queryFn: () => {
-          return client!.query<{ teamsPagination: { teams: Array<ITeamFullGql>, total: number } }>({
-            query: gql(`
+          return customGraphQLClient.request<{ teamsPagination: { teams: Array<ITeamFullGql>, total: number } }>(
+            `
             query getAllteams ($research: String, $limit: Int, $offset: Int) {
               teamsPagination (research: $research, limit: $limit, offset: $offset){
                 teams {
@@ -77,57 +73,50 @@ export const InitializeFromOtoroshi = () => {
                 }
                 total
               }
-            }`),
-            fetchPolicy: "no-cache",
-            variables: {
-              research: "",
-              limit: -1,
-              offset: -1
-            }
-          }).then(({ data: { teamsPagination } }) => {
-            return teamsPagination
+            }`, {
+            research: "",
+            limit: -1,
+            offset: -1
           })
-        },
-        enabled: !!client
+            .then((data) => {
+              return data.teamsPagination
+            })
+        }
       },
       {
         queryKey: [tenant._id, "teams"],
         queryFn: () => {
-          return client!.query<{ visibleApis: { apis: Array<IVisibleApiGQL> } }>({
-            query: gql`
-                query AllVisibleApis {
-                  visibleApis {
-                    apis {
-                      api {
-                        _id
-                        name
-                        tenant {
-                          id
-                        }
-                        team {
-                          _id
-                        }
-                        currentVersion
-                        possibleUsagePlans {
-                          _id
-                          customName
-                          type
-                        }
-                        _humanReadableId
-                      }
+          return customGraphQLClient.request<{ visibleApis: { apis: Array<IVisibleApiGQL> } }>(
+            `query AllVisibleApis {
+              visibleApis {
+                apis {
+                  api {
+                    _id
+                    name
+                    tenant {
+                      id
                     }
+                    team {
+                      _id
+                    }
+                    currentVersion
+                    possibleUsagePlans {
+                      _id
+                      customName
+                      type
+                    }
+                    _humanReadableId
                   }
                 }
-              `,
-          })
-            .then(({ data: { visibleApis: { apis } } }) =>
+              }
+            }`)
+            .then(({ visibleApis: { apis } }) =>
               apis.map(({ api }) => ({
                 ...api,
                 team: api.team._id,
               }))
             )
-        },
-        enabled: !!client
+        }
       },
       {
         queryKey: [tenant._id, 'otoroshis'],

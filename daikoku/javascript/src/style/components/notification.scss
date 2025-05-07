@@ -9,6 +9,7 @@
 
   &-color {
     color: variables.$sidebar-text-color;
+
     &:hover {
       color: variables.$sidebar-text-hover-color;
       text-decoration: none;
@@ -37,4 +38,127 @@
 
 .notification-prop a:hover {
   color: #fff;
+}
+
+// ------- new page ---------
+
+.filters-container {
+  margin: 1rem 0;
+
+  padding: 1rem;
+  border: 1px solid #DDD;
+  border-radius: 5px;
+
+  background: #FFF;
+
+}
+
+.filters-label {
+  font-weight: bold;
+}
+
+.notification-table {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #DDD;
+  border-radius: 5px;
+  overflow: hidden;
+  background: #f9f9f9;
+
+}
+
+.table-header {
+  padding: 2rem 1rem 1rem 1rem;
+
+  .table-title {
+    font-weight: bold;
+  }
+
+  .table-description {
+    font-weight: lighter;
+  }
+}
+
+.select-all-row {
+  background-color: #EEE;
+  padding: 0.75rem 1rem;
+}
+
+.table-rows {
+  display: flex;
+  flex-direction: column;
+  background-color: #FFF;
+
+  .table-row {
+    display: grid;
+    grid-template-columns: 5fr 55fr 15fr 15fr 10fr;
+    padding: 1.5rem 1rem;
+    align-items: center;
+    border-bottom: 1px solid #DDD;
+
+    &:hover {
+      background-color: #f9f9f9;
+    }
+
+    div.description-cell {
+      display: flex;
+      justify-content: start;
+
+      .notification {
+        position: relative;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+
+        &:not(.unread) {
+          margin-left: calc(10px + 1rem);
+        }
+
+        &.unread:before {
+          content: "";
+          width: 10px;
+          height: 10px;
+          margin-right: 1rem;
+          display: block;
+          background-color: #29438D;
+          border-radius: 50%;
+          box-sizing: content-box;
+
+          flex-shrink: 0;
+        }
+
+        .notification__identities {
+          font-weight: lighter;
+        }
+
+        .notification__description {
+          font-weight: bold;
+        }
+      }
+    }
+
+    div.type-cell {
+      text-align: center;
+    }
+
+    div.sender-cell {
+      display: flex;
+      justify-content: center;
+
+      .sender {
+        width: fit-content;
+        padding: .3rem .6rem;
+        border-radius: 4px;
+        border: 1px solid #ddd;
+      }
+    }
+
+    div.date-cell {
+      text-align: end;
+    }
+  }
+
+  .table-row:last-of-type {
+    border: none;
+  }
 }

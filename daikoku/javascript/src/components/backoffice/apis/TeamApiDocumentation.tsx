@@ -8,7 +8,7 @@ import { IFormModalProps, ModalContext } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
-import { IApi, IAsset, IDocPage, IDocumentation, IDocumentationPage, IDocumentationPages, isError, IState, ITeamSimple, ITenant } from '../../../types';
+import { IApi, IAsset, ICmsPageGQL, IDocPage, IDocumentation, IDocumentationPage, IDocumentationPages, isError, IState, ITeamSimple, ITenant } from '../../../types';
 import { BeautifulTitle } from '../../utils';
 import { SortableTree } from '../../utils/dnd/SortableTree';
 import { Wrapper } from '../../utils/dnd/Wrapper';
@@ -109,34 +109,13 @@ type TeamApiDocumentationProps = {
   importAuthorized: boolean
 }
 
-import { getApolloContext, gql } from '@apollo/client';
-import { IPage } from '../../adminbackoffice/cms';
-
-const cmsPagesQuery = () => ({
-  query: gql`
-    query CmsPages {
-      pages {
-        id
-        name
-        path
-        contentType
-        lastPublishedDate
-        metadata
-      }
-    }
-  `,
-})
-
 export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
 
   const { translate } = useContext(I18nContext);
   const { confirm, openFormModal } = useContext(ModalContext);
-
-  const { tenant } = useContext(GlobalContext);
+  const { tenant, customGraphQLClient } = useContext(GlobalContext);
 
   const queryClient = useQueryClient();
-
-  const { client } = useContext(getApolloContext());
 
   const flow: Flow = [
     'title',
@@ -148,9 +127,9 @@ export const TeamApiDocumentation = (props: TeamApiDocumentationProps) => {
     'content',
   ];
 
-  const getCmsPages = (): Promise<Array<IPage>> =>
-    client!.query(cmsPagesQuery())
-      .then(res => res.data.pages as Array<IPage>)
+  const getCmsPages = (): Promise<Array<ICmsPageGQL>> =>
+    customGraphQLClient.request<{ pages: ICmsPageGQL[] }>(Services.graphql.cmsPages)
+      .then(res => res.pages)
 
   const schema = (onSubmitAsset: (page: IDocPage) => void): Schema => {
     return {

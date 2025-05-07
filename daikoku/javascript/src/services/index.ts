@@ -1,4 +1,3 @@
-import { gql } from '@apollo/client';
 import {
   I2FAQrCode,
   IAsset,
@@ -1287,7 +1286,7 @@ export const removeCmsPage = (id: any) =>
   });
 
 export const graphql = {
-  myTeams: gql`
+  myTeams: `
     query MyTeams {
       myTeams {
         name
@@ -1306,7 +1305,7 @@ export const graphql = {
       }
     }
   `,
-  apisByIds: gql(`
+  apisByIds: (`
       query filteredApis ($ids: [String!]) {
         apis (ids: $ids) {
           _id
@@ -1327,7 +1326,7 @@ export const graphql = {
         }
       }
     `),
-  apisByIdsWithPlans: gql(`
+  apisByIdsWithPlans: (`
       query filteredApis ($ids: [String!]) {
         apis (ids: $ids) {
           _id
@@ -1508,7 +1507,7 @@ export const graphql = {
     query getAllCategories ($research: String, $groupId: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $filter: String, $limit: Int, $offset: Int){
       allCategories (research: $research, groupId: $groupId, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, filter: $filter, limit: $limit, offset: $offset)
     }`,
-  getAllTeams: gql(`
+  getAllTeams: `
   query getAllteams ($research: String, $limit: Int, $offset: Int) {
     teamsPagination (research: $research, limit: $limit, offset: $offset){
       teams {
@@ -1543,7 +1542,7 @@ export const graphql = {
       }
       total
     }
-  }`),
+  }`,
   getTeamIncome: `
   query getTeamIncome ($teamId: String!, $from: Long, $to: Long) {
     teamIncomes (teamId: $teamId, from: $from, to: $to) {
@@ -1565,7 +1564,7 @@ export const graphql = {
       to
     }
   }`,
-  getApiConsumptions: gql(`
+  getApiConsumptions: `
   query getApiConsumptions ($apiId: String!, $teamId: String!, $from: Long, $to: Long, $planId: String) {
     apiConsumptions (id: $apiId, teamId: $teamId, from: $from, to: $to, planIdOpt: $planId) {
       _id
@@ -1598,7 +1597,7 @@ export const graphql = {
       from
       to
     }
-  }`),
+  }`,
   getApiSubscriptions: `
     query getApiSubscriptions ($apiId: String!, $teamId: String!, $version: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
       apiApiSubscriptions (id: $apiId, teamId: $teamId, version: $version, filterTable: $filterTable, sortingTable: $sortingTable,  limit: $limit, offset: $offset) {
@@ -1655,8 +1654,8 @@ export const graphql = {
     }
     `,
   getMyNotifications: `
-    query getMyNotifications ($pageNumber : Int, $pageSize: Int) {
-      myNotifications (pageNumber: $pageNumber, pageSize: $pageSize) {
+    query getMyNotifications ($limit : Int, $offset: Int) {
+      myNotifications (limit: $limit, offset: $offset) {
         notifications {
           _id
           tenant {
@@ -1835,11 +1834,13 @@ export const graphql = {
           }
           
         }
-        total
+        total,
+        totalByTeams,
+        totalByTypes
       }
     }
     `,
-  getApisWithSubscription: gql(`
+  getApisWithSubscription: `
     query AccessibleApis ($teamId: String!, $research: String, $apiSubOnly: Boolean, $limit: Int, $offset: Int) {
       accessibleApis (teamId: $teamId, research: $research, apiSubOnly: $apiSubOnly , limit: $limit, offset: $offset) {
         apis {
@@ -1899,8 +1900,8 @@ export const graphql = {
         total
       }
 
-    }`),
-  getCmsPage: (id: any) => gql`
+    }`,
+  getCmsPage: (id: string) => `
     query GetCmsPage {
         cmsPage(id: "${id}") {
             name
@@ -1916,7 +1917,7 @@ export const graphql = {
         }
     }
   `,
-  getCmsPageHistory: (id: any) => gql`
+  getCmsPageHistory: (id: string) => `
   query GetCmsPage {
       cmsPage(id: "${id}") {
           name
@@ -1930,6 +1931,18 @@ export const graphql = {
       }
   }
 `,
+  cmsPages: `
+    query CmsPages {
+      pages {
+        id
+        name
+        path
+        contentType
+        lastPublishedDate
+        metadata
+      }
+    }
+  `,
   getAuditTrail: `
   query getAuditTrail ($from: Long!, $to: Long!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
     auditTrail (from: $from, to: $to, filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset) {
