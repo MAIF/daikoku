@@ -1,23 +1,118 @@
-import React, { useContext, useEffect, useState } from 'react';
-import groupBy from 'lodash/groupBy';
+import React, { PropsWithChildren, useContext, useEffect, useMemo, useState } from 'react';
+import { formatDistanceToNow } from 'date-fns';
+import Select, { components, ValueContainerProps } from 'react-select';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, PaginationState, SortingState, useReactTable } from '@tanstack/react-table';
 
 import * as Services from '../../../services';
-import { Spinner } from '../../utils';
+import { getLanguageFns, Spinner } from '../../utils';
 import { SimpleNotification } from './SimpleNotification';
-import { I18nContext } from '../../../contexts';
-import { getApolloContext, gql } from '@apollo/client';
+import { I18nContext, TranslateParams } from '../../../contexts';
 import { ModalContext, useUserBackOffice } from '../../../contexts';
 import { ITesting, isError } from '../../../types';
 import { GlobalContext } from '../../../contexts/globalContext';
-import { useQuery } from '@tanstack/react-query';
+import classNames from 'classnames';
+
+type NotificationColumnMeta = {
+  className: string;
+};
+declare module '@tanstack/react-table' {
+  interface ColumnMeta<TData extends unknown, TValue> extends NotificationColumnMeta { }
+}
+
+const notificationFormatter = (notification: NotificationGQL, translate: (params: string | TranslateParams) => string) => {
+  switch (notification.action.__typename) {
+    case 'CheckoutForSubscription':
+      return translate("notif.CheckoutForSubscription");
+    case 'ApiAccess':
+      return translate({ key: 'notif.api.access', replacements: [notification.action.api!.name] })
+    case 'TransferApiOwnership':
+      return translate({ key: 'notif.api.transfer', replacements: [notification.action.api!.name] })
+    case 'ApiSubscriptionDemand':
+      return translate({
+        key: 'notif.api.subscription',
+        replacements: [notification.action.api!.name, notification.action.api!.currentVersion, notification.action.plan!.customName]
+      })
+    case 'ApiSubscriptionReject':
+      return translate({
+        key: 'notif.api.demand.reject',
+        replacements: [notification.action.api!.name, notification.action.api!.currentVersion, notification.action.plan!.customName]
+      })
+    case 'ApiSubscriptionAccept':
+      return translate({
+        key: 'notif.api.demand.accept',
+        replacements: [notification.action.api!.name, notification.action.api!.currentVersion, notification.action.plan!.customName]
+      })
+    case 'ApiKeyDeletionInformation':
+      return translate({ key: 'notif.apikey.deletion', replacements: [notification.action.clientId!, notification.action.api!.name] })
+    case 'OtoroshiSyncSubscriptionError':
+    case 'OtoroshiSyncApiError':
+      return notification.action.message!
+    case 'ApiKeyRotationInProgress':
+      return translate({
+        key: 'notif.apikey.rotation.inprogress',
+        replacements: [
+          notification.action.clientId!,
+          notification.action.api!.name,
+          notification.action.plan!.customName,]
+      })
+    case 'ApiKeyRotationEnded':
+      return translate({
+        key: 'notif.apikey.rotation.ended',
+        replacements: [
+          notification.action.parentSubscriptionId!.apiKey.clientId,
+          notification.action.api!.name,
+          notification.action.plan!.customName,]
+      })
+    case 'ApiKeyRefresh':
+      return translate({
+        key: 'notif.apikey.refresh',
+        replacements: [
+          notification.action.subscriptionName!,
+          notification.action.api!.name,
+          notification.action.plan!.customName]
+      })
+    case 'TeamInvitation':
+      return translate({
+        key: 'team.invitation',
+        replacements: [
+          notification.sender.name,
+          notification.action.team!.name]
+      })
+    case 'NewPostPublished':
+      return translate({
+        key: 'new.published.post.notification',
+        replacements: [
+          notification.sender.name,
+          notification.action.team!.name,
+          notification.action.api?.name ?? 'unknown api (2)']
+      })
+    case 'NewIssueOpen':
+      return translate({
+        key: 'issues.notification',
+        replacements: [
+          notification.action.api?.name ?? 'on connais pas cette api (1)']
+      })
+    case 'NewCommentOnIssue':
+      return translate({
+        key: 'issues.comment.notification',
+        replacements: [
+          notification.action.api!.name]
+      })
+
+  }
+}
 
 type NotificationsGQL = {
   notifications: Array<NotificationGQL>
-  total: number
+  total: number,
+  totalFiltered: number,
+  totalByTypes: Array<{ type: string, total: number }>,
+  totalByTeams: Array<{ team: string, total: number }>,
 }
 type LimitedTeam = {
   _id: string
-  name?: string
+  name: string
   type: string
 }
 
@@ -29,6 +124,7 @@ type NotificationGQL = {
     api?: {
       _id: string
       name: string
+      currentVersion: string
       testing: ITesting
     }
     apiName?: string
@@ -40,7 +136,7 @@ type NotificationGQL = {
     team?: LimitedTeam
     plan?: {
       _id: string
-      customName?: string
+      customName: string
       typeName: string
     }
     user?: {
@@ -58,7 +154,7 @@ type NotificationGQL = {
   }
   date: number
   notificationType: {
-    value: string
+    value: 'AcceptOnly' | 'AcceptOrReject'
   }
   sender: {
     id: string
@@ -66,7 +162,7 @@ type NotificationGQL = {
   }
   status: {
     date?: number
-    status: string
+    status: 'Pending' | 'Accepted' | 'Rejected'
   }
   team: {
     _id: string
@@ -77,251 +173,282 @@ type NotificationGQL = {
   }
 
 }
+
+type CustomValueContainerProps = {
+  getValue: () => []
+}
+
+type Option = {
+  label: string;
+  value: string;
+};
+type ExtraProps = {
+  labelSingular: string;
+  labelAll: string;
+};
+const GenericValueContainer = (
+  props: ValueContainerProps<Option, true> & { selectProps: ExtraProps }
+) => {
+  const { getValue, hasValue, selectProps } = props;
+  const selectedValues = getValue();
+  const nbValues = selectedValues.length;
+
+  if (!hasValue || nbValues === 0) {
+    return (
+      <components.ValueContainer {...props}>
+        {selectProps.labelAll}
+      </components.ValueContainer>
+    );
+  }
+
+  return (
+    <components.ValueContainer {...props}>
+      {`${selectProps.labelSingular}${nbValues > 1 ? 's' : ''}`}{" "}
+      <span className="ms-2 badge badge-custom">{nbValues}</span>
+    </components.ValueContainer>
+  );
+};
+
 export const NotificationList = () => {
   useUserBackOffice();
-  const { translate, Translation } = useContext(I18nContext);
-  const { reloadUnreadNotificationsCount, customGraphQLClient } = useContext(GlobalContext)
-  const { alert } = useContext(ModalContext);
+  const { translate, Translation, language } = useContext(I18nContext);
+  const { customGraphQLClient } = useContext(GlobalContext)
 
-  const notificationListQuery = useQuery({
-    queryKey: ['notifications'],
-    queryFn: () => customGraphQLClient.request<{ myNotifications: NotificationsGQL }>(Services.graphql.getMyNotifications, {
-      pageNumber: state.page,
-      pageSize: state.pageSize
+  const pageSize = 10;
+
+
+  const [limit, setLimit] = useState(pageSize);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize,
+  })
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
+    []
+  )
+
+  const notificationListQuery = useInfiniteQuery({
+    queryKey: ['notifications', limit],
+    queryFn: ({ pageParam = 0 }) => customGraphQLClient.request<{ myNotifications: NotificationsGQL }>(Services.graphql.getMyNotifications, {
+      limit,
+      offset: pageParam
     }),
-    select: data => data.myNotifications
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, pages) => {
+      const notifications = lastPage.myNotifications.notifications;
+      const totalCount = lastPage.myNotifications.total;
+      const nextOffset = pages.length * pageSize;
+      console.debug({ nextOffset, pages, pageSize, totalCount })
+      return nextOffset < totalCount ? nextOffset : undefined;
+    }
   })
 
-  const [state, setState] = useState<{
-    notifications: Array<NotificationGQL>
-    untreatedNotifications: Array<NotificationGQL>
-    teams: Array<any>
-    apis: Array<any>
-    tab: string
-    page: number
-    pageSize: number
-    count: number
-    untreatedCount: number
-    nextIsPending: boolean
-  }>({
-    notifications: [],
-    untreatedNotifications: [],
-    teams: [],
-    tab: 'unread',
-    page: 0,
-    pageSize: 10,
-    count: 0,
-    untreatedCount: 0,
-    nextIsPending: false,
-    apis: []
-  });
+  const myTeamsRequest = useQuery({
+    queryKey: ['myTeams'],
+    queryFn: () => Services.myTeams(),
+    select: data => isError(data) ? [] : data
+  })
 
-  const isUntreatedNotification = (n: NotificationGQL) => n.status.status === 'Pending';
+  const notificationTypes = [
+    { type: "ApiAccess", label: "Accès à une API", variant: "success" },
+    { type: "ApiSubscription", label: "Nouvelle souscription", variant: "success" },
+    { type: "ApiSubscriptionDemand", label: "Nouvelle souscription", variant: "success" },
+    { type: "ApiSubscriptionReject", label: "Souscription refusée", variant: "danger" },
+    { type: "ApiSubscriptionAccept", label: "Souscription acceptée", variant: "info" },
+    { type: "OtoroshiSyncSubscriptionError", label: "Erreur de synchro (souscription)", variant: "danger" },
+    { type: "OtoroshiSyncApiError", label: "Erreur de synchro (API)", variant: "danger" },
+    { type: "ApiKeyDeletionInformation", label: "Suppression de clé API", variant: "warning" },
+    { type: "ApiKeyRotationInProgress", label: "Rotation de clé en cours", variant: "warning" },
+    { type: "ApiKeyRotationEnded", label: "Rotation de clé terminée", variant: "success" },
+    { type: "TeamInvitation", label: "Invitation dans une équipe", variant: "info" },
+    { type: "ApiKeyRefresh", label: "Clé API rafraîchie", variant: "info" },
+    { type: "NewPostPublished", label: "Nouveau post publié", variant: "info" },
+    { type: "NewIssueOpen", label: "Nouvelle issue", variant: "warning" },
+    { type: "NewCommentOnIssue", label: "Nouveau commentaire", variant: "info" },
+    { type: "TransferApiOwnership", label: "Transfert de propriété d'API", variant: "warning" },
+    { type: "ApiSubscriptionTransferSuccess", label: "Transfert de souscription réussi", variant: "success" },
+    { type: "CheckoutForSubscription", label: "Paiement pour souscription", variant: "info" },
+  ];
 
-  // useEffect(() => {
-  // setState({
-  //   ...state,
-  //   untreatedNotifications: notifications.notifications.filter((n) => isUntreatedNotification(n)
-  //   ),
-  //   notifications: notifications.notifications,
-  //   count: notifications.total,
-  //   untreatedCount: notifications.total,
-  //   page: state.page + 1,
-  //   loading: false
-  // });
-  // }
-  //   );
-  // }, []);
+  const notificationActionTypes = [
+    { value: "AcceptOnly", label: "Information note" },
+    { value: "AcceptOrreject", label: "Action needed" },
+  ]
 
-  const acceptNotification = (notificationId: string, values?: object): void => {
-    //   setState({
-    //     ...state,
-    //     notifications: state.notifications.map((n: any) => {
-    //       n.fade = n._id === notificationId;
-    //       return n;
-    //     }),
-    //   });
-    //   Services.acceptNotificationOfTeam(notificationId, values)
-    //     .then((res) => {
-    //       if (isError(res)) {
-    //         //@ts-ignore
-    //         alert({ message: res.error, title: translate('notification.accept.on_error.title') });
-    //       } else {
-    //         return Promise.resolve();
-    //       }
-    //     })
-    //     .then(() => client!.query<{ myNotifications: NotificationsGQL }>({
-    //       query: Services.graphql.getMyNotifications,
-    //       fetchPolicy: "no-cache",
-    //       variables: {
-    //         pageNumber: 0,
-    //         pageSize: state.notifications.length
-    //       }
-    //     }).then(({ data: { myNotifications } }) => {
-    //       return myNotifications
-    //     }))
-    //     .then(({ notifications, total }) =>
-    //       setState({
-    //         ...state,
-    //         notifications,
-    //         count: total,
-    //         untreatedCount: total,
-    //         untreatedNotifications: notifications.filter((n: NotificationGQL) => isUntreatedNotification(n)),
-    //       })
-    //     )
-    //     .then(reloadUnreadNotificationsCount);
-  };
+  const columnHelper = createColumnHelper<NotificationGQL>();
+  const columns = [
+    columnHelper.display({
+      id: 'select',
+      meta: { className: "select-cell" },
+      cell: ({ row }) => {
+        return <input
+          type="checkbox"
+          className='form-check-input'
+          checked={row.getIsSelected()}
+          disabled={!row.getCanSelect()}
+          onChange={row.getToggleSelectedHandler()}
+        />;
+      }
+    }),
+    columnHelper.display({
+      id: 'description',
+      meta: { className: "description-cell" },
+      cell: (info) => {
+        const notification = info.row.original;
+        return <div className={classNames('notification', { unread: notification.status.status === 'Pending' })}>
+          <div>
+            <div className='notification__identities'>{notification.team.name} / {notification.action.api?.name ?? 'rien'}</div>
+            <div className='notification__description'>{notificationFormatter(notification, translate)}</div>
+          </div>
+        </div>;
+      },
+    }),
+    columnHelper.accessor('action.__typename', {
+      id: 'type',
+      meta: { className: "type-cell" },
+      enableColumnFilter: true,
+      cell: (info) => {
+        const _type = info.getValue();
+        const type = notificationTypes.find(t => t.type === _type)
+        return <span className={`badge badge-custom-${type?.variant ?? 'custom'}`}>{type?.label ?? _type}</span>;
+      },
+    }),
+    columnHelper.accessor('sender.name', {
+      id: 'sender',
+      meta: { className: "sender-cell" },
+      enableColumnFilter: true,
+      cell: (info) => {
+        const sender = info.getValue();
+        const isSystem = sender.startsWith('Otoroshi')
+        return <div className='sender'>
+          {!isSystem && <i className="far fa-face-smile me-1"></i>}
+          {sender}
+        </div>;
+      },
+    }),
+    columnHelper.accessor('date', {
+      id: 'date',
+      enableColumnFilter: false,
+      meta: { className: "date-cell" },
+      cell: (info) => {
+        const date = info.getValue();
+        return formatDistanceToNow(date, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })
+      },
+    })
+  ]
 
-  // useEffect(() => {
-  //   client!.query<{ myNotifications: NotificationsGQL }>({
-  //     query: Services.graphql.getMyNotifications,
-  //     fetchPolicy: "no-cache",
-  //     variables: {
-  //       pageNumber: 0,
-  //       pageSize: 10
-  //     }
-  //   }).then(({ data: { myNotifications } }) => {
-  //     return myNotifications
-  //   })
-
-  //   return () => reloadUnreadNotificationsCount()
-  // }, [])
-
-
-  const rejectNotification = (notificationId: string, message?: string) => {
-    //   setState({
-    //     ...state,
-    //     notifications: state.notifications.map((n: any) => {
-    //       (n as any).fade = (n as any)._id === notificationId;
-    //       return n;
-    //     }),
-    //   });
-    //   Services.rejectNotificationOfTeam(notificationId, message)
-    //     .then(() => client!.query<{ myNotifications: NotificationsGQL }>({
-    //       query: Services.graphql.getMyNotifications,
-    //       fetchPolicy: "no-cache",
-    //       variables: {
-    //         pageNumber: 0,
-    //         pageSize: state.notifications.length
-    //       }
-    //     }).then(({ data: { myNotifications } }) => {
-    //       return myNotifications
-    //     }))
-    //     .then(({ notifications, total }) => {
-    //       setState({
-    //         ...state,
-    //         notifications,
-    //         count: total,
-    //         untreatedCount: total,
-    //         untreatedNotifications: notifications.filter((n: NotificationGQL) => isUntreatedNotification(n)),
-    //       });
-    //     })
-    //     .then(reloadUnreadNotificationsCount);
-  };
-
-  // useEffect(() => {
-  //   if (state.loading)
-  //     if (state.tab === 'all') {
-  //       Services.myAllNotifications(state.page, state.pageSize)
-  //         .then(({ notifications, count }) => setState({ ...state, notifications, count, loading: false }));
-  //     }
-  //     else {
-  //       client!.query<{ myNotifications: NotificationsGQL }>({
-  //         query: Services.graphql.getMyNotifications,
-  //         fetchPolicy: "no-cache",
-  //         variables: {
-  //           pageNumber: state.page,
-  //           pageSize: state.pageSize
-  //         }
-  //       }).then(({ data: { myNotifications } }) => {
-  //         return myNotifications
-  //       })
-  //         .then(({ notifications, total }) => setState({
-  //           ...state,
-  //           notifications,
-  //           count: total,
-  //           untreatedCount: total,
-  //           loading: false,
-  //         }));
-  //     }
-  // }, [state.tab, state.page, state.loading])
-
-
-  const moreBtnIsDisplay = () => !!state.count && state.count > state.notifications.length;
-
-  const getMoreNotifications = () => {
-    //   if (state.tab === 'unread') {
-    //     setState({ ...state, nextIsPending: true });
-    //     client!.query<{ myNotifications: NotificationsGQL }>({
-    //       query: Services.graphql.getMyNotifications,
-    //       fetchPolicy: "no-cache",
-    //       variables: {
-    //         pageNumber: state.page,
-    //         pageSize: state.pageSize
-    //       }
-    //     }).then(({ data: { myNotifications } }) => {
-    //       return myNotifications
-    //     }).then(({ notifications, total }) =>
-    //       setState({
-    //         ...state,
-    //         notifications: [...state.notifications, ...notifications],
-    //         count: total,
-    //         untreatedCount: total,
-    //         page: state.page + 1,
-    //         nextIsPending: false,
-    //       })
-    //     );
-    //   } else if (state.tab === 'all') {
-    //     setState({ ...state, nextIsPending: true });
-    //     Services.myAllNotifications(state.page, state.pageSize).then(({ notifications, count }) =>
-    //       setState({
-    //         ...state,
-    //         notifications: [...state.notifications, ...notifications],
-    //         count,
-    //         page: state.page + 1,
-    //         nextIsPending: false,
-    //       })
-    //     );
-    //   }
-  };
+  const defaultData = useMemo(() => [], [])
+  const table = useReactTable({
+    data: notificationListQuery.data?.pages.flatMap(
+      (page) => page.myNotifications.notifications
+    ) ?? defaultData,
+    columns: columns,
+    rowCount: notificationListQuery.data?.pages[0].myNotifications.total,
+    state: {
+      pagination,
+      columnFilters,
+      sorting
+    },
+    onPaginationChange: setPagination,
+    onSortingChange: setSorting,
+    getCoreRowModel: getCoreRowModel(),
+    manualPagination: true,
+    onColumnFiltersChange: setColumnFilters,
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    enableSubRowSelection: true,
+    enableRowSelection: row => {
+      const notification = row.original;
+      return notification.status.status === 'Pending' && notification.notificationType.value === 'AcceptOnly';
+    },
+  })
 
   if (notificationListQuery.isLoading) {
     return (
       <Spinner />
     )
   } else if (notificationListQuery.data) {
-    const { notifications, total } = notificationListQuery.data
-
-    // const notifByTeams = groupBy(notifications, 'team._id');
 
     return (
       <div className='flex-grow-1'>
-        <div className="row">
-          <h1>
-            {translate({key: "Notifications", plural: true})} ({total})
-          </h1>
-        </div>
-        <div className="row">
-          {total === 0 && (<div>
-            <h4>{translate("no notification")}</h4>
-          </div>)}
-          <div className="col-10 offset-1">
-            <div className="home-tiles">
-              {notifications
-                .map((notification) => {
-                  console.debug({notification})
-                  return <SimpleNotification
-                    key={notification._id}
-                    notification={notification}
-                    accept={(values?: object) => acceptNotification(notification._id, values)}
-                    reject={(message?: string) => rejectNotification(notification._id, message)}
-                  />})}
-            </div>
-            {(state as any).nextIsPending && <Spinner />}
-            {!(state as any).nextIsPending && moreBtnIsDisplay() && (<button className="btn btn-outline-primary my-2 ms-2" onClick={() => getMoreNotifications()}>
-              <Translation i18nkey="more">more</Translation>
-            </button>)}
+        <div className='filters-container d-flex flex-row justify-content-between'>
+          <div className='d-flex flex-row gap-3 justify-content-start align-items-center'>
+            <span className='filters-label'>filtres</span>
+            {myTeamsRequest.data && <Select
+              isMulti //@ts-ignore
+              components={{ ValueContainer: GenericValueContainer }}
+              options={myTeamsRequest.data.map(t => ({ label: t.name, value: t._id }))}
+              isLoading={myTeamsRequest.isLoading || myTeamsRequest.isPending}
+              closeMenuOnSelect={false}
+              labelSingular="Team"
+              labelAll="All teams" />}
+            <Select
+              isMulti //@ts-ignore
+              components={{ ValueContainer: GenericValueContainer }}
+              options={notificationTypes.map(v => ({ label: v.label, value: v.type }))}
+              closeMenuOnSelect={false}
+              labelSingular="Type"
+              labelAll="All types" />
+            <Select
+              isMulti //@ts-ignore
+              components={{ ValueContainer: GenericValueContainer }}
+              options={notificationActionTypes.map(({ value, label }) => ({ label, value }))}
+              closeMenuOnSelect={false}
+              labelSingular="Action type"
+              labelAll="All action types" />
+            <button className='btn btn-outline-success'>unread only</button>
           </div>
+          <button className='btn btn-outline-secondary'>
+            <i className='fas fa-rotate me-2' />
+            reset filters
+          </button>
+
+        </div>
+        <div className="notification-table">
+          <div className='table-header'>
+            <div className='table-title'>Notifications</div>
+            <div className="table-description">Overview of your latest notifications ans system update</div>
+          </div>
+          <div className='select-all-row'>
+            <label>
+              <input
+                type="checkbox"
+                className='form-check-input me-3'
+                checked={table.getIsAllPageRowsSelected()}
+                onChange={table.getToggleAllPageRowsSelectedHandler()}
+              />
+              select all
+            </label>
+          </div>
+          <div className='table-rows'>
+            {table.getRowModel().rows.map(row => {
+              return (
+                <div key={row.id} className='table-row'>
+                  {row.getVisibleCells().map(cell => {
+                    return (
+                      <div key={cell.id} className={cell.column.columnDef.meta?.className}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext()
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            })}
+          </div>
+        </div>
+        <div className="mt-3 mb-5 d-flex justify-content-center">
+          {notificationListQuery.hasNextPage && (
+            <button
+              className='btn btn-outline-primary'
+              onClick={() => notificationListQuery.fetchNextPage()}
+              disabled={notificationListQuery.isFetchingNextPage}
+            >
+              {notificationListQuery.isFetchingNextPage ? 'Chargement…' : 'Charger plus'}
+            </button>
+          )}
         </div>
       </div>
     );

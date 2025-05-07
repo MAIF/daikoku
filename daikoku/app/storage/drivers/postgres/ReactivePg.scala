@@ -51,6 +51,20 @@ object pgimplicits {
           }
         }
       )
+    def optJsArray(name: String)(implicit logger: Logger): Option[JsArray] =
+      opt(
+        name,
+        "JsArray",
+        (row, _) => {
+          Try {
+            Json.parse(row.getJsonArray(name).encode()).as[JsArray]
+          } match {
+            case Success(s) => s
+            case Failure(e) =>
+              Json.parse(row.getString(name)).as[JsArray]
+          }
+        }
+      )
   }
 
   implicit class VertxQueryEnhancer[A](val query: io.vertx.sqlclient.Query[A])

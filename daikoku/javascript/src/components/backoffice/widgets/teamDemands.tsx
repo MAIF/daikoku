@@ -1,20 +1,23 @@
 
-import { getApolloContext, gql } from '@apollo/client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useContext } from 'react';
 
 import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
-import { ITeamSimple } from '../../../types';
+import { ISubscriptionDemandGQL, ITeamSimple } from '../../../types';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { Widget } from './widget';
 
 type LastDemandsProps = {
   team: ITeamSimple
 }
+export interface ITeamSubscriptionDemandsGQL {
+  total: number,
+  subscriptionDemands: Array<ISubscriptionDemandGQL>
+}
 export const LastDemands = (props: LastDemandsProps) => {
-  const GET_TEAM_LAST_DEMANDS = gql`
+  const GET_TEAM_LAST_DEMANDS = `
     query GetTeamLastDemands($teamId: String!, $limit: Int, $offset: Int) {
       teamSubscriptionDemands(teamId: $teamId , limit: $limit, offset: $offset) {
         total
@@ -45,18 +48,17 @@ export const LastDemands = (props: LastDemandsProps) => {
       }
     }
   `
-  const { connectedUser } = useContext(GlobalContext);
+  const { connectedUser, customGraphQLClient } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
-  const { client } = useContext(getApolloContext());
 
   const queryClient = useQueryClient()
   const { isLoading, isError, data } = useQuery({
     queryKey: ["widget", "widget_team_last_demands"],
-    queryFn: () => client?.query({
-      query: GET_TEAM_LAST_DEMANDS,
-      variables: { teamId: props.team._id, offset: 0, limit: 5 }
-    })
+    queryFn: () => customGraphQLClient.request<{ teamSubscriptionDemands: ITeamSubscriptionDemandsGQL }>(
+      GET_TEAM_LAST_DEMANDS,
+      { teamId: props.team._id, offset: 0, limit: 5 }
+    )
   })
   const isAdmin = !!props.team.users.find(u => u.userId === connectedUser._id && u.teamPermission === 'Administrator') || connectedUser.isDaikokuAdmin
 
@@ -80,9 +82,9 @@ export const LastDemands = (props: LastDemandsProps) => {
     <>
       <Widget isLoading={isLoading} isError={isError} size="small" title={translate("widget.demands.title")}>
         <div className='d-flex flex-column gap-1'>
-          {data?.data && data.data.teamSubscriptionDemands.total === 0 && <span className='widget-list-default-item'>{translate('widget.demands.no.demands')}</span>}
-          {data?.data && data.data.teamSubscriptionDemands.total > 0 && data.data.teamSubscriptionDemands.subscriptionDemands.map((d) => {
-            const checkout = d.state === 'inProgress' && d.steps.find(s => s.state === 'inProgress').step.name === 'payment'
+          {data && data.teamSubscriptionDemands.total === 0 && <span className='widget-list-default-item'>{translate('widget.demands.no.demands')}</span>}
+          {data && data.teamSubscriptionDemands.total > 0 && data.teamSubscriptionDemands.subscriptionDemands.map((d) => {
+            const checkout = d.state === 'inProgress' && d.steps.find(s => s.state === 'inProgress')?.step.name === 'payment'
 
             return (
               <div className='d-flex flex-column justify-content-between align-items-center widget-list-item'>

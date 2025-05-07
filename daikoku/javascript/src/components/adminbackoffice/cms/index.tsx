@@ -1,4 +1,3 @@
-import { getApolloContext, gql } from '@apollo/client';
 import { useContext, useEffect, useState } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { I18nContext } from '../../../contexts';
@@ -8,14 +7,8 @@ import { Pages } from './Pages';
 import * as Services from '../../../services';
 import { Spinner } from '../..';
 import { useTenantBackOffice } from '../../../contexts';
-
-export interface IPage {
-  id: string
-  name: string
-  path: string
-  contentType: string
-  metadata: any
-}
+import { GlobalContext } from '../../../contexts/globalContext';
+import { ICmsPageGQL } from '../../../types';
 
 export interface IRenderingPage {
   name: string
@@ -23,8 +16,7 @@ export interface IRenderingPage {
   metadata: any
 }
 
-const getAllPages = () => ({
-  query: gql`
+const getAllPages = `
     query CmsPages {
       pages {
         id
@@ -34,18 +26,17 @@ const getAllPages = () => ({
         metadata
       }
     }
-  `,
-});
+  `;
 
 export const CMSOffice = () => {
   useTenantBackOffice();
 
   const location = useLocation();
 
-  const { client } = useContext(getApolloContext());
+  const { customGraphQLClient } = useContext(GlobalContext);
   const { translate } = useContext(I18nContext);
 
-  const [cmsPages, setPages] = useState<Array<IPage>>([]);
+  const [cmsPages, setPages] = useState<Array<ICmsPageGQL>>([]);
   const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
@@ -57,9 +48,8 @@ export const CMSOffice = () => {
   }, [location]);
 
   const reload = () => {
-    //FIXME handle client setted
-    client && client.query(getAllPages())
-      .then((r) => setPages(r.data.pages));
+    customGraphQLClient.request<{ pages: Array<ICmsPageGQL> }>(getAllPages)
+      .then((r) => setPages(r.pages));
   };
 
   const Index = ({ }) => {
@@ -86,7 +76,7 @@ export const CMSOffice = () => {
         </div>
       </div>
 
-      <Pages pages={cmsPages} reload={reload}/>
+      <Pages pages={cmsPages} reload={reload} />
     </div>);
   };
 

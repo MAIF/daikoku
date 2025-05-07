@@ -1,11 +1,12 @@
-import { getApolloContext } from '@apollo/client';
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import * as Services from '../../../services';
-import { IApi, IApiWithAuthorization, ITeamSimple } from '../../../types';
+import { IApi, IApiWithAuthorization, ITeamFullGql, ITeamSimple } from '../../../types';
 import { ApiList } from '../team';
 import { NavContext } from '../../../contexts/navUtils';
+import { GlobalContext } from '../../../contexts/globalContext';
+import { teamGQLToLegitTeam } from '../../utils/graphqlUtils';
 
 type ApiGroupApisProps = {
   apiGroup: IApi
@@ -16,33 +17,17 @@ export const ApiGroupApis = ({
   ownerTeam
 }: ApiGroupApisProps) => {
   const { setApiGroup } = useContext(NavContext);
+  const { customGraphQLClient } = useContext(GlobalContext);
   const navigate = useNavigate();
   const [myTeams, setMyTeams] = useState<Array<ITeamSimple>>([]);
 
-  const { client } = useContext(getApolloContext());
 
   useEffect(() => {
-    if (!client) {
-      return;
-    }
-    Promise.all([
-      client.query<{ myTeams: Array<ITeamSimple> }>({
-        query: Services.graphql.myTeams,
-      }),
-    ]).then(([{ data }]) => {
-      setMyTeams(
-        data.myTeams.map(({
-          users,
-          ...data
-        }: any) => ({
-          ...data,
-          users: users.map(({
-            teamPermission,
-            user
-          }: any) => ({ ...user, teamPermission })),
-        }))
-      );
-    });
+    customGraphQLClient.request<{ myTeams: Array<ITeamFullGql> }>(Services.graphql.myTeams)
+      .then((data) => 
+        setMyTeams(
+          data.myTeams.map(teamGQLToLegitTeam))
+        );
   }, [apiGroup]);
 
   const redirectToApiPage = (apiWithAuthorization: IApiWithAuthorization) => {
