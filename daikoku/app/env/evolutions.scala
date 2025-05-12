@@ -1223,7 +1223,9 @@ object evolution_1820 extends EvolutionScript {
               JsNull
             )
           case _ =>
-            AppLogger.error(s"[evolution $version] :: no type found :: ${Json.prettyPrint(rawPlan)}")
+            AppLogger.error(
+              s"[evolution $version] :: no type found :: ${Json.prettyPrint(rawPlan)}"
+            )
             (
               (rawPlan \ "customName").asOpt[String].getOrElse("--"),
               JsNull,
@@ -1249,7 +1251,9 @@ object evolution_1820 extends EvolutionScript {
             ) match {
             case JsSuccess(plan, _) => plan
             case JsError(errors) =>
-              AppLogger.error(s"[evolution $version] :: failed to parse plan: $errors\nRaw JSON: $patchedJson")
+              AppLogger.error(
+                s"[evolution $version] :: failed to parse plan: $errors\nRaw JSON: $patchedJson"
+              )
               throw new RuntimeException(s"Failed to parse plan: $errors")
           }
         })
@@ -1340,7 +1344,9 @@ object evolution_1830 extends EvolutionScript {
           (tenant.get, cssPage, colorThemePage, jsPage)
         })
         .mapAsync(1)(tuple => {
-          AppLogger.debug(s"[evolution $version] :: save ${tuple._2.id.value} - ${tuple._2.id.value} - ${tuple._2.id.value}")
+          AppLogger.debug(
+            s"[evolution $version] :: save ${tuple._2.id.value} - ${tuple._2.id.value} - ${tuple._2.id.value}"
+          )
           for {
             _ <- dataStore.cmsRepo.forTenant(tuple._1).save(tuple._2)
             _ <- dataStore.cmsRepo.forTenant(tuple._1).save(tuple._3)
