@@ -1555,7 +1555,7 @@
   "api.consumption.plan.btn.label": "Voir la consommation",
   "api.subscriptions.team.select.placeholder": "Sélectionnez une équipe pour afficher les clés d'API associés",
   "migration.custom.style.alert.title": "Nouvelle gestion du code personnalisé dans Daikoku",
-  "migration.custom.style.alert.info.1": "Depuis la version 18.3.0, la gestion du CSS, des thèmes de couleurs et du JavaScript est désormais déléguée à la CLI Daikoku.",
+  "migration.custom.style.alert.info.1": "Depuis la version 18.2.2, la gestion du CSS, des thèmes de couleurs et du JavaScript est désormais déléguée à la CLI Daikoku.",
   "migration.custom.style.alert.info.2": "Un job de migration a été exécuté automatiquement afin de créer des pages CMS correspondant à vos fichiers CSS, JS et thème existants.",
   "migration.custom.style.alert.info.3": "👉 Vous pouvez toujours injecter du CSS ou du JavaScript via une URL externe.",
   "migration.custom.style.alert.info.4": " Cependant, l’édition directe du code en ligne se fait désormais via la CLI.",
