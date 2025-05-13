@@ -21,7 +21,7 @@ jobs:
       matrix:
         platform:
           - os_name: Linux-x86_64
-            os: ubuntu-20.04
+            os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             bin: daikoku-linux-amd64
           - os_name: Windows-x86_64
