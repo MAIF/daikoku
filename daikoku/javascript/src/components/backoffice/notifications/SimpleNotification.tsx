@@ -435,7 +435,8 @@ export function SimpleNotification(props: ISimpleNotificationProps) {
 
   const { notification } = props;
   let infos = {};
-  if (['ApiAccess', 'ApiSubscriptionDemand', 'TransferApiOwnership', 'ApiSubscriptionReject', 'ApiSubscriptionAccept'].includes(notification.action.__typename)) {
+  if (['ApiAccess', 'ApiSubscriptionDemand', 'TransferApiOwnership', 'ApiSubscriptionReject', 'ApiSubscriptionAccept']
+    .includes(notification.action.__typename)) {
     const api = notification.action.api
     const plan = !api
       ? { customName: translate('deleted') }
