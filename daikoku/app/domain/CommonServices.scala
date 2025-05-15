@@ -1019,6 +1019,17 @@ object CommonServices {
                |                  WHERE content -> 'users' @> '[{"userId": "${ctx.user.id.value}"}]')
                |                  """
 
+      val actionTypes =
+        getFiltervalue[List[String]](filter, "actionType").getOrElse(List.empty).toArray
+
+      val teams =
+        getFiltervalue[List[String]](filter, "team").getOrElse(List.empty).toArray
+
+      val types =
+        getFiltervalue[List[String]](filter, "type").getOrElse(List.empty).toArray
+
+      val unreadOnly = getFiltervalue[Boolean](filter, "unreadOnly").getOrElse(false)
+
       for {
         notifications <- env.dataStore.notificationRepo
           .forTenant(ctx.tenant)
@@ -1030,15 +1041,27 @@ object CommonServices {
                |         JOIN my_teams t ON n.content ->> 'team' = t._id::text
                |WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |    OR n.content ->> 'team' = t._id::text)
-               |  AND (COALESCE($$1, '') = '' OR n.content -> 'action' ->> 'type' = ANY ($$1::text[]))
-               |  AND (COALESCE($$2, '') = '' OR t._id = ANY ($$2::text[]))
-               |  AND (COALESCE($$3, '') = '' OR n.content ->> 'notificationType' = ANY ($$3::text[]))
-               |LIMIT $$4 OFFSET $$5;
+               |  AND CASE
+               |          WHEN array_length($$1::text[], 1) IS NULL THEN true
+               |          ELSE n.content ->> 'notificationType' = ANY ($$1::text[])
+               |  END
+               |  AND CASE
+               |          WHEN array_length($$2::text[], 1) IS NULL THEN true
+               |          ELSE t._id = ANY ($$2::text[])
+               |  END
+               |  AND CASE
+               |          WHEN array_length($$3::text[], 1) IS NULL THEN true
+               |          ELSE n.content -> 'action' ->> 'type' = ANY ($$3::text[])
+               |  END
+               |  AND ($$4 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
+               |ORDER BY n.content ->> 'date' DESC
+               |LIMIT $$5 OFFSET $$6;
                |""".stripMargin,
             Seq(
-              null,
-              null,
-              null,
+              actionTypes,
+              teams,
+              types,
+              java.lang.Boolean.valueOf(unreadOnly),
               java.lang.Integer.valueOf(limit),
               java.lang.Integer.valueOf(offset)
             )
@@ -1052,16 +1075,27 @@ object CommonServices {
                |         JOIN my_teams t ON n.content ->> 'team' = t._id::text
                |WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |    OR n.content ->> 'team' = t._id::text)
-               |  AND (COALESCE($$1, '') = '' OR n.content -> 'action' ->> 'type' = ANY ($$1::text[]))
-               |  AND (COALESCE($$2, '') = '' OR t._id = ANY ($$2::text[]))
-               |  AND (COALESCE($$3, '') = '' OR n.content ->> 'notificationType' = ANY ($$3::text[]))
-               |LIMIT $$4 OFFSET $$5;
+                 AND CASE
+               |          WHEN array_length($$1::text[], 1) IS NULL THEN true
+               |          ELSE n.content ->> 'notificationType' = ANY ($$1::text[])
+               |  END
+               |  AND CASE
+               |          WHEN array_length($$2::text[], 1) IS NULL THEN true
+               |          ELSE t._id = ANY ($$2::text[])
+               |  END
+               |  AND CASE
+               |          WHEN array_length($$3::text[], 1) IS NULL THEN true
+               |          ELSE n.content -> 'action' ->> 'type' = ANY ($$3::text[])
+               |  END
+               |  AND ($$4 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
+               |LIMIT $$5 OFFSET $$6;
                |""".stripMargin,
             "total_filtered",
             Seq(
-              null,
-              null,
-              null,
+              actionTypes,
+              teams,
+              types,
+              java.lang.Boolean.valueOf(unreadOnly),
               java.lang.Integer.valueOf(limit),
               java.lang.Integer.valueOf(offset)
             ))
@@ -1108,12 +1142,29 @@ object CommonServices {
             "total_by_types",
             Seq()
           )
+        totalByNotificationTypes <- env.dataStore.asInstanceOf[PostgresDataStore]
+          .queryOneJsArray(
+            s"""
+               |$CTE
+               |select json_agg(row_to_json(_.*)) as total_by_notification_types
+               |from (SELECT n.content -> 'action' ->> 'type' AS type, COUNT(*) AS total
+               |      FROM notifications n
+               |               JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |          OR n.content ->> 'team' = t._id::text)
+               |      GROUP BY n.content -> 'action' ->> 'type'
+               |      ORDER BY total DESC) _;
+               |""".stripMargin,
+            "total_by_notification_types",
+            Seq()
+          )
       } yield {
         Right(NotificationWithCount(
           notifications = notifications,
           total = total.getOrElse(0),
           totalFiltered = totalFiltered.getOrElse(0),
           totalByTypes = totalByTypes.getOrElse(Json.arr()),
+          totalByNotificationTypes = totalByNotificationTypes.getOrElse(Json.arr()),
           totalByTeams = totalByTeams.getOrElse(Json.arr())))
       }
     }

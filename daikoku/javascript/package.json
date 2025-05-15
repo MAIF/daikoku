@@ -55,7 +55,7 @@
     "react-paginate": "8.2.0",
     "react-resizable-panels": "^2.1.4",
     "react-router-dom": "^7.5.2",
-    "react-select": "5.8.0",
+    "react-select": "5.10.1",
     "react-step-wizard": "5.3.11",
     "react-tooltip": "5.27.1",
     "recharts": "2.12.7",

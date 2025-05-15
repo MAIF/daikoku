@@ -1654,8 +1654,8 @@ export const graphql = {
     }
     `,
   getMyNotifications: `
-    query getMyNotifications ($limit : Int, $offset: Int) {
-      myNotifications (limit: $limit, offset: $offset) {
+    query getMyNotifications ($limit : Int, $offset: Int, $filterTable: JsArray) {
+      myNotifications (limit: $limit, offset: $offset, filterTable: $filterTable) {
         notifications {
           _id
           tenant {
@@ -1835,8 +1835,10 @@ export const graphql = {
           
         }
         total,
+        totalFiltered,
         totalByTeams,
-        totalByTypes
+        totalByTypes,
+        totalByNotificationTypes
       }
     }
     `,
