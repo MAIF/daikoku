@@ -166,3 +166,51 @@
 .select-menu-item:hover {
   background-color: #eee;
 }
+
+
+.notification-table .notification__actions {
+  display: none;
+}
+
+.notification-table .table-row:hover .date-cell {
+  .notification__date {
+    display: none;
+  }
+
+  .notification__actions {
+    display: block;
+  }
+
+  .nav_item {
+    font-size: 1.5rem;
+    width: 2rem; height: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: variables.$level1_text-color;
+
+    &:hover {
+      background-color: #ddd;
+      border-radius: 4px;
+      padding: 0.2rem;
+    }
+  }
+}
+
+.selected-filter {
+  width: fit-content;
+    padding: .3rem .6rem;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    background-color: #eee;
+
+    cursor: pointer;
+
+    &:hover {
+      border-color: #eee;
+    }
+
+    &:active {
+      background-color: #fff;
+    }
+}

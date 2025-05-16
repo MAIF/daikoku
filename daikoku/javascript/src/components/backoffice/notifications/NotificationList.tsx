@@ -1,15 +1,21 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
-import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getFilteredRowModel, getSortedRowModel, PaginationState, SortingState, useReactTable } from '@tanstack/react-table';
+import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, PaginationState, SortingState, useReactTable } from '@tanstack/react-table';
 import classNames from 'classnames';
 import { formatDistanceToNow } from 'date-fns';
-import { useContext, useEffect, useMemo, useState } from 'react';
-import Select, { components, MultiValue, OptionProps, PropsValue, ValueContainerProps } from 'react-select';
+import { useContext, useMemo, useState } from 'react';
+import Select, { components, MultiValue, OptionProps, ValueContainerProps } from 'react-select';
+import Check from 'react-feather/dist/icons/check';
+import X from 'react-feather/dist/icons/x';
 
-import { I18nContext, TranslateParams, useUserBackOffice } from '../../../contexts';
+import { constraints, format, type } from '@maif/react-forms';
+import { useNavigate } from 'react-router-dom';
+import { I18nContext, ModalContext, TranslateParams, useUserBackOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
+import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
 import * as Services from '../../../services';
-import { isError, ITeamSimple, ITesting } from '../../../types';
+import { isError, ISubscriptionDemand, ITesting } from '../../../types';
 import { getLanguageFns, Spinner } from '../../utils';
+import { FeedbackButton } from '../../utils/FeedbackButton';
 
 type NotificationColumnMeta = {
   className: string;
@@ -150,6 +156,7 @@ type NotificationGQL = {
         clientSecret: string;
       }
     }
+    demand?: ISubscriptionDemand
   }
   date: number
   notificationType: {
@@ -203,10 +210,17 @@ const GenericValueContainer = (
   );
 };
 
+type TypedColumnFilter =
+  | { id: 'team' | 'team' | 'notificationType'; value: Array<string> }
+  | { id: 'notificationType'; value: 'AcceptOnly' | 'RejectOnly' };
+
 export const NotificationList = () => {
   useUserBackOffice();
-  const { translate, Translation, language } = useContext(I18nContext);
+  const { translate, language } = useContext(I18nContext);
   const { customGraphQLClient } = useContext(GlobalContext)
+  const { openSubMetadataModal, openFormModal, alert } = useContext(ModalContext)
+
+  const navigate = useNavigate();
 
   const pageSize = 10;
 
@@ -218,9 +232,10 @@ export const NotificationList = () => {
   })
   const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    []
+    [{ "id": "unreadOnly", "value": true }]
   )
 
+  const queryClient = useQueryClient();
   const notificationListQuery = useInfiniteQuery({
     queryKey: ['notifications', limit, columnFilters],
     queryFn: ({ pageParam = 0 }) => customGraphQLClient.request<{ myNotifications: NotificationsGQL }>(Services.graphql.getMyNotifications, {
@@ -268,6 +283,188 @@ export const NotificationList = () => {
     { value: "AcceptOrReject", label: "Action needed" },
   ]
 
+  const accept = (notification: string, sub?: CustomSubscriptionData) => {
+    Services.acceptNotificationOfTeam(notification, sub)
+      .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
+  }
+  const reject = (notification: string, message?: string) => {
+    Services.rejectNotificationOfTeam(notification, message)
+      .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
+  }
+  const handleBulkRead = () => {
+    const notificationsIds = table.getSelectedRowModel().rows.map(r => r.original._id)
+    Services.acceptNotificationOfTeamByBulk(notificationsIds)
+      .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
+  }
+
+  const actionFormatter = (notification: NotificationGQL) => {
+    const { status, date } = notification.status;
+    if (
+      status === 'Pending' &&
+      (notification.action.__typename === 'NewIssueOpen' ||
+        notification.action.__typename === 'NewCommentOnIssue')
+    ) {
+      return (
+        <div>
+          <button
+            type="button"
+            className="btn btn-outline-success btn-sm me-1"
+            onClick={() => accept(notification._id)}
+          >
+            <i className="fas fa-check" />
+          </button>
+          <button
+            type="button"
+            className="btn btn-sm btn-outline-success"
+            onClick={() => {
+              accept(notification._id);
+              notification.action.linkTo ?
+                navigate(notification.action.linkTo, { replace: true }) : navigate("/apis", { replace: true })
+            }}
+          >
+            <i className="fas fa-eye" />
+          </button>
+        </div>
+      );
+    } else {
+      switch (status) {
+        case 'Pending':
+          switch (notification.action.__typename) {
+            case 'ApiSubscriptionDemand':
+              return (
+                <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
+                  <button
+                    className="nav_item cursor-pointer"
+                    title={translate('Accept')}
+                    aria-label={translate('Accept')}
+                    onClick={() => //@ts-ignore
+                      Services.getSubscriptionDemand(notification.team._id, notification.action.demand!.id)
+                        .then(demand => {
+                          if (!isError(demand)) {
+                            openSubMetadataModal({
+                              save: (sub) => accept(notification._id, sub),
+                              api: notification.action.api?._id,
+                              plan: notification.action.plan!._id,
+                              team: notification.action.team,
+                              notification: notification,
+                              subscriptionDemand: demand,
+                              creationMode: true,
+                            })
+                          }
+                        })
+                    }
+                  >
+                    <i className="fas fa-check" />
+                  </button>
+                  <button
+                    className="nav_item cursor-pointer"
+                    title={translate('Reject')}
+                    aria-label={translate('Reject')}
+                    onClick={() => {
+                      openFormModal<{ message: string }>({
+                        title: translate('Message'),
+                        schema: {
+                          message: {
+                            type: type.string,
+                            format: format.text,
+                            label: null,
+                            constraints: [
+                              constraints.required()
+                            ]
+                          }
+                        },
+                        onSubmit: ({ message }) => reject(notification._id, message),
+                        actionLabel: translate('Send')
+                      })
+                    }}
+                  >
+                    <i className="fas fa-xmark" />
+                  </button>
+
+                </div>
+              );
+            case 'ApiSubscriptionReject':
+              return (
+                <div className='d-flex flex-row flex-grow-1'>
+                  <div className='d-flex flex-wrap flex-grow-1'>
+                    {notification.action.message}
+                  </div>
+                  <div className='d-flex flex-row flex-nowrap'>
+                    <a
+                      className="btn btn-outline-success btn-sm me-1"
+                      style={{ height: '30px' }}
+                      title={translate('Accept')}
+                      aria-label={translate('Accept')}
+                      onClick={() => accept(notification._id)}
+                    >
+                      <i className="fas fa-check" />
+                    </a>
+                  </div>
+
+                </div>
+              )
+            case 'CheckoutForSubscription':
+              return (
+                <div className='d-flex flex-row flex-grow-1 justify-content-between'>
+                  <div>{notification.action.apiName}/{notification.action.planName}</div>
+                  <div className='d-flex flex-row flex-nowrap'>
+                    <FeedbackButton
+                      type="success"
+                      className="ms-1" //@ts-ignore
+                      onPress={() => Services.rerunProcess(notification.action.team?._id!, notification.action.demand!.id)
+                        .then(r => window.location.href = r.checkoutUrl)}
+                      onSuccess={() => console.debug("success")}
+                      feedbackTimeout={100}
+                      disabled={false}
+                    >{translate('Checkout')}</FeedbackButton>
+                  </div>
+
+                </div>
+              )
+            default:
+              return (
+                <div>
+                  <a
+                    className="btn btn-outline-success btn-sm me-1"
+                    href="#"
+                    title={translate('Accept')}
+                    aria-label={translate('Accept')}
+                    onClick={() => accept(notification._id)}
+                  >
+                    <i className="fas fa-check" />
+                  </a>
+                  {notification.notificationType.value === 'AcceptOrReject' && (
+                    <a
+                      className="btn btn-outline-danger btn-sm"
+                      href="#"
+                      title={translate('Reject')}
+                      aria-label={translate('Reject')}
+                      onClick={() => reject(notification._id)}
+                    >
+                      <i className="fas fa-times" />
+                    </a>
+                  )}
+                </div>
+              );
+          }
+        case 'Accepted':
+          return (
+            <div className='d-flex gap-2 justify-content-end align-items-center'>
+              <i className="fas fa-check" />
+              {formatDistanceToNow(notification.date, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })}
+            </div>
+          );
+        case 'Rejected':
+          return (
+            <div className='d-flex gap-2 justify-content-end align-items-center'>
+              <i className="fas fa-xmark" />
+              {formatDistanceToNow(notification.date, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })}
+            </div>
+          );
+      }
+    }
+  };
+
   const columnHelper = createColumnHelper<NotificationGQL>();
   const columns = [
     columnHelper.display({
@@ -288,11 +485,24 @@ export const NotificationList = () => {
       meta: { className: "description-cell" },
       cell: (info) => {
         const notification = info.row.original;
-        return <div className={classNames('notification', { unread: notification.status.status === 'Pending' })}>
+        const team = notification.team;
+        return <div className={classNames('notification d-flex align-items-center gap-3', { unread: notification.status.status === 'Pending' })}>
           <div>
-            <div className='notification__identities'>{notification.team.name} / {notification.action.apiName ?? 'unknown Api'}</div>
+            <div className='notification__identities'>
+              <a href='#' onClick={() => handleSelectChange([{ label: team.name, value: team._id }], 'team')}>{team.name}</a> / {notification.action.apiName ?? notification.action.api?.name ?? 'unknown Api'}</div>
             <div className='notification__description'>{notificationFormatter(notification, translate)}</div>
           </div>
+          {notification.action.__typename === 'ApiSubscriptionDemand' && (
+            <i
+              className="ms-4 far fa-eye cursor-pointer"
+              onClick={() => alert({
+                title: 'About Subscription demand',
+                message: <div>
+                  <i>{notification.action.motivation}</i>
+                  <pre>{JSON.stringify(notification.action.demand!.motivation, null, 4)}</pre>
+                </div>
+              })} />
+          )}
         </div>;
       },
     }),
@@ -303,7 +513,7 @@ export const NotificationList = () => {
       cell: (info) => {
         const _type = info.getValue();
         const type = notificationTypes.find(t => t.type === _type)
-        return <span className={`badge badge-custom-${type?.variant ?? 'custom'}`}>{type?.label ?? _type}</span>;
+        return <span onClick={() => handleSelectChange([{ label: type!.label, value: type!.type }], 'type')} className={`badge badge-custom-${type?.variant ?? 'custom'}`}>{type?.label ?? _type}</span>;
       },
     }),
     columnHelper.accessor('sender.name', {
@@ -319,13 +529,19 @@ export const NotificationList = () => {
         </div>;
       },
     }),
-    columnHelper.accessor('date', {
-      id: 'date',
+    columnHelper.display({
+      id: 'dateOrAction',
       enableColumnFilter: false,
       meta: { className: "date-cell" },
       cell: (info) => {
-        const date = info.getValue();
-        return formatDistanceToNow(date, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })
+        const notification = info.row.original;
+        const date = formatDistanceToNow(notification.date, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })
+        return (
+          <>
+            <div className="notification__date">{date}</div>
+            <div className='notification__actions'>{actionFormatter(notification)}</div>
+          </>
+        )
       },
     })
   ]
@@ -336,14 +552,15 @@ export const NotificationList = () => {
       (page) => page.myNotifications.notifications
     ) ?? defaultData,
     columns: columns,
+    getRowId: row => row._id,
     rowCount: notificationListQuery.data?.pages[0].myNotifications.totalFiltered,
     state: {
       pagination,
-      // columnFilters,
-      sorting
+      //columnFilters,
+      // sorting
     },
     onPaginationChange: setPagination,
-    onSortingChange: setSorting,
+    // onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     onColumnFiltersChange: setColumnFilters,
@@ -397,7 +614,6 @@ export const NotificationList = () => {
     return total
   }
   const getTotalForType = (type: string) => {
-    console.debug({ totalByTypes, type})
     const total = totalByTypes?.find(total => total.type === type)?.total;
     if (!total) {
       return undefined;
@@ -405,7 +621,6 @@ export const NotificationList = () => {
     return total
   }
   const getTotalForNotifType = (type: string) => {
-    console.debug({ totalByTypes, type})
     const total = totalByNotificationTypes?.find(total => total.type === type)?.total;
     if (!total) {
       return undefined;
@@ -429,73 +644,130 @@ export const NotificationList = () => {
       </div>
     );
   };
+
+  const clearFilter = (id: string, value: string) => {
+    const columnFilterValues = columnFilters.find(c => c.id === id)?.value as Array<string> ?? []
+    setColumnFilters([...columnFilters.filter(c => c.id !== id), { id, value: columnFilterValues.filter(v => v !== value) }])
+  }
+
+  const displayFilters = () => {
+    if (!columnFilters.length) {
+      return null
+    } else {
+      const filterOrder = ['team', 'type', 'actionType']
+      return (
+        <div className='mt-2 d-flex flex-wrap flex-row gap-2' role="list">
+          {columnFilters
+            .sort((a, b) => filterOrder.indexOf(a.id) - filterOrder.indexOf(b.id))
+            .flatMap(f => {
+              switch (true) {
+                case f.id === 'team':
+                  return ((f.value as Array<string>).map(value => {
+                    const teamName = myTeamsRequest.data?.find(t => t._id === value)?.name;
+                    return (
+                      <div className='selected-filter d-flex gap-2 align-items-center' role="listitem" onClick={() => clearFilter(f.id, value)}>
+                        {teamName}
+                        <i className='fas fa-xmark' />
+                      </div>
+                    )
+                  }))
+                case f.id === 'type':
+                  return ((f.value as Array<string>).map(value => {
+                    const type = notificationTypes.find(t => t.type === value)
+                    return (
+                      <div className='selected-filter d-flex gap-2 align-items-center' role="listitem" onClick={() => clearFilter(f.id, value)}>
+                        {type?.label}
+                        <i className='fas fa-xmark' />
+                      </div>
+                    )
+                  }))
+                case f.id === 'actionType':
+                  return ((f.value as Array<string>).map(value => {
+                    const type = notificationActionTypes.find(t => t.value === value)
+                    return (
+                      <div className='selected-filter d-flex gap-2 align-items-center' role="listitem" onClick={() => clearFilter(f.id, value)}>
+                        {type?.label}
+                        <i className='fas fa-xmark' />
+                      </div>
+                    )
+                  }))
+              }
+            })}
+        </div>
+      )
+    }
+  }
+
   return (
     <div className='flex-grow-1'>
-      <div className='filters-container d-flex flex-row justify-content-between'>
-        <div className='d-flex flex-row gap-3 justify-content-start align-items-center'>
-          <span className='filters-label'>filtres</span>
-          <Select
-            isMulti //@ts-ignore
-            components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
-            options={(myTeamsRequest.data ?? []).map(t => ({ label: t.name, value: t._id }))}
-            isLoading={myTeamsRequest.isLoading || myTeamsRequest.isPending}
-            closeMenuOnSelect={true}
-            labelSingular="Team"
-            labelAll="All teams"
-            getCount={getTotalForTeam}
-            classNamePrefix="daikoku-select"
-            styles={menuStyle}
-            onChange={data => handleSelectChange(data, 'team')}
-            value={getSelectValue('team', myTeamsRequest.data ?? [], 'name', '_id')} />
-          <Select
-            isMulti //@ts-ignore
-            components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
-            options={notificationTypes.map(v => ({ label: v.label, value: v.type }))}
-            closeMenuOnSelect={true}
-            labelSingular="Type"
-            labelAll="All types"
-            getCount={getTotalForNotifType}
-            styles={menuStyle}
-            onChange={data => handleSelectChange(data, 'type')}
-            value={getSelectValue('type', notificationTypes, 'label', 'type')} />
-          <Select
-            isMulti //@ts-ignore
-            components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
-            options={notificationActionTypes.map(({ value, label }) => ({ label, value }))}
-            closeMenuOnSelect={true}
-            labelSingular="Action type"
-            labelAll="All action types"
-            getCount={getTotalForType}
-            styles={menuStyle}
-            onChange={data => handleSelectChange(data, 'actionType')}
-            value={getSelectValue('actionType', notificationActionTypes, 'label', 'value')} />
-          <div className='btn-group' role='group' aria-label='unread notif ?'>
-            <button
-              className={classNames('btn btn-outline-secondary', { active: !unreadOnly })}
-              onClick={() => {
-                const filters = columnFilters.filter(f => f.id !== 'unreadOnly')
-                setColumnFilters([...filters, { id: 'unreadOnly', value: false }])
-              }}>all</button>
-            <button
-              className={classNames('btn btn-outline-secondary', { active: unreadOnly })}
-              onClick={() => {
-                const filters = columnFilters.filter(f => f.id !== 'unreadOnly')
-                setColumnFilters([...filters, { id: 'unreadOnly', value: true }])
-              }}>unread only</button>
+      <div className='filters-container '>
+        <div className='d-flex flex-row justify-content-between'>
+          <div className='d-flex flex-row gap-3 justify-content-start align-items-center'>
+            <span className='filters-label'>filtres</span>
+            <Select
+              isMulti //@ts-ignore
+              components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
+              options={(myTeamsRequest.data ?? []).map(t => ({ label: t.name, value: t._id }))}
+              isLoading={myTeamsRequest.isLoading || myTeamsRequest.isPending}
+              closeMenuOnSelect={true}
+              labelSingular="Team"
+              labelAll="All teams"
+              getCount={getTotalForTeam}
+              classNamePrefix="daikoku-select"
+              styles={menuStyle}
+              onChange={data => handleSelectChange(data, 'team')}
+              value={getSelectValue('team', myTeamsRequest.data ?? [], 'name', '_id')} />
+            <Select
+              isMulti //@ts-ignore
+              components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
+              options={notificationTypes.map(v => ({ label: v.label, value: v.type }))}
+              closeMenuOnSelect={true}
+              labelSingular="Type"
+              labelAll="All types"
+              getCount={getTotalForNotifType}
+              styles={menuStyle}
+              onChange={data => handleSelectChange(data, 'type')}
+              value={getSelectValue('type', notificationTypes, 'label', 'type')} />
+            <Select
+              isMulti //@ts-ignore
+              components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
+              options={notificationActionTypes.map(({ value, label }) => ({ label, value }))}
+              closeMenuOnSelect={true}
+              labelSingular="Action type"
+              labelAll="All action types"
+              getCount={getTotalForType}
+              styles={menuStyle}
+              onChange={data => handleSelectChange(data, 'actionType')}
+              value={getSelectValue('actionType', notificationActionTypes, 'label', 'value')} />
+            <div className='btn-group' role='group' aria-label='unread notif ?'>
+              <button
+                className={classNames('btn btn-outline-secondary', { active: !unreadOnly })}
+                onClick={() => {
+                  const filters = columnFilters.filter(f => f.id !== 'unreadOnly')
+                  setColumnFilters([...filters, { id: 'unreadOnly', value: false }])
+                }}>all</button>
+              <button
+                className={classNames('btn btn-outline-secondary', { active: unreadOnly })}
+                onClick={() => {
+                  const filters = columnFilters.filter(f => f.id !== 'unreadOnly')
+                  setColumnFilters([...filters, { id: 'unreadOnly', value: true }])
+                }}>unread only</button>
+            </div>
           </div>
+          <button className='btn btn-outline-secondary' onClick={() => setColumnFilters([])}>
+            <i className='fas fa-rotate me-2' />
+            reset filters
+          </button>
         </div>
-        <button className='btn btn-outline-secondary' onClick={() => setColumnFilters([])}>
-          <i className='fas fa-rotate me-2' />
-          reset filters
-        </button>
 
+        {displayFilters()}
       </div>
       {notificationListQuery.isLoading && <Spinner />}
       {notificationListQuery.data && (
         <>
           <div className="notification-table">
             <div className='table-header'>
-              <div className='table-title d-flex align-item-center gap-3'>Notifications <span className='badge badge-custom-warning'>{notificationListQuery.data?.pages[0].myNotifications.totalFiltered}</span></div>
+              <div className='table-title d-flex align-items-center gap-3'>Notifications <span className='badge badge-custom-warning'>{notificationListQuery.data?.pages[0].myNotifications.totalFiltered}</span></div>
               <div className="table-description">Overview of your latest notifications ans system update</div>
             </div>
             <div className='select-all-row'>
@@ -506,8 +778,11 @@ export const NotificationList = () => {
                   checked={table.getIsAllPageRowsSelected()}
                   onChange={table.getToggleAllPageRowsSelectedHandler()}
                 />
-                select all
+                {table.getIsSomeRowsSelected() ? `${table.getSelectedRowModel().rows.length} row(s) selected` : 'select all'}
               </label>
+              {table.getIsSomeRowsSelected() && (
+                <button className='ms-2 btn btn-sm btn-outline-secondary' onClick={handleBulkRead}>mark as read</button>
+              )}
             </div>
             <div className='table-rows'>
               {table.getRowModel().rows.map(row => {

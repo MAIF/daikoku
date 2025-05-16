@@ -115,12 +115,21 @@ export const myUnreadNotificationsCount = (): Promise<{ count: number }> =>
     .catch(() => ({ count: 0 }));
 
 export const acceptNotificationOfTeam = (
-  NotificationId: string,
+  notificationId: string,
   values: object = {}
 ): Promise<ResponseError | ResponseDone> =>
-  customFetch(`/api/notifications/${NotificationId}/accept`, {
+  customFetch(`/api/notifications/${notificationId}/accept`, {
     method: 'PUT',
     body: JSON.stringify(values),
+  });
+
+
+export const acceptNotificationOfTeamByBulk = (
+  notificationIds: Array<string>
+): Promise<ResponseError | ResponseDone> =>
+  customFetch(`/api/notifications/accept/bulk`, {
+    method: 'PUT',
+    body: JSON.stringify(notificationIds),
   });
 
 export const rejectNotificationOfTeam = (
