@@ -1960,6 +1960,7 @@ object SchemaDefinition {
         )
       ),
       ReplaceField("total", Field("total", LongType, resolve = _.value.total)),
+      ReplaceField("totalSelectable", Field("totalSelectable", LongType, resolve = _.value.totalSelectable)),
       ReplaceField("totalFiltered", Field("totalFiltered", LongType, resolve = _.value.totalFiltered)),
       ReplaceField("totalByTypes", Field("totalByTypes", JsonType, resolve = _.value.totalByTypes)),
       ReplaceField("totalByTeams", Field("totalByTeams", JsonType, resolve = _.value.totalByTeams)),

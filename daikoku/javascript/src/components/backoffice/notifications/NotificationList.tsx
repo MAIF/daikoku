@@ -4,11 +4,9 @@ import classNames from 'classnames';
 import { formatDistanceToNow } from 'date-fns';
 import { useContext, useMemo, useState } from 'react';
 import Select, { components, MultiValue, OptionProps, ValueContainerProps } from 'react-select';
-import Check from 'react-feather/dist/icons/check';
-import X from 'react-feather/dist/icons/x';
 
 import { constraints, format, type } from '@maif/react-forms';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { I18nContext, ModalContext, TranslateParams, useUserBackOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
@@ -16,6 +14,7 @@ import * as Services from '../../../services';
 import { isError, ISubscriptionDemand, ITesting } from '../../../types';
 import { getLanguageFns, Spinner } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
+import { Option as opt } from '../../utils';
 
 type NotificationColumnMeta = {
   className: string;
@@ -114,6 +113,7 @@ type NotificationsGQL = {
   totalByTypes: Array<{ type: string, total: number }>,
   totalByNotificationTypes: Array<{ type: string, total: number }>,
   totalByTeams: Array<{ team: string, total: number }>,
+  totalSelectable: number
 }
 type LimitedTeam = {
   _id: string
@@ -225,12 +225,13 @@ export const NotificationList = () => {
   const pageSize = 10;
 
 
+  const [selectAll, setSelectAll] = useState(false);
   const [limit, setLimit] = useState(pageSize);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize,
   })
-  const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
+  // const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     [{ "id": "unreadOnly", "value": true }]
   )
@@ -293,7 +294,7 @@ export const NotificationList = () => {
   }
   const handleBulkRead = () => {
     const notificationsIds = table.getSelectedRowModel().rows.map(r => r.original._id)
-    Services.acceptNotificationOfTeamByBulk(notificationsIds)
+    Services.acceptNotificationOfTeamByBulk(notificationsIds, selectAll)
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
   }
 
@@ -305,25 +306,21 @@ export const NotificationList = () => {
         notification.action.__typename === 'NewCommentOnIssue')
     ) {
       return (
-        <div>
+        <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
           <button
             type="button"
-            className="btn btn-outline-success btn-sm me-1"
+            className="nav_item cursor-pointer me-1"
             onClick={() => accept(notification._id)}
           >
             <i className="fas fa-check" />
           </button>
-          <button
-            type="button"
-            className="btn btn-sm btn-outline-success"
-            onClick={() => {
-              accept(notification._id);
-              notification.action.linkTo ?
-                navigate(notification.action.linkTo, { replace: true }) : navigate("/apis", { replace: true })
-            }}
+          <Link
+            to={notification.action.linkTo!}
+            className="nav_item cursor-pointer"
+            target='_blank'
           >
             <i className="fas fa-eye" />
-          </button>
+          </Link>
         </div>
       );
     } else {
@@ -385,64 +382,52 @@ export const NotificationList = () => {
               );
             case 'ApiSubscriptionReject':
               return (
-                <div className='d-flex flex-row flex-grow-1'>
-                  <div className='d-flex flex-wrap flex-grow-1'>
-                    {notification.action.message}
-                  </div>
-                  <div className='d-flex flex-row flex-nowrap'>
-                    <a
-                      className="btn btn-outline-success btn-sm me-1"
-                      style={{ height: '30px' }}
-                      title={translate('Accept')}
-                      aria-label={translate('Accept')}
-                      onClick={() => accept(notification._id)}
-                    >
-                      <i className="fas fa-check" />
-                    </a>
-                  </div>
-
-                </div>
-              )
-            case 'CheckoutForSubscription':
-              return (
-                <div className='d-flex flex-row flex-grow-1 justify-content-between'>
-                  <div>{notification.action.apiName}/{notification.action.planName}</div>
-                  <div className='d-flex flex-row flex-nowrap'>
-                    <FeedbackButton
-                      type="success"
-                      className="ms-1" //@ts-ignore
-                      onPress={() => Services.rerunProcess(notification.action.team?._id!, notification.action.demand!.id)
-                        .then(r => window.location.href = r.checkoutUrl)}
-                      onSuccess={() => console.debug("success")}
-                      feedbackTimeout={100}
-                      disabled={false}
-                    >{translate('Checkout')}</FeedbackButton>
-                  </div>
-
-                </div>
-              )
-            default:
-              return (
-                <div>
-                  <a
-                    className="btn btn-outline-success btn-sm me-1"
-                    href="#"
+                <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
+                  <button
+                    className="nav_item cursor-pointer"
+                    style={{ height: '30px' }}
                     title={translate('Accept')}
                     aria-label={translate('Accept')}
                     onClick={() => accept(notification._id)}
                   >
                     <i className="fas fa-check" />
-                  </a>
+                  </button>
+                </div>
+              )
+            case 'CheckoutForSubscription':
+              return (
+                <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
+                  <FeedbackButton
+                    type="success"
+                    className="nav_item cursor-pointer ms-1" //@ts-ignore
+                    onPress={() => Services.rerunProcess(notification.action.team?._id!, notification.action.demand!.id)
+                      .then(r => window.location.href = r.checkoutUrl)}
+                    onSuccess={() => console.debug("success")}
+                    feedbackTimeout={100}
+                    disabled={false}
+                  >{translate('Checkout')}</FeedbackButton>
+                </div>
+              )
+            default:
+              return (
+                <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
+                  <button
+                    className="nav_item cursor-pointer"
+                    title={translate('Accept')}
+                    aria-label={translate('Accept')}
+                    onClick={() => accept(notification._id)}
+                  >
+                    <i className="fas fa-check" />
+                  </button>
                   {notification.notificationType.value === 'AcceptOrReject' && (
-                    <a
+                    <button
                       className="btn btn-outline-danger btn-sm"
-                      href="#"
                       title={translate('Reject')}
                       aria-label={translate('Reject')}
                       onClick={() => reject(notification._id)}
                     >
                       <i className="fas fa-times" />
-                    </a>
+                    </button>
                   )}
                 </div>
               );
@@ -489,19 +474,19 @@ export const NotificationList = () => {
         return <div className={classNames('notification d-flex align-items-center gap-3', { unread: notification.status.status === 'Pending' })}>
           <div>
             <div className='notification__identities'>
-              <a href='#' onClick={() => handleSelectChange([{ label: team.name, value: team._id }], 'team')}>{team.name}</a> / {notification.action.apiName ?? notification.action.api?.name ?? 'unknown Api'}</div>
+              <a href='#' onClick={() => handleSelectChange([{ label: team.name, value: team._id }], 'team')}>{team.name}</a> {opt(notification.action.apiName ?? notification.action.api?.name).map(apiName => `/ ${apiName}`).getOrElse('')}</div>
             <div className='notification__description'>{notificationFormatter(notification, translate)}</div>
           </div>
           {notification.action.__typename === 'ApiSubscriptionDemand' && (
-            <i
-              className="ms-4 far fa-eye cursor-pointer"
-              onClick={() => alert({
-                title: 'About Subscription demand',
-                message: <div>
-                  <i>{notification.action.motivation}</i>
-                  <pre>{JSON.stringify(notification.action.demand!.motivation, null, 4)}</pre>
-                </div>
-              })} />
+            <button onClick={() => alert({
+              title: 'About Subscription demand',
+              message: <div>
+                <i>{notification.action.motivation}</i>
+                <pre>{JSON.stringify(notification.action.demand!.motivation, null, 4)}</pre>
+              </div>
+            })}>
+              <i className="ms-4 far fa-eye cursor-pointer" />
+            </button>
           )}
         </div>;
       },
@@ -606,6 +591,7 @@ export const NotificationList = () => {
   const totalByTeams = notificationListQuery.data?.pages[0].myNotifications.totalByTeams
   const totalByTypes = notificationListQuery.data?.pages[0].myNotifications.totalByTypes
   const totalByNotificationTypes = notificationListQuery.data?.pages[0].myNotifications.totalByNotificationTypes
+  const totalSelectable = notificationListQuery.data?.pages[0].myNotifications.totalSelectable ?? 0
   const getTotalForTeam = (team: string) => {
     const total = totalByTeams?.find(total => total.team === team)?.total;
     if (!total) {
@@ -698,6 +684,7 @@ export const NotificationList = () => {
     }
   }
 
+
   return (
     <div className='flex-grow-1'>
       <div className='filters-container '>
@@ -778,10 +765,13 @@ export const NotificationList = () => {
                   checked={table.getIsAllPageRowsSelected()}
                   onChange={table.getToggleAllPageRowsSelectedHandler()}
                 />
-                {table.getIsSomeRowsSelected() ? `${table.getSelectedRowModel().rows.length} row(s) selected` : 'select all'}
+                {(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) ? `${selectAll ? totalSelectable : table.getSelectedRowModel().rows.length} row(s) selected` : 'select all'}
               </label>
-              {table.getIsSomeRowsSelected() && (
+              {(!!totalSelectable && (table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) || selectAll) && (
                 <button className='ms-2 btn btn-sm btn-outline-secondary' onClick={handleBulkRead}>mark as read</button>
+              )}
+              {!selectAll && table.getIsAllPageRowsSelected() && table.getSelectedRowModel().rows.length < totalSelectable && (
+                <button className='a-fake' onClick={() => setSelectAll(true)}>selectionner les {totalSelectable} notifications</button>
               )}
             </div>
             <div className='table-rows'>

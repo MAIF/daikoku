@@ -1003,7 +1003,12 @@ object CommonServices {
     }
   }
 
-  def getMyNotification(filter: JsArray, sort: JsArray, limit: Int, offset: Int)(implicit
+  def getMyNotification(
+      filter: JsArray,
+      sort: JsArray,
+      limit: Int,
+      offset: Int
+  )(implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
       ec: ExecutionContext
@@ -1020,21 +1025,29 @@ object CommonServices {
                |                  """
 
       val actionTypes =
-        getFiltervalue[List[String]](filter, "actionType").getOrElse(List.empty).toArray
+        getFiltervalue[List[String]](filter, "actionType")
+          .getOrElse(List.empty)
+          .toArray
 
       val teams =
-        getFiltervalue[List[String]](filter, "team").getOrElse(List.empty).toArray
+        getFiltervalue[List[String]](filter, "team")
+          .getOrElse(List.empty)
+          .toArray
 
       val types =
-        getFiltervalue[List[String]](filter, "type").getOrElse(List.empty).toArray
+        getFiltervalue[List[String]](filter, "type")
+          .getOrElse(List.empty)
+          .toArray
 
-      val unreadOnly = getFiltervalue[Boolean](filter, "unreadOnly").getOrElse(false)
+      val unreadOnly =
+        getFiltervalue[Boolean](filter, "unreadOnly").getOrElse(false)
 
       for {
-        notifications <- env.dataStore.notificationRepo
-          .forTenant(ctx.tenant)
-          .query(
-            s"""
+        notifications <-
+          env.dataStore.notificationRepo
+            .forTenant(ctx.tenant)
+            .query(
+              s"""
                |$CTE
                |SELECT n.content
                |FROM notifications n
@@ -1057,18 +1070,20 @@ object CommonServices {
                |ORDER BY n.content ->> 'date' DESC
                |LIMIT $$5 OFFSET $$6;
                |""".stripMargin,
-            Seq(
-              actionTypes,
-              teams,
-              types,
-              java.lang.Boolean.valueOf(unreadOnly),
-              java.lang.Integer.valueOf(limit),
-              java.lang.Integer.valueOf(offset)
+              Seq(
+                actionTypes,
+                teams,
+                types,
+                java.lang.Boolean.valueOf(unreadOnly),
+                java.lang.Integer.valueOf(limit),
+                java.lang.Integer.valueOf(offset)
+              )
             )
-          )
-        totalFiltered <- env.dataStore.asInstanceOf[PostgresDataStore]
-          .queryOneLong(
-            s"""
+        totalFiltered <-
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneLong(
+              s"""
                |$CTE
                |SELECT count(1) as total_filtered
                |FROM notifications n
@@ -1090,30 +1105,37 @@ object CommonServices {
                |  AND ($$4 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
                |LIMIT $$5 OFFSET $$6;
                |""".stripMargin,
-            "total_filtered",
-            Seq(
-              actionTypes,
-              teams,
-              types,
-              java.lang.Boolean.valueOf(unreadOnly),
-              java.lang.Integer.valueOf(limit),
-              java.lang.Integer.valueOf(offset)
-            ))
-        total <- env.dataStore.asInstanceOf[PostgresDataStore]
-          .queryOneLong(
-            s"""
+              "total_filtered",
+              Seq(
+                actionTypes,
+                teams,
+                types,
+                java.lang.Boolean.valueOf(unreadOnly),
+                java.lang.Integer.valueOf(limit),
+                java.lang.Integer.valueOf(offset)
+              )
+            )
+        total <-
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneLong(
+              s"""
                |$CTE
                |SELECT count(1) as total
                |FROM notifications n
                |         JOIN my_teams t ON n.content ->> 'team' = t._id::text
                |WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
-               |    OR n.content ->> 'team' = t._id::text);
+               |    OR n.content ->> 'team' = t._id::text)
+               |    AND ($$1 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending');
                |""".stripMargin,
-            "total",
-            Seq())
-        totalByTeams <- env.dataStore.asInstanceOf[PostgresDataStore]
-          .queryOneJsArray(
-            s"""
+              "total",
+              Seq(java.lang.Boolean.valueOf(unreadOnly))
+            )
+        totalByTeams <-
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneJsArray(
+              s"""
                |$CTE
                |select json_agg(row_to_json(_.*)) as total_by_teams
                |from (SELECT n.content ->> 'team' AS team, COUNT(*) AS total
@@ -1121,14 +1143,18 @@ object CommonServices {
                |               JOIN my_teams t ON n.content ->> 'team' = t._id::text
                |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |          OR n.content ->> 'team' = t._id::text)
+               |          AND ($$1 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
                |      GROUP BY n.content ->> 'team'
                |      ORDER BY total DESC) _;
                |""".stripMargin,
-            "total_by_teams",
-            Seq())
-        totalByTypes <- env.dataStore.asInstanceOf[PostgresDataStore]
-          .queryOneJsArray(
-            s"""
+              "total_by_teams",
+              Seq(java.lang.Boolean.valueOf(unreadOnly))
+            )
+        totalByTypes <-
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneJsArray(
+              s"""
                |$CTE
                |select json_agg(row_to_json(_.*)) as total_by_types
                |from (SELECT n.content ->> 'notificationType' AS type, COUNT(*) AS total
@@ -1136,15 +1162,18 @@ object CommonServices {
                |               JOIN my_teams t ON n.content ->> 'team' = t._id::text
                |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |          OR n.content ->> 'team' = t._id::text)
+               |          AND ($$1 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
                |      GROUP BY n.content ->> 'notificationType'
                |      ORDER BY total DESC) _;
                |""".stripMargin,
-            "total_by_types",
-            Seq()
-          )
-        totalByNotificationTypes <- env.dataStore.asInstanceOf[PostgresDataStore]
-          .queryOneJsArray(
-            s"""
+              "total_by_types",
+              Seq(java.lang.Boolean.valueOf(unreadOnly))
+            )
+        totalByNotificationTypes <-
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneJsArray(
+              s"""
                |$CTE
                |select json_agg(row_to_json(_.*)) as total_by_notification_types
                |from (SELECT n.content -> 'action' ->> 'type' AS type, COUNT(*) AS total
@@ -1152,20 +1181,42 @@ object CommonServices {
                |               JOIN my_teams t ON n.content ->> 'team' = t._id::text
                |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |          OR n.content ->> 'team' = t._id::text)
+               |          AND ($$1 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
                |      GROUP BY n.content -> 'action' ->> 'type'
                |      ORDER BY total DESC) _;
                |""".stripMargin,
-            "total_by_notification_types",
-            Seq()
-          )
+              "total_by_notification_types",
+              Seq(java.lang.Boolean.valueOf(unreadOnly))
+            )
+        totalSelectable <-
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneLong(
+              s"""
+                 |$CTE
+                 |SELECT COUNT(1) AS total_by_types
+                 |      FROM notifications n
+                 |               JOIN my_teams t ON n.content ->> 'team' = t._id::text
+                 |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+                 |          OR n.content ->> 'team' = t._id::text)
+                 |          AND n.content -> 'status' ->> 'status' = 'Pending';
+                 |""".stripMargin,
+              "total_by_types",
+              Seq()
+            )
       } yield {
-        Right(NotificationWithCount(
-          notifications = notifications,
-          total = total.getOrElse(0),
-          totalFiltered = totalFiltered.getOrElse(0),
-          totalByTypes = totalByTypes.getOrElse(Json.arr()),
-          totalByNotificationTypes = totalByNotificationTypes.getOrElse(Json.arr()),
-          totalByTeams = totalByTeams.getOrElse(Json.arr())))
+        Right(
+          NotificationWithCount(
+            notifications = notifications,
+            total = total.getOrElse(0),
+            totalFiltered = totalFiltered.getOrElse(0),
+            totalByTypes = totalByTypes.getOrElse(Json.arr()),
+            totalByNotificationTypes =
+              totalByNotificationTypes.getOrElse(Json.arr()),
+            totalByTeams = totalByTeams.getOrElse(Json.arr()),
+            totalSelectable = totalSelectable.getOrElse(0)
+          )
+        )
       }
     }
   }
