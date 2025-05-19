@@ -125,11 +125,11 @@ export const acceptNotificationOfTeam = (
 
 
 export const acceptNotificationOfTeamByBulk = (
-  notificationIds: Array<string>
+  notificationIds: Array<string>, selectAll: boolean
 ): Promise<ResponseError | ResponseDone> =>
   customFetch(`/api/notifications/accept/bulk`, {
     method: 'PUT',
-    body: JSON.stringify(notificationIds),
+    body: JSON.stringify({notificationIds, selectAll}),
   });
 
 export const rejectNotificationOfTeam = (
@@ -1847,7 +1847,8 @@ export const graphql = {
         totalFiltered,
         totalByTeams,
         totalByTypes,
-        totalByNotificationTypes
+        totalByNotificationTypes,
+        totalSelectable
       }
     }
     `,

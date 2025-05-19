@@ -764,7 +764,8 @@ case class NotificationWithCount(
                                   totalFiltered: Long,
                                   totalByTypes: JsArray,
                                   totalByNotificationTypes: JsArray,
-                                  totalByTeams: JsArray)
+                                  totalByTeams: JsArray,
+                                  totalSelectable: Long)
 case class TeamWithCount(teams: Seq[Team], total: Long)
 case class SubscriptionsWithPlan(
     planId: String,

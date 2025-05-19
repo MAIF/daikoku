@@ -251,7 +251,7 @@ GET     /api/teams/:teamId/notifications/unread-count   fr.maif.otoroshi.daikoku
 GET     /api/teams/:teamId/notifications/all            fr.maif.otoroshi.daikoku.ctrls.NotificationController.notificationOfTeam(teamId, page: Int ?= 0, pageSize: Int ?= 10)
 GET     /api/teams/:teamId/notifications                fr.maif.otoroshi.daikoku.ctrls.NotificationController.untreatedNotificationOfTeam(teamId, page: Int ?= 0, pageSize: Int ?= 10)
 PUT     /api/notifications/:id/accept                   fr.maif.otoroshi.daikoku.ctrls.NotificationController.acceptNotification(id)
-PUT     /api/notifications/accept/bulk              fr.maif.otoroshi.daikoku.ctrls.NotificationController.acceptNotifications()
+PUT     /api/notifications/accept/bulk                  fr.maif.otoroshi.daikoku.ctrls.NotificationController.acceptNotifications()
 PUT     /api/notifications/:id/reject                   fr.maif.otoroshi.daikoku.ctrls.NotificationController.rejectNotification(id)
 
 GET     /api/teams/:teamId/_verify                      fr.maif.otoroshi.daikoku.ctrls.TeamController.verifyContactEmail(teamId)
