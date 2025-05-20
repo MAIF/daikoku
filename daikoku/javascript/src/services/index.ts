@@ -1847,6 +1847,7 @@ export const graphql = {
         totalFiltered,
         totalByTeams,
         totalByTypes,
+        totalByApis,
         totalByNotificationTypes,
         totalSelectable
       }

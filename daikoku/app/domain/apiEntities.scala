@@ -763,6 +763,7 @@ case class NotificationWithCount(
                                   total: Long,
                                   totalFiltered: Long,
                                   totalByTypes: JsArray,
+                                  totalByApis: JsArray,
                                   totalByNotificationTypes: JsArray,
                                   totalByTeams: JsArray,
                                   totalSelectable: Long)
