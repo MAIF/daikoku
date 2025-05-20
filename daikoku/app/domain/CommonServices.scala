@@ -1039,6 +1039,11 @@ object CommonServices {
           .getOrElse(List.empty)
           .toArray
 
+      val apis =
+        getFiltervalue[List[String]](filter, "api")
+          .getOrElse(List.empty)
+          .toArray
+
       val unreadOnly =
         getFiltervalue[Boolean](filter, "unreadOnly").getOrElse(false)
 
@@ -1052,6 +1057,7 @@ object CommonServices {
                |SELECT n.content
                |FROM notifications n
                |         JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |         LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
                |WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |    OR n.content ->> 'team' = t._id::text)
                |  AND CASE
@@ -1066,14 +1072,19 @@ object CommonServices {
                |          WHEN array_length($$3::text[], 1) IS NULL THEN true
                |          ELSE n.content -> 'action' ->> 'type' = ANY ($$3::text[])
                |  END
-               |  AND ($$4 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
+               |  AND CASE
+               |          WHEN array_length($$4::text[], 1) IS NULL THEN true
+               |          ELSE a._id = ANY ($$4::text[])
+               |  END
+               |  AND ($$5 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
                |ORDER BY n.content ->> 'date' DESC
-               |LIMIT $$5 OFFSET $$6;
+               |LIMIT $$6 OFFSET $$7;
                |""".stripMargin,
               Seq(
                 actionTypes,
                 teams,
                 types,
+                apis,
                 java.lang.Boolean.valueOf(unreadOnly),
                 java.lang.Integer.valueOf(limit),
                 java.lang.Integer.valueOf(offset)
@@ -1088,6 +1099,7 @@ object CommonServices {
                |SELECT count(1) as total_filtered
                |FROM notifications n
                |         JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |         LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
                |WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |    OR n.content ->> 'team' = t._id::text)
                  AND CASE
@@ -1102,14 +1114,19 @@ object CommonServices {
                |          WHEN array_length($$3::text[], 1) IS NULL THEN true
                |          ELSE n.content -> 'action' ->> 'type' = ANY ($$3::text[])
                |  END
-               |  AND ($$4 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
-               |LIMIT $$5 OFFSET $$6;
+               |  AND CASE
+               |          WHEN array_length($$4::text[], 1) IS NULL THEN true
+               |          ELSE a._id = ANY ($$4::text[])
+               |  END
+               |  AND ($$5 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
+               |LIMIT $$6 OFFSET $$7;
                |""".stripMargin,
               "total_filtered",
               Seq(
                 actionTypes,
                 teams,
                 types,
+                apis,
                 java.lang.Boolean.valueOf(unreadOnly),
                 java.lang.Integer.valueOf(limit),
                 java.lang.Integer.valueOf(offset)
@@ -1137,7 +1154,7 @@ object CommonServices {
             .queryOneJsArray(
               s"""
                |$CTE
-               |select json_agg(row_to_json(_.*)) as total_by_teams
+               |select coalesce(json_agg(row_to_json(_.*)), '[]'::json) as total_by_teams
                |from (SELECT n.content ->> 'team' AS team, COUNT(*) AS total
                |      FROM notifications n
                |               JOIN my_teams t ON n.content ->> 'team' = t._id::text
@@ -1150,13 +1167,33 @@ object CommonServices {
               "total_by_teams",
               Seq(java.lang.Boolean.valueOf(unreadOnly))
             )
+        totalByApis <-
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneJsArray(
+              s"""
+                 |$CTE
+                 |select coalesce(json_agg(row_to_json(_.*)), '[]'::json) as total_by_apis
+                 |from (SELECT a._id as api, COUNT(*) AS total
+                 |      FROM notifications n
+                 |               JOIN my_teams t ON n.content ->> 'team' = t._id::text
+                 |               LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
+                 |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+                 |          OR n.content ->> 'team' = t._id::text)
+                 |          AND ($$1 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
+                 |      GROUP BY a._id
+                 |      ORDER BY total DESC) _;
+                 |""".stripMargin,
+              "total_by_apis",
+              Seq(java.lang.Boolean.valueOf(unreadOnly))
+            )
         totalByTypes <-
           env.dataStore
             .asInstanceOf[PostgresDataStore]
             .queryOneJsArray(
               s"""
                |$CTE
-               |select json_agg(row_to_json(_.*)) as total_by_types
+               |select coalesce(json_agg(row_to_json(_.*)), '[]'::json) as total_by_types
                |from (SELECT n.content ->> 'notificationType' AS type, COUNT(*) AS total
                |      FROM notifications n
                |               JOIN my_teams t ON n.content ->> 'team' = t._id::text
@@ -1175,7 +1212,7 @@ object CommonServices {
             .queryOneJsArray(
               s"""
                |$CTE
-               |select json_agg(row_to_json(_.*)) as total_by_notification_types
+               |select coalesce(json_agg(row_to_json(_.*)), '[]'::json) as total_by_notification_types
                |from (SELECT n.content -> 'action' ->> 'type' AS type, COUNT(*) AS total
                |      FROM notifications n
                |               JOIN my_teams t ON n.content ->> 'team' = t._id::text
@@ -1210,11 +1247,12 @@ object CommonServices {
             notifications = notifications,
             total = total.getOrElse(0),
             totalFiltered = totalFiltered.getOrElse(0),
+            totalSelectable = totalSelectable.getOrElse(0),
             totalByTypes = totalByTypes.getOrElse(Json.arr()),
             totalByNotificationTypes =
               totalByNotificationTypes.getOrElse(Json.arr()),
             totalByTeams = totalByTeams.getOrElse(Json.arr()),
-            totalSelectable = totalSelectable.getOrElse(0)
+            totalByApis = totalByApis.getOrElse(Json.arr())
           )
         )
       }

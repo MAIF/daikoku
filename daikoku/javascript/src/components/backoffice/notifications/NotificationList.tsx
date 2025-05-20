@@ -113,6 +113,7 @@ type NotificationsGQL = {
   totalByTypes: Array<{ type: string, total: number }>,
   totalByNotificationTypes: Array<{ type: string, total: number }>,
   totalByTeams: Array<{ team: string, total: number }>,
+  totalByApis: Array<{ api: string, total: number }>,
   totalSelectable: number
 }
 type LimitedTeam = {
@@ -214,13 +215,23 @@ type TypedColumnFilter =
   | { id: 'team' | 'team' | 'notificationType'; value: Array<string> }
   | { id: 'notificationType'; value: 'AcceptOnly' | 'RejectOnly' };
 
+const VISIBLE_APIS = `
+    query AllVisibleApis ($teamId: String, $research: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $limit: Int, $offset: Int, $groupId: String) {
+      visibleApis (teamId: $teamId, research: $research, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, limit: $limit, offset: $offset, groupId: $groupId) {
+        apis {
+          api {
+            name
+            _id
+          }
+        }
+      }
+    }`
+
 export const NotificationList = () => {
   useUserBackOffice();
   const { translate, language } = useContext(I18nContext);
   const { customGraphQLClient } = useContext(GlobalContext)
   const { openSubMetadataModal, openFormModal, alert } = useContext(ModalContext)
-
-  const navigate = useNavigate();
 
   const pageSize = 10;
 
@@ -250,6 +261,17 @@ export const NotificationList = () => {
       const nextOffset = pages.length * pageSize;
       return nextOffset < totalFilteredCount ? nextOffset : undefined;
     }
+  })
+
+  const visibleApisRequest = useQuery({
+    queryKey: ['apis'],
+    queryFn: () => customGraphQLClient.request<{ visibleApis: { apis: [{ api: { _id: string, name: string } }] } }>(
+      VISIBLE_APIS,
+      {
+        limit: -1,
+        offset: 0,
+      }),
+    select: d => d.visibleApis.apis.map(a => a.api)
   })
 
   const myTeamsRequest = useQuery({
@@ -324,129 +346,132 @@ export const NotificationList = () => {
         </div>
       );
     } else {
-      switch (status) {
-        case 'Pending':
-          switch (notification.action.__typename) {
-            case 'ApiSubscriptionDemand':
-              return (
-                <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
-                  <button
-                    className="nav_item cursor-pointer"
-                    title={translate('Accept')}
-                    aria-label={translate('Accept')}
-                    onClick={() => //@ts-ignore
-                      Services.getSubscriptionDemand(notification.team._id, notification.action.demand!.id)
-                        .then(demand => {
-                          if (!isError(demand)) {
-                            openSubMetadataModal({
-                              save: (sub) => accept(notification._id, sub),
-                              api: notification.action.api?._id,
-                              plan: notification.action.plan!._id,
-                              team: notification.action.team,
-                              notification: notification,
-                              subscriptionDemand: demand,
-                              creationMode: true,
-                            })
-                          }
-                        })
-                    }
-                  >
-                    <i className="fas fa-check" />
-                  </button>
-                  <button
-                    className="nav_item cursor-pointer"
-                    title={translate('Reject')}
-                    aria-label={translate('Reject')}
-                    onClick={() => {
-                      openFormModal<{ message: string }>({
-                        title: translate('Message'),
-                        schema: {
-                          message: {
-                            type: type.string,
-                            format: format.text,
-                            label: null,
-                            constraints: [
-                              constraints.required()
-                            ]
-                          }
-                        },
-                        onSubmit: ({ message }) => reject(notification._id, message),
-                        actionLabel: translate('Send')
-                      })
-                    }}
-                  >
-                    <i className="fas fa-xmark" />
-                  </button>
-
-                </div>
-              );
-            case 'ApiSubscriptionReject':
-              return (
-                <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
-                  <button
-                    className="nav_item cursor-pointer"
-                    style={{ height: '30px' }}
-                    title={translate('Accept')}
-                    aria-label={translate('Accept')}
-                    onClick={() => accept(notification._id)}
-                  >
-                    <i className="fas fa-check" />
-                  </button>
-                </div>
-              )
-            case 'CheckoutForSubscription':
-              return (
-                <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
-                  <FeedbackButton
-                    type="success"
-                    className="nav_item cursor-pointer ms-1" //@ts-ignore
-                    onPress={() => Services.rerunProcess(notification.action.team?._id!, notification.action.demand!.id)
-                      .then(r => window.location.href = r.checkoutUrl)}
-                    onSuccess={() => console.debug("success")}
-                    feedbackTimeout={100}
-                    disabled={false}
-                  >{translate('Checkout')}</FeedbackButton>
-                </div>
-              )
-            default:
-              return (
-                <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
-                  <button
-                    className="nav_item cursor-pointer"
-                    title={translate('Accept')}
-                    aria-label={translate('Accept')}
-                    onClick={() => accept(notification._id)}
-                  >
-                    <i className="fas fa-check" />
-                  </button>
-                  {notification.notificationType.value === 'AcceptOrReject' && (
-                    <button
-                      className="btn btn-outline-danger btn-sm"
-                      title={translate('Reject')}
-                      aria-label={translate('Reject')}
-                      onClick={() => reject(notification._id)}
-                    >
-                      <i className="fas fa-times" />
-                    </button>
-                  )}
-                </div>
-              );
-          }
-        case 'Accepted':
+      // switch (status) {
+      //   case 'Pending':
+      switch (notification.action.__typename) {
+        case 'ApiSubscriptionDemand':
           return (
-            <div className='d-flex gap-2 justify-content-end align-items-center'>
-              <i className="fas fa-check" />
-              {formatDistanceToNow(notification.date, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })}
+            <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
+              <button
+                className="nav_item cursor-pointer"
+                title={translate('Accept')}
+                aria-label={translate('Accept')}
+                onClick={() => //@ts-ignore
+                  Services.getSubscriptionDemand(notification.team._id, notification.action.demand!.id)
+                    .then(demand => {
+                      if (!isError(demand)) {
+                        openSubMetadataModal({
+                          save: (sub) => accept(notification._id, sub),
+                          api: notification.action.api?._id,
+                          plan: notification.action.plan!._id,
+                          team: notification.action.team,
+                          notification: notification,
+                          subscriptionDemand: demand,
+                          creationMode: true,
+                        })
+                      }
+                    })
+                }
+              >
+                <i className="fas fa-check" />
+              </button>
+              <button
+                className="nav_item cursor-pointer"
+                title={translate('Reject')}
+                aria-label={translate('Reject')}
+                onClick={() => {
+                  openFormModal<{ message: string }>({
+                    title: translate('Message'),
+                    schema: {
+                      message: {
+                        type: type.string,
+                        format: format.text,
+                        label: null,
+                        constraints: [
+                          constraints.required()
+                        ]
+                      }
+                    },
+                    onSubmit: ({ message }) => reject(notification._id, message),
+                    actionLabel: translate('Send')
+                  })
+                }}
+              >
+                <i className="fas fa-xmark" />
+              </button>
+
             </div>
           );
-        case 'Rejected':
+        case 'ApiSubscriptionReject':
           return (
-            <div className='d-flex gap-2 justify-content-end align-items-center'>
-              <i className="fas fa-xmark" />
-              {formatDistanceToNow(notification.date, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })}
+            <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
+              <button
+                className="nav_item cursor-pointer"
+                style={{ height: '30px' }}
+                title={translate('Accept')}
+                aria-label={translate('Accept')}
+                onClick={() => accept(notification._id)}
+              >
+                <i className="fas fa-check" />
+              </button>
+            </div>
+          )
+        case 'CheckoutForSubscription':
+          return (
+            <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
+              <FeedbackButton
+                type="success"
+                className="nav_item cursor-pointer ms-1" //@ts-ignore
+                onPress={() => Services.rerunProcess(notification.action.team?._id!, notification.action.demand!.id)
+                  .then(r => window.location.href = r.checkoutUrl)}
+                onSuccess={() => console.debug("success")}
+                feedbackTimeout={100}
+                disabled={false}
+              >{translate('Checkout')}</FeedbackButton>
+            </div>
+          )
+        default:
+          return (
+            <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
+              <button
+                className="nav_item cursor-pointer"
+                title={translate('Accept')}
+                aria-label={translate('Accept')}
+                onClick={() => accept(notification._id)}
+              >
+                <i className="fas fa-check" />
+              </button>
+              {notification.notificationType.value === 'AcceptOrReject' && (
+                <button
+                  className="btn btn-outline-danger btn-sm"
+                  title={translate('Reject')}
+                  aria-label={translate('Reject')}
+                  onClick={() => reject(notification._id)}
+                >
+                  <i className="fas fa-times" />
+                </button>
+              )}
             </div>
           );
       }
+      //   case 'Accepted':
+      //     return (
+      //       // <div className='d-flex gap-2 justify-content-end align-items-center'>
+      //       //   <i className="fas fa-check" />
+      //       //   {formatDistanceToNow(date ?? notification.date, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })}
+      //       // </div>
+      //       <></>
+      //     );
+      //   case 'Rejected':
+      //     return (
+      //       // <div className='d-flex gap-2 justify-content-end align-items-center'>
+      //       //   <i className="fas fa-xmark" />
+      //       //   {formatDistanceToNow(
+      //       //     date ?? notification.date, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })}
+      //       // </div>
+      //       <></>
+      //     );
+      // }
     }
   };
 
@@ -471,21 +496,48 @@ export const NotificationList = () => {
       cell: (info) => {
         const notification = info.row.original;
         const team = notification.team;
+        const api = opt(notification.action.apiName ?? notification.action.api?.name)
+          .flatMap(name => opt(visibleApisRequest.data?.find(d => d.name === name))).getOrNull()
+
         return <div className={classNames('notification d-flex align-items-center gap-3', { unread: notification.status.status === 'Pending' })}>
           <div>
             <div className='notification__identities'>
-              <a href='#' onClick={() => handleSelectChange([{ label: team.name, value: team._id }], 'team')}>{team.name}</a> {opt(notification.action.apiName ?? notification.action.api?.name).map(apiName => `/ ${apiName}`).getOrElse('')}</div>
+              <a href='#' onClick={() => handleSelectChange([{ label: team.name, value: team._id }], 'team')}>{team.name}</a>
+              {opt(api).map(a => <span>/ <a href='#' onClick={() => handleSelectChange([{ label: a.name, value: a._id }], 'api')}>{a.name}</a></span>).getOrElse(<></>)}</div>
             <div className='notification__description'>{notificationFormatter(notification, translate)}</div>
           </div>
           {notification.action.__typename === 'ApiSubscriptionDemand' && (
-            <button onClick={() => alert({
+            <button className='nav_item cursor-pointer' onClick={() => alert({
               title: 'About Subscription demand',
               message: <div>
                 <i>{notification.action.motivation}</i>
-                <pre>{JSON.stringify(notification.action.demand!.motivation, null, 4)}</pre>
+                <div className="accordion" id="accordionExample">
+                  <div className="accordion-item">
+                    <h2 className="accordion-header">
+                      <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                        Voir la demande au format JSON
+                      </button>
+                    </h2>
+                    <div id="collapseOne" className="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                      <div className="accordion-body">
+                        <pre>{JSON.stringify(notification.action.demand!.motivation, null, 4)}</pre>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             })}>
-              <i className="ms-4 far fa-eye cursor-pointer" />
+              <i className="far fa-eye cursor-pointer" />
+            </button>
+          )}
+          {notification.action.__typename === 'ApiSubscriptionReject' && (
+            <button className='nav_item cursor-pointer' onClick={() => alert({
+              title: 'About Subscription demand reject',
+              message: <div>
+                <i>{notification.action.message}</i>
+              </div>
+            })}>
+              <i className="far fa-circle-question cursor-pointer" />
             </button>
           )}
         </div>;
@@ -524,7 +576,7 @@ export const NotificationList = () => {
         return (
           <>
             <div className="notification__date">{date}</div>
-            <div className='notification__actions'>{actionFormatter(notification)}</div>
+            <div className='notification__actions'>{notification.status.status === 'Pending' ? actionFormatter(notification) : date}</div>
           </>
         )
       },
@@ -589,11 +641,19 @@ export const NotificationList = () => {
   const unreadOnly = !!columnFilters.find(f => f.id === 'unreadOnly')?.value as boolean
 
   const totalByTeams = notificationListQuery.data?.pages[0].myNotifications.totalByTeams
+  const totalByApis = notificationListQuery.data?.pages[0].myNotifications.totalByApis
   const totalByTypes = notificationListQuery.data?.pages[0].myNotifications.totalByTypes
   const totalByNotificationTypes = notificationListQuery.data?.pages[0].myNotifications.totalByNotificationTypes
   const totalSelectable = notificationListQuery.data?.pages[0].myNotifications.totalSelectable ?? 0
   const getTotalForTeam = (team: string) => {
     const total = totalByTeams?.find(total => total.team === team)?.total;
+    if (!total) {
+      return undefined;
+    }
+    return total
+  }
+  const getTotalForApi = (api: string) => {
+    const total = totalByApis?.find(total => total.api === api)?.total;
     if (!total) {
       return undefined;
     }
@@ -640,7 +700,7 @@ export const NotificationList = () => {
     if (!columnFilters.length) {
       return null
     } else {
-      const filterOrder = ['team', 'type', 'actionType']
+      const filterOrder = ['team', 'api', 'type', 'actionType']
       return (
         <div className='mt-2 d-flex flex-wrap flex-row gap-2' role="list">
           {columnFilters
@@ -650,6 +710,16 @@ export const NotificationList = () => {
                 case f.id === 'team':
                   return ((f.value as Array<string>).map(value => {
                     const teamName = myTeamsRequest.data?.find(t => t._id === value)?.name;
+                    return (
+                      <div className='selected-filter d-flex gap-2 align-items-center' role="listitem" onClick={() => clearFilter(f.id, value)}>
+                        {teamName}
+                        <i className='fas fa-xmark' />
+                      </div>
+                    )
+                  }))
+                case f.id === 'api':
+                  return ((f.value as Array<string>).map(value => {
+                    const teamName = visibleApisRequest.data?.find(t => t._id === value)?.name;
                     return (
                       <div className='selected-filter d-flex gap-2 align-items-center' role="listitem" onClick={() => clearFilter(f.id, value)}>
                         {teamName}
@@ -704,6 +774,19 @@ export const NotificationList = () => {
               styles={menuStyle}
               onChange={data => handleSelectChange(data, 'team')}
               value={getSelectValue('team', myTeamsRequest.data ?? [], 'name', '_id')} />
+            <Select
+              isMulti //@ts-ignore
+              components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
+              options={(visibleApisRequest.data ?? []).map(api => ({ label: api.name, value: api._id }))}
+              isLoading={visibleApisRequest.isLoading || visibleApisRequest.isPending}
+              closeMenuOnSelect={true}
+              labelSingular="Api"
+              labelAll="All apis"
+              getCount={getTotalForApi}
+              classNamePrefix="daikoku-select"
+              styles={menuStyle}
+              onChange={data => handleSelectChange(data, 'api')}
+              value={getSelectValue('api', visibleApisRequest.data ?? [], 'name', '_id')} />
             <Select
               isMulti //@ts-ignore
               components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}

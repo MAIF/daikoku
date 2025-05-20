@@ -100,6 +100,22 @@
       background-color: #f9f9f9;
     }
 
+    .nav_item {
+      font-size: 1.5rem;
+      width: 2rem;
+      height: 2rem;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: variables.$level1_text-color;
+
+      &:hover {
+        background-color: #ddd;
+        border-radius: 4px;
+        padding: 0.2rem;
+      }
+    }
+
     div.description-cell {
       display: flex;
       justify-content: start;
@@ -180,37 +196,22 @@
   .notification__actions {
     display: block;
   }
-
-  .nav_item {
-    font-size: 1.5rem;
-    width: 2rem; height: 2rem;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: variables.$level1_text-color;
-
-    &:hover {
-      background-color: #ddd;
-      border-radius: 4px;
-      padding: 0.2rem;
-    }
-  }
 }
 
 .selected-filter {
   width: fit-content;
-    padding: .3rem .6rem;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    background-color: #eee;
+  padding: .3rem .6rem;
+  border-radius: 4px;
+  border: 1px solid #ddd;
+  background-color: #eee;
 
-    cursor: pointer;
+  cursor: pointer;
 
-    &:hover {
-      border-color: #eee;
-    }
+  &:hover {
+    border-color: #eee;
+  }
 
-    &:active {
-      background-color: #fff;
-    }
+  &:active {
+    background-color: #fff;
+  }
 }

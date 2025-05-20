@@ -1964,6 +1964,7 @@ object SchemaDefinition {
       ReplaceField("totalFiltered", Field("totalFiltered", LongType, resolve = _.value.totalFiltered)),
       ReplaceField("totalByTypes", Field("totalByTypes", JsonType, resolve = _.value.totalByTypes)),
       ReplaceField("totalByTeams", Field("totalByTeams", JsonType, resolve = _.value.totalByTeams)),
+      ReplaceField("totalByApis", Field("totalByApis", JsonType, resolve = _.value.totalByApis)),
     )
 
     lazy val TeamWithCountType = deriveObjectType[
