@@ -1560,5 +1560,63 @@
   "migration.custom.style.alert.info.3": "👉 Vous pouvez toujours injecter du CSS ou du JavaScript via une URL externe.",
   "migration.custom.style.alert.info.4": " Cependant, l’édition directe du code en ligne se fait désormais via la CLI.",
   "migration.custom.style.alert.info.5": "📘 Pour en savoir plus sur la CLI Daikoku, vous pouvez consulter la %s",
-  "migration.custom.style.alert.hide": "Ne plus voir ce message"
+  "migration.custom.style.alert.hide": "Ne plus voir ce message",
+  "notifications.page.filters.label": "Filtres",
+  "notifications.page.filters.team.label": {
+    "s": "Équipe",
+    "p": "Équipes"
+  },
+  "notifications.page.filters.all.team.label": "Toutes les équipes",
+  "notifications.page.filters.api.label": {
+    "s": "API",
+    "p": "APIs"
+  },
+  "notifications.page.filters.all.api.label": "Toutes les apis",
+  "notifications.page.filters.type.label": {
+    "s": "Type",
+    "p": "Types"
+  },
+  "notifications.page.filters.all.type.label": "Tous les types",
+  "notifications.page.filters.action.label": {
+    "s": "Action attendue",
+    "p": "Actions attendues"
+  },
+  "notifications.page.filters.all.action.label": "Toutes les notifications",
+  "notifications.page.filters.action.AcceptOnly.label": "Action requise",
+  "notifications.page.filters.action.AcceptOrReject.label": "Aucune action requise",
+  "notifications.page.filters.type.ApiAccess.label": "Accès à une API",
+  "notifications.page.filters.type.ApiSubscription.label": "Nouvelle souscription",
+  "notifications.page.filters.type.ApiSubscriptionDemand.label": "Nouvelle souscription",
+  "notifications.page.filters.type.ApiSubscriptionReject.label": "Souscription refusée",
+  "notifications.page.filters.type.ApiSubscriptionAccept.label": "Souscription acceptée",
+  "notifications.page.filters.type.OtoroshiSyncSubscriptionError.label": "Erreur de synchro (souscription)",
+  "notifications.page.filters.type.OtoroshiSyncApiError.label": "Erreur de synchro (API)",
+  "notifications.page.filters.type.ApiKeyDeletionInformation.label": "Suppression de clé API",
+  "notifications.page.filters.type.ApiKeyRotationInProgress.label": "Rotation de clé en cours",
+  "notifications.page.filters.type.ApiKeyRotationEnded.label": "Rotation de clé terminée",
+  "notifications.page.filters.type.TeamInvitation.label": "Invitation dans une équipe",
+  "notifications.page.filters.type.ApiKeyRefresh.label": "Clé API rafraîchie",
+  "notifications.page.filters.type.NewPostPublished.label": "Nouveau post publié",
+  "notifications.page.filters.type.NewIssueOpen.label": "Nouvelle issue",
+  "notifications.page.filters.type.NewCommentOnIssue.label": "Nouveau commentaire",
+  "notifications.page.filters.type.TransferApiOwnership.label": "Transfert de propriété d'API",
+  "notifications.page.filters.type.ApiSubscriptionTransferSuccess.label": "Transfert de souscription réussi",
+  "notifications.page.filters.type.CheckoutForSubscription.label": "Paiement pour souscription",
+  "notifications.page.filters.all.notifications.label": "Toutes",
+  "notifications.page.filters.unread.notifications.label": "Non lues",
+  "notifications.page.filters.clear.label": "Réinitialiser les filtres",
+  "notifications.page.table.title": "Notifications",
+  "notifications.page.table.description": "Aperçu de vos dernières notifications et mises à jour du système",
+  "notifications.page.table.select.all.label": "tout sélectionner",
+  "notifications.page.table.selected.count.label": {
+    "s": "%s ligne sélectionnée",
+    "p": "%s lignes sélectionnées"
+  },
+  "notifications.page.table.read.bulk.action.label": "Marquer comme lu",
+  "notifications.page.table.select.really.all.label": "selectionner les %s notifications",
+  "notifications.page.table.more.button.label": "Afficher plus",
+  "notifications.page.subscription.demand.detail.modal.title": "Détails de la demande de souscription",
+  "notifications.page.subscription.demand.detail.modal.raw.button.label": "Afficher les données brutes",
+  "notifications.page.subscription.demand.detail.summary.label": "Résumé de la demande",
+  "notifications.page.subscription.demand.reject.detail.modal.title": "Détails du rejet de la demande de souscription"
 }

@@ -1560,6 +1560,64 @@
     "migration.custom.style.alert.info.3": "👉 You can still inject CSS or JavaScript via an external URL.",
     "migration.custom.style.alert.info.4": " However, inline code editing is now handled through the CLI.",
     "migration.custom.style.alert.info.5": "📘 To learn more about the Daikoku CLI, check out the %s",
-    "migration.custom.style.alert.hide": "Hide message"
+    "migration.custom.style.alert.hide": "Hide message",
+    "notifications.page.filters.label": "Filters",
+    "notifications.page.filters.team.label": {
+        "s": "Team",
+        "p": "Teams"
+    },
+    "notifications.page.filters.all.team.label": "All teams",
+    "notifications.page.filters.api.label": {
+        "s": "API",
+        "p": "APIs"
+    },
+    "notifications.page.filters.all.api.label": "All APIs",
+    "notifications.page.filters.type.label": {
+        "s": "Type",
+        "p": "Types"
+    },
+    "notifications.page.filters.all.type.label": "All types",
+    "notifications.page.filters.action.label": {
+        "s": "Action required",
+        "p": "Actions required"
+    },
+    "notifications.page.filters.all.action.label": "All notifications",
+    "notifications.page.filters.action.AcceptOnly.label": "Action required",
+    "notifications.page.filters.action.AcceptOrReject.label": "No action required",
+    "notifications.page.filters.type.ApiAccess.label": "API access",
+    "notifications.page.filters.type.ApiSubscription.label": "New subscription",
+    "notifications.page.filters.type.ApiSubscriptionDemand.label": "New subscription",
+    "notifications.page.filters.type.ApiSubscriptionReject.label": "Subscription rejected",
+    "notifications.page.filters.type.ApiSubscriptionAccept.label": "Subscription accepted",
+    "notifications.page.filters.type.OtoroshiSyncSubscriptionError.label": "Sync error (subscription)",
+    "notifications.page.filters.type.OtoroshiSyncApiError.label": "Sync error (API)",
+    "notifications.page.filters.type.ApiKeyDeletionInformation.label": "API key deletion",
+    "notifications.page.filters.type.ApiKeyRotationInProgress.label": "API key rotation in progress",
+    "notifications.page.filters.type.ApiKeyRotationEnded.label": "API key rotation completed",
+    "notifications.page.filters.type.TeamInvitation.label": "Team invitation",
+    "notifications.page.filters.type.ApiKeyRefresh.label": "API key refreshed",
+    "notifications.page.filters.type.NewPostPublished.label": "New post published",
+    "notifications.page.filters.type.NewIssueOpen.label": "New issue opened",
+    "notifications.page.filters.type.NewCommentOnIssue.label": "New comment",
+    "notifications.page.filters.type.TransferApiOwnership.label": "API ownership transfer",
+    "notifications.page.filters.type.ApiSubscriptionTransferSuccess.label": "Subscription transfer successful",
+    "notifications.page.filters.type.CheckoutForSubscription.label": "Subscription payment",
+    "notifications.page.filters.all.notifications.label": "All",
+    "notifications.page.filters.unread.notifications.label": "Unread",
+    "notifications.page.filters.clear.label": "Reset filters",
+    "notifications.page.table.title": "Notifications",
+    "notifications.page.table.description": "Overview of your latest notifications and system updates",
+    "notifications.page.table.select.all.label": "Select all",
+    "notifications.page.table.selected.count.label": {
+        "s": "%s row selected",
+        "p": "%s rows selected"
+    },
+    "notifications.page.table.read.bulk.action.label": "Mark as read",
+    "notifications.page.table.select.really.all.label": "Select all %s notifications",
+    "notifications.page.table.more.button.label": "Show more",
+    "notifications.page.subscription.demand.detail.modal.title": "Subscription request details",
+    "notifications.page.subscription.demand.detail.modal.raw.button.label": "Show raw data",
+    "notifications.page.subscription.demand.detail.summary.label": "Request summary",
+    "notifications.page.subscription.demand.reject.detail.modal.title": "Subscription request rejection details"
     
 }
