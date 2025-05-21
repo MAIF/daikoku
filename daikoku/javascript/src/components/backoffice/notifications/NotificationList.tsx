@@ -186,34 +186,33 @@ type Option = {
   value: string;
 };
 type ExtraProps = {
-  labelSingular: string;
-  labelAll: string;
+  labelKey: string;
+  labelKeyAll: string;
   getCount: (data: string) => number
 };
 const GenericValueContainer = (
   props: ValueContainerProps<Option, true> & { selectProps: ExtraProps }
 ) => {
+  const { translate } = useContext(I18nContext);
+
   const { getValue, hasValue, selectProps } = props;
   const selectedValues = getValue();
   const nbValues = selectedValues.length;
 
+  const label = translate({ key: selectProps.labelKey, plural: nbValues > 1 })
   return (
     <components.ValueContainer {...props}>
       {!hasValue || nbValues === 0 ? (
-        selectProps.labelAll
+        translate(selectProps.labelKeyAll)
       ) : (
         <>
-          {`${selectProps.labelSingular}${nbValues > 1 ? 's' : ''}`}{" "}
+          {label}
           <span className="ms-2 badge badge-custom">{nbValues}</span>
         </>
       )}
     </components.ValueContainer>
   );
 };
-
-type TypedColumnFilter =
-  | { id: 'team' | 'team' | 'notificationType'; value: Array<string> }
-  | { id: 'notificationType'; value: 'AcceptOnly' | 'RejectOnly' };
 
 const VISIBLE_APIS = `
     query AllVisibleApis ($teamId: String, $research: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $limit: Int, $offset: Int, $groupId: String) {
@@ -281,29 +280,29 @@ export const NotificationList = () => {
   })
 
   const notificationTypes = [
-    { type: "ApiAccess", label: "Accès à une API", variant: "success" },
-    { type: "ApiSubscription", label: "Nouvelle souscription", variant: "success" },
-    { type: "ApiSubscriptionDemand", label: "Nouvelle souscription", variant: "success" },
-    { type: "ApiSubscriptionReject", label: "Souscription refusée", variant: "danger" },
-    { type: "ApiSubscriptionAccept", label: "Souscription acceptée", variant: "info" },
-    { type: "OtoroshiSyncSubscriptionError", label: "Erreur de synchro (souscription)", variant: "danger" },
-    { type: "OtoroshiSyncApiError", label: "Erreur de synchro (API)", variant: "danger" },
-    { type: "ApiKeyDeletionInformation", label: "Suppression de clé API", variant: "warning" },
-    { type: "ApiKeyRotationInProgress", label: "Rotation de clé en cours", variant: "warning" },
-    { type: "ApiKeyRotationEnded", label: "Rotation de clé terminée", variant: "success" },
-    { type: "TeamInvitation", label: "Invitation dans une équipe", variant: "info" },
-    { type: "ApiKeyRefresh", label: "Clé API rafraîchie", variant: "info" },
-    { type: "NewPostPublished", label: "Nouveau post publié", variant: "info" },
-    { type: "NewIssueOpen", label: "Nouvelle issue", variant: "warning" },
-    { type: "NewCommentOnIssue", label: "Nouveau commentaire", variant: "info" },
-    { type: "TransferApiOwnership", label: "Transfert de propriété d'API", variant: "warning" },
-    { type: "ApiSubscriptionTransferSuccess", label: "Transfert de souscription réussi", variant: "success" },
-    { type: "CheckoutForSubscription", label: "Paiement pour souscription", variant: "info" },
+    { type: "ApiAccess", variant: "success" },
+    { type: "ApiSubscription", variant: "success" },
+    { type: "ApiSubscriptionDemand", variant: "success" },
+    { type: "ApiSubscriptionReject", variant: "danger" },
+    { type: "ApiSubscriptionAccept", variant: "info" },
+    { type: "OtoroshiSyncSubscriptionError", variant: "danger" },
+    { type: "OtoroshiSyncApiError", variant: "danger" },
+    { type: "ApiKeyDeletionInformation", variant: "warning" },
+    { type: "ApiKeyRotationInProgress", variant: "warning" },
+    { type: "ApiKeyRotationEnded", variant: "success" },
+    { type: "TeamInvitation", variant: "info" },
+    { type: "ApiKeyRefresh", variant: "info" },
+    { type: "NewPostPublished", variant: "info" },
+    { type: "NewIssueOpen", variant: "warning" },
+    { type: "NewCommentOnIssue", variant: "info" },
+    { type: "TransferApiOwnership", variant: "warning" },
+    { type: "ApiSubscriptionTransferSuccess", variant: "success" },
+    { type: "CheckoutForSubscription", variant: "info" },
   ];
 
   const notificationActionTypes = [
-    { value: "AcceptOnly", label: "Information note" },
-    { value: "AcceptOrReject", label: "Action needed" },
+    { value: "AcceptOnly" },
+    { value: "AcceptOrReject" },
   ]
 
   const accept = (notification: string, sub?: CustomSubscriptionData) => {
@@ -454,24 +453,6 @@ export const NotificationList = () => {
             </div>
           );
       }
-      //   case 'Accepted':
-      //     return (
-      //       // <div className='d-flex gap-2 justify-content-end align-items-center'>
-      //       //   <i className="fas fa-check" />
-      //       //   {formatDistanceToNow(date ?? notification.date, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })}
-      //       // </div>
-      //       <></>
-      //     );
-      //   case 'Rejected':
-      //     return (
-      //       // <div className='d-flex gap-2 justify-content-end align-items-center'>
-      //       //   <i className="fas fa-xmark" />
-      //       //   {formatDistanceToNow(
-      //       //     date ?? notification.date, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })}
-      //       // </div>
-      //       <></>
-      //     );
-      // }
     }
   };
 
@@ -508,14 +489,15 @@ export const NotificationList = () => {
           </div>
           {notification.action.__typename === 'ApiSubscriptionDemand' && (
             <button className='nav_item cursor-pointer' onClick={() => alert({
-              title: 'About Subscription demand',
+              title: translate('notifications.page.subscription.demand.detail.modal.title'),
               message: <div>
+                <div>{translate('notifications.page.subscription.demand.detail.summary.label')} :</div>
                 <i>{notification.action.motivation}</i>
                 <div className="accordion" id="accordionExample">
                   <div className="accordion-item">
                     <h2 className="accordion-header">
                       <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                        Voir la demande au format JSON
+                        {translate("notifications.page.subscription.demand.detail.modal.raw.button.label")}
                       </button>
                     </h2>
                     <div id="collapseOne" className="accordion-collapse collapse" data-bs-parent="#accordionExample">
@@ -532,7 +514,7 @@ export const NotificationList = () => {
           )}
           {notification.action.__typename === 'ApiSubscriptionReject' && (
             <button className='nav_item cursor-pointer' onClick={() => alert({
-              title: 'About Subscription demand reject',
+              title: translate('notifications.page.subscription.demand.reject.detail.modal.title'),
               message: <div>
                 <i>{notification.action.message}</i>
               </div>
@@ -550,7 +532,13 @@ export const NotificationList = () => {
       cell: (info) => {
         const _type = info.getValue();
         const type = notificationTypes.find(t => t.type === _type)
-        return <span onClick={() => handleSelectChange([{ label: type!.label, value: type!.type }], 'type')} className={`badge badge-custom-${type?.variant ?? 'custom'}`}>{type?.label ?? _type}</span>;
+        const label = translate(`notifications.page.filters.type.${type?.type}.label`)
+        return (
+          <span onClick={() => handleSelectChange([{ label, value: type!.type }], 'type')}
+            className={`badge badge-custom-${type?.variant ?? 'custom'}`}>
+            {label}
+          </span>
+        );
       },
     }),
     columnHelper.accessor('sender.name', {
@@ -681,7 +669,7 @@ export const NotificationList = () => {
     const total = props.selectProps.getCount(data.value)
 
     return (
-      <div ref={innerRef} {...innerProps} className="d-flex justify-content-between align-items-center px-3 py-2 cursor-pointer select-menu-item">
+      <div ref={innerRef} {...innerProps} className="d-flex justify-content-between align-items-center px-3 py-2 cursor-pointer select-menu-item gap-2">
         <span>{data.label}</span>
 
         {!!total && <span className="badge badge-custom-warning">
@@ -730,9 +718,10 @@ export const NotificationList = () => {
                 case f.id === 'type':
                   return ((f.value as Array<string>).map(value => {
                     const type = notificationTypes.find(t => t.type === value)
+                    const label = translate(`notifications.page.filters.type.${type?.type}.label`)
                     return (
                       <div className='selected-filter d-flex gap-2 align-items-center' role="listitem" onClick={() => clearFilter(f.id, value)}>
-                        {type?.label}
+                        {label}
                         <i className='fas fa-xmark' />
                       </div>
                     )
@@ -740,9 +729,10 @@ export const NotificationList = () => {
                 case f.id === 'actionType':
                   return ((f.value as Array<string>).map(value => {
                     const type = notificationActionTypes.find(t => t.value === value)
+                    const label = translate(`notifications.page.filters.action.${type?.value}.label`)
                     return (
                       <div className='selected-filter d-flex gap-2 align-items-center' role="listitem" onClick={() => clearFilter(f.id, value)}>
-                        {type?.label}
+                        {label}
                         <i className='fas fa-xmark' />
                       </div>
                     )
@@ -760,15 +750,15 @@ export const NotificationList = () => {
       <div className='filters-container '>
         <div className='d-flex flex-row justify-content-between'>
           <div className='d-flex flex-row gap-3 justify-content-start align-items-center'>
-            <span className='filters-label'>filtres</span>
+            <span className='filters-label'>{translate('notifications.page.filters.label')}</span>
             <Select
               isMulti //@ts-ignore
               components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
               options={(myTeamsRequest.data ?? []).map(t => ({ label: t.name, value: t._id }))}
               isLoading={myTeamsRequest.isLoading || myTeamsRequest.isPending}
               closeMenuOnSelect={true}
-              labelSingular="Team"
-              labelAll="All teams"
+              labelKey={"notifications.page.filters.team.label"}
+              labelKeyAll={"notifications.page.filters.all.team.label"}
               getCount={getTotalForTeam}
               classNamePrefix="daikoku-select"
               styles={menuStyle}
@@ -780,8 +770,8 @@ export const NotificationList = () => {
               options={(visibleApisRequest.data ?? []).map(api => ({ label: api.name, value: api._id }))}
               isLoading={visibleApisRequest.isLoading || visibleApisRequest.isPending}
               closeMenuOnSelect={true}
-              labelSingular="Api"
-              labelAll="All apis"
+              labelKey={"notifications.page.filters.api.label"}
+              labelKeyAll={"notifications.page.filters.all.api.label"}
               getCount={getTotalForApi}
               classNamePrefix="daikoku-select"
               styles={menuStyle}
@@ -790,10 +780,10 @@ export const NotificationList = () => {
             <Select
               isMulti //@ts-ignore
               components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
-              options={notificationTypes.map(v => ({ label: v.label, value: v.type }))}
+              options={notificationTypes.map(v => ({ label: translate(`notifications.page.filters.type.${v.type}.label`), value: v.type }))}
               closeMenuOnSelect={true}
-              labelSingular="Type"
-              labelAll="All types"
+              labelKey={"notifications.page.filters.type.label"}
+              labelKeyAll={"notifications.page.filters.all.type.label"}
               getCount={getTotalForNotifType}
               styles={menuStyle}
               onChange={data => handleSelectChange(data, 'type')}
@@ -801,10 +791,10 @@ export const NotificationList = () => {
             <Select
               isMulti //@ts-ignore
               components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
-              options={notificationActionTypes.map(({ value, label }) => ({ label, value }))}
+              options={notificationActionTypes.map(({ value }) => ({ label: translate(`notifications.page.filters.action.${value}.label`), value }))}
               closeMenuOnSelect={true}
-              labelSingular="Action type"
-              labelAll="All action types"
+              labelKey={"notifications.page.filters.action.label"}
+              labelKeyAll={"notifications.page.filters.all.action.label"}
               getCount={getTotalForType}
               styles={menuStyle}
               onChange={data => handleSelectChange(data, 'actionType')}
@@ -815,18 +805,20 @@ export const NotificationList = () => {
                 onClick={() => {
                   const filters = columnFilters.filter(f => f.id !== 'unreadOnly')
                   setColumnFilters([...filters, { id: 'unreadOnly', value: false }])
-                }}>all</button>
+                }}>{translate('notifications.page.filters.all.notifications.label')}
+              </button>
               <button
                 className={classNames('btn btn-outline-secondary', { active: unreadOnly })}
                 onClick={() => {
                   const filters = columnFilters.filter(f => f.id !== 'unreadOnly')
                   setColumnFilters([...filters, { id: 'unreadOnly', value: true }])
-                }}>unread only</button>
+                }}>{translate('notifications.page.filters.unread.notifications.label')}
+              </button>
             </div>
           </div>
           <button className='btn btn-outline-secondary' onClick={() => setColumnFilters([])}>
             <i className='fas fa-rotate me-2' />
-            reset filters
+            {translate('notifications.page.filters.clear.label')}
           </button>
         </div>
 
@@ -837,8 +829,13 @@ export const NotificationList = () => {
         <>
           <div className="notification-table">
             <div className='table-header'>
-              <div className='table-title d-flex align-items-center gap-3'>Notifications <span className='badge badge-custom-warning'>{notificationListQuery.data?.pages[0].myNotifications.totalFiltered}</span></div>
-              <div className="table-description">Overview of your latest notifications ans system update</div>
+              <div className='table-title d-flex align-items-center gap-3'>
+                {translate("notifications.page.table.title")}
+                <span className='badge badge-custom-warning'>
+                  {notificationListQuery.data?.pages[0].myNotifications.totalFiltered}
+                </span>
+              </div>
+              <div className="table-description">{translate("notifications.page.table.description")}</div>
             </div>
             <div className='select-all-row'>
               <label>
@@ -848,13 +845,15 @@ export const NotificationList = () => {
                   checked={table.getIsAllPageRowsSelected()}
                   onChange={table.getToggleAllPageRowsSelectedHandler()}
                 />
-                {(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) ? `${selectAll ? totalSelectable : table.getSelectedRowModel().rows.length} row(s) selected` : 'select all'}
+                
+                {/* {(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) ? `${selectAll ? totalSelectable : table.getSelectedRowModel().rows.length} row(s) selected` : translate("notifications.page.table.select.all.label")} */}
+                {(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) ? translate({ key: "notifications.page.table.selected.count.label", plural: (selectAll ? totalSelectable : table.getSelectedRowModel().rows.length) > 1, replacements: [selectAll ? `${totalSelectable}` : `${table.getSelectedRowModel().rows.length}`]}) : translate("notifications.page.table.select.all.label")}
               </label>
               {(!!totalSelectable && (table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) || selectAll) && (
-                <button className='ms-2 btn btn-sm btn-outline-secondary' onClick={handleBulkRead}>mark as read</button>
+                <button className='ms-2 btn btn-sm btn-outline-secondary' onClick={handleBulkRead}>{translate('notifications.page.table.read.bulk.action.label')}</button>
               )}
               {!selectAll && table.getIsAllPageRowsSelected() && table.getSelectedRowModel().rows.length < totalSelectable && (
-                <button className='a-fake' onClick={() => setSelectAll(true)}>selectionner les {totalSelectable} notifications</button>
+                <button className='a-fake' onClick={() => setSelectAll(true)}>{translate({ key: 'notifications.page.table.select.really.all.label', replacements: [totalSelectable.toLocaleString()]})}</button>
               )}
             </div>
             <div className='table-rows'>
@@ -878,13 +877,14 @@ export const NotificationList = () => {
           </div>
           <div className="mt-3 mb-5 d-flex justify-content-center">
             {notificationListQuery.hasNextPage && (
-              <button
-                className='btn btn-outline-primary'
-                onClick={() => notificationListQuery.fetchNextPage()}
+              <FeedbackButton
+                type="primary"
+                className="btn btn-outline-primary"
+                onPress={() => notificationListQuery.fetchNextPage()}
+                onSuccess={() => console.debug("success")}
+                feedbackTimeout={100}
                 disabled={notificationListQuery.isFetchingNextPage}
-              >
-                {notificationListQuery.isFetchingNextPage ? 'Chargement…' : 'Charger plus'}
-              </button>
+              >{translate('notifications.page.table.more.button.label')}</FeedbackButton>
             )}
           </div></>
       )}
