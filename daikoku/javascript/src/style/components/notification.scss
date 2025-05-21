@@ -1,4 +1,5 @@
 @use "../variables";
+@use "sass:color";
 
 .notification-link,
 .messages-link {
@@ -31,26 +32,42 @@
   right: 3px;
   background-color: variables.$danger-color;
   border-radius: 50%;
-  // border: 2px solid $navbar-text-color;
   box-sizing: content-box;
   z-index: 1;
 }
 
 .notification-prop a:hover {
-  color: #fff;
+  color: #fff;//fixme: better color
 }
 
 // ------- new page ---------
 
 .filters-container {
   margin: 1rem 0;
-
   padding: 1rem;
-  border: 1px solid #DDD;
+
   border-radius: 5px;
 
-  background: #FFF;
+  background-color: variables.$level2_bg-color;
+  color: variables.$level2_text-color;
+}
 
+.selected-filter {
+  width: fit-content;
+  padding: .3rem .6rem;
+  border-radius: 4px;
+  border: 1px solid variables.$level2_text-color;
+  background-color: variables.$level3_bg-color;
+
+  cursor: pointer;
+
+  &:hover {
+    border-color: variables.$level3_bg-color;
+  }
+
+  &:active {
+    background-color: variables.$level2_bg-color; //fixme: ????
+  }
 }
 
 .filters-label {
@@ -60,10 +77,11 @@
 .notification-table {
   display: flex;
   flex-direction: column;
-  border: 1px solid #DDD;
   border-radius: 5px;
   overflow: hidden;
-  background: #f9f9f9;
+
+  background-color: variables.$level2_bg-color;
+  color: variables.$level2_text-color;
 
 }
 
@@ -79,25 +97,27 @@
   }
 }
 
+$level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 .select-all-row {
-  background-color: #EEE;
+  background-color: $level1-darken-color;
   padding: 0.75rem 1rem;
 }
 
 .table-rows {
   display: flex;
   flex-direction: column;
-  background-color: #FFF;
+  background-color: variables.$level3_bg-color;
+  color: variables.$level3_text-color;
 
   .table-row {
     display: grid;
     grid-template-columns: 5fr 55fr 15fr 15fr 10fr;
     padding: 1.5rem 1rem;
     align-items: center;
-    border-bottom: 1px solid #DDD;
+    border-bottom: 1px solid variables.$level1_bg-color;
 
-    &:hover {
-      background-color: #f9f9f9;
+    &:hover { 
+      background-color: color-mix(in srgb, variables.$level3_bg-color 90%, #000);
     }
 
     .nav_item {
@@ -110,7 +130,8 @@
       color: variables.$level1_text-color;
 
       &:hover {
-        background-color: #ddd;
+        background-color: variables.$level1_text-color;
+        color: variables.$level2_bg-color ;
         border-radius: 4px;
         padding: 0.2rem;
       }
@@ -126,17 +147,14 @@
         flex-direction: row;
         align-items: center;
 
-        &:not(.unread) {
-          margin-left: calc(10px + 1rem);
-        }
-
         &.unread:before {
           content: "";
-          width: 10px;
-          height: 10px;
-          margin-right: 1rem;
+          width: 0.85rem;
+          height: 0.85rem;
+          position: absolute;
+          left: -1.5rem;
           display: block;
-          background-color: #29438D;
+          background-color: variables.$info-color;
           border-radius: 50%;
           box-sizing: content-box;
 
@@ -165,7 +183,7 @@
         width: fit-content;
         padding: .3rem .6rem;
         border-radius: 4px;
-        border: 1px solid #ddd;
+        border: 1px solid $level1-darken-color;
       }
     }
 
@@ -195,23 +213,5 @@
 
   .notification__actions {
     display: block;
-  }
-}
-
-.selected-filter {
-  width: fit-content;
-  padding: .3rem .6rem;
-  border-radius: 4px;
-  border: 1px solid #ddd;
-  background-color: #eee;
-
-  cursor: pointer;
-
-  &:hover {
-    border-color: #eee;
-  }
-
-  &:active {
-    background-color: #fff;
   }
 }
