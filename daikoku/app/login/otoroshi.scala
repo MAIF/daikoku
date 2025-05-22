@@ -145,7 +145,14 @@ object OtoroshiIdentityFilter {
                 )
               case Some(user) =>
                 val isDaikokuAdmin: Boolean =
-                  user.metadata.get("daikokuAdmin").exists(s => s.asOpt[String].flatMap(_.toBooleanOption).orElse(s.asOpt[Boolean]).getOrElse(false))
+                  user.metadata
+                    .get("daikokuAdmin")
+                    .exists(s =>
+                      s.asOpt[String]
+                        .flatMap(_.toBooleanOption)
+                        .orElse(s.asOpt[Boolean])
+                        .getOrElse(false)
+                    )
 
                 def createSessionFromOtoroshi(
                     maybeUser: Option[User] = None,
