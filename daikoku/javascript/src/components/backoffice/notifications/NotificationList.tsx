@@ -7,7 +7,7 @@ import Select, { components, MultiValue, OptionProps, ValueContainerProps } from
 
 import { constraints, format, type } from '@maif/react-forms';
 import { Link, useNavigate } from 'react-router-dom';
-import { I18nContext, ModalContext, TranslateParams, useUserBackOffice } from '../../../contexts';
+import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
 import * as Services from '../../../services';
@@ -47,7 +47,8 @@ const notificationFormatter = (notification: NotificationGQL, translate: (params
         replacements: [notification.action.api!.name, notification.action.api!.currentVersion, notification.action.plan!.customName]
       })
     case 'ApiKeyDeletionInformation':
-      return translate({ key: 'notif.apikey.deletion', replacements: [notification.action.clientId!, notification.action.api!.name] })
+      console.debug({ notification })
+      return translate({ key: 'notif.apikey.deletion', replacements: [notification.action.clientId!, notification.action.apiName!] })
     case 'OtoroshiSyncSubscriptionError':
     case 'OtoroshiSyncApiError':
       return notification.action.message!
@@ -102,6 +103,8 @@ const notificationFormatter = (notification: NotificationGQL, translate: (params
         replacements: [
           notification.action.apiName ?? "no named api"]
       })
+    default:
+      return '';
 
   }
 }
@@ -171,7 +174,7 @@ type NotificationGQL = {
     date?: number
     status: 'Pending' | 'Accepted' | 'Rejected'
   }
-  team: {
+  team?: {
     _id: string
     name: string
   }
@@ -227,9 +230,8 @@ const VISIBLE_APIS = `
     }`
 
 export const NotificationList = () => {
-  useUserBackOffice();
   const { translate, language } = useContext(I18nContext);
-  const { customGraphQLClient } = useContext(GlobalContext)
+  const { customGraphQLClient, connectedUser } = useContext(GlobalContext)
   const { openSubMetadataModal, openFormModal, alert } = useContext(ModalContext)
 
   const pageSize = 10;
@@ -319,6 +321,19 @@ export const NotificationList = () => {
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
   }
 
+  const notificationAriaLabelFormatter = (notif: NotificationGQL): string => {
+    const date = formatDistanceToNow(notif.date, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })
+
+    return translate({
+      key: 'notifications.page.notification.ariaLabel',
+      replacements: [
+        translate(`notifications.page.filters.type.${notif.action.__typename}.label`),
+        notif.sender.name,
+        date
+      ]
+    })
+  }
+
   const actionFormatter = (notification: NotificationGQL) => {
     const { status, date } = notification.status;
     if (
@@ -331,6 +346,8 @@ export const NotificationList = () => {
           <button
             type="button"
             className="nav_item cursor-pointer me-1"
+            title={translate('Accept')}
+            aria-label={translate('Accept')}
             onClick={() => accept(notification._id)}
           >
             <i className="fas fa-check" />
@@ -339,14 +356,14 @@ export const NotificationList = () => {
             to={notification.action.linkTo!}
             className="nav_item cursor-pointer"
             target='_blank'
+            title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+            aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
           >
             <i className="fas fa-eye" />
           </Link>
         </div>
       );
     } else {
-      // switch (status) {
-      //   case 'Pending':
       switch (notification.action.__typename) {
         case 'ApiSubscriptionDemand':
           return (
@@ -355,8 +372,8 @@ export const NotificationList = () => {
                 className="nav_item cursor-pointer"
                 title={translate('Accept')}
                 aria-label={translate('Accept')}
-                onClick={() => //@ts-ignore
-                  Services.getSubscriptionDemand(notification.team._id, notification.action.demand!.id)
+                onClick={() =>
+                  Services.getSubscriptionDemand(notification.team!._id, notification.action.demand!._id) //todo: check si id ou _id pour la deman
                     .then(demand => {
                       if (!isError(demand)) {
                         openSubMetadataModal({
@@ -418,7 +435,7 @@ export const NotificationList = () => {
         case 'CheckoutForSubscription':
           return (
             <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
-              <FeedbackButton
+              <FeedbackButton //fixme: aria-label
                 type="success"
                 className="nav_item cursor-pointer ms-1" //@ts-ignore
                 onPress={() => Services.rerunProcess(notification.action.team?._id!, notification.action.demand!.id)
@@ -442,7 +459,7 @@ export const NotificationList = () => {
               </button>
               {notification.notificationType.value === 'AcceptOrReject' && (
                 <button
-                  className="btn btn-outline-danger btn-sm"
+                  className="nav_item cursor-pointer"
                   title={translate('Reject')}
                   aria-label={translate('Reject')}
                   onClick={() => reject(notification._id)}
@@ -462,7 +479,7 @@ export const NotificationList = () => {
       id: 'select',
       meta: { className: "select-cell" },
       cell: ({ row }) => {
-        return <input
+        return <input //FIXME: aria-label
           type="checkbox"
           className='form-check-input'
           checked={row.getIsSelected()}
@@ -483,42 +500,52 @@ export const NotificationList = () => {
         return <div className={classNames('notification d-flex align-items-center gap-3', { unread: notification.status.status === 'Pending' })}>
           <div>
             <div className='notification__identities'>
-              <a href='#' onClick={() => handleSelectChange([{ label: team.name, value: team._id }], 'team')}>{team.name}</a>
+              {!!team && <a href='#' onClick={() => handleSelectChange([{ label: team.name, value: team._id }], 'team')}>{team.name}</a>}
+              {!team && <span>{connectedUser.name}</span>}
               {opt(api).map(a => <span>/ <a href='#' onClick={() => handleSelectChange([{ label: a.name, value: a._id }], 'api')}>{a.name}</a></span>).getOrElse(<></>)}</div>
             <div className='notification__description'>{notificationFormatter(notification, translate)}</div>
           </div>
           {notification.action.__typename === 'ApiSubscriptionDemand' && (
-            <button className='nav_item cursor-pointer' onClick={() => alert({
-              title: translate('notifications.page.subscription.demand.detail.modal.title'),
-              message: <div>
-                <div>{translate('notifications.page.subscription.demand.detail.summary.label')} :</div>
-                <i>{notification.action.motivation}</i>
-                <div className="accordion" id="accordionExample">
-                  <div className="accordion-item">
-                    <h2 className="accordion-header">
-                      <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
-                        {translate("notifications.page.subscription.demand.detail.modal.raw.button.label")}
-                      </button>
-                    </h2>
-                    <div id="collapseOne" className="accordion-collapse collapse" data-bs-parent="#accordionExample">
-                      <div className="accordion-body">
-                        <pre>{JSON.stringify(notification.action.demand!.motivation, null, 4)}</pre>
+            <button
+
+              title={translate('notifications.page.subscription.demand.detail.button.label')}
+              aria-label={translate('notifications.page.subscription.demand.detail.button.label')}
+              className='nav_item cursor-pointer'
+              onClick={() => alert({
+                title: translate('notifications.page.subscription.demand.detail.modal.title'),
+                message: <div>
+                  <div>{translate('notifications.page.subscription.demand.detail.summary.label')} :</div>
+                  <i>{notification.action.motivation}</i>
+                  <div className="accordion" id="accordionExample">
+                    <div className="accordion-item">
+                      <h2 className="accordion-header">
+                        <button className="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                          {translate("notifications.page.subscription.demand.detail.modal.raw.button.label")}
+                        </button>
+                      </h2>
+                      <div id="collapseOne" className="accordion-collapse collapse" data-bs-parent="#accordionExample">
+                        <div className="accordion-body">
+                          <pre>{JSON.stringify(notification.action.demand!.motivation, null, 4)}</pre>
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            })}>
+              })}>
               <i className="far fa-eye cursor-pointer" />
             </button>
           )}
           {notification.action.__typename === 'ApiSubscriptionReject' && (
-            <button className='nav_item cursor-pointer' onClick={() => alert({
-              title: translate('notifications.page.subscription.demand.reject.detail.modal.title'),
-              message: <div>
-                <i>{notification.action.message}</i>
-              </div>
-            })}>
+            <button
+              className='nav_item cursor-pointer'
+              aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              onClick={() => alert({
+                title: translate('notifications.page.subscription.demand.reject.detail.modal.title'),
+                message: <div>
+                  <i>{notification.action.message}</i>
+                </div>
+              })}>
               <i className="far fa-circle-question cursor-pointer" />
             </button>
           )}
@@ -555,17 +582,25 @@ export const NotificationList = () => {
       },
     }),
     columnHelper.display({
-      id: 'dateOrAction',
+      id: 'date',
       enableColumnFilter: false,
       meta: { className: "date-cell" },
       cell: (info) => {
         const notification = info.row.original;
         const date = formatDistanceToNow(notification.date, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })
         return (
-          <>
-            <div className="notification__date">{date}</div>
-            <div className='notification__actions'>{notification.status.status === 'Pending' ? actionFormatter(notification) : date}</div>
-          </>
+          <div className="notification__date">{date}</div>
+        )
+      },
+    }),
+    columnHelper.display({
+      id: 'action',
+      enableColumnFilter: false,
+      meta: { className: "action-cell" },
+      cell: (info) => {
+        const notification = info.row.original;
+        return (
+          <div className='notification__actions'>{notification.status.status === 'Pending' ? actionFormatter(notification) : null}</div>
         )
       },
     })
@@ -829,9 +864,11 @@ export const NotificationList = () => {
         <>
           <div className="notification-table">
             <div className='table-header'>
-              <div className='table-title d-flex align-items-center gap-3'>
-                {translate("notifications.page.table.title")}
-                <span className='badge badge-custom-warning'>
+              <div className='d-flex align-items-center gap-3' aria-live="polite">
+                <div className="table-title" id='notif-label'>
+                  {translate("notifications.page.table.title")}
+                </div>
+                <span className='badge badge-custom-warning' aria-labelledby="notif-label notif-count" id='notif-count'>
                   {notificationListQuery.data?.pages[0].myNotifications.totalFiltered}
                 </span>
               </div>
@@ -845,35 +882,36 @@ export const NotificationList = () => {
                   checked={table.getIsAllPageRowsSelected()}
                   onChange={table.getToggleAllPageRowsSelectedHandler()}
                 />
-                
-                {/* {(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) ? `${selectAll ? totalSelectable : table.getSelectedRowModel().rows.length} row(s) selected` : translate("notifications.page.table.select.all.label")} */}
-                {(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) ? translate({ key: "notifications.page.table.selected.count.label", plural: (selectAll ? totalSelectable : table.getSelectedRowModel().rows.length) > 1, replacements: [selectAll ? `${totalSelectable}` : `${table.getSelectedRowModel().rows.length}`]}) : translate("notifications.page.table.select.all.label")}
+
+                {(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) ? translate({ key: "notifications.page.table.selected.count.label", plural: (selectAll ? totalSelectable : table.getSelectedRowModel().rows.length) > 1, replacements: [selectAll ? `${totalSelectable}` : `${table.getSelectedRowModel().rows.length}`] }) : translate("notifications.page.table.select.all.label")}
               </label>
               {(!!totalSelectable && (table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) || selectAll) && (
                 <button className='ms-2 btn btn-sm btn-outline-secondary' onClick={handleBulkRead}>{translate('notifications.page.table.read.bulk.action.label')}</button>
               )}
               {!selectAll && table.getIsAllPageRowsSelected() && table.getSelectedRowModel().rows.length < totalSelectable && (
-                <button className='a-fake' onClick={() => setSelectAll(true)}>{translate({ key: 'notifications.page.table.select.really.all.label', replacements: [totalSelectable.toLocaleString()]})}</button>
+                <button className='a-fake' onClick={() => setSelectAll(true)}>{translate({ key: 'notifications.page.table.select.really.all.label', replacements: [totalSelectable.toLocaleString()] })}</button>
               )}
             </div>
-            <div className='table-rows'>
+            <ul className='table-rows'>
               {table.getRowModel().rows.map(row => {
                 return (
-                  <div key={row.id} className='table-row'>
-                    {row.getVisibleCells().map(cell => {
-                      return (
-                        <div key={cell.id} className={cell.column.columnDef.meta?.className}>
-                          {flexRender(
-                            cell.column.columnDef.cell,
-                            cell.getContext()
-                          )}
-                        </div>
-                      )
-                    })}
-                  </div>
+                  <li key={row.id} tabIndex={-1}>
+                    <article className='table-row' aria-label={notificationAriaLabelFormatter(row.original)}>
+                      {row.getVisibleCells().map(cell => {
+                        return (
+                          <div key={cell.id} className={cell.column.columnDef.meta?.className}>
+                            {flexRender(
+                              cell.column.columnDef.cell,
+                              cell.getContext()
+                            )}
+                          </div>
+                        )
+                      })}
+                    </article>
+                  </li>
                 )
               })}
-            </div>
+            </ul>
           </div>
           <div className="mt-3 mb-5 d-flex justify-content-center">
             {notificationListQuery.hasNextPage && (

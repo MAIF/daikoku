@@ -10,7 +10,7 @@ export const LoginOrRegisterModal = (props: ILoginOrRegisterModalProps & IBaseMo
   const { translate } = useContext(I18nContext);
 
   return (
-    <div className="modal-content mx-auto" style={{ maxWidth: '448px' }} role='alertdialog' aria-labelledby='modal-title' aria-describedby='modal-description'>
+    <div className="modal-content mx-auto" style={{ maxWidth: '448px' }} aria-labelledby='modal-title' aria-describedby='modal-description'>
       {!props.showOnlyMessage && (
         <div className="modal-header">
           <h5 className="modal-title" id="modal-title">{props.title ?? translate('consume.apikey')}</h5>

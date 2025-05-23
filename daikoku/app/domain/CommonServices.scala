@@ -1056,7 +1056,7 @@ object CommonServices {
                |$CTE
                |SELECT n.content
                |FROM notifications n
-               |         JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |         LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
                |         LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
                |WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |    OR n.content ->> 'team' = t._id::text)
@@ -1098,7 +1098,7 @@ object CommonServices {
                |$CTE
                |SELECT count(1) as total_filtered
                |FROM notifications n
-               |         JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |         LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
                |         LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
                |WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |    OR n.content ->> 'team' = t._id::text)
@@ -1140,7 +1140,7 @@ object CommonServices {
                |$CTE
                |SELECT count(1) as total
                |FROM notifications n
-               |         JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |         LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
                |WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |    OR n.content ->> 'team' = t._id::text)
                |    AND ($$1 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending');
@@ -1157,7 +1157,7 @@ object CommonServices {
                |select coalesce(json_agg(row_to_json(_.*)), '[]'::json) as total_by_teams
                |from (SELECT n.content ->> 'team' AS team, COUNT(*) AS total
                |      FROM notifications n
-               |               JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |               LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
                |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |          OR n.content ->> 'team' = t._id::text)
                |          AND ($$1 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
@@ -1176,7 +1176,7 @@ object CommonServices {
                  |select coalesce(json_agg(row_to_json(_.*)), '[]'::json) as total_by_apis
                  |from (SELECT a._id as api, COUNT(*) AS total
                  |      FROM notifications n
-                 |               JOIN my_teams t ON n.content ->> 'team' = t._id::text
+                 |               LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
                  |               LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
                  |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                  |          OR n.content ->> 'team' = t._id::text)
@@ -1196,7 +1196,7 @@ object CommonServices {
                |select coalesce(json_agg(row_to_json(_.*)), '[]'::json) as total_by_types
                |from (SELECT n.content ->> 'notificationType' AS type, COUNT(*) AS total
                |      FROM notifications n
-               |               JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |               LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
                |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |          OR n.content ->> 'team' = t._id::text)
                |          AND ($$1 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
@@ -1215,7 +1215,7 @@ object CommonServices {
                |select coalesce(json_agg(row_to_json(_.*)), '[]'::json) as total_by_notification_types
                |from (SELECT n.content -> 'action' ->> 'type' AS type, COUNT(*) AS total
                |      FROM notifications n
-               |               JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |               LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
                |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |          OR n.content ->> 'team' = t._id::text)
                |          AND ($$1 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
@@ -1233,7 +1233,7 @@ object CommonServices {
                  |$CTE
                  |SELECT COUNT(1) AS total_by_types
                  |      FROM notifications n
-                 |               JOIN my_teams t ON n.content ->> 'team' = t._id::text
+                 |               LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
                  |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                  |          OR n.content ->> 'team' = t._id::text)
                  |          AND n.content -> 'status' ->> 'status' = 'Pending';

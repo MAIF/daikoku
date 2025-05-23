@@ -29,7 +29,10 @@ export const HOME = `http://localhost:${exposedPort}/`
 export const loginAs = async (user: IUser, page: Page) => {
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Se connecter' }).click();
-  await page.locator('input[name="username"]').fill(user.email);
+  const input = page.locator('input[name="username"]');
+  await input.waitFor({ state: 'visible' });
+  await input.fill(user.email);
+  // await page.locator('input[name="username"]').fill(user.email);
   await page.locator('input[name="password"]').fill('password');
   await page.getByRole('button', { name: 'Se connecter' }).click();
   await page.getByLabel('API papier').waitFor({ state: 'visible' });

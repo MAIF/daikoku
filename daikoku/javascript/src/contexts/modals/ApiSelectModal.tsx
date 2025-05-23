@@ -75,7 +75,7 @@ export const ApiSelectModal = (props: IApiSelectModalProps & IBaseModalProps) =>
     return (
       <div className="modal-content">
         <div className="modal-header">
-          <h5 className="modal-title">{translate('api_select_modal.title')}</h5>
+          <h5 className="modal-title" id="modal-title">{translate('api_select_modal.title')}</h5>
           <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />
         </div>
         <div className="modal-body">

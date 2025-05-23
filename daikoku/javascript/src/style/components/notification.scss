@@ -108,10 +108,11 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
   flex-direction: column;
   background-color: variables.$level3_bg-color;
   color: variables.$level3_text-color;
+  padding: 0; margin: 0;
 
   .table-row {
     display: grid;
-    grid-template-columns: 5fr 55fr 15fr 15fr 10fr;
+    grid-template-columns: 5fr 50fr 15fr 15fr 10fr 10fr;
     padding: 1.5rem 1rem;
     align-items: center;
     border-bottom: 1px solid variables.$level1_bg-color;
@@ -190,6 +191,9 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     div.date-cell {
       text-align: end;
     }
+    div.action-cell {
+      text-align: end;
+    }
   }
 
   .table-row:last-of-type {
@@ -199,19 +203,4 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 
 .select-menu-item:hover {
   background-color: #eee;
-}
-
-
-.notification-table .notification__actions {
-  display: none;
-}
-
-.notification-table .table-row:hover .date-cell {
-  .notification__date {
-    display: none;
-  }
-
-  .notification__actions {
-    display: block;
-  }
 }
