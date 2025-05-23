@@ -149,8 +149,8 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByText('Une API pour avoir du papier')).toBeVisible();
   await page.getByRole('navigation').getByText('Environnements').click();
   await page.getByRole('listitem', { name: 'dev' }).getByRole('button', { name: 'Obtenir une clé d\'API' }).click();
-  await expect(page.getByRole('alertdialog', { name: 'Accédez à l\'API' })).toBeVisible();
-  await page.getByRole('alertdialog', { name: 'Accédez à l\'API' }).getByRole('button', { name: 'Fermer' }).click();
+  await expect(page.getByRole('dialog', { name: 'Accédez à l\'API' })).toBeVisible();
+  await page.getByRole('dialog', { name: 'Accédez à l\'API' }).getByRole('button', { name: 'Fermer' }).click();
   await page.getByRole('navigation').getByText('Questions').click();
   await expect(page.getByText('Aucun problème correspondant')).toBeVisible();
 
