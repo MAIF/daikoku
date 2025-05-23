@@ -14,6 +14,13 @@ import { OtoDatePicker } from '../../inputs/datepicker';
 import { Can, formatDate, manage, tenant } from '../../utils';
 import { GlobalContext } from "../../../contexts/globalContext";
 
+type NotificationColumnMeta = {
+  style?: { [x: string]: string };
+};
+declare module '@tanstack/react-table' {
+  interface ColumnMeta<TData extends unknown, TValue> extends NotificationColumnMeta { }
+}
+
 export const AuditTrailList = () => {
   useTenantBackOffice();
   const queryClient = useQueryClient();
@@ -26,14 +33,14 @@ export const AuditTrailList = () => {
     pageIndex: 0,
     pageSize: 10,
   })
-  const [sorting, setSorting] = useState<SortingState>([{id: 'date', desc: true}]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     []
   )
   const [from, setFrom] = useState(subHours(new Date(), 1));
   const [to, setTo] = useState(new Date());
 
-  
+
   const auditTrailQuery = useQuery({
     queryKey: ["audits", from, to, columnFilters, sorting, pagination],
     queryFn: () => customGraphQLClient.request<{ auditTrail: { events: Array<IAuditTrailEventGQL>, total: number } }>(Services.graphql.getAuditTrail, {

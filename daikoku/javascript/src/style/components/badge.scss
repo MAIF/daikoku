@@ -1,5 +1,6 @@
 @use "../variables";
 @use "sass:color";
+@use "sass:map";
 
 @mixin badge-custom($bg, $text) {
   background-color: $bg;
@@ -21,8 +22,8 @@ $badge-colors: (
 
 @each $name, $colors in $badge-colors {
   .badge-custom-#{$name} {
-    @include badge-custom(map-get($colors, bg),
-      map-get($colors, text));
+    @include badge-custom(map.get($colors, bg),
+      map.get($colors, text));
   }
 }
 

@@ -17,7 +17,7 @@ import { FeedbackButton } from '../../utils/FeedbackButton';
 import { Option as opt } from '../../utils';
 
 type NotificationColumnMeta = {
-  className: string;
+  className?: string;
 };
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData extends unknown, TValue> extends NotificationColumnMeta { }
@@ -283,7 +283,6 @@ export const NotificationList = () => {
 
   const notificationTypes = [
     { type: "ApiAccess", variant: "success" },
-    { type: "ApiSubscription", variant: "success" },
     { type: "ApiSubscriptionDemand", variant: "success" },
     { type: "ApiSubscriptionReject", variant: "danger" },
     { type: "ApiSubscriptionAccept", variant: "info" },

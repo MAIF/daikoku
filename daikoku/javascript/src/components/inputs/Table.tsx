@@ -275,13 +275,13 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
   );
 }
 
-export function Filter({
+export const Filter = ({
   column,
   table
 }: {
   column: Column<any, any>;
   table: ReactTable<any>;
-}) {
+}) => {
   const { translate } = useContext(I18nContext);
 
 
