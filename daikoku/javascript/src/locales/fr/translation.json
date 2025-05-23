@@ -1591,7 +1591,7 @@
   "notifications.page.filters.type.ApiSubscriptionAccept.label": "Souscription acceptée",
   "notifications.page.filters.type.OtoroshiSyncSubscriptionError.label": "Erreur de synchro (souscription)",
   "notifications.page.filters.type.OtoroshiSyncApiError.label": "Erreur de synchro (API)",
-  "notifications.page.filters.type.ApiKeyDeletionInformation.label": "Suppression de clé API",
+  "notifications.page.filters.type.ApiKeyDeletionInformation.label": "Suppression de clé d'API",
   "notifications.page.filters.type.ApiKeyRotationInProgress.label": "Rotation de clé en cours",
   "notifications.page.filters.type.ApiKeyRotationEnded.label": "Rotation de clé terminée",
   "notifications.page.filters.type.TeamInvitation.label": "Invitation dans une équipe",
@@ -1615,8 +1615,11 @@
   "notifications.page.table.read.bulk.action.label": "Marquer comme lu",
   "notifications.page.table.select.really.all.label": "selectionner les %s notifications",
   "notifications.page.table.more.button.label": "Afficher plus",
+  "notifications.page.subscription.demand.detail.button.label": "Voir les détails de la demande de souscription",
   "notifications.page.subscription.demand.detail.modal.title": "Détails de la demande de souscription",
   "notifications.page.subscription.demand.detail.modal.raw.button.label": "Afficher les données brutes",
   "notifications.page.subscription.demand.detail.summary.label": "Résumé de la demande",
-  "notifications.page.subscription.demand.reject.detail.modal.title": "Détails du rejet de la demande de souscription"
+  "notifications.page.subscription.demand.reject.detail.modal.title": "Détails du rejet de la demande de souscription",
+  "notifications.page.subscription.demand.reject.detail.button.label": "Voir les détails du rejet de la demande de souscription",
+  "notifications.page.notification.ariaLabel": "%s par %s, %s"
 }

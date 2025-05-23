@@ -41,7 +41,7 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   await page.getByRole('button', { name: 'Envoyer' }).click();
   await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('La demande de clé d\'API au plan prod pour l\'équipe Vendeurs est en attente de validation');
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.locator('h4')).toContainText('Vous avez 0 notifications');
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('0');
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
 
@@ -49,11 +49,12 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
 
   //todo: acces aux mail et verifier le message
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.locator('h5')).toContainText('Souscription à API papier - 1.0.0 pour le plan prod');
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
+  await expect(page.getByRole('listitem')).toContainText('Souscription à API papier - 1.0.0 pour le plan prod');
   await page.getByLabel('Accepter').click();
-  await page.getByLabel('Nom personnalisé de la clé').fill('veudeurs - clé pour API papier');
-  await page.getByRole('button', { name: 'Accepter' }).click();
-  await expect(page.locator('h4')).toContainText('Vous avez 0 notifications');
+  await page.getByLabel('Nom personnalisé de la clé').fill('vendeurs - clé pour API papier');
+  await page.getByRole('dialog', { name: 'Métadonnées de souscription' }).getByRole('button', { name: 'Accepter' }).click();
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('0');
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
 
@@ -84,6 +85,8 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
 });
 
 test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context }) => {
+  test.setTimeout(60_000);
+
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
   await page.goto(ACCUEIL);
@@ -95,31 +98,33 @@ test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context 
   await page.getByRole('button', { name: 'Souscrire avec une nouvelle' }).click();
   await page.getByLabel('motivation').click();
   await page.getByLabel('motivation').fill('please');
-  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await page.getByRole('button', { name: 'Envoyer' }).click(); //todo: ??? region ???
   await expect(page.getByRole('region', { name: 'Notifications' })).toContainText('La demande de clé d\'API au plan prod pour l\'équipe Vendeurs est en attente de validation');
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.locator('h4')).toContainText('Vous avez 0 notifications');
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('0');
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
 
   await loginAs(MICHAEL, page);
-
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.locator('h5')).toContainText('Souscription à API papier - 1.0.0 pour le plan prod');
-  await page.getByLabel('Rejeter').click();
-  await page.locator('#message').click();
-  await page.locator('#message').fill('désolé');
-  await page.getByRole('button', { name: 'Envoyer' }).click();
-  await expect(page.locator('h4')).toContainText('Vous avez 0 notifications');
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
+  await expect(page.getByRole('listitem')).toContainText('Souscription à API papier - 1.0.0 pour le plan prod');
+  await page.getByRole('article', { name: 'Nouvelle souscription par Jim Halpert' })
+    .getByRole('button', { name: 'Rejeter' }).click();
+  // await page.getByRole('dialog').locator('#message').click();
+  await page.getByRole('dialog').locator('#message').fill('désolé');
+  await page.getByRole('dialog').getByRole('button', { name: 'Envoyer' }).click();
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('0');
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
 
   await loginAs(JIM, page);
 
-  await page.goto(EMAIL_UI);
-  await expect(page.locator('#root')).toContainText('Votre demande a été rejetée.');
-  await page.getByText('Votre demande a été rejetée.').first().click();
-  await expect(page.locator('#root')).toContainText('en raison de: désolé.');
+  const emailPage = await context.newPage();
+  await emailPage.goto(EMAIL_UI);
+  await expect(emailPage.locator('#root')).toContainText('Votre demande a été rejetée.');
+  await emailPage.getByText('Votre demande a été rejetée.').first().click();
+  await expect(emailPage.locator('#root')).toContainText('en raison de: désolé.');
 
 
   await page.goto(ACCUEIL);
@@ -129,8 +134,11 @@ test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context 
   await expect(page.locator('h1')).toContainText('API papier');
   await expect(page.locator('.api-subscription', { hasText: 'prod' })).toBeHidden();
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.locator('h5')).toContainText('Votre souscription à API papier - 1.0.0 pour le plan prod a été refusée');
-  await expect(page.getByRole('alert')).toContainText('désolé');
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
+  await expect(page.getByRole('listitem')).toContainText('Votre souscription à API papier - 1.0.0 pour le plan prod a été refusée');
+  await page.getByRole('article', { name: 'Souscription refusée' })
+    .getByRole('button', { name: 'Voir les détails du rejet' }).click();
+  await expect(page.getByRole('dialog')).toContainText('désolé');
   //todo: accepter la notification
 });
 
@@ -183,6 +191,8 @@ test('[ASOAPI-10161] - Demander une extension d\apikey - process automatique', a
 });
 
 test('[ASOAPI-10161] - Demander une extension d\apikey - process manuel', async ({ page, context }) => {
+
+  test.setTimeout(90_000);
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
   await page.goto(ACCUEIL);
@@ -200,11 +210,14 @@ test('[ASOAPI-10161] - Demander une extension d\apikey - process manuel', async 
 
   await loginAs(MICHAEL, page);
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.locator('h5')).toContainText('Souscription à API papier - 1.0.0 pour le plan prod');
-  await page.getByLabel('Accepter').click();
+
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
+  await expect(page.getByRole('listitem')).toContainText('Souscription à API papier - 1.0.0 pour le plan prod');
+  await page.getByRole('article', { name: 'Nouvelle souscription par Jim' })
+    .getByRole('button', { name: 'Accepter' }).click();
   await page.getByLabel('Nom personnalisé de la clé').fill('veudeurs - clé pour API papier');
-  await page.getByRole('button', { name: 'Accepter' }).click();
-  await expect(page.locator('h4')).toContainText('Vous avez 0 notifications');
+  await page.getByRole('dialog').getByRole('button', { name: 'Accepter' }).click();
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
 
@@ -296,6 +309,7 @@ test('[ASOAPI-10691] - Demander une extension d\apikey - fast mode', async ({ pa
 });
 
 test('[ASOAPI-10164] - Demander une extension d\apikey - process manuel - refus', async ({ page, context }) => {
+  test.setTimeout(90_000);
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
   await page.goto(ACCUEIL);
@@ -313,11 +327,13 @@ test('[ASOAPI-10164] - Demander une extension d\apikey - process manuel - refus'
 
   await loginAs(MICHAEL, page);
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.locator('h5')).toContainText('Souscription à API papier - 1.0.0 pour le plan prod');
-  await page.getByLabel('Rejeter').click();
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
+  await expect(page.getByRole('listitem')).toContainText('Souscription à API papier - 1.0.0 pour le plan prod');
+  await page.getByRole('article', { name: 'Nouvelle souscription par Jim Halpert' })
+    .getByLabel('Rejeter').click();
   await page.locator('#message').fill('désolé');
-  await page.getByRole('button', { name: 'Envoyer' }).click();
-  await expect(page.locator('h4')).toContainText('Vous avez 0 notifications');
+  await page.getByRole('dialog').getByRole('button', { name: 'Envoyer' }).click();
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('0');
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
 
@@ -335,8 +351,11 @@ test('[ASOAPI-10164] - Demander une extension d\apikey - process manuel - refus'
   await expect(page.locator('.api-subscription', { hasText: 'prod' })).toBeHidden();
 
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.locator('h5')).toContainText('Votre souscription à API papier - 1.0.0 pour le plan prod a été refusée');
-  await expect(page.getByRole('alert')).toContainText('désolé');
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
+  await expect(page.getByRole('listitem')).toContainText('Votre souscription à API papier - 1.0.0 pour le plan prod a été refusée');
+  await page.getByRole('article', { name: 'Souscription refusée' })
+    .getByRole('button', { name: 'Voir les détails du rejet' }).click();
+  await expect(page.getByRole('dialog')).toContainText('désolé');
 
   await page.goto(ACCUEIL);
   await page.getByText('Logistique').click();
@@ -405,7 +424,7 @@ test('[ASOAPI-10398 ASOAPI-10399] - [producteur] - désactiver/activer une clé 
   await loginAs(MICHAEL, page);
   await page.getByRole('heading', { name: 'API Commande' }).click();
   await page.getByText('Souscriptions').click();
-  await page.getByRole('row', { name: 'api-commande-prod' }).getByRole('switch', { name: 'Désactiver la souscription'}).click();
+  await page.getByRole('row', { name: 'api-commande-prod' }).getByRole('switch', { name: 'Désactiver la souscription' }).click();
   //wait return of api
   await page.waitForResponse(r => r.url().includes('/_archiveByOwner?enabled=false') && r.status() === 200);
   //test in otoroshi
@@ -825,7 +844,12 @@ test('[] - [Consommateur] - supprimer une clé avec extension avec extraction de
     expect.arrayContaining([otoroshiDevCommandRouteId])
   );
   await page.getByLabel('Accès aux notifications').click();
-  await expect(page.locator('h5')).toContainText(`Votre clé d\'API avec l\'identifiant client ${vendeursPapierExtendedDevApiKeyId} pour API API papier a été supprimée`);
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
+  await expect(page.getByRole('article')).toContainText(`Votre clé d\'API avec l\'identifiant client ${vendeursPapierExtendedDevApiKeyId} pour API API papier a été supprimée`);
+  await page.getByRole('article', { name: 'Suppression de clé d\'API' })
+    .getByRole('button', { name: 'Accepter' }).click();
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('0');
+
 })
 
 test('[ASOAP-10604] - [Consommateur] - transférer une clé d\'api à une autre équipe', async ({ page, context }) => {

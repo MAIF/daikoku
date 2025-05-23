@@ -164,9 +164,14 @@ export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
 const ModalWrapper = (props: { children: JSX.Element, closeModal: () => void }) => {
   return (
     <div>
-      <div className="modal show" tabIndex={-1} role="dialog">
-        <div className="modal-backdrop show" onClick={props.closeModal} />
-        <div className="modal-dialog modal-lg" style={{ zIndex: 10000 }} role="document">
+      <div className="modal show">
+        <div className="modal-backdrop show" onClick={props.closeModal} aria-hidden="true" />
+        <div className="modal-dialog modal-lg"
+          tabIndex={-1}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-title"
+          style={{ zIndex: 10000 }}>
           {props.children}
         </div>
       </div>

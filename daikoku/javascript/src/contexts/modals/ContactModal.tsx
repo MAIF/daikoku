@@ -33,7 +33,7 @@ export const ContactModal = (props: IContactModalComponentProps & IBaseModalProp
 
   return (<div className="modal-content">
     <div className="modal-header">
-      <h5 className="modal-title">
+      <h5 className="modal-title" id="modal-title">
         <Translation i18nkey="Contact request">Contact request</Translation>
       </h5>
       <button type="button" className="btn-close" aria-label="Close" onClick={props.close} />

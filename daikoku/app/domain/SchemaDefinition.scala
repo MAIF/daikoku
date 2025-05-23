@@ -2169,7 +2169,7 @@ object SchemaDefinition {
       "A subscription demand",
       () =>
         fields[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemand](
-          Field("id", StringType, resolve = _.value.id.value),
+          Field("_id", StringType, resolve = _.value.id.value),
           Field("tenant", StringType, resolve = _.value.id.value),
           Field("deleted", BooleanType, resolve = _.value.deleted),
           Field(

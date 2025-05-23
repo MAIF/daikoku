@@ -1727,7 +1727,7 @@ export const graphql = {
               }
               motivation
               demand {
-                id
+                _id
                 motivation
               }
             }

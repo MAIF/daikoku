@@ -41,7 +41,7 @@ export type TModalContext = {
   prompt: (p: PromptModalProps) => Promise<string | undefined>;
   openFormModal: <T extends TBaseObject>(p: IFormModalProps<T>) => void;
   openTestingApikeyModal: <T extends IWithTesting>(p: TestingApiKeyModalProps<T>) => void;
-  openSubMetadataModal: (p: SubscriptionMetadataModalProps) => void;
+  openSubMetadataModal: <T extends IWithTesting>(p: SubscriptionMetadataModalProps<T>) => void;
   openApiDocumentationSelectModal: (p: IApiDocumentationSelectModalProps) => void;
   openTeamSelectorModal: (p: TeamSelectorModalProps) => void;
   openInvitationTeamModal: (p: ITeamInvitationModalProps) => void;
@@ -174,7 +174,7 @@ type NotificationGQL = {
     };
   };
 };
-export type SubscriptionMetadataModalProps = {
+export type SubscriptionMetadataModalProps<T> = {
   creationMode?: boolean;
   api?: string;
   plan?: string;

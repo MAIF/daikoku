@@ -1615,9 +1615,11 @@
     "notifications.page.table.read.bulk.action.label": "Mark as read",
     "notifications.page.table.select.really.all.label": "Select all %s notifications",
     "notifications.page.table.more.button.label": "Show more",
+    "notifications.page.subscription.demand.detail.button.label": "Show subscription request details",
     "notifications.page.subscription.demand.detail.modal.title": "Subscription request details",
     "notifications.page.subscription.demand.detail.modal.raw.button.label": "Show raw data",
     "notifications.page.subscription.demand.detail.summary.label": "Request summary",
-    "notifications.page.subscription.demand.reject.detail.modal.title": "Subscription request rejection details"
-    
+    "notifications.page.subscription.demand.reject.detail.modal.title": "Subscription request rejection details",
+    "notifications.page.subscription.demand.reject.detail.button.label": "Show subscription request rejection details",
+    "notifications.page.notification.ariaLabel": "%s by %s, %s"
 }
