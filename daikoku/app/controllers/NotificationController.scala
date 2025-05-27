@@ -264,14 +264,13 @@ class NotificationController(
         val notificationIds = (ctx.request.body \ "notificationIds").as[JsArray]
         val selectAll = (ctx.request.body \ "selectAll").as[Boolean]
         ctx.setCtxValue("notifications", Json.stringify(notificationIds))
-        //FIXME: use selectALL
         (for {
           notifications <- EitherT.liftF[Future, AppError, Seq[Notification]](env.dataStore.notificationRepo.forTenant(ctx.tenant)
             .findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> notificationIds))))
           _ <- EitherT.cond[Future][AppError, Unit](notifications.forall(_.notificationType == AcceptOnly), (), AppError.EntityConflict("Notification must be AcceptOnly"))
           _ <- EitherT.liftF[Future, AppError, Long](env.dataStore.notificationRepo.forTenant(ctx.tenant)
             .updateManyByQuery(
-              if (selectAll) Json.obj("status.status" -> "Pending") else Json.obj("_id" -> Json.obj("$in" -> notificationIds)),
+              if (selectAll) Json.obj("status.status" -> "Pending", "notificationType" -> NotificationType.AcceptOnly.value) else Json.obj("_id" -> Json.obj("$in" -> notificationIds)),
               Json.obj("$set" -> Json.obj("status" -> NotificationStatusFormat.writes(NotificationStatus.Accepted())))))
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())

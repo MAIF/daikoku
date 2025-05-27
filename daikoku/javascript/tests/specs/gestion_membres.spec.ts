@@ -1,6 +1,7 @@
 import { expect, Locator, test } from '@playwright/test';
-import { ANDY, DWIGHT, JIM, PAM } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, EMAIL_UI, exposedPort, loginAs, logout } from './utils';
+import { ANDY, DWIGHT, JIM, MICHAEL, PAM } from './users';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiPapier, commandeDevPlan, EMAIL_UI, exposedPort, loginAs, logistique, logout, subCommandeDevVendeurs, teamJim, vendeurs } from './utils';
+import { NotifProps, postNewNotif } from './notifications';
 
 
 test.beforeEach(async () => {
@@ -197,4 +198,60 @@ test("[ASOAPI-10366] - Supprimer un membre d'une équipe", async ({ page }) => {
   await expect(page.locator(".avatar-with-action__infos", { hasText: DWIGHT.name })).toBeHidden();
 
   //todo: testere  aussi vie l'api d'admin ?
+});
+
+test('Voir ses notifications', async ({ page }) => {
+
+  const notifs: Array<NotifProps> = [
+    { type: "ApiAccess", sender: JIM, api: apiCommande, team: vendeurs},
+    { type: "ApiAccess", sender: JIM, api: apiCommande, team: logistique},
+    { type: "ApiAccess", sender: JIM, api: apiCommande, team: teamJim},
+    { type: "ApiAccess", sender: JIM, api: apiPapier, team: vendeurs},
+    { type: "ApiAccess", sender: JIM, api: apiPapier, team: logistique},
+    { type: "ApiAccess", sender: JIM, api: apiPapier, team: teamJim},
+    { type: "TransferApiOwnership", sender: MICHAEL, api: apiPapier, team: vendeurs},
+    { type: "TransferApiOwnership", sender: MICHAEL, api: apiCommande, team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 1", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 2", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 3", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 4", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 5", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 6", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 7", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 8", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 9", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 10", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 11", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 12", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 13", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 14", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 15", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 16", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 17", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 18", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 19", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: apiCommande, clientId: "apikey 20", team: vendeurs},
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: apiCommande, plan: commandeDevPlan, team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: apiCommande, plan: commandeDevPlan, team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: apiCommande, plan: commandeDevPlan, team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: apiCommande, plan: commandeDevPlan, team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: apiCommande, plan: commandeDevPlan, team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: apiCommande, plan: commandeDevPlan, team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: apiCommande, plan: commandeDevPlan, team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: apiCommande, plan: commandeDevPlan, team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: apiCommande, plan: commandeDevPlan, team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: apiCommande, plan: commandeDevPlan, team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: apiCommande, plan: commandeDevPlan, team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: apiCommande, plan: commandeDevPlan, team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: apiCommande, plan: commandeDevPlan, team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: apiCommande, plan: commandeDevPlan, team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: apiCommande, plan: commandeDevPlan, team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: apiCommande, plan: commandeDevPlan, team: vendeurs, subscription: subCommandeDevVendeurs },
+  ]
+
+  
+  await Promise.all(notifs.map(n => postNewNotif(n)))
+  
+  await page.goto(ACCUEIL);
+  await loginAs(JIM, page)
 });

@@ -107,6 +107,7 @@
   "notif.api.demand.reject": "Votre souscription à %s - %s pour le plan %s a été refusée",
   "notif.api.demand.accept": "Votre souscription à %s - %s pour le plan %s a été acceptée",
   "notif.api.access": "demande d'accès à %s",
+  "notif.api.transfer": "demande de transfert de propriété de l'API %s",
   "notif.membership.team": "Demande d'adhésion a votre équipe",
   "notif.apikey.deletion": "Votre clé d'API avec l'identifiant client %s pour API %s a été supprimée",
   "api.access.request": "Vous allez envoyer une demande d'accès à l'API %s. Pour quelle équipe voulez-vous envoyer cette demande ?",
@@ -1621,5 +1622,6 @@
   "notifications.page.subscription.demand.detail.summary.label": "Résumé de la demande",
   "notifications.page.subscription.demand.reject.detail.modal.title": "Détails du rejet de la demande de souscription",
   "notifications.page.subscription.demand.reject.detail.button.label": "Voir les détails du rejet de la demande de souscription",
-  "notifications.page.notification.ariaLabel": "%s par %s, %s"
+  "notifications.page.notification.ariaLabel": "%s par %s, %s",
+  "notifications.page.unread.button.group.aria.label": "Filtrer les notifications lues ou non lues"
 }

@@ -26,6 +26,33 @@ export const EMAIL_UI = "http://localhost:1080";
 export const ACCUEIL = `http://localhost:${exposedPort}/apis`
 export const HOME = `http://localhost:${exposedPort}/`
 
+// ---------- pg state ------------------------------
+export const tenant = 'default';
+
+export const apiPapier = "qVJzX6DLRkHIEWHqPHgrM4gqMVyGXeDj"
+export const apiCommande = "G12uGyXcKMr7cWsTidiIOmzUvrxvlkrJ"
+
+export const apiDivision = "pP61PigzFffXTu4TX3BmvAB6iUIHY9oj"
+export const vendeurs = "c9NB4pklW4QxJ3mLcxQAwqu4RvquHYv4"
+export const logistique = "jGVkVifJgKFdOq4PeoMU2XKWzEjejUfI"
+export const teamJim = "4Z9ss4YZDFCxBuLwMX4RkXi3W1JOw7kj"
+export const teamMichael = "bUM1LJH3LE4c5tanG78QnQKkMoc7fxq2"
+export const teamDwight = "3Msxj2b5tIdyCDEd9yvkaWfqfZqcEiXm"
+
+export const papierProdPlan = "D5gZYeWoq18w5GRdKFLwrbtARZ7c9I2o";
+export const papierDevPlan = "lNnh8Hkr2hX6MCf4BHrq2W4UPtW7DqaZ";
+export const commandeDevPlan = "AQuzATL1d2MBujVRsjzpQWaGuoD0uiDK";
+export const commandeProdPlan = "96JAG4xax2z3fpr1l9kDlldiZRZ6uxoL";
+
+export const demandCommandeProdForLogistique = 'X3DtdDY0Z20BdptJjtzGuxCRhrEnNWdr'
+
+export const subPapierDevDwight = 'vk6QRoGrc8JyRiZfgcifwjzNES9l9ygQ';
+export const subCommandeDevLogistique = '22T3RsirZpz5afBi4MsC8U71gtc12MxK';
+export const subCommandeProdLogistique = 'iXaRzJPRKsP0XTYUCRmYeltG3sifYdfF';
+export const subPapierdevVedeurs = '4EGnOUDSp7eaC8J2d26TfO95rwUxfz9H';
+export const subCommandeDevVendeurs = 'mRVlHMttmN0JMytFGkd4uVm4UWzI3Qwq';
+// -------------------------------------------
+
 export const loginAs = async (user: IUser, page: Page) => {
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Se connecter' }).click();

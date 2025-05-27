@@ -17,7 +17,7 @@ import { FeedbackButton } from '../../utils/FeedbackButton';
 import { Option as opt } from '../../utils';
 
 type NotificationColumnMeta = {
-  className?: string;
+  className: string;
 };
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData extends unknown, TValue> extends NotificationColumnMeta { }
@@ -47,7 +47,6 @@ const notificationFormatter = (notification: NotificationGQL, translate: (params
         replacements: [notification.action.api!.name, notification.action.api!.currentVersion, notification.action.plan!.customName]
       })
     case 'ApiKeyDeletionInformation':
-      console.debug({ notification })
       return translate({ key: 'notif.apikey.deletion', replacements: [notification.action.clientId!, notification.action.apiName!] })
     case 'OtoroshiSyncSubscriptionError':
     case 'OtoroshiSyncApiError':
@@ -73,8 +72,8 @@ const notificationFormatter = (notification: NotificationGQL, translate: (params
         key: 'notif.apikey.refresh',
         replacements: [
           notification.action.subscriptionName!,
-          notification.action.api!.name,
-          notification.action.plan!.customName]
+          notification.action.apiName!,
+          notification.action.planName!]
       })
     case 'TeamInvitation':
       return translate({
@@ -234,7 +233,7 @@ export const NotificationList = () => {
   const { customGraphQLClient, connectedUser } = useContext(GlobalContext)
   const { openSubMetadataModal, openFormModal, alert } = useContext(ModalContext)
 
-  const pageSize = 10;
+  const pageSize = 25;
 
 
   const [selectAll, setSelectAll] = useState(false);
@@ -244,9 +243,8 @@ export const NotificationList = () => {
     pageSize,
   })
   // const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
-    [{ "id": "unreadOnly", "value": true }]
-  )
+  const defaultColumnFilters = [{ "id": "unreadOnly", "value": true }];
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(defaultColumnFilters)
 
   const queryClient = useQueryClient();
   const notificationListQuery = useInfiniteQuery({
@@ -260,6 +258,7 @@ export const NotificationList = () => {
     getNextPageParam: (lastPage, pages) => {
       const totalFilteredCount = lastPage.myNotifications.totalFiltered;
       const nextOffset = pages.length * pageSize;
+
       return nextOffset < totalFilteredCount ? nextOffset : undefined;
     }
   })
@@ -314,9 +313,12 @@ export const NotificationList = () => {
     Services.rejectNotificationOfTeam(notification, message)
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
   }
-  const handleBulkRead = () => {
+  const handleBulkRead = (e) => {
     const notificationsIds = table.getSelectedRowModel().rows.map(r => r.original._id)
     Services.acceptNotificationOfTeamByBulk(notificationsIds, selectAll)
+      .then(() => table.getToggleAllPageRowsSelectedHandler()(e))
+      .then(() => setSelectAll(false))
+      .then(() => setColumnFilters(defaultColumnFilters))
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
   }
 
@@ -481,7 +483,7 @@ export const NotificationList = () => {
         return <input //FIXME: aria-label
           type="checkbox"
           className='form-check-input'
-          checked={row.getIsSelected()}
+          checked={row.getIsSelected() || row.getCanSelect() && selectAll}
           disabled={!row.getCanSelect()}
           onChange={row.getToggleSelectedHandler()}
         />;
@@ -724,7 +726,7 @@ export const NotificationList = () => {
     } else {
       const filterOrder = ['team', 'api', 'type', 'actionType']
       return (
-        <div className='mt-2 d-flex flex-wrap flex-row gap-2' role="list">
+        <div className='mt-2 d-flex flex-wrap flex-row gap-2'>
           {columnFilters
             .sort((a, b) => filterOrder.indexOf(a.id) - filterOrder.indexOf(b.id))
             .flatMap(f => {
@@ -733,20 +735,20 @@ export const NotificationList = () => {
                   return ((f.value as Array<string>).map(value => {
                     const teamName = myTeamsRequest.data?.find(t => t._id === value)?.name;
                     return (
-                      <div className='selected-filter d-flex gap-2 align-items-center' role="listitem" onClick={() => clearFilter(f.id, value)}>
+                      <button className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
                         {teamName}
                         <i className='fas fa-xmark' />
-                      </div>
+                      </button>
                     )
                   }))
                 case f.id === 'api':
                   return ((f.value as Array<string>).map(value => {
                     const teamName = visibleApisRequest.data?.find(t => t._id === value)?.name;
                     return (
-                      <div className='selected-filter d-flex gap-2 align-items-center' role="listitem" onClick={() => clearFilter(f.id, value)}>
+                      <button className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
                         {teamName}
                         <i className='fas fa-xmark' />
-                      </div>
+                      </button>
                     )
                   }))
                 case f.id === 'type':
@@ -754,10 +756,10 @@ export const NotificationList = () => {
                     const type = notificationTypes.find(t => t.type === value)
                     const label = translate(`notifications.page.filters.type.${type?.type}.label`)
                     return (
-                      <div className='selected-filter d-flex gap-2 align-items-center' role="listitem" onClick={() => clearFilter(f.id, value)}>
+                      <button className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
                         {label}
                         <i className='fas fa-xmark' />
-                      </div>
+                      </button>
                     )
                   }))
                 case f.id === 'actionType':
@@ -765,10 +767,10 @@ export const NotificationList = () => {
                     const type = notificationActionTypes.find(t => t.value === value)
                     const label = translate(`notifications.page.filters.action.${type?.value}.label`)
                     return (
-                      <div className='selected-filter d-flex gap-2 align-items-center' role="listitem" onClick={() => clearFilter(f.id, value)}>
+                      <button className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
                         {label}
                         <i className='fas fa-xmark' />
-                      </div>
+                      </button>
                     )
                   }))
               }
@@ -833,9 +835,10 @@ export const NotificationList = () => {
               styles={menuStyle}
               onChange={data => handleSelectChange(data, 'actionType')}
               value={getSelectValue('actionType', notificationActionTypes, 'label', 'value')} />
-            <div className='btn-group' role='group' aria-label='unread notif ?'>
+            <div className='btn-group' role='group' aria-label={translate('notifications.page.unread.button.group.aria.label')}>
               <button
                 className={classNames('btn btn-outline-secondary', { active: !unreadOnly })}
+                aria-pressed={!unreadOnly}
                 onClick={() => {
                   const filters = columnFilters.filter(f => f.id !== 'unreadOnly')
                   setColumnFilters([...filters, { id: 'unreadOnly', value: false }])
@@ -843,6 +846,7 @@ export const NotificationList = () => {
               </button>
               <button
                 className={classNames('btn btn-outline-secondary', { active: unreadOnly })}
+                aria-pressed={unreadOnly}
                 onClick={() => {
                   const filters = columnFilters.filter(f => f.id !== 'unreadOnly')
                   setColumnFilters([...filters, { id: 'unreadOnly', value: true }])
@@ -850,7 +854,7 @@ export const NotificationList = () => {
               </button>
             </div>
           </div>
-          <button className='btn btn-outline-secondary' onClick={() => setColumnFilters([])}>
+          <button className='btn btn-outline-secondary' onClick={() => setColumnFilters(defaultColumnFilters)}>
             <i className='fas fa-rotate me-2' />
             {translate('notifications.page.filters.clear.label')}
           </button>
@@ -879,7 +883,11 @@ export const NotificationList = () => {
                   type="checkbox"
                   className='form-check-input me-3'
                   checked={table.getIsAllPageRowsSelected()}
-                  onChange={table.getToggleAllPageRowsSelectedHandler()}
+                  onChange={(e) => {
+                    if (selectAll)
+                      setSelectAll(!selectAll)
+                    table.getToggleAllPageRowsSelectedHandler()(e)
+                  }}
                 />
 
                 {(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) ? translate({ key: "notifications.page.table.selected.count.label", plural: (selectAll ? totalSelectable : table.getSelectedRowModel().rows.length) > 1, replacements: [selectAll ? `${totalSelectable}` : `${table.getSelectedRowModel().rows.length}`] }) : translate("notifications.page.table.select.all.label")}
@@ -888,7 +896,7 @@ export const NotificationList = () => {
                 <button className='ms-2 btn btn-sm btn-outline-secondary' onClick={handleBulkRead}>{translate('notifications.page.table.read.bulk.action.label')}</button>
               )}
               {!selectAll && table.getIsAllPageRowsSelected() && table.getSelectedRowModel().rows.length < totalSelectable && (
-                <button className='a-fake' onClick={() => setSelectAll(true)}>{translate({ key: 'notifications.page.table.select.really.all.label', replacements: [totalSelectable.toLocaleString()] })}</button>
+                <button className='btn btn-sm btn-outline-secondary ms-3' onClick={() => setSelectAll(true)}>{translate({ key: 'notifications.page.table.select.really.all.label', replacements: [totalSelectable.toLocaleString()] })}</button>
               )}
             </div>
             <ul className='table-rows'>
