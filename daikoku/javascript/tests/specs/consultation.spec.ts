@@ -472,7 +472,7 @@ test('Voir ses notifications', async ({ page }) => {
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('2');
   await expect(page.locator('article')).toHaveCount(2)
   await page.getByRole('button', { name: 'Toutes' }).click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('59'); //38 injected notif + acceptedDemand already on db
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('59'); //58 injected notif + acceptedDemand already on db
   await expect(page.locator('article')).toHaveCount(25)
   await page.getByRole('button', { name: 'Non lues' }).click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('2');
