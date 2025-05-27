@@ -1118,8 +1118,7 @@ object CommonServices {
                |          WHEN array_length($$4::text[], 1) IS NULL THEN true
                |          ELSE a._id = ANY ($$4::text[])
                |  END
-               |  AND ($$5 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
-               |LIMIT $$6 OFFSET $$7;
+               |  AND ($$5 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending');
                |""".stripMargin,
               "total_filtered",
               Seq(
@@ -1128,8 +1127,6 @@ object CommonServices {
                 types,
                 apis,
                 java.lang.Boolean.valueOf(unreadOnly),
-                java.lang.Integer.valueOf(limit),
-                java.lang.Integer.valueOf(offset)
               )
             )
         total <-
@@ -1177,7 +1174,7 @@ object CommonServices {
                  |from (SELECT a._id as api, COUNT(*) AS total
                  |      FROM notifications n
                  |               LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
-                 |               LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
+                 |               LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')) or ((a.content ->> 'name') = (n.content -> 'action' ->> 'api')))
                  |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                  |          OR n.content ->> 'team' = t._id::text)
                  |          AND ($$1 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
@@ -1231,14 +1228,15 @@ object CommonServices {
             .queryOneLong(
               s"""
                  |$CTE
-                 |SELECT COUNT(1) AS total_by_types
+                 |SELECT COUNT(1) AS total_selectable
                  |      FROM notifications n
                  |               LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
                  |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                  |          OR n.content ->> 'team' = t._id::text)
+                 |          AND n.content ->> 'notificationType' = 'AcceptOnly'
                  |          AND n.content -> 'status' ->> 'status' = 'Pending';
                  |""".stripMargin,
-              "total_by_types",
+              "total_selectable",
               Seq()
             )
       } yield {

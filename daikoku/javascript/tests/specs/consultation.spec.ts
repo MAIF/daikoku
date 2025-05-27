@@ -1,7 +1,8 @@
 import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 import { JIM, MICHAEL } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, HOME, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiPapier, commandeDevPlan, exposedPort, HOME, loginAs, logistique, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, subCommandeDevLogistique, subCommandeDevVendeurs, subCommandeProdLogistique, teamJim, vendeurs } from './utils';
+import { NotifProps, postNewNotif } from './notifications';
 
 
 test.beforeEach(async () => {
@@ -345,3 +346,135 @@ await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
 await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeVisible();
 await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeVisible();
 })
+
+test('Voir ses notifications', async ({ page }) => {
+
+  const notifs: Array<NotifProps> = [
+    { type: "ApiAccess", sender: JIM, api: apiCommande, team: vendeurs},
+    { type: "ApiAccess", sender: JIM, api: apiCommande, team: logistique},
+    { type: "ApiAccess", sender: JIM, api: apiCommande, team: teamJim},
+    { type: "ApiAccess", sender: JIM, api: apiPapier, team: vendeurs},
+    { type: "ApiAccess", sender: JIM, api: apiPapier, team: logistique},
+    { type: "ApiAccess", sender: JIM, api: apiPapier, team: teamJim},
+    { type: "TransferApiOwnership", sender: MICHAEL, api: apiPapier, team: vendeurs},
+    { type: "TransferApiOwnership", sender: MICHAEL, api: apiCommande, team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 1", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 2", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 3", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 4", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 5", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 6", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 7", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 8", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 9", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 10", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 11", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 12", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 13", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 14", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 15", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 16", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 17", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 18", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 19", team: vendeurs},
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 20", team: vendeurs},
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: vendeurs, subscription: subCommandeDevVendeurs },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeProdLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeProdLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeProdLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeProdLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeProdLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+    { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: logistique, subscription: subCommandeDevLogistique },
+  ]
+
+  await page.goto(ACCUEIL);
+  await loginAs(JIM, page)
+  
+  await Promise.all(notifs.map(n => postNewNotif(n)))
+  
+
+  //go to notif page
+  await page.getByRole('link', { name: 'Accès aux notifications' }).click();
+  //38 notifs au total
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('58');
+  //10 notifs
+  await expect(page.getByRole('article')).toHaveCount(25)
+  ;
+  
+  //voir plus => 20 notifs
+  
+  await page.getByRole('button', { name: 'Afficher plus', exact: true }).click();
+  await expect(page.locator('article')).toHaveCount(50)
+  await page.getByRole('button', { name: 'Afficher plus', exact: true }).click();
+  await expect(page.locator('article')).toHaveCount(58)
+  await expect(page.getByRole('button', { name: 'Afficher plus', exact: true })).toBeHidden();
+  //encore
+  //encore
+  //filter par le select equipe logistique => 2 notifs
+  await page.locator('div').filter({ hasText: /^Toutes les équipes/ }).locator('svg').click();
+  await page.getByRole('option', { name: 'Logistique' }).click();
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('7');
+  await expect(page.locator('article')).toHaveCount(25)
+  await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
+  //reset
+  // filtrer par api Commande => xx
+  await page.locator('div').filter({ hasText: /^Toutes les apis/ }).locator('svg').click();
+  await page.getByRole('option', { name: 'API Papier' }).click();
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
+  await expect(page.locator('article')).toHaveCount(1)
+  await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
+
+  await page.locator('div').filter({ hasText: /^Tous les types/ }).locator('svg').click();
+  await page.getByRole('option', { name: 'Transfert de propriété d\'API' }).click();
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('2');
+  await expect(page.locator('article')).toHaveCount(2)
+  await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
+
+  await page.locator('div').filter({ hasText: /^Toutes les notifications/ }).locator('svg').click();
+  await page.getByRole('option', { name: 'Aucune action requise' }).click();
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('2');
+  await expect(page.locator('article')).toHaveCount(2)
+  await page.getByRole('button', { name: 'Aucune action requise' }).click();
+
+  await page.getByRole('checkbox', { name: 'tout sélectionner' }).check();
+  await page.getByRole('button', { name: 'selectionner les 56' }).click();
+  await expect(page.getByText('56 lignes sélectionnées')).toBeVisible();
+  await page.getByRole('button', { name: 'Marquer comme lu' }).click();
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('2');
+  await expect(page.locator('article')).toHaveCount(2)
+  await page.getByRole('button', { name: 'Toutes' }).click();
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('59'); //38 injected notif + acceptedDemand already on db
+  await expect(page.locator('article')).toHaveCount(25)
+  await page.getByRole('button', { name: 'Non lues' }).click();
+  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('2');
+  await expect(page.locator('article')).toHaveCount(2)
+});

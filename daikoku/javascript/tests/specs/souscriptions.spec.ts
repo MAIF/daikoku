@@ -191,8 +191,6 @@ test('[ASOAPI-10161] - Demander une extension d\apikey - process automatique', a
 });
 
 test('[ASOAPI-10161] - Demander une extension d\apikey - process manuel', async ({ page, context }) => {
-
-  test.setTimeout(90_000);
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
 
   await page.goto(ACCUEIL);
