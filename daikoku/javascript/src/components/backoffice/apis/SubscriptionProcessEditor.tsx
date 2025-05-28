@@ -15,7 +15,7 @@ import { I18nContext } from '../../../contexts/i18n-context';
 import { ModalContext } from '../../../contexts/modalContext';
 import { ITeamSimple } from '../../../types';
 import { isValidationStepEmail, isValidationStepHttpRequest, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepHttpRequest, IValidationStepTeamAdmin, IValidationStepType } from '../../../types/api';
-import { ITenantFull } from '../../../types/tenant';
+import { ITenant, ITenantFull } from '../../../types/tenant';
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
 import { Help } from '../apikeys/TeamApiKeysForApi';
@@ -142,7 +142,7 @@ const MotivationForm = (props: MotivationFormProps) => {
 
 type ValidationStepProps = {
   step: IValidationStep;
-  tenant: ITenantFull;
+  tenant: ITenant;
   update?: () => void;
   index: number;
 };
@@ -222,7 +222,7 @@ type SubProcessProps = {
   savePlan: (plan: IUsagePlan) => Promise<void>;
   plan: IUsagePlan;
   team: ITeamSimple;
-  tenant: ITenantFull;
+  tenant: ITenant;
 };
 export const SubscriptionProcessEditor = (props: SubProcessProps) => {
   const { translate } = useContext(I18nContext);

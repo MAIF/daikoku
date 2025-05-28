@@ -56,6 +56,15 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', {name: 'Configurer'}).click();
   await page.getByRole('button', { name: 'Publiée' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
+
+await page.getByText('Environnements').click();
+await page.getByRole('list', { name: 'Liste des environnements' }).locator('div').click();
+await page.locator('div').filter({ hasText: /^new usage plan$/ }).nth(2).click();
+await page.getByText('dev', { exact: true }).click();
+await page.getByRole('textbox', { name: 'Description' }).fill('environnement de developpement');
+await page.getByRole('button', { name: 'Enregistrer' }).click();
+await expect(page.getByRole('listitem', { name: 'dev' })).toBeVisible();
+
   await page.getByLabel('Accueil Daikoku').click();
   await expect(page.getByRole('heading', { name: 'API Betterave' })).toBeVisible();
   await logout(page);

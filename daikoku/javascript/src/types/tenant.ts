@@ -124,7 +124,11 @@ interface IMailerSmtpClient extends IMailerSettings {
   fromTitle: string;
   fromEmail: string;
 }
-
+export interface ISafeOtoroshiSettings {
+  _id: string;
+  url: string;
+  host: string;
+}
 export interface IOtoroshiSettings {
   _id: string;
   url: string;
@@ -189,6 +193,8 @@ export interface ITenant {
   jsUrl?: string;
   faviconUrl?: string;
   fontFamilyUrl?: string;
+  otoroshiSettings: Array<ISafeOtoroshiSettings>;
+  thirdPartyPaymentSettings: Array<IThirdPartyPaymentSettings>
 }
 
 export interface ITenantFull extends ITenant {
