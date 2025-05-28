@@ -1126,7 +1126,7 @@ object CommonServices {
                 teams,
                 types,
                 apis,
-                java.lang.Boolean.valueOf(unreadOnly),
+                java.lang.Boolean.valueOf(unreadOnly)
               )
             )
         total <-

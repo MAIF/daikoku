@@ -123,13 +123,13 @@ export const acceptNotificationOfTeam = (
     body: JSON.stringify(values),
   });
 
-
 export const acceptNotificationOfTeamByBulk = (
-  notificationIds: Array<string>, selectAll: boolean
+  notificationIds: Array<string>,
+  selectAll: boolean
 ): Promise<ResponseError | ResponseDone> =>
   customFetch(`/api/notifications/accept/bulk`, {
     method: 'PUT',
-    body: JSON.stringify({notificationIds, selectAll}),
+    body: JSON.stringify({ notificationIds, selectAll }),
   });
 
 export const rejectNotificationOfTeam = (
@@ -1310,7 +1310,7 @@ export const graphql = {
       }
     }
   `,
-  apisByIds: (`
+  apisByIds: `
       query filteredApis ($ids: [String!]) {
         apis (ids: $ids) {
           _id
@@ -1330,8 +1330,8 @@ export const graphql = {
           }
         }
       }
-    `),
-  apisByIdsWithPlans: (`
+    `,
+  apisByIdsWithPlans: `
       query filteredApis ($ids: [String!]) {
         apis (ids: $ids) {
           _id
@@ -1348,7 +1348,7 @@ export const graphql = {
           }
         }
       }
-    `),
+    `,
   apiByIdsWithPlans: `
       query filteredApi ($id: String!) {
         api (id: $id) {

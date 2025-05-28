@@ -1,5 +1,5 @@
-import { ITeamSimple, ITenant } from "../../types";
-import { ITeamFullGql } from "../../types/gql";
+import { ITeamSimple, ITenant } from '../../types';
+import { ITeamFullGql } from '../../types/gql';
 
 export const teamGQLToLegitTeam = (teamGQL: ITeamFullGql): ITeamSimple => {
   return {
@@ -11,10 +11,10 @@ export const teamGQLToLegitTeam = (teamGQL: ITeamFullGql): ITeamSimple => {
     description: teamGQL.description,
     avatar: teamGQL.avatar,
     contact: teamGQL.contact,
-    users: teamGQL.users.map(u => ({ userId: u.user.userId, teamPermission: u.teamPermission })),
+    users: teamGQL.users.map((u) => ({ userId: u.user.userId, teamPermission: u.teamPermission })),
     apiKeyVisibility: teamGQL.apiKeyVisibility,
     apisCreationPermission: teamGQL.apisCreationPermission,
     verified: teamGQL.verified,
-    authorizedOtoroshiEntities: teamGQL.authorizedOtoroshiEntities
+    authorizedOtoroshiEntities: teamGQL.authorizedOtoroshiEntities,
   };
-}
+};

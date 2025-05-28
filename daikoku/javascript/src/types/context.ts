@@ -28,7 +28,7 @@ export interface IStateContext {
   session?: ISimpleSession;
   loginAction: string;
   theme: string;
-  graphQLEndpoint: string
+  graphQLEndpoint: string;
 }
 
 export interface IStateError {
