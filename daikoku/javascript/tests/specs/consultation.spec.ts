@@ -422,31 +422,20 @@ test('Voir ses notifications', async ({ page }) => {
   await Promise.all(notifs.map(n => postNewNotif(n)))
   
 
-  //go to notif page
   await page.getByRole('link', { name: 'Accès aux notifications' }).click();
-  //38 notifs au total
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('58');
-  //10 notifs
-  await expect(page.getByRole('article')).toHaveCount(25)
-  ;
-  
-  //voir plus => 20 notifs
-  
+  await expect(page.getByRole('article')).toHaveCount(25);
+
   await page.getByRole('button', { name: 'Afficher plus', exact: true }).click();
   await expect(page.locator('article')).toHaveCount(50)
   await page.getByRole('button', { name: 'Afficher plus', exact: true }).click();
   await expect(page.locator('article')).toHaveCount(58)
   await expect(page.getByRole('button', { name: 'Afficher plus', exact: true })).toBeHidden();
-  //encore
-  //encore
-  //filter par le select equipe logistique => 2 notifs
   await page.locator('div').filter({ hasText: /^Toutes les équipes/ }).locator('svg').click();
   await page.getByRole('option', { name: 'Logistique' }).click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('7');
   await expect(page.locator('article')).toHaveCount(25)
   await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
-  //reset
-  // filtrer par api Commande => xx
   await page.locator('div').filter({ hasText: /^Toutes les apis/ }).locator('svg').click();
   await page.getByRole('option', { name: 'API Papier' }).click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');

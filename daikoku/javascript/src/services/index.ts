@@ -1701,7 +1701,7 @@ export const graphql = {
                 name
               }
             }
-            ... on ApiSubscriptionDemand {
+            ... on ApiSubscription {
             __typename
               api {
                 _id
