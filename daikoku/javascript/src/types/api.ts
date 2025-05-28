@@ -167,7 +167,7 @@ export interface IValidationStep {
   id: string;
   type: IValidationStepType;
   name?: IValidationStepType;
-  title?: string
+  title?: string;
 }
 
 export interface IValidationStepEmail extends IValidationStep {

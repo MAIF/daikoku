@@ -721,8 +721,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     }
   }
 
-  def queryOneJsArray(query: String, name: String, params: Seq[AnyRef])(
-    implicit ec: ExecutionContext
+  def queryOneJsArray(query: String, name: String, params: Seq[AnyRef])(implicit
+      ec: ExecutionContext
   ): Future[Option[JsArray]] = {
     logger.debug(s"queryOneJsArray($query)")
 

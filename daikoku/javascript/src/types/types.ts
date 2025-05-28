@@ -40,7 +40,7 @@ export interface INotification {
   action: any;
   date: string;
   notificationType: 'AcceptOnly' | 'AcceptOrReject';
-  sender: { id?: string, name: string, email: string };
+  sender: { id?: string; name: string; email: string };
   status: { status: 'Pending' } | { status: 'Accepted' | 'Rejected'; date?: string };
   team: string;
 }

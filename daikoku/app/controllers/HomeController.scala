@@ -174,9 +174,12 @@ class HomeController(
           "loginAction" -> fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
             .login(ctx.tenant.authProvider.name)
             .url,
-          "graphQLEndpoint" ->  env.getDaikokuUrl(ctx.tenant, fr.maif.otoroshi.daikoku.ctrls.routes.GraphQLController
-            .search()
-            .url)
+          "graphQLEndpoint" -> env.getDaikokuUrl(
+            ctx.tenant,
+            fr.maif.otoroshi.daikoku.ctrls.routes.GraphQLController
+              .search()
+              .url
+          )
         )
       )
     }

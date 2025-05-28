@@ -3,7 +3,11 @@ package fr.maif.otoroshi.daikoku.ctrls
 import cats.data.EitherT
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
@@ -17,7 +21,12 @@ import fr.maif.otoroshi.daikoku.utils.{ApiService, Translator}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.i18n.I18nSupport
 import play.api.libs.json._
-import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Result}
+import play.api.mvc.{
+  AbstractController,
+  AnyContent,
+  ControllerComponents,
+  Result
+}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -259,19 +268,44 @@ class NotificationController(
   def acceptNotifications() =
     DaikokuAction.async(parse.json) { ctx =>
       PublicUserAccess(
-        AuditTrailEvent(s"@{user.name} has read notifications by bulk (@{notifications})")
+        AuditTrailEvent(
+          s"@{user.name} has read notifications by bulk (@{notifications})"
+        )
       )(ctx) {
         val notificationIds = (ctx.request.body \ "notificationIds").as[JsArray]
         val selectAll = (ctx.request.body \ "selectAll").as[Boolean]
         ctx.setCtxValue("notifications", Json.stringify(notificationIds))
         (for {
-          notifications <- EitherT.liftF[Future, AppError, Seq[Notification]](env.dataStore.notificationRepo.forTenant(ctx.tenant)
-            .findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> notificationIds))))
-          _ <- EitherT.cond[Future][AppError, Unit](notifications.forall(_.notificationType == AcceptOnly), (), AppError.EntityConflict("Notification must be AcceptOnly"))
-          _ <- EitherT.liftF[Future, AppError, Long](env.dataStore.notificationRepo.forTenant(ctx.tenant)
-            .updateManyByQuery(
-              if (selectAll) Json.obj("status.status" -> "Pending", "notificationType" -> NotificationType.AcceptOnly.value) else Json.obj("_id" -> Json.obj("$in" -> notificationIds)),
-              Json.obj("$set" -> Json.obj("status" -> NotificationStatusFormat.writes(NotificationStatus.Accepted())))))
+          notifications <- EitherT.liftF[Future, AppError, Seq[Notification]](
+            env.dataStore.notificationRepo
+              .forTenant(ctx.tenant)
+              .findNotDeleted(
+                Json.obj("_id" -> Json.obj("$in" -> notificationIds))
+              )
+          )
+          _ <- EitherT.cond[Future][AppError, Unit](
+            notifications.forall(_.notificationType == AcceptOnly),
+            (),
+            AppError.EntityConflict("Notification must be AcceptOnly")
+          )
+          _ <- EitherT.liftF[Future, AppError, Long](
+            env.dataStore.notificationRepo
+              .forTenant(ctx.tenant)
+              .updateManyByQuery(
+                if (selectAll)
+                  Json.obj(
+                    "status.status" -> "Pending",
+                    "notificationType" -> NotificationType.AcceptOnly.value
+                  )
+                else Json.obj("_id" -> Json.obj("$in" -> notificationIds)),
+                Json.obj(
+                  "$set" -> Json.obj(
+                    "status" -> NotificationStatusFormat
+                      .writes(NotificationStatus.Accepted())
+                  )
+                )
+              )
+          )
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())
           .merge

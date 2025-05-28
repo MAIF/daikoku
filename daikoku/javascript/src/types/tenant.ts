@@ -194,7 +194,7 @@ export interface ITenant {
   faviconUrl?: string;
   fontFamilyUrl?: string;
   otoroshiSettings: Array<ISafeOtoroshiSettings>;
-  thirdPartyPaymentSettings: Array<IThirdPartyPaymentSettings>
+  thirdPartyPaymentSettings: Array<IThirdPartyPaymentSettings>;
 }
 
 export interface ITenantFull extends ITenant {

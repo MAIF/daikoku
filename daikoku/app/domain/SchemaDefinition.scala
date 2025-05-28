@@ -1911,11 +1911,26 @@ object SchemaDefinition {
         )
       ),
       ReplaceField("total", Field("total", LongType, resolve = _.value.total)),
-      ReplaceField("totalSelectable", Field("totalSelectable", LongType, resolve = _.value.totalSelectable)),
-      ReplaceField("totalFiltered", Field("totalFiltered", LongType, resolve = _.value.totalFiltered)),
-      ReplaceField("totalByTypes", Field("totalByTypes", JsonType, resolve = _.value.totalByTypes)),
-      ReplaceField("totalByTeams", Field("totalByTeams", JsonType, resolve = _.value.totalByTeams)),
-      ReplaceField("totalByApis", Field("totalByApis", JsonType, resolve = _.value.totalByApis)),
+      ReplaceField(
+        "totalSelectable",
+        Field("totalSelectable", LongType, resolve = _.value.totalSelectable)
+      ),
+      ReplaceField(
+        "totalFiltered",
+        Field("totalFiltered", LongType, resolve = _.value.totalFiltered)
+      ),
+      ReplaceField(
+        "totalByTypes",
+        Field("totalByTypes", JsonType, resolve = _.value.totalByTypes)
+      ),
+      ReplaceField(
+        "totalByTeams",
+        Field("totalByTeams", JsonType, resolve = _.value.totalByTeams)
+      ),
+      ReplaceField(
+        "totalByApis",
+        Field("totalByApis", JsonType, resolve = _.value.totalByApis)
+      )
     )
 
     lazy val TeamWithCountType = deriveObjectType[
@@ -3477,10 +3492,12 @@ object SchemaDefinition {
         limit: Int,
         offset: Int
     ) = {
-      CommonServices.getMyNotification(filter, sort, limit, offset)(ctx.ctx._2, env, e).map {
-        case Left(value)  => throw NotAuthorizedError(value.toString)
-        case Right(value) => value
-      }
+      CommonServices
+        .getMyNotification(filter, sort, limit, offset)(ctx.ctx._2, env, e)
+        .map {
+          case Left(value)  => throw NotAuthorizedError(value.toString)
+          case Right(value) => value
+        }
     }
 
     def myNotificationQuery()
@@ -3496,7 +3513,8 @@ object SchemaDefinition {
               ctx.arg(FILTER_TABLE),
               ctx.arg(SORTING_TABLE),
               ctx.arg(LIMIT),
-              ctx.arg(OFFSET))
+              ctx.arg(OFFSET)
+            )
           }
         )
       )
