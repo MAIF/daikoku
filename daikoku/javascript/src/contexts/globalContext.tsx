@@ -53,6 +53,8 @@ const initContext: TGlobalContext = {
     display: Display.default,
     environments: [],
     loginProvider: 'Local',
+    thirdPartyPaymentSettings: [],
+    otoroshiSettings: []
   },
   session: {
     created: new Date().getTime(),

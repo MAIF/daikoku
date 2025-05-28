@@ -1190,8 +1190,7 @@ class TenantControllerSpec()
         headers = Map("accept" -> "text/html")
       )(tenant, session)
 
-      //redirect to error page
-      resp.status mustBe 303
+      resp.status mustBe 404
     }
     "navigate to an unknown cms page with the 404 cms page defined" in {
       val notFoundPage =
@@ -1247,8 +1246,7 @@ class TenantControllerSpec()
         headers = Map("accept" -> "text/html")
       )(tenant, session)
 
-      //redirect to error page
-      resp.status mustBe 303
+      resp.status mustBe 404
     }
     "get the query params from cms page" in {
       val page = defaultCmsPage.copy(

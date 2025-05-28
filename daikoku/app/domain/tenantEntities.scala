@@ -5,16 +5,11 @@ import com.github.jknack.handlebars.{Context, Handlebars, Options}
 import controllers.AppError.toJson
 import controllers.{AppError, Assets}
 import domain.JsonNodeValueResolver
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuActionContext,
-  DaikokuActionMaybeWithoutUserContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, KafkaConfig}
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  _TeamMemberOnly,
-  _UberPublicUserAccess
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
+import fr.maif.otoroshi.daikoku.domain.json.SeqThirdPartyPaymentSettingsFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
@@ -386,6 +381,8 @@ sealed trait ThirdPartyPaymentSettings {
   def name: String
 
   def asJson: JsValue = json.ThirdPartyPaymentSettingsFormat.writes(this)
+
+  def toUiPayload: JsValue
 }
 
 case object ThirdPartyPaymentSettings {
@@ -396,6 +393,10 @@ case object ThirdPartyPaymentSettings {
       secretKey: String
   ) extends ThirdPartyPaymentSettings {
     override def typeName: String = "Stripe"
+
+    override def toUiPayload: JsValue = json.StripeSettingsFormat.writes(this).as[JsObject] ++ Json.obj(
+      "type" -> "Stripe"
+    ) - "publicKey" - "privateKey"
   }
 }
 
@@ -517,7 +518,9 @@ case class Tenant(
         .flatMap(_.fontFamilyUrl)
         .map(JsString.apply)
         .getOrElse(JsNull)
-        .as[JsValue]
+        .as[JsValue],
+      "otoroshiSettings" -> JsArray(otoroshiSettings.map(_.toUiPayload()).toSeq),
+      "thirdPartyPaymentSettings" -> JsArray(thirdPartyPaymentSettings.map(_.toUiPayload))
     )
   }
   def favicon(): String = {

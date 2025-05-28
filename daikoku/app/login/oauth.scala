@@ -242,7 +242,10 @@ object OAuth2Support {
                 val picture =
                   (userFromOauth \ authConfig.pictureField).asOpt[String]
                 val maybeDaikokuAdmin =
-                  (userFromOauth \ "daikokuAdmin").asOpt[Boolean]
+                  (userFromOauth \ "daikokuAdmin")
+                    .asOpt[String]
+                    .flatMap(_.toBooleanOption)
+                    .orElse((userFromOauth \ "daikokuAdmin").asOpt[Boolean])
 
                 val isDaikokuAdmin = maybeDaikokuAdmin.getOrElse(
                   authConfig.daikokuAdmins.contains(email)

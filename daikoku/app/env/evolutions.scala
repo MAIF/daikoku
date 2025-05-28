@@ -1177,8 +1177,16 @@ object evolution_1820 extends EvolutionScript {
       implicit val executionContext: ExecutionContext = ec
 
       def getOldTypeOfPlan(rawPlan: JsValue): (String, JsValue, JsValue) = {
-        (rawPlan \ "type").as[String] match {
-          case "FreeWithoutQuotas" =>
+        (rawPlan \ "type").asOpt[String] match {
+          case Some("FreeWithoutQuotas") =>
+            (
+              (rawPlan \ "customName")
+                .asOpt[String]
+                .getOrElse("Free without quotas"),
+              JsNull,
+              JsNull
+            )
+          case Some("FreeWithQuotas") =>
             (
               (rawPlan \ "customName")
                 .asOpt[String]
@@ -1186,15 +1194,7 @@ object evolution_1820 extends EvolutionScript {
               JsNull,
               JsNull
             )
-          case "FreeWithQuotas" =>
-            (
-              (rawPlan \ "customName")
-                .asOpt[String]
-                .getOrElse("Free with quotas"),
-              JsNull,
-              JsNull
-            )
-          case "QuotasWithLimits" =>
+          case Some("QuotasWithLimits") =>
             (
               (rawPlan \ "customName")
                 .asOpt[String]
@@ -1202,7 +1202,7 @@ object evolution_1820 extends EvolutionScript {
               (rawPlan \ "currency").as[JsValue],
               (rawPlan \ "billingDuration").as[JsValue]
             )
-          case "QuotasWithoutLimits" =>
+          case Some("QuotasWithoutLimits") =>
             (
               (rawPlan \ "customName")
                 .asOpt[String]
@@ -1210,15 +1210,24 @@ object evolution_1820 extends EvolutionScript {
               (rawPlan \ "currency").as[JsValue],
               (rawPlan \ "billingDuration").as[JsValue]
             )
-          case "PayPerUse" =>
+          case Some("PayPerUse") =>
             (
               (rawPlan \ "customName").asOpt[String].getOrElse("Pay per use"),
               (rawPlan \ "currency").as[JsValue],
               (rawPlan \ "billingDuration").as[JsValue]
             )
-          case "Admin" =>
+          case Some("Admin") =>
             (
               (rawPlan \ "customName").asOpt[String].getOrElse("Admin"),
+              JsNull,
+              JsNull
+            )
+          case _ =>
+            AppLogger.error(
+              s"[evolution $version] :: no type found :: ${Json.prettyPrint(rawPlan)}"
+            )
+            (
+              (rawPlan \ "customName").asOpt[String].getOrElse("--"),
               JsNull,
               JsNull
             )
@@ -1231,20 +1240,33 @@ object evolution_1820 extends EvolutionScript {
         .map(rawPlan => {
           val (customName, currency, billingDuration) =
             getOldTypeOfPlan(rawPlan)
+          val patchedJson = rawPlan.as[JsObject] ++ Json.obj(
+            "customName" -> customName,
+            "currency" -> currency,
+            "billingDuration" -> billingDuration
+          )
           json.UsagePlanFormat
             .reads(
-              rawPlan.as[JsObject] ++ Json.obj(
-                "customName" -> customName,
-                "currency" -> currency,
-                "billingDuration" -> billingDuration
+              patchedJson
+            ) match {
+            case JsSuccess(plan, _) => plan
+            case JsError(errors) =>
+              AppLogger.error(
+                s"[evolution $version] :: failed to parse plan: $errors\nRaw JSON: $patchedJson"
               )
-            )
-            .get
+              throw new RuntimeException(s"Failed to parse plan: $errors")
+          }
         })
         .mapAsync(10)(plan => {
           dataStore.usagePlanRepo.forAllTenant().save(plan)
         })
         .runWith(Sink.ignore)(mat)
+        .andThen {
+          case Success(_) =>
+            AppLogger.debug(s"[evolution $version] :: completed successfully")
+          case Failure(e) =>
+            AppLogger.error(s"[evolution $version] :: failed with error", e)
+        }(ec)
     }
 }
 
@@ -1322,6 +1344,9 @@ object evolution_1830 extends EvolutionScript {
           (tenant.get, cssPage, colorThemePage, jsPage)
         })
         .mapAsync(1)(tuple => {
+          AppLogger.debug(
+            s"[evolution $version] :: save ${tuple._2.id.value} - ${tuple._2.id.value} - ${tuple._2.id.value}"
+          )
           for {
             _ <- dataStore.cmsRepo.forTenant(tuple._1).save(tuple._2)
             _ <- dataStore.cmsRepo.forTenant(tuple._1).save(tuple._3)
@@ -1330,6 +1355,12 @@ object evolution_1830 extends EvolutionScript {
           } yield ()
         })
         .runWith(Sink.ignore)(mat)
+        .andThen {
+          case Success(_) =>
+            AppLogger.debug(s"[evolution $version] :: completed successfully")
+          case Failure(e) =>
+            AppLogger.error(s"[evolution $version] :: failed with error", e)
+        }(ec)
     }
 }
 

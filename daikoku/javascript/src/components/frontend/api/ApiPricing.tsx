@@ -484,200 +484,184 @@ const BillingForm = (props: { ownerTeam: ITeamSimple, plan: IUsagePlan, savePlan
 
   const [billingDisplayed, setBillingDisplayed] = useState(!!props.plan.costPerMonth || !!props.plan.costPerRequest)
 
-  const queryFullTenant = useQuery({
-    queryKey: ['fullTenant'],
-    queryFn: () => Services.oneTenant(tenant._id)
+  const billingSchema = ({
+    paymentSettings: {
+      type: type.object,
+      format: format.form,
+      label: translate('payment settings'),
+      schema: {
+        thirdPartyPaymentSettingsId: {
+          type: type.string,
+          format: format.select,
+          label: translate('Type'),
+          help: 'If no type is selected, use Daikoku APIs to get billing informations',
+          options: tenant.thirdPartyPaymentSettings,
+          transformer: (s: IThirdPartyPaymentSettings) => ({
+            label: s.name,
+            value: s._id,
+          }),
+          props: { isClearable: true },
+          onChange: ({ rawValues, setValue, value }) => {
+            const settings = tenant.thirdPartyPaymentSettings;
+            setValue(
+              'paymentSettings.type',
+              settings.find((s) => value === s._id)?.type
+            );
+          },
+        },
+      },
+    },
+    costPerMonth: {
+      type: type.number,
+      label: ({ rawValues }) =>
+        translate(
+          `Cost per ${rawValues?.billingDuration?.unit?.toLocaleLowerCase() ?? 'month'}`
+        ),
+      placeholder: translate('Cost per billing period'),
+      constraints: [constraints.positive(translate('constraints.positive'))],
+    },
+    costPerRequest: {
+      type: type.number,
+      label: translate('Cost per req.'),
+      placeholder: translate('Cost per request'),
+      props: { step: 0.01 },
+      constraints: [constraints.positive(translate('constraints.positive'))],
+    },
+    currency: {
+      type: type.object,
+      format: format.form,
+      label: null,
+      schema: {
+        code: {
+          type: type.string,
+          format: format.select,
+          label: translate('Currency'),
+          defaultValue: 'EUR',
+          options: currencies.map((c) => ({
+            label: `${c.name} (${c.symbol})`,
+            value: c.code,
+          })),
+        },
+      },
+    },
+    billingDuration: {
+      type: type.object,
+      format: format.form,
+      label: translate('Billing every'),
+      schema: {
+        value: {
+          type: type.number,
+          label: translate('Billing period'),
+          placeholder: translate('The Billing period'),
+          props: {
+            step: 1,
+            min: 0,
+          },
+          constraints: [
+            constraints.positive(translate('constraints.positive')),
+            constraints.integer(translate('constraints.integer')),
+            constraints.required(
+              translate('constraints.required.billing.period')
+            ),
+          ],
+        },
+        unit: {
+          type: type.string,
+          format: format.buttonsSelect,
+          label: translate('Billing period unit'),
+          options: [
+            { label: translate('Hours'), value: 'Hour' },
+            { label: translate('Days'), value: 'Day' },
+            { label: translate('Months'), value: 'Month' },
+            { label: translate('Years'), value: 'Year' },
+          ],
+          constraints: [
+            constraints.required('constraints.required.billing.period'),
+            constraints.oneOf(
+              ['Hour', 'Day', 'Month', 'Year'],
+              translate('constraints.oneof.period')
+            ),
+          ],
+        },
+      },
+    },
+    trialPeriod: {
+      type: type.object,
+      format: format.form,
+      label: translate('Trial'),
+      schema: {
+        value: {
+          type: type.number,
+          label: translate('Trial period'),
+          placeholder: translate('The trial period'),
+          defaultValue: 0,
+          props: {
+            step: 1,
+            min: 0,
+          },
+          constraints: [
+            constraints.integer(translate('constraints.integer')),
+            constraints.test(
+              'positive',
+              translate('constraints.positive'),
+              (v) => v >= 0
+            ),
+          ],
+        },
+        unit: {
+          type: type.string,
+          format: format.buttonsSelect,
+          label: translate('Trial period unit'),
+          defaultValue: 'Month',
+          options: [
+            { label: translate('Hours'), value: 'Hour' },
+            { label: translate('Days'), value: 'Day' },
+            { label: translate('Months'), value: 'Month' },
+            { label: translate('Years'), value: 'Year' },
+          ],
+          constraints: [
+            constraints.oneOf(
+              ['Hour', 'Day', 'Month', 'Year'],
+              translate('constraints.oneof.period')
+            ),
+            // constraints.when('trialPeriod.value', (value) => value > 0, [constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period'))]) //FIXME
+          ],
+        },
+      },
+    },
   })
 
-  if (queryFullTenant.isLoading) {
-    return <Spinner />
-  } else if (queryFullTenant.data && !isError(queryFullTenant.data)) {
-    const fullTenant: ITenantFull = queryFullTenant.data
-
-    const billingSchema = ({
-      paymentSettings: {
-        type: type.object,
-        format: format.form,
-        label: translate('payment settings'),
-        schema: {
-          thirdPartyPaymentSettingsId: {
-            type: type.string,
-            format: format.select,
-            label: translate('Type'),
-            help: 'If no type is selected, use Daikoku APIs to get billing informations',
-            options: fullTenant.thirdPartyPaymentSettings,
-            transformer: (s: IThirdPartyPaymentSettings) => ({
-              label: s.name,
-              value: s._id,
-            }),
-            props: { isClearable: true },
-            onChange: ({ rawValues, setValue, value }) => {
-              const settings = fullTenant.thirdPartyPaymentSettings;
-              setValue(
-                'paymentSettings.type',
-                settings.find((s) => value === s._id)?.type
-              );
-            },
-          },
-        },
-      },
-      costPerMonth: {
-        type: type.number,
-        label: ({ rawValues }) =>
-          translate(
-            `Cost per ${rawValues?.billingDuration?.unit?.toLocaleLowerCase() ?? 'month'}`
-          ),
-        placeholder: translate('Cost per billing period'),
-        constraints: [constraints.positive(translate('constraints.positive'))],
-      },
-      costPerRequest: {
-        type: type.number,
-        label: translate('Cost per req.'),
-        placeholder: translate('Cost per request'),
-        props: { step: 0.01 },
-        constraints: [constraints.positive(translate('constraints.positive'))],
-      },
-      currency: {
-        type: type.object,
-        format: format.form,
-        label: null,
-        schema: {
-          code: {
-            type: type.string,
-            format: format.select,
-            label: translate('Currency'),
-            defaultValue: 'EUR',
-            options: currencies.map((c) => ({
-              label: `${c.name} (${c.symbol})`,
-              value: c.code,
-            })),
-          },
-        },
-      },
-      billingDuration: {
-        type: type.object,
-        format: format.form,
-        label: translate('Billing every'),
-        schema: {
-          value: {
-            type: type.number,
-            label: translate('Billing period'),
-            placeholder: translate('The Billing period'),
-            props: {
-              step: 1,
-              min: 0,
-            },
-            constraints: [
-              constraints.positive(translate('constraints.positive')),
-              constraints.integer(translate('constraints.integer')),
-              constraints.required(
-                translate('constraints.required.billing.period')
-              ),
-            ],
-          },
-          unit: {
-            type: type.string,
-            format: format.buttonsSelect,
-            label: translate('Billing period unit'),
-            options: [
-              { label: translate('Hours'), value: 'Hour' },
-              { label: translate('Days'), value: 'Day' },
-              { label: translate('Months'), value: 'Month' },
-              { label: translate('Years'), value: 'Year' },
-            ],
-            constraints: [
-              constraints.required('constraints.required.billing.period'),
-              constraints.oneOf(
-                ['Hour', 'Day', 'Month', 'Year'],
-                translate('constraints.oneof.period')
-              ),
-            ],
-          },
-        },
-      },
-      trialPeriod: {
-        type: type.object,
-        format: format.form,
-        label: translate('Trial'),
-        schema: {
-          value: {
-            type: type.number,
-            label: translate('Trial period'),
-            placeholder: translate('The trial period'),
-            defaultValue: 0,
-            props: {
-              step: 1,
-              min: 0,
-            },
-            constraints: [
-              constraints.integer(translate('constraints.integer')),
-              constraints.test(
-                'positive',
-                translate('constraints.positive'),
-                (v) => v >= 0
-              ),
-            ],
-          },
-          unit: {
-            type: type.string,
-            format: format.buttonsSelect,
-            label: translate('Trial period unit'),
-            defaultValue: 'Month',
-            options: [
-              { label: translate('Hours'), value: 'Hour' },
-              { label: translate('Days'), value: 'Day' },
-              { label: translate('Months'), value: 'Month' },
-              { label: translate('Years'), value: 'Year' },
-            ],
-            constraints: [
-              constraints.oneOf(
-                ['Hour', 'Day', 'Month', 'Year'],
-                translate('constraints.oneof.period')
-              ),
-              // constraints.when('trialPeriod.value', (value) => value > 0, [constraints.oneOf(['Hour', 'Day', 'Month', 'Year'], translate('constraints.oneof.period'))]) //FIXME
-            ],
-          },
-        },
-      },
-    })
-
-    return (
-      <>
-        <ToggleFormPartButton
-          value={billingDisplayed}
-          action={() => setBillingDisplayed((prev) => !prev)}
-          falseLabel={translate("usage.plan.form.pricing.selector.false.label")}
-          falseDescription={translate("usage.plan.form.pricing.selector.false.description")}
-          trueLabel={translate("usage.plan.form.pricing.selector.true.label")}
-          trueDescription={translate("usage.plan.form.pricing.selector.true.description")}
-        />
-        {billingDisplayed && <Form
-          schema={billingSchema}
-          value={props.plan}
-          onSubmit={(data) => props.savePlan({ ...props.plan, ...data })}
-        />}
-        {!billingDisplayed && (
-          <div className='mrf-flex mrf-jc_end mrf-mt_5'>
-            <button className='mrf-btn mrf-btn_green mrf-ml_10'
-              type='button'
-              onClick={() => props.savePlan({
-                ...props.plan,
-                costPerMonth: undefined, costPerRequest: undefined,
-                trialPeriod: undefined, currency: undefined,
-                billingDuration: undefined, paymentSettings: undefined
-              })}>
-              Save
-            </button>
-          </div>
-        )}
-      </>
-    )
-  } else {
-    return (
-      <div>an error occured durring tenant retrieving</div>
-    )
-  }
-
+  return (
+    <>
+      <ToggleFormPartButton
+        value={billingDisplayed}
+        action={() => setBillingDisplayed((prev) => !prev)}
+        falseLabel={translate("usage.plan.form.pricing.selector.false.label")}
+        falseDescription={translate("usage.plan.form.pricing.selector.false.description")}
+        trueLabel={translate("usage.plan.form.pricing.selector.true.label")}
+        trueDescription={translate("usage.plan.form.pricing.selector.true.description")}
+      />
+      {billingDisplayed && <Form
+        schema={billingSchema}
+        value={props.plan}
+        onSubmit={(data) => props.savePlan({ ...props.plan, ...data })}
+      />}
+      {!billingDisplayed && (
+        <div className='mrf-flex mrf-jc_end mrf-mt_5'>
+          <button className='mrf-btn mrf-btn_green mrf-ml_10'
+            type='button'
+            onClick={() => props.savePlan({
+              ...props.plan,
+              costPerMonth: undefined, costPerRequest: undefined,
+              trialPeriod: undefined, currency: undefined,
+              billingDuration: undefined, paymentSettings: undefined
+            })}>
+            Save
+          </button>
+        </div>
+      )}
+    </>
+  )
 }
 
 type ApiPricingCardProps = {
@@ -716,12 +700,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
   const graphqlEndpoint = `${window.location.origin}/api/search`;
   const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
 
-  const abilitedToUpdateAPI = useMemo<boolean>(() => CanIDoAction(connectedUser, manage, API, props.ownerTeam), [connectedUser, props.ownerTeam]);
-  const queryFullTenant = useQuery({
-    queryKey: ['fullTenant'],
-    queryFn: () => Services.oneTenant(tenant._id),
-    enabled: abilitedToUpdateAPI
-  })
+  // const abilitedToUpdateAPI = useMemo<boolean>(() => CanIDoAction(connectedUser, manage, API, props.ownerTeam), [connectedUser, props.ownerTeam]);
 
   const showApiKeySelectModal = (team: string) => {
     const { plan } = props;
@@ -1107,12 +1086,6 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     />
   })
 
-  if (abilitedToUpdateAPI && queryFullTenant.isLoading) {
-    return <Spinner />
-  } else if (!abilitedToUpdateAPI || (queryFullTenant.data && !isError(queryFullTenant.data))) {
-
-    const fullTenant = queryFullTenant.data as (undefined | ITenantFull)
-
     const setupPayment = (plan: IUsagePlan) => {
       return Services.setupPayment(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
         .then((response) => {
@@ -1149,7 +1122,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         savePlan={plan => Promise.resolve(props.savePlan(plan))}
         plan={props.plan}
         team={props.ownerTeam}
-        tenant={fullTenant as ITenantFull}
+        tenant={tenant}
       />
     })
 
@@ -1311,7 +1284,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
               <div>
                 <h4>{translate("Otoroshi target")}</h4>
                 <span className='feature__description'>
-                  {plan.otoroshiTarget?.otoroshiSettings && (fullTenant?.otoroshiSettings.find(o => o._id === plan.otoroshiTarget?.otoroshiSettings)?.url)}
+                  {plan.otoroshiTarget?.otoroshiSettings && (tenant.otoroshiSettings.find(o => o._id === plan.otoroshiTarget?.otoroshiSettings)?.url)}
                   {!plan.otoroshiTarget?.otoroshiSettings && translate('api.pricings.otoroshi.target.value.none')}
                 </span>
               </div>
@@ -1332,11 +1305,6 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         </div>
       </div>
     );
-  } else {
-    return (
-      <div>An error occurred while retrieving the tenant</div>
-    )
-  }
 };
 
 type ITeamSelector = {
