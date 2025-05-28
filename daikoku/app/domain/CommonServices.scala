@@ -1239,6 +1239,47 @@ object CommonServices {
               "total_selectable",
               Seq()
             )
+//        test <- env.dataStore.notificationRepo
+//          .forTenant(ctx.tenant)
+//          .query(
+//            s"""
+//               |$CTE
+//               |SELECT n.content, count(1) OVER() AS total_filtered
+//               |FROM notifications n
+//               |         LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
+//               |         LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
+//               |WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+//               |    OR n.content ->> 'team' = t._id::text)
+//               |  AND CASE
+//               |          WHEN array_length($$1::text[], 1) IS NULL THEN true
+//               |          ELSE n.content ->> 'notificationType' = ANY ($$1::text[])
+//               |  END
+//               |  AND CASE
+//               |          WHEN array_length($$2::text[], 1) IS NULL THEN true
+//               |          ELSE t._id = ANY ($$2::text[])
+//               |  END
+//               |  AND CASE
+//               |          WHEN array_length($$3::text[], 1) IS NULL THEN true
+//               |          ELSE n.content -> 'action' ->> 'type' = ANY ($$3::text[])
+//               |  END
+//               |  AND CASE
+//               |          WHEN array_length($$4::text[], 1) IS NULL THEN true
+//               |          ELSE a._id = ANY ($$4::text[])
+//               |  END
+//               |  AND ($$5 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
+//               |ORDER BY n.content ->> 'date' DESC
+//               |LIMIT $$6 OFFSET $$7;
+//               |""".stripMargin,
+//            Seq(
+//              actionTypes,
+//              teams,
+//              types,
+//              apis,
+//              java.lang.Boolean.valueOf(unreadOnly),
+//              java.lang.Integer.valueOf(limit),
+//              java.lang.Integer.valueOf(offset)
+//            )
+//          )
       } yield {
         Right(
           NotificationWithCount(

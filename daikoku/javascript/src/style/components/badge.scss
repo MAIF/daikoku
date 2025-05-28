@@ -4,7 +4,7 @@
 
 @mixin badge-custom($bg, $text) {
   background-color: $bg;
-  color: $text;
+  color: color-mix(in srgb, $bg 50%, #000);;
   position: relative;
   z-index: 0;
   cursor: pointer;

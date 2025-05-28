@@ -113,9 +113,10 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
   .table-row {
     display: grid;
     grid-template-columns: 5fr 50fr 15fr 15fr 10fr 10fr;
-    padding: 1.5rem 1rem;
+    padding: .875rem 1rem;
     align-items: center;
     border-bottom: 1px solid variables.$level1_bg-color;
+    font-size: 0.875rem;
 
     &:hover { 
       background-color: color-mix(in srgb, variables.$level3_bg-color 90%, #000);
@@ -165,7 +166,7 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
         .notification__identities {
           font-weight: lighter;
         }
-
+        
         .notification__description {
           font-weight: bold;
         }

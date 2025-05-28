@@ -2,11 +2,11 @@ import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-quer
 import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, PaginationState, SortingState, useReactTable } from '@tanstack/react-table';
 import classNames from 'classnames';
 import { formatDistanceToNow } from 'date-fns';
-import { useContext, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import Select, { components, MultiValue, OptionProps, ValueContainerProps } from 'react-select';
 
 import { constraints, format, type } from '@maif/react-forms';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
@@ -15,13 +15,13 @@ import { isError, ISubscriptionDemand, ITesting } from '../../../types';
 import { getLanguageFns, Spinner } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { Option as opt } from '../../utils';
+declare module '@tanstack/react-table' {
+  interface ColumnMeta<TData extends unknown, TValue> extends NotificationColumnMeta { }
+}
 
 type NotificationColumnMeta = {
   className?: string;
 };
-declare module '@tanstack/react-table' {
-  interface ColumnMeta<TData extends unknown, TValue> extends NotificationColumnMeta { }
-}
 
 const notificationFormatter = (notification: NotificationGQL, translate: (params: string | TranslateParams) => string) => {
   switch (notification.action.__typename) {
@@ -31,7 +31,7 @@ const notificationFormatter = (notification: NotificationGQL, translate: (params
       return translate({ key: 'notif.api.access', replacements: [notification.action.api!.name] })
     case 'TransferApiOwnership':
       return translate({ key: 'notif.api.transfer', replacements: [notification.action.api!.name] })
-    case 'ApiSubscriptionDemand':
+    case 'ApiSubscription':
       return translate({
         key: 'notif.api.subscription',
         replacements: [notification.action.api!.name, notification.action.api!.currentVersion, notification.action.plan!.customName]
@@ -231,20 +231,25 @@ const VISIBLE_APIS = `
 export const NotificationList = () => {
   const { translate, language } = useContext(I18nContext);
   const { customGraphQLClient, connectedUser } = useContext(GlobalContext)
-  const { openSubMetadataModal, openFormModal, alert } = useContext(ModalContext)
+  const { openSubMetadataModal, openFormModal, alert, openCustomModal } = useContext(ModalContext)
 
+  
+  
   const pageSize = 25;
-
-
   const [selectAll, setSelectAll] = useState(false);
   const [limit, setLimit] = useState(pageSize);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize,
   })
-  // const [sorting, setSorting] = useState<SortingState>([{ id: 'date', desc: true }]);
+
   const defaultColumnFilters = [{ "id": "unreadOnly", "value": true }];
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(defaultColumnFilters)
+  const [searchParams] = useSearchParams();
+  const initialFilters = useMemo(() => {
+    const f = searchParams.get('filter');
+    return f ? JSON.parse(decodeURIComponent(f)) : defaultColumnFilters;
+  }, [searchParams]);
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialFilters)
 
   const queryClient = useQueryClient();
   const notificationListQuery = useInfiniteQuery({
@@ -262,6 +267,11 @@ export const NotificationList = () => {
       return nextOffset < totalFilteredCount ? nextOffset : undefined;
     }
   })
+
+  useEffect(() => {
+    const q = JSON.stringify(columnFilters);
+    window.history.replaceState(null, '', `?filter=${q}`);
+  }, [columnFilters]);
 
   const visibleApisRequest = useQuery({
     queryKey: ['apis'],
@@ -282,7 +292,7 @@ export const NotificationList = () => {
 
   const notificationTypes = [
     { type: "ApiAccess", variant: "success" },
-    { type: "ApiSubscriptionDemand", variant: "success" },
+    { type: "ApiSubscription", variant: "success" },
     { type: "ApiSubscriptionReject", variant: "danger" },
     { type: "ApiSubscriptionAccept", variant: "info" },
     { type: "OtoroshiSyncSubscriptionError", variant: "danger" },
@@ -366,7 +376,7 @@ export const NotificationList = () => {
       );
     } else {
       switch (notification.action.__typename) {
-        case 'ApiSubscriptionDemand':
+        case 'ApiSubscription':
           return (
             <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
               <button
@@ -506,15 +516,14 @@ export const NotificationList = () => {
               {opt(api).map(a => <span>/ <a href='#' onClick={() => handleSelectChange([{ label: a.name, value: a._id }], 'api')}>{a.name}</a></span>).getOrElse(<></>)}</div>
             <div className='notification__description'>{notificationFormatter(notification, translate)}</div>
           </div>
-          {notification.action.__typename === 'ApiSubscriptionDemand' && (
+          {notification.action.__typename === 'ApiSubscription' && (
             <button
-
               title={translate('notifications.page.subscription.demand.detail.button.label')}
               aria-label={translate('notifications.page.subscription.demand.detail.button.label')}
               className='nav_item cursor-pointer'
-              onClick={() => alert({
+              onClick={() => openCustomModal({
                 title: translate('notifications.page.subscription.demand.detail.modal.title'),
-                message: <div>
+                content: <div>
                   <div>{translate('notifications.page.subscription.demand.detail.summary.label')} :</div>
                   <i>{notification.action.motivation}</i>
                   <div className="accordion" id="accordionExample">
@@ -531,7 +540,25 @@ export const NotificationList = () => {
                       </div>
                     </div>
                   </div>
-                </div>
+                </div>,
+                actions: (close) => notification.status.status === 'Pending' ? <>
+                  <button className='btn btn-outline-danger' onClick={close}>{translate('Reject')}</button>
+                  <button className='btn btn-outline-success' onClick={() => Services.getSubscriptionDemand(notification.team!._id, notification.action.demand!._id) //todo: check si id ou _id pour la deman
+                    .then(demand => {
+                      if (!isError(demand)) {
+                        openSubMetadataModal({
+                          save: (sub) => accept(notification._id, sub),
+                          api: notification.action.api?._id,
+                          plan: notification.action.plan!._id,
+                          team: notification.action.team,
+                          notification: notification,
+                          subscriptionDemand: demand,
+                          creationMode: true,
+                        })
+                      }
+                    })}>{translate('Accept')}</button>
+                </> : <button className="btn btn-outline-info">{translate('Close')}</button>,
+                noClose: true
               })}>
               <i className="far fa-eye cursor-pointer" />
             </button>

@@ -2266,7 +2266,7 @@ object SchemaDefinition {
 
     lazy val ApiSubscriptionDemandType = new PossibleObject(
       ObjectType(
-        "ApiSubscriptionDemand",
+        "ApiSubscription",
         "A api subscription notification action",
         interfaces[
           (DataStore, DaikokuActionContext[JsValue]),
