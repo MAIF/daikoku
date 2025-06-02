@@ -513,7 +513,7 @@ export const NotificationList = () => {
             <div className='notification__identities'>
               {!!team && <a href='#' onClick={() => handleSelectChange([{ label: team.name, value: team._id }], 'team')}>{team.name}</a>}
               {!team && <span>{connectedUser.name}</span>}
-              {opt(api).map(a => <span>/ <a href='#' onClick={() => handleSelectChange([{ label: a.name, value: a._id }], 'api')}>{a.name}</a></span>).getOrElse(<></>)}</div>
+              {opt(api).map(a => <span> / <a href='#' onClick={() => handleSelectChange([{ label: a.name, value: a._id }], 'api')}>{a.name}</a></span>).getOrElse(<></>)}</div>
             <div className='notification__description'>{notificationFormatter(notification, translate)}</div>
           </div>
           {notification.action.__typename === 'ApiSubscription' && (

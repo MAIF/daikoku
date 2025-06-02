@@ -1021,7 +1021,7 @@ object CommonServices {
       val CTE = s"""
                |WITH my_teams as (SELECT *
                |                  FROM teams
-               |                  WHERE content -> 'users' @> '[{"userId": "${ctx.user.id.value}"}]')
+               |                  WHERE _deleted IS FALSE AND content -> 'users' @> '[{"userId": "${ctx.user.id.value}"}]')
                |                  """
 
       val actionTypes =
@@ -1047,254 +1047,126 @@ object CommonServices {
       val unreadOnly =
         getFiltervalue[Boolean](filter, "unreadOnly").getOrElse(false)
 
-      for {
-        notifications <-
-          env.dataStore.notificationRepo
-            .forTenant(ctx.tenant)
-            .query(
-              s"""
-               |$CTE
-               |SELECT n.content
-               |FROM notifications n
-               |         LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
-               |         LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
-               |WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
-               |    OR n.content ->> 'team' = t._id::text)
-               |  AND CASE
-               |          WHEN array_length($$1::text[], 1) IS NULL THEN true
-               |          ELSE n.content ->> 'notificationType' = ANY ($$1::text[])
-               |  END
-               |  AND CASE
-               |          WHEN array_length($$2::text[], 1) IS NULL THEN true
-               |          ELSE t._id = ANY ($$2::text[])
-               |  END
-               |  AND CASE
-               |          WHEN array_length($$3::text[], 1) IS NULL THEN true
-               |          ELSE n.content -> 'action' ->> 'type' = ANY ($$3::text[])
-               |  END
-               |  AND CASE
-               |          WHEN array_length($$4::text[], 1) IS NULL THEN true
-               |          ELSE a._id = ANY ($$4::text[])
-               |  END
-               |  AND ($$5 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
-               |ORDER BY n.content ->> 'date' DESC
-               |LIMIT $$6 OFFSET $$7;
+      (for {
+        notifications <- EitherT.fromOptionF(env.dataStore
+          .asInstanceOf[PostgresDataStore]
+          .queryOneRaw(
+            s"""
+               |$CTE,
+               |filtered_notifs as (
+               |  SELECT
+               |    n.content,
+               |    count(1) OVER() AS total_filtered
+               |  FROM notifications n
+               |           LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |           LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
+               |  WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |      OR n.content ->> 'team' = t._id::text)
+               |    AND CASE
+               |            WHEN array_length($$1::text[], 1) IS NULL THEN true
+               |            ELSE n.content ->> 'notificationType' = ANY ($$1::text[])
+               |    END
+               |    AND CASE
+               |            WHEN array_length($$2::text[], 1) IS NULL THEN true
+               |            ELSE t._id = ANY ($$2::text[])
+               |    END
+               |    AND CASE
+               |            WHEN array_length($$3::text[], 1) IS NULL THEN true
+               |            ELSE n.content -> 'action' ->> 'type' = ANY ($$3::text[])
+               |    END
+               |    AND CASE
+               |            WHEN array_length($$4::text[], 1) IS NULL THEN true
+               |            ELSE a._id = ANY ($$4::text[])
+               |    END
+               |    AND ($$5 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
+               |  ORDER BY n.content ->> 'date' DESC
+               |  LIMIT $$6 OFFSET $$7
+               |)
+               |
+               |SELECT json_build_object(
+               |  'notifications', json_agg(to_jsonb(filtered_notifs.content)),
+               |  'total_filtered', COALESCE(max(total_filtered), 0)
+               |) AS result
+               |FROM filtered_notifs;
                |""".stripMargin,
-              Seq(
-                actionTypes,
-                teams,
-                types,
-                apis,
-                java.lang.Boolean.valueOf(unreadOnly),
-                java.lang.Integer.valueOf(limit),
-                java.lang.Integer.valueOf(offset)
-              )
+            "result",
+            Seq(
+              actionTypes,
+              teams,
+              types,
+              apis,
+              java.lang.Boolean.valueOf(unreadOnly),
+              java.lang.Integer.valueOf(limit),
+              java.lang.Integer.valueOf(offset)
             )
-        totalFiltered <-
-          env.dataStore
-            .asInstanceOf[PostgresDataStore]
-            .queryOneLong(
-              s"""
-               |$CTE
-               |SELECT count(1) as total_filtered
-               |FROM notifications n
-               |         LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
-               |         LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
-               |WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
-               |    OR n.content ->> 'team' = t._id::text)
-                 AND CASE
-               |          WHEN array_length($$1::text[], 1) IS NULL THEN true
-               |          ELSE n.content ->> 'notificationType' = ANY ($$1::text[])
-               |  END
-               |  AND CASE
-               |          WHEN array_length($$2::text[], 1) IS NULL THEN true
-               |          ELSE t._id = ANY ($$2::text[])
-               |  END
-               |  AND CASE
-               |          WHEN array_length($$3::text[], 1) IS NULL THEN true
-               |          ELSE n.content -> 'action' ->> 'type' = ANY ($$3::text[])
-               |  END
-               |  AND CASE
-               |          WHEN array_length($$4::text[], 1) IS NULL THEN true
-               |          ELSE a._id = ANY ($$4::text[])
-               |  END
-               |  AND ($$5 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending');
-               |""".stripMargin,
-              "total_filtered",
-              Seq(
-                actionTypes,
-                teams,
-                types,
-                apis,
-                java.lang.Boolean.valueOf(unreadOnly)
-              )
+          ), AppError.InternalServerError("SQL request for notifications failed"))
+        totals <- EitherT.fromOptionF(env.dataStore.asInstanceOf[PostgresDataStore]
+          .queryOneRaw(
+            s"""
+               |$CTE,
+               |     base AS (SELECT t.content ->> 'name', n.content -> 'action' ->> 'type', n.*
+               |              FROM notifications n
+               |                       LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |              WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |                  OR n.content ->> 'team' = t._id::text)
+               |                AND ($$1 IS FALSE OR n.content -> 'status' ->> 'status' = 'Pending')),
+               |     total AS (SELECT COUNT(*) AS total
+               |               FROM base),
+               |     total_by_teams AS (SELECT n.content ->> 'team' AS team, COUNT(*) AS total
+               |                        FROM base n
+               |                        GROUP BY n.content ->> 'team'
+               |                        ORDER BY total DESC),
+               |     total_by_apis AS (SELECT a._id AS api, COUNT(*) AS total
+               |                       FROM base n
+               |                                LEFT JOIN apis a
+               |                                          ON (
+               |                                              a._id = n.content -> 'action' ->> 'api'
+               |                                                  OR a.content ->> 'name' = n.content -> 'action' ->> 'apiName'
+               |                                                  OR a.content ->> 'name' = n.content -> 'action' ->> 'api'
+               |                                                  OR a.content ->> '_id' = n.content -> 'action' -> 'api' ->> '_id'
+               |                                              )
+               |                       GROUP BY a._id
+               |                       ORDER BY total DESC),
+               |     total_by_types AS (SELECT n.content ->> 'notificationType' AS type, COUNT(*) AS total
+               |                        FROM base n
+               |                        GROUP BY n.content ->> 'notificationType'
+               |                        ORDER BY total DESC),
+               |     total_by_notification_types AS (SELECT n.content -> 'action' ->> 'type' AS type, COUNT(*) AS total
+               |                                     FROM base n
+               |                                     GROUP BY n.content -> 'action' ->> 'type'
+               |                                     ORDER BY total DESC),
+               |     total_selectable AS (SELECT COUNT(*) AS total_selectable
+               |                          FROM base)
+               |
+               |SELECT row_to_json(_.*) as result
+               |from (select (SELECT total FROM total),
+               |             COALESCE((SELECT json_agg(row_to_json(t)) FROM total_by_teams t), '[]'::json)                  AS total_by_teams,
+               |             COALESCE((SELECT json_agg(row_to_json(a)) FROM total_by_apis a),
+               |                      '[]'::json)                                                                           AS total_by_apis,
+               |             COALESCE((SELECT json_agg(row_to_json(nt)) FROM total_by_types nt),
+               |                      '[]'::json)                                                                           AS total_by_types,
+               |             COALESCE((SELECT json_agg(row_to_json(ant)) FROM total_by_notification_types ant),
+               |                      '[]'::json)                                                                           AS total_by_notification_types,
+               |             (SELECT total_selectable FROM total_selectable)) _
+               |  """.stripMargin,
+            "result",
+            Seq(
+              java.lang.Boolean.valueOf(unreadOnly)
             )
-        total <-
-          env.dataStore
-            .asInstanceOf[PostgresDataStore]
-            .queryOneLong(
-              s"""
-               |$CTE
-               |SELECT count(1) as total
-               |FROM notifications n
-               |         LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
-               |WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
-               |    OR n.content ->> 'team' = t._id::text)
-               |    AND ($$1 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending');
-               |""".stripMargin,
-              "total",
-              Seq(java.lang.Boolean.valueOf(unreadOnly))
-            )
-        totalByTeams <-
-          env.dataStore
-            .asInstanceOf[PostgresDataStore]
-            .queryOneJsArray(
-              s"""
-               |$CTE
-               |select coalesce(json_agg(row_to_json(_.*)), '[]'::json) as total_by_teams
-               |from (SELECT n.content ->> 'team' AS team, COUNT(*) AS total
-               |      FROM notifications n
-               |               LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
-               |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
-               |          OR n.content ->> 'team' = t._id::text)
-               |          AND ($$1 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
-               |      GROUP BY n.content ->> 'team'
-               |      ORDER BY total DESC) _;
-               |""".stripMargin,
-              "total_by_teams",
-              Seq(java.lang.Boolean.valueOf(unreadOnly))
-            )
-        totalByApis <-
-          env.dataStore
-            .asInstanceOf[PostgresDataStore]
-            .queryOneJsArray(
-              s"""
-                 |$CTE
-                 |select coalesce(json_agg(row_to_json(_.*)), '[]'::json) as total_by_apis
-                 |from (SELECT a._id as api, COUNT(*) AS total
-                 |      FROM notifications n
-                 |               LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
-                 |               LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')) or ((a.content ->> 'name') = (n.content -> 'action' ->> 'api')))
-                 |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
-                 |          OR n.content ->> 'team' = t._id::text)
-                 |          AND ($$1 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
-                 |      GROUP BY a._id
-                 |      ORDER BY total DESC) _;
-                 |""".stripMargin,
-              "total_by_apis",
-              Seq(java.lang.Boolean.valueOf(unreadOnly))
-            )
-        totalByTypes <-
-          env.dataStore
-            .asInstanceOf[PostgresDataStore]
-            .queryOneJsArray(
-              s"""
-               |$CTE
-               |select coalesce(json_agg(row_to_json(_.*)), '[]'::json) as total_by_types
-               |from (SELECT n.content ->> 'notificationType' AS type, COUNT(*) AS total
-               |      FROM notifications n
-               |               LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
-               |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
-               |          OR n.content ->> 'team' = t._id::text)
-               |          AND ($$1 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
-               |      GROUP BY n.content ->> 'notificationType'
-               |      ORDER BY total DESC) _;
-               |""".stripMargin,
-              "total_by_types",
-              Seq(java.lang.Boolean.valueOf(unreadOnly))
-            )
-        totalByNotificationTypes <-
-          env.dataStore
-            .asInstanceOf[PostgresDataStore]
-            .queryOneJsArray(
-              s"""
-               |$CTE
-               |select coalesce(json_agg(row_to_json(_.*)), '[]'::json) as total_by_notification_types
-               |from (SELECT n.content -> 'action' ->> 'type' AS type, COUNT(*) AS total
-               |      FROM notifications n
-               |               LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
-               |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
-               |          OR n.content ->> 'team' = t._id::text)
-               |          AND ($$1 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
-               |      GROUP BY n.content -> 'action' ->> 'type'
-               |      ORDER BY total DESC) _;
-               |""".stripMargin,
-              "total_by_notification_types",
-              Seq(java.lang.Boolean.valueOf(unreadOnly))
-            )
-        totalSelectable <-
-          env.dataStore
-            .asInstanceOf[PostgresDataStore]
-            .queryOneLong(
-              s"""
-                 |$CTE
-                 |SELECT COUNT(1) AS total_selectable
-                 |      FROM notifications n
-                 |               LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
-                 |      WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
-                 |          OR n.content ->> 'team' = t._id::text)
-                 |          AND n.content ->> 'notificationType' = 'AcceptOnly'
-                 |          AND n.content -> 'status' ->> 'status' = 'Pending';
-                 |""".stripMargin,
-              "total_selectable",
-              Seq()
-            )
-//        test <- env.dataStore.notificationRepo
-//          .forTenant(ctx.tenant)
-//          .query(
-//            s"""
-//               |$CTE
-//               |SELECT n.content, count(1) OVER() AS total_filtered
-//               |FROM notifications n
-//               |         LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
-//               |         LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
-//               |WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
-//               |    OR n.content ->> 'team' = t._id::text)
-//               |  AND CASE
-//               |          WHEN array_length($$1::text[], 1) IS NULL THEN true
-//               |          ELSE n.content ->> 'notificationType' = ANY ($$1::text[])
-//               |  END
-//               |  AND CASE
-//               |          WHEN array_length($$2::text[], 1) IS NULL THEN true
-//               |          ELSE t._id = ANY ($$2::text[])
-//               |  END
-//               |  AND CASE
-//               |          WHEN array_length($$3::text[], 1) IS NULL THEN true
-//               |          ELSE n.content -> 'action' ->> 'type' = ANY ($$3::text[])
-//               |  END
-//               |  AND CASE
-//               |          WHEN array_length($$4::text[], 1) IS NULL THEN true
-//               |          ELSE a._id = ANY ($$4::text[])
-//               |  END
-//               |  AND ($$5 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
-//               |ORDER BY n.content ->> 'date' DESC
-//               |LIMIT $$6 OFFSET $$7;
-//               |""".stripMargin,
-//            Seq(
-//              actionTypes,
-//              teams,
-//              types,
-//              apis,
-//              java.lang.Boolean.valueOf(unreadOnly),
-//              java.lang.Integer.valueOf(limit),
-//              java.lang.Integer.valueOf(offset)
-//            )
-//          )
+          ), AppError.InternalServerError("SQL request for notifications totals failed"))
       } yield {
-        Right(
           NotificationWithCount(
-            notifications = notifications,
-            total = total.getOrElse(0),
-            totalFiltered = totalFiltered.getOrElse(0),
-            totalSelectable = totalSelectable.getOrElse(0),
-            totalByTypes = totalByTypes.getOrElse(Json.arr()),
+            notifications = (notifications \ "notifications").asOpt(json.SeqNotificationFormat).getOrElse(Seq.empty),
+            totalFiltered = (notifications \ "total_filtered").as[Long],
+            total = (totals \ "total").as[Long],
+            totalSelectable = (totals \ "total_selectable").as[Long],
+            totalByTypes = (totals \ "total_by_types").as[JsArray],
             totalByNotificationTypes =
-              totalByNotificationTypes.getOrElse(Json.arr()),
-            totalByTeams = totalByTeams.getOrElse(Json.arr()),
-            totalByApis = totalByApis.getOrElse(Json.arr())
+              (totals \ "total_by_notification_types").as[JsArray],
+            totalByTeams = (totals \ "total_by_teams").as[JsArray],
+            totalByApis = (totals \ "total_by_apis").as[JsArray]
           )
-        )
-      }
+      }).value
     }
   }
 
