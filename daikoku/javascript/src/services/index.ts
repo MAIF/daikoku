@@ -1802,6 +1802,14 @@ export const graphql = {
             __typename
               message
             }
+            ... on OtoroshiSyncApiError {
+            __typename
+              message,
+              api {
+                _id,
+                name
+              }
+            }
             ... on ApiKeyRotationInProgress {
             __typename
               clientId

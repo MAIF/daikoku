@@ -2446,12 +2446,12 @@ object SchemaDefinition {
         interfaces[
           (DataStore, DaikokuActionContext[JsValue]),
           OtoroshiSyncApiError
-        ](OtoroshiSyncNotificationActionType),
+        ](NotificationActionType),
         fields[
           (DataStore, DaikokuActionContext[JsValue]),
           OtoroshiSyncApiError
         ](
-          Field("api", ApiType, resolve = _.value.api),
+          Field("api", OptionType(ApiType), resolve = ctx => Some(ctx.value.api)),
           Field("message", StringType, resolve = _.value.message)
         )
       )
