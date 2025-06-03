@@ -1058,9 +1058,9 @@ object CommonServices {
                |    n.content,
                |    count(1) OVER() AS total_filtered
                |  FROM notifications n
-               |           LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
-               |           LEFT JOIN apis a ON ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
-               |  WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |           LEFT JOIN my_teams t ON t._deleted IS FALSE AND n.content ->> 'team' = t._id::text
+               |           LEFT JOIN apis a ON a._deleted IS FALSE AND ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
+               |  WHERE n._deleted IS FALSE AND (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |      OR n.content ->> 'team' = t._id::text)
                |    AND CASE
                |            WHEN array_length($$1::text[], 1) IS NULL THEN true
@@ -1107,7 +1107,7 @@ object CommonServices {
                |     base AS (SELECT t.content ->> 'name', n.content -> 'action' ->> 'type', n.*
                |              FROM notifications n
                |                       LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
-               |              WHERE (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |              WHERE n._deleted IS FALSE AND (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
                |                  OR n.content ->> 'team' = t._id::text)
                |                AND ($$1 IS FALSE OR n.content -> 'status' ->> 'status' = 'Pending')),
                |     total AS (SELECT COUNT(*) AS total
@@ -1119,7 +1119,7 @@ object CommonServices {
                |     total_by_apis AS (SELECT a._id AS api, COUNT(*) AS total
                |                       FROM base n
                |                                LEFT JOIN apis a
-               |                                          ON (
+               |                                          ON a._deleted IS FALSE AND (
                |                                              a._id = n.content -> 'action' ->> 'api'
                |                                                  OR a.content ->> 'name' = n.content -> 'action' ->> 'apiName'
                |                                                  OR a.content ->> 'name' = n.content -> 'action' ->> 'api'
@@ -1136,7 +1136,8 @@ object CommonServices {
                |                                     GROUP BY n.content -> 'action' ->> 'type'
                |                                     ORDER BY total DESC),
                |     total_selectable AS (SELECT COUNT(*) AS total_selectable
-               |                          FROM base)
+               |                          FROM base
+               |                          WHERE content ->> 'notificationType' = 'AcceptOnly' AND content -> 'status' ->> 'status' = 'Pending')
                |
                |SELECT row_to_json(_.*) as result
                |from (select (SELECT total FROM total),
