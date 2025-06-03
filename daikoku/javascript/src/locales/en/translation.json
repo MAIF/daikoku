@@ -1583,8 +1583,8 @@
         "p": "Actions required"
     },
     "notifications.page.filters.all.action.label": "All notifications",
-    "notifications.page.filters.action.AcceptOnly.label": "Action required",
-    "notifications.page.filters.action.AcceptOrReject.label": "No action required",
+    "notifications.page.filters.action.AcceptOnly.label": "No action required",
+    "notifications.page.filters.action.AcceptOrReject.label": "Action required",
     "notifications.page.filters.type.ApiAccess.label": "API access",
     "notifications.page.filters.type.ApiSubscription.label": "New subscription",
     "notifications.page.filters.type.ApiSubscriptionReject.label": "Subscription rejected",
