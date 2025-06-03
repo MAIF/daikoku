@@ -1586,8 +1586,8 @@
     "p": "Actions attendues"
   },
   "notifications.page.filters.all.action.label": "Toutes les notifications",
-  "notifications.page.filters.action.AcceptOnly.label": "Action requise",
-  "notifications.page.filters.action.AcceptOrReject.label": "Aucune action requise",
+  "notifications.page.filters.action.AcceptOnly.label": "Aucune action requise",
+  "notifications.page.filters.action.AcceptOrReject.label": "Action requise",
   "notifications.page.filters.type.ApiAccess.label": "Accès à une API",
   "notifications.page.filters.type.ApiSubscription.label": "Nouvelle souscription",
   "notifications.page.filters.type.ApiSubscriptionReject.label": "Souscription refusée",
