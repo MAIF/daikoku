@@ -1286,6 +1286,7 @@ export const removeCmsPage = (id: any) =>
     method: 'DELETE',
   });
 
+// MARK: GraphQL
 export const graphql = {
   myTeams: gql`
     query MyTeams {
@@ -2062,3 +2063,29 @@ export const retrieveSubscription = (
     method: 'PUT',
     body: JSON.stringify({ token }),
   });
+
+// MARK: Passkeys
+
+export const beginPasskeyRegistration = (): PromiseWithError<{challenge: string}> =>
+  customFetch(`/api/passkey/begin-registration`, {
+    method: 'POST',
+    body: JSON.stringify({})
+  })
+export const completePasskeyRegistration = (body: object): PromiseWithError<ResponseDone> =>
+  customFetch(`/api/passkey/complete-registration`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+
+
+export const beginPasskeyAssertion = (): PromiseWithError<{ challenge: string, allowCredentials: Array<{id: string, type: string}>, userVerification: string }> =>
+  customFetch(`/api/passkey/begin-assertion`, {
+    method: 'POST',
+    body: JSON.stringify({})
+  })
+
+export const completePasskeyAssertion = (body: object): PromiseWithError<ResponseDone> =>
+  customFetch(`/api/passkey/complete-assertion`, {
+    method: 'POST',
+    body: JSON.stringify(body)
+  })

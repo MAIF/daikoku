@@ -55,6 +55,8 @@ libraryDependencies ++= Seq(
   jdbc,
   ws,
   filters,
+  guice,
+  "org.playframework" %% "play-caffeine-cache" % "3.0.7",
   "org.scalatestplus.play" %% "scalatestplus-play" % "7.0.0" % Test,
   "com.themillhousegroup" %% "scoup" % "1.0.0" % Test,
   "org.wiremock" % "wiremock" % wiremockVersion % Test,
@@ -64,6 +66,7 @@ libraryDependencies ++= Seq(
   "com.dimafeng" %% "testcontainers-scala-postgresql" % "0.40.14" % Test,
   "org.apache.commons" % "commons-lang3" % "3.13.0",
   "org.bouncycastle" % "bcprov-jdk18on" % "1.76",
+  "org.bouncycastle" % "bcpkix-jdk18on" % "1.76",
   //play framework
   "org.playframework" %% "play-json" % "3.0.1",
   "org.playframework" %% "play-pekko-http2-support" % "3.0.0",
@@ -99,7 +102,10 @@ libraryDependencies ++= Seq(
   "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.15.3",
   "org.apache.logging.log4j" % "log4j-api" % "2.19.0",
   "com.github.blemale" %% "scaffeine" % "5.2.1",
-  "com.github.slugify" % "slugify" % "3.0.6"
+  "com.github.slugify" % "slugify" % "3.0.6",
+
+  "io.bullet" %% "borer-core" % "1.8.0",
+  "io.bullet" %% "borer-derivation" % "1.8.0"
 )
 
 dependencyOverrides += "io.netty" % "netty-handler" % "4.1.100.Final"

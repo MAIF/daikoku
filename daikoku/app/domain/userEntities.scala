@@ -35,6 +35,7 @@ case class User(
     isGuest: Boolean = false,
     starredApis: Set[ApiId] = Set.empty[ApiId],
     twoFactorAuthentication: Option[TwoFactorAuthentication] = None,
+    passkeys: Seq[Passkey] = Seq.empty,
     invitation: Option[UserInvitation] = None
 ) extends CanJson[User] {
   override def asJson: JsValue = json.UserFormat.writes(this)
@@ -158,6 +159,46 @@ case class TwoFactorAuthentication(
 ) extends CanJson[TwoFactorAuthentication] {
   override def asJson: JsValue = json.TwoFactorAuthenticationFormat.writes(this)
 }
+
+case class Passkey(
+    id: String,
+    publicKey: String,
+    counter: Long,
+    createdAt: DateTime,
+    lastUsedAt: Option[DateTime],
+    name: Option[String],
+    algorithm: Int
+) extends CanJson[Passkey] {
+  override def asJson: JsValue = json.PasskeyFormat.writes(this)
+}
+
+case class AllowCredential(
+  id: String,           // credentialId en base64url (comme stocké en base)
+  `type`: String,       // Toujours "public-key"
+) extends CanJson[AllowCredential] {
+  override def asJson: JsValue = json.AllowCredentialFormat.writes(this)
+}
+
+case class AssertionOptions(
+ challenge: String,                    // Challenge en base64url
+ allowCredentials: Seq[AllowCredential],
+ userVerification: String,             // "required", "preferred", "discouraged"
+ timeout: Int = 60000
+) extends CanJson[AssertionOptions] {
+  override def asJson: JsValue = json.AssertionOptionsFormat.writes(this)
+}
+
+case class ClientData(
+                       challenge: String,
+                       origin: String,
+                       `type`: String
+                     )
+
+// Résultat de la vérification
+case class VerificationResult(
+                               verified: Boolean,
+                               newCounter: Long
+                             )
 
 case class UserInvitation(
     registered: Boolean,

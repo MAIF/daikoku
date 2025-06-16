@@ -2,12 +2,14 @@ import { Form, Schema, constraints, format, type } from '@maif/react-forms';
 import { md5 } from 'js-md5';
 import { ChangeEvent, useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
+import crypto from 'crypto';
 
 import { I18nContext, ModalContext, useUserBackOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { I2FAQrCode, ITenant, IUser, isError } from '../../../types';
 import { Spinner } from '../../utils';
+import { createPasskey, testPasskey } from '../../utils/authentication';
 
 type TwoFactorAuthenticationProps = {
   user: IUser
@@ -22,6 +24,7 @@ const TwoFactorAuthentication = ({
 
   const { translate } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
+  const { connectedUser } = useContext(GlobalContext);
 
   const getQRCode = () => {
     Services.getQRCode()
@@ -73,6 +76,40 @@ const TwoFactorAuthentication = ({
         });
     }
   }
+
+  // const createPasskey = () => {
+  //   fetch("/api/webauthn/register/start", {
+  //     method: "POST",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify({ username: connectedUser.email }),
+  //   })
+  //     .then((r) => r.json())
+  //     .then(options => ({
+  //       ...options,
+  //       challenge: Uint8Array.from(atob(options.challenge), c => c.charCodeAt(0)),
+  //       user: {
+  //         ...options.user,
+  //         id: Uint8Array.from(atob(options.user.id), c => c.charCodeAt(0))
+  //       }
+  //     }))
+  //     .then((options) => navigator.credentials.create({
+  //       publicKey: options,
+  //     }))
+  //     .then((credential) => fetch("/api/webauthn/register/finish", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({
+  //         id: credential?.id, //@ts-ignore
+  //         rawId: btoa(String.fromCharCode(...new Uint8Array(credential?.rawId))),
+  //         response: { //@ts-ignore
+  //           attestationObject: btoa(String.fromCharCode(...new Uint8Array(credential?.response?.attestationObject))), //@ts-ignore
+  //           clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(credential?.response?.clientDataJSON))),
+  //         },
+  //         type: credential?.type,
+  //       }),
+  //     }))
+  // }
+
 
   return modal ? (
     <div>
@@ -197,6 +234,20 @@ const TwoFactorAuthentication = ({
           )}
         </div>
       </div>
+      <button
+        onClick={() => createPasskey(connectedUser)}
+        className="btn btn-outline-success"
+        type="button"
+      >
+        passkey
+      </button>
+        <button
+          onClick={() => testPasskey(connectedUser)}
+          className="btn btn-outline-warning"
+          type="button"
+        >
+          tester ma passkey
+        </button>
       {user?.twoFactorAuthentication?.enabled && (
         <div className="form-group row">
           <label className="col-xs-12 col-sm-2 col-form-label">

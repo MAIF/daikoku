@@ -50,6 +50,9 @@ import java.util.regex.Pattern
 import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.CollectionConverters.{IterableHasAsScala, MapHasAsJava}
 
+import play.api.cache.caffeine.CaffeineCacheComponents
+import play.api.cache.AsyncCacheApi
+
 class DaikokuLoader extends ApplicationLoader {
   def load(context: Context): Application = {
     LoggerConfigurator(context.environment.classLoader).foreach {
@@ -65,9 +68,12 @@ package object modules {
       extends BuiltInComponentsFromContext(context)
       with AssetsComponents
       with AhcWSComponents
-      with I18nSupport {
+      with I18nSupport
+      with CaffeineCacheComponents {
 
     implicit lazy val env: Env = wire[DaikokuEnv]
+
+    lazy val cacheApi: AsyncCacheApi = defaultCacheApi
 
     lazy val verifier = wire[OtoroshiVerifierJob]
     lazy val deletor = wire[QueueJob]

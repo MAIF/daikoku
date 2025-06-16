@@ -1909,11 +1909,14 @@ object json {
             twoFactorAuthentication = (json \ "twoFactorAuthentication").asOpt(
               TwoFactorAuthenticationFormat
             ),
-            invitation = (json \ "invitation").asOpt(UserInvitationFormat)
+            invitation = (json \ "invitation").asOpt(UserInvitationFormat),
+            passkeys = (json \ "passkeys").asOpt(SeqPasskeyFormat).getOrElse(Seq.empty)
           )
         )
       } recover {
-        case e => JsError(e.getMessage)
+        case e =>
+          AppLogger.warn(e.getMessage, e)
+          JsError(e.getMessage)
       } get
 
     override def writes(o: User): JsValue =
@@ -1950,7 +1953,8 @@ object json {
         "invitation" -> o.invitation
           .map(UserInvitationFormat.writes)
           .getOrElse(JsNull)
-          .as[JsValue]
+          .as[JsValue],
+        "passkeys" -> SeqPasskeyFormat.writes(o.passkeys)
       )
   }
 
@@ -3896,6 +3900,86 @@ object json {
       )
   }
 
+  val PasskeyFormat = new Format[Passkey] {
+    override def reads(json: JsValue): JsResult[Passkey] =
+      Try {
+        JsSuccess(
+          Passkey(
+            id = (json \ "id").as[String],
+            publicKey = (json \ "publicKey").as[String],
+            counter = (json \ "counter").as[Long],
+            createdAt = (json \ "createdAt").as(DateTimeFormat),
+            lastUsedAt = (json \ "lastUsageAt").asOpt(DateTimeFormat),
+            name = (json \ "name").asOpt[String],
+            algorithm = (json \ "algorithm").as[Int]
+          )
+        )
+      } recover {
+        e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
+
+    override def writes(o: Passkey): JsValue =
+      Json.obj(
+        "id" -> o.id,
+        "publicKey" -> o.publicKey,
+        "counter" -> o.counter,
+        "createdAt" -> DateTimeFormat.writes(o.createdAt),
+        "lastUsage" -> o.lastUsedAt.map(DateTimeFormat.writes).getOrElse(JsNull).as[JsValue],
+        "name" -> o.name.map(JsString).getOrElse(JsNull).as[JsValue],
+        "algorithm" -> o.algorithm
+      )
+  }
+
+  val AllowCredentialFormat = new Format[AllowCredential] {
+    override def reads(json: JsValue): JsResult[AllowCredential] =
+      Try {
+        JsSuccess(
+          AllowCredential(
+            id = (json \ "id").as[String],
+            `type` = (json \ "type").as[String]
+          )
+        )
+      } recover {
+        e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
+
+    override def writes(o: AllowCredential): JsValue =
+      Json.obj(
+        "id" -> o.id,
+        "type" -> o.`type`
+      )
+  }
+
+  val AssertionOptionsFormat = new Format[AssertionOptions] {
+    override def reads(json: JsValue): JsResult[AssertionOptions] =
+      Try {
+        JsSuccess(
+          AssertionOptions(
+            challenge = (json \ "challenge").as[String],
+            allowCredentials = (json \ "allowCredentials").as(SeqAllowCredentialsFormat),
+            userVerification = (json \ "userVerification").as[String],
+            timeout = (json \ "timeout").as[Int],
+          )
+        )
+      } recover {
+        e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
+
+    override def writes(o: AssertionOptions): JsValue =
+      Json.obj(
+        "challenge" -> o.challenge,
+        "allowCredentials" -> SeqAllowCredentialsFormat.writes(o.allowCredentials),
+        "userVerification" -> o.userVerification,
+        "timeout" -> o.timeout
+      )
+  }
+
   val EvolutionFormat: Format[Evolution] =
     new Format[Evolution] {
       override def reads(json: JsValue): JsResult[Evolution] =
@@ -4402,4 +4486,15 @@ object json {
       Writes.seq(TeamAuthorizedEntitiesFormat)
     )
 
+  val SeqPasskeyFormat =
+    Format(
+      Reads.seq(PasskeyFormat),
+      Writes.seq(PasskeyFormat)
+    )
+
+  val SeqAllowCredentialsFormat =
+    Format(
+      Reads.seq(AllowCredentialFormat),
+      Writes.seq(AllowCredentialFormat)
+    )
 }

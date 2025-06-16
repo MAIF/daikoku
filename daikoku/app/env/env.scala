@@ -184,6 +184,10 @@ class Config(val underlying: Configuration) {
     .getOptional[Int]("daikoku.exposedOn")
     .getOrElse(port)
 
+  lazy val secure: Boolean = underlying
+    .getOptional[Boolean]("daikoku.secure")
+    .getOrElse(false)
+
   lazy val mode: DaikokuMode =
     underlying.getOptional[String]("daikoku.mode").map(_.toLowerCase) match {
       case Some("dev")  => DaikokuMode.Dev
@@ -697,6 +701,7 @@ class DaikokuEnv(
     config.exposedPort match {
       case 80  => s"http://${tenant.domain}$path"
       case 443 => s"https://${tenant.domain}$path"
+      case _ if config.secure   => s"https://${tenant.domain}:${config.exposedPort}$path"
       case _   => s"http://${tenant.domain}:${config.exposedPort}$path"
     }
 }

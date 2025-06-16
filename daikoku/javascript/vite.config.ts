@@ -2,6 +2,23 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 import react from "@vitejs/plugin-react";
 import { visualizer } from "rollup-plugin-visualizer";
+import fs from 'fs';
+import path from 'path';
+
+import https from 'https';
+
+const httpsAgent = new https.Agent({
+  rejectUnauthorized: false,
+});
+
+const proxyTarget = 'http://localhost:9000';
+
+const secureProxy = {
+  target: proxyTarget,
+  // changeOrigin: true,
+  // secure: false,
+  // agent: httpsAgent,
+};
 
 
 // https://vitejs.dev/config/
@@ -11,40 +28,44 @@ export default defineConfig({
   },
   publicDir: "public",
   server: {
-    // host: '0.0.0.0', // Accepte les connexions externes
-    // port: 5173,
-    // strictPort: true,
-    // hmr: {
-    //   host: '*.oto.tools',
-    //   port: 5173,
-    // },
-    // allowedHosts: ['test.oto.tools'],
-    // watch: {
-    //   usePolling: true,
-    // },
+    https: {
+      key: fs.readFileSync(path.resolve(process.env.HOME || '', '/Users/76885k/.daikoku.oto.tools/daikoku.key')),
+      cert: fs.readFileSync(path.resolve(process.env.HOME || '', '/Users/76885k/.daikoku.oto.tools/daikoku.crt')),
+    },
+    host: '0.0.0.0', // Accepte les connexions externes
+    port: 5173,
+    strictPort: true,
+    hmr: {
+      host: '*.oto.tools',
+      port: 5173,
+    },
+    allowedHosts: ['daikoku.oto.tools'],
+    watch: {
+      usePolling: true,
+    },
     proxy: {
-      "/_": "http://localhost:9000",
-      "/cms": "http://localhost:9000",
-      "/asset-thumbnails": "http://localhost:9000",
-      "/team-assets": "http://localhost:9000",
-      "/api/": "http://localhost:9000",
-      "/admin-api": "http://localhost:9000",
-      "/cms-api": "http://localhost:9000",
-      "/account": "http://localhost:9000",
-      "/tenant-assets": "http://localhost:9000",
-      "/auth/Local/callback": "http://localhost:9000",
-      "/auth/LDAP/callback": "http://localhost:9000",
-      "/auth/oauth2/callback": "http://localhost:9000",
-      "/login/oauth2/callback": "http://localhost:9000",
-      "/auth/oauth2/login": "http://localhost:9000",
-      "/auth/OAuth2/login": "http://localhost:9000",
-      "/logout": "http://localhost:9000",
-      "/assets": "http://localhost:9000",
-      "/robots.txt": "http://localhost:9000",
-      "/health": "http://localhost:9000",
-      "/status": "http://localhost:9000",
-      "/user-avatar": "http://localhost:9000",
-      "^/$": "http://localhost:9000",
+      '/_': secureProxy,
+      '/cms': secureProxy,
+      '/asset-thumbnails': secureProxy,
+      '/team-assets': secureProxy,
+      '/api/': secureProxy,
+      '/admin-api': secureProxy,
+      '/cms-api': secureProxy,
+      '/account': secureProxy,
+      '/tenant-assets': secureProxy,
+      '/auth/Local/callback': secureProxy,
+      '/auth/LDAP/callback': secureProxy,
+      '/auth/oauth2/callback': secureProxy,
+      '/login/oauth2/callback': secureProxy,
+      '/auth/oauth2/login': secureProxy,
+      '/auth/OAuth2/login': secureProxy,
+      '/logout': secureProxy,
+      '/assets': secureProxy,
+      '/robots.txt': secureProxy,
+      '/health': secureProxy,
+      '/status': secureProxy,
+      '/user-avatar': secureProxy,
+      '^/$': secureProxy
     },
   },
   plugins: [react()],
