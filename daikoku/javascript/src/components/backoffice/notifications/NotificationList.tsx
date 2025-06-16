@@ -233,8 +233,8 @@ export const NotificationList = () => {
   const { customGraphQLClient, connectedUser } = useContext(GlobalContext)
   const { openSubMetadataModal, openFormModal, alert, openCustomModal } = useContext(ModalContext)
 
-  
-  
+
+
   const pageSize = 25;
   const [selectAll, setSelectAll] = useState(false);
   const [limit, setLimit] = useState(pageSize);
@@ -354,24 +354,24 @@ export const NotificationList = () => {
     ) {
       return (
         <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
-          <button
-            type="button"
-            className="nav_item cursor-pointer me-1"
-            title={translate('Accept')}
-            aria-label={translate('Accept')}
-            onClick={() => accept(notification._id)}
-          >
-            <i className="fas fa-check" />
-          </button>
           <Link
             to={notification.action.linkTo!}
-            className="nav_item cursor-pointer"
+            className="nav_item cursor-pointer bg-info"
             target='_blank'
             title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
             aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
           >
-            <i className="fas fa-eye" />
+            <i className="fas fa-arrow-right" />
           </Link>
+          <button
+            type="button"
+            className="nav_item cursor-pointer no-bg"
+            title={translate('Accept')}
+            aria-label={translate('Accept')}
+            onClick={() => accept(notification._id)}
+          >
+            <i className="fas fa-times" />
+          </button>
         </div>
       );
     } else {
@@ -380,7 +380,7 @@ export const NotificationList = () => {
           return (
             <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
               <button
-                className="nav_item cursor-pointer"
+                className="nav_item cursor-pointer bg-success"
                 title={translate('Accept')}
                 aria-label={translate('Accept')}
                 onClick={() =>
@@ -433,7 +433,7 @@ export const NotificationList = () => {
           return (
             <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
               <button
-                className="nav_item cursor-pointer"
+                className="nav_item cursor-pointer bg-success"
                 style={{ height: '30px' }}
                 title={translate('Accept')}
                 aria-label={translate('Accept')}
@@ -460,24 +460,34 @@ export const NotificationList = () => {
         default:
           return (
             <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
-              <button
-                className="nav_item cursor-pointer"
+              {notification.notificationType.value === 'AcceptOrReject' && <button
+                className="nav_item cursor-pointer bg-success"
                 title={translate('Accept')}
                 aria-label={translate('Accept')}
                 onClick={() => accept(notification._id)}
               >
                 <i className="fas fa-check" />
-              </button>
+              </button>}
               {notification.notificationType.value === 'AcceptOrReject' && (
                 <button
-                  className="nav_item cursor-pointer"
+                  className="nav_item cursor-pointer bg-danger"
                   title={translate('Reject')}
                   aria-label={translate('Reject')}
                   onClick={() => reject(notification._id)}
                 >
-                  <i className="fas fa-times" />
+                  <i className="fas fa-ban" />
                 </button>
               )}
+              <button
+                type="button"
+                className="nav_item cursor-pointer no-bg"
+                disabled={notification.notificationType.value === 'AcceptOrReject'}
+                title={translate('Accept')}
+                aria-label={translate('Accept')}
+                onClick={() => accept(notification._id)}
+              >
+                <i className="fas fa-times" />
+              </button>
             </div>
           );
       }
@@ -560,7 +570,7 @@ export const NotificationList = () => {
                 </> : <button className="btn btn-outline-info">{translate('Close')}</button>,
                 noClose: true
               })}>
-              <i className="far fa-eye cursor-pointer" />
+              <i className="far fa-arrow-right cursor-pointer" />
             </button>
           )}
           {notification.action.__typename === 'ApiSubscriptionReject' && (
@@ -810,102 +820,91 @@ export const NotificationList = () => {
 
   return (
     <div className='flex-grow-1'>
-      <div className='filters-container '>
-        <div className='d-flex flex-row justify-content-between'>
-          <div className='d-flex flex-row gap-3 justify-content-start align-items-center'>
-            <span className='filters-label'>{translate('notifications.page.filters.label')}</span>
-            <Select
-              isMulti //@ts-ignore
-              components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
-              options={(myTeamsRequest.data ?? []).map(t => ({ label: t.name, value: t._id }))}
-              isLoading={myTeamsRequest.isLoading || myTeamsRequest.isPending}
-              closeMenuOnSelect={true}
-              labelKey={"notifications.page.filters.team.label"}
-              labelKeyAll={"notifications.page.filters.all.team.label"}
-              getCount={getTotalForTeam}
-              classNamePrefix="daikoku-select"
-              styles={menuStyle}
-              onChange={data => handleSelectChange(data, 'team')}
-              value={getSelectValue('team', myTeamsRequest.data ?? [], 'name', '_id')} />
-            <Select
-              isMulti //@ts-ignore
-              components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
-              options={(visibleApisRequest.data ?? []).map(api => ({ label: api.name, value: api._id }))}
-              isLoading={visibleApisRequest.isLoading || visibleApisRequest.isPending}
-              closeMenuOnSelect={true}
-              labelKey={"notifications.page.filters.api.label"}
-              labelKeyAll={"notifications.page.filters.all.api.label"}
-              getCount={getTotalForApi}
-              classNamePrefix="daikoku-select"
-              styles={menuStyle}
-              onChange={data => handleSelectChange(data, 'api')}
-              value={getSelectValue('api', visibleApisRequest.data ?? [], 'name', '_id')} />
-            <Select
-              isMulti //@ts-ignore
-              components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
-              options={notificationTypes.map(v => ({ label: translate(`notifications.page.filters.type.${v.type}.label`), value: v.type }))}
-              closeMenuOnSelect={true}
-              labelKey={"notifications.page.filters.type.label"}
-              labelKeyAll={"notifications.page.filters.all.type.label"}
-              getCount={getTotalForNotifType}
-              styles={menuStyle}
-              onChange={data => handleSelectChange(data, 'type')}
-              value={getSelectValue('type', notificationTypes, 'label', 'type')} />
-            <Select
-              isMulti //@ts-ignore
-              components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
-              options={notificationActionTypes.map(({ value }) => ({ label: translate(`notifications.page.filters.action.${value}.label`), value }))}
-              closeMenuOnSelect={true}
-              labelKey={"notifications.page.filters.action.label"}
-              labelKeyAll={"notifications.page.filters.all.action.label"}
-              getCount={getTotalForType}
-              styles={menuStyle}
-              onChange={data => handleSelectChange(data, 'actionType')}
-              value={getSelectValue('actionType', notificationActionTypes, 'label', 'value')} />
-            <div className='btn-group' role='group' aria-label={translate('notifications.page.unread.button.group.aria.label')}>
-              <button
-                className={classNames('btn btn-outline-secondary', { active: !unreadOnly })}
-                aria-pressed={!unreadOnly}
-                onClick={() => {
-                  const filters = columnFilters.filter(f => f.id !== 'unreadOnly')
-                  setColumnFilters([...filters, { id: 'unreadOnly', value: false }])
-                }}>{translate('notifications.page.filters.all.notifications.label')}
-              </button>
-              <button
-                className={classNames('btn btn-outline-secondary', { active: unreadOnly })}
-                aria-pressed={unreadOnly}
-                onClick={() => {
-                  const filters = columnFilters.filter(f => f.id !== 'unreadOnly')
-                  setColumnFilters([...filters, { id: 'unreadOnly', value: true }])
-                }}>{translate('notifications.page.filters.unread.notifications.label')}
-              </button>
-            </div>
-          </div>
-          <button className='btn btn-outline-secondary' onClick={() => setColumnFilters(defaultColumnFilters)}>
-            <i className='fas fa-rotate me-2' />
-            {translate('notifications.page.filters.clear.label')}
-          </button>
-        </div>
-
-        {displayFilters()}
-      </div>
       {notificationListQuery.isLoading && <Spinner />}
       {notificationListQuery.data && (
         <>
-          <div className="notification-table">
-            <div className='table-header'>
-              <div className='d-flex align-items-center gap-3' aria-live="polite">
-                <div className="table-title" id='notif-label'>
-                  {translate("notifications.page.table.title")}
-                </div>
-                <span className='badge badge-custom-warning' aria-labelledby="notif-label notif-count" id='notif-count'>
-                  {notificationListQuery.data?.pages[0].myNotifications.totalFiltered}
-                </span>
-              </div>
-              <div className="table-description">{translate("notifications.page.table.description")}</div>
+          <div className='table-header'>
+            <div className='d-flex align-items-center gap-3' aria-live="polite">
+              <h2 className="table-title" id='notif-label'>
+                {translate("notifications.page.table.title")}
+              </h2>
             </div>
+            <div className='d-flex flex-row justify-content-between align-items-center'>
+              <div className='d-flex flex-row gap-3 justify-content-start align-items-center'>
+                <Select
+                  isMulti //@ts-ignore
+                  components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
+                  options={(myTeamsRequest.data ?? []).map(t => ({ label: t.name, value: t._id }))}
+                  isLoading={myTeamsRequest.isLoading || myTeamsRequest.isPending}
+                  closeMenuOnSelect={true}
+                  labelKey={"notifications.page.filters.team.label"}
+                  labelKeyAll={"notifications.page.filters.all.team.label"}
+                  getCount={getTotalForTeam}
+                  classNamePrefix="daikoku-select"
+                  styles={menuStyle}
+                  onChange={data => handleSelectChange(data, 'team')}
+                  value={getSelectValue('team', myTeamsRequest.data ?? [], 'name', '_id')} />
+                <Select
+                  isMulti //@ts-ignore
+                  components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
+                  options={(visibleApisRequest.data ?? []).map(api => ({ label: api.name, value: api._id }))}
+                  isLoading={visibleApisRequest.isLoading || visibleApisRequest.isPending}
+                  closeMenuOnSelect={true}
+                  labelKey={"notifications.page.filters.api.label"}
+                  labelKeyAll={"notifications.page.filters.all.api.label"}
+                  getCount={getTotalForApi}
+                  classNamePrefix="daikoku-select"
+                  styles={menuStyle}
+                  onChange={data => handleSelectChange(data, 'api')}
+                  value={getSelectValue('api', visibleApisRequest.data ?? [], 'name', '_id')} />
+                <Select
+                  isMulti //@ts-ignore
+                  components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
+                  options={notificationTypes.map(v => ({ label: translate(`notifications.page.filters.type.${v.type}.label`), value: v.type }))}
+                  closeMenuOnSelect={true}
+                  labelKey={"notifications.page.filters.type.label"}
+                  labelKeyAll={"notifications.page.filters.all.type.label"}
+                  getCount={getTotalForNotifType}
+                  styles={menuStyle}
+                  onChange={data => handleSelectChange(data, 'type')}
+                  value={getSelectValue('type', notificationTypes, 'label', 'type')} />
+                <div className='btn-group' role='group' aria-label={translate('notifications.page.unread.button.group.aria.label')}>
+                  <button
+                    className={classNames('btn btn-outline-secondary', { active: unreadOnly })}
+                    aria-pressed={unreadOnly}
+                    onClick={() => {
+                      const filters = columnFilters.filter(f => f.id !== 'unreadOnly')
+                      setColumnFilters([...filters, { id: 'unreadOnly', value: true }])
+                    }}>{translate('notifications.page.filters.unread.notifications.label')}
+                  </button>
+                  <button
+                    className={classNames('btn btn-outline-secondary', { active: !unreadOnly })}
+                    aria-pressed={!unreadOnly}
+                    onClick={() => {
+                      const filters = columnFilters.filter(f => f.id !== 'unreadOnly')
+                      setColumnFilters([...filters, { id: 'unreadOnly', value: false }])
+                    }}>{translate('notifications.page.filters.all.notifications.label')}
+                  </button>
+                </div>
+                <button className='btn btn-outline-secondary' onClick={() => setColumnFilters(defaultColumnFilters)}>
+                  <i className='fas fa-rotate me-2' />
+                  {translate('notifications.page.filters.clear.label')}
+                </button>
+              </div>
+              <span className='' aria-labelledby="notif-label notif-count" id='notif-count'>
+                {translate({
+                  key: "notifications.page.total.label",
+                  replacements: [notificationListQuery.data?.pages[0].myNotifications.totalFiltered.toString()],
+                  plural: notificationListQuery.data?.pages[0].myNotifications.totalFiltered > 1
+                })}
+              </span>
+            </div>
+
+            {displayFilters()}
+          </div>
+          <div className="notification-table">
             <div className='select-all-row'>
-              <label>
+              <label className='notification-table-header'>
                 <input
                   type="checkbox"
                   className='form-check-input me-3'
@@ -951,14 +950,17 @@ export const NotificationList = () => {
             {notificationListQuery.hasNextPage && (
               <FeedbackButton
                 type="primary"
-                className="btn btn-outline-primary"
+                className="btn btn-outline-primary a-fake"
                 onPress={() => notificationListQuery.fetchNextPage()}
                 onSuccess={() => console.debug("success")}
-                feedbackTimeout={100}
+                feedbackTimeout={500}
                 disabled={notificationListQuery.isFetchingNextPage}
-              >{translate('notifications.page.table.more.button.label')}</FeedbackButton>
+              >
+                {translate('notifications.page.table.more.button.label')}
+              </FeedbackButton>
             )}
-          </div></>
+          </div>
+        </>
       )}
     </div>
   );

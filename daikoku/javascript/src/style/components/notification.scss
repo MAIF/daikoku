@@ -42,16 +42,6 @@
 
 // ------- new page ---------
 
-.filters-container {
-  margin: 1rem 0;
-  padding: 1rem;
-
-  border-radius: 5px;
-
-  background-color: variables.$level2_bg-color;
-  color: variables.$level2_text-color;
-}
-
 .selected-filter {
   width: fit-content;
   padding: .3rem .6rem;
@@ -83,6 +73,7 @@
   background-color: variables.$level2_bg-color;
   color: variables.$level2_text-color;
 
+  
 }
 
 .table-header {
@@ -90,6 +81,7 @@
 
   .table-title {
     font-weight: bold;
+    margin: 0;
   }
 
   .table-description {
@@ -123,20 +115,33 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     }
 
     .nav_item {
-      font-size: 1.5rem;
-      width: 2rem;
-      height: 2rem;
+      font-size: 1.1rem;
+      width: 1.5rem;
+      height: 1.5rem;
       display: flex;
       justify-content: center;
       align-items: center;
-      color: variables.$level1_text-color;
+      color: white;
+      border-radius: 4px;
+
+      &.no-bg {
+        color: variables.$level1_text-color;
+
+        &:disabled {
+          color: color-mix(in srgb, variables.$level1_text-color 50%, #fff);
+        }
+
+        &:hover {
+          background-color: transparent;
+        }
+      }
 
       &:hover {
         background-color: variables.$level1_text-color;
-        color: variables.$level2_bg-color ;
-        border-radius: 4px;
+        color: color-mix(in srgb, variables.$level1_text-color 50%, #000);
         padding: 0.2rem;
       }
+
     }
 
     div.description-cell {
