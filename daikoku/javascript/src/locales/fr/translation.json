@@ -1618,10 +1618,10 @@
   "notifications.page.table.more.button.label": "Afficher plus de notifications",
   "notifications.page.subscription.demand.detail.button.label": "Voir les détails de la demande de souscription",
   "notifications.page.subscription.demand.detail.modal.title": "Détails de la demande de souscription",
-  "notifications.page.subscription.demand.detail.modal.raw.button.label": "Afficher les données brutes",
+  "notifications.page.subscription.demand.detail.modal.raw.button.label": "Voir plus",
   "notifications.page.subscription.demand.detail.summary.label": "Résumé de la demande",
   "notifications.page.subscription.demand.reject.detail.modal.title": "Détails du rejet de la demande de souscription",
-  "notifications.page.subscription.demand.reject.detail.button.label": "Voir les détails du rejet de la demande de souscription",
+  "notifications.page.subscription.demand.reject.detail.button.label": "Voir plus",
   "notifications.page.notification.ariaLabel": "%s par %s, %s",
   "notifications.page.unread.button.group.aria.label": "Filtrer les notifications lues ou non lues",
   "notifications.page.total.label": {
