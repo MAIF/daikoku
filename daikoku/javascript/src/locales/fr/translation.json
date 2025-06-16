@@ -1562,7 +1562,6 @@
   "migration.custom.style.alert.info.4": " Cependant, l’édition directe du code en ligne se fait désormais via la CLI.",
   "migration.custom.style.alert.info.5": "📘 Pour en savoir plus sur la CLI Daikoku, vous pouvez consulter la %s",
   "migration.custom.style.alert.hide": "Ne plus voir ce message",
-  "notifications.page.filters.label": "Filtres",
   "notifications.page.filters.team.label": {
     "s": "Équipe",
     "p": "Équipes"
@@ -1603,10 +1602,9 @@
   "notifications.page.filters.type.ApiSubscriptionTransferSuccess.label": "Transfert de souscription réussi",
   "notifications.page.filters.type.CheckoutForSubscription.label": "Paiement pour souscription",
   "notifications.page.filters.all.notifications.label": "Toutes",
-  "notifications.page.filters.unread.notifications.label": "Non lues",
+  "notifications.page.filters.unread.notifications.label": "À traiter",
   "notifications.page.filters.clear.label": "Réinitialiser les filtres",
   "notifications.page.table.title": "Notifications",
-  "notifications.page.table.description": "Aperçu de vos dernières notifications et mises à jour du système",
   "notifications.page.table.select.all.label": "tout sélectionner",
   "notifications.page.table.selected.count.label": {
     "s": "%s ligne sélectionnée",
@@ -1614,7 +1612,7 @@
   },
   "notifications.page.table.read.bulk.action.label": "Marquer comme lu",
   "notifications.page.table.select.really.all.label": "selectionner les %s notifications",
-  "notifications.page.table.more.button.label": "Afficher plus",
+  "notifications.page.table.more.button.label": "Afficher plus de notifications",
   "notifications.page.subscription.demand.detail.button.label": "Voir les détails de la demande de souscription",
   "notifications.page.subscription.demand.detail.modal.title": "Détails de la demande de souscription",
   "notifications.page.subscription.demand.detail.modal.raw.button.label": "Afficher les données brutes",
@@ -1622,5 +1620,9 @@
   "notifications.page.subscription.demand.reject.detail.modal.title": "Détails du rejet de la demande de souscription",
   "notifications.page.subscription.demand.reject.detail.button.label": "Voir les détails du rejet de la demande de souscription",
   "notifications.page.notification.ariaLabel": "%s par %s, %s",
-  "notifications.page.unread.button.group.aria.label": "Filtrer les notifications lues ou non lues"
+  "notifications.page.unread.button.group.aria.label": "Filtrer les notifications lues ou non lues",
+  "notifications.page.total.label": {
+    "s": "%s notification",
+    "p": "%s notifications"
+  }
 }
