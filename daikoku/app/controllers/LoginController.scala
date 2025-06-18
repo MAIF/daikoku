@@ -5,8 +5,14 @@ import cats.implicits.catsSyntaxOptionId
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import com.google.common.base.Charsets
 import controllers.{AppError, Assets}
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithoutUser, DaikokuTenantAction, DaikokuTenantActionContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithoutUser,
+  DaikokuTenantAction,
+  DaikokuTenantActionContext
+}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.PublicUserAccess
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -19,7 +25,7 @@ import org.apache.commons.codec.binary.Base32
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
-import play.api.libs.json.{JsObject, JsString, JsValue, Json}
+import play.api.libs.json.{JsArray, JsObject, JsString, JsValue, Json}
 import play.api.mvc._
 
 import java.net.URLEncoder
@@ -990,8 +996,18 @@ class LoginController(
 
       PasskeyUtils.decodeAttestationObject(attestationObjectB64) match {
         case Right(attestationData) =>
-          val name = PasskeyUtils.getAuthenticatorName(Base64.getUrlDecoder.decode(attestationObjectB64))
-            .orElse(PasskeyUtils.guessAuthenticatorType(attestationData.counter, ctx.request.headers.get("User-Agent"), "cross-platform"))
+          val name = (ctx.request.body \ "name").asOpt[String]
+            .orElse(PasskeyUtils
+              .getAuthenticatorName(
+                Base64.getUrlDecoder.decode(attestationObjectB64)
+              ))
+            .orElse(
+              PasskeyUtils.guessAuthenticatorType(
+                attestationData.counter,
+                ctx.request.headers.get("User-Agent"),
+                "cross-platform"
+              )
+            )
 
           AppLogger.info(s"[passkey name] :: $name")
           val passkey = Passkey(
@@ -1030,8 +1046,7 @@ class LoginController(
       } yield {
         AppLogger.info(Json.stringify(credentialData))
         Ok(Json.obj("done" -> true))
-      }).leftMap(_.render())
-        .merge
+      }).leftMap(_.render()).merge
 
     }
 
@@ -1048,15 +1063,18 @@ class LoginController(
         )
         _ <- EitherT.liftF[Future, AppError, Done](cache.remove(challengeKey))
         credentialId = (assertionData \ "id").as[String]
-        authenticatorDataB64 = (assertionData \ "response" \ "authenticatorData").as[String]
-        clientDataJSON = (assertionData \ "response" \ "clientDataJSON").as[String]
+        authenticatorDataB64 =
+          (assertionData \ "response" \ "authenticatorData").as[String]
+        clientDataJSON =
+          (assertionData \ "response" \ "clientDataJSON").as[String]
         signatureB64 = (assertionData \ "response" \ "signature").as[String]
         clientData <- EitherT.fromEither[Future](
           PasskeyUtils.decodeClientData(clientDataJSON)
         )
 
         _ <- EitherT.cond[Future](
-          PasskeyUtils.normalizeBase64(clientData.challenge) == PasskeyUtils.normalizeBase64(storedChallenge),
+          PasskeyUtils.normalizeBase64(clientData.challenge) == PasskeyUtils
+            .normalizeBase64(storedChallenge),
           (),
           AppError.SecurityError("Challenge mismatch")
         )
@@ -1098,7 +1116,9 @@ class LoginController(
           )
         )
 
-        _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.userRepo.save(updatedUser))
+        _ <- EitherT.liftF[Future, AppError, Boolean](
+          env.dataStore.userRepo.save(updatedUser)
+        )
 
         // Créer une session
 //        sessionResult <- EitherT.liftF(
@@ -1110,11 +1130,81 @@ class LoginController(
 //          )
 //        )
 
-
       } yield Ok(Json.obj("done" -> true)))
         .leftMap(e => e.render())
         .merge
+    }
 
+  def listPasskeys() = {
+    DaikokuAction.async { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} has accessed its passkey list"
+        )
+      )(ctx) {
+        FastFuture.successful(Ok(JsArray(ctx.user.passkeys.map(_.asJson))))
+      }
+    }
+  }
+
+  def updatePasskey(id: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} has updated its passkey with id @{passkey.id}"
+        )
+      )(ctx) {
+
+        (for {
+          name <- EitherT.fromOption[Future][AppError, String](
+            (ctx.request.body \ "name").asOpt[String],
+            AppError.EntityNotFound("name")
+          )
+          passkey <- EitherT.fromOption[Future][AppError, Passkey](
+            ctx.user.passkeys.find(_.id == id),
+            AppError.EntityNotFound("passkey")
+          )
+          _ <- EitherT.liftF[Future, AppError, Boolean](
+            env.dataStore.userRepo.save(
+              ctx.user
+                .copy(passkeys = ctx.user.passkeys.filter(_.id != passkey.id) :+ passkey.copy(name = name.some))
+            )
+          )
+        } yield {
+          ctx.setCtxValue("passkey.id", id)
+          Ok(Json.obj("done" -> true))
+        })
+          .leftMap(_.render())
+          .merge
+      }
+    }
+
+  def deletePasskey(id: String) =
+    DaikokuAction.async { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} has deleted its passkey with id @{passkey.id}"
+        )
+      )(ctx) {
+
+        (for {
+          passkey <- EitherT.fromOption[Future][AppError, Passkey](
+            ctx.user.passkeys.find(_.id == id),
+            AppError.EntityNotFound("passkey")
+          )
+          _ <- EitherT.liftF[Future, AppError, Boolean](
+            env.dataStore.userRepo.save(
+              ctx.user
+                .copy(passkeys = ctx.user.passkeys.filter(_.id != passkey.id))
+            )
+          )
+        } yield {
+          ctx.setCtxValue("passkey.id", id)
+          Ok(Json.obj("done" -> true))
+        })
+          .leftMap(_.render())
+          .merge
+      }
     }
 }
 
@@ -1284,32 +1374,36 @@ object PasskeyUtils {
 //    buffer.getInt.toLong & 0xffffffffL
 //  }
 
-
   def decodeClientData(clientDataJSON: String): Either[AppError, ClientData] = {
     try {
       val decodedBytes = Base64.getUrlDecoder.decode(clientDataJSON)
       val jsonString = new String(decodedBytes, "UTF-8")
       val json = Json.parse(jsonString)
 
-      Right(ClientData(
-        challenge = (json \ "challenge").as[String],
-        origin = (json \ "origin").as[String],
-        `type` = (json \ "type").as[String]
-      ))
+      Right(
+        ClientData(
+          challenge = (json \ "challenge").as[String],
+          origin = (json \ "origin").as[String],
+          `type` = (json \ "type").as[String]
+        )
+      )
     } catch {
-      case e: Exception => Left(AppError.SecurityError(s"Failed to decode client data: ${e.getMessage}"))
+      case e: Exception =>
+        Left(
+          AppError
+            .SecurityError(s"Failed to decode client data: ${e.getMessage}")
+        )
     }
   }
 
-
   def verifyAssertion(
-                       publicKeyB64: String,
-                       authenticatorDataB64: String,
-                       clientDataJSON: String,
-                       signatureB64: String,
-                       expectedCounter: Long,
-                       algorithm: Int
-                     ): Either[AppError, VerificationResult] = {
+      publicKeyB64: String,
+      authenticatorDataB64: String,
+      clientDataJSON: String,
+      signatureB64: String,
+      expectedCounter: Long,
+      algorithm: Int
+  ): Either[AppError, VerificationResult] = {
     try {
       // Décoder les données
       val authenticatorData = Base64.getUrlDecoder.decode(authenticatorDataB64)
@@ -1323,33 +1417,49 @@ object PasskeyUtils {
       AppLogger.warn(s"[expectedCounter] :: ${expectedCounter}")
 
       if (signatureCounter == 0) {
-        AppLogger.info("Cross - platform authenticator detected(counter = 0), skipping counter validation")
+        AppLogger.info(
+          "Cross - platform authenticator detected(counter = 0), skipping counter validation"
+        )
       } else if (signatureCounter <= expectedCounter) {
-        return Left(AppError.SecurityError("Counter regression detected - possible replay attack"))
+        return Left(
+          AppError.SecurityError(
+            "Counter regression detected - possible replay attack"
+          )
+        )
       }
 
       // Construire les données à vérifier (authenticatorData + hash(clientDataJSON))
-      val clientDataHash = java.security.MessageDigest.getInstance("SHA-256").digest(clientDataBytes)
+      val clientDataHash = java.security.MessageDigest
+        .getInstance("SHA-256")
+        .digest(clientDataBytes)
       val dataToVerify = authenticatorData ++ clientDataHash
 
       // Vérifier la signature selon l'algorithme de la clé
-      val isValid = verifySignatureWithPublicKey(publicKeyB64, algorithm, dataToVerify, signature)
+      val isValid = verifySignatureWithPublicKey(
+        publicKeyB64,
+        algorithm,
+        dataToVerify,
+        signature
+      )
 
-      Right(VerificationResult(
-        verified = isValid,
-        newCounter = signatureCounter
-      ))
+      Right(
+        VerificationResult(
+          verified = isValid,
+          newCounter = signatureCounter
+        )
+      )
 
     } catch {
-      case e: Exception => Left(AppError.SecurityError(s"Verification failed: ${e.getMessage}"))
+      case e: Exception =>
+        Left(AppError.SecurityError(s"Verification failed: ${e.getMessage}"))
     }
   }
 
   private def verifySignatureWithPublicKey(
-    publicKeyData: String, // Stocké au format que vous avez défini lors de l'enregistrement
-    algorithmId: Int, // L'algorithme COSE récupéré lors de l'enregistrement
-    data: Array[Byte],
-    signature: Array[Byte]
+      publicKeyData: String, // Stocké au format que vous avez défini lors de l'enregistrement
+      algorithmId: Int, // L'algorithme COSE récupéré lors de l'enregistrement
+      data: Array[Byte],
+      signature: Array[Byte]
   ): Boolean = {
     try {
       algorithmId match {
@@ -1371,10 +1481,10 @@ object PasskeyUtils {
   }
 
   private def verifyES256Signature(
-                                    publicKeyData: String,
-                                    data: Array[Byte],
-                                    signature: Array[Byte]
-                                  ): Boolean = {
+      publicKeyData: String,
+      data: Array[Byte],
+      signature: Array[Byte]
+  ): Boolean = {
     // Si vous utilisez Bouncy Castle (recommandé)
     import org.bouncycastle.jce.provider.BouncyCastleProvider
     import org.bouncycastle.jce.spec.ECPublicKeySpec
@@ -1392,7 +1502,8 @@ object PasskeyUtils {
         val curve = ECNamedCurveTable.getParameterSpec("secp256r1")
         val point = curve.getCurve.decodePoint(publicKeyBytes)
         val keySpec = new ECPublicKeySpec(point, curve)
-        val publicKey = KeyFactory.getInstance("ECDSA", "BC").generatePublic(keySpec)
+        val publicKey =
+          KeyFactory.getInstance("ECDSA", "BC").generatePublic(keySpec)
 
         val verifier = Signature.getInstance("SHA256withECDSA", "BC")
         verifier.initVerify(publicKey)
@@ -1409,10 +1520,10 @@ object PasskeyUtils {
   }
 
   private def verifyRS256Signature(
-                                    publicKeyData: String,
-                                    data: Array[Byte],
-                                    signature: Array[Byte]
-                                  ): Boolean = {
+      publicKeyData: String,
+      data: Array[Byte],
+      signature: Array[Byte]
+  ): Boolean = {
     import java.security.spec.RSAPublicKeySpec
     import java.security.{KeyFactory, Signature}
     import java.math.BigInteger
@@ -1436,7 +1547,9 @@ object PasskeyUtils {
       // verifier.update(data)
       // verifier.verify(signature)
 
-      AppLogger.warn("RS256 verification not fully implemented - need to store n and e separately")
+      AppLogger.warn(
+        "RS256 verification not fully implemented - need to store n and e separately"
+      )
       false
     } catch {
       case e: Exception =>
@@ -1446,10 +1559,10 @@ object PasskeyUtils {
   }
 
   private def verifyEdDSASignature(
-                                    publicKeyData: String,
-                                    data: Array[Byte],
-                                    signature: Array[Byte]
-                                  ): Boolean = {
+      publicKeyData: String,
+      data: Array[Byte],
+      signature: Array[Byte]
+  ): Boolean = {
     import org.bouncycastle.jce.provider.BouncyCastleProvider
     import org.bouncycastle.jce.spec.ECPublicKeySpec
     import java.security.{KeyFactory, Signature, Security}
@@ -1462,14 +1575,21 @@ object PasskeyUtils {
       // Pour Ed25519, la clé publique fait 32 bytes
       if (publicKeyBytes.length == 32) {
         import org.bouncycastle.asn1.edec.EdECObjectIdentifiers
-        import org.bouncycastle.asn1.x509.{AlgorithmIdentifier, SubjectPublicKeyInfo}
+        import org.bouncycastle.asn1.x509.{
+          AlgorithmIdentifier,
+          SubjectPublicKeyInfo
+        }
         import org.bouncycastle.asn1.DEROctetString
         import java.security.spec.X509EncodedKeySpec
 
-        val algorithmIdentifier = new AlgorithmIdentifier(EdECObjectIdentifiers.id_Ed25519)
-        val publicKeyInfo = new SubjectPublicKeyInfo(algorithmIdentifier, publicKeyBytes)
+        val algorithmIdentifier = new AlgorithmIdentifier(
+          EdECObjectIdentifiers.id_Ed25519
+        )
+        val publicKeyInfo =
+          new SubjectPublicKeyInfo(algorithmIdentifier, publicKeyBytes)
         val keySpec = new X509EncodedKeySpec(publicKeyInfo.getEncoded)
-        val publicKey = KeyFactory.getInstance("Ed25519", "BC").generatePublic(keySpec)
+        val publicKey =
+          KeyFactory.getInstance("Ed25519", "BC").generatePublic(keySpec)
 
         val verifier = Signature.getInstance("Ed25519", "BC")
         verifier.initVerify(publicKey)
@@ -1497,9 +1617,15 @@ object PasskeyUtils {
 
     val counterBytes = Array.fill[Byte](4)(0)
     buffer.get(counterBytes)
-    AppLogger.debug(s"Counter bytes: ${counterBytes.map("%02x".format(_)).mkString}")
+    AppLogger.debug(
+      s"Counter bytes: ${counterBytes.map("%02x".format(_)).mkString}"
+    )
 
-    val counter = ByteBuffer.wrap(counterBytes).order(ByteOrder.BIG_ENDIAN).getInt.toLong & 0xffffffffL
+    val counter = ByteBuffer
+      .wrap(counterBytes)
+      .order(ByteOrder.BIG_ENDIAN)
+      .getInt
+      .toLong & 0xffffffffL
     AppLogger.debug(s"Parsed counter: $counter")
 
     counter
@@ -1520,7 +1646,9 @@ object PasskeyUtils {
             getAuthenticatorByAAGUID(aaguid)
         }
       case Some(other) =>
-        AppLogger.info(s"Invalid authData format: expected BytesElem, got $other")
+        AppLogger.info(
+          s"Invalid authData format: expected BytesElem, got $other"
+        )
         None
       case None =>
         AppLogger.info("Missing authData in attestationObject")
@@ -1532,30 +1660,35 @@ object PasskeyUtils {
     val aaguidHex = aaguid.map("%02x".format(_)).mkString
 
     aaguidHex match {
-      case "d41f5a69b94d4e5ebf9b6c7f8f7b7c7d" => "Touch ID".some
+      case "d41f5a69b94d4e5ebf9b6c7f8f7b7c7d"     => "Touch ID".some
       case "adce0002-35bc-c60a-648b-0b25f1f05503" => "Windows Hello".some
       case "fa2b99dc-9e39-4c95-8321-4e5c8a7c5f4c" => "Chrome".some
       case "d548826e-79b4-db40-a3d8-11116f7e8349" => "Bitwarden".some
-      case _ => None
+      case _                                      => None
     }
   }
 
   def guessAuthenticatorType(
-                              signatureCounter: Long,
-                              userAgent: Option[String],
-                              authenticatorAttachment: String
-                            ): Option[String] = {
+      signatureCounter: Long,
+      userAgent: Option[String],
+      authenticatorAttachment: String
+  ): Option[String] = {
 
     AppLogger.info(s"[user-agent] :: $userAgent")
     (signatureCounter, userAgent, authenticatorAttachment) match {
-      case (0, Some(ua), "cross-platform") if ua.contains("Bitwarden") => "Bitwarden".some
-      case (0, Some(ua), "cross-platform") if ua.contains("1Password") => "1Password".some
+      case (0, Some(ua), "cross-platform") if ua.contains("Bitwarden") =>
+        "Bitwarden".some
+      case (0, Some(ua), "cross-platform") if ua.contains("1Password") =>
+        "1Password".some
       case (_, Some(ua), "platform") if ua.contains("Mac") => "Touch ID".some
-      case (_, Some(ua), "platform") if ua.contains("Windows") => "Windows Hello".some
-      case (_, Some(ua), "platform") if ua.contains("Android") => "Android Biométrie".some
-      case (counter, _, "cross-platform") if counter > 0 => "YubiKey ou similaire".some
+      case (_, Some(ua), "platform") if ua.contains("Windows") =>
+        "Windows Hello".some
+      case (_, Some(ua), "platform") if ua.contains("Android") =>
+        "Android Biométrie".some
+      case (counter, _, "cross-platform") if counter > 0 =>
+        "YubiKey ou similaire".some
       case (0, _, "cross-platform") => "Gestionnaire de mots de passe".some
-      case _ => "Authenticator".some
+      case _                        => "Authenticator".some
     }
   }
 }

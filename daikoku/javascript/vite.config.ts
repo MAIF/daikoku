@@ -29,14 +29,15 @@ export default defineConfig({
   publicDir: "public",
   server: {
     https: {
-      key: fs.readFileSync(path.resolve(process.env.HOME || '', '/Users/76885k/.daikoku.oto.tools/daikoku.key')),
-      cert: fs.readFileSync(path.resolve(process.env.HOME || '', '/Users/76885k/.daikoku.oto.tools/daikoku.crt')),
+      key: fs.readFileSync(path.resolve(process.env.HOME || '', '/Users/76885k/daikoku.oto.tools+3-key.pem')),
+      cert: fs.readFileSync(path.resolve(process.env.HOME || '', '/Users/76885k/daikoku.oto.tools+3.pem')),
     },
     host: '0.0.0.0', // Accepte les connexions externes
     port: 5173,
     strictPort: true,
     hmr: {
-      host: '*.oto.tools',
+      protocol: 'wss',
+      host: 'daikoku.oto.tools',
       port: 5173,
     },
     allowedHosts: ['daikoku.oto.tools'],

@@ -3,6 +3,7 @@ import { isError, IUserSimple } from "../../types";
 
 import * as Services from '../../services';
 import { toast } from "sonner";
+import { IPasskey } from "../backoffice";
 
 export const createPassKeyCredential = (
   username: string,
@@ -27,8 +28,7 @@ export const createPassKeyCredential = (
     authenticatorSelection: {
       authenticatorAttachment: "cross-platform",
       userVerification: "preferred",
-      residentKey: "preferred",
-      requireResidentKey: true
+      residentKey: "required",
     },
     challenge: challengeBuffer,
     rp: {
@@ -47,7 +47,7 @@ export const createPassKeyCredential = (
       { type: "public-key", alg: -8 },   // EdDSA
     ],
     timeout: 15000,
-    attestation: "direct",
+    attestation: "none",
   };
 
   console.debug(
@@ -103,7 +103,7 @@ const validateClientData = (
 };
 
 
-export const testPasskey = (user: IUserSimple) => {
+export const testPasskey = () => {
   Services.beginPasskeyAssertion()
     .then(r => {
       if (isError(r))
@@ -125,7 +125,7 @@ export const testPasskey = (user: IUserSimple) => {
       })
     })
     .then((assertion) => {
-      if (assertion ) {
+      if (assertion) {
         console.log("✅ Assertion is not null : ", assertion);
         const credential = assertion as PublicKeyCredential;
         const authResponse = credential.response as AuthenticatorAssertionResponse;
@@ -158,9 +158,32 @@ export const testPasskey = (user: IUserSimple) => {
     })
 }
 
-export const createPasskey = (user: IUserSimple) => {
+export const listPasskeys = () =>
+  Services.listPassKeys()
+    .then(r => {
+      if (isError(r)) {
+        toast.error(r.error)
+        return []
+      } else {
+        return r
+      }
+    })
 
-  Services.beginPasskeyRegistration()
+export const deletePasskey = (passkey: IPasskey, onDelete: () => Promise<void>) => {
+  return Services.deletePasskey(passkey)
+    .then(() => toast.success("deletion PassKey successful"))
+    .then(onDelete)
+}
+export const editPasskey = (passkey: IPasskey, getName: () => Promise<string | undefined>,  onDelete: () => Promise<void>) => {
+  return getName()
+    .then(name => Services.updatePasskey(passkey, name))
+    .then(() => toast.success("update PassKey name successful"))
+    .then(onDelete)
+}
+
+export const createPasskey = (user: IUserSimple, getName: () => Promise<string | undefined>, onSuccess: () => Promise<void>) => {
+
+  return Services.beginPasskeyRegistration()
     .then(r => {
       if (isError(r))
         return Promise.reject(r.error)
@@ -186,27 +209,27 @@ export const createPasskey = (user: IUserSimple) => {
             console.log("❌ PassKey verification failed.");
             return;
           default:
-            console.log(
-              "✅ PassKey verification passed with challenge : ",
-              challenge
-            );
+            console.log(`✅ PassKey verification passed with challenge : ${challenge}`);
 
             const response = credential.response as AuthenticatorAttestationResponse
-            return Services.completePasskeyRegistration({
-              userId: user._id,
-              username: user.email,
-              displayName: user.name,
-              challengeBuffer: challengeBufferString,
-              challenge: challenge,
-
-              credentialId: credential.id,
-              rawId: arrayBufferToBase64url(credential.rawId),
-              attestationObject: arrayBufferToBase64url(response.attestationObject),
-              clientDataJSON: arrayBufferToBase64url(response.clientDataJSON),
-              type: credential.type,
-              publicKeyAlgorithm: response.getPublicKeyAlgorithm()
-            })
+            return getName()
+              .then(name => Services.completePasskeyRegistration({
+                userId: user._id,
+                username: user.email,
+                displayName: user.name,
+                challengeBuffer: challengeBufferString,
+                challenge: challenge,
+                name,
+                credentialId: credential.id,
+                rawId: arrayBufferToBase64url(credential.rawId),
+                attestationObject: arrayBufferToBase64url(response.attestationObject),
+                clientDataJSON: arrayBufferToBase64url(response.clientDataJSON),
+                type: credential.type,
+                publicKeyAlgorithm: response.getPublicKeyAlgorithm()
+              }))
               .then(() => console.log("✅ register PassKey successful"))
+              .then(() => toast.success("register PassKey successful"))
+              .then(onSuccess)
         }
       } else {
         console.log("❌ Credential does not exist.");

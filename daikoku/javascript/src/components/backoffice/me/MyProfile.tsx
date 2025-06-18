@@ -9,10 +9,22 @@ import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { I2FAQrCode, ITenant, IUser, isError } from '../../../types';
 import { Spinner } from '../../utils';
-import { createPasskey, testPasskey } from '../../utils/authentication';
+import { createPasskey, testPasskey, listPasskeys, deletePasskey, editPasskey } from '../../utils/authentication';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 type TwoFactorAuthenticationProps = {
   user: IUser
+}
+
+export type IPasskey = {
+  id: string,
+  name: string,
+  counter: number,
+  algorithm: number,
+  createdAt: number,
+  lastUsage: number,
+  publicKey: string
+
 }
 
 const TwoFactorAuthentication = ({
@@ -23,8 +35,15 @@ const TwoFactorAuthentication = ({
   const [backupCodes, setBackupCodes] = useState('');
 
   const { translate } = useContext(I18nContext);
-  const { confirm } = useContext(ModalContext);
+  const { confirm, prompt, openFormModal } = useContext(ModalContext);
   const { connectedUser } = useContext(GlobalContext);
+
+  const queryClient = useQueryClient();
+
+  const passkeyQuery = useQuery({
+    queryKey: ["passkey-list"],
+    queryFn: () => listPasskeys()
+  })
 
   const getQRCode = () => {
     Services.getQRCode()
@@ -77,39 +96,31 @@ const TwoFactorAuthentication = ({
     }
   }
 
-  // const createPasskey = () => {
-  //   fetch("/api/webauthn/register/start", {
-  //     method: "POST",
-  //     headers: { "Content-Type": "application/json" },
-  //     body: JSON.stringify({ username: connectedUser.email }),
-  //   })
-  //     .then((r) => r.json())
-  //     .then(options => ({
-  //       ...options,
-  //       challenge: Uint8Array.from(atob(options.challenge), c => c.charCodeAt(0)),
-  //       user: {
-  //         ...options.user,
-  //         id: Uint8Array.from(atob(options.user.id), c => c.charCodeAt(0))
-  //       }
-  //     }))
-  //     .then((options) => navigator.credentials.create({
-  //       publicKey: options,
-  //     }))
-  //     .then((credential) => fetch("/api/webauthn/register/finish", {
-  //       method: "POST",
-  //       headers: { "Content-Type": "application/json" },
-  //       body: JSON.stringify({
-  //         id: credential?.id, //@ts-ignore
-  //         rawId: btoa(String.fromCharCode(...new Uint8Array(credential?.rawId))),
-  //         response: { //@ts-ignore
-  //           attestationObject: btoa(String.fromCharCode(...new Uint8Array(credential?.response?.attestationObject))), //@ts-ignore
-  //           clientDataJSON: btoa(String.fromCharCode(...new Uint8Array(credential?.response?.clientDataJSON))),
-  //         },
-  //         type: credential?.type,
-  //       }),
-  //     }))
-  // }
-
+  const handledeletePasskey = (passkey: IPasskey) => {
+    openFormModal({
+      title: translate('Confirm'),
+      description: <div className="alert alert-danger" role="alert" >
+        <h4 className="alert-heading"> {translate('Warning')} </h4>
+        < p > vous allez supprimer votre clé....bla bla </p>
+      </div>,
+      schema: {
+        confirm: {
+          type: type.string,
+          label: translate({ key: 'delete.item.confirm.modal.confirm.label', replacements: [passkey.name] }),
+          constraints: [
+            constraints.oneOf(
+              [passkey.name],
+              translate({ key: 'constraints.type.api.name', replacements: [passkey.name] })
+            ),
+          ],
+        },
+      },
+      onSubmit: ({ next }) => {
+        deletePasskey(passkey, () => queryClient.invalidateQueries({ queryKey: ["passkey-list"] }))
+      },
+      actionLabel: translate('Delete')
+    })
+  }
 
   return modal ? (
     <div>
@@ -234,44 +245,87 @@ const TwoFactorAuthentication = ({
           )}
         </div>
       </div>
-      <button
-        onClick={() => createPasskey(connectedUser)}
-        className="btn btn-outline-success"
-        type="button"
-      >
-        passkey
-      </button>
-        <button
-          onClick={() => testPasskey(connectedUser)}
-          className="btn btn-outline-warning"
-          type="button"
-        >
-          tester ma passkey
-        </button>
-      {user?.twoFactorAuthentication?.enabled && (
-        <div className="form-group row">
-          <label className="col-xs-12 col-sm-2 col-form-label">
-            {translate('2fa.backup_codes')}
-          </label>
-          <div className="col-sm-10">
-            <div className="d-flex">
-              <input
-                type="text"
-                disabled={true}
-                value={user?.twoFactorAuthentication.backupCodes}
-                className="form-control"
-              />
-              <button
-                className="btn btn-outline-success ms-1"
-                type="button"
-                onClick={copyToClipboard}
-              >
-                <i className="fas fa-copy" />
-              </button>
-            </div>
-          </div>
+
+
+      <div>
+        <div className="header d-flex flex-row justify-content-between">
+          <div>passkeys</div>
+          <button
+            onClick={() => createPasskey(
+              connectedUser,
+              () => prompt({ title: "passkey name", message: "test", okLabel: "create", cancelLabel: "go back" }),
+              () => queryClient.invalidateQueries({ queryKey: ["passkey-list"] }))}
+            className="btn btn-outline-success"
+            type="button"
+          >
+            create new passkey
+          </button>
         </div>
-      )}
+
+        <div className='passkeys'>
+          {passkeyQuery.isLoading && <Spinner />}
+          {passkeyQuery.data && (
+            passkeyQuery.data.map(passkey => {
+              return (
+                <div className="passkey-details d-flex flex-row justify-content-between">
+                  <>
+                    <h4 className="">{passkey.name}</h4>
+                    <small className="mt-1">
+                      Added on {passkey.createdAt}
+                      | Last used
+                      {passkey.lastUsage}
+                    </small>
+                  </>
+                  <div className="d-flex gap-3">
+                    <button className='btn btn-outline-success'
+                      onClick={() => editPasskey(
+                        passkey,  
+                        () => prompt({ title: "passkey name", message: "test", okLabel: "create", cancelLabel: "go back" }),
+                        () => queryClient.invalidateQueries({ queryKey: ["passkey-list"] }))}>edit</button>
+                    <button className='btn btn-outline-danger' onClick={()=> handledeletePasskey(passkey)}>delete</button>
+                  </div>
+                </div>)
+            })
+          )}
+
+
+
+          {/* <button
+            onClick={() => testPasskey(connectedUser)}
+            className="btn btn-outline-warning"
+            type="button"
+          >
+            tester ma passkey
+          </button> */}
+
+          {
+            user?.twoFactorAuthentication?.enabled && (
+              <div className="form-group row">
+                <label className="col-xs-12 col-sm-2 col-form-label">
+                  {translate('2fa.backup_codes')}
+                </label>
+                <div className="col-sm-10">
+                  <div className="d-flex">
+                    <input
+                      type="text"
+                      disabled={true}
+                      value={user?.twoFactorAuthentication.backupCodes}
+                      className="form-control"
+                    />
+                    <button
+                      className="btn btn-outline-success ms-1"
+                      type="button"
+                      onClick={copyToClipboard}
+                    >
+                      <i className="fas fa-copy" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )
+          }
+        </div>
+      </div>
     </>
   );
 };
@@ -456,7 +510,7 @@ export const MyProfile = () => {
       constraints: [
         constraints.required(translate('constraints.required.avatar')),
         // constraints.url(
-        //   translate({ key: 'constraints.format.url', replacements: [translate('Avatar')] })
+        //   translate({key: 'constraints.format.url', replacements: [translate('Avatar')] })
         // ),
       ],
     },
@@ -485,7 +539,7 @@ export const MyProfile = () => {
       constraints: [
         constraints.required(translate('constraints.required.newPassword')),
         constraints.matches(
-          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8,1000}$/,
+          /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[#$^+=!*()@%&]).{8, 1000}$/,
           translate('constraints.matches.password')
         ),
       ],

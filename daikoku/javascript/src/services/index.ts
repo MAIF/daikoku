@@ -47,6 +47,8 @@ import {
   ResponseError,
 } from '../types/api';
 import { IChatInfo } from '../types/chat';
+import { IPasskey } from '../components/backoffice/me/MyProfile';
+import { method } from 'lodash';
 
 const HEADERS = {
   Accept: 'application/json',
@@ -2066,7 +2068,7 @@ export const retrieveSubscription = (
 
 // MARK: Passkeys
 
-export const beginPasskeyRegistration = (): PromiseWithError<{challenge: string}> =>
+export const beginPasskeyRegistration = (): PromiseWithError<{ challenge: string }> =>
   customFetch(`/api/passkey/begin-registration`, {
     method: 'POST',
     body: JSON.stringify({})
@@ -2078,7 +2080,7 @@ export const completePasskeyRegistration = (body: object): PromiseWithError<Resp
   })
 
 
-export const beginPasskeyAssertion = (): PromiseWithError<{ challenge: string, allowCredentials: Array<{id: string, type: string}>, userVerification: string }> =>
+export const beginPasskeyAssertion = (): PromiseWithError<{ challenge: string, allowCredentials: Array<{ id: string, type: string }>, userVerification: string }> =>
   customFetch(`/api/passkey/begin-assertion`, {
     method: 'POST',
     body: JSON.stringify({})
@@ -2088,4 +2090,19 @@ export const completePasskeyAssertion = (body: object): PromiseWithError<Respons
   customFetch(`/api/passkey/complete-assertion`, {
     method: 'POST',
     body: JSON.stringify(body)
+  })
+
+export const listPassKeys = (): PromiseWithError<Array<IPasskey>> =>
+  customFetch(`/api/passkeys`, {
+    method: 'GET'
+  })
+
+export const deletePasskey = (passkey: IPasskey): PromiseWithError<ResponseDone> =>
+  customFetch(`/api/passkeys/${passkey.id}`, {
+    method: 'DELETE'
+  })
+export const updatePasskey = (passkey: IPasskey, name?: string): PromiseWithError<IPasskey> =>
+  customFetch(`/api/passkeys/${passkey.id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ name })
   })
