@@ -5,12 +5,7 @@ import cats.implicits.catsSyntaxOptionId
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import com.google.common.base.Charsets
 import controllers.{AppError, Assets}
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuTenantAction,
-  DaikokuTenantActionContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithoutUser, DaikokuTenantAction, DaikokuTenantActionContext}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.PublicUserAccess
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -19,6 +14,7 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider._
 import fr.maif.otoroshi.daikoku.login._
+import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator, Translator}
 import io.bullet.borer.Dom.ByteArrayElem
 import org.apache.commons.codec.binary.Base32
@@ -130,18 +126,22 @@ class LoginController(
       sessionMaxAge: Int,
       tenant: Tenant,
       request: RequestHeader,
-      f: => Future[Option[User]]
+      f: => Future[Option[User]],
+      bypass2fa: Boolean = false
   ): Future[Result] = {
+    AppLogger.warn(s"[BIND USER] :: bypass 2fa :: $bypass2fa")
     f.flatMap {
       case None => FastFuture.successful(BadRequest(Json.obj("error" -> true)))
       case Some(user) =>
-        user.twoFactorAuthentication match {
-          case Some(auth) if auth.enabled =>
+        (user.twoFactorAuthentication, user.passkeys) match {
+          case (Some(auth), passkeys) if (auth.enabled || passkeys.nonEmpty) && !bypass2fa =>
+            AppLogger.warn(s"[BIND USER] :: auth enable ${auth.enabled} :: passkeys ${passkeys.length} :: $bypass2fa")
             val keyGenerator = KeyGenerator.getInstance("HmacSHA1")
             keyGenerator.init(160)
             val token =
               new Base32().encodeAsString(keyGenerator.generateKey.getEncoded)
 
+            //todo: put token in cache instead of db
             env.dataStore.userRepo
               .save(
                 user.copy(
@@ -364,6 +364,120 @@ class LoginController(
         }
     }
   }
+
+  def beginPasskeyLogin() =
+    DaikokuActionMaybeWithoutUser.async(parse.json) { ctx =>
+      val challengeId = (ctx.request.body \ "challengeId").as[String]
+      val challenge = PasskeyUtils.generateSecureChallenge()
+
+      val assertionOptions = AssertionOptions(
+        challenge = challenge,
+        allowCredentials = Seq.empty,
+        userVerification = "preferred"
+      )
+
+      // Stocker le challenge en session/cache
+      val key = s"passkey_asssertion_challenge_$challengeId"
+
+      for {
+        _ <- cache.set(key = key, value = challenge, expiration = 2.minutes)
+      } yield {
+        Ok(assertionOptions.asJson)
+      }
+    }
+
+  def completePasskeyLogin() =
+    DaikokuActionMaybeWithoutUser.async(parse.json) { ctx =>
+      val assertionData = ctx.request.body
+      val challengeId = (ctx.request.body \ "challengeId").as[String]
+
+      // Récupérer le challenge stocké
+      val challengeKey = s"passkey_asssertion_challenge_$challengeId"
+      (for {
+        storedChallenge <- EitherT.fromOptionF(
+          cache.get[String](challengeKey),
+          AppError.SecurityError("Challenge expired or missing")
+        )
+        _ <- EitherT.liftF[Future, AppError, Done](cache.remove(challengeKey))
+        credentialId = (assertionData \ "id").as[String]
+        authenticatorDataB64 =
+          (assertionData \ "response" \ "authenticatorData").as[String]
+        clientDataJSON =
+          (assertionData \ "response" \ "clientDataJSON").as[String]
+        signatureB64 = (assertionData \ "response" \ "signature").as[String]
+        clientData <- EitherT.fromEither[Future](
+          PasskeyUtils.decodeClientData(clientDataJSON)
+        )
+
+        _ <- EitherT.cond[Future](
+          PasskeyUtils.normalizeBase64(clientData.challenge) == PasskeyUtils
+            .normalizeBase64(storedChallenge),
+          (),
+          AppError.SecurityError("Challenge mismatch")
+        )
+        expectedOrigin = env.getDaikokuUrl(ctx.tenant, "")
+        _ <- EitherT.cond[Future](
+          clientData.origin == expectedOrigin,
+          (),
+          AppError.SecurityError("Origin mismatch")
+        )
+        user <- EitherT.fromOptionF(
+          env.dataStore.userRepo
+            .findOneNotDeleted(Json.obj("passkeys.id" -> credentialId)),
+          AppError.Unauthorized
+        )
+        passkey <- EitherT.fromOption[Future](
+          user.passkeys.find(_.id == credentialId),
+          AppError.SecurityError("Passkey not found for user")
+        )
+        isValid <- EitherT.fromEither[Future](
+          PasskeyUtils.verifyAssertion(
+            passkey.publicKey,
+            authenticatorDataB64,
+            clientDataJSON,
+            signatureB64,
+            passkey.counter,
+            passkey.algorithm
+          )
+        )
+        _ <- EitherT.cond[Future][AppError, Unit](
+          isValid.verified,
+          (),
+          AppError.SecurityError("Invalid signature")
+        )
+        updatedPasskey = passkey.copy(
+          counter = isValid.newCounter,
+          lastUsedAt = Some(DateTime.now())
+        )
+
+        updatedUser = user.copy(
+          passkeys = user.passkeys.map(pk =>
+            if (pk.id == credentialId) updatedPasskey else pk
+          )
+        )
+
+        _ <- EitherT.liftF[Future, AppError, Boolean](
+          env.dataStore.userRepo.save(updatedUser)
+        )
+        localConfig = LocalLoginConfig.fromJsons(
+          ctx.tenant.authProviderSettings
+        )
+        login <- EitherT.liftF[Future, AppError, Result](bindUser(
+          sessionMaxAge = localConfig.sessionMaxAge,
+          tenant = ctx.tenant,
+          request = ctx.request,
+          f = user.some.future,
+          bypass2fa = true
+        ))
+      } yield {
+        AuditTrailEvent(
+          s"unauthenticated user has logged in with passkey -- user found with name ${user.name} ans id ${user.id}"
+        ).logUnauthenticatedUserEvent(ctx.tenant)
+        login
+      })
+        .leftMap(e => e.render())
+        .merge
+    }
 
   def login(provider: String) =
     DaikokuTenantAction.async { ctx =>
@@ -963,28 +1077,6 @@ class LoginController(
 
     }
 
-  def beginPasskeyAssertion() =
-    DaikokuAction.async(parse.json) { ctx =>
-      val challenge = PasskeyUtils.generateSecureChallenge()
-      val allowCredentials =
-        ctx.user.passkeys.map(pk => AllowCredential(pk.id, "public-key"))
-
-      val assertionOptions = AssertionOptions(
-        challenge = challenge,
-        allowCredentials = allowCredentials,
-        userVerification = "preferred"
-      )
-
-      // Stocker le challenge en session/cache
-      val key = s"passkey_asssertion_challenge_${ctx.user.id.value}"
-
-      for {
-        _ <- cache.set(key = key, value = challenge, expiration = 5.minutes)
-      } yield {
-        Ok(assertionOptions.asJson)
-      }
-    }
-
   def completePasskeyRegistration() =
     DaikokuAction.async(parse.json) { ctx =>
       val credentialData = ctx.request.body
@@ -996,11 +1088,14 @@ class LoginController(
 
       PasskeyUtils.decodeAttestationObject(attestationObjectB64) match {
         case Right(attestationData) =>
-          val name = (ctx.request.body \ "name").asOpt[String]
-            .orElse(PasskeyUtils
-              .getAuthenticatorName(
-                Base64.getUrlDecoder.decode(attestationObjectB64)
-              ))
+          val name = (ctx.request.body \ "name")
+            .asOpt[String]
+            .orElse(
+              PasskeyUtils
+                .getAuthenticatorName(
+                  Base64.getUrlDecoder.decode(attestationObjectB64)
+                )
+            )
             .orElse(
               PasskeyUtils.guessAuthenticatorType(
                 attestationData.counter,
@@ -1050,12 +1145,37 @@ class LoginController(
 
     }
 
+
+  def beginPasskeyAssertion() =
+    DaikokuActionMaybeWithoutUser.async(parse.json) { ctx =>
+      val challengeId = (ctx.request.body \ "challengeId").as[String]
+      val challenge = PasskeyUtils.generateSecureChallenge()
+//      val allowCredentials =
+//        ctx.user.passkeys.map(pk => AllowCredential(pk.id, "public-key"))
+
+      val assertionOptions = AssertionOptions(
+        challenge = challenge,
+        allowCredentials = Seq.empty,
+        userVerification = "preferred"
+      )
+
+      // Stocker le challenge en session/cache
+      val key = s"passkey_asssertion_challenge_$challengeId"
+
+      for {
+        _ <- cache.set(key = key, value = challenge, expiration = 5.minutes)
+      } yield {
+        Ok(assertionOptions.asJson)
+      }
+    }
+
   def completePasskeyAssertion() =
-    DaikokuAction.async(parse.json) { ctx =>
+    DaikokuActionMaybeWithoutUser.async(parse.json) { ctx =>
       val assertionData = ctx.request.body
+      val challengeId = (ctx.request.body \ "challengeId").as[String]
 
       // Récupérer le challenge stocké
-      val challengeKey = s"passkey_asssertion_challenge_${ctx.user.id.value}"
+      val challengeKey = s"passkey_asssertion_challenge_$challengeId"
       (for {
         storedChallenge <- EitherT.fromOptionF(
           cache.get[String](challengeKey),
@@ -1079,15 +1199,18 @@ class LoginController(
           AppError.SecurityError("Challenge mismatch")
         )
         expectedOrigin = env.getDaikokuUrl(ctx.tenant, "")
-        log = AppLogger.warn(s"[clientData origin] :: ${clientData.origin}")
-        log2 = AppLogger.warn(s"[expected origin] :: ${expectedOrigin}")
         _ <- EitherT.cond[Future](
           clientData.origin == expectedOrigin,
           (),
           AppError.SecurityError("Origin mismatch")
         )
+        user <- EitherT.fromOptionF(
+          env.dataStore.userRepo
+            .findOneNotDeleted(Json.obj("passkeys.id" -> credentialId)),
+          AppError.Unauthorized
+        )
         passkey <- EitherT.fromOption[Future](
-          ctx.user.passkeys.find(_.id == credentialId),
+          user.passkeys.find(_.id == credentialId),
           AppError.SecurityError("Passkey not found for user")
         )
         isValid <- EitherT.fromEither[Future](
@@ -1110,8 +1233,8 @@ class LoginController(
           lastUsedAt = Some(DateTime.now())
         )
 
-        updatedUser = ctx.user.copy(
-          passkeys = ctx.user.passkeys.map(pk =>
+        updatedUser = user.copy(
+          passkeys = user.passkeys.map(pk =>
             if (pk.id == credentialId) updatedPasskey else pk
           )
         )
@@ -1167,14 +1290,16 @@ class LoginController(
           _ <- EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.userRepo.save(
               ctx.user
-                .copy(passkeys = ctx.user.passkeys.filter(_.id != passkey.id) :+ passkey.copy(name = name.some))
+                .copy(passkeys =
+                  ctx.user.passkeys.filter(_.id != passkey.id) :+ passkey
+                    .copy(name = name.some)
+                )
             )
           )
         } yield {
           ctx.setCtxValue("passkey.id", id)
           Ok(Json.obj("done" -> true))
-        })
-          .leftMap(_.render())
+        }).leftMap(_.render())
           .merge
       }
     }
@@ -1201,8 +1326,7 @@ class LoginController(
         } yield {
           ctx.setCtxValue("passkey.id", id)
           Ok(Json.obj("done" -> true))
-        })
-          .leftMap(_.render())
+        }).leftMap(_.render())
           .merge
       }
     }
@@ -1413,8 +1537,8 @@ object PasskeyUtils {
       // Vérifier le compteur (protection contre les attaques de replay)
       val signatureCounter = getSignatureCounter(authenticatorData)
 
-      AppLogger.warn(s"[signatureCounter] :: ${signatureCounter}")
-      AppLogger.warn(s"[expectedCounter] :: ${expectedCounter}")
+      AppLogger.warn(s"[signatureCounter] :: $signatureCounter")
+      AppLogger.warn(s"[expectedCounter] :: $expectedCounter")
 
       if (signatureCounter == 0) {
         AppLogger.info(

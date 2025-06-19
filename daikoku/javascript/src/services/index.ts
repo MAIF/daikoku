@@ -2080,16 +2080,17 @@ export const completePasskeyRegistration = (body: object): PromiseWithError<Resp
   })
 
 
-export const beginPasskeyAssertion = (): PromiseWithError<{ challenge: string, allowCredentials: Array<{ id: string, type: string }>, userVerification: string }> =>
-  customFetch(`/api/passkey/begin-assertion`, {
+export const beginPasskeyAssertion = (challengeId: string): PromiseWithError<{ challenge: string, allowCredentials: Array<{ id: string, type: string }>, userVerification: string }> =>
+  customFetch(`/auth/passkey/begin`, {
     method: 'POST',
-    body: JSON.stringify({})
+    body: JSON.stringify({challengeId}) 
   })
 
-export const completePasskeyAssertion = (body: object): PromiseWithError<ResponseDone> =>
-  customFetch(`/api/passkey/complete-assertion`, {
+export const completePasskeyAssertion = (body: object, challengeId: string): Promise<Response> =>
+  fetch(`/auth/passkey/complete`, {
     method: 'POST',
-    body: JSON.stringify(body)
+    headers: HEADERS,
+    body: JSON.stringify({...body, challengeId})
   })
 
 export const listPassKeys = (): PromiseWithError<Array<IPasskey>> =>

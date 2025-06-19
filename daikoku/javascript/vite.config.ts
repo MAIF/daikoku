@@ -60,6 +60,8 @@ export default defineConfig({
       '/login/oauth2/callback': secureProxy,
       '/auth/oauth2/login': secureProxy,
       '/auth/OAuth2/login': secureProxy,
+      '/auth/passkey/begin': secureProxy,
+      '/auth/passkey/complete': secureProxy,
       '/logout': secureProxy,
       '/assets': secureProxy,
       '/robots.txt': secureProxy,

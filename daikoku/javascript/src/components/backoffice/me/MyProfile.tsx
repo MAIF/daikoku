@@ -9,7 +9,7 @@ import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { I2FAQrCode, ITenant, IUser, isError } from '../../../types';
 import { Spinner } from '../../utils';
-import { createPasskey, testPasskey, listPasskeys, deletePasskey, editPasskey } from '../../utils/authentication';
+import { createPasskey, listPasskeys, deletePasskey, editPasskey } from '../../utils/authentication';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 type TwoFactorAuthenticationProps = {

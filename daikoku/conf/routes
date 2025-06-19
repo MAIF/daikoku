@@ -69,6 +69,8 @@ GET     /api/auth/:provider/context                     fr.maif.otoroshi.daikoku
 GET     /auth/:provider/login                           fr.maif.otoroshi.daikoku.ctrls.LoginController.loginPage(provider)
 POST    /auth/:provider/callback                        fr.maif.otoroshi.daikoku.ctrls.LoginController.login(provider)
 GET     /auth/:provider/callback                        fr.maif.otoroshi.daikoku.ctrls.LoginController.loginGet(provider)
+POST    /auth/passkey/begin                             fr.maif.otoroshi.daikoku.ctrls.LoginController.beginPasskeyLogin()
+POST    /auth/passkey/complete                          fr.maif.otoroshi.daikoku.ctrls.LoginController.completePasskeyLogin()
 POST    /api/auth/ldap/_check                           fr.maif.otoroshi.daikoku.ctrls.LoginController.checkLdapConnection()
 
 GET     /api/me/teams                                   fr.maif.otoroshi.daikoku.ctrls.ApiController.myTeams()

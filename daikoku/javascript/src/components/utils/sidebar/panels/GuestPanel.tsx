@@ -3,9 +3,9 @@ import { Form, type, constraints, format } from '@maif/react-forms';
 
 import * as Services from '../../../../services';
 import { I18nContext } from '../../../../contexts/i18n-context';
-import { NavContext } from '../../../../contexts';
 import { GlobalContext } from '../../../../contexts/globalContext';
 import { Link } from 'react-router-dom';
+import { loginWithPasskey } from '../../authentication';
 
 export const GuestPanel = () => {
   const { translate, Translation } = useContext(I18nContext);
@@ -19,6 +19,10 @@ export const GuestPanel = () => {
       label: translate('login.label'),
       placeholder: translate('login.placeholder'),
       format: format.email,
+      props: {
+        autocomplete: 'username webauthn',
+        autofocus: 'autofocus',
+      },
       constraints: [
         constraints.required(translate('constraints.required.email')),
         constraints.email(translate('constraints.matches.email')),
@@ -66,10 +70,10 @@ export const GuestPanel = () => {
                 onSubmit={submit}
                 footer={({ valid }) => {
                   return (
-                    <div className="d-flex justify-content-end mt-3">
+                    <div className="d-flex mt-3">
                       <button
                         type="submit"
-                        className="btn btn-outline-success ms-2"
+                        className="btn btn-outline-success flex-grow-1"
                         onClick={valid}
                       >
                         <span>{translate('Login')}</span>
@@ -78,6 +82,8 @@ export const GuestPanel = () => {
                   );
                 }}
               />
+              <div className="login-divider">OR</div>
+              <button className="btn btn-outline-success" onClick={() => loginWithPasskey()}>use passkey</button>
               <div className="d-flex flex-row justify-content-between mt-3">
                 {tenant.loginProvider == 'Local' && (
                   <Link className="text-center" to="/signup">

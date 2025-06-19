@@ -103,8 +103,9 @@ const validateClientData = (
 };
 
 
-export const testPasskey = () => {
-  Services.beginPasskeyAssertion()
+export const loginWithPasskey = () => {
+  const challengeId = nanoid(32)
+  Services.beginPasskeyAssertion(challengeId)
     .then(r => {
       if (isError(r))
         return Promise.reject(r.error)
@@ -121,7 +122,7 @@ export const testPasskey = () => {
             id: base64urlDecode(id)
           })),
           userVerification: "preferred"
-        }
+        },
       })
     })
     .then((assertion) => {
@@ -143,17 +144,18 @@ export const testPasskey = () => {
           }
         };
         console.log("✅ Serialized assertion : ", serializedAssertion);
-        return Services.completePasskeyAssertion(serializedAssertion)
+        return Services.completePasskeyAssertion(serializedAssertion, challengeId)
       } else {
         console.log("❌ Assertion does not exist.");
         return Promise.reject(null)
       }
     })
     .then(r => {
+      console.debug({r})
       if (isError(r)) {
         toast.error(r.error)
       } else {
-        toast.success("✅ authentication successful 🎉")
+        location.reload()
       }
     })
 }
