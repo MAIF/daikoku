@@ -261,3 +261,54 @@ const base64urlDecode = (str: string): Uint8Array => {
   const binary = atob(base64);
   return new Uint8Array(binary.split('').map(char => char.charCodeAt(0)));
 }
+
+export const loginWithConditionalPasskey = () => {
+  const challengeId = nanoid(32);
+
+  return Services.beginPasskeyAssertion(challengeId)
+    .then(r => {
+      if (isError(r)) return Promise.reject(r.error);
+      return r;
+    })
+    .then(r => {
+      const challengeBuffer = base64urlDecode(r.challenge);
+      return navigator.credentials.get({
+        publicKey: {
+          challenge: challengeBuffer,
+          allowCredentials: r.allowCredentials.map(({ id }) => ({
+            type: 'public-key',
+            id: base64urlDecode(id),
+          })),
+          userVerification: 'preferred',
+        },
+        mediation: 'conditional',
+      });
+    })
+    .then(assertion => {
+      if (!assertion) {
+        console.log('❌ Conditional passkey assertion is null.');
+        return Promise.reject('No assertion');
+      }
+
+      console.log('✅ Conditional assertion: ', assertion);
+
+      const credential = assertion as PublicKeyCredential;
+      const authResponse = credential.response as AuthenticatorAssertionResponse;
+
+      const serializedAssertion = {
+        id: credential.id,
+        rawId: arrayBufferToBase64url(credential.rawId),
+        type: credential.type,
+        response: {
+          authenticatorData: arrayBufferToBase64url(authResponse.authenticatorData),
+          clientDataJSON: arrayBufferToBase64url(authResponse.clientDataJSON),
+          signature: arrayBufferToBase64url(authResponse.signature),
+          userHandle: authResponse.userHandle
+            ? arrayBufferToBase64url(authResponse.userHandle)
+            : null,
+        },
+      };
+
+      return Services.completePasskeyAssertion(serializedAssertion, challengeId).then(() => location.reload());
+    });
+};

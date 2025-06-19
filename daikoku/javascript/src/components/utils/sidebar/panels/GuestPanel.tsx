@@ -1,17 +1,48 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Form, type, constraints, format } from '@maif/react-forms';
 
 import * as Services from '../../../../services';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { GlobalContext } from '../../../../contexts/globalContext';
 import { Link } from 'react-router-dom';
-import { loginWithPasskey } from '../../authentication';
+import { loginWithConditionalPasskey, loginWithPasskey } from '../../authentication';
 
 export const GuestPanel = () => {
   const { translate, Translation } = useContext(I18nContext);
   const { loginAction, tenant } = useContext(GlobalContext);
 
   const [loginError, setLoginError] = useState(false);
+
+  const usernameRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    async function checkAndPromptPasskey() {
+      if (
+        window.PublicKeyCredential &&
+        PublicKeyCredential.isConditionalMediationAvailable
+      ) {
+        const cma = await PublicKeyCredential.isConditionalMediationAvailable();
+        if (cma) {
+          try {
+            const user = await loginWithConditionalPasskey();
+            if (user && user.username) {
+              if (usernameRef.current) {
+                usernameRef.current.value = user.username;
+              }
+              window.location.href = '/'; // ou rediriger vers la bonne page
+            }
+          } catch (e) {
+            if (e.name !== 'NotAllowedError') {
+              console.error(e);
+              alert(e.message);
+            }
+          }
+        }
+      }
+    }
+
+    checkAndPromptPasskey();
+  }, []);
 
   const schema = {
     username: {
@@ -23,6 +54,7 @@ export const GuestPanel = () => {
         autocomplete: 'username webauthn',
         autofocus: 'autofocus',
       },
+      ref: usernameRef,
       constraints: [
         constraints.required(translate('constraints.required.email')),
         constraints.email(translate('constraints.matches.email')),
