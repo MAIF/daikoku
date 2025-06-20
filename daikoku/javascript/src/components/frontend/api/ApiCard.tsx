@@ -27,10 +27,10 @@ export const ApiCard = (props: {
   const api = apiWithAutho.api
   const authorizations = apiWithAutho.authorizations
   const allTeamsAreAuthorized =
-    api.visibility === 'Public' || authorizations.every((a: any) => a.authorized);
+    api.visibility === 'Public' || authorizations.every((a) => a.authorized);
 
   const isPending =
-    authorizations && authorizations.every((a: any) => a.pending && !a.authorized);
+    authorizations && authorizations.every((a) => a.pending && !a.authorized);
   const team = props.team;
 
   const { translate, Translation } = useContext(I18nContext);
@@ -69,11 +69,17 @@ export const ApiCard = (props: {
     return null;
   };
 
+  const redirectToApiPage = () => {
+    if (api.visibility === 'Public' || authorizations.some((a) => a.authorized)) {
+      props.redirectToApiPage()
+    }
+  }
+
   const starred = props.user.starredApis.includes(api._id)
   return (
     <div className={classNames("row border-bottom py-4 api-card", { starred })} role='listitem' aria-labelledby={api._humanReadableId}>
       <div className="col-12 d-flex justify-content-between">
-        <div className="cursor-pointer underline level2-link" onClick={props.redirectToApiPage}>
+        <div className="cursor-pointer underline level2-link" onClick={redirectToApiPage}>
           <h3 id={api._humanReadableId}>{`${api.name}${props.groupView && props.apiWithAutho.length > 1 ? ` - ${api.currentVersion}` : ''}`}</h3>
         </div>
         <div className="ms-2">

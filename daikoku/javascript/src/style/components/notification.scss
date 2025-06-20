@@ -37,7 +37,7 @@
 }
 
 .notification-prop a:hover {
-  color: #fff;//fixme: better color
+  color: #fff; //fixme: better color
 }
 
 // ------- new page ---------
@@ -73,7 +73,7 @@
   background-color: variables.$level2_bg-color;
   color: variables.$level2_text-color;
 
-  
+
 }
 
 .table-header {
@@ -90,9 +90,16 @@
 }
 
 $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
+
 .select-all-row {
   background-color: $level1-darken-color;
-  padding: 0.75rem 1rem;
+  padding: 1rem 1rem !important;
+  font-size: 1rem !important;
+  height: 4rem;
+
+  // input.form-check-input {
+  //   margin-left: .7rem!important;
+  // }
 }
 
 .table-rows {
@@ -100,17 +107,19 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
   flex-direction: column;
   background-color: variables.$level3_bg-color;
   color: variables.$level3_text-color;
-  padding: 0; margin: 0;
+  padding: 0;
+  margin: 0;
 
   .table-row {
     display: grid;
-    grid-template-columns: 5fr 50fr 15fr 15fr 10fr 10fr;
+    grid-template-columns: 5fr 15fr 15fr 30fr 15fr 12fr 7fr 15fr;
+    gap: 1rem;
     padding: .875rem 1rem;
     align-items: center;
     border-bottom: 1px solid variables.$level1_bg-color;
     font-size: 0.875rem;
 
-    &:hover { 
+    &:hover {
       background-color: color-mix(in srgb, variables.$level3_bg-color 90%, #000);
     }
 
@@ -144,6 +153,31 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 
     }
 
+    div.select-cell {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 1rem;
+      padding-right: 1rem;
+
+      position: relative;
+
+      .indicator {
+
+        &.unread:after {
+          content: "";
+          width: 0.85rem;
+          height: 0.85rem;
+          display: block;
+          background-color: variables.$info-color;
+          border-radius: 50%;
+          box-sizing: content-box;
+
+          flex-shrink: 0;
+        }
+      }
+    }
+
     div.description-cell {
       display: flex;
       justify-content: start;
@@ -154,37 +188,19 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
         flex-direction: row;
         align-items: center;
 
-        &.unread:before {
-          content: "";
-          width: 0.85rem;
-          height: 0.85rem;
-          position: absolute;
-          left: -1.5rem;
-          display: block;
-          background-color: variables.$info-color;
-          border-radius: 50%;
-          box-sizing: content-box;
-
-          flex-shrink: 0;
-        }
-
-        .notification__identities {
-          font-weight: lighter;
-        }
-        
         .notification__description {
-          font-weight: bold;
+          font-weight: 500;
         }
       }
     }
 
     div.type-cell {
-      text-align: center;
+      text-align: left;
     }
 
     div.sender-cell {
       display: flex;
-      justify-content: center;
+      justify-content: start;
 
       .sender {
         width: fit-content;
@@ -197,6 +213,7 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     div.date-cell {
       text-align: end;
     }
+
     div.action-cell {
       text-align: end;
     }
@@ -207,6 +224,26 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
   }
 }
 
+.action-container {
+  display: grid;
+  grid-template-columns: 80fr 20fr;
+  gap: 1rem;
+}
+
 .select-menu-item:hover {
   background-color: #eee;
+}
+
+.notification-subscription-demand-summary {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+
+  .label {
+    font-weight: bold;
+  }
+
+  & +.notification-subscription-demand-summary {
+    margin-top: 2rem;
+  }
 }
