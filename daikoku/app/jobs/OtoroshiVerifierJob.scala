@@ -1067,8 +1067,8 @@ class OtoroshiVerifierJob(
                 sender = jobUser.asNotificationSender,
                 action = NotificationAction.ApiKeyRotationInProgress(
                   apk.clientId,
-                  api.name,
-                  plan.customName
+                  api.id.value,
+                  plan.id.value
                 ),
                 notificationType = NotificationType.AcceptOnly
               ).some

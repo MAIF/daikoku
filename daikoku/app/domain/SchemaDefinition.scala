@@ -2575,6 +2575,9 @@ object SchemaDefinition {
         ](
           Field("clientId", StringType, resolve = _.value.clientId),
           Field("apiName", StringType, resolve = _.value.api),
+          Field("api", OptionType(ApiType), resolve = ctx => ctx.ctx._1.apiRepo
+            .forTenant(ctx.ctx._2.tenant)
+            .findOne(Json.obj("name" -> ctx.value.api))),
           Field("planName", StringType, resolve = _.value.plan)
         )
       )
