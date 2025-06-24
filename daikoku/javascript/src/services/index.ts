@@ -1736,11 +1736,42 @@ export const graphql = {
               linkTo
               apiName
             }
+            ... on NewCommentOnIssueV2 {
+            __typename
+              api {
+                _id
+                _humanReadableId
+                name
+                currentVersion
+                team {
+                  _humanReadableId
+                  name
+                }
+              }
+              issue {
+                _id
+              }
+            }
             ... on NewPostPublished {
             __typename
               apiName
               team {
                 name
+              }
+            }
+            ... on NewPostPublishedV2 {
+            __typename
+              api {
+                _id
+                _humanReadableId
+                name
+                currentVersion
+                team {
+                  _humanReadableId
+                }
+              }
+              post {
+                _id
               }
             }
             ... on ApiKeyRefresh {
@@ -1749,9 +1780,37 @@ export const graphql = {
               apiName
               planName
             }
+            ... on ApiKeyRefreshV2 {
+            __typename
+              subscription {
+                _id
+              }
+              api {
+                _id
+                _humanReadableId
+                name
+              }
+              plan {
+                _id
+                customName
+              }
+              message
+            }
             ... on ApiKeyDeletionInformation {
             __typename
               apiName
+              clientId
+            }
+            ... on ApiKeyDeletionInformationV2 {
+            __typename
+              subscription {
+                _id
+              }
+              api {
+                _id
+                _humanReadableId
+                name
+              }
               clientId
             }
             ... on TransferApiOwnership {
@@ -1816,16 +1875,64 @@ export const graphql = {
               apiName
               planName
             }
+            ... on ApiKeyRotationInProgressV2 {
+            __typename
+              subscription {
+                apiKey {
+                  clientId
+                }
+              }
+              api {
+                _humanReadableId
+                name
+              }
+              plan {
+                _id
+                customName
+              }
+            }
             ... on ApiKeyRotationEnded {
             __typename
               clientId
               apiName
               planName
             }
+            ... on ApiKeyRotationEndedV2 {
+            __typename
+              subscription {
+                apiKey {
+                  clientId
+                }
+              }
+              api {
+                _humanReadableId
+                name
+              }
+              plan {
+                _id
+                customName
+              }
+            }
             ... on NewIssueOpen {
             __typename
               linkTo
               apiName
+            }
+            ... on NewIssueOpenV2 {
+            __typename
+              api {
+                _id
+                _humanReadableId
+                name
+                currentVersion
+                team {
+                  _humanReadableId
+                  name
+                }
+              }
+              issue {
+                _id
+              }
             }
           }
           date

@@ -407,8 +407,6 @@ class TeamController(
                 case Some(team) =>
                   ctx.setCtxValue("team.id", team.id)
                   ctx.setCtxValue("team.name", team.name)
-                  AppLogger.info(Json.prettyPrint(ctx.request.body))
-                  AppLogger.info(Json.prettyPrint(team.asJson))
                   val teamWithEdits =
                     if (ctx.user.isDaikokuAdmin || ctx.isTenantAdmin) newTeam
                     else
