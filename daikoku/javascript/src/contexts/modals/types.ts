@@ -180,7 +180,6 @@ export type SubscriptionMetadataModalProps<T> = {
   plan?: string;
   save: ((sub: CustomSubscriptionData) => Promise<void>) | ((sub: CustomSubscriptionData) => void);
   team?: ITeamSimple | LimitedTeam;
-  notification?: INotification | NotificationGQL;
   config?: ITestingConfig;
   subscription?: ISubscriptionCustomization;
   subscriptionDemand?: ISubscriptionDemand;

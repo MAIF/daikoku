@@ -521,10 +521,10 @@ class OtoroshiVerifierJob(
                       date = DateTime.now(),
                       notificationType = NotificationType.AcceptOnly,
                       status = NotificationStatus.Pending(),
-                      action = NotificationAction.ApiKeyRefresh(
-                        infos.parent.id.value,
-                        infos.parent.api.value,
-                        infos.parent.plan.value
+                      action = NotificationAction.ApiKeyRefreshV2(
+                        subscription = infos.parent.id,
+                        api = infos.parent.api,
+                        plan = infos.parent.plan
                       )
                     )
                   )
@@ -1065,10 +1065,10 @@ class OtoroshiVerifierJob(
                 tenant = tenant.id,
                 team = Some(subscription.team),
                 sender = jobUser.asNotificationSender,
-                action = NotificationAction.ApiKeyRotationInProgress(
-                  apk.clientId,
-                  api.id.value,
-                  plan.id.value
+                action = NotificationAction.ApiKeyRotationInProgressV2(
+                  subscription = subscription.id,
+                  api = api.id,
+                  plan = plan.id
                 ),
                 notificationType = NotificationType.AcceptOnly
               ).some
@@ -1089,10 +1089,10 @@ class OtoroshiVerifierJob(
                 tenant = tenant.id,
                 team = Some(subscription.team),
                 sender = jobUser.asNotificationSender,
-                action = NotificationAction.ApiKeyRotationEnded(
-                  apk.clientId,
-                  api.name,
-                  plan.customName
+                action = NotificationAction.ApiKeyRotationEndedV2(
+                  subscription = subscription.id,
+                  api = api.id,
+                  plan = plan.id
                 ),
                 notificationType = NotificationType.AcceptOnly
               ).some

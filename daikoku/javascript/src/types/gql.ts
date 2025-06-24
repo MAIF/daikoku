@@ -128,7 +128,7 @@ export interface ICmsPageGQL {
 }
 
 export interface ISubscriptionDemandGQL {
-  id: string;
+  _id: string;
   api: IApiGQL;
   plan: IUsagePlanGQL;
   steps: Array<{
@@ -142,4 +142,5 @@ export interface ISubscriptionDemandGQL {
     name: string;
   };
   date: number;
+  motivation?: string
 }

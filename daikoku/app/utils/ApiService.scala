@@ -1072,10 +1072,10 @@ class ApiService(
                   team = Some(subscription.team),
                   sender = user.asNotificationSender,
                   action = NotificationAction
-                    .ApiKeyRefresh(
-                      subscription.customName.getOrElse(apiKey.clientName),
-                      api.name,
-                      plan.customName
+                    .ApiKeyRefreshV2(
+                      subscription = subscription.id,
+                      api = api.id,
+                      plan = plan.id
                     ),
                   notificationType = NotificationType.AcceptOnly
                 )
@@ -1413,7 +1413,7 @@ class ApiService(
 
   def deleteApiSubscriptionsAsFlow(
       tenant: Tenant,
-      apiOrGroupName: String,
+      apiOrGroupId: ApiId,
       user: User
   ): Flow[(UsagePlan, Seq[ApiSubscription]), UsagePlan, NotUsed] =
     Flow[(UsagePlan, Seq[ApiSubscription])]
@@ -1429,9 +1429,10 @@ class ApiService(
                 team = Some(subscription.team),
                 sender = user.asNotificationSender,
                 notificationType = NotificationType.AcceptOnly,
-                action = NotificationAction.ApiKeyDeletionInformation(
-                  apiOrGroupName,
-                  subscription.apiKey.clientId
+                action = NotificationAction.ApiKeyDeletionInformationV2(
+                  apiOrGroupId,
+                  subscription.apiKey.clientId,
+                  subscription.id
                 )
               )
             )
@@ -1628,7 +1629,7 @@ class ApiService(
           )
           .map(seq => (plan, seq))
       )
-      .via(deleteApiSubscriptionsAsFlow(tenant, api.name, user))
+      .via(deleteApiSubscriptionsAsFlow(tenant, api.id, user))
       .runWith(Sink.ignore)
       .recover {
         case e =>
