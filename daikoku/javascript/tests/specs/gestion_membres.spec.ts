@@ -57,7 +57,7 @@ test("[ASOAPI-10360] - Ajouter une personne n'ayant pas de compte Daikoku à une
   await loginAs(PAM, page)
   await expect(page.getByText('Vendeurs')).not.toBeVisible();
   await page.getByRole('link', { name: 'Accès aux notifications' }).click();
-  await expect(page.getByText('Jim Halpert, administrateur de Vendeurs, vous a invité a rejoindre son équipe.')).toBeVisible();
+  await expect(page.getByText('Vous avez été invité•e à rejoindre l\'équipe Vendeurs.')).toBeVisible();
   await page.getByRole('listitem').filter({ hasText: 'Invitation dans une équipe' })
     .getByRole('button', { name: 'Accepter' }).click();
   await page.getByRole('link', { name: 'Liste des APIs' }).click();
@@ -86,7 +86,7 @@ test("[ASOAPI-10363] - Ajouter une personne n'ayant pas de compte Daikoku à une
   await loginAs(ANDY, page)
   await expect(page.getByText('Vendeurs')).not.toBeVisible();
   await page.getByRole('link', { name: 'Accès aux notifications' }).click();
-  await expect(page.getByText('Jim Halpert, administrateur de Vendeurs, vous a invité a rejoindre son équipe.')).toBeVisible();
+  await expect(page.getByText('Vous avez été invité•e à rejoindre l\'équipe Vendeurs.')).toBeVisible();
   await page.getByRole('listitem').filter({ hasText: 'Invitation dans une équipe' })
     .getByRole('button', { name: 'Accepter' }).click();
   await page.getByRole('link', { name: 'Liste des APIs' }).click();
@@ -115,7 +115,7 @@ test("[ASOAPI-10362] - Ajouter une personne ayant un compte Daikoku à une équi
   await loginAs(DWIGHT, page)
   await expect(page.getByText('Logistique')).not.toBeVisible();
   await page.getByRole('link', { name: 'Accès aux notifications' }).click();
-  await expect(page.getByText('Jim Halpert, administrateur de Logistique, vous a invité a rejoindre son équipe.')).toBeVisible();
+  await expect(page.getByText('Vous avez été invité•e à rejoindre l\'équipe Logistique.')).toBeVisible();
   await page.getByRole('listitem').filter({ hasText: 'Invitation dans une équipe' })
     .getByRole('button', { name: 'Accepter' }).click();
   await page.getByRole('link', { name: 'Liste des APIs' }).click();

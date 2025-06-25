@@ -1620,7 +1620,8 @@
         "s": "%s row selected",
         "p": "%s rows selected"
     },
-    "notifications.page.table.read.bulk.action.label": "Mark as read",
+    "notifications.page.table.read.bulk.action.label": "Mark all as read",
+    "notifications.page.table.read.action.label": "Mark as read",
     "notifications.page.table.select.really.all.label": "Select all %s notifications",
     "notifications.page.table.more.button.label": "Show more notifications",
     "notifications.page.subscription.demand.detail.button.label": "Show subscription request details",

@@ -426,44 +426,39 @@ test('Voir ses notifications', async ({ page }) => {
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('58');
   await expect(page.getByRole('article')).toHaveCount(25);
 
-  await page.getByRole('button', { name: 'Afficher plus', exact: true }).click();
+  await page.getByRole('button', { name: "Afficher plus de notifications", exact: true }).click();
   await expect(page.locator('article')).toHaveCount(50)
-  await page.getByRole('button', { name: 'Afficher plus', exact: true }).click();
+  await page.getByRole('button', { name: "Afficher plus de notifications", exact: true }).click();
   await expect(page.locator('article')).toHaveCount(58)
-  await expect(page.getByRole('button', { name: 'Afficher plus', exact: true })).toBeHidden();
-  await page.locator('div').filter({ hasText: /^Toutes les équipes/ }).locator('svg').click();
+  await expect(page.getByRole('button', { name: "Afficher plus de notifications", exact: true })).toBeHidden();
+  await page.locator('div.daikoku-select__control').filter({ hasText: /^Toutes les équipes/ }).locator('svg').click();
   await page.getByRole('option', { name: 'Logistique' }).click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('7');
   await expect(page.locator('article')).toHaveCount(25)
   await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
-  await page.locator('div').filter({ hasText: /^Toutes les apis/ }).locator('svg').click();
+  await page.locator('div.daikoku-select__control').filter({ hasText: /^Toutes les apis/ }).locator('svg').click();
   await page.getByRole('option', { name: 'API Papier' }).click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
   await expect(page.locator('article')).toHaveCount(1)
   await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
-
-  await page.locator('div').filter({ hasText: /^Tous les types/ }).locator('svg').click();
+  await page.locator('div.daikoku-select__control').filter({ hasText: /^Tous les types/ }).locator('svg').click();
   await page.getByRole('option', { name: 'Transfert de propriété d\'API' }).click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('2');
   await expect(page.locator('article')).toHaveCount(2)
   await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
-
-  await page.locator('div').filter({ hasText: /^Toutes les notifications/ }).locator('svg').click();
-  await page.getByRole('option', { name: 'Aucune action requise' }).click();
-  await expect(page.getByLabel('Notifications', { exact: true })).toContainText('2');
-  await expect(page.locator('article')).toHaveCount(2)
-  await page.getByRole('button', { name: 'Aucune action requise' }).click();
+  
+  await page.reload();
 
   await page.getByRole('checkbox', { name: 'tout sélectionner' }).check();
   await page.getByRole('button', { name: 'selectionner les 56' }).click();
   await expect(page.getByText('56 lignes sélectionnées')).toBeVisible();
-  await page.getByRole('button', { name: 'Marquer comme lu' }).click();
+  await page.getByRole('button', { name: 'Marquer tout comme lu' }).click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('2');
   await expect(page.locator('article')).toHaveCount(2)
   await page.getByRole('button', { name: 'Toutes' }).click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('59'); //58 injected notif + acceptedDemand already on db
   await expect(page.locator('article')).toHaveCount(25)
-  await page.getByRole('button', { name: 'Non lues' }).click();
+  await page.getByRole('button', { name: 'À traiter' }).click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('2');
   await expect(page.locator('article')).toHaveCount(2)
 });

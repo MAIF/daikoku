@@ -1620,7 +1620,8 @@
     "s": "%s ligne sélectionnée",
     "p": "%s lignes sélectionnées"
   },
-  "notifications.page.table.read.bulk.action.label": "Marquer comme lu",
+  "notifications.page.table.read.bulk.action.label": "Marquer tout comme lu",
+  "notifications.page.table.read.action.label": "Marquer comme lu",
   "notifications.page.table.select.really.all.label": "selectionner les %s notifications",
   "notifications.page.table.more.button.label": "Afficher plus de notifications",
   "notifications.page.subscription.demand.detail.button.label": "Voir les détails de la demande de souscription",
