@@ -1784,11 +1784,38 @@ export const graphql = {
             __typename
               subscription {
                 _id
+                apiKey {
+                  clientName
+                  clientId
+                  clientSecret
+                }
+                createdAt
+                validUntil
+                by {
+                  id
+                  name
+                  email
+                }
+                customName
+                adminCustomName
+                enabled
+                rotation {
+                  enabled
+                  rotationEvery
+                  gracePeriod
+                  pendingRotation
+                }
+                integrationToken
               }
               api {
                 _id
                 _humanReadableId
                 name
+                team {
+                  _id
+                  _humanReadableId
+                  name
+                }
               }
               plan {
                 _id
@@ -1805,13 +1832,24 @@ export const graphql = {
             __typename
               subscription {
                 _id
+                apiKey {
+                  clientId
+                }
+                plan {
+                  _id
+                  customName
+                }
               }
               api {
                 _id
                 _humanReadableId
                 name
+                team {
+                  _id
+                  _humanReadableId
+                  name
+                }
               }
-              clientId
             }
             ... on TransferApiOwnership {
             __typename
@@ -1878,9 +1916,33 @@ export const graphql = {
             ... on ApiKeyRotationInProgressV2 {
             __typename
               subscription {
+                _id
                 apiKey {
+                  clientName
                   clientId
+                  clientSecret
                 }
+                plan {
+                  _id
+                  customName
+                }
+                createdAt
+                validUntil
+                by {
+                  id
+                  name
+                  email
+                }
+                customName
+                adminCustomName
+                enabled
+                rotation {
+                  enabled
+                  rotationEvery
+                  gracePeriod
+                  pendingRotation
+                }
+                integrationToken
               }
               api {
                 _humanReadableId
@@ -1900,9 +1962,33 @@ export const graphql = {
             ... on ApiKeyRotationEndedV2 {
             __typename
               subscription {
+                _id
                 apiKey {
+                  clientName
                   clientId
+                  clientSecret
                 }
+                plan {
+                  _id
+                  customName
+                }
+                createdAt
+                validUntil
+                by {
+                  id
+                  name
+                  email
+                }
+                customName
+                adminCustomName
+                enabled
+                rotation {
+                  enabled
+                  rotationEvery
+                  gracePeriod
+                  pendingRotation
+                }
+                integrationToken
               }
               api {
                 _humanReadableId

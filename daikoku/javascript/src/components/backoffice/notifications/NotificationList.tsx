@@ -16,6 +16,7 @@ import { getLanguageFns, Spinner } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { Option as opt } from '../../utils';
 import { IApiSubscriptionGql } from '../apis';
+import { SimpleApiKeyCard } from '../apikeys/TeamApiKeysForApi';
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData extends unknown, TValue> extends NotificationColumnMeta { }
 }
@@ -90,7 +91,7 @@ type NotificationActionGQL =
   | {
     __typename: 'ApiKeyRefreshV2';
     api: IApiGQL;
-    subscription: ISubscription;
+    subscription: IApiSubscriptionGql;
     plan: IUsagePlan
     message?: string
   }
@@ -103,7 +104,7 @@ type NotificationActionGQL =
     __typename: 'ApiKeyDeletionInformationV2';
     clientId: string;
     api: IApiGQL;
-    subscription: ISubscription;
+    subscription: IApiSubscriptionGql;
   }
   | {
     __typename: 'TransferApiOwnership';
@@ -595,19 +596,13 @@ export const NotificationList = () => {
       case 'ApiKeyRotationInProgressV2':
       case 'ApiKeyRotationEndedV2':
         //todo: redirect to subscription (or open it)
+        const __api = notification.action.api
+        const __plan = notification.action.plan
+        const __team = notification.action.api.team
+        const __subscription = notification.action.subscription
         return (
           <div className='action-container'>
             <div className="d-flex justify-content-end">
-              <a
-                href={'#'}
-                onClick={() => notification.status.status === 'Pending' ? accept(notification._id) : {}}
-                className="nav_item cursor-pointer bg-info"
-                target='_blank'
-                title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-                aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
-              >
-                <i className="fas fa-arrow-right" />
-              </a>
             </div>
             {notification.status.status === 'Pending' && <button
               type="button"
@@ -782,9 +777,10 @@ export const NotificationList = () => {
           replacements: [notification.action.plan.customName]
         })
       case 'ApiKeyDeletionInformation':
-      case 'ApiKeyDeletionInformationV2':
+        return translate({ key: 'notif.apikey.deletion' })
+      case 'ApiKeyDeletionInformationV2': {
         const apiKeyDeletionInformationDescription = translate({ key: 'notif.apikey.deletion' })
-        const _clientId = notification.action.clientId
+        const __subscription = notification.action.subscription        
         return (
           <>
             {apiKeyDeletionInformationDescription}
@@ -796,30 +792,108 @@ export const NotificationList = () => {
               onClick={() => alert({
                 title: translate('notifications.page.subscription.deletion.detail.modal.title'),
                 message: <div>
-                  {translate("subscription.display.credentials.clientId")} : <i>{_clientId}</i>
+                  {translate("subscription.display.credentials.clientId")} : <i>{__subscription.apiKey.clientId}</i>
                 </div>
               })}>
               <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
             </a>
           </>
         )
+      }
 
       case 'OtoroshiSyncSubscriptionError':
       case 'OtoroshiSyncApiError':
-        return notification.action.message!
+        return notification.action.message
       case 'ApiKeyRotationInProgress':
-      case 'ApiKeyRotationInProgressV2':
-        return translate('notif.apikey.rotation.inprogress')
+        return translate('notif.apikey.rotation.inprogress');
+      case 'ApiKeyRotationInProgressV2': {
+        const apiKeyRotationInProgressDescription = translate('notif.apikey.rotation.inprogress')
+        const __api = notification.action.api
+        const __plan = notification.action.plan
+        const __team = notification.action.api.team
+        const __subscription = notification.action.subscription 
+        return (
+          <>
+            {apiKeyRotationInProgressDescription}
+            <a
+              href='#'
+              className='underline'
+              aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+              onClick={() => alert({
+                title: translate('notifications.page.subscription.deletion.detail.modal.title'),
+                message: <SimpleApiKeyCard //@ts-ignore
+                  api={__api}
+                  plan={__plan}
+                  apiTeam={__team as ITeamSimple} //@ts-ignore
+                  subscription={__subscription}
+                />
+              })}>
+              <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
+            </a>
+          </>
+        )
+      }
       case 'ApiKeyRotationEnded':
-      case 'ApiKeyRotationEndedV2':
         return translate('notif.apikey.rotation.ended')
+      case 'ApiKeyRotationEndedV2': {
+        const apiKeyRotationEndedV2Description =  translate('notif.apikey.rotation.ended')
+        const __api = notification.action.api
+        const __plan = notification.action.plan
+        const __team = notification.action.api.team
+        const __subscription = notification.action.subscription 
+        return <>
+          {apiKeyRotationEndedV2Description}
+          <a
+            href='#'
+            className='underline'
+            aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+            title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+            onClick={() => alert({
+              title: translate('notifications.page.subscription.deletion.detail.modal.title'),
+              message: <SimpleApiKeyCard //@ts-ignore
+                api={__api}
+                plan={__plan}
+                apiTeam={__team as ITeamSimple} //@ts-ignore
+                subscription={__subscription}
+              />
+            })}>
+            <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
+          </a>
+        </>
+      }
       case 'ApiKeyRefresh':
-      case 'ApiKeyRefreshV2':
         return translate('notif.apikey.refresh')
+      case 'ApiKeyRefreshV2': {
+        const apiKeyRefreshV2Description = translate('notif.apikey.refresh')
+        const __api = notification.action.api
+        const __plan = notification.action.plan
+        const __team = notification.action.api.team
+        const __subscription = notification.action.subscription 
+        return <>
+          {apiKeyRefreshV2Description}
+          <a
+            href='#'
+            className='underline'
+            aria-label={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+            title={translate('notifications.page.subscription.demand.reject.detail.button.label')}
+            onClick={() => alert({
+              title: translate('notifications.page.subscription.deletion.detail.modal.title'),
+              message: <SimpleApiKeyCard //@ts-ignore
+                api={__api}
+                plan={__plan}
+                apiTeam={__team as ITeamSimple} //@ts-ignore
+                subscription={__subscription}
+              />
+            })}>
+            <span className='ms-2'>[{translate('notifications.page.subscription.demand.reject.detail.button.label')}]</span>
+          </a>
+        </>
+      }
       case 'TeamInvitation':
         return translate({
           key: 'notif.team.invitation',
-          replacements: [notification.action.team!.name]
+          replacements: [notification.action.team.name]
         })
       case 'NewPostPublished':
         return translate({
@@ -853,7 +927,7 @@ export const NotificationList = () => {
     }
   }
 
-  const getApiFromNotification = (notification: NotificationGQL, apis?: Array<{ _id: string, name: string }>): {_id: string, name: string, currentVersion?: string} | undefined => {
+  const getApiFromNotification = (notification: NotificationGQL, apis?: Array<{ _id: string, name: string }>): { _id: string, name: string, currentVersion?: string } | undefined => {
     if (!apis) {
       return;
     }
@@ -922,7 +996,7 @@ export const NotificationList = () => {
         const api = getApiFromNotification(notification, visibleApisRequest.data)
 
         if (api)
-          return <a href='#' onClick={() => handleSelectChange([{ label: api?.name, value: api?._id }], 'api')}>
+          return <a href='#' onClick={() => handleSelectChange([{ label: api.name, value: api._id }], 'api')}>
             {api.name}{api.currentVersion ? ` (${api.currentVersion})` : null}
           </a>
         else

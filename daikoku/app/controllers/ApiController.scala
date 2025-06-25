@@ -2477,6 +2477,15 @@ class ApiController(
                         .map(child => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
                           .save(child.copy(parent = futureParent.id.some))))) //update first child to remove parent
                       _ <- EitherT.liftF[Future, AppError, Unit](otoroshiSynchronisator.verify(Json.obj("_id" -> futureParent.id.asJson)))
+                      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.notificationRepo.forTenant(ctx.tenant)
+                        .save(Notification(
+                        id = NotificationId(IdGenerator.token(32)),
+                        tenant = ctx.tenant.id,
+                        team = team.id.some,
+                        sender = ctx.user.asNotificationSender,
+                        notificationType = NotificationType.AcceptOnly,
+                        action = NotificationAction.ApiKeyDeletionInformationV2(api = api.id, clientId = subscription.apiKey.clientId, subscription = subscription.id)
+                      )))
                     } yield Json.obj(
                       "archive" -> "done",
                       "subscriptionId" -> subscriptionId
