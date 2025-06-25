@@ -22,7 +22,7 @@ export const LastDemands = (props: LastDemandsProps) => {
       teamSubscriptionDemands(teamId: $teamId , limit: $limit, offset: $offset) {
         total
         subscriptionDemands {
-          id
+          _id
           api {
             name
           }
@@ -93,14 +93,14 @@ export const LastDemands = (props: LastDemandsProps) => {
                   {checkout && <FeedbackButton
                     type="primary"
                     className="ms-1 btn-sm"
-                    onPress={() => handleCheckout(d.id)}
+                    onPress={() => handleCheckout(d._id)}
                     onSuccess={() => console.debug("success")}
                     feedbackTimeout={100}
                     disabled={false}
                   >Checkout</FeedbackButton>
                   }
                   {!checkout && <span className='badge bg-secondary my-2'>{translate({ key: 'widget.demands.state', replacements: [translate(d.state)] })}</span>}
-                  {isAdmin && <button className='btn btn-sm btn-outline-danger ms-1' onClick={() => cancelDemand(d.id)}>{translate('Cancel')}</button>}
+                  {isAdmin && <button className='btn btn-sm btn-outline-danger ms-1' onClick={() => cancelDemand(d._id)}>{translate('Cancel')}</button>}
                 </div>
               </div>
             )
