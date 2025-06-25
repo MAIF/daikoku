@@ -50,7 +50,7 @@ test('[ASOAPI-10160] - souscrire à une api', async ({ page, context }) => {
   //todo: acces aux mail et verifier le message
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
-  await expect(page.getByRole('listitem')).toContainText('Souscription à API papier - 1.0.0 pour le plan prod');
+  await expect(page.getByRole('listitem')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
   await page.getByLabel('Accepter').click();
   await page.getByLabel('Nom personnalisé de la clé').fill('vendeurs - clé pour API papier');
   await page.getByRole('dialog', { name: 'Métadonnées de souscription' }).getByRole('button', { name: 'Accepter' }).click();
@@ -108,7 +108,7 @@ test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context 
   await loginAs(MICHAEL, page);
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
-  await expect(page.getByRole('listitem')).toContainText('Souscription à API papier - 1.0.0 pour le plan prod');
+  await expect(page.getByRole('listitem')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
   await page.getByRole('article', { name: 'Nouvelle souscription par Jim Halpert' })
     .getByRole('button', { name: 'Rejeter' }).click();
   // await page.getByRole('dialog').locator('#message').click();
@@ -135,9 +135,9 @@ test('[ASOAPI-10163] - souscrire à une api avec refus', async ({ page, context 
   await expect(page.locator('.api-subscription', { hasText: 'prod' })).toBeHidden();
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
-  await expect(page.getByRole('listitem')).toContainText('Votre souscription à API papier - 1.0.0 pour le plan prod a été refusée');
+  await expect(page.getByRole('listitem')).toContainText('Votre demande de souscription (prod) a été refusée.');
   await page.getByRole('article', { name: 'Souscription refusée' })
-    .getByRole('button', { name: 'Voir les détails du rejet' }).click();
+    .getByRole('link', { name: 'Voir plus' }).click();
   await expect(page.getByRole('dialog')).toContainText('désolé');
   //todo: accepter la notification
 });
@@ -210,7 +210,7 @@ test('[ASOAPI-10161] - Demander une extension d\apikey - process manuel', async 
   await page.getByLabel('Accès aux notifications').click();
 
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
-  await expect(page.getByRole('listitem')).toContainText('Souscription à API papier - 1.0.0 pour le plan prod');
+  await expect(page.getByRole('listitem')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
   await page.getByRole('article', { name: 'Nouvelle souscription par Jim' })
     .getByRole('button', { name: 'Accepter' }).click();
   await page.getByLabel('Nom personnalisé de la clé').fill('veudeurs - clé pour API papier');
@@ -326,7 +326,7 @@ test('[ASOAPI-10164] - Demander une extension d\apikey - process manuel - refus'
   await loginAs(MICHAEL, page);
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
-  await expect(page.getByRole('listitem')).toContainText('Souscription à API papier - 1.0.0 pour le plan prod');
+  await expect(page.getByRole('listitem')).toContainText('Nouvelle demande de souscription pour l\'environnement prod.');
   await page.getByRole('article', { name: 'Nouvelle souscription par Jim Halpert' })
     .getByLabel('Rejeter').click();
   await page.locator('#message').fill('désolé');
@@ -350,9 +350,9 @@ test('[ASOAPI-10164] - Demander une extension d\apikey - process manuel - refus'
 
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
-  await expect(page.getByRole('listitem')).toContainText('Votre souscription à API papier - 1.0.0 pour le plan prod a été refusée');
+  await expect(page.getByRole('listitem')).toContainText('Votre demande de souscription (prod) a été refusée.');
   await page.getByRole('article', { name: 'Souscription refusée' })
-    .getByRole('button', { name: 'Voir les détails du rejet' }).click();
+    .getByRole('link', { name: 'Voir plus' }).click();
   await expect(page.getByRole('dialog')).toContainText('désolé');
 
   await page.goto(ACCUEIL);
@@ -843,9 +843,9 @@ test('[] - [Consommateur] - supprimer une clé avec extension avec extraction de
   );
   await page.getByLabel('Accès aux notifications').click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('1');
-  await expect(page.getByRole('article')).toContainText(`Votre clé d\'API avec l\'identifiant client ${vendeursPapierExtendedDevApiKeyId} pour API API papier a été supprimée`);
+  await expect(page.getByRole('article')).toContainText(`Votre clé d\'API a été supprimée`);
   await page.getByRole('article', { name: 'Suppression de clé d\'API' })
-    .getByRole('button', { name: 'Accepter' }).click();
+    .getByRole('button', { name: 'marquer comme lu' }).click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('0');
 
 })

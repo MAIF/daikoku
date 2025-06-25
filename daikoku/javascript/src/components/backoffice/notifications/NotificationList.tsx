@@ -417,8 +417,8 @@ export const NotificationList = () => {
             {notification.status.status === 'Pending' && <button
               type="button"
               className="nav_item cursor-pointer no-bg"
-              title={translate('notifications.page.table.read.bulk.action.label')}
-              aria-label={translate('notifications.page.table.read.bulk.action.label')}
+              title={translate('notifications.page.table.read.action.label')}
+              aria-label={translate('notifications.page.table.read.action.label')}
               onClick={() => accept(notification._id)}
             >
               <i className="fas fa-times" />
@@ -444,8 +444,8 @@ export const NotificationList = () => {
             {notification.status.status === 'Pending' && <button
               type="button"
               className="nav_item cursor-pointer no-bg"
-              title={translate('notifications.page.table.read.bulk.action.label')}
-              aria-label={translate('notifications.page.table.read.bulk.action.label')}
+              title={translate('notifications.page.table.read.action.label')}
+              aria-label={translate('notifications.page.table.read.action.label')}
               onClick={() => accept(notification._id)}
             >
               <i className="fas fa-times" />
@@ -472,8 +472,8 @@ export const NotificationList = () => {
             {notification.status.status === 'Pending' && <button
               type="button"
               className="nav_item cursor-pointer no-bg"
-              title={translate('notifications.page.table.read.bulk.action.label')}
-              aria-label={translate('notifications.page.table.read.bulk.action.label')}
+              title={translate('notifications.page.table.read.action.label')}
+              aria-label={translate('notifications.page.table.read.action.label')}
               onClick={() => accept(notification._id)}
             >
               <i className="fas fa-times" />
@@ -494,7 +494,7 @@ export const NotificationList = () => {
                   title={translate('Accept')}
                   aria-label={translate('Accept')}
                   onClick={() =>
-                    Services.getSubscriptionDemand(_team._id, _demand._id)
+                    Services.getSubscriptionDemand(notification.team!._id, _demand._id)
                       .then(demand => {
                         if (!isError(demand)) {
                           openSubMetadataModal({
@@ -540,8 +540,8 @@ export const NotificationList = () => {
                 type="button"
                 className="nav_item cursor-pointer no-bg"
                 disabled={true}
-                title={translate('notifications.page.table.read.bulk.action.label')}
-                aria-label={translate('notifications.page.table.read.bulk.action.label')}
+                title={translate('notifications.page.table.read.action.label')}
+                aria-label={translate('notifications.page.table.read.action.label')}
                 onClick={() => { }}
               >
                 <i className="fas fa-times" />
@@ -584,8 +584,8 @@ export const NotificationList = () => {
             {notification.status.status === 'Pending' && <button
               type="button"
               className="nav_item cursor-pointer no-bg"
-              title={translate('notifications.page.table.read.bulk.action.label')}
-              aria-label={translate('notifications.page.table.read.bulk.action.label')}
+              title={translate('notifications.page.table.read.action.label')}
+              aria-label={translate('notifications.page.table.read.action.label')}
               onClick={() => accept(notification._id)}
             >
               <i className="fas fa-times" />
@@ -595,11 +595,6 @@ export const NotificationList = () => {
       case 'ApiKeyRefreshV2':
       case 'ApiKeyRotationInProgressV2':
       case 'ApiKeyRotationEndedV2':
-        //todo: redirect to subscription (or open it)
-        const __api = notification.action.api
-        const __plan = notification.action.plan
-        const __team = notification.action.api.team
-        const __subscription = notification.action.subscription
         return (
           <div className='action-container'>
             <div className="d-flex justify-content-end">
@@ -607,8 +602,8 @@ export const NotificationList = () => {
             {notification.status.status === 'Pending' && <button
               type="button"
               className="nav_item cursor-pointer no-bg"
-              title={translate('notifications.page.table.read.bulk.action.label')}
-              aria-label={translate('notifications.page.table.read.bulk.action.label')}
+              title={translate('notifications.page.table.read.action.label')}
+              aria-label={translate('notifications.page.table.read.action.label')}
               onClick={() => accept(notification._id)}
             >
               <i className="fas fa-times" />
@@ -645,8 +640,8 @@ export const NotificationList = () => {
               type="button"
               className="nav_item cursor-pointer no-bg"
               disabled={notification.notificationType.value === 'AcceptOrReject'}
-              title={translate('notifications.page.table.read.bulk.action.label')}
-              aria-label={translate('notifications.page.table.read.bulk.action.label')}
+              title={translate('notifications.page.table.read.action.label')}
+              aria-label={translate('notifications.page.table.read.action.label')}
               onClick={() => accept(notification._id)}
             >
               <i className="fas fa-times" />
@@ -674,7 +669,6 @@ export const NotificationList = () => {
         const _team = notification.action.team
         const _demand = notification.action.demand
         const _motivation = notification.action.motivation
-        //FIXME: l'object motivation a afficher vient du step
         return (
           <>
             {apiSubscriptionDescription}
@@ -1295,6 +1289,7 @@ export const NotificationList = () => {
                 labelKey={"notifications.page.filters.type.label"}
                 labelKeyAll={"notifications.page.filters.all.type.label"}
                 getCount={getTotalForNotifType}
+                classNamePrefix="daikoku-select"
                 styles={menuStyle}
                 onChange={data => handleSelectChange(data, 'type')}
                 value={getSelectValue('type', notificationTypes, 'label', 'type')} />
@@ -1340,6 +1335,7 @@ export const NotificationList = () => {
                 <label className='notification-table-header'>
                   <input
                     type="checkbox"
+                    aria-label={translate('notifications.page.table.select.all.label')}
                     className='form-check-input'
                     checked={table.getIsAllPageRowsSelected()}
                     onChange={(e) => {
