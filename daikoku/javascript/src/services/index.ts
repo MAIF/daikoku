@@ -1934,6 +1934,22 @@ export const graphql = {
                 _id
               }
             }
+            ... on CheckoutForSubscription {
+            __typename
+              demand {
+                _id
+                team {
+                  _id
+                  _humanReadableId
+                  name
+                }
+              }
+              api {
+                _id
+                name
+                currentVersion
+              }
+            }
           }
           date
           notificationType {

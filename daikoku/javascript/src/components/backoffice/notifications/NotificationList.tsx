@@ -252,7 +252,7 @@ const VISIBLE_APIS = `
 
 export const NotificationList = () => {
   const { translate, language } = useContext(I18nContext);
-  const { customGraphQLClient, tenant } = useContext(GlobalContext)
+  const { customGraphQLClient, tenant, reloadUnreadNotificationsCount } = useContext(GlobalContext)
   const { openSubMetadataModal, openFormModal, alert, openCustomModal } = useContext(ModalContext)
 
   const pageSize = 25;
@@ -345,10 +345,12 @@ export const NotificationList = () => {
   const accept = (notification: string, sub?: CustomSubscriptionData) => {
     Services.acceptNotificationOfTeam(notification, sub)
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
+      .then(reloadUnreadNotificationsCount)
   }
   const reject = (notification: string, message?: string) => {
     Services.rejectNotificationOfTeam(notification, message)
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
+      .then(reloadUnreadNotificationsCount)
   }
   const handleBulkRead = (e) => {
     const notificationsIds = table.getSelectedRowModel().rows.map(r => r.original._id)
@@ -357,6 +359,7 @@ export const NotificationList = () => {
       .then(() => setSelectAll(false))
       .then(() => setColumnFilters(defaultColumnFilters))
       .then(() => queryClient.invalidateQueries({ queryKey: ['notifications'] }))
+      .then(reloadUnreadNotificationsCount)
   }
 
   const notificationAriaLabelFormatter = (notif: NotificationGQL): string => {
@@ -552,13 +555,14 @@ export const NotificationList = () => {
           )
         }
       case 'CheckoutForSubscription':
+        const _checkoutDemand = notification.action.demand
         return (
           <div className="action-container">
             <div className='d-flex flex-row flex-grow-1 gap-2 justify-content-end'>
-              <FeedbackButton //fixme: aria-label
+              <FeedbackButton
                 type="success"
-                className="nav_item cursor-pointer ms-1" //@ts-ignore
-                onPress={() => Services.rerunProcess(notification.action.team?._id!, notification.action.demand!.id)
+                className="nav_item cursor-pointer ms-1"
+                onPress={() => Services.rerunProcess(_checkoutDemand.team._id, _checkoutDemand._id)
                   .then(r => window.location.href = r.checkoutUrl)}
                 onSuccess={() => console.debug("success")}
                 feedbackTimeout={100}
@@ -1057,7 +1061,6 @@ export const NotificationList = () => {
   const handleSelectChange = (data: MultiValue<Option>, id: string) => {
     const filters = columnFilters.filter(f => f.id !== id)
 
-    console.debug({ data, filters })
     setColumnFilters([...filters, { id, value: data.map(d => d.value) }])
   }
 
