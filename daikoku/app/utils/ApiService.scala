@@ -1062,23 +1062,24 @@ class ApiService(
               .forTenant(tenant.id)
               .save(updatedSubscription)
           )
+          notification = Notification(
+            id = NotificationId(IdGenerator.token(32)),
+            tenant = tenant.id,
+            team = Some(subscription.team),
+            sender = user.asNotificationSender,
+            action = NotificationAction
+              .ApiKeyRefreshV2(
+                subscription = subscription.id,
+                api = api.id,
+                plan = plan.id
+              ),
+            notificationType = NotificationType.AcceptOnly
+          )
           _ <- EitherT.liftF(
             env.dataStore.notificationRepo
               .forTenant(tenant.id)
               .save(
-                Notification(
-                  id = NotificationId(IdGenerator.token(32)),
-                  tenant = tenant.id,
-                  team = Some(subscription.team),
-                  sender = user.asNotificationSender,
-                  action = NotificationAction
-                    .ApiKeyRefreshV2(
-                      subscription = subscription.id,
-                      api = api.id,
-                      plan = plan.id
-                    ),
-                  notificationType = NotificationType.AcceptOnly
-                )
+                notification
               )
           )
           _ <- EitherT.liftF(Future.sequence(admins.map(admin => {
