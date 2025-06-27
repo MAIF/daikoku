@@ -1206,11 +1206,6 @@ class ApiController(
           val source = ctx.request.body
             .filter(api => api.tenant == ctx.tenant.id)
             .grouped(10)
-            .alsoTo(
-              Sink.foreach(seq =>
-                AppLogger.debug(s"${seq.length} apis process")
-              )
-            )
             .flatMapConcat(seq => {
               Source(seq)
                 .mapAsync(10) { api =>
@@ -3095,7 +3090,6 @@ class ApiController(
             .runWith(Sink.fold(Set.empty[UsagePlan])((set, plan) => set + plan))
             .map(Right(_))
             .recover { case ex =>
-              AppLogger.error("[source] :: ça fail")
               Left(AppError.OtoroshiError(Json.obj("error" -> ex.getMessage)))})
 
           _ <- EitherT.liftF[Future, AppError, Long](env.dataStore.operationRepo
@@ -3129,15 +3123,9 @@ class ApiController(
             .deleteByIdLogically(apiId))
 
           _ <- processNextCurrentVersion(api, nextCurrentVersion)
-          log = AppLogger.warn(s"[ApiController] :: DELETE API ${api.humanReadableId} Ended")
         } yield Ok(Json.obj("done" -> true)))
           .recover(d => {
             AppLogger.error(d.getErrorMessage())
-            AppLogger.error("on block l'api et les soucription")
-
-
-
-
             d.render()
           })
           .leftMap(_.render())
@@ -4217,7 +4205,6 @@ class ApiController(
               .exists(comment => comment.by != ctx.user.id)
 
         def notifyUser(api: Api, issue: ApiIssue, user: UserId) = {
-          AppLogger.debug(s"notify team ${user.value} for new issue comment ")
           env.dataStore.notificationRepo
             .forTenant(ctx.tenant.id)
             .save(
@@ -4250,49 +4237,59 @@ class ApiController(
               team <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo
                   .forTenant(ctx.tenant.id)
                   .findById(teamId), AppError.TeamNotFound)
+              api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
+                .forTenant(ctx.tenant.id)
+                .findByIdOrHrIdNotDeleted(apiId),
+                AppError.ApiNotFound)
+              subs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](env.dataStore.apiSubscriptionRepo
+                .forTenant(ctx.tenant.id)
+                .findNotDeleted(Json.obj(
+                  "api" -> api.id.asJson
+                )))
+              myTeams <- EitherT.liftF[Future, AppError, Seq[Team]](env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
 
-              isTeamMember = team.users.find(_.userId == ctx.user.id)
+
+
+              isPriviligedUser = team.users.find(_.userId == ctx.user.id).nonEmpty || ctx.user.isDaikokuAdmin
+
               sortedExistingComments = existingIssue.comments.sortBy(_.createdAt.getMillis)
               sortedEntryComments = issue.comments.sortBy(_.createdAt.getMillis)
 
-              _ <- EitherT.cond[Future][AppError, Unit](!existingIssue.tags.equals(issue.tags) &&
-                isTeamMember.isEmpty && !ctx.user.isDaikokuAdmin, (), AppError.Unauthorized)
-              _ <- EitherT.cond[Future][AppError, Unit](commentsHasBeenRemovedWithoutRights(
+              _ <- EitherT.cond[Future][AppError, Unit](existingIssue.tags.equals(issue.tags) ||
+                isPriviligedUser, (), AppError.Unauthorized("Only admin can manage issue tags"))
+              _ <- EitherT.cond[Future][AppError, Unit](!commentsHasBeenRemovedWithoutRights(
                 ctx.user.isDaikokuAdmin,
                 sortedEntryComments,
                 sortedExistingComments
-              ), (), AppError.Unauthorized("You're not allowed to delete a comment that does not belong to you"))
-              _ <- EitherT.cond[Future][AppError, Unit](commentsHasBeenUpdatedWithoutRights(
+              ), (), AppError.Forbidden("You're not allowed to delete a comment that does not belong to you"))
+              _ <- EitherT.cond[Future][AppError, Unit](!commentsHasBeenUpdatedWithoutRights(
                 ctx.user.isDaikokuAdmin,
                 sortedEntryComments,
                 sortedExistingComments
-              ), (), AppError.Unauthorized("You're not allowed to edit a comment that does not belong to you"))
-              _ <- EitherT.cond[Future][AppError, Unit](existingIssue.open != issue.open &&
-                isTeamMember.isEmpty && !ctx.user.isDaikokuAdmin, (), AppError.Unauthorized("You're not authorized to close or re-open an issue"))
-              _ <- EitherT.cond[Future][AppError, Unit](existingIssue.title != issue.title && !ctx.user.isDaikokuAdmin &&
-                (issue.by != ctx.user.id || (issue.by != ctx.user.id && isTeamMember.isEmpty)), (), AppError.Unauthorized("You're not authorized to edit issue"))
+              ), (), AppError.Forbidden("You're not allowed to edit a comment that does not belong to you"))
+              _ <- EitherT.cond[Future][AppError, Unit](existingIssue.open == issue.open ||
+                isPriviligedUser, (), AppError.Unauthorized("You're not authorized to close or re-open an issue"))
+              _ <- EitherT.cond[Future][AppError, Unit](existingIssue.title == issue.title || ctx.user.isDaikokuAdmin ||
+                issue.by == ctx.user.id, (), AppError.Forbidden("You're not authorized to edit issue title"))
+              _ <- EitherT.cond[Future][AppError, Unit](myTeams.map(_.id).intersect(subs.map(_.team)).nonEmpty || isPriviligedUser,
+                (), AppError.Unauthorized("not a  suber / not member of api team"))
+
               _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiIssueRepo
                 .forTenant(ctx.tenant.id)
                 .save(issue))
 
 
-              subs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](env.dataStore.apiSubscriptionRepo
-                .forTenant(ctx.tenant.id)
-                .find(Json.obj(
-                  "api" -> apiId
-                )))
-              api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
-                .forTenant(ctx.tenant.id)
-                .findByIdOrHrIdNotDeleted(apiId), 
-                AppError.ApiNotFound)
+
               _ <- if(existingIssue.comments.size < issue.comments.size) EitherT.liftF[Future, AppError, Seq[Boolean]](Future.sequence(
                 existingIssue.comments
-                  .distinctBy(_.by)
-                  .map(sub =>
+                  .map(_.by)
+                  .distinct
+                  .filter(_ != ctx.user.id)
+                  .map(by =>
                     notifyUser(
                       api,
                       issue,
-                      sub.by
+                      by
                     )
                   )
               )) else EitherT.pure[Future, AppError](Seq.empty[Boolean])
