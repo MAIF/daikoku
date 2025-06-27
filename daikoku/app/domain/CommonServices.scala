@@ -1048,10 +1048,11 @@ object CommonServices {
         getFiltervalue[Boolean](filter, "unreadOnly").getOrElse(false)
 
       (for {
-        notifications <- EitherT.fromOptionF(env.dataStore
-          .asInstanceOf[PostgresDataStore]
-          .queryOneRaw(
-            s"""
+        notifications <- EitherT.fromOptionF(
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneRaw(
+              s"""
                |$CTE,
                |filtered_notifs as (
                |  SELECT
@@ -1089,20 +1090,24 @@ object CommonServices {
                |) AS result
                |FROM filtered_notifs;
                |""".stripMargin,
-            "result",
-            Seq(
-              actionTypes,
-              teams,
-              types,
-              apis,
-              java.lang.Boolean.valueOf(unreadOnly),
-              java.lang.Integer.valueOf(limit),
-              java.lang.Integer.valueOf(offset)
-            )
-          ), AppError.InternalServerError("SQL request for notifications failed"))
-        totals <- EitherT.fromOptionF(env.dataStore.asInstanceOf[PostgresDataStore]
-          .queryOneRaw(
-            s"""
+              "result",
+              Seq(
+                actionTypes,
+                teams,
+                types,
+                apis,
+                java.lang.Boolean.valueOf(unreadOnly),
+                java.lang.Integer.valueOf(limit),
+                java.lang.Integer.valueOf(offset)
+              )
+            ),
+          AppError.InternalServerError("SQL request for notifications failed")
+        )
+        totals <- EitherT.fromOptionF(
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneRaw(
+              s"""
                |$CTE,
                |     base AS (SELECT t.content ->> 'name', n.content -> 'action' ->> 'type', n.*
                |              FROM notifications n
@@ -1150,23 +1155,29 @@ object CommonServices {
                |                      '[]'::json)                                                                           AS total_by_notification_types,
                |             (SELECT total_selectable FROM total_selectable)) _
                |  """.stripMargin,
-            "result",
-            Seq(
-              java.lang.Boolean.valueOf(unreadOnly)
-            )
-          ), AppError.InternalServerError("SQL request for notifications totals failed"))
-      } yield {
-          NotificationWithCount(
-            notifications = (notifications \ "notifications").asOpt(json.SeqNotificationFormat).getOrElse(Seq.empty),
-            totalFiltered = (notifications \ "total_filtered").as[Long],
-            total = (totals \ "total").as[Long],
-            totalSelectable = (totals \ "total_selectable").as[Long],
-            totalByTypes = (totals \ "total_by_types").as[JsArray],
-            totalByNotificationTypes =
-              (totals \ "total_by_notification_types").as[JsArray],
-            totalByTeams = (totals \ "total_by_teams").as[JsArray],
-            totalByApis = (totals \ "total_by_apis").as[JsArray]
+              "result",
+              Seq(
+                java.lang.Boolean.valueOf(unreadOnly)
+              )
+            ),
+          AppError.InternalServerError(
+            "SQL request for notifications totals failed"
           )
+        )
+      } yield {
+        NotificationWithCount(
+          notifications = (notifications \ "notifications")
+            .asOpt(json.SeqNotificationFormat)
+            .getOrElse(Seq.empty),
+          totalFiltered = (notifications \ "total_filtered").as[Long],
+          total = (totals \ "total").as[Long],
+          totalSelectable = (totals \ "total_selectable").as[Long],
+          totalByTypes = (totals \ "total_by_types").as[JsArray],
+          totalByNotificationTypes =
+            (totals \ "total_by_notification_types").as[JsArray],
+          totalByTeams = (totals \ "total_by_teams").as[JsArray],
+          totalByApis = (totals \ "total_by_apis").as[JsArray]
+        )
       }).value
     }
   }

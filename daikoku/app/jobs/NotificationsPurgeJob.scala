@@ -28,9 +28,11 @@ class NotificationsPurgeJob(env: Env) {
     if (env.config.notificationsPurgeByCron && ref.get() == null) {
       ref.set(
         env.defaultActorSystem.scheduler
-          .scheduleAtFixedRate(10.seconds, env.config.notificationsPurgeInterval) {
-            () =>
-              purge()
+          .scheduleAtFixedRate(
+            10.seconds,
+            env.config.notificationsPurgeInterval
+          ) { () =>
+            purge()
           }
       )
     }
@@ -57,7 +59,8 @@ class NotificationsPurgeJob(env: Env) {
                   .now()
                   .minus(env.config.notificationsBasePurgeMaxDate.toMillis)
                   .getMillis
-              )),
+              )
+            ),
             Json.obj(
               "status.status" -> "Accepted",
               "status.date" -> Json.obj(
@@ -65,7 +68,8 @@ class NotificationsPurgeJob(env: Env) {
                   .now()
                   .minus(env.config.notificationsBasePurgeMaxDate.toMillis)
                   .getMillis
-              )),
+              )
+            ),
             Json.obj(
               "notificationType" -> NotificationType.AcceptOrReject.value,
               "status.status" -> "Pending",
@@ -74,7 +78,8 @@ class NotificationsPurgeJob(env: Env) {
                   .now()
                   .minus(env.config.notificationsToTreatPurgeMaxDate.toMillis)
                   .getMillis
-              ))
+              )
+            )
           )
         )
       )
