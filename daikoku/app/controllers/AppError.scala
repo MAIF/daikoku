@@ -57,6 +57,7 @@ object AppError {
   case object TranslationNotFound extends AppError
   case object Unauthorized extends AppError
   case class Unauthorized(message: String) extends AppError
+  case class Forbidden(message: String) extends AppError
   case object TeamForbidden extends AppError
   case class ParsingPayloadError(message: String) extends AppError
   case object NameAlreadyExists extends AppError
@@ -75,7 +76,7 @@ object AppError {
       case ApiVersionConflict         => Conflict(toJson(ApiVersionConflict))
       case TeamNameAlreadyExists      => Conflict(toJson(TeamNameAlreadyExists))
       case ApiNotFound                => NotFound(toJson(error))
-      case ApiNotPublished            => Forbidden(toJson(error))
+      case ApiNotPublished            => play.api.mvc.Results.Forbidden(toJson(error))
       case PageNotFound               => NotFound(toJson(error))
       case ApiGroupNotFound           => NotFound(toJson(error))
       case TeamNotFound               => NotFound(toJson(error))
@@ -83,7 +84,7 @@ object AppError {
       case UserNotFound(_)            => NotFound(toJson(error))
       case EntityNotFound(_)          => NotFound(toJson(error))
       case SubscriptionDemandNotFound => NotFound(toJson(error))
-      case SubscriptionDemandClosed   => Forbidden(toJson(error))
+      case SubscriptionDemandClosed   => play.api.mvc.Results.Forbidden(toJson(error))
       case NotificationNotFound       => NotFound(toJson(error))
       case OtoroshiSettingsNotFound   => NotFound(toJson(error))
       case TeamUnauthorized           => play.api.mvc.Results.Unauthorized(toJson(error))
@@ -103,7 +104,7 @@ object AppError {
       case ApiKeyRotationConflict          => Conflict(toJson(error))
       case EntityConflict(_)               => Conflict(toJson(error))
       case ApiKeyRotationError(e)          => BadRequest(e)
-      case ForbiddenAction                 => Forbidden(toJson(error))
+      case ForbiddenAction                 => play.api.mvc.Results.Forbidden(toJson(error))
       case ApiKeyCustomMetadataNotPrivided => BadRequest(toJson(error))
       case SubscriptionNotFound            => NotFound(toJson(error))
       case SubscriptionParentExisted       => Conflict(toJson(error))
@@ -116,6 +117,7 @@ object AppError {
       case TranslationNotFound                     => NotFound(toJson(error))
       case Unauthorized                            => play.api.mvc.Results.Unauthorized(toJson(error))
       case Unauthorized(_)                         => play.api.mvc.Results.Unauthorized(toJson(error))
+      case Forbidden(_)                            => play.api.mvc.Results.Forbidden(toJson(error))
       case ParsingPayloadError(message)            => BadRequest(toJson(error))
       case NameAlreadyExists                       => Conflict(toJson(error))
       case ThirdPartyPaymentSettingsNotFound       => NotFound(toJson(error))
@@ -182,7 +184,8 @@ object AppError {
         "The parent of this subscription is missing"
       case TranslationNotFound => "Translation not found"
       case Unauthorized        => "You're not authorized here"
-      case Unauthorized(message)     => message
+      case Unauthorized(message)      => message
+      case Forbidden(message)         => message
       case NameAlreadyExists   => "Resource with same name already exists"
       case ThirdPartyPaymentSettingsNotFound =>
         "Third-party payment settings not found"
