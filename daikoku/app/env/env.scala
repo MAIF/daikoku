@@ -274,10 +274,10 @@ class Config(val underlying: Configuration) {
     .getOptional[FiniteDuration]("daikoku.notifications.purge.interval")
     .getOrElse(1 hour)
   lazy val notificationsToTreatPurgeMaxDate: FiniteDuration = underlying
-    .getOptional[FiniteDuration]("daikoku.notifications.to.treat.max.date")
+    .getOptional[FiniteDuration]("daikoku.notifications.max.to.treat.date")
     .getOrElse(6 * 30 days)
   lazy val notificationsBasePurgeMaxDate: FiniteDuration = underlying
-    .getOptional[FiniteDuration]("daikoku.notifications.base.purge.max.date")
+    .getOptional[FiniteDuration]("daikoku.notifications.purge.max.base.date")
     .getOrElse(30 days)
 
   lazy val deletionByCron: Boolean = underlying
