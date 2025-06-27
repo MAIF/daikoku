@@ -84,12 +84,13 @@ object AppError {
       case UserNotFound(_)            => NotFound(toJson(error))
       case EntityNotFound(_)          => NotFound(toJson(error))
       case SubscriptionDemandNotFound => NotFound(toJson(error))
-      case SubscriptionDemandClosed   => play.api.mvc.Results.Forbidden(toJson(error))
-      case NotificationNotFound       => NotFound(toJson(error))
-      case OtoroshiSettingsNotFound   => NotFound(toJson(error))
-      case TeamUnauthorized           => play.api.mvc.Results.Unauthorized(toJson(error))
-      case TeamNotVerified            => play.api.mvc.Results.Unauthorized(toJson(error))
-      case TeamForbidden              => play.api.mvc.Results.Forbidden(toJson(error))
+      case SubscriptionDemandClosed =>
+        play.api.mvc.Results.Forbidden(toJson(error))
+      case NotificationNotFound     => NotFound(toJson(error))
+      case OtoroshiSettingsNotFound => NotFound(toJson(error))
+      case TeamUnauthorized         => play.api.mvc.Results.Unauthorized(toJson(error))
+      case TeamNotVerified          => play.api.mvc.Results.Unauthorized(toJson(error))
+      case TeamForbidden            => play.api.mvc.Results.Forbidden(toJson(error))
       case ApiUnauthorized =>
         play.api.mvc.Results
           .Unauthorized(toJson(error) ++ Json.obj("status" -> 403))
@@ -182,11 +183,11 @@ object AppError {
         "The subscribed plan has another otoroshi of the parent plan"
       case MissingParentSubscription =>
         "The parent of this subscription is missing"
-      case TranslationNotFound => "Translation not found"
-      case Unauthorized        => "You're not authorized here"
-      case Unauthorized(message)      => message
-      case Forbidden(message)         => message
-      case NameAlreadyExists   => "Resource with same name already exists"
+      case TranslationNotFound   => "Translation not found"
+      case Unauthorized          => "You're not authorized here"
+      case Unauthorized(message) => message
+      case Forbidden(message)    => message
+      case NameAlreadyExists     => "Resource with same name already exists"
       case ThirdPartyPaymentSettingsNotFound =>
         "Third-party payment settings not found"
       case SecurityError(s)         => s"Forbidden action due to security : $s"

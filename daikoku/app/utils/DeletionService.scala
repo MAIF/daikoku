@@ -120,7 +120,11 @@ class DeletionService(
         sender = user.asNotificationSender,
         notificationType = NotificationType.AcceptOnly,
         action = NotificationAction
-          .ApiKeyDeletionInformationV2(api.id, subscription.apiKey.clientId, subscription.id)
+          .ApiKeyDeletionInformationV2(
+            api.id,
+            subscription.apiKey.clientId,
+            subscription.id
+          )
       )
       _ <- EitherT.liftF(
         apiKeyStatsJob

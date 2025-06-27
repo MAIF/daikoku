@@ -2730,8 +2730,9 @@ object json {
             ApiKeyRotationInProgressFormat.reads(json)
           case "ApiKeyRotationInProgressV2" =>
             ApiKeyRotationInProgressV2Format.reads(json)
-          case "ApiKeyRotationEnded"  => ApiKeyRotationEndedFormat.reads(json)
-          case "ApiKeyRotationEndedV2"=> ApiKeyRotationEndedV2Format.reads(json)
+          case "ApiKeyRotationEnded" => ApiKeyRotationEndedFormat.reads(json)
+          case "ApiKeyRotationEndedV2" =>
+            ApiKeyRotationEndedV2Format.reads(json)
           case "TeamInvitation"       => TeamInvitationFormat.reads(json)
           case "ApiKeyRefresh"        => ApiKeyRefreshFormat.reads(json)
           case "ApiKeyRefreshV2"      => ApiKeyRefreshV2Format.reads(json)
@@ -2784,9 +2785,10 @@ object json {
               "type" -> "ApiKeyDeletionInformation"
             )
           case p: ApiKeyDeletionInformationV2 =>
-            ApiKeyDeletionInformationV2Format.writes(p).as[JsObject] ++ Json.obj(
-              "type" -> "ApiKeyDeletionInformationV2"
-            )
+            ApiKeyDeletionInformationV2Format.writes(p).as[JsObject] ++ Json
+              .obj(
+                "type" -> "ApiKeyDeletionInformationV2"
+              )
           case p: ApiKeyRotationInProgress =>
             ApiKeyRotationInProgressFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiKeyRotationInProgress"
@@ -2967,7 +2969,7 @@ object json {
         JsSuccess(
           NewIssueOpenV2(
             api = (json \ "api").as(ApiIdFormat),
-            issue = (json \ "issue").as(IssueIdFormat),
+            issue = (json \ "issue").as(IssueIdFormat)
           )
         )
       } recover {
@@ -2977,7 +2979,7 @@ object json {
     override def writes(o: NewIssueOpenV2): JsValue =
       Json.obj(
         "api" -> o.api.asJson,
-        "issue" -> o.issue.asJson,
+        "issue" -> o.issue.asJson
       )
   }
 
@@ -3165,27 +3167,28 @@ object json {
         "clientId" -> o.clientId
       )
   }
-  val ApiKeyDeletionInformationV2Format = new Format[ApiKeyDeletionInformationV2] {
-    override def reads(json: JsValue): JsResult[ApiKeyDeletionInformationV2] =
-      Try {
-        JsSuccess(
-          ApiKeyDeletionInformationV2(
-            api = (json \ "api").as(ApiIdFormat),
-            clientId = (json \ "clientId").as[String],
-            subscription = (json \ "subscription").as(ApiSubscriptionIdFormat)
+  val ApiKeyDeletionInformationV2Format =
+    new Format[ApiKeyDeletionInformationV2] {
+      override def reads(json: JsValue): JsResult[ApiKeyDeletionInformationV2] =
+        Try {
+          JsSuccess(
+            ApiKeyDeletionInformationV2(
+              api = (json \ "api").as(ApiIdFormat),
+              clientId = (json \ "clientId").as[String],
+              subscription = (json \ "subscription").as(ApiSubscriptionIdFormat)
+            )
           )
-        )
-      } recover {
-        case e => JsError(e.getMessage)
-      } get
+        } recover {
+          case e => JsError(e.getMessage)
+        } get
 
-    override def writes(o: ApiKeyDeletionInformationV2): JsValue =
-      Json.obj(
-        "api" -> o.api.value,
-        "clientId" -> o.clientId,
-        "subscription"-> o.subscription.value
-      )
-  }
+      override def writes(o: ApiKeyDeletionInformationV2): JsValue =
+        Json.obj(
+          "api" -> o.api.value,
+          "clientId" -> o.clientId,
+          "subscription" -> o.subscription.value
+        )
+    }
 
   val OtoroshiSyncSubscriptionErrorFormat =
     new Format[OtoroshiSyncSubscriptionError] {
@@ -3250,28 +3253,29 @@ object json {
         "plan" -> o.plan
       )
   }
-  val ApiKeyRotationInProgressV2Format = new Format[ApiKeyRotationInProgressV2] {
-    override def reads(json: JsValue): JsResult[ApiKeyRotationInProgressV2] =
-      Try {
-        JsSuccess(
-          ApiKeyRotationInProgressV2(
-            subscription = (json \ "subscription").as(ApiSubscriptionIdFormat),
-            api = (json \ "api").as(ApiIdFormat),
-            plan = (json \ "plan").as(UsagePlanIdFormat)
+  val ApiKeyRotationInProgressV2Format =
+    new Format[ApiKeyRotationInProgressV2] {
+      override def reads(json: JsValue): JsResult[ApiKeyRotationInProgressV2] =
+        Try {
+          JsSuccess(
+            ApiKeyRotationInProgressV2(
+              subscription =
+                (json \ "subscription").as(ApiSubscriptionIdFormat),
+              api = (json \ "api").as(ApiIdFormat),
+              plan = (json \ "plan").as(UsagePlanIdFormat)
+            )
           )
+        } recover {
+          case e => JsError(e.getMessage)
+        } get
+
+      override def writes(o: ApiKeyRotationInProgressV2): JsValue =
+        Json.obj(
+          "subscription" -> o.subscription.value,
+          "api" -> o.api.value,
+          "plan" -> o.plan.value
         )
-      } recover {
-        case e => JsError(e.getMessage)
-      } get
-
-    override def writes(o: ApiKeyRotationInProgressV2): JsValue =
-      Json.obj(
-        "subscription" -> o.subscription.value,
-        "api" -> o.api.value,
-        "plan" -> o.plan.value
-      )
-  }
-
+    }
 
   val ApiKeyRotationEndedFormat = new Format[ApiKeyRotationEnded] {
     override def reads(json: JsValue): JsResult[ApiKeyRotationEnded] =

@@ -6,7 +6,10 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
+  _TeamMemberOnly,
+  _TenantAdminAccessTenant
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
@@ -2090,7 +2093,11 @@ object SchemaDefinition {
           (DataStore, DaikokuActionContext[JsValue]),
           OtoroshiSyncNotificationAction
         ](
-          Field("message", OptionType(StringType), resolve = _.value.message.some)
+          Field(
+            "message",
+            OptionType(StringType),
+            resolve = _.value.message.some
+          )
         ),
       interfaces[
         (DataStore, DaikokuActionContext[JsValue]),
@@ -2340,7 +2347,11 @@ object SchemaDefinition {
             ApiSubscriptionType,
             resolve = _.value.subscription
           ),
-          Field("message", OptionType(StringType), resolve = _.value.message.some)
+          Field(
+            "message",
+            OptionType(StringType),
+            resolve = _.value.message.some
+          )
         )
       )
     )
@@ -2445,12 +2456,21 @@ object SchemaDefinition {
           NotificationActionType
         ),
         fields[(DataStore, DaikokuActionContext[JsValue]), NewIssueOpenV2](
-          Field("api", OptionType(ApiType), resolve = ctx => ctx.ctx._1.apiRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.api)),
-          Field("issue", OptionType(ApiIssueType), resolve = ctx => ctx.ctx._1.apiIssueRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.issue)
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          ),
+          Field(
+            "issue",
+            OptionType(ApiIssueType),
+            resolve = ctx =>
+              ctx.ctx._1.apiIssueRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.issue)
           )
         )
       )
@@ -2468,8 +2488,16 @@ object SchemaDefinition {
           (DataStore, DaikokuActionContext[JsValue]),
           OtoroshiSyncApiError
         ](
-          Field("api", OptionType(ApiType), resolve = ctx => Some(ctx.value.api)),
-          Field("message", OptionType(StringType), resolve = _.value.message.some)
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx => Some(ctx.value.api)
+          ),
+          Field(
+            "message",
+            OptionType(StringType),
+            resolve = _.value.message.some
+          )
         )
       )
     )
@@ -2504,10 +2532,19 @@ object SchemaDefinition {
           NewPostPublishedV2
         ](NotificationActionType),
         fields[(DataStore, DaikokuActionContext[JsValue]), NewPostPublishedV2](
-          Field("api", OptionType(ApiType), resolve = ctx => ctx.ctx._1.apiRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.api)),
-          Field("post", OptionType(ApiPostType), resolve = ctx => ctx.ctx._1.apiPostRepo
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          ),
+          Field(
+            "post",
+            OptionType(ApiPostType),
+            resolve = ctx =>
+              ctx.ctx._1.apiPostRepo
                 .forTenant(ctx.ctx._2.tenant)
                 .findByIdNotDeleted(ctx.value.post)
           )
@@ -2537,15 +2574,30 @@ object SchemaDefinition {
           NotificationActionType
         ),
         fields[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRefreshV2](
-          Field("api", OptionType(ApiType), resolve = ctx => ctx.ctx._1.apiRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.api)),
-          Field("subscription", OptionType(ApiSubscriptionType), resolve = ctx => ctx.ctx._1.apiSubscriptionRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.subscription)),
-          Field("plan", OptionType(UsagePlanType), resolve = ctx => ctx.ctx._1.usagePlanRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.plan)),
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          ),
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve = ctx =>
+              ctx.ctx._1.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.subscription)
+          ),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx =>
+              ctx.ctx._1.usagePlanRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.plan)
+          ),
           Field("message", OptionType(StringType), resolve = _.value.message)
         )
       )
@@ -2582,12 +2634,22 @@ object SchemaDefinition {
           ApiKeyDeletionInformationV2
         ](
           Field("clientId", StringType, resolve = _.value.clientId),
-          Field("api", OptionType(ApiType), resolve = ctx => ctx.ctx._1.apiRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findById(ctx.value.api)),
-          Field("subscription", OptionType(ApiSubscriptionType), resolve = ctx => ctx.ctx._1.apiSubscriptionRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findById(ctx.value.subscription))
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findById(ctx.value.api)
+          ),
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve = ctx =>
+              ctx.ctx._1.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findById(ctx.value.subscription)
+          )
         )
       )
     )
@@ -2623,15 +2685,30 @@ object SchemaDefinition {
           (DataStore, DaikokuActionContext[JsValue]),
           ApiKeyRotationInProgressV2
         ](
-          Field("api", OptionType(ApiType), resolve = ctx => ctx.ctx._1.apiRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.api)),
-          Field("subscription", OptionType(ApiSubscriptionType), resolve = ctx => ctx.ctx._1.apiSubscriptionRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.subscription)),
-          Field("plan", OptionType(UsagePlanType), resolve = ctx => ctx.ctx._1.usagePlanRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.plan))
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          ),
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve = ctx =>
+              ctx.ctx._1.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.subscription)
+          ),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx =>
+              ctx.ctx._1.usagePlanRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.plan)
+          )
         )
       )
     )
@@ -2659,16 +2736,34 @@ object SchemaDefinition {
           (DataStore, DaikokuActionContext[JsValue]),
           ApiKeyRotationEndedV2
         ](NotificationActionType),
-        fields[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRotationEndedV2](
-          Field("api", OptionType(ApiType), resolve = ctx => ctx.ctx._1.apiRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.api)),
-          Field("subscription", OptionType(ApiSubscriptionType), resolve = ctx => ctx.ctx._1.apiSubscriptionRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.subscription)),
-          Field("plan", OptionType(UsagePlanType), resolve = ctx => ctx.ctx._1.usagePlanRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.plan))
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiKeyRotationEndedV2
+        ](
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          ),
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve = ctx =>
+              ctx.ctx._1.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.subscription)
+          ),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx =>
+              ctx.ctx._1.usagePlanRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.plan)
+          )
         )
       )
     )
@@ -2692,14 +2787,29 @@ object SchemaDefinition {
           NewCommentOnIssueV2
         ](NotificationActionType),
         fields[(DataStore, DaikokuActionContext[JsValue]), NewCommentOnIssueV2](
-          Field("api", OptionType(ApiType), resolve = ctx => ctx.ctx._1.apiRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.api)),
-          Field("issue", OptionType(ApiIssueType), resolve = ctx => ctx.ctx._1.apiIssueRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.issue)),
-          Field("user", OptionType(UserType), resolve = ctx => ctx.ctx._1.userRepo
-            .findByIdNotDeleted(ctx.value.user)),
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          ),
+          Field(
+            "issue",
+            OptionType(ApiIssueType),
+            resolve = ctx =>
+              ctx.ctx._1.apiIssueRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.issue)
+          ),
+          Field(
+            "user",
+            OptionType(UserType),
+            resolve = ctx =>
+              ctx.ctx._1.userRepo
+                .findByIdNotDeleted(ctx.value.user)
+          )
         )
       )
     )
@@ -2715,16 +2825,31 @@ object SchemaDefinition {
           (DataStore, DaikokuActionContext[JsValue]),
           CheckoutForSubscription
         ](
-          Field("plan", OptionType(UsagePlanType), resolve = ctx => ctx.ctx._1.usagePlanRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.plan)),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx =>
+              ctx.ctx._1.usagePlanRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.plan)
+          ),
           Field("step", StringType, resolve = _.value.step.value),
-          Field("demand", OptionType(SubscriptionDemandType), resolve = ctx => ctx.ctx._1.subscriptionDemandRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.demand)),
-          Field("api", OptionType(ApiType), resolve = ctx => ctx.ctx._1.apiRepo
-            .forTenant(ctx.ctx._2.tenant)
-            .findByIdNotDeleted(ctx.value.api))
+          Field(
+            "demand",
+            OptionType(SubscriptionDemandType),
+            resolve = ctx =>
+              ctx.ctx._1.subscriptionDemandRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.demand)
+          ),
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          )
         )
       )
     )
@@ -2743,9 +2868,10 @@ object SchemaDefinition {
           Field(
             "subscription",
             OptionType(ApiSubscriptionType),
-            resolve = ctx => ctx.ctx._1.apiSubscriptionRepo
-              .forTenant(ctx.ctx._2.tenant)
-              .findByIdNotDeleted(ctx.value.subscription)
+            resolve = ctx =>
+              ctx.ctx._1.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.subscription)
           )
         )
       )

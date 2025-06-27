@@ -991,26 +991,26 @@ class NotificationControllerSpec()
         defaultLanguage = None
       )
       val issue = ApiIssue(
-          id = ApiIssueId(IdGenerator.token(32)),
-          seqId = 0,
-          tenant = tenant.id,
-          title = "Daikoku Init on postgres can be broken",
-          tags = Set(),
-          open = true,
-          createdAt = DateTime.now(),
-          lastModificationAt = DateTime.now(),
-          closedAt = None,
-          by = user.id,
-          comments = Seq(
-            ApiIssueComment(
-              by = user.id,
-              createdAt = DateTime.now(),
-              lastModificationAt = DateTime.now(),
-              content =
-                "Describe the bug\nIf schema has some table, DK init can't be proceed & DK is broken\n\nExpected behavior\nInit detection & tables creation"
-            )
+        id = ApiIssueId(IdGenerator.token(32)),
+        seqId = 0,
+        tenant = tenant.id,
+        title = "Daikoku Init on postgres can be broken",
+        tags = Set(),
+        open = true,
+        createdAt = DateTime.now(),
+        lastModificationAt = DateTime.now(),
+        closedAt = None,
+        by = user.id,
+        comments = Seq(
+          ApiIssueComment(
+            by = user.id,
+            createdAt = DateTime.now(),
+            lastModificationAt = DateTime.now(),
+            content =
+              "Describe the bug\nIf schema has some table, DK init can't be proceed & DK is broken\n\nExpected behavior\nInit detection & tables creation"
           )
         )
+      )
 
       val planSubId = UsagePlanId("1")
       val sub = ApiSubscription(
@@ -1050,14 +1050,30 @@ class NotificationControllerSpec()
         tenants = Seq(tenant),
         users = Seq(userAdmin, user, userApiEditor, otherUser),
         teams = Seq(
-          teamOwner.copy(users = Set(UserWithPermission(userTeamAdminId, Administrator))),
-          teamConsumer.copy(users = Set(UserWithPermission(user.id, Administrator))),
-          thirdTeam),
+          teamOwner.copy(users =
+            Set(UserWithPermission(userTeamAdminId, Administrator))
+          ),
+          teamConsumer
+            .copy(users = Set(UserWithPermission(user.id, Administrator))),
+          thirdTeam
+        ),
         usagePlans = defaultApi.plans,
-        apis = Seq(defaultApi.api.copy(issuesTags = Set(
-          ApiIssueTag(id = ApiIssueTagId("test"), name = "test", color = "#ffffff"),
-          ApiIssueTag(id = ApiIssueTagId("test2"), name = "test2", color = "#cecece")),
-        )),
+        apis = Seq(
+          defaultApi.api.copy(issuesTags =
+            Set(
+              ApiIssueTag(
+                id = ApiIssueTagId("test"),
+                name = "test",
+                color = "#ffffff"
+              ),
+              ApiIssueTag(
+                id = ApiIssueTagId("test2"),
+                name = "test2",
+                color = "#cecece"
+              )
+            )
+          )
+        ),
         subscriptions = Seq(sub, subThird)
       )
 
@@ -1094,7 +1110,8 @@ class NotificationControllerSpec()
       adminCheckNotification.status mustBe 200
       (adminCheckNotification.json \ "count").as[Long] mustBe 1
 
-      val notifications = (adminCheckNotification.json \ "notifications").as[JsArray]
+      val notifications =
+        (adminCheckNotification.json \ "notifications").as[JsArray]
       (notifications.head \ "action" \ "type").asOpt[String] mustBe Some(
         "NewIssueOpenV2"
       )
@@ -1104,8 +1121,7 @@ class NotificationControllerSpec()
         by = userAdmin.id,
         createdAt = DateTime.now(),
         lastModificationAt = DateTime.now(),
-        content =
-          "bug id corrected in new release, is it OK ?"
+        content = "bug id corrected in new release, is it OK ?"
       )
       val commentsByAdmin = issue.comments :+ adminComment
       val adminCommentIssue = httpJsonCallBlocking(
@@ -1131,17 +1147,19 @@ class NotificationControllerSpec()
       userCheckNotif.status mustBe 200
       (userCheckNotif.json \ "count").as[Long] mustBe 2
 
-      val notifications2 = (userCheckNotif.json \ "notifications").as(json.SeqNotificationFormat)
-      notifications2.maxBy(_.date).action.getClass mustBe classOf[NewCommentOnIssueV2]
-
+      val notifications2 =
+        (userCheckNotif.json \ "notifications").as(json.SeqNotificationFormat)
+      notifications2
+        .maxBy(_.date)
+        .action
+        .getClass mustBe classOf[NewCommentOnIssueV2]
 
       //[5] - apiEditor member of third team add also a response in issue by removing a comment ==> KO
       val apiEditorComment = ApiIssueComment(
         by = userApiEditor.id,
         createdAt = DateTime.now(),
         lastModificationAt = DateTime.now(),
-        content =
-          "I'm not sur..."
+        content = "I'm not sur..."
       )
       val commentsByApiEditorKO = issue.comments :+ apiEditorComment
       val apiEditorCommentIssueKO = httpJsonCallBlocking(
@@ -1190,14 +1208,21 @@ class NotificationControllerSpec()
       )
       otherCommentIssue.status mustBe 401
 
-
-
       //[7] - admin can update tags & close issue
       val adminCloseIssue = httpJsonCallBlocking(
         path =
           s"/api/teams/${defaultApi.api.team.value}/apis/${defaultApi.api.humanReadableId}/issues/${issue.id.value}",
         method = "PUT",
-        body = Some(issue.copy(tags = Set(ApiIssueTagId("test")), comments = commentsByApiEditor, open = false, closedAt = DateTime.now().some).asJson)
+        body = Some(
+          issue
+            .copy(
+              tags = Set(ApiIssueTagId("test")),
+              comments = commentsByApiEditor,
+              open = false,
+              closedAt = DateTime.now().some
+            )
+            .asJson
+        )
       )(
         tenant,
         session
@@ -1208,7 +1233,16 @@ class NotificationControllerSpec()
         path =
           s"/api/teams/${defaultApi.api.team.value}/apis/${defaultApi.api.humanReadableId}/issues/${issue.id.value}",
         method = "PUT",
-        body = Some(issue.copy(tags = Set(ApiIssueTagId("test")), comments = commentsByApiEditor, open = true, closedAt = DateTime.now().some).asJson)
+        body = Some(
+          issue
+            .copy(
+              tags = Set(ApiIssueTagId("test")),
+              comments = commentsByApiEditor,
+              open = true,
+              closedAt = DateTime.now().some
+            )
+            .asJson
+        )
       )(
         tenant,
         session
@@ -1220,7 +1254,16 @@ class NotificationControllerSpec()
         path =
           s"/api/teams/${defaultApi.api.team.value}/apis/${defaultApi.api.humanReadableId}/issues/${issue.id.value}",
         method = "PUT",
-        body = Some(issue.copy(tags = Set(ApiIssueTagId("test")), comments = commentsByApiEditor, open = false, closedAt = DateTime.now().some).asJson)
+        body = Some(
+          issue
+            .copy(
+              tags = Set(ApiIssueTagId("test")),
+              comments = commentsByApiEditor,
+              open = false,
+              closedAt = DateTime.now().some
+            )
+            .asJson
+        )
       )(
         tenant,
         userSession
@@ -1232,7 +1275,14 @@ class NotificationControllerSpec()
         path =
           s"/api/teams/${defaultApi.api.team.value}/apis/${defaultApi.api.humanReadableId}/issues/${issue.id.value}",
         method = "PUT",
-        body = Some(issue.copy(tags = Set(ApiIssueTagId("test"), ApiIssueTagId("test2")), comments = commentsByApiEditor).asJson)
+        body = Some(
+          issue
+            .copy(
+              tags = Set(ApiIssueTagId("test"), ApiIssueTagId("test2")),
+              comments = commentsByApiEditor
+            )
+            .asJson
+        )
       )(
         tenant,
         userSession
@@ -1240,9 +1290,6 @@ class NotificationControllerSpec()
       nonAdminUpdateTagsIssue.status mustBe 401
     }
   }
-
-
-
 
   "a user/api editor" can {
     "not read the count of untreated notifications of his team" in {

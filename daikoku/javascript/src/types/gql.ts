@@ -142,5 +142,5 @@ export interface ISubscriptionDemandGQL {
     name: string;
   };
   date: number;
-  motivation?: string
+  motivation?: string;
 }
