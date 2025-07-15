@@ -6,8 +6,6 @@ import { GlobalContext } from '../globalContext';
 import { IBaseModalProps, IContactModalComponentProps } from './types';
 
 export const ContactModal = (props: IContactModalComponentProps & IBaseModalProps) => {
-  const [email, setEmail] = useState(props.email);
-  const [name, setName] = useState(props.name);
   const [honeyName, setHoneyName] = useState('');
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
@@ -22,11 +20,11 @@ export const ContactModal = (props: IContactModalComponentProps & IBaseModalProp
     if (formRef) {
       setValidity(formRef.checkValidity());
     }
-  }, [email, subject, body]);
+  }, [subject, body]);
 
   const sendEmail = () => {
     if (!honeyName && validity) {
-      Services.sendEmails(name!, email!, subject, body, tenant._id, props.team, props.api, language)
+      Services.sendEmails(subject, body, tenant._id, props.team, props.api, language)
         .then(() => props.close());
     }
   };
@@ -42,18 +40,6 @@ export const ContactModal = (props: IContactModalComponentProps & IBaseModalProp
     <div className="modal-body">
       <div className="modal-description">
         <form ref={(ref) => setFormRef(ref)}>
-          {!props.name && (<div className="mb-3">
-            <label htmlFor="sender-name">
-              <Translation i18nkey="Name">Name</Translation>
-            </label>
-            <input onChange={(e) => setName(e.target.value)} value={name} required type="text" className="form-control" id="sender-name" aria-describedby={translate('Enter your name')} placeholder={translate('Enter your name')} />
-          </div>)}
-          {!props.email && (<div className="mb-3">
-            <label htmlFor="sender-email">
-              <Translation i18nkey="Email address">Email address</Translation>
-            </label>
-            <input onChange={(e) => setEmail(e.target.value)} value={email} required type="email" className="form-control" id="sender-email" aria-describedby={translate('Enter email')} placeholder={translate('Enter email')} />
-          </div>)}
           <div className="mb-3">
             <label htmlFor="subject">
               <Translation i18nkey="Subject">Subject</Translation>

@@ -908,8 +908,6 @@ export const resetTranslation = (translation: any) =>
   });
 
 export const sendEmails = (
-  name: string,
-  email: string,
   subject: string,
   body: string,
   tenantId: string,
@@ -926,8 +924,6 @@ export const sendEmails = (
       'X-contact-language': language,
     },
     body: JSON.stringify({
-      name,
-      email,
       subject,
       body,
       teamId,

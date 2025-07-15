@@ -173,13 +173,17 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
         order: 2,
         links: {
           contact: {
-            component: (
-              <button
+            component: ( connectedUser.isGuest ? 
+              <a
+                className="btn btn-sm btn-outline-primary mb-2"
+                href={`mailto:${team?.contact}`}
+              >
+                {translate({ key: `contact.team`, replacements: [team?.name || '--'] })}
+              </a> :
+               <button
                 className="btn btn-sm btn-outline-primary mb-2"
                 onClick={() =>
                   openContactModal({
-                    name: connectedUser.name,
-                    email: connectedUser.email,
                     team: api?.team,
                     api: api?._id
                   })

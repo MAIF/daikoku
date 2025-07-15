@@ -233,8 +233,6 @@ export interface ILoginOrRegisterModalProps {
 export interface IContactModalComponentProps {
   team?: string;
   api?: string;
-  email?: string;
-  name?: string;
 }
 
 export interface IAssetSelectorModalProps {
