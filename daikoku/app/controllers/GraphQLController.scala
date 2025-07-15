@@ -1,16 +1,14 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.ctrls.playJson._
 import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.NotAuthorizedError
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.env.DaikokuMode.Prod
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import fr.maif.otoroshi.daikoku.utils.admin.DaikokuApiAction
+import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.i18n.I18nSupport
@@ -19,6 +17,7 @@ import play.api.mvc._
 import sangria.execution._
 import sangria.parser.{QueryParser, SyntaxError}
 import sangria.renderer.SchemaRenderer
+import sangria.validation.{QueryValidator, UndefinedFieldViolation, UnknownArgViolation}
 import storage.DataStore
 
 import java.util.concurrent.TimeUnit
@@ -120,32 +119,52 @@ class GraphQLController(
       query: String,
       variables: Option[JsValue],
       operation: Option[String]
-  ) =
+  ) = {
+
     QueryParser.parse(query) match {
       case Success(queryAst) =>
-        Executor
-          .execute(
-            schema,
-            queryAst,
-            (env.dataStore, ctx),
-            operationName = operation,
-            variables = variables getOrElse Json.obj(),
-            deferredResolver = resolver,
-            exceptionHandler = exceptionHandler,
-            queryReducers = List(
-              QueryReducer
-                .rejectMaxDepth[(DataStore, DaikokuActionContext[JsValue])](15),
-              QueryReducer.rejectComplexQueries[
-                (DataStore, DaikokuActionContext[JsValue])
-              ](4000, (_, _) => TooComplexQueryError)
+        val violations =
+          QueryValidator.default.validateQuery(schema, queryAst, None)
+        if (violations.isEmpty || env.config.mode != Prod) {
+          Executor
+            .execute(
+              schema,
+              queryAst,
+              (env.dataStore, ctx),
+              operationName = operation,
+              variables = variables getOrElse Json.obj(),
+              deferredResolver = resolver,
+              exceptionHandler = exceptionHandler,
+              queryReducers = List(
+                QueryReducer
+                  .rejectMaxDepth[(DataStore, DaikokuActionContext[JsValue])](
+                    15
+                  ),
+                QueryReducer.rejectComplexQueries[
+                  (DataStore, DaikokuActionContext[JsValue])
+                ](4000, (_, _) => TooComplexQueryError),
+                QueryReducer.rejectIntrospection[
+                  (DataStore, DaikokuActionContext[JsValue])
+                ](env.config.mode == Prod)
+              )
             )
-          )
-          .map(Ok(_))
-          .recover {
-            case error: QueryAnalysisError => BadRequest(error.resolveError)
-            case error: ErrorWithResolver =>
-              InternalServerError(error.resolveError)
+            .map(Ok(_))
+            .recover {
+              case error: QueryAnalysisError => BadRequest(error.resolveError)
+              case error: ErrorWithResolver =>
+                InternalServerError(error.resolveError)
+            }
+        } else {
+          val sanitizedViolations = violations.map {
+            case v: UndefinedFieldViolation =>
+              v.copy(suggestedFieldNames = Seq.empty)
+            case v: UnknownArgViolation =>
+              v.copy(suggestedArgs = Seq.empty)
+            case other => other
           }
+
+          BadRequest(Json.obj("error" -> ValidationError(sanitizedViolations, exceptionHandler).toString)).future
+        }
 
       // can't parse GraphQL query, return error
       case Failure(error: SyntaxError) =>
@@ -166,4 +185,5 @@ class GraphQLController(
       case Failure(error) =>
         throw error
     }
+  }
 }
