@@ -11,6 +11,7 @@ import * as Services from '../../../services';
 import { IState, ITenant, IUser } from '../../../types';
 import { Can, daikoku, manage, Spinner } from '../../utils';
 import { GlobalContext } from '../../../contexts/globalContext';
+import { allowedAvatarFileTypes } from '../../utils/tenantUtils';
 
 const Avatar = ({
   setValue,
@@ -38,17 +39,20 @@ const Avatar = ({
       const filename = file.name;
       const contentType = file.type;
 
-      return Services.storeUserAvatar(filename, contentType, file)
-        .then((res) => {
-          if (res.error) {
-            toast.error(res.error);
-          } else {
-            setValue!('pictureFromProvider', false);
-            onChange!(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
-          }
-        });
+      if (allowedAvatarFileTypes.includes(contentType)) {
+        return Services.storeUserAvatar(filename, contentType, file)
+          .then((res) => {
+            if (res.error) {
+              toast.error(res.error);
+            } else {
+              setValue!('pictureFromProvider', false);
+              onChange!(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
+            }
+          });
+      } else {
+        return Promise.reject(toast.error("file type not allowed"))
+      }
     }
-
   };
 
   const setPictureFromProvider = () => {
@@ -92,12 +96,6 @@ const Avatar = ({
         <PictureUpload setFiles={setFiles} />
       </div>
       <div className="">
-        <input
-          type="text"
-          className="form-control"
-          value={value}
-          onChange={(e) => changePicture(e.target.value)}
-        />
         <div className="d-flex mt-1 justify-content-end">
           <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink} disabled={!rawValues?.email}>
             <i className="fas fa-user-circle me-1" />
@@ -146,6 +144,7 @@ const PictureUpload = (props: { setFiles: (l: FileList | null) => void }) => {
         ref={(r) => (input = r)}
         type="file"
         className="form-control hide"
+        accept="image/png, image/jpeg, image/jpg"
         onChange={e => setFiles(e)}
       />
       <button

@@ -50,12 +50,6 @@ const Avatar = ({
         />
       </div>
       <div className="d-flex flex-column flex-grow-1">
-        <input
-          type="text"
-          className="form-control mb-1"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-        />
         <div className='d-flex justify-content-end'>
           <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink} disabled={!rawValues.contact}>
             <i className="fas fa-user-circle me-1" />

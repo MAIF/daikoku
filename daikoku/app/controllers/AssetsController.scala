@@ -1,14 +1,10 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
+import controllers.AppError
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.apache.pekko.util.ByteString
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest,
-  DaikokuTenantAction
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest, DaikokuTenantAction}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.{Asset, AssetId}
@@ -22,13 +18,7 @@ import play.api.http.HttpEntity
 import play.api.libs.json.{JsArray, JsObject, Json}
 import play.api.libs.streams.Accumulator
 import play.api.mvc.Results.{NotFound, Ok}
-import play.api.mvc.{
-  AbstractController,
-  Action,
-  AnyContent,
-  BodyParser,
-  ControllerComponents
-}
+import play.api.mvc.{AbstractController, Action, AnyContent, BodyParser, ControllerComponents}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.DurationInt
@@ -422,25 +412,29 @@ class UserAssetsController(
         val contentType = ctx.request.headers
           .get("Asset-Content-Type")
           .orElse(ctx.request.contentType)
-          .getOrElse("image/jpg")
+
         val filename =
           ctx.request
             .getQueryString("filename")
             .getOrElse(IdGenerator.token(16))
         val assetId = AssetId(ctx.user.id.value)
-        ctx.tenant.bucketSettings match {
-          case None =>
+
+        val validContentTypes = Seq("image/jpeg", "image/png")
+
+
+        (contentType, ctx.tenant.bucketSettings) match {
+          case (_, None) =>
             FastFuture.successful(
               NotFound(Json.obj("error" -> "No bucket config found !"))
             )
-          case Some(cfg) =>
+          case (Some(_contentType), Some(cfg)) if validContentTypes.contains(_contentType) =>
             env.assetsStore
               .storeUserAsset(
                 ctx.tenant.id,
                 ctx.user.id,
                 assetId,
                 filename,
-                contentType,
+                _contentType,
                 ctx.request.body
               )(cfg)
               .map { _ =>
@@ -449,6 +443,7 @@ class UserAssetsController(
               } recover {
               case e => InternalServerError(Json.obj("error" -> ec.toString))
             }
+          case _ => AppError.BadRequestError("file type not allowed").renderF()
         }
       }
     }

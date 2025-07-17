@@ -8,6 +8,7 @@ import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { I2FAQrCode, ITenant, IUser, isError } from '../../../types';
 import { Spinner } from '../../utils';
+import { allowedAvatarFileTypes } from '../../utils/tenantUtils';
 
 type TwoFactorAuthenticationProps = {
   user: IUser
@@ -239,15 +240,20 @@ const Avatar = ({
       const file = files[0];
       const filename = file.name;
       const contentType = file.type;
-      return Services.storeUserAvatar(filename, contentType, file)
-        .then((res) => {
-          if (res.error) {
-            toast.error(res.error);
-          } else {
-            setValue('pictureFromProvider', false);
-            onChange(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
-          }
-        });
+
+      if (allowedAvatarFileTypes.includes(contentType)) {
+        return Services.storeUserAvatar(filename, contentType, file)
+          .then((res) => {
+            if (res.error) {
+              toast.error(res.error);
+            } else {
+              setValue('pictureFromProvider', false);
+              onChange(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
+            }
+          });
+      } else {
+        return Promise.reject(toast.error("file type not allowed"))
+      }
     }
   };
 
@@ -293,12 +299,6 @@ const Avatar = ({
         <PictureUpload setFiles={setFiles} tenant={tenant} />
       </div>
       <div className="">
-        <input
-          type="text"
-          className="form-control"
-          value={value}
-          onChange={(e) => changePicture(e.target.value)}
-        />
         <div className="d-flex mt-1 justify-content-end">
           <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink}>
             <i className="fas fa-user-circle me-1" />
@@ -327,6 +327,8 @@ type PictureUploadProps = {
   tenant: ITenant,
   setFiles: (files: FileList | null) => void
 }
+
+
 const PictureUpload = (props: PictureUploadProps) => {
   const [uploading, setUploading] = useState(false);
 
@@ -352,6 +354,7 @@ const PictureUpload = (props: PictureUploadProps) => {
         ref={(r) => (input = r)}
         type="file"
         className="form-control hide"
+        accept="image/png, image/jpeg, image/jpg"
         onChange={e => setFiles(e)}
       />
       <button
