@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useRef, useState } from 'react';
 import { Form, type, constraints, format } from '@maif/react-forms';
 
 import * as Services from '../../../../services';
@@ -11,7 +11,10 @@ export const GuestPanel = () => {
   const { translate, Translation } = useContext(I18nContext);
   const { loginAction, tenant } = useContext(GlobalContext);
 
+  const buttonRef = useRef<HTMLButtonElement>(null)
+
   const [loginError, setLoginError] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const schema = {
     username: {
@@ -34,6 +37,8 @@ export const GuestPanel = () => {
   };
 
   const submit = (data: { username: string, password: string }) => {
+    
+    setLoading(true)
     setLoginError(false);
 
     const { username, password } = data;
@@ -43,6 +48,11 @@ export const GuestPanel = () => {
       .then((res) => {
         if (res.status === 400) {
           setLoginError(true);
+          setLoading(false)
+          buttonRef.current?.classList.add('active', 'btn-outline-danger')
+          setTimeout(() => {
+            buttonRef.current?.classList.remove('active', 'btn-outline-danger');
+          }, 800);
         } else if (res.redirected) {
           window.location.href = res.url;
         }
@@ -69,7 +79,9 @@ export const GuestPanel = () => {
                     <div className="d-flex justify-content-end mt-3">
                       <button
                         type="submit"
-                        className="btn btn-outline-success ms-2"
+                        ref={buttonRef}
+                        className="btn btn-outline-success ms-2 shake"
+                        disabled={loading}
                         onClick={valid}
                       >
                         <span>{translate('Login')}</span>

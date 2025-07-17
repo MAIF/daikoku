@@ -271,3 +271,22 @@ button {
   margin: 0 20px;
   padding: 20px;
 }
+
+.shake {
+
+  &.active {
+    animation: shake 200ms 2 linear;
+  }
+  
+}
+@keyframes shake {
+  0% {
+    transform: translate(6px, 0);
+  }
+  50% {
+    transform: translate(-6px, 0);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}

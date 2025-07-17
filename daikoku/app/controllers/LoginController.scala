@@ -3,12 +3,7 @@ package fr.maif.otoroshi.daikoku.ctrls
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import com.google.common.base.Charsets
 import controllers.Assets
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuTenantAction,
-  DaikokuTenantActionContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithoutUser, DaikokuTenantAction, DaikokuTenantActionContext}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
@@ -18,21 +13,23 @@ import fr.maif.otoroshi.daikoku.login.AuthProvider._
 import fr.maif.otoroshi.daikoku.login._
 import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator, Translator}
 import org.apache.commons.codec.binary.Base32
+import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.pattern.after
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json.{JsObject, JsString, JsValue, Json}
 import play.api.mvc._
 
 import java.net.URLEncoder
-import java.time.Instant
+import java.time.{Duration, Instant}
 import java.util.Base64
-import java.util.concurrent.TimeUnit
+import java.util.concurrent.{Executors, TimeUnit}
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
 import scala.collection.concurrent.TrieMap
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 class LoginController(
     DaikokuAction: DaikokuAction,
@@ -46,6 +43,7 @@ class LoginController(
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
   implicit val tr: Translator = translator
+  implicit val as: ActorSystem = env.defaultActorSystem
 
   def loginContext(provider: String) =
     DaikokuActionMaybeWithoutUser { _ =>
@@ -119,7 +117,7 @@ class LoginController(
       f: => Future[Option[User]]
   ): Future[Result] = {
     f.flatMap {
-      case None => FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+      case None => after(3.seconds)(FastFuture.successful(BadRequest(Json.obj("error" -> true))))
       case Some(user) =>
         user.twoFactorAuthentication match {
           case Some(auth) if auth.enabled =>
@@ -138,7 +136,7 @@ class LoginController(
                 case true =>
                   FastFuture.successful(Redirect(s"/2fa?token=$token"))
                 case false =>
-                  FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+                  after(3.seconds)(FastFuture.successful(BadRequest(Json.obj("error" -> true))))
               }
           case _ => createSession(sessionMaxAge, user, request, tenant)
         }
@@ -213,22 +211,22 @@ class LoginController(
       ctx: DaikokuTenantActionContext[AnyContent]
   ): Future[Result] = {
     AuthProvider(provider) match {
-      case None =>
-        Errors.craftResponseResult(
-          "Bad authentication provider",
-          Results.BadRequest,
-          ctx.request,
-          None,
-          env
-        )
+      case None => after(3.seconds)(Errors.craftResponseResult(
+        "Bad authentication provider",
+        Results.BadRequest,
+        ctx.request,
+        None,
+        env
+      ))
+
       case Some(p) if ctx.tenant.authProvider != p && p != AuthProvider.Local =>
-        Errors.craftResponseResult(
+        after(3.seconds)(Errors.craftResponseResult(
           "Bad authentication provider",
           Results.BadRequest,
           ctx.request,
           None,
           env
-        )
+        ))
       case Some(p) if p == AuthProvider.OAuth2 =>
         val maybeOAuth2Config =
           OAuth2Config.fromJson(ctx.tenant.authProviderSettings)
@@ -245,13 +243,13 @@ class LoginController(
             )
           case Left(e) =>
             AppLogger.error("Error during OAuthConfig read", e)
-            Errors.craftResponseResult(
+            after(3.seconds)(Errors.craftResponseResult(
               "Invalid OAuth Config",
               Results.BadRequest,
               ctx.request,
               None,
               env
-            )
+            ))
         }
       case Some(p) =>
         ctx.request.body.asFormUrlEncoded match {
@@ -330,22 +328,22 @@ class LoginController(
                         )
                     }
                   case _ =>
-                    Errors.craftResponseResult(
+                    after(3.seconds)(Errors.craftResponseResult(
                       "No matching provider found",
                       Results.BadRequest,
                       ctx.request,
                       None,
                       env
-                    )
+                    ))
                 }
               case _ =>
-                Errors.craftResponseResult(
+                after(3.seconds)(Errors.craftResponseResult(
                   "No credentials found",
                   Results.BadRequest,
                   ctx.request,
                   None,
                   env
-                )
+                ))
             }
         }
     }
