@@ -19,6 +19,7 @@ import sangria.parser.{QueryParser, SyntaxError}
 import sangria.renderer.SchemaRenderer
 import sangria.validation.{QueryValidator, UndefinedFieldViolation, UnknownArgViolation}
 import storage.DataStore
+import storage.graphql.DaikokuAuthMiddleware
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
@@ -135,6 +136,7 @@ class GraphQLController(
               variables = variables getOrElse Json.obj(),
               deferredResolver = resolver,
               exceptionHandler = exceptionHandler,
+              middleware = List(new DaikokuAuthMiddleware()),
               queryReducers = List(
                 QueryReducer
                   .rejectMaxDepth[(DataStore, DaikokuActionContext[JsValue])](

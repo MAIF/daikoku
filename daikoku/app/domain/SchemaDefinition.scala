@@ -5,10 +5,7 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  _TeamMemberOnly,
-  _TenantAdminAccessTenant
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
@@ -23,6 +20,7 @@ import sangria.schema.{Context, _}
 import sangria.validation.ValueCoercionViolation
 import services.CmsPage
 import storage._
+import storage.graphql.{GraphQLImplicits, RequiresDaikokuAdmin, RequiresTenantAdmin}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -30,6 +28,8 @@ import scala.concurrent.duration.FiniteDuration
 import scala.util.{Failure, Success, Try}
 
 object SchemaDefinition {
+  import GraphQLImplicits._
+
   case object JsArrayCoercionViolation
       extends ValueCoercionViolation("Can't parse string to js array")
   case object JsonCoercionViolation
@@ -136,7 +136,7 @@ object SchemaDefinition {
         "A tenant object",
         () =>
           fields[(DataStore, DaikokuActionContext[JsValue]), Tenant](
-            Field("id", StringType, resolve = _.value.id.value),
+            Field("id", StringType, resolve = ctx => ctx.value.id.value),
             Field("enabled", BooleanType, resolve = _.value.enabled),
             Field("deleted", BooleanType, resolve = _.value.deleted),
             Field("name", StringType, resolve = _.value.name),
@@ -167,27 +167,32 @@ object SchemaDefinition {
                 MailjetSettingsType,
                 SimpleSMTPSettingsType,
                 SendgridSettingsType
-              )
+              ),
+              tags = List(RequiresTenantAdmin)
             ),
             Field(
               "bucketSettings",
               OptionType(BucketSettingsType),
-              resolve = _.value.bucketSettings
+              resolve = _.value.bucketSettings,
+              tags = List(RequiresTenantAdmin)
             ),
             Field(
               "authProvider",
               StringType,
-              resolve = _.value.authProvider.name
+              resolve = _.value.authProvider.name,
+              tags = List(RequiresTenantAdmin)
             ),
             Field(
               "authProviderSettings",
               JsonType,
-              resolve = _.value.authProviderSettings
+              resolve = _.value.authProviderSettings,
+              tags = List(RequiresTenantAdmin)
             ),
             Field(
               "auditTrailConfig",
               AuditTrailConfigType,
-              resolve = _.value.auditTrailConfig
+              resolve = _.value.auditTrailConfig,
+              tags = List(RequiresTenantAdmin)
             ),
             Field("isPrivate", BooleanType, resolve = _.value.isPrivate),
             Field(
@@ -196,7 +201,8 @@ object SchemaDefinition {
               resolve = ctx =>
                 ctx.ctx._1.apiRepo
                   .forTenant(ctx.ctx._2.tenant)
-                  .findById(ctx.value.adminApi)
+                  .findById(ctx.value.adminApi),
+              tags = List(RequiresTenantAdmin)
             ),
             Field(
               "adminSubscriptions",
@@ -212,22 +218,23 @@ object SchemaDefinition {
                         )
                       )
                     )
-                  )
+                  ),
+              tags = List(RequiresTenantAdmin)
             ),
             Field(
               "creationSecurity",
               OptionType(BooleanType),
-              resolve = _.value.creationSecurity
+              resolve = _.value.creationSecurity,
             ),
             Field(
               "subscriptionSecurity",
               OptionType(BooleanType),
-              resolve = _.value.subscriptionSecurity
+              resolve = _.value.subscriptionSecurity,
             ),
             Field(
               "apiReferenceHideForGuest",
               OptionType(BooleanType),
-              resolve = _.value.apiReferenceHideForGuest
+              resolve = _.value.apiReferenceHideForGuest,
             ),
             Field(
               "defaultMessage",
@@ -336,7 +343,43 @@ object SchemaDefinition {
         Field(
           "elasticConfig",
           OptionType(ElasticAnalyticsConfigType),
-          resolve = _.value.elasticConfig
+          resolve = _.value.elasticConfig,
+          tags = List(RequiresTenantAdmin)
+        )
+      ),
+      ReplaceField(
+        "url",
+        Field(
+          "url",
+          OptionType(StringType),
+          resolve = _.value.url
+        )
+      ),
+      ReplaceField(
+        "host",
+        Field(
+          "host",
+          OptionType(StringType),
+          resolve = _.value.host,
+          tags = List(RequiresTenantAdmin)
+        )
+      ),
+      ReplaceField(
+        "clientId",
+        Field(
+          "clientId",
+          OptionType(StringType),
+          resolve = _.value.clientId,
+          tags = List(RequiresTenantAdmin)
+        )
+      ),
+      ReplaceField(
+        "clientSecret",
+        Field(
+          "clientSecret",
+          OptionType(StringType),
+          resolve = _.value.clientSecret,
+          tags = List(RequiresTenantAdmin)
         )
       )
     )
@@ -777,7 +820,13 @@ object SchemaDefinition {
             Field(
               "users",
               ListType(UserWithPermissionType),
-              resolve = _.value.users.toSeq
+              resolve = ctx => {
+                if (ctx.ctx.isTenantAdmin || ctx.value.includeUser(ctx.ctx._2.user.id)) {
+                  ctx.value.users.toSeq
+                } else {
+                  Seq.empty[UserWithPermission]
+                }
+              }
             ),
             Field(
               "authorizedOtoroshiEntities",
@@ -4021,7 +4070,8 @@ object SchemaDefinition {
       getTenantFields("translation", TranslationType, ctx => ctx.ctx._1.translationRepo) ++
       getTenantFields("message", MessageType, ctx => ctx.ctx._1.messageRepo) ++
       // format: off
-      getTenantFields("apiSubscription", ApiSubscriptionType, ctx => ctx.ctx._1.apiSubscriptionRepo) ++ getTenantFields("apiDocumentationPage", ApiDocumentationPageType, ctx => ctx.ctx._1.apiDocumentationPageRepo) ++
+      getTenantFields("apiSubscription", ApiSubscriptionType, ctx => ctx.ctx._1.apiSubscriptionRepo) ++
+      getTenantFields("apiDocumentationPage", ApiDocumentationPageType, ctx => ctx.ctx._1.apiDocumentationPageRepo) ++
       getTenantFields("notification", NotificationType, ctx => ctx.ctx._1.notificationRepo) ++
       getTenantFields("consumption", ApiKeyConsumptionType, ctx => ctx.ctx._1.consumptionRepo) ++
       getTenantFields("post", ApiPostType, ctx => ctx.ctx._1.apiPostRepo) ++
