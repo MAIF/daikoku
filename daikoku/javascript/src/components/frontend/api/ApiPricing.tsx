@@ -677,7 +677,7 @@ type ApiPricingCardProps = {
   ownerTeam: ITeamSimple;
   subscriptions: Array<ISubscription>;
   inProgressDemands: Array<ISubscriptionDemand>;
-  updatePlan: (p: IUsagePlan) => void
+  updatePlan: (p: IUsagePlan, creation?: boolean) => void
   savePlan: (p: IUsagePlan) => void
   plans: Array<IUsagePlan>
 };
@@ -884,7 +884,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       paymentSettings: undefined,
     };
 
-    props.updatePlan(clone)
+    props.updatePlan(clone, true)
 
   };
 
@@ -1717,7 +1717,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
                 (demand) => demand.api === props.api._id && demand.plan === plan._id
               )}
               askForApikeys={props.askForApikeys}
-              updatePlan={updatePlan}
+              updatePlan={(plan, creation = false) => updatePlan(plan, creation)}
               savePlan={savePlan}
               plans={possibleUsagePlans}
             />
