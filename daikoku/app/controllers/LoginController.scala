@@ -1,9 +1,16 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
+import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import com.google.common.base.Charsets
-import controllers.Assets
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithoutUser, DaikokuTenantAction, DaikokuTenantActionContext}
+import controllers.{AppError, Assets}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithoutUser,
+  DaikokuTenantAction,
+  DaikokuTenantActionContext
+}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
@@ -11,7 +18,7 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider._
 import fr.maif.otoroshi.daikoku.login._
-import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator, Translator}
+import fr.maif.otoroshi.daikoku.utils.{Cypher, Errors, IdGenerator, Translator}
 import org.apache.commons.codec.binary.Base32
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -117,7 +124,10 @@ class LoginController(
       f: => Future[Option[User]]
   ): Future[Result] = {
     f.flatMap {
-      case None => after(3.seconds)(FastFuture.successful(BadRequest(Json.obj("error" -> true))))
+      case None =>
+        after(3.seconds)(
+          FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+        )
       case Some(user) =>
         user.twoFactorAuthentication match {
           case Some(auth) if auth.enabled =>
@@ -136,7 +146,9 @@ class LoginController(
                 case true =>
                   FastFuture.successful(Redirect(s"/2fa?token=$token"))
                 case false =>
-                  after(3.seconds)(FastFuture.successful(BadRequest(Json.obj("error" -> true))))
+                  after(3.seconds)(
+                    FastFuture.successful(BadRequest(Json.obj("error" -> true)))
+                  )
               }
           case _ => createSession(sessionMaxAge, user, request, tenant)
         }
@@ -211,22 +223,27 @@ class LoginController(
       ctx: DaikokuTenantActionContext[AnyContent]
   ): Future[Result] = {
     AuthProvider(provider) match {
-      case None => after(3.seconds)(Errors.craftResponseResult(
-        "Bad authentication provider",
-        Results.BadRequest,
-        ctx.request,
-        None,
-        env
-      ))
+      case None =>
+        after(3.seconds)(
+          Errors.craftResponseResult(
+            "Bad authentication provider",
+            Results.BadRequest,
+            ctx.request,
+            None,
+            env
+          )
+        )
 
       case Some(p) if ctx.tenant.authProvider != p && p != AuthProvider.Local =>
-        after(3.seconds)(Errors.craftResponseResult(
-          "Bad authentication provider",
-          Results.BadRequest,
-          ctx.request,
-          None,
-          env
-        ))
+        after(3.seconds)(
+          Errors.craftResponseResult(
+            "Bad authentication provider",
+            Results.BadRequest,
+            ctx.request,
+            None,
+            env
+          )
+        )
       case Some(p) if p == AuthProvider.OAuth2 =>
         val maybeOAuth2Config =
           OAuth2Config.fromJson(ctx.tenant.authProviderSettings)
@@ -243,13 +260,15 @@ class LoginController(
             )
           case Left(e) =>
             AppLogger.error("Error during OAuthConfig read", e)
-            after(3.seconds)(Errors.craftResponseResult(
-              "Invalid OAuth Config",
-              Results.BadRequest,
-              ctx.request,
-              None,
-              env
-            ))
+            after(3.seconds)(
+              Errors.craftResponseResult(
+                "Invalid OAuth Config",
+                Results.BadRequest,
+                ctx.request,
+                None,
+                env
+              )
+            )
         }
       case Some(p) =>
         ctx.request.body.asFormUrlEncoded match {
@@ -328,22 +347,26 @@ class LoginController(
                         )
                     }
                   case _ =>
-                    after(3.seconds)(Errors.craftResponseResult(
-                      "No matching provider found",
-                      Results.BadRequest,
-                      ctx.request,
-                      None,
-                      env
-                    ))
+                    after(3.seconds)(
+                      Errors.craftResponseResult(
+                        "No matching provider found",
+                        Results.BadRequest,
+                        ctx.request,
+                        None,
+                        env
+                      )
+                    )
                 }
               case _ =>
-                after(3.seconds)(Errors.craftResponseResult(
-                  "No credentials found",
-                  Results.BadRequest,
-                  ctx.request,
-                  None,
-                  env
-                ))
+                after(3.seconds)(
+                  Errors.craftResponseResult(
+                    "No credentials found",
+                    Results.BadRequest,
+                    ctx.request,
+                    None,
+                    env
+                  )
+                )
             }
         }
     }
@@ -446,17 +469,18 @@ class LoginController(
     } else if (email.trim().isEmpty()) {
       Left("Email address should not be empty")
     } else {
-      (password.trim(), confirmPassword.trim()) match {
-        case (pwd1, pwd2) if pwd1 != pwd2 =>
-          Left("Your passwords does not match")
-        case (pwd1, pwd2) if pwd1.isEmpty || pwd2.isEmpty =>
-          Left("Your password can't be empty")
-        case (pwd1, _) if passwordPattern.matcher(pwd1).matches() => Right(())
-        case _ =>
-          Left(
-            "Your password should be longer than 8 characters and contains letters, capitalized letters, numbers and special characters (#$^+=!*()@%&) !"
-          )
-      }
+      Right(())
+//      (password.trim(), confirmPassword.trim()) match {
+//        case (pwd1, pwd2) if pwd1 != pwd2 =>
+//          Left("Your passwords does not match")
+//        case (pwd1, pwd2) if pwd1.isEmpty || pwd2.isEmpty =>
+//          Left("Your password can't be empty")
+//        case (pwd1, _) if passwordPattern.matcher(pwd1).matches() => Right(())
+//        case _ =>
+//          Left(
+//            "Your password should be longer than 8 characters and contains letters, capitalized letters, numbers and special characters (#$^+=!*()@%&) !"
+//          )
+//      }
     }
   }
 
@@ -642,144 +666,129 @@ class LoginController(
     DaikokuTenantAction.async(parse.json) { ctx =>
       val body = ctx.request.body.as[JsObject]
       val email = (body \ "email").as[String]
-      val password = (body \ "password").as[String]
-      val confirmPassword = (body \ "confirmPassword").as[String]
+//      val password = (body \ "password").as[String]
+//      val confirmPassword = (body \ "confirmPassword").as[String]
 
       AuditTrailEvent(s"unauthenticated user with $email ask to reset password")
         .logUnauthenticatedUserEvent(ctx.tenant)
 
-      env.dataStore.userRepo.findOne(Json.obj("email" -> email)).flatMap {
-        case Some(user) =>
-          validateUserCreationForm(
-            "daikoku",
-            email,
-            password,
-            confirmPassword
-          ) match {
-            case Left(msg) =>
-              FastFuture.successful(BadRequest(Json.obj("error" -> msg)))
-            case Right(_) => {
-              val randomId = IdGenerator.token(128)
-              env.dataStore.passwordResetRepo.save(
-                PasswordReset(
-                  id = DatastoreId(IdGenerator.token(32)),
-                  randomId = randomId,
-                  email = email,
-                  password = BCrypt.hashpw(password, BCrypt.gensalt()),
-                  user = user.id,
-                  creationDate = DateTime.now(),
-                  validUntil = DateTime.now().plusMinutes(15)
-                )
-              )
-              val host = ctx.request.headers
-                .get("Otoroshi-Proxied-Host")
-                .orElse(ctx.request.headers.get("X-Forwarded-Host"))
-                .getOrElse(ctx.request.host)
+      val tenantLanguage = ctx.tenant.defaultLanguage.getOrElse("en")
 
-              val tenantLanguage: String =
-                ctx.tenant.defaultLanguage.getOrElse("en")
-              implicit val language: String =
-                user.defaultLanguage.getOrElse(tenantLanguage)
-              val link =
-                env.getDaikokuUrl(ctx.tenant, s"/account/reset?id=$randomId")
-              ctx.tenant.mailer
-                .send(
-                  s"Reset your ${ctx.tenant.name} account password",
-                  Seq(email),
-                  s"""
-                |<p>You asked to reset your ${ctx.tenant.name} account password.</p>
-                |
-                |<p>If it was you, please click on the following link to finalize the password resset process</p>
-                |
-                |<a href="$link">Reset</a>
-                |<p>If not, just ignore this email</p>
-                |
-                |<p>The ${ctx.tenant.name} team</p>
-              """.stripMargin,
-                  ctx.tenant
-                )
-                .map { _ =>
-                  Ok(Json.obj("done" -> true))
-                }
-            }
-          }
-        case None =>
-          FastFuture.successful(
-            BadRequest(Json.obj("error" -> "Email address does not exist"))
+      (for {
+        user <- EitherT.fromOptionF[Future, AppError, User](
+          env.dataStore.userRepo.findOne(Json.obj("email" -> email)),
+          AppError.UserNotFound(None)
+        )
+        randomId = IdGenerator.token(128)
+        _ <- EitherT.liftF[Future, AppError, Boolean](
+          env.dataStore.passwordResetRepo.save(
+            PasswordReset(
+              id = DatastoreId(IdGenerator.token(32)),
+              randomId = randomId,
+              email = email,
+              password = "",
+              user = user.id,
+              creationDate = DateTime.now(),
+              validUntil = DateTime.now().plusMinutes(15)
+            )
           )
-      }
+        )
+
+        cypheredId =
+          Cypher.encrypt(env.config.cypherSecret, randomId, ctx.tenant)
+        link = env.getDaikokuUrl(ctx.tenant, s"/reset/password?id=$cypheredId")
+        language: String = user.defaultLanguage.getOrElse(tenantLanguage)
+        title <- EitherT.liftF[Future, AppError, String](
+          translator.translate(
+            "mail.reset.password.title",
+            ctx.tenant,
+            Map(
+              "tenant" -> JsString(ctx.tenant.name),
+              "tenant_data" -> ctx.tenant.toUiPayload(env),
+            )
+          )(messagesApi, language, env)
+        )
+        body <- EitherT.liftF[Future, AppError, String](
+          translator.translate(
+            "mail.reset.password.body",
+            ctx.tenant,
+            Map(
+              "mail" -> JsString(email),
+              "tenant" -> JsString(ctx.tenant.name),
+              "link" -> JsString(link),
+              "tenant_data" -> ctx.tenant.toUiPayload(env),
+            )
+          )(messagesApi, language, env)
+        )
+        _ <- EitherT.liftF[Future, AppError, Unit](
+          ctx.tenant.mailer
+            .send(
+              title,
+              Seq(email),
+              body,
+              ctx.tenant
+            )(
+              ec = ec,
+              translator = tr,
+              messagesApi = messagesApi,
+              env = env,
+              language = language
+            )
+        )
+
+      } yield Ok(Json.obj("done" -> true)))
+        .leftMap(_.render())
+        .merge
     }
 
   def passwordResetValidation() =
-    DaikokuTenantAction.async { ctx =>
-      ctx.request.getQueryString("id") match {
-        case None =>
-          FastFuture.successful(
-            Redirect(
-              env.getDaikokuUrl(ctx.tenant, "/reset?error=bad.creation.id")
-            )
+    DaikokuTenantAction.async(parse.json) { ctx =>
+      val body = ctx.request.body.as[JsObject]
+      val email = (body \ "email").as[String]
+      val password = (body \ "password").as[String]
+      val confirmPassword = (body \ "confirmPassword").as[String]
+
+      (for {
+        user <- EitherT.fromOptionF[Future, AppError, User](
+          env.dataStore.userRepo.findOneNotDeleted(Json.obj("email" -> email)),
+          AppError.BadRequestError("password.reset.error.unknown.user")
+        )
+        _ <- EitherT.cond[Future][AppError, Unit](
+          ctx.tenant.authProvider == AuthProvider.Local,
+          (),
+          AppError.BadRequestError(
+            "AuthProvider doesn't provide password reset"
           )
-        case Some(id) => {
+        )
+        cypheredId <- EitherT.fromOption[Future][AppError, String](
+          ctx.request.getQueryString("id"),
+          AppError.BadRequestError("password.reset.error.invalid")
+        )
+        id = Cypher.decrypt(env.config.cypherSecret, cypheredId, ctx.tenant)
+        pwdReset <- EitherT.fromOptionF[Future, AppError, PasswordReset](
           env.dataStore.passwordResetRepo
-            .findOneNotDeleted(Json.obj("randomId" -> id))
-            .flatMap {
-              case Some(pwdReset)
-                  if pwdReset.validUntil.isBefore(DateTime.now()) =>
-                env.dataStore.passwordResetRepo
-                  .deleteByIdLogically(pwdReset.id.value)
-                  .map { _ =>
-                    Redirect(
-                      env.getDaikokuUrl(
-                        ctx.tenant,
-                        "/reset?error=not.valid.anymore"
-                      )
-                    )
-                  }
-              case Some(pwdReset)
-                  if pwdReset.validUntil.isAfter(DateTime.now()) =>
-                env.dataStore.userRepo
-                  .findOneNotDeleted(
-                    Json.obj(
-                      "_id" -> pwdReset.user.value,
-                      "email" -> pwdReset.email
-                    )
-                  )
-                  .flatMap {
-                    case None =>
-                      FastFuture.successful(
-                        Redirect(
-                          env.getDaikokuUrl(
-                            ctx.tenant,
-                            "/reset?error=user.not.found"
-                          )
-                        )
-                      )
-                    case Some(user) =>
-                      env.dataStore.userRepo
-                        .save(user.copy(password = Some(pwdReset.password)))
-                        .flatMap { _ =>
-                          env.dataStore.passwordResetRepo
-                            .deleteByIdLogically(pwdReset.id.value)
-                            .map { _ =>
-                              Redirect(
-                                env.getDaikokuUrl(
-                                  ctx.tenant,
-                                  "/?message=password.reset.successfull"
-                                )
-                              )
-                            }
-                        }
-                  }
-              case _ =>
-                FastFuture.successful(
-                  Redirect(
-                    env
-                      .getDaikokuUrl(ctx.tenant, "/reset?error=bad.creation.id")
-                  )
-                )
-            }
-        }
-      }
+            .findOneNotDeleted(Json.obj("randomId" -> id, "email" -> email)),
+          AppError.BadRequestError("password.reset.error.invalid")
+        )
+        _ <- EitherT.cond[Future][AppError, Unit](
+          pwdReset.validUntil.isAfter(DateTime.now()),
+          (),
+          AppError.BadRequestError("password.reset.error.expires")
+        )
+        _ <- EitherT.cond[Future][AppError, Unit](
+          password == confirmPassword,
+          (),
+          AppError.EntityConflict("Passwords matching")
+        )
+        _ <- EitherT.liftF[Future, AppError, Boolean](
+          env.dataStore.userRepo.save(
+            user.copy(password = BCrypt.hashpw(password, BCrypt.gensalt()).some)
+          )
+        )
+
+      } yield Ok(Json.obj("done" -> true)))
+        .leftMap(_.render())
+        .merge
     }
 
   def checkLdapConnection() =

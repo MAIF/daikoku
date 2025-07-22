@@ -867,7 +867,7 @@ export const ApiKeyCard = ({
                   aria-label={translate("subscription.copy.cli.auth.aria-label")}
                   onClick={() => {
                     navigator.clipboard
-                      .writeText(`Basic ${btoa(`${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`)}`)
+                      .writeText(`${btoa(`${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`)}`)
                       .then(() =>
                         toast.info(translate('credential.copy.success'))
                       )

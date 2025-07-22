@@ -108,24 +108,23 @@ export function LoginPage() {
               onChange={onChange}
             />
           </div>
-          <div className="mb-3 d-grid gap-1"> 
+          <div className="mb-3 d-grid gap-1">
             <button type="submit" ref={buttonRef} className="btn btn-outline-success shake" disabled={loading}>
               <Translation i18nkey="login.btn.label">Login</Translation>
             </button>
           </div>
-          <div className='d-flex justify-content-between'>
-            <div className="mb-3">
-              <Link to="/reset">
-                <Translation i18nkey="Forgot your password ?">Forgot your password ?</Translation>
-              </Link>
-            </div>
-            {provider === 'Local' && (
+          {provider === 'Local' && (
+            <div className='d-flex justify-content-between'>
+              <div className="mb-3">
+                <Link to="/reset">
+                  <Translation i18nkey="Forgot your password ?">Forgot your password ?</Translation>
+                </Link>
+              </div>
               <Link to="/signup">
                 {translate('Create your account')}
               </Link>
-            )}
-          </div>
-
+            </div>
+          )}
         </form>
       </div>
     </div>

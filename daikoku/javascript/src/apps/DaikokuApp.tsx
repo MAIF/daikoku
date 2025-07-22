@@ -45,7 +45,7 @@ import { FastMode } from "../components/frontend/fastMode/FastMode";
 import { GlobalContext } from '../contexts/globalContext';
 import { I18nContext } from '../contexts/i18n-context';
 import { MessagesEvents } from '../services/messages';
-import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
+import { ResetPassword, ResetPasswordEnd, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
 import { AnonymousReporting } from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
 import { RightPanel } from '../components/utils/sidebar/RightPanel';
 
@@ -87,6 +87,14 @@ export const DaikokuApp = () => {
                 element={
                   <UnauthenticatedRoute title={translate('Login')} header={`${translate({ key: 'login.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
                     <LoginPage />
+                  </UnauthenticatedRoute>
+                }
+              />
+              <Route
+                path="/reset/password"
+                element={
+                  <UnauthenticatedRoute title={translate('Reset')} header={translate('Reset your password')}>
+                    <ResetPasswordEnd />
                   </UnauthenticatedRoute>
                 }
               />
@@ -174,6 +182,14 @@ export const DaikokuApp = () => {
                     element={
                       <UnauthenticatedRoute title={translate('Verification code')} header={translate('Verification code')} >
                         <TwoFactorAuthentication />
+                      </UnauthenticatedRoute>
+                    }
+                  />
+                  <Route
+                    path="/reset/password"
+                    element={
+                      <UnauthenticatedRoute title={translate('Reset')} header={translate('Reset your password')}>
+                        <ResetPasswordEnd />
                       </UnauthenticatedRoute>
                     }
                   />

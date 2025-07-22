@@ -102,3 +102,9 @@ mail.user.invitation.body=[sender] asked you to join [teamName] \
 Please click on the following link to join this team. \
 </br>\
 <a href="[link]">Click to join the team</a>
+mail.reset.password.title = Reset your [tenant] account password
+mail.reset.password.body = <p>You asked to reset your [tenant] account password.</p>\
+<p>If it was you, please click on the following link to finalize the password reset process</p>\
+<a href="[link]" target="_blank">Reset</a>\
+<p>If not, just ignore this email</p>\
+<p>The [tenant] team</p>

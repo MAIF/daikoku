@@ -2,11 +2,12 @@ import { constraints, Form, format, type } from '@maif/react-forms';
 import { md5 } from 'js-md5';
 import { useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { BrowserRouter as Router, Route, Routes, useNavigate, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useNavigate, Link, useLocation, useSearchParams } from 'react-router-dom';
 
 import { I18nContext } from '../contexts/i18n-context';
 import * as Services from '../services';
-import { IUserSimple } from '../types';
+import { AuthProvider, IUserSimple } from '../types';
+import { GlobalContext } from '../contexts/globalContext';
 
 const AvatarInput = ({
   rawValues,
@@ -177,12 +178,113 @@ export const Signup = () => {
 
 export const ResetPassword = () => {
   const { translate, Translation } = useContext(I18nContext);
+  const { tenant } = useContext(GlobalContext);
 
   const [user, setUser] = useState<IUserSimple>();
   const [state, setState] = useState<'creation' | 'error' | 'done'>('creation');
   const [error, setError] = useState<string>();
 
   const navigate = useNavigate();
+
+  const schema = {
+    email: {
+      type: type.string,
+      format: format.email,
+      label: translate('Email address'),
+      constraints: [
+        constraints.required(translate('constraints.required.email')),
+        constraints.email(translate('constraints.matches.email')),
+      ],
+    },
+  };
+
+  const flow = ['email'];
+
+  const resetPassword = (data: any) => {
+    return fetch('/account/reset', {
+      method: 'POST',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.error) {
+          setState('error');
+          setError(res.error);
+        } else {
+          setUser(data);
+          setState('done');
+        }
+      });
+  };
+
+  useEffect(() => {
+    if(tenant.authProvider !== AuthProvider.local)
+      navigate('/apis')
+  }, [])
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    if (query.get('error')) {
+      setState('error');
+      setError(translate(`account.reset.error.${query.get('error')}`));
+    }
+  }, []);
+
+  if (state === 'done' && user) {
+    return (
+      <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px' }}>
+        <div className="alert alert-info" role="alert">
+          <Translation i18nkey="password.reset.done" replacements={[user.email]}>
+            You will receive an email at <b>{user.email}</b> to finish your passsword reset process.
+            You will have 15 minutes from now to finish your password reset process.
+          </Translation>
+        </div>
+        <div className="d-flex justify-content-end">
+          <Link className='btn btn-outline-success' to="/">{translate('go_back')}</Link>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px' }}>
+      {state === 'error' && (
+        <div className="alert alert-danger" role="alert">
+          {error}
+        </div>
+      )}
+      <Form
+        schema={schema}
+        flow={flow}
+        onSubmit={resetPassword}
+        footer={({ reset, valid }) => {
+          return (
+            <div className="d-flex justify-content-end">
+              <button className="btn btn-outline-danger m-3" onClick={() => navigate(-1)}>
+                {translate('Cancel')}
+              </button>
+              <button className="btn btn-outline-success m-3" onClick={valid}>
+                <span>
+                  <Translation i18nkey="Reset password">Reset password</Translation>
+                </span>
+              </button>
+            </div>
+          );
+        }}
+      />
+    </div>
+  );
+};
+
+export const ResetPasswordEnd = () => {
+  const { translate, Translation } = useContext(I18nContext);
+  const { tenant } = useContext(GlobalContext);
+
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams()
 
   const schema = {
     email: {
@@ -223,7 +325,7 @@ export const ResetPassword = () => {
   const flow = ['email', 'password', 'confirmPassword'];
 
   const resetPassword = (data: any) => {
-    return fetch('/account/reset', {
+    return fetch(`/account/reset/validate?id=${searchParams.get('id')}`, {
       method: 'POST',
       credentials: 'include',
       headers: {
@@ -234,50 +336,27 @@ export const ResetPassword = () => {
       .then((r) => r.json())
       .then((res) => {
         if (res.error) {
-          setState('error');
-          setError(res.error);
+          toast.error(translate(res.error));
         } else {
-          setUser(data);
-          setState('done');
+          toast.success(translate("password.reset.successfull"))
+          navigate('/apis')
         }
       });
   };
 
   useEffect(() => {
-    const query = new URLSearchParams(window.location.search);
-    if (query.get('error')) {
-      setState('error');
-      setError(translate(`account.reset.error.${query.get('error')}`));
-    }
-  }, []);
+    if (tenant.authProvider !== AuthProvider.local)
+      navigate('/apis')
+  }, [])
 
-  if (state === 'done' && user) {
-    return (
-      <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px' }}>
-        <div className="alert alert-info" role="alert">
-          <Translation i18nkey="password.reset.done" replacements={[user.email]}>
-            You will receive an email at <b>{user.email}</b> to finish your passsword reset process.
-            You will have 15 minutes from now to finish your password reset process.
-          </Translation>
-        </div>
-        <div className="d-flex justify-content-end">
-          <Link className='btn btn-outline-success' to="/">{translate('go_back')}</Link>
-        </div>
-      </div>
-    );
-  }
+
   return (
     <div className="section mx-auto mt-3 p-3" style={{ maxWidth: '448px' }}>
-      {state === 'error' && (
-        <div className="alert alert-danger" role="alert">
-          {error}
-        </div>
-      )}
       <Form
         schema={schema}
         flow={flow}
         onSubmit={resetPassword}
-        footer={({ reset, valid }) => {
+        footer={({ valid }) => {
           return (
             <div className="d-flex justify-content-end">
               <button className="btn btn-outline-danger m-3" onClick={() => navigate(-1)}>
