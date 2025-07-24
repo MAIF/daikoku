@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.7.0">
 <title data-rh="true">Managing tenants | Daikoku</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://maif.github.io/daikoku/img/daikoku-mini.jpg"><meta data-rh="true" name="twitter:image" content="https://maif.github.io/daikoku/img/daikoku-mini.jpg"><meta data-rh="true" property="og:url" content="https://maif.github.io/daikoku/docs/usages/adminusage/tenants"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Managing tenants | Daikoku"><meta data-rh="true" name="description" content="Go to settings/Organizations settings"><meta data-rh="true" property="og:description" content="Go to settings/Organizations settings"><link data-rh="true" rel="icon" href="/daikoku/img/daikoku-mini.svg"><link data-rh="true" rel="canonical" href="https://maif.github.io/daikoku/docs/usages/adminusage/tenants"><link data-rh="true" rel="alternate" href="https://maif.github.io/daikoku/docs/usages/adminusage/tenants" hreflang="en"><link data-rh="true" rel="alternate" href="https://maif.github.io/daikoku/docs/usages/adminusage/tenants" hreflang="x-default"><link rel="stylesheet" href="/daikoku/assets/css/styles.98544a2c.css">
-<script src="/daikoku/assets/js/runtime~main.19e23a18.js" defer="defer"></script>
+<script src="/daikoku/assets/js/runtime~main.fbe5a876.js" defer="defer"></script>
 <script src="/daikoku/assets/js/main.2877995b.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -18,6 +18,56 @@
 It&#x27;s possible to set the default language of the tenant.
 Maintenance Mode and construction mode can be activated here (only Daikoku and Tenant admins can login).</p>
 <p>A robot.txt file is serve on the path /robot.txt by default, the file is empty, but you can fill it like you want.</p>
+<h4 class="anchor anchorWithStickyNavbar_LWe7" id="customizing-the-client-name-pattern">Customizing the Client Name Pattern<a href="#customizing-the-client-name-pattern" class="hash-link" aria-label="Direct link to Customizing the Client Name Pattern" title="Direct link to Customizing the Client Name Pattern">​</a></h4>
+<p>When generating an API key, you can define a <strong>custom client name pattern</strong> that includes dynamic values. This helps create meaningful, consistent client names that reflect key context such as the user, team, or API involved.</p>
+<h5 class="anchor anchorWithStickyNavbar_LWe7" id="syntax">Syntax<a href="#syntax" class="hash-link" aria-label="Direct link to Syntax" title="Direct link to Syntax">​</a></h5>
+<p>Use the expression language (syntax like <code>${...}</code>) to insert dynamic values.<br>
+<!-- -->For example:
+<code>${team.name}::${api.name}/${plan.customName}</code></p>
+<p>Might produce:</p>
+<p><code>team-name::my-api/prod</code></p>
+<h5 class="anchor anchorWithStickyNavbar_LWe7" id="available-variables">Available Variables<a href="#available-variables" class="hash-link" aria-label="Direct link to Available Variables" title="Direct link to Available Variables">​</a></h5>
+<p>You can inject the following variables into your pattern:</p>
+<h6 class="anchor anchorWithStickyNavbar_LWe7" id="user">User<a href="#user" class="hash-link" aria-label="Direct link to User" title="Direct link to User">​</a></h6>
+<ul>
+<li><code>${user.id}</code></li>
+<li><code>${user.humanReadableId}</code></li>
+<li><code>${user.name}</code></li>
+<li><code>${user.email}</code></li>
+<li><code>${user.metadata.&lt;value&gt;}</code></li>
+</ul>
+<h6 class="anchor anchorWithStickyNavbar_LWe7" id="api">API<a href="#api" class="hash-link" aria-label="Direct link to API" title="Direct link to API">​</a></h6>
+<ul>
+<li><code>${api.id}</code></li>
+<li><code>${api.humanReadableId}</code></li>
+<li><code>${api.name}</code></li>
+<li><code>${api.currentVersion}</code></li>
+</ul>
+<h6 class="anchor anchorWithStickyNavbar_LWe7" id="plan">Plan<a href="#plan" class="hash-link" aria-label="Direct link to Plan" title="Direct link to Plan">​</a></h6>
+<ul>
+<li><code>${plan.id}</code></li>
+<li><code>${plan.customName}</code></li>
+</ul>
+<h6 class="anchor anchorWithStickyNavbar_LWe7" id="team">Team<a href="#team" class="hash-link" aria-label="Direct link to Team" title="Direct link to Team">​</a></h6>
+<ul>
+<li><code>${team.id}</code></li>
+<li><code>${team.humanReadableId}</code></li>
+<li><code>${team.name}</code></li>
+<li><code>${team.metadata.&lt;value&gt;}</code></li>
+</ul>
+<h6 class="anchor anchorWithStickyNavbar_LWe7" id="tenant">Tenant<a href="#tenant" class="hash-link" aria-label="Direct link to Tenant" title="Direct link to Tenant">​</a></h6>
+<ul>
+<li><code>${tenant.id}</code></li>
+<li><code>${tenant.humanReadableId}</code></li>
+<li><code>${tenant.name}</code></li>
+</ul>
+<h6 class="anchor anchorWithStickyNavbar_LWe7" id="creation-timestamp">Creation Timestamp<a href="#creation-timestamp" class="hash-link" aria-label="Direct link to Creation Timestamp" title="Direct link to Creation Timestamp">​</a></h6>
+<ul>
+<li><code>${createdAt}</code> — ISO 8601 format (e.g. <code>2025-07-24T10:42:00Z</code>)</li>
+<li><code>${createdAtMillis}</code> — Unix timestamp in milliseconds</li>
+</ul>
+<h5 class="anchor anchorWithStickyNavbar_LWe7" id="tip">Tip<a href="#tip" class="hash-link" aria-label="Direct link to Tip" title="Direct link to Tip">​</a></h5>
+<p>If you&#x27;re using metadata (e.g. <code>${user.metadata.department}</code>), make sure the key exists in the entity&#x27;s metadata before applying the pattern — otherwise it may resolve as an empty string.</p>
 <h3 class="anchor anchorWithStickyNavbar_LWe7" id="customization">Customization<a href="#customization" class="hash-link" aria-label="Direct link to Customization" title="Direct link to Customization">​</a></h3>
 <p>Tenants could be customized in Daikoku.
 Logo, title, description can be changed.</p>
