@@ -1563,6 +1563,9 @@
     "migration.custom.style.alert.info.3": "👉 You can still inject CSS or JavaScript via an external URL.",
     "migration.custom.style.alert.info.4": " However, inline code editing is now handled through the CLI.",
     "migration.custom.style.alert.info.5": "📘 To learn more about the Daikoku CLI, check out the %s",
-    "migration.custom.style.alert.hide": "Hide message"
+    "migration.custom.style.alert.hide": "Hide message",
+    "tenant.edit.clientNamePattern.label": "Custom client name pattern",
+    "tenant.edit.clientNamePattern.help": "This pattern is used to customize the client name when creating an API key. The string can include dynamic values using the ${my.value} syntax.",
+    "tenant.edit.clientNamePattern.help2": "The following values are available:"
     
 }

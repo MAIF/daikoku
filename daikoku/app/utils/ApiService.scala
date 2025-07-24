@@ -86,34 +86,50 @@ class ApiService(
       maybeOtoroshiApiKey: Option[OtoroshiApiKey] = None
   ) = {
 
-    val otoroshiApiKey = maybeOtoroshiApiKey.getOrElse(
-      OtoroshiApiKey(
-        clientId = IdGenerator.token(32),
-        clientSecret = IdGenerator.token(64),
-        clientName =
-          s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${System
-            .currentTimeMillis()}-${api.currentVersion.value}"
-      )
-    )
 
-    val createdAt = DateTime.now().toString()
-    val ctx = Map(
+    val date = DateTime.now()
+    val createdAtMillis = date.getMillis.toString
+    val createdAt = date.toString()
+
+    val defaultClientName = s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${createdAtMillis}-${api.currentVersion.value}"
+
+    val baseContext: Map[String, String] = Map(
       "user.id" -> user.id.value,
+      "user.humanReadableId" -> user.humanReadableId,
       "user.name" -> user.name,
       "user.email" -> user.email,
       "api.id" -> api.id.value,
+      "api.humanReadableId" -> api.humanReadableId,
       "api.name" -> api.name,
+      "api.currentVersion" -> api.currentVersion.value,
+      "plan.id" -> plan.id.value,
+      "plan.name" -> plan.customName,
       "team.id" -> team.id.value,
+      "team.humanReadableId" -> team.humanReadableId,
       "team.name" -> team.name,
       "tenant.id" -> tenant.id.value,
+      "tenant.humanReadableId" -> tenant.humanReadableId,
       "tenant.name" -> tenant.name,
       "createdAt" -> createdAt,
-      "client.id" -> otoroshiApiKey.clientId,
-      "client.name" -> otoroshiApiKey.clientName
+      "createdAtMillis" -> createdAtMillis,
     ) ++ team.metadata.map(t =>
       ("team.metadata." + t._1, t._2)
     ) ++ user.metadata
       .map(t => ("user.metadata." + t._1, t._2))
+
+    val otoroshiApiKey = maybeOtoroshiApiKey.getOrElse(
+      OtoroshiApiKey(
+        clientId = IdGenerator.token(32),
+        clientSecret = IdGenerator.token(64),
+        clientName = tenant.clientNamePattern
+          .map(OtoroshiTarget.processValue(_, baseContext))
+          .getOrElse(defaultClientName)
+      )
+    )
+
+    val ctx = baseContext ++ Map(
+      "client.id" -> otoroshiApiKey.clientId,
+      "client.name" -> otoroshiApiKey.clientName)
 
     //FIXME: if custom.metadata are not string:string it's broken
     val processedMetadata = plan.otoroshiTarget

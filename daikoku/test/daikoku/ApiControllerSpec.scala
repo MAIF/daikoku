@@ -427,6 +427,81 @@ class ApiControllerSpec()
 
       resp.status mustBe 403
     }
+
+    "setup a client name pattern to customize created APIkey name" in {
+      val plan = UsagePlan(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        customName = "free without quotas",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val api = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
+        defaultUsagePlan = UsagePlanId("parent.dev").some
+      )
+
+
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            clientNamePattern = Some("apk-test::api=${api.name}:${api.currentVersion}/${plan.name}::team=${team.name}"),
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin, user),
+        teams = Seq(
+          teamOwner,
+          teamConsumer.copy(users =
+            Set(
+              UserWithPermission(userTeamUserId, Administrator)
+            )
+          ),
+          defaultAdminTeam
+        ),
+        usagePlans = Seq(plan, adminApiPlan),
+        apis = Seq(api, adminApi),
+      )
+
+      val session = loginWithBlocking(user, tenant)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/apis/${api.id.value}/plan/${plan.id.value}/team/${teamConsumer.id.value}/_subscribe",
+        method = "POST",
+        body = Json.obj().some
+      )(tenant, session)
+      resp.status mustBe 200
+
+      val sub = (resp.json \ "subscription").as(json.ApiSubscriptionFormat)
+      val expectedName = s"apk-test::api=${api.name}:${api.currentVersion.value}/${plan.customName}::team=${teamConsumer.name}"
+      sub.apiKey.clientName mustBe expectedName
+    }
+
   }
 
   "a team administrator" can {

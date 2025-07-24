@@ -435,7 +435,8 @@ case class Tenant(
     robotTxt: Option[String] = None,
     thirdPartyPaymentSettings: Seq[ThirdPartyPaymentSettings] = Seq.empty,
     display: TenantDisplay = TenantDisplay.Default,
-    environments: Set[String] = Set.empty
+    environments: Set[String] = Set.empty,
+    clientNamePattern: Option[String] = None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)

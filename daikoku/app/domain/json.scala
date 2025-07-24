@@ -1713,7 +1713,9 @@ object json {
               .getOrElse(TenantDisplay.Default),
             environments = (json \ "environments")
               .asOpt[Set[String]]
-              .getOrElse(Set.empty)
+              .getOrElse(Set.empty),
+            clientNamePattern = (json \ "clientNamePattern")
+              .asOpt[String]
           )
         )
       } recover {
@@ -1789,7 +1791,8 @@ object json {
         "thirdPartyPaymentSettings" -> SeqThirdPartyPaymentSettingsFormat
           .writes(o.thirdPartyPaymentSettings),
         "display" -> TenantDisplayFormat.writes(o.display),
-        "environments" -> JsArray(o.environments.map(JsString.apply).toSeq)
+        "environments" -> JsArray(o.environments.map(JsString.apply).toSeq),
+        "clientNamePattern" -> o.clientNamePattern
       )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {

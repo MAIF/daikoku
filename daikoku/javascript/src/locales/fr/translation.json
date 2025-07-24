@@ -1563,5 +1563,8 @@
   "migration.custom.style.alert.info.3": "👉 Vous pouvez toujours injecter du CSS ou du JavaScript via une URL externe.",
   "migration.custom.style.alert.info.4": " Cependant, l’édition directe du code en ligne se fait désormais via la CLI.",
   "migration.custom.style.alert.info.5": "📘 Pour en savoir plus sur la CLI Daikoku, vous pouvez consulter la %s",
-  "migration.custom.style.alert.hide": "Ne plus voir ce message"
+  "migration.custom.style.alert.hide": "Ne plus voir ce message",
+  "tenant.edit.clientNamePattern.label": "Modèle de nom de client personnalisé",
+  "tenant.edit.clientNamePattern.help": "Ce modèle est utilisé pour personnaliser le nom du client lors de la création d'une clé d'API. La chaîne de caractères peut contenir des valeurs dynamiques en utilisant la syntaxe ${ma.valeur}.",
+  "tenant.edit.clientNamePattern.help2": "Les valeurs disponibles sont les suivantes :"
 }

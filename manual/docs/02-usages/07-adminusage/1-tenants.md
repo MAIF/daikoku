@@ -16,6 +16,60 @@ Maintenance Mode and construction mode can be activated here (only Daikoku and T
 
 A robot.txt file is serve on the path /robot.txt by default, the file is empty, but you can fill it like you want.
 
+#### Customizing the Client Name Pattern
+
+When generating an API key, you can define a **custom client name pattern** that includes dynamic values. This helps create meaningful, consistent client names that reflect key context such as the user, team, or API involved.
+
+##### Syntax
+
+Use the expression language (syntax like `${...}`) to insert dynamic values.  
+For example:
+```${team.name}::${api.name}/${plan.customName}```
+
+Might produce:
+
+```team-name::my-api/prod```
+
+
+##### Available Variables
+
+You can inject the following variables into your pattern:
+
+###### User
+- `${user.id}`
+- `${user.humanReadableId}`
+- `${user.name}`
+- `${user.email}`
+- `${user.metadata.<value>}`
+
+###### API
+- `${api.id}`
+- `${api.humanReadableId}`
+- `${api.name}`
+- `${api.currentVersion}`
+
+###### Plan
+- `${plan.id}`
+- `${plan.customName}`
+
+###### Team
+- `${team.id}`
+- `${team.humanReadableId}`
+- `${team.name}`
+- `${team.metadata.<value>}`
+
+###### Tenant
+- `${tenant.id}`
+- `${tenant.humanReadableId}`
+- `${tenant.name}`
+
+###### Creation Timestamp
+- `${createdAt}` — ISO 8601 format (e.g. `2025-07-24T10:42:00Z`)
+- `${createdAtMillis}` — Unix timestamp in milliseconds
+
+##### Tip
+
+If you're using metadata (e.g. `${user.metadata.department}`), make sure the key exists in the entity's metadata before applying the pattern — otherwise it may resolve as an empty string.
 
 ### Customization
 
