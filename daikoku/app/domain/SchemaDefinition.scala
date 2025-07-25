@@ -666,6 +666,23 @@ object SchemaDefinition {
         ReplaceField(
           "team",
           Field("team", StringType, resolve = ctx => ctx.value.team.value)
+        )
+      )
+    )
+    lazy val ValidationStepForm = new PossibleObject(
+      deriveObjectType[
+        (DataStore, DaikokuActionContext[JsValue]),
+        ValidationStep.Form
+      ](
+        Interfaces(ValidationStepInterfaceType),
+        ObjectTypeDescription("A validation Step by html form"),
+        ReplaceField(
+          "id",
+          Field("id", StringType, resolve = ctx => ctx.value.id)
+        ),
+        ReplaceField(
+          "title",
+          Field("title", StringType, resolve = ctx => ctx.value.title)
         ),
         ReplaceField(
           "schema",
@@ -1000,7 +1017,8 @@ object SchemaDefinition {
               ValidationStepEmail,
               ValidationStepAdmin,
               ValidationStepPayment,
-              ValidationStepHttRequest
+              ValidationStepHttRequest,
+              ValidationStepForm
             )
           ),
           Field(

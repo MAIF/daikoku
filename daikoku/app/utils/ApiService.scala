@@ -221,21 +221,20 @@ class ApiService(
     ): Future[Either[AppError, ApiSubscription]] = {
       import cats.implicits._
 
-      EitherT(parentSubscriptionId match {
+      val value: EitherT[Future, AppError, (Option[ApiSubscription], Option[OtoroshiApiKey])] = parentSubscriptionId match {
         case None =>
-          val error: Future[
-            Either[AppError, (Option[ApiSubscription], Option[OtoroshiApiKey])]
-          ] = FastFuture.successful(Right((None, None)))
+          val error:
+            EitherT[Future, AppError, (Option[ApiSubscription], Option[OtoroshiApiKey])]
+          = EitherT.pure[Future, AppError]((None, None))
           error
-        case Some(id) =>
-          env.dataStore.apiSubscriptionRepo
+        case Some(id) => for {
+          sub <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo
             .forTenant(tenant.id)
-            .findById(id.value)
-            .map {
-              case Some(sub) => Right((Some(sub), Some(sub.apiKey)))
-              case None      => Left(AppError.SubscriptionNotFound)
-            }
-      }).flatMap {
+            .findById(id.value), AppError.SubscriptionNotFound)
+        } yield (Some(sub), Some(sub.apiKey))
+
+      }
+      value.flatMap {
         case (maybeParentSub, otoroshiApiKey) =>
           val integrationToken = IdGenerator.token(64)
 
@@ -1662,10 +1661,11 @@ class ApiService(
         env.dataStore.userRepo.findByIdNotDeleted(demand.from),
         AppError.UserNotFound()
       )
+      formStep <- EitherT.fromOption[Future][AppError, ValidationStep.Form](plan.subscriptionProcess.collectFirst{ case s: ValidationStep.Form => s}, AppError.EntityNotFound("form step"))
       motivationAsString =
         motivationPattern
-          .findAllMatchIn(actualStep.formatter.getOrElse("[[motivation]]"))
-          .foldLeft(actualStep.formatter.getOrElse("[[motivation]]"))(
+          .findAllMatchIn(formStep.formatter.getOrElse("[[motivation]]"))
+          .foldLeft(formStep.formatter.getOrElse("[[motivation]]"))(
             (motivation, rgxMatch) => {
               val key = rgxMatch.group(1)
               val replacement = (demand.motivation.getOrElse(Json.obj()) \ key)
@@ -2057,6 +2057,8 @@ class ApiService(
           )
         case s: ValidationStep.HttpRequest =>
           callHttpRequestStep(s, step, demand, tenant)
+        case _: ValidationStep.Form =>
+          EitherT.pure[Future, AppError](Ok(Json.obj("done" -> true)))
       }
 
       val steps = demand.steps.map(s =>
@@ -2573,10 +2575,12 @@ class ApiService(
                       api = api.id,
                       plan = plan.id,
                       state = SubscriptionDemandState.Waiting,
-                      steps = steps.map(step =>
-                        SubscriptionDemandStep(
+                      steps = steps.map(step => SubscriptionDemandStep(
                           id = SubscriptionDemandStepId(IdGenerator.token),
-                          state = SubscriptionDemandState.Waiting,
+                          state = step match {
+                            case _: ValidationStep.Form => SubscriptionDemandState.Accepted
+                            case _ => SubscriptionDemandState.Waiting
+                          },
                           step = step
                         )
                       ),

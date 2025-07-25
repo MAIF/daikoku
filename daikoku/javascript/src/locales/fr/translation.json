@@ -1251,6 +1251,7 @@
   "subscription.process.creation.title": "Création d'une étape de validation",
   "subscription.process.type.selection": "Merci de sélectionner un type de validation",
   "subscription.process.team.admin": "Admin. équipe",
+  "subscription.process.form": "Form",
   "subscription.process.email": "Courriel",
   "subscription.process.add.label": "Ajouter une nouvelle étape",
   "subscription.process.httpRequest": "Requête HTTP",

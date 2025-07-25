@@ -1,5 +1,5 @@
 import { UniqueIdentifier } from '@dnd-kit/core';
-import { CodeInput, constraints, Form, format, type } from '@maif/react-forms';
+import { CodeInput, constraints, Form, format, Schema, type } from '@maif/react-forms';
 import classNames from 'classnames';
 import { nanoid } from 'nanoid';
 import React, { useContext, useEffect, useRef, useState } from 'react';
@@ -10,11 +10,12 @@ import Plus from 'react-feather/dist/icons/plus';
 import Settings from 'react-feather/dist/icons/settings';
 import Trash from 'react-feather/dist/icons/trash';
 import User from 'react-feather/dist/icons/user';
+import List from 'react-feather/dist/icons/list';
 
 import { I18nContext } from '../../../contexts/i18n-context';
 import { ModalContext } from '../../../contexts/modalContext';
 import { ITeamSimple } from '../../../types';
-import { isValidationStepEmail, isValidationStepHttpRequest, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepHttpRequest, IValidationStepTeamAdmin, IValidationStepType } from '../../../types/api';
+import { isValidationStepEmail, isValidationStepForm, isValidationStepHttpRequest, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepForm, IValidationStepHttpRequest, IValidationStepTeamAdmin, IValidationStepType } from '../../../types/api';
 import { ITenant, ITenantFull } from '../../../types/tenant';
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
@@ -22,11 +23,11 @@ import { Help } from '../apikeys/TeamApiKeysForApi';
 
 type MotivationFormProps = {
   saveMotivation: (m: { schema: object; formatter: string }) => void;
-  value: IValidationStepTeamAdmin;
+  value: IValidationStepForm;
 };
 
 const MotivationForm = (props: MotivationFormProps) => {
-  const [schema, setSchema] = useState<string | object>(
+  const [schema, setSchema] = useState<string | Schema>(
     props.value.schema || '{}'
   );
   const [realSchema, setRealSchema] = useState<any>(props.value.schema || {});
@@ -211,6 +212,18 @@ const ValidationStep = (props: ValidationStepProps) => {
         </span>
       </div>
     );
+  } else if (isValidationStepForm(step)) {
+    return (
+      <div className="d-flex flex-column validation-step">
+        <span className="validation-step__index">
+          {String(props.index).padStart(2, '0')}
+        </span>
+        <span className="validation-step__name">{step.title}</span>
+        <span className="validation-step__type">
+          <List />
+        </span>
+      </div>
+    )
   } else {
     return <></>;
   }
@@ -313,12 +326,11 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           },
           actionLabel: translate('Create'),
         });
-      case 'teamAdmin': {
-        const step: IValidationStepTeamAdmin = {
-          type: 'teamAdmin',
-          team: props.team._id,
+      case 'form': {
+        const step: IValidationStepForm = {
+          type: 'form',
           id: nanoid(32),
-          title: 'Admin',
+          title: 'Form',
           schema: {
             motivation: {
               type: type.string,
@@ -334,6 +346,20 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
         })
         return close();
       }
+      case 'teamAdmin': {
+        const step: IValidationStepTeamAdmin = {
+          type: 'teamAdmin',
+          team: props.team._id,
+          id: nanoid(32),
+          title: 'Admin',
+        };
+        setDraft({
+          ...draft,
+          subscriptionProcess: [step, ...draft.subscriptionProcess],
+        })
+        return close();
+      }
+
       case 'httpRequest': {
         const step: IValidationStepHttpRequest = {
           type: 'httpRequest',
@@ -357,7 +383,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
               type: type.string,
               constraints: [
                 constraints.required(translate('constraints.required.value')),
-                constraints.url(translate('constraints.matches.url')),
+                // constraints.url(translate('constraints.matches.url')),
               ],
             },
             Headers: {
@@ -423,7 +449,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           type: type.string,
           constraints: [
             constraints.required(translate('constraints.required.value')),
-            constraints.url(translate('constraints.matches.url')),
+            // constraints.url(translate('constraints.matches.url')),
           ],
         },
         Headers: {
@@ -451,8 +477,11 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
     const alreadyStepAdmin = draft.subscriptionProcess.some(
       isValidationStepTeamAdmin
     );
+    const alreadyStepForm = draft.subscriptionProcess.some(
+      isValidationStepForm
+    );
 
-    const options = addArrayIf(
+    const options = addArrayIf(!alreadyStepForm, addArrayIf(
       !alreadyStepAdmin,
       [
         { value: 'email', label: translate('subscription.process.email') },
@@ -465,7 +494,10 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
         value: 'teamAdmin',
         label: translate('subscription.process.team.admin'),
       }
-    );
+    ), {
+      value: 'form',
+      label: translate('subscription.process.form'),
+    })
 
     openFormModal({
       title: translate('subscription.process.creation.title'),
@@ -576,7 +608,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                         ) : (
                           <></>
                         )}
-                        {isValidationStepTeamAdmin(item) ? (
+                        {isValidationStepForm(item) ? (
                           <button
                             className="btn btn-sm btn-outline-info"
                             onClick={() =>

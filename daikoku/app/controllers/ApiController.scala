@@ -707,7 +707,7 @@ class ApiController(
             case UserLevel.User => JsArray(filteredPlans.map(p => p.asJson.as[JsObject] - "subscriptionProcess" - "testing" +
               ("testing" -> p.testing.map(_.asSafeJson).getOrElse(Json.obj())) +
               ("subscriptionProcess" -> JsArray(p.subscriptionProcess.map {
-                case process@ValidationStep.TeamAdmin(id, team, title, schema, formatter) => process.asJson
+                case process@ValidationStep.Form(id, title, schema, formatter) => process.asJson
                 case process => Json.obj("name" -> process.name)
               }))))
             case UserLevel.Guest if ctx.tenant.apiReferenceHideForGuest.getOrElse(true) => JsArray(filteredPlans.map(_.asJson.as[JsObject] - "otoroshiTarget" - "documentation" - "SubscriptionProcess" - "testing" - "swagger"))

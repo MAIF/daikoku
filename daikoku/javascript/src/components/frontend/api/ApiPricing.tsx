@@ -24,6 +24,7 @@ import {
   isError,
   ISubscription,
   ISubscriptionDemand,
+  isValidationStepForm,
   isValidationStepTeamAdmin,
   ITeamSimple,
   ITenantFull,
@@ -710,13 +711,13 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       plan: IUsagePlan,
       apiKey?: ISubscription
     ) => {
-      const adminStep = plan.subscriptionProcess.find((s) =>
-        isValidationStepTeamAdmin(s)
+      const formStep = plan.subscriptionProcess.find((s) =>
+        isValidationStepForm(s)
       );
-      if (adminStep && isValidationStepTeamAdmin(adminStep)) {
+      if (formStep) {
         openFormModal<any>({
           title: translate('motivations.modal.title'),
-          schema: adminStep.schema,
+          schema: formStep.schema,
           onSubmit: (motivation: object) =>
             props.askForApikeys({ team, plan, apiKey, motivation }),
           actionLabel: translate('Send'),

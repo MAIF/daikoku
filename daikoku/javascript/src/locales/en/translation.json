@@ -1252,6 +1252,7 @@
     "subscription.process.creation.title": "Validation step creation",
     "subscription.process.type.selection": "Please select a type of validation",
     "subscription.process.team.admin": "Team admin",
+    "subscription.process.form": "Formulaire",
     "subscription.process.email": "Email",
     "subscription.process.add.label": "Add a new step",
     "subscription.process.httpRequest": "HTTP Request",

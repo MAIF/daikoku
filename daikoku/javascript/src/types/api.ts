@@ -161,7 +161,7 @@ export interface ISwagger {
   specificationType: SpecificationType;
 }
 
-export type IValidationStepType = 'teamAdmin' | 'email' | 'payment' | 'httpRequest';
+export type IValidationStepType = 'teamAdmin' | 'email' | 'payment' | 'httpRequest' | 'form';
 
 export interface IValidationStep {
   id: string;
@@ -184,11 +184,14 @@ export function isValidationStepEmail(item: any): item is IValidationStepEmail {
   return (<IValidationStepEmail>item).emails !== undefined;
 }
 
-export interface IValidationStepTeamAdmin extends IValidationStep {
-  team: string;
+export interface IValidationStepForm extends IValidationStep {
   title?: string;
   schema: Schema;
   formatter: string;
+}
+export interface IValidationStepTeamAdmin extends IValidationStep {
+  team: string;
+  title?: string;
 }
 
 export function isValidationStepTeamAdmin(item: any): item is IValidationStepTeamAdmin {
@@ -201,6 +204,10 @@ export function isValidationStepPayment(item: any): item is IValidationStepPayme
 
 export function isValidationStepHttpRequest(item: any): item is IValidationStepHttpRequest {
   return (<IValidationStepHttpRequest>item).url !== undefined;
+}
+
+export function isValidationStepForm(item: any): item is IValidationStepForm {
+  return (<IValidationStepForm>item).schema !== undefined;
 }
 
 export interface IValidationStepPayment extends IValidationStep {

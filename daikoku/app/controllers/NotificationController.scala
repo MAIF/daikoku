@@ -972,9 +972,9 @@ class NotificationController(
                 sd.steps.map(s =>
                   s.copy(step = s.step match {
                     case ValidationStep
-                          .TeamAdmin(id, _, title, schema, formatter) =>
+                          .TeamAdmin(id, _, title) =>
                       ValidationStep
-                        .TeamAdmin(id, newTeam.id, title, schema, formatter)
+                        .TeamAdmin(id, newTeam.id, title)
                     case _ => s.step
                   })
                 )

@@ -616,11 +616,17 @@ object json {
             "title" -> title,
             "message" -> message.map(JsString).getOrElse(JsNull).as[JsValue]
           )
-        case ValidationStep.TeamAdmin(id, team, title, schema, formatter) =>
+        case ValidationStep.TeamAdmin(id, team, title) =>
           Json.obj(
             "type" -> "teamAdmin",
             "id" -> id,
             "team" -> team.asJson,
+            "title" -> title,
+          )
+        case ValidationStep.Form(id, title, schema, formatter) =>
+          Json.obj(
+            "type" -> "form",
+            "id" -> id,
             "title" -> title,
             "schema" -> schema.getOrElse(JsNull).as[JsValue],
             "formatter" -> formatter.map(JsString).getOrElse(JsNull).as[JsValue]
@@ -658,6 +664,13 @@ object json {
             ValidationStep.TeamAdmin(
               id = (json \ "id").as[String],
               team = (json \ "team").as(TeamIdFormat),
+              title = (json \ "title").as[String]
+            )
+          )
+        case "form" =>
+          JsSuccess(
+            ValidationStep.Form(
+              id = (json \ "id").as[String],
               title = (json \ "title").as[String],
               schema = (json \ "schema")
                 .asOpt[JsObject]
