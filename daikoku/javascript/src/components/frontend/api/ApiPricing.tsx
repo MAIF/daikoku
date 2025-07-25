@@ -1120,8 +1120,9 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     const editProcess = () => openRightPanel({
       title: translate("api.pricings.subscription.process.panel.title"),
       content: <SubscriptionProcessEditor
-        savePlan={plan => Promise.resolve(props.savePlan(plan))}
-        plan={props.plan}
+        save={updatedProcess => Promise.resolve(props.savePlan({...plan, subscriptionProcess: updatedProcess}))}
+        // save={plan => Promise.resolve(props.savePlan(plan))}
+        process={props.plan.subscriptionProcess}
         team={props.ownerTeam}
         tenant={tenant}
       />

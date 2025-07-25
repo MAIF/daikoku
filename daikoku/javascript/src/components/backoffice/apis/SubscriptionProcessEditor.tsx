@@ -232,8 +232,8 @@ const ValidationStep = (props: ValidationStepProps) => {
 type EmailOption = { option: 'all' | 'oneOf' };
 
 type SubProcessProps = {
-  savePlan: (plan: IUsagePlan) => Promise<void>;
-  plan: IUsagePlan;
+  save: (process: Array<IValidationStep>) => Promise<void>;
+  process: Array<IValidationStep>;
   team: ITeamSimple;
   tenant: ITenant;
 };
@@ -241,7 +241,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
   const { translate } = useContext(I18nContext);
   const { openCustomModal, openFormModal, close } = useContext(ModalContext);
 
-  const [draft, setDraft] = useState(props.plan)
+  const [draft, setDraft] = useState(props.process)
 
   const editProcess = (name: IValidationStepType, index: number) => {
     //todo: use the index !!
@@ -292,14 +292,11 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                 id: nanoid(32),
                 title: data.title,
               };
-              setDraft({
-                ...draft,
-                subscriptionProcess: insertArrayIndex(
+              setDraft(insertArrayIndex(
                   { ...step, id: nanoid(32) },
-                  draft.subscriptionProcess,
+                  draft,
                   index
-                ),
-              });
+                ));
             } else {
               const steps: Array<IValidationStepEmail> = data.emails.map(
                 (email) => ({
@@ -312,9 +309,9 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
               );
               const subscriptionProcess = steps.reduce(
                 (process, step) => insertArrayIndex(step, process, index),
-                draft.subscriptionProcess
+                draft
               );
-              setDraft({ ...draft, subscriptionProcess });
+              setDraft(subscriptionProcess);
             }
           },
           options: {
@@ -340,10 +337,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           },
           formatter: '[[motivation]]',
         };
-        setDraft({
-          ...draft,
-          subscriptionProcess: [step, ...draft.subscriptionProcess],
-        })
+        setDraft([step, ...draft] )
         return close();
       }
       case 'teamAdmin': {
@@ -353,10 +347,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           id: nanoid(32),
           title: 'Admin',
         };
-        setDraft({
-          ...draft,
-          subscriptionProcess: [step, ...draft.subscriptionProcess],
-        })
+        setDraft([step, ...draft])
         return close();
       }
 
@@ -395,10 +386,10 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           onSubmit: (data: IValidationStepHttpRequest) => {
             const subscriptionProcess = insertArrayIndex(
               data,
-              draft.subscriptionProcess,
+              draft,
               index
             );
-            setDraft({ ...draft, subscriptionProcess });
+            setDraft(subscriptionProcess);
           },
           actionLabel: translate('Create'),
         });
@@ -420,15 +411,12 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
         },
       },
       onSubmit: (data: IValidationStepEmail) => {
-        setDraft({
-          ...draft,
-          subscriptionProcess: draft.subscriptionProcess.map((p) => {
+        setDraft(draft.map((p) => {
             if (p.id === data.id) {
               return data;
             }
             return p;
-          }),
-        });
+          }));
       },
       actionLabel: translate('Update'),
       value,
@@ -457,15 +445,12 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
         },
       },
       onSubmit: (data: IValidationStepHttpRequest) => {
-        setDraft({
-          ...draft,
-          subscriptionProcess: draft.subscriptionProcess.map((p) => {
+        setDraft(draft.map((p) => {
             if (p.id === data.id) {
               return data;
             }
             return p;
-          }),
-        });
+          }));
       },
       actionLabel: translate('Update'),
       value,
@@ -474,10 +459,10 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
 
   //todo
   const addProcess = (index: number) => {
-    const alreadyStepAdmin = draft.subscriptionProcess.some(
+    const alreadyStepAdmin = draft.some(
       isValidationStepTeamAdmin
     );
-    const alreadyStepForm = draft.subscriptionProcess.some(
+    const alreadyStepForm = draft.some(
       isValidationStepForm
     );
 
@@ -516,10 +501,10 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
   };
 
   const deleteStep = (deletedStepId: UniqueIdentifier) => {
-    const subscriptionProcess = draft.subscriptionProcess.filter(
+    const subscriptionProcess = draft.filter(
       (step) => step.id !== deletedStepId
     );
-    setDraft({ ...draft, subscriptionProcess });
+    setDraft(subscriptionProcess );
   };
 
   // if (!draft.subscriptionProcess.length) {
@@ -539,7 +524,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
   return (
     <div>
       <div className="d-flex flex-row align-items-center">
-        {!!draft.subscriptionProcess.length && (
+        {!!draft.length && (
           <button
             className="btn btn-outline-primary sortable-list-btn"
             onClick={() => addProcess(0)}
@@ -547,7 +532,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
             <Plus />
           </button>
         )}
-        {!draft.subscriptionProcess.length && (
+        {!draft.length && (
           <div className="d-flex flex-column align-items-center">
             <div> {translate('api.pricings.no.step.explanation')}</div>
             <button
@@ -559,9 +544,9 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           </div>
         )}
         <SortableList
-          items={draft.subscriptionProcess}
+          items={draft}
           onChange={(subscriptionProcess) =>
-            setDraft({ ...draft, subscriptionProcess })
+            setDraft(subscriptionProcess)
           }
           className="flex-grow-1"
           renderItem={(item, idx) => {
@@ -622,7 +607,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                                       const updatedPlan = {
                                         ...draft,
                                         subscriptionProcess:
-                                          draft.subscriptionProcess.map(
+                                          draft.map(
                                             (s) => (s.id === step.id ? step : s)
                                           ),
                                       };
@@ -666,8 +651,8 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           }}
         />
       </div>
-      {(!!draft.subscriptionProcess.length || !!props.plan.subscriptionProcess.length) && (
-        <button className='btn btn-outline-success' onClick={() => props.savePlan(draft)}>save</button>
+      {(!!draft.length || !!props.process.length) && (
+        <button className='btn btn-outline-success' onClick={() => props.save(draft)}>save</button>
       )}
     </div>
   );

@@ -436,7 +436,8 @@ case class Tenant(
     thirdPartyPaymentSettings: Seq[ThirdPartyPaymentSettings] = Seq.empty,
     display: TenantDisplay = TenantDisplay.Default,
     environments: Set[String] = Set.empty,
-    clientNamePattern: Option[String] = None
+    clientNamePattern: Option[String] = None,
+    accountCreationProcess: Seq[ValidationStep] = Seq.empty
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
