@@ -1,18 +1,52 @@
 import { useContext } from 'react';
 import { Form, Schema, type } from '@maif/react-forms';
-import { UseMutationResult } from '@tanstack/react-query';
+import { UseMutationResult, useQuery } from '@tanstack/react-query';
 
 import { I18nContext } from '../../../../contexts';
-import { Display, ITenant, ITenantFull } from '../../../../types';
+import { Display, ITeamFullGql, ITeamSimple, ITenant, ITenantFull } from '../../../../types';
 import { ModalContext } from '../../../../contexts';
 import { SubscriptionProcessEditor } from '../../../backoffice/apis/SubscriptionProcessEditor';
+import { GlobalContext } from '../../../../contexts/globalContext';
+import { getApolloContext, gql } from '@apollo/client';
 
 export const SecurityForm = (props: {
-  tenant?: ITenantFull;
+  tenant: ITenantFull;
   updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown>;
 }) => {
   const { translate } = useContext(I18nContext);
   const { alert, openRightPanel } = useContext(ModalContext);
+  const { client } = useContext(getApolloContext());
+
+  const teamQuery = useQuery<ITeamFullGql>({
+    queryKey: ["admin-team"],
+    queryFn: ({ queryKey }) => {
+      return client!.query<{ teamsPagination: { teams: Array<ITeamFullGql>, total: number } }>({
+        query: gql(`
+        query getAllteams ($research: String, $limit: Int, $offset: Int) {
+          teamsPagination (research: $research, limit: $limit, offset: $offset){
+            teams {
+              _id
+              type
+            }
+            total
+          }
+        }`),
+        fetchPolicy: "no-cache",
+        variables: {
+          research: "admin-team",
+          limit: 1,
+          offset: 0
+        }
+      }).then(({ data: { teamsPagination } }) => {
+
+        return teamsPagination.teams[0]
+      })
+    },
+    enabled: !!client,
+    gcTime: 0
+  })
+
+  //todo: get tenant admin team
 
   const schema: Schema = {
     isPrivate: {
@@ -55,15 +89,16 @@ export const SecurityForm = (props: {
     }
   }
 
-  // const editProcess = () => openRightPanel({
-  //       title: translate("api.pricings.subscription.process.panel.title"),
-  //       content: <SubscriptionProcessEditor
-  //         savePlan={plan => Promise.resolve(props.savePlan(plan))}
-  //         plan={props.plan}
-  //         team={props.ownerTeam}
-  //         tenant={props.tenant as ITenant}
-  //       />
-  //     })
+  const _tenant = props.tenant
+  const editProcess = () => openRightPanel({
+    title: translate("api.pricings.subscription.process.panel.title"),
+    content: <SubscriptionProcessEditor
+      save={accountCreationProcess => props.updateTenant.mutateAsync({ ..._tenant, accountCreationProcess })}
+      process={props.tenant?.accountCreationProcess ?? []}
+      team={teamQuery.data?._id!}
+      tenant={props.tenant as ITenant}
+    />
+  })
 
   return (
     <div>
@@ -79,7 +114,8 @@ export const SecurityForm = (props: {
           },
         }}
       />
-      {/* <button className='btn btn-outline-success' onClick={() => ope}>setup account process</button> */}
+      <button className='btn btn-outline-success' onClick={() => editProcess()}>setup account process</button>
     </div>
   );
+
 };

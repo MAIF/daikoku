@@ -234,7 +234,7 @@ type EmailOption = { option: 'all' | 'oneOf' };
 type SubProcessProps = {
   save: (process: Array<IValidationStep>) => Promise<void>;
   process: Array<IValidationStep>;
-  team: ITeamSimple;
+  team: string;
   tenant: ITenant;
 };
 export const SubscriptionProcessEditor = (props: SubProcessProps) => {
@@ -343,7 +343,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
       case 'teamAdmin': {
         const step: IValidationStepTeamAdmin = {
           type: 'teamAdmin',
-          team: props.team._id,
+          team: props.team,
           id: nanoid(32),
           title: 'Admin',
         };

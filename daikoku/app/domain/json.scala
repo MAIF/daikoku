@@ -1728,7 +1728,8 @@ object json {
               .asOpt[Set[String]]
               .getOrElse(Set.empty),
             clientNamePattern = (json \ "clientNamePattern")
-              .asOpt[String]
+              .asOpt[String],
+            accountCreationProcess = (json \ "accountCreationProcess").asOpt(SeqValidationStepFormat).getOrElse(Seq.empty)
           )
         )
       } recover {
@@ -1805,7 +1806,10 @@ object json {
           .writes(o.thirdPartyPaymentSettings),
         "display" -> TenantDisplayFormat.writes(o.display),
         "environments" -> JsArray(o.environments.map(JsString.apply).toSeq),
-        "clientNamePattern" -> o.clientNamePattern
+        "clientNamePattern" -> o.clientNamePattern,
+        "accountCreationProcess" -> SeqValidationStepFormat.writes(
+          o.accountCreationProcess
+        )
       )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
