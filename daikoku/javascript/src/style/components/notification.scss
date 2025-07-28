@@ -138,6 +138,7 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 
         &:disabled {
           color: color-mix(in srgb, variables.$level1_text-color 50%, #fff);
+          cursor: not-allowed;
         }
 
         &:hover {
