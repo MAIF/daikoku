@@ -39,8 +39,8 @@ export interface INotification {
   _tenant: string;
   action: any;
   date: string;
-  notificationType: string;
-  sender: IUser;
-  status: { status: string; date: string };
+  notificationType: 'AcceptOnly' | 'AcceptOrReject';
+  sender: { id?: string; name: string; email: string };
+  status: { status: 'Pending' } | { status: 'Accepted' | 'Rejected'; date?: string };
   team: string;
 }

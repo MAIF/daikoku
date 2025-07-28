@@ -7,6 +7,7 @@ import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.ApiAccess
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.libs.json._
@@ -1002,44 +1003,182 @@ object CommonServices {
     }
   }
 
-  def getMyNotification(page: Int, pageSize: Int)(implicit
+  def getMyNotification(
+      filter: JsArray,
+      sort: JsArray,
+      limit: Int,
+      offset: Int
+  )(implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
       ec: ExecutionContext
   ) = {
     _PublicUserAccess(
       AuditTrailEvent(
-        s"@{user.name} has accessed to his count of unread notifications"
+        s"@{user.name} has accessed to his notifications"
       )
     )(ctx) {
-      for {
-        myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
-        notificationRepo <-
-          env.dataStore.notificationRepo
-            .forTenantF(ctx.tenant.id)
-        notifications <- notificationRepo.findWithPagination(
-          Json.obj(
-            "_deleted" -> false,
-            "$or" -> Json.arr(
-              Json.obj(
-                "team" -> Json.obj(
-                  "$in" -> JsArray(
-                    myTeams
-                      .filter(t => t.admins().contains(ctx.user.id))
-                      .map(_.id.asJson)
-                  )
-                )
-              ),
-              Json.obj("action.user" -> ctx.user.id.asJson)
+      val CTE = s"""
+               |WITH my_teams as (SELECT *
+               |                  FROM teams
+               |                  WHERE _deleted IS FALSE AND content -> 'users' @> '[{"userId": "${ctx.user.id.value}"}]')
+               |                  """
+
+      val actionTypes =
+        getFiltervalue[List[String]](filter, "actionType")
+          .getOrElse(List.empty)
+          .toArray
+
+      val teams =
+        getFiltervalue[List[String]](filter, "team")
+          .getOrElse(List.empty)
+          .toArray
+
+      val types =
+        getFiltervalue[List[String]](filter, "type")
+          .getOrElse(List.empty)
+          .toArray
+
+      val apis =
+        getFiltervalue[List[String]](filter, "api")
+          .getOrElse(List.empty)
+          .toArray
+
+      val unreadOnly =
+        getFiltervalue[Boolean](filter, "unreadOnly").getOrElse(false)
+
+      (for {
+        notifications <- EitherT.fromOptionF(
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneRaw(
+              s"""
+               |$CTE,
+               |filtered_notifs as (
+               |  SELECT
+               |    n.content,
+               |    count(1) OVER() AS total_filtered
+               |  FROM notifications n
+               |           LEFT JOIN my_teams t ON t._deleted IS FALSE AND n.content ->> 'team' = t._id::text
+               |           LEFT JOIN apis a ON a._deleted IS FALSE AND ((a._id = n.content -> 'action' ->> 'api') or ((a.content ->> 'name') = (n.content -> 'action' ->> 'apiName')))
+               |  WHERE n._deleted IS FALSE AND (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |      OR n.content ->> 'team' = t._id::text)
+               |    AND CASE
+               |            WHEN array_length($$1::text[], 1) IS NULL THEN true
+               |            ELSE n.content ->> 'notificationType' = ANY ($$1::text[])
+               |    END
+               |    AND CASE
+               |            WHEN array_length($$2::text[], 1) IS NULL THEN true
+               |            ELSE t._id = ANY ($$2::text[])
+               |    END
+               |    AND CASE
+               |            WHEN array_length($$3::text[], 1) IS NULL THEN true
+               |            ELSE n.content -> 'action' ->> 'type' = ANY ($$3::text[])
+               |    END
+               |    AND CASE
+               |            WHEN array_length($$4::text[], 1) IS NULL THEN true
+               |            ELSE a._id = ANY ($$4::text[])
+               |    END
+               |    AND ($$5 IS FALSE or n.content -> 'status' ->> 'status' = 'Pending')
+               |  ORDER BY n.content ->> 'date' DESC
+               |  LIMIT $$6 OFFSET $$7
+               |)
+               |
+               |SELECT json_build_object(
+               |  'notifications', json_agg(to_jsonb(filtered_notifs.content)),
+               |  'total_filtered', COALESCE(max(total_filtered), 0)
+               |) AS result
+               |FROM filtered_notifs;
+               |""".stripMargin,
+              "result",
+              Seq(
+                actionTypes,
+                teams,
+                types,
+                apis,
+                java.lang.Boolean.valueOf(unreadOnly),
+                java.lang.Integer.valueOf(limit),
+                java.lang.Integer.valueOf(offset)
+              )
             ),
-            "status.status" -> NotificationStatus.Pending.toString
-          ),
-          page,
-          pageSize
+          AppError.InternalServerError("SQL request for notifications failed")
+        )
+        totals <- EitherT.fromOptionF(
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneRaw(
+              s"""
+               |$CTE,
+               |     base AS (SELECT t.content ->> 'name', n.content -> 'action' ->> 'type', n.*
+               |              FROM notifications n
+               |                       LEFT JOIN my_teams t ON n.content ->> 'team' = t._id::text
+               |              WHERE n._deleted IS FALSE AND (n.content -> 'action' ->> 'user' = '${ctx.user.id.value}'
+               |                  OR n.content ->> 'team' = t._id::text)
+               |                AND ($$1 IS FALSE OR n.content -> 'status' ->> 'status' = 'Pending')),
+               |     total AS (SELECT COUNT(*) AS total
+               |               FROM base),
+               |     total_by_teams AS (SELECT n.content ->> 'team' AS team, COUNT(*) AS total
+               |                        FROM base n
+               |                        GROUP BY n.content ->> 'team'
+               |                        ORDER BY total DESC),
+               |     total_by_apis AS (SELECT a._id AS api, COUNT(*) AS total
+               |                       FROM base n
+               |                                LEFT JOIN apis a
+               |                                          ON a._deleted IS FALSE AND (
+               |                                              a._id = n.content -> 'action' ->> 'api'
+               |                                                  OR a.content ->> 'name' = n.content -> 'action' ->> 'apiName'
+               |                                                  OR a.content ->> 'name' = n.content -> 'action' ->> 'api'
+               |                                                  OR a.content ->> '_id' = n.content -> 'action' -> 'api' ->> '_id'
+               |                                              )
+               |                       GROUP BY a._id
+               |                       ORDER BY total DESC),
+               |     total_by_types AS (SELECT n.content ->> 'notificationType' AS type, COUNT(*) AS total
+               |                        FROM base n
+               |                        GROUP BY n.content ->> 'notificationType'
+               |                        ORDER BY total DESC),
+               |     total_by_notification_types AS (SELECT n.content -> 'action' ->> 'type' AS type, COUNT(*) AS total
+               |                                     FROM base n
+               |                                     GROUP BY n.content -> 'action' ->> 'type'
+               |                                     ORDER BY total DESC),
+               |     total_selectable AS (SELECT COUNT(*) AS total_selectable
+               |                          FROM base
+               |                          WHERE content ->> 'notificationType' = 'AcceptOnly' AND content -> 'status' ->> 'status' = 'Pending')
+               |
+               |SELECT row_to_json(_.*) as result
+               |from (select (SELECT total FROM total),
+               |             COALESCE((SELECT json_agg(row_to_json(t)) FROM total_by_teams t), '[]'::json)                  AS total_by_teams,
+               |             COALESCE((SELECT json_agg(row_to_json(a)) FROM total_by_apis a),
+               |                      '[]'::json)                                                                           AS total_by_apis,
+               |             COALESCE((SELECT json_agg(row_to_json(nt)) FROM total_by_types nt),
+               |                      '[]'::json)                                                                           AS total_by_types,
+               |             COALESCE((SELECT json_agg(row_to_json(ant)) FROM total_by_notification_types ant),
+               |                      '[]'::json)                                                                           AS total_by_notification_types,
+               |             (SELECT total_selectable FROM total_selectable)) _
+               |  """.stripMargin,
+              "result",
+              Seq(
+                java.lang.Boolean.valueOf(unreadOnly)
+              )
+            ),
+          AppError.InternalServerError(
+            "SQL request for notifications totals failed"
+          )
         )
       } yield {
-        Right(NotificationWithCount(notifications._1, notifications._2))
-      }
+        NotificationWithCount(
+          notifications = (notifications \ "notifications")
+            .asOpt(json.SeqNotificationFormat)
+            .getOrElse(Seq.empty),
+          totalFiltered = (notifications \ "total_filtered").as[Long],
+          total = (totals \ "total").as[Long],
+          totalSelectable = (totals \ "total_selectable").as[Long],
+          totalByTypes = (totals \ "total_by_types").as[JsArray],
+          totalByNotificationTypes =
+            (totals \ "total_by_notification_types").as[JsArray],
+          totalByTeams = (totals \ "total_by_teams").as[JsArray],
+          totalByApis = (totals \ "total_by_apis").as[JsArray]
+        )
+      }).value
     }
   }
 

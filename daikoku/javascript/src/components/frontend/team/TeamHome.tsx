@@ -1,4 +1,3 @@
-import { getApolloContext } from '@apollo/client';
 import { useQuery } from '@tanstack/react-query';
 import { useContext } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -13,17 +12,14 @@ export const TeamHome = () => {
   const navigate = useNavigate();
   const params = useParams();
 
-  const { tenant } = useContext(GlobalContext);
-
-  const { client } = useContext(getApolloContext());
-
+  const { tenant, customGraphQLClient } = useContext(GlobalContext);
 
   const queryTeam = useQuery({ queryKey: ['team'], queryFn: () => Services.team(params.teamId!) });
   const queryMyTeams = useQuery({
     queryKey: ['my-team'],
-    queryFn: () => client!.query<{ myTeams: Array<ITeamSimple> }>({
-      query: Services.graphql.myTeams,
-    })
+    queryFn: () => customGraphQLClient.request<{ myTeams: Array<ITeamSimple> }>(
+      Services.graphql.myTeams,
+    )
   });
   const redirectToApiPage = (apiWithAutho: IApiWithAuthorization) => {
     const api = apiWithAutho.api
@@ -81,7 +77,7 @@ export const TeamHome = () => {
           </div>
         </section>
         <ApiList
-          myTeams={queryMyTeams.data.data.myTeams.map(({
+          myTeams={queryMyTeams.data.myTeams.map(({
             users,
             ...data
           }: any) => ({

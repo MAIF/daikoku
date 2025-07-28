@@ -273,6 +273,40 @@ object NotificationAction {
   case class NewCommentOnIssue(teamId: String, apiName: String, linkTo: String)
       extends NotificationAction
 
+  case class ApiKeyDeletionInformationV2(
+      api: ApiId,
+      clientId: String,
+      subscription: ApiSubscriptionId
+  ) extends NotificationAction
+
+  case class ApiKeyRotationInProgressV2(
+      subscription: ApiSubscriptionId,
+      api: ApiId,
+      plan: UsagePlanId
+  ) extends NotificationAction
+
+  case class ApiKeyRotationEndedV2(
+      subscription: ApiSubscriptionId,
+      api: ApiId,
+      plan: UsagePlanId
+  ) extends NotificationAction
+
+  case class ApiKeyRefreshV2(
+      subscription: ApiSubscriptionId,
+      api: ApiId,
+      plan: UsagePlanId,
+      message: Option[String] = None
+  ) extends NotificationAction
+
+  case class NewPostPublishedV2(api: ApiId, post: ApiPostId)
+      extends NotificationAction
+
+  case class NewIssueOpenV2(api: ApiId, issue: ApiIssueId)
+      extends NotificationAction
+
+  case class NewCommentOnIssueV2(api: ApiId, issue: ApiIssueId, user: UserId)
+      extends NotificationAction
+
   case class TransferApiOwnership(team: TeamId, api: ApiId)
       extends NotificationAction
 

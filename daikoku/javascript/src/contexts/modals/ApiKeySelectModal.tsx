@@ -38,7 +38,7 @@ export const ApiKeySelectModal = (
   return (
     <div className="modal-content">
       <div className="modal-header">
-        <h5 className="modal-title">
+        <h5 className="modal-title" id="modal-title">
           {translate('apikey_select_modal.title')}
         </h5>
         <button
@@ -93,7 +93,7 @@ const ApiKeysView = (props: ApiKeysViewProps) => {
   const { translate } = useContext(I18nContext);
   return (
     <div>
-      <h5 className="modal-title">
+      <h5 className="modal-title" id="modal-title">
         {translate('apikey_select_modal.select_your_api_key')}
       </h5>
       <div className="team-selection__container">

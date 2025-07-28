@@ -3,7 +3,7 @@ import { md5 } from 'js-md5';
 import { ChangeEvent, useContext, useEffect, useState } from 'react';
 import { toast } from 'sonner';
 
-import { I18nContext, ModalContext, useUserBackOffice } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { I2FAQrCode, ITenant, IUser, isError } from '../../../types';
@@ -376,8 +376,6 @@ const PictureUpload = (props: PictureUploadProps) => {
 };
 
 export const MyProfile = () => {
-  useUserBackOffice();
-
   const [user, setUser] = useState<IUser>();
   const [tab, setTab] = useState('infos');
 

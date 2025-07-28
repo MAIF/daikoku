@@ -1,4 +1,3 @@
-import { getApolloContext, gql } from "@apollo/client";
 import { constraints, format, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import debounce from "lodash/debounce";
@@ -15,14 +14,15 @@ import * as Services from '../../../services';
 import { IAuthorizedEntities, IOtoroshiSettings, ISimpleOtoroshiSettings, ITeamFullGql, ITeamSimple, ResponseError, isError } from '../../../types';
 import { teamSchema } from '../../backoffice/teams/TeamEdit';
 import { AvatarWithAction, Can, tenant as TENANT, manage } from '../../utils';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 export const TeamList = () => {
   const { tenant } = useTenantBackOffice();
 
   const { translate, Translation } = useContext(I18nContext);
-  const { confirm, openFormModal, alert } = useContext(ModalContext);
+  const { openFormModal, alert } = useContext(ModalContext);
   const queryClient = useQueryClient();
-  const { client } = useContext(getApolloContext());
+  const { customGraphQLClient } = useContext(GlobalContext);
 
   const [search, setSearch] = useState<string>("");
   const limit = 11;
@@ -34,9 +34,8 @@ export const TeamList = () => {
       limit,
       offset],
     queryFn: ({ queryKey }) => {
-      return client!.query<{ teamsPagination: { teams: Array<ITeamFullGql>, total: number } }>({
-        query: gql(`
-        query getAllteams ($research: String, $limit: Int, $offset: Int) {
+      return customGraphQLClient.request<{ teamsPagination: { teams: Array<ITeamFullGql>, total: number } }>(
+        `query getAllteams ($research: String, $limit: Int, $offset: Int) {
           teamsPagination (research: $research, limit: $limit, offset: $offset){
             teams {
               _id
@@ -47,19 +46,16 @@ export const TeamList = () => {
             }
             total
           }
-        }`),
-        fetchPolicy: "no-cache",
-        variables: {
+        }`,
+        {
           research: queryKey[1],
           limit: queryKey[2],
           offset: queryKey[3]
         }
-      }).then(({ data: { teamsPagination } }) => {
-
+      ).then(({ teamsPagination }) => {
         return teamsPagination
       })
     },
-    enabled: !!client,
     gcTime: 0
   })
 

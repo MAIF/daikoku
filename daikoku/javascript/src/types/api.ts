@@ -166,6 +166,8 @@ export type IValidationStepType = 'teamAdmin' | 'email' | 'payment' | 'httpReque
 export interface IValidationStep {
   id: string;
   type: IValidationStepType;
+  name?: IValidationStepType;
+  title?: string;
 }
 
 export interface IValidationStepEmail extends IValidationStep {
@@ -514,7 +516,7 @@ export interface IApiPost {
   content: string;
 }
 
-type ISubscriptionDemandState =
+export type ISubscriptionDemandState =
   | 'accepted'
   | 'refused'
   | 'canceled'
@@ -522,7 +524,7 @@ type ISubscriptionDemandState =
   | 'waiting'
   | 'blocked';
 
-interface SubscriptionDemandStep {
+export interface SubscriptionDemandStep {
   id: string;
   state: ISubscriptionDemandState;
   step: IValidationStep;

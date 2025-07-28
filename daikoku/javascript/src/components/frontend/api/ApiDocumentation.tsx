@@ -1,5 +1,4 @@
 /* eslint-disable react/display-name */
-import { getApolloContext, gql } from '@apollo/client';
 import { constraints, Flow, Form, format, Schema, type } from '@maif/react-forms';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import asciidoctor from 'asciidoctor';
@@ -15,8 +14,7 @@ import { I18nContext, ModalContext } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { IApi, IDocPage, IDocumentation, IDocumentationPages, isApi, isError, isUsagePlan, ITeamSimple, IUsagePlan, IWithDocumentation, ResponseError } from '../../../types';
-import { IPage } from '../../adminbackoffice/cms';
+import { IApi, ICmsPageGQL, IDocPage, IDocumentation, IDocumentationPages, isApi, isError, isUsagePlan, ITeamSimple, IUsagePlan, IWithDocumentation, ResponseError } from '../../../types';
 import { AssetButton, longLoremIpsum, loremIpsum, TeamApiDocumentation } from '../../backoffice/apis/TeamApiDocumentation';
 import { api as API, BeautifulTitle, Can, manage, Spinner } from '../../utils';
 import { CmsViewer } from '../CmsViewer';
@@ -143,7 +141,7 @@ const ApiDocPage = (props: ApiDocPageProps) => {
 export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumentationProps<T>) => {
   const { Translation, translate } = useContext(I18nContext);
   const { openRightPanel, openApiDocumentationSelectModal, closeRightPanel } = useContext(ModalContext);
-  const { client } = useContext(getApolloContext());
+  const { customGraphQLClient } = useContext(GlobalContext);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [view, setView] = useState<'documentation' | 'update'>(() => {
@@ -157,25 +155,10 @@ export const ApiDocumentation = <T extends IWithDocumentation>(props: ApiDocumen
 
   const [pageId, setPageId] = useState(searchParams.get('page') || props.documentation?.pages[0]?.id);
 
-  const cmsPagesQuery = () => ({
-    query: gql`
-      query CmsPages {
-        pages {
-          id
-          name
-          path
-          contentType
-          lastPublishedDate
-          metadata
-        }
-      }
-    `,
-  })
 
-
-  const getCmsPages = (): Promise<Array<IPage>> =>
-    client!.query(cmsPagesQuery())
-      .then(res => res.data.pages as Array<IPage>)
+  const getCmsPages = (): Promise<Array<ICmsPageGQL>> =>
+    customGraphQLClient.request<{ pages: Array<ICmsPageGQL> }>(Services.graphql.cmsPages)
+      .then(res => res.pages)
 
   const flattenDoc = (pages?: IDocumentationPages): Array<string> => {
     if (!pages) {

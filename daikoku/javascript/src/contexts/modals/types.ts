@@ -174,13 +174,12 @@ type NotificationGQL = {
     };
   };
 };
-export type SubscriptionMetadataModalProps<T extends IWithTesting> = {
+export type SubscriptionMetadataModalProps<T> = {
   creationMode?: boolean;
   api?: string;
   plan?: string;
   save: ((sub: CustomSubscriptionData) => Promise<void>) | ((sub: CustomSubscriptionData) => void);
   team?: ITeamSimple | LimitedTeam;
-  notification?: INotification | NotificationGQL;
   config?: ITestingConfig;
   subscription?: ISubscriptionCustomization;
   subscriptionDemand?: ISubscriptionDemand;

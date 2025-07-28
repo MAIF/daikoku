@@ -1,5 +1,12 @@
 import { IApiSubscriptionGql } from '../components';
-import { ApiState, IApi, IAuthorizedEntities, IIssuesTag } from './api';
+import {
+  ApiState,
+  IApi,
+  IAuthorizedEntities,
+  IIssuesTag,
+  ISubscriptionDemandState,
+  IValidationStep,
+} from './api';
 import { ITeamSimple, IUser, TeamPermission, TeamUser } from './team';
 import { ITenant } from './tenant';
 
@@ -104,4 +111,36 @@ export interface IAuditTrailEventGQL {
     email: string;
     isDaikokuAdmin: boolean;
   };
+}
+
+export interface ICmsPageGQL {
+  id: string;
+  name: string;
+  path: string;
+  body: string;
+  exact: boolean;
+  visible: boolean;
+  authenticated: boolean;
+  metadata: object;
+  contentType: string;
+  tags: String[];
+  lastPublishedDate: number;
+}
+
+export interface ISubscriptionDemandGQL {
+  _id: string;
+  api: IApiGQL;
+  plan: IUsagePlanGQL;
+  steps: Array<{
+    id: string;
+    state: ISubscriptionDemandState;
+    step: IValidationStep;
+  }>;
+  state: string;
+  team: ITeamFullGql;
+  from: {
+    name: string;
+  };
+  date: number;
+  motivation?: string;
 }

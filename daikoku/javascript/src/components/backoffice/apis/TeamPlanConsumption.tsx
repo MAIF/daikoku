@@ -1,4 +1,3 @@
-import { getApolloContext } from "@apollo/client";
 import { useQuery } from '@tanstack/react-query';
 import { useContext, useEffect } from 'react';
 import { useMatch } from 'react-router-dom';
@@ -8,6 +7,7 @@ import * as Services from '../../../services';
 import { IApi, IGlobalInformations, ITeamSimple, isError } from '../../../types';
 import { formatDate, OtoroshiStatsVizualization, Spinner } from '../../utils';
 import { IgqlConsumption } from "./TeamApiConsumption";
+import { GlobalContext } from '../../../contexts/globalContext';
 
 type TeamPlanConsumptionProps = {
   apiGroup?: boolean,
@@ -16,7 +16,7 @@ type TeamPlanConsumptionProps = {
 }
 export const TeamPlanConsumption = (props: TeamPlanConsumptionProps) => {
   const { translate } = useContext(I18nContext);
-  const { client } = useContext(getApolloContext());
+  const { customGraphQLClient } = useContext(GlobalContext);
 
   const urlMatching = !!props.apiGroup
     ? '/:teamId/settings/apigroups/:apiId/stats/plan/:planId'
@@ -31,7 +31,7 @@ export const TeamPlanConsumption = (props: TeamPlanConsumptionProps) => {
         return translate({ key: 'data.in.plus.hits', replacements: [totalHits] });
       },
       title: translate('Data In'),
-      formatter: (data: Array<IgqlConsumption>) => data.reduce<Array<{date: string, count: number}>>((acc, item: IgqlConsumption) => {
+      formatter: (data: Array<IgqlConsumption>) => data.reduce<Array<{ date: string, count: number }>>((acc, item: IgqlConsumption) => {
         const date = formatDate(item.to, translate('date.locale'), 'DD MMM.');
         const value = acc.find((a) => a.date === date) || { count: 0 };
         return [...acc.filter((a) => a.date !== date), { date, count: value.count + item.globalInformations.hits }];
@@ -103,19 +103,18 @@ export const TeamPlanConsumption = (props: TeamPlanConsumptionProps) => {
       <OtoroshiStatsVizualization
         sync={() => Services.syncApiConsumption(match?.params.apiId, props.currentTeam._id)}
         fetchData={(from: Date, to: Date) =>
-          client!.query<{ apiConsumptions: Array<IgqlConsumption> }>({
-            query: Services.graphql.getApiConsumptions,
-            fetchPolicy: "no-cache",
-            variables: {
+          customGraphQLClient.request<{ apiConsumptions: Array<IgqlConsumption> }>(
+            Services.graphql.getApiConsumptions,
+            {
               apiId: match?.params.apiId,
               teamId: props.currentTeam._id,
               from: from.valueOf(),
               to: to.valueOf(),
               planId: match?.params.planId
-            }
-          }).then(({ data: { apiConsumptions } }) => {
-            return apiConsumptions
-          })
+            })
+            .then(({ apiConsumptions }) => {
+              return apiConsumptions
+            })
         }
         mappers={mappers}
       />
@@ -131,9 +130,10 @@ type PlanInformationsProps = {
 }
 
 const PlanInformations = (props: PlanInformationsProps) => {
-  const planRequest = useQuery({ 
-    queryKey: ['plan'], 
-    queryFn: () => Services.planOfApi(props.currentTeam._id, props.api._id, props.version, props.planId) })
+  const planRequest = useQuery({
+    queryKey: ['plan'],
+    queryFn: () => Services.planOfApi(props.currentTeam._id, props.api._id, props.version, props.planId)
+  })
 
   if (planRequest.isLoading) {
     return <Spinner width="50" height="50" />;

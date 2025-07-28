@@ -1,4 +1,3 @@
-import { getApolloContext, gql } from '@apollo/client';
 import { useQuery } from '@tanstack/react-query';
 import { useContext } from 'react';
 import RefreshCcw from 'react-feather/dist/icons/refresh-ccw';
@@ -8,6 +7,8 @@ import * as Services from '../../../services';
 import { ITeamSimple } from '../../../types';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { Widget } from './widget';
+import { GlobalContext } from '../../../contexts/globalContext';
+import { ITeamSubscriptionDemandsGQL } from './teamDemands';
 
 
 
@@ -16,9 +17,9 @@ type LastDemandsProps = {
 }
 export const LastDemandsExt = (props: LastDemandsProps) => {
   const { translate } = useContext(I18nContext);
-  const { client } = useContext(getApolloContext());
+  const { customGraphQLClient } = useContext(GlobalContext);
 
-  const GET_LAST_DEMANDS = gql`
+  const GET_LAST_DEMANDS = `
     query GetLastDemands($teamId: String!, $limit: Int, $offset: Int) {
       subscriptionDemandsForAdmin(teamId: $teamId , limit: $limit, offset: $offset) {
         total
@@ -54,10 +55,10 @@ export const LastDemandsExt = (props: LastDemandsProps) => {
 
   const { isLoading, isError, data } = useQuery({
     queryKey: ["widget", "widget_last_demands_ext"],
-    queryFn: () => client?.query({
-      query: GET_LAST_DEMANDS,
-      variables: { teamId: props.team._id, offset: 0, limit: 5 }
-    })
+    queryFn: () => customGraphQLClient.request<{ subscriptionDemandsForAdmin: ITeamSubscriptionDemandsGQL }>(
+      GET_LAST_DEMANDS,
+      { teamId: props.team._id, offset: 0, limit: 5 }
+    )
   })
 
   const runProcess = (demandId: string) => {
@@ -68,8 +69,8 @@ export const LastDemandsExt = (props: LastDemandsProps) => {
   return (
     <Widget isLoading={isLoading} isError={isError} size="small" title={translate("widget.demands.ext.title")}>
       <div className='d-flex flex-column'>
-        {data?.data && data.data.subscriptionDemandsForAdmin.total === 0 && <span className='widget-list-default-item'>{translate('widget.demands.no.demands')}</span>}
-        {data?.data && data.data.subscriptionDemandsForAdmin.total > 0 && data.data.subscriptionDemandsForAdmin.subscriptionDemands
+        {data && data.subscriptionDemandsForAdmin.total === 0 && <span className='widget-list-default-item'>{translate('widget.demands.no.demands')}</span>}
+        {data && data.subscriptionDemandsForAdmin.total > 0 && data.subscriptionDemandsForAdmin.subscriptionDemands
           .map((d: any) => {
 
             const actualStep = d.steps.find(s => ['inProgress', 'waiting'].includes(s.state))

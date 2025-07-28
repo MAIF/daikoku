@@ -10,6 +10,7 @@ import { IApiAuthoWithCount, isError, ITeamSimple } from '../../../types';
 import { MonthPicker } from '../../inputs/monthPicker';
 import { api, Can, formatCurrency, formatDate, read, Spinner } from '../../utils';
 import { ApiTotal, NoData, PriceCartridge, TheadBillingContainer } from './components';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 
 type TeamIncomeGql = {
@@ -33,9 +34,7 @@ type TeamIncomeGql = {
 export const TeamIncome = () => {
   const { isLoading, currentTeam, error } = useTeamBackOffice();
   const { translate, Translation } = useContext(I18nContext);
-
-  const graphqlEndpoint = `${window.location.origin}/api/search`;
-  const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
+  const { customGraphQLClient } = useContext(GlobalContext);
 
   const [date, setDate] = useState(new Date())
   const [state, setState] = useState<{

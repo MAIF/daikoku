@@ -1062,23 +1062,24 @@ class ApiService(
               .forTenant(tenant.id)
               .save(updatedSubscription)
           )
+          notification = Notification(
+            id = NotificationId(IdGenerator.token(32)),
+            tenant = tenant.id,
+            team = Some(subscription.team),
+            sender = user.asNotificationSender,
+            action = NotificationAction
+              .ApiKeyRefreshV2(
+                subscription = subscription.id,
+                api = api.id,
+                plan = plan.id
+              ),
+            notificationType = NotificationType.AcceptOnly
+          )
           _ <- EitherT.liftF(
             env.dataStore.notificationRepo
               .forTenant(tenant.id)
               .save(
-                Notification(
-                  id = NotificationId(IdGenerator.token(32)),
-                  tenant = tenant.id,
-                  team = Some(subscription.team),
-                  sender = user.asNotificationSender,
-                  action = NotificationAction
-                    .ApiKeyRefresh(
-                      subscription.customName.getOrElse(apiKey.clientName),
-                      api.name,
-                      plan.customName
-                    ),
-                  notificationType = NotificationType.AcceptOnly
-                )
+                notification
               )
           )
           _ <- EitherT.liftF(Future.sequence(admins.map(admin => {
@@ -1413,7 +1414,7 @@ class ApiService(
 
   def deleteApiSubscriptionsAsFlow(
       tenant: Tenant,
-      apiOrGroupName: String,
+      apiOrGroupId: ApiId,
       user: User
   ): Flow[(UsagePlan, Seq[ApiSubscription]), UsagePlan, NotUsed] =
     Flow[(UsagePlan, Seq[ApiSubscription])]
@@ -1429,9 +1430,10 @@ class ApiService(
                 team = Some(subscription.team),
                 sender = user.asNotificationSender,
                 notificationType = NotificationType.AcceptOnly,
-                action = NotificationAction.ApiKeyDeletionInformation(
-                  apiOrGroupName,
-                  subscription.apiKey.clientId
+                action = NotificationAction.ApiKeyDeletionInformationV2(
+                  apiOrGroupId,
+                  subscription.apiKey.clientId,
+                  subscription.id
                 )
               )
             )
@@ -1628,7 +1630,7 @@ class ApiService(
           )
           .map(seq => (plan, seq))
       )
-      .via(deleteApiSubscriptionsAsFlow(tenant, api.name, user))
+      .via(deleteApiSubscriptionsAsFlow(tenant, api.id, user))
       .runWith(Sink.ignore)
       .recover {
         case e =>
