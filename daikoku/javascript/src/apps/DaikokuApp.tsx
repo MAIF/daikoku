@@ -1,4 +1,4 @@
-import { useContext, useEffect } from 'react';
+import { PropsWithChildren, useContext, useEffect } from 'react';
 import { Navigate, Outlet } from 'react-router';
 import { BrowserRouter, Route, BrowserRouter as Router, Routes, createBrowserRouter, RouterProvider, ScrollRestoration, useSearchParams } from 'react-router-dom';
 
@@ -482,7 +482,7 @@ const ToLogin = ({ tenant }) => {
     return <Navigate to={to} replace />
 }
 
-const FrontOfficeRoute = (props: { title?: string, children: JSX.Element }) => {
+const FrontOfficeRoute = (props: PropsWithChildren<{ title?: string }>) => {
   return (
     <RouteWithTitle {...props}>
       <FrontOffice>{props.children}</FrontOffice>
@@ -490,7 +490,7 @@ const FrontOfficeRoute = (props: { title?: string, children: JSX.Element }) => {
   );
 };
 
-const RouteWithTitle = (props: { title?: string, children: JSX.Element }) => {
+const RouteWithTitle = (props: PropsWithChildren<{ title?: string }>) => {
   const { tenant } = useContext(GlobalContext)
 
   useEffect(() => {
@@ -502,7 +502,7 @@ const RouteWithTitle = (props: { title?: string, children: JSX.Element }) => {
   return props.children;
 };
 
-const UnauthenticatedRoute = (props: { children: JSX.Element, title: string, header: string }) => {
+const UnauthenticatedRoute = (props: PropsWithChildren<{ title: string, header: string }>) => {
   const { connectedUser, tenant } = useContext(GlobalContext)
   if (connectedUser && connectedUser._humanReadableId) {
     return <Navigate to="/" />;
