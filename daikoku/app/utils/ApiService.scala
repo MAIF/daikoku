@@ -86,12 +86,12 @@ class ApiService(
       maybeOtoroshiApiKey: Option[OtoroshiApiKey] = None
   ) = {
 
-
     val date = DateTime.now()
     val createdAtMillis = date.getMillis.toString
     val createdAt = date.toString()
 
-    val defaultClientName = s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${createdAtMillis}-${api.currentVersion.value}"
+    val defaultClientName =
+      s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${createdAtMillis}-${api.currentVersion.value}"
 
     val baseContext: Map[String, String] = Map(
       "user.id" -> user.id.value,
@@ -111,7 +111,7 @@ class ApiService(
       "tenant.humanReadableId" -> tenant.humanReadableId,
       "tenant.name" -> tenant.name,
       "createdAt" -> createdAt,
-      "createdAtMillis" -> createdAtMillis,
+      "createdAtMillis" -> createdAtMillis
     ) ++ team.metadata.map(t =>
       ("team.metadata." + t._1, t._2)
     ) ++ user.metadata
@@ -129,7 +129,8 @@ class ApiService(
 
     val ctx = baseContext ++ Map(
       "client.id" -> otoroshiApiKey.clientId,
-      "client.name" -> otoroshiApiKey.clientName)
+      "client.name" -> otoroshiApiKey.clientName
+    )
 
     //FIXME: if custom.metadata are not string:string it's broken
     val processedMetadata = plan.otoroshiTarget

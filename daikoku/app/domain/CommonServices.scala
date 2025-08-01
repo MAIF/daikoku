@@ -453,7 +453,7 @@ object CommonServices {
                     .exists(_.id == api.team)
                 )
               val authorizations = myTeams
-//                .filter(t => t.`type` != TeamType.Admin)
+              //                .filter(t => t.`type` != TeamType.Admin)
                 .foldLeft(Seq.empty[AuthorizationApi]) {
                   case (acc, team) =>
                     acc :+ AuthorizationApi(

@@ -24,7 +24,11 @@ import sangria.schema.{Context, _}
 import sangria.validation.ValueCoercionViolation
 import services.CmsPage
 import storage._
-import storage.graphql.{GraphQLImplicits, RequiresDaikokuAdmin, RequiresTenantAdmin}
+import storage.graphql.{
+  GraphQLImplicits,
+  RequiresDaikokuAdmin,
+  RequiresTenantAdmin
+}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -228,17 +232,17 @@ object SchemaDefinition {
             Field(
               "creationSecurity",
               OptionType(BooleanType),
-              resolve = _.value.creationSecurity,
+              resolve = _.value.creationSecurity
             ),
             Field(
               "subscriptionSecurity",
               OptionType(BooleanType),
-              resolve = _.value.subscriptionSecurity,
+              resolve = _.value.subscriptionSecurity
             ),
             Field(
               "apiReferenceHideForGuest",
               OptionType(BooleanType),
-              resolve = _.value.apiReferenceHideForGuest,
+              resolve = _.value.apiReferenceHideForGuest
             ),
             Field(
               "defaultMessage",
@@ -825,7 +829,10 @@ object SchemaDefinition {
               "users",
               ListType(UserWithPermissionType),
               resolve = ctx => {
-                if (ctx.ctx.isTenantAdmin || ctx.value.includeUser(ctx.ctx._2.user.id)) {
+                if (
+                  ctx.ctx.isTenantAdmin || ctx.value
+                    .includeUser(ctx.ctx._2.user.id)
+                ) {
                   ctx.value.users.toSeq
                 } else {
                   Seq.empty[UserWithPermission]

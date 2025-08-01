@@ -14,10 +14,35 @@ type MachineEvents =
   | { type: 'ROLLBACK' }
   | { type: 'CREATE_APIS'; createdApis: any[]; callBackCreation: () => void }
   | { type: 'CREATE_APIKEYS'; createdSubs: any[]; callBackCreation: () => void }
-  | { type: 'DONE_SERVICES'; tenant: string; otoroshi: any; groups: any[]; services: any[]; routes: any[] }
-  | { type: 'DONE_APIKEYS'; tenant: string; otoroshi: any; groups: any[]; services: any[]; apikeys: any[]; routes: any[] }
+  | {
+      type: 'DONE_SERVICES';
+      tenant: string;
+      otoroshi: any;
+      groups: any[];
+      services: any[];
+      routes: any[];
+    }
+  | {
+      type: 'DONE_APIKEYS';
+      tenant: string;
+      otoroshi: any;
+      groups: any[];
+      services: any[];
+      apikeys: any[];
+      routes: any[];
+    }
   | { type: 'DONE' }
-  | { type: 'DONE_COMPLETE'; groups?: any[]; services?: any[]; routes?: any[]; tenant?: string; otoroshi?: any; newServices?: any[]; newRoutes?: any[]; newApikeys?: any[] }
+  | {
+      type: 'DONE_COMPLETE';
+      groups?: any[];
+      services?: any[];
+      routes?: any[];
+      tenant?: string;
+      otoroshi?: any;
+      newServices?: any[];
+      newRoutes?: any[];
+      newApikeys?: any[];
+    }
   | { type: 'DONE_MORE'; newApikeys: any[]; nextPage: number }
   | { type: 'CREATION_DONE' }
   | { type: 'FAILURE'; error: any };
@@ -149,8 +174,7 @@ export const theMachine = createMachine({
               if (groups.error) sendBack({ type: 'FAILURE', error: { ...groups } });
               if (services.error) sendBack({ type: 'FAILURE', error: { ...services } });
               if (routes.error) sendBack({ type: 'FAILURE', error: { ...routes } });
-              else
-                sendBack({ type: 'DONE_COMPLETE', groups, services, tenant, otoroshi, routes });
+              else sendBack({ type: 'DONE_COMPLETE', groups, services, tenant, otoroshi, routes });
             })
             .catch((error) => sendBack({ type: 'FAILURE', error }));
         }),
@@ -296,7 +320,7 @@ export const theMachine = createMachine({
               tenant: context.tenant,
             };
           }
-          return { createdApis: [], callBackCreation: () => { }, tenant: context.tenant };
+          return { createdApis: [], callBackCreation: () => {}, tenant: context.tenant };
         },
       },
       on: {
@@ -419,7 +443,7 @@ export const theMachine = createMachine({
               tenant: context.tenant,
             };
           }
-          return { createdSubs: [], callBackCreation: () => { }, tenant: context.tenant };
+          return { createdSubs: [], callBackCreation: () => {}, tenant: context.tenant };
         },
       },
       on: {

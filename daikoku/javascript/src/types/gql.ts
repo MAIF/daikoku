@@ -4,7 +4,7 @@ import {
   IApi,
   IAuthorizedEntities,
   ISubscriptionDemandState,
-  IValidationStep
+  IValidationStep,
 } from './api';
 import { TeamPermission } from './team';
 import { ITenant } from './tenant';

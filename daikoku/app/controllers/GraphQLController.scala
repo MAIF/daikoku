@@ -1,6 +1,10 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.ctrls.playJson._
 import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.NotAuthorizedError
 import fr.maif.otoroshi.daikoku.domain._
@@ -17,7 +21,11 @@ import play.api.mvc._
 import sangria.execution._
 import sangria.parser.{QueryParser, SyntaxError}
 import sangria.renderer.SchemaRenderer
-import sangria.validation.{QueryValidator, UndefinedFieldViolation, UnknownArgViolation}
+import sangria.validation.{
+  QueryValidator,
+  UndefinedFieldViolation,
+  UnknownArgViolation
+}
 import storage.DataStore
 import storage.graphql.DaikokuAuthMiddleware
 
@@ -165,7 +173,14 @@ class GraphQLController(
             case other => other
           }
 
-          BadRequest(Json.obj("error" -> ValidationError(sanitizedViolations, exceptionHandler).toString)).future
+          BadRequest(
+            Json.obj(
+              "error" -> ValidationError(
+                sanitizedViolations,
+                exceptionHandler
+              ).toString
+            )
+          ).future
         }
 
       // can't parse GraphQL query, return error

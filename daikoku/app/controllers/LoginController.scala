@@ -704,7 +704,7 @@ class LoginController(
             ctx.tenant,
             Map(
               "tenant" -> JsString(ctx.tenant.name),
-              "tenant_data" -> ctx.tenant.toUiPayload(env),
+              "tenant_data" -> ctx.tenant.toUiPayload(env)
             )
           )(messagesApi, language, env)
         )
@@ -716,7 +716,7 @@ class LoginController(
               "mail" -> JsString(email),
               "tenant" -> JsString(ctx.tenant.name),
               "link" -> JsString(link),
-              "tenant_data" -> ctx.tenant.toUiPayload(env),
+              "tenant_data" -> ctx.tenant.toUiPayload(env)
             )
           )(messagesApi, language, env)
         )
