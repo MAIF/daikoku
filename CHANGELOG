@@ -756,3 +756,19 @@ We'd like to thank all the contributors who worked on this release!
 
 - Authetication error from Otoroshi or OAuth [#857](https://github.com/MAIF/daikoku/issues/857)
 
+## [v18.3.0] - 2025-08-01
+
+## :star: New Features
+
+- Add possibility to choice the Api key name create in Otoroshi by Daikoku [#860](https://github.com/MAIF/daikoku/issues/860)
+- Better notification page [#841](https://github.com/MAIF/daikoku/issues/841)
+- Use cms to sync tenant css, css root & js [#820](https://github.com/MAIF/daikoku/issues/820)
+- Update forgot password workflow [#785](https://github.com/MAIF/daikoku/issues/785)
+
+## :beetle: Bug Fixes
+
+- Plan duplication does not works [#862](https://github.com/MAIF/daikoku/issues/862)
+- Add possibility to customize forgotten password mail [#856](https://github.com/MAIF/daikoku/issues/856)
+- Duplicate doesn't work [#854](https://github.com/MAIF/daikoku/issues/854)
+- Init. from Otoroshi is broken to import apikeys [#494](https://github.com/MAIF/daikoku/issues/494)
+
