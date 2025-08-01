@@ -1237,16 +1237,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           {customDescription && <span>{customDescription}</span>}
         </p>
         <div className="d-flex justify-content-between align-items-center flex-wrap usage-plan__card__subscription">
-          {!connectedUser.isGuest && (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined) && props.api.visibility !== 'AdminOnly' && (
-            <button
-              type="button"
-              className="usage-plan__card__action-button inactive"
-            >
-              <Translation i18nkey="Get API key" />
-            </button>
-          )}
-          {/* todo: click to publish ? */}
-          {!isPublish(props.api) && props.api.visibility !== 'AdminOnly' && (
+          {!connectedUser.isGuest && (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) && props.api.visibility !== 'AdminOnly' && (
             <button
               type="button"
               className="usage-plan__card__action-button inactive"

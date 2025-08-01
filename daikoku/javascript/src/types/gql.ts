@@ -3,11 +3,10 @@ import {
   ApiState,
   IApi,
   IAuthorizedEntities,
-  IIssuesTag,
   ISubscriptionDemandState,
-  IValidationStep,
+  IValidationStep
 } from './api';
-import { ITeamSimple, IUser, TeamPermission, TeamUser } from './team';
+import { TeamPermission } from './team';
 import { ITenant } from './tenant';
 
 export interface ITeamFullGql {
@@ -25,7 +24,7 @@ export interface ITeamFullGql {
   apisCreationPermission?: boolean;
   verified: boolean;
   metadata: object;
-  authorizedOtoroshiEntities: Array<{
+  authorizedOtoroshiEntities?: Array<{
     otoroshiSettingsId: string;
     authorizedEntities: IAuthorizedEntities;
   }>;
@@ -54,6 +53,7 @@ export interface IApiGQL {
   lastUpdate: string;
   state: ApiState;
   currentVersion: string;
+  isDefault: boolean;
   name: string;
   smallDescription: string;
   description: string;

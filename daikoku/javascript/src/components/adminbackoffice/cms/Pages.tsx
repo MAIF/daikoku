@@ -17,7 +17,7 @@ export const Pages = ({
   pages,
   reload
 }: PagesProps) => {
-  const table = useRef<TableRef>()
+  const table = useRef<TableRef>(undefined)
   const { translate } = useContext(I18nContext);
 
   useEffect(() => {

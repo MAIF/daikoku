@@ -1,4 +1,4 @@
-import { ReactNode, useContext } from 'react';
+import { JSX, ReactNode, useContext } from 'react';
 
 import { toast } from 'sonner';
 import { Option } from '..';

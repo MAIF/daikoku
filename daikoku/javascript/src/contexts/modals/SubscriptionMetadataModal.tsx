@@ -35,7 +35,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(
 ) => {
   const { translate, Translation } = useContext(I18nContext);
 
-  const formRef = useRef<FormRef>();
+  const formRef = useRef<FormRef>(undefined);
 
   const apiQuery = useQuery({
     queryKey: ["api"],

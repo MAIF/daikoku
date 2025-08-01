@@ -1,5 +1,5 @@
 import { TBaseObject } from "@maif/react-forms";
-import React, { useEffect, useState } from "react";
+import React, { JSX, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { IWithTesting } from "../types";

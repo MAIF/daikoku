@@ -99,7 +99,7 @@ export const TeamApiSubscriptions = ({
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     []
   )
-  const tableRef = useRef<TableRef>();
+  const tableRef = useRef<TableRef>(undefined);
 
   const { translate, Translation } = useContext(I18nContext);
   const { customGraphQLClient } = useContext(GlobalContext);

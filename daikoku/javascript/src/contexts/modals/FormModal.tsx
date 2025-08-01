@@ -16,7 +16,7 @@ export const FormModal = <T extends TBaseObject>({
   noClose,
   description
 }: IFormModalProps<T> & IBaseModalProps) => {
-  const ref = useRef<FormRef>();
+  const ref = useRef<FormRef>(undefined);
 
   const { translate } = useContext(I18nContext);
 

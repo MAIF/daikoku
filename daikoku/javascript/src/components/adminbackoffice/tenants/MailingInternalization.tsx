@@ -77,7 +77,7 @@ function InternalizationChooser({ domain, translate }) {
 
 export const MailingInternalization = () => {
   useTenantBackOffice();
-  const table = useRef<TableRef>();
+  const table = useRef<TableRef>(undefined);
   const { tenant } = useContext(GlobalContext);
 
   const { domain } = useParams();

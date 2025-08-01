@@ -7,7 +7,7 @@ import { IBaseModalProps, ITeamInvitationModalProps } from './types';
 import { GlobalContext } from '../globalContext';
 
 export const TeamInvitationModal = (props: ITeamInvitationModalProps & IBaseModalProps) => {
-  const ref = useRef<FormRef>();
+  const ref = useRef<FormRef>(undefined);
   
   const { translate } = useContext(I18nContext);
   const { tenant } = useContext(GlobalContext)

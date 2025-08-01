@@ -820,7 +820,7 @@ object CommonServices {
                      |          WHEN array_length($$6::text[], 1) IS NULL THEN true
                      |          ELSE s.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
                      |    END
-                     |  AND s.content -> 'metadata' @> COALESCE($$7::text::jsonb, '{}'::jsonb);
+                     |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$7::text::jsonb, '{}'::jsonb);
                      |""".stripMargin
       val query = s"""
            |SELECT s.content
@@ -836,7 +836,7 @@ object CommonServices {
            |          WHEN array_length($$6::text[], 1) IS NULL THEN true
            |          ELSE s.content -> 'apiKey' ->> 'clientId' = ANY ($$6::text[])
            |    END
-           |  AND s.content -> 'metadata' @> COALESCE($$7::text::jsonb, '{}'::jsonb)
+           |  AND COALESCE(NULLIF(s.content -> 'metadata', 'null'::jsonb), '{}'::jsonb) @> COALESCE($$7::text::jsonb, '{}'::jsonb)
            |$sortClause
            |LIMIT $$8 OFFSET $$9;
            |""".stripMargin

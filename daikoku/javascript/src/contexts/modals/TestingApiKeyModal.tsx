@@ -11,7 +11,7 @@ import { IBaseModalProps, TestingApiKeyModalProps } from './types';
 
 
 export const TestingApiKeyModal = <T extends IWithTesting>(props: TestingApiKeyModalProps<T> & IBaseModalProps) => {
-  const formRef = useRef<FormRef>();
+  const formRef = useRef<FormRef>(undefined);
 
   const { tenant } = useContext(GlobalContext)
 

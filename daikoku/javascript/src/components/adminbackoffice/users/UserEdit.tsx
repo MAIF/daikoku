@@ -2,7 +2,7 @@ import { constraints, Form, format, FormRef, Schema, type } from '@maif/react-fo
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { md5 } from 'js-md5';
 import { nanoid } from 'nanoid';
-import React, { useContext, useRef, useState } from 'react';
+import React, { JSX, useContext, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -122,6 +122,7 @@ const Avatar = ({
 
 const PictureUpload = (props: { setFiles: (l: FileList | null) => void }) => {
   const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const { Translation } = useContext(I18nContext);
 
@@ -133,15 +134,16 @@ const PictureUpload = (props: { setFiles: (l: FileList | null) => void }) => {
   };
 
   const trigger = () => {
-    input.click();
+    if (inputRef.current) {
+      inputRef.current.click();
+    }
   };
 
-  let input;
 
   return (
     <div className="changePicture mx-3">
       <input
-        ref={(r) => (input = r)}
+        ref={inputRef}
         type="file"
         className="form-control hide"
         accept="image/png, image/jpeg, image/jpg"
@@ -261,7 +263,7 @@ export const UserEdit = () => {
       });
   };
 
-  const ref = useRef<FormRef>()
+  const ref = useRef<FormRef>(undefined)
   if (queryUser.isLoading) {
     return <Spinner />;
   } else if (queryUser.data) {

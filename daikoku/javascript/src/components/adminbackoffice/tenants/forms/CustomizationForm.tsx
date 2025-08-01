@@ -59,7 +59,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
   const { alert } = useContext(ModalContext);
   const { customGraphQLClient } = useContext(GlobalContext);
 
-  const formRef = useRef<FormRef>()
+  const formRef = useRef<FormRef>(undefined)
 
   useEffect(() => {
     const display = localStorage.getItem("display.migration.custom.style.alert")

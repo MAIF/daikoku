@@ -1,4 +1,5 @@
 
+import { JSX } from 'react';
 import { IModalProps } from './ApiSelectModal';
 import { IBaseModalProps } from './types';
 

@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { I18nContext, useTenantBackOffice } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
-import { ITeamFull, ITeamFullGql, isError } from '../../../types';
+import { ITeamFullGql, isError } from '../../../types';
 import { BeautifulTitle, Can, Option, Spinner, tenant as TENANT, manage } from '../../utils';
 import {
   ApiKeyStep,
@@ -23,29 +23,28 @@ import { useQueries, useQueryClient } from '@tanstack/react-query';
 
 type IVisibleApiGQL = {
   api: {
-    _id: string,
-    name: string,
+    _id: string;
+    name: string;
     tenant: {
-      id: string,
-    }
+      id: string;
+    };
     team: {
-      _id: string
-    }
-    currentVersion: string
+      _id: string;
+    };
+    currentVersion: string;
     possibleUsagePlans: {
-      _id: string
-      customName: string
-      type: string
-    }
-    _humanReadableId: string
-  }
-}
+      _id: string;
+      customName: string;
+    };
+    _humanReadableId: string;
+  };
+};
 
 export const InitializeFromOtoroshi = () => {
   const { tenant, customGraphQLClient } = useContext(GlobalContext);
   useTenantBackOffice();
 
-  const [state, send] = useMachine<any>(theMachine);
+  const [snapshot, send] = useMachine(theMachine);
 
   const { Translation, translate } = useContext(I18nContext);
 
@@ -59,10 +58,13 @@ export const InitializeFromOtoroshi = () => {
   const queries = useQueries({
     queries: [
       {
-        queryKey: [tenant._id, "teams"],
+        queryKey: [tenant._id, 'teams'],
         queryFn: () => {
-          return customGraphQLClient.request<{ teamsPagination: { teams: Array<ITeamFullGql>, total: number } }>(
-            `
+          return customGraphQLClient
+            .request<{
+              teamsPagination: { teams: Array<ITeamFullGql>; total: number };
+            }>(
+              `
             query getAllteams ($research: String, $limit: Int, $offset: Int) {
               teamsPagination (research: $research, limit: $limit, offset: $offset){
                 teams {
@@ -70,24 +72,35 @@ export const InitializeFromOtoroshi = () => {
                   _humanReadableId
                   name
                   avatar
+                  authorizedOtoroshiEntities {
+                    otoroshiSettingsId
+                    authorizedEntities {
+                      routes
+                      groups
+                      services
+                    }
+                  }
                 }
                 total
               }
-            }`, {
-            research: "",
-            limit: -1,
-            offset: -1
-          })
+            }`,
+              {
+                research: '',
+                limit: -1,
+                offset: -1,
+              }
+            )
             .then((data) => {
-              return data.teamsPagination
-            })
-        }
+              return data.teamsPagination;
+            });
+        },
       },
       {
-        queryKey: [tenant._id, "teams"],
+        queryKey: [tenant._id, 'apis'],
         queryFn: () => {
-          return customGraphQLClient.request<{ visibleApis: { apis: Array<IVisibleApiGQL> } }>(
-            `query AllVisibleApis {
+          return customGraphQLClient
+            .request<{ visibleApis: { apis: Array<IVisibleApiGQL> } }>(
+              `query AllVisibleApis {
               visibleApis {
                 apis {
                   api {
@@ -103,35 +116,39 @@ export const InitializeFromOtoroshi = () => {
                     possibleUsagePlans {
                       _id
                       customName
-                      type
                     }
                     _humanReadableId
                   }
                 }
               }
-            }`)
+            }`
+            )
             .then(({ visibleApis: { apis } }) =>
               apis.map(({ api }) => ({
                 ...api,
                 team: api.team._id,
               }))
-            )
-        }
+            );
+        },
       },
       {
         queryKey: [tenant._id, 'otoroshis'],
-        queryFn: () => Services.allSimpleOtoroshis(tenant._id)
-      }
-    ]
-  })
-
+        queryFn: () => Services.allSimpleOtoroshis(tenant._id),
+      },
+    ],
+  });
 
   useEffect(() => {
-    if (queries[1].data && queries[1].data.length && state.context.otoroshi && (createdApis.length || createdSubs.length)) {
+    if (
+      queries[1].data &&
+      queries[1].data.length &&
+      snapshot.context.otoroshi &&
+      (createdApis.length || createdSubs.length)
+    ) {
       localStorage.setItem(
         `daikoku-initialization-${tenant._id}`,
         JSON.stringify({
-          otoroshi: state.context.otoroshi,
+          otoroshi: snapshot.context.otoroshi,
           tenant: tenant._id,
           step,
           createdApis,
@@ -141,44 +158,66 @@ export const InitializeFromOtoroshi = () => {
     }
   }, [createdApis, createdSubs]);
 
-  if (queries.some(q => q.isFetching || q.isLoading)) {
-    return <Spinner />
-  } else if (queries.every(q => q.data && !isError(q.data))) {
+  if (queries.some((q) => q.isFetching || q.isLoading)) {
+    return <Spinner />;
+  } else if (queries.every((q) => q.data && !isError(q.data))) {
+    const teams = queries[0].data!.teams;
+    const apis = queries[1].data!;
+    const otoroshis = queries[2].data!;
 
-    const teams = queries[0].data!.teams
-    const apis = queries[1].data!
-    const otoroshis = queries[2].data!
-
-    const orderedServices = orderBy([...state.context.services, ...state.context.routes], ['groupId', 'id', 'name']);
-    const filterServices = (inputValue: any) => Promise.resolve(orderedServices
-      .map(({ name }, index) => ({ label: name, value: index + 1 }))
-      .filter((s) => (s.label as any).toLowerCase().includes(inputValue.toLowerCase())));
-    const servicesSteps = orderedServices.map((s, idx) => (
+    const orderedServices = orderBy(
+      [...snapshot.context.services, ...snapshot.context.routes],
+      ['groupId', 'id', 'name']
+    );
+    const filterServices = (inputValue: any) =>
+      Promise.resolve(
+        orderedServices
+          .map(({ name }, index) => ({ label: name, value: index + 1 }))
+          .filter((s) =>
+            (s.label as any).toLowerCase().includes(inputValue.toLowerCase())
+          )
+      );
+    const servicesSteps = orderedServices.map((s, idx) => ( //@ts-ignore
       <ServicesStep
         key={`service-${idx}`}
         service={s}
-        groups={state.context.groups}
+        groups={snapshot.context.groups}
         teams={teams}
         addNewTeam={(t: any) => setCreatedTeams([...createdTeams, t])}
         addService={(s: any, team: any) => setCreatedApis([...createdApis, { ...s, team }])}
-        infos={{ index: idx, total: [...state.context.services, ...state.context.routes].length }}
-        recap={() => send('RECAP')}
+        infos={{
+          index: idx,
+          total: [...snapshot.context.services, ...snapshot.context.routes].length,
+        }}
+        recap={() => send({ type: 'RECAP' })}
         maybeCreatedApi={Option(createdApis.find((a) => (a as any).id === (s as any).id))}
-        updateService={(s: any, team: any) => setCreatedApis([...createdApis.filter((a) => (a as any).id !== s.id), { ...s, team }])}
-        resetService={() => setCreatedApis([...createdApis.filter((a) => (a as any).id !== (s as any).id)])}
+        updateService={(s: any, team: any) =>
+          setCreatedApis([
+            ...createdApis.filter((a) => (a as any).id !== s.id),
+            { ...s, team },
+          ])
+        }
+        resetService={() =>
+          setCreatedApis([...createdApis.filter((a) => (a as any).id !== (s as any).id)])
+        }
         getFilteredServices={filterServices}
         tenant={tenant}
-        cancel={() => send('CANCEL')} />));
+        cancel={() => send({ type: 'CANCEL' })}
+        context={snapshot.context}
+      />
+    ));
 
-    const orderedApikeys = orderBy(state.context.apikeys, ['clientName']);
+    const orderedApikeys = orderBy(snapshot.context.apikeys, ['clientName']);
 
-    const filterApikeys = (entity: { label: string, prefix: string, value: string }) => {
-      return orderedApikeys.filter((apikey) => (apikey.authorizedEntities || '').includes(`${entity.prefix}${entity.value}`));
+    const filterApikeys = (entity: { label: string; prefix: string; value: string }) => {
+      return orderedApikeys.filter((apikey) =>
+        (apikey.authorizedEntities || '').includes(`${entity.prefix}${entity.value}`)
+      );
     };
 
     const afterCreation = () => {
-
-      queryClient.invalidateQueries({ queryKey: [tenant._id] })
+      queryClient
+        .invalidateQueries({ queryKey: [tenant._id] })
         .then(() => setStep(1))
         .then(() => toast.success(translate('Apis successfully created')));
     };
@@ -193,14 +232,24 @@ export const InitializeFromOtoroshi = () => {
       const prevState = JSON.parse(
         localStorage.getItem(`daikoku-initialization-${tenant._id}`) || '{}'
       );
-      if (prevState.createdApis.length) {
+      if (prevState.createdApis && prevState.createdApis.length) {
         setStep(prevState.step);
         setCreatedApis(prevState.createdApis);
-        send('LOAD_PREVIOUS_STATE', { otoroshi: prevState.otoroshi, tenant: prevState.tenant, goto: 'services' });
-      } else if (prevState.createdSubs.length) {
+        send({
+          type: 'LOAD_PREVIOUS_STATE',
+          otoroshi: prevState.otoroshi,
+          tenant: prevState.tenant,
+          goto: 'services',
+        });
+      } else if (prevState.createdSubs && prevState.createdSubs.length) {
         setStep(prevState.step);
         setCreatedSubs(prevState.createdSubs);
-        send('LOAD_PREVIOUS_STATE', { otoroshi: prevState.otoroshi, tenant: prevState.tenant, goto: 'apikeys' });
+        send({
+          type: 'LOAD_PREVIOUS_STATE',
+          otoroshi: prevState.otoroshi,
+          tenant: prevState.tenant,
+          goto: 'apikeys',
+        });
       } else {
         toast.warning(translate('Seems to have no saved state...please continue'));
       }
@@ -212,58 +261,118 @@ export const InitializeFromOtoroshi = () => {
           <h1>
             <Translation i18nkey="Daikoku initialization">Daikoku initialization</Translation>
           </h1>
-          {state.matches('completeServices') && <Help />}
+          {snapshot.matches('completeServices') && <Help />}
         </div>
         <div className="section py-3 px-2">
-          {state.value === 'otoroshiSelection' && (
+          {snapshot.value === 'otoroshiSelection' && (
             <SelectOtoStep
               tenant={tenant}
               loadPreviousState={() => loadPreviousState()}
-              setOtoInstance={(oto: any) => send('LOAD', { otoroshi: oto.value, tenant: tenant._id })}
-              otoroshis={otoroshis} />)}
-          {(state.matches('loadingOtoroshiGroups') ||
-            state.matches('loadingServices') ||
-            state.matches('loadingApikeys')) && <Spinner />}
-          {state.value === 'stepSelection' && (<SelectionStepStep
-            goToServices={() => send('LOAD_SERVICE', { up: true })}
-            goToApikeys={() => send('LOAD_APIKEY')} />)}
-          {state.matches('completeServices') && <StepWizard initialStep={step} isLazyMount={true} transitions={{}} onStepChange={(x) => setStep(x.activeStep)}>
-            {servicesSteps}
-          </StepWizard>}
-          {state.matches('recap') && (<RecapServiceStep
-            cancel={() => send('CANCEL')}
-            createdApis={createdApis}
-            groups={state.context.groups}
-            teams={teams}
-            goBackToServices={() => send('ROLLBACK')}
-            create={() => send('CREATE_APIS', { createdApis, callBackCreation: () => afterCreation() })} />)}
-          {state.matches('completeApikeys') && (<>
-            <ApiKeyStep
-              groups={state.context.groups}
-              services={state.context.services}
-              routes={state.context.routes}
-              getFilteredApikeys={filterApikeys}
-              cancel={() => send('CANCEL')}
-              createdSubs={createdSubs} />
-            {createdSubs.length > 0 && (<RecapSubsStep createdSubs={createdSubs} cancel={() => {
-              setCreatedSubs([]);
-              send('CANCEL');
-            }} apis={apis} teams={teams} goBackToServices={() => send('CANCEL')} create={() => send('CREATE_APIKEYS', {
-              createdSubs,
-              callBackCreation: () => afterSubCreation(),
-            })} />)}
-          </>)}
-          {state.matches('recapSubs') && (<RecapSubsStep createdSubs={createdSubs} cancel={() => send('CANCEL')} apis={apis} teams={teams} goBackToServices={() => send('ROLLBACK')} create={() => send('CREATE_APIKEYS', { createdSubs, callBackCreation: () => afterSubCreation() })} />)}
-          {state.matches('complete') && <Translation i18nkey="Done">Done</Translation>}
+              setOtoInstance={(oto: any) =>
+                send({ type: 'LOAD', otoroshi: oto.value, tenant: tenant._id })
+              }
+              otoroshis={otoroshis}
+            />
+          )}
+          {(snapshot.matches('loadingOtoroshiGroups') ||
+            snapshot.matches('loadingServices') ||
+            snapshot.matches('loadingApikeys')) && <Spinner />}
+          {snapshot.value === 'stepSelection' && (
+            <SelectionStepStep
+              goToServices={() => send({ type: 'LOAD_SERVICE', up: true })}
+              goToApikeys={() => send({ type: 'LOAD_APIKEY' })}
+            />
+          )}
+          {snapshot.matches('completeServices') && (
+            <StepWizard
+              initialStep={step}
+              isLazyMount={true}
+              transitions={{}}
+              onStepChange={(x) => setStep(x.activeStep)}
+            >
+              {servicesSteps}
+            </StepWizard>
+          )}
+          {snapshot.matches('recap') && (
+            <RecapServiceStep
+              cancel={() => send({ type: 'CANCEL' })}
+              createdApis={createdApis}
+              groups={snapshot.context.groups}
+              teams={teams}
+              goBackToServices={() => send({ type: 'ROLLBACK' })}
+              create={() =>
+                send({
+                  type: 'CREATE_APIS',
+                  createdApis,
+                  callBackCreation: () => afterCreation(),
+                })
+              }
+            />
+          )}
+          {snapshot.matches('completeApikeys') && (
+            <>
+              <ApiKeyStep
+                groups={snapshot.context.groups}
+                services={snapshot.context.services}
+                routes={snapshot.context.routes}
+                getFilteredApikeys={filterApikeys}
+                cancel={() => send({ type: 'CANCEL' })}
+                createdSubs={createdSubs}
+                addSub={(apikey, team, api, plan) => {
+                  return setCreatedSubs([...createdSubs, { ...apikey, team, api, plan }])
+                }}
+                removeSub={(apikey) => {
+                  return setCreatedSubs(createdSubs.filter(s => s.clientId !== apikey.clientId))
+                }}
+              />
+              {createdSubs.length > 0 && (
+                <RecapSubsStep
+                  createdSubs={createdSubs}
+                  cancel={() => {
+                    setCreatedSubs([]);
+                    send({ type: 'CANCEL' });
+                  }}
+                  apis={apis}
+                  teams={teams}
+                  goBackToServices={() => send({ type: 'CANCEL' })}
+                  create={() =>
+                    send({
+                      type: 'CREATE_APIKEYS',
+                      createdSubs,
+                      callBackCreation: () => afterSubCreation(),
+                    })
+                  }
+                />
+              )}
+            </>
+          )}
+          {snapshot.matches('recapSubs') && (
+            <RecapSubsStep
+              createdSubs={createdSubs}
+              cancel={() => send({ type: 'CANCEL' })}
+              apis={apis}
+              teams={teams}
+              goBackToServices={() => send({ type: 'ROLLBACK' })}
+              create={() =>
+                send({
+                  type: 'CREATE_APIKEYS',
+                  createdSubs,
+                  callBackCreation: () => afterSubCreation(),
+                })
+              }
+            />
+          )}
+          {snapshot.matches('complete') && <Translation i18nkey="Done">Done</Translation>}
 
-          {state.matches('failure') && (<div className="alert alert-danger">{state.context.error.error}</div>)}
+          {snapshot.matches('failure') && (
+            <div className="alert alert-danger">{snapshot.context.error.error}</div>
+          )}
         </div>
       </Can>
     );
   } else {
-    return (<div>Error while fetching data</div>)
+    return <div>Error while fetching data</div>;
   }
-
 };
 
 const Help = () => {

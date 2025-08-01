@@ -1,3 +1,4 @@
+import { JSX } from 'react';
 import { IUserSimple } from './team';
 import { ISimpleSession, ITenant } from './tenant';
 

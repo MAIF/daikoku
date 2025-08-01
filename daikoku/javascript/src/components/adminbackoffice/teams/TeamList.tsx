@@ -113,7 +113,7 @@ export const TeamList = () => {
   const sanitizeTeamAuthorizedEntities = (team: ITeamSimple) => {
     return Promise.resolve({
       ...team,
-      authorizedOtoroshiEntities: team.authorizedOtoroshiEntities.reduce<Array<{ otoroshiSettingsId: string, authorizedEntities: IAuthorizedEntities }>>((acc, curr) => {
+      authorizedOtoroshiEntities: (team.authorizedOtoroshiEntities ?? []).reduce<Array<{ otoroshiSettingsId: string, authorizedEntities: IAuthorizedEntities }>>((acc, curr) => {
         if (acc.some(x => x.otoroshiSettingsId === curr.otoroshiSettingsId)) {
           const authorizedEntities = acc.find(x => x.otoroshiSettingsId === curr.otoroshiSettingsId)!.authorizedEntities
           return [

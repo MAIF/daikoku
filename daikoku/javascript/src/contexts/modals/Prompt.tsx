@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { I18nContext } from "../i18n-context";
 import { PromptProps } from "./types";
 
@@ -7,7 +7,7 @@ export const Prompt = (props: PromptProps) => {
 
   const [text, setText] = useState(props.value || '');
 
-  let ref: any;
+  const  inputRef = useRef<HTMLInputElement>(null);
 
   const defaultButton = (e: KeyboardEvent) => {
     if (e.key === "Enter") {
@@ -17,8 +17,8 @@ export const Prompt = (props: PromptProps) => {
 
   useEffect(() => {
     document.body.addEventListener('keydown', defaultButton);
-    if (ref) {
-      ref.focus();
+    if (inputRef.current) {
+      inputRef.current.focus();
     }
 
     return () => document.body.removeEventListener('keydown', defaultButton);
@@ -38,7 +38,7 @@ export const Prompt = (props: PromptProps) => {
             className="form-control"
             value={text}
             placeholder={props.placeholder || ''}
-            ref={(r) => (ref = r)}
+            ref={inputRef}
             onChange={(e) => setText(e.target.value)} />
         </div>
       </div>

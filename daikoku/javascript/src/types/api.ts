@@ -2,7 +2,7 @@ import { Schema } from '@maif/react-forms';
 import { IFastTeam, ITeamSimple, IUserSimple } from './team';
 import { ThirdPartyPaymentType } from './tenant';
 import { INotification } from './types';
-import { ITeamFullGql } from './gql';
+import { IApiGQL, ITeamFullGql } from './gql';
 
 export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked' | 'deleted';
 
@@ -59,7 +59,7 @@ export interface IIssuesTag {
   color: string;
 }
 
-export interface IApiWithTeam extends IBaseApi {
+export interface IApiWithTeam extends IApiGQL {
   team: ITeamFullGql;
 }
 

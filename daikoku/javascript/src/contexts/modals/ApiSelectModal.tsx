@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { JSX, useContext, useEffect, useState } from 'react';
 import Select from 'react-select';
 
 import { I18nContext } from '../../contexts';

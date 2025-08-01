@@ -24,7 +24,7 @@ import { IApiKeySelectModalProps } from './ApiKeySelectModal';
 import { IApiSelectModalProps, IModalProps } from './ApiSelectModal';
 import { CustomSubscriptionData } from './SubscriptionMetadataModal';
 import { ICustomModalProps } from './CustomModal';
-import { ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 
 export interface IBaseModalProps {
   close: () => void;

@@ -144,7 +144,7 @@ const ReplaceButton = (props: any) => {
 export const AssetsList = ({
   currentTeam
 }: { currentTeam?: ITeamSimple }) => {
-  const tableRef = useRef<TableRef>();
+  const tableRef = useRef<TableRef>(undefined);
   const { tenant } = useContext(GlobalContext);
 
   const { translate } = useContext(I18nContext);
