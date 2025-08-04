@@ -78,6 +78,7 @@ export type PromptModalProps = {
   message?: string;
   cancelLabel?: string;
   okLabel?: string;
+  required?: boolean
 };
 export type PromptProps = PromptModalProps & {
   ok: (value: string) => void;

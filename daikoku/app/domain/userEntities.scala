@@ -172,6 +172,12 @@ case class Passkey(
   override def asJson: JsValue = json.PasskeyFormat.writes(this)
 }
 
+case class PasskeyChallenge(
+    key: String, value: String, expires: DateTime
+) extends CanJson[PasskeyChallenge] {
+  override def asJson: JsValue = json.PasskeyChallengeFormat.writes(this)
+}
+
 case class AllowCredential(
   id: String,           // credentialId en base64url (comme stocké en base)
   `type`: String,       // Toujours "public-key"

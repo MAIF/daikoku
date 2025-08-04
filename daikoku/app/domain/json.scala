@@ -4125,6 +4125,31 @@ object json {
       )
   }
 
+  val PasskeyChallengeFormat = new Format[PasskeyChallenge] {
+
+    override def reads(json: JsValue): JsResult[PasskeyChallenge] =
+      Try {
+        JsSuccess(
+          PasskeyChallenge(
+            key = (json \ "key").as[String],
+            value = (json \ "value").as[String],
+            expires = (json \ "expires").as(DateTimeFormat)
+          )
+        )
+      } recover {
+        e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
+
+    override def writes(o: PasskeyChallenge): JsValue =
+      Json.obj(
+        "key" -> o.key,
+        "value" -> o.value,
+        "expires" -> DateTimeFormat.writes(o.expires)
+      )
+  }
+
   val AllowCredentialFormat = new Format[AllowCredential] {
     override def reads(json: JsValue): JsResult[AllowCredential] =
       Try {

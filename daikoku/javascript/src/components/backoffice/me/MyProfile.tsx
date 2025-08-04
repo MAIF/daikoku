@@ -254,7 +254,7 @@ const TwoFactorAuthentication = ({
           <button
             onClick={() => createPasskey(
               connectedUser,
-              () => prompt({ title: "passkey name", message: "test", okLabel: "create", cancelLabel: "go back" }),
+              (name?: string) => prompt({ title: "passkey name", message: `You can customize your passkey by giving a display name`, okLabel: "create", cancelLabel: "go back", value: name, required: true }),
               () => queryClient.invalidateQueries({ queryKey: ["passkey-list"] }))}
             className="btn btn-outline-success"
             type="button"
@@ -281,7 +281,7 @@ const TwoFactorAuthentication = ({
                     <button className='btn btn-outline-success'
                       onClick={() => editPasskey(
                         passkey,
-                        () => prompt({ title: "passkey name", message: "test", okLabel: "create", cancelLabel: "go back" }),
+                        (name?: string) => prompt({ title: "passkey name", message: `You can customize your passkey by giving a display name`, okLabel: "create", cancelLabel: "go back", value: name, required: true }),
                         () => queryClient.invalidateQueries({ queryKey: ["passkey-list"] }))}>edit</button>
                     <button className='btn btn-outline-danger' onClick={()=> handledeletePasskey(passkey)}>delete</button>
                   </div>

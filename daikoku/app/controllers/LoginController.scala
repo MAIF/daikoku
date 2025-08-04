@@ -22,33 +22,28 @@ import fr.maif.otoroshi.daikoku.login._
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.{Cypher, Errors, IdGenerator, Translator}
 import io.bullet.borer.Dom.ByteArrayElem
+import io.bullet.borer._
 import org.apache.commons.codec.binary.Base32
+import org.apache.pekko.Done
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.pattern.after
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
-import play.api.libs.json.{JsArray, JsObject, JsString, JsValue, Json}
+import play.api.libs.json.{Json, _}
 import play.api.mvc._
 
 import java.net.URLEncoder
-import java.time.{Duration, Instant}
+import java.nio.{ByteBuffer, ByteOrder}
+import java.security.SecureRandom
+import java.time.Instant
 import java.util.Base64
-import java.util.concurrent.{Executors, TimeUnit}
+import java.util.concurrent.TimeUnit
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future, Promise}
-import play.api.cache.AsyncCacheApi
-
-import java.security.SecureRandom
-import io.bullet.borer._
-import io.bullet.borer.derivation.MapBasedCodecs._
-import org.apache.pekko.Done
-
-import java.util.Base64
-import java.nio.{ByteBuffer, ByteOrder}
+import scala.concurrent.{ExecutionContext, Future}
 
 class LoginController(
     DaikokuAction: DaikokuAction,
@@ -58,7 +53,6 @@ class LoginController(
     cc: ControllerComponents,
     translator: Translator,
     assets: Assets,
-    cache: AsyncCacheApi
 ) extends AbstractController(cc) {
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
@@ -404,7 +398,8 @@ class LoginController(
       val key = s"passkey_asssertion_challenge_$challengeId"
 
       for {
-        _ <- cache.set(key = key, value = challenge, expiration = 2.minutes)
+        _ <- env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant)
+        .save(PasskeyChallenge(key = key, value = challenge, expires = DateTime.now().plusMinutes(2)))
       } yield {
         Ok(assertionOptions.asJson)
       }
@@ -419,10 +414,10 @@ class LoginController(
       val challengeKey = s"passkey_asssertion_challenge_$challengeId"
       (for {
         storedChallenge <- EitherT.fromOptionF(
-          cache.get[String](challengeKey),
+          env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).findById(challengeKey),
           AppError.SecurityError("Challenge expired or missing")
         )
-        _ <- EitherT.liftF[Future, AppError, Done](cache.remove(challengeKey))
+        _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).deleteById(challengeKey))
         credentialId = (assertionData \ "id").as[String]
         authenticatorDataB64 =
           (assertionData \ "response" \ "authenticatorData").as[String]
@@ -435,7 +430,7 @@ class LoginController(
 
         _ <- EitherT.cond[Future](
           PasskeyUtils.normalizeBase64(clientData.challenge) == PasskeyUtils
-            .normalizeBase64(storedChallenge),
+            .normalizeBase64(storedChallenge.value),
           (),
           AppError.SecurityError("Challenge mismatch")
         )
@@ -1080,7 +1075,8 @@ class LoginController(
       val key = s"passkey_challenge_${ctx.user.id.value}"
 
       for {
-        _ <- cache.set(key = key, value = challenge, expiration = 5.minutes)
+        _ <- env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant)
+          .save(PasskeyChallenge(key = key, value = challenge, expires = DateTime.now().plusMinutes(5)))
       } yield {
         Ok(Json.obj("challenge" -> challenge))
       }
@@ -1137,14 +1133,14 @@ class LoginController(
       }
 
       (for {
-        storedChallenge <- EitherT.fromOptionF(
-          cache.get[String](s"passkey_challenge_${ctx.user.id.value}"),
+        storedChallenge <- EitherT.fromOptionF[Future, AppError, PasskeyChallenge](
+          env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).findById(s"passkey_challenge_${ctx.user.id.value}"),
           AppError.SecurityError("Challenge expired or missing")
         )
         _ <-
-          EitherT.liftF(cache.remove(s"passkey_challenge_${ctx.user.id.value}"))
-        _ <- EitherT.cond[Future](
-          storedChallenge == (credentialData \ "challengeBuffer").as[String],
+          EitherT.liftF[Future, AppError, Boolean](env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).deleteById(s"passkey_challenge_${ctx.user.id.value}"))
+        _ <- EitherT.cond[Future][AppError, Unit](
+          storedChallenge.value == (credentialData \ "challengeBuffer").as[String],
           (),
           AppError.SecurityError("Challenge mismatch")
         )
@@ -1173,7 +1169,7 @@ class LoginController(
       val key = s"passkey_asssertion_challenge_$challengeId"
 
       for {
-        _ <- cache.set(key = key, value = challenge, expiration = 5.minutes)
+        _ <- env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).save(PasskeyChallenge(key = key, value = challenge, expires = DateTime.now().plusMinutes(5)))
       } yield {
         Ok(assertionOptions.asJson)
       }
@@ -1188,10 +1184,10 @@ class LoginController(
       val challengeKey = s"passkey_asssertion_challenge_$challengeId"
       (for {
         storedChallenge <- EitherT.fromOptionF(
-          cache.get[String](challengeKey),
+          env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).findById(challengeKey),
           AppError.SecurityError("Challenge expired or missing")
         )
-        _ <- EitherT.liftF[Future, AppError, Done](cache.remove(challengeKey))
+        _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).deleteById(challengeKey))
         credentialId = (assertionData \ "id").as[String]
         authenticatorDataB64 =
           (assertionData \ "response" \ "authenticatorData").as[String]
@@ -1204,7 +1200,7 @@ class LoginController(
 
         _ <- EitherT.cond[Future](
           PasskeyUtils.normalizeBase64(clientData.challenge) == PasskeyUtils
-            .normalizeBase64(storedChallenge),
+            .normalizeBase64(storedChallenge.value),
           (),
           AppError.SecurityError("Challenge mismatch")
         )
@@ -1620,11 +1616,11 @@ object PasskeyUtils {
       signature: Array[Byte]
   ): Boolean = {
     // Si vous utilisez Bouncy Castle (recommandé)
+    import org.bouncycastle.jce.ECNamedCurveTable
     import org.bouncycastle.jce.provider.BouncyCastleProvider
     import org.bouncycastle.jce.spec.ECPublicKeySpec
-    import org.bouncycastle.jce.ECNamedCurveTable
-    import org.bouncycastle.math.ec.ECPoint
-    import java.security.{KeyFactory, Signature, Security}
+
+    import java.security.{KeyFactory, Security, Signature}
 
     Security.addProvider(new BouncyCastleProvider())
 
@@ -1658,9 +1654,6 @@ object PasskeyUtils {
       data: Array[Byte],
       signature: Array[Byte]
   ): Boolean = {
-    import java.security.spec.RSAPublicKeySpec
-    import java.security.{KeyFactory, Signature}
-    import java.math.BigInteger
 
     try {
       // Assumer que publicKeyData contient n+e concaténés (à adapter selon votre format)
@@ -1698,8 +1691,8 @@ object PasskeyUtils {
       signature: Array[Byte]
   ): Boolean = {
     import org.bouncycastle.jce.provider.BouncyCastleProvider
-    import org.bouncycastle.jce.spec.ECPublicKeySpec
-    import java.security.{KeyFactory, Signature, Security}
+
+    import java.security.{KeyFactory, Security, Signature}
 
     Security.addProvider(new BouncyCastleProvider())
 
@@ -1713,7 +1706,7 @@ object PasskeyUtils {
           AlgorithmIdentifier,
           SubjectPublicKeyInfo
         }
-        import org.bouncycastle.asn1.DEROctetString
+
         import java.security.spec.X509EncodedKeySpec
 
         val algorithmIdentifier = new AlgorithmIdentifier(

@@ -6,6 +6,7 @@ export const Prompt = (props: PromptProps) => {
   const { translate } = useContext(I18nContext);
 
   const [text, setText] = useState(props.value || '');
+  const [displayRequiredLabel, setDisplayRequiredLabel] = useState(false);
 
   const  inputRef = useRef<HTMLInputElement>(null);
 
@@ -24,6 +25,21 @@ export const Prompt = (props: PromptProps) => {
     return () => document.body.removeEventListener('keydown', defaultButton);
   }, []);
 
+  useEffect(() => {
+    if (displayRequiredLabel) {
+      setDisplayRequiredLabel(false)
+    }
+  }, [text])
+  
+
+  const handleOK = () => {
+    if (!props.required || !!text) {
+      props.ok(text)
+    } else {
+      setDisplayRequiredLabel(true)
+    }
+  }
+
   return (
     <div className="modal-content">
       <div className="modal-header">
@@ -36,17 +52,20 @@ export const Prompt = (props: PromptProps) => {
           <input
             type={props.isPassword ? 'password' : 'text'}
             className="form-control"
+            aria-invalid={displayRequiredLabel}
+            required={props.required}
             value={text}
             placeholder={props.placeholder || ''}
             ref={inputRef}
             onChange={(e) => setText(e.target.value)} />
         </div>
+        {displayRequiredLabel && <span className="color-danger">{translate('constraints.required.value')}</span>}
       </div>
       <div className="modal-footer">
         <button type="button" className="btn btn-outline-danger" onClick={props.cancel}>
           {props.cancelLabel || translate('Cancel')}
         </button>
-        <button type="button" className="btn btn-outline-success" onClick={() => props.ok(text)}>
+        <button type="button" className="btn btn-outline-success" onClick={() => handleOK()}>
           {props.okLabel || translate('Ok')}
         </button>
       </div>

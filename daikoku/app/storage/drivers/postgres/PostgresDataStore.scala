@@ -304,6 +304,19 @@ case class PostgresTenantCapableApiSubscriptionTransferRepo(
     _tenantRepo(tenant)
 }
 
+case class PostgresTenantCapablePasskeyCacheRepo(
+    _repo: () => PostgresRepo[PasskeyChallenge, DatastoreId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[PasskeyChallenge, DatastoreId]
+  ) extends PostgresTenantCapableRepo[PasskeyChallenge, DatastoreId]
+  with PasskeyChallengeRepo {
+  override def tenantRepo(
+                           tenant: TenantId
+                         ): PostgresTenantAwareRepo[PasskeyChallenge, DatastoreId] =
+    _tenantRepo(tenant)
+
+  override def repo(): PostgresRepo[PasskeyChallenge, DatastoreId] = _repo()
+}
+
 case class PostgresTenantCapableConsumptionRepo(
     _repo: () => PostgresRepo[ApiKeyConsumption, DatastoreId],
     _tenantRepo: TenantId => PostgresTenantAwareRepo[
@@ -432,7 +445,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     "usage_plans" -> true,
     "assets" -> true,
     "reports_info" -> true,
-    "api_subscription_transfers" -> true
+    "api_subscription_transfers" -> true,
+    "passkey_caches" -> true
   )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
@@ -639,6 +653,12 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       t => new PostgresTenantApiSubscriptionTransferRepo(env, reactivePg, t)
     )
 
+  private val _passkeyCacheRepo: PasskeyChallengeRepo =
+    PostgresTenantCapablePasskeyCacheRepo(
+      () => new PostgresPasskeyCacheRepo(env, reactivePg),
+      t => new PostgresTenantPasskeyCacheRepo(env, reactivePg, t)
+    )
+
   override def tenantRepo: TenantRepo = _tenantRepo
 
   override def userRepo: UserRepo = _userRepo
@@ -693,6 +713,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
 
   override def apiSubscriptionTransferRepo: ApiSubscriptionTransferRepo =
     _apiSubscriptionTransferRepo
+
+  override def passkeyChallengeRepo: PasskeyChallengeRepo = _passkeyCacheRepo
 
   override def queryOneRaw(query: String, name: String, params: Seq[AnyRef])(
       implicit ec: ExecutionContext
@@ -1382,6 +1404,23 @@ class PostgresTenantAuditTrailRepo(
   override def extractId(value: JsObject): String = (value \ "_id").as[String]
 }
 
+class PostgresTenantPasskeyCacheRepo(
+    env: Env,
+    reactivePg: ReactivePg,
+    tenant: TenantId
+) extends PostgresTenantAwareRepo[PasskeyChallenge, DatastoreId](
+      env,
+      reactivePg,
+      tenant
+    ) {
+
+  override def tableName: String = "passkey_challenges"
+
+  override def format: Format[PasskeyChallenge] = json.PasskeyChallengeFormat
+
+  override def extractId(value: PasskeyChallenge): String = value.key
+}
+
 class PostgresUserRepo(env: Env, reactivePg: ReactivePg)
     extends PostgresRepo[User, UserId](env, reactivePg)
     with UserRepo {
@@ -1600,6 +1639,15 @@ class PostgresAuditTrailRepo(env: Env, reactivePg: ReactivePg)
   override def format: Format[JsObject] = _fmt
 
   override def extractId(value: JsObject): String = (value \ "_id").as[String]
+}
+
+class PostgresPasskeyCacheRepo(env: Env, reactivePg: ReactivePg)
+    extends PostgresRepo[PasskeyChallenge, DatastoreId](env, reactivePg) {
+  override def tableName: String = "passkey_challenges"
+
+  override def format: Format[PasskeyChallenge] = json.PasskeyChallengeFormat
+
+  override def extractId(value: PasskeyChallenge): String = value.key
 }
 
 abstract class PostgresRepo[Of, Id <: ValueType](
