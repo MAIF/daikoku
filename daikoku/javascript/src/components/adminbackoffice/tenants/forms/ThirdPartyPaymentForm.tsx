@@ -12,7 +12,7 @@ import { Can, manage, tenant as TENANT } from '../../../utils';
 import { deleteOtoroshiSettings } from '../../../../services';
 
 export const ThirdPartyPaymentForm = (props: { tenant: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
-  const table = useRef<TableRef>();
+  const table = useRef<TableRef>(undefined);
 
   const { translate } = useContext(I18nContext);
   const { openFormModal, confirm } = useContext(ModalContext);

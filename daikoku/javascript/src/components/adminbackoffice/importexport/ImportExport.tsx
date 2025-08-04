@@ -1,5 +1,5 @@
 /* eslint-disable react/jsx-no-target-blank */
-import React, { useContext, useState } from 'react';
+import React, { useContext, useRef, useState } from 'react';
 import { BooleanInput } from '@maif/react-forms';
 
 import * as Services from '../../../services';
@@ -12,7 +12,7 @@ export const ImportExport = () => {
 
   const { translate, Translation } = useContext(I18nContext);
 
-  let input: any;
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const [uploading, setUploading] = useState(false);
   const [exportAuditTrail, setExportAuditTrail] = useState(true);
@@ -23,8 +23,8 @@ export const ImportExport = () => {
   });
 
   const importState = () => {
-    if (input) {
-      input.click();
+    if (inputRef.current) {
+      inputRef.current.click();
     }
   };
 
@@ -85,7 +85,7 @@ export const ImportExport = () => {
             <input
               type="file"
               className="hide"
-              ref={(r) => (input = r)}
+              ref={inputRef}
               onChange={actuallyImportState}
             />
           </div>

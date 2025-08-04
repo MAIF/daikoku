@@ -1,14 +1,15 @@
 import { Form, Schema, constraints, format, type } from '@maif/react-forms';
 import { md5 } from 'js-md5';
-import { ChangeEvent, useContext, useEffect, useState } from 'react';
+import { ChangeEvent, useContext, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import crypto from 'crypto';
 
-import { I18nContext, ModalContext, useUserBackOffice } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { I2FAQrCode, ITenant, IUser, isError } from '../../../types';
 import { Spinner } from '../../utils';
+import { allowedAvatarFileTypes } from '../../utils/tenantUtils';
 import { createPasskey, listPasskeys, deletePasskey, editPasskey } from '../../utils/authentication';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 
@@ -279,7 +280,7 @@ const TwoFactorAuthentication = ({
                   <div className="d-flex gap-3">
                     <button className='btn btn-outline-success'
                       onClick={() => editPasskey(
-                        passkey,  
+                        passkey,
                         () => prompt({ title: "passkey name", message: "test", okLabel: "create", cancelLabel: "go back" }),
                         () => queryClient.invalidateQueries({ queryKey: ["passkey-list"] }))}>edit</button>
                     <button className='btn btn-outline-danger' onClick={()=> handledeletePasskey(passkey)}>delete</button>
@@ -344,15 +345,20 @@ const Avatar = ({
       const file = files[0];
       const filename = file.name;
       const contentType = file.type;
-      return Services.storeUserAvatar(filename, contentType, file)
-        .then((res) => {
-          if (res.error) {
-            toast.error(res.error);
-          } else {
-            setValue('pictureFromProvider', false);
-            onChange(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
-          }
-        });
+
+      if (allowedAvatarFileTypes.includes(contentType)) {
+        return Services.storeUserAvatar(filename, contentType, file)
+          .then((res) => {
+            if (res.error) {
+              toast.error(res.error);
+            } else {
+              setValue('pictureFromProvider', false);
+              onChange(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
+            }
+          });
+      } else {
+        return Promise.reject(toast.error("file type not allowed"))
+      }
     }
   };
 
@@ -398,12 +404,6 @@ const Avatar = ({
         <PictureUpload setFiles={setFiles} tenant={tenant} />
       </div>
       <div className="">
-        <input
-          type="text"
-          className="form-control"
-          value={value}
-          onChange={(e) => changePicture(e.target.value)}
-        />
         <div className="d-flex mt-1 justify-content-end">
           <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink}>
             <i className="fas fa-user-circle me-1" />
@@ -432,8 +432,12 @@ type PictureUploadProps = {
   tenant: ITenant,
   setFiles: (files: FileList | null) => void
 }
+
+
 const PictureUpload = (props: PictureUploadProps) => {
   const [uploading, setUploading] = useState(false);
+
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const { Translation } = useContext(I18nContext);
 
@@ -446,17 +450,19 @@ const PictureUpload = (props: PictureUploadProps) => {
   };
 
   const trigger = () => {
-    input.click();
+    if (inputRef.current) {
+      inputRef.current.click();
+    }
   };
 
-  let input: any;
 
   return (
     <div className="changePicture mx-3">
       <input
-        ref={(r) => (input = r)}
+        ref={inputRef}
         type="file"
         className="form-control hide"
+        accept="image/png, image/jpeg, image/jpg"
         onChange={e => setFiles(e)}
       />
       <button
@@ -478,8 +484,6 @@ const PictureUpload = (props: PictureUploadProps) => {
 };
 
 export const MyProfile = () => {
-  useUserBackOffice();
-
   const [user, setUser] = useState<IUser>();
   const [tab, setTab] = useState('infos');
 

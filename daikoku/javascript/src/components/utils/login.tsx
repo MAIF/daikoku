@@ -1,11 +1,12 @@
-import React, { FormEvent, useContext, useEffect, useState } from 'react';
+import { FormEvent, useContext, useEffect, useRef, useState } from 'react';
 import * as Services from '../../services/index';
 import { I18nContext } from '../../contexts';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { isError } from '../../types';
 
-export function LoginPage(props: {}) {
+export function LoginPage() {
   const { Translation, translate } = useContext(I18nContext);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   const { provider } = useParams()
   const [searchParams] = useSearchParams();
@@ -18,6 +19,7 @@ export function LoginPage(props: {}) {
   });
 
   const [action, setAction] = useState<string>();
+  const [loading, setLoading] = useState(false);
 
   const onChange = (e) => {
     setState({
@@ -38,17 +40,25 @@ export function LoginPage(props: {}) {
 
 
   const submit = (e: FormEvent<HTMLElement>) => {
+    setLoading(true);
+
     e.preventDefault();
     const { username, password } = state;
 
     if (action)
       Services.login(username, password, action, searchParams.get('redirect'))
         .then((res) => {
-          if (res.status === 400)
+          if (res.status === 400) {
             setState({
               ...state,
               loginError: true,
             });
+            setLoading(false);
+            buttonRef.current?.classList.add('active', 'btn-outline-danger')
+            setTimeout(() => {
+              buttonRef.current?.classList.remove('active', 'btn-outline-danger');
+            }, 800);
+          }
           else if (res.redirected) {
             window.location.href = res.url;
           }
@@ -99,23 +109,22 @@ export function LoginPage(props: {}) {
             />
           </div>
           <div className="mb-3 d-grid gap-1">
-            <button type="submit" className="btn btn-outline-success">
+            <button type="submit" ref={buttonRef} className="btn btn-outline-success shake" disabled={loading}>
               <Translation i18nkey="login.btn.label">Login</Translation>
             </button>
           </div>
-          <div className='d-flex justify-content-between'>
-            <div className="mb-3">
-              <Link to="/reset">
-                <Translation i18nkey="Forgot your password ?">Forgot your password ?</Translation>
-              </Link>
-            </div>
-            {provider === 'Local' && (
+          {provider === 'Local' && (
+            <div className='d-flex justify-content-between'>
+              <div className="mb-3">
+                <Link to="/reset">
+                  <Translation i18nkey="Forgot your password ?">Forgot your password ?</Translation>
+                </Link>
+              </div>
               <Link to="/signup">
                 {translate('Create your account')}
               </Link>
-            )}
-          </div>
-
+            </div>
+          )}
         </form>
       </div>
     </div>

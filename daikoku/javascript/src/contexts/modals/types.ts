@@ -24,7 +24,7 @@ import { IApiKeySelectModalProps } from './ApiKeySelectModal';
 import { IApiSelectModalProps, IModalProps } from './ApiSelectModal';
 import { CustomSubscriptionData } from './SubscriptionMetadataModal';
 import { ICustomModalProps } from './CustomModal';
-import { ReactNode } from 'react';
+import { JSX, ReactNode } from 'react';
 
 export interface IBaseModalProps {
   close: () => void;
@@ -174,13 +174,12 @@ type NotificationGQL = {
     };
   };
 };
-export type SubscriptionMetadataModalProps<T extends IWithTesting> = {
+export type SubscriptionMetadataModalProps<T> = {
   creationMode?: boolean;
   api?: string;
   plan?: string;
   save: ((sub: CustomSubscriptionData) => Promise<void>) | ((sub: CustomSubscriptionData) => void);
   team?: ITeamSimple | LimitedTeam;
-  notification?: INotification | NotificationGQL;
   config?: ITestingConfig;
   subscription?: ISubscriptionCustomization;
   subscriptionDemand?: ISubscriptionDemand;
@@ -233,8 +232,6 @@ export interface ILoginOrRegisterModalProps {
 export interface IContactModalComponentProps {
   team?: string;
   api?: string;
-  email?: string;
-  name?: string;
 }
 
 export interface IAssetSelectorModalProps {

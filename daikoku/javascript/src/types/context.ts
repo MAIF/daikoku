@@ -1,3 +1,4 @@
+import { JSX } from 'react';
 import { IUserSimple } from './team';
 import { ISimpleSession, ITenant } from './tenant';
 
@@ -28,6 +29,7 @@ export interface IStateContext {
   session?: ISimpleSession;
   loginAction: string;
   theme: string;
+  graphQLEndpoint: string;
 }
 
 export interface IStateError {

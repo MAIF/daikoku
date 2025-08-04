@@ -533,10 +533,10 @@ class TenantController(
     }
 
   def contact(tenantId: String) =
-    DaikokuActionMaybeWithGuest.async(parse.json) { ctx =>
-      UberPublicUserAccess(
+    DaikokuAction.async(parse.json) { ctx =>
+      PublicUserAccess(
         AuditTrailEvent(
-          s"@{name} - @{email} send a contact email to @{contact}"
+          s"@{user.name} - @{user.email} send a contact email to @{contact}"
         )
       )(ctx) {
 
@@ -548,15 +548,10 @@ class TenantController(
 
         val body = ctx.request.body
 
-        val name = (body \ "name").as[String]
-        val email = (body \ "email").as[String]
         val subject = (body \ "subject").as[String]
         val mailBody = (body \ "body").as[String]
         val teamId = (body \ "teamId").asOpt[String]
         val apiId = (body \ "apiId").asOpt[String]
-
-        ctx.setCtxValue("email", email)
-        ctx.setCtxValue("name", name)
 
         val sanitizeBody = HtmlSanitizer.sanitize(mailBody)
 
@@ -570,8 +565,8 @@ class TenantController(
               "mail.contact.sender",
               ctx.tenant,
               Map(
-                "user" -> JsString(name),
-                "email" -> JsString(email),
+                "user" -> JsString(ctx.user.name),
+                "email" -> JsString(ctx.user.email),
                 "subject" -> JsString(subject),
                 "body" -> JsString(sanitizeBody),
                 "user_data" -> ctx.user.asSimpleJson,
@@ -582,8 +577,8 @@ class TenantController(
               "mail.contact.contact",
               ctx.tenant,
               Map(
-                "user" -> JsString(name),
-                "email" -> JsString(email),
+                "user" -> JsString(ctx.user.name),
+                "email" -> JsString(ctx.user.email),
                 "subject" -> JsString(subject),
                 "body" -> JsString(sanitizeBody),
                 "user_data" -> ctx.user.asSimpleJson,
@@ -593,7 +588,7 @@ class TenantController(
             )
             _ <- ctx.tenant.mailer.send(
               titleToSender,
-              Seq(email),
+              Seq(ctx.user.email),
               mailToSender,
               ctx.tenant
             )

@@ -93,6 +93,11 @@ export const AtomicDesign = () => {
             <h1 className="mt-3">Badges</h1>
             Customizable :
             <div className="badge badge-custom ms-2">badge-custom</div>
+            <div className="badge badge-custom-custom ms-2">badge-custom-custom</div>
+            <div className="badge badge-custom-info ms-2">badge-custom-info</div>
+            <div className="badge badge-custom-success ms-2">badge-custom-success</div>
+            <div className="badge badge-custom-warning ms-2">badge-custom-warning</div>
+            <div className="badge badge-custom-danger ms-2">badge-custom-danger</div>
             <h1 className="mt-3">Content</h1>
             <div className="d-flex flex-column">
               <div className="d-flex">

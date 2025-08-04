@@ -8,13 +8,10 @@ import { ModalContext } from '../../../../contexts';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services';
-import { IApi, isError, ITeamSimple } from '../../../../types';
+import { IApi, ICmsPageGQL, isError, ITeamSimple } from '../../../../types';
 import { teamSchema } from '../../../backoffice/teams/TeamEdit';
 import { Form } from '@maif/react-forms';
 import { teamApiInfoForm } from '../../../backoffice/apis/TeamApiInfo';
-import { getApolloContext, gql } from '@apollo/client';
-import { IPage } from '../../../adminbackoffice/cms';
-import { actions } from 'xstate';
 
 export const AddPanel = () => {
   const { translate } = useContext(I18nContext);
@@ -225,25 +222,10 @@ export const ApiFormRightPanel = (props: ApiFormRightPanelProps) => {
   const { translate } = useContext(I18nContext);
   const { closeRightPanel } = useContext(ModalContext);
 
-  const { tenant, expertMode, toggleExpertMode } = useContext(GlobalContext);
-  const { client } = useContext(getApolloContext());
-  const cmsPagesQuery = () => ({
-    query: gql`
-    query CmsPages {
-      pages {
-        id
-        name
-        path
-        contentType
-        lastPublishedDate
-        metadata
-      }
-    }
-  `,
-  });
-  const getCmsPages = (): Promise<Array<IPage>> =>
-    client!.query(cmsPagesQuery())
-      .then(res => res.data.pages as Array<IPage>)
+  const { tenant, expertMode, toggleExpertMode, customGraphQLClient } = useContext(GlobalContext);
+  const getCmsPages = (): Promise<Array<ICmsPageGQL>> =>
+    customGraphQLClient.request<{ pages: Array<ICmsPageGQL> }>(Services.graphql.cmsPages)
+      .then(res => res.pages)
 
   const informationForm = teamApiInfoForm(translate, props.team, tenant, getCmsPages, props.apigroup);
 

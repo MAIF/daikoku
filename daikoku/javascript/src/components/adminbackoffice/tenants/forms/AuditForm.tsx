@@ -9,7 +9,7 @@ import { ITenantFull } from '../../../../types';
 export const AuditForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translate } = useContext(I18nContext)
 
-  const ref = useRef<FormRef>()
+  const ref = useRef<FormRef>(undefined)
 
 
   const schema = {

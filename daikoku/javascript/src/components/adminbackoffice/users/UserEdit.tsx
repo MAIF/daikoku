@@ -2,7 +2,7 @@ import { constraints, Form, format, FormRef, Schema, type } from '@maif/react-fo
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { md5 } from 'js-md5';
 import { nanoid } from 'nanoid';
-import React, { useContext, useRef, useState } from 'react';
+import React, { JSX, useContext, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -11,6 +11,7 @@ import * as Services from '../../../services';
 import { IState, ITenant, IUser } from '../../../types';
 import { Can, daikoku, manage, Spinner } from '../../utils';
 import { GlobalContext } from '../../../contexts/globalContext';
+import { allowedAvatarFileTypes } from '../../utils/tenantUtils';
 
 const Avatar = ({
   setValue,
@@ -38,17 +39,20 @@ const Avatar = ({
       const filename = file.name;
       const contentType = file.type;
 
-      return Services.storeUserAvatar(filename, contentType, file)
-        .then((res) => {
-          if (res.error) {
-            toast.error(res.error);
-          } else {
-            setValue!('pictureFromProvider', false);
-            onChange!(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
-          }
-        });
+      if (allowedAvatarFileTypes.includes(contentType)) {
+        return Services.storeUserAvatar(filename, contentType, file)
+          .then((res) => {
+            if (res.error) {
+              toast.error(res.error);
+            } else {
+              setValue!('pictureFromProvider', false);
+              onChange!(`/user-avatar/${tenant._humanReadableId}/${res.id}`);
+            }
+          });
+      } else {
+        return Promise.reject(toast.error("file type not allowed"))
+      }
     }
-
   };
 
   const setPictureFromProvider = () => {
@@ -92,12 +96,6 @@ const Avatar = ({
         <PictureUpload setFiles={setFiles} />
       </div>
       <div className="">
-        <input
-          type="text"
-          className="form-control"
-          value={value}
-          onChange={(e) => changePicture(e.target.value)}
-        />
         <div className="d-flex mt-1 justify-content-end">
           <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink} disabled={!rawValues?.email}>
             <i className="fas fa-user-circle me-1" />
@@ -124,6 +122,7 @@ const Avatar = ({
 
 const PictureUpload = (props: { setFiles: (l: FileList | null) => void }) => {
   const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const { Translation } = useContext(I18nContext);
 
@@ -135,17 +134,19 @@ const PictureUpload = (props: { setFiles: (l: FileList | null) => void }) => {
   };
 
   const trigger = () => {
-    input.click();
+    if (inputRef.current) {
+      inputRef.current.click();
+    }
   };
 
-  let input;
 
   return (
     <div className="changePicture mx-3">
       <input
-        ref={(r) => (input = r)}
+        ref={inputRef}
         type="file"
         className="form-control hide"
+        accept="image/png, image/jpeg, image/jpg"
         onChange={e => setFiles(e)}
       />
       <button
@@ -262,7 +263,7 @@ export const UserEdit = () => {
       });
   };
 
-  const ref = useRef<FormRef>()
+  const ref = useRef<FormRef>(undefined)
   if (queryUser.isLoading) {
     return <Spinner />;
   } else if (queryUser.data) {

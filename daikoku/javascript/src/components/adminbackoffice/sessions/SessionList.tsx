@@ -18,7 +18,7 @@ export const SessionList = () => {
   const { translate, Translation } = useContext(I18nContext);
   const { confirm } = useContext(ModalContext);
 
-  const tableRef = useRef<TableRef>()
+  const tableRef = useRef<TableRef>(undefined)
 
   const columnHelper = createColumnHelper<ISession>();
   const columns = [

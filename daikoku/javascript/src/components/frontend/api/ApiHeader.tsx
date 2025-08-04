@@ -1,4 +1,3 @@
-import { getApolloContext, gql } from '@apollo/client';
 import { Form, constraints, format, type } from '@maif/react-forms';
 import { useQueryClient } from '@tanstack/react-query';
 import sortBy from 'lodash/sortBy';
@@ -11,8 +10,7 @@ import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { IApi, ITeamSimple, isError } from '../../../types';
-import { IPage } from '../../adminbackoffice/cms';
+import { IApi, ICmsPageGQL, ITeamSimple, isError } from '../../../types';
 import { api as API, Can, CanIDoAction, manage } from '../../utils';
 import { deleteApi } from '../../utils/apiUtils';
 import { ApiFormRightPanel } from '../../utils/sidebar/panels/AddPanel';
@@ -36,7 +34,6 @@ export const ApiHeader = ({
   const queryClient = useQueryClient();
   const { openRightPanel, closeRightPanel, prompt, openFormModal } = useContext(ModalContext);
   const { translate } = useContext(I18nContext);
-  const { tenant, expertMode, connectedUser } = useContext(GlobalContext);
 
   const [versions, setApiVersions] = useState<Array<string>>([]);
 
@@ -58,25 +55,7 @@ export const ApiHeader = ({
         setApiVersions(versions)
       );
   }, []);
-
-  const cmsPagesQuery = () => ({
-    query: gql`
-    query CmsPages {
-      pages {
-        id
-        name
-        path
-        contentType
-        lastPublishedDate
-        metadata
-      }
-    }
-  `,
-  });
-  const { client } = useContext(getApolloContext());
-  const getCmsPages = (): Promise<Array<IPage>> =>
-    client!.query(cmsPagesQuery())
-      .then(res => res.data.pages as Array<IPage>)
+      
   const transferSchema = {
     team: {
       type: type.string,
@@ -236,7 +215,7 @@ export const ApiHeader = ({
                   {translate("api.home.config.api.menu.new_version")}
                 </button>
               </li>}
-              <div className="dropdown-divider" role='none'/>
+              <div className="dropdown-divider" role='none' />
               {!api.apis && <li role='none'>
                 <button
                   role='menuitem'

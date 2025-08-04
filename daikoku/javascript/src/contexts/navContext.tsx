@@ -173,13 +173,17 @@ export const useApiFrontOffice = (api?: IApi, team?: ITeamSimple, plans?: IUsage
         order: 2,
         links: {
           contact: {
-            component: (
-              <button
+            component: ( connectedUser.isGuest ? 
+              <a
+                className="btn btn-sm btn-outline-primary mb-2"
+                href={`mailto:${team?.contact}`}
+              >
+                {translate({ key: `contact.team`, replacements: [team?.name || '--'] })}
+              </a> :
+               <button
                 className="btn btn-sm btn-outline-primary mb-2"
                 onClick={() =>
                   openContactModal({
-                    name: connectedUser.name,
-                    email: connectedUser.email,
                     team: api?.team,
                     api: api?._id
                   })
@@ -581,55 +585,6 @@ export const useDaikokuBackOffice = (props?: { creation?: boolean }) => {
       setMenu(fakeMenu);
     };
   }, [match, matchEdition]);
-
-  return { addMenu };
-};
-
-export const useUserBackOffice = () => {
-  const { setMode, setOffice, addMenu, setMenu } = useContext(NavContext);
-  const { translate } = useContext(I18nContext);
-
-  const { connectedUser } = useContext(GlobalContext);
-
-  const navigate = useNavigate();
-  const match = useMatch('/:tab');
-
-  const schema = (currentTab?: string) => ({
-    title: connectedUser.name,
-
-    blocks: {
-      links: {
-        order: 1,
-        links: {
-          profile: {
-            label: translate('My profile'),
-            action: () => navigateTo('me'),
-            className: { active: currentTab === 'me' },
-          },
-          notification: {
-            label: translate('Notifications'),
-            action: () => navigateTo('notifications'),
-            className: { active: currentTab === 'notifications' },
-          },
-        },
-      },
-    }
-  });
-
-  const navigateTo = (navTab: string) => {
-    navigate(`/${navTab}`);
-  };
-
-  useEffect(() => {
-    setMode(navMode.user);
-    setOffice(officeMode.back);
-    setMenu(schema(match?.params.tab));
-
-    return () => {
-      setMode(navMode.initial);
-      setMenu(fakeMenu);
-    };
-  }, []);
 
   return { addMenu };
 };

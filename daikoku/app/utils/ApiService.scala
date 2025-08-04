@@ -86,34 +86,50 @@ class ApiService(
       maybeOtoroshiApiKey: Option[OtoroshiApiKey] = None
   ) = {
 
-    val otoroshiApiKey = maybeOtoroshiApiKey.getOrElse(
-      OtoroshiApiKey(
-        clientId = IdGenerator.token(32),
-        clientSecret = IdGenerator.token(64),
-        clientName =
-          s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${System
-            .currentTimeMillis()}-${api.currentVersion.value}"
-      )
-    )
 
-    val createdAt = DateTime.now().toString()
-    val ctx = Map(
+    val date = DateTime.now()
+    val createdAtMillis = date.getMillis.toString
+    val createdAt = date.toString()
+
+    val defaultClientName = s"daikoku-api-key-${api.humanReadableId}-${plan.customName.urlPathSegmentSanitized}-${team.humanReadableId}-${createdAtMillis}-${api.currentVersion.value}"
+
+    val baseContext: Map[String, String] = Map(
       "user.id" -> user.id.value,
+      "user.humanReadableId" -> user.humanReadableId,
       "user.name" -> user.name,
       "user.email" -> user.email,
       "api.id" -> api.id.value,
+      "api.humanReadableId" -> api.humanReadableId,
       "api.name" -> api.name,
+      "api.currentVersion" -> api.currentVersion.value,
+      "plan.id" -> plan.id.value,
+      "plan.name" -> plan.customName,
       "team.id" -> team.id.value,
+      "team.humanReadableId" -> team.humanReadableId,
       "team.name" -> team.name,
       "tenant.id" -> tenant.id.value,
+      "tenant.humanReadableId" -> tenant.humanReadableId,
       "tenant.name" -> tenant.name,
       "createdAt" -> createdAt,
-      "client.id" -> otoroshiApiKey.clientId,
-      "client.name" -> otoroshiApiKey.clientName
+      "createdAtMillis" -> createdAtMillis,
     ) ++ team.metadata.map(t =>
       ("team.metadata." + t._1, t._2)
     ) ++ user.metadata
       .map(t => ("user.metadata." + t._1, t._2))
+
+    val otoroshiApiKey = maybeOtoroshiApiKey.getOrElse(
+      OtoroshiApiKey(
+        clientId = IdGenerator.token(32),
+        clientSecret = IdGenerator.token(64),
+        clientName = tenant.clientNamePattern
+          .map(OtoroshiTarget.processValue(_, baseContext))
+          .getOrElse(defaultClientName)
+      )
+    )
+
+    val ctx = baseContext ++ Map(
+      "client.id" -> otoroshiApiKey.clientId,
+      "client.name" -> otoroshiApiKey.clientName)
 
     //FIXME: if custom.metadata are not string:string it's broken
     val processedMetadata = plan.otoroshiTarget
@@ -1046,23 +1062,24 @@ class ApiService(
               .forTenant(tenant.id)
               .save(updatedSubscription)
           )
+          notification = Notification(
+            id = NotificationId(IdGenerator.token(32)),
+            tenant = tenant.id,
+            team = Some(subscription.team),
+            sender = user.asNotificationSender,
+            action = NotificationAction
+              .ApiKeyRefreshV2(
+                subscription = subscription.id,
+                api = api.id,
+                plan = plan.id
+              ),
+            notificationType = NotificationType.AcceptOnly
+          )
           _ <- EitherT.liftF(
             env.dataStore.notificationRepo
               .forTenant(tenant.id)
               .save(
-                Notification(
-                  id = NotificationId(IdGenerator.token(32)),
-                  tenant = tenant.id,
-                  team = Some(subscription.team),
-                  sender = user.asNotificationSender,
-                  action = NotificationAction
-                    .ApiKeyRefresh(
-                      subscription.customName.getOrElse(apiKey.clientName),
-                      api.name,
-                      plan.customName
-                    ),
-                  notificationType = NotificationType.AcceptOnly
-                )
+                notification
               )
           )
           _ <- EitherT.liftF(Future.sequence(admins.map(admin => {
@@ -1397,7 +1414,7 @@ class ApiService(
 
   def deleteApiSubscriptionsAsFlow(
       tenant: Tenant,
-      apiOrGroupName: String,
+      apiOrGroupId: ApiId,
       user: User
   ): Flow[(UsagePlan, Seq[ApiSubscription]), UsagePlan, NotUsed] =
     Flow[(UsagePlan, Seq[ApiSubscription])]
@@ -1413,9 +1430,10 @@ class ApiService(
                 team = Some(subscription.team),
                 sender = user.asNotificationSender,
                 notificationType = NotificationType.AcceptOnly,
-                action = NotificationAction.ApiKeyDeletionInformation(
-                  apiOrGroupName,
-                  subscription.apiKey.clientId
+                action = NotificationAction.ApiKeyDeletionInformationV2(
+                  apiOrGroupId,
+                  subscription.apiKey.clientId,
+                  subscription.id
                 )
               )
             )
@@ -1612,7 +1630,7 @@ class ApiService(
           )
           .map(seq => (plan, seq))
       )
-      .via(deleteApiSubscriptionsAsFlow(tenant, api.name, user))
+      .via(deleteApiSubscriptionsAsFlow(tenant, api.id, user))
       .runWith(Sink.ignore)
       .recover {
         case e =>

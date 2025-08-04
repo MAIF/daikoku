@@ -1,4 +1,3 @@
-import { gql } from '@apollo/client';
 import {
   I2FAQrCode,
   IAsset,
@@ -118,12 +117,21 @@ export const myUnreadNotificationsCount = (): Promise<{ count: number }> =>
     .catch(() => ({ count: 0 }));
 
 export const acceptNotificationOfTeam = (
-  NotificationId: string,
+  notificationId: string,
   values: object = {}
 ): Promise<ResponseError | ResponseDone> =>
-  customFetch(`/api/notifications/${NotificationId}/accept`, {
+  customFetch(`/api/notifications/${notificationId}/accept`, {
     method: 'PUT',
     body: JSON.stringify(values),
+  });
+
+export const acceptNotificationOfTeamByBulk = (
+  notificationIds: Array<string>,
+  selectAll: boolean
+): Promise<ResponseError | ResponseDone> =>
+  customFetch(`/api/notifications/accept/bulk`, {
+    method: 'PUT',
+    body: JSON.stringify({ notificationIds, selectAll }),
   });
 
 export const rejectNotificationOfTeam = (
@@ -910,8 +918,6 @@ export const resetTranslation = (translation: any) =>
   });
 
 export const sendEmails = (
-  name: string,
-  email: string,
   subject: string,
   body: string,
   tenantId: string,
@@ -928,8 +934,6 @@ export const sendEmails = (
       'X-contact-language': language,
     },
     body: JSON.stringify({
-      name,
-      email,
       subject,
       body,
       teamId,
@@ -1290,7 +1294,7 @@ export const removeCmsPage = (id: any) =>
 
 // MARK: GraphQL
 export const graphql = {
-  myTeams: gql`
+  myTeams: `
     query MyTeams {
       myTeams {
         name
@@ -1309,7 +1313,7 @@ export const graphql = {
       }
     }
   `,
-  apisByIds: gql(`
+  apisByIds: `
       query filteredApis ($ids: [String!]) {
         apis (ids: $ids) {
           _id
@@ -1329,8 +1333,8 @@ export const graphql = {
           }
         }
       }
-    `),
-  apisByIdsWithPlans: gql(`
+    `,
+  apisByIdsWithPlans: `
       query filteredApis ($ids: [String!]) {
         apis (ids: $ids) {
           _id
@@ -1347,7 +1351,7 @@ export const graphql = {
           }
         }
       }
-    `),
+    `,
   apiByIdsWithPlans: `
       query filteredApi ($id: String!) {
         api (id: $id) {
@@ -1511,7 +1515,7 @@ export const graphql = {
     query getAllCategories ($research: String, $groupId: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $filter: String, $limit: Int, $offset: Int){
       allCategories (research: $research, groupId: $groupId, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, filter: $filter, limit: $limit, offset: $offset)
     }`,
-  getAllTeams: gql(`
+  getAllTeams: `
   query getAllteams ($research: String, $limit: Int, $offset: Int) {
     teamsPagination (research: $research, limit: $limit, offset: $offset){
       teams {
@@ -1546,7 +1550,7 @@ export const graphql = {
       }
       total
     }
-  }`),
+  }`,
   getTeamIncome: `
   query getTeamIncome ($teamId: String!, $from: Long, $to: Long) {
     teamIncomes (teamId: $teamId, from: $from, to: $to) {
@@ -1568,7 +1572,7 @@ export const graphql = {
       to
     }
   }`,
-  getApiConsumptions: gql(`
+  getApiConsumptions: `
   query getApiConsumptions ($apiId: String!, $teamId: String!, $from: Long, $to: Long, $planId: String) {
     apiConsumptions (id: $apiId, teamId: $teamId, from: $from, to: $to, planIdOpt: $planId) {
       _id
@@ -1601,7 +1605,7 @@ export const graphql = {
       from
       to
     }
-  }`),
+  }`,
   getApiSubscriptions: `
     query getApiSubscriptions ($apiId: String!, $teamId: String!, $version: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
       apiApiSubscriptions (id: $apiId, teamId: $teamId, version: $version, filterTable: $filterTable, sortingTable: $sortingTable,  limit: $limit, offset: $offset) {
@@ -1657,9 +1661,9 @@ export const graphql = {
       }
     }
     `,
-  getMyNotifications: gql(`
-    query getMyNotifications ($pageNumber : Int, $pageSize: Int) {
-      myNotifications (pageNumber: $pageNumber, pageSize: $pageSize) {
+  getMyNotifications: `
+    query getMyNotifications ($limit : Int, $offset: Int, $filterTable: JsArray) {
+      myNotifications (limit: $limit, offset: $offset, filterTable: $filterTable) {
         notifications {
           _id
           tenant {
@@ -1675,6 +1679,7 @@ export const graphql = {
           }
           action {
             ... on ApiAccess {
+              __typename
               api {
                 _id
                 name
@@ -1685,6 +1690,7 @@ export const graphql = {
               }
             }
             ... on TeamInvitation {
+            __typename
               team {
                 _id
                 name
@@ -1694,7 +1700,8 @@ export const graphql = {
                 name
               }
             }
-            ... on ApiSubscriptionDemand {
+            ... on ApiSubscription {
+            __typename
               api {
                 _id
                 name
@@ -1719,30 +1726,132 @@ export const graphql = {
               }
               motivation
               demand {
-                id
+                _id
                 motivation
               }
             }
             ... on NewCommentOnIssue {
+            __typename
               linkTo
               apiName
             }
+            ... on NewCommentOnIssueV2 {
+            __typename
+              api {
+                _id
+                _humanReadableId
+                name
+                currentVersion
+                team {
+                  _humanReadableId
+                  name
+                }
+              }
+              issue {
+                _id
+              }
+            }
             ... on NewPostPublished {
+            __typename
               apiName
               team {
                 name
               }
             }
+            ... on NewPostPublishedV2 {
+            __typename
+              api {
+                _id
+                _humanReadableId
+                name
+                currentVersion
+                team {
+                  _humanReadableId
+                }
+              }
+              post {
+                _id
+              }
+            }
             ... on ApiKeyRefresh {
+            __typename
               subscriptionName
               apiName
               planName
             }
+            ... on ApiKeyRefreshV2 {
+            __typename
+              subscription {
+                _id
+                apiKey {
+                  clientName
+                  clientId
+                  clientSecret
+                }
+                createdAt
+                validUntil
+                by {
+                  id
+                  name
+                  email
+                }
+                customName
+                adminCustomName
+                enabled
+                rotation {
+                  enabled
+                  rotationEvery
+                  gracePeriod
+                  pendingRotation
+                }
+                integrationToken
+              }
+              api {
+                _id
+                _humanReadableId
+                name
+                team {
+                  _id
+                  _humanReadableId
+                  name
+                }
+              }
+              plan {
+                _id
+                customName
+              }
+              message
+            }
             ... on ApiKeyDeletionInformation {
+            __typename
               apiName
               clientId
             }
+            ... on ApiKeyDeletionInformationV2 {
+            __typename
+              subscription {
+                _id
+                apiKey {
+                  clientId
+                }
+                plan {
+                  _id
+                  customName
+                }
+              }
+              api {
+                _id
+                _humanReadableId
+                name
+                team {
+                  _id
+                  _humanReadableId
+                  name
+                }
+              }
+            }
             ... on TransferApiOwnership {
+            __typename
               api {
                 _id
                 name
@@ -1753,6 +1862,7 @@ export const graphql = {
               }
             }
             ... on ApiSubscriptionAccept {
+            __typename
               team {
                 _id
                 name
@@ -1768,6 +1878,7 @@ export const graphql = {
               }
             }
             ... on ApiSubscriptionReject {
+            __typename
               team {
                 _id
                 name
@@ -1784,21 +1895,145 @@ export const graphql = {
               message
             }
             ... on OtoroshiSyncSubscriptionError {
+            __typename
               message
             }
+            ... on OtoroshiSyncApiError {
+            __typename
+              message,
+              api {
+                _id,
+                name
+              }
+            }
             ... on ApiKeyRotationInProgress {
+            __typename
               clientId
               apiName
               planName
+            }
+            ... on ApiKeyRotationInProgressV2 {
+            __typename
+              subscription {
+                _id
+                apiKey {
+                  clientName
+                  clientId
+                  clientSecret
+                }
+                plan {
+                  _id
+                  customName
+                }
+                createdAt
+                validUntil
+                by {
+                  id
+                  name
+                  email
+                }
+                customName
+                adminCustomName
+                enabled
+                rotation {
+                  enabled
+                  rotationEvery
+                  gracePeriod
+                  pendingRotation
+                }
+                integrationToken
+              }
+              api {
+                _humanReadableId
+                name
+              }
+              plan {
+                _id
+                customName
+              }
             }
             ... on ApiKeyRotationEnded {
+            __typename
               clientId
               apiName
               planName
             }
+            ... on ApiKeyRotationEndedV2 {
+            __typename
+              subscription {
+                _id
+                apiKey {
+                  clientName
+                  clientId
+                  clientSecret
+                }
+                plan {
+                  _id
+                  customName
+                }
+                createdAt
+                validUntil
+                by {
+                  id
+                  name
+                  email
+                }
+                customName
+                adminCustomName
+                enabled
+                rotation {
+                  enabled
+                  rotationEvery
+                  gracePeriod
+                  pendingRotation
+                }
+                integrationToken
+              }
+              api {
+                _humanReadableId
+                name
+              }
+              plan {
+                _id
+                customName
+              }
+            }
             ... on NewIssueOpen {
+            __typename
               linkTo
               apiName
+            }
+            ... on NewIssueOpenV2 {
+            __typename
+              api {
+                _id
+                _humanReadableId
+                name
+                currentVersion
+                team {
+                  _humanReadableId
+                  name
+                }
+              }
+              issue {
+                _id
+              }
+            }
+            ... on CheckoutForSubscription {
+            __typename
+              demand {
+                _id
+                team {
+                  _id
+                  _humanReadableId
+                  name
+                }
+              }
+              api {
+                _id
+                name
+                currentVersion
+              }
             }
           }
           date
@@ -1807,25 +2042,34 @@ export const graphql = {
           }
           status {
             ... on NotificationStatusAccepted {
+            __typename
               date
               status
             }
             ... on NotificationStatusRejected {
+            __typename
               date
               status
             }
             ... on NotificationStatusPending {
+            __typename
               status
             }
 
           }
           
         }
-        total
+        total,
+        totalFiltered,
+        totalByTeams,
+        totalByTypes,
+        totalByApis,
+        totalByNotificationTypes,
+        totalSelectable
       }
     }
-    `),
-  getApisWithSubscription: gql(`
+    `,
+  getApisWithSubscription: `
     query AccessibleApis ($teamId: String!, $research: String, $apiSubOnly: Boolean, $limit: Int, $offset: Int) {
       accessibleApis (teamId: $teamId, research: $research, apiSubOnly: $apiSubOnly , limit: $limit, offset: $offset) {
         apis {
@@ -1885,8 +2129,8 @@ export const graphql = {
         total
       }
 
-    }`),
-  getCmsPage: (id: any) => gql`
+    }`,
+  getCmsPage: (id: string) => `
     query GetCmsPage {
         cmsPage(id: "${id}") {
             name
@@ -1902,7 +2146,7 @@ export const graphql = {
         }
     }
   `,
-  getCmsPageHistory: (id: any) => gql`
+  getCmsPageHistory: (id: string) => `
   query GetCmsPage {
       cmsPage(id: "${id}") {
           name
@@ -1916,6 +2160,18 @@ export const graphql = {
       }
   }
 `,
+  cmsPages: `
+    query CmsPages {
+      pages {
+        id
+        name
+        path
+        contentType
+        lastPublishedDate
+        metadata
+      }
+    }
+  `,
   getAuditTrail: `
   query getAuditTrail ($from: Long!, $to: Long!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
     auditTrail (from: $from, to: $to, filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset) {

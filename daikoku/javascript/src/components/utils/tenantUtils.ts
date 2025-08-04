@@ -47,3 +47,5 @@ export const parseAsHtml = (element: string): DocumentFragment => {
 };
 
 export const reservedCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
+
+export const allowedAvatarFileTypes = ['image/jpeg', 'image/png'];

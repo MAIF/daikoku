@@ -411,6 +411,9 @@ class OtoroshiClient(env: Env) {
       otoroshiSettings: OtoroshiSettings,
       tenant: Tenant
   ): EitherT[Future, JsArray, JsArray] = {
+    AppLogger.warn(Json.stringify(JsArray(
+      subscriptions.map(_.apiKey.clientId).map(JsString)
+    )))
     otoroshiSettings.elasticConfig match {
       case Some(config) =>
         new ElasticReadsAnalytics(config, env)
@@ -454,8 +457,9 @@ class OtoroshiClient(env: Env) {
             )
           )
           .map(resp => {
+            AppLogger.warn(Json.stringify(resp))
             val buckets =
-              (resp \ "aggregations" \ "lastUsages" \ "buckets").as[JsArray]
+              (resp \ "aggregations" \ "lastUsages" \ "buckets").asOpt[JsArray].getOrElse(Json.arr())
             JsArray(buckets.value.map(agg => {
               val key = (agg \ "key").as[String]
               val lastUsage =

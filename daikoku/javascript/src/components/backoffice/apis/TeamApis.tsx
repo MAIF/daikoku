@@ -25,7 +25,7 @@ export const TeamApis = () => {
       document.title = `${currentTeam.name} - ${translate({ key: 'API', plural: true })}`;
   }, [currentTeam]);
 
-  let table = useRef<TableRef>();
+  let table = useRef<TableRef>(undefined);
 
   const columnHelper = createColumnHelper<IApi>();
 

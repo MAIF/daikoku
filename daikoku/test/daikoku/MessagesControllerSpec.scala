@@ -71,7 +71,6 @@ class MessagesControllerSpec()
 
       val respGet =
         httpJsonCallBlocking("/api/me/messages/admin")(tenant, session)
-      AppLogger.info(Json.prettyPrint(respGet.json))
       respGet.status mustBe 200
       val messages =
         json.SeqMessagesFormat.reads((respGet.json \ "messages").as[JsArray])

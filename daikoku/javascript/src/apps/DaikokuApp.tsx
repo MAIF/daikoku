@@ -1,4 +1,4 @@
-import { useContext, useEffect } from 'react';
+import { PropsWithChildren, useContext, useEffect } from 'react';
 import { Navigate, Outlet } from 'react-router';
 import { BrowserRouter, Route, BrowserRouter as Router, Routes, createBrowserRouter, RouterProvider, ScrollRestoration, useSearchParams } from 'react-router-dom';
 
@@ -45,7 +45,7 @@ import { FastMode } from "../components/frontend/fastMode/FastMode";
 import { GlobalContext } from '../contexts/globalContext';
 import { I18nContext } from '../contexts/i18n-context';
 import { MessagesEvents } from '../services/messages';
-import { ResetPassword, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
+import { ResetPassword, ResetPasswordEnd, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
 import { AnonymousReporting } from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
 import { RightPanel } from '../components/utils/sidebar/RightPanel';
 
@@ -87,6 +87,14 @@ export const DaikokuApp = () => {
                 element={
                   <UnauthenticatedRoute title={translate('Login')} header={`${translate({ key: 'login.to.tenant', replacements: [tenant.title || translate('Tenant')] })}`} >
                     <LoginPage />
+                  </UnauthenticatedRoute>
+                }
+              />
+              <Route
+                path="/reset/password"
+                element={
+                  <UnauthenticatedRoute title={translate('Reset')} header={translate('Reset your password')}>
+                    <ResetPasswordEnd />
                   </UnauthenticatedRoute>
                 }
               />
@@ -174,6 +182,14 @@ export const DaikokuApp = () => {
                     element={
                       <UnauthenticatedRoute title={translate('Verification code')} header={translate('Verification code')} >
                         <TwoFactorAuthentication />
+                      </UnauthenticatedRoute>
+                    }
+                  />
+                  <Route
+                    path="/reset/password"
+                    element={
+                      <UnauthenticatedRoute title={translate('Reset')} header={translate('Reset your password')}>
+                        <ResetPasswordEnd />
                       </UnauthenticatedRoute>
                     }
                   />
@@ -466,7 +482,7 @@ const ToLogin = ({ tenant }) => {
     return <Navigate to={to} replace />
 }
 
-const FrontOfficeRoute = (props: { title?: string, children: JSX.Element }) => {
+const FrontOfficeRoute = (props: PropsWithChildren<{ title?: string }>) => {
   return (
     <RouteWithTitle {...props}>
       <FrontOffice>{props.children}</FrontOffice>
@@ -474,7 +490,7 @@ const FrontOfficeRoute = (props: { title?: string, children: JSX.Element }) => {
   );
 };
 
-const RouteWithTitle = (props: { title?: string, children: JSX.Element }) => {
+const RouteWithTitle = (props: PropsWithChildren<{ title?: string }>) => {
   const { tenant } = useContext(GlobalContext)
 
   useEffect(() => {
@@ -486,7 +502,7 @@ const RouteWithTitle = (props: { title?: string, children: JSX.Element }) => {
   return props.children;
 };
 
-const UnauthenticatedRoute = (props: { children: JSX.Element, title: string, header: string }) => {
+const UnauthenticatedRoute = (props: PropsWithChildren<{ title: string, header: string }>) => {
   const { connectedUser, tenant } = useContext(GlobalContext)
   if (connectedUser && connectedUser._humanReadableId) {
     return <Navigate to="/" />;

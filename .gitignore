@@ -2,6 +2,7 @@
 .metals
 .vscode
 .bsp
+.jvmopts
 *.swp
 node_modules
 .idea

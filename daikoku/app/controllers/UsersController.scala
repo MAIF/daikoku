@@ -532,13 +532,11 @@ class UsersController(
             maybeToken,
             AppError.InternalServerError("no token provided")
           )
-          _ = AppLogger.info(token)
           user <- EitherT.fromOptionF[Future, AppError, User](
             env.dataStore.userRepo
               .findOne(Json.obj("invitation.token" -> token)),
             AppError.UserNotFound()
           )
-          _ = AppLogger.info(user.id.value)
           _ <- EitherT.pure[Future, AppError](
             ctx.setCtxValue("invited_user", user.email)
           )
@@ -553,7 +551,6 @@ class UsersController(
               ),
             AppError.EntityNotFound("notification")
           )
-          _ = AppLogger.info(notification.id.value)
           _ <- EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.notificationRepo
               .forTenant(ctx.tenant)

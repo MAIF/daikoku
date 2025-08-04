@@ -82,7 +82,7 @@ export const TeamSelectorModal = ({ title, description, teams, pendingTeams = []
   return (
     <div className="modal-content">
       <div className="modal-header">
-        <h5 className="modal-title" id='modal-title'>{title}</h5>
+        <h5 className="modal-title" id="modal-title">{title}</h5>
         <button type="button" className="btn-close" aria-label={translate("Close")} onClick={close} />
       </div>
       <div className="modal-body">

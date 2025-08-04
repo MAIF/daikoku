@@ -1,17 +1,18 @@
-import { constraints, Form, format, type } from '@maif/react-forms';
+import { constraints, Form, format, Schema, type } from '@maif/react-forms';
 import { UseMutationResult } from '@tanstack/react-query';
 import { useContext } from 'react';
 
 
-import { I18nContext } from '../../../../contexts';
+import { I18nContext, ModalContext } from '../../../../contexts';
 import { ITenantFull, Language } from '../../../../types';
 
 
 
 export const GeneralForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown>, createTenant: UseMutationResult<any, unknown, ITenantFull, unknown>, creation: boolean }) => {
   const { translate, languages } = useContext(I18nContext)
+  const { alert } = useContext(ModalContext)
 
-  const schema = {
+  const schema: Schema = {
     name: {
       type: type.string,
       label: translate('Name'),
@@ -50,6 +51,46 @@ export const GeneralForm = (props: { tenant?: ITenantFull, updateTenant: UseMuta
       type: type.string,
       format: format.text,
       label: translate('Robot.txt.label'),
+    },
+    clientNamePattern: {
+      type: type.string,
+      label: () => <div>{translate("tenant.edit.clientNamePattern.label")}
+        <button type='button'
+          className='btn btn-outline-info ms-1'
+          onClick={() => alert({ 
+            title: translate('tenant.edit.clientNamePattern.label'), 
+            message: <div>
+              <div>{translate('tenant.edit.clientNamePattern.help')}</div>
+              <div>{translate('tenant.edit.clientNamePattern.help2')}</div>
+              <pre>
+                {JSON.stringify([
+                  "user.id",
+                  "user.humanReadableId",
+                  "user.name",
+                  "user.email",
+                  "user.metadata.<value>",
+                  "api.id",
+                  "api.humanReadableId",
+                  "api.name",
+                  "api.currentVersion",
+                  "plan.id",
+                  "plan.customName",
+                  "team.id",
+                  "team.humanReadableId",
+                  "team.name",
+                  "team.metadata.<value>",
+                  "tenant.id",
+                  "tenant.humanReadableId",
+                  "tenant.name",
+                  "createdAt" ,
+                  "createdAtMillis" ,
+                ], null, 4)}
+              </pre>
+            </div> })}>
+          <i className='fas fa-circle-question' />
+        </button>
+      </div>,
+
     }
   };
 

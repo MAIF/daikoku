@@ -1,6 +1,12 @@
 import { IApiSubscriptionGql } from '../components';
-import { ApiState, IApi, IAuthorizedEntities, IIssuesTag } from './api';
-import { ITeamSimple, IUser, TeamPermission, TeamUser } from './team';
+import {
+  ApiState,
+  IApi,
+  IAuthorizedEntities,
+  ISubscriptionDemandState,
+  IValidationStep
+} from './api';
+import { TeamPermission } from './team';
 import { ITenant } from './tenant';
 
 export interface ITeamFullGql {
@@ -18,7 +24,7 @@ export interface ITeamFullGql {
   apisCreationPermission?: boolean;
   verified: boolean;
   metadata: object;
-  authorizedOtoroshiEntities: Array<{
+  authorizedOtoroshiEntities?: Array<{
     otoroshiSettingsId: string;
     authorizedEntities: IAuthorizedEntities;
   }>;
@@ -47,6 +53,7 @@ export interface IApiGQL {
   lastUpdate: string;
   state: ApiState;
   currentVersion: string;
+  isDefault: boolean;
   name: string;
   smallDescription: string;
   description: string;
@@ -104,4 +111,36 @@ export interface IAuditTrailEventGQL {
     email: string;
     isDaikokuAdmin: boolean;
   };
+}
+
+export interface ICmsPageGQL {
+  id: string;
+  name: string;
+  path: string;
+  body: string;
+  exact: boolean;
+  visible: boolean;
+  authenticated: boolean;
+  metadata: object;
+  contentType: string;
+  tags: String[];
+  lastPublishedDate: number;
+}
+
+export interface ISubscriptionDemandGQL {
+  _id: string;
+  api: IApiGQL;
+  plan: IUsagePlanGQL;
+  steps: Array<{
+    id: string;
+    state: ISubscriptionDemandState;
+    step: IValidationStep;
+  }>;
+  state: string;
+  team: ITeamFullGql;
+  from: {
+    name: string;
+  };
+  date: number;
+  motivation?: string;
 }

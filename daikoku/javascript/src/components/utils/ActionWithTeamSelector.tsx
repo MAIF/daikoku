@@ -1,11 +1,8 @@
-import React, { ReactNode, useContext } from 'react';
+import React, { PropsWithChildren, ReactElement, ReactNode, useContext } from 'react';
 import { ModalContext, TeamSelectorModalProps } from '../../contexts';
 
-type TActionWithTeamSelectorComponentProps = TeamSelectorModalProps & {
-  children: JSX.Element
-};
 
-export const ActionWithTeamSelector = (props: TActionWithTeamSelectorComponentProps) => {
+export const ActionWithTeamSelector = (props: PropsWithChildren<TeamSelectorModalProps>) => {
   const { openTeamSelectorModal } = useContext(ModalContext);
 
   const openModal = () => {
@@ -16,7 +13,9 @@ export const ActionWithTeamSelector = (props: TActionWithTeamSelectorComponentPr
     }
   };
 
-  if (
+  if (!React.isValidElement(props.children)) {
+    return null
+  } else if (
     !props.allowMultipleDemand && props.teams.length === 1 &&
     ((props.pendingTeams && props.pendingTeams.includes(props.teams[0]._id)) ||
       (props.acceptedTeams && props.acceptedTeams.includes(props.teams[0]._id)))
@@ -24,5 +23,5 @@ export const ActionWithTeamSelector = (props: TActionWithTeamSelectorComponentPr
     return null;
   }
 
-  return <>{React.cloneElement(props.children, { onClick: () => openModal() })}</>;
+  return <>{React.cloneElement(props.children as ReactElement<{ onClick?: () => void }>, { onClick: () => openModal() })}</>;
 }

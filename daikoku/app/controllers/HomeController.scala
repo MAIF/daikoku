@@ -173,7 +173,13 @@ class HomeController(
           "apiCreationPermitted" -> ctx.apiCreationPermitted,
           "loginAction" -> fr.maif.otoroshi.daikoku.ctrls.routes.LoginController
             .login(ctx.tenant.authProvider.name)
-            .url
+            .url,
+          "graphQLEndpoint" -> env.getDaikokuUrl(
+            ctx.tenant,
+            fr.maif.otoroshi.daikoku.ctrls.routes.GraphQLController
+              .search()
+              .url
+          )
         )
       )
     }

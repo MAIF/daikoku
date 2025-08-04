@@ -643,6 +643,29 @@ This document provides a comprehensive overview of all Daikoku email events, the
         </ul>
       </details>
     </li>
+    <li>
+      <details>
+        <summary>
+          A user receive a mail for <strong>password reset</strong> validation
+        </summary>
+        <p>
+          <strong>This email is sent to a user who asked to reset his password.</strong>
+        </p>
+        
+        <p>
+          <div><strong>Title</strong>: mail-reset-password-title</div>
+          <div><strong>Body</strong>: mail-reset-password-body</div>
+        </p>
+
+        <p><strong>Parameters:</strong></p>
+        <ul>
+          <li><strong>mail</strong>: The mail of user who asked password reset</li>
+          <li><strong>tenant</strong>: The name of the tenant</li>
+          <li><strong>link</strong>: The link to daikoku page for password reset validation</li>
+          <li><strong>tenant_data</strong>: The tenant as a JSON object</li>
+        </ul>
+      </details>
+    </li>
 </ul>
 
 Each folder structure contains two subfolders, each with a `page.html` file.

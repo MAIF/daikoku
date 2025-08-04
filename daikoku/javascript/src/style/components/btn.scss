@@ -71,7 +71,8 @@ button {
 .btn-outline-info:hover,
 .btn-outline-danger:hover,
 .btn-outline-success:hover,
-.btn.btn-danger:hover {
+.btn.btn-danger:hover,
+.btn.btn-secondary:hover {
   color: #fff;
 }
 
@@ -91,6 +92,20 @@ button {
   &:hover,
   &.active {
     color: #9e9e9e !important;
+  }
+}
+
+.btn-outline-secondary,
+.btn-outline-secondary:focus {
+  background-color: #fff;
+  color: variables.$neutral-color;
+  border-color: variables.$neutral-color;
+
+  &:hover,
+  &.active {
+    color: #fff;
+    background-color: variables.$neutral-color;
+    border-color: variables.$neutral-color;
   }
 }
 
@@ -270,4 +285,23 @@ button {
 .fake-documentation-page-dnd {
   margin: 0 20px;
   padding: 20px;
+}
+
+.shake {
+
+  &.active {
+    animation: shake 200ms 2 linear;
+  }
+  
+}
+@keyframes shake {
+  0% {
+    transform: translate(6px, 0);
+  }
+  50% {
+    transform: translate(-6px, 0);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
 }

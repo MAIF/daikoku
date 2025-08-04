@@ -5,7 +5,6 @@ export enum navMode {
   initial = 'INITIAL',
   api = 'API',
   apiGroup = 'API_GROUP',
-  user = 'USER',
   daikoku = 'DAIKOKU',
   tenant = 'TENANT',
   team = 'TEAM',

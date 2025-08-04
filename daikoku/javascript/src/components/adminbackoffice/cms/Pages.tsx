@@ -1,22 +1,23 @@
 import { createColumnHelper } from '@tanstack/react-table';
 import { useContext, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { IPage } from '..';
 import { ModalContext } from '../../../contexts';
 import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { Table, TableRef } from '../../inputs';
 import { CONTENT_TYPES } from './cmsUtils';
+import { ICmsPageGQL } from '../../../types';
 
 type PagesProps = {
-  pages: Array<IPage>
+  pages: Array<ICmsPageGQL>
   reload: any
 }
+
 export const Pages = ({
   pages,
   reload
 }: PagesProps) => {
-  const table = useRef<TableRef>()
+  const table = useRef<TableRef>(undefined)
   const { translate } = useContext(I18nContext);
 
   useEffect(() => {
@@ -29,7 +30,7 @@ export const Pages = ({
 
   const navigate = useNavigate();
 
-  const columnHelper = createColumnHelper<IPage>();
+  const columnHelper = createColumnHelper<ICmsPageGQL>();
   const columns = [
     columnHelper.display({
       header: ' ',
