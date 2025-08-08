@@ -1353,13 +1353,13 @@ export const NotificationList = () => {
                 {!selectAll && table.getIsAllPageRowsSelected() && table.getSelectedRowModel().rows.length < totalSelectable && (
                   <button className='btn btn-sm btn-outline-secondary ms-3' onClick={() => setSelectAll(true)}>{translate({ key: 'notifications.page.table.select.really.all.label', replacements: [totalSelectable.toLocaleString()] })}</button>
                 )}
-                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>Api</span>}
-                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>Type</span>}
-                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>Description</span>}
-                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>Équipe</span>}
-                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>Sender</span>}
-                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>Date</span>}
-                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>Action</span>}
+                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('notifications.page.table.header.label.api')}</span>}
+                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('notifications.page.table.header.label.type')}</span>}
+                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('notifications.page.table.header.label.description')}</span>}
+                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('notifications.page.table.header.label.team')}</span>}
+                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('notifications.page.table.header.label.sender')}</span>}
+                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('notifications.page.table.header.label.date')}</span>}
+                {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('notifications.page.table.header.label.actions')}</span>}
               </div>
               <ul className='table-rows'>
                 {table.getRowModel().rows.map(row => {

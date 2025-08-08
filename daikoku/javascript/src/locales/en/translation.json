@@ -1639,6 +1639,13 @@
     "notification.page.status.accepted.label": "Accepted",
     "notification.page.status.pending.label": "Pending",
     "notification.page.status.rejected.label": "Rejected",
+    "notifications.page.table.header.label.api": "API",
+    "notifications.page.table.header.label.type": "Type",
+    "notifications.page.table.header.label.description": "Description",
+    "notifications.page.table.header.label.team": "Team",
+    "notifications.page.table.header.label.sender": "Sender",
+    "notifications.page.table.header.label.date": "Date",
+    "notifications.page.table.header.label.actions": "Actions",
     "tenant.edit.clientNamePattern.label": "Custom client name pattern",
     "tenant.edit.clientNamePattern.help": "This pattern is used to customize the client name when creating an API key. The string can include dynamic values using the ${my.value} syntax.",
     "tenant.edit.clientNamePattern.help2": "The following values are available:"
