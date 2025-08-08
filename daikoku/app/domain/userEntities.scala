@@ -173,7 +173,11 @@ case class Passkey(
 }
 
 case class PasskeyChallenge(
-    key: String, value: String, expires: DateTime
+    id: DatastoreId,
+    tenant: TenantId,
+    key: String,
+    value: String,
+    expires: DateTime
 ) extends CanJson[PasskeyChallenge] {
   override def asJson: JsValue = json.PasskeyChallengeFormat.writes(this)
 }

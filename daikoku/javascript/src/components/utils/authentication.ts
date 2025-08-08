@@ -5,8 +5,9 @@ import { decode, diagnose, encode } from 'cbor2';
 import { isError, IUserSimple } from "../../types";
 import * as Services from '../../services';
 import { IPasskey } from "../backoffice";
+import { RefObject } from "react";
 
-const getKnownAAGUIDs = (): {[key: string]: {name: string} } => {
+const getKnownAAGUIDs = (): { [key: string]: { name: string } } => {
   return {
     "ea9b8d66-4d01-1d21-3ce4-b6b48cb575d4": {
       "name": "Google Password Manager",
@@ -123,8 +124,6 @@ const getPasskeyProvider = (credentialResponse: AuthenticatorAttestationResponse
     const hex = Array.from(aaguidBytes).map(b => b.toString(16).padStart(2, '0')).join('');
     const aaguid = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
 
-    console.debug({ aaguid })
-
     return Promise.resolve(getKnownAAGUIDs()[aaguid].name);
   } catch (error) {
     return Promise.resolve(undefined);
@@ -144,7 +143,6 @@ export const createPassKeyCredential = (
     The authenticator will sign this along with other data.
   */
 
-  console.debug({ challengeBufferString })
   const challengeBuffer = base64urlDecode(challengeBufferString)
 
   const userIdBuffer = new TextEncoder().encode(userId);
@@ -169,16 +167,12 @@ export const createPassKeyCredential = (
     // SUPPORT ALL PASSKEYS
     pubKeyCredParams: [
       { type: "public-key", alg: -7 },   // ES256
-      { type: "public-key", alg: -257 }, // RS256
+      // { type: "public-key", alg: -257 }, // RS256 => avoid it for security reason
       { type: "public-key", alg: -8 },   // EdDSA
     ],
     timeout: 15000,
     attestation: "none",
   };
-
-  console.debug(
-    `✅  publicKeyCredentialCreationOptions : ${publicKeyCredentialCreationOptions}`
-  );
 
   return navigator.credentials.create({
     publicKey: publicKeyCredentialCreationOptions,
@@ -206,22 +200,17 @@ const validateClientData = (
   // Gather the Client Data
   const decoder = new TextDecoder(); // @ts-ignore
   const clientData: { type: string, challenge: string, origin: string } = JSON.parse(decoder.decode(credential.response.clientDataJSON));
-  // console.debug({ clientData, credential, clientDataJSON: credential.response.clientDataJSON })
-  console.log("✅  Gathered Client Data: ", clientData);
   if (clientData.origin !== "https://daikoku.oto.tools:5173") {
-    console.log("❌  Origin does not match!", clientData.origin);
     return {
       valid: false,
       challenge: null,
     };
   } else if (clientData.type !== "webauthn.create") {
-    console.log("❌  Type does not match webauthn.create");
     return {
       valid: false,
       challenge: null,
     };
   }
-  console.log("✅  Client Data is Valid");
   return {
     valid: true,
     challenge: clientData.challenge,
@@ -253,7 +242,6 @@ export const loginWithPasskey = () => {
     })
     .then((assertion) => {
       if (assertion) {
-        console.log("✅ Assertion is not null : ", assertion);
         const credential = assertion as PublicKeyCredential;
         const authResponse = credential.response as AuthenticatorAssertionResponse;
 
@@ -269,16 +257,13 @@ export const loginWithPasskey = () => {
             userHandle: authResponse.userHandle ? arrayBufferToBase64url(authResponse.userHandle) : null
           }
         };
-        console.log("✅ Serialized assertion : ", serializedAssertion);
         return Services.completePasskeyAssertion(serializedAssertion, challengeId)
       } else {
-        console.log("❌ Assertion does not exist.");
         return Promise.reject(null)
       }
     })
     .then(r => {
-      console.debug({ r })
-      if (isError(r)) {
+      if (!!r && isError(r)) {
         toast.error(r.error)
       } else {
         location.reload()
@@ -326,18 +311,14 @@ export const createPasskey = (user: IUserSimple, getName: (name?: string) => Pro
     )
       .then((credential) => ({ credential: credential as PublicKeyCredential | null, challengeBufferString })))
     .then(({ credential, challengeBufferString }) => {
-      console.log("✅ Created Pass Key Credential ! ")
 
       if (credential) {
-        console.log("✅ Credential is not null : ", credential);
         // Validate PassKey Creation
         const challenge = validatePassKeyCreation(credential);
         switch (challenge) {
           case null:
-            console.log("❌ PassKey verification failed.");
             return;
           default:
-            console.log(`✅ PassKey verification passed with challenge : ${challenge}`);
 
 
 
@@ -358,12 +339,10 @@ export const createPasskey = (user: IUserSimple, getName: (name?: string) => Pro
                 type: credential.type,
                 publicKeyAlgorithm: response.getPublicKeyAlgorithm()
               }))
-              .then(() => console.log("✅ register PassKey successful"))
               .then(() => toast.success("register PassKey successful"))
               .then(onSuccess)
         }
       } else {
-        console.log("❌ Credential does not exist.");
         return Promise.reject(null)
       }
     })
@@ -415,11 +394,9 @@ export const loginWithConditionalPasskey = () => {
     })
     .then(assertion => {
       if (!assertion) {
-        console.log('❌ Conditional passkey assertion is null.');
         return Promise.reject('No assertion');
       }
 
-      console.log('✅ Conditional assertion: ', assertion);
 
       const credential = assertion as PublicKeyCredential;
       const authResponse = credential.response as AuthenticatorAssertionResponse;
@@ -440,4 +417,29 @@ export const loginWithConditionalPasskey = () => {
 
       return Services.completePasskeyAssertion(serializedAssertion, challengeId).then(() => location.reload());
     });
+};
+
+export const handleLoginInputFocus = (isPromptingPasskey: RefObject<boolean>) => {
+  if (isPromptingPasskey.current) { 
+    return; 
+  }
+  isPromptingPasskey.current = true;
+
+  if (window.PublicKeyCredential && PublicKeyCredential.isConditionalMediationAvailable) {
+    PublicKeyCredential.isConditionalMediationAvailable()
+      .then(cma => {
+        if (cma) {
+          return loginWithConditionalPasskey();
+        }
+      })
+      .then(() => {
+        window.location.href = '/'
+      })
+      .catch(e => {
+        if (e.name !== 'AbortError' && e.name !== 'NotAllowedError') {
+          console.error(e);
+          isPromptingPasskey.current = false;
+        }
+      })
+  }
 };

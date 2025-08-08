@@ -425,7 +425,10 @@ trait ApiSubscriptionTransferRepo
     extends TenantCapableRepo[ApiSubscriptionTransfer, DatastoreId]
 
 trait PasskeyChallengeRepo
-    extends TenantCapableRepo[PasskeyChallenge, DatastoreId]
+    extends TenantCapableRepo[PasskeyChallenge, DatastoreId] {
+  def findByKey(key: String, tenant: Tenant)(implicit env: Env, ec: ExecutionContext): Future[Option[PasskeyChallenge]] =
+    this.forTenant(tenant).findOne(Json.obj("key" -> key))
+}
 
 trait TeamRepo extends TenantCapableRepo[Team, TeamId] {
   def myTeams(tenant: Tenant, user: User)(implicit

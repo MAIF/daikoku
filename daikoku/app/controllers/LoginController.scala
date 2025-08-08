@@ -5,12 +5,7 @@ import cats.implicits.catsSyntaxOptionId
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import com.google.common.base.Charsets
 import controllers.{AppError, Assets}
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuTenantAction,
-  DaikokuTenantActionContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithoutUser, DaikokuTenantAction, DaikokuTenantActionContext}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.PublicUserAccess
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -33,6 +28,7 @@ import org.mindrot.jbcrypt.BCrypt
 import play.api.libs.json.{Json, _}
 import play.api.mvc._
 
+import java.math.BigInteger
 import java.net.URLEncoder
 import java.nio.{ByteBuffer, ByteOrder}
 import java.security.SecureRandom
@@ -102,7 +98,7 @@ class LoginController(
               val redirect = ctx.request.getQueryString("redirect")
               val clientId = authConfig.clientId
               val responseType = "code"
-              val scope = authConfig.scope // "openid profile email name"
+              val scope = authConfig.scope
               val redirectUri = authConfig.callbackUrl
               val loginUrl =
                 s"${authConfig.loginUrl}?scope=$scope&client_id=$clientId&response_type=$responseType&redirect_uri=$redirectUri"
@@ -131,7 +127,6 @@ class LoginController(
       f: => Future[Option[User]],
       bypass2fa: Boolean = false
   ): Future[Result] = {
-    AppLogger.warn(s"[BIND USER] :: bypass 2fa :: $bypass2fa")
     f.flatMap {
       case None =>
         after(3.seconds)(
@@ -140,7 +135,6 @@ class LoginController(
       case Some(user) =>
         (user.twoFactorAuthentication, user.passkeys) match {
           case (Some(auth), passkeys) if (auth.enabled || passkeys.nonEmpty) && !bypass2fa =>
-            AppLogger.warn(s"[BIND USER] :: auth enable ${auth.enabled} :: passkeys ${passkeys.length} :: $bypass2fa")
             val keyGenerator = KeyGenerator.getInstance("HmacSHA1")
             keyGenerator.init(160)
             val token =
@@ -394,12 +388,17 @@ class LoginController(
         userVerification = "preferred"
       )
 
-      // Stocker le challenge en session/cache
-      val key = s"passkey_asssertion_challenge_$challengeId"
+      val key = s"passkey_login_challenge_$challengeId"
 
+      val passkeyChallenge = PasskeyChallenge(
+        id = DatastoreId(IdGenerator.token(32)),
+        tenant = ctx.tenant.id,
+        key = key,
+        value = challenge,
+        expires = DateTime.now().plusMinutes(2))
       for {
         _ <- env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant)
-        .save(PasskeyChallenge(key = key, value = challenge, expires = DateTime.now().plusMinutes(2)))
+        .save(passkeyChallenge)
       } yield {
         Ok(assertionOptions.asJson)
       }
@@ -410,14 +409,17 @@ class LoginController(
       val assertionData = ctx.request.body
       val challengeId = (ctx.request.body \ "challengeId").as[String]
 
-      // Récupérer le challenge stocké
-      val challengeKey = s"passkey_asssertion_challenge_$challengeId"
+      val challengeKey = s"passkey_login_challenge_$challengeId"
+
+
       (for {
+        //todo: check if expires
         storedChallenge <- EitherT.fromOptionF(
-          env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).findById(challengeKey),
+          env.dataStore.passkeyChallengeRepo.findByKey(challengeKey, ctx.tenant),
           AppError.SecurityError("Challenge expired or missing")
         )
-        _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).deleteById(challengeKey))
+        _ <- EitherT.cond[Future](storedChallenge.expires.isAfter(DateTime.now), (), AppError.SecurityError("Challenge expired"))
+        _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).deleteById(storedChallenge.id))
         credentialId = (assertionData \ "id").as[String]
         authenticatorDataB64 =
           (assertionData \ "response" \ "authenticatorData").as[String]
@@ -427,7 +429,6 @@ class LoginController(
         clientData <- EitherT.fromEither[Future](
           PasskeyUtils.decodeClientData(clientDataJSON)
         )
-
         _ <- EitherT.cond[Future](
           PasskeyUtils.normalizeBase64(clientData.challenge) == PasskeyUtils
             .normalizeBase64(storedChallenge.value),
@@ -1071,12 +1072,17 @@ class LoginController(
   def beginPasskeyRegistration() =
     DaikokuAction.async(parse.json) { ctx =>
       val challenge = PasskeyUtils.generateSecureChallenge()
-      AppLogger.info(s"[challenge] :: $challenge")
-      val key = s"passkey_challenge_${ctx.user.id.value}"
+      val key = s"passkey_challenge_registration_${ctx.user.id.value}"
+      val passkeyChallenge = PasskeyChallenge(
+        id = DatastoreId(IdGenerator.token(32)),
+        tenant = ctx.tenant.id,
+        key = key,
+        value = challenge,
+        expires = DateTime.now().plusMinutes(5))
 
       for {
         _ <- env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant)
-          .save(PasskeyChallenge(key = key, value = challenge, expires = DateTime.now().plusMinutes(5)))
+          .save(passkeyChallenge)
       } yield {
         Ok(Json.obj("challenge" -> challenge))
       }
@@ -1110,7 +1116,6 @@ class LoginController(
               )
             )
 
-          AppLogger.info(s"[passkey name] :: $name")
           val passkey = Passkey(
             id = attestationData.credentialId,
             publicKey = attestationData.publicKey,
@@ -1121,7 +1126,6 @@ class LoginController(
             algorithm = publicKeyAlgorithm
           )
 
-          // Sauvegarder en base
           env.dataStore.userRepo
             .save(ctx.user.copy(passkeys = ctx.user.passkeys :+ passkey))
             .map { _ =>
@@ -1134,18 +1138,17 @@ class LoginController(
 
       (for {
         storedChallenge <- EitherT.fromOptionF[Future, AppError, PasskeyChallenge](
-          env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).findById(s"passkey_challenge_${ctx.user.id.value}"),
+          env.dataStore.passkeyChallengeRepo.findByKey(s"passkey_challenge_registration_${ctx.user.id.value}", ctx.tenant),
           AppError.SecurityError("Challenge expired or missing")
         )
         _ <-
-          EitherT.liftF[Future, AppError, Boolean](env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).deleteById(s"passkey_challenge_${ctx.user.id.value}"))
+          EitherT.liftF[Future, AppError, Boolean](env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).deleteById(storedChallenge.id))
         _ <- EitherT.cond[Future][AppError, Unit](
           storedChallenge.value == (credentialData \ "challengeBuffer").as[String],
           (),
           AppError.SecurityError("Challenge mismatch")
         )
       } yield {
-        AppLogger.info(Json.stringify(credentialData))
         Ok(Json.obj("done" -> true))
       }).leftMap(_.render()).merge
 
@@ -1165,11 +1168,18 @@ class LoginController(
         userVerification = "preferred"
       )
 
-      // Stocker le challenge en session/cache
       val key = s"passkey_asssertion_challenge_$challengeId"
 
+      val passkeyChallenge = PasskeyChallenge(
+        id = DatastoreId(IdGenerator.token(32)),
+        tenant = ctx.tenant.id,
+        key = key,
+        value = challenge,
+        expires = DateTime.now().plusMinutes(5)
+      )
       for {
-        _ <- env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).save(PasskeyChallenge(key = key, value = challenge, expires = DateTime.now().plusMinutes(5)))
+        _ <- env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant)
+          .save(passkeyChallenge)
       } yield {
         Ok(assertionOptions.asJson)
       }
@@ -1180,14 +1190,13 @@ class LoginController(
       val assertionData = ctx.request.body
       val challengeId = (ctx.request.body \ "challengeId").as[String]
 
-      // Récupérer le challenge stocké
       val challengeKey = s"passkey_asssertion_challenge_$challengeId"
       (for {
         storedChallenge <- EitherT.fromOptionF(
-          env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).findById(challengeKey),
+          env.dataStore.passkeyChallengeRepo.findByKey(challengeKey, ctx.tenant),
           AppError.SecurityError("Challenge expired or missing")
         )
-        _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).deleteById(challengeKey))
+        _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.passkeyChallengeRepo.forTenant(ctx.tenant).deleteById(storedChallenge.id))
         credentialId = (assertionData \ "id").as[String]
         authenticatorDataB64 =
           (assertionData \ "response" \ "authenticatorData").as[String]
@@ -1248,17 +1257,6 @@ class LoginController(
         _ <- EitherT.liftF[Future, AppError, Boolean](
           env.dataStore.userRepo.save(updatedUser)
         )
-
-        // Créer une session
-//        sessionResult <- EitherT.liftF(
-//          createSession(
-//            LocalLoginConfig.fromJsons(ctx.tenant.authProviderSettings).sessionMaxAge,
-//            updatedUser,
-//            ctx.request,
-//            ctx.tenant
-//          )
-//        )
-
       } yield Ok(Json.obj("done" -> true)))
         .leftMap(e => e.render())
         .merge
@@ -1339,13 +1337,12 @@ class LoginController(
 }
 
 case class AttestationData(
-    publicKey: String, // Clé publique en base64url
-    credentialId: String, // ID de la credential
-    counter: Long, // Compteur de signature
-    aaguid: String // AAGUID de l'authenticateur
+    publicKey: String,
+    credentialId: String,
+    counter: Long,
+    aaguid: String
 )
 
-//TODO: Either[AppError, <Content>]
 object PasskeyUtils {
 
   private val secureRandom = new SecureRandom()
@@ -1357,7 +1354,6 @@ object PasskeyUtils {
   }
 
   def normalizeBase64(input: String): String = {
-    // Convertir Base64 standard vers Base64URL
     input.replace('+', '-').replace('/', '_').replace("=", "")
   }
 
@@ -1367,11 +1363,9 @@ object PasskeyUtils {
     try {
       val attestationBytes = Base64.getUrlDecoder.decode(attestationObjectB64)
 
-      // Décoder le CBOR avec Borer
       val attestationMap =
         Cbor.decode(attestationBytes).to[Map[String, Dom.Element]].value
 
-      // Extraire authData
       attestationMap.get("authData") match {
         case Some(ByteArrayElem(authDataBytes)) =>
           parseAuthData(authDataBytes)
@@ -1390,25 +1384,20 @@ object PasskeyUtils {
   ): Either[String, AttestationData] = {
     val buffer = ByteBuffer.wrap(authData)
 
-    // Ignorer rpIdHash (32 bytes) + flags (1 byte) + counter (4 bytes)
     buffer.position(37)
 
-    // AAGUID (16 bytes)
     val aaguid = new Array[Byte](16)
     buffer.get(aaguid)
     val aaguidString =
       Base64.getUrlEncoder.withoutPadding().encodeToString(aaguid)
 
-    // Credential ID length (2 bytes)
     val credIdLength = buffer.getShort & 0xffff
 
-    // Credential ID
     val credentialId = new Array[Byte](credIdLength)
     buffer.get(credentialId)
     val credIdString =
       Base64.getUrlEncoder.withoutPadding().encodeToString(credentialId)
 
-    // Public Key (reste du buffer)
     val publicKeyBytes = new Array[Byte](buffer.remaining())
     buffer.get(publicKeyBytes)
 
@@ -1430,17 +1419,13 @@ object PasskeyUtils {
       publicKeyBytes: Array[Byte]
   ): Either[String, String] = {
     try {
-      // Décoder la clé publique CBOR avec Borer
       val keyMap = Cbor.decode(publicKeyBytes).to[Map[Int, Dom.Element]].value
 
-      // Extraire les composants selon l'algorithme
       keyMap
         .get(3)
-        .collect { case Dom.IntElem(alg) => alg } match { // alg field
+        .collect { case Dom.IntElem(alg) => alg } match {
         case Some(-7) => // ES256
           parseES256Key(keyMap)
-        case Some(-257) => // RS256
-          parseRS256Key(keyMap)
         case Some(-8) => // EdDSA
           parseEdDSAKey(keyMap)
         case Some(alg) =>
@@ -1461,21 +1446,8 @@ object PasskeyUtils {
       x <- extractByteString(keyMap, -2, "x coordinate")
       y <- extractByteString(keyMap, -3, "y coordinate")
     } yield {
-      // Format clé publique non compressée (0x04 + x + y)
       val fullKey = Array[Byte](0x04.toByte) ++ x ++ y
       Base64.getUrlEncoder.withoutPadding().encodeToString(fullKey)
-    }
-  }
-
-  private def parseRS256Key(
-      keyMap: Map[Int, Dom.Element]
-  ): Either[String, String] = {
-    for {
-      n <- extractByteString(keyMap, -1, "modulus")
-      e <- extractByteString(keyMap, -2, "exponent")
-    } yield {
-      // Pour RS256, encoder n et e (format spécifique à implémenter selon vos besoins)
-      Base64.getUrlEncoder.withoutPadding().encodeToString(n ++ e)
     }
   }
 
@@ -1497,12 +1469,6 @@ object PasskeyUtils {
       case _                          => Left(s"$name not found or invalid format")
     }
   }
-
-//  private def getSignatureCounter(authData: Array[Byte]): Long = {
-//    val buffer = ByteBuffer.wrap(authData)
-//    buffer.position(33)
-//    buffer.getInt.toLong & 0xffffffffL
-//  }
 
   def decodeClientData(clientDataJSON: String): Either[AppError, ClientData] = {
     try {
@@ -1535,22 +1501,13 @@ object PasskeyUtils {
       algorithm: Int
   ): Either[AppError, VerificationResult] = {
     try {
-      // Décoder les données
       val authenticatorData = Base64.getUrlDecoder.decode(authenticatorDataB64)
       val signature = Base64.getUrlDecoder.decode(signatureB64)
       val clientDataBytes = Base64.getUrlDecoder.decode(clientDataJSON)
 
-      // Vérifier le compteur (protection contre les attaques de replay)
       val signatureCounter = getSignatureCounter(authenticatorData)
 
-      AppLogger.warn(s"[signatureCounter] :: $signatureCounter")
-      AppLogger.warn(s"[expectedCounter] :: $expectedCounter")
-
-      if (signatureCounter == 0) {
-        AppLogger.info(
-          "Cross - platform authenticator detected(counter = 0), skipping counter validation"
-        )
-      } else if (signatureCounter <= expectedCounter) {
+      if (signatureCounter != 0 && signatureCounter <= expectedCounter) {
         return Left(
           AppError.SecurityError(
             "Counter regression detected - possible replay attack"
@@ -1558,13 +1515,11 @@ object PasskeyUtils {
         )
       }
 
-      // Construire les données à vérifier (authenticatorData + hash(clientDataJSON))
       val clientDataHash = java.security.MessageDigest
         .getInstance("SHA-256")
         .digest(clientDataBytes)
       val dataToVerify = authenticatorData ++ clientDataHash
 
-      // Vérifier la signature selon l'algorithme de la clé
       val isValid = verifySignatureWithPublicKey(
         publicKeyB64,
         algorithm,
@@ -1586,8 +1541,8 @@ object PasskeyUtils {
   }
 
   private def verifySignatureWithPublicKey(
-      publicKeyData: String, // Stocké au format que vous avez défini lors de l'enregistrement
-      algorithmId: Int, // L'algorithme COSE récupéré lors de l'enregistrement
+      publicKeyData: String,
+      algorithmId: Int,
       data: Array[Byte],
       signature: Array[Byte]
   ): Boolean = {
@@ -1595,18 +1550,36 @@ object PasskeyUtils {
       algorithmId match {
         case -7 => // ES256 (ECDSA P-256 with SHA-256)
           verifyES256Signature(publicKeyData, data, signature)
-        case -257 => // RS256 (RSA PKCS#1 v1.5 with SHA-256)
-          verifyRS256Signature(publicKeyData, data, signature)
         case -8 => // EdDSA (Ed25519)
           verifyEdDSASignature(publicKeyData, data, signature)
         case _ =>
-          AppLogger.error(s"Unsupported algorithm: $algorithmId")
           false
       }
     } catch {
       case e: Exception =>
-        AppLogger.error(s"Signature verification failed: ${e.getMessage}")
+        AppLogger.error(s"[PASSKEY UTILS] :: Signature verification failed: ${e.getMessage}", e)
         false
+    }
+  }
+
+  private def parseSignature(signature: Array[Byte]): (BigInteger, BigInteger) = {
+    if (signature.length == 64) {
+      // Format raw : r (32 bytes) + s (32 bytes)
+      val r = new BigInteger(1, signature.slice(0, 32))
+      val s = new BigInteger(1, signature.slice(32, 64))
+      (r, s)
+    } else if (signature.length > 64 && signature(0) == 0x30.toByte) {
+      // Format DER : parser ASN.1
+      import org.bouncycastle.asn1.{ASN1InputStream, ASN1Integer, DLSequence}
+      val asn1 = new ASN1InputStream(signature)
+      val seq = asn1.readObject().asInstanceOf[DLSequence]
+      asn1.close()
+
+      val r = seq.getObjectAt(0).asInstanceOf[ASN1Integer].getValue
+      val s = seq.getObjectAt(1).asInstanceOf[ASN1Integer].getValue
+      (r, s)
+    } else {
+      throw new IllegalArgumentException(s"Unsupported signature format: length=${signature.length}")
     }
   }
 
@@ -1615,75 +1588,66 @@ object PasskeyUtils {
       data: Array[Byte],
       signature: Array[Byte]
   ): Boolean = {
-    // Si vous utilisez Bouncy Castle (recommandé)
-    import org.bouncycastle.jce.ECNamedCurveTable
+    import org.bouncycastle.crypto.digests.SHA256Digest
+    import org.bouncycastle.crypto.params.ECPublicKeyParameters
+    import org.bouncycastle.crypto.signers.{ECDSASigner, DSADigestSigner}
+    import org.bouncycastle.asn1.x9.X9ECParameters
+    import org.bouncycastle.crypto.ec.CustomNamedCurves
     import org.bouncycastle.jce.provider.BouncyCastleProvider
-    import org.bouncycastle.jce.spec.ECPublicKeySpec
-
-    import java.security.{KeyFactory, Security, Signature}
+    import org.bouncycastle.math.ec.ECPoint
+    import java.security.Security
 
     Security.addProvider(new BouncyCastleProvider())
 
     try {
       val publicKeyBytes = Base64.getUrlDecoder.decode(publicKeyData)
 
-      // Si c'est une clé non compressée (0x04 + x + y)
-      if (publicKeyBytes.length == 65 && publicKeyBytes(0) == 0x04) {
-        val curve = ECNamedCurveTable.getParameterSpec("secp256r1")
-        val point = curve.getCurve.decodePoint(publicKeyBytes)
-        val keySpec = new ECPublicKeySpec(point, curve)
-        val publicKey =
-          KeyFactory.getInstance("ECDSA", "BC").generatePublic(keySpec)
+      if (publicKeyBytes.length == 65 && publicKeyBytes(0) == 0x04.toByte) {
+        // Configuration de la courbe P-256
+        val x9ECParameters: X9ECParameters = CustomNamedCurves.getByName("secp256r1")
+        val ecDomainParameters = new org.bouncycastle.crypto.params.ECDomainParameters(
+          x9ECParameters.getCurve,
+          x9ECParameters.getG,
+          x9ECParameters.getN,
+          x9ECParameters.getH
+        )
 
-        val verifier = Signature.getInstance("SHA256withECDSA", "BC")
-        verifier.initVerify(publicKey)
-        verifier.update(data)
-        verifier.verify(signature)
+        // Créer le point de la clé publique
+        val point: ECPoint = x9ECParameters.getCurve.decodePoint(publicKeyBytes)
+        val ecPublicKeyParameters = new ECPublicKeyParameters(point, ecDomainParameters)
+
+        // Essayer d'abord avec DSADigestSigner (gère automatiquement SHA256)
+        try {
+          val digestSigner = new DSADigestSigner(new ECDSASigner(), new SHA256Digest())
+          digestSigner.init(false, ecPublicKeyParameters)
+          digestSigner.update(data, 0, data.length)
+          return digestSigner.verifySignature(signature)
+        } catch {
+          case _: Exception =>
+            AppLogger.debug("[PASSKEY UTILS] :: DSADigestSigner failed, trying manual parsing")
+        }
+
+        // Fallback : parser manuellement
+        val signer = new ECDSASigner()
+        signer.init(false, ecPublicKeyParameters)
+
+        val digest = new SHA256Digest()
+        digest.update(data, 0, data.length)
+        val hash = new Array[Byte](digest.getDigestSize)
+        digest.doFinal(hash, 0)
+
+        val (r, s) = parseSignature(signature)
+        signer.verifySignature(hash, r, s)
       } else {
         false
       }
     } catch {
       case e: Exception =>
-        AppLogger.error(s"ES256 verification failed: ${e.getMessage}")
+        AppLogger.error(s"[PASSKEY UTILS] :: ES256 verification failed: ${e.getMessage}", e)
         false
     }
   }
 
-  private def verifyRS256Signature(
-      publicKeyData: String,
-      data: Array[Byte],
-      signature: Array[Byte]
-  ): Boolean = {
-
-    try {
-      // Assumer que publicKeyData contient n+e concaténés (à adapter selon votre format)
-      val publicKeyBytes = Base64.getUrlDecoder.decode(publicKeyData)
-
-      // Cette partie dépend de comment vous avez stocké la clé RSA
-      // Vous devriez stocker séparément le modulus (n) et l'exposant (e)
-      // Pour l'exemple, je suppose qu'ils sont dans des champs séparés
-
-      // TODO: Adapter selon votre structure de données
-      // val modulus = new BigInteger(1, nBytes)
-      // val exponent = new BigInteger(1, eBytes)
-      // val keySpec = new RSAPublicKeySpec(modulus, exponent)
-      // val publicKey = KeyFactory.getInstance("RSA").generatePublic(keySpec)
-
-      // val verifier = Signature.getInstance("SHA256withRSA")
-      // verifier.initVerify(publicKey)
-      // verifier.update(data)
-      // verifier.verify(signature)
-
-      AppLogger.warn(
-        "RS256 verification not fully implemented - need to store n and e separately"
-      )
-      false
-    } catch {
-      case e: Exception =>
-        AppLogger.error(s"RS256 verification failed: ${e.getMessage}")
-        false
-    }
-  }
 
   private def verifyEdDSASignature(
       publicKeyData: String,
@@ -1699,7 +1663,6 @@ object PasskeyUtils {
     try {
       val publicKeyBytes = Base64.getUrlDecoder.decode(publicKeyData)
 
-      // Pour Ed25519, la clé publique fait 32 bytes
       if (publicKeyBytes.length == 32) {
         import org.bouncycastle.asn1.edec.EdECObjectIdentifiers
         import org.bouncycastle.asn1.x509.{
@@ -1727,7 +1690,7 @@ object PasskeyUtils {
       }
     } catch {
       case e: Exception =>
-        AppLogger.error(s"EdDSA verification failed: ${e.getMessage}")
+        AppLogger.error(s"[PASSKEY UTILS] :: EdDSA verification failed: ${e.getMessage}", e)
         false
     }
   }
@@ -1739,21 +1702,16 @@ object PasskeyUtils {
 
     val buffer = ByteBuffer.wrap(authenticatorData)
     buffer.order(ByteOrder.BIG_ENDIAN)
-    buffer.position(33) // Skip rpIdHash (32 bytes) + flags (1 byte)
-//    buffer.getInt.toLong & 0xffffffffL
+    buffer.position(33)
 
     val counterBytes = Array.fill[Byte](4)(0)
     buffer.get(counterBytes)
-    AppLogger.debug(
-      s"Counter bytes: ${counterBytes.map("%02x".format(_)).mkString}"
-    )
 
     val counter = ByteBuffer
       .wrap(counterBytes)
       .order(ByteOrder.BIG_ENDIAN)
       .getInt
       .toLong & 0xffffffffL
-    AppLogger.debug(s"Parsed counter: $counter")
 
     counter
   }
@@ -1764,7 +1722,7 @@ object PasskeyUtils {
 
     authData match {
       case Some(Dom.ByteArrayElem(bytes)) =>
-        val aaguid = bytes.slice(37, 53) // Bytes 37-52 dans authData
+        val aaguid = bytes.slice(37, 53)
 
         aaguid match {
           case Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0) =>
@@ -1773,12 +1731,8 @@ object PasskeyUtils {
             getAuthenticatorByAAGUID(aaguid)
         }
       case Some(other) =>
-        AppLogger.info(
-          s"Invalid authData format: expected BytesElem, got $other"
-        )
         None
       case None =>
-        AppLogger.info("Missing authData in attestationObject")
         None
     }
   }
@@ -1801,7 +1755,6 @@ object PasskeyUtils {
       authenticatorAttachment: String
   ): Option[String] = {
 
-    AppLogger.info(s"[user-agent] :: $userAgent")
     (signatureCounter, userAgent, authenticatorAttachment) match {
       case (0, Some(ua), "cross-platform") if ua.contains("Bitwarden") =>
         "Bitwarden".some

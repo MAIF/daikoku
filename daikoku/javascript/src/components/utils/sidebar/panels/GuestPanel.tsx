@@ -1,51 +1,21 @@
-import React, { useContext, useEffect, useRef, useState } from 'react';
-import { Form, type, constraints, format } from '@maif/react-forms';
+import { constraints, Form, format, type } from '@maif/react-forms';
+import { useContext, useRef, useState } from 'react';
 
-import * as Services from '../../../../services';
-import { I18nContext } from '../../../../contexts/i18n-context';
-import { GlobalContext } from '../../../../contexts/globalContext';
 import { Link } from 'react-router-dom';
-import { loginWithConditionalPasskey, loginWithPasskey } from '../../authentication';
+import { GlobalContext } from '../../../../contexts/globalContext';
+import { I18nContext } from '../../../../contexts/i18n-context';
+import * as Services from '../../../../services';
+import { handleLoginInputFocus, loginWithPasskey } from '../../authentication';
 
 export const GuestPanel = () => {
   const { translate, Translation } = useContext(I18nContext);
   const { loginAction, tenant } = useContext(GlobalContext);
 
   const buttonRef = useRef<HTMLButtonElement>(null)
+  const isPromptingPasskey = useRef(false);
 
   const [loginError, setLoginError] = useState(false);
   const [loading, setLoading] = useState(false);
-
-  const usernameRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    async function checkAndPromptPasskey() {
-      if (
-        window.PublicKeyCredential &&
-        PublicKeyCredential.isConditionalMediationAvailable
-      ) {
-        const cma = await PublicKeyCredential.isConditionalMediationAvailable();
-        if (cma) {
-          try {
-            const user = await loginWithConditionalPasskey();
-            if (user && user.username) {
-              if (usernameRef.current) {
-                usernameRef.current.value = user.username;
-              }
-              window.location.href = '/'; // ou rediriger vers la bonne page
-            }
-          } catch (e) {
-            if (e.name !== 'NotAllowedError') {
-              console.error(e);
-              alert(e.message);
-            }
-          }
-        }
-      }
-    }
-
-    checkAndPromptPasskey();
-  }, []);
 
   const schema = {
     username: {
@@ -54,10 +24,9 @@ export const GuestPanel = () => {
       placeholder: translate('login.placeholder'),
       format: format.email,
       props: {
-        autocomplete: 'username webauthn',
-        autofocus: 'autofocus',
+        autoComplete: 'username webauthn',
+        onFocus: () => handleLoginInputFocus(isPromptingPasskey),
       },
-      ref: usernameRef,
       constraints: [
         constraints.required(translate('constraints.required.email')),
         constraints.email(translate('constraints.matches.email')),
@@ -68,6 +37,9 @@ export const GuestPanel = () => {
       label: translate('password.label'),
       placeholder: translate('password.label'),
       format: format.password,
+      props: {
+        autoComplete: 'current-password'
+      },
       constraints: [constraints.required(translate('constraints.required.password'))],
     },
   };

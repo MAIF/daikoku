@@ -4131,6 +4131,8 @@ object json {
       Try {
         JsSuccess(
           PasskeyChallenge(
+            id = (json \ "_id").as(DatastoreIdFormat),
+            tenant = (json \ "_tenant").as(TenantIdFormat),
             key = (json \ "key").as[String],
             value = (json \ "value").as[String],
             expires = (json \ "expires").as(DateTimeFormat)
@@ -4144,6 +4146,8 @@ object json {
 
     override def writes(o: PasskeyChallenge): JsValue =
       Json.obj(
+        "_id" -> o.id.value,
+        "_tenant" -> o.tenant.asJson,
         "key" -> o.key,
         "value" -> o.value,
         "expires" -> DateTimeFormat.writes(o.expires)

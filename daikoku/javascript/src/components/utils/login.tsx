@@ -1,12 +1,15 @@
-import { FormEvent, useContext, useEffect, useRef, useState } from 'react';
+import { FormEvent, RefObject, useContext, useEffect, useRef, useState } from 'react';
 import * as Services from '../../services/index';
 import { I18nContext } from '../../contexts';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { isError } from '../../types';
+import { handleLoginInputFocus, loginWithConditionalPasskey, loginWithPasskey } from './authentication';
 
 export function LoginPage() {
   const { Translation, translate } = useContext(I18nContext);
   const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const isPromptingPasskey = useRef(false);
 
   const { provider } = useParams()
   const [searchParams] = useSearchParams();
@@ -67,6 +70,7 @@ export function LoginPage() {
 
   const { loginError } = state;
 
+
   return (
     <div>
       <div className="login__container text-center">
@@ -91,8 +95,10 @@ export function LoginPage() {
             <input
               type="text"
               name="username"
+              autoComplete="username webauthn"
               className="form-control"
               value={state.username}
+              onFocus={() => handleLoginInputFocus(isPromptingPasskey)}
               onChange={onChange}
             />
           </div>
@@ -104,6 +110,7 @@ export function LoginPage() {
               type="password"
               name="password"
               className="form-control"
+              autoComplete="current-password"
               value={state.password}
               onChange={onChange}
             />
@@ -112,6 +119,8 @@ export function LoginPage() {
             <button type="submit" ref={buttonRef} className="btn btn-outline-success shake" disabled={loading}>
               <Translation i18nkey="login.btn.label">Login</Translation>
             </button>
+            <div className="login-divider">OR</div>
+            <button type='button' className="btn btn-outline-success" onClick={() => loginWithPasskey()}>use passkey</button>
           </div>
           {provider === 'Local' && (
             <div className='d-flex justify-content-between'>

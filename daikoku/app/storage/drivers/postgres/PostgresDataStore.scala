@@ -446,7 +446,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     "assets" -> true,
     "reports_info" -> true,
     "api_subscription_transfers" -> true,
-    "passkey_caches" -> true
+    "passkey_challenges" -> true
   )
 
   private lazy val poolOptions: PoolOptions = new PoolOptions()
@@ -1418,7 +1418,7 @@ class PostgresTenantPasskeyCacheRepo(
 
   override def format: Format[PasskeyChallenge] = json.PasskeyChallengeFormat
 
-  override def extractId(value: PasskeyChallenge): String = value.key
+  override def extractId(value: PasskeyChallenge): String = value.id.value
 }
 
 class PostgresUserRepo(env: Env, reactivePg: ReactivePg)
@@ -1647,7 +1647,7 @@ class PostgresPasskeyCacheRepo(env: Env, reactivePg: ReactivePg)
 
   override def format: Format[PasskeyChallenge] = json.PasskeyChallengeFormat
 
-  override def extractId(value: PasskeyChallenge): String = value.key
+  override def extractId(value: PasskeyChallenge): String = value.id.value
 }
 
 abstract class PostgresRepo[Of, Id <: ValueType](

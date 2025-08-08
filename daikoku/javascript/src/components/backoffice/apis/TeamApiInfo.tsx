@@ -201,11 +201,15 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
       defaultValue: apigroup ? [] : null,
       isMulti: true,
       optionsFrom: () => Services.teamApis(team._id)
-        .then((apis) => !isError(apis) ? apis.filter((api) => !api.apis) : []),
-      transformer: (api) => ({
-        label: `${api.name} - ${api.currentVersion}`,
-        value: api._id
-      }),
+        .then((apis) => {
+          console.debug({apis})
+          return (!isError(apis) ? apis.filter((api) => !api.apis) : [])}),
+      transformer: (api) => {
+        return ({
+          label: `${api.name} - ${api.currentVersion}`,
+          value: api._id
+        })
+      },
     },
   }
 
