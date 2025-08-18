@@ -7,7 +7,7 @@ import { nanoid } from 'nanoid';
 import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import Edit2 from 'react-feather/dist/icons/edit-2';
 import { useMatch, useNavigate } from 'react-router-dom';
-import Select, { components } from 'react-select';
+import Select, { components, OptionProps, ValueContainerProps } from 'react-select';
 import CreatableSelect from 'react-select/creatable';
 import { toast } from 'sonner';
 
@@ -46,17 +46,53 @@ import {
   Spinner
 } from '../../utils';
 
+type Option = {
+  label: string;
+  value: string;
+  enabled: boolean;
+};
+type ExtraProps = {
+  labelKey: string;
+  labelKeyAll: string;
+  getEnabledValue: (data: string) => number
+};
+const CustomOption = (props: OptionProps<Option, true> & { selectProps: ExtraProps }) => {
+  const { data, innerRef, innerProps } = props;
+  const { translate } = useContext(I18nContext);
+
+  return (
+    <div ref={innerRef} {...innerProps} className="d-flex align-items-center px-3 py-2 cursor-pointer select-menu-item gap-2">
+      <div className="col-1">
+        {!data.enabled && (
+          <span className="badge badge-custom-danger">
+            {translate("Disabled")}
+          </span>
+        )}
+      </div>
+
+      <span>{data.label}</span>
+
+    </div>
+  );
+};
+
 type OtoroshiEntitiesSelectorProps = {
   rawValues: IOtoroshiTarget
   onChange: (item: any) => void,
   translate: (x: string) => string
   ownerTeam: ITeamSimple
 }
+type OtoroshiEntity = {
+  label: string
+  value: string
+  type: 'route' | 'group' | 'service'
+  enabled: boolean
+}
 export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate, ownerTeam }: OtoroshiEntitiesSelectorProps) => {
   const [loading, setLoading] = useState<boolean>(true);
-  const [groups, setGroups] = useState<Array<any>>([]);
-  const [services, setServices] = useState<Array<any>>([]);
-  const [routes, setRoutes] = useState<Array<any>>([]);
+  const [groups, setGroups] = useState<Array<OtoroshiEntity>>([]);
+  const [services, setServices] = useState<Array<OtoroshiEntity>>([]);
+  const [routes, setRoutes] = useState<Array<OtoroshiEntity>>([]);
   const [disabled, setDisabled] = useState<boolean>(true);
   const [value, setValue] = useState<any>(undefined);
 
@@ -82,12 +118,14 @@ export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate, owner
         ),
       ])
         .then(([groups, services, routes]) => {
+          console.debug({ routes })
           if (!groups.error)
             setGroups(
               groups.map((g: any) => ({
                 label: g.name,
                 value: g.id,
                 type: 'group',
+                enabled: g.enabled
               }))
             );
           else setGroups([]);
@@ -97,6 +135,7 @@ export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate, owner
                 label: g.name,
                 value: g.id,
                 type: 'service',
+                enabled: g.enabled
               }))
             );
           else setServices([]);
@@ -106,6 +145,7 @@ export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate, owner
                 label: g.name,
                 value: g.id,
                 type: 'route',
+                enabled: g.enabled
               }))
             );
           else setRoutes([]);
@@ -164,7 +204,7 @@ export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate, owner
                 ...acc,
                 groups: [
                   ...acc.groups,
-                  groups.find((g: any) => g.value === entitie.value).value,
+                  groups.find((g) => g.value === entitie.value)?.value,
                 ],
               };
             case 'service':
@@ -172,7 +212,7 @@ export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate, owner
                 ...acc,
                 services: [
                   ...acc.services,
-                  services.find((s: any) => s.value === entitie.value).value,
+                  services.find((s) => s.value === entitie.value)?.value,
                 ],
               };
             case 'route':
@@ -180,7 +220,7 @@ export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate, owner
                 ...acc,
                 routes: [
                   ...acc.routes,
-                  routes.find((s: any) => s.value === entitie.value).value,
+                  routes.find((s: any) => s.value === entitie.value)?.value,
                 ],
               };
           }
@@ -224,8 +264,16 @@ export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate, owner
         isLoading={loading}
         isDisabled={disabled && !loading}
         placeholder={translate('Authorized.entities.placeholder')} //@ts-ignore //FIXME
-        components={(props: any) => <components.Group {...props} />}
+        components={{
+          Group: components.Group, //@ts-ignore
+          Option: CustomOption
+        }}
         formatGroupLabel={formatGroupLabel}
+        getEnabledValue={(item: string) => {
+          //todo: chelou, certaine route sont disable on sait pas pourquoi ?
+          const enabled = [...groups, ...routes, ...services].find(i => i.value === item)?.enabled
+          return enabled
+        }}
         options={groupedOptions}
         value={value}
         onChange={onValueChange}
@@ -1087,18 +1135,18 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
     />
   })
 
-    const setupPayment = (plan: IUsagePlan) => {
-      return Services.setupPayment(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
-        .then((response) => {
-          if (isError(response)) {
-            toast.error(translate(response.error));
-          } else {
-            toast.success(translate('plan.payment.setup.successful'));
-            closeRightPanel();
-            queryClient.invalidateQueries({ queryKey: ['plans'] })
-          }
-        });
-    };
+  const setupPayment = (plan: IUsagePlan) => {
+    return Services.setupPayment(props.ownerTeam._id, props.api._id, props.api.currentVersion, plan)
+      .then((response) => {
+        if (isError(response)) {
+          toast.error(translate(response.error));
+        } else {
+          toast.success(translate('plan.payment.setup.successful'));
+          closeRightPanel();
+          queryClient.invalidateQueries({ queryKey: ['plans'] })
+        }
+      });
+  };
 
     const editQuotas = () => {
       if (userCanUpadtePlan)
@@ -1128,185 +1176,176 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       />
     })
 
-    const userCanUpadtePlan = CanIDoAction(connectedUser, manage, API, props.ownerTeam)
+  const userCanUpadtePlan = CanIDoAction(connectedUser, manage, API, props.ownerTeam)
 
-    return (
+  return (
+    <div
+      className="col-md-3 mb-4 shadow-sm usage-plan__card"
+      data-usage-plan={plan.customName}
+      role='listitem'
+      aria-labelledby={`${plan._id}-title`}
+    >
       <div
-        className="col-md-3 mb-4 shadow-sm usage-plan__card"
-        data-usage-plan={plan.customName}
-        role='listitem'
-        aria-labelledby={`${plan._id}-title`}
+        className="usage-plan__card__header"
+        data-holder-rendered="true"
       >
-        <div
-          className="usage-plan__card__header"
-          data-holder-rendered="true"
-        >
-          <Can I={manage} a={API} team={props.ownerTeam}>
-            <div
-              className="dropdown"
-              style={{
-                position: 'absolute',
-                top: '10px',
-                right: '10px',
-                zIndex: '100',
-              }}
-            >
-              <i
-                className="fas fa-gear cursor-pointer dropdown-menu-button"
-                style={{ fontSize: '20px', fill: 'tomato' }}
-                data-bs-toggle="dropdown"
-                aria-expanded="false"
-                id={`${plan._id}-dropdownMenuButton`}
-              />
-              <div className="dropdown-menu" aria-labelledby={`${plan._id}-dropdownMenuButton`}>
-                <span className="dropdown-item cursor-pointer" onClick={editPlan}>
-                  {tenant.display === 'environment'
-                    ? translate('pricing.edit.env.btn.label')
-                    : translate('Edit plan')}
-                </span>
-                {props.api.visibility !== 'AdminOnly' && <>
-                  <span
-                    className="dropdown-item cursor-pointer"
-                    onClick={duplicatePlan}
-                  >
-                    {tenant.display === 'environment'
-                      ? translate('pricing.clone.env.btn.label')
-                      : translate('Duplicate plan')}
-                  </span>
-                  <div className="dropdown-divider" />
-                  <span
-                    className="dropdown-item cursor-pointer danger"
-                    onClick={deleteWithConfirm}
-                  >
-                    {tenant.display === 'environment'
-                      ? translate('pricing.delete.env.btn.label')
-                      : translate('Delete plan')}
-                  </span>
-                </>}
-              </div>
-            </div>
-          </Can>
-          <div className='overflow-hidden usage-plan__card__title' id={`${plan._id}-title`}>{plan.customName}</div>
-          <p className="usage-plan__card__description text-justify flex-grow-1">
-            {customDescription && <span>{customDescription}</span>}
-          </p>
-          <div className="d-flex justify-content-between align-items-center flex-wrap usage-plan__card__subscription">
-            {!connectedUser.isGuest && (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined) && props.api.visibility !== 'AdminOnly' && (
-              <button
-                type="button"
-                className="usage-plan__card__action-button inactive"
-              >
-                <Translation i18nkey="Get API key" />
-              </button>
-            )}
-            {/* todo: click to publish ? */}
-            {!isPublish(props.api) && props.api.visibility !== 'AdminOnly' && (
-              <button
-                type="button"
-                className="usage-plan__card__action-button inactive"
-              >
-                <Translation i18nkey="Get API key" />
-              </button>
-            )}
-            {((otoroshiTargetIsDefined && otoroshiEntitiesIsDefined) ||
-              props.api.visibility === 'AdminOnly') &&
-              (!isAccepted || props.api.visibility === 'AdminOnly') &&
-              isPublish(props.api) && (
-                <Can
-                  I={access}
-                  a={apikey}
-                  teams={authorizedTeams.filter(
-                    (team) =>
-                      plan.visibility === 'Public' ||
-                      team._id === props.ownerTeam._id
-                  )}
-                >
-                  {(props.api.visibility === 'AdminOnly' ||
-                    (plan.otoroshiTarget && !isAccepted)) && (
-                      <button
-                        type="button"
-                        className="usage-plan__card__action-button"
-                        onClick={openTeamSelectorModal}
-                      >
-                        <Translation
-                          i18nkey={
-                            isAutomaticProcess ? 'Get API key' : 'Request API key'
-                          }
-                        />
-                      </button>
-                    )}
-                </Can>
-              )}
-            {connectedUser.isGuest && (
-              <button
-                type="button"
-                className="usage-plan__card__action-button"
-                onClick={() => openLoginOrRegisterModal({ tenant })}
-              >
-                <Translation i18nkey="Get API key" />
-              </button>
-            )}
-          </div>
-        </div>
-        <div className="usage-plan__card__body d-flex flex-column">
-          <span className={classNames("usage-plan__card__feature", {
-            "no-decoration": !userCanUpadtePlan
-          })} onClick={editQuotas}>
-            <div>
-              <h4>{translate('Quotas')}</h4>
-              <div className='feature__description'>
-                {!plan.maxPerMonth && translate('plan.limits.unlimited')}
-                {!!plan.maxPerMonth && translate({
-                  key: 'api.pricings.quotas.value', replacements: [
-                    String(plan.maxPerSecond), String(plan.maxPerDay), String(plan.maxPerMonth)
-                  ]
-                })}
-              </div>
-            </div>
-            <Can I={manage} a={API} team={props.ownerTeam}>
-              <Edit2 className="edition-icon" />
-            </Can>
-          </span>
-          <span className={classNames("usage-plan__card__feature", {
-            "no-decoration": !userCanUpadtePlan
-          })} onClick={editPricing}>
-            <div>
-              <h4>Tarif</h4>
-              <span className='feature__description'>
-                {pricing}
+        <Can I={manage} a={API} team={props.ownerTeam}>
+          <div
+            className="dropdown"
+            style={{
+              position: 'absolute',
+              top: '10px',
+              right: '10px',
+              zIndex: '100',
+            }}
+          >
+            <i
+              className="fas fa-gear cursor-pointer dropdown-menu-button"
+              style={{ fontSize: '20px', fill: 'tomato' }}
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              id={`${plan._id}-dropdownMenuButton`}
+            />
+            <div className="dropdown-menu" aria-labelledby={`${plan._id}-dropdownMenuButton`}>
+              <span className="dropdown-item cursor-pointer" onClick={editPlan}>
+                {tenant.display === 'environment'
+                  ? translate('pricing.edit.env.btn.label')
+                  : translate('Edit plan')}
               </span>
-            </div>
-            <Can I={manage} a={API} team={props.ownerTeam}>
-              <Edit2 className="edition-icon" />
-            </Can>
-
-          </span>
-          <Can I={manage} a={API} team={props.ownerTeam}>
-            <span className="usage-plan__card__feature" onClick={editOtoroshiTarget}>
-              <div>
-                <h4>{translate("Otoroshi target")}</h4>
-                <span className='feature__description'>
-                  {plan.otoroshiTarget?.otoroshiSettings && (tenant.otoroshiSettings.find(o => o._id === plan.otoroshiTarget?.otoroshiSettings)?.url)}
-                  {!plan.otoroshiTarget?.otoroshiSettings && translate('api.pricings.otoroshi.target.value.none')}
+              {props.api.visibility !== 'AdminOnly' && <>
+                <span
+                  className="dropdown-item cursor-pointer"
+                  onClick={duplicatePlan}
+                >
+                  {tenant.display === 'environment'
+                    ? translate('pricing.clone.env.btn.label')
+                    : translate('Duplicate plan')}
                 </span>
-              </div>
-              <Edit2 className="edition-icon" />
-            </span>
-          </Can>
-          <Can I={manage} a={API} team={props.ownerTeam}>
-            <span className="usage-plan__card__feature" onClick={editProcess}>
-              <div>
-                <h4>{translate('Process')}</h4>
-                <span className='feature__description'>{plan.subscriptionProcess.length ?
-                  translate({ key: 'api.pricings.process.value', replacements: [String(plan.subscriptionProcess.length)] }) :
-                  translate('api.pricings.process.value.none')}</span>
-              </div>
-              <Edit2 className="edition-icon" />
-            </span>
-          </Can>
+                <div className="dropdown-divider" />
+                <span
+                  className="dropdown-item cursor-pointer danger"
+                  onClick={deleteWithConfirm}
+                >
+                  {tenant.display === 'environment'
+                    ? translate('pricing.delete.env.btn.label')
+                    : translate('Delete plan')}
+                </span>
+              </>}
+            </div>
+          </div>
+        </Can>
+        <div className='overflow-hidden usage-plan__card__title' id={`${plan._id}-title`}>{plan.customName}</div>
+        <p className="usage-plan__card__description text-justify flex-grow-1">
+          {customDescription && <span>{customDescription}</span>}
+        </p>
+        <div className="d-flex justify-content-between align-items-center flex-wrap usage-plan__card__subscription">
+          {!connectedUser.isGuest && (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) && props.api.visibility !== 'AdminOnly' && (
+            <button
+              type="button"
+              className="usage-plan__card__action-button inactive"
+            >
+              <Translation i18nkey="Get API key" />
+            </button>
+          )}
+          {((otoroshiTargetIsDefined && otoroshiEntitiesIsDefined) ||
+            props.api.visibility === 'AdminOnly') &&
+            (!isAccepted || props.api.visibility === 'AdminOnly') &&
+            isPublish(props.api) && (
+              <Can
+                I={access}
+                a={apikey}
+                teams={authorizedTeams.filter(
+                  (team) =>
+                    plan.visibility === 'Public' ||
+                    team._id === props.ownerTeam._id
+                )}
+              >
+                {(props.api.visibility === 'AdminOnly' ||
+                  (plan.otoroshiTarget && !isAccepted)) && (
+                    <button
+                      type="button"
+                      className="usage-plan__card__action-button"
+                      onClick={openTeamSelectorModal}
+                    >
+                      <Translation
+                        i18nkey={
+                          isAutomaticProcess ? 'Get API key' : 'Request API key'
+                        }
+                      />
+                    </button>
+                  )}
+              </Can>
+            )}
+          {connectedUser.isGuest && (
+            <button
+              type="button"
+              className="usage-plan__card__action-button"
+              onClick={() => openLoginOrRegisterModal({ tenant })}
+            >
+              <Translation i18nkey="Get API key" />
+            </button>
+          )}
         </div>
       </div>
-    );
+      <div className="usage-plan__card__body d-flex flex-column">
+        <span className={classNames("usage-plan__card__feature", {
+          "no-decoration": !userCanUpadtePlan
+        })} onClick={editQuotas}>
+          <div>
+            <h4>{translate('Quotas')}</h4>
+            <div className='feature__description'>
+              {!plan.maxPerMonth && translate('plan.limits.unlimited')}
+              {!!plan.maxPerMonth && translate({
+                key: 'api.pricings.quotas.value', replacements: [
+                  String(plan.maxPerSecond), String(plan.maxPerDay), String(plan.maxPerMonth)
+                ]
+              })}
+            </div>
+          </div>
+          <Can I={manage} a={API} team={props.ownerTeam}>
+            <Edit2 className="edition-icon" />
+          </Can>
+        </span>
+        <span className={classNames("usage-plan__card__feature", {
+          "no-decoration": !userCanUpadtePlan
+        })} onClick={editPricing}>
+          <div>
+            <h4>Tarif</h4>
+            <span className='feature__description'>
+              {pricing}
+            </span>
+          </div>
+          <Can I={manage} a={API} team={props.ownerTeam}>
+            <Edit2 className="edition-icon" />
+          </Can>
+
+        </span>
+        <Can I={manage} a={API} team={props.ownerTeam}>
+          <span className="usage-plan__card__feature" onClick={editOtoroshiTarget}>
+            <div>
+              <h4>{translate("Otoroshi target")}</h4>
+              <span className='feature__description'>
+                {plan.otoroshiTarget?.otoroshiSettings && (tenant.otoroshiSettings.find(o => o._id === plan.otoroshiTarget?.otoroshiSettings)?.url)}
+                {!plan.otoroshiTarget?.otoroshiSettings && translate('api.pricings.otoroshi.target.value.none')}
+              </span>
+            </div>
+            <Edit2 className="edition-icon" />
+          </span>
+        </Can>
+        <Can I={manage} a={API} team={props.ownerTeam}>
+          <span className="usage-plan__card__feature" onClick={editProcess}>
+            <div>
+              <h4>{translate('Process')}</h4>
+              <span className='feature__description'>{plan.subscriptionProcess.length ?
+                translate({ key: 'api.pricings.process.value', replacements: [String(plan.subscriptionProcess.length)] }) :
+                translate('api.pricings.process.value.none')}</span>
+            </div>
+            <Edit2 className="edition-icon" />
+          </span>
+        </Can>
+      </div>
+    </div>
+  );
 };
 
 type ITeamSelector = {

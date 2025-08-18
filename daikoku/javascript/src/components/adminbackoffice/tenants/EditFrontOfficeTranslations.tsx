@@ -13,7 +13,7 @@ import { isError, ResponseError } from '../../../types';
 
 
 export function EditFrontOfficeTranslations(props: any) {
-  const table = useRef<TableRef>();
+  const table = useRef<TableRef>(undefined);
 
   const { alert } = useContext(ModalContext)
 

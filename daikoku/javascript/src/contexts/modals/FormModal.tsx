@@ -16,14 +16,14 @@ export const FormModal = <T extends TBaseObject>({
   noClose,
   description
 }: IFormModalProps<T> & IBaseModalProps) => {
-  const ref = useRef<FormRef>();
+  const ref = useRef<FormRef>(undefined);
 
   const { translate } = useContext(I18nContext);
 
   return (
     <div className="modal-content">
       <div className="modal-header">
-        <h5 className="modal-title">{title}</h5>
+        <h5 className="modal-title" id="modal-title">{title}</h5>
         <button type="button" className="btn-close" aria-label="Close" onClick={() => close()} />
       </div>
       <div className="modal-body">

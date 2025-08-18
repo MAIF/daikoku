@@ -15,6 +15,7 @@ export interface OptionType<DataType> {
   getOrNull(): DataType | undefined;
 
   isDefined(): boolean;
+  isEmpty(): boolean;
 
   exists(f: (data: DataType) => any): boolean;
 
@@ -34,6 +35,7 @@ export const Some: <T>(x: T) => OptionType<T> = (x) => {
     getOrElse: () => x,
     getOrNull: () => x,
     isDefined: () => true,
+    isEmpty: () => false,
     exists: (f) => Option(f(x)).isDefined(),
     filter: (f) => (f(x) ? Option(x) : None),
   };
@@ -47,6 +49,7 @@ export const None: OptionType<any> = {
   getOrElse: (ifEmpty) => ifEmpty,
   getOrNull: () => undefined,
   isDefined: () => false,
+  isEmpty: () => true,
   exists: () => false,
   filter: () => None,
 };

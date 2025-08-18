@@ -11,9 +11,12 @@ import { ModalContext } from '../../../../contexts';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { GlobalContext } from '../../../../contexts/globalContext';
 import * as Services from '../../../../services';
-import { IApiKey, ISubscription } from '../../../../types/api';
+import { IApi, IApiAuthoWithCount, IApiKey, IApiWithTeam, ISubscription, IUsagePlan } from '../../../../types/api';
 import { Table, TableRef } from '../../../inputs';
-import { BeautifulTitle, Option, newPossibleUsagePlan } from '../../../utils';
+import { BeautifulTitle, Option, Spinner, newPossibleUsagePlan } from '../../../utils';
+import { ITeamFullGql, ITeamSimple, ITenant } from '../../../../types';
+import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
+import { StepWizardChildProps } from 'react-step-wizard';
 
 export const SelectionStepStep = (props: any) => {
   const { Translation } = useContext(I18nContext);
@@ -182,7 +185,45 @@ export const RecapSubsStep = (props: any) => {
   );
 };
 
-export const ServicesStep = (props: any) => {
+type ServiceStepProps = {
+  service: any
+  groups: Array<any>
+  teams: Array<ITeamFullGql>
+  addNewTeam: (t: ITeamSimple) => void
+  addService: (s: any, team: string) => void
+  infos: any
+  recap: () => void
+  maybeCreatedApi: any
+  updateService: (service: any, team: any) => void
+  resetService: () => void
+  getFilteredServices: (inpout: string) => Promise<any>
+  tenant: ITenant
+  cancel: () => void
+  context: any
+}
+
+const filterTeamsByAccess = (teams: Array<ITeamFullGql>, otoroshiSettings: string, serviceId: string) => {
+  return teams.filter(team => {
+    const { authorizedOtoroshiEntities } = team;
+    const authorizedEntities = authorizedOtoroshiEntities?.find(o => o.otoroshiSettingsId === otoroshiSettings)?.authorizedEntities
+
+    if (!authorizedOtoroshiEntities?.length || !authorizedEntities) {
+      return true
+    } else if (authorizedEntities.groups.length === 0 &&
+      authorizedEntities.services.length === 0 &&
+      authorizedEntities.routes.length === 0) {
+      return true; // accès à tout
+    }
+
+    return (
+      authorizedEntities.groups.includes(serviceId) ||
+      authorizedEntities.services.includes(serviceId) ||
+      authorizedEntities.routes.includes(serviceId)
+    );
+  });
+}
+
+export const ServicesStep = (props: StepWizardChildProps<ServiceStepProps>) => {
   const [service, setService] = useState(props.maybeCreatedApi.getOrElse(props.service));
   const [loading, setLoading] = useState(false);
   const [newTeam, setNewTeam] = useState<string>();
@@ -270,10 +311,13 @@ export const ServicesStep = (props: any) => {
   };
   document.onkeydown = checkKey;
 
-  const teams = props.teams.map((t: any) => ({
-    label: t.name,
-    value: t._id
-  }));
+
+  const teams = () => filterTeamsByAccess(props.teams, props.context.otoroshi, props.service.id)
+    .map((t) => ({
+      label: t.name,
+      value: t._id
+    }));
+
   return (<div className="d-flex flex-row flex-wrap">
     <div className="col-6">
       <h2>
@@ -340,11 +384,11 @@ export const ServicesStep = (props: any) => {
           isDisabled={loading}
           isLoading={loading}
           onChange={(slug, { action }) => {
-            setSelectedTeam(action === 'clear' ? undefined : slug.value);
+            setSelectedTeam(action === 'clear' ? undefined : slug?.value);
           }}
           onCreateOption={setNewTeam}
-          options={teams}
-          value={teams.find((t: any) => t.value === selectedTeam)}
+          options={teams()}
+          value={teams().find((t: any) => t.value === selectedTeam)}
           placeholder={translate('Select a team')}
           formatCreateLabel={(value) => translate({ key: 'create.team.label', replacements: [value] })}
           classNamePrefix="reactSelect" />
@@ -467,14 +511,89 @@ type ApiKeyStepProps = {
   services: Array<{ id: string, name: string }>,
   routes: Array<{ id: string, name: string }>,
   getFilteredApikeys: (entity: { value: string, prefix: string, label: string }) => Array<IApiKey>
-  createdSubs: Array<ISubscription>
+  createdSubs: Array<IApiKey>
   cancel: () => void
+  addSub: { (apikey: IApiKey, team: string, api: string, plan: string): void }
+  removeSub: { (apikey: IApiKey): void }
 }
 export const ApiKeyStep = (props: ApiKeyStepProps) => {
-  const table = useRef<TableRef>()
+  const table = useRef<TableRef>(undefined)
   const [selectedEntity, setSelectedEntity] = useState<{ value: string, prefix: string, label: string } | null>();
 
   const { translate, Translation } = useContext(I18nContext);
+  const { customGraphQLClient } = useContext(GlobalContext);
+
+  const API_QUERY = `
+    query AllVisibleApis ($teamId: String, $research: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $limit: Int, $offset: Int, $groupId: String) {
+      visibleApis (teamId: $teamId, research: $research, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, limit: $limit, offset: $offset, groupId: $groupId) {
+        apis {
+          api {
+            name
+            _id
+            possibleUsagePlans {
+              _id
+              customName
+            }
+            currentVersion
+            team {
+              _id
+              _humanReadableId
+              name
+            }
+          }
+        }
+      }
+    }`
+
+  const TEAM_QUERY = `
+  query getAllteams ($research: String, $limit: Int, $offset: Int) {
+    teamsPagination (research: $research, limit: $limit, offset: $offset){
+      teams {
+        _id
+        _humanReadableId
+        name
+        authorizedOtoroshiEntities {
+          otoroshiSettingsId
+          authorizedEntities {
+            routes
+            groups
+            services
+          }
+        }
+      }
+      total
+    }
+  }`
+  const apiQuery = useQuery({
+    queryKey: ["init_apis"],
+    queryFn: () => customGraphQLClient.request<{ visibleApis: IApiAuthoWithCount }>(
+      API_QUERY,
+      {
+        teamId: null,
+        research: "",
+        selectedTag: undefined,
+        selectedCategory: undefined,
+        limit: -1,
+        offset: 0,
+        groupId: undefined,
+        selectedTeam: undefined
+      }
+    ),
+    select: d => d.visibleApis.apis.map(a => a.api)
+  })
+
+  const teamQuery = useQuery({
+    queryKey: ["init_teams"],
+    queryFn: () => customGraphQLClient.request<{ teamsPagination: { teams: Array<ITeamFullGql> } }>(
+      TEAM_QUERY,
+      {
+        research: "",
+        limit: -1,
+        offset: 0
+      }
+    ),
+    select: d => d.teamsPagination.teams
+  })
 
   useEffect(() => {
     if (table.current) {
@@ -500,109 +619,120 @@ export const ApiKeyStep = (props: ApiKeyStepProps) => {
   }));
 
   const columnHelper = createColumnHelper<IApiKey>()
-  const columns = [
-    columnHelper.accessor('clientName', {
-      header: translate('initialize_from_otoroshi.otoroshi_api_key'),
-      meta: { style: { textAlign: 'left', width: '20%' } },
-      sortingFn: 'basic',
-    }),
-    columnHelper.display({
-      header: translate('API.s'),
-      meta: { style: { textAlign: 'left' } },
-      enableColumnFilter: false,
-      enableSorting: false,
-      cell: (info) => {
-        const apikey = info.row.original;
-        return <ApiKey apikey={apikey} key={apikey.clientId} {...props} />;
-      },
-    }),
-  ];
 
-  return (
-    <div className="d-flex flex-column">
-      <div className="d-flex align-items-center mx-3">
-        <span style={{ fontWeight: 'bold' }} className="me-2">
-          {translate('initialize_from_otoroshi.api_keys_of')}
-        </span>
-        <Select
-          className="w-50" //@ts-ignore //FIXME
-          components={(props: any) => <components.Group {...props} />}
-          options={[
-            { label: 'Services', options: orderBy(services, ['label']) },
-            { label: 'Service groups', options: orderBy(groups, ['label']) },
-            { label: 'Routes', options: orderBy(routes, ['label']) }
-          ]}
-          onChange={setSelectedEntity}
-          value={selectedEntity}
-          placeholder={translate('initialize_from_otoroshi.select_group')}
-          classNamePrefix="reactSelect"
-        />
-      </div>
-      {selectedEntity && (
-        <div className="d-flex flex-column mt-3">
-          <Table
-            defaultSort="name"
-            columns={columns}
-            fetchItems={() => {
-              return props.getFilteredApikeys(selectedEntity)
-            }}
-            ref={table}
+
+  if (teamQuery.isLoading || apiQuery.isLoading) {
+    return <Spinner />
+  } else if (teamQuery.data && apiQuery.data) {
+
+    const columns = [
+      columnHelper.accessor('clientName', {
+        header: translate('initialize_from_otoroshi.otoroshi_api_key'),
+        meta: { style: { textAlign: 'left', width: '20%' } },
+        sortingFn: 'basic',
+      }),
+      columnHelper.display({
+        header: translate('API.s'),
+        meta: { style: { textAlign: 'left' } },
+        enableColumnFilter: false,
+        enableSorting: false,
+        cell: (info) => {
+          const apikey = info.row.original;
+          return <ApiKey
+            apikey={apikey} key={apikey.clientId}
+            apis={apiQuery.data}
+            teams={teamQuery.data}
+            selectedEntity={selectedEntity}
+            {...props} />;
+        },
+      }),
+    ];
+
+    return (
+      <div className="d-flex flex-column">
+        <div className="d-flex align-items-center mx-3">
+          <span style={{ fontWeight: 'bold' }} className="me-2">
+            {translate('initialize_from_otoroshi.api_keys_of')}
+          </span>
+          <Select
+            className="w-50" //@ts-ignore //FIXME
+            components={(props) => <components.Group {...props} />}
+            options={[
+              { label: 'Services', options: orderBy(services, ['label']) },
+              { label: 'Service groups', options: orderBy(groups, ['label']) },
+              { label: 'Routes', options: orderBy(routes, ['label']) }
+            ]}
+            onChange={setSelectedEntity}
+            value={selectedEntity}
+            placeholder={translate('initialize_from_otoroshi.select_group')}
+            classNamePrefix="reactSelect"
           />
         </div>
-      )}
-
-      <div className="ml-auto">
-        {props.createdSubs.length <= 0 && (
-          <button className="btn btn-outline-danger me-2" onClick={props.cancel}>
-            <Translation i18nkey="Cancel">Cancel</Translation>
-          </button>
+        {selectedEntity && (
+          <div className="d-flex flex-column mt-3">
+            <Table
+              defaultSort="clientName"
+              columns={columns}
+              fetchItems={() => {
+                return props.getFilteredApikeys(selectedEntity)
+              }}
+              ref={table}
+            />
+          </div>
         )}
+
+        <div className="ml-auto">
+          {props.createdSubs.length <= 0 && (
+            <button className="btn btn-outline-danger me-2" onClick={props.cancel}>
+              <Translation i18nkey="Cancel">Cancel</Translation>
+            </button>
+          )}
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
 };
 
-const ApiKey = (props: any) => {
+type ApiKeyProps = {
+  apikey: IApiKey
+  key: string
+  apis: Array<IApiWithTeam>
+  teams: Array<ITeamFullGql>
+  selectedEntity: any
+}
+
+const ApiKey = (props: ApiKeyProps & ApiKeyStepProps) => {
   const { translate } = useContext(I18nContext);
   const { tenant } = useContext(GlobalContext)
-  const [selectedApi, setSelectedApi] = useState(
-    props
-      .maybeCreatedSub(props.apikey)
-      .map((sub: any) => sub.api)
-      .getOrNull()
-  );
-  const [selectedPlan, setSelectedPlan] = useState(
-    props
-      .maybeCreatedSub(props.apikey)
-      .map((sub: any) => sub.plan)
-      .getOrNull()
-  );
-  const [selectedTeam, setSelectedTeam] = useState(
-    props
-      .maybeCreatedSub(props.apikey)
-      .map((sub: any) => sub.team)
-      .getOrNull()
-  );
+  const queryClient = useQueryClient();
+
+  const getSub = (apikey: IApiKey) => {
+    return Option(props.createdSubs.find((s) => apikey.clientId === s.clientId))
+  }
+
+  const [selectedApi, setSelectedApi] = useState<IApiWithTeam>();
+  const [selectedPlan, setSelectedPlan] = useState<IUsagePlan>();
+  const [selectedTeam, setSelectedTeam] = useState<ITeamFullGql>();
 
   const [newTeam, setNewTeam] = useState(undefined);
   const [newPlan, setNewPlan] = useState(undefined);
   const [loading, setLoading] = useState(false);
-  const [loadingPlan, setLoadingPlan] = useState(false);
 
-  useEffect(() => {
-    if (selectedApi) {
-      const api = props.apis.find((a: any) => selectedApi._id === a._id);
-      setSelectedApi(api);
+  // useEffect(() => {
+  //   if (selectedApi) {
+  //     const api = props.apis.find((a: any) => selectedApi._id === a._id);
+  //     setSelectedApi(api);
 
-      if (selectedPlan) {
-        setSelectedPlan(api.possibleUsagePlans.find((pp: any) => pp._id === selectedPlan._id));
-      }
-    }
+  //     if (selectedPlan) {
+  //       setSelectedPlan(api.possibleUsagePlans.find((pp: any) => pp._id === selectedPlan._id));
+  //     }
+  //   }
 
-    return () => {
-      document.onkeydown = null
-    }
-  }, [props.apis])
+  //   return () => {
+  //     document.onkeydown = null
+  //   }
+  // }, [props.apis])
 
   useEffect(() => {
     if (newTeam) {
@@ -610,9 +740,10 @@ const ApiKey = (props: any) => {
       Services.fetchNewTeam()
         .then((t) => ({ ...t, name: newTeam }))
         .then((t) => Services.createTeam(t))
-        .then((t) => {
-          props.addNewTeam(t);
-          setSelectedTeam(t._id);
+        .then((t: ITeamFullGql) => {
+          // queryClient.invalidateQueries({ queryKey: ['init_teams']})
+
+          setSelectedTeam(t);
           setNewTeam(undefined);
           setLoading(false);
         });
@@ -640,33 +771,33 @@ const ApiKey = (props: any) => {
   };
 
   //add new plan effect
-  useEffect(() => {
-    if (newPlan) {
-      let plans = cloneDeep(selectedApi.possibleUsagePlans);
-      const newPossiblePlan = newPossibleUsagePlan(newPlan, tenant);
-      const plan = {
-        ...newPossiblePlan,
-        otoroshiTarget: {
-          ...newPossiblePlan.otoroshiTarget,
-          otoroshiSettings: props.otoroshi,
-          authorizedEntities: getAuthorizedEntitiesFromOtoroshiApiKey(
-            props.apikey.authorizedEntities
-          ),
-        },
-      };
-      plans.push(plan);
-      const value = cloneDeep(selectedApi);
-      value.possibleUsagePlans = plans;
+  // useEffect(() => {
+  //   if (newPlan) {
+  //     let plans = cloneDeep(selectedApi.possibleUsagePlans);
+  //     const newPossiblePlan = newPossibleUsagePlan(newPlan, tenant);
+  //     const plan = {
+  //       ...newPossiblePlan,
+  //       otoroshiTarget: {
+  //         ...newPossiblePlan.otoroshiTarget,
+  //         otoroshiSettings: props.otoroshi,
+  //         authorizedEntities: getAuthorizedEntitiesFromOtoroshiApiKey(
+  //           props.apikey.authorizedEntities
+  //         ),
+  //       },
+  //     };
+  //     plans.push(plan);
+  //     const value = cloneDeep(selectedApi);
+  //     value.possibleUsagePlans = plans;
 
-      setSelectedPlan(plan);
-      Promise.resolve(setLoadingPlan(true))
-        .then(() => props.updateApi(value))
-        .then(() => {
-          setNewPlan(undefined);
-          setLoadingPlan(false);
-        });
-    }
-  }, [newPlan]);
+  //     setSelectedPlan(plan);
+  //     Promise.resolve(setLoadingPlan(true))
+  //       .then(() => props.updateApi(value))
+  //       .then(() => {
+  //         setNewPlan(undefined);
+  //         setLoadingPlan(false);
+  //       });
+  //   }
+  // }, [newPlan]);
 
   //handle error effect
   // useEffect(() => {
@@ -674,24 +805,26 @@ const ApiKey = (props: any) => {
   //   update();
   // }, [selectedPlan, selectedApi, selectedTeam]);
 
-  const apis = props.apis.map((a: any) => ({
+  const apis = props.apis.map((a) => ({
     label: a.name,
     value: a
   }));
-  const teams = props.teams.map((t: any) => ({
+  const teams = props.teams.map((t) => ({
     label: t.name,
-    value: t._id
+    value: t
   }));
-  const possiblePlans = Option(props.apis.find((a: any) => selectedApi && a._id === selectedApi._id))
-    .map((a: any) => a.possibleUsagePlans)
-    .getOrElse([])
-    .map((pp: any) => ({
-      label: pp.customName,
-      value: pp
-    }));
+
+  const possiblePlans = () => props.apis
+    .filter(a => a._id === selectedApi?._id)
+    .map(a => a.possibleUsagePlans).flat()
+    .map(plan => ({ label: plan.customName, value: plan }))
+
+
 
   const getIt = () => {
-    props.addSub(props.apikey, selectedTeam, selectedApi, selectedPlan);
+    if (selectedApi && selectedTeam && selectedPlan) {
+      props.addSub(props.apikey, selectedTeam._id, selectedApi._id, selectedPlan._id);
+    }
   };
 
   // const update = () => {
@@ -700,24 +833,26 @@ const ApiKey = (props: any) => {
   // };
 
   const remove = () => {
-    props.resetSub(props.apikey);
+    props.removeSub(props.apikey);
   };
 
   return (<div className="d-flex flex-row justify-content-between">
-    <div className="flex-grow-1 me-2">
-      <SelectApi apis={apis} setSelectedApi={setSelectedApi} selectedApi={selectedApi} />
-    </div>
-    <div className="flex-grow-1 me-2">
-      <SelectPlan possiblePlans={possiblePlans} selectedPlan={selectedPlan} loadingPlan={loadingPlan} setSelectedPlan={setSelectedPlan} setNewPlan={setNewPlan} selectedApi={selectedApi} />
-    </div>
-    <div className="flex-grow-1 me-2">
-      <SelectTeam loading={loading} setNewTeam={setNewTeam} selectedTeam={selectedTeam} teams={teams} setSelectedTeam={setSelectedTeam} selectedApi={selectedApi} />
-    </div>
+    {getSub(props.apikey).isEmpty() ? <>
+      <div className="flex-grow-1 me-2">
+        <SelectApi apis={apis} setSelectedApi={setSelectedApi} selectedApi={selectedApi} />
+      </div>
+      <div className="flex-grow-1 me-2">
+        <SelectPlan possiblePlans={possiblePlans()} selectedPlan={selectedPlan} setSelectedPlan={setSelectedPlan} setNewPlan={setNewPlan} selectedApi={selectedApi} />
+      </div>
+      <div className="flex-grow-1 me-2">
+        <SelectTeam loading={loading} setNewTeam={setNewTeam} selectedTeam={selectedTeam} teams={teams} setSelectedTeam={setSelectedTeam} selectedApi={selectedApi} />
+      </div>
+    </> : <div className='flex-grow' />}
     <button
-      className={`btn btn-outline-${props.maybeCreatedSub(props.apikey).isDefined ? 'warning' : 'success'}`}
-      disabled={!selectedTeam || !selectedPlan}
-      onClick={props.maybeCreatedSub(props.apikey).isDefined ? remove : getIt}>
-      {props.maybeCreatedSub(props.apikey).isDefined
+      className={`btn btn-outline-${getSub(props.apikey).isDefined() ? 'warning' : 'success'}`}
+      disabled={getSub(props.apikey).isEmpty() && (!selectedTeam || !selectedPlan)}
+      onClick={getSub(props.apikey).isDefined() ? remove : getIt}>
+      {getSub(props.apikey).isDefined()
         ? translate('initialize_from_otoroshi.remove')
         : translate('initialize_from_otoroshi.add')}
     </button>

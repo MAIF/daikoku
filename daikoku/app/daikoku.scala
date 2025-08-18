@@ -33,6 +33,7 @@ import jobs.{
   AnonymousReportingJob,
   ApiKeyStatsJob,
   AuditTrailPurgeJob,
+  NotificationsPurgeJob,
   OtoroshiVerifierJob,
   QueueJob
 }
@@ -74,6 +75,7 @@ package object modules {
     lazy val statsJob = wire[ApiKeyStatsJob]
     lazy val auditTrailPurgeJob = wire[AuditTrailPurgeJob]
     lazy val anonReportingJob = wire[AnonymousReportingJob]
+    lazy val notificationPurgeJob = wire[NotificationsPurgeJob]
 
     lazy val otoroshiClient = wire[OtoroshiClient]
     lazy val paymentClient = wire[PaymentClient]
@@ -251,6 +253,7 @@ package object modules {
     deletor.start()
     verifier.start()
     auditTrailPurgeJob.start()
+    notificationPurgeJob.start()
     anonReportingJob.start()
     env.onStartup()
 
@@ -259,6 +262,7 @@ package object modules {
       verifier.stop()
       statsJob.stop()
       auditTrailPurgeJob.stop()
+      notificationPurgeJob.stop()
       anonReportingJob.stop()
       env.onShutdown()
       pgPool.close()

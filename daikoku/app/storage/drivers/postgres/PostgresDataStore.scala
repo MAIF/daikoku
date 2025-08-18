@@ -721,6 +721,20 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     }
   }
 
+  def queryOneJsArray(query: String, name: String, params: Seq[AnyRef])(implicit
+      ec: ExecutionContext
+  ): Future[Option[JsArray]] = {
+    logger.debug(s"queryOneJsArray($query)")
+
+    for {
+      value <- reactivePg.queryOne(query = query, params = params) { row =>
+        row.optJsArray(name)
+      }
+    } yield {
+      value
+    }
+  }
+
   override def queryRaw(query: String, name: String, params: Seq[AnyRef])(
       implicit ec: ExecutionContext
   ): Future[Seq[JsValue]] = {

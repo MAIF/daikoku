@@ -1,11 +1,15 @@
 package fr.maif.otoroshi.daikoku.domain
 
 import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
+  _TeamMemberOnly,
+  _TenantAdminAccessTenant
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
 import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
@@ -20,7 +24,11 @@ import sangria.schema.{Context, _}
 import sangria.validation.ValueCoercionViolation
 import services.CmsPage
 import storage._
-import storage.graphql.{GraphQLImplicits, RequiresDaikokuAdmin, RequiresTenantAdmin}
+import storage.graphql.{
+  GraphQLImplicits,
+  RequiresDaikokuAdmin,
+  RequiresTenantAdmin
+}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -224,17 +232,17 @@ object SchemaDefinition {
             Field(
               "creationSecurity",
               OptionType(BooleanType),
-              resolve = _.value.creationSecurity,
+              resolve = _.value.creationSecurity
             ),
             Field(
               "subscriptionSecurity",
               OptionType(BooleanType),
-              resolve = _.value.subscriptionSecurity,
+              resolve = _.value.subscriptionSecurity
             ),
             Field(
               "apiReferenceHideForGuest",
               OptionType(BooleanType),
-              resolve = _.value.apiReferenceHideForGuest,
+              resolve = _.value.apiReferenceHideForGuest
             ),
             Field(
               "defaultMessage",
@@ -838,7 +846,10 @@ object SchemaDefinition {
               "users",
               ListType(UserWithPermissionType),
               resolve = ctx => {
-                if (ctx.ctx.isTenantAdmin || ctx.value.includeUser(ctx.ctx._2.user.id)) {
+                if (
+                  ctx.ctx.isTenantAdmin || ctx.value
+                    .includeUser(ctx.ctx._2.user.id)
+                ) {
                   ctx.value.users.toSeq
                 } else {
                   Seq.empty[UserWithPermission]
@@ -1977,7 +1988,27 @@ object SchemaDefinition {
           resolve = _.value.notifications
         )
       ),
-      ReplaceField("total", Field("total", LongType, resolve = _.value.total))
+      ReplaceField("total", Field("total", LongType, resolve = _.value.total)),
+      ReplaceField(
+        "totalSelectable",
+        Field("totalSelectable", LongType, resolve = _.value.totalSelectable)
+      ),
+      ReplaceField(
+        "totalFiltered",
+        Field("totalFiltered", LongType, resolve = _.value.totalFiltered)
+      ),
+      ReplaceField(
+        "totalByTypes",
+        Field("totalByTypes", JsonType, resolve = _.value.totalByTypes)
+      ),
+      ReplaceField(
+        "totalByTeams",
+        Field("totalByTeams", JsonType, resolve = _.value.totalByTeams)
+      ),
+      ReplaceField(
+        "totalByApis",
+        Field("totalByApis", JsonType, resolve = _.value.totalByApis)
+      )
     )
 
     lazy val TeamWithCountType = deriveObjectType[
@@ -2139,7 +2170,11 @@ object SchemaDefinition {
           (DataStore, DaikokuActionContext[JsValue]),
           OtoroshiSyncNotificationAction
         ](
-          Field("message", StringType, resolve = _.value.message)
+          Field(
+            "message",
+            OptionType(StringType),
+            resolve = _.value.message.some
+          )
         ),
       interfaces[
         (DataStore, DaikokuActionContext[JsValue]),
@@ -2231,7 +2266,7 @@ object SchemaDefinition {
       "A subscription demand",
       () =>
         fields[(DataStore, DaikokuActionContext[JsValue]), SubscriptionDemand](
-          Field("id", StringType, resolve = _.value.id.value),
+          Field("_id", StringType, resolve = _.value.id.value),
           Field("tenant", StringType, resolve = _.value.id.value),
           Field("deleted", BooleanType, resolve = _.value.deleted),
           Field(
@@ -2279,7 +2314,7 @@ object SchemaDefinition {
 
     lazy val ApiSubscriptionDemandType = new PossibleObject(
       ObjectType(
-        "ApiSubscriptionDemand",
+        "ApiSubscription",
         "A api subscription notification action",
         interfaces[
           (DataStore, DaikokuActionContext[JsValue]),
@@ -2389,7 +2424,11 @@ object SchemaDefinition {
             ApiSubscriptionType,
             resolve = _.value.subscription
           ),
-          Field("message", StringType, resolve = _.value.message)
+          Field(
+            "message",
+            OptionType(StringType),
+            resolve = _.value.message.some
+          )
         )
       )
     )
@@ -2405,7 +2444,7 @@ object SchemaDefinition {
           (DataStore, DaikokuActionContext[JsValue]),
           ApiSubscriptionReject
         ](
-          Field("message", StringType, resolve = _.value.message.getOrElse("")),
+          Field("message", OptionType(StringType), resolve = _.value.message),
           Field(
             "team",
             OptionType(TeamObjectType),
@@ -2486,6 +2525,34 @@ object SchemaDefinition {
         )
       )
     )
+    lazy val NewIssueOpenV2Type = new PossibleObject(
+      ObjectType(
+        "NewIssueOpenV2",
+        "A notification triggered when a new issue has been created",
+        interfaces[(DataStore, DaikokuActionContext[JsValue]), NewIssueOpenV2](
+          NotificationActionType
+        ),
+        fields[(DataStore, DaikokuActionContext[JsValue]), NewIssueOpenV2](
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          ),
+          Field(
+            "issue",
+            OptionType(ApiIssueType),
+            resolve = ctx =>
+              ctx.ctx._1.apiIssueRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.issue)
+          )
+        )
+      )
+    )
+
     lazy val OtoroshiSyncApiErrorType = new PossibleObject(
       ObjectType(
         "OtoroshiSyncApiError",
@@ -2493,13 +2560,21 @@ object SchemaDefinition {
         interfaces[
           (DataStore, DaikokuActionContext[JsValue]),
           OtoroshiSyncApiError
-        ](OtoroshiSyncNotificationActionType),
+        ](NotificationActionType),
         fields[
           (DataStore, DaikokuActionContext[JsValue]),
           OtoroshiSyncApiError
         ](
-          Field("api", ApiType, resolve = _.value.api),
-          Field("message", StringType, resolve = _.value.message)
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx => Some(ctx.value.api)
+          ),
+          Field(
+            "message",
+            OptionType(StringType),
+            resolve = _.value.message.some
+          )
         )
       )
     )
@@ -2525,6 +2600,34 @@ object SchemaDefinition {
         )
       )
     )
+    lazy val NewPostPublishedV2Type = new PossibleObject(
+      ObjectType(
+        "NewPostPublishedV2",
+        "A notification triggered when a new post has been pusblished",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          NewPostPublishedV2
+        ](NotificationActionType),
+        fields[(DataStore, DaikokuActionContext[JsValue]), NewPostPublishedV2](
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          ),
+          Field(
+            "post",
+            OptionType(ApiPostType),
+            resolve = ctx =>
+              ctx.ctx._1.apiPostRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.post)
+          )
+        )
+      )
+    )
 
     lazy val ApiKeyRefreshType = new PossibleObject(
       ObjectType(
@@ -2537,6 +2640,42 @@ object SchemaDefinition {
           Field("subscriptionName", StringType, resolve = _.value.subscription),
           Field("apiName", StringType, resolve = _.value.api),
           Field("planName", StringType, resolve = _.value.plan)
+        )
+      )
+    )
+    lazy val ApiKeyRefreshV2Type = new PossibleObject(
+      ObjectType(
+        "ApiKeyRefreshV2",
+        "An Otoroshi notification triggered when an api key has been refreshed",
+        interfaces[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRefreshV2](
+          NotificationActionType
+        ),
+        fields[(DataStore, DaikokuActionContext[JsValue]), ApiKeyRefreshV2](
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          ),
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve = ctx =>
+              ctx.ctx._1.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.subscription)
+          ),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx =>
+              ctx.ctx._1.usagePlanRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.plan)
+          ),
+          Field("message", OptionType(StringType), resolve = _.value.message)
         )
       )
     )
@@ -2559,6 +2698,39 @@ object SchemaDefinition {
       )
     )
 
+    lazy val ApiKeyDeletionInformationV2Type = new PossibleObject(
+      ObjectType(
+        "ApiKeyDeletionInformationV2",
+        "An notification triggered when an api key has been deleted",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiKeyDeletionInformationV2
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiKeyDeletionInformationV2
+        ](
+          Field("clientId", StringType, resolve = _.value.clientId),
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findById(ctx.value.api)
+          ),
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve = ctx =>
+              ctx.ctx._1.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findById(ctx.value.subscription)
+          )
+        )
+      )
+    )
+
     lazy val ApiKeyRotationInProgressType = new PossibleObject(
       ObjectType(
         "ApiKeyRotationInProgress",
@@ -2577,6 +2749,47 @@ object SchemaDefinition {
         )
       )
     )
+
+    lazy val ApiKeyRotationInProgressV2Type = new PossibleObject(
+      ObjectType(
+        "ApiKeyRotationInProgressV2",
+        "An Otoroshi notification triggered when the credentials of an api key is in rotation progress",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiKeyRotationInProgressV2
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiKeyRotationInProgressV2
+        ](
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          ),
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve = ctx =>
+              ctx.ctx._1.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.subscription)
+          ),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx =>
+              ctx.ctx._1.usagePlanRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.plan)
+          )
+        )
+      )
+    )
+
     lazy val ApiKeyRotationEndedType = new PossibleObject(
       ObjectType(
         "ApiKeyRotationEnded",
@@ -2592,6 +2805,45 @@ object SchemaDefinition {
         )
       )
     )
+    lazy val ApiKeyRotationEndedV2Type = new PossibleObject(
+      ObjectType(
+        "ApiKeyRotationEndedV2",
+        "An Otoroshi notification triggered when the credentials of an api key has been rotated",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiKeyRotationEndedV2
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiKeyRotationEndedV2
+        ](
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          ),
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve = ctx =>
+              ctx.ctx._1.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.subscription)
+          ),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx =>
+              ctx.ctx._1.usagePlanRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.plan)
+          )
+        )
+      )
+    )
     lazy val NewCommentOnIssueType = new PossibleObject(
       deriveObjectType[
         (DataStore, DaikokuActionContext[JsValue]),
@@ -2601,6 +2853,41 @@ object SchemaDefinition {
           "An Otoroshi notification triggered when a new comment has been written"
         ),
         Interfaces(NotificationActionType)
+      )
+    )
+    lazy val NewCommentOnIssueV2Type = new PossibleObject(
+      ObjectType(
+        "NewCommentOnIssueV2",
+        "A notification triggered when a new comment on an issue has been written",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          NewCommentOnIssueV2
+        ](NotificationActionType),
+        fields[(DataStore, DaikokuActionContext[JsValue]), NewCommentOnIssueV2](
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          ),
+          Field(
+            "issue",
+            OptionType(ApiIssueType),
+            resolve = ctx =>
+              ctx.ctx._1.apiIssueRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.issue)
+          ),
+          Field(
+            "user",
+            OptionType(UserType),
+            resolve = ctx =>
+              ctx.ctx._1.userRepo
+                .findByIdNotDeleted(ctx.value.user)
+          )
+        )
       )
     )
     lazy val CheckoutForSubscriptionType = new PossibleObject(
@@ -2615,10 +2902,31 @@ object SchemaDefinition {
           (DataStore, DaikokuActionContext[JsValue]),
           CheckoutForSubscription
         ](
-          Field("plan", StringType, resolve = _.value.plan.value),
+          Field(
+            "plan",
+            OptionType(UsagePlanType),
+            resolve = ctx =>
+              ctx.ctx._1.usagePlanRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.plan)
+          ),
           Field("step", StringType, resolve = _.value.step.value),
-          Field("demand", StringType, resolve = _.value.demand.value),
-          Field("api", StringType, resolve = _.value.api.value)
+          Field(
+            "demand",
+            OptionType(SubscriptionDemandType),
+            resolve = ctx =>
+              ctx.ctx._1.subscriptionDemandRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.demand)
+          ),
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          )
         )
       )
     )
@@ -2636,8 +2944,11 @@ object SchemaDefinition {
         ](
           Field(
             "subscription",
-            StringType,
-            resolve = _.value.subscription.value
+            OptionType(ApiSubscriptionType),
+            resolve = ctx =>
+              ctx.ctx._1.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.subscription)
           )
         )
       )
@@ -2742,12 +3053,19 @@ object SchemaDefinition {
             OtoroshiSyncSubscriptionErrorType,
             OtoroshiSyncApiErrorType,
             ApiKeyDeletionInformationType,
+            ApiKeyDeletionInformationV2Type,
             ApiKeyRotationInProgressType,
+            ApiKeyRotationInProgressV2Type,
             ApiKeyRotationEndedType,
+            ApiKeyRotationEndedV2Type,
             ApiKeyRefreshType,
+            ApiKeyRefreshV2Type,
             NewPostPublishedType,
+            NewPostPublishedV2Type,
             NewIssueOpenType,
+            NewIssueOpenV2Type,
             NewCommentOnIssueType,
+            NewCommentOnIssueV2Type,
             TransferApiOwnershipType,
             ApiSubscriptionRejectType,
             ApiSubscriptionAcceptType,
@@ -3534,13 +3852,17 @@ object SchemaDefinition {
 
     def getMyNotification(
         ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
-        page: Int,
-        pageSize: Int
+        filter: JsArray,
+        sort: JsArray,
+        limit: Int,
+        offset: Int
     ) = {
-      CommonServices.getMyNotification(page, pageSize)(ctx.ctx._2, env, e).map {
-        case Left(value)  => throw NotAuthorizedError(value.toString)
-        case Right(value) => value
-      }
+      CommonServices
+        .getMyNotification(filter, sort, limit, offset)(ctx.ctx._2, env, e)
+        .map {
+          case Left(value)  => throw NotAuthorizedError(value.toString)
+          case Right(value) => value
+        }
     }
 
     def myNotificationQuery()
@@ -3549,9 +3871,15 @@ object SchemaDefinition {
         Field(
           "myNotifications",
           NotificationWithCountType,
-          arguments = PAGE_NUMBER :: PAGE_SIZE :: Nil,
+          arguments = FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
-            getMyNotification(ctx, ctx.arg(PAGE_NUMBER), ctx.arg(PAGE_SIZE))
+            getMyNotification(
+              ctx,
+              ctx.arg(FILTER_TABLE),
+              ctx.arg(SORTING_TABLE),
+              ctx.arg(LIMIT),
+              ctx.arg(OFFSET)
+            )
           }
         )
       )

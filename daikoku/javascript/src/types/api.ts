@@ -2,7 +2,7 @@ import { Schema } from '@maif/react-forms';
 import { IFastTeam, ITeamSimple, IUserSimple } from './team';
 import { ThirdPartyPaymentType } from './tenant';
 import { INotification } from './types';
-import { ITeamFullGql } from './gql';
+import { IApiGQL, ITeamFullGql } from './gql';
 
 export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked' | 'deleted';
 
@@ -59,7 +59,7 @@ export interface IIssuesTag {
   color: string;
 }
 
-export interface IApiWithTeam extends IBaseApi {
+export interface IApiWithTeam extends IApiGQL {
   team: ITeamFullGql;
 }
 
@@ -166,6 +166,8 @@ export type IValidationStepType = 'teamAdmin' | 'email' | 'payment' | 'httpReque
 export interface IValidationStep {
   id: string;
   type: IValidationStepType;
+  name?: IValidationStepType;
+  title?: string;
 }
 
 export interface IValidationStepEmail extends IValidationStep {
@@ -521,7 +523,7 @@ export interface IApiPost {
   content: string;
 }
 
-type ISubscriptionDemandState =
+export type ISubscriptionDemandState =
   | 'accepted'
   | 'refused'
   | 'canceled'
@@ -529,7 +531,7 @@ type ISubscriptionDemandState =
   | 'waiting'
   | 'blocked';
 
-interface SubscriptionDemandStep {
+export interface SubscriptionDemandStep {
   id: string;
   state: ISubscriptionDemandState;
   step: IValidationStep;

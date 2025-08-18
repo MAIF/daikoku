@@ -39,7 +39,7 @@ import play.api.i18n.I18nSupport
 import play.api.libs.json._
 import play.api.libs.streams.Accumulator
 import play.api.mvc._
-import storage.{Desc}
+import storage.Desc
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -1206,11 +1206,6 @@ class ApiController(
           val source = ctx.request.body
             .filter(api => api.tenant == ctx.tenant.id)
             .grouped(10)
-            .alsoTo(
-              Sink.foreach(seq =>
-                AppLogger.debug(s"${seq.length} apis process")
-              )
-            )
             .flatMapConcat(seq => {
               Source(seq)
                 .mapAsync(10) { api =>
@@ -2404,9 +2399,10 @@ class ApiController(
         team = Some(subscription.team),
         sender = user.asNotificationSender,
         notificationType = NotificationType.AcceptOnly,
-        action = NotificationAction.ApiKeyDeletionInformation(
-          api.name,
-          subscription.apiKey.clientId
+        action = NotificationAction.ApiKeyDeletionInformationV2(
+          api.id,
+          subscription.apiKey.clientId,
+          subscription.id
         )
       )
       _ <- env.dataStore.notificationRepo.forTenant(tenant).save(notif)
@@ -2476,6 +2472,15 @@ class ApiController(
                         .map(child => env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
                           .save(child.copy(parent = futureParent.id.some))))) //update first child to remove parent
                       _ <- EitherT.liftF[Future, AppError, Unit](otoroshiSynchronisator.verify(Json.obj("_id" -> futureParent.id.asJson)))
+                      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.notificationRepo.forTenant(ctx.tenant)
+                        .save(Notification(
+                        id = NotificationId(IdGenerator.token(32)),
+                        tenant = ctx.tenant.id,
+                        team = team.id.some,
+                        sender = ctx.user.asNotificationSender,
+                        notificationType = NotificationType.AcceptOnly,
+                        action = NotificationAction.ApiKeyDeletionInformationV2(api = api.id, clientId = subscription.apiKey.clientId, subscription = subscription.id)
+                      )))
                     } yield Json.obj(
                       "archive" -> "done",
                       "subscriptionId" -> subscriptionId
@@ -3078,14 +3083,13 @@ class ApiController(
             .via(
               apiService.deleteApiSubscriptionsAsFlow(
                 tenant = ctx.tenant,
-                apiOrGroupName = api.name,
+                apiOrGroupId = api.id,
                 user = ctx.user
               )
             )
             .runWith(Sink.fold(Set.empty[UsagePlan])((set, plan) => set + plan))
             .map(Right(_))
             .recover { case ex =>
-              AppLogger.error("[source] :: ça fail")
               Left(AppError.OtoroshiError(Json.obj("error" -> ex.getMessage)))})
 
           _ <- EitherT.liftF[Future, AppError, Long](env.dataStore.operationRepo
@@ -3119,15 +3123,9 @@ class ApiController(
             .deleteByIdLogically(apiId))
 
           _ <- processNextCurrentVersion(api, nextCurrentVersion)
-          log = AppLogger.warn(s"[ApiController] :: DELETE API ${api.humanReadableId} Ended")
         } yield Ok(Json.obj("done" -> true)))
           .recover(d => {
             AppLogger.error(d.getErrorMessage())
-            AppLogger.error("on block l'api et les soucription")
-
-
-
-
             d.render()
           })
           .leftMap(_.render())
@@ -3721,9 +3719,9 @@ class ApiController(
                       tenant = ctx.tenant.id,
                       sender = ctx.user.asNotificationSender,
                       action =
-                        NotificationAction.NewPostPublished(
-                          teamId,
-                          api.name
+                        NotificationAction.NewPostPublishedV2(
+                          api = api.id,
+                          post = newPost.id
                         ),
                       notificationType =
                         NotificationType.AcceptOnly,
@@ -4070,12 +4068,10 @@ class ApiController(
                                                     tenant = ctx.tenant.id,
                                                     sender =
                                                       ctx.user.asNotificationSender,
-                                                    action = NotificationAction
-                                                      .NewIssueOpen(
-                                                        teamId,
-                                                        api.name,
-                                                        s"/${optTeam.map(_.humanReadableId).getOrElse("")}/${api.humanReadableId}/${api.currentVersion.value}/issues/${issue.id.value}"
-                                                      ),
+                                                    action = NotificationAction.NewIssueOpenV2(
+                                                      api = api.id,
+                                                      issue = issue.id
+                                                    ),
                                                     notificationType =
                                                       NotificationType.AcceptOnly,
                                                     team = Some(sub.team)
@@ -4155,10 +4151,9 @@ class ApiController(
                                               sender =
                                                 ctx.user.asNotificationSender,
                                               action =
-                                                NotificationAction.NewIssueOpen(
-                                                  teamId,
-                                                  api.name,
-                                                  s"/${optTeam.map(_.humanReadableId).getOrElse("")}/${api.humanReadableId}/${api.currentVersion.value}/issues/${issue.id.value}"
+                                                NotificationAction.NewIssueOpenV2(
+                                                  api = api.id,
+                                                  issue = issue.id
                                                 ),
                                               notificationType =
                                                 NotificationType.AcceptOnly,
@@ -4209,7 +4204,7 @@ class ApiController(
               }
               .exists(comment => comment.by != ctx.user.id)
 
-        def notifyTeam(apiName: String, linkTo: String, team: TeamId) =
+        def notifyUser(api: Api, issue: ApiIssue, user: UserId) = {
           env.dataStore.notificationRepo
             .forTenant(ctx.tenant.id)
             .save(
@@ -4218,11 +4213,16 @@ class ApiController(
                 tenant = ctx.tenant.id,
                 sender = ctx.user.asNotificationSender,
                 action =
-                  NotificationAction.NewCommentOnIssue(teamId, apiName, linkTo),
+                  NotificationAction.NewCommentOnIssueV2(
+                    api = api.id,
+                    issue = issue.id,
+                    user = user
+                  ),
                 notificationType = NotificationType.AcceptOnly,
-                team = Some(team)
+                team = None
               )
             )
+        }
 
         ApiIssueFormat.reads(ctx.request.body) match {
           case JsError(_) =>
@@ -4231,141 +4231,73 @@ class ApiController(
             )
           case JsSuccess(issue, _) =>
             (for {
-              optIssue <-
-                env.dataStore.apiIssueRepo
+              existingIssue <- EitherT.fromOptionF[Future, AppError, ApiIssue](env.dataStore.apiIssueRepo
                   .forTenant(ctx.tenant.id)
-                  .findOne(Json.obj("_id" -> issueId))
-              optTeam <-
-                env.dataStore.teamRepo
+                  .findOne(Json.obj("_id" -> issueId)), AppError.EntityNotFound("issue"))
+              team <- EitherT.fromOptionF[Future, AppError, Team](env.dataStore.teamRepo
                   .forTenant(ctx.tenant.id)
-                  .findById(teamId)
+                  .findById(teamId), AppError.TeamNotFound)
+              api <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
+                .forTenant(ctx.tenant.id)
+                .findByIdOrHrIdNotDeleted(apiId),
+                AppError.ApiNotFound)
+              subs <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](env.dataStore.apiSubscriptionRepo
+                .forTenant(ctx.tenant.id)
+                .findNotDeleted(Json.obj(
+                  "api" -> api.id.asJson
+                )))
+              myTeams <- EitherT.liftF[Future, AppError, Seq[Team]](env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
+
+
+
+              isPriviligedUser = team.users.find(_.userId == ctx.user.id).nonEmpty || ctx.user.isDaikokuAdmin
+
+              sortedExistingComments = existingIssue.comments.sortBy(_.createdAt.getMillis)
+              sortedEntryComments = issue.comments.sortBy(_.createdAt.getMillis)
+
+              _ <- EitherT.cond[Future][AppError, Unit](existingIssue.tags.equals(issue.tags) ||
+                isPriviligedUser, (), AppError.Unauthorized("Only admin can manage issue tags"))
+              _ <- EitherT.cond[Future][AppError, Unit](!commentsHasBeenRemovedWithoutRights(
+                ctx.user.isDaikokuAdmin,
+                sortedEntryComments,
+                sortedExistingComments
+              ), (), AppError.Forbidden("You're not allowed to delete a comment that does not belong to you"))
+              _ <- EitherT.cond[Future][AppError, Unit](!commentsHasBeenUpdatedWithoutRights(
+                ctx.user.isDaikokuAdmin,
+                sortedEntryComments,
+                sortedExistingComments
+              ), (), AppError.Forbidden("You're not allowed to edit a comment that does not belong to you"))
+              _ <- EitherT.cond[Future][AppError, Unit](existingIssue.open == issue.open ||
+                isPriviligedUser, (), AppError.Unauthorized("You're not authorized to close or re-open an issue"))
+              _ <- EitherT.cond[Future][AppError, Unit](existingIssue.title == issue.title || ctx.user.isDaikokuAdmin ||
+                issue.by == ctx.user.id, (), AppError.Forbidden("You're not authorized to edit issue title"))
+              _ <- EitherT.cond[Future][AppError, Unit](myTeams.map(_.id).intersect(subs.map(_.team)).nonEmpty || isPriviligedUser,
+                (), AppError.Unauthorized("not a  suber / not member of api team"))
+
+              _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiIssueRepo
+                .forTenant(ctx.tenant.id)
+                .save(issue))
+
+
+
+              _ <- if(existingIssue.comments.size < issue.comments.size) EitherT.liftF[Future, AppError, Seq[Boolean]](Future.sequence(
+                existingIssue.comments
+                  .map(_.by)
+                  .distinct
+                  .filter(_ != ctx.user.id)
+                  .map(by =>
+                    notifyUser(
+                      api,
+                      issue,
+                      by
+                    )
+                  )
+              )) else EitherT.pure[Future, AppError](Seq.empty[Boolean])
             } yield {
-              (optIssue, optTeam) match {
-                case (Some(existingIssue), Some(team)) =>
-                  val isTeamMember = team.users.find(_.userId == ctx.user.id)
-                  val isDaikokuAdmin = ctx.user.isDaikokuAdmin
-
-                  val sortedExistingComments =
-                    existingIssue.comments.sortBy(_.createdAt.getMillis)
-                  val sortedEntryComments =
-                    issue.comments.sortBy(_.createdAt.getMillis)
-
-                  if (
-                    !existingIssue.tags.equals(
-                      issue.tags
-                    ) && isTeamMember.isEmpty && !isDaikokuAdmin
-                  )
-                    FastFuture.successful(
-                      Unauthorized(
-                        Json
-                          .obj("error" -> "You're not authorized to edit tags")
-                      )
-                    )
-                  else if (
-                    commentsHasBeenRemovedWithoutRights(
-                      isDaikokuAdmin,
-                      sortedEntryComments,
-                      sortedExistingComments
-                    )
-                  )
-                    FastFuture.successful(
-                      Unauthorized(
-                        Json.obj(
-                          "error" -> "You're not allowed to delete a comment that does not belong to you"
-                        )
-                      )
-                    )
-                  else if (
-                    commentsHasBeenUpdatedWithoutRights(
-                      isDaikokuAdmin,
-                      sortedEntryComments,
-                      sortedExistingComments
-                    )
-                  )
-                    FastFuture.successful(
-                      Unauthorized(
-                        Json.obj(
-                          "error" -> "You're not allowed to edit a comment that does not belong to you"
-                        )
-                      )
-                    )
-                  else if (
-                    existingIssue.open != issue.open && isTeamMember.isEmpty && !isDaikokuAdmin
-                  )
-                    FastFuture.successful(
-                      Unauthorized(
-                        Json.obj(
-                          "error" -> "You're not authorized to close or re-open an issue"
-                        )
-                      )
-                    )
-                  else if (
-                    existingIssue.title != issue.title && !isDaikokuAdmin && (issue.by != ctx.user.id || (issue.by != ctx.user.id && isTeamMember.isEmpty))
-                  )
-                    FastFuture.successful(
-                      Unauthorized(
-                        Json
-                          .obj("error" -> "You're not authorized to edit issue")
-                      )
-                    )
-                  else
-                    env.dataStore.apiIssueRepo
-                      .forTenant(ctx.tenant.id)
-                      .save(issue)
-                      .flatMap { updated =>
-                        if (updated) {
-                          if (existingIssue.comments.size < issue.comments.size)
-                            for {
-                              subs <-
-                                env.dataStore.apiSubscriptionRepo
-                                  .forTenant(ctx.tenant.id)
-                                  .find(
-                                    Json.obj(
-                                      "_humanReadableId" -> apiId
-                                    )
-                                  )
-                              api <-
-                                env.dataStore.apiRepo
-                                  .forTenant(ctx.tenant.id)
-                                  .findOne(
-                                    Json.obj(
-                                      "_humanReadableId" -> apiId,
-                                      "parent" -> JsNull
-                                    )
-                                  )
-                              _ <- {
-                                Future.sequence(
-                                  subs
-                                    .distinctBy(_.team)
-                                    .map(sub =>
-                                      notifyTeam(
-                                        api.map(_.name).getOrElse(""),
-                                        s"${team.humanReadableId}/${api.map(_.humanReadableId).getOrElse("")}/${api
-                                          .map(_.currentVersion.value)
-                                          .getOrElse("1.0.0")}/issues/${issue.id.value}",
-                                        sub.team
-                                      )
-                                    )
-                                )
-                              }
-                            } yield Ok(Json.obj("message" -> "Issue saved"))
-                          else
-                            FastFuture.successful(
-                              Ok(Json.obj("message" -> "Issue saved"))
-                            )
-                        } else
-                          FastFuture.successful(
-                            BadRequest(
-                              Json.obj("error" -> "Something went wrong")
-                            )
-                          )
-                      }
-                case _ =>
-                  FastFuture.successful(
-                    NotFound(Json.obj("error" -> "Team or issue not found"))
-                  )
-              }
-            }).flatMap(_.asInstanceOf[Future[Result]])
+              Ok(Json.obj("message" -> "Issue saved"))
+            })
+              .leftMap(_.render())
+              .merge
         }
       }
     }

@@ -38,8 +38,8 @@ const MotivationForm = (props: MotivationFormProps) => {
   const { translate } = useContext(I18nContext);
   const { close } = useContext(ModalContext);
 
-  const childRef = useRef();
-  const codeInputRef = useRef();
+  const childRef = useRef(null);
+  const codeInputRef = useRef(null);
 
   useEffect(() => {
     //@ts-ignore

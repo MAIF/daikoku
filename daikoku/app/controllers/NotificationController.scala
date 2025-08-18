@@ -11,9 +11,12 @@ import fr.maif.otoroshi.daikoku.actions.{
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
+import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOnly
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, TeamUser}
 import fr.maif.otoroshi.daikoku.domain._
+import fr.maif.otoroshi.daikoku.domain.json.NotificationStatusFormat
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{ApiService, Translator}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.i18n.I18nSupport
@@ -262,6 +265,52 @@ class NotificationController(
   private def nothingNone[A](): Future[Either[AppError, Option[A]]] =
     FastFuture.successful(Right[AppError, Option[A]](None))
 
+  def acceptNotifications() =
+    DaikokuAction.async(parse.json) { ctx =>
+      PublicUserAccess(
+        AuditTrailEvent(
+          s"@{user.name} has read notifications by bulk (@{notifications})"
+        )
+      )(ctx) {
+        val notificationIds = (ctx.request.body \ "notificationIds").as[JsArray]
+        val selectAll = (ctx.request.body \ "selectAll").as[Boolean]
+        ctx.setCtxValue("notifications", Json.stringify(notificationIds))
+        (for {
+          notifications <- EitherT.liftF[Future, AppError, Seq[Notification]](
+            env.dataStore.notificationRepo
+              .forTenant(ctx.tenant)
+              .findNotDeleted(
+                Json.obj("_id" -> Json.obj("$in" -> notificationIds))
+              )
+          )
+          _ <- EitherT.cond[Future][AppError, Unit](
+            notifications.forall(_.notificationType == AcceptOnly),
+            (),
+            AppError.EntityConflict("Notification must be AcceptOnly")
+          )
+          _ <- EitherT.liftF[Future, AppError, Long](
+            env.dataStore.notificationRepo
+              .forTenant(ctx.tenant)
+              .updateManyByQuery(
+                if (selectAll)
+                  Json.obj(
+                    "status.status" -> "Pending",
+                    "notificationType" -> NotificationType.AcceptOnly.value
+                  )
+                else Json.obj("_id" -> Json.obj("$in" -> notificationIds)),
+                Json.obj(
+                  "$set" -> Json.obj(
+                    "status" -> NotificationStatusFormat
+                      .writes(NotificationStatus.Accepted())
+                  )
+                )
+              )
+          )
+        } yield Ok(Json.obj("done" -> true)))
+          .leftMap(_.render())
+          .merge
+      }
+    }
   def acceptNotification(notificationId: String) =
     DaikokuAction.async(parse.json) { ctx =>
       import cats.data._

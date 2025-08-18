@@ -1,9 +1,9 @@
 import { Form, Schema, constraints, format, type } from '@maif/react-forms';
 import { md5 } from 'js-md5';
-import { ChangeEvent, useContext, useEffect, useState } from 'react';
+import { ChangeEvent, useContext, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 
-import { I18nContext, ModalContext, useUserBackOffice } from '../../../contexts';
+import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { I2FAQrCode, ITenant, IUser, isError } from '../../../types';
@@ -332,6 +332,8 @@ type PictureUploadProps = {
 const PictureUpload = (props: PictureUploadProps) => {
   const [uploading, setUploading] = useState(false);
 
+  const inputRef = useRef<HTMLInputElement>(null)
+
   const { Translation } = useContext(I18nContext);
 
   const setFiles = (e: ChangeEvent<HTMLInputElement>) => {
@@ -343,15 +345,16 @@ const PictureUpload = (props: PictureUploadProps) => {
   };
 
   const trigger = () => {
-    input.click();
+    if (inputRef.current) {
+      inputRef.current.click();
+    }
   };
 
-  let input: any;
 
   return (
     <div className="changePicture mx-3">
       <input
-        ref={(r) => (input = r)}
+        ref={inputRef}
         type="file"
         className="form-control hide"
         accept="image/png, image/jpeg, image/jpg"
@@ -376,8 +379,6 @@ const PictureUpload = (props: PictureUploadProps) => {
 };
 
 export const MyProfile = () => {
-  useUserBackOffice();
-
   const [user, setUser] = useState<IUser>();
   const [tab, setTab] = useState('infos');
 

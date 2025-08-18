@@ -2,14 +2,16 @@ import { useContext, useEffect, useState } from 'react';
 import { I18nContext } from '../../../contexts';
 import { useNavigate, useParams } from 'react-router-dom';
 import * as Services from '../../../services';
-import { getApolloContext } from '@apollo/client';
 
 import { Spinner } from '../../utils/Spinner';
 import { Form, format, type } from '@maif/react-forms';
+import { GlobalContext } from '../../../contexts/globalContext';
+import { ICmsPageGQL } from '../../../types/gql';
+
 
 export const Create = (props: any) => {
-  const { client } = useContext(getApolloContext());
   const { translate } = useContext(I18nContext);
+  const { customGraphQLClient } = useContext(GlobalContext);
 
   const params = useParams();
   const navigate = useNavigate();
@@ -17,20 +19,16 @@ export const Create = (props: any) => {
   const [loading, setLoading] = useState(true);
 
   const [value, setValue] = useState<any>({});
-  // const [contentType, setContentType] = useState();
 
   useEffect(() => {
     const id = params.id;
     if (id) {
       setLoading(true);
-      client && client.query({ query: Services.graphql.getCmsPage(id) }).then((res) => {
-        if (res.data) {
-          const { history, ...side } = res.data.cmsPage;
-          setValue(side.body);
-          // setContentType(side.contentType);
-        }
-        setLoading(false);
-      });
+      customGraphQLClient.request<{ cmsPage: ICmsPageGQL }>(Services.graphql.getCmsPage(id))
+        .then((res) => {
+          setValue(res.cmsPage.body);
+          setLoading(false);
+        });
     }
   }, [params.id]);
 

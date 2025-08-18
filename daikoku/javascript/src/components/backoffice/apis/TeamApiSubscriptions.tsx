@@ -26,6 +26,7 @@ import {
   formatDate,
   manage
 } from "../../utils";
+import { GlobalContext } from "../../../contexts/globalContext";
 
 type TeamApiSubscriptionsProps = {
   api: IApi;
@@ -94,21 +95,20 @@ export const TeamApiSubscriptions = ({
     pageIndex: 0,
     pageSize: 10,
   })
-  const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true}]);
+  const [sorting, setSorting] = useState<SortingState>([{ id: "createdAt", desc: true }]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(
     []
   )
-  const tableRef = useRef<TableRef>();
+  const tableRef = useRef<TableRef>(undefined);
 
-  const { translate, language, Translation } = useContext(I18nContext);
+  const { translate, Translation } = useContext(I18nContext);
+  const { customGraphQLClient } = useContext(GlobalContext);
   const { confirm, openFormModal, openSubMetadataModal } =
     useContext(ModalContext);
 
-  const graphqlEndpoint = `${window.location.origin}/api/search`;
-  const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
   const subscriptionsQuery = useQuery({
     queryKey: ["subscriptions", filters, columnFilters, sorting, pagination],
-    queryFn: () => customGraphQLClient.request<{ apiApiSubscriptions: {subscriptions: Array<IApiSubscriptionGql>, total: number} }>(Services.graphql.getApiSubscriptions, {
+    queryFn: () => customGraphQLClient.request<{ apiApiSubscriptions: { subscriptions: Array<IApiSubscriptionGql>, total: number } }>(Services.graphql.getApiSubscriptions, {
       apiId: api._id,
       teamId: currentTeam._id,
       version: api.currentVersion,

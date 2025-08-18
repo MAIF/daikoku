@@ -1,4 +1,3 @@
-import { getApolloContext } from '@apollo/client';
 import { useQueryClient } from '@tanstack/react-query';
 import { useContext, useEffect, useState } from 'react';
 import Select from 'react-select';
@@ -38,8 +37,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
   const { openFormModal, openApiKeySelectModal } = useContext(ModalContext);
 
   const queryClient = useQueryClient();
-  const { client } = useContext(getApolloContext());
-  const { tenant } = useContext(GlobalContext);
+  const { tenant, customGraphQLClient } = useContext(GlobalContext);
 
   const { translate } = useContext(I18nContext);
   const [selectedApiV, setSelectedApiV] = useState(
@@ -78,12 +76,12 @@ export const FastApiCard = (props: FastApiCardProps) => {
     const apiKeyDemand = (motivation?: object) =>
       apiKey
         ? Services.extendApiKey(
-            apiId,
-            apiKey._id,
-            team._id,
-            plan._id,
-            motivation
-          )
+          apiId,
+          apiKey._id,
+          team._id,
+          plan._id,
+          motivation
+        )
         : Services.askForApiKey(apiId, team._id, plan._id, motivation);
 
     const formStep = plan.subscriptionProcess.find((s) =>
@@ -148,60 +146,57 @@ export const FastApiCard = (props: FastApiCardProps) => {
     team: ITeamSimple,
     plan: IFastPlan
   ) => {
-    if (client) {
-      Services.getAllTeamSubscriptions(props.team._id)
-        .then((subscriptions) =>
-          client
-            .query({
-              query: Services.graphql.apisByIdsWithPlans,
-              variables: { ids: [...new Set(subscriptions.map((s) => s.api))] },
-            })
-            .then(({ data }) => ({ apis: data.apis, subscriptions }))
+    Services.getAllTeamSubscriptions(props.team._id)
+      .then((subscriptions) =>
+        customGraphQLClient.request<{ apis: Array<IApiGQL> }>(
+          Services.graphql.apisByIdsWithPlans,
+          { ids: [...new Set(subscriptions.map((s) => s.api))] },
         )
-        .then(
-          ({
-            apis,
-            subscriptions,
-          }: {
-            apis: Array<IApiGQL>;
-            subscriptions: Array<ISubscriptionWithApiInfo>;
-          }) => {
-            const int = subscriptions.map((subscription) => {
-              const api = apis.find((a) => a._id === subscription.api);
-              const plan = Option(api?.possibleUsagePlans)
-                .flatMap((plans) =>
-                  Option(plans.find((plan) => plan._id === subscription.plan))
-                )
-                .getOrNull();
-              return { subscription, api, plan };
-            });
-
-            const filteredApiKeys = int
-              .filter(
-                (infos) =>
-                  infos.plan?.otoroshiTarget?.otoroshiSettings === plan?.otoroshiTarget?.otoroshiSettings &&
-                  (infos.plan?.aggregationApiKeysSecurity)
+          .then((data) => ({ apis: data.apis, subscriptions }))
+      )
+      .then(
+        ({
+          apis,
+          subscriptions,
+        }: {
+          apis: Array<IApiGQL>;
+          subscriptions: Array<ISubscriptionWithApiInfo>;
+        }) => {
+          const int = subscriptions.map((subscription) => {
+            const api = apis.find((a) => a._id === subscription.api);
+            const plan = Option(api?.possibleUsagePlans)
+              .flatMap((plans) =>
+                Option(plans.find((plan) => plan._id === subscription.plan))
               )
-              .filter(s => !tenant.environmentAggregationApiKeysSecurity || s.subscription.planName === plan.customName)
-              .map((infos) => infos.subscription);
+              .getOrNull();
+            return { subscription, api, plan };
+          });
 
-            if (
-              !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
-              filteredApiKeys.length <= 0
-            ) {
-              subscribe(apiId, team, plan);
-            } else {
-              openApiKeySelectModal({
-                plan,
-                apiKeys: filteredApiKeys,
-                onSubscribe: () => subscribe(apiId, team, plan),
-                extendApiKey: (apiKey: ISubscription) =>
-                  subscribe(apiId, team, plan, apiKey),
-              });
-            }
+          const filteredApiKeys = int
+            .filter(
+              (infos) =>
+                infos.plan?.otoroshiTarget?.otoroshiSettings === plan?.otoroshiTarget?.otoroshiSettings &&
+                (infos.plan?.aggregationApiKeysSecurity)
+            )
+            .filter(s => !tenant.environmentAggregationApiKeysSecurity || s.subscription.planName === plan.customName)
+            .map((infos) => infos.subscription);
+
+          if (
+            !tenant.aggregationApiKeysSecurity || !plan.aggregationApiKeysSecurity ||
+            filteredApiKeys.length <= 0
+          ) {
+            subscribe(apiId, team, plan);
+          } else {
+            openApiKeySelectModal({
+              plan,
+              apiKeys: filteredApiKeys,
+              onSubscribe: () => subscribe(apiId, team, plan),
+              extendApiKey: (apiKey: ISubscription) =>
+                subscribe(apiId, team, plan, apiKey),
+            });
           }
-        );
-    }
+        }
+      );
   };
 
   return (
@@ -302,24 +297,24 @@ export const FastApiCard = (props: FastApiCardProps) => {
                     )}
                     {((!subscriptionsCount && !isPending) ||
                       plan.allowMultipleKeys) && (
-                      <button
-                        style={{ whiteSpace: 'nowrap' }}
-                        className={'btn btn-sm btn-outline-info'}
-                        onClick={() =>
-                          subscribeOrExtends(
-                            selectedApi.api._id,
-                            props.team,
-                            plan
-                          )
-                        }
-                      >
-                        {translate(
-                          isSubscriptionProcessIsAutomatic(plan)
-                            ? 'Get API key'
-                            : 'Request API key'
-                        )}
-                      </button>
-                    )}
+                        <button
+                          style={{ whiteSpace: 'nowrap' }}
+                          className={'btn btn-sm btn-outline-info'}
+                          onClick={() =>
+                            subscribeOrExtends(
+                              selectedApi.api._id,
+                              props.team,
+                              plan
+                            )
+                          }
+                        >
+                          {translate(
+                            isSubscriptionProcessIsAutomatic(plan)
+                              ? 'Get API key'
+                              : 'Request API key'
+                          )}
+                        </button>
+                      )}
                     {isPending && (
                       <button
                         style={{ whiteSpace: 'nowrap' }}

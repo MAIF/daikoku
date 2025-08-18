@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext, useImperativeHandle, MutableRefObject } from 'react';
+import React, { useState, useEffect, useContext, useImperativeHandle, MutableRefObject, JSX, ReactNode, RefObject } from 'react';
 import {
   flexRender,
   getCoreRowModel,
@@ -42,14 +42,14 @@ type TableProps<T> = {
   className?: string,
   columns: ColumnDef<T, any>[];
   fetchItems: () => Array<T> | Promise<Array<T> | ResponseError>;
-  injectTopBar?: () => JSX.Element,
+  injectTopBar?: () => ReactNode,
   injectTable?: (ref: TableRef) => void,
   defaultSort?: string,
   defaultSortDesc?: boolean,
   header?: boolean,
   footer?: boolean,
   onSelectRow?: (row: any) => void,
-  ref?: MutableRefObject<TableRef | undefined>
+  ref?: RefObject<TableRef | undefined>
   noPagination?: boolean,
 };
 
@@ -275,13 +275,13 @@ const TableComponent = <T extends unknown>(props: TableProps<T>, ref: React.Ref<
   );
 }
 
-export function Filter({
+export const Filter = ({
   column,
   table
 }: {
   column: Column<any, any>;
   table: ReactTable<any>;
-}) {
+}) => {
   const { translate } = useContext(I18nContext);
 
 

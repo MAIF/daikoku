@@ -1,14 +1,14 @@
-import { getApolloContext } from "@apollo/client";
 import classNames from 'classnames';
 import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from "@tanstack/react-query";
-import {startOfDay, addDays, format} from 'date-fns'
+import { startOfDay, addDays, format } from 'date-fns'
 
 import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { IApi, IGlobalInformations, isError, ITeamSimple, IUsagePlan } from '../../../types';
 import { Can, formatDate, GlobalDataConsumption, OtoroshiStatsVizualization, read, Spinner, stat } from '../../utils';
+import { GlobalContext } from '../../../contexts/globalContext';
 
 
 export type IgqlConsumption = {
@@ -64,11 +64,11 @@ export const TeamApiConsumption = ({
       to: startOfDay(addDays(new Date(), 1)),
     },
   });
-  const { client } = useContext(getApolloContext());
+  const { customGraphQLClient } = useContext(GlobalContext);
+  const { translate } = useContext(I18nContext);
 
   const navigate = useNavigate();
 
-  const { translate } = useContext(I18nContext);
 
   const usagePlansQuery = useQuery({
     queryKey: ['plans', api.currentVersion],
@@ -153,21 +153,21 @@ export const TeamApiConsumption = ({
                 <OtoroshiStatsVizualization
                   sync={() => Services.syncApiConsumption(api._id, currentTeam._id)}
                   fetchData={(from: Date, to: Date) => {
-                    const newLocal: Promise<IgqlConsumption[]> = client!.query<{ apiConsumptions: Array<IgqlConsumption>; }>({
-                      query: Services.graphql.getApiConsumptions,
-                      fetchPolicy: "no-cache",
-                      variables: {
+                    const newLocal: Promise<IgqlConsumption[]> = customGraphQLClient.request<{ apiConsumptions: Array<IgqlConsumption>; }>(
+                      Services.graphql.getApiConsumptions,
+                      {
                         apiId: api._id,
                         teamId: currentTeam._id,
                         from: from.valueOf(),
                         to: to.valueOf()
                       }
-                    }).then(({ data: { apiConsumptions } }) => {
-                      return apiConsumptions;
-                    });
+                    )
+                      .then((data) => {
+                        return data.apiConsumptions;
+                      });
                     return newLocal;
                   }
-                    
+
                   }
                   mappers={mappers(usagePlansQuery.data as IUsagePlan[])}
                 />

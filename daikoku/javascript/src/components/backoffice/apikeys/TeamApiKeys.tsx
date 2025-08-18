@@ -26,7 +26,7 @@ export const TeamApiKeys = () => {
 
   const { connectedUser } = useContext(GlobalContext);
 
-  const tableRef = useRef<TableRef>();
+  const tableRef = useRef<TableRef>(undefined);
   const [showApiKey, setShowApiKey] = useState(false);
 
   const { translate, Translation } = useContext(I18nContext);

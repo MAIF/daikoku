@@ -458,11 +458,12 @@ class ApiControllerSpec()
         defaultUsagePlan = UsagePlanId("parent.dev").some
       )
 
-
       setupEnvBlocking(
         tenants = Seq(
           tenant.copy(
-            clientNamePattern = Some("apk-test::api=${api.name}:${api.currentVersion}/${plan.name}::team=${team.name}"),
+            clientNamePattern = Some(
+              "apk-test::api=${api.name}:${api.currentVersion}/${plan.name}::team=${team.name}"
+            ),
             otoroshiSettings = Set(
               OtoroshiSettings(
                 id = containerizedOtoroshi,
@@ -486,19 +487,21 @@ class ApiControllerSpec()
           defaultAdminTeam
         ),
         usagePlans = Seq(plan, adminApiPlan),
-        apis = Seq(api, adminApi),
+        apis = Seq(api, adminApi)
       )
 
       val session = loginWithBlocking(user, tenant)
       val resp = httpJsonCallBlocking(
-        path = s"/api/apis/${api.id.value}/plan/${plan.id.value}/team/${teamConsumer.id.value}/_subscribe",
+        path =
+          s"/api/apis/${api.id.value}/plan/${plan.id.value}/team/${teamConsumer.id.value}/_subscribe",
         method = "POST",
         body = Json.obj().some
       )(tenant, session)
       resp.status mustBe 200
 
       val sub = (resp.json \ "subscription").as(json.ApiSubscriptionFormat)
-      val expectedName = s"apk-test::api=${api.name}:${api.currentVersion.value}/${plan.customName}::team=${teamConsumer.name}"
+      val expectedName =
+        s"apk-test::api=${api.name}:${api.currentVersion.value}/${plan.customName}::team=${teamConsumer.name}"
       sub.apiKey.clientName mustBe expectedName
     }
 

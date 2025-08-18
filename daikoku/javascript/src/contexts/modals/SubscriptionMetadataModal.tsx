@@ -35,7 +35,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(
 ) => {
   const { translate, Translation } = useContext(I18nContext);
 
-  const formRef = useRef<FormRef>();
+  const formRef = useRef<FormRef>(undefined);
 
   const apiQuery = useQuery({
     queryKey: ["api"],
@@ -254,7 +254,7 @@ export const SubscriptionMetadataModal = <T extends IWithTesting>(
     return (
       <div className="modal-content">
         <div className="modal-header">
-          <h5 className="modal-title">
+          <h5 className="modal-title" id="modal-title" >
             <Translation i18nkey="Subscription metadata">
               Subscription metadata
             </Translation>

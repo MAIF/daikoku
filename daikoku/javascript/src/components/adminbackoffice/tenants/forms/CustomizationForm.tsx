@@ -1,16 +1,13 @@
-import { getApolloContext, gql } from '@apollo/client';
 import { Flow, Form, FormRef, Schema, SchemaEntry, format, type } from '@maif/react-forms';
 import { UseMutationResult, useQuery } from '@tanstack/react-query';
 import { useContext, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 
+import Select from 'react-select';
 import { ModalContext } from '../../../../contexts';
+import { GlobalContext } from '../../../../contexts/globalContext';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../../contexts/modals/AssetsChooserModal';
-import { ITenantFull } from '../../../../types';
-import { IPage } from '../../cms';
-import { GraphQLClient } from 'graphql-request';
-import Select from 'react-select';
+import { ICmsPageGQL, ITenantFull } from '../../../../types';
 
 type CmsPagesSelectorProps = {
   rawValues: any
@@ -18,6 +15,7 @@ type CmsPagesSelectorProps = {
   value: string
 }
 const CmsPageSelector = ({ rawValues, onChange, value }: CmsPagesSelectorProps) => {
+  const { customGraphQLClient } = useContext(GlobalContext);
   const cmsPagesQuery = `
       query CmsPages {
         pages {
@@ -30,12 +28,10 @@ const CmsPageSelector = ({ rawValues, onChange, value }: CmsPagesSelectorProps) 
         }
       }
     `
-  const graphqlEndpoint = `${window.location.origin}/api/search`;
-  const customGraphQLClient = new GraphQLClient(graphqlEndpoint);
 
   const queryPages = useQuery({
     queryKey: ['cmsPageSelector', 'pages'],
-    queryFn: () => customGraphQLClient.request<{ pages: Array<IPage> }>(
+    queryFn: () => customGraphQLClient.request<{ pages: Array<ICmsPageGQL> }>(
       cmsPagesQuery
     )
   })
@@ -61,11 +57,9 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
 
   const { translate } = useContext(I18nContext);
   const { alert } = useContext(ModalContext);
-  const { client } = useContext(getApolloContext());
+  const { customGraphQLClient } = useContext(GlobalContext);
 
-  const formRef = useRef<FormRef>()
-
-  const navigate = useNavigate();
+  const formRef = useRef<FormRef>(undefined)
 
   useEffect(() => {
     const display = localStorage.getItem("display.migration.custom.style.alert")
@@ -103,9 +97,8 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
 
   const queryCMSPages = useQuery({
     queryKey: ['CMS pages'],
-    queryFn: () => client?.query({
-      query: gql`
-      query CmsPages {
+    queryFn: () => customGraphQLClient.request<{ pages: ICmsPageGQL[]}>(
+      `query CmsPages {
         pages {
           id
           name
@@ -113,9 +106,8 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
           contentType
         }
       }
-    `,
-    })
-      .then((r) => r.data.pages)
+    `)
+      .then((r) => r.pages)
   })
 
 

@@ -139,6 +139,25 @@ img:hover+.changePicture,
   opacity: 0.5;
 }
 
+.bg-success {
+  background-color: variables.$success-color;
+}
+.bg-info {
+  background-color: variables.$info-color;
+}
+.bg-danger {
+  background-color: variables.$danger-color;
+}
+.color-success {
+  color: variables.$success-color;
+}
+.color-info {
+  color: variables.$info-color;
+}
+.color-danger {
+  color: variables.$danger-color;
+}
+
 
 /* rwd */
 @media screen and (min-width: 576px) {

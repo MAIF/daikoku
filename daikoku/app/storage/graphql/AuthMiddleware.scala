@@ -1,10 +1,21 @@
 package storage.graphql
 
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
-import fr.maif.otoroshi.daikoku.domain.{Tenant, User, UserId, UserWithPermission}
+import fr.maif.otoroshi.daikoku.domain.{
+  Tenant,
+  User,
+  UserId,
+  UserWithPermission
+}
 import play.api.Logger
 import play.api.libs.json.JsValue
-import sangria.execution.{BeforeFieldResult, FieldTag, Middleware, MiddlewareBeforeField, MiddlewareQueryContext}
+import sangria.execution.{
+  BeforeFieldResult,
+  FieldTag,
+  Middleware,
+  MiddlewareBeforeField,
+  MiddlewareQueryContext
+}
 import sangria.schema.Context
 import storage.DataStore
 
@@ -23,12 +34,12 @@ object GraphQLImplicits {
 
     def tenant: Tenant = actionContext.tenant
 
-    def isTenantAdmin: Boolean = actionContext.isTenantAdmin || user.isDaikokuAdmin
+    def isTenantAdmin: Boolean =
+      actionContext.isTenantAdmin || user.isDaikokuAdmin
 
     def isDaikokuAdmin: Boolean = user.isDaikokuAdmin
 
     def isGuest: Boolean = user.isGuest
-
 
     def requireTenantAdmin(): Unit = {
       if (!isTenantAdmin || !isDaikokuAdmin) {
@@ -41,7 +52,6 @@ object GraphQLImplicits {
         throw AuthorizationException("Admin access required")
       }
     }
-
 
   }
 }

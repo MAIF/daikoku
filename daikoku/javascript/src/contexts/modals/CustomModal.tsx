@@ -1,4 +1,5 @@
 
+import { JSX } from 'react';
 import { IModalProps } from './ApiSelectModal';
 import { IBaseModalProps } from './types';
 
@@ -40,7 +41,7 @@ export const CustomModal = ({
   return (
     <div className="modal-content">
       <div className="modal-header">
-        <h5 className="modal-title">{title}</h5>
+        <h5 className="modal-title" id="modal-title">{title}</h5>
         <button type="button" className="btn-close" aria-label="Close" onClick={() => close()} />
       </div>
       <div className="modal-body">

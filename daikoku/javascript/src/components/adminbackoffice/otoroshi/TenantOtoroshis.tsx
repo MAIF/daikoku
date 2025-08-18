@@ -21,7 +21,7 @@ export const TenantOtoroshis = () => {
   useTenantBackOffice();
 
   const [isTenantAdmin, setIsTenantAdmin] = useState(connectedUser.isDaikokuAdmin);
-  const table = useRef<TableRef>()
+  const table = useRef<TableRef>(undefined)
 
   useEffect(() => {
     if (!isTenantAdmin)

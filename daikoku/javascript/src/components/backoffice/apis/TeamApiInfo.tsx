@@ -3,8 +3,7 @@ import { useContext } from 'react';
 import { I18nContext, TranslateParams } from '../../../contexts';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import * as Services from '../../../services';
-import { isError, ITeamSimple, ITenant } from '../../../types';
-import { IPage } from '../../adminbackoffice/cms';
+import { ICmsPageGQL, isError, ITeamSimple, ITenant } from '../../../types';
 
 
 const Image = ({
@@ -42,7 +41,7 @@ const Image = ({
 };
 
 const reservedVersionCharacters = [';', '/', '?', ':', '@', '&', '=', '+', '$', ','];
-export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) => string, team: ITeamSimple, tenant: ITenant, getCmsPages: () => Promise<Array<IPage>>, apigroup: boolean) => {
+export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) => string, team: ITeamSimple, tenant: ITenant, getCmsPages: () => Promise<Array<ICmsPageGQL>>, apigroup: boolean) => {
   const schema: Schema = {
     isDefault: {
       type: type.bool,

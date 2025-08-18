@@ -758,7 +758,16 @@ case class ApiWithCount(
     producers: Seq[Team],
     total: Long
 )
-case class NotificationWithCount(notifications: Seq[Notification], total: Long)
+case class NotificationWithCount(
+    notifications: Seq[Notification],
+    total: Long,
+    totalFiltered: Long,
+    totalByTypes: JsArray,
+    totalByApis: JsArray,
+    totalByNotificationTypes: JsArray,
+    totalByTeams: JsArray,
+    totalSelectable: Long
+)
 case class TeamWithCount(teams: Seq[Team], total: Long)
 case class SubscriptionsWithPlan(
     planId: String,

@@ -2744,14 +2744,24 @@ object json {
           case "OtoroshiSyncApiError" => OtoroshiSyncApiErrorFormat.reads(json)
           case "ApiKeyDeletionInformation" =>
             ApiKeyDeletionInformationFormat.reads(json)
+          case "ApiKeyDeletionInformationV2" =>
+            ApiKeyDeletionInformationV2Format.reads(json)
           case "ApiKeyRotationInProgress" =>
             ApiKeyRotationInProgressFormat.reads(json)
-          case "ApiKeyRotationEnded"  => ApiKeyRotationEndedFormat.reads(json)
+          case "ApiKeyRotationInProgressV2" =>
+            ApiKeyRotationInProgressV2Format.reads(json)
+          case "ApiKeyRotationEnded" => ApiKeyRotationEndedFormat.reads(json)
+          case "ApiKeyRotationEndedV2" =>
+            ApiKeyRotationEndedV2Format.reads(json)
           case "TeamInvitation"       => TeamInvitationFormat.reads(json)
           case "ApiKeyRefresh"        => ApiKeyRefreshFormat.reads(json)
+          case "ApiKeyRefreshV2"      => ApiKeyRefreshV2Format.reads(json)
           case "NewPostPublished"     => NewPostPublishedFormat.reads(json)
+          case "NewPostPublishedV2"   => NewPostPublishedV2Format.reads(json)
           case "NewIssueOpen"         => NewIssueOpenFormat.reads(json)
+          case "NewIssueOpenV2"       => NewIssueOpenV2Format.reads(json)
           case "NewCommentOnIssue"    => NewCommentOnIssueFormat.reads(json)
+          case "NewCommentOnIssueV2"  => NewCommentOnIssueV2Format.reads(json)
           case "TransferApiOwnership" => TransferApiOwnershipFormat.reads(json)
           case "ApiSubscriptionTransferSuccess" =>
             ApiSubscriptionTransferSuccessFormat.reads(json)
@@ -2794,13 +2804,26 @@ object json {
             ApiKeyDeletionInformationFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiKeyDeletionInformation"
             )
+          case p: ApiKeyDeletionInformationV2 =>
+            ApiKeyDeletionInformationV2Format.writes(p).as[JsObject] ++ Json
+              .obj(
+                "type" -> "ApiKeyDeletionInformationV2"
+              )
           case p: ApiKeyRotationInProgress =>
             ApiKeyRotationInProgressFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiKeyRotationInProgress"
             )
+          case p: ApiKeyRotationInProgressV2 =>
+            ApiKeyRotationInProgressV2Format.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "ApiKeyRotationInProgressV2"
+            )
           case p: ApiKeyRotationEnded =>
             ApiKeyRotationEndedFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiKeyRotationEnded"
+            )
+          case p: ApiKeyRotationEndedV2 =>
+            ApiKeyRotationEndedV2Format.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "ApiKeyRotationEndedV2"
             )
           case p: TeamInvitation =>
             TeamInvitationFormat.writes(p).as[JsObject] ++ Json.obj(
@@ -2810,17 +2833,33 @@ object json {
             ApiKeyRefreshFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiKeyRefresh"
             )
+          case p: ApiKeyRefreshV2 =>
+            ApiKeyRefreshV2Format.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "ApiKeyRefreshV2"
+            )
           case p: NewPostPublished =>
             NewPostPublishedFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "NewPostPublished"
+            )
+          case p: NewPostPublishedV2 =>
+            NewPostPublishedV2Format.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "NewPostPublishedV2"
             )
           case p: NewIssueOpen =>
             NewIssueOpenFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "NewIssueOpen"
             )
+          case p: NewIssueOpenV2 =>
+            NewIssueOpenV2Format.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "NewIssueOpenV2"
+            )
           case p: NewCommentOnIssue =>
             NewCommentOnIssueFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "NewCommentOnIssue"
+            )
+          case p: NewCommentOnIssueV2 =>
+            NewCommentOnIssueV2Format.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "NewCommentOnIssueV2"
             )
           case p: TransferApiOwnership =>
             TransferApiOwnershipFormat.writes(p).as[JsObject] ++ Json.obj(
@@ -2852,6 +2891,27 @@ object json {
         "apiName" -> o.apiName,
         "teamId" -> o.teamId,
         "linkTo" -> o.linkTo
+      )
+  }
+  val NewCommentOnIssueV2Format = new Format[NewCommentOnIssueV2] {
+    override def reads(json: JsValue): JsResult[NewCommentOnIssueV2] =
+      Try {
+        JsSuccess(
+          NewCommentOnIssueV2(
+            api = (json \ "api").as(ApiIdFormat),
+            issue = (json \ "issue").as(ApiIssueIdFormat),
+            user = (json \ "user").as(UserIdFormat)
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: NewCommentOnIssueV2): JsValue =
+      Json.obj(
+        "api" -> o.api.asJson,
+        "issue" -> o.issue.asJson,
+        "user" -> o.user.asJson
       )
   }
 
@@ -2923,6 +2983,25 @@ object json {
         "linkTo" -> o.linkTo
       )
   }
+  val NewIssueOpenV2Format = new Format[NewIssueOpenV2] {
+    override def reads(json: JsValue): JsResult[NewIssueOpenV2] =
+      Try {
+        JsSuccess(
+          NewIssueOpenV2(
+            api = (json \ "api").as(ApiIdFormat),
+            issue = (json \ "issue").as(IssueIdFormat)
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: NewIssueOpenV2): JsValue =
+      Json.obj(
+        "api" -> o.api.asJson,
+        "issue" -> o.issue.asJson
+      )
+  }
 
   val NewPostPublishedFormat = new Format[NewPostPublished] {
     override def reads(json: JsValue): JsResult[NewPostPublished] =
@@ -2941,6 +3020,25 @@ object json {
       Json.obj(
         "apiName" -> o.apiName,
         "teamId" -> o.teamId
+      )
+  }
+  val NewPostPublishedV2Format = new Format[NewPostPublishedV2] {
+    override def reads(json: JsValue): JsResult[NewPostPublishedV2] =
+      Try {
+        JsSuccess(
+          NewPostPublishedV2(
+            api = (json \ "api").as(ApiIdFormat),
+            post = (json \ "post").as(PostIdFormat)
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: NewPostPublishedV2): JsValue =
+      Json.obj(
+        "api" -> o.api.value,
+        "post" -> o.post.value
       )
   }
 
@@ -3089,6 +3187,28 @@ object json {
         "clientId" -> o.clientId
       )
   }
+  val ApiKeyDeletionInformationV2Format =
+    new Format[ApiKeyDeletionInformationV2] {
+      override def reads(json: JsValue): JsResult[ApiKeyDeletionInformationV2] =
+        Try {
+          JsSuccess(
+            ApiKeyDeletionInformationV2(
+              api = (json \ "api").as(ApiIdFormat),
+              clientId = (json \ "clientId").as[String],
+              subscription = (json \ "subscription").as(ApiSubscriptionIdFormat)
+            )
+          )
+        } recover {
+          case e => JsError(e.getMessage)
+        } get
+
+      override def writes(o: ApiKeyDeletionInformationV2): JsValue =
+        Json.obj(
+          "api" -> o.api.value,
+          "clientId" -> o.clientId,
+          "subscription" -> o.subscription.value
+        )
+    }
 
   val OtoroshiSyncSubscriptionErrorFormat =
     new Format[OtoroshiSyncSubscriptionError] {
@@ -3153,6 +3273,30 @@ object json {
         "plan" -> o.plan
       )
   }
+  val ApiKeyRotationInProgressV2Format =
+    new Format[ApiKeyRotationInProgressV2] {
+      override def reads(json: JsValue): JsResult[ApiKeyRotationInProgressV2] =
+        Try {
+          JsSuccess(
+            ApiKeyRotationInProgressV2(
+              subscription =
+                (json \ "subscription").as(ApiSubscriptionIdFormat),
+              api = (json \ "api").as(ApiIdFormat),
+              plan = (json \ "plan").as(UsagePlanIdFormat)
+            )
+          )
+        } recover {
+          case e => JsError(e.getMessage)
+        } get
+
+      override def writes(o: ApiKeyRotationInProgressV2): JsValue =
+        Json.obj(
+          "subscription" -> o.subscription.value,
+          "api" -> o.api.value,
+          "plan" -> o.plan.value
+        )
+    }
+
   val ApiKeyRotationEndedFormat = new Format[ApiKeyRotationEnded] {
     override def reads(json: JsValue): JsResult[ApiKeyRotationEnded] =
       Try {
@@ -3172,6 +3316,28 @@ object json {
         "clientId" -> o.clientId,
         "api" -> o.api,
         "plan" -> o.plan
+      )
+  }
+
+  val ApiKeyRotationEndedV2Format = new Format[ApiKeyRotationEndedV2] {
+    override def reads(json: JsValue): JsResult[ApiKeyRotationEndedV2] =
+      Try {
+        JsSuccess(
+          ApiKeyRotationEndedV2(
+            subscription = (json \ "subscription").as(ApiSubscriptionIdFormat),
+            api = (json \ "api").as(ApiIdFormat),
+            plan = (json \ "plan").as(UsagePlanIdFormat)
+          )
+        )
+      } recover {
+        case e => JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiKeyRotationEndedV2): JsValue =
+      Json.obj(
+        "subscription" -> o.subscription.value,
+        "api" -> o.api.value,
+        "plan" -> o.plan.value
       )
   }
   val TeamInvitationFormat = new Format[TeamInvitation] {
@@ -3214,6 +3380,30 @@ object json {
         "subscription" -> o.subscription,
         "api" -> o.api,
         "plan" -> o.plan
+      )
+  }
+  val ApiKeyRefreshV2Format = new Format[ApiKeyRefreshV2] {
+    override def reads(json: JsValue): JsResult[ApiKeyRefreshV2] =
+      Try {
+        JsSuccess(
+          ApiKeyRefreshV2(
+            subscription = (json \ "subscription").as(ApiSubscriptionIdFormat),
+            api = (json \ "api").as(ApiIdFormat),
+            plan = (json \ "plan").as(UsagePlanIdFormat),
+            message = (json \ "message").asOpt[String]
+          )
+        )
+      } recover {
+        case e =>
+          JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiKeyRefreshV2): JsValue =
+      Json.obj(
+        "subscription" -> o.subscription.value,
+        "api" -> o.api.value,
+        "plan" -> o.plan.value,
+        "message" -> o.message
       )
   }
 
