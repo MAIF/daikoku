@@ -20,6 +20,7 @@ import { ITenant, ITenantFull } from '../../../types/tenant';
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
 import { Help } from '../apikeys/TeamApiKeysForApi';
+import { toast } from 'sonner';
 
 type MotivationFormProps = {
   saveMotivation: (m: { schema: object; formatter: string }) => void;
@@ -347,7 +348,25 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           id: nanoid(32),
           title: 'Admin',
         };
-        setDraft([step, ...draft])
+        if (draft.some(e => e.type === 'form')) {
+          setDraft([step, ...draft])
+        } else {
+          const formStep: IValidationStepForm = {
+            type: 'form',
+            id: nanoid(32),
+            title: 'Form',
+            schema: {
+              motivation: {
+                type: type.string,
+                format: format.text,
+                constraints: [{ type: 'required' }],
+              },
+            },
+            formatter: '[[motivation]]',
+          };
+          toast.info('on a ajouté un step form, obloigatoire pour le bon fonctionnement du step admin')
+          setDraft([formStep, step, ...draft])
+        }
         return close();
       }
 
@@ -500,9 +519,15 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
     });
   };
 
-  const deleteStep = (deletedStepId: UniqueIdentifier) => {
+  const deleteStep = (deletedStep: IValidationStep) => {
+    if(deletedStep.type === 'form' && draft.some(s => s.type === 'teamAdmin')) {
+      toast.error('pas le droit de supprimer le step form tant qu\'un step admin est preszent')
+      return;
+    }
+
+
     const subscriptionProcess = draft.filter(
-      (step) => step.id !== deletedStepId
+      (step) => step.id !== deletedStep.id
     );
     setDraft(subscriptionProcess );
   };
@@ -625,7 +650,8 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                         )}
                         <button
                           className="btn btn-sm btn-outline-danger"
-                          onClick={() => deleteStep(item.id)}
+                          disabled={item.type === 'form' && draft.some(s => s.type === 'teamAdmin')}
+                          onClick={() => deleteStep(item)}
                         >
                           <Trash size={15} />
                         </button>

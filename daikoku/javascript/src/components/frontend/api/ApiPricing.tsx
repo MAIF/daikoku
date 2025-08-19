@@ -29,7 +29,8 @@ import {
   ITeamSimple,
   ITenantFull,
   IThirdPartyPaymentSettings,
-  IUsagePlan
+  IUsagePlan,
+  IValidationStep
 } from '../../../types';
 import { SubscriptionProcessEditor } from '../../backoffice/apis/SubscriptionProcessEditor';
 import {
@@ -118,7 +119,6 @@ export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate, owner
         ),
       ])
         .then(([groups, services, routes]) => {
-          console.debug({ routes })
           if (!groups.error)
             setGroups(
               groups.map((g: any) => ({
@@ -1165,13 +1165,13 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
             savePlan={setupPayment} />
         })
     }
+
     const editProcess = () => openRightPanel({
       title: translate("api.pricings.subscription.process.panel.title"),
       content: <SubscriptionProcessEditor
         save={updatedProcess => Promise.resolve(props.savePlan({...plan, subscriptionProcess: updatedProcess}))}
-        // save={plan => Promise.resolve(props.savePlan(plan))}
         process={props.plan.subscriptionProcess}
-        team={props.ownerTeam}
+        team={props.ownerTeam._id}
         tenant={tenant}
       />
     })
