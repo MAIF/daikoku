@@ -1,6 +1,10 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.ctrls.playJson._
 import fr.maif.otoroshi.daikoku.domain.SchemaDefinition.NotAuthorizedError
 import fr.maif.otoroshi.daikoku.domain._
@@ -18,7 +22,13 @@ import sangria.ast.{AstLocation, AstVisitor, Field}
 import sangria.execution._
 import sangria.parser.{QueryParser, SyntaxError}
 import sangria.renderer.SchemaRenderer
-import sangria.validation.{QueryValidator, UndefinedFieldViolation, UnknownArgViolation, ValidationContext, ValidationRule}
+import sangria.validation.{
+  QueryValidator,
+  UndefinedFieldViolation,
+  UnknownArgViolation,
+  ValidationContext,
+  ValidationRule
+}
 import storage.DataStore
 import storage.graphql.DaikokuAuthMiddleware
 
