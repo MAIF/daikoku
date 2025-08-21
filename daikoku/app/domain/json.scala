@@ -3842,7 +3842,11 @@ object json {
               avatar = (json \ "avatar").as[String],
               password = (json \ "password").as[String],
               creationDate = (json \ "creationDate").as(DateTimeFormat),
-              validUntil = (json \ "validUntil").as(DateTimeFormat)
+              validUntil = (json \ "validUntil").as(DateTimeFormat),
+              steps = (json \ "steps").as(SeqSubscriptionDemanStepFormat),
+              state = (json \ "state").as(SubscriptionDemandStateFormat),
+              value = (json \ "value").as[JsObject],
+              fromTenant = (json \ "fromTenant").as(TenantIdFormat)
             )
           )
         } recover {
@@ -3859,7 +3863,11 @@ object json {
           "avatar" -> o.avatar,
           "password" -> o.password,
           "creationDate" -> DateTimeFormat.writes(o.creationDate),
-          "validUntil" -> DateTimeFormat.writes(o.validUntil)
+          "validUntil" -> DateTimeFormat.writes(o.validUntil),
+          "steps" -> SeqSubscriptionDemanStepFormat.writes(o.steps),
+          "state" -> SubscriptionDemandStateFormat.writes(o.state),
+          "value" -> o.value,
+          "fromTenant" -> o.fromTenant.value
         )
     }
 

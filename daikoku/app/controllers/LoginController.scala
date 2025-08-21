@@ -5,13 +5,9 @@ import cats.implicits.catsSyntaxOptionId
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import com.google.common.base.Charsets
 import controllers.{AppError, Assets}
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuTenantAction,
-  DaikokuTenantActionContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithoutUser, DaikokuTenantAction, DaikokuTenantActionContext}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
+import fr.maif.otoroshi.daikoku.domain.AccountCreationServices.runAccountCreationProcess
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -25,7 +21,8 @@ import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.pattern.after
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
-import play.api.libs.json.{JsObject, JsString, JsValue, Json}
+import play.api.libs.json.{JsArray, JsObject, JsString, JsValue, Json}
+import play.api.mvc.Results.Ok
 import play.api.mvc._
 
 import java.net.URLEncoder
@@ -37,6 +34,7 @@ import javax.crypto.spec.SecretKeySpec
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.Try
 
 class LoginController(
     DaikokuAction: DaikokuAction,
@@ -462,25 +460,24 @@ class LoginController(
       email: String,
       password: String,
       confirmPassword: String
-  ): Either[String, Unit] = {
+  ): Either[AppError, Unit] = {
 
     if (name.trim().isEmpty()) {
-      Left("Name should not be empty")
+      Left(AppError.BadRequestError("Name should not be empty"))
     } else if (email.trim().isEmpty()) {
-      Left("Email address should not be empty")
+      Left(AppError.BadRequestError("Email address should not be empty"))
     } else {
-      Right(())
-//      (password.trim(), confirmPassword.trim()) match {
-//        case (pwd1, pwd2) if pwd1 != pwd2 =>
-//          Left("Your passwords does not match")
-//        case (pwd1, pwd2) if pwd1.isEmpty || pwd2.isEmpty =>
-//          Left("Your password can't be empty")
-//        case (pwd1, _) if passwordPattern.matcher(pwd1).matches() => Right(())
-//        case _ =>
-//          Left(
-//            "Your password should be longer than 8 characters and contains letters, capitalized letters, numbers and special characters (#$^+=!*()@%&) !"
-//          )
-//      }
+      (password.trim(), confirmPassword.trim()) match {
+        case (pwd1, pwd2) if pwd1 != pwd2 =>
+          Left(AppError.BadRequestError("Your passwords does not match"))
+        case (pwd1, pwd2) if pwd1.isEmpty || pwd2.isEmpty =>
+          Left(AppError.BadRequestError("Your password can't be empty"))
+        case (pwd1, _) if passwordPattern.matcher(pwd1).matches() => Right(())
+        case _ =>
+          Left(AppError.BadRequestError(
+            "Your password should be longer than 8 characters and contains letters, capitalized letters, numbers and special characters (#$^+=!*()@%&) !"
+          ))
+      }
     }
   }
 
@@ -493,72 +490,116 @@ class LoginController(
       val password = (body \ "password").as[String]
       val confirmPawword = (body \ "confirmPassword").as[String]
 
-      env.dataStore.userRepo.findOne(Json.obj("email" -> email)).flatMap {
-        case Some(user)
-            if user.invitation.isEmpty || user.invitation.get.registered =>
-          FastFuture.successful(
-            BadRequest(Json.obj("error" -> "Email address already exists"))
+      //verifier le resultat du formulaire
+      //verifier que le user n'existe pas deja
+      //passer a l'etape suivante
+
+      (for {
+        maybeUser <- EitherT.liftF(env.dataStore.userRepo.findOne(Json.obj("email" -> email)))
+        //todo: tester la presence desessentiel ??
+        _ <- EitherT.cond[Future](maybeUser.forall(u => u.invitation.nonEmpty && u.invitation.exists(!_.registered)), (), AppError.EntityConflict("Email address already exists"))
+        randomId = IdGenerator.token(128)
+        accountCreationId = DatastoreId(IdGenerator.token(32))
+        _ <- EitherT.fromEither[Future](validateUserCreationForm(
+          name,
+          email,
+          password,
+          confirmPawword
+        ))
+        _ <- EitherT.liftF(env.dataStore.accountCreationRepo.save(
+          AccountCreation(
+            id = accountCreationId,
+            randomId = randomId,
+            email = email,
+            avatar = avatar,
+            name = name,
+            password = password,
+            creationDate = DateTime.now(),
+            validUntil = DateTime.now().plusMinutes(15),
+            steps = ctx.tenant.accountCreationProcess.map(step => SubscriptionDemandStep(
+              id = SubscriptionDemandStepId(IdGenerator.token),
+              state = step match {
+                case _: ValidationStep.Form => SubscriptionDemandState.Accepted
+                case _ => SubscriptionDemandState.Waiting
+              },
+              step = step
+            )),
+            state = SubscriptionDemandState.Waiting,
+            value = body,
+            fromTenant = ctx.tenant.id
           )
-        case _ =>
-          validateUserCreationForm(
-            name,
-            email,
-            password,
-            confirmPawword
-          ) match {
-            case Left(msg) =>
-              FastFuture.successful(BadRequest(Json.obj("error" -> msg)))
-            case Right(_) =>
-              val randomId = IdGenerator.token(128)
-              val accountCreation = AccountCreation(
-                id = DatastoreId(IdGenerator.token(32)),
-                randomId = randomId,
-                email = email,
-                name = name,
-                avatar = avatar,
-                password = BCrypt.hashpw(password, BCrypt.gensalt()),
-                creationDate = DateTime.now(),
-                validUntil = DateTime.now().plusMinutes(15)
-              )
-              env.dataStore.accountCreationRepo
-                .save(accountCreation)
-                .flatMap { _ =>
-                  val host = ctx.request.headers
-                    .get("Otoroshi-Proxied-Host")
-                    .orElse(ctx.request.headers.get("X-Forwarded-Host"))
-                    .getOrElse(ctx.request.host)
-                  implicit val tenantLanguage: String =
-                    ctx.tenant.defaultLanguage.getOrElse("en")
-                  (for {
-                    title <- translator.translate(
-                      "mail.new.user.title",
-                      ctx.tenant,
-                      Map("tenant" -> JsString(ctx.tenant.name))
-                    )
-                    body <- translator.translate(
-                      "mail.new.user.body",
-                      ctx.tenant,
-                      Map(
-                        "tenant" -> JsString(ctx.tenant.name),
-                        "link" -> JsString(
-                          env.getDaikokuUrl(
-                            ctx.tenant,
-                            s"/account/validate?id=$randomId"
-                          )
-                        ),
-                        "tenant_data" -> accountCreation.asJson
-                      )
-                    )
-                  } yield {
-                    ctx.tenant.mailer
-                      .send(title, Seq(email), body, ctx.tenant)
-                      .map { _ =>
-                        Ok(Json.obj("done" -> true))
-                      }
-                  }).flatten
-                }
-          }
-      }
+        ))
+        result <- runAccountCreationProcess(accountCreationId, ctx.tenant)
+      } yield result)
+        .leftMap(_.render())
+        .merge
+
+//      env.dataStore.userRepo.findOne(Json.obj("email" -> email)).flatMap {
+//        case Some(user)
+//            if user.invitation.isEmpty || user.invitation.get.registered =>
+//          FastFuture.successful(
+//            BadRequest(Json.obj("error" -> "Email address already exists"))
+//          )
+//        case _ =>
+//          validateUserCreationForm(
+//            name,
+//            email,
+//            password,
+//            confirmPawword
+//          ) match {
+//            case Left(msg) =>
+//              FastFuture.successful(BadRequest(Json.obj("error" -> msg)))
+//            case Right(_) =>
+//              val randomId = IdGenerator.token(128)
+//              val accountCreation = AccountCreation(
+//                id = DatastoreId(IdGenerator.token(32)),
+//                randomId = randomId,
+//                email = email,
+//                name = name,
+//                avatar = avatar,
+//                password = BCrypt.hashpw(password, BCrypt.gensalt()),
+//                creationDate = DateTime.now(),
+//                validUntil = DateTime.now().plusMinutes(15)
+//              )
+//              env.dataStore.accountCreationRepo
+//                .save(accountCreation)
+//                .flatMap { _ =>
+//                  val host = ctx.request.headers
+//                    .get("Otoroshi-Proxied-Host")
+//                    .orElse(ctx.request.headers.get("X-Forwarded-Host"))
+//                    .getOrElse(ctx.request.host)
+//                  implicit val tenantLanguage: String =
+//                    ctx.tenant.defaultLanguage.getOrElse("en")
+//                  (for {
+//                    title <- translator.translate(
+//                      "mail.new.user.title",
+//                      ctx.tenant,
+//                      Map("tenant" -> JsString(ctx.tenant.name))
+//                    )
+//                    body <- translator.translate(
+//                      "mail.new.user.body",
+//                      ctx.tenant,
+//                      Map(
+//                        "tenant" -> JsString(ctx.tenant.name),
+//                        "link" -> JsString(
+//                          env.getDaikokuUrl(
+//                            ctx.tenant,
+//                            s"/account/validate?id=$randomId"
+//                          )
+//                        ),
+//                        "tenant_data" -> accountCreation.asJson
+//                      )
+//                    )
+//                  } yield {
+//                    ctx.tenant.mailer
+//                      .send(title, Seq(email), body, ctx.tenant)
+//                      .map { _ =>
+//                        Ok(Json.obj("done" -> true))
+//                      }
+//                  }).flatten
+//                }
+//          }
+//      }
     }
 
   def createUserValidation() =

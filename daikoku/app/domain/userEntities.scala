@@ -191,7 +191,12 @@ case class AccountCreation(
     avatar: String,
     password: String,
     creationDate: DateTime,
-    validUntil: DateTime
+    validUntil: DateTime,
+    steps: Seq[SubscriptionDemandStep],
+    state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
+    value: JsObject,
+    fromTenant: TenantId,
+    metadata: Map[String, String] = Map.empty
 ) extends CanJson[AccountCreation] {
   override def asJson: JsValue = json.AccountCreationFormat.writes(this)
 }
