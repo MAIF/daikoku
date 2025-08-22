@@ -225,8 +225,8 @@ object NotificationAction {
       motivation: Option[String]
   ) extends NotificationAction
 
-  case class AccountCreation(
-    demand: DatastoreId,
+  case class AccountCreationAttempt(
+    demand: SubscriptionDemandId,
     step: SubscriptionDemandStepId,
     motivation: String
   ) extends NotificationAction

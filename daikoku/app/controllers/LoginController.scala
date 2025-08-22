@@ -499,7 +499,7 @@ class LoginController(
         //todo: tester la presence desessentiel ??
         _ <- EitherT.cond[Future](maybeUser.forall(u => u.invitation.nonEmpty && u.invitation.exists(!_.registered)), (), AppError.EntityConflict("Email address already exists"))
         randomId = IdGenerator.token(128)
-        accountCreationId = DatastoreId(IdGenerator.token(32))
+        accountCreationId = SubscriptionDemandId(IdGenerator.token(32))
         _ <- EitherT.fromEither[Future](validateUserCreationForm(
           name,
           email,

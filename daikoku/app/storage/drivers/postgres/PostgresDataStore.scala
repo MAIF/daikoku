@@ -1071,7 +1071,7 @@ class PostgresReportsInfoRepo(env: Env, reactivePg: ReactivePg)
   override def extractId(value: ReportsInfo): String = value.id.value
 }
 class PostgresAccountCreationRepo(env: Env, reactivePg: ReactivePg)
-    extends PostgresRepo[AccountCreation, DatastoreId](env, reactivePg)
+    extends PostgresRepo[AccountCreation, SubscriptionDemandId](env, reactivePg)
     with AccountCreationRepo {
   override def tableName: String = "account_creation"
 

@@ -13,7 +13,7 @@ import play.api.mvc.Results.Ok
 import scala.concurrent.{ExecutionContext, Future}
 
 object AccountCreationServices {
-  def runAccountCreationProcess(demandId: DatastoreId, tenant: Tenant)(implicit
+  def runAccountCreationProcess(demandId: SubscriptionDemandId, tenant: Tenant)(implicit
       env: Env,
       ec: ExecutionContext,
       translator: Translator,
@@ -149,12 +149,12 @@ object AccountCreationServices {
       env: Env,
       ec: ExecutionContext,
       translator: Translator,
-      messagesApi: MessagesApi
+    messagesApi: MessagesApi
   ): EitherT[Future, AppError, Result] = {
 
     def validStep(
-        metadata: Option[JsObject]
-    ): EitherT[Future, AppError, Result] = {
+                   metadata: Option[JsObject]
+                 ): EitherT[Future, AppError, Result] = {
 
       for {
         _ <- _step.check()
@@ -167,7 +167,7 @@ object AccountCreationServices {
           metadata = metadata
             .map(_.fieldSet.map {
               case (a, b: JsString) => a -> b.value
-              case (a, b)           => a -> Json.stringify(b)
+              case (a, b) => a -> Json.stringify(b)
             }.toMap)
             .getOrElse(Map.empty)
         )
@@ -175,7 +175,8 @@ object AccountCreationServices {
           env.dataStore.accountCreationRepo
             .save(updatedDemand)
         )
-      } yield runAccountCreationProcess(demand.id, tenant)
+        result <- runAccountCreationProcess(demand.id, tenant)
+      } yield result
     }
 
     def declineAccountCreation(): EitherT[Future, AppError, Result] = {
@@ -301,7 +302,7 @@ object AccountCreationServices {
           id = None
         ),
         action = NotificationAction
-          .AccountCreation(
+          .AccountCreationAttempt(
             accountCreation.id,
             _step.id,
             motivationAsString

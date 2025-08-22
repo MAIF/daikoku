@@ -3278,7 +3278,19 @@ object SchemaDefinition {
           OptionType(DateTimeUnitype),
           resolve = _.value.validUntil
         )
-      )
+      ),
+      ReplaceField(
+        "steps",
+        Field(
+          "steps",
+          ListType(SubscriptionDemandStepType),
+          resolve = _.value.steps
+        )
+      ),
+      ReplaceField("state", Field("state", StringType, resolve = _.value.state.name)),
+      ReplaceField("fromTenant", Field("fromTenant", StringType, resolve = _.value.fromTenant.value)),
+      ReplaceField("value", Field("value", JsonType, resolve = _.value.value)),
+      ReplaceField("metadata", Field("metadata", MapType, resolve = _.value.metadata)),
     )
     lazy val TranslationType =
       ObjectType[(DataStore, DaikokuActionContext[JsValue]), Translation](

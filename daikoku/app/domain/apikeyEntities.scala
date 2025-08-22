@@ -340,7 +340,7 @@ case class StepValidator(
     deleted: Boolean = false,
     token: String,
     step: SubscriptionDemandStepId,
-    subscriptionDemand: ValueType,
+    subscriptionDemand: SubscriptionDemandId,
     metadata: JsObject = Json.obj()
 ) extends CanJson[StepValidator] {
   override def asJson: JsValue = json.StepValidatorFormat.writes(this)

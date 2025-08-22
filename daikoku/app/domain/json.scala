@@ -2734,6 +2734,7 @@ object json {
       override def reads(json: JsValue) =
         (json \ "type").as[String] match {
           case "ApiAccess"       => ApiAccessFormat.reads(json)
+          case "AccountCreationAttempt" => accountCreationAttemptFormat.reads(json)
           case "ApiSubscription" => ApiSubscriptionDemandFormat.reads(json)
           case "ApiSubscriptionReject" =>
             ApiSubscriptionRejectFormat.reads(json)
@@ -2779,6 +2780,10 @@ object json {
           case p: ApiSubscriptionDemand =>
             ApiSubscriptionDemandFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiSubscription"
+            )
+          case p: AccountCreationAttempt =>
+            accountCreationAttemptFormat.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "AccountCreationAttempt"
             )
           case p: ApiSubscriptionTransferSuccess =>
             ApiSubscriptionTransferSuccessFormat.writes(p).as[JsObject] ++ Json
@@ -3097,6 +3102,29 @@ object json {
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue]
+      )
+  }
+  val accountCreationAttemptFormat = new Format[AccountCreationAttempt] {
+    override def reads(json: JsValue): JsResult[AccountCreationAttempt] =
+      Try {
+        JsSuccess(
+          AccountCreationAttempt(
+            demand = (json \ "demand").as(SubscriptionDemandIdFormat),
+            step = (json \ "step").as(SubscriptionDemandStepIdFormat),
+            motivation = (json \ "motivation").as[String]
+          )
+        )
+      } recover {
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
+
+    override def writes(o: AccountCreationAttempt): JsValue =
+      Json.obj(
+        "demand" -> o.demand.value,
+        "step" -> o.step.value,
+        "motivation" -> o.motivation
       )
   }
   val ApiSubscriptionTransferSuccessFormat =
@@ -3834,7 +3862,7 @@ object json {
         Try {
           JsSuccess(
             AccountCreation(
-              id = (json \ "_id").as(DatastoreIdFormat),
+              id = (json \ "_id").as(SubscriptionDemandIdFormat),
               deleted = (json \ "_deleted").as[Boolean],
               randomId = (json \ "randomId").as[String],
               email = (json \ "email").as[String],

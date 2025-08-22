@@ -183,7 +183,7 @@ case class PasswordReset(
 }
 
 case class AccountCreation(
-    id: DatastoreId,
+    id: SubscriptionDemandId,
     deleted: Boolean = false,
     randomId: String,
     email: String,
