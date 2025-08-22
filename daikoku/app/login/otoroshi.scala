@@ -112,7 +112,7 @@ object OtoroshiIdentityFilter {
 
     request.headers.get(claimHeaderName) match {
       case None =>
-        Errors.craftResponseResult(
+        Errors.craftResponseResultF(
           "Not authorized here",
           Results.Unauthorized,
           request,
@@ -122,7 +122,7 @@ object OtoroshiIdentityFilter {
       case Some(token) =>
         Try(otoroshiJwtVerifier.verify(token)) match {
           case Failure(exception) =>
-            Errors.craftResponseResult(
+            Errors.craftResponseResultF(
               "Not authorized here",
               Results.Unauthorized,
               request,
@@ -136,7 +136,7 @@ object OtoroshiIdentityFilter {
                 Try(Json.parse(b).as(OtoroshiUser.fmt)).toOption
               ) match {
               case None =>
-                Errors.craftResponseResult(
+                Errors.craftResponseResultF(
                   "No user provided",
                   Results.BadRequest,
                   request,

@@ -22,7 +22,8 @@ import fr.maif.otoroshi.daikoku.utils.{
   DeletionService,
   Errors,
   OtoroshiClient,
-  Translator
+  Translator,
+  AccountCreationService
 }
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
@@ -81,6 +82,7 @@ package object modules {
     lazy val paymentClient = wire[PaymentClient]
 
     lazy val apiService = wire[ApiService]
+    lazy val accountService = wire[AccountCreationService]
     lazy val assetsService = wire[AssetsService]
     lazy val translationsService = wire[TranslationsService]
     lazy val deletionService = wire[DeletionService]
@@ -285,7 +287,7 @@ package object modules {
         s"Client Error [$uuid]: $message on ${request.relativeUri} ($statusCode)"
 
       logger.error(errorMessage)
-      Errors.craftResponseResult(
+      Errors.craftResponseResultF(
         errorMessage,
         Results.Status(statusCode),
         request,
@@ -302,7 +304,7 @@ package object modules {
         s"Server Error [$uuid]: ${exception.getMessage} on ${request.relativeUri}",
         exception
       )
-      Errors.craftResponseResult(
+      Errors.craftResponseResultF(
         s"Server Error: $uuid",
         Results.InternalServerError,
         request,

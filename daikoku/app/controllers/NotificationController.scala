@@ -1,13 +1,10 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
 import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import controllers.AppError._
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
@@ -17,16 +14,11 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.NotificationStatusFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.{ApiService, Translator}
+import fr.maif.otoroshi.daikoku.utils.{AccountCreationService, ApiService, Translator}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.i18n.I18nSupport
 import play.api.libs.json._
-import play.api.mvc.{
-  AbstractController,
-  AnyContent,
-  ControllerComponents,
-  Result
-}
+import play.api.mvc.{AbstractController, AnyContent, ControllerComponents, Result}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -35,6 +27,7 @@ class NotificationController(
     DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
     env: Env,
     apiService: ApiService,
+    accountCreationService: AccountCreationService,
     translator: Translator,
     cc: ControllerComponents
 ) extends AbstractController(cc)
@@ -339,6 +332,13 @@ class NotificationController(
                     notification.sender
                   )
                 )
+              case AccountCreationAttempt(demand, step, _) =>
+                EitherT(
+                  accountCreationService.acceptAccountCreationAttempt(
+                    demand,
+                    step,
+                  )
+                )
               case ApiSubscriptionDemand(
                     apiId,
                     planId,
@@ -425,7 +425,7 @@ class NotificationController(
       teamId: TeamId,
       notification: Notification,
       maybeMessage: Option[String]
-  )(implicit ctx: DaikokuActionContext[AnyContent], lang: String) =
+  )(implicit ctx: DaikokuActionContext[AnyContent], lang: String, ec: ExecutionContext) =
     TeamAdminOnly(
       AuditTrailEvent(
         s"@{user.name} has rejected a notifications for team @{team.name} - @{team.id} => @{notification.id}"
@@ -435,7 +435,7 @@ class NotificationController(
 
         ctx.setCtxValue("notification.id", notification.id)
 
-        val mailBody: Future[String] = notification.action match {
+        val mailBody: Future[Option[String]] = notification.action match {
           case ApiAccess(api, team) =>
             (for {
               api <-
@@ -475,8 +475,19 @@ class NotificationController(
                 "producer_team_data" -> ownerTeam.asJson,
                 "notification_data" -> notification.asJson
               )
-            )).flatten
-
+            ).map(_.some)).flatten
+          case AccountCreationAttempt(demand, step, _) =>
+            EitherT(
+              accountCreationService.declineAccountCreationAttempt(
+                demand,
+                step,
+                ctx.tenant,
+                maybeMessage
+              )
+            )
+              .map(_ => None)
+              .leftMap(_ => None)
+              .merge
           case notif: TeamInvitation =>
             (for {
               user <-
@@ -509,7 +520,7 @@ class NotificationController(
                 "producer_team_data" -> ownerTeam.asJson,
                 "notification_data" -> notification.asJson
               )
-            )).flatten
+            ).map(_.some)).flatten
           case notif: ApiSubscriptionDemand =>
             for {
               _ <-
@@ -579,7 +590,7 @@ class NotificationController(
                     .getOrElse(Json.obj())
                 )
               )
-            } yield body
+            } yield body.some
           case TransferApiOwnership(team, api) =>
             val result = for {
               api <-
@@ -614,24 +625,25 @@ class NotificationController(
               )
             }
 
-            result.flatten
-          case _ => FastFuture.successful("")
+            result.flatten.map(_.some)
+          case _ => FastFuture.successful(None)
         }
 
-        for {
-          mailBody <- mailBody
-          _ <-
-            env.dataStore.notificationRepo
-              .forTenant(ctx.tenant.id)
-              .save(notification.copy(status = NotificationStatus.Rejected()))
-          title <- translator.translate("mail.rejection.title", ctx.tenant)
-          _ <- ctx.tenant.mailer.send(
+        (for {
+          mailBody <- EitherT.fromOptionF[Future, Unit, String](mailBody, ())
+          _ <- EitherT.liftF[Future, Unit, Boolean](env.dataStore.notificationRepo
+            .forTenant(ctx.tenant.id)
+            .save(notification.copy(status = NotificationStatus.Rejected())))
+          title <- EitherT.liftF[Future, Unit, String](translator.translate("mail.rejection.title", ctx.tenant))
+          _ <- EitherT.liftF[Future, Unit, Unit](ctx.tenant.mailer.send(
             title,
             Seq(notification.sender.email),
             mailBody,
             ctx.tenant
-          )
-        } yield Ok(Json.obj("done" -> true))
+          ))
+        } yield Ok(Json.obj("done" -> true)))
+          .leftMap(_ => Ok(Json.obj("done" -> true)))
+          .merge
 
       }
     }

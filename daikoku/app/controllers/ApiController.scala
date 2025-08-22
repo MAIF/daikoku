@@ -1369,7 +1369,7 @@ class ApiController(
           Redirect(env.getDaikokuUrl(ctx.tenant, "/?message=home.message.subscription.validation.successfull")).future
         })
         .leftMap(error =>
-          Errors.craftResponseResult(
+          Errors.craftResponseResultF(
             message = error.getErrorMessage(),
             status = Results.Ok,
             req = ctx.request,
@@ -1440,7 +1440,7 @@ class ApiController(
         } yield
           Redirect(env.getDaikokuUrl(ctx.tenant, "/response?message=home.message.subscription.refusal.successfull")).future
         ).leftMap(error =>
-            Errors.craftResponseResult(
+            Errors.craftResponseResultF(
               message = error.getErrorMessage(),
               status = Results.Ok,
               req = ctx.request,
