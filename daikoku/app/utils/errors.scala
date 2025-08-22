@@ -10,20 +10,27 @@ import scala.concurrent.Future
 
 object Errors {
 
-  def craftResponseResult(
+  def craftResponseResultF(
       message: String,
       status: Status,
       req: RequestHeader,
       maybeCauseId: Option[String] = None,
       env: Env
   ): Future[Result] = {
-    FastFuture.successful(
-      status
-        .apply(Json.obj("error" -> message))
-        .withHeaders(
-          "x-error" -> "true",
-          "x-error-msg" -> message
-        )
-    )
+    FastFuture.successful(craftResponseResult(message, status, req, maybeCauseId, env))
+  }
+  def craftResponseResult(
+      message: String,
+      status: Status,
+      req: RequestHeader,
+      maybeCauseId: Option[String] = None,
+      env: Env
+  ): Result = {
+    status
+      .apply(Json.obj("error" -> message))
+      .withHeaders(
+        "x-error" -> "true",
+        "x-error-msg" -> message
+      )
   }
 }

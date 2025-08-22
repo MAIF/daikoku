@@ -45,9 +45,10 @@ import { FastMode } from "../components/frontend/fastMode/FastMode";
 import { GlobalContext } from '../contexts/globalContext';
 import { I18nContext } from '../contexts/i18n-context';
 import { MessagesEvents } from '../services/messages';
-import { ResetPassword, ResetPasswordEnd, Signup, TwoFactorAuthentication } from './DaikokuHomeApp';
+import { ResetPassword, ResetPasswordEnd, TwoFactorAuthentication } from './DaikokuHomeApp';
 import { AnonymousReporting } from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
 import { RightPanel } from '../components/utils/sidebar/RightPanel';
+import { Signup } from '../components/frontend/account/signup';
 
 const RouteWithFooterLayout = () => (
   <>

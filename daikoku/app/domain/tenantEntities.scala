@@ -5,17 +5,11 @@ import com.github.jknack.handlebars.{Context, Handlebars, Options}
 import controllers.AppError.toJson
 import controllers.{AppError, Assets}
 import domain.JsonNodeValueResolver
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuActionContext,
-  DaikokuActionMaybeWithoutUserContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuActionContext, DaikokuActionMaybeWithoutUserContext}
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, KafkaConfig}
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  _TeamMemberOnly,
-  _UberPublicUserAccess
-}
-import fr.maif.otoroshi.daikoku.domain.json.SeqThirdPartyPaymentSettingsFormat
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _UberPublicUserAccess}
+import fr.maif.otoroshi.daikoku.domain.json.{SeqThirdPartyPaymentSettingsFormat, SeqValidationStepFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
@@ -436,7 +430,8 @@ case class Tenant(
     thirdPartyPaymentSettings: Seq[ThirdPartyPaymentSettings] = Seq.empty,
     display: TenantDisplay = TenantDisplay.Default,
     environments: Set[String] = Set.empty,
-    clientNamePattern: Option[String] = None
+    clientNamePattern: Option[String] = None,
+    accountCreationProcess: Seq[ValidationStep] = Seq.empty
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -532,7 +527,9 @@ case class Tenant(
       ),
       "thirdPartyPaymentSettings" -> JsArray(
         thirdPartyPaymentSettings.map(_.toUiPayload)
-      )
+      ),
+      "accountCreationProcess" -> SeqValidationStepFormat.writes(
+        accountCreationProcess)
     )
   }
   def favicon(): String = {

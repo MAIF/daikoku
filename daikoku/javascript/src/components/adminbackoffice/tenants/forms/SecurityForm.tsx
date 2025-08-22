@@ -1,17 +1,42 @@
 import { useContext } from 'react';
 import { Form, Schema, type } from '@maif/react-forms';
-import { UseMutationResult } from '@tanstack/react-query';
+import { UseMutationResult, useQuery } from '@tanstack/react-query';
 
 import { I18nContext } from '../../../../contexts';
-import { Display, ITenantFull } from '../../../../types';
+import { Display, ITeamFullGql, ITeamSimple, ITenant, ITenantFull } from '../../../../types';
 import { ModalContext } from '../../../../contexts';
+import { SubscriptionProcessEditor } from '../../../backoffice/apis/SubscriptionProcessEditor';
+import { GlobalContext } from '../../../../contexts/globalContext';
 
 export const SecurityForm = (props: {
-  tenant?: ITenantFull;
+  tenant: ITenantFull;
   updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown>;
 }) => {
   const { translate } = useContext(I18nContext);
-  const { alert } = useContext(ModalContext);
+  const { alert, openRightPanel } = useContext(ModalContext);
+  const { customGraphQLClient } = useContext(GlobalContext);
+
+  const teamQuery = useQuery({
+    queryKey: ["admin-team"],
+    queryFn: () => {
+      return customGraphQLClient.request<{ teamsPagination: { teams: Array<ITeamFullGql>, total: number } }>(
+        `query getAllteams ($research: String, $limit: Int, $offset: Int) {
+          teamsPagination (research: $research, limit: $limit, offset: $offset){
+            teams {
+              _id
+              type
+            }
+            total
+          }
+        }`,
+        {
+          research: "admin-team",
+          limit: 1,
+          offset: 0
+        })
+    },
+    select: data => data.teamsPagination.teams[0]
+  })
 
   const schema: Schema = {
     isPrivate: {
@@ -54,18 +79,35 @@ export const SecurityForm = (props: {
     }
   }
 
+  const _tenant = props.tenant
+  const editProcess = () => {
+    openRightPanel({
+      title: translate("api.pricings.subscription.process.panel.title"),
+      content: <SubscriptionProcessEditor
+        save={accountCreationProcess => props.updateTenant.mutateAsync({ ..._tenant, accountCreationProcess })}
+        process={props.tenant?.accountCreationProcess ?? []}
+        team={teamQuery.data?._id!}
+        tenant={props.tenant as ITenant}
+      />
+    })
+  }
+
   return (
-    <Form
-      schema={schema}
-      onSubmit={(updatedTenant) =>
-        props.updateTenant.mutateAsync(updatedTenant)
-      }
-      value={props.tenant}
-      options={{
-        actions: {
-          submit: { label: translate('Save') },
-        },
-      }}
-    />
+    <div>
+      <Form
+        schema={schema}
+        onSubmit={(updatedTenant) =>
+          props.updateTenant.mutateAsync(updatedTenant)
+        }
+        value={props.tenant}
+        options={{
+          actions: {
+            submit: { label: translate('Save') },
+          },
+        }}
+      />
+      <button className='btn btn-outline-success' onClick={() => editProcess()}>setup account process</button>
+    </div>
   );
+
 };

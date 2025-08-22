@@ -189,7 +189,7 @@ class CmsApiAction(val parser: BodyParser[AnyContent], env: Env)
                 case Success(decoded) if !decoded.getClaim("apikey").isNull =>
                   block(CmsApiActionContext[A](request, tenant))
                 case _ =>
-                  Errors.craftResponseResult(
+                  Errors.craftResponseResultF(
                     "No api key provided",
                     Results.Unauthorized,
                     request,
@@ -198,7 +198,7 @@ class CmsApiAction(val parser: BodyParser[AnyContent], env: Env)
                   )
               }
             case _ =>
-              Errors.craftResponseResult(
+              Errors.craftResponseResultF(
                 "No api key provided",
                 Results.Unauthorized,
                 request,
@@ -211,7 +211,7 @@ class CmsApiAction(val parser: BodyParser[AnyContent], env: Env)
             case Some(auth) if auth.startsWith("Basic ") =>
               extractUsernamePassword(auth) match {
                 case None =>
-                  Errors.craftResponseResult(
+                  Errors.craftResponseResultF(
                     "No api key provided",
                     Results.Unauthorized,
                     request,
@@ -232,7 +232,7 @@ class CmsApiAction(val parser: BodyParser[AnyContent], env: Env)
                       case done if done =>
                         block(CmsApiActionContext[A](request, tenant))
                       case _ =>
-                        Errors.craftResponseResult(
+                        Errors.craftResponseResultF(
                           "No api key provided",
                           Results.Unauthorized,
                           request,
@@ -242,7 +242,7 @@ class CmsApiAction(val parser: BodyParser[AnyContent], env: Env)
                     })
               }
             case _ =>
-              Errors.craftResponseResult(
+              Errors.craftResponseResultF(
                 "No api key provided",
                 Results.Unauthorized,
                 request,
@@ -277,7 +277,7 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
     ) match {
       case (Some(tenant), _, _, Some(user), isTenantAdmin)
           if !tenantSecurity.isDefaultMode(tenant, user.some, isTenantAdmin) =>
-        Errors.craftResponseResult(
+        Errors.craftResponseResultF(
           s"${tenant.tenantMode.get.toString} mode enabled",
           Results.ServiceUnavailable,
           request,
@@ -316,7 +316,7 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
           }
         }
       case _ =>
-        Errors.craftResponseResult(
+        Errors.craftResponseResultF(
           "User not found :-(",
           Results.NotFound,
           request,
@@ -348,7 +348,7 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
     ) match {
       case (Some(tenant), _, _, Some(user), isTenantAdmin)
           if !tenantSecurity.isDefaultMode(tenant, user.some, isTenantAdmin) =>
-        Errors.craftResponseResult(
+        Errors.craftResponseResultF(
           s"${tenant.tenantMode.get.toString} mode enabled",
           Results.ServiceUnavailable,
           request,
@@ -387,7 +387,7 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
           }
         }
       case (Some(tenant), _, _, _, _) if tenant.isPrivate =>
-        Errors.craftResponseResult(
+        Errors.craftResponseResultF(
           "This tenant is private, bye bye.",
           Results.Unauthorized,
           request,
@@ -418,7 +418,7 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
           )
         )
       case _ =>
-        Errors.craftResponseResult(
+        Errors.craftResponseResultF(
           "User not found :-(",
           Results.NotFound,
           request,
@@ -453,7 +453,7 @@ class DaikokuActionMaybeWithoutUser(
     ) match {
       case (Some(tenant), _, _, maybeUser, isTenantAdmin)
           if !tenantSecurity.isDefaultMode(tenant, maybeUser, isTenantAdmin) =>
-        Errors.craftResponseResult(
+        Errors.craftResponseResultF(
           s"${tenant.tenantMode.get.toString} mode enabled",
           Results.ServiceUnavailable,
           request,
@@ -515,7 +515,7 @@ class DaikokuActionMaybeWithoutUser(
           )
         )
       case _ =>
-        Errors.craftResponseResult(
+        Errors.craftResponseResultF(
           "Tenant not found :-(",
           Results.NotFound,
           request,

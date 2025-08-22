@@ -412,7 +412,7 @@ trait UserSessionRepo extends Repo[UserSession, DatastoreId]
 
 trait PasswordResetRepo extends Repo[PasswordReset, DatastoreId]
 
-trait AccountCreationRepo extends Repo[AccountCreation, DatastoreId]
+trait AccountCreationRepo extends Repo[AccountCreation, SubscriptionDemandId]
 
 trait TenantRepo extends Repo[Tenant, TenantId]
 

@@ -4373,7 +4373,7 @@ class ApiControllerSpec()
       demandsForAllversion.count(d =>
         d.steps
           .map(_.step match {
-            case ValidationStep.TeamAdmin(_, team, _, _, _) =>
+            case ValidationStep.TeamAdmin(_, team, _) =>
               team === teamOwnerId
             case _ => false
           })
@@ -4470,7 +4470,7 @@ class ApiControllerSpec()
       demandsForAllversion2.count(d =>
         d.steps
           .map(_.step match {
-            case ValidationStep.TeamAdmin(_, team, _, _, _) =>
+            case ValidationStep.TeamAdmin(_, team, _) =>
               team === teamConsumerId
             case _ => false
           })

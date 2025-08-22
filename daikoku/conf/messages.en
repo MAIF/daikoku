@@ -108,3 +108,26 @@ mail.reset.password.body = <p>You asked to reset your [tenant] account password.
 <a href="[link]" target="_blank">Reset</a>\
 <p>If not, just ignore this email</p>\
 <p>The [tenant] team</p>
+
+mail.account.creation.mail.confirmation.title = Confirm your email address to activate your [tenant] account
+mail.account.creation.mail.confirmation.body = Hello [userName], </br>\
+Thank you for signing up on [tenant]. </br>\
+Before getting started, please confirm your email address by clicking the link below: </br>\
+<a href="[urlAccept]" target="_blank">👉 [Confirm my email address]</a>\
+If you did not create an account on [tenant], you can safely ignore this message.
+
+mail.account.creation.mail.validation.title = New registration pending approval on [tenant]
+mail.account.creation.mail.validation.body = Hello, </br>\
+A new user has just registered on [tenant].</br>\
+Account details:</br>\
+Name: [userName]</br>\
+Email: [userEmail]</br>\
+You can <a href="[urlAccept]" target="_blank">approve</a>\ or <a href="[urlDecline]" target="_blank">reject</a>\ this account creation.
+
+mail.account.creation.mail.rejected.title = Your registration on [tenant] has not been approved
+mail.account.creation.mail.rejected.body = Hello [userName], </br>\
+Thank you for signing up on [tenant]. </br>\
+After review, we regret to inform you that your account creation request has not been approved. </br>\
+Here is the reason: [message] </br>\
+If you believe this is a mistake or would like more information, please contact our support team. </br>
+

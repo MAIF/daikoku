@@ -92,15 +92,37 @@ mail.checkout.body = Votre demande de souscription pour l'api [api.name] et le p
 Vous pouvez effectuer maintenant le reglement.\
 Vous pouvez finaliser votre demande : <a href="[link]">Reglement</a>
 mail.api.subscription.transfer.rejection.body = Votre demande de transfert de le souscription [subscription] a été rejetée.
-mail.user.invitation.title = Rejoindre l'équipe [teamName]
+mail.user.invitation.title = Rejoindre l''équipe [teamName]
 mail.user.invitation.body=[sender] vous propose de rejoindre son équipe [teamName] \
 </br>\
 Veuillez cliquer sur le lien suivant pour rejoindre cette équipe. \
 </br>\
-<a href="[link]">Cliquez pour rejoindre l'équipe/a>
+<a href="[link]">Cliquez pour rejoindre l''équipe/a>
 mail.reset.password.title = Réinitialiser votre mots de passe de compte [tenant]
 mail.reset.password.body = <p>Vous avez demandé la réinitialisation de votre mots de passe pour votre compte [tenant].</p>\
 <p>Si cette demande provient de vous, veuillez cliquer sur le lien suivant pour finaliser le processus de réinitialisation du mot de passe</p>\
 <a href="[link]" target="_blank">Réinitialiser</a>\
 <p>Sinon, ignorez simplement cet e-mail</p>\
 <p>L''équipe [tenant]</p>
+
+mail.account.creation.mail.confirmation.title = Confirmez votre adresse e-mail pour activer votre compte [tenant]
+mail.account.creation.mail.confirmation.body = Bonjour [userName], </br>\
+Merci de vous être inscrit sur [tenant]. </br>\
+Avant de commencer, veuillez confirmer votre adresse e-mail en cliquant sur le lien ci-dessous : </br>\
+<a href="[urlAccept]" target="_blank">👉 [Confirmer mon adresse e-mail]</a>\
+Si vous n''avez pas créé de compte sur [tenant], vous pouvez ignorer ce message.
+
+mail.account.creation.mail.validation.title = Nouvelle inscription à valider sur [tenant]
+mail.account.creation.mail.validation.body = Bonjour, </br>\
+Un nouvel utilisateur vient de s''inscrire sur [Nom de l''application].</br>\
+Informations du compte :</br>\
+Nom : [userName]</br>\
+Email : [userEmail]</br>\
+Vous pouvez <a href="[urlAccept]" target="_blank">accepter</a>\ ou <a href="[urlDecline]" target="_blank">refuser</a>\ la création de ce compte.
+
+mail.account.creation.mail.rejected.title = Votre inscription sur [tenant] n''a pas été validée
+mail.account.creation.mail.rejected.body = Bonjour [userName], </br>\
+Nous vous remercions pour votre inscription sur [tenant]. </br>\
+Après vérification, nous sommes au regret de vous informer que votre demande de création de compte n''a pas été validée. </br>\
+Voici la raison: [message] </br>\
+Si vous pensez qu''il s''agit d''une erreur ou souhaitez obtenir plus d''informations, vous pouvez contacter notre équipe de support. </br>\

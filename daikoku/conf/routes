@@ -58,6 +58,8 @@ POST    /account/reset                                  fr.maif.otoroshi.daikoku
 POST    /account/reset/validate                         fr.maif.otoroshi.daikoku.ctrls.LoginController.passwordResetValidation()
 GET     /account/validate                               fr.maif.otoroshi.daikoku.ctrls.LoginController.createUserValidation()
 POST    /account                                        fr.maif.otoroshi.daikoku.ctrls.LoginController.createUser()
+GET     /api/account/_validate                          fr.maif.otoroshi.daikoku.ctrls.LoginController.validateAccountCreationAttempt()
+GET     /api/account/_decline                           fr.maif.otoroshi.daikoku.ctrls.LoginController.declineAccountCreationAttempt()
 GET     /api/auth/:provider/context                     fr.maif.otoroshi.daikoku.ctrls.LoginController.loginContext(provider)
 GET     /auth/:provider/login                           fr.maif.otoroshi.daikoku.ctrls.LoginController.loginPage(provider)
 POST    /auth/:provider/callback                        fr.maif.otoroshi.daikoku.ctrls.LoginController.login(provider)

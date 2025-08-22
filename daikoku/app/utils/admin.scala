@@ -60,7 +60,7 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
                 case Success(decoded) if !decoded.getClaim("apikey").isNull =>
                   block(DaikokuApiActionContext[A](request, tenant))
                 case _ =>
-                  Errors.craftResponseResult(
+                  Errors.craftResponseResultF(
                     "No api key provided",
                     Results.Unauthorized,
                     request,
@@ -69,7 +69,7 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
                   )
               }
             case _ =>
-              Errors.craftResponseResult(
+              Errors.craftResponseResultF(
                 "No api key provided",
                 Results.Unauthorized,
                 request,
@@ -82,7 +82,7 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
             case Some(auth) if auth.startsWith("Basic ") =>
               extractUsernamePassword(auth) match {
                 case None =>
-                  Errors.craftResponseResult(
+                  Errors.craftResponseResultF(
                     "No api key provided",
                     Results.Unauthorized,
                     request,
@@ -103,7 +103,7 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
                       case done if done =>
                         block(DaikokuApiActionContext[A](request, tenant))
                       case _ =>
-                        Errors.craftResponseResult(
+                        Errors.craftResponseResultF(
                           "No api key provided",
                           Results.Unauthorized,
                           request,
@@ -113,7 +113,7 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
                     })
               }
             case _ =>
-              Errors.craftResponseResult(
+              Errors.craftResponseResultF(
                 "No api key provided",
                 Results.Unauthorized,
                 request,
@@ -148,7 +148,7 @@ class DaikokuApiActionWithoutTenant(
               case Success(decoded) if !decoded.getClaim("apikey").isNull =>
                 block(request)
               case _ =>
-                Errors.craftResponseResult(
+                Errors.craftResponseResultF(
                   "No api key provided",
                   Results.Unauthorized,
                   request,
@@ -157,7 +157,7 @@ class DaikokuApiActionWithoutTenant(
                 )
             }
           case _ =>
-            Errors.craftResponseResult(
+            Errors.craftResponseResultF(
               "No api key provided",
               Results.Unauthorized,
               request,
@@ -171,7 +171,7 @@ class DaikokuApiActionWithoutTenant(
           .orElse(request.headers.get("X-Api-Key")) match {
           case Some(key) if key == keyValue => block(request)
           case _ =>
-            Errors.craftResponseResult(
+            Errors.craftResponseResultF(
               "No api key provided",
               Results.Unauthorized,
               request,
@@ -275,7 +275,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
         entityStore(ctx.tenant, env.dataStore).findByIdNotDeleted(id).flatMap {
           case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
           case None =>
-            Errors.craftResponseResult(
+            Errors.craftResponseResultF(
               s"$entityName not found",
               Results.NotFound,
               ctx.request,
@@ -287,7 +287,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
         entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
           case Some(entity) => FastFuture.successful(Ok(toJson(entity)))
           case None =>
-            Errors.craftResponseResult(
+            Errors.craftResponseResultF(
               s"$entityName not found",
               Results.NotFound,
               ctx.request,
@@ -303,7 +303,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
       fromJson(ctx.request.body) match {
         case Left(e) =>
           logger.error(s"Bad $entityName format", new RuntimeException(e))
-          Errors.craftResponseResult(
+          Errors.craftResponseResultF(
             s"Bad $entityName format",
             Results.BadRequest,
             ctx.request,
@@ -337,7 +337,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
     DaikokuApiAction.async(parse.json) { ctx =>
       entityStore(ctx.tenant, env.dataStore).findById(id).flatMap {
         case None =>
-          Errors.craftResponseResult(
+          Errors.craftResponseResultF(
             s"Entity $entityName not found",
             Results.NotFound,
             ctx.request,
@@ -348,7 +348,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
           fromJson(ctx.request.body) match {
             case Left(e) =>
               logger.error(s"Bad $entityName format", new RuntimeException(e))
-              Errors.craftResponseResult(
+              Errors.craftResponseResultF(
                 s"Bad $entityName format",
                 Results.BadRequest,
                 ctx.request,
@@ -429,7 +429,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
         fromJson(patchedJson) match {
           case Left(e) =>
             logger.error(s"Bad $entityName format", new RuntimeException(e))
-            Errors.craftResponseResult(
+            Errors.craftResponseResultF(
               s"Bad $entityName format",
               Results.BadRequest,
               ctx.request,
@@ -451,7 +451,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
 
       val value: Future[Result] = fu.flatMap {
         case None =>
-          Errors.craftResponseResult(
+          Errors.craftResponseResultF(
             s"Entity $entityName not found",
             Results.NotFound,
             ctx.request,
@@ -479,7 +479,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
                     s"Bad $entityName format",
                     new RuntimeException(e)
                   )
-                  Errors.craftResponseResult(
+                  Errors.craftResponseResultF(
                     s"Bad $entityName format",
                     Results.BadRequest,
                     ctx.request,

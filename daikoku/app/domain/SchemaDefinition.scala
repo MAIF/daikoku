@@ -674,6 +674,23 @@ object SchemaDefinition {
         ReplaceField(
           "team",
           Field("team", StringType, resolve = ctx => ctx.value.team.value)
+        )
+      )
+    )
+    lazy val ValidationStepForm = new PossibleObject(
+      deriveObjectType[
+        (DataStore, DaikokuActionContext[JsValue]),
+        ValidationStep.Form
+      ](
+        Interfaces(ValidationStepInterfaceType),
+        ObjectTypeDescription("A validation Step by html form"),
+        ReplaceField(
+          "id",
+          Field("id", StringType, resolve = ctx => ctx.value.id)
+        ),
+        ReplaceField(
+          "title",
+          Field("title", StringType, resolve = ctx => ctx.value.title)
         ),
         ReplaceField(
           "schema",
@@ -1011,7 +1028,8 @@ object SchemaDefinition {
               ValidationStepEmail,
               ValidationStepAdmin,
               ValidationStepPayment,
-              ValidationStepHttRequest
+              ValidationStepHttRequest,
+              ValidationStepForm
             )
           ),
           Field(
@@ -3260,7 +3278,19 @@ object SchemaDefinition {
           OptionType(DateTimeUnitype),
           resolve = _.value.validUntil
         )
-      )
+      ),
+      ReplaceField(
+        "steps",
+        Field(
+          "steps",
+          ListType(SubscriptionDemandStepType),
+          resolve = _.value.steps
+        )
+      ),
+      ReplaceField("state", Field("state", StringType, resolve = _.value.state.name)),
+      ReplaceField("fromTenant", Field("fromTenant", StringType, resolve = _.value.fromTenant.value)),
+      ReplaceField("value", Field("value", JsonType, resolve = _.value.value)),
+      ReplaceField("metadata", Field("metadata", MapType, resolve = _.value.metadata)),
     )
     lazy val TranslationType =
       ObjectType[(DataStore, DaikokuActionContext[JsValue]), Translation](

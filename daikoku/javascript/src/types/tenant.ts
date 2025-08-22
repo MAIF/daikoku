@@ -1,3 +1,4 @@
+import { IValidationStep } from './api';
 import { ITeamSimple, IUser, IUserSimple } from './team';
 import { Language } from './types';
 
@@ -195,6 +196,7 @@ export interface ITenant {
   fontFamilyUrl?: string;
   otoroshiSettings: Array<ISafeOtoroshiSettings>;
   thirdPartyPaymentSettings: Array<IThirdPartyPaymentSettings>;
+  accountCreationProcess: Array<IValidationStep>
 }
 
 export interface ITenantFull extends ITenant {
@@ -202,7 +204,7 @@ export interface ITenantFull extends ITenant {
   adminApi: string;
   adminSubscription: Array<string>;
   auditTrailConfig: IAuditTrailConfig;
-  authProviderSettings: any; //todo handle differenbt case of authprovider
+  authProviderSettings: any; //todo handle different case of authprovider
   bucketSettings: IBucketSettings;
   daikokuHeader: { name: string; value: string };
   domain: string;

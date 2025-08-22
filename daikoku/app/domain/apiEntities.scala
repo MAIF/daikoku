@@ -796,31 +796,39 @@ sealed trait ValidationStep {
 }
 
 object ValidationStep {
+
+  case class Form(
+                   id: String,
+                   title: String,
+                   schema: Option[JsObject] = Json
+                     .obj(
+                       "motivation" -> Json.obj(
+                         "type" -> "string",
+                         "format" -> "textarea",
+                         "constraints" -> Json.arr(Json.obj("type" -> "required"))
+                       )
+                     )
+                     .some,
+                   formatter: Option[String] = "[[motivation]]".some
+                 ) extends ValidationStep {
+    override def name: String = "form"
+    override def isAutomatic: Boolean = false
+  }
+
   case class Email(
-      id: String,
-      emails: Seq[String],
-      message: Option[String],
-      title: String
+                    id: String,
+                    emails: Seq[String],
+                    message: Option[String],
+                    title: String
   ) extends ValidationStep {
     def name: String = "email"
-
-    override def isAutomatic: Boolean = false
+    override def isAutomatic: Boolean = true
   }
 
   case class TeamAdmin(
       id: String,
       team: TeamId,
       title: String = "Administrator",
-      schema: Option[JsObject] = Json
-        .obj(
-          "motivation" -> Json.obj(
-            "type" -> "string",
-            "format" -> "textarea",
-            "constraints" -> Json.arr(Json.obj("type" -> "required"))
-          )
-        )
-        .some,
-      formatter: Option[String] = "[[motivation]]".some
   ) extends ValidationStep {
     def name: String = "teamAdmin"
     override def isAutomatic: Boolean = false
