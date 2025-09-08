@@ -171,8 +171,6 @@ class TenantController(
             Errors.craftResponseResultF(
               "Tenant not found",
               Results.NotFound,
-              ctx.request,
-              env = env
             )
         }
       }

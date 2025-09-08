@@ -11,7 +11,7 @@ import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
 import * as Services from '../../../services';
-import { DaikokuMode, Display, IApi, IApiGQL, IApiPost, IIssuesTag, isError, Issue, ISubscription, ISubscriptionDemand, ISubscriptionDemandGQL, ITeamFullGql, ITeamSimple, ITenant, ITesting, IUsagePlan, IUser, IValidationStepPayment } from '../../../types';
+import { DaikokuMode, Display, IAccountCreationGQL, IApi, IApiGQL, IApiPost, IIssuesTag, isError, Issue, ISubscription, ISubscriptionDemand, ISubscriptionDemandGQL, ITeamFullGql, ITeamSimple, ITenant, ITesting, IUsagePlan, IUser, IValidationStepPayment } from '../../../types';
 import { getLanguageFns, Spinner } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { Option as opt } from '../../utils';
@@ -177,6 +177,11 @@ type NotificationActionGQL =
   | {
     __typename: 'ApiSubscriptionTransferSuccess';
     subscription: ISubscription;
+  }
+  | {
+    __typename: 'AccountCreationAttempt';
+    demand: IAccountCreationGQL;
+    motivation: string;
   };
 
 type NotificationGQL = {
@@ -203,7 +208,6 @@ type NotificationGQL = {
   tenant: {
     id: string
   }
-
 }
 
 type Option = {
@@ -336,6 +340,7 @@ export const NotificationList = () => {
     { type: "TransferApiOwnership" },
     { type: "ApiSubscriptionTransferSuccess" },
     { type: "CheckoutForSubscription" },
+    { type: "AccountCreation" },
   ];
 
   const notificationActionTypes = [
@@ -915,6 +920,8 @@ export const NotificationList = () => {
         return translate('notif.issues.comment')
       case 'ApiSubscriptionTransferSuccess':
         return translate('notif.subscription.transfer.success')
+      case 'AccountCreationAttempt': 
+        return translate('notif.account.creation.attempt');
       default:
         return '';
 

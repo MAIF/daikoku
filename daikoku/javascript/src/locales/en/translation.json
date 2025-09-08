@@ -117,6 +117,7 @@
     "notif.new.published.post": "A new post has been published about API %s.",
     "notif.issues": "A new issue has been opened regarding API %s.",
     "notif.issues.comment": "A new comment has been added to an issue related to you.",
+    "notif.account.creation.attempt": "Registration request pending",
     "api.access.request": "You will send an access request to the API %s. For which team do you want to send the request?",
     "FreeWithoutQuotas": "Free without quotas",
     "FreeWithQuotas": "Free with quotas",

@@ -93,17 +93,11 @@ object TenantHelper {
             Errors.craftResponseResultF(
               "Tenant does not exists (1)",
               Results.NotFound,
-              request,
-              None,
-              env
             )
           case Some(tenant) if !tenant.enabled =>
             Errors.craftResponseResultF(
               "Tenant does not exists (2)",
               Results.NotFound,
-              request,
-              None,
-              env
             )
           case Some(tenant) => f(tenant)
         }
@@ -129,9 +123,6 @@ object TenantHelper {
               Errors.craftResponseResultF(
                 s"Tenant does not exists (3)",
                 Results.NotFound,
-                request,
-                None,
-                env
               )
             case Some(tenant) if !tenant.enabled =>
               AppLogger.info(
@@ -140,9 +131,6 @@ object TenantHelper {
               Errors.craftResponseResultF(
                 "Tenant does not exists (4)",
                 Results.NotFound,
-                request,
-                None,
-                env
               )
             case Some(tenant) => f(tenant)
           }
@@ -187,17 +175,11 @@ object TenantHelper {
               Errors.craftResponseResultF(
                 "Tenant does not exists (5)",
                 Results.NotFound,
-                request,
-                None,
-                env
               )
             case Some(tenant) if !tenant.enabled =>
               Errors.craftResponseResultF(
                 "Tenant does not exists (6)",
                 Results.NotFound,
-                request,
-                None,
-                env
               )
             case Some(tenant) => f(tenant)
           }
@@ -207,9 +189,6 @@ object TenantHelper {
               Errors.craftResponseResultF(
                 "Failed to retrieve tenant # Try to reload your page",
                 Results.NotFound,
-                request,
-                None,
-                env
               )
           }
     }

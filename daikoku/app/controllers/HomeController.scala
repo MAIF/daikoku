@@ -411,18 +411,12 @@ class HomeController(
               Errors.craftResponseResultF(
                 "Page not found !",
                 Results.NotFound,
-                ctx.request,
-                None,
-                env
               )
           }
       case _ =>
         Errors.craftResponseResultF(
           "Page not found !",
           Results.NotFound,
-          ctx.request,
-          None,
-          env
         )
     }
   }

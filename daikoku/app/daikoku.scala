@@ -290,9 +290,6 @@ package object modules {
       Errors.craftResponseResultF(
         errorMessage,
         Results.Status(statusCode),
-        request,
-        Some("errors.client.error"),
-        env
       )
     }
 
@@ -307,9 +304,6 @@ package object modules {
       Errors.craftResponseResultF(
         s"Server Error: $uuid",
         Results.InternalServerError,
-        request,
-        Some("errors.server.error"),
-        env
       )
     }
   }

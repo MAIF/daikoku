@@ -192,18 +192,12 @@ class CmsApiAction(val parser: BodyParser[AnyContent], env: Env)
                   Errors.craftResponseResultF(
                     "No api key provided",
                     Results.Unauthorized,
-                    request,
-                    None,
-                    env
                   )
               }
             case _ =>
               Errors.craftResponseResultF(
                 "No api key provided",
                 Results.Unauthorized,
-                request,
-                None,
-                env
               )
           }
         case LocalCmsApiConfig(_) =>
@@ -214,9 +208,6 @@ class CmsApiAction(val parser: BodyParser[AnyContent], env: Env)
                   Errors.craftResponseResultF(
                     "No api key provided",
                     Results.Unauthorized,
-                    request,
-                    None,
-                    env
                   )
                 case Some((clientId, clientSecret)) =>
                   env.dataStore.apiSubscriptionRepo
@@ -235,9 +226,6 @@ class CmsApiAction(val parser: BodyParser[AnyContent], env: Env)
                         Errors.craftResponseResultF(
                           "No api key provided",
                           Results.Unauthorized,
-                          request,
-                          None,
-                          env
                         )
                     })
               }
@@ -245,9 +233,6 @@ class CmsApiAction(val parser: BodyParser[AnyContent], env: Env)
               Errors.craftResponseResultF(
                 "No api key provided",
                 Results.Unauthorized,
-                request,
-                None,
-                env
               )
           }
       }
@@ -280,9 +265,6 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
         Errors.craftResponseResultF(
           s"${tenant.tenantMode.get.toString} mode enabled",
           Results.ServiceUnavailable,
-          request,
-          None,
-          env
         )
       case (
             Some(tenant),
@@ -319,9 +301,6 @@ class DaikokuAction(val parser: BodyParser[AnyContent], env: Env)
         Errors.craftResponseResultF(
           "User not found :-(",
           Results.NotFound,
-          request,
-          None,
-          env
         )
     }
   }
@@ -351,9 +330,6 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
         Errors.craftResponseResultF(
           s"${tenant.tenantMode.get.toString} mode enabled",
           Results.ServiceUnavailable,
-          request,
-          None,
-          env
         )
       case (
             Some(tenant),
@@ -390,9 +366,6 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
         Errors.craftResponseResultF(
           "This tenant is private, bye bye.",
           Results.Unauthorized,
-          request,
-          None,
-          env
         )
       case (Some(tenant), None, _, Some(user), Some(isTenantAdmin)) =>
         block(
@@ -421,9 +394,6 @@ class DaikokuActionMaybeWithGuest(val parser: BodyParser[AnyContent], env: Env)
         Errors.craftResponseResultF(
           "User not found :-(",
           Results.NotFound,
-          request,
-          None,
-          env
         )
     }
   }
@@ -456,9 +426,6 @@ class DaikokuActionMaybeWithoutUser(
         Errors.craftResponseResultF(
           s"${tenant.tenantMode.get.toString} mode enabled",
           Results.ServiceUnavailable,
-          request,
-          None,
-          env
         )
       case (
             Some(tenant),
@@ -518,9 +485,6 @@ class DaikokuActionMaybeWithoutUser(
         Errors.craftResponseResultF(
           "Tenant not found :-(",
           Results.NotFound,
-          request,
-          None,
-          env
         )
     }
   }

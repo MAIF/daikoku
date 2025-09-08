@@ -69,18 +69,12 @@ class LoginController(
           Errors.craftResponseResultF(
             "Bad authentication provider",
             Results.BadRequest,
-            ctx.request,
-            None,
-            env
           )
         case Some(p)
             if ctx.tenant.authProvider != p && p != AuthProvider.Local =>
           Errors.craftResponseResultF(
             "Bad authentication provider",
             Results.BadRequest,
-            ctx.request,
-            None,
-            env
           )
         case Some(p) =>
           p match {
@@ -227,9 +221,6 @@ class LoginController(
           Errors.craftResponseResultF(
             "Bad authentication provider",
             Results.BadRequest,
-            ctx.request,
-            None,
-            env
           )
         )
 
@@ -238,9 +229,6 @@ class LoginController(
           Errors.craftResponseResultF(
             "Bad authentication provider",
             Results.BadRequest,
-            ctx.request,
-            None,
-            env
           )
         )
       case Some(p) if p == AuthProvider.OAuth2 =>
@@ -263,9 +251,6 @@ class LoginController(
               Errors.craftResponseResultF(
                 "Invalid OAuth Config",
                 Results.BadRequest,
-                ctx.request,
-                None,
-                env
               )
             )
         }
@@ -275,9 +260,6 @@ class LoginController(
             Errors.craftResponseResultF(
               "No credentials found",
               Results.BadRequest,
-              ctx.request,
-              None,
-              env
             )
           case Some(form) =>
             (
@@ -350,9 +332,6 @@ class LoginController(
                       Errors.craftResponseResultF(
                         "No matching provider found",
                         Results.BadRequest,
-                        ctx.request,
-                        None,
-                        env
                       )
                     )
                 }
@@ -361,9 +340,6 @@ class LoginController(
                   Errors.craftResponseResultF(
                     "No credentials found",
                     Results.BadRequest,
-                    ctx.request,
-                    None,
-                    env
                   )
                 )
             }
@@ -580,9 +556,7 @@ class LoginController(
         .leftMap(error =>
           Errors.craftResponseResult(
             message = error.getErrorMessage(),
-            status = Results.Ok,
-            req = ctx.request,
-            env = env
+            status = Results.Ok
           )
         )
         .merge
@@ -611,9 +585,7 @@ class LoginController(
         .leftMap(error =>
           Errors.craftResponseResult(
             message = error.getErrorMessage(),
-            status = Results.Ok,
-            req = ctx.request,
-            env = env
+            status = Results.Ok
           )
         )
         .merge
@@ -627,8 +599,6 @@ class LoginController(
           Errors.craftResponseResultF(
             "The user creation has failed.",
             Results.BadRequest,
-            ctx.request,
-            env = env
           )
         case Some(id) =>
           env.dataStore.accountCreationRepo
@@ -651,8 +621,6 @@ class LoginController(
                       Errors.craftResponseResultF(
                         "This account is already enabled.",
                         Results.BadRequest,
-                        ctx.request,
-                        env = env
                       )
                     case optUser =>
                       val userId = optUser
@@ -714,8 +682,6 @@ class LoginController(
                 Errors.craftResponseResultF(
                   "Your link is invalid",
                   Results.BadRequest,
-                  ctx.request,
-                  env = env
                 )
             }
       }

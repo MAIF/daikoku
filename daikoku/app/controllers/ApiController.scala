@@ -1371,9 +1371,7 @@ class ApiController(
         .leftMap(error =>
           Errors.craftResponseResultF(
             message = error.getErrorMessage(),
-            status = Results.Ok,
-            req = ctx.request,
-            env = env
+            status = Results.Ok
           )
         )
         .merge
@@ -1442,9 +1440,7 @@ class ApiController(
         ).leftMap(error =>
             Errors.craftResponseResultF(
               message = error.getErrorMessage(),
-              status = Results.Ok,
-              req = ctx.request,
-              env = env
+              status = Results.Ok
             )
           )
           .merge

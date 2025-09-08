@@ -6,12 +6,9 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  _TeamMemberOnly,
-  _TenantAdminAccessTenant
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiSubscriptionDemandFormat, TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{OtoroshiClient, S3Configuration}
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -24,11 +21,7 @@ import sangria.schema.{Context, _}
 import sangria.validation.ValueCoercionViolation
 import services.CmsPage
 import storage._
-import storage.graphql.{
-  GraphQLImplicits,
-  RequiresDaikokuAdmin,
-  RequiresTenantAdmin
-}
+import storage.graphql.{GraphQLImplicits, RequiresDaikokuAdmin, RequiresTenantAdmin}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -2953,6 +2946,77 @@ object SchemaDefinition {
         )
       )
     )
+    lazy val AccountCreationType = deriveObjectType[
+      (DataStore, DaikokuActionContext[JsValue]),
+      AccountCreation
+    ](
+      ObjectTypeDescription(
+        "A new user awaiting confirmation of their account."
+      ),
+      ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
+      ReplaceField(
+        "creationDate",
+        Field("creationDate", DateTimeUnitype, resolve = _.value.creationDate)
+      ),
+      ReplaceField(
+        "validUntil",
+        Field(
+          "validUntil",
+          OptionType(DateTimeUnitype),
+          resolve = _.value.validUntil
+        )
+      ),
+      ReplaceField(
+        "steps",
+        Field(
+          "steps",
+          ListType(SubscriptionDemandStepType),
+          resolve = _.value.steps
+        )
+      ),
+      ReplaceField("state", Field("state", StringType, resolve = _.value.state.name)),
+      ReplaceField("fromTenant", Field("fromTenant", StringType, resolve = _.value.fromTenant.value)),
+      ReplaceField("value", Field("value", JsonType, resolve = _.value.value)),
+      ReplaceField("metadata", Field("metadata", MapType, resolve = _.value.metadata)),
+    )
+    lazy val AccountCreationAttemptType = new PossibleObject(
+      ObjectType(
+        "AccountCreationAttempt",
+        "A notification triggered during a new account creation",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          AccountCreationAttempt
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          AccountCreationAttempt
+        ](
+          Field(
+            "demand",
+            OptionType(AccountCreationType),
+            resolve = ctx =>
+              ctx.ctx._1.accountCreationRepo
+                .findByIdNotDeleted(ctx.value.demand)
+          ),
+          Field(
+            "step",
+            OptionType(SubscriptionDemandStepType),
+            resolve = ctx =>
+              ctx.ctx._1.accountCreationRepo
+                .findByIdNotDeleted(ctx.value.demand)
+                .map {
+                  case Some(d) => d.steps.find(_.id == ctx.value.step)
+                  case None => None
+                }
+          ),
+          Field(
+            "motivation",
+            OptionType(StringType),
+            resolve = _.value.motivation.some
+          )
+        )
+      )
+    )
 
     lazy val NotificationInterfaceType: ObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
@@ -3070,7 +3134,8 @@ object SchemaDefinition {
             ApiSubscriptionRejectType,
             ApiSubscriptionAcceptType,
             CheckoutForSubscriptionType,
-            ApiSubscriptionTransferSuccessType
+            ApiSubscriptionTransferSuccessType,
+            AccountCreationAttemptType
           )
         )
       )
@@ -3259,39 +3324,7 @@ object SchemaDefinition {
         Field("validUntil", DateTimeUnitype, resolve = _.value.validUntil)
       )
     )
-    val AccountCreationType = deriveObjectType[
-      (DataStore, DaikokuActionContext[JsValue]),
-      AccountCreation
-    ](
-      ObjectTypeDescription(
-        "A new user awaiting confirmation of their account."
-      ),
-      ReplaceField("id", Field("_id", StringType, resolve = _.value.id.value)),
-      ReplaceField(
-        "creationDate",
-        Field("creationDate", DateTimeUnitype, resolve = _.value.creationDate)
-      ),
-      ReplaceField(
-        "validUntil",
-        Field(
-          "validUntil",
-          OptionType(DateTimeUnitype),
-          resolve = _.value.validUntil
-        )
-      ),
-      ReplaceField(
-        "steps",
-        Field(
-          "steps",
-          ListType(SubscriptionDemandStepType),
-          resolve = _.value.steps
-        )
-      ),
-      ReplaceField("state", Field("state", StringType, resolve = _.value.state.name)),
-      ReplaceField("fromTenant", Field("fromTenant", StringType, resolve = _.value.fromTenant.value)),
-      ReplaceField("value", Field("value", JsonType, resolve = _.value.value)),
-      ReplaceField("metadata", Field("metadata", MapType, resolve = _.value.metadata)),
-    )
+
     lazy val TranslationType =
       ObjectType[(DataStore, DaikokuActionContext[JsValue]), Translation](
         "Translation",

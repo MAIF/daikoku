@@ -2032,6 +2032,15 @@ export const graphql = {
                 currentVersion
               }
             }
+            ... on AccountCreationAttempt {
+            __typename
+              demand {
+                _id
+                email
+                name
+              }
+              motivation
+            }
           }
           date
           notificationType {

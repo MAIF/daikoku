@@ -3,18 +3,70 @@ package fr.maif.otoroshi.daikoku.utils
 import cats.data.EitherT
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
-import fr.maif.otoroshi.daikoku.utils.{IdGenerator, Translator}
+import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
-import play.api.libs.json.{JsArray, JsObject, JsString, JsValue, Json}
+import play.api.libs.json._
 import play.api.mvc.Result
 import play.api.mvc.Results.Ok
 
 import scala.concurrent.{ExecutionContext, Future}
 
 class AccountCreationService {
+  def finalizeAccountCreation(accountCreation: AccountCreation, tenant: Tenant)(implicit env: Env, ec: ExecutionContext) = {
+    for {
+      _ <- EitherT.cond[Future][AppError, Unit](accountCreation.validUntil.isAfter(DateTime.now()), (), AppError.BadRequestError("not.valid.anymore"))
+      optUser <- EitherT.liftF(env.dataStore.userRepo.findOne(Json.obj("email" -> accountCreation.email)))
+      _ <- EitherT.cond[Future][AppError, Unit](optUser.forall(u => u.invitation.isEmpty || u.invitation.get.registered), (),
+        AppError.EntityConflict("This account is already enabled."))
+      userId = optUser
+        .map(_.id)
+        .getOrElse(UserId(IdGenerator.token(32)))
+      team = Team(
+        id = TeamId(IdGenerator.token(32)),
+        tenant = tenant.id,
+        `type` = TeamType.Personal,
+        name = s"${accountCreation.name}",
+        description = s"Team of ${accountCreation.name}",
+        users = Set(UserWithPermission(userId, Administrator)),
+        authorizedOtoroshiEntities = None,
+        contact = accountCreation.email
+      )
+      user = User(
+        id = userId,
+        tenants = Set(tenant.id),
+        origins = Set(tenant.authProvider),
+        name = accountCreation.name,
+        email = accountCreation.email,
+        picture = accountCreation.avatar,
+        lastTenant = Some(tenant.id),
+        password = Some(accountCreation.password),
+        personalToken = Some(IdGenerator.token(32)),
+        defaultLanguage = None
+      )
+
+      _user = optUser
+        .map { u =>
+          user.copy(invitation =
+            u.invitation.map(_.copy(registered = true))
+          )
+        }
+        .getOrElse(user)
+
+      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.teamRepo
+          .forTenant(tenant.id)
+          .save(team))
+      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.userRepo.save(_user))
+      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.accountCreationRepo
+          .deleteByIdLogically(accountCreation.id.value))
+
+    } yield Ok(Json.obj("message" -> "user.validated.success"))
+    }
+
   def runAccountCreationProcess(demandId: SubscriptionDemandId, tenant: Tenant)(
       implicit
       env: Env,
@@ -51,10 +103,6 @@ class AccountCreationService {
           )
       }
 
-    def createUser(
-        accountCreation: AccountCreation
-    ): EitherT[Future, AppError, Result] = ???
-
     for {
       accountCreation <- EitherT.fromOptionF(
         env.dataStore.accountCreationRepo.findById(demandId),
@@ -68,7 +116,8 @@ class AccountCreationService {
       maybeStep <- EitherT.pure[Future, AppError](
         accountCreation.steps.find(!_.state.isClosed)
       )
-      result <- maybeStep.fold(createUser(accountCreation))(
+
+      result <- maybeStep.fold(finalizeAccountCreation(accountCreation, tenant))(
         processStep(_, accountCreation)
       )
     } yield result
@@ -499,7 +548,9 @@ class AccountCreationService {
         demand.steps.find(_.id == subscriptionDemandStepId),
         AppError.EntityNotFound("Validation Step")
       )
+      log = AppLogger.warn(s"valid step -- ${step.id}")
       _ <- validateStep(step, demand)
+      log = AppLogger.warn("run account creation process")
       _ <- runAccountCreationProcess(demand.id, ctx.tenant)
     } yield ()
 
