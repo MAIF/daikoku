@@ -3,7 +3,10 @@ import { useContext, useState } from 'react';
 import { UseMutationResult } from '@tanstack/react-query';
 
 import { I18nContext } from '../../../../contexts';
-import { IMailerSettings, ITenantFull } from '../../../../types';
+import {IMailerSettings, isError, ITenantFull} from '../../../../types';
+import * as Services from '../../../../services';
+import {testMailConnection} from "../../../../services";
+import {toast} from "sonner";
 
 export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translate } = useContext(I18nContext)
@@ -21,6 +24,21 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
         constraints.email(translate('constraints.matches.email'))
       ]
     },
+    testConnection: {
+      type: type.string,
+      render: ({rawValues}) => {
+        return <button type="button" className='btn btn-outline-info' onClick={() => {
+          testMailConnection(props.tenant?._id!, mailerType, rawValues)
+              .then(response => {
+                if (isError(response)) {
+                  toast.error("Failed to check connection")
+                } else {
+                  toast.success("Connection is correct")
+                }
+              })
+        }}>Test connection</button>
+      }
+    }
   }
 
   const getSchema = (mailerType) => {
@@ -97,6 +115,8 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
   }
 
   const schema = getSchema(mailerType)
+
+
 
   return (
     <div>

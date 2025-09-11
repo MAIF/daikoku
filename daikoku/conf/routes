@@ -263,6 +263,7 @@ POST    /api/oidc/_fetchConfig                          fr.maif.otoroshi.daikoku
 GET     /api/tenants/simplified                         fr.maif.otoroshi.daikoku.ctrls.TenantController.tenantList()
 GET     /api/tenants/:id/_redirect                      fr.maif.otoroshi.daikoku.ctrls.TenantController.redirectToTenant(id)
 POST    /api/tenants/:tenantId/_contact                 fr.maif.otoroshi.daikoku.ctrls.TenantController.contact(tenantId)
+POST    /api/tenants/:tenantId/mailers/_test-connection fr.maif.otoroshi.daikoku.ctrls.TenantController.testConnection(tenantId)
 POST    /api/tenants/_names                             fr.maif.otoroshi.daikoku.ctrls.TenantController.namesOfTenants()
 PUT     /api/tenants/:tenantId                          fr.maif.otoroshi.daikoku.ctrls.TenantController.saveTenant(tenantId)
 GET     /api/tenants/:tenantId                          fr.maif.otoroshi.daikoku.ctrls.TenantController.oneTenant(tenantId)

@@ -2327,3 +2327,15 @@ export const retrieveSubscription = (
     method: 'PUT',
     body: JSON.stringify({ token }),
   });
+
+
+export const testMailConnection = (
+    tenantId: string,
+    mailerType: string,
+    mailerConfiguration: object
+): PromiseWithError<ResponseDone> => {
+    return customFetch(`/api/tenants/${tenantId}/mailers/_test-connection`, {
+        method: "POST",
+        body: JSON.stringify({ ...mailerConfiguration, type: mailerType})
+    });
+};

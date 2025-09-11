@@ -1660,18 +1660,7 @@ object json {
               .asOpt(SeqOtoroshiSettingsFormat)
               .map(_.toSet)
               .getOrElse(Set.empty),
-            mailerSettings =
-              (json \ "mailerSettings").asOpt[JsObject].flatMap { settings =>
-                (settings \ "type").as[String] match {
-                  case "mailgun" => MailgunSettingsFormat.reads(settings).asOpt
-                  case "mailjet" => MailjetSettingsFormat.reads(settings).asOpt
-                  case "sendgrid" =>
-                    SendGridSettingsFormat.reads(settings).asOpt
-                  case "smtpClient" =>
-                    SimpleSMTPClientSettingsFormat.reads(settings).asOpt
-                  case "console" => ConsoleSettingsFormat.reads(settings).asOpt
-                }
-              },
+            mailerSettings = (json \ "mailerSettings").asOpt(MailerSettingsFormat),
             bucketSettings =
               (json \ "bucketSettings").asOpt[JsObject].flatMap { settings =>
                 S3Configuration.format.reads(settings).asOpt
@@ -1812,6 +1801,21 @@ object json {
         )
       )
   }
+
+  val MailerSettingsFormat = new Format[MailerSettings] {
+      override def reads(settings: JsValue): JsResult[MailerSettings] =
+          (settings \ "type").as[String] match {
+            case "mailgun" => MailgunSettingsFormat.reads(settings)
+            case "mailjet" => MailjetSettingsFormat.reads(settings)
+            case "sendgrid" =>
+              SendGridSettingsFormat.reads(settings)
+            case "smtpClient" =>
+              SimpleSMTPClientSettingsFormat.reads(settings)
+            case "console" => ConsoleSettingsFormat.reads(settings)
+          }
+    override def writes(o: MailerSettings): JsValue = o.asJson
+  }
+
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
     override def reads(json: JsValue): JsResult[AuditTrailConfig] =
       Try {

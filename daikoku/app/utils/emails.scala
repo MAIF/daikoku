@@ -2,6 +2,8 @@ package fr.maif.otoroshi.daikoku.utils
 
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
+import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.http.scaladsl.util.FastFuture.EnhancedFuture
 import org.owasp.html.HtmlPolicyBuilder
@@ -37,6 +39,10 @@ trait Mailer {
       env: Env,
       language: String
   ): Future[Unit]
+  def testConnection(tenant: Tenant)(implicit
+      ec: ExecutionContext,
+      env: Env
+  ): Future[Boolean]
 }
 
 object ConsoleMailer {
@@ -75,6 +81,10 @@ class ConsoleMailer(settings: ConsoleMailerSettings) extends Mailer {
         ()
       }
   }
+
+  override def testConnection(
+      tenant: Tenant
+  )(implicit ec: ExecutionContext, env: Env): Future[Boolean] = true.future
 }
 
 class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
@@ -127,6 +137,10 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
           .map(_ -> ())
       })
   }
+
+  override def testConnection(
+      tenant: Tenant
+  )(implicit ec: ExecutionContext, env: Env): Future[Boolean] = false.future
 }
 
 class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
@@ -191,6 +205,10 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
           .map(_ => ())
       })
   }
+
+  override def testConnection(
+      tenant: Tenant
+  )(implicit ec: ExecutionContext, env: Env): Future[Boolean] = false.future
 }
 
 class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
@@ -228,9 +246,10 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
             to.map(InternetAddress.parse)
               .map {
                 address =>
+                  val session = Session.getDefaultInstance(properties, null)
                   val message: Message =
                     new MimeMessage(
-                      Session.getDefaultInstance(properties, null)
+                      session
                     )
                   message.setFrom(new InternetAddress(settings.fromEmail))
                   message.setRecipients(
@@ -266,6 +285,26 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
           }
       })
   }
+
+  override def testConnection(
+      tenant: Tenant
+  )(implicit ec: ExecutionContext, env: Env): Future[Boolean] = {
+    val properties = new Properties()
+    AppLogger.info(s"test connection for ${settings.host} ${settings.port}")
+    properties.put("mail.smtp.host", settings.host)
+    properties.put("mail.smtp.port", Integer.valueOf(settings.port))
+    val session = Session.getDefaultInstance(properties, null)
+
+    Try{
+      session.getTransport("smtp").connect(settings.host, settings.port.toInt, null, null)
+      true.future
+    } recover {
+      case e =>
+        AppLogger.error(e.getMessage, e)
+        false.future
+    } get
+  }
+
 }
 
 class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
@@ -323,4 +362,7 @@ class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
           .map(_ => ())
       })
   }
+
+  override def testConnection(tenant: Tenant)(implicit ec: ExecutionContext, env: Env): Future[Boolean] =
+    false.future
 }
