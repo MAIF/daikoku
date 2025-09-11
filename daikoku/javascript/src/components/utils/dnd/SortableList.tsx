@@ -163,6 +163,9 @@ export const SortableItem = (props: PropsWithChildren<SortableItemProps>) => {
 export const FixedItem = (props: PropsWithChildren<SortableItemProps>) => {
   return (
     <li className="drag-handle sortable-item fixed sorted-list__step d-flex flex-column">
+      {props.action && <div className='sortable-item__action'>
+        {props.action}
+      </div>}
       {props.children}
     </li>
   );

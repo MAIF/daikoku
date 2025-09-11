@@ -1651,5 +1651,17 @@
   "notifications.page.table.header.label.actions": "Actions",
   "tenant.edit.clientNamePattern.label": "Modèle de nom de client personnalisé",
   "tenant.edit.clientNamePattern.help": "Ce modèle est utilisé pour personnaliser le nom du client lors de la création d'une clé d'API. La chaîne de caractères peut contenir des valeurs dynamiques en utilisant la syntaxe ${ma.valeur}.",
-  "tenant.edit.clientNamePattern.help2": "Les valeurs disponibles sont les suivantes :"
+  "tenant.edit.clientNamePattern.help2": "Les valeurs disponibles sont les suivantes :",
+  "tenant.security.account.creation.process.button.label": "Personnaliser le processus de création de comptes",
+  "tenant.security.account.creation.process.doc.title": "Configuration du processus de création de compte",
+  "tenant.security.account.creation.process.doc.intro": "Définissez les étapes qui composent la création de compte utilisateur. Vous pouvez ajouter, supprimer ou réorganiser les étapes.",
+  "tenant.security.account.creation.process.doc.step.form": "affiche un formulaire paramétrable à remplir lors de la demande de compte.",
+  "tenant.security.account.creation.process.doc.step.email": "envoie un email pour validation. Si le titre contient \"confirmation\", l’email sert à valider l’adresse (${form.email} comme destinataire)",
+  "tenant.security.account.creation.process.doc.step.http": "envoie toutes les données contextuelles à un webhook externe pour validation",
+  "tenant.security.account.creation.process.doc.step.admin": "notifie les administrateurs du tenant pour une validation manuelle",
+  "tenant.security.account.creation.process.doc.footer": "Utiliser un workflow par défaut",
+  "tenant.security.account.creation.process.doc.default.workflow": "form → mail de confirmation",
+  "tenant.security.account.creation.process.doc.default.workflow.admin": "form → mail de confirmation → validation admin",
+  "tenant.security.account.creation.process.doc.close.aria": "Fermer la documentation",
+  "tenant.security.account.creation.process.doc.open.aria": "Voir la documentation"
 }

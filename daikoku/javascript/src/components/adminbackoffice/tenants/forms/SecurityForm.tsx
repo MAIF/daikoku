@@ -1,12 +1,13 @@
 import { useContext } from 'react';
-import { Form, Schema, type } from '@maif/react-forms';
+import { constraints, Form, Schema, type, format } from '@maif/react-forms';
 import { UseMutationResult, useQuery } from '@tanstack/react-query';
 
 import { I18nContext } from '../../../../contexts';
-import { Display, ITeamFullGql, ITeamSimple, ITenant, ITenantFull } from '../../../../types';
+import { Display, ITeamFullGql, ITenant, ITenantFull, IValidationStep } from '../../../../types';
 import { ModalContext } from '../../../../contexts';
 import { SubscriptionProcessEditor } from '../../../backoffice/apis/SubscriptionProcessEditor';
 import { GlobalContext } from '../../../../contexts/globalContext';
+import { nanoid } from 'nanoid';
 
 export const SecurityForm = (props: {
   tenant: ITenantFull;
@@ -14,7 +15,7 @@ export const SecurityForm = (props: {
 }) => {
   const { translate } = useContext(I18nContext);
   const { alert, openRightPanel } = useContext(ModalContext);
-  const { customGraphQLClient } = useContext(GlobalContext);
+  const { customGraphQLClient, tenant } = useContext(GlobalContext);
 
   const teamQuery = useQuery({
     queryKey: ["admin-team"],
@@ -79,6 +80,118 @@ export const SecurityForm = (props: {
     }
   }
 
+  const AccountCreationProcessDocumentation = (props: { close: () => void, updateProcess: (process: IValidationStep[]) => void }) => {
+    const defaultWorkflow: IValidationStep[] = [
+      {
+        id: nanoid(32),
+        type: 'form',
+        title: 'form',
+        schema: {
+          name: {
+            type: type.string,
+            label: "Name",
+            constraints: [{
+              "type": "required",
+              "message": "Your name is required"
+            }]
+          },
+          email: {
+            type: type.string,
+            label: "Email",
+            constraints: [{
+              "type": "required",
+              "message": "Your email is required"
+            }, {
+                "type": "email",
+                "message": "Your email needs to be an email"
+              }]
+          },
+          password: {
+            type: type.string,
+            format: format.password,
+            label: "Password",
+            constraints: [{
+              "type": "required",
+              "message": "Your password is required"
+            }, {
+              "type": "matches", //@ts-ignore
+              "regexp": "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[#$^+=!*()@%&]).{8,1000}$",
+              "message": translate('constraints.matches.password')
+            }]
+          },
+          confirmPassword: {
+            type: type.string,
+            format: format.password,
+            label: "Confirm password",
+            constraints: [
+              {
+                "type": "required",
+                "message": "a confirm password is required"
+              },
+              {
+                "type": "oneOf", //@ts-ignore
+                "arrayOfValues": [
+                  {
+                    "ref": "password"
+                  }
+                ],
+                "message": "confirm password and password must be equal"
+              }
+            ]
+          },
+        },
+        formatter: ''
+      },{
+        id: nanoid(32),
+        type: 'email',
+        title: 'confirmation email',
+        emails: ["${form.email}"],
+        message: ""
+      },
+    ];
+
+    const defaultWorkflowWithAdmin: IValidationStep[] = [...defaultWorkflow, {
+      type: 'teamAdmin',
+      id: nanoid(),
+      title: 'admin validation',
+      team: teamQuery.data?._id!
+    }];
+
+    return (
+      <div className="alert alert-info" role="alert">
+        <div className="d-flex justify-content-between">
+          <h5 className="alert-heading">{translate('tenant.security.account.creation.process.doc.title')}</h5>
+          <button type='button' aria-label={translate('tenant.security.account.creation.process.doc.close.aria')} className='btn-close' onClick={props.close} />
+        </div>
+        <p>
+          {translate('tenant.security.account.creation.process.doc.intro')}
+        </p>
+        <ul>
+          <li>
+            <strong>{translate('subscription.process.form')}</strong> : {translate('tenant.security.account.creation.process.doc.step.form')}
+          </li>
+          <li>
+            <strong>{translate('subscription.process.email')}</strong> : {translate('tenant.security.account.creation.process.doc.step.email')}
+          </li>
+          <li>
+            <strong>{translate('subscription.process.httpRequest')}</strong> : {translate('tenant.security.account.creation.process.doc.step.http')}
+          </li>
+          <li>
+            <strong>{translate('subscription.process.team.admin')}</strong> : {translate('tenant.security.account.creation.process.doc.step.admin')}
+          </li>
+        </ul>
+        <hr />
+        <div className="mb-0">
+          {translate('tenant.security.account.creation.process.doc.footer')}
+          <div className='d-flex flex-start gap-2'>
+            <button className="btn btn-outline-info" onClick={() => props.updateProcess(defaultWorkflow)}>{translate('tenant.security.account.creation.process.doc.default.workflow')}</button>
+            <button className="btn btn-outline-info" onClick={() => props.updateProcess(defaultWorkflowWithAdmin)}>{translate('tenant.security.account.creation.process.doc.default.workflow.admin')}</button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const _tenant = props.tenant
   const editProcess = () => {
     openRightPanel({
@@ -88,6 +201,7 @@ export const SecurityForm = (props: {
         process={props.tenant?.accountCreationProcess ?? []}
         team={teamQuery.data?._id!}
         tenant={props.tenant as ITenant}
+        documentation={AccountCreationProcessDocumentation}
       />
     })
   }
@@ -106,7 +220,7 @@ export const SecurityForm = (props: {
           },
         }}
       />
-      <button className='btn btn-outline-success' onClick={() => editProcess()}>setup account process</button>
+      <button className='btn btn-outline-success' onClick={() => editProcess()}>{translate("tenant.security.account.creation.process.button.label")}</button>
     </div>
   );
 

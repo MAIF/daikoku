@@ -13,8 +13,6 @@ import {
   isError,
   ISubscription,
   ISubscriptionWithApiInfo,
-  isValidationStepForm,
-  isValidationStepTeamAdmin,
   ITeamSimple,
 } from '../../../types';
 import { isSubscriptionProcessIsAutomatic, Option } from '../../utils';
@@ -85,7 +83,7 @@ export const FastApiCard = (props: FastApiCardProps) => {
         : Services.askForApiKey(apiId, team._id, plan._id, motivation);
 
     const formStep = plan.subscriptionProcess.find((s) =>
-      isValidationStepForm(s)
+      s.type === 'form'
     );
     if (formStep) {
       openFormModal<any>({

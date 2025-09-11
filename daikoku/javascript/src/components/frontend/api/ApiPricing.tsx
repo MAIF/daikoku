@@ -24,8 +24,6 @@ import {
   isError,
   ISubscription,
   ISubscriptionDemand,
-  isValidationStepForm,
-  isValidationStepTeamAdmin,
   ITeamSimple,
   ITenantFull,
   IThirdPartyPaymentSettings,
@@ -760,7 +758,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       apiKey?: ISubscription
     ) => {
       const formStep = plan.subscriptionProcess.find((s) =>
-        isValidationStepForm(s)
+        s.type === 'form'
       );
       if (formStep) {
         openFormModal<any>({

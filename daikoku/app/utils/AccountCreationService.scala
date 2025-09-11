@@ -154,7 +154,7 @@ class AccountCreationService {
     val pathDecline =
       s"/api/account/_decline?token=$cipheredValidationToken"
 
-    val mailType = if ( s.emails.head == "${form.mail}") "confirmation" else "validation"
+    val mailType = if ( s.title.contains("confirm")) "confirmation" else "validation"
     val mailData = Map(
       "tenant" -> JsString(tenant.name),
       "urlAccept" -> JsString(

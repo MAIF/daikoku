@@ -1,4 +1,3 @@
-import { UniqueIdentifier } from '@dnd-kit/core';
 import { CodeInput, constraints, Form, format, Schema, type } from '@maif/react-forms';
 import classNames from 'classnames';
 import { nanoid } from 'nanoid';
@@ -6,25 +5,24 @@ import React, { useContext, useEffect, useRef, useState } from 'react';
 import AtSign from 'react-feather/dist/icons/at-sign';
 import CreditCard from 'react-feather/dist/icons/credit-card';
 import Globe from 'react-feather/dist/icons/globe';
+import List from 'react-feather/dist/icons/list';
 import Plus from 'react-feather/dist/icons/plus';
 import Settings from 'react-feather/dist/icons/settings';
 import Trash from 'react-feather/dist/icons/trash';
 import User from 'react-feather/dist/icons/user';
-import List from 'react-feather/dist/icons/list';
 
+import { toast } from 'sonner';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { ModalContext } from '../../../contexts/modalContext';
-import { ITeamSimple } from '../../../types';
-import { isValidationStepEmail, isValidationStepForm, isValidationStepHttpRequest, isValidationStepPayment, isValidationStepTeamAdmin, IUsagePlan, IValidationStep, IValidationStepEmail, IValidationStepForm, IValidationStepHttpRequest, IValidationStepTeamAdmin, IValidationStepType } from '../../../types/api';
-import { ITenant, ITenantFull } from '../../../types/tenant';
+import { IValidationStep } from '../../../types/api';
+import { ITenant } from '../../../types/tenant';
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
 import { Help } from '../apikeys/TeamApiKeysForApi';
-import { toast } from 'sonner';
 
 type MotivationFormProps = {
   saveMotivation: (m: { schema: object; formatter: string }) => void;
-  value: IValidationStepForm;
+  value: IValidationStep & { type: 'form' };
 };
 
 const MotivationForm = (props: MotivationFormProps) => {
@@ -151,82 +149,82 @@ type ValidationStepProps = {
 
 const ValidationStep = (props: ValidationStepProps) => {
   const step = props.step;
-  if (isValidationStepPayment(step)) {
-    const thirdPartyPaymentSettings =
-      props.tenant.thirdPartyPaymentSettings.find(
-        (setting) => setting._id == step.thirdPartyPaymentSettingsId
+
+  switch (step.type) {
+    case 'payment':
+      const thirdPartyPaymentSettings =
+        props.tenant.thirdPartyPaymentSettings.find(
+          (setting) => setting._id == step.thirdPartyPaymentSettingsId
+        );
+      return (
+        <div className="d-flex flex-column validation-step">
+          <span className="validation-step__index">
+            {String(props.index).padStart(2, '0')}
+          </span>
+          <span className="validation-step__name">{step.title}</span>
+          <span className="validation-step__type">
+            <CreditCard />
+          </span>
+          <div className="d-flex flex-row validation-step__infos">
+            <span>{thirdPartyPaymentSettings?.name}</span>
+            <span>{thirdPartyPaymentSettings?.type}</span>
+          </div>
+        </div>
       );
-    return (
-      <div className="d-flex flex-column validation-step">
-        <span className="validation-step__index">
-          {String(props.index).padStart(2, '0')}
-        </span>
-        <span className="validation-step__name">{step.title}</span>
-        <span className="validation-step__type">
-          <CreditCard />
-        </span>
-        <div className="d-flex flex-row validation-step__infos">
-          <span>{thirdPartyPaymentSettings?.name}</span>
-          <span>{thirdPartyPaymentSettings?.type}</span>
+    case 'email':
+      return (
+        <div className="d-flex flex-column validation-step">
+          <span className="validation-step__index">
+            {String(props.index).padStart(2, '0')}
+          </span>
+          <span className="validation-step__name">{step.title}</span>
+          <span className="validation-step__type">
+            <AtSign />
+          </span>
+          <div className="d-flex flex-row validation-step__infos">
+            <span>{step.emails[0]}</span>
+            {step.emails.length > 1 && (
+              <span>{` + ${step.emails.length - 1}`}</span>
+            )}
+          </div>
         </div>
-      </div>
-    );
-  } else if (isValidationStepEmail(step)) {
-    return (
-      <div className="d-flex flex-column validation-step">
-        <span className="validation-step__index">
-          {String(props.index).padStart(2, '0')}
-        </span>
-        <span className="validation-step__name">{step.title}</span>
-        <span className="validation-step__type">
-          <AtSign />
-        </span>
-        <div className="d-flex flex-row validation-step__infos">
-          <span>{step.emails[0]}</span>
-          {step.emails.length > 1 && (
-            <span>{` + ${step.emails.length - 1}`}</span>
-          )}
+      );
+    case 'teamAdmin':
+      return (
+        <div className="d-flex flex-column validation-step">
+          <span className="validation-step__index">
+            {String(props.index).padStart(2, '0')}
+          </span>
+          <span className="validation-step__name">{step.title}</span>
+          <span className="validation-step__type">
+            <User />
+          </span>
         </div>
-      </div>
-    );
-  } else if (isValidationStepTeamAdmin(step)) {
-    return (
-      <div className="d-flex flex-column validation-step">
-        <span className="validation-step__index">
-          {String(props.index).padStart(2, '0')}
-        </span>
-        <span className="validation-step__name">{step.title}</span>
-        <span className="validation-step__type">
-          <User />
-        </span>
-      </div>
-    );
-  } else if (isValidationStepHttpRequest(step)) {
-    return (
-      <div className="d-flex flex-column validation-step">
-        <span className="validation-step__index">
-          {String(props.index).padStart(2, '0')}
-        </span>
-        <span className="validation-step__name">{step.title}</span>
-        <span className="validation-step__type">
-          <Globe />
-        </span>
-      </div>
-    );
-  } else if (isValidationStepForm(step)) {
-    return (
-      <div className="d-flex flex-column validation-step">
-        <span className="validation-step__index">
-          {String(props.index).padStart(2, '0')}
-        </span>
-        <span className="validation-step__name">{step.title}</span>
-        <span className="validation-step__type">
-          <List />
-        </span>
-      </div>
-    )
-  } else {
-    return <></>;
+      );
+    case 'httpRequest':
+      return (
+        <div className="d-flex flex-column validation-step">
+          <span className="validation-step__index">
+            {String(props.index).padStart(2, '0')}
+          </span>
+          <span className="validation-step__name">{step.title}</span>
+          <span className="validation-step__type">
+            <Globe />
+          </span>
+        </div>
+      );
+    case 'form':
+      return (
+        <div className="d-flex flex-column validation-step">
+          <span className="validation-step__index">
+            {String(props.index).padStart(2, '0')}
+          </span>
+          <span className="validation-step__name">{step.title}</span>
+          <span className="validation-step__type">
+            <List />
+          </span>
+        </div>
+      )
   }
 };
 
@@ -237,14 +235,21 @@ type SubProcessProps = {
   process: Array<IValidationStep>;
   team: string;
   tenant: ITenant;
+  documentation?: React.ComponentType<{ close: () => void, updateProcess: (process: IValidationStep[]) => void }>
 };
+type IValidationStepEmail = IValidationStep & { type: 'email' };
+type IValidationStepForm = IValidationStep & { type: 'form' };
+type IValidationStepTeamAdmin = IValidationStep & { type: 'teamAdmin' };
+type IValidationStepHttpRequest = IValidationStep & { type: 'httpRequest' };
+
 export const SubscriptionProcessEditor = (props: SubProcessProps) => {
   const { translate } = useContext(I18nContext);
   const { openCustomModal, openFormModal, close } = useContext(ModalContext);
 
   const [draft, setDraft] = useState(props.process)
+  const [showDocumentation, setShowDocumentation] = useState(false);
 
-  const editProcess = (name: IValidationStepType, index: number) => {
+  const editProcess = (name: string, index: number) => {
     //todo: use the index !!
     switch (name) {
       case 'email':
@@ -284,7 +289,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
               format: format.text,
             },
           },
-          onSubmit: (data: IValidationStepEmail & EmailOption) => {
+          onSubmit: (data: IValidationStep & { type: 'email' } & EmailOption) => {
             if (data.option === 'oneOf') {
               const step: IValidationStepEmail = {
                 type: 'email',
@@ -294,10 +299,10 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                 title: data.title,
               };
               setDraft(insertArrayIndex(
-                  { ...step, id: nanoid(32) },
-                  draft,
-                  index
-                ));
+                { ...step, id: nanoid(32) },
+                draft,
+                index
+              ));
             } else {
               const steps: Array<IValidationStepEmail> = data.emails.map(
                 (email) => ({
@@ -338,7 +343,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           },
           formatter: '[[motivation]]',
         };
-        setDraft([step, ...draft] )
+        setDraft([step, ...draft])
         return close();
       }
       case 'teamAdmin': {
@@ -431,11 +436,11 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
       },
       onSubmit: (data: IValidationStepEmail) => {
         setDraft(draft.map((p) => {
-            if (p.id === data.id) {
-              return data;
-            }
-            return p;
-          }));
+          if (p.id === data.id) {
+            return data;
+          }
+          return p;
+        }));
       },
       actionLabel: translate('Update'),
       value,
@@ -465,11 +470,11 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
       },
       onSubmit: (data: IValidationStepHttpRequest) => {
         setDraft(draft.map((p) => {
-            if (p.id === data.id) {
-              return data;
-            }
-            return p;
-          }));
+          if (p.id === data.id) {
+            return data;
+          }
+          return p;
+        }));
       },
       actionLabel: translate('Update'),
       value,
@@ -479,10 +484,10 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
   //todo
   const addProcess = (index: number) => {
     const alreadyStepAdmin = draft.some(
-      isValidationStepTeamAdmin
+      s => s.type === 'teamAdmin'
     );
     const alreadyStepForm = draft.some(
-      isValidationStepForm
+      s => s.type === 'form'
     );
 
     const options = addArrayIf(!alreadyStepForm, addArrayIf(
@@ -520,7 +525,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
   };
 
   const deleteStep = (deletedStep: IValidationStep) => {
-    if(deletedStep.type === 'form' && draft.some(s => s.type === 'teamAdmin')) {
+    if (deletedStep.type === 'form' && draft.some(s => s.type === 'teamAdmin')) {
       toast.error('pas le droit de supprimer le step form tant qu\'un step admin est preszent')
       return;
     }
@@ -529,7 +534,7 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
     const subscriptionProcess = draft.filter(
       (step) => step.id !== deletedStep.id
     );
-    setDraft(subscriptionProcess );
+    setDraft(subscriptionProcess);
   };
 
   // if (!draft.subscriptionProcess.length) {
@@ -546,8 +551,14 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
   //   );
   // }
 
+  const Documentation = props.documentation ?? React.Fragment
   return (
     <div>
+      <button
+        className='btn btn-outline-info mb-5'
+        onClick={() => setShowDocumentation(!showDocumentation)}>
+        {translate(`tenant.security.account.creation.process.doc.${showDocumentation ? 'close' : 'open'}.aria`)}
+      </button>
       <div className="d-flex flex-row align-items-center">
         {!!draft.length && (
           <button
@@ -575,9 +586,41 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
           }
           className="flex-grow-1"
           renderItem={(item, idx) => {
-            if (isValidationStepPayment(item)) {
+            if (item.type === 'form') {
               return (
-                <FixedItem id={item.id}>
+                <FixedItem
+                  id={item.id}
+                  className="validation-step-container"
+                  action={<div
+                    className='d-flex flex-row justify-content-between'
+                  >
+                    <button
+                      className="btn btn-sm btn-outline-info"
+                      onClick={() =>
+                        openCustomModal({
+                          title: translate('motivation.form.modal.title'),
+                          content: (
+                            <MotivationForm
+                              value={item}
+                              saveMotivation={({ schema, formatter }) => {
+                                const step = { ...item, schema, formatter };
+                                const updatedPlan = {
+                                  ...draft,
+                                  subscriptionProcess:
+                                    draft.map(
+                                      (s) => (s.id === step.id ? step : s)
+                                    ),
+                                };
+                                setDraft(updatedPlan);
+                              }}
+                            />
+                          ),
+                        })
+                      }
+                    >
+                      <Settings size={15} />
+                    </button>
+                  </div>}>
                   <ValidationStep
                     index={idx + 1}
                     step={item}
@@ -593,32 +636,27 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                     action={
                       <div
                         className={classNames('d-flex flex-row', {
-                          'justify-content-between':
-                            !isValidationStepPayment(item),
-                          'justify-content-end': isValidationStepPayment(item),
+                          'justify-content-between': item.type !== 'payment',
+                          'justify-content-end': item.type === 'payment',
                         })}
                       >
-                        {isValidationStepEmail(item) ? (
+                        {item.type === 'email' && (
                           <button
                             className="btn btn-sm btn-outline-info"
                             onClick={() => editMailStep(item)}
                           >
                             <Settings size={15} />
                           </button>
-                        ) : (
-                          <></>
                         )}
-                        {isValidationStepHttpRequest(item) ? (
+                        {item.type === 'httpRequest' && (
                           <button
                             className="btn btn-sm btn-outline-info"
                             onClick={() => editHttpRequestStep(item)}
                           >
                             <Settings size={15} />
                           </button>
-                        ) : (
-                          <></>
                         )}
-                        {isValidationStepForm(item) ? (
+                        {/* {item.type === 'form' && (
                           <button
                             className="btn btn-sm btn-outline-info"
                             onClick={() =>
@@ -645,12 +683,10 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                           >
                             <Settings size={15} />
                           </button>
-                        ) : (
-                          <></>
-                        )}
+                        )} */}
                         <button
                           className="btn btn-sm btn-outline-danger"
-                          disabled={item.type === 'form' && draft.some(s => s.type === 'teamAdmin')}
+                          // disabled={item.type === 'form' && draft.some(s => s.type === 'teamAdmin')}
                           onClick={() => deleteStep(item)}
                         >
                           <Trash size={15} />
@@ -676,7 +712,9 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
             }
           }}
         />
+
       </div>
+      {showDocumentation && <Documentation close={() => setShowDocumentation(false)} updateProcess={(steps) => setDraft(steps)} />}
       {(!!draft.length || !!props.process.length) && (
         <button className='btn btn-outline-success' onClick={() => props.save(draft)}>save</button>
       )}

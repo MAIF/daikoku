@@ -1355,7 +1355,7 @@ object evolution_1830 extends EvolutionScript {
     }
 }
 
-object evolution_1840 extends EvolutionScript {
+object evolution_1840_a extends EvolutionScript {
   override def version: String = "18.4.0"
 
   override def script: (
@@ -1404,12 +1404,96 @@ object evolution_1840 extends EvolutionScript {
                 )
                 .prepended(newFormStep.asJson)))
 
-              //todo: pas tres propre le .get
               val _plan = plan.as(json.UsagePlanFormat).copy(subscriptionProcess = subscriptionProcess.get)
               dataStore.usagePlanRepo.forAllTenant()
                 .save(_plan)(ec)
           }
 
+        }
+        .runWith(Sink.ignore)(mat)
+    }
+}
+
+object evolution_1840_b extends EvolutionScript {
+  override def version: String = "18.4.0_b"
+
+  override def script: (
+    Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+    ) => Future[Done] =
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - create account creation steps"
+      )
+
+      implicit val _ec = ec
+
+      dataStore.tenantRepo
+        .streamAllRaw()(ec)
+        .mapAsync(1) { tenant =>
+          dataStore.teamRepo.forTenant((tenant \ "_id").as(TenantIdFormat)).findOneNotDeleted(Json.obj("type" -> TeamType.Admin.name))
+            .map(t => (tenant, t))
+        }
+        .mapAsync(10) {
+          case (tenant, maybeTeam) if maybeTeam.isDefined =>
+            val formStep = ValidationStep.Form(
+              id = IdGenerator.token(32),
+              title = "form",
+              schema = Json.obj(
+                "name" -> Json.obj(
+                  "type" -> "string",
+                  "label" -> "account.creation.form.name.label",
+                ),
+                "email" -> Json.obj(
+                  "type" -> "string",
+                  "format" -> "email",
+                  "label" -> "account.creation.form.email.label",
+                ),
+                "password" -> Json.obj(
+                  "type" -> "string",
+                  "format" -> "password",
+                  "label" -> "account.creation.form.password.label",
+                ),
+                "confirmPassword" -> Json.obj(
+                  "type" -> "string",
+                  "format" -> "password",
+                  "label" -> "account.creation.form.confirm.password.label",
+                )
+              ).some,
+              formatter = "".some
+            )
+            val mailStep = ValidationStep.Email(
+              id = IdGenerator.token(32),
+              emails = Seq("${form.email}"),
+              message = "".some,
+              title = "confirm email"
+            )
+
+
+            val jsTenant = tenant.as[JsObject] +
+              ("accountCreationProcess" -> json.SeqValidationStepFormat.writes(Seq(
+                formStep, mailStep
+              )))
+            json.TenantFormat.reads(jsTenant) match {
+              case JsSuccess(value, _) => dataStore.tenantRepo.save(value)
+
+              case JsError(e) =>
+                logger.error(s"error during evolution $version => unable to evolve tenant ${(tenant \ "_id").as[String]}")
+                logger.error(e.toString())
+                FastFuture.successful(())
+            }
+          case _ =>
+            logger.error(s"error during evolution $version => unable to evolve tenant - no admin team found")
+            FastFuture.successful(())
         }
         .runWith(Sink.ignore)(mat)
     }
@@ -1435,7 +1519,8 @@ object evolutions {
       evolution_1750,
       evolution_1820,
       evolution_1830,
-      evolution_1840,
+      evolution_1840_a,
+      evolution_1840_b,
     )
   def run(
       dataStore: DataStore,

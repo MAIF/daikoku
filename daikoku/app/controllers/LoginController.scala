@@ -503,7 +503,7 @@ class LoginController(
               email = email,
               avatar = avatar,
               name = name,
-              password = password,
+              password = BCrypt.hashpw(password, BCrypt.gensalt()),
               creationDate = DateTime.now(),
               validUntil = DateTime.now().plusMinutes(15),
               steps = ctx.tenant.accountCreationProcess.map(step =>

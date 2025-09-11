@@ -4,7 +4,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { I18nContext } from '../../../contexts';
-import { IUserSimple, IValidationStepForm } from '../../../types';
+import { IUserSimple, IValidationStep } from '../../../types';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { Option } from '../../utils'
 
@@ -115,8 +115,9 @@ export const Signup = () => {
   }
 
   const schema = Option(formStepAccountCreation)
-    .map(s => s as IValidationStepForm)
+    .map(s => s as IValidationStep & {type: 'form'})
     .map(s => s.schema)
+    .map(s => Object.fromEntries(Object.entries(s).map(([k, v]) => ([k, {...v, label: v.label ? translate(v.label as string) : undefined}]))))
     .getOrElse(defaultSchema)
 
   return (
