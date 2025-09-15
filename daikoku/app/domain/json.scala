@@ -917,7 +917,8 @@ object json {
             key = (json \ "key").as[String],
             fromTitle = (json \ "fromTitle").as[String],
             fromEmail = (json \ "fromEmail").as[String],
-            template = (json \ "template").asOpt[String]
+            template = (json \ "template").asOpt[String],
+            testingEmail = (json \ "testingEmail").asOpt[String]
           )
         )
       } recover {
@@ -935,7 +936,8 @@ object json {
         "template" -> o.template
           .map(JsString.apply)
           .getOrElse(JsNull)
-          .as[JsValue]
+          .as[JsValue],
+        "testingEmail" -> o.testingEmail
       )
   }
   val MailjetSettingsFormat = new Format[MailjetSettings] {

@@ -27,6 +27,7 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
     testConnection: {
       type: type.string,
       render: ({rawValues}) => {
+        console.log(rawValues)
         return <button type="button" className='btn btn-outline-info' onClick={() => {
           testMailConnection(props.tenant?._id!, mailerType, rawValues)
               .then(response => {
@@ -54,7 +55,8 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
         },
         ...basicMailSchema,
       };
-    if (mailerType === 'mailgun')
+    if (mailerType === 'mailgun') {
+      const { testConnection, ...basicWithoutTestButton } = basicMailSchema
       return {
         domain: {
           type: type.string,
@@ -68,8 +70,14 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
           type: type.string,
           label: translate('Mailgun key'),
         },
-        ...basicMailSchema
+        ...basicWithoutTestButton,
+        testingEmail: {
+          type: type.string,
+          label: translate('Recipient email (for test only)'), // FIXME
+        },
+        testConnection
       }
+    }
     if (mailerType === 'mailjet')
       return {
         apiKeyPublic: {
@@ -116,8 +124,6 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
 
   const schema = getSchema(mailerType)
 
-
-
   return (
     <div>
       <Form
@@ -136,7 +142,9 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
       <Form<IMailerSettings>
         schema={{...schema}}
         value={props.tenant?.mailerSettings}
-        onSubmit={(data) => props.updateTenant.mutateAsync({ ...props.tenant, mailerSettings: {...data, type: mailerType} } as ITenantFull)}
+        onSubmit={(data) => {
+          props.updateTenant.mutateAsync({ ...props.tenant, mailerSettings: {...data, type: mailerType} } as ITenantFull)
+        }}
       />
     </div>
 

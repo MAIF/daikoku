@@ -4,6 +4,7 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
+import org.apache.pekko.http.scaladsl.model.HttpHeader.ParsingResult.Ok
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.http.scaladsl.util.FastFuture.EnhancedFuture
 import org.owasp.html.HtmlPolicyBuilder
@@ -31,6 +32,7 @@ object HtmlSanitizer {
 }
 
 trait Mailer {
+  lazy val logger = Logger("daikoku-console-mailer")
   def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
       implicit
       ec: ExecutionContext,
@@ -50,9 +52,6 @@ object ConsoleMailer {
 }
 
 class ConsoleMailer(settings: ConsoleMailerSettings) extends Mailer {
-
-  lazy val logger = Logger("daikoku-console-mailer")
-
   def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
       implicit
       ec: ExecutionContext,
@@ -90,7 +89,31 @@ class ConsoleMailer(settings: ConsoleMailerSettings) extends Mailer {
 class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
     extends Mailer {
 
-  lazy val logger = Logger("daikoku-mailer")
+  override lazy val logger = Logger("daikoku-mailer")
+
+  private def _send(body: String, title: String, to: Seq[String], sandbox: Boolean = false) = {
+    wsClient
+      .url(if (settings.eu) {
+        s"https://api.eu.mailgun.net/v3/${settings.domain}/messages"
+      } else {
+        s"https://api.mailgun.net/v3/${settings.domain}/messages"
+      })
+      .withAuth("api", settings.key, WSAuthScheme.BASIC)
+      .post(
+        Map(
+          "o:testmode"-> Seq(if(sandbox) "yes" else "no"),
+          "from" -> Seq(s"${settings.fromTitle} <daikoku@${settings.domain}>"),
+          "to" -> to,
+          "subject" -> Seq(title),
+          "html" ->
+            Seq(body
+              .replace("{{email}}", body)
+              .replace("[email]", body))
+          ,
+          "text" -> Seq(body)
+        )
+      )
+  }
 
   def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
       implicit
@@ -108,26 +131,7 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
         Map("email" -> JsString(body))
       )
       .map(templatedBody => {
-        wsClient
-          .url(if (settings.eu) {
-            s"https://api.eu.mailgun.net/v3/${settings.domain}/messages"
-          } else {
-            s"https://api.mailgun.net/v3/${settings.domain}/messages"
-          })
-          .withAuth("api", settings.key, WSAuthScheme.BASIC)
-          .post(
-            Map(
-              "from" -> Seq(s"${settings.fromTitle} <${settings.fromEmail}>"),
-              "to" -> Seq(to.mkString(", ")),
-              "subject" -> Seq(title),
-              "html" -> Seq(
-                templatedBody
-                  .replace("{{email}}", body)
-                  .replace("[email]", body)
-              ),
-              "text" -> Seq(body)
-            )
-          )
+        _send(body=templatedBody, title = title, to = to)
           .andThen {
             case Success(res) =>
               logger.info(s"Alert email sent \r\n ${res.json}")
@@ -140,13 +144,61 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
 
   override def testConnection(
       tenant: Tenant
-  )(implicit ec: ExecutionContext, env: Env): Future[Boolean] = false.future
+  )(implicit ec: ExecutionContext, env: Env): Future[Boolean] = {
+    _send(body = "Test email", title = "Test email",
+      to = settings.testingEmail.map(email => Seq(email)).getOrElse(Seq.empty),
+      sandbox = true)
+      .map(res => {
+        logger.info(res.body)
+        res.status < 400
+      })
+      .recover{
+        case e =>
+          logger.error("Error while testing mailgun email", e)
+          false
+      }
+  }
 }
 
 class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
     extends Mailer {
 
-  lazy val logger = Logger("daikoku-mailer")
+  private def _send(body: String, title: String, to: Seq[String], sandbox: Boolean = false) = {
+    wsClient
+      .url(s"https://api.mailjet.com/v3.1/send")
+      .withAuth(
+        settings.apiKeyPublic,
+        settings.apiKeyPrivate,
+        WSAuthScheme.BASIC
+      )
+      .withHttpHeaders("Content-Type" -> "application/json")
+      .post(
+        Json.obj(
+          "SandboxMode" -> sandbox,
+          "Messages" -> Json.arr(
+            Json.obj(
+              "From" -> Json.obj(
+                "Email" -> settings.fromEmail,
+                "Name" -> settings.fromTitle
+              ),
+              "To" -> JsArray(
+                to.map(t =>
+                  Json.obj(
+                    "Email" -> t,
+                    "Name" -> t
+                  )
+                )
+              ),
+              "Subject" -> title,
+              "HTMLPart" -> body
+                .replace("{{email}}", body)
+                .replace("[email]", body)
+              // TextPart
+            )
+          )
+        )
+      )
+  }
 
   def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
       implicit
@@ -164,39 +216,7 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
         Map("email" -> JsString(body))
       )
       .map(templatedBody => {
-        wsClient
-          .url(s"https://api.mailjet.com/v3.1/send")
-          .withAuth(
-            settings.apiKeyPublic,
-            settings.apiKeyPrivate,
-            WSAuthScheme.BASIC
-          )
-          .withHttpHeaders("Content-Type" -> "application/json")
-          .post(
-            Json.obj(
-              "Messages" -> Json.arr(
-                Json.obj(
-                  "From" -> Json.obj(
-                    "Email" -> settings.fromEmail,
-                    "Name" -> settings.fromTitle
-                  ),
-                  "To" -> JsArray(
-                    to.map(t =>
-                      Json.obj(
-                        "Email" -> t,
-                        "Name" -> t
-                      )
-                    )
-                  ),
-                  "Subject" -> title,
-                  "HTMLPart" -> templatedBody
-                    .replace("{{email}}", body)
-                    .replace("[email]", body)
-                  // TextPart
-                )
-              )
-            )
-          )
+        _send(body = templatedBody, title = title, to = to)
           .andThen {
             case Success(res) => logger.info("Alert email sent")
             case Failure(e) =>
@@ -208,7 +228,18 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
 
   override def testConnection(
       tenant: Tenant
-  )(implicit ec: ExecutionContext, env: Env): Future[Boolean] = false.future
+  )(implicit ec: ExecutionContext, env: Env): Future[Boolean] = {
+    _send(body = "<div>this is a test connection</div>", title = "test_connection", to = Seq("admin@daikoku.io"), sandbox = true)
+      .map(res => {
+        logger.info(res.body)
+        res.status < 400
+      })
+      .recover{
+        case e =>
+          logger.error("Error while testing mailjet email", e)
+          false
+      }
+  }
 }
 
 class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
@@ -217,8 +248,6 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
   import jakarta.mail.internet._
 
   import java.util.{Date, Properties}
-
-  lazy val logger = Logger("daikoku-mailer")
 
   def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
       implicit
@@ -290,7 +319,6 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
       tenant: Tenant
   )(implicit ec: ExecutionContext, env: Env): Future[Boolean] = {
     val properties = new Properties()
-    AppLogger.info(s"test connection for ${settings.host} ${settings.port}")
     properties.put("mail.smtp.host", settings.host)
     properties.put("mail.smtp.port", Integer.valueOf(settings.port))
     val session = Session.getDefaultInstance(properties, null)
@@ -300,7 +328,7 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
       true.future
     } recover {
       case e =>
-        AppLogger.error(e.getMessage, e)
+        logger.error("Error while testing smtp email", e)
         false.future
     } get
   }
@@ -308,7 +336,36 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
 }
 
 class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
-  lazy val logger = Logger("daikoku-mailer")
+  private def _send(body: String, title: String, to: Seq[String], sandbox: Boolean = false) = {
+    ws.url(s"https://api.sendgrid.com/v3/mail/send")
+      .withHttpHeaders(
+        "Authorization" -> s"Bearer ${settings.apikey}",
+        "Content-Type" -> "application/json"
+      )
+      .post(
+        Json.obj(
+          "mail_settings" -> Json.obj("sandbox_mode" -> Json.obj("enable" -> sandbox)),
+          "personalizations" -> Json.arr(
+            Json.obj(
+              "subject" -> title,
+              "to" -> to.map(c => Json.obj("email" -> c, "name" -> c))
+            )
+          ),
+          "from" -> Json.obj(
+            "email" -> settings.fromEmail,
+            "name" -> settings.fromTitle
+          ),
+          "content" -> Json.arr(
+            Json.obj(
+              "type" -> "text/html",
+              "value" -> body
+                .replace("{{email}}", body)
+                .replace("[email]", body)
+            )
+          )
+        )
+      )
+  }
 
   def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
       implicit
@@ -326,33 +383,8 @@ class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
         Map("email" -> JsString(body))
       )
       .map(templatedBody => {
-        ws.url(s"https://api.sendgrid.com/v3/mail/send")
-          .withHttpHeaders(
-            "Authorization" -> s"Bearer ${settings.apikey}",
-            "Content-Type" -> "application/json"
-          )
-          .post(
-            Json.obj(
-              "personalizations" -> Json.arr(
-                Json.obj(
-                  "subject" -> title,
-                  "to" -> to.map(c => Json.obj("email" -> c, "name" -> c))
-                )
-              ),
-              "from" -> Json.obj(
-                "email" -> settings.fromEmail,
-                "name" -> settings.fromTitle
-              ),
-              "content" -> Json.arr(
-                Json.obj(
-                  "type" -> "text/html",
-                  "value" -> templatedBody
-                    .replace("{{email}}", body)
-                    .replace("[email]", body)
-                )
-              )
-            )
-          )
+        // "<div>sandbox</div>", "test message", ""
+        _send(templatedBody, title, to)
           .andThen {
             case Success(_) => logger.info(s"Alert email sent : ${to}")
             case Failure(e) =>
@@ -364,5 +396,14 @@ class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
   }
 
   override def testConnection(tenant: Tenant)(implicit ec: ExecutionContext, env: Env): Future[Boolean] =
-    false.future
+    _send(body = "<div>this is a test connection</div>", title = "test_connection", Seq("admin@daikoku.io"), sandbox = true)
+      .map(res => {
+        logger.info(res.body)
+        res.status < 400
+      })
+      .recover{
+        case e =>
+          logger.error("Error while testing sendgrid email", e)
+          false
+      }
 }
