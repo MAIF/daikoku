@@ -8,6 +8,7 @@ type Props = {
   onPress: () => Promise<any>,
   onSuccess?: () => void,
   feedbackTimeout?: number,
+  feedbackMessages?: { success?: string, fail?: string },
   className?: string,
   disabled: boolean,
   style?: { [key: string]: string },
@@ -115,22 +116,28 @@ export function FeedbackButton(props: PropsWithChildren<Props>) {
         </>
       )}
       {successed && (
-        <i
-          className="fas fa-check"
-          style={{
-            opacity: successed ? 1 : 0,
-            transition: 'opacity 2s',
-          }}
-        />
+        <>
+          <i
+            className="fas fa-check"
+            style={{
+              opacity: successed ? 1 : 0,
+              transition: 'opacity 2s',
+            }}
+          />
+          {props.feedbackMessages?.success}
+        </>
       )}
       {failed && (
-        <i
-          className="fas fa-times"
-          style={{
-            opacity: failed ? 1 : 0,
-            transition: 'opacity 2s',
-          }}
-        />
+        <>
+          <i
+            className="fas fa-times"
+            style={{
+              opacity: failed ? 1 : 0,
+              transition: 'opacity 2s',
+            }}
+          />
+          {props.feedbackMessages?.fail}
+        </>
       )}
       {!loading && !successed && !failed && props.children}
     </button>

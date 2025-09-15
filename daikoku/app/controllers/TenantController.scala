@@ -642,17 +642,15 @@ class TenantController(
     DaikokuAction.async(parse.json) { ctx =>
       TenantAdminOnly(
         AuditTrailEvent(s"@{user.name} - @{user.email} test a provider")
-      )(tenantId, ctx) { (tenant, adminTeam) =>
+      )(tenantId, ctx) { (_, _) =>
         ctx.request.body.asOpt(json.MailerSettingsFormat) match {
           case Some(settings) => settings.mailer.testConnection(ctx.tenant)
             .map {
               case true => Ok(Json.obj("done" -> true))
-              case false => BadRequest(Json.obj("error" -> "zebi"))
+              case false => BadRequest(Json.obj("error" -> "wrong mailer configuration"))
             }
-          case None => BadRequest(Json.obj("error" -> "zebi max")).future
+          case None => BadRequest(Json.obj("error" -> "wrong mailer configuration format")).future
         }
-
-
       }
     }
 

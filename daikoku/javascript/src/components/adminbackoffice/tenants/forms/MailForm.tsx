@@ -1,12 +1,12 @@
-import { constraints, format, type, Form } from '@maif/react-forms';
-import { useContext, useState } from 'react';
+import { constraints, Form, format, type } from '@maif/react-forms';
 import { UseMutationResult } from '@tanstack/react-query';
+import { useContext, useState } from 'react';
 
+import { toast } from "sonner";
 import { I18nContext } from '../../../../contexts';
-import {IMailerSettings, isError, ITenantFull} from '../../../../types';
-import * as Services from '../../../../services';
-import {testMailConnection} from "../../../../services";
-import {toast} from "sonner";
+import { testMailConnection } from "../../../../services";
+import { IMailerSettings, isError, ITenantFull } from '../../../../types';
+import { FeedbackButton } from '../../../utils/FeedbackButton';
 
 export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translate } = useContext(I18nContext)
@@ -26,18 +26,22 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
     },
     testConnection: {
       type: type.string,
-      render: ({rawValues}) => {
-        console.log(rawValues)
-        return <button type="button" className='btn btn-outline-info' onClick={() => {
-          testMailConnection(props.tenant?._id!, mailerType, rawValues)
-              .then(response => {
-                if (isError(response)) {
-                  toast.error("Failed to check connection")
-                } else {
-                  toast.success("Connection is correct")
-                }
-              })
-        }}>Test connection</button>
+      label: null,
+      render: ({ rawValues }) => {
+        return (
+          <FeedbackButton
+            type='info'
+            onPress={() => testMailConnection(props.tenant?._id!, mailerType, rawValues)
+              .then(r => isError(r) ? Promise.reject(r) : r)
+            }
+            feedbackTimeout={1000}
+            feedbackMessages={{
+              success: translate("tenant.settings.mailer.test.connection.success.label"),
+              fail: translate("tenant.settings.mailer.test.connection.failed.label")
+            }}
+            disabled={false}
+          >{translate('tenant.settings.mailer.test.connection.button.label')}</FeedbackButton>
+        )
       }
     }
   }
@@ -73,7 +77,7 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
         ...basicWithoutTestButton,
         testingEmail: {
           type: type.string,
-          label: translate('Recipient email (for test only)'), // FIXME
+          label: translate('tenant.settings.mailer.mailgun.test.recipient.email.label'),
         },
         testConnection
       }
@@ -140,10 +144,10 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
         value={{ type: mailerType }}
       />
       <Form<IMailerSettings>
-        schema={{...schema}}
+        schema={{ ...schema }}
         value={props.tenant?.mailerSettings}
         onSubmit={(data) => {
-          props.updateTenant.mutateAsync({ ...props.tenant, mailerSettings: {...data, type: mailerType} } as ITenantFull)
+          props.updateTenant.mutateAsync({ ...props.tenant, mailerSettings: { ...data, type: mailerType } } as ITenantFull)
         }}
       />
     </div>
