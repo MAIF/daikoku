@@ -1648,6 +1648,8 @@
     "notifications.page.table.header.label.sender": "Sender",
     "notifications.page.table.header.label.date": "Date",
     "notifications.page.table.header.label.actions": "Actions",
+    "notifications.page.account.creation.attempt.detail.button.label": "Show more",
+    "notifications.page.account.creation.attempt.detail.modal.title": "Account creation attempt details",
     "tenant.edit.clientNamePattern.label": "Custom client name pattern",
     "tenant.edit.clientNamePattern.help": "This pattern is used to customize the client name when creating an API key. The string can include dynamic values using the ${my.value} syntax.",
     "tenant.edit.clientNamePattern.help2": "The following values are available:",

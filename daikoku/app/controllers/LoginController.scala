@@ -518,7 +518,7 @@ class LoginController(
                 )
               ),
               state = SubscriptionDemandState.Waiting,
-              value = body,
+              value = body - "confirmPassword" - "password",
               fromTenant = ctx.tenant.id
             )
           )

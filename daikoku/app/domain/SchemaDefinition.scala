@@ -646,6 +646,14 @@ object SchemaDefinition {
             ListType(StringType),
             resolve = ctx => ctx.value.emails
           )
+        ),
+        AddFields(
+          Field(
+            "type",
+            StringType,
+            description = Some("Type of the validation step"),
+            resolve = ctx => ctx.value.name
+          )
         )
       )
     )
@@ -667,6 +675,14 @@ object SchemaDefinition {
         ReplaceField(
           "team",
           Field("team", StringType, resolve = ctx => ctx.value.team.value)
+        ),
+        AddFields(
+          Field(
+            "type",
+            StringType,
+            description = Some("Type of the validation step"),
+            resolve = ctx => ctx.value.name
+          )
         )
       )
     )
@@ -700,6 +716,14 @@ object SchemaDefinition {
             OptionType(StringType),
             resolve = ctx => ctx.value.formatter
           )
+        ),
+        AddFields(
+          Field(
+            "type",
+            StringType,
+            description = Some("Type of the validation step"),
+            resolve = ctx => ctx.value.name
+          )
         )
       )
     )
@@ -725,6 +749,14 @@ object SchemaDefinition {
         ReplaceField(
           "headers",
           Field("headers", MapType, resolve = _.value.headers)
+        ),
+        AddFields(
+          Field(
+            "type",
+            StringType,
+            description = Some("Type of the validation step"),
+            resolve = ctx => ctx.value.name
+          )
         )
       )
     )
@@ -749,6 +781,14 @@ object SchemaDefinition {
             "thirdPartyPaymentSettingsId",
             StringType,
             resolve = ctx => ctx.value.thirdPartyPaymentSettingsId.value
+          )
+        ),
+        AddFields(
+          Field(
+            "type",
+            StringType,
+            description = Some("Type of the validation step"),
+            resolve = ctx => ctx.value.name
           )
         )
       )
@@ -2976,7 +3016,7 @@ object SchemaDefinition {
       ),
       ReplaceField("state", Field("state", StringType, resolve = _.value.state.name)),
       ReplaceField("fromTenant", Field("fromTenant", StringType, resolve = _.value.fromTenant.value)),
-      ReplaceField("value", Field("value", JsonType, resolve = _.value.value)),
+      ReplaceField("value", Field("value", JsonType, resolve = _.value.value - "password" - "confirmPassword")),
       ReplaceField("metadata", Field("metadata", MapType, resolve = _.value.metadata)),
     )
     lazy val AccountCreationAttemptType = new PossibleObject(

@@ -149,6 +149,7 @@ type ValidationStepProps = {
 
 const ValidationStep = (props: ValidationStepProps) => {
   const step = props.step;
+  console.debug(step)
 
   switch (step.type) {
     case 'payment':
