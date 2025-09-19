@@ -1,7 +1,7 @@
 import { nanoid } from "nanoid"
-import { IApi, INotification, ISubscription, ISubscriptionDemand, ITeamSimple, ITenant, IUsagePlan, IUserSimple, IValidationStep, IValidationStepTeamAdmin } from "../../src/types"
-import { adminApikeyId, adminApikeySecret, exposedPort, tenant } from "./utils"
+import { INotification } from "../../src/types"
 import { IUser } from "./users"
+import { adminApikeyId, adminApikeySecret, exposedPort, tenant } from "./utils"
 
 type NotificationActionType = "ApiAccess" |
   "ApiSubscriptionDemand" |

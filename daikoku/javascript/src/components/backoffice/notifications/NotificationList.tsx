@@ -1424,7 +1424,7 @@ export const NotificationList = () => {
                   className="btn btn-outline-primary a-fake"
                   onPress={() => notificationListQuery.fetchNextPage()}
                   onSuccess={() => console.debug("success")}
-                  feedbackTimeout={500}
+                  feedbackTimeout={100}
                   disabled={notificationListQuery.isFetchingNextPage}
                 >
                   {translate('notifications.page.table.more.button.label')}

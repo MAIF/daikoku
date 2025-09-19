@@ -84,7 +84,7 @@ export const LastDemands = (props: LastDemandsProps) => {
         <div className='d-flex flex-column gap-1'>
           {data && data.teamSubscriptionDemands.total === 0 && <span className='widget-list-default-item'>{translate('widget.demands.no.demands')}</span>}
           {data && data.teamSubscriptionDemands.total > 0 && data.teamSubscriptionDemands.subscriptionDemands.map((d) => {
-            const checkout = d.state === 'inProgress' && d.steps.find(s => s.state === 'inProgress')?.step.name === 'payment'
+            const checkout = d.state === 'inProgress' && d.steps.find(s => s.state === 'inProgress')?.step.type === 'payment'
 
             return (
               <div className='d-flex flex-column justify-content-between align-items-center widget-list-item'>
