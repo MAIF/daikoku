@@ -404,13 +404,13 @@ test('Se créer un compte avec un process de souscription local', async ({ page 
   await page.getByRole('button', { name: 'Création d\'un compte' }).click();
   await expect(page.getByRole('heading', { name: 'Confirmation de votre compte' })).toBeVisible();
   await page.getByRole('heading', { name: 'Confirmation de votre compte' }).click();
-  await page.goto('http://localhost:1080/');
+  await page.goto(EMAIL_UI);
   await page.getByText('Confirmez votre adresse e-mail pour activer votre compte Dunder Mifflin', { exact: true }).click();
   const page2Promise = page.waitForEvent('popup');
   await page.getByRole('link', { name: '👉 [Confirmer mon adresse e-mail' }).click();
   const page2 = await page2Promise;
   await expect(page2.getByText('Merci pour votre réponse')).toBeVisible();
-  await page.goto('http://localhost:5173/apis');
+  await page.goto(ACCUEIL);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('textbox', { name: 'Courriel' }).fill(MICHAEL.email);
   await page.getByRole('textbox', { name: 'Mot de passe' }).fill('password');
