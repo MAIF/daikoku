@@ -886,7 +886,7 @@ object evolution_1613_b extends EvolutionScript {
                 .find(plan => (plan \ "_id").as[String] == planId.value)
             )
             demand = SubscriptionDemand(
-              id = SubscriptionDemandId(IdGenerator.token),
+              id = DemandId(IdGenerator.token),
               tenant = tenant,
               api = apiId,
               plan = (plan \ "_id").as(json.UsagePlanIdFormat),

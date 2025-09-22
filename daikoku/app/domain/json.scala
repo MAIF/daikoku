@@ -537,15 +537,15 @@ object json {
       override def writes(o: ThirdPartyPaymentSettingsId): JsValue =
         JsString(o.value)
     }
-  val SubscriptionDemandIdFormat = new Format[SubscriptionDemandId] {
-    override def reads(json: JsValue): JsResult[SubscriptionDemandId] =
+  val SubscriptionDemandIdFormat = new Format[DemandId] {
+    override def reads(json: JsValue): JsResult[DemandId] =
       Try {
-        JsSuccess(SubscriptionDemandId(json.as[String]))
+        JsSuccess(DemandId(json.as[String]))
       } recover {
         case e => JsError(e.getMessage)
       } get
 
-    override def writes(o: SubscriptionDemandId): JsValue = JsString(o.value)
+    override def writes(o: DemandId): JsValue = JsString(o.value)
   }
   val SubscriptionDemandStepIdFormat = new Format[SubscriptionDemandStepId] {
     override def reads(json: JsValue): JsResult[SubscriptionDemandStepId] =

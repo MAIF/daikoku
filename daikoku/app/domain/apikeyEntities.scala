@@ -290,26 +290,26 @@ object SubscriptionDemandState {
 }
 
 case class SubscriptionDemand(
-    id: SubscriptionDemandId,
-    tenant: TenantId,
-    deleted: Boolean = false,
-    api: ApiId,
-    plan: UsagePlanId,
-    steps: Seq[SubscriptionDemandStep],
-    state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
-    team: TeamId,
-    from: UserId,
-    date: DateTime = DateTime.now,
-    motivation: Option[JsObject] = None,
-    parentSubscriptionId: Option[ApiSubscriptionId] = None,
-    customReadOnly: Option[Boolean] = None,
-    customMetadata: Option[JsObject] = None,
-    customMaxPerSecond: Option[Long] = None,
-    customMaxPerDay: Option[Long] = None,
-    customMaxPerMonth: Option[Long] = None,
-    adminCustomName: Option[String] = None,
-    customName: Option[String] = None,
-    tags: Option[Set[String]] = None
+                               id: DemandId,
+                               tenant: TenantId,
+                               deleted: Boolean = false,
+                               api: ApiId,
+                               plan: UsagePlanId,
+                               steps: Seq[SubscriptionDemandStep],
+                               state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
+                               team: TeamId,
+                               from: UserId,
+                               date: DateTime = DateTime.now,
+                               motivation: Option[JsObject] = None,
+                               parentSubscriptionId: Option[ApiSubscriptionId] = None,
+                               customReadOnly: Option[Boolean] = None,
+                               customMetadata: Option[JsObject] = None,
+                               customMaxPerSecond: Option[Long] = None,
+                               customMaxPerDay: Option[Long] = None,
+                               customMaxPerMonth: Option[Long] = None,
+                               adminCustomName: Option[String] = None,
+                               customName: Option[String] = None,
+                               tags: Option[Set[String]] = None
 ) extends CanJson[SubscriptionDemand] {
   override def asJson: JsValue = json.SubscriptionDemandFormat.writes(this)
 }
@@ -335,13 +335,13 @@ case class SubscriptionDemandStep(
 }
 
 case class StepValidator(
-    id: DatastoreId,
-    tenant: TenantId,
-    deleted: Boolean = false,
-    token: String,
-    step: SubscriptionDemandStepId,
-    subscriptionDemand: SubscriptionDemandId,
-    metadata: JsObject = Json.obj()
+                          id: DatastoreId,
+                          tenant: TenantId,
+                          deleted: Boolean = false,
+                          token: String,
+                          step: SubscriptionDemandStepId,
+                          subscriptionDemand: DemandId,
+                          metadata: JsObject = Json.obj()
 ) extends CanJson[StepValidator] {
   override def asJson: JsValue = json.StepValidatorFormat.writes(this)
 }

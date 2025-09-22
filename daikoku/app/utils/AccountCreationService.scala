@@ -67,7 +67,7 @@ class AccountCreationService {
     } yield Ok(Json.obj("message" -> "user.validated.success"))
     }
 
-  def runAccountCreationProcess(demandId: SubscriptionDemandId, tenant: Tenant)(
+  def runAccountCreationProcess(demandId: DemandId, tenant: Tenant)(
       implicit
       env: Env,
       ec: ExecutionContext,
@@ -526,7 +526,7 @@ class AccountCreationService {
   }
 
   def acceptAccountCreationAttempt(
-                                    accountCreation: SubscriptionDemandId,
+                                    accountCreation: DemandId,
                                     subscriptionDemandStepId: SubscriptionDemandStepId,
                                   )(implicit
                                     ctx: DaikokuActionContext[JsValue],
@@ -558,10 +558,10 @@ class AccountCreationService {
   }
 
   def declineAccountCreationAttempt(
-                                    accountCreation: SubscriptionDemandId,
-                                    subscriptionDemandStepId: SubscriptionDemandStepId,
-                                    tenant: Tenant,
-                                    message: Option[String]
+                                     accountCreation: DemandId,
+                                     subscriptionDemandStepId: SubscriptionDemandStepId,
+                                     tenant: Tenant,
+                                     message: Option[String]
                                   )(implicit
                                     env: Env,
                                     ec: ExecutionContext,

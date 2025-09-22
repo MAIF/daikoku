@@ -1788,7 +1788,7 @@ class ApiControllerSpec()
         autoRotation = Some(false)
       )
       val demand = SubscriptionDemand(
-        id = SubscriptionDemandId("1"),
+        id = DemandId("1"),
         tenant = tenant.id,
         api = defaultApi.api.id,
         plan = UsagePlanId("3"),
@@ -4694,7 +4694,7 @@ class ApiControllerSpec()
               UsagePlanId("2"),
               teamConsumerId,
               motivation = Some("motivation"),
-              demand = SubscriptionDemandId(IdGenerator.token),
+              demand = DemandId(IdGenerator.token),
               step = SubscriptionDemandStepId(IdGenerator.token)
             )
           )
@@ -4765,7 +4765,7 @@ class ApiControllerSpec()
               UsagePlanId("2"),
               teamConsumerId,
               motivation = Some("motivation"),
-              demand = SubscriptionDemandId(IdGenerator.token),
+              demand = DemandId(IdGenerator.token),
               step = SubscriptionDemandStepId(IdGenerator.token)
             )
           )
@@ -4818,7 +4818,7 @@ class ApiControllerSpec()
               UsagePlanId("2"),
               teamConsumerId,
               motivation = Some("motivation"),
-              demand = SubscriptionDemandId(IdGenerator.token),
+              demand = DemandId(IdGenerator.token),
               step = SubscriptionDemandStepId(IdGenerator.token)
             )
           )
