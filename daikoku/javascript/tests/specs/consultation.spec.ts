@@ -426,8 +426,10 @@ test('Voir ses notifications', async ({ page }) => {
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('58');
   await expect(page.getByRole('article')).toHaveCount(25);
 
+  await page.getByRole('button', { name: "Afficher plus de notifications", exact: true }).isEnabled();
   await page.getByRole('button', { name: "Afficher plus de notifications", exact: true }).click();
   await expect(page.locator('article')).toHaveCount(50)
+  await page.getByRole('button', { name: "Afficher plus de notifications", exact: true }).isEnabled();
   await page.getByRole('button', { name: "Afficher plus de notifications", exact: true }).click();
   await expect(page.locator('article')).toHaveCount(58)
   await expect(page.getByRole('button', { name: "Afficher plus de notifications", exact: true })).toBeHidden();

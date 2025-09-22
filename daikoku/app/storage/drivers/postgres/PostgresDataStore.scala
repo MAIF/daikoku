@@ -1,6 +1,6 @@
 package storage.drivers.postgres
 
-import org.apache.pekko.NotUsed
+import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Framing, Keep, Sink, Source}
@@ -918,7 +918,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       .sequence(TABLES.map {
         case (key, _) => reactivePg.rawQuery(s"TRUNCATE $key")
       })
-      .map { _ =>
+      .flatMap { _ =>
         source
           .via(
             Framing
@@ -1021,6 +1021,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
           .toMat(Sink.ignore)(Keep.right)
           .run()(env.defaultMaterializer)
       }
+      .map(_ => logger.info("importFromStream ended"))
   }
 
   override def clear() = {
@@ -1034,7 +1035,6 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       )
       .mapConcat(identity)
       .mapAsync(5)(query => {
-        logger.debug(query)
         reactivePg.query(query)
       })
       .runWith(Sink.ignore)(env.defaultMaterializer)

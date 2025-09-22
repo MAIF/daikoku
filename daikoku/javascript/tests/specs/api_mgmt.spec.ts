@@ -46,9 +46,10 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.locator('h1')).toContainText('API Betterave');
   await page.getByLabel('Accueil Daikoku').click();
-  await expect(page.getByRole('heading', { name: 'API Betterave' })).toBeAttached();
+  await expect(page.getByRole('listitem', { name: 'API Betterave' })).toBeAttached();
+  // await expect(page.getByRole('heading', { name: 'API Betterave' })).toBeAttached();
   await logout(page);
-  await expect(page.getByRole('heading', { name: 'API Betterave' })).toBeHidden();
+  await expect(page.getByRole('listitem', { name: 'API Betterave' })).toBeHidden();
 
   await loginAs(JIM, page);
   await page.getByRole('listitem', { name: 'API Betterave' }).getByRole('heading').click();
@@ -66,9 +67,9 @@ await page.getByRole('button', { name: 'Enregistrer' }).click();
 await expect(page.getByRole('listitem', { name: 'dev' })).toBeVisible();
 
   await page.getByLabel('Accueil Daikoku').click();
-  await expect(page.getByRole('heading', { name: 'API Betterave' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'API Betterave' })).toBeVisible();
   await logout(page);
-  await expect(page.getByRole('heading', { name: 'API Betterave' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'API Betterave' })).toBeVisible();
   await loginAs(JIM, page);
   await page.getByRole('listitem', { name: 'API Betterave' }).getByRole('heading').click();
   //todo: wait for better API lifecycle to test deprected
@@ -221,7 +222,7 @@ test('sécuriser la création d\'API à l\'aide de la securité de tenant associ
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.locator('h1')).toContainText('Vente de papier API');
   await page.getByLabel('Accueil Daikoku').click();
-  await expect(page.getByRole('heading', { name: 'Vente de papier API' })).toBeVisible();
+  await expect(page.getByRole('listitem', { name: 'Vente de papier API' })).toBeVisible();
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Dunder Mifflin' }).click();
   await page.getByText('Sécurité').click();

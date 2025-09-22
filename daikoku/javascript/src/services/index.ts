@@ -2132,9 +2132,11 @@ export const graphql = {
               }
               subscriptionProcess {
                 name
+                ... on Form {
+                  schema
+                }
                 ... on TeamAdmin {
                   team
-                  schema
                 }
               }
               allowMultipleKeys

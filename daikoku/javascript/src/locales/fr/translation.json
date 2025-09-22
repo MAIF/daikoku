@@ -538,7 +538,7 @@
   "Private tenant": "Tenant privé",
   "tenant.created.success": "Le tenant %s a été créé avec succès",
   "Tenant updated successfully": "Le tenant a été modifié avec succès",
-  "Confirm password": "Mot de passe de confirmation",
+  "Confirm password": "Confirmation de mot de passe",
   "Create account": "Création d'un compte",
   "account.creation.error.not.valid.anymore": "Votre demande de création de compte n'est plus valide (elle n'est valable que pendant 15 minutes). Merci de créer une nouvelle demande.",
   "create.account.alert.title": "Confirmation de votre compte",

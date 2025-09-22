@@ -1376,18 +1376,32 @@ object evolution_1840_a extends EvolutionScript {
         s"Begin evolution $version - Extract form step from admin step"
       )
 
+      val count = dataStore.usagePlanRepo
+        .forAllTenant()
+        .streamAllRaw()(ec)
+        .runWith(Sink.fold(0)((count, _) => count + 1))(mat)
+
+      count.map(c => logger.warn(s"il y a $c usage plan en bdd"))(ec)
+
+
+
+
       dataStore.usagePlanRepo
         .forAllTenant()
         .streamAllRaw()(ec)
-        .filter(plan => (plan \ "subscriptionProcess").asOpt[JsArray].exists(_.value.nonEmpty))
-        .filter(plan => (plan \ "subscriptionProcess").as[JsArray].value.exists(step => (step \ "type").as[String] == "teamAdmin"))
+//        .filter(plan => (plan \ "subscriptionProcess").asOpt[JsArray].exists(_.value.nonEmpty))
+//        .filter(plan => (plan \ "subscriptionProcess").as[JsArray].value.exists(step => (step \ "type").as[String] == "teamAdmin"))
         .mapAsync(10) { plan =>
+
+          logger.info(s"evolution for plan ${(plan \ "_id").as[String]}")
+
           //recuperer le schema et le formatter
           (plan \ "subscriptionProcess").as[JsArray].value.find(step => (step \ "type").as[String] == "teamAdmin") match {
             case None =>
               logger.warn("no step admin found")
               FastFuture.successful(false)
             case Some(oldAdminStep) =>
+              logger.info(s"admin step found for plan ${(plan \ "_id").as[String]}")
               //creer le step form
               val newFormStep = ValidationStep.Form(
                 id = IdGenerator.token(32),
@@ -1405,6 +1419,7 @@ object evolution_1840_a extends EvolutionScript {
                 .prepended(newFormStep.asJson)))
 
               val _plan = plan.as(json.UsagePlanFormat).copy(subscriptionProcess = subscriptionProcess.get)
+              logger.info(Json.stringify(_plan.asJson))
               dataStore.usagePlanRepo.forAllTenant()
                 .save(_plan)(ec)
           }
