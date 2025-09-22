@@ -4095,6 +4095,10 @@ class ApiControllerSpec()
 
     "transfer API ownership to another team with in progress demand" in {
       val process = Seq(
+        ValidationStep.Form(
+          id = IdGenerator.token,
+          title = "Form"
+        ),
         ValidationStep.TeamAdmin(
           id = IdGenerator.token,
           team = defaultApi.api.team,
@@ -4282,14 +4286,14 @@ class ApiControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq(process),
+        subscriptionProcess = Seq(ValidationStep.Form(id = IdGenerator.token, title = "form"), process),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
       val plan2 = plan.copy(
         id = UsagePlanId(IdGenerator.token),
         customName = "plan 2",
-        subscriptionProcess = Seq(processV2)
+        subscriptionProcess = Seq(ValidationStep.Form(id = IdGenerator.token, title = "form"), processV2)
       )
       val defaultApiV2 =
         defaultApi.api.copy(
@@ -4327,6 +4331,8 @@ class ApiControllerSpec()
         body = Some(Json.obj("motivation" -> "pleaaase"))
       )(tenant, session)
       demand.status mustBe 200
+      logger.info(s"demand => ${Json.stringify(demand.json)}")
+
       val demand2 = httpJsonCallBlocking(
         path =
           s"/api/apis/${defaultApiV2.id.value}/plan/${plan.id.value}/team/${teamConsumerId.value}/_subscribe",
@@ -4334,6 +4340,7 @@ class ApiControllerSpec()
         body = Some(Json.obj("motivation" -> "pleaaase"))
       )(tenant, session)
       demand2.status mustBe 200
+      logger.info(s"demand2 => ${Json.stringify(demand.json)}")
 
       //check notification for demand is saved for owner team
       val notificationsForOwner = Await.result(
@@ -4370,14 +4377,13 @@ class ApiControllerSpec()
         5.seconds
       )
       demandsForAllversion.length mustBe 2
+
       demandsForAllversion.count(d =>
-        d.steps
-          .map(_.step match {
-            case ValidationStep.TeamAdmin(_, team, _) =>
-              team === teamOwnerId
+        d.steps.exists {
+            case SubscriptionDemandStep(_, _, step: ValidationStep.TeamAdmin, _) =>
+              step.team === teamOwnerId
             case _ => false
-          })
-          .forall(b => b)
+          }
       ) mustBe 2
 
       //3
@@ -4468,13 +4474,11 @@ class ApiControllerSpec()
       )
       demandsForAllversion2.length mustBe 2
       demandsForAllversion2.count(d =>
-        d.steps
-          .map(_.step match {
-            case ValidationStep.TeamAdmin(_, team, _) =>
-              team === teamConsumerId
-            case _ => false
-          })
-          .forall(b => b)
+        d.steps.exists {
+          case SubscriptionDemandStep(_, _, step: ValidationStep.TeamAdmin, _) =>
+            step.team === teamConsumerId
+          case _ => false
+        }
       ) mustBe 2
     }
   }
@@ -4936,6 +4940,10 @@ class ApiControllerSpec()
         ),
         allowMultipleKeys = Some(false),
         subscriptionProcess = Seq(
+          ValidationStep.Form(
+            id = IdGenerator.token,
+            title = "Form"
+          ),
           ValidationStep.TeamAdmin(
             id = IdGenerator.token,
             team = defaultApi.api.team,

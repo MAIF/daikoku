@@ -417,8 +417,6 @@ test('Se créer un compte avec un process de souscription local', async ({ page 
   await page.getByRole('button', { name: 'Se connecter' }).click();
 
   await page.getByRole('link', { name: 'Accès aux notifications' }).click();
-  // await expect(page.getByRole('listitem', { name: "Demande de création de compte par Pam Beesly" })).toContainText('Demande d\'inscription');
-  // await page.getByRole('listitem', { name: "Demande de création de compte par Pam Beesly" }).getByRole('button', { name: 'Accepter' }).click();
   await expect(page.getByRole('article', { name: 'Demande de création de compte' })).toContainText('Pam Beesly');
   page.getByRole('article', { name: 'Demande de création de compte' }).getByRole('button', { name: 'Accepter' }).click();
   await page.getByRole('img', { name: 'user menu' }).click();
