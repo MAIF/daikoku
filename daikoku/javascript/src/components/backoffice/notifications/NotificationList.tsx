@@ -179,7 +179,7 @@ type NotificationActionGQL =
   }
   | {
     __typename: 'AccountCreationAttempt';
-    demand: IAccountCreationGQL;
+    demand?: IAccountCreationGQL;
     motivation: string;
   };
 
@@ -921,21 +921,21 @@ export const NotificationList = () => {
         return translate('notif.subscription.transfer.success')
       case 'AccountCreationAttempt':
         const description = translate('notif.account.creation.attempt');
-        const value = notification.action.demand.value
-        const formStep = notification.action.demand.steps.map(s => s.step).find(s => s.type === 'form')
+        const value = notification.action.demand?.value
+        const formStep = notification.action.demand?.steps.map(s => s.step).find(s => s.type === 'form')
 
         const regexp = /\[\[(.+?)\]\]/g;
         const matches = formStep?.formatter.match(regexp);
 
         const formattedValue = matches?.reduce((acc, match) => {
           const key = match.replace('[[', '').replace(']]', '');
-          return acc.replace(match, value[key] || match);
+          return acc.replace(match, value?.[key] || match);
         }, formStep?.formatter ?? "");
 
         return (
           <>
             {description}
-            <a
+            {value && <a
               href='#'
               className='underline'
               aria-label={translate('notifications.page.account.creation.attempt.detail.button.label')}
@@ -950,7 +950,7 @@ export const NotificationList = () => {
                 </div>
               })}>
               <span className='ms-2'>[{translate('notifications.page.account.creation.attempt.detail.button.label')}]</span>
-            </a>
+            </a>}
           </>
         )
       default:
