@@ -216,13 +216,19 @@ object NotificationAction {
   ) extends NotificationAction
 
   case class ApiSubscriptionDemand(
-      api: ApiId,
-      plan: UsagePlanId,
-      team: TeamId,
-      demand: SubscriptionDemandId,
-      step: SubscriptionDemandStepId,
-      parentSubscriptionId: Option[ApiSubscriptionId] = None,
-      motivation: Option[String]
+                                    api: ApiId,
+                                    plan: UsagePlanId,
+                                    team: TeamId,
+                                    demand: DemandId,
+                                    step: SubscriptionDemandStepId,
+                                    parentSubscriptionId: Option[ApiSubscriptionId] = None,
+                                    motivation: Option[String]
+  ) extends NotificationAction
+
+  case class AccountCreationAttempt(
+                                     demand: DemandId,
+                                     step: SubscriptionDemandStepId,
+                                     motivation: String
   ) extends NotificationAction
 
   case class ApiSubscriptionTransferSuccess(
@@ -311,10 +317,10 @@ object NotificationAction {
       extends NotificationAction
 
   case class CheckoutForSubscription(
-      demand: SubscriptionDemandId,
-      api: ApiId,
-      plan: UsagePlanId,
-      step: SubscriptionDemandStepId
+                                      demand: DemandId,
+                                      api: ApiId,
+                                      plan: UsagePlanId,
+                                      step: SubscriptionDemandStepId
   ) extends NotificationAction
 }
 

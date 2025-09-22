@@ -168,11 +168,9 @@ class TenantController(
               }
           }
           case None =>
-            Errors.craftResponseResult(
+            Errors.craftResponseResultF(
               "Tenant not found",
               Results.NotFound,
-              ctx.request,
-              env = env
             )
         }
       }

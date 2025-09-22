@@ -117,9 +117,9 @@ case class ThirdPartyPaymentSettingsId(value: String)
   def asJson: JsValue = JsString(value)
 }
 
-case class SubscriptionDemandId(value: String)
+case class DemandId(value: String)
     extends ValueType
-    with CanJson[SubscriptionDemandId] {
+    with CanJson[DemandId] {
   def asJson: JsValue = JsString(value)
 }
 

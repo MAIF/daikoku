@@ -1,36 +1,27 @@
 package fr.maif.otoroshi.daikoku.env
 
-import org.apache.pekko.Done
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import cats.data.OptionT
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.Tenant.getCustomizationCmsPage
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiDocumentationPageFormat,
-  ApiFormat,
-  ApiSubscriptionFormat,
-  SeqApiDocumentationDetailPageFormat,
-  TeamFormat,
-  TeamIdFormat,
-  TenantFormat,
-  TenantIdFormat,
-  UserFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, TenantIdFormat, UserFormat}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
+import org.apache.pekko.Done
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.joda.time.DateTime
+import play.api.Logger
 import play.api.libs.json._
 import services.CmsPage
 import storage.DataStore
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
 
 sealed trait EvolutionScript {
+  val logger = Logger("evolution")
   def version: String
   def script: (
       Option[DatastoreId],
@@ -895,7 +886,7 @@ object evolution_1613_b extends EvolutionScript {
                 .find(plan => (plan \ "_id").as[String] == planId.value)
             )
             demand = SubscriptionDemand(
-              id = SubscriptionDemandId(IdGenerator.token),
+              id = DemandId(IdGenerator.token),
               tenant = tenant,
               api = apiId,
               plan = (plan \ "_id").as(json.UsagePlanIdFormat),
@@ -1364,6 +1355,165 @@ object evolution_1830 extends EvolutionScript {
     }
 }
 
+object evolution_1840_a extends EvolutionScript {
+  override def version: String = "18.4.0"
+
+  override def script: (
+    Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+    ) => Future[Done] =
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - Extract form step from admin step"
+      )
+
+      val count = dataStore.usagePlanRepo
+        .forAllTenant()
+        .streamAllRaw()(ec)
+        .runWith(Sink.fold(0)((count, _) => count + 1))(mat)
+
+      count.map(c => logger.warn(s"il y a $c usage plan en bdd"))(ec)
+
+
+
+
+      dataStore.usagePlanRepo
+        .forAllTenant()
+        .streamAllRaw()(ec)
+//        .filter(plan => (plan \ "subscriptionProcess").asOpt[JsArray].exists(_.value.nonEmpty))
+//        .filter(plan => (plan \ "subscriptionProcess").as[JsArray].value.exists(step => (step \ "type").as[String] == "teamAdmin"))
+        .mapAsync(10) { plan =>
+
+          logger.info(s"evolution for plan ${(plan \ "_id").as[String]}")
+
+          //recuperer le schema et le formatter
+          (plan \ "subscriptionProcess").as[JsArray].value.find(step => (step \ "type").as[String] == "teamAdmin") match {
+            case None =>
+              logger.warn("no step admin found")
+              FastFuture.successful(false)
+            case Some(oldAdminStep) =>
+              logger.info(s"admin step found for plan ${(plan \ "_id").as[String]}")
+              //creer le step form
+              val newFormStep = ValidationStep.Form(
+                id = IdGenerator.token(32),
+                title = "form",
+                schema = (oldAdminStep \ "schema").asOpt[JsObject],
+                formatter = (oldAdminStep \ "formatter").asOpt[String]
+              )
+              //creer le nouveau step d'admin
+              val newAdminStep = oldAdminStep.as(json.ValidationStepFormat)
+              //save le plan modifié
+              val subscriptionProcess = json.SeqValidationStepFormat.reads(JsArray((plan \ "subscriptionProcess").as[JsArray].value
+                .map(step =>
+                  if ((step \ "type").as[String] == "admin") newAdminStep.asJson else step
+                )
+                .prepended(newFormStep.asJson)))
+
+              val _plan = plan.as(json.UsagePlanFormat).copy(subscriptionProcess = subscriptionProcess.get)
+              logger.info(Json.stringify(_plan.asJson))
+              dataStore.usagePlanRepo.forAllTenant()
+                .save(_plan)(ec)
+          }
+
+        }
+        .runWith(Sink.ignore)(mat)
+    }
+}
+
+object evolution_1840_b extends EvolutionScript {
+  override def version: String = "18.4.0_b"
+
+  override def script: (
+    Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+    ) => Future[Done] =
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - create account creation steps"
+      )
+
+      implicit val _ec = ec
+
+      dataStore.tenantRepo
+        .streamAllRaw()(ec)
+        .mapAsync(1) { tenant =>
+          dataStore.teamRepo.forTenant((tenant \ "_id").as(TenantIdFormat)).findOneNotDeleted(Json.obj("type" -> TeamType.Admin.name))
+            .map(t => (tenant, t))
+        }
+        .mapAsync(10) {
+          case (tenant, maybeTeam) if maybeTeam.isDefined =>
+            val formStep = ValidationStep.Form(
+              id = IdGenerator.token(32),
+              title = "form",
+              schema = Json.obj(
+                "name" -> Json.obj(
+                  "type" -> "string",
+                  "label" -> "account.creation.form.name.label",
+                ),
+                "email" -> Json.obj(
+                  "type" -> "string",
+                  "format" -> "email",
+                  "label" -> "account.creation.form.email.label",
+                ),
+                "password" -> Json.obj(
+                  "type" -> "string",
+                  "format" -> "password",
+                  "label" -> "account.creation.form.password.label",
+                ),
+                "confirmPassword" -> Json.obj(
+                  "type" -> "string",
+                  "format" -> "password",
+                  "label" -> "account.creation.form.confirm.password.label",
+                )
+              ).some,
+              formatter = "".some
+            )
+            val mailStep = ValidationStep.Email(
+              id = IdGenerator.token(32),
+              emails = Seq("${form.email}"),
+              message = "".some,
+              title = "confirm email"
+            )
+
+
+            val jsTenant = tenant.as[JsObject] +
+              ("accountCreationProcess" -> json.SeqValidationStepFormat.writes(Seq(
+                formStep, mailStep
+              )))
+            json.TenantFormat.reads(jsTenant) match {
+              case JsSuccess(value, _) => dataStore.tenantRepo.save(value)
+
+              case JsError(e) =>
+                logger.error(s"error during evolution $version => unable to evolve tenant ${(tenant \ "_id").as[String]}")
+                logger.error(e.toString())
+                FastFuture.successful(())
+            }
+          case _ =>
+            logger.error(s"error during evolution $version => unable to evolve tenant - no admin team found")
+            FastFuture.successful(())
+        }
+        .runWith(Sink.ignore)(mat)
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -1383,7 +1533,9 @@ object evolutions {
       evolution_1634,
       evolution_1750,
       evolution_1820,
-      evolution_1830
+      evolution_1830,
+      evolution_1840_a,
+      evolution_1840_b,
     )
   def run(
       dataStore: DataStore,

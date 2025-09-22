@@ -5,6 +5,7 @@ import React, {
   useState,
 } from 'react';
 
+import { GraphQLClient } from 'graphql-request';
 import { Spinner } from '../components/utils/Spinner';
 import * as Services from '../services/index';
 import {
@@ -13,9 +14,8 @@ import {
   Display,
   IStateContext,
   TenanMode,
-  isError,
+  isError
 } from '../types';
-import { GraphQLClient } from 'graphql-request';
 
 type TGlobalContext = IStateContext & {
   reloadContext: () => void;
@@ -54,7 +54,8 @@ const initContext: TGlobalContext = {
     environments: [],
     loginProvider: 'Local',
     thirdPartyPaymentSettings: [],
-    otoroshiSettings: []
+    otoroshiSettings: [],
+    accountCreationProcess: []
   },
   session: {
     created: new Date().getTime(),

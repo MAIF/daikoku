@@ -5,20 +5,18 @@ import cats.implicits.catsSyntaxOptionId
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import com.google.common.base.Charsets
 import controllers.{AppError, Assets}
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithoutUser,
-  DaikokuTenantAction,
-  DaikokuTenantActionContext
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithoutUser, DaikokuTenantAction, DaikokuTenantActionContext}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.UberPublicUserAccess
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider._
 import fr.maif.otoroshi.daikoku.login._
-import fr.maif.otoroshi.daikoku.utils.{Cypher, Errors, IdGenerator, Translator}
+import fr.maif.otoroshi.daikoku.utils.Cypher.decrypt
+import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
+import fr.maif.otoroshi.daikoku.utils.{AccountCreationService, Cypher, Errors, IdGenerator, Translator}
 import org.apache.commons.codec.binary.Base32
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -29,14 +27,14 @@ import play.api.libs.json.{JsObject, JsString, JsValue, Json}
 import play.api.mvc._
 
 import java.net.URLEncoder
-import java.time.{Duration, Instant}
+import java.time.Instant
 import java.util.Base64
-import java.util.concurrent.{Executors, TimeUnit}
+import java.util.concurrent.TimeUnit
 import javax.crypto.KeyGenerator
 import javax.crypto.spec.SecretKeySpec
 import scala.collection.concurrent.TrieMap
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.concurrent.{ExecutionContext, Future}
 
 class LoginController(
     DaikokuAction: DaikokuAction,
@@ -45,7 +43,8 @@ class LoginController(
     env: Env,
     cc: ControllerComponents,
     translator: Translator,
-    assets: Assets
+    assets: Assets,
+    accountCreationService: AccountCreationService
 ) extends AbstractController(cc) {
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
@@ -67,21 +66,15 @@ class LoginController(
     DaikokuTenantAction.async { ctx =>
       AuthProvider(provider) match {
         case None =>
-          Errors.craftResponseResult(
+          Errors.craftResponseResultF(
             "Bad authentication provider",
             Results.BadRequest,
-            ctx.request,
-            None,
-            env
           )
         case Some(p)
             if ctx.tenant.authProvider != p && p != AuthProvider.Local =>
-          Errors.craftResponseResult(
+          Errors.craftResponseResultF(
             "Bad authentication provider",
             Results.BadRequest,
-            ctx.request,
-            None,
-            env
           )
         case Some(p) =>
           p match {
@@ -225,23 +218,17 @@ class LoginController(
     AuthProvider(provider) match {
       case None =>
         after(3.seconds)(
-          Errors.craftResponseResult(
+          Errors.craftResponseResultF(
             "Bad authentication provider",
             Results.BadRequest,
-            ctx.request,
-            None,
-            env
           )
         )
 
       case Some(p) if ctx.tenant.authProvider != p && p != AuthProvider.Local =>
         after(3.seconds)(
-          Errors.craftResponseResult(
+          Errors.craftResponseResultF(
             "Bad authentication provider",
             Results.BadRequest,
-            ctx.request,
-            None,
-            env
           )
         )
       case Some(p) if p == AuthProvider.OAuth2 =>
@@ -261,24 +248,18 @@ class LoginController(
           case Left(e) =>
             AppLogger.error("Error during OAuthConfig read", e)
             after(3.seconds)(
-              Errors.craftResponseResult(
+              Errors.craftResponseResultF(
                 "Invalid OAuth Config",
                 Results.BadRequest,
-                ctx.request,
-                None,
-                env
               )
             )
         }
       case Some(p) =>
         ctx.request.body.asFormUrlEncoded match {
           case None =>
-            Errors.craftResponseResult(
+            Errors.craftResponseResultF(
               "No credentials found",
               Results.BadRequest,
-              ctx.request,
-              None,
-              env
             )
           case Some(form) =>
             (
@@ -348,23 +329,17 @@ class LoginController(
                     }
                   case _ =>
                     after(3.seconds)(
-                      Errors.craftResponseResult(
+                      Errors.craftResponseResultF(
                         "No matching provider found",
                         Results.BadRequest,
-                        ctx.request,
-                        None,
-                        env
                       )
                     )
                 }
               case _ =>
                 after(3.seconds)(
-                  Errors.craftResponseResult(
+                  Errors.craftResponseResultF(
                     "No credentials found",
                     Results.BadRequest,
-                    ctx.request,
-                    None,
-                    env
                   )
                 )
             }
@@ -462,25 +437,26 @@ class LoginController(
       email: String,
       password: String,
       confirmPassword: String
-  ): Either[String, Unit] = {
+  ): Either[AppError, Unit] = {
 
     if (name.trim().isEmpty()) {
-      Left("Name should not be empty")
+      Left(AppError.BadRequestError("Name should not be empty"))
     } else if (email.trim().isEmpty()) {
-      Left("Email address should not be empty")
+      Left(AppError.BadRequestError("Email address should not be empty"))
     } else {
-      Right(())
-//      (password.trim(), confirmPassword.trim()) match {
-//        case (pwd1, pwd2) if pwd1 != pwd2 =>
-//          Left("Your passwords does not match")
-//        case (pwd1, pwd2) if pwd1.isEmpty || pwd2.isEmpty =>
-//          Left("Your password can't be empty")
-//        case (pwd1, _) if passwordPattern.matcher(pwd1).matches() => Right(())
-//        case _ =>
-//          Left(
-//            "Your password should be longer than 8 characters and contains letters, capitalized letters, numbers and special characters (#$^+=!*()@%&) !"
-//          )
-//      }
+      (password.trim(), confirmPassword.trim()) match {
+        case (pwd1, pwd2) if pwd1 != pwd2 =>
+          Left(AppError.BadRequestError("Your passwords does not match"))
+        case (pwd1, pwd2) if pwd1.isEmpty || pwd2.isEmpty =>
+          Left(AppError.BadRequestError("Your password can't be empty"))
+        case (pwd1, _) if passwordPattern.matcher(pwd1).matches() => Right(())
+        case _ =>
+          Left(
+            AppError.BadRequestError(
+              "Your password should be longer than 8 characters and contains letters, capitalized letters, numbers and special characters (#$^+=!*()@%&) !"
+            )
+          )
+      }
     }
   }
 
@@ -493,83 +469,136 @@ class LoginController(
       val password = (body \ "password").as[String]
       val confirmPawword = (body \ "confirmPassword").as[String]
 
-      env.dataStore.userRepo.findOne(Json.obj("email" -> email)).flatMap {
-        case Some(user)
-            if user.invitation.isEmpty || user.invitation.get.registered =>
-          FastFuture.successful(
-            BadRequest(Json.obj("error" -> "Email address already exists"))
-          )
-        case _ =>
+      //verifier le resultat du formulaire
+      //verifier que le user n'existe pas deja
+      //passer a l'etape suivante
+
+      (for {
+        maybeUser <- EitherT.liftF(
+          env.dataStore.userRepo.findOne(Json.obj("email" -> email))
+        )
+        //todo: tester la presence desessentiel ??
+        _ <- EitherT.cond[Future](
+          maybeUser.forall(u =>
+            u.invitation.nonEmpty && u.invitation.exists(!_.registered)
+          ),
+          (),
+          AppError.EntityConflict("Email address already exists")
+        )
+        randomId = IdGenerator.token(128)
+        accountCreationId = DemandId(IdGenerator.token(32))
+        _ <- EitherT.fromEither[Future](
           validateUserCreationForm(
             name,
             email,
             password,
             confirmPawword
-          ) match {
-            case Left(msg) =>
-              FastFuture.successful(BadRequest(Json.obj("error" -> msg)))
-            case Right(_) =>
-              val randomId = IdGenerator.token(128)
-              val accountCreation = AccountCreation(
-                id = DatastoreId(IdGenerator.token(32)),
-                randomId = randomId,
-                email = email,
-                name = name,
-                avatar = avatar,
-                password = BCrypt.hashpw(password, BCrypt.gensalt()),
-                creationDate = DateTime.now(),
-                validUntil = DateTime.now().plusMinutes(15)
-              )
-              env.dataStore.accountCreationRepo
-                .save(accountCreation)
-                .flatMap { _ =>
-                  val host = ctx.request.headers
-                    .get("Otoroshi-Proxied-Host")
-                    .orElse(ctx.request.headers.get("X-Forwarded-Host"))
-                    .getOrElse(ctx.request.host)
-                  implicit val tenantLanguage: String =
-                    ctx.tenant.defaultLanguage.getOrElse("en")
-                  (for {
-                    title <- translator.translate(
-                      "mail.new.user.title",
-                      ctx.tenant,
-                      Map("tenant" -> JsString(ctx.tenant.name))
-                    )
-                    body <- translator.translate(
-                      "mail.new.user.body",
-                      ctx.tenant,
-                      Map(
-                        "tenant" -> JsString(ctx.tenant.name),
-                        "link" -> JsString(
-                          env.getDaikokuUrl(
-                            ctx.tenant,
-                            s"/account/validate?id=$randomId"
-                          )
-                        ),
-                        "tenant_data" -> accountCreation.asJson
-                      )
-                    )
-                  } yield {
-                    ctx.tenant.mailer
-                      .send(title, Seq(email), body, ctx.tenant)
-                      .map { _ =>
-                        Ok(Json.obj("done" -> true))
-                      }
-                  }).flatten
-                }
-          }
-      }
+          )
+        )
+        _ <- EitherT.liftF(
+          env.dataStore.accountCreationRepo.save(
+            AccountCreation(
+              id = accountCreationId,
+              randomId = randomId,
+              email = email,
+              avatar = avatar,
+              name = name,
+              password = BCrypt.hashpw(password, BCrypt.gensalt()),
+              creationDate = DateTime.now(),
+              validUntil = DateTime.now().plusMinutes(15),
+              steps = ctx.tenant.accountCreationProcess.map(step =>
+                SubscriptionDemandStep(
+                  id = SubscriptionDemandStepId(IdGenerator.token),
+                  state = step match {
+                    case _: ValidationStep.Form =>
+                      SubscriptionDemandState.Accepted
+                    case _ => SubscriptionDemandState.Waiting
+                  },
+                  step = step
+                )
+              ),
+              state = SubscriptionDemandState.Waiting,
+              value = body - "confirmPassword" - "password",
+              fromTenant = ctx.tenant.id
+            )
+          )
+        )
+        result <- accountCreationService.runAccountCreationProcess(accountCreationId, ctx.tenant)
+      } yield result)
+        .leftMap(_.render())
+        .merge
     }
+
+  def validateAccountCreationAttempt() = {
+    DaikokuActionMaybeWithoutUser.async { ctx =>
+
+      (for {
+        encryptedToken <- EitherT.fromOption[Future](
+          ctx.request.getQueryString("token"),
+          AppError.EntityNotFound("token from query")
+        )
+        token <- EitherT.pure[Future, AppError](
+          decrypt(env.config.cypherSecret, encryptedToken, ctx.tenant)
+        )
+        validator <- EitherT.fromOptionF(
+          env.dataStore.stepValidatorRepo
+            .forTenant(ctx.tenant)
+            .findOneNotDeleted(Json.obj("token" -> token)),
+          AppError.EntityNotFound("token")
+        )
+
+        _ <- accountCreationService.validateAccountCreationWithStepValidator(
+          validator,
+          ctx.tenant
+        )
+        result <- EitherT.pure[Future, AppError](Redirect(env.getDaikokuUrl(ctx.tenant, "/response")))
+      } yield result)
+        .leftMap(error =>
+          Errors.craftResponseResult(
+            message = error.getErrorMessage(),
+            status = Results.Ok
+          )
+        )
+        .merge
+    }
+  }
+
+  def declineAccountCreationAttempt() =
+    DaikokuActionMaybeWithoutUser.async { ctx =>
+      (for {
+        encryptedToken <- EitherT.fromOption[Future](
+          ctx.request.getQueryString("token"),
+          AppError.EntityNotFound("token from query")
+        )
+        token <- EitherT.pure[Future, AppError](
+          decrypt(env.config.cypherSecret, encryptedToken, ctx.tenant)
+        )
+        validator <- EitherT.fromOptionF(
+          env.dataStore.stepValidatorRepo
+            .forTenant(ctx.tenant)
+            .findOneNotDeleted(Json.obj("token" -> token)),
+          AppError.EntityNotFound("token")
+        )
+        _ <- accountCreationService.declineAccountCreationWithStepValidator(validator, ctx.tenant)
+        result <- EitherT.pure[Future, AppError](Redirect(env.getDaikokuUrl(ctx.tenant, "/response?message=home.message.subscription.refusal.successfull")))
+      } yield result)
+        .leftMap(error =>
+          Errors.craftResponseResult(
+            message = error.getErrorMessage(),
+            status = Results.Ok
+          )
+        )
+        .merge
+    }
+
 
   def createUserValidation() =
     DaikokuTenantAction.async { ctx =>
       ctx.request.getQueryString("id") match {
         case None =>
-          Errors.craftResponseResult(
+          Errors.craftResponseResultF(
             "The user creation has failed.",
             Results.BadRequest,
-            ctx.request,
-            env = env
           )
         case Some(id) =>
           env.dataStore.accountCreationRepo
@@ -589,11 +618,9 @@ class LoginController(
                   .flatMap {
                     case Some(user)
                         if user.invitation.isEmpty || user.invitation.get.registered =>
-                      Errors.craftResponseResult(
+                      Errors.craftResponseResultF(
                         "This account is already enabled.",
                         Results.BadRequest,
-                        ctx.request,
-                        env = env
                       )
                     case optUser =>
                       val userId = optUser
@@ -652,11 +679,9 @@ class LoginController(
                       }
                   }
               case _ =>
-                Errors.craftResponseResult(
+                Errors.craftResponseResultF(
                   "Your link is invalid",
                   Results.BadRequest,
-                  ctx.request,
-                  env = env
                 )
             }
       }
@@ -669,8 +694,9 @@ class LoginController(
 //      val password = (body \ "password").as[String]
 //      val confirmPassword = (body \ "confirmPassword").as[String]
 
-      AuditTrailEvent(s"unauthenticated user with $email ask to reset password")
-        .logUnauthenticatedUserEvent(ctx.tenant)
+      AuditTrailEvent(
+        s"unauthenticated user with $email ask to reset password"
+      ).logUnauthenticatedUserEvent(ctx.tenant)
 
       val tenantLanguage = ctx.tenant.defaultLanguage.getOrElse("en")
 
@@ -750,7 +776,8 @@ class LoginController(
 
       (for {
         user <- EitherT.fromOptionF[Future, AppError, User](
-          env.dataStore.userRepo.findOneNotDeleted(Json.obj("email" -> email)),
+          env.dataStore.userRepo
+            .findOneNotDeleted(Json.obj("email" -> email)),
           AppError.BadRequestError("password.reset.error.unknown.user")
         )
         _ <- EitherT.cond[Future][AppError, Unit](

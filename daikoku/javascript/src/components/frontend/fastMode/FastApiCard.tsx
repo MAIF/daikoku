@@ -13,7 +13,6 @@ import {
   isError,
   ISubscription,
   ISubscriptionWithApiInfo,
-  isValidationStepTeamAdmin,
   ITeamSimple,
 } from '../../../types';
 import { isSubscriptionProcessIsAutomatic, Option } from '../../utils';
@@ -83,13 +82,13 @@ export const FastApiCard = (props: FastApiCardProps) => {
         )
         : Services.askForApiKey(apiId, team._id, plan._id, motivation);
 
-    const adminStep = plan.subscriptionProcess.find((s) =>
-      isValidationStepTeamAdmin(s)
+    const formStep = plan.subscriptionProcess.find((s) =>
+      s.type === 'form'
     );
-    if (adminStep && isValidationStepTeamAdmin(adminStep)) {
+    if (formStep) {
       openFormModal<any>({
         title: translate('motivations.modal.title'),
-        schema: adminStep.schema,
+        schema: formStep.schema,
         onSubmit: (motivation) => {
           apiKeyDemand(motivation).then((response) => {
             if (isError(response)) {

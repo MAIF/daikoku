@@ -425,11 +425,11 @@ class DaikokuEnv(
         (dataStore match {
           case store: PostgresDataStore => store.checkDatabase()
           case _                        => FastFuture.successful(None)
-        }).map { _ =>
-          path.orElse(config.init.data.from) match {
+        }).flatMap { _ =>
+          val eventualUnit: Future[Unit] = path.orElse(config.init.data.from) match {
             case Some(path)
-                if path.startsWith("http://") || path
-                  .startsWith("https://") =>
+              if path.startsWith("http://") || path
+                .startsWith("https://") =>
               AppLogger.warn(
                 s"Main dataStore seems to be empty, importing from http resource $path ..."
               )
@@ -628,6 +628,7 @@ class DaikokuEnv(
               }
 
           }
+          eventualUnit
         }
       } else {
         dataStore match {

@@ -537,15 +537,15 @@ object json {
       override def writes(o: ThirdPartyPaymentSettingsId): JsValue =
         JsString(o.value)
     }
-  val SubscriptionDemandIdFormat = new Format[SubscriptionDemandId] {
-    override def reads(json: JsValue): JsResult[SubscriptionDemandId] =
+  val SubscriptionDemandIdFormat = new Format[DemandId] {
+    override def reads(json: JsValue): JsResult[DemandId] =
       Try {
-        JsSuccess(SubscriptionDemandId(json.as[String]))
+        JsSuccess(DemandId(json.as[String]))
       } recover {
         case e => JsError(e.getMessage)
       } get
 
-    override def writes(o: SubscriptionDemandId): JsValue = JsString(o.value)
+    override def writes(o: DemandId): JsValue = JsString(o.value)
   }
   val SubscriptionDemandStepIdFormat = new Format[SubscriptionDemandStepId] {
     override def reads(json: JsValue): JsResult[SubscriptionDemandStepId] =
@@ -616,11 +616,17 @@ object json {
             "title" -> title,
             "message" -> message.map(JsString).getOrElse(JsNull).as[JsValue]
           )
-        case ValidationStep.TeamAdmin(id, team, title, schema, formatter) =>
+        case ValidationStep.TeamAdmin(id, team, title) =>
           Json.obj(
             "type" -> "teamAdmin",
             "id" -> id,
             "team" -> team.asJson,
+            "title" -> title,
+          )
+        case ValidationStep.Form(id, title, schema, formatter) =>
+          Json.obj(
+            "type" -> "form",
+            "id" -> id,
             "title" -> title,
             "schema" -> schema.getOrElse(JsNull).as[JsValue],
             "formatter" -> formatter.map(JsString).getOrElse(JsNull).as[JsValue]
@@ -658,6 +664,13 @@ object json {
             ValidationStep.TeamAdmin(
               id = (json \ "id").as[String],
               team = (json \ "team").as(TeamIdFormat),
+              title = (json \ "title").as[String]
+            )
+          )
+        case "form" =>
+          JsSuccess(
+            ValidationStep.Form(
+              id = (json \ "id").as[String],
               title = (json \ "title").as[String],
               schema = (json \ "schema")
                 .asOpt[JsObject]
@@ -1715,7 +1728,8 @@ object json {
               .asOpt[Set[String]]
               .getOrElse(Set.empty),
             clientNamePattern = (json \ "clientNamePattern")
-              .asOpt[String]
+              .asOpt[String],
+            accountCreationProcess = (json \ "accountCreationProcess").asOpt(SeqValidationStepFormat).getOrElse(Seq.empty)
           )
         )
       } recover {
@@ -1792,7 +1806,10 @@ object json {
           .writes(o.thirdPartyPaymentSettings),
         "display" -> TenantDisplayFormat.writes(o.display),
         "environments" -> JsArray(o.environments.map(JsString.apply).toSeq),
-        "clientNamePattern" -> o.clientNamePattern
+        "clientNamePattern" -> o.clientNamePattern,
+        "accountCreationProcess" -> SeqValidationStepFormat.writes(
+          o.accountCreationProcess
+        )
       )
   }
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
@@ -2717,6 +2734,7 @@ object json {
       override def reads(json: JsValue) =
         (json \ "type").as[String] match {
           case "ApiAccess"       => ApiAccessFormat.reads(json)
+          case "AccountCreationAttempt" => accountCreationAttemptFormat.reads(json)
           case "ApiSubscription" => ApiSubscriptionDemandFormat.reads(json)
           case "ApiSubscriptionReject" =>
             ApiSubscriptionRejectFormat.reads(json)
@@ -2762,6 +2780,10 @@ object json {
           case p: ApiSubscriptionDemand =>
             ApiSubscriptionDemandFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiSubscription"
+            )
+          case p: AccountCreationAttempt =>
+            accountCreationAttemptFormat.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "AccountCreationAttempt"
             )
           case p: ApiSubscriptionTransferSuccess =>
             ApiSubscriptionTransferSuccessFormat.writes(p).as[JsObject] ++ Json
@@ -3080,6 +3102,29 @@ object json {
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue]
+      )
+  }
+  val accountCreationAttemptFormat = new Format[AccountCreationAttempt] {
+    override def reads(json: JsValue): JsResult[AccountCreationAttempt] =
+      Try {
+        JsSuccess(
+          AccountCreationAttempt(
+            demand = (json \ "demand").as(SubscriptionDemandIdFormat),
+            step = (json \ "step").as(SubscriptionDemandStepIdFormat),
+            motivation = (json \ "motivation").as[String]
+          )
+        )
+      } recover {
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
+
+    override def writes(o: AccountCreationAttempt): JsValue =
+      Json.obj(
+        "demand" -> o.demand.value,
+        "step" -> o.step.value,
+        "motivation" -> o.motivation
       )
   }
   val ApiSubscriptionTransferSuccessFormat =
@@ -3817,7 +3862,7 @@ object json {
         Try {
           JsSuccess(
             AccountCreation(
-              id = (json \ "_id").as(DatastoreIdFormat),
+              id = (json \ "_id").as(SubscriptionDemandIdFormat),
               deleted = (json \ "_deleted").as[Boolean],
               randomId = (json \ "randomId").as[String],
               email = (json \ "email").as[String],
@@ -3825,7 +3870,11 @@ object json {
               avatar = (json \ "avatar").as[String],
               password = (json \ "password").as[String],
               creationDate = (json \ "creationDate").as(DateTimeFormat),
-              validUntil = (json \ "validUntil").as(DateTimeFormat)
+              validUntil = (json \ "validUntil").as(DateTimeFormat),
+              steps = (json \ "steps").as(SeqSubscriptionDemanStepFormat),
+              state = (json \ "state").as(SubscriptionDemandStateFormat),
+              value = (json \ "value").as[JsObject],
+              fromTenant = (json \ "fromTenant").as(TenantIdFormat)
             )
           )
         } recover {
@@ -3842,7 +3891,11 @@ object json {
           "avatar" -> o.avatar,
           "password" -> o.password,
           "creationDate" -> DateTimeFormat.writes(o.creationDate),
-          "validUntil" -> DateTimeFormat.writes(o.validUntil)
+          "validUntil" -> DateTimeFormat.writes(o.validUntil),
+          "steps" -> SeqSubscriptionDemanStepFormat.writes(o.steps),
+          "state" -> SubscriptionDemandStateFormat.writes(o.state),
+          "value" -> o.value,
+          "fromTenant" -> o.fromTenant.value
         )
     }
 

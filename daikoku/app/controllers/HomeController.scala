@@ -408,21 +408,15 @@ class HomeController(
                 )
                 .map(res => Ok(res._1).as(res._2))
             case _ =>
-              Errors.craftResponseResult(
+              Errors.craftResponseResultF(
                 "Page not found !",
                 Results.NotFound,
-                ctx.request,
-                None,
-                env
               )
           }
       case _ =>
-        Errors.craftResponseResult(
+        Errors.craftResponseResultF(
           "Page not found !",
           Results.NotFound,
-          ctx.request,
-          None,
-          env
         )
     }
   }

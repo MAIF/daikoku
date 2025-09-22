@@ -24,11 +24,11 @@ import {
   isError,
   ISubscription,
   ISubscriptionDemand,
-  isValidationStepTeamAdmin,
   ITeamSimple,
   ITenantFull,
   IThirdPartyPaymentSettings,
-  IUsagePlan
+  IUsagePlan,
+  IValidationStep
 } from '../../../types';
 import { SubscriptionProcessEditor } from '../../backoffice/apis/SubscriptionProcessEditor';
 import {
@@ -117,7 +117,6 @@ export const OtoroshiEntitiesSelector = ({ rawValues, onChange, translate, owner
         ),
       ])
         .then(([groups, services, routes]) => {
-          console.debug({ routes })
           if (!groups.error)
             setGroups(
               groups.map((g: any) => ({
@@ -758,13 +757,13 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       plan: IUsagePlan,
       apiKey?: ISubscription
     ) => {
-      const adminStep = plan.subscriptionProcess.find((s) =>
-        isValidationStepTeamAdmin(s)
+      const formStep = plan.subscriptionProcess.find((s) =>
+        s.type === 'form'
       );
-      if (adminStep && isValidationStepTeamAdmin(adminStep)) {
+      if (formStep) {
         openFormModal<any>({
           title: translate('motivations.modal.title'),
-          schema: adminStep.schema,
+          schema: formStep.schema,
           onSubmit: (motivation: object) =>
             props.askForApikeys({ team, plan, apiKey, motivation }),
           actionLabel: translate('Send'),
@@ -1147,32 +1146,33 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       });
   };
 
-  const editQuotas = () => {
-    if (userCanUpadtePlan)
-      openRightPanel({
-        title: translate("api.pricings.quotas.panel.title"),
-        content: <QuotasForm ownerTeam={props.ownerTeam} plan={props.plan} savePlan={props.savePlan} />
-      })
-  }
-  const editPricing = () => {
-    if (userCanUpadtePlan)
-      openRightPanel({
-        title: translate("api.pricings.pricing.panel.title"),
-        content: <BillingForm
-          ownerTeam={props.ownerTeam}
-          plan={props.plan}
-          savePlan={setupPayment} />
-      })
-  }
-  const editProcess = () => openRightPanel({
-    title: translate("api.pricings.subscription.process.panel.title"),
-    content: <SubscriptionProcessEditor
-      savePlan={plan => Promise.resolve(props.savePlan(plan))}
-      plan={props.plan}
-      team={props.ownerTeam}
-      tenant={tenant}
-    />
-  })
+    const editQuotas = () => {
+      if (userCanUpadtePlan)
+        openRightPanel({
+          title: translate("api.pricings.quotas.panel.title"),
+          content: <QuotasForm ownerTeam={props.ownerTeam} plan={props.plan} savePlan={props.savePlan} />
+        })
+    }
+    const editPricing = () => {
+      if (userCanUpadtePlan)
+        openRightPanel({
+          title: translate("api.pricings.pricing.panel.title"),
+          content: <BillingForm
+            ownerTeam={props.ownerTeam}
+            plan={props.plan}
+            savePlan={setupPayment} />
+        })
+    }
+
+    const editProcess = () => openRightPanel({
+      title: translate("api.pricings.subscription.process.panel.title"),
+      content: <SubscriptionProcessEditor
+        save={updatedProcess => Promise.resolve(props.savePlan({...plan, subscriptionProcess: updatedProcess}))}
+        process={props.plan.subscriptionProcess}
+        team={props.ownerTeam._id}
+        tenant={tenant}
+      />
+    })
 
   const userCanUpadtePlan = CanIDoAction(connectedUser, manage, API, props.ownerTeam)
 

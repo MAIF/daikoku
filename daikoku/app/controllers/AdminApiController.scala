@@ -1160,7 +1160,7 @@ class SubscriptionDemandsAdminApiController(
     daa: DaikokuApiAction,
     env: Env,
     cc: ControllerComponents
-) extends AdminApiController[SubscriptionDemand, SubscriptionDemandId](
+) extends AdminApiController[SubscriptionDemand, DemandId](
       daa,
       env,
       cc
@@ -1171,7 +1171,7 @@ class SubscriptionDemandsAdminApiController(
   override def entityStore(
       tenant: Tenant,
       ds: DataStore
-  ): Repo[SubscriptionDemand, SubscriptionDemandId] =
+  ): Repo[SubscriptionDemand, DemandId] =
     ds.subscriptionDemandRepo.forTenant(tenant)
   override def toJson(entity: SubscriptionDemand): JsValue = entity.asJson
   override def fromJson(entity: JsValue): Either[String, SubscriptionDemand] =
@@ -1209,7 +1209,7 @@ class SubscriptionDemandsAdminApiController(
       )
     } yield entity
 
-  override def getId(entity: SubscriptionDemand): SubscriptionDemandId =
+  override def getId(entity: SubscriptionDemand): DemandId =
     entity.id
 }
 

@@ -161,54 +161,37 @@ export interface ISwagger {
   specificationType: SpecificationType;
 }
 
-export type IValidationStepType = 'teamAdmin' | 'email' | 'payment' | 'httpRequest';
-
-export interface IValidationStep {
+export type IValidationStep = {
+  type: 'email';
   id: string;
-  type: IValidationStepType;
-  name?: IValidationStepType;
-  title?: string;
-}
-
-export interface IValidationStepEmail extends IValidationStep {
   emails: Array<string>;
   message: string;
   title: string;
-}
-
-export interface IValidationStepHttpRequest extends IValidationStep {
+} | {
+  type: 'httpRequest';
+  id: string;
   title: string;
   url: string;
   headers: object;
-}
-
-export function isValidationStepEmail(item: any): item is IValidationStepEmail {
-  return (<IValidationStepEmail>item).emails !== undefined;
-}
-
-export interface IValidationStepTeamAdmin extends IValidationStep {
-  team: string;
-  title?: string;
+} | {
+  type: 'form';
+  id: string;
   schema: Schema;
   formatter: string;
-}
-
-export function isValidationStepTeamAdmin(item: any): item is IValidationStepTeamAdmin {
-  return (<IValidationStepTeamAdmin>item).team !== undefined;
-}
-
-export function isValidationStepPayment(item: any): item is IValidationStepPayment {
-  return (<IValidationStepPayment>item).thirdPartyPaymentSettingsId !== undefined;
-}
-
-export function isValidationStepHttpRequest(item: any): item is IValidationStepHttpRequest {
-  return (<IValidationStepHttpRequest>item).url !== undefined;
-}
-
-export interface IValidationStepPayment extends IValidationStep {
+  title: string
+} | {
+  type: 'payment';
+  id: string;
   thirdPartyPaymentSettingsId: string;
   title?: string;
+} | {
+  type: 'teamAdmin';
+  id: string;
+  title?: string;
+  team: string;
+
 }
+
 export interface IBaseUsagePlan {
   _id: string;
   _tenant: string;

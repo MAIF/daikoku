@@ -112,22 +112,16 @@ object OtoroshiIdentityFilter {
 
     request.headers.get(claimHeaderName) match {
       case None =>
-        Errors.craftResponseResult(
+        Errors.craftResponseResultF(
           "Not authorized here",
           Results.Unauthorized,
-          request,
-          None,
-          env
         )
       case Some(token) =>
         Try(otoroshiJwtVerifier.verify(token)) match {
           case Failure(exception) =>
-            Errors.craftResponseResult(
+            Errors.craftResponseResultF(
               "Not authorized here",
               Results.Unauthorized,
-              request,
-              None,
-              env
             )
           case Success(jwt) =>
             Option(jwt.getClaim("user"))
@@ -136,12 +130,9 @@ object OtoroshiIdentityFilter {
                 Try(Json.parse(b).as(OtoroshiUser.fmt)).toOption
               ) match {
               case None =>
-                Errors.craftResponseResult(
+                Errors.craftResponseResultF(
                   "No user provided",
                   Results.BadRequest,
-                  request,
-                  None,
-                  env
                 )
               case Some(user) =>
                 val isDaikokuAdmin: Boolean =

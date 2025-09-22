@@ -1,22 +1,21 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, PaginationState, SortingState, useReactTable } from '@tanstack/react-table';
+import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, PaginationState, useReactTable } from '@tanstack/react-table';
 import classNames from 'classnames';
 import { formatDistanceToNow } from 'date-fns';
 import { useContext, useEffect, useMemo, useState } from 'react';
 import Select, { components, MultiValue, OptionProps, ValueContainerProps } from 'react-select';
 
 import { constraints, format, type } from '@maif/react-forms';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
 import * as Services from '../../../services';
-import { DaikokuMode, Display, IApi, IApiGQL, IApiPost, IIssuesTag, isError, Issue, ISubscription, ISubscriptionDemand, ISubscriptionDemandGQL, ITeamFullGql, ITeamSimple, ITenant, ITesting, IUsagePlan, IUser, IValidationStepPayment } from '../../../types';
+import { IAccountCreationGQL, IApiGQL, IApiPost, isError, Issue, ISubscription, ISubscriptionDemandGQL, ITeamFullGql, ITeamSimple, ITenant, IUsagePlan, IUser, IValidationStep } from '../../../types';
 import { getLanguageFns, Spinner } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
-import { Option as opt } from '../../utils';
-import { IApiSubscriptionGql } from '../apis';
 import { SimpleApiKeyCard } from '../apikeys/TeamApiKeysForApi';
+import { IApiSubscriptionGql } from '../apis';
 declare module '@tanstack/react-table' {
   interface ColumnMeta<TData extends unknown, TValue> extends NotificationColumnMeta { }
 }
@@ -170,13 +169,18 @@ type NotificationActionGQL =
   | {
     __typename: 'CheckoutForSubscription';
     plan: IUsagePlan;
-    step: IValidationStepPayment;
+    step: IValidationStep & { type: 'payment' };
     demand: ISubscriptionDemandGQL;
     api: IApiGQL;
   }
   | {
     __typename: 'ApiSubscriptionTransferSuccess';
     subscription: ISubscription;
+  }
+  | {
+    __typename: 'AccountCreationAttempt';
+    demand?: IAccountCreationGQL;
+    motivation: string;
   };
 
 type NotificationGQL = {
@@ -203,7 +207,6 @@ type NotificationGQL = {
   tenant: {
     id: string
   }
-
 }
 
 type Option = {
@@ -336,6 +339,7 @@ export const NotificationList = () => {
     { type: "TransferApiOwnership" },
     { type: "ApiSubscriptionTransferSuccess" },
     { type: "CheckoutForSubscription" },
+    { type: "AccountCreation" },
   ];
 
   const notificationActionTypes = [
@@ -774,7 +778,7 @@ export const NotificationList = () => {
         return translate({ key: 'notif.apikey.deletion' })
       case 'ApiKeyDeletionInformationV2': {
         const apiKeyDeletionInformationDescription = translate({ key: 'notif.apikey.deletion' })
-        const __subscription = notification.action.subscription        
+        const __subscription = notification.action.subscription
         return (
           <>
             {apiKeyDeletionInformationDescription}
@@ -805,7 +809,7 @@ export const NotificationList = () => {
         const __api = notification.action.api
         const __plan = notification.action.plan
         const __team = notification.action.api.team
-        const __subscription = notification.action.subscription 
+        const __subscription = notification.action.subscription
         return (
           <>
             {apiKeyRotationInProgressDescription}
@@ -831,11 +835,11 @@ export const NotificationList = () => {
       case 'ApiKeyRotationEnded':
         return translate('notif.apikey.rotation.ended')
       case 'ApiKeyRotationEndedV2': {
-        const apiKeyRotationEndedV2Description =  translate('notif.apikey.rotation.ended')
+        const apiKeyRotationEndedV2Description = translate('notif.apikey.rotation.ended')
         const __api = notification.action.api
         const __plan = notification.action.plan
         const __team = notification.action.api.team
-        const __subscription = notification.action.subscription 
+        const __subscription = notification.action.subscription
         return <>
           {apiKeyRotationEndedV2Description}
           <a
@@ -863,7 +867,7 @@ export const NotificationList = () => {
         const __api = notification.action.api
         const __plan = notification.action.plan
         const __team = notification.action.api.team
-        const __subscription = notification.action.subscription 
+        const __subscription = notification.action.subscription
         return <>
           {apiKeyRefreshV2Description}
           <a
@@ -915,9 +919,42 @@ export const NotificationList = () => {
         return translate('notif.issues.comment')
       case 'ApiSubscriptionTransferSuccess':
         return translate('notif.subscription.transfer.success')
+      case 'AccountCreationAttempt':
+        const description = translate('notif.account.creation.attempt');
+        const value = notification.action.demand?.value
+        const formStep = notification.action.demand?.steps.map(s => s.step).find(s => s.type === 'form')
+
+        const regexp = /\[\[(.+?)\]\]/g;
+        const matches = formStep?.formatter.match(regexp);
+
+        const formattedValue = matches?.reduce((acc, match) => {
+          const key = match.replace('[[', '').replace(']]', '');
+          return acc.replace(match, value?.[key] || match);
+        }, formStep?.formatter ?? "");
+
+        return (
+          <>
+            {description}
+            {value && <a
+              href='#'
+              className='underline'
+              aria-label={translate('notifications.page.account.creation.attempt.detail.button.label')}
+              title={translate('notifications.page.account.creation.attempt.detail.button.label')}
+              onClick={() => alert({
+                title: translate('notifications.page.account.creation.attempt.detail.modal.title'),
+                message: <div>
+                  {!!formattedValue && <em>{formattedValue}</em>}
+                  <pre>
+                    {JSON.stringify(value, null, 2)}
+                  </pre>
+                </div>
+              })}>
+              <span className='ms-2'>[{translate('notifications.page.account.creation.attempt.detail.button.label')}]</span>
+            </a>}
+          </>
+        )
       default:
         return '';
-
     }
   }
 
@@ -1017,10 +1054,8 @@ export const NotificationList = () => {
       meta: { className: "description-cell" },
       cell: (info) => {
         return <div className='notification d-flex align-items-center gap-3'>
-          <div>
-            <div className='notification__description'>
-              {notificationFormatter(info.row.original, translate, tenant)}
-            </div>
+          <div className='notification__description'>
+            {notificationFormatter(info.row.original, translate, tenant)}
           </div>
         </div>;
       },
@@ -1389,7 +1424,7 @@ export const NotificationList = () => {
                   className="btn btn-outline-primary a-fake"
                   onPress={() => notificationListQuery.fetchNextPage()}
                   onSuccess={() => console.debug("success")}
-                  feedbackTimeout={500}
+                  feedbackTimeout={100}
                   disabled={notificationListQuery.isFetchingNextPage}
                 >
                   {translate('notifications.page.table.more.button.label')}

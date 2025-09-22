@@ -90,20 +90,14 @@ object TenantHelper {
         val tenantId = TenantHelper.extractTenantId(request)(env)
         env.dataStore.tenantRepo.findByIdNotDeleted(tenantId).flatMap {
           case None =>
-            Errors.craftResponseResult(
+            Errors.craftResponseResultF(
               "Tenant does not exists (1)",
               Results.NotFound,
-              request,
-              None,
-              env
             )
           case Some(tenant) if !tenant.enabled =>
-            Errors.craftResponseResult(
+            Errors.craftResponseResultF(
               "Tenant does not exists (2)",
               Results.NotFound,
-              request,
-              None,
-              env
             )
           case Some(tenant) => f(tenant)
         }
@@ -126,23 +120,17 @@ object TenantHelper {
               AppLogger.info(
                 s"Tenant does not exists - host $host - domain $domain - None"
               )
-              Errors.craftResponseResult(
+              Errors.craftResponseResultF(
                 s"Tenant does not exists (3)",
                 Results.NotFound,
-                request,
-                None,
-                env
               )
             case Some(tenant) if !tenant.enabled =>
               AppLogger.info(
                 s"Tenant does not exists - host $host - domain $domain - tenant disabled"
               )
-              Errors.craftResponseResult(
+              Errors.craftResponseResultF(
                 "Tenant does not exists (4)",
                 Results.NotFound,
-                request,
-                None,
-                env
               )
             case Some(tenant) => f(tenant)
           }
@@ -184,32 +172,23 @@ object TenantHelper {
           .flatMap(env.dataStore.tenantRepo.findByIdNotDeleted(_))
           .flatMap {
             case None =>
-              Errors.craftResponseResult(
+              Errors.craftResponseResultF(
                 "Tenant does not exists (5)",
                 Results.NotFound,
-                request,
-                None,
-                env
               )
             case Some(tenant) if !tenant.enabled =>
-              Errors.craftResponseResult(
+              Errors.craftResponseResultF(
                 "Tenant does not exists (6)",
                 Results.NotFound,
-                request,
-                None,
-                env
               )
             case Some(tenant) => f(tenant)
           }
           .recoverWith {
             case e =>
               AppLogger.error(s"Failed to retrieve tenant : ${e.getMessage}", e)
-              Errors.craftResponseResult(
+              Errors.craftResponseResultF(
                 "Failed to retrieve tenant # Try to reload your page",
                 Results.NotFound,
-                request,
-                None,
-                env
               )
           }
     }

@@ -21,7 +21,7 @@
     "@dnd-kit/sortable": "10.0.0",
     "@dnd-kit/utilities": "3.2.2",
     "@fortawesome/fontawesome-free": "7.0.0",
-    "@maif/react-forms": "^1.6.10",
+    "@maif/react-forms": "^1.6.11",
     "@popperjs/core": "^2.11.8",
     "@tanstack/react-query": "5.83.0",
     "@tanstack/react-table": "^8.21.3",
