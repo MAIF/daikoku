@@ -68,6 +68,7 @@ case class ApiSubscription(
     enabled: Boolean = true,
     rotation: Option[ApiSubscriptionRotation],
     integrationToken: String,
+    bearerToken: Option[String] = None,
     customMetadata: Option[JsObject] = None,
     metadata: Option[JsObject] = None,
     tags: Option[Set[String]] = None,
@@ -141,7 +142,8 @@ case class ActualOtoroshiApiKey(
     metadata: Map[String, String] = Map.empty[String, String],
     restrictions: ApiKeyRestrictions = ApiKeyRestrictions(),
     rotation: Option[ApiKeyRotation],
-    validUntil: Option[Long] = None
+    validUntil: Option[Long] = None,
+    bearer: Option[String] = None
 ) extends CanJson[OtoroshiApiKey] {
   override def asJson: JsValue = json.ActualOtoroshiApiKeyFormat.writes(this)
   def asOtoroshiApiKey: OtoroshiApiKey =

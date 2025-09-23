@@ -2257,6 +2257,7 @@ object json {
             rotation =
               (json \ "rotation").asOpt(ApiSubscriptionyRotationFormat),
             integrationToken = (json \ "integrationToken").as[String],
+            bearerToken = (json \ "bearerToken").asOpt[String],
             metadata = (json \ "metadata").asOpt[JsObject],
             customMetadata = (json \ "customMetadata").asOpt[JsObject],
             tags = (json \ "tags").asOpt[Set[String]],
@@ -2317,6 +2318,7 @@ object json {
           .getOrElse(JsNull)
           .as[JsValue],
         "integrationToken" -> o.integrationToken,
+        "bearerToken" -> o.bearerToken,
         "metadata" -> o.metadata,
         "customMetadata" -> o.customMetadata,
         "tags" -> JsArray(
@@ -2659,7 +2661,8 @@ object json {
             .map(ApiKeyRotationFormat.writes)
             .getOrElse(JsNull)
             .as[JsValue],
-          "validUntil" -> apk.validUntil
+          "validUntil" -> apk.validUntil,
+          "bearer" -> apk.bearer
         )
 
       override def reads(json: JsValue): JsResult[ActualOtoroshiApiKey] =
@@ -2695,7 +2698,8 @@ object json {
               .getOrElse(Set.empty[String]),
             restrictions = (json \ "restrictions").as(ApiKeyRestrictionsFormat),
             rotation = (json \ "rotation").asOpt(ApiKeyRotationFormat),
-            validUntil = (json \ "validUntil").asOpt[Long]
+            validUntil = (json \ "validUntil").asOpt[Long],
+            bearer = (json \ "bearer").asOpt[String]
           )
         } map {
           case sd => JsSuccess(sd)

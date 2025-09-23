@@ -1,16 +1,17 @@
 package fr.maif.otoroshi.daikoku.env
 
-import cats.data.OptionT
+import cats.data.{EitherT, OptionT}
 import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.Tenant.getCustomizationCmsPage
+import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Admin
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, TenantIdFormat, UserFormat}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
-import org.apache.pekko.Done
+import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.{Sink, Source}
+import org.apache.pekko.stream.scaladsl.{Flow, Sink, Source}
 import org.joda.time.DateTime
 import play.api.Logger
 import play.api.libs.json._
@@ -1514,6 +1515,49 @@ object evolution_1840_b extends EvolutionScript {
     }
 }
 
+object evolution_1840_c extends EvolutionScript {
+  override def version: String = "18.4.0_c"
+
+  override def script: (
+    Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+    ) => Future[Done] =
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      otoroshiClient: OtoroshiClient
+    ) => {
+      AppLogger.info(
+        s"Begin evolution $version - get bearer token for all existing key"
+      )
+
+      implicit val _ec: ExecutionContext = ec
+
+      dataStore.tenantRepo
+        .streamAllRawFormatted()
+        .flatMapConcat(tenant => {
+          dataStore.apiSubscriptionRepo.forTenant(tenant)
+            .streamAllRawFormatted()
+            .mapAsync(10)(subscription => {
+              (for {
+                usagePlan <- EitherT.fromOptionF[Future, Option[Unit], UsagePlan](dataStore.usagePlanRepo.forTenant(tenant).findByIdNotDeleted(subscription.plan), None)
+                _ <- EitherT.cond[Future][Option[Unit], Unit](usagePlan.visibility != Admin, (), None)
+                otoroshiSettings <- EitherT.fromOption[Future][Option[Unit], OtoroshiSettings](tenant.otoroshiSettings.find(s => usagePlan.otoroshiTarget.exists(_.otoroshiSettings == s.id)), None)
+                keyWithBearer <- EitherT(otoroshiClient.getApikey(subscription.apiKey.clientId)(otoroshiSettings)).leftMap[Option[Unit]](_ => None)
+                _ <- EitherT.liftF[Future, Option[Unit], Boolean](dataStore.apiSubscriptionRepo.forTenant(tenant).save(subscription.copy(bearerToken = keyWithBearer.bearer)))
+              } yield Some(()))
+                .merge
+            })
+        })
+        .runWith(Sink.ignore)(mat)
+    }
+}
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -1536,6 +1580,7 @@ object evolutions {
       evolution_1830,
       evolution_1840_a,
       evolution_1840_b,
+      evolution_1840_c,
     )
   def run(
       dataStore: DataStore,

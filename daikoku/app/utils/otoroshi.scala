@@ -57,7 +57,7 @@ class OtoroshiClient(env: Env) {
   def client(
       path: String
   )(implicit otoroshiSettings: OtoroshiSettings): WSRequest = {
-    ws.url(s"${otoroshiSettings.url}${path}")
+    ws.url(s"${otoroshiSettings.url}$path")
       .addHttpHeaders(
         "Host" -> otoroshiSettings.host
       )
@@ -156,7 +156,7 @@ class OtoroshiClient(env: Env) {
   def getApiKeys()(implicit
       otoroshiSettings: OtoroshiSettings
   ): Future[JsArray] = {
-    client(s"/api/apikeys").get().flatMap { resp =>
+    client(s"/apis/apim.otoroshi.io/v1/apikeys").get().flatMap { resp =>
       if (resp.status == 200) {
         val res = resp.json.as[JsArray]
         FastFuture.successful(JsArray(res.value))
@@ -223,7 +223,7 @@ class OtoroshiClient(env: Env) {
   def getApikey(clientId: String)(implicit
       otoroshiSettings: OtoroshiSettings
   ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
-    client(s"/api/apikeys/$clientId").get().map { resp =>
+    client(s"/apis/apim.otoroshi.io/v1/apikeys/$clientId").get().map { resp =>
       if (resp.status == 200) {
         resp.json.validate(ActualOtoroshiApiKeyFormat) match {
           case JsSuccess(k, _) => Right(k)
@@ -244,7 +244,7 @@ class OtoroshiClient(env: Env) {
   def createApiKey(key: ActualOtoroshiApiKey)(implicit
       otoroshiSettings: OtoroshiSettings
   ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
-    client(s"/api/apikeys").post(key.asJson).map { resp =>
+    client(s"/apis/apim.otoroshi.io/v1/apikeys").post(key.asJson).map { resp =>
       if (resp.status == 201 || resp.status == 200) {
         resp.json.validate(ActualOtoroshiApiKeyFormat) match {
           case JsSuccess(k, _) => Right(k)
@@ -265,7 +265,7 @@ class OtoroshiClient(env: Env) {
   def updateApiKey(key: ActualOtoroshiApiKey)(implicit
       otoroshiSettings: OtoroshiSettings
   ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
-    client(s"/api/apikeys/${key.clientId}")
+    client(s"/apis/apim.otoroshi.io/v1/apikeys/${key.clientId}")
       .put(key.asJson)
       .map { resp =>
         if (resp.status == 200) {
@@ -295,7 +295,7 @@ class OtoroshiClient(env: Env) {
       otoroshiSettings: OtoroshiSettings
   ): EitherT[Future, AppError, Unit] = {
     for {
-      resp <- EitherT.liftF(client(s"/api/apikeys/$clientId").delete())
+      resp <- EitherT.liftF(client(s"/apis/apim.otoroshi.io/v1/apikeys/$clientId").delete())
       _ <- EitherT.cond[Future][AppError, Unit](
         resp.status == 200,
         (),

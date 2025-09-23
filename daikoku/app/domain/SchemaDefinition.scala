@@ -1485,6 +1485,7 @@ object SchemaDefinition {
           ),
           Field("deleted", BooleanType, resolve = _.value.deleted),
           Field("apiKey", OtoroshiApiKeyType, resolve = _.value.apiKey),
+          Field("bearerToken", OptionType(StringType), resolve = _.value.bearerToken),
           Field(
             "plan",
             OptionType(UsagePlanType),
