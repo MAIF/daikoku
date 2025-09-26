@@ -1,6 +1,8 @@
 package fr.maif.otoroshi.daikoku.utils
 
 import com.github.slugify.Slugify
+import play.api.Logger
+import play.api.libs.json.{JsValue, Json}
 
 import java.math.BigInteger
 import java.security.MessageDigest
@@ -31,5 +33,13 @@ object StringImplicits {
         .trim
     }
     def slugify: String = Slugify.builder().build().slugify(s)
+  }
+}
+
+object LoggerImplicits {
+  implicit class BetterLogger(logger: Logger) {
+    def json(js: JsValue, pretty: Boolean = false): Unit = {
+      logger.info(if (pretty) Json.prettyPrint(js) else Json.stringify(js))
+    }
   }
 }
