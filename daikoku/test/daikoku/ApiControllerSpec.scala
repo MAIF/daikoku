@@ -5518,7 +5518,6 @@ class ApiControllerSpec()
         port = container.mappedPort(8080)
       )(tenant, session)
       (update1.json \ "enabled").as[Boolean] mustBe false
-        .as[JsObject])
       (update1.json \ "metadata")
         .as[JsObject]
         .keys
