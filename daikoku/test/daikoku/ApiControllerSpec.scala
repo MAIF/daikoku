@@ -37,7 +37,6 @@ class ApiControllerSpec()
     extends PlaySpec
     with DaikokuSpecHelper
     with IntegrationPatience
-    with BeforeAndAfterEach
     with BeforeAndAfter
     with ForAllTestContainer {
 
@@ -962,7 +961,6 @@ class ApiControllerSpec()
           s"/api/teams/${teamOwnerId.value}/tenant/otoroshis/${containerizedOtoroshi.value}/routes"
       )(tenant, session)
 
-      logger.json(respGroupsForOwner.json)
       respGroupsForOwner.status mustBe 200
       respGroupsForOwner.json.as[JsArray].value.length mustBe 1
       respRoutesForOwner.status mustBe 200
