@@ -3,10 +3,6 @@ package fr.maif.otoroshi.daikoku.tests
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
-import com.github.tomakehurst.wiremock.WireMockServer
-import com.github.tomakehurst.wiremock.client.WireMock
-import com.github.tomakehurst.wiremock.client.WireMock._
-import com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig
 import controllers.AppError
 import controllers.AppError.SubscriptionAggregationDisabled
 import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
@@ -16,7 +12,6 @@ import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
 }
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
-import fr.maif.otoroshi.daikoku.domain.UsagePlan._
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.{
@@ -24,7 +19,6 @@ import fr.maif.otoroshi.daikoku.domain.json.{
   SeqApiSubscriptionFormat
 }
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
-import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
@@ -34,10 +28,10 @@ import org.testcontainers.containers.BindMode
 import play.api.http.Status
 import play.api.libs.json._
 
-import scala.concurrent.duration._
 import scala.concurrent.Await
+import scala.concurrent.duration._
 import scala.util.Random
-import fr.maif.otoroshi.daikoku.utils.LoggerImplicits._
+import fr.maif.otoroshi.daikoku.utils.LoggerImplicits.BetterLogger
 
 class ApiControllerSpec()
     extends PlaySpec
@@ -48,10 +42,6 @@ class ApiControllerSpec()
     with ForAllTestContainer {
 
   val pwd = System.getProperty("user.dir");
-  lazy val wireMockServer = new WireMockServer(
-    wireMockConfig()
-      .port(stubPort)
-  )
 
   override val container = GenericContainer(
     "maif/otoroshi",
@@ -68,12 +58,6 @@ class ApiControllerSpec()
 
   before {
     Await.result(cleanOtoroshiServer(container.mappedPort(8080)), 5.seconds)
-    wireMockServer.start()
-    WireMock.configureFor(stubHost, stubPort)
-  }
-
-  after {
-    wireMockServer.stop()
   }
 
   "a tenant administrator" can {
@@ -892,7 +876,18 @@ class ApiControllerSpec()
 
     "create usage plan with only otoroshiTarget entities for which access is authorized" in {
       setupEnvBlocking(
-        tenants = Seq(tenant),
+        tenants = Seq(tenant.copy(
+          otoroshiSettings = Set(
+            OtoroshiSettings(
+              id = containerizedOtoroshi,
+              url =
+                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+              host = "otoroshi-api.oto.tools",
+              clientSecret = otoroshiAdminApiKey.clientSecret,
+              clientId = otoroshiAdminApiKey.clientId
+            )
+          )
+        )),
         users = Seq(userAdmin),
         apis = Seq(defaultApi.api.copy(possibleUsagePlans = Seq.empty)),
         teams = Seq(
@@ -901,11 +896,10 @@ class ApiControllerSpec()
             authorizedOtoroshiEntities = Some(
               Seq(
                 TeamAuthorizedEntities(
-                  OtoroshiSettingsId("wiremock"),
+                  containerizedOtoroshi,
                   AuthorizedEntities(
-                    services = Set(OtoroshiServiceId("s_auth")),
-                    groups = Set(OtoroshiServiceGroupId("g_auth")),
-                    routes = Set(OtoroshiRouteId("r_auth"))
+                    groups = Set(OtoroshiServiceGroupId(serviceGroupDefault)),
+                    routes = Set(OtoroshiRouteId(otherRouteId))
                   )
                 )
               )
@@ -927,132 +921,68 @@ class ApiControllerSpec()
 
       val otoroshitargetWithUnauthGroup = Some(
         OtoroshiTarget(
-          wiremockedOtoroshi,
+          containerizedOtoroshi,
           Some(
             AuthorizedEntities(
-              groups = Set(OtoroshiServiceGroupId("g_unauth"))
-            )
-          )
-        )
-      )
-      val otoroshitargetWithUnauthService = Some(
-        OtoroshiTarget(
-          wiremockedOtoroshi,
-          Some(
-            AuthorizedEntities(
-              services = Set(OtoroshiServiceId("s_unauth"))
+              groups = Set(OtoroshiServiceGroupId(serviceGroupDev))
             )
           )
         )
       )
       val otoroshitargetWithUnauthRoute = Some(
         OtoroshiTarget(
-          wiremockedOtoroshi,
+          containerizedOtoroshi,
           Some(
             AuthorizedEntities(
-              routes = Set(OtoroshiRouteId("r_unauth"))
+              routes = Set(OtoroshiRouteId(parentRouteId))
             )
           )
         )
       )
       val otoroshitargetWithAuthEntities = Some(
         OtoroshiTarget(
-          wiremockedOtoroshi,
+          containerizedOtoroshi,
           Some(
             AuthorizedEntities(
-              routes = Set(OtoroshiRouteId("r_auth")),
-              services = Set(OtoroshiServiceId("s_auth")),
-              groups = Set(OtoroshiServiceGroupId("g_auth"))
+              routes = Set(OtoroshiRouteId(otherRouteId)),
+              groups = Set(OtoroshiServiceGroupId(serviceGroupDefault))
             )
           )
         )
       )
-      stubFor(
-        get(urlMatching(s"$otoroshiPathGroup.*"))
-          .willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  Json.arr(
-                    Json.obj("id" -> "g_unauth", "name" -> "unauth group"),
-                    Json.obj("id" -> "g_auth", "name" -> "auth group")
-                  )
-                )
-              )
-              .withStatus(200)
-          )
-      )
-      stubFor(
-        get(urlMatching(s"$otoroshiPathRoutes.*"))
-          .willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  Json.arr(
-                    Json.obj("id" -> "r_unauth", "name" -> "unauth route"),
-                    Json.obj("id" -> "r_auth", "name" -> "auth route")
-                  )
-                )
-              )
-              .withStatus(200)
-          )
-      )
-      stubFor(
-        get(urlMatching(s"$otoroshiPathServices.*"))
-          .willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  Json.arr(
-                    Json.obj("id" -> "s_unauth", "name" -> "unauth service"),
-                    Json.obj("id" -> "s_auth", "name" -> "auth service")
-                  )
-                )
-              )
-              .withStatus(200)
-          )
-      )
+
       val session = loginWithBlocking(userAdmin, tenant)
 
       val respGroupsForOwner = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/groups"
+          s"/api/teams/${teamOwnerId.value}/tenant/otoroshis/${containerizedOtoroshi.value}/groups"
       )(tenant, session)
       val respRoutesForOwner = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamOwnerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/routes"
-      )(tenant, session)
-      val respServicesForOwner = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamOwnerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/services"
+          s"/api/teams/${teamOwnerId.value}/tenant/otoroshis/${containerizedOtoroshi.value}/routes"
       )(tenant, session)
 
+      logger.json(respGroupsForOwner.json)
       respGroupsForOwner.status mustBe 200
       respGroupsForOwner.json.as[JsArray].value.length mustBe 1
       respRoutesForOwner.status mustBe 200
       respRoutesForOwner.json.as[JsArray].value.length mustBe 1
-      respServicesForOwner.status mustBe 200
-      respServicesForOwner.json.as[JsArray].value.length mustBe 1
 
       val respGroupsForConsumer = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamConsumerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/groups"
+          s"/api/teams/${teamConsumerId.value}/tenant/otoroshis/${containerizedOtoroshi.value}/groups"
       )(tenant, session)
       val respRoutesForConsumer = httpJsonCallBlocking(
         path =
-          s"/api/teams/${teamConsumerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/routes"
-      )(tenant, session)
-      val respServicesForConsumer = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamConsumerId.value}/tenant/otoroshis/${wiremockedOtoroshi.value}/services"
+          s"/api/teams/${teamConsumerId.value}/tenant/otoroshis/${containerizedOtoroshi.value}/routes"
       )(tenant, session)
 
+
       respGroupsForConsumer.status mustBe 200
-      respGroupsForConsumer.json.as[JsArray].value.length mustBe 2
+      respGroupsForConsumer.json.as[JsArray].value.length mustBe 3 //dev, default, admin
       respRoutesForConsumer.status mustBe 200
-      respRoutesForConsumer.json.as[JsArray].value.length mustBe 2
-      respServicesForConsumer.status mustBe 200
-      respServicesForConsumer.json.as[JsArray].value.length mustBe 2
+      respRoutesForConsumer.json.as[JsArray].value.length mustBe 4 //parent, child, other, admin
+
 
       val respUnauthRoute = httpJsonCallBlocking(
         path =
@@ -1075,17 +1005,6 @@ class ApiControllerSpec()
           .some
       )(tenant, session)
       respUnauthGroup.status mustBe 401
-
-      val respUnauthService = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}/plan",
-        method = "POST",
-        body = planToCreate
-          .copy(otoroshiTarget = otoroshitargetWithUnauthService)
-          .asJson
-          .some
-      )(tenant, session)
-      respUnauthService.status mustBe 401
 
       val respAuthEntities = httpJsonCallBlocking(
         path =
@@ -1694,37 +1613,8 @@ class ApiControllerSpec()
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
-      wireMockServer.isRunning mustBe true
-      val path = otoroshiUpdateApikeyPath(sub.apiKey.clientId)
 
-      stubFor(
-        get(urlMatching(s"$otoroshiPathGroup.*"))
-          .willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  otoApiKey.asJson.as[JsObject] ++
-                    Json.obj(
-                      "id" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value,
-                      "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value
-                    )
-                )
-              )
-              .withStatus(200)
-          )
-      )
-      stubFor(
-        put(urlMatching(s"$path.*"))
-          .willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  otoApiKey.copy(enabled = false).asJson
-                )
-              )
-              .withStatus(201)
-          )
-      )
+
       val resp = httpJsonCallBlocking(
         path =
           s"/api/teams/${teamConsumerId.value}/subscriptions/${sub.id.value}",
@@ -2060,13 +1950,11 @@ class ApiControllerSpec()
         method = "PUT",
         body = Json.obj("token" -> token).some
       )(tenant, session)
-      logger.info(Json.stringify(respRetrieve.json))
       respRetrieve.status mustBe 200
 
       val consumerSubsReq = httpJsonCallBlocking(
         s"/api/subscriptions/teams/${teamConsumer.id.value}"
       )(tenant, session)
-      logger.info(Json.stringify(consumerSubsReq.json))
       consumerSubsReq.status mustBe 200
       val maybeConsumerSubs =
         json.SeqApiSubscriptionFormat.reads(consumerSubsReq.json)
@@ -2077,7 +1965,6 @@ class ApiControllerSpec()
       val ownerSubsReq = httpJsonCallBlocking(
         s"/api/subscriptions/teams/${teamOwner.id.value}"
       )(tenant, session)
-      logger.info(Json.stringify(ownerSubsReq.json))
       ownerSubsReq.status mustBe 200
       val maybeOwnerSubs =
         json.SeqApiSubscriptionFormat.reads(ownerSubsReq.json)
@@ -2370,7 +2257,6 @@ class ApiControllerSpec()
         method = "PUT",
         body = Json.obj("token" -> token).some
       )(tenant, session)
-      logger.info(Json.stringify(respRetrieve.json))
       respRetrieve.status mustBe 409
     }
     "not transfer child subscriptions to another team which have already a child subscription" in {
@@ -2533,7 +2419,6 @@ class ApiControllerSpec()
         method = "PUT",
         body = Json.obj("token" -> token).some
       )(tenant, session)
-      logger.info(Json.stringify(respRetrieve.json))
       respRetrieve.status mustBe 409
     }
 
@@ -2697,7 +2582,6 @@ class ApiControllerSpec()
         method = "PUT",
         body = Json.obj("token" -> token).some
       )(tenant, session)
-      logger.info(Json.stringify(respRetrieve.json))
       respRetrieve.status mustBe 200
     }
     "transfer child subscriptions to another team which have already a subscription when child plan allow it" in {
@@ -2861,7 +2745,6 @@ class ApiControllerSpec()
         method = "PUT",
         body = Json.obj("token" -> token).some
       )(tenant, session)
-      logger.info(Json.stringify(respRetrieve.json))
       respRetrieve.status mustBe 200
     }
 
@@ -2998,7 +2881,6 @@ class ApiControllerSpec()
         method = "PUT",
         body = Json.obj("token" -> token).some
       )(tenant, session)
-      logger.info(Json.stringify(respRetrieve.json))
       respRetrieve.status mustBe 401
     }
     "not transfer subscriptions to another team unauthorized on parent plan" in {
@@ -3134,7 +3016,6 @@ class ApiControllerSpec()
         method = "PUT",
         body = Json.obj("token" -> token).some
       )(tenant, session)
-      logger.info(Json.stringify(respRetrieve.json))
       respRetrieve.status mustBe 401
     }
 
@@ -3271,7 +3152,6 @@ class ApiControllerSpec()
         method = "PUT",
         body = Json.obj("token" -> token).some
       )(tenant, session)
-      logger.info(Json.stringify(respRetrieve.json))
       respRetrieve.status mustBe 401
     }
     "not transfer subscriptions to another team unauthorized on child plan" in {
@@ -3407,7 +3287,6 @@ class ApiControllerSpec()
         method = "PUT",
         body = Json.obj("token" -> token).some
       )(tenant, session)
-      logger.info(Json.stringify(respRetrieve.json))
       respRetrieve.status mustBe 401
     }
 
@@ -4317,7 +4196,6 @@ class ApiControllerSpec()
         body = Some(Json.obj("motivation" -> "pleaaase"))
       )(tenant, session)
       demand.status mustBe 200
-      logger.info(s"demand => ${Json.stringify(demand.json)}")
 
       val demand2 = httpJsonCallBlocking(
         path =
@@ -4326,7 +4204,6 @@ class ApiControllerSpec()
         body = Some(Json.obj("motivation" -> "pleaaase"))
       )(tenant, session)
       demand2.status mustBe 200
-      logger.info(s"demand2 => ${Json.stringify(demand.json)}")
 
       //check notification for demand is saved for owner team
       val notificationsForOwner = Await.result(
@@ -5336,7 +5213,6 @@ class ApiControllerSpec()
         apis = Seq(defaultApi.api, secondApi.api),
         subscriptions = Seq(parentSub, childSub)
       )
-      wireMockServer.isRunning mustBe true
 
       val sessionTest = loginWithBlocking(userAdmin, tenant)
 
@@ -5466,7 +5342,6 @@ class ApiControllerSpec()
         respAllVisibleApi.status mustBe 200
         val response =
           (respAllVisibleApi.json \ "data" \ "visibleApis").as[JsObject]
-        logger.info(Json.prettyPrint(response))
         (response \ "total").as[Int] mustBe count
         (response \ "apis").as[JsArray].value.length mustBe count
       }
@@ -5573,7 +5448,6 @@ class ApiControllerSpec()
         ),
         port = container.mappedPort(8080)
       )(tenant, session)
-      logger.info(Json.stringify(update2.json))
       (update2.json \ "enabled").as[Boolean] mustBe true
       (update2.json \ "metadata")
         .as[JsObject]
@@ -6069,7 +5943,7 @@ class ApiControllerSpec()
       resp.status mustBe 403
     }
 
-    "cannot be updated except otoroshi target of admin plan" in {
+    "not be updated except otoroshi target of admin plan" in {
 
       val updatedAdminPlan = adminApiPlan
         .copy(
@@ -6077,36 +5951,30 @@ class ApiControllerSpec()
           customDescription = Some("test"),
           otoroshiTarget = Some(
             OtoroshiTarget(
-              otoroshiSettings = OtoroshiSettingsId("wiremock"),
+              otoroshiSettings = containerizedOtoroshi,
               authorizedEntities = Some(
                 AuthorizedEntities(
                   groups =
-                    Set(OtoroshiServiceGroupId("daikoku-admin-api-group-id"))
+                    Set(OtoroshiServiceGroupId(serviceGroupAdmin))
                 )
               )
             )
           )
         )
 
-      wireMockServer.isRunning mustBe true
-      stubFor(
-        get(urlMatching(s"$otoroshiPathGroup.*"))
-          .willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  Json.obj(
-                    "id" -> "daikoku-admin-api-group-id",
-                    "name" -> "daikoku-admin-api-group"
-                  )
-                )
-              )
-              .withStatus(200)
-          )
-      )
-
       setupEnvBlocking(
-        tenants = Seq(tenant),
+        tenants = Seq(tenant.copy(
+          otoroshiSettings = Set(
+            OtoroshiSettings(
+              id = containerizedOtoroshi,
+              url =
+                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+              host = "otoroshi-api.oto.tools",
+              clientSecret = otoroshiAdminApiKey.clientSecret,
+              clientId = otoroshiAdminApiKey.clientId
+            )
+          )
+        )),
         users = Seq(daikokuAdmin),
         teams = Seq(defaultAdminTeam),
         usagePlans = Seq(adminApiPlan),
@@ -6131,11 +5999,9 @@ class ApiControllerSpec()
       adminPlan.customName mustBe adminApiPlan.customName
       adminPlan.customDescription mustBe adminApiPlan.customDescription
       adminPlan.otoroshiTarget.isDefined mustBe true
-      adminPlan.otoroshiTarget.get.otoroshiSettings mustBe OtoroshiSettingsId(
-        "wiremock"
-      )
+      adminPlan.otoroshiTarget.get.otoroshiSettings mustBe containerizedOtoroshi
       adminPlan.otoroshiTarget.get.authorizedEntities.value.groups must contain(
-        OtoroshiServiceGroupId("daikoku-admin-api-group-id")
+        OtoroshiServiceGroupId(serviceGroupAdmin)
       )
     }
   }
@@ -6456,38 +6322,9 @@ class ApiControllerSpec()
         rotation = None
       )
 
-      wireMockServer.isRunning mustBe true
       val path = otoroshiUpdateApikeyPath(sub.apiKey.clientId)
 
       val apiKeyPath = otoroshiGetApikeyPath(otoApiKey.clientId)
-      stubFor(
-        get(urlMatching(s"$apiKeyPath.*"))
-          .willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  otoApiKey.asJson.as[JsObject] ++
-                    Json.obj(
-                      "id" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value,
-                      "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value
-                    )
-                )
-              )
-              .withStatus(200)
-          )
-      )
-      stubFor(
-        put(urlMatching(s"$path.*"))
-          .willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  otoApiKey.copy(enabled = false).asJson
-                )
-              )
-              .withStatus(200)
-          )
-      )
 
       val matrixOfMatrix = Map(
         (
@@ -6839,38 +6676,9 @@ class ApiControllerSpec()
         rotation = None
       )
 
-      wireMockServer.isRunning mustBe true
       val path = otoroshiUpdateApikeyPath(sub.apiKey.clientId)
 
       val apiKeyPath = otoroshiGetApikeyPath(otoApiKey.clientId)
-      stubFor(
-        get(urlMatching(s"$apiKeyPath.*"))
-          .willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  otoApiKey.asJson.as[JsObject] ++
-                    Json.obj(
-                      "id" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value,
-                      "name" -> otoroshiTarget.get.authorizedEntities.value.groups.head.value
-                    )
-                )
-              )
-              .withStatus(200)
-          )
-      )
-      stubFor(
-        put(urlMatching(s"$path.*"))
-          .willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  otoApiKey.copy(enabled = false).asJson
-                )
-              )
-              .withStatus(200)
-          )
-      )
 
       val matrixOfMatrix = Map(
         (
@@ -6942,7 +6750,6 @@ class ApiControllerSpec()
         )
       )
 
-      wireMockServer.isRunning mustBe true
 
       val resp = httpJsonCallBlocking(
         path =
@@ -6989,7 +6796,6 @@ class ApiControllerSpec()
         apis = Seq(defaultApi.api),
         subscriptions = Seq(parentSub, childSub)
       )
-      wireMockServer.isRunning mustBe true
 
       val resp = httpJsonCallBlocking(
         path =
@@ -7008,7 +6814,6 @@ class ApiControllerSpec()
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api)
       )
-      wireMockServer.isRunning mustBe true
 
       val updatedPlans = defaultApi.plans
         .map(_.copy(aggregationApiKeysSecurity = Some(true)))
@@ -7146,33 +6951,8 @@ class ApiControllerSpec()
         apis = Seq(defaultApi.api),
         subscriptions = Seq(parentSub, childSub)
       )
-      wireMockServer.isRunning mustBe true
 
       val apiKeyPath = otoroshiGetApikeyPath(parentSub.apiKey.clientId)
-      stubFor(
-        get(urlMatching(s"$apiKeyPath.*"))
-          .willReturn(
-            aResponse()
-              .withBody(
-                Json.stringify(
-                  ActualOtoroshiApiKey(
-                    clientId = parentSub.apiKey.clientId,
-                    clientSecret = parentSub.apiKey.clientSecret,
-                    clientName = parentSub.apiKey.clientName,
-                    authorizedEntities = AuthorizedEntities(),
-                    throttlingQuota = 10L,
-                    dailyQuota = 10L,
-                    monthlyQuota = 10L,
-                    tags = Set.empty[String],
-                    restrictions = ApiKeyRestrictions(),
-                    metadata = Map(),
-                    rotation = None
-                  ).asJson
-                )
-              )
-              .withStatus(200)
-          )
-      )
 
       val resp = httpJsonCallBlocking(
         path =
@@ -8123,7 +7903,9 @@ class ApiControllerSpec()
       strings.contains(otherRouteId) mustBe true
       strings.contains(parentRouteId) mustBe true
       val metadata = (respVerifOtoParent.json \ "metadata").as[JsObject]
-      val keys = metadata.keys.filter(key => !key.startsWith("daikoku_"))
+      val keys = metadata.keys
+        .filter(key => !key.startsWith("daikoku_"))
+        .filter(key => !key.startsWith("updated_at"))
       keys.size mustBe 0
     }
 
@@ -8478,7 +8260,6 @@ class ApiControllerSpec()
 
       (respPreVerifOtoParent.json \ "enabled").as[Boolean] mustBe true
       val preMetadata = (respPreVerifOtoParent.json \ "metadata").as[JsObject]
-      logger.info(Json.stringify(respPreVerifOtoParent.json))
       val preKeys = preMetadata.keys.filter(key => !key.startsWith("daikoku_"))
       preKeys.size mustBe 1
       (preMetadata \ "foo").as[String] mustBe "bar"
@@ -8510,7 +8291,7 @@ class ApiControllerSpec()
         .as[Boolean] mustBe true
 
       val respVerifOtoParent = httpJsonCallBlocking(
-        path = s"/api/apikeys/${parentSub.apiKey.clientId}",
+        path = s"/apis/apim.otoroshi.io/v1/apikeys/${parentSub.apiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
         headers = Map(
           "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
@@ -8528,7 +8309,9 @@ class ApiControllerSpec()
       strings.contains(otherRouteId) mustBe true
       strings.contains(parentRouteId) mustBe true
       val metadata = (respVerifOtoParent.json \ "metadata").as[JsObject]
-      val keys = metadata.keys.filter(key => !key.startsWith("daikoku_"))
+      val keys = metadata.keys
+        .filter(key => !key.startsWith("daikoku_"))
+        .filter(key => !key.startsWith("updated_at"))
       keys.size mustBe 0
     }
 
@@ -8998,7 +8781,9 @@ class ApiControllerSpec()
       strings.contains(childRouteId) mustBe true
       strings.contains(parentRouteId) mustBe false
       val metadata = (respVerifOto.json \ "metadata").as[JsObject]
-      val keys = metadata.keys.filter(key => !key.startsWith("daikoku_"))
+      val keys = metadata.keys
+        .filter(key => !key.startsWith("daikoku_"))
+        .filter(key => !key.startsWith("updated_at"))
       keys.size mustBe 1
       (preMetadata \ "foo").as[String] mustBe "bar"
     }
@@ -9273,6 +9058,8 @@ class ApiControllerSpec()
       val metadata = (respVerifOtoChild.json \ "metadata").as[JsObject]
       val keys = metadata.keys
         .filter(key => !key.startsWith("daikoku_"))
+        .filter(key => !key.startsWith("updated_at"))
+        .filter(key => !key.startsWith("created_at"))
         .filter(key => key != "raw_custom_metadata")
       keys.size mustBe 1
       keys.contains("foo") mustBe true
@@ -9299,6 +9086,8 @@ class ApiControllerSpec()
       val keys2 = metadata2.keys
         .filter(key => !key.startsWith("daikoku_"))
         .filter(key => key != "raw_custom_metadata")
+        .filter(key => key != "updated_at")
+        .filter(key => key != "created_at")
       keys2.size mustBe 1
       keys2.contains("foo2") mustBe true
     }
