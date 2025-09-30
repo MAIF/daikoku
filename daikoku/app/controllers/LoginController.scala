@@ -852,11 +852,10 @@ class LoginController(
               BadRequest(Json.obj("error" -> "bad auth. module. config"))
             )
           case Right(config) =>
-            LdapSupport.checkConnection(config).map {
-              case (works, _) if works => Ok(Json.obj("works" -> works))
-              case (works, error) =>
-                Ok(Json.obj("works" -> works, "error" -> error))
-            }
+            LdapSupport.checkConnection(config)
+              .leftMap(err => Ok(Json.obj("works" -> false, "error" -> err.getErrorMessage())))
+              .map(_ => Ok(Json.obj("works" -> true)))
+              .merge
         }
       }
     }

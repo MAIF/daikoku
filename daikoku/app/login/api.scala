@@ -582,11 +582,11 @@ class LoginFilter(env: Env)(implicit
           }
 
           provider match {
-            case AuthProvider.Local() => passWithSession()
-            case AuthProvider.Otoroshi() =>
+            case AuthProvider.Local => passWithSession()
+            case AuthProvider.Otoroshi =>
               OtoroshiIdentityFilter(env, tenant, nextFilter, request)
-            case AuthProvider.LDAP()   => passWithSession()
-            case AuthProvider.OAuth2() => passWithSession()
+            case AuthProvider.LDAP   => passWithSession()
+            case AuthProvider.OAuth2 => passWithSession()
           }
         }
     }
