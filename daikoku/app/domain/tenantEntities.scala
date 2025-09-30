@@ -529,7 +529,8 @@ case class Tenant(
         thirdPartyPaymentSettings.map(_.toUiPayload)
       ),
       "accountCreationProcess" -> SeqValidationStepFormat.writes(
-        accountCreationProcess)
+        accountCreationProcess),
+      "isPrivate" -> isPrivate
     )
   }
   def favicon(): String = {
