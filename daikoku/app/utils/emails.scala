@@ -29,7 +29,7 @@ object HtmlSanitizer {
   def sanitize(unsafeHTML: String): String = policy.sanitize(unsafeHTML)
 }
 
-trait Mailer {
+sealed trait Mailer {
   lazy val logger = Logger("daikoku-console-mailer")
   def send(title: String, to: Seq[String], body: String, tenant: Tenant)(
       implicit
