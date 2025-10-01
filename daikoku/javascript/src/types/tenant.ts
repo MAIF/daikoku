@@ -307,3 +307,47 @@ export interface ISimpleSession {
   expires: number;
   ttl: number;
 }
+
+type AlgoSettings = {
+  type: 'HSAlgoSettings',
+  size: number,
+  secret: string
+} | {
+  type: 'RSAlgoSettings',
+  size: number,
+  publicKey: string,
+  privateKey?: string
+} | {
+  type: 'ESAlgoSettings',
+  size: number,
+  publicKey: string,
+  privateKey?: string
+} | {
+  type: 'JWKSAlgoSettings',
+  url: string,
+  timeout: number,
+  headers: { [x: string]: string },
+  ttl: number,
+  kty: string
+}
+
+export type OAuthSettings = {
+  sessionMaxAge: number;
+  clientId: string;
+  clientSecret: string;
+  tokenUrl: string;
+  authorizeUrl: string;
+  userInfoUrl: string;
+  loginUrl: string;
+  logoutUrl: string;
+  scope: string;
+  useJson: boolean;
+  readProfileFromToken: boolean;
+  jwtVerifier?: AlgoSettings;
+  accessTokenField: string;
+  nameField: string;
+  emailField: string;
+  pictureField: string;
+  callbackUrl: string;
+  daikokuAdmins: string[];
+}

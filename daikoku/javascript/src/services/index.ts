@@ -22,6 +22,7 @@ import {
   ISimpleOtoroshiSettings,
   IAnonymousState,
   IAuthContext,
+  OAuthSettings,
 } from '../types';
 import {
   IApi,
@@ -2330,12 +2331,30 @@ export const retrieveSubscription = (
 
 
 export const testMailConnection = (
-    tenantId: string,
-    mailerType: string,
-    mailerConfiguration: object
+  tenantId: string,
+  mailerType: string,
+  mailerConfiguration: object
 ): PromiseWithError<ResponseDone> => {
-    return customFetch(`/api/tenants/${tenantId}/mailers/_test-connection`, {
-        method: "POST",
-        body: JSON.stringify({ ...mailerConfiguration, type: mailerType})
-    });
-};
+  return customFetch(`/api/tenants/${tenantId}/mailers/_test-connection`, {
+    method: "POST",
+    body: JSON.stringify({ ...mailerConfiguration, type: mailerType })
+  });
+}
+
+export const testAuthProviderConfiguration = (
+  authProvider: "ldap" | "oauth",
+  config: object
+): PromiseWithError<{works: boolean}> => {
+  return customFetch(`/api/auth/${authProvider}/_check`, {
+    method: "POST",
+    body: JSON.stringify(config)
+  });
+}
+export const fetchOAuthConfiguration = (
+  url: string, clientId?: string, clientSecret?: string
+): PromiseWithError<OAuthSettings> => {
+  return customFetch(`/api/auth/oauth/_fetch-configuration`, {
+    method: "POST",
+    body: JSON.stringify({url, clientId, clientSecret})
+  });
+}

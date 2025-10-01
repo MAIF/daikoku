@@ -1666,5 +1666,7 @@
     "tenant.settings.mailer.mailgun.test.recipient.email.label": "Recipient email (for test only)",
     "tenant.settings.mailer.test.connection.button.label": "Test connection",
     "tenant.settings.mailer.test.connection.success.label": "Test coonection succeeded",
-    "tenant.settings.mailer.test.connection.failed.label": "Test connection failed"
+    "tenant.settings.mailer.test.connection.failed.label": "Test connection failed",
+    "tenant.settings.authProvider.oauth.fetch.configuration.button.label": "Get configuration",
+    "tenant.settings.authProvider.oauth.configuration.url.label": "URL of the OIDC config"
 }

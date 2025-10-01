@@ -1,18 +1,24 @@
 package fr.maif.otoroshi.daikoku.login
 
+import cats.data.EitherT
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.auth0.jwt.JWT
+import controllers.AppError
+import controllers.AppError.AuthenticationError
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import fr.maif.otoroshi.daikoku.utils.jwt.{AlgoSettings, InputMode}
 import org.apache.commons.codec.binary.{Base64 => ApacheBase64}
 import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws.DefaultBodyWritables.writeableOf_urlEncodedSimpleForm
+import play.api.libs.ws.WSResponse
 import play.api.mvc.RequestHeader
 
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
 
@@ -24,14 +30,14 @@ object OAuth2Config {
 
     override def reads(json: JsValue) =
       fromJson(json) match {
-        case Left(e)  => JsError(e.getMessage)
-        case Right(v) => JsSuccess(v.asInstanceOf[OAuth2Config])
+        case Left(e)  => JsError(e.getErrorMessage())
+        case Right(v) => JsSuccess(v)
       }
 
     override def writes(o: OAuth2Config) = o.asJson
   }
 
-  def fromJson(json: JsValue): Either[Throwable, OAuth2Config] = {
+  def fromJson(json: JsValue): Either[AppError, OAuth2Config] = {
     Try {
       Right(
         OAuth2Config(
@@ -41,18 +47,23 @@ object OAuth2Config {
             (json \ "clientSecret").asOpt[String].getOrElse("secret"),
           authorizeUrl = (json \ "authorizeUrl")
             .asOpt[String]
+            .orElse((json \ "authorize_url").asOpt[String])
             .getOrElse("http://localhost:8082/oauth/authorize"),
           tokenUrl = (json \ "tokenUrl")
             .asOpt[String]
+            .orElse((json \ "token_url").asOpt[String])
             .getOrElse("http://localhost:8082/oauth/token"),
           userInfoUrl = (json \ "userInfoUrl")
             .asOpt[String]
+            .orElse((json \ "token_url").asOpt[String])
             .getOrElse("http://localhost:8082/userinfo"),
           loginUrl = (json \ "loginUrl")
             .asOpt[String]
+            .orElse((json \ "login_url").asOpt[String])
             .getOrElse("http://localhost:8082/login"),
           logoutUrl = (json \ "logoutUrl")
             .asOpt[String]
+            .orElse((json \ "logout_url").asOpt[String])
             .getOrElse("http://localhost:8082/logout"),
           accessTokenField =
             (json \ "accessTokenField").asOpt[String].getOrElse("access_token"),
@@ -62,7 +73,7 @@ object OAuth2Config {
             (json \ "pictureField").asOpt[String].getOrElse("picture"),
           scope = (json \ "scope")
             .asOpt[String]
-            .getOrElse("openid profile email name"),
+            .getOrElse("openid profile email name picture"),
           useJson = (json \ "useJson").asOpt[Boolean].getOrElse(false),
           readProfileFromToken =
             (json \ "readProfileFromToken").asOpt[Boolean].getOrElse(false),
@@ -78,7 +89,12 @@ object OAuth2Config {
         )
       )
     } recover {
-      case e => Left(e)
+      case e =>
+        AppLogger.error("wrong oauth2 configuration", e)
+        Left(
+          AppError
+            .AuthenticationError(s"wrong oauth2 configuration: ${e.getMessage}")
+        )
     } get
   }
 }
@@ -158,17 +174,18 @@ object OAuth2Support {
                   "grant_type" -> "authorization_code",
                   "client_id" -> clientId,
                   "client_secret" -> clientSecret,
-                  "redirect_uri" -> redirectUri
+                  "redirect_uri" -> redirectUri,
+                  "scope" -> authConfig.scope
                 )
               )
             } else {
               builder.post(
                 Map(
-                  "code" -> code,
                   "grant_type" -> "authorization_code",
                   "client_id" -> clientId,
                   "client_secret" -> clientSecret,
-                  "redirect_uri" -> redirectUri
+                  "redirect_uri" -> redirectUri,
+                  "scope" -> authConfig.scope
                 )
               )(writeableOf_urlEncodedSimpleForm)
             }
@@ -318,5 +335,115 @@ object OAuth2Support {
               }
         }
     }
+  }
+
+  def getConfiguration(
+      url: String,
+      clientId: Option[String],
+      clientSecret: Option[String],
+      tenant: Tenant
+  )(implicit
+      executionContext: ExecutionContext,
+      env: Env
+  ): EitherT[Future, AppError, OAuth2Config] = {
+    val config = OAuth2Config()
+
+    def parseResponseAsConfig(body: JsValue): OAuth2Config = {
+      val issuer =
+        (body \ "issuer").asOpt[String].getOrElse("http://localhost:8082/")
+      val tokenUrl =
+        (body \ "token_endpoint").asOpt[String].getOrElse(config.tokenUrl)
+      val authorizeUrl = (body \ "authorization_endpoint")
+        .asOpt[String]
+        .getOrElse(config.authorizeUrl)
+      val userInfoUrl =
+        (body \ "userinfo_endpoint").asOpt[String].getOrElse(config.userInfoUrl)
+      val loginUrl =
+        (body \ "authorization_endpoint").asOpt[String].getOrElse(authorizeUrl)
+      val logoutUrl = (body \ "end_session_endpoint")
+        .asOpt[String]
+        .orElse((body \ "ping_end_session_endpoint").asOpt[String])
+        .getOrElse((issuer + "/logout").replace("//logout", "/logout"))
+      val scope = (body \ "scopes_supported")
+        .asOpt[Seq[String]]
+        .map(_.mkString(" "))
+        .getOrElse("openid profile email name")
+      config
+        .copy(
+          clientId = clientId.getOrElse(config.clientId),
+          clientSecret =  clientSecret.getOrElse(config.clientSecret),
+          tokenUrl = tokenUrl,
+          authorizeUrl = authorizeUrl,
+          userInfoUrl = userInfoUrl,
+          loginUrl = loginUrl,
+          logoutUrl = logoutUrl,
+          callbackUrl = env.getDaikokuUrl(tenant, "/auth/oauth2/callback"),
+          scope = scope,
+          accessTokenField = "access_token",
+          useJson = false,
+          readProfileFromToken = false,
+          nameField =
+            if (scope.contains(config.nameField))
+              config.nameField
+            else
+              config.emailField,
+          jwtVerifier = None
+        )
+    }
+
+    for {
+      getConfig <- EitherT.liftF[Future, AppError, WSResponse](
+        env.wsClient.url(url).withRequestTimeout(10.seconds).get()
+      )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        getConfig.status == 200, (), AppError.BadRequestError("Get config impossible")
+      )
+    } yield parseResponseAsConfig(getConfig.json)
+
+  }
+
+  def checkConnection(authConfig: OAuth2Config)(implicit
+      executionContext: ExecutionContext,
+      env: Env
+  ): EitherT[Future, AppError, Unit] = {
+    for {
+      config <- EitherT.liftF[Future, AppError, WSResponse](
+        env.wsClient
+          .url(
+            authConfig.authorizeUrl
+              .replace("/authorize", "/.well-known/openid-configuration")
+          )
+          .get()
+      )
+      log = AppLogger.info(config.body)
+
+      //todo: tester les different endpoint...
+//      head <- EitherT.liftF[Future, AppError, WSResponse](_env.wsClient.url(s"${authConfig.authorizeUrl}?client_id=${authConfig.clientId}&redirect=${authConfig.callbackUrl}").head())
+//      log2 = AppLogger.info(head.statusText)
+
+//      tokenResp <- EitherT.liftF[Future, AppError, WSResponse](_env.wsClient.url(authConfig.tokenUrl).get())
+//      log = AppLogger.info(tokenResp.body)
+//      _ <- EitherT.cond[Future][AppError, Unit](tokenResp.status == 200, (), AuthenticationError(s"Token endpoint unreacheable : ${tokenResp.status}"))
+      testResp <- EitherT.liftF[Future, AppError, WSResponse](
+        env.wsClient
+          .url(authConfig.tokenUrl)
+          .post(
+            Map(
+              "code" -> "fifou",
+              "grant_type" -> "authorization_code",
+              "client_id" -> authConfig.clientId,
+              "client_secret" -> authConfig.clientSecret,
+              "scope" -> authConfig.scope,
+              "redirect_uri" -> authConfig.callbackUrl
+            )
+          )
+      )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        testResp.status == 401,
+        (),
+        AuthenticationError("configuration KO")
+      )
+    } yield ()
+
   }
 }

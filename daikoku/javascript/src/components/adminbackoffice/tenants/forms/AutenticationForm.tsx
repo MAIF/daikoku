@@ -4,8 +4,10 @@ import { UseMutationResult } from '@tanstack/react-query';
 
 
 import { I18nContext } from '../../../../contexts';
-import { ITenantFull } from '../../../../types';
+import { isError, ITenantFull } from '../../../../types';
 import { FormWithChoice } from '../../../utils/FormWithChoice';
+import { FeedbackButton } from '../../../utils/FeedbackButton';
+import { testAuthProviderConfiguration, fetchOAuthConfiguration } from '../../../../services';
 
 export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translate } = useContext(I18nContext)
@@ -97,25 +99,71 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
       type: type.string,
       label: translate('Email field name'),
     },
+    testConnection: {
+      type: type.string,
+      label: null,
+      render: ({ rawValues }) => {
+        return (
+          <FeedbackButton
+            type='info'
+            onPress={() => testAuthProviderConfiguration('ldap', rawValues)
+              .then(r => isError(r) ? Promise.reject(r) : r)
+            }
+            feedbackTimeout={1000}
+            feedbackMessages={{
+              success: translate("tenant.settings.mailer.test.connection.success.label"),
+              fail: translate("tenant.settings.mailer.test.connection.failed.label")
+            }}
+            disabled={false}
+          >{translate('tenant.settings.mailer.test.connection.button.label')}</FeedbackButton>
+        )
+      }
+    }
   }
   const OAuth2Schema: Schema = {
+    configUrl: {
+      type: type.string,
+      label: translate('tenant.settings.authProvider.oauth.configuration.url.label'),
+    },
+    getConfig: {
+      type: type.string,
+      label: null,
+      render: ({ rawValues, setValue }) => {
+        return (
+          <FeedbackButton
+            type='info'
+            onPress={() => fetchOAuthConfiguration(rawValues.configUrl, rawValues.clientId, rawValues.clientSecret)
+              .then(r => isError(r) ? Promise.reject(r) : r)
+              .then(config => {
+                if (setValue) {
+                  setValue('scope', config.scope)
+                  setValue('authorizeUrl', config.authorizeUrl)
+                  setValue('tokenUrl', config.tokenUrl)
+                  setValue('userInfoUrl', config.userInfoUrl)
+                  setValue('loginUrl', config.loginUrl)
+                  setValue('logoutUrl', config.logoutUrl)
+                  setValue('callbackUrl', config.callbackUrl)
+                  setValue('accessTokenField', config.accessTokenField)
+                  setValue('nameField', config.nameField)
+                  setValue('nameField', config.nameField)
+                  setValue('emailField', config.emailField)
+                  setValue('pictureField', config.pictureField)
+                  setValue('clientId', config.clientId)
+                  setValue('clientSecret', config.clientSecret)
+                }
+              })
+            }
+            feedbackTimeout={1000}
+            disabled={false}
+          >{translate('tenant.settings.authProvider.oauth.fetch.configuration.button.label')}</FeedbackButton>
+        )
+      }
+    },
     sessionMaxAge: {
       type: type.number,
       label: translate('Session max. age (s)'),
       defaultValue: 86400
     },
-    // oidcProvider: {
-    //   type: () => (
-    //     <div className="mb-3 row">
-    //       <label className="col-xs-12 col-sm-2 col-form-label" />
-    //       <div className="col-sm-10">
-    //         <button type="button" className="btn btn-outline-success" onClick={fetchConfig}>
-    //           <Translation i18nkey="Get from OIDC config 2">Get from OIDC config 2</Translation>
-    //         </button>
-    //       </div>
-    //     </div>
-    //   ),
-    // },
     useJson: {
       type: type.bool,
       label: translate('Use JSON payloads'),
@@ -300,6 +348,26 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
         }
       }
     },
+    testConnection: {
+      type: type.string,
+      label: null,
+      render: ({ rawValues }) => {
+        return (
+          <FeedbackButton
+            type='info'
+            onPress={() => testAuthProviderConfiguration('oauth', rawValues)
+              .then(r => isError(r) ? Promise.reject(r) : r)
+            }
+            feedbackTimeout={1000}
+            feedbackMessages={{
+              success: translate("tenant.settings.mailer.test.connection.success.label"),
+              fail: translate("tenant.settings.mailer.test.connection.failed.label")
+            }}
+            disabled={false}
+          >{translate('tenant.settings.mailer.test.connection.button.label')}</FeedbackButton>
+        )
+      }
+    }
   }
 
   return (

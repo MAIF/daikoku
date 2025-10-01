@@ -246,7 +246,6 @@ class LoginController(
                 .map(_.toOption)
             )
           case Left(e) =>
-            AppLogger.error("Error during OAuthConfig read", e)
             after(3.seconds)(
               Errors.craftResponseResultF(
                 "Invalid OAuth Config",
@@ -857,6 +856,38 @@ class LoginController(
               .map(_ => Ok(Json.obj("works" -> true)))
               .merge
         }
+      }
+    }
+
+  def checkOauthConnection() =
+    DaikokuAction.async(parse.json) { ctx =>
+        OAuth2Config.fromJson(ctx.request.body) match {
+          case Left(_) =>
+            FastFuture.successful(
+              BadRequest(Json.obj("error" -> "bad auth. module. config"))
+            )
+          case Right(config) =>
+            OAuth2Support.checkConnection(config)
+              .leftMap(err => Ok(Json.obj("works" -> false, "error" -> err.getErrorMessage())))
+              .map(_ => Ok(Json.obj("works" -> true)))
+              .merge
+      }
+    }
+
+  def fetchOauthConfiguration() =
+    DaikokuAction.async(parse.json) { ctx =>
+      val clientId = (ctx.request.body \ "clientId").asOpt[String]
+      val clientSecret = (ctx.request.body \ "clientSecret").asOpt[String]
+
+
+      (ctx.request.body \ "url").asOpt[String] match {
+          case None =>
+              BadRequest(Json.obj("error" -> "please provide a url")).future
+          case Some(url) =>
+            OAuth2Support.getConfiguration(url, clientId, clientSecret, ctx.tenant)
+              .leftMap(_.render())
+              .map(config => Ok(config.asJson))
+              .merge
       }
     }
 
