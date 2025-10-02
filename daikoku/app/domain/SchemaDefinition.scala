@@ -675,6 +675,14 @@ object SchemaDefinition {
         ReplaceField(
           "team",
           Field("team", StringType, resolve = ctx => ctx.value.team.value)
+        ),
+        AddFields(
+          Field(
+            "type",
+            StringType,
+            description = Some("Type of the validation step"),
+            resolve = ctx => ctx.value.name
+          )
         )
       )
     )
