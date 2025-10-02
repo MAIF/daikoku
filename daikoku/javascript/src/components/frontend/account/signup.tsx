@@ -107,7 +107,7 @@ export const Signup = () => {
           </h1>
           <p>{translate({key: "create.account.done", replacements: [user!.email] })}</p>
         </div>
-        
+
 
       </div>
     );

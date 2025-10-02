@@ -55,7 +55,8 @@ const initContext: TGlobalContext = {
     loginProvider: 'Local',
     thirdPartyPaymentSettings: [],
     otoroshiSettings: [],
-    accountCreationProcess: []
+    accountCreationProcess: [],
+    isPrivate: false
   },
   session: {
     created: new Date().getTime(),

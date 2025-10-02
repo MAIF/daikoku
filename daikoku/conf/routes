@@ -65,6 +65,8 @@ GET     /auth/:provider/login                           fr.maif.otoroshi.daikoku
 POST    /auth/:provider/callback                        fr.maif.otoroshi.daikoku.ctrls.LoginController.login(provider)
 GET     /auth/:provider/callback                        fr.maif.otoroshi.daikoku.ctrls.LoginController.loginGet(provider)
 POST    /api/auth/ldap/_check                           fr.maif.otoroshi.daikoku.ctrls.LoginController.checkLdapConnection()
+POST    /api/auth/oauth/_check                          fr.maif.otoroshi.daikoku.ctrls.LoginController.checkOauthConnection()
+POST    /api/auth/oauth/_fetch-configuration            fr.maif.otoroshi.daikoku.ctrls.LoginController.fetchOauthConfiguration()
 
 GET     /api/me/teams                                   fr.maif.otoroshi.daikoku.ctrls.ApiController.myTeams()
 GET     /api/me/teams/own                               fr.maif.otoroshi.daikoku.ctrls.ApiController.myOwnTeam()
@@ -263,6 +265,7 @@ POST    /api/oidc/_fetchConfig                          fr.maif.otoroshi.daikoku
 GET     /api/tenants/simplified                         fr.maif.otoroshi.daikoku.ctrls.TenantController.tenantList()
 GET     /api/tenants/:id/_redirect                      fr.maif.otoroshi.daikoku.ctrls.TenantController.redirectToTenant(id)
 POST    /api/tenants/:tenantId/_contact                 fr.maif.otoroshi.daikoku.ctrls.TenantController.contact(tenantId)
+POST    /api/tenants/:tenantId/mailers/_test-connection fr.maif.otoroshi.daikoku.ctrls.TenantController.testConnection(tenantId)
 POST    /api/tenants/_names                             fr.maif.otoroshi.daikoku.ctrls.TenantController.namesOfTenants()
 PUT     /api/tenants/:tenantId                          fr.maif.otoroshi.daikoku.ctrls.TenantController.saveTenant(tenantId)
 GET     /api/tenants/:tenantId                          fr.maif.otoroshi.daikoku.ctrls.TenantController.oneTenant(tenantId)

@@ -561,7 +561,8 @@ case class MailgunSettings(
     key: String,
     fromTitle: String,
     fromEmail: String,
-    template: Option[String]
+    template: Option[String],
+    testingEmail: Option[String] = None
 ) extends MailerSettings
     with CanJson[MailgunSettings] {
   def mailerType: String = "mailgun"

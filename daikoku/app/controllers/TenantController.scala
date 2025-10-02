@@ -5,10 +5,7 @@ import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import com.nimbusds.jose.jwk.KeyType
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -18,6 +15,7 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.OAuth2Config
 import fr.maif.otoroshi.daikoku.utils._
+import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.jwt.JWKSAlgoSettings
 import org.joda.time.DateTime
 import play.api.i18n._
@@ -636,6 +634,22 @@ class TenantController(
                   )
               }
           case (None, None) => sendMail(ctx.tenant.contact, ctx.tenant.asJson)
+        }
+      }
+    }
+
+  def testConnection(tenantId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(s"@{user.name} - @{user.email} test a provider")
+      )(tenantId, ctx) { (_, _) =>
+        ctx.request.body.asOpt(json.MailerSettingsFormat) match {
+          case Some(settings) => settings.mailer.testConnection(ctx.tenant)
+            .map {
+              case true => Ok(Json.obj("done" -> true))
+              case false => BadRequest(Json.obj("error" -> "wrong mailer configuration"))
+            }
+          case None => BadRequest(Json.obj("error" -> "wrong mailer configuration format")).future
         }
       }
     }

@@ -1,15 +1,17 @@
 package fr.maif.otoroshi.daikoku.login
 
+import cats.data.EitherT
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import cats.syntax.option._
+import controllers.AppError
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.{Env, TenantProvider}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{Errors, IdGenerator}
 import org.joda.time.DateTime
-import play.api.libs.json.{JsString, JsValue, Json}
+import play.api.libs.json.{Format, JsString, JsValue, Json}
 import play.api.libs.typedmap._
 import play.api.mvc._
 
@@ -26,9 +28,6 @@ object AuthProvider {
   case object Local extends AuthProvider {
     def name: String = "Local"
   }
-  // case object LocalWithFIDOU2F extends AuthProvider {
-  //   def name: String = "LocalWithFIDOU2F"
-  // }
   case object Otoroshi extends AuthProvider {
     def name: String = "Otoroshi"
   }
@@ -44,8 +43,6 @@ object AuthProvider {
     name.toLowerCase() match {
       case "Local" => Local.some
       case "local" => Local.some
-      // case "LocalWithFIDOU2F" => LocalWithFIDOU2F.some
-      // case "localwithfidou2f" => LocalWithFIDOU2F.some
       case "Otoroshi" => Otoroshi.some
       case "otoroshi" => Otoroshi.some
       case "LDAP"     => LDAP.some

@@ -67,6 +67,7 @@ object AppError {
   case object UnexpectedError extends AppError
   case class InternalServerError(message: String) extends AppError
   case class BadRequestError(message: String) extends AppError
+  case class AuthenticationError(message: String) extends AppError
 
   def renderF(error: AppError): Future[mvc.Result] =
     FastFuture.successful(render(error))
@@ -129,6 +130,7 @@ object AppError {
       case InternalServerError(message) =>
         play.api.mvc.Results.InternalServerError(toJson(error))
       case BadRequestError(message) => BadRequest(toJson(error))
+      case AuthenticationError(message) => play.api.mvc.Results.Unauthorized(toJson(error))
     }
 
   def getErrorMessage(error: AppError) =
@@ -194,6 +196,7 @@ object AppError {
       case TeamAlreadyVerified      => "This team is already verified"
       case UnexpectedError          => "Oops, an unexpected error occured ¯\\_(ツ)_/¯"
       case InternalServerError(msg) => msg
+      case AuthenticationError(msg) => msg
       case _                        => ""
     }
 

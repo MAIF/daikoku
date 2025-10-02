@@ -1,5 +1,7 @@
 package fr.maif.otoroshi.daikoku.login
 
+import cats.data.EitherT
+import controllers.AppError
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
@@ -13,7 +15,7 @@ import play.api.libs.json._
 
 import javax.naming.ldap.{Control, InitialLdapContext}
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future, TimeoutException}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise, TimeoutException}
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.{Failure, Success, Try}
 
@@ -508,55 +510,60 @@ object LdapSupport {
 
   def checkConnection(
       config: LdapConfig
-  )(implicit ec: ExecutionContext): Future[(Boolean, String)] = {
-    if (config.adminUsername.isEmpty || config.adminUsername.get.trim.isEmpty) {
-      FastFuture.successful(
-        (
-          false,
-          "Empty admin username are not allowed for this LDAP auth. module"
-        )
-      )
-    } else if (
-      config.adminPassword.isEmpty || config.adminPassword.get.trim.isEmpty
-    ) {
-      FastFuture.successful(
-        (
-          false,
-          "Empty admin password are not allowed for this LDAP auth. module"
-        )
-      )
+  )(implicit ec: ExecutionContext): EitherT[Future, AppError, Unit] = {
+
+    def _check(): EitherT[Future, AppError, Unit] = {
+      val env = new util.Hashtable[String, AnyRef]
+      env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
+      env.put(Context.SECURITY_AUTHENTICATION, "simple")
+      config.adminUsername.foreach(u => env.put(Context.SECURITY_PRINCIPAL, u))
+      config.adminPassword.foreach(p => env.put(Context.SECURITY_CREDENTIALS, p))
+
+      if (config.serverUrls.isEmpty) {
+        EitherT.leftT[Future, Unit](AppError.AuthenticationError("Missing LDAP server URLs"))
+      } else {
+        val p = Promise[Either[AppError, Unit]]()
+
+
+        config.serverUrls.foreach(url => {
+          val localEnv = new java.util.Hashtable[String, AnyRef](env)
+          localEnv.put(javax.naming.Context.PROVIDER_URL, url)
+
+
+          Future {
+            val ctx = new InitialDirContext(localEnv)
+            ctx.close()
+            Right(())
+          }.recover {
+            case _: javax.naming.ServiceUnavailableException |
+                 _: javax.naming.CommunicationException |
+                 _: java.util.concurrent.TimeoutException =>
+              Left(AppError.AuthenticationError(s"Cannot connect to LDAP server: $url"))
+            case e: Exception =>
+              AppLogger.warn(e.getLocalizedMessage, e)
+              Left(AppError.AuthenticationError(e.getMessage))
+
+          }.onComplete {
+            case Success(Right(_)) => p.trySuccess(Right(()))
+            case Success(Left(error)) => if (!p.isCompleted && url == config.serverUrls.last) {
+              p.trySuccess(Left(error))
+            }
+            case Failure(exception) => if (!p.isCompleted && url == config.serverUrls.last) {
+              p.trySuccess(Left(AppError.AuthenticationError(exception.getMessage)))
+            }
+          }
+        })
+
+        EitherT(p.future)
+      }
     }
 
-    val env = new util.Hashtable[String, AnyRef]
-    env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
-    env.put(Context.SECURITY_AUTHENTICATION, "simple")
-    config.adminUsername.foreach(u => env.put(Context.SECURITY_PRINCIPAL, u))
-    config.adminPassword.foreach(p => env.put(Context.SECURITY_CREDENTIALS, p))
 
-    Try {
-      for (url <- config.serverUrls) {
-        env.put(Context.PROVIDER_URL, url)
-        scala.util.Try {
-          Await.result(
-            Future {
-              val ctx2 = new InitialDirContext(env)
-              ctx2.close()
-            },
-            Duration(s"${config.connectTimeout} seconds")
-          )
-        } match {
-          case Success(_) => return FastFuture.successful((true, "--"))
-          case Failure(
-                _: ServiceUnavailableException | _: CommunicationException |
-                _: TimeoutException
-              )           =>
-          case Failure(e) => throw e
-        }
-      }
-      FastFuture.successful((false, "Missing LDAP server URLs or all down"))
-    } recover {
-      case e: Exception => FastFuture.successful((false, e.getMessage))
-    } get
+    for {
+      _ <- EitherT.cond[Future](config.adminUsername.nonEmpty && config.adminUsername.get.trim.nonEmpty, (), AppError.AuthenticationError("Empty admin username are not allowed for this LDAP auth. module"))
+      _ <- EitherT.cond[Future](config.adminPassword.nonEmpty && config.adminPassword.get.trim.nonEmpty, (), AppError.AuthenticationError("Empty admin password are not allowed for this LDAP auth. module"))
+      r <- _check()
+    } yield r
   }
 
   def existsUser(email: String, tenant: Tenant)(implicit

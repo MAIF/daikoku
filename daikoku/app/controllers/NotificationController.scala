@@ -14,7 +14,7 @@ import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.NotificationStatusFormat
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.utils.{AccountCreationService, ApiService, Translator}
+import fr.maif.otoroshi.daikoku.utils.{AccountCreationService, ApiService, ConsoleMailer, MailgunSender, MailjetSender, SendgridSender, SimpleSMTPSender, Translator}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import play.api.i18n.I18nSupport
 import play.api.libs.json._
