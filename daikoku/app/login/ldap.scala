@@ -531,7 +531,7 @@ object LdapSupport {
 
 
           Future {
-            val ctx = new InitialDirContext(env)
+            val ctx = new InitialDirContext(localEnv)
             ctx.close()
             Right(())
           }.recover {
@@ -540,6 +540,7 @@ object LdapSupport {
                  _: java.util.concurrent.TimeoutException =>
               Left(AppError.AuthenticationError(s"Cannot connect to LDAP server: $url"))
             case e: Exception =>
+              AppLogger.warn(e.getLocalizedMessage, e)
               Left(AppError.AuthenticationError(e.getMessage))
 
           }.onComplete {
