@@ -772,6 +772,9 @@ object utils {
     val parentRouteId = "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
     val childRouteId = "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"
     val otherRouteId = "route_d74ea8b27-b8be-4177-82d9-c50722416c51"
+    val serviceGroupDev = "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5" //parent, child, other routes
+    val serviceGroupDefault = "default" //other routes
+    val serviceGroupAdmin = "admin-api-group"
     val parent2ApkAsJson = Json.obj(
       "_loc" -> Json.obj(
         "tenant" -> "default",

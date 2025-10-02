@@ -68,6 +68,7 @@ case class ApiSubscription(
     enabled: Boolean = true,
     rotation: Option[ApiSubscriptionRotation],
     integrationToken: String,
+    bearerToken: Option[String] = None,
     customMetadata: Option[JsObject] = None,
     metadata: Option[JsObject] = None,
     tags: Option[Set[String]] = None,
@@ -141,7 +142,8 @@ case class ActualOtoroshiApiKey(
     metadata: Map[String, String] = Map.empty[String, String],
     restrictions: ApiKeyRestrictions = ApiKeyRestrictions(),
     rotation: Option[ApiKeyRotation],
-    validUntil: Option[Long] = None
+    validUntil: Option[Long] = None,
+    bearer: Option[String] = None
 ) extends CanJson[OtoroshiApiKey] {
   override def asJson: JsValue = json.ActualOtoroshiApiKeyFormat.writes(this)
   def asOtoroshiApiKey: OtoroshiApiKey =
@@ -290,26 +292,26 @@ object SubscriptionDemandState {
 }
 
 case class SubscriptionDemand(
-    id: SubscriptionDemandId,
-    tenant: TenantId,
-    deleted: Boolean = false,
-    api: ApiId,
-    plan: UsagePlanId,
-    steps: Seq[SubscriptionDemandStep],
-    state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
-    team: TeamId,
-    from: UserId,
-    date: DateTime = DateTime.now,
-    motivation: Option[JsObject] = None,
-    parentSubscriptionId: Option[ApiSubscriptionId] = None,
-    customReadOnly: Option[Boolean] = None,
-    customMetadata: Option[JsObject] = None,
-    customMaxPerSecond: Option[Long] = None,
-    customMaxPerDay: Option[Long] = None,
-    customMaxPerMonth: Option[Long] = None,
-    adminCustomName: Option[String] = None,
-    customName: Option[String] = None,
-    tags: Option[Set[String]] = None
+                               id: DemandId,
+                               tenant: TenantId,
+                               deleted: Boolean = false,
+                               api: ApiId,
+                               plan: UsagePlanId,
+                               steps: Seq[SubscriptionDemandStep],
+                               state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
+                               team: TeamId,
+                               from: UserId,
+                               date: DateTime = DateTime.now,
+                               motivation: Option[JsObject] = None,
+                               parentSubscriptionId: Option[ApiSubscriptionId] = None,
+                               customReadOnly: Option[Boolean] = None,
+                               customMetadata: Option[JsObject] = None,
+                               customMaxPerSecond: Option[Long] = None,
+                               customMaxPerDay: Option[Long] = None,
+                               customMaxPerMonth: Option[Long] = None,
+                               adminCustomName: Option[String] = None,
+                               customName: Option[String] = None,
+                               tags: Option[Set[String]] = None
 ) extends CanJson[SubscriptionDemand] {
   override def asJson: JsValue = json.SubscriptionDemandFormat.writes(this)
 }
@@ -335,13 +337,13 @@ case class SubscriptionDemandStep(
 }
 
 case class StepValidator(
-    id: DatastoreId,
-    tenant: TenantId,
-    deleted: Boolean = false,
-    token: String,
-    step: SubscriptionDemandStepId,
-    subscriptionDemand: SubscriptionDemandId,
-    metadata: JsObject = Json.obj()
+                          id: DatastoreId,
+                          tenant: TenantId,
+                          deleted: Boolean = false,
+                          token: String,
+                          step: SubscriptionDemandStepId,
+                          subscriptionDemand: DemandId,
+                          metadata: JsObject = Json.obj()
 ) extends CanJson[StepValidator] {
   override def asJson: JsValue = json.StepValidatorFormat.writes(this)
 }

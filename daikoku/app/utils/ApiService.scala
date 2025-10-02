@@ -1943,10 +1943,10 @@ class ApiService(
   }
 
   def runSubscriptionProcess(
-      demandId: SubscriptionDemandId,
-      tenant: Tenant,
-      from: Option[String] = None,
-      maybeSessionId: Option[String] = None
+                              demandId: DemandId,
+                              tenant: Tenant,
+                              from: Option[String] = None,
+                              maybeSessionId: Option[String] = None
   )(implicit
       language: String,
       currentUser: User
@@ -2566,7 +2566,7 @@ class ApiService(
               )
             )
           case steps =>
-            val demanId = SubscriptionDemandId(IdGenerator.token(32))
+            val demanId = DemandId(IdGenerator.token(32))
             for {
               _ <- EitherT.liftF(
                 env.dataStore.subscriptionDemandRepo
@@ -2607,11 +2607,11 @@ class ApiService(
   }
 
   def declineSubscriptionDemand(
-      tenant: Tenant,
-      demandId: SubscriptionDemandId,
-      stepId: SubscriptionDemandStepId,
-      sender: NotificationSender,
-      maybeMessage: Option[String] = None
+                                 tenant: Tenant,
+                                 demandId: DemandId,
+                                 stepId: SubscriptionDemandStepId,
+                                 sender: NotificationSender,
+                                 maybeMessage: Option[String] = None
   ): EitherT[Future, AppError, Result] = {
 
     for {

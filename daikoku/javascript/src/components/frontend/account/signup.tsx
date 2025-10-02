@@ -101,23 +101,22 @@ export const Signup = () => {
   if (state === 'done') {
     return (
       <div className="col">
-        <h1 className="h1-rwd-reduce text-center">
-          <Translation i18nkey="Create account">Create account</Translation>
-        </h1>
-        <p style={{ width: '100%', textAlign: 'center' }}>
-          <Translation i18nkey="create.account.done" replacements={[user!.email]}>
-            You will receive an email at <b>{user!.email}</b> to finish your account creation
-            process. You will have 15 minutes from now to finish your account creation process.
-          </Translation>
-        </p>
+        <div className='alert alert-info col-6 text-center mx-auto'>
+          <h1 className="h1-rwd-reduce text-center">
+            {translate('create.account.alert.title')}
+          </h1>
+          <p>{translate({key: "create.account.done", replacements: [user!.email] })}</p>
+        </div>
+
+
       </div>
     );
   }
 
   const schema = Option(formStepAccountCreation)
-    .map(s => s as IValidationStep & {type: 'form'})
+    .map(s => s as IValidationStep & { type: 'form' })
     .map(s => s.schema)
-    .map(s => Object.fromEntries(Object.entries(s).map(([k, v]) => ([k, {...v, label: v.label ? translate(v.label as string) : undefined}]))))
+    .map(s => Object.fromEntries(Object.entries(s).map(([k, v]) => ([k, { ...v, label: v.label ? translate(v.label as string) : undefined }]))))
     .getOrElse(defaultSchema)
 
   return (

@@ -726,12 +726,11 @@ class OtoroshiVerifierJob(
           .forAllTenant()
           .findNotDeleted(query)
       )
-      //Get admin API
-      adminApi <- EitherT.fromOptionF[Future, AppError, Api](
+      //Get admin APIs
+      adminApis <- EitherT.liftF[Future, AppError, Seq[Api]](
         env.dataStore.apiRepo
           .forAllTenant()
-          .findOne(Json.obj("visibility" -> ApiVisibility.AdminOnly.name)),
-        AppError.EntityNotFound("Admin API")
+          .find(Json.obj("visibility" -> ApiVisibility.AdminOnly.name))
       )
       //Get all Parent subscriptions based on allSubscription filtering all adminAPI subs
       subscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
@@ -752,7 +751,7 @@ class OtoroshiVerifierJob(
             )
           )
           .map(
-            _.filterNot(sub => adminApi.possibleUsagePlans.contains(sub.plan))
+            _.filterNot(sub => adminApis.flatMap(_.possibleUsagePlans).contains(sub.plan))
           )
       )
     } yield subscriptions

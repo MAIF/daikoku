@@ -220,7 +220,7 @@ export const SecurityForm = (props: {
           },
         }}
       />
-      <button className='btn btn-outline-success' onClick={() => editProcess()}>{translate("tenant.security.account.creation.process.button.label")}</button>
+      {tenant.authProvider === 'Local' && <button className='btn btn-outline-success' onClick={() => editProcess()}>{translate("tenant.security.account.creation.process.button.label")}</button>}
     </div>
   );
 

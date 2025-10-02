@@ -1878,7 +1878,8 @@
       "export_reporting": false,
       "capture": false,
       "groups": [
-        "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5"
+        "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5",
+        "default"
       ],
       "bound_listeners": [],
       "frontend": {

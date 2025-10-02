@@ -49,6 +49,7 @@ import { ResetPassword, ResetPasswordEnd, TwoFactorAuthentication } from './Daik
 import { AnonymousReporting } from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
 import { RightPanel } from '../components/utils/sidebar/RightPanel';
 import { Signup } from '../components/frontend/account/signup';
+import { ITenant, ITenantFull } from '../types';
 
 const RouteWithFooterLayout = () => (
   <>
@@ -470,7 +471,7 @@ export const DaikokuApp = () => {
   );
 };
 
-const ToLogin = ({ tenant }) => {
+const ToLogin = ({ tenant }: { tenant: ITenant }) => {
 
   const [searchParams] = useSearchParams();
 
@@ -479,6 +480,8 @@ const ToLogin = ({ tenant }) => {
 
   if (redirect)
     return <Navigate to={`${to}?redirect=${redirect}`} replace />
+  else if (tenant.isPrivate)
+    window.location.href = to
   else
     return <Navigate to={to} replace />
 }

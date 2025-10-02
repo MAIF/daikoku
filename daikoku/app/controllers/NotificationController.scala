@@ -908,14 +908,14 @@ class NotificationController(
   }
 
   def acceptApiSubscription(
-      subscriptionDemandId: SubscriptionDemandId,
-      subscriptionDemandStepId: SubscriptionDemandStepId,
-      teamRequestId: TeamId,
-      apiId: ApiId,
-      plan: UsagePlanId,
-      tenant: Tenant,
-      user: User,
-      sender: NotificationSender
+                             subscriptionDemandId: DemandId,
+                             subscriptionDemandStepId: SubscriptionDemandStepId,
+                             teamRequestId: TeamId,
+                             apiId: ApiId,
+                             plan: UsagePlanId,
+                             tenant: Tenant,
+                             user: User,
+                             sender: NotificationSender
   )(implicit
       ctx: DaikokuActionContext[JsValue]
   ): Future[Either[AppError, Unit]] = {

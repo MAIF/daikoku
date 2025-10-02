@@ -2039,6 +2039,32 @@ export const graphql = {
                 _id
                 email
                 name
+                value
+                steps {
+                  step {
+                    ... on Form {
+                      __typename
+                      formatter
+                      type
+                    }
+                    ... on Email {
+                      __typename
+                      type
+                    }
+                    ... on TeamAdmin {
+                      __typename
+                      type
+                    }
+                    ... on Payment {
+                      __typename
+                      type
+                    }
+                    ... on HttpRequest {
+                      __typename
+                      type
+                    }
+                  }
+                }
               }
               motivation
             }
@@ -2107,9 +2133,11 @@ export const graphql = {
               }
               subscriptionProcess {
                 name
+                ... on Form {
+                  schema
+                }
                 ... on TeamAdmin {
                   team
-                  schema
                 }
               }
               allowMultipleKeys

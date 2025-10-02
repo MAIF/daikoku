@@ -485,7 +485,7 @@ class LoginController(
           AppError.EntityConflict("Email address already exists")
         )
         randomId = IdGenerator.token(128)
-        accountCreationId = SubscriptionDemandId(IdGenerator.token(32))
+        accountCreationId = DemandId(IdGenerator.token(32))
         _ <- EitherT.fromEither[Future](
           validateUserCreationForm(
             name,
@@ -517,7 +517,7 @@ class LoginController(
                 )
               ),
               state = SubscriptionDemandState.Waiting,
-              value = body,
+              value = body - "confirmPassword" - "password",
               fromTenant = ctx.tenant.id
             )
           )

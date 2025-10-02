@@ -5742,7 +5742,7 @@ class AdminApiControllerSpec
 
       "POST :: Conflict :: UsagePlan already exists" in {
         val demand = SubscriptionDemand(
-          id = SubscriptionDemandId(IdGenerator.token(10)),
+          id = DemandId(IdGenerator.token(10)),
           tenant = tenant.id,
           api = defaultApi.api.id,
           plan = UsagePlanId("5"),
@@ -5782,7 +5782,7 @@ class AdminApiControllerSpec
 
       "POST :: BadRequest" in {
         val demand = SubscriptionDemand(
-          id = SubscriptionDemandId(IdGenerator.token(10)),
+          id = DemandId(IdGenerator.token(10)),
           tenant = tenant.id,
           api = defaultApi.api.id,
           plan = UsagePlanId("5"),
@@ -5864,7 +5864,7 @@ class AdminApiControllerSpec
 
       "PUT :: Not Found" in {
         val demand = SubscriptionDemand(
-          id = SubscriptionDemandId(IdGenerator.token(10)),
+          id = DemandId(IdGenerator.token(10)),
           tenant = tenant.id,
           api = defaultApi.api.id,
           plan = UsagePlanId("5"),
@@ -5921,7 +5921,7 @@ class AdminApiControllerSpec
 
       "GET :: Ok" in {
         val demand = SubscriptionDemand(
-          id = SubscriptionDemandId(IdGenerator.token(10)),
+          id = DemandId(IdGenerator.token(10)),
           tenant = tenant.id,
           api = defaultApi.api.id,
           plan = UsagePlanId("5"),
@@ -5960,7 +5960,7 @@ class AdminApiControllerSpec
 
       "POST :: Created" in {
         val demand = SubscriptionDemand(
-          id = SubscriptionDemandId(IdGenerator.token(10)),
+          id = DemandId(IdGenerator.token(10)),
           tenant = tenant.id,
           api = defaultApi.api.id,
           plan = UsagePlanId("5"),
@@ -6009,7 +6009,7 @@ class AdminApiControllerSpec
       }
       "PUT :: No Content" in {
         val demand = SubscriptionDemand(
-          id = SubscriptionDemandId(IdGenerator.token(10)),
+          id = DemandId(IdGenerator.token(10)),
           tenant = tenant.id,
           api = defaultApi.api.id,
           plan = UsagePlanId("5"),
@@ -6059,7 +6059,7 @@ class AdminApiControllerSpec
       }
       "PATCH :: No Content" in {
         val demand = SubscriptionDemand(
-          id = SubscriptionDemandId(IdGenerator.token(10)),
+          id = DemandId(IdGenerator.token(10)),
           tenant = tenant.id,
           api = defaultApi.api.id,
           plan = UsagePlanId("5"),
@@ -6116,7 +6116,7 @@ class AdminApiControllerSpec
       }
       "DELETE :: Ok" in {
         val demand = SubscriptionDemand(
-          id = SubscriptionDemandId(IdGenerator.token(10)),
+          id = DemandId(IdGenerator.token(10)),
           tenant = tenant.id,
           api = defaultApi.api.id,
           plan = UsagePlanId("5"),

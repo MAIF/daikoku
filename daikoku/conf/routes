@@ -341,6 +341,11 @@ GET     /fakeotoroshi/api/groups/:groupId            fr.maif.otoroshi.daikoku.ct
 GET     /fakeotoroshi/api/groups                     fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiGroups()
 GET     /fakeotoroshi/api/services                   fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiServices()
 GET     /fakeotoroshi/api/routes                     fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiRoutes()
+GET     /fakeotoroshi/apis/apim.otoroshi.io/v1/apikeys/:clientId     fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiApiKey(clientId)
+DELETE  /fakeotoroshi/apis/apim.otoroshi.io/v1/apikeys/:clientId     fr.maif.otoroshi.daikoku.ctrls.MockController.deleteFakeOtoroshiApiKey(clientId)
+PUT     /fakeotoroshi/apis/apim.otoroshi.io/v1/apikeys/:clientId     fr.maif.otoroshi.daikoku.ctrls.MockController.updateFakeOtoroshiApiKey(clientId)
+GET     /fakeotoroshi/apis/apim.otoroshi.io/v1/apikeys               fr.maif.otoroshi.daikoku.ctrls.MockController.fakeOtoroshiApiKeys()
+POST    /fakeotoroshi/apis/apim.otoroshi.io/v1/apikeys               fr.maif.otoroshi.daikoku.ctrls.MockController.createFakeOtoroshiApiKey()
 
 GET     /admin-api/swagger.json                      fr.maif.otoroshi.daikoku.ctrls.AdminApiSwaggerController.swagger()
 GET     /admin-api/openapi.json                      fr.maif.otoroshi.daikoku.ctrls.AdminApiSwaggerController.swagger()

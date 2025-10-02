@@ -826,7 +826,7 @@ export const ApiKeyCard = ({
               </BeautifulTitle>}
               {!isApiCMS && <BeautifulTitle title={translate("subscription.copy.token.help")}>
                 <button className='btn btn-sm btn-outline-info'
-                  aria-label={translate("subscription.copy.tokan.aria-label")}
+                  aria-label={translate("subscription.copy.tokan.aria.label")}
                   onClick={() => {
                     navigator.clipboard
                       .writeText(subscription.integrationToken)
@@ -841,9 +841,26 @@ export const ApiKeyCard = ({
                   {translate("subscription.copy.token.label")}
                 </button>
               </BeautifulTitle>}
+              {!isApiCMS && <BeautifulTitle title={translate("subscription.copy.bearer.token.help")}>
+                <button className='btn btn-sm btn-outline-info'
+                  aria-label={translate("subscription.copy.bearer.token.aria.label")}
+                  onClick={() => {
+                    navigator.clipboard
+                      .writeText(subscription.bearerToken ?? '')
+                      .then(() =>
+                        toast.info(translate('credential.copy.success'))
+                      )
+                      .catch(() =>
+                        toast.warning(translate('credential.copy.error'))
+                      );
+                  }}>
+                  <i className="fa fa-copy me-1" />
+                  {translate("subscription.copy.bearer.token.label")}
+                </button>
+              </BeautifulTitle>}
               {!isApiCMS && <BeautifulTitle title={translate("subscription.copy.basic.auth.help")}>
                 <button className='btn btn-sm btn-outline-info'
-                  aria-label={translate("subscription.copy.basic.auth.aria-label")}
+                  aria-label={translate("subscription.copy.basic.auth.aria.label")}
                   onClick={() => {
                     navigator.clipboard
                       .writeText(`Basic ${btoa(`${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`)}`)
@@ -860,7 +877,7 @@ export const ApiKeyCard = ({
               </BeautifulTitle>}
               {isApiCMS && <BeautifulTitle title={translate("subscription.copy.cli.auth.help")}>
                 <button className='btn btn-sm btn-outline-info'
-                  aria-label={translate("subscription.copy.cli.auth.aria-label")}
+                  aria-label={translate("subscription.copy.cli.auth.aria.label")}
                   onClick={() => {
                     navigator.clipboard
                       .writeText(`${btoa(`${subscription.apiKey?.clientId}:${subscription.apiKey?.clientSecret}`)}`)
@@ -1092,7 +1109,7 @@ export const SimpleApiKeyCard = (props: SimpleApiKeyCardProps) => {
             </BeautifulTitle>}
             {!!isApiCMS && <BeautifulTitle title={translate("subscription.copy.cli.auth.help")}>
               <button className='btn btn-sm btn-outline-info'
-                aria-label={translate("subscription.copy.cli.auth.aria-label")}
+                aria-label={translate("subscription.copy.cli.auth.aria.label")}
                 onClick={() => {
                   navigator.clipboard
                     .writeText(`Basic ${btoa(`${props.subscription.apiKey?.clientId}:${props.subscription.apiKey?.clientSecret}`)}`)

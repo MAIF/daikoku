@@ -1,6 +1,6 @@
 package storage.drivers.postgres
 
-import org.apache.pekko.NotUsed
+import org.apache.pekko.{Done, NotUsed}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import org.apache.pekko.stream.scaladsl.{Framing, Keep, Sink, Source}
@@ -245,19 +245,19 @@ case class PostgresTenantCapableEmailVerificationRepo(
   override def repo(): PostgresRepo[EmailVerification, DatastoreId] = _repo()
 }
 case class PostgresTenantCapableSubscriptionDemandRepo(
-    _repo: () => PostgresRepo[SubscriptionDemand, SubscriptionDemandId],
-    _tenantRepo: TenantId => PostgresTenantAwareRepo[
+                                                        _repo: () => PostgresRepo[SubscriptionDemand, DemandId],
+                                                        _tenantRepo: TenantId => PostgresTenantAwareRepo[
       SubscriptionDemand,
-      SubscriptionDemandId
+      DemandId
     ]
-) extends PostgresTenantCapableRepo[SubscriptionDemand, SubscriptionDemandId]
+) extends PostgresTenantCapableRepo[SubscriptionDemand, DemandId]
     with SubscriptionDemandRepo {
-  override def repo(): PostgresRepo[SubscriptionDemand, SubscriptionDemandId] =
+  override def repo(): PostgresRepo[SubscriptionDemand, DemandId] =
     _repo()
 
   override def tenantRepo(
       tenant: TenantId
-  ): PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId] =
+  ): PostgresTenantAwareRepo[SubscriptionDemand, DemandId] =
     _tenantRepo(tenant)
 }
 
@@ -918,7 +918,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       .sequence(TABLES.map {
         case (key, _) => reactivePg.rawQuery(s"TRUNCATE $key")
       })
-      .map { _ =>
+      .flatMap { _ =>
         source
           .via(
             Framing
@@ -1021,6 +1021,7 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
           .toMat(Sink.ignore)(Keep.right)
           .run()(env.defaultMaterializer)
       }
+      .map(_ => logger.info("importFromStream ended"))
   }
 
   override def clear() = {
@@ -1034,7 +1035,6 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
       )
       .mapConcat(identity)
       .mapAsync(5)(query => {
-        logger.debug(query)
         reactivePg.query(query)
       })
       .runWith(Sink.ignore)(env.defaultMaterializer)
@@ -1071,7 +1071,7 @@ class PostgresReportsInfoRepo(env: Env, reactivePg: ReactivePg)
   override def extractId(value: ReportsInfo): String = value.id.value
 }
 class PostgresAccountCreationRepo(env: Env, reactivePg: ReactivePg)
-    extends PostgresRepo[AccountCreation, SubscriptionDemandId](env, reactivePg)
+    extends PostgresRepo[AccountCreation, DemandId](env, reactivePg)
     with AccountCreationRepo {
   override def tableName: String = "account_creation"
 
@@ -1165,7 +1165,7 @@ class PostgresTenantSubscriptionDemandRepo(
     env: Env,
     reactivePg: ReactivePg,
     tenant: TenantId
-) extends PostgresTenantAwareRepo[SubscriptionDemand, SubscriptionDemandId](
+) extends PostgresTenantAwareRepo[SubscriptionDemand, DemandId](
       env,
       reactivePg,
       tenant
@@ -1464,7 +1464,7 @@ class PostgresEmailVerificationRepo(env: Env, reactivePg: ReactivePg)
 }
 
 class PostgresSubscriptionDemandRepo(env: Env, reactivePg: ReactivePg)
-    extends PostgresRepo[SubscriptionDemand, SubscriptionDemandId](
+    extends PostgresRepo[SubscriptionDemand, DemandId](
       env,
       reactivePg
     ) {

@@ -149,7 +149,6 @@ type ValidationStepProps = {
 
 const ValidationStep = (props: ValidationStepProps) => {
   const step = props.step;
-
   switch (step.type) {
     case 'payment':
       const thirdPartyPaymentSettings =

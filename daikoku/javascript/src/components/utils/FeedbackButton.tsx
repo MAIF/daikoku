@@ -77,7 +77,7 @@ export function FeedbackButton(props: PropsWithChildren<Props>) {
     <button
       id={id}
       type="button"
-      disabled={props.disabled}
+      disabled={props.disabled || loading}
       className={classNames(`btn btn-outline-${color}`, props.className)}
       style={setStyle()}
       onClick={() => {

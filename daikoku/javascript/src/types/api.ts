@@ -402,6 +402,7 @@ export interface ISafeSubscription extends IBaseSubscription, ISubscriptionCusto
 export interface ISubscription extends IBaseSubscription {
   apiKey: IApiKey;
   integrationToken: string;
+  bearerToken?: string
 }
 
 export interface ISubscriptionCustomization {

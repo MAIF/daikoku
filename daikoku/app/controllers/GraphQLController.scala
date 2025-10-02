@@ -18,13 +18,16 @@ import play.api.Logger
 import play.api.i18n.I18nSupport
 import play.api.libs.json.{JsValue, Json}
 import play.api.mvc._
+import sangria.ast.{AstLocation, AstVisitor, Field}
 import sangria.execution._
 import sangria.parser.{QueryParser, SyntaxError}
 import sangria.renderer.SchemaRenderer
 import sangria.validation.{
   QueryValidator,
   UndefinedFieldViolation,
-  UnknownArgViolation
+  UnknownArgViolation,
+  ValidationContext,
+  ValidationRule
 }
 import storage.DataStore
 import storage.graphql.DaikokuAuthMiddleware
@@ -155,7 +158,7 @@ class GraphQLController(
                 ](4000, (_, _) => TooComplexQueryError),
                 QueryReducer.rejectIntrospection[
                   (DataStore, DaikokuActionContext[JsValue])
-                ](env.config.mode == Prod)
+                ](includeTypeName = false)
               )
             )
             .map(Ok(_))

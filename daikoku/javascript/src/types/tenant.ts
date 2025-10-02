@@ -197,6 +197,7 @@ export interface ITenant {
   otoroshiSettings: Array<ISafeOtoroshiSettings>;
   thirdPartyPaymentSettings: Array<IThirdPartyPaymentSettings>;
   accountCreationProcess: Array<IValidationStep>
+  isPrivate: boolean
 }
 
 export interface ITenantFull extends ITenant {
