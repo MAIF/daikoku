@@ -11,7 +11,7 @@ import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
 import * as Services from '../../../services';
-import { DaikokuMode, Display, IAccountCreationGQL, IApi, IApiGQL, IApiPost, IIssuesTag, isError, Issue, ISubscription, ISubscriptionDemand, ISubscriptionDemandGQL, ITeamFullGql, ITeamSimple, ITenant, ITesting, IUsagePlan, IUser, IValidationStepPayment } from '../../../types';
+import { DaikokuMode, Display, IAccountCreationGQL, IApi, IApiGQL, IApiPost, IIssuesTag, isError, Issue, ISubscription, ISubscriptionDemand, ISubscriptionDemandGQL, ITeamFullGql, ITeamSimple, ITenant, ITesting, IUsagePlan, IUser, IValidationStep } from '../../../types';
 import { getLanguageFns, Spinner } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { SimpleApiKeyCard } from '../apikeys/TeamApiKeysForApi';
