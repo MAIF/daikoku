@@ -693,31 +693,6 @@ object SchemaDefinition {
           "title",
           Field("title", StringType, resolve = ctx => ctx.value.title)
         ),
-        AddFields(
-          Field(
-            "type",
-            StringType,
-            description = Some("Type of the validation step"),
-            resolve = ctx => ctx.value.name
-          )
-        )
-      )
-    )
-    lazy val ValidationStepForm = new PossibleObject(
-      deriveObjectType[
-        (DataStore, DaikokuActionContext[JsValue]),
-        ValidationStep.Form
-      ](
-        Interfaces(ValidationStepInterfaceType),
-        ObjectTypeDescription("A validation Step by html form"),
-        ReplaceField(
-          "id",
-          Field("id", StringType, resolve = ctx => ctx.value.id)
-        ),
-        ReplaceField(
-          "title",
-          Field("title", StringType, resolve = ctx => ctx.value.title)
-        ),
         ReplaceField(
           "schema",
           Field(

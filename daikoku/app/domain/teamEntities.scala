@@ -231,12 +231,6 @@ object NotificationAction {
                                      motivation: String
   ) extends NotificationAction
 
-  case class AccountCreationAttempt(
-    demand: SubscriptionDemandId,
-    step: SubscriptionDemandStepId,
-    motivation: String
-  ) extends NotificationAction
-
   case class ApiSubscriptionTransferSuccess(
       subscription: ApiSubscriptionId
   ) extends NotificationAction
