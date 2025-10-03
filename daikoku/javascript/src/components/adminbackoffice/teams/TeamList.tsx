@@ -305,7 +305,7 @@ export const TeamList = () => {
           <div className="d-flex flex-wrap section" role="list" aria-labelledby="title">{
             dataRequest.data.teams.map((team) => {
               return (
-                <AvatarWithAction key={team._id} avatar={team.avatar} infos={<>
+                <AvatarWithAction key={team._id} avatar={team.avatar} name={team.name} infos={<>
                   <span className=" section team__name text-truncate">{team.name}</span>
                 </>} actions={actions(team)} />)
             })}

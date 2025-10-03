@@ -15,7 +15,9 @@ import {
   Option,
   PaginatedComponent,
   tenant as TENANT,
+  getInitials,
   manage,
+  userHasAvatar,
 } from '../../utils';
 
 const AdminList = () => {
@@ -82,11 +84,15 @@ const AdminList = () => {
     label: (
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         {admin.name} ({admin.email}){' '}
-        <img
+        {userHasAvatar(admin) && <img
           style={{ borderRadius: '50%', backgroundColor: 'white', width: 34, height: 34 }}
           src={admin.picture}
           alt="avatar"
-        />
+        />}
+        {!userHasAvatar(admin) && <div
+          className='avatar-without-img'
+          style={{ borderRadius: '50%', backgroundColor: 'white', width: 34, height: 34 }}
+        >{getInitials(admin.name)}</div>}
       </div>
     ),
 
@@ -138,7 +144,7 @@ const AdminList = () => {
         </div>
       </div>
       <PaginatedComponent items={sortBy(filteredAdmins, [(a) => a.name.toLowerCase()])} count={15} formatter={(admin) => {
-        return (<AvatarWithAction key={admin._id} avatar={admin.picture} infos={<span className="team-member__name">{admin.name}</span>} actions={[
+        return (<AvatarWithAction key={admin._id} avatar={admin.picture} name={admin.name} infos={<span className="team-member__name">{admin.name}</span>} actions={[
           {
             action: () => removeAdmin(admin),
             iconClass: 'fas fa-trash delete-icon',

@@ -133,7 +133,7 @@ hr {
   top: 0;
 }
 
-img:hover+.changePicture,
+img:hover+.changePicture, .avatar-without-img:hover+.changePicture,
 .changePicture:hover {
   display: block;
   opacity: 0.5;

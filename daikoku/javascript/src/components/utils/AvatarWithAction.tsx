@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Tooltip as ReactToolTip } from 'react-tooltip';
 import { nanoid } from 'nanoid';
 import { BeautifulTitle } from './BeautifulTitle';
+import { IUser, IUserSimple } from '../../types';
 
 type Props = {
   avatar: string;
+  name: string;
   infos?: string | React.ReactElement;
   actions: {
     action?: ((...args: any[]) => any) | any[];
@@ -14,6 +16,24 @@ type Props = {
     tooltip?: string;
   }[];
 };
+
+export const userHasAvatar = (user: IUserSimple) => user.isGuest || !user.picture.includes('anonymous')
+
+export const getInitials = (fullName: string): string | undefined => {
+  if (!fullName) return "";
+
+  const parts = fullName.trim().split(/\s+/);
+
+  if (parts.length === 0) return;
+  if (parts.length === 1) {
+    return parts[0][0].toUpperCase();
+  }
+
+  const first = parts[0][0].toUpperCase();
+  const last = parts[parts.length - 1][0].toUpperCase();
+
+  return first + last;
+}
 
 export const AvatarWithAction = (props: Props) => {
   const [secondaryActions, setSecondaryActions] = useState([]);
@@ -84,7 +104,8 @@ export const AvatarWithAction = (props: Props) => {
       <div className="container">
         <div className="overlay" />
         <div className="avatar__container">
-          <img src={props.avatar} alt="avatar" className="avatar-with-action__avatar" />
+          {props.avatar.includes('anonymous') && <div className="avatar-with-action__avatar avatar-without-img" >{getInitials(props.name)}</div>}
+          {!props.avatar.includes('anonymous') && <img src={props.avatar} alt="avatar" className="avatar-with-action__avatar" />}
         </div>
         <div className="avatar-with-action__infos" id={id}>{props.infos}</div>
         {!secondaryActions.length && props.actions.map((action, idx) => getAction(action, idx))}

@@ -15,6 +15,7 @@ import { MessagesContext } from '../../backoffice';
 import { Companion } from './companions';
 import { AddPanel, DarkModeActivator, GuestPanel, MessagePanel, SearchPanel, SettingsPanel } from './panels';
 import { MorePanel } from './panels/MorePanel';
+import { getInitials, userHasAvatar } from '../..';
 
 
 export const state = {
@@ -187,7 +188,27 @@ export const SideBar = () => {
           </button>
 
           <div className="nav_item mb-3" style={{ color: '#fff' }}>
-            <img
+            {!userHasAvatar(connectedUser) && <div
+              style={{ width: '35px', height: '35px', ...impersonatorStyle }}
+              className="logo-anonymous user-logo avatar-without-img"
+              onClick={() => {
+                if (!connectedUser.isGuest) {
+                  setPanelState(state.opened);
+                  setPanelContent(<SettingsPanel />);
+                } else {
+                  setPanelState(state.opened);
+                  setPanelContent(<GuestPanel />);
+                }
+              }}
+              title={
+                impersonator
+                  ? `${connectedUser.name} (${connectedUser.email}) ${translate(
+                    'Impersonated by'
+                  )} ${impersonator.name} (${impersonator.email})`
+                  : connectedUser.name
+              }
+            >{getInitials(connectedUser.name)}</div>}
+            {userHasAvatar(connectedUser) &&<img
               style={{ width: '35px', height: '35px', ...impersonatorStyle }}
               src={connectedUser.picture}
               className="logo-anonymous user-logo"
@@ -208,7 +229,7 @@ export const SideBar = () => {
                   : connectedUser.name
               }
               alt="user menu"
-            />
+            />}
           </div>
         </div>
       </div>

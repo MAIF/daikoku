@@ -566,7 +566,7 @@ export interface IConsumption {
 }
 
 export type Comment = {
-  by: string;
+  by: IUserSimple;
   createdAt: number;
   lastModificationAt: number;
   content: string;

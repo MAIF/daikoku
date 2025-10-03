@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useContext } from 'react';
-import Pagination from 'react-paginate';
 import classNames from 'classnames';
+import React, { ReactNode, useContext, useEffect, useState } from 'react';
+import Pagination from 'react-paginate';
 import { I18nContext } from '../../contexts/i18n-context';
 
-type Props = {
-  items: any[];
-  formatter: (...args: any[]) => any;
+type Props<T> = {
+  items: T[];
+  formatter: (...args: T[]) => ReactNode | undefined;
   count?: number;
   columnMode?: boolean;
   reverse?: boolean;
@@ -15,7 +15,7 @@ type Props = {
   help?: any
 };
 
-export const PaginatedComponent = (props: Props) => {
+export const PaginatedComponent = <T extends object>(props: Props<T>) => {
   const [selectedPage, setSelectedPage] = useState(0);
   const [offset, setOffset] = useState(0);
 

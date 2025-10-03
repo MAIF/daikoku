@@ -7,7 +7,7 @@ import { I18nContext, ModalContext } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { I2FAQrCode, ITenant, IUser, isError } from '../../../types';
-import { Spinner } from '../../utils';
+import { getInitials, Spinner, userHasAvatar } from '../../utils';
 import { allowedAvatarFileTypes } from '../../utils/tenantUtils';
 
 type TwoFactorAuthenticationProps = {
@@ -284,9 +284,8 @@ const Avatar = ({
   return (
     <div className="">
       <div className="float-right mb-4 position-relative">
-        <img
-          src={`${rawValues?.picture}${rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`
-            }`}
+        {userHasAvatar(rawValues) && <img
+          src={`${rawValues?.picture}${rawValues?.picture?.startsWith('http') ? '' : `?${Date.now()}`}`}
           style={{
             width: 100,
             height: 100,
@@ -295,10 +294,19 @@ const Avatar = ({
           }}
           alt="avatar"
           className="mx-3"
-        />
+        />}
+        {!userHasAvatar(rawValues) && <div
+          style={{
+            width: 100,
+            height: 100,
+            borderRadius: '50%',
+            // backgroundColor: 'white',
+          }}
+          className="mx-3 avatar-without-img"
+        >{getInitials(rawValues?.name)}</div>}
         <PictureUpload setFiles={setFiles} tenant={tenant} />
       </div>
-      <div className="">
+      <div>
         <div className="d-flex mt-1 justify-content-end">
           <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink}>
             <i className="fas fa-user-circle me-1" />

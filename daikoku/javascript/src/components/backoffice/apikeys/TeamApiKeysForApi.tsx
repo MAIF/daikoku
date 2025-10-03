@@ -527,7 +527,7 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
           <PaginatedComponent
             items={sortedApiKeys}
             count={5}
-            formatter={(subscription: ISubscriptionWithChildren) => {
+            formatter={(subscription) => {
               return (
                 <ApiKeyCard
                   api={props.api}

@@ -104,10 +104,12 @@ export const UserList = () => {
             return (<AvatarWithAction
               key={user._id}
               avatar={user.picture}
+              name={user.name}
               infos={<>
                 {user.isDaikokuAdmin && (<i className="fas fa-shield-alt" style={{ marginRight: '10px' }} />)}
                 <span className="team__name text-truncate">{user.name}</span>
-              </>} actions={[
+              </>}
+              actions={[
                 {
                   action: () => removeUser(user),
                   iconClass: 'fas fa-trash delete-icon',

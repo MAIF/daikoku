@@ -17,7 +17,7 @@ import * as Services from '../../../services';
 import * as MessagesEvents from '../../../services/messages';
 import { IUserSimple, isError } from '../../../types';
 import { MessagesContext } from '../../backoffice';
-import { BeautifulTitle, Option, formatMessageDate, getLanguageFns, partition } from '../../utils';
+import { BeautifulTitle, Option, formatMessageDate, getInitials, getLanguageFns, partition, userHasAvatar } from '../../utils';
 import { IMessage } from '../../../types/chat';
 
 const unknownUser = (id: string): IUserSimple => ({
@@ -165,14 +165,22 @@ export const AdminMessages = () => {
               alignItems: 'center',
             }}>
               {u.name} ({u.email}){' '}
-              <img
+              {userHasAvatar(u) && <img
                 style={{
                   borderRadius: '50%',
                   backgroundColor: 'white',
                   width: 34,
                   height: 34,
                 }}
-                src={u.picture} alt="avatar" />
+                src={u.picture} alt="avatar" />}
+              {!userHasAvatar(u) && <div
+                className='avatar-without-img'
+                style={{
+                  borderRadius: '50%',
+                  backgroundColor: 'white',
+                  width: 34,
+                  height: 34,
+                }}>{getInitials(u.name)}</div>}
             </div>),
             value: u,
           }))}
@@ -195,7 +203,8 @@ export const AdminMessages = () => {
               'level2-link__active-bg': selectedChat === chat,
             })} onClick={() => setSelectedChat(chat)}>
               <div className="col-4">
-                <img className="user-avatar" src={user.picture} alt="user-avatar" style={{ width: '100%' }} />
+                {userHasAvatar(user) && <img className="user-avatar" src={user.picture} alt="user-avatar" style={{ width: '100%' }} />}
+                {!userHasAvatar(user) && <div className="user-avatar avatar-without-img" style={{ width: '100%', aspectRatio: '1 / 1', fontSize: '2rem' }}>{getInitials(user.name)}</div>}
                 {unreadCount > 0 && <span className="notification">{unreadCount}</span>}
               </div>
               <div className="col-8">

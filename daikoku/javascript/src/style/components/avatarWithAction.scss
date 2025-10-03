@@ -1,5 +1,22 @@
 @use "../variables";
 
+.avatar-without-img {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+
+    color: variables.$sidebar-text-color;
+    border: 2px solid variables.$sidebar-text-color;
+    background-color: transparent;
+
+    &:hover {
+        color: variables.$sidebar-text-hover-color;
+        border: 2px solid variables.$sidebar-text-hover-color;
+        text-decoration: none;
+    }
+}
+
 .avatar__container {
     width: 100px;
     height: 100px;
@@ -36,8 +53,8 @@
             width: 100px;
             height: 100px;
             border-radius: 50px;
-            background-color: rgba(0,0,0,0.1);
-            
+            background-color: rgba(0, 0, 0, 0.1);
+
             opacity: 0;
 
             transition: all .2s ease-in-out;
@@ -48,8 +65,9 @@
         }
 
         .avatar-with-action__avatar {
+            font-size: 2.5em;
             width: 100%;
-            height: auto;
+            height: 100%;
         }
 
         .avatar-with-action__infos {
@@ -63,9 +81,9 @@
             justify-content: center;
 
             font-weight: 500;
-           // color: #333;
+            // color: #333;
         }
-    
+
         //action limit 4 actions for position
         .avatar-with-action__action {
             position: absolute;
@@ -76,7 +94,8 @@
             border: 2px solid #333;
             border-radius: 50%;
             background-color: #fff;
-            width: 35px; height: 35px;
+            width: 35px;
+            height: 35px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -115,11 +134,11 @@
             .avatar-with-action__container {
                 box-shadow: 0px 0px 0px 5px lightgrey;
             }
-    
+
             .avatar-with-action__action {
                 opacity: 1;
             }
-    
+
             .overlay {
                 opacity: 1;
             }

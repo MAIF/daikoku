@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 import { useNavigate, useParams } from 'react-router-dom';
 import Select from 'react-select/creatable';
 
-import { api as API, formatDate, manage } from '../../..';
+import { api as API, formatDate, getInitials, manage, userHasAvatar } from '../../..';
 import { I18nContext } from '../../../../contexts';
 import * as Services from '../../../../services';
 import { converter } from '../../../../services/showdown';
@@ -97,8 +97,9 @@ export function ApiTimelineIssue({
       .then((res) => {
         if (res.error) {
           toast.error(res.error);
-        } else
+        } else {
           setIssue(updatedIssue);
+        }
       });
   }
 
@@ -145,7 +146,7 @@ export function ApiTimelineIssue({
       });
   }
 
-  function createComment(content: any) {
+  function createComment(content: string) {
     const updatedIssue = {
       ...issue,
       comments: [
@@ -153,6 +154,7 @@ export function ApiTimelineIssue({
         {
           by: connectedUser,
           content,
+          createdAt: Date.now()
         }
       ]
     }
@@ -164,6 +166,7 @@ export function ApiTimelineIssue({
       ...issue,
       open: false,
       tags: issue.tags.map((tag: any) => tag.value),
+      closedAt: Date.now()
     };
     updateIssue(closedIssue)
   }
@@ -251,8 +254,8 @@ export function ApiTimelineIssue({
 
     <div className="row">
       <div className="col-md-9">
-        {issue.comments.map((comment, i) => (<Comment {...comment} key={`comment${i}`} i={i} editComment={() => editComment(i)} removeComment={() => removeComment(i)} updateComment={(content: any) => updateComment(i, content)} connectedUser={connectedUser} />))}
-        {connectedUser && !connectedUser.isGuest && (<NewComment picture={connectedUser.picture} open={(issue as any).open} createComment={createComment} closeIssue={closeIssue} openIssue={() => updateIssue({ ...issue, open: true })} team={team} />)}
+        {issue.comments.map((comment, i) => (<Comment {...comment} key={`comment${i}`} i={i} editComment={() => editComment(i)} removeComment={() => removeComment(i)} updateComment={(content: string) => updateComment(i, content)} connectedUser={connectedUser} />))}
+        {connectedUser && !connectedUser.isGuest && (<NewComment open={issue.open} createComment={createComment} closeIssue={closeIssue} openIssue={() => updateIssue({ ...issue, open: true })} team={team} connectedUser={connectedUser} />)}
       </div>
       <div className="col-md-3">
         <div>
@@ -291,6 +294,18 @@ export function ApiTimelineIssue({
   </div>);
 }
 
+type CommentProps = {
+  by: IUserSimple,
+  createdAt: number
+  content: string
+  editing?: boolean
+  editComment: () => void
+  removeComment: () => void
+  updateComment: (s: string) => void
+  connectedUser: IUserSimple
+  i: number
+}
+
 function Comment({
   by,
   createdAt,
@@ -301,7 +316,7 @@ function Comment({
   updateComment,
   connectedUser,
   i
-}: any) {
+}: CommentProps) {
   const [showActions, toggleActions] = useState(false);
 
   const { translate } = useContext(I18nContext);
@@ -309,13 +324,16 @@ function Comment({
   return (
     <div className="d-flex pb-4">
       <div className="dropdown pe-2">
-        <img
+        {userHasAvatar(by) && <img
           style={{ width: 42 }}
           src={by.picture}
-          className="dropdown-toggle logo-anonymous user-logo"
-          data-toggle="dropdown"
+          className="logo-anonymous user-logo user-comment"
           alt="user menu"
-        />
+        />}
+        {!userHasAvatar(by) && <div
+          style={{ width: 42, aspectRatio: '1 / 1' }}
+          className="logo-anonymous user-logo user-comment avatar-without-img"
+        >{getInitials(by.name)}</div>}
       </div>
       <div className="container">
         <div className="d-flex px-3 py-2" style={styles.commentHeader}>
@@ -323,7 +341,7 @@ function Comment({
             {by.name}
           </span>
           <span className="pe-1">{translate('issues.commented_on')}</span>
-          {formatDate(createdAt, translate('date.locale'), translate('date.format.without.hours'))}
+          {createdAt && formatDate(createdAt, translate('date.locale'), translate('date.format.without.hours'))}
           {by._id === connectedUser._id && editing !== true && (
             <>
               {showActions ? (
@@ -381,25 +399,39 @@ function Comment({
   );
 }
 
+type NewCommentProps = {
+  connectedUser: IUserSimple,
+  createComment: (c: string) => void,
+  closeIssue: () => void,
+  open: boolean,
+  openIssue: () => void,
+  team: ITeamSimple
+}
+
 function NewComment({
-  picture,
   createComment,
   closeIssue,
   open,
   openIssue,
-  team
-}: any) {
+  team,
+  connectedUser
+}: NewCommentProps) {
   const { translate } = useContext(I18nContext);
   return (
     <div className="d-flex pb-4">
       <div className="dropdown pe-2">
-        <img
+        {userHasAvatar(connectedUser) && <img
           style={{ width: 42 }}
-          src={picture}
-          className="dropdown-toggle logo-anonymous user-logo"
+          src={connectedUser.picture}
+          className="dropdown-toggle logo-anonymous user-logo avatar-new-comment"
           data-toggle="dropdown"
           alt="user menu"
-        />
+        />}
+        {!userHasAvatar(connectedUser) && <div
+          style={{ width: 42, aspectRatio: '1 / 1' }}
+          className="logo-anonymous user-logo user-comment avatar-without-img"
+        >{getInitials(connectedUser.name)}</div>}
+
       </div>
       <div className="container">
         <div className="d-flex px-3 py-2" style={styles.commentHeader}>

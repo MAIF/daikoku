@@ -255,14 +255,9 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
       });
     }} items={sortBy(filteredMembers, [(member) => member.name.toLowerCase()])} count={15} formatter={(member) => {
       const isAdmin = userHavePemission(member, administrator);
-      const isApiEditor = userHavePemission(member, apiEditor);
-      if (member.isPending) {
-        return (<AvatarWithAction key={member._id} avatar={member.picture} infos={<>
-          <i className="fas fa-question me-2" />
-          <span className="team-member__name">{member.name}</span>
-        </>} actions={[]} />);
-      }
-      return (<AvatarWithAction key={member._id} avatar={member.picture} infos={<>
+      const isApiEditor = userHavePemission(member, apiEditor); 
+      
+      return (<AvatarWithAction key={member._id} avatar={member.picture} name={member.name} infos={<>
         {userHavePemission(member, administrator) && (<i className="fas fa-shield-alt" style={{ marginRight: '10px' }} />)}
         {userHavePemission(member, apiEditor) && (<i className="fas fa-pencil-alt" style={{ marginRight: '10px' }} />)}
         <span className="team-member__name">{member.name}</span>
@@ -297,7 +292,7 @@ export const TeamMembersSimpleComponent = ({ currentTeam, reloadCurrentTeam }: T
     {state.tab === TABS.pending &&
       (filteredPending.length > 0 ? (<PaginatedComponent items={sortBy(filteredPending, [(member) => member.name.toLowerCase()])} count={15} formatter={(member) => {
         const invitedUser = member.name === 'invited user';
-        return (<AvatarWithAction key={member._id} avatar={member.picture} infos={<span className="team-member__name">
+        return (<AvatarWithAction key={member._id} avatar={member.picture} name={member.name} infos={<span className="team-member__name">
           {invitedUser ? member.email : member.name}
         </span>} actions={CanIDoAction(connectedUser, manage, team, currentTeam) ?
           [

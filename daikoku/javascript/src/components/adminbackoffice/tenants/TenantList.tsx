@@ -1,15 +1,15 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import sortBy from 'lodash/sortBy';
+import { useContext, useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
+import { I18nContext, ModalContext, useDaikokuBackOffice } from '../../../contexts';
 import * as Services from '../../../services';
-import { PaginatedComponent, AvatarWithAction, Can, manage, daikoku } from '../../utils';
-import { I18nContext } from '../../../contexts';
-import { ModalContext, useDaikokuBackOffice } from '../../../contexts';
+import { ITenantFull } from '../../../types';
+import { AvatarWithAction, Can, daikoku, manage, PaginatedComponent } from '../../utils';
 
 export const TenantList = () => {
   useDaikokuBackOffice();
-  const [tenants, setTenants] = useState([]);
+  const [tenants, setTenants] = useState<ITenantFull[]>([]);
   const [search, setSearch] = useState<string>();
 
   const navigate = useNavigate();
@@ -73,7 +73,7 @@ export const TenantList = () => {
           </div>
         </div>
         <PaginatedComponent items={sortBy(filteredTenants, [(tenant) => (tenant as any).name.toLowerCase()])} count={15} formatter={(tenant) => {
-          return (<AvatarWithAction key={tenant._id} avatar={tenant.style.logo} infos={<>
+          return (<AvatarWithAction key={tenant._id} avatar={tenant.style.logo} name={tenant.name} infos={<>
             <span className="text-truncate">{tenant.name}</span>
           </>} actions={[
             {
