@@ -1146,33 +1146,35 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
       });
   };
 
-    const editQuotas = () => {
-      if (userCanUpadtePlan)
-        openRightPanel({
-          title: translate("api.pricings.quotas.panel.title"),
-          content: <QuotasForm ownerTeam={props.ownerTeam} plan={props.plan} savePlan={props.savePlan} />
-        })
-    }
-    const editPricing = () => {
-      if (userCanUpadtePlan)
-        openRightPanel({
-          title: translate("api.pricings.pricing.panel.title"),
-          content: <BillingForm
-            ownerTeam={props.ownerTeam}
-            plan={props.plan}
-            savePlan={setupPayment} />
-        })
-    }
+  const editQuotas = () => {
+    if (userCanUpadtePlan)
+      openRightPanel({
+        title: translate("api.pricings.quotas.panel.title"),
+        content: <QuotasForm ownerTeam={props.ownerTeam} plan={props.plan} savePlan={props.savePlan} />
+      })
+  }
+  const editPricing = () => {
+    if (userCanUpadtePlan)
+      openRightPanel({
+        title: translate("api.pricings.pricing.panel.title"),
+        content: <BillingForm
+          ownerTeam={props.ownerTeam}
+          plan={props.plan}
+          savePlan={setupPayment} />
+      })
+  }
 
-    const editProcess = () => openRightPanel({
-      title: translate("api.pricings.subscription.process.panel.title"),
-      content: <SubscriptionProcessEditor
-        save={updatedProcess => Promise.resolve(props.savePlan({...plan, subscriptionProcess: updatedProcess}))}
-        process={props.plan.subscriptionProcess}
-        team={props.ownerTeam._id}
-        tenant={tenant}
-      />
-    })
+  const editProcess = () => openRightPanel({
+    title: translate("api.pricings.subscription.process.panel.title"),
+    content: <SubscriptionProcessEditor
+      save={updatedProcess => {
+        return Promise.resolve(props.savePlan({ ...plan, subscriptionProcess: updatedProcess }))
+      }}
+      process={props.plan.subscriptionProcess}
+      team={props.ownerTeam._id}
+      tenant={tenant}
+    />
+  })
 
   const userCanUpadtePlan = CanIDoAction(connectedUser, manage, API, props.ownerTeam)
 

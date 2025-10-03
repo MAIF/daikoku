@@ -19,9 +19,10 @@ import { ITenant } from '../../../types/tenant';
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
 import { Help } from '../apikeys/TeamApiKeysForApi';
+import { truncateByDomain } from 'recharts/types/util/ChartUtils';
 
 type MotivationFormProps = {
-  saveMotivation: (m: { schema: object; formatter: string }) => void;
+  saveMotivation: (m: { schema: Schema; formatter: string }) => void;
   value: IValidationStep & { type: 'form' };
 };
 
@@ -553,11 +554,11 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
   const Documentation = props.documentation ?? React.Fragment
   return (
     <div>
-      <button
+      {props.documentation && <button
         className='btn btn-outline-info mb-5'
         onClick={() => setShowDocumentation(!showDocumentation)}>
         {translate(`tenant.security.account.creation.process.doc.${showDocumentation ? 'close' : 'open'}.aria`)}
-      </button>
+      </button>}
       <div className="d-flex flex-row align-items-center">
         {!!draft.length && (
           <button
@@ -603,14 +604,10 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                               value={item}
                               saveMotivation={({ schema, formatter }) => {
                                 const step = { ...item, schema, formatter };
-                                const updatedPlan = {
-                                  ...draft,
-                                  subscriptionProcess:
-                                    draft.map(
-                                      (s) => (s.id === step.id ? step : s)
-                                    ),
-                                };
-                                setDraft(updatedPlan);
+                                const updatedProcess = draft.map(
+                                  (s) => (s.id === step.id ? step : s)
+                                );
+                                setDraft(updatedProcess);
                               }}
                             />
                           ),
