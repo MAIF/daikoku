@@ -74,4 +74,12 @@ object JsonOperationsHelper {
     }
   }
 
+  def mergeOptJson(a: Option[JsObject], b: Option[JsObject]): Option[JsObject] =
+    (a, b) match {
+      case (None, None)       => None
+      case (Some(x), None)    => Some(x)
+      case (None, Some(y))    => Some(y)
+      case (Some(x), Some(y)) => Some(x.deepMerge(y))
+    }
+
 }

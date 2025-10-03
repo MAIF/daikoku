@@ -707,7 +707,7 @@ class ApiController(
             case UserLevel.User => JsArray(filteredPlans.map(p => p.asJson.as[JsObject] - "subscriptionProcess" - "testing" +
               ("testing" -> p.testing.map(_.asSafeJson).getOrElse(Json.obj())) +
               ("subscriptionProcess" -> JsArray(p.subscriptionProcess.map {
-                case process@ValidationStep.Form(id, title, schema, formatter) => process.asJson
+                case process@ValidationStep.Form(_,_,_,_,_) => process.asJson
                 case process => Json.obj("name" -> process.name)
               }))))
             case UserLevel.Guest if ctx.tenant.apiReferenceHideForGuest.getOrElse(true) => JsArray(filteredPlans.map(_.asJson.as[JsObject] - "otoroshiTarget" - "documentation" - "SubscriptionProcess" - "testing" - "swagger"))
@@ -5135,11 +5135,9 @@ class ApiController(
           _ <- EitherT.liftF(
             env.dataStore.usagePlanRepo.forTenant(ctx.tenant).save(updatedPlan)
           )
-          log1 = logger.warn("######### APICONTROLLER ####### SYNC BEGIN")
           _ <- EitherT.liftF(
             otoroshiSynchronisator.verify(Json.obj("api" -> api.id.value))
           )
-          log = logger.warn("######### APICONTROLLER ####### SYNC ENDED ??????")
           _ <- runDemandUpdate(oldPlan, updatedPlan, api)
           //FIXME: attention, peut etre il y en a qui sont blocked de base
           _ <- EitherT.liftF(

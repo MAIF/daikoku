@@ -623,13 +623,16 @@ object json {
             "team" -> team.asJson,
             "title" -> title,
           )
-        case ValidationStep.Form(id, title, schema, formatter) =>
+        case ValidationStep.Form(id, title, schema, formatter, formKeysToMetadata) =>
           Json.obj(
             "type" -> "form",
             "id" -> id,
             "title" -> title,
             "schema" -> schema.getOrElse(JsNull).as[JsValue],
-            "formatter" -> formatter.map(JsString).getOrElse(JsNull).as[JsValue]
+            "formatter" -> formatter.map(JsString).getOrElse(JsNull).as[JsValue],
+            "formKeysToMetadata" -> formKeysToMetadata.map(keys => JsArray(keys.map(JsString)))
+              .getOrElse(JsNull)
+              .as[JsValue]
           )
         case ValidationStep.Payment(id, thirdPartyPaymentSettingsId, title) =>
           Json.obj(
@@ -690,7 +693,9 @@ object json {
                 ),
               formatter = (json \ "formatter")
                 .asOpt[String]
-                .orElse("[[motivation]]".some)
+                .orElse("[[motivation]]".some),
+              formKeysToMetadata = (json \ "formKeysToMetadata")
+                .asOpt[Seq[String]]
             )
           )
         case "payment" =>

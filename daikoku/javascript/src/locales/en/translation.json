@@ -1657,6 +1657,7 @@
     "tenant.edit.clientNamePattern.label": "Custom client name pattern",
     "tenant.edit.clientNamePattern.help": "This pattern is used to customize the client name when creating an API key. The string can include dynamic values using the ${my.value} syntax.",
     "tenant.edit.clientNamePattern.help2": "The following values are available:",
+    "tenant.security.account.creation.process.panel.title": "Account creation process",
     "tenant.security.account.creation.process.button.label": "Customize the account creation process",
     "tenant.security.account.creation.process.doc.title": "Account creation process configuration",
     "tenant.security.account.creation.process.doc.intro": "Define the steps that make up the account creation process. You can add, remove, or reorder steps.",

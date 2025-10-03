@@ -178,7 +178,8 @@ export type IValidationStep = {
   id: string;
   schema: Schema;
   formatter: string;
-  title: string
+  title: string;
+  formKeysToMetadata?: Array<string>
 } | {
   type: 'payment';
   id: string;

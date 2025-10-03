@@ -12,7 +12,6 @@ import fr.maif.otoroshi.daikoku.domain.json.{
   TestingConfigFormat
 }
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, ReplaceAllWith}
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -266,7 +265,8 @@ case class UsagePlan(
     documentation: Option[ApiDocumentation] = None,
     subscriptionProcess: Seq[ValidationStep] = Seq.empty,
     visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
-    authorizedTeams: Seq[TeamId] = Seq.empty
+    authorizedTeams: Seq[TeamId] = Seq.empty,
+    formKeysToMetadata: Option[Seq[String]] = None
 ) extends CanJson[UsagePlan] {
   def costFor(requests: Long): BigDecimal =
     (costPerMonth, costPerRequest) match {
@@ -809,7 +809,8 @@ object ValidationStep {
                        )
                      )
                      .some,
-                   formatter: Option[String] = "[[motivation]]".some
+                   formatter: Option[String] = "[[motivation]]".some,
+                   formKeysToMetadata: Option[Seq[String]] = None
                  ) extends ValidationStep {
     override def name: String = "form"
     override def isAutomatic: Boolean = false

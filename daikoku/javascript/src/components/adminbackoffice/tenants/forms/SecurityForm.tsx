@@ -195,7 +195,7 @@ export const SecurityForm = (props: {
   const _tenant = props.tenant
   const editProcess = () => {
     openRightPanel({
-      title: translate("api.pricings.subscription.process.panel.title"),
+      title: translate("tenant.security.account.creation.process.panel.title"),
       content: <SubscriptionProcessEditor
         save={accountCreationProcess => props.updateTenant.mutateAsync({ ..._tenant, accountCreationProcess })}
         process={props.tenant?.accountCreationProcess ?? []}

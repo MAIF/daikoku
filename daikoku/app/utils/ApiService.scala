@@ -2567,6 +2567,20 @@ class ApiService(
             )
           case steps =>
             val demanId = DemandId(IdGenerator.token(32))
+
+            val formKeysToMetadata = steps.collectFirst { case s: ValidationStep.Form => s }
+              .flatMap(_.formKeysToMetadata)
+
+            val metadataFromMotivation: Option[JsObject] = for {
+              motiv <- motivation
+              keys  <- formKeysToMetadata
+            } yield {
+              val filtered = motiv.fields.collect {
+                case (k, v) if keys.contains(k) => (k, v)
+              }
+              JsObject(filtered)
+            }
+
             for {
               _ <- EitherT.liftF(
                 env.dataStore.subscriptionDemandRepo
@@ -2591,7 +2605,7 @@ class ApiService(
                       from = user.id,
                       motivation = motivation,
                       parentSubscriptionId = apiKeyId,
-                      customMetadata = customMetadata,
+                      customMetadata = JsonOperationsHelper.mergeOptJson(customMetadata, metadataFromMotivation),
                       customMaxPerSecond = customMaxPerSecond,
                       customMaxPerDay = customMaxPerDay,
                       customMaxPerMonth = customMaxPerMonth,

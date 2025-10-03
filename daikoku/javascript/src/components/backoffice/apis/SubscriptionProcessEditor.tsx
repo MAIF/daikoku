@@ -19,10 +19,9 @@ import { ITenant } from '../../../types/tenant';
 import { addArrayIf, insertArrayIndex } from '../../utils/array';
 import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableList';
 import { Help } from '../apikeys/TeamApiKeysForApi';
-import { truncateByDomain } from 'recharts/types/util/ChartUtils';
 
 type MotivationFormProps = {
-  saveMotivation: (m: { schema: Schema; formatter: string }) => void;
+  saveMotivation: (m: { schema: Schema; formatter: string, formKeysToMetadata?: Array<string> }) => void;
   value: IValidationStep & { type: 'form' };
 };
 
@@ -32,6 +31,7 @@ const MotivationForm = (props: MotivationFormProps) => {
   );
   const [realSchema, setRealSchema] = useState<any>(props.value.schema || {});
   const [formatter, setFormatter] = useState(props.value.formatter || '');
+  const [formKeysToMetadata, setFormKeysToMetadata] = useState<Array<string>>()
   const [value, setValue] = useState<any>({});
   const [example, setExample] = useState('');
 
@@ -123,6 +123,25 @@ const MotivationForm = (props: MotivationFormProps) => {
               <div>{translate('motivation.form.sample.title')}</div>
               <div>{example}</div>
             </div>
+            <div className="flex-1 mt-1">
+              <div>{translate('motivation.form.formKeysToMetadata.title')}</div>
+              <div>
+                <Form 
+                  schema={{
+                    formKeysToMetadata: {
+                      type: type.string,
+                      isMulti: true,
+                      format: format.select,
+                      options: Object.keys(realSchema),
+                      label: translate('motivation.form.formKeysToMetadata.label')
+                    }
+                  }}
+                  onSubmit={d => setFormKeysToMetadata(d.formKeysToMetadata)}
+                  value={{formKeysToMetadata: props.value.formKeysToMetadata}}
+                  options={{ autosubmit: true, actions: {submit: {display: false}}}}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -130,7 +149,7 @@ const MotivationForm = (props: MotivationFormProps) => {
         <button
           className="btn btn-outline-success"
           onClick={() => {
-            props.saveMotivation({ schema: realSchema, formatter });
+            props.saveMotivation({ schema: realSchema, formatter, formKeysToMetadata });
             close();
           }}
         >
@@ -602,8 +621,8 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                           content: (
                             <MotivationForm
                               value={item}
-                              saveMotivation={({ schema, formatter }) => {
-                                const step = { ...item, schema, formatter };
+                              saveMotivation={({ schema, formatter, formKeysToMetadata }) => {
+                                const step = { ...item, schema, formatter, formKeysToMetadata };
                                 const updatedProcess = draft.map(
                                   (s) => (s.id === step.id ? step : s)
                                 );
