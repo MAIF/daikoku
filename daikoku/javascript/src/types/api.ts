@@ -1,4 +1,4 @@
-import { Schema } from '@maif/react-forms';
+import { constraints, Schema } from '@maif/react-forms';
 import { IFastTeam, ITeamSimple, IUserSimple } from './team';
 import { ThirdPartyPaymentType } from './tenant';
 import { INotification } from './types';
@@ -389,6 +389,10 @@ export type ResponseDone = {
 
 export function isError(obj: any): obj is ResponseError {
   return (<ResponseError>obj).error !== undefined;
+}
+
+export function isConstraint(obj: any): obj is constraints.Constraint { //@ts-ignore
+  return (<constraints.Constraint> obj).type === undefined;
 }
 
 export function isPromise<T>(obj: any): obj is Promise<T> {

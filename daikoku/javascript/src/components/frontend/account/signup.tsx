@@ -4,7 +4,7 @@ import { useContext, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { I18nContext } from '../../../contexts';
-import { IUserSimple, IValidationStep } from '../../../types';
+import { isConstraint, isError, IUserSimple, IValidationStep } from '../../../types';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { Option } from '../../utils'
 
@@ -27,12 +27,6 @@ export const Signup = () => {
         constraints.required(translate('constraints.required.email')),
         constraints.email(translate('constraints.matches.email')),
       ],
-    },
-    avatar: {
-      type: type.string,
-      label: translate('Avatar'),
-      // defaultValue: defaultAvatar,
-      // render: AvatarInput,
     },
     password: {
       type: type.string,
@@ -105,7 +99,7 @@ export const Signup = () => {
           <h1 className="h1-rwd-reduce text-center">
             {translate('create.account.alert.title')}
           </h1>
-          <p>{translate({key: "create.account.done", replacements: [user!.email] })}</p>
+          <p>{translate({ key: "create.account.done", replacements: [user!.email] })}</p>
         </div>
 
 
@@ -114,9 +108,16 @@ export const Signup = () => {
   }
 
   const schema = Option(formStepAccountCreation)
-    .map(s => s as IValidationStep & { type: 'form' })
     .map(s => s.schema)
-    .map(s => Object.fromEntries(Object.entries(s).map(([k, v]) => ([k, { ...v, label: v.label ? translate(v.label as string) : undefined }]))))
+    .map(s => Object.fromEntries(Object.entries(s)
+      .map(([k, v]) => {
+        return ([k, { 
+          ...v, 
+          label: v.label ? translate(v.label as string) : undefined,
+          constraints: v.constraints?.map(c => isConstraint(c) ? c : ({...c, message: c.message ? translate(c.message) : undefined}))
+        }])
+      })
+    ))
     .getOrElse(defaultSchema)
 
   return (

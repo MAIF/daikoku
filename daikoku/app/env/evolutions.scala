@@ -1468,21 +1468,55 @@ object evolution_1840_b extends EvolutionScript {
                 "name" -> Json.obj(
                   "type" -> "string",
                   "label" -> "account.creation.form.name.label",
+                  "constraints" -> Json.arr(
+                    Json.obj(
+                      "type" -> "required",
+                      "message" -> "constraints.required.name"
+                    )
+                  )
                 ),
                 "email" -> Json.obj(
                   "type" -> "string",
                   "format" -> "email",
                   "label" -> "account.creation.form.email.label",
+                  "constraints" -> Json.arr(
+                    Json.obj(
+                      "type" -> "required",
+                      "message" -> "constraints.required.email"
+                    )
+                  )
                 ),
                 "password" -> Json.obj(
                   "type" -> "string",
                   "format" -> "password",
                   "label" -> "account.creation.form.password.label",
+                  "constraints" -> Json.arr(
+                    Json.obj(
+                      "type" -> "required",
+                      "message" -> "constraints.required.password"
+                    ),
+                    Json.obj(
+                      "type" -> "matches",
+                      "regexp" -> "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[#$^+=!*()@%&]).{8,1000}$",
+                      "message" -> "constraints.matches.password"
+                    )
+                  )
                 ),
                 "confirmPassword" -> Json.obj(
                   "type" -> "string",
                   "format" -> "password",
                   "label" -> "account.creation.form.confirm.password.label",
+                  "constraints" -> Json.arr(
+                    Json.obj(
+                      "type" -> "required",
+                      "message" -> "constraints.required.confirmPassword"
+                    ),
+                    Json.obj(
+                      "type" -> "oneOf",
+                      "arrayOfValues" -> Json.arr(Json.obj("ref" -> "password")),
+                      "message" -> "constraints.oneof.confirm.password"
+                    )
+                  )
                 )
               ).some,
               formatter = "".some

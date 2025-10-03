@@ -1675,5 +1675,9 @@
   "tenant.settings.mailer.test.connection.success.label": "Test de connexion réussi",
   "tenant.settings.mailer.test.connection.failed.label": "Test de connexion échoué",
   "tenant.settings.authProvider.oauth.fetch.configuration.button.label": "Récuperer la configuration",
-  "tenant.settings.authProvider.oauth.configuration.url.label": "URL de la configuration OIDC"
+  "tenant.settings.authProvider.oauth.configuration.url.label": "URL de la configuration OIDC",
+  "account.creation.form.name.label": "Nom",
+  "account.creation.form.email.label": "Courriel",
+  "account.creation.form.password.label": "Mot de passe",
+  "account.creation.form.confirm.password.label": "Confirmation du mot de passe"
 }
