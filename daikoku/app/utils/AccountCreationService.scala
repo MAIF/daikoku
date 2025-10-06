@@ -1,6 +1,7 @@
 package fr.maif.otoroshi.daikoku.utils
 
 import cats.data.EitherT
+import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -36,6 +37,20 @@ class AccountCreationService {
         authorizedOtoroshiEntities = None,
         contact = accountCreation.email
       )
+
+      formKeysToMetadata = tenant.accountCreationProcess.collectFirst { case s: ValidationStep.Form => s }
+        .flatMap(_.formKeysToMetadata)
+
+      metadataFromMotivation: Option[JsObject] = for {
+        motiv <- accountCreation.value.some
+        keys  <- formKeysToMetadata
+      } yield {
+        val filtered = motiv.fields.collect {
+          case (k, v) if keys.contains(k) => (k, v)
+        }
+        JsObject(filtered)
+      }
+
       user = User(
         id = userId,
         tenants = Set(tenant.id),
@@ -46,7 +61,8 @@ class AccountCreationService {
         lastTenant = Some(tenant.id),
         password = Some(accountCreation.password),
         personalToken = Some(IdGenerator.token(32)),
-        defaultLanguage = None
+        defaultLanguage = None,
+        metadata = metadataFromMotivation.getOrElse(Json.obj()).as[Map[String, String]]
       )
 
       _user = optUser
