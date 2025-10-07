@@ -51,13 +51,16 @@ Each plan can define **quotas** (e.g., number of allowed requests per windows/se
 
 By combining these options, you can create plans tailored to different use cases, whether free, quota-based, or pay-per-use, without being constrained by predefined categories.
 
-The subscription process in Daikoku offers flexibility, allowing users to customize their validation steps. There are three possible types of steps:
+The subscription process in Daikoku offers flexibility, allowing users to customize their validation steps. There are few possible types of steps:
 
-  * **Admin Validation**: This step requires an administrator from the API's owning team to validate the subscription request. When a request is submitted, all administrators in the team receive a Daikoku notification and an email containing the request details. The first administrator who validates the notification approves the step.
+  * **Form**: A step to display a customizable form, to ask specific information to the user.
 > It's possible to configure this step to display a specific form when the user asks for a subscription.
 > To parameterize the form, we use the JSON language used by [@maif/react-forms](https://github.com/MAIF/react-forms#maifreact-forms).
 > You can write a formatter to format the form response as a notification sent to admins. It's just a string with a replacement pattern like this `[[label]]`
-> the result of the form is used to automatically generate metadata which will be deletable or modifiable before validation by the admin
+> the result of the form is used to automatically generate metadata, configure with the `keysToMetadata` parameter which will be deletable or modifiable before validation by the admin (if ana admin step is configure)
+> A header can be setup to display a quick description to the user
+
+  * **Admin Validation**: This step requires an administrator from the API's owning team to validate the subscription request. When a request is submitted, all administrators in the team receive a Daikoku notification and an email containing the request details. The first administrator who validates the notification approves the step.
 
   * **HTTP Request**: This step is a semi-automatic step. A HTTP POST is sent to an API with the whole context of the subscription demand.
 A JSON response is awaited with a precise format.

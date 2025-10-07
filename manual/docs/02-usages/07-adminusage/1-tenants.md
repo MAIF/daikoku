@@ -155,6 +155,8 @@ It's possible to hide the API Reference tab (for all APIs) to unlogged user. Thi
 
 It's possible to hide the teams page (/teams) to prevent everyone for knowing all the teams in the organization. This is a feature primary intended for public tenants.
 
+An account creation process can be setup, by describing a workflow using th esame validation steps than [api subscription](../09-producerusage/1-apis.md#plans)
+
 ### Display mode
 
 It's possible to switch tenant display mode from `default` to `environment`.
