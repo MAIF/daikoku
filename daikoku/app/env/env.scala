@@ -588,28 +588,6 @@ class DaikokuEnv(
                     .save(
                       Tenant.getCustomizationCmsPage(
                         tenantId = tenant.id,
-                        pageId = "style",
-                        contentType = "text/css",
-                        body = ""
-                      )
-                    )
-                _ <-
-                  dataStore.cmsRepo
-                    .forTenant(tenant.id)
-                    .save(
-                      Tenant.getCustomizationCmsPage(
-                        tenantId = tenant.id,
-                        pageId = "script",
-                        contentType = "text/javascript",
-                        body = ""
-                      )
-                    )
-                _ <-
-                  dataStore.cmsRepo
-                    .forTenant(tenant.id)
-                    .save(
-                      Tenant.getCustomizationCmsPage(
-                        tenantId = tenant.id,
                         pageId = "color-theme",
                         contentType = "text/css",
                         body = cssFileContent
