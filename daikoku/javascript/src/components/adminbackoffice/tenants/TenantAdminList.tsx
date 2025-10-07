@@ -159,7 +159,3 @@ export const TenantAdminList = () => {
   useTenantBackOffice();
   return <AdminList />;
 };
-export const DaikokuTenantAdminList = () => {
-  useDaikokuBackOffice();
-  return <AdminList />;
-};

@@ -116,7 +116,7 @@ class TenantController(
       )(ctx) {
         val newTeamId = TeamId(IdGenerator.token(32))
         env.dataStore.tenantRepo.findByIdNotDeleted(id).flatMap {
-          case Some(tenant) => {
+          case Some(tenant) =>
             ctx.setCtxValue("dest.name", tenant.name)
             val wasInTenant = ctx.user.tenants.contains(tenant.id)
             env.dataStore.teamRepo
@@ -125,7 +125,6 @@ class TenantController(
                 env.dataStore.userRepo.save(
                   ctx.user.copy(
                     lastTenant = Some(tenant.id),
-                    // lastTeams = ctx.user.lastTeams + (tenant.id -> teams.headOption.map(_.id).getOrElse(newTeamId)),
                     tenants = ctx.user.tenants + tenant.id
                   )
                 )
@@ -152,19 +151,20 @@ class TenantController(
                   FastFuture.successful(())
                 }
                 fu.map { _ =>
+                  val path = ctx.request.getQueryString("path").getOrElse("")
+
                   {
                     env.config.exposedPort match {
-                      case 80  => Redirect(s"http://${tenant.domain}/")
-                      case 443 => Redirect(s"https://${tenant.domain}/")
+                      case 80  => Redirect(s"http://${tenant.domain}/$path")
+                      case 443 => Redirect(s"https://${tenant.domain}/$path")
                       case _ =>
                         Redirect(
-                          s"https://${tenant.domain}:${env.config.exposedPort}/"
+                          s"http://${tenant.domain}:${env.config.exposedPort}/$path"
                         )
                     }
                   }
                 }
               }
-          }
           case None =>
             Errors.craftResponseResultF(
               "Tenant not found",

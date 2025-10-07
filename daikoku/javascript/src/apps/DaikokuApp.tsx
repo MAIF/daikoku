@@ -23,7 +23,6 @@ import {
   AdminMessages,
   AuditTrailList,
   CMSOffice,
-  DaikokuTenantAdminList,
   ImportExport,
   InitializeFromOtoroshi,
   MailingInternalization,
@@ -339,14 +338,6 @@ export const DaikokuApp = () => {
                     element={
                       <RouteWithTitle title={`${tenant.title} - ${translate({ key: 'Tenants', plural: true })}`}>
                         <TenantList />
-                      </RouteWithTitle>
-                    }
-                  />
-                  <Route
-                    path="/settings/tenants/:tenantId/admins"
-                    element={
-                      <RouteWithTitle title={`${tenant.title} - ${translate('Admins')}`}>
-                        <DaikokuTenantAdminList />
                       </RouteWithTitle>
                     }
                   />

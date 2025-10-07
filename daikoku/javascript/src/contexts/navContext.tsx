@@ -489,9 +489,8 @@ export const useDaikokuBackOffice = (props?: { creation?: boolean }) => {
 
   const navigate = useNavigate();
   const match = useMatch('/settings/:tab/*');
-  const matchEdition = useMatch('/settings/tenants/:id/:tabs')
 
-  const schema = (currentTab?: string, subTab?: string): INavMenu => {
+  const schema = (currentTab?: string): INavMenu => {
     return ({
       blocks: {
         links: {
@@ -501,49 +500,6 @@ export const useDaikokuBackOffice = (props?: { creation?: boolean }) => {
               label: translate('Tenants'),
               action: () => navigateTo('tenants'),
               className: { active: currentTab === 'tenants' },
-              childs: matchEdition ? {
-                general: {
-                  label: translate('General'),
-                  action: () => navigateTo(`tenants/${matchEdition.params.id}/general`),
-                  className: { active: subTab === 'general' },
-                },
-                custom: {
-                  label: translate('Customization'),
-                  action: () => navigateTo(`tenants/${matchEdition.params.id}/customization`),
-                  className: { active: subTab === 'customization' },
-                  visible: !props?.creation
-                },
-                audit: {
-                  label: translate('Audit'),
-                  action: () => navigateTo(`tenants/${matchEdition.params.id}/audit`),
-                  className: { active: subTab === 'audit' },
-                  visible: !props?.creation
-                },
-                mail: {
-                  label: translate('Mail'),
-                  action: () => navigateTo(`tenants/${matchEdition.params.id}/mail`),
-                  className: { active: subTab === 'mail' },
-                  visible: !props?.creation
-                },
-                authentication: {
-                  label: translate('Authentication'),
-                  action: () => navigateTo(`tenants/${matchEdition.params.id}/authentication`),
-                  className: { active: subTab === 'authentication' },
-                  visible: !props?.creation
-                },
-                bucket: {
-                  label: translate('Bucket'),
-                  action: () => navigateTo(`tenants/${matchEdition.params.id}/bucket`),
-                  className: { active: subTab === 'bucket' },
-                  visible: !props?.creation
-                },
-                security: {
-                  label: translate('Security'),
-                  action: () => navigateTo(`tenants/${matchEdition.params.id}/security`),
-                  className: { active: subTab === 'security' },
-                  visible: !props?.creation
-                },
-              } : {},
             },
             users: {
               label: translate('Users'),
@@ -578,13 +534,13 @@ export const useDaikokuBackOffice = (props?: { creation?: boolean }) => {
   useEffect(() => {
     setMode(navMode.daikoku);
     setOffice(officeMode.back);
-    setMenu(schema(match?.params.tab, matchEdition?.params.tabs));
+    setMenu(schema(match?.params.tab));
 
     return () => {
       setMode(navMode.initial);
       setMenu(fakeMenu);
     };
-  }, [match, matchEdition]);
+  }, [match]);
 
   return { addMenu };
 };

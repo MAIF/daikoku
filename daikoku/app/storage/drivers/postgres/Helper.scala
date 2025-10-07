@@ -190,8 +190,6 @@ object Helper {
               _convertTuple(value.fields.head, params)
 
             case Some((key: String, _: JsValue)) if key == "$ne" =>
-              val (a, b) = _convertTuple(value.fields.head, params)
-              logger.warn(s"${value.fields.head} - $params --> ($a, $b)")
               (
                 s"(content->>${getParam(
                   params.size

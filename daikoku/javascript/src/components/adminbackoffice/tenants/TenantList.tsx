@@ -82,7 +82,7 @@ export const TenantList = () => {
               tooltip: translate('Remove tenant'),
             },
             {
-              redirect: () => navigate(`/settings/tenants/${tenant._humanReadableId}/general`),
+              link: `/api/tenants/${tenant._id}/_redirect?path=settings/settings/general`,
               iconClass: 'fas fa-pen',
               tooltip: translate('Edit tenant'),
             },

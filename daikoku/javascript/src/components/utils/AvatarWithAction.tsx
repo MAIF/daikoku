@@ -68,7 +68,7 @@ export const AvatarWithAction = (props: Props) => {
       );
     } else if (action.link) {
       ActionComponent = (
-        <a href={action.link} aria-label={action.ariaLabel}>
+        <a href={action.link} target='_blank' aria-label={action.ariaLabel}>
           <i className={action.iconClass} onClick={() => handleAction(action.action)} />
         </a>
       );
