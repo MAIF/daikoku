@@ -191,11 +191,12 @@ object Helper {
 
             case Some((key: String, _: JsValue)) if key == "$ne" =>
               val (a, b) = _convertTuple(value.fields.head, params)
+              logger.warn(s"${value.fields.head} - $params --> ($a, $b)")
               (
                 s"(content->>${getParam(
-                  b.size
-                )} <> ${getParam(b.size + 1)})",
-                b ++ Seq(
+                  params.size
+                )} <> ${getParam(params.size + 1)})",
+                params ++ Seq(
                   _removeQuotes(field._1),
                   _removeQuotes(value.fields.head._2)
                 )
