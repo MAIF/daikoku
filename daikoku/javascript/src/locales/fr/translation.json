@@ -1296,6 +1296,8 @@
   "team.dashboard.label.producer": "Producteur",
   "team.dashboard.label.consumer": "Consommateur",
   "motivation.form.modal.title": "Paramétrage du formulaire de motivation",
+  "motivation.form.info.label": "Informations",
+  "motivation.form.info.help": "Ce bloc permet d’afficher une explication ou un message informatif à l’utilisateur lors de la demande de clé API. Il ne collecte aucune donnée, il sert uniquement à contextualiser le formulaire.",
   "motivation.form.setting.title": "Paramètres",
   "motivation.form.sample.title": "Exemple",
   "motivation.form.preview.title": "Prévisualisation",

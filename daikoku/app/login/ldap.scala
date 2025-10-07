@@ -15,7 +15,13 @@ import play.api.libs.json._
 
 import javax.naming.ldap.{Control, InitialLdapContext}
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future, Promise, TimeoutException}
+import scala.concurrent.{
+  Await,
+  ExecutionContext,
+  Future,
+  Promise,
+  TimeoutException
+}
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.{Failure, Success, Try}
 
@@ -514,21 +520,25 @@ object LdapSupport {
 
     def _check(): EitherT[Future, AppError, Unit] = {
       val env = new util.Hashtable[String, AnyRef]
-      env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
+      env.put(
+        Context.INITIAL_CONTEXT_FACTORY,
+        "com.sun.jndi.ldap.LdapCtxFactory"
+      )
       env.put(Context.SECURITY_AUTHENTICATION, "simple")
       config.adminUsername.foreach(u => env.put(Context.SECURITY_PRINCIPAL, u))
-      config.adminPassword.foreach(p => env.put(Context.SECURITY_CREDENTIALS, p))
+      config.adminPassword.foreach(p =>
+        env.put(Context.SECURITY_CREDENTIALS, p)
+      )
 
       if (config.serverUrls.isEmpty) {
-        EitherT.leftT[Future, Unit](AppError.AuthenticationError("Missing LDAP server URLs"))
+        EitherT.leftT[Future, Unit](
+          AppError.AuthenticationError("Missing LDAP server URLs")
+        )
       } else {
-        val p = Promise[Either[AppError, Unit]]()
 
-
-        config.serverUrls.foreach(url => {
+        val futures = config.serverUrls.map(url => {
           val localEnv = new java.util.Hashtable[String, AnyRef](env)
           localEnv.put(javax.naming.Context.PROVIDER_URL, url)
-
 
           Future {
             val ctx = new InitialDirContext(localEnv)
@@ -536,32 +546,54 @@ object LdapSupport {
             Right(())
           }.recover {
             case _: javax.naming.ServiceUnavailableException |
-                 _: javax.naming.CommunicationException |
-                 _: java.util.concurrent.TimeoutException =>
-              Left(AppError.AuthenticationError(s"Cannot connect to LDAP server: $url"))
+                _: javax.naming.CommunicationException |
+                _: java.util.concurrent.TimeoutException =>
+              Left(
+                AppError
+                  .AuthenticationError(s"Cannot connect to LDAP server: $url")
+              )
             case e: Exception =>
               AppLogger.warn(e.getLocalizedMessage, e)
               Left(AppError.AuthenticationError(e.getMessage))
-
-          }.onComplete {
-            case Success(Right(_)) => p.trySuccess(Right(()))
-            case Success(Left(error)) => if (!p.isCompleted && url == config.serverUrls.last) {
-              p.trySuccess(Left(error))
-            }
-            case Failure(exception) => if (!p.isCompleted && url == config.serverUrls.last) {
-              p.trySuccess(Left(AppError.AuthenticationError(exception.getMessage)))
-            }
           }
         })
 
-        EitherT(p.future)
+        val firstSuccess = Future.find(futures)(_.isRight)
+
+        val result = firstSuccess.flatMap {
+          case Some(Right(_)) => Future.successful(Right(()))
+          case _              =>
+            Future
+              .sequence(futures)
+              .map(
+                _.collectFirst { case Left(err) => Left(err) }.getOrElse(
+                  Left(
+                    AppError
+                      .AuthenticationError("All LDAP servers are unreachable")
+                  )
+                )
+              )
+        }
+
+        EitherT(result)
       }
     }
 
-
     for {
-      _ <- EitherT.cond[Future](config.adminUsername.nonEmpty && config.adminUsername.get.trim.nonEmpty, (), AppError.AuthenticationError("Empty admin username are not allowed for this LDAP auth. module"))
-      _ <- EitherT.cond[Future](config.adminPassword.nonEmpty && config.adminPassword.get.trim.nonEmpty, (), AppError.AuthenticationError("Empty admin password are not allowed for this LDAP auth. module"))
+      _ <- EitherT.cond[Future](
+        config.adminUsername.nonEmpty && config.adminUsername.get.trim.nonEmpty,
+        (),
+        AppError.AuthenticationError(
+          "Empty admin username are not allowed for this LDAP auth. module"
+        )
+      )
+      _ <- EitherT.cond[Future](
+        config.adminPassword.nonEmpty && config.adminPassword.get.trim.nonEmpty,
+        (),
+        AppError.AuthenticationError(
+          "Empty admin password are not allowed for this LDAP auth. module"
+        )
+      )
       r <- _check()
     } yield r
   }

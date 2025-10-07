@@ -1296,6 +1296,8 @@
     "widget.demands.no.demands": "no demands",
     "team.dashboard.label.producer": "Producer",
     "team.dashboard.label.consumer": "Consumer",
+    "motivation.form.info.label": "Informations",
+    "motivation.form.info.help": "This block displays an explanation or informational message to the user when requesting an API key. It does not collect any data — it’s only used to provide context for the form.",
     "motivation.form.modal.title": "Motivation form parameters",
     "motivation.form.setting.title": "Settings",
     "motivation.form.sample.title": "Form preview",

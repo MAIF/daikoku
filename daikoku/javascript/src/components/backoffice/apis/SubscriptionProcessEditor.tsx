@@ -21,7 +21,7 @@ import { FixedItem, SortableItem, SortableList } from '../../utils/dnd/SortableL
 import { Help } from '../apikeys/TeamApiKeysForApi';
 
 type MotivationFormProps = {
-  saveMotivation: (m: { schema: Schema; formatter: string, formKeysToMetadata?: Array<string> }) => void;
+  saveMotivation: (m: { schema: Schema; formatter: string, formKeysToMetadata?: Array<string>, info?: string }) => void;
   value: IValidationStep & { type: 'form' };
 };
 
@@ -34,6 +34,7 @@ const MotivationForm = (props: MotivationFormProps) => {
   const [formKeysToMetadata, setFormKeysToMetadata] = useState<Array<string>>()
   const [value, setValue] = useState<any>({});
   const [example, setExample] = useState('');
+  const [info, setInfo] = useState(props.value.info)
 
   const { translate } = useContext(I18nContext);
   const { close } = useContext(ModalContext);
@@ -69,6 +70,19 @@ const MotivationForm = (props: MotivationFormProps) => {
   return (
     <>
       <div className="container">
+        <div className="row">
+          <div className="col-12">
+            <div className="motivation-form__editor mb-1">
+              <label>{translate('motivation.form.info.label')}</label>
+              <Help message={translate('motivation.form.info.help')} />
+              <CodeInput
+                mode="javascript"
+                onChange={setInfo}
+                value={props.value.info}
+              />
+            </div>
+          </div>
+        </div>
         <div className="row">
           <div className="col-6">
             <h6>{translate('motivation.form.setting.title')}</h6>
@@ -126,7 +140,7 @@ const MotivationForm = (props: MotivationFormProps) => {
             <div className="flex-1 mt-1">
               <div>{translate('motivation.form.formKeysToMetadata.title')}</div>
               <div>
-                <Form 
+                <Form
                   schema={{
                     formKeysToMetadata: {
                       type: type.string,
@@ -137,8 +151,8 @@ const MotivationForm = (props: MotivationFormProps) => {
                     }
                   }}
                   onSubmit={d => setFormKeysToMetadata(d.formKeysToMetadata)}
-                  value={{formKeysToMetadata: props.value.formKeysToMetadata}}
-                  options={{ autosubmit: true, actions: {submit: {display: false}}}}
+                  value={{ formKeysToMetadata: props.value.formKeysToMetadata }}
+                  options={{ autosubmit: true, actions: { submit: { display: false } } }}
                 />
               </div>
             </div>
@@ -149,7 +163,7 @@ const MotivationForm = (props: MotivationFormProps) => {
         <button
           className="btn btn-outline-success"
           onClick={() => {
-            props.saveMotivation({ schema: realSchema, formatter, formKeysToMetadata });
+            props.saveMotivation({ schema: realSchema, formatter, formKeysToMetadata, info });
             close();
           }}
         >
@@ -621,8 +635,8 @@ export const SubscriptionProcessEditor = (props: SubProcessProps) => {
                           content: (
                             <MotivationForm
                               value={item}
-                              saveMotivation={({ schema, formatter, formKeysToMetadata }) => {
-                                const step = { ...item, schema, formatter, formKeysToMetadata };
+                              saveMotivation={({ schema, formatter, formKeysToMetadata, info }) => {
+                                const step = { ...item, schema, formatter, formKeysToMetadata, info };
                                 const updatedProcess = draft.map(
                                   (s) => (s.id === step.id ? step : s)
                                 );

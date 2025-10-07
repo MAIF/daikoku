@@ -180,6 +180,7 @@ export type IValidationStep = {
   formatter: string;
   title: string;
   formKeysToMetadata?: Array<string>
+  info?: string
 } | {
   type: 'payment';
   id: string;

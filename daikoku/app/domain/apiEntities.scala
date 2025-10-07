@@ -810,7 +810,8 @@ object ValidationStep {
                      )
                      .some,
                    formatter: Option[String] = "[[motivation]]".some,
-                   formKeysToMetadata: Option[Seq[String]] = None
+                   formKeysToMetadata: Option[Seq[String]] = None,
+                   info: Option[String] = None
                  ) extends ValidationStep {
     override def name: String = "form"
     override def isAutomatic: Boolean = false

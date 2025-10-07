@@ -761,13 +761,14 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
         s.type === 'form'
       );
       if (formStep) {
-        openFormModal<any>({
+        openFormModal({
           title: translate('motivations.modal.title'),
           schema: formStep.schema,
-          onSubmit: (motivation: object) =>
+          onSubmit: (motivation) =>
             props.askForApikeys({ team, plan, apiKey, motivation }),
           actionLabel: translate('Send'),
           value: apiKey?.customMetadata,
+          description: formStep.info ? <div className='alert alert-info' dangerouslySetInnerHTML={{__html: formStep.info}} /> : <></>
         });
       } else {
         props.askForApikeys({ team, plan: plan, apiKey }).then(() => close());
