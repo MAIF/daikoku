@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.7.0">
 <title data-rh="true">Managing APIs | Daikoku</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:image" content="https://maif.github.io/daikoku/img/daikoku-mini.jpg"><meta data-rh="true" name="twitter:image" content="https://maif.github.io/daikoku/img/daikoku-mini.jpg"><meta data-rh="true" property="og:url" content="https://maif.github.io/daikoku/docs/usages/producerusage/apis"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Managing APIs | Daikoku"><meta data-rh="true" name="description" content="Create a new API"><meta data-rh="true" property="og:description" content="Create a new API"><link data-rh="true" rel="icon" href="/daikoku/img/daikoku-mini.svg"><link data-rh="true" rel="canonical" href="https://maif.github.io/daikoku/docs/usages/producerusage/apis"><link data-rh="true" rel="alternate" href="https://maif.github.io/daikoku/docs/usages/producerusage/apis" hreflang="en"><link data-rh="true" rel="alternate" href="https://maif.github.io/daikoku/docs/usages/producerusage/apis" hreflang="x-default"><link rel="stylesheet" href="/daikoku/assets/css/styles.98544a2c.css">
-<script src="/daikoku/assets/js/runtime~main.2deba45f.js" defer="defer"></script>
+<script src="/daikoku/assets/js/runtime~main.81870b8e.js" defer="defer"></script>
 <script src="/daikoku/assets/js/main.15cef605.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
@@ -48,19 +48,25 @@ It&#x27;s possible to <strong>allow API keys aggregation</strong></p>
 <p>Plans in Daikoku are fully configurable.
 Each plan can define <strong>quotas</strong> (e.g., number of allowed requests per windows/sec, day or month) and <strong>pricing</strong> settings (e.g., fixed monthly costs, per-request pricing).</p>
 <p>By combining these options, you can create plans tailored to different use cases, whether free, quota-based, or pay-per-use, without being constrained by predefined categories.</p>
-<p>The subscription process in Daikoku offers flexibility, allowing users to customize their validation steps. There are three possible types of steps:</p>
+<p>The subscription process in Daikoku offers flexibility, allowing users to customize their validation steps. There are few possible types of steps:</p>
 <ul>
-<li><strong>Admin Validation</strong>: This step requires an administrator from the API&#x27;s owning team to validate the subscription request. When a request is submitted, all administrators in the team receive a Daikoku notification and an email containing the request details. The first administrator who validates the notification approves the step.</li>
+<li><strong>Form</strong>: A step to display a customizable form, to ask specific information to the user.</li>
 </ul>
 <blockquote>
 <p>It&#x27;s possible to configure this step to display a specific form when the user asks for a subscription.
 To parameterize the form, we use the JSON language used by <a href="https://github.com/MAIF/react-forms#maifreact-forms" target="_blank" rel="noopener noreferrer">@maif/react-forms</a>.
 You can write a formatter to format the form response as a notification sent to admins. It&#x27;s just a string with a replacement pattern like this <code>[[label]]</code>
-the result of the form is used to automatically generate metadata which will be deletable or modifiable before validation by the admin</p>
+the result of the form is used to automatically generate metadata, configure with the <code>keysToMetadata</code> parameter which will be deletable or modifiable before validation by the admin (if ana admin step is configure)
+A header can be setup to display a quick description to the user</p>
 </blockquote>
 <ul>
-<li><strong>HTTP Request</strong>: This step is a semi-automatic step. A HTTP POST is sent to an API with the whole context of the subscription demand.
-A JSON response is awaited with a precise format.</li>
+<li>
+<p><strong>Admin Validation</strong>: This step requires an administrator from the API&#x27;s owning team to validate the subscription request. When a request is submitted, all administrators in the team receive a Daikoku notification and an email containing the request details. The first administrator who validates the notification approves the step.</p>
+</li>
+<li>
+<p><strong>HTTP Request</strong>: This step is a semi-automatic step. A HTTP POST is sent to an API with the whole context of the subscription demand.
+A JSON response is awaited with a precise format.</p>
+</li>
 </ul>
 <blockquote>
 <p>A property <code>accept</code> as boolean to accept or reject the subscription demand
