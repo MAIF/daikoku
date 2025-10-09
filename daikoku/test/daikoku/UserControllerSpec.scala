@@ -1,8 +1,11 @@
 package fr.maif.otoroshi.daikoku.tests
 
+import cats.implicits.catsSyntaxOptionId
+import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.login.AuthProvider
+import fr.maif.otoroshi.daikoku.login.{AuthProvider, LdapConfig}
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
+import fr.maif.otoroshi.daikoku.utils.LoggerImplicits.BetterLogger
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsArray, Json}
@@ -12,7 +15,13 @@ import scala.util.Random
 class UserControllerSpec()
     extends PlaySpec
     with DaikokuSpecHelper
-    with IntegrationPatience {
+    with IntegrationPatience
+    with ForAllTestContainer {
+
+
+  override val container = GenericContainer(
+    "ghcr.io/rroemhild/docker-test-openldap:master",
+    exposedPorts = Seq(10389, 10636))
 
   "a daikoku admin" can {
     "list all tenant user" in {
@@ -365,6 +374,18 @@ class UserControllerSpec()
     }
 
   }
+  lazy val authProviderSettings = LdapConfig(
+    serverUrls = Seq(
+      s"ldap://localhost:${container.mappedPort(10389)}"
+    ),
+    searchBase = "dc=planetexpress,dc=com",
+    userBase = "ou=people".some,
+    groupFilter = "ou=ship_crew".some,
+    adminGroupFilter = "ou=admin_staff".some,
+    adminUsername = "cn=admin,dc=planetexpress,dc=com".some,
+    adminPassword = "GoodNewsEveryone".some,
+    nameFields = Seq("givenName", "sn")
+  ).asJson
 
   "a teamAdmin" can {
     "create LDAP user" in {
@@ -372,18 +393,7 @@ class UserControllerSpec()
         tenants = Seq(
           tenant.copy(
             authProvider = AuthProvider.LDAP,
-            authProviderSettings = Json.obj(
-              "serverUrls" -> Seq("ldap://ldap.forumsys.com:389"),
-              "searchBase" -> "dc=example,dc=com",
-              "adminUsername" -> "cn=read-only-admin,dc=example,dc=com",
-              "adminPassword" -> "password",
-              "userBase" -> "",
-              "searchFilter" -> "(mail=${username})",
-              "groupFilter" -> "ou=mathematicians",
-              "adminGroupFilter" -> "ou=scientists",
-              "nameField" -> "cn",
-              "emailField" -> "mail"
-            )
+            authProviderSettings = authProviderSettings
           )
         ),
         users = Seq(tenantAdmin),
@@ -396,12 +406,13 @@ class UserControllerSpec()
         method = "POST",
         body = Some(
           Json.obj(
-            "email" -> "gauss@ldap.forumsys.com",
+            "email" -> "fry@planetexpress.com",
             "teamId" -> defaultAdminTeam.id.value
           )
         )
       )(tenant, session)
 
+      logger.json(resp.json)
       resp.status mustBe 201
     }
   }

@@ -1,15 +1,23 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import fr.maif.otoroshi.daikoku.login.AuthProvider
+import cats.implicits.catsSyntaxOptionId
+import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
+import fr.maif.otoroshi.daikoku.login.{AuthProvider, LdapConfig}
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
-import play.api.libs.json.Json
 
 class BasicUsageSpec()
     extends PlaySpec
     with DaikokuSpecHelper
-    with IntegrationPatience {
+    with IntegrationPatience
+    with ForAllTestContainer {
+
+
+  override val container = GenericContainer(
+    "ghcr.io/rroemhild/docker-test-openldap:master",
+    exposedPorts = Seq(10389, 10636)
+  )
 
   s"Daikoku basics" should {
 
@@ -93,23 +101,21 @@ class BasicUsageSpec()
 //    }
   }
 
+  lazy val authProviderSettings = LdapConfig(
+    serverUrls = Seq(
+      s"ldap://localhost:${container.mappedPort(10389)}"
+    ),
+    searchBase = "dc=planetexpress,dc=com",
+    userBase = "ou=people".some,
+    groupFilter = "ou=ship_crew".some,
+    adminGroupFilter = "ou=admin_staff".some,
+    adminUsername = "cn=admin,dc=planetexpress,dc=com".some,
+    adminPassword = "GoodNewsEveryone".some,
+    nameFields = Seq("givenName", "sn"),
+  ).asJson
+
   "daikoku ldap module" can {
     "used fallback urls" in {
-      val authProviderSettings = Json.obj(
-        "serverUrls" -> Seq(
-          "ldap://ldap.forumsys:389",
-          "ldap://ldap.forumsys.com:389"
-        ),
-        "searchBase" -> "dc=example,dc=com",
-        "adminUsername" -> "cn=read-only-admin,dc=example,dc=com",
-        "adminPassword" -> "password",
-        "userBase" -> "",
-        "searchFilter" -> "(mail=${username})",
-        "groupFilter" -> "ou=mathematicians",
-        "adminGroupFilter" -> "ou=scientists",
-        "nameField" -> "cn",
-        "emailField" -> "mail"
-      )
 
       setupEnvBlocking(
         tenants = Seq(
@@ -134,18 +140,6 @@ class BasicUsageSpec()
     }
 
     "check if email exists in ldap" in {
-      val authProviderSettings = Json.obj(
-        "serverUrls" -> Seq("ldap://ldap.forumsys.com:389"),
-        "searchBase" -> "dc=example,dc=com",
-        "adminUsername" -> "cn=read-only-admin,dc=example,dc=com",
-        "adminPassword" -> "password",
-        "userBase" -> "",
-        "searchFilter" -> "(mail=${username})",
-        "groupFilter" -> "ou=mathematicians",
-        "adminGroupFilter" -> "ou=scientists",
-        "nameField" -> "cn",
-        "emailField" -> "mail"
-      )
 
       setupEnvBlocking(
         tenants = Seq(
@@ -159,19 +153,19 @@ class BasicUsageSpec()
       )
       val session = loginWithBlocking(tenantAdmin, tenant)
 
-      val validEmail = "gauss@ldap.forumsys.com"
-      val unknownEmail = "toto@ldap.forumsys.com"
+      val validEmail = "fry@planetexpress.com"
+      val unknownEmail = "yolo@planetexpress.com"
 
       var resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${defaultAdminTeam.id.value}/ldap/users/${validEmail}"
+          s"/api/teams/${defaultAdminTeam.id.value}/ldap/users/$validEmail"
       )(tenant, session)
 
       resp.status mustBe 200
 
       resp = httpJsonCallBlocking(
         path =
-          s"/api/teams/${defaultAdminTeam.id.value}/ldap/users/${unknownEmail}"
+          s"/api/teams/${defaultAdminTeam.id.value}/ldap/users/$unknownEmail"
       )(tenant, session)
 
       resp.status mustBe 400
