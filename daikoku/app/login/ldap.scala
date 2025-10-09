@@ -13,15 +13,12 @@ import org.apache.commons.lang3.StringUtils.stripAccents
 import play.api.Logger
 import play.api.libs.json._
 
+import java.net.{InetAddress, Socket}
+import java.security.cert.X509Certificate
 import javax.naming.ldap.{Control, InitialLdapContext}
+import javax.net.ssl.{SSLContext, SSLSocket, SSLSocketFactory, TrustManager, X509TrustManager}
 import scala.concurrent.duration.Duration
-import scala.concurrent.{
-  Await,
-  ExecutionContext,
-  Future,
-  Promise,
-  TimeoutException
-}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise, TimeoutException}
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.{Failure, Success, Try}
 
@@ -77,7 +74,9 @@ object LdapConfig {
           nameFields =
             (json \ "nameFields").asOpt[Seq[String]].getOrElse(Seq("cn")),
           emailField = (json \ "emailField").as[String],
-          pictureField = (json \ "pictureField").asOpt[String]
+          pictureField = (json \ "pictureField").asOpt[String],
+          useSsl = (json \ "useSsl").as[Boolean]
+
         )
       )
     } recover {
@@ -98,7 +97,8 @@ case class LdapConfig(
     adminPassword: Option[String] = None,
     nameFields: Seq[String] = Seq("cn"),
     emailField: String = "mail",
-    pictureField: Option[String] = None
+    pictureField: Option[String] = None,
+    useSsl: Boolean = false
 ) {
   def asJson: JsObject =
     Json.obj(
@@ -133,7 +133,8 @@ case class LdapConfig(
       "pictureField" -> this.pictureField
         .map(JsString.apply)
         .getOrElse(JsNull)
-        .as[JsValue]
+        .as[JsValue],
+      "useSsl" -> this.useSsl
     )
 }
 
@@ -146,7 +147,8 @@ object LdapSupport {
   private def getLdapContext(
       principal: String,
       password: String,
-      url: String
+      url: String,
+      useSsl: Boolean
   ): util.Hashtable[String, AnyRef] = {
     val env = new util.Hashtable[String, AnyRef]
     env.put(Context.SECURITY_AUTHENTICATION, "simple")
@@ -154,16 +156,22 @@ object LdapSupport {
     env.put(Context.SECURITY_CREDENTIALS, password)
     env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
     env.put(Context.PROVIDER_URL, url)
+
+    if (useSsl || url.startsWith("ldaps://")) {
+      env.put(Context.SECURITY_PROTOCOL, "ssl")
+    }
+
     env
   }
 
   private def getInitialLdapContext(
       principal: String,
       password: String,
-      url: String
+      url: String,
+      useSsl: Boolean
   ) = {
     new InitialLdapContext(
-      getLdapContext(principal, password, url),
+      getLdapContext(principal, password, url, useSsl),
       Array.empty[Control]
     )
   }
@@ -171,9 +179,10 @@ object LdapSupport {
   private def getInitialDirContext(
       principal: String,
       password: String,
-      url: String
+      url: String,
+      useSsl: Boolean
   ) =
-    new InitialDirContext(getLdapContext(principal, password, url))
+    new InitialDirContext(getLdapContext(principal, password, url, useSsl))
 
   private def getUsersInGroup(
       optFilter: Option[String],
@@ -273,6 +282,9 @@ object LdapSupport {
     if (urls.isEmpty)
       Left("All servers down")
     else {
+      AppLogger.warn(
+        s"[ldapConfig] :: try to connect $username with ldap"
+      )
       Try {
         val url = urls.head
         Await.result(
@@ -280,7 +292,8 @@ object LdapSupport {
             val ctx = getInitialLdapContext(
               ldapConfig.adminUsername.map(u => u).getOrElse(""),
               ldapConfig.adminPassword.map(p => p).getOrElse(""),
-              url
+              url,
+              ldapConfig.useSsl
             )
 
             val searchControls = getDefaultSearchControls()
@@ -345,7 +358,7 @@ object LdapSupport {
                 ldapConfig.adminGroupFilter
                   .exists(_ => usersInAdminGroup.contains(dn))
               ) {
-                getInitialDirContext(dn, password, url)
+                getInitialDirContext(dn, password, url, ldapConfig.useSsl)
                   .close()
 
                 Right(
@@ -405,7 +418,7 @@ object LdapSupport {
                   usersInGroup.map(stripAccents).contains(stripAccents(dn))
                 )
               ) {
-                getInitialDirContext(dn, password, url)
+                getInitialDirContext(dn, password, url, ldapConfig.useSsl)
                   .close()
 
                 Right(
@@ -474,13 +487,20 @@ object LdapSupport {
           Duration(s"${ldapConfig.connectTimeout} seconds")
         )
       } recover {
-        case _: ServiceUnavailableException | _: CommunicationException |
-            _: TimeoutException =>
+        case e: ServiceUnavailableException =>
+          AppLogger.error("bind failed - check your fields", e)
+          _bindUser(urls.tail, username, password, ldapConfig, tenant, _env)
+        case e: CommunicationException =>
+          AppLogger.error("bind failed - check your fields", e)
+          _bindUser(urls.tail, username, password, ldapConfig, tenant, _env)
+        case e: TimeoutException =>
+          AppLogger.error("bind failed - check your fields", e)
           _bindUser(urls.tail, username, password, ldapConfig, tenant, _env)
         case e: NamingException =>
           AppLogger.error(e.getMessage, e)
           Left(e.getMessage)
         case e =>
+          AppLogger.error("bind failed - check your fields", e)
           throw e
           Left(s"bind failed - check your fields")
       } get
@@ -613,7 +633,8 @@ object LdapSupport {
                 val ctx = getInitialLdapContext(
                   ldapConfig.adminUsername.map(u => u).getOrElse(""),
                   ldapConfig.adminPassword.map(p => p).getOrElse(""),
-                  url
+                  url,
+                  ldapConfig.useSsl
                 )
 
                 val res = ctx.search(
@@ -658,7 +679,8 @@ object LdapSupport {
         val ctx = getInitialLdapContext(
           ldapConfig.adminUsername.map(u => u).getOrElse(""),
           ldapConfig.adminPassword.map(p => p).getOrElse(""),
-          url
+          url,
+          ldapConfig.useSsl
         )
 
         val searchControls = getDefaultSearchControls()

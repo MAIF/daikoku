@@ -99,6 +99,9 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
       type: type.string,
       label: translate('Email field name'),
     },
+    useSsl: {
+      type: type.bool
+    },
     testConnection: {
       type: type.string,
       label: null,
