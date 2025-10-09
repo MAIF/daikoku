@@ -189,6 +189,7 @@ export const SideBar = () => {
 
           <div className="nav_item mb-3" style={{ color: '#fff' }}>
             {!userHasAvatar(connectedUser) && <div
+              role="img" aria-label="user menu"
               style={{ width: '35px', height: '35px', ...impersonatorStyle }}
               className="logo-anonymous user-logo avatar-without-img"
               onClick={() => {
