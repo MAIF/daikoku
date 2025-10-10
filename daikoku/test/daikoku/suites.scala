@@ -16,6 +16,7 @@ import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
 import org.joda.time.DateTime
 import org.jsoup.nodes.Document
 import org.mindrot.jbcrypt.BCrypt
+import org.apache.pekko.pattern.after
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest._
 import org.scalatestplus.play.components.OneServerPerSuiteWithComponents
@@ -899,10 +900,46 @@ object utils {
         .execute()
         .map(_.json.as[JsArray].value.toSeq)
 
+      def fetchApiKeysWithRetry(maxRetries: Int = 3, delay: FiniteDuration = 1.second): Future[Seq[JsValue]] = {
+        def fetchOnce(): Future[JsValue] = {
+          daikokuComponents.env.wsClient
+            .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
+            .withHttpHeaders(
+              "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+              "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+              "Host" -> "otoroshi-api.oto.tools"
+            )
+            .withFollowRedirects(false)
+            .withRequestTimeout(10.seconds)
+            .get()
+            .map(_.json)
+        }
+
+        def loop(attempt: Int): Future[Seq[JsValue]] = {
+          fetchOnce().flatMap {
+            case keys:JsArray =>
+              Future.successful(keys.value.toSeq)
+            case obj: JsObject if (obj \ "error").isDefined && attempt < maxRetries =>
+              logger.warn(s"[$attempt/$maxRetries] Failed to fetch Otoroshi API keys: ${(obj \ "error").as[String]}")
+              after(delay * attempt)(loop(attempt + 1))
+            case other if attempt < maxRetries =>
+              logger.error(s"[$attempt/$maxRetries] Failed to fetch Otoroshi API keys after $maxRetries attempts: ${Json.prettyPrint(other)}")
+              Future.successful(Seq.empty) // on renvoie une liste vide pour ne pas faire planter la suite
+            case other =>
+              logger.error(s"Failed to fetch Otoroshi API keys after $maxRetries attempts: ${Json.prettyPrint(other)}")
+              Future.successful(Seq.empty) // on renvoie une liste vide pour ne pas faire planter la suite
+          }
+        }
+
+        loop(1)
+      }
+
+
+
       for {
         _ <-
           Source
-            .futureSource(apikeys.map(Source(_)))
+            .futureSource(fetchApiKeysWithRetry().map(Source(_)))
             .mapAsync(5)(apk => {
               val clientId = (apk \ "clientId").as[String]
               if (clientId == "admin-api-apikey-id") {
