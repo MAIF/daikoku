@@ -2357,32 +2357,33 @@ export const retrieveSubscription = (
     body: JSON.stringify({ token }),
   });
 
-
 export const testMailConnection = (
   tenantId: string,
   mailerType: string,
   mailerConfiguration: object
 ): PromiseWithError<ResponseDone> => {
   return customFetch(`/api/tenants/${tenantId}/mailers/_test-connection`, {
-    method: "POST",
-    body: JSON.stringify({ ...mailerConfiguration, type: mailerType })
+    method: 'POST',
+    body: JSON.stringify({ ...mailerConfiguration, type: mailerType }),
   });
-}
+};
 
 export const testAuthProviderConfiguration = (
-  authProvider: "ldap" | "oauth",
+  authProvider: 'ldap' | 'oauth',
   config: object
-): PromiseWithError<{works: boolean}> => {
+): PromiseWithError<{ works: boolean }> => {
   return customFetch(`/api/auth/${authProvider}/_check`, {
-    method: "POST",
-    body: JSON.stringify(config)
+    method: 'POST',
+    body: JSON.stringify(config),
   });
-}
+};
 export const fetchOAuthConfiguration = (
-  url: string, clientId?: string, clientSecret?: string
+  url: string,
+  clientId?: string,
+  clientSecret?: string
 ): PromiseWithError<OAuthSettings> => {
   return customFetch(`/api/auth/oauth/_fetch-configuration`, {
-    method: "POST",
-    body: JSON.stringify({url, clientId, clientSecret})
+    method: 'POST',
+    body: JSON.stringify({ url, clientId, clientSecret }),
   });
-}
+};

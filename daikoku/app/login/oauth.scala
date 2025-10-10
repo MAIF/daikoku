@@ -371,7 +371,7 @@ object OAuth2Support {
       config
         .copy(
           clientId = clientId.getOrElse(config.clientId),
-          clientSecret =  clientSecret.getOrElse(config.clientSecret),
+          clientSecret = clientSecret.getOrElse(config.clientSecret),
           tokenUrl = tokenUrl,
           authorizeUrl = authorizeUrl,
           userInfoUrl = userInfoUrl,
@@ -396,7 +396,9 @@ object OAuth2Support {
         env.wsClient.url(url).withRequestTimeout(10.seconds).get()
       )
       _ <- EitherT.cond[Future][AppError, Unit](
-        getConfig.status == 200, (), AppError.BadRequestError("Get config impossible")
+        getConfig.status == 200,
+        (),
+        AppError.BadRequestError("Get config impossible")
       )
     } yield parseResponseAsConfig(getConfig.json)
 

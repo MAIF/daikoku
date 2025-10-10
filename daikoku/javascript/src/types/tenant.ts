@@ -196,8 +196,8 @@ export interface ITenant {
   fontFamilyUrl?: string;
   otoroshiSettings: Array<ISafeOtoroshiSettings>;
   thirdPartyPaymentSettings: Array<IThirdPartyPaymentSettings>;
-  accountCreationProcess: Array<IValidationStep>
-  isPrivate: boolean
+  accountCreationProcess: Array<IValidationStep>;
+  isPrivate: boolean;
 }
 
 export interface ITenantFull extends ITenant {
@@ -309,28 +309,32 @@ export interface ISimpleSession {
   ttl: number;
 }
 
-type AlgoSettings = {
-  type: 'HSAlgoSettings',
-  size: number,
-  secret: string
-} | {
-  type: 'RSAlgoSettings',
-  size: number,
-  publicKey: string,
-  privateKey?: string
-} | {
-  type: 'ESAlgoSettings',
-  size: number,
-  publicKey: string,
-  privateKey?: string
-} | {
-  type: 'JWKSAlgoSettings',
-  url: string,
-  timeout: number,
-  headers: { [x: string]: string },
-  ttl: number,
-  kty: string
-}
+type AlgoSettings =
+  | {
+      type: 'HSAlgoSettings';
+      size: number;
+      secret: string;
+    }
+  | {
+      type: 'RSAlgoSettings';
+      size: number;
+      publicKey: string;
+      privateKey?: string;
+    }
+  | {
+      type: 'ESAlgoSettings';
+      size: number;
+      publicKey: string;
+      privateKey?: string;
+    }
+  | {
+      type: 'JWKSAlgoSettings';
+      url: string;
+      timeout: number;
+      headers: { [x: string]: string };
+      ttl: number;
+      kty: string;
+    };
 
 export type OAuthSettings = {
   sessionMaxAge: number;
@@ -351,4 +355,4 @@ export type OAuthSettings = {
   pictureField: string;
   callbackUrl: string;
   daikokuAdmins: string[];
-}
+};

@@ -6,9 +6,16 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
+  _TeamMemberOnly,
+  _TenantAdminAccessTenant
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiSubscriptionDemandFormat, TenantIdFormat, UserIdFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiSubscriptionDemandFormat,
+  TenantIdFormat,
+  UserIdFormat
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{OtoroshiClient, S3Configuration}
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -21,7 +28,11 @@ import sangria.schema.{Context, _}
 import sangria.validation.ValueCoercionViolation
 import services.CmsPage
 import storage._
-import storage.graphql.{GraphQLImplicits, RequiresDaikokuAdmin, RequiresTenantAdmin}
+import storage.graphql.{
+  GraphQLImplicits,
+  RequiresDaikokuAdmin,
+  RequiresTenantAdmin
+}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -1485,7 +1496,11 @@ object SchemaDefinition {
           ),
           Field("deleted", BooleanType, resolve = _.value.deleted),
           Field("apiKey", OtoroshiApiKeyType, resolve = _.value.apiKey),
-          Field("bearerToken", OptionType(StringType), resolve = _.value.bearerToken),
+          Field(
+            "bearerToken",
+            OptionType(StringType),
+            resolve = _.value.bearerToken
+          ),
           Field(
             "plan",
             OptionType(UsagePlanType),
@@ -3015,10 +3030,26 @@ object SchemaDefinition {
           resolve = _.value.steps
         )
       ),
-      ReplaceField("state", Field("state", StringType, resolve = _.value.state.name)),
-      ReplaceField("fromTenant", Field("fromTenant", StringType, resolve = _.value.fromTenant.value)),
-      ReplaceField("value", Field("value", JsonType, resolve = _.value.value - "password" - "confirmPassword")),
-      ReplaceField("metadata", Field("metadata", MapType, resolve = _.value.metadata)),
+      ReplaceField(
+        "state",
+        Field("state", StringType, resolve = _.value.state.name)
+      ),
+      ReplaceField(
+        "fromTenant",
+        Field("fromTenant", StringType, resolve = _.value.fromTenant.value)
+      ),
+      ReplaceField(
+        "value",
+        Field(
+          "value",
+          JsonType,
+          resolve = _.value.value - "password" - "confirmPassword"
+        )
+      ),
+      ReplaceField(
+        "metadata",
+        Field("metadata", MapType, resolve = _.value.metadata)
+      )
     )
     lazy val AccountCreationAttemptType = new PossibleObject(
       ObjectType(
@@ -3047,7 +3078,7 @@ object SchemaDefinition {
                 .findByIdNotDeleted(ctx.value.demand)
                 .map {
                   case Some(d) => d.steps.find(_.id == ctx.value.step)
-                  case None => None
+                  case None    => None
                 }
           ),
           Field(

@@ -13,7 +13,6 @@ class BasicUsageSpec()
     with IntegrationPatience
     with ForAllTestContainer {
 
-
   override val container = GenericContainer(
     "ghcr.io/rroemhild/docker-test-openldap:master",
     exposedPorts = Seq(10389, 10636)
@@ -111,7 +110,7 @@ class BasicUsageSpec()
     adminGroupFilter = "ou=admin_staff".some,
     adminUsername = "cn=admin,dc=planetexpress,dc=com".some,
     adminPassword = "GoodNewsEveryone".some,
-    nameFields = Seq("givenName", "sn"),
+    nameFields = Seq("givenName", "sn")
   ).asJson
 
   "daikoku ldap module" can {
@@ -157,8 +156,7 @@ class BasicUsageSpec()
       val unknownEmail = "yolo@planetexpress.com"
 
       var resp = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${defaultAdminTeam.id.value}/ldap/users/$validEmail"
+        path = s"/api/teams/${defaultAdminTeam.id.value}/ldap/users/$validEmail"
       )(tenant, session)
 
       resp.status mustBe 200

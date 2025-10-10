@@ -18,10 +18,10 @@ class UserControllerSpec()
     with IntegrationPatience
     with ForAllTestContainer {
 
-
   override val container = GenericContainer(
     "ghcr.io/rroemhild/docker-test-openldap:master",
-    exposedPorts = Seq(10389, 10636))
+    exposedPorts = Seq(10389, 10636)
+  )
 
   "a daikoku admin" can {
     "list all tenant user" in {

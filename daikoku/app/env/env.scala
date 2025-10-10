@@ -426,186 +426,188 @@ class DaikokuEnv(
           case store: PostgresDataStore => store.checkDatabase()
           case _                        => FastFuture.successful(None)
         }).flatMap { _ =>
-          val eventualUnit: Future[Unit] = path.orElse(config.init.data.from) match {
-            case Some(path)
-              if path.startsWith("http://") || path
-                .startsWith("https://") =>
-              AppLogger.warn(
-                s"Main dataStore seems to be empty, importing from http resource $path ..."
-              )
-              implicit val ec: ExecutionContext = defaultExecutionContext
-              implicit val env: DaikokuEnv = this
-              wsClient
-                .url(path)
-                .withHttpHeaders(config.init.data.headers.toSeq: _*)
-                .withMethod("GET")
-                .withRequestTimeout(10.seconds)
-                .get()
-                .flatMap {
-                  case resp if resp.status == 200 =>
-                    dataStore.importFromStream(resp.bodyAsSource)
-                  case resp =>
-                    FastFuture.failed(
-                      new RuntimeException(
-                        s"Bad response from $path: ${resp.status} - ${resp.body}"
+          val eventualUnit: Future[Unit] =
+            path.orElse(config.init.data.from) match {
+              case Some(path)
+                  if path.startsWith("http://") || path
+                    .startsWith("https://") =>
+                AppLogger.warn(
+                  s"Main dataStore seems to be empty, importing from http resource $path ..."
+                )
+                implicit val ec: ExecutionContext = defaultExecutionContext
+                implicit val env: DaikokuEnv = this
+                wsClient
+                  .url(path)
+                  .withHttpHeaders(config.init.data.headers.toSeq: _*)
+                  .withMethod("GET")
+                  .withRequestTimeout(10.seconds)
+                  .get()
+                  .flatMap {
+                    case resp if resp.status == 200 =>
+                      dataStore.importFromStream(resp.bodyAsSource)
+                    case resp =>
+                      FastFuture.failed(
+                        new RuntimeException(
+                          s"Bad response from $path: ${resp.status} - ${resp.body}"
+                        )
                       )
-                    )
-                }
-            case Some(path) =>
-              AppLogger.warn(
-                s"Main dataStore seems to be empty, importing from $path ..."
-              )
-              implicit val ec: ExecutionContext = defaultExecutionContext
-              implicit val env: DaikokuEnv = this
+                  }
+              case Some(path) =>
+                AppLogger.warn(
+                  s"Main dataStore seems to be empty, importing from $path ..."
+                )
+                implicit val ec: ExecutionContext = defaultExecutionContext
+                implicit val env: DaikokuEnv = this
 
-              dataStore.importFromStream(FileIO.fromPath(Paths.get(path)))
-            case _ =>
-              import fr.maif.otoroshi.daikoku.domain._
-              import fr.maif.otoroshi.daikoku.login._
-              import fr.maif.otoroshi.daikoku.utils.StringImplicits._
-              import org.mindrot.jbcrypt.BCrypt
-              import play.api.libs.json._
+                dataStore.importFromStream(FileIO.fromPath(Paths.get(path)))
+              case _ =>
+                import fr.maif.otoroshi.daikoku.domain._
+                import fr.maif.otoroshi.daikoku.login._
+                import fr.maif.otoroshi.daikoku.utils.StringImplicits._
+                import org.mindrot.jbcrypt.BCrypt
+                import play.api.libs.json._
 
-              import scala.concurrent._
+                import scala.concurrent._
 
-              AppLogger.warn("")
-              AppLogger.warn(
-                "Main dataStore seems to be empty, generating initial data ..."
-              )
-              val userId = UserId(IdGenerator.token(32))
-              val adminApiDefaultTenantId =
-                ApiId(s"admin-api-tenant-${Tenant.Default.value}")
-              val cmsApiDefaultTenantId =
-                ApiId(s"cms-api-tenant-${Tenant.Default.value}")
-              val defaultAdminTeam = Team(
-                id = TeamId(IdGenerator.token),
-                tenant = Tenant.Default,
-                `type` = TeamType.Admin,
-                name = s"default-admin-team",
-                description = s"The admin team for the default tenant",
-                avatar = Some(
-                  s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"
-                ),
-                users = Set(UserWithPermission(userId, Administrator)),
-                authorizedOtoroshiEntities = None,
-                contact = "no-replay@daikoku.io"
-              )
+                AppLogger.warn("")
+                AppLogger.warn(
+                  "Main dataStore seems to be empty, generating initial data ..."
+                )
+                val userId = UserId(IdGenerator.token(32))
+                val adminApiDefaultTenantId =
+                  ApiId(s"admin-api-tenant-${Tenant.Default.value}")
+                val cmsApiDefaultTenantId =
+                  ApiId(s"cms-api-tenant-${Tenant.Default.value}")
+                val defaultAdminTeam = Team(
+                  id = TeamId(IdGenerator.token),
+                  tenant = Tenant.Default,
+                  `type` = TeamType.Admin,
+                  name = s"default-admin-team",
+                  description = s"The admin team for the default tenant",
+                  avatar = Some(
+                    s"https://www.gravatar.com/avatar/${"default-tenant".md5}?size=128&d=robohash"
+                  ),
+                  users = Set(UserWithPermission(userId, Administrator)),
+                  authorizedOtoroshiEntities = None,
+                  contact = "no-replay@daikoku.io"
+                )
 
-              val tenant = Tenant(
-                id = Tenant.Default,
-                name = "Daikoku Default Tenant",
-                domain = config.init.host,
-                defaultLanguage = Some("En"),
-                style = Some(
-                  DaikokuStyle
-                    .template(Tenant.Default)
-                    .copy(
-                      title = "Daikoku Default Tenant"
-                    )
-                ),
-                contact = "contact@foo.bar",
-                mailerSettings = Some(ConsoleMailerSettings()),
-                authProvider = AuthProvider.Local,
-                authProviderSettings = Json.obj(
-                  "sessionMaxAge" -> 86400
-                ),
-                bucketSettings = None,
-                otoroshiSettings = Set(),
-                adminApi = adminApiDefaultTenantId
-              )
+                val tenant = Tenant(
+                  id = Tenant.Default,
+                  name = "Daikoku Default Tenant",
+                  domain = config.init.host,
+                  defaultLanguage = Some("En"),
+                  style = Some(
+                    DaikokuStyle
+                      .template(Tenant.Default)
+                      .copy(
+                        title = "Daikoku Default Tenant"
+                      )
+                  ),
+                  contact = "contact@foo.bar",
+                  mailerSettings = Some(ConsoleMailerSettings()),
+                  authProvider = AuthProvider.Local,
+                  authProviderSettings = Json.obj(
+                    "sessionMaxAge" -> 86400
+                  ),
+                  bucketSettings = None,
+                  otoroshiSettings = Set(),
+                  adminApi = adminApiDefaultTenantId
+                )
 
-              val (adminApiDefaultTenant, adminApiDefaultPlan) =
-                ApiTemplate.adminApi(defaultAdminTeam, tenant)
-              val (cmsApi, cmsPlan) =
-                ApiTemplate.cmsApi(defaultAdminTeam, tenant)
+                val (adminApiDefaultTenant, adminApiDefaultPlan) =
+                  ApiTemplate.adminApi(defaultAdminTeam, tenant)
+                val (cmsApi, cmsPlan) =
+                  ApiTemplate.cmsApi(defaultAdminTeam, tenant)
 
-              val team = Team(
-                id = TeamId(IdGenerator.token(32)),
-                tenant = tenant.id,
-                `type` = TeamType.Personal,
-                name = s"${config.init.admin.name}",
-                description = s"${config.init.admin.name}'s team",
-                users = Set(UserWithPermission(userId, Administrator)),
-                authorizedOtoroshiEntities = None,
-                contact = "admin@daikoku.io"
-              )
-              val user = User(
-                id = userId,
-                tenants = Set(tenant.id),
-                origins = Set(AuthProvider.Otoroshi),
-                name = config.init.admin.name,
-                email = config.init.admin.email,
-                picture = config.init.admin.email.gravatar,
-                isDaikokuAdmin = true,
-                lastTenant = Some(tenant.id),
-                password = Some(
-                  BCrypt.hashpw(config.init.admin.password, BCrypt.gensalt())
-                ),
-                personalToken = Some(IdGenerator.token(32)),
-                defaultLanguage = None
-              )
-              for {
-                _ <- Future.sequence(
-                  evolutions.list.map(e =>
-                    dataStore.evolutionRepo.save(
-                      Evolution(
-                        id = DatastoreId(IdGenerator.token(32)),
-                        version = e.version,
-                        applied = true
+                val team = Team(
+                  id = TeamId(IdGenerator.token(32)),
+                  tenant = tenant.id,
+                  `type` = TeamType.Personal,
+                  name = s"${config.init.admin.name}",
+                  description = s"${config.init.admin.name}'s team",
+                  users = Set(UserWithPermission(userId, Administrator)),
+                  authorizedOtoroshiEntities = None,
+                  contact = "admin@daikoku.io"
+                )
+                val user = User(
+                  id = userId,
+                  tenants = Set(tenant.id),
+                  origins = Set(AuthProvider.Otoroshi),
+                  name = config.init.admin.name,
+                  email = config.init.admin.email,
+                  picture = config.init.admin.email.gravatar,
+                  isDaikokuAdmin = true,
+                  lastTenant = Some(tenant.id),
+                  password = Some(
+                    BCrypt.hashpw(config.init.admin.password, BCrypt.gensalt())
+                  ),
+                  personalToken = Some(IdGenerator.token(32)),
+                  defaultLanguage = None
+                )
+                for {
+                  _ <- Future.sequence(
+                    evolutions.list.map(e =>
+                      dataStore.evolutionRepo.save(
+                        Evolution(
+                          id = DatastoreId(IdGenerator.token(32)),
+                          version = e.version,
+                          applied = true
+                        )
                       )
                     )
                   )
-                )
-                _ <- dataStore.tenantRepo.save(tenant)
-                _ <- dataStore.teamRepo.forTenant(tenant.id).save(team)
-                _ <-
-                  dataStore.teamRepo
-                    .forTenant(tenant.id)
-                    .save(defaultAdminTeam)
-                _ <-
-                  dataStore.apiRepo
-                    .forTenant(tenant.id)
-                    .save(adminApiDefaultTenant)
-                _ <-
-                  dataStore.usagePlanRepo
-                    .forTenant(tenant.id)
-                    .save(adminApiDefaultPlan)
-                _ <-
-                  dataStore.apiRepo
-                    .forTenant(tenant.id)
-                    .save(cmsApi)
-                _ <-
-                  dataStore.usagePlanRepo
-                    .forTenant(tenant.id)
-                    .save(cmsPlan)
-                _ <- dataStore.userRepo.save(user)
-                publicFolderPath = environment.getFile("public").getPath
-                cssFilePath = s"$publicFolderPath/themes/default.css"
-                cssFileContent = scala.io.Source.fromFile(cssFilePath).mkString
-                _ <-
-                  dataStore.cmsRepo
-                    .forTenant(tenant.id)
-                    .save(
-                      Tenant.getCustomizationCmsPage(
-                        tenantId = tenant.id,
-                        pageId = "color-theme",
-                        contentType = "text/css",
-                        body = cssFileContent
+                  _ <- dataStore.tenantRepo.save(tenant)
+                  _ <- dataStore.teamRepo.forTenant(tenant.id).save(team)
+                  _ <-
+                    dataStore.teamRepo
+                      .forTenant(tenant.id)
+                      .save(defaultAdminTeam)
+                  _ <-
+                    dataStore.apiRepo
+                      .forTenant(tenant.id)
+                      .save(adminApiDefaultTenant)
+                  _ <-
+                    dataStore.usagePlanRepo
+                      .forTenant(tenant.id)
+                      .save(adminApiDefaultPlan)
+                  _ <-
+                    dataStore.apiRepo
+                      .forTenant(tenant.id)
+                      .save(cmsApi)
+                  _ <-
+                    dataStore.usagePlanRepo
+                      .forTenant(tenant.id)
+                      .save(cmsPlan)
+                  _ <- dataStore.userRepo.save(user)
+                  publicFolderPath = environment.getFile("public").getPath
+                  cssFilePath = s"$publicFolderPath/themes/default.css"
+                  cssFileContent =
+                    scala.io.Source.fromFile(cssFilePath).mkString
+                  _ <-
+                    dataStore.cmsRepo
+                      .forTenant(tenant.id)
+                      .save(
+                        Tenant.getCustomizationCmsPage(
+                          tenantId = tenant.id,
+                          pageId = "color-theme",
+                          contentType = "text/css",
+                          body = cssFileContent
+                        )
                       )
-                    )
-              } yield {
-                AppLogger.warn("")
-                AppLogger.warn(
-                  s"You can log in with admin@daikoku.io / ${config.init.admin.password}"
-                )
-                AppLogger.warn("")
-                AppLogger.warn(
-                  "Please avoid using the default tenant for anything else than configuring Daikoku"
-                )
-                AppLogger.warn("")
-              }
+                } yield {
+                  AppLogger.warn("")
+                  AppLogger.warn(
+                    s"You can log in with admin@daikoku.io / ${config.init.admin.password}"
+                  )
+                  AppLogger.warn("")
+                  AppLogger.warn(
+                    "Please avoid using the default tenant for anything else than configuring Daikoku"
+                  )
+                  AppLogger.warn("")
+                }
 
-          }
+            }
           eventualUnit
         }
       } else {

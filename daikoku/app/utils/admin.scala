@@ -62,13 +62,13 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
                 case _ =>
                   Errors.craftResponseResultF(
                     "No api key provided",
-                    Results.Unauthorized,
+                    Results.Unauthorized
                   )
               }
             case _ =>
               Errors.craftResponseResultF(
                 "No api key provided",
-                Results.Unauthorized,
+                Results.Unauthorized
               )
           }
         case LocalAdminApiConfig(_) =>
@@ -78,7 +78,7 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
                 case None =>
                   Errors.craftResponseResultF(
                     "No api key provided",
-                    Results.Unauthorized,
+                    Results.Unauthorized
                   )
                 case Some((clientId, clientSecret)) =>
                   env.dataStore.apiSubscriptionRepo
@@ -96,14 +96,14 @@ class DaikokuApiAction(val parser: BodyParser[AnyContent], env: Env)
                       case _ =>
                         Errors.craftResponseResultF(
                           "No api key provided",
-                          Results.Unauthorized,
+                          Results.Unauthorized
                         )
                     })
               }
             case _ =>
               Errors.craftResponseResultF(
                 "No api key provided",
-                Results.Unauthorized,
+                Results.Unauthorized
               )
           }
       }
@@ -135,13 +135,13 @@ class DaikokuApiActionWithoutTenant(
               case _ =>
                 Errors.craftResponseResultF(
                   "No api key provided",
-                  Results.Unauthorized,
+                  Results.Unauthorized
                 )
             }
           case _ =>
             Errors.craftResponseResultF(
               "No api key provided",
-              Results.Unauthorized,
+              Results.Unauthorized
             )
         }
       case LocalAdminApiConfig(keyValue) =>
@@ -152,7 +152,7 @@ class DaikokuApiActionWithoutTenant(
           case _ =>
             Errors.craftResponseResultF(
               "No api key provided",
-              Results.Unauthorized,
+              Results.Unauthorized
             )
         }
     }
@@ -253,7 +253,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
           case None =>
             Errors.craftResponseResultF(
               s"$entityName not found",
-              Results.NotFound,
+              Results.NotFound
             )
         }
       } else {
@@ -262,7 +262,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
           case None =>
             Errors.craftResponseResultF(
               s"$entityName not found",
-              Results.NotFound,
+              Results.NotFound
             )
         }
       }
@@ -275,7 +275,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
           logger.error(s"Bad $entityName format", new RuntimeException(e))
           Errors.craftResponseResultF(
             s"Bad $entityName format",
-            Results.BadRequest,
+            Results.BadRequest
           )
         case Right(newEntity) =>
           entityStore(ctx.tenant, env.dataStore)
@@ -306,7 +306,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
         case None =>
           Errors.craftResponseResultF(
             s"Entity $entityName not found",
-            Results.NotFound,
+            Results.NotFound
           )
         case Some(_) =>
           fromJson(ctx.request.body) match {
@@ -314,7 +314,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
               logger.error(s"Bad $entityName format", new RuntimeException(e))
               Errors.craftResponseResultF(
                 s"Bad $entityName format",
-                Results.BadRequest,
+                Results.BadRequest
               )
             case Right(newEntity) =>
               validate(newEntity, UpdateOrCreate.Update)
@@ -392,7 +392,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
             logger.error(s"Bad $entityName format", new RuntimeException(e))
             Errors.craftResponseResultF(
               s"Bad $entityName format",
-              Results.BadRequest,
+              Results.BadRequest
             )
           case Right(patchedEntity) =>
             validate(patchedEntity, UpdateOrCreate.Update)
@@ -411,7 +411,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
         case None =>
           Errors.craftResponseResultF(
             s"Entity $entityName not found",
-            Results.NotFound,
+            Results.NotFound
           )
         case Some(entity) =>
           val currentJson = toJson(entity)
@@ -436,7 +436,7 @@ abstract class AdminApiController[Of, Id <: ValueType](
                   )
                   Errors.craftResponseResultF(
                     s"Bad $entityName format",
-                    Results.BadRequest,
+                    Results.BadRequest
                   )
                 case Right(patchedEntity) =>
                   val patchedJson =

@@ -289,7 +289,7 @@ package object modules {
       logger.error(errorMessage)
       Errors.craftResponseResultF(
         errorMessage,
-        Results.Status(statusCode),
+        Results.Status(statusCode)
       )
     }
 
@@ -303,7 +303,7 @@ package object modules {
       )
       Errors.craftResponseResultF(
         s"Server Error: $uuid",
-        Results.InternalServerError,
+        Results.InternalServerError
       )
     }
   }

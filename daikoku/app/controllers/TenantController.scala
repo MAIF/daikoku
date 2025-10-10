@@ -5,7 +5,10 @@ import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import com.nimbusds.jose.jwk.KeyType
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -168,7 +171,7 @@ class TenantController(
           case None =>
             Errors.craftResponseResultF(
               "Tenant not found",
-              Results.NotFound,
+              Results.NotFound
             )
         }
       }
@@ -644,12 +647,18 @@ class TenantController(
         AuditTrailEvent(s"@{user.name} - @{user.email} test a provider")
       )(tenantId, ctx) { (_, _) =>
         ctx.request.body.asOpt(json.MailerSettingsFormat) match {
-          case Some(settings) => settings.mailer.testConnection(ctx.tenant)
-            .map {
-              case true => Ok(Json.obj("done" -> true))
-              case false => BadRequest(Json.obj("error" -> "wrong mailer configuration"))
-            }
-          case None => BadRequest(Json.obj("error" -> "wrong mailer configuration format")).future
+          case Some(settings) =>
+            settings.mailer
+              .testConnection(ctx.tenant)
+              .map {
+                case true => Ok(Json.obj("done" -> true))
+                case false =>
+                  BadRequest(Json.obj("error" -> "wrong mailer configuration"))
+              }
+          case None =>
+            BadRequest(
+              Json.obj("error" -> "wrong mailer configuration format")
+            ).future
         }
       }
     }

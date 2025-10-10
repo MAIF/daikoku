@@ -773,7 +773,8 @@ object utils {
     val parentRouteId = "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
     val childRouteId = "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"
     val otherRouteId = "route_d74ea8b27-b8be-4177-82d9-c50722416c51"
-    val serviceGroupDev = "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5" //parent, child, other routes
+    val serviceGroupDev =
+      "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5" //parent, child, other routes
     val serviceGroupDefault = "default" //other routes
     val serviceGroupAdmin = "admin-api-group"
     val parent2ApkAsJson = Json.obj(
@@ -900,7 +901,10 @@ object utils {
         .execute()
         .map(_.json.as[JsArray].value.toSeq)
 
-      def fetchApiKeysWithRetry(maxRetries: Int = 3, delay: FiniteDuration = 1.second): Future[Seq[JsValue]] = {
+      def fetchApiKeysWithRetry(
+          maxRetries: Int = 3,
+          delay: FiniteDuration = 1.second
+      ): Future[Seq[JsValue]] = {
         def fetchOnce(): Future[JsValue] = {
           daikokuComponents.env.wsClient
             .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
@@ -917,24 +921,34 @@ object utils {
 
         def loop(attempt: Int): Future[Seq[JsValue]] = {
           fetchOnce().flatMap {
-            case keys:JsArray =>
+            case keys: JsArray =>
               Future.successful(keys.value.toSeq)
-            case obj: JsObject if (obj \ "error").isDefined && attempt < maxRetries =>
-              logger.warn(s"[$attempt/$maxRetries] Failed to fetch Otoroshi API keys: ${(obj \ "error").as[String]}")
+            case obj: JsObject
+                if (obj \ "error").isDefined && attempt < maxRetries =>
+              logger.warn(
+                s"[$attempt/$maxRetries] Failed to fetch Otoroshi API keys: ${(obj \ "error").as[String]}"
+              )
               after(delay * attempt)(loop(attempt + 1))
             case other if attempt < maxRetries =>
-              logger.error(s"[$attempt/$maxRetries] Failed to fetch Otoroshi API keys after $maxRetries attempts: ${Json.prettyPrint(other)}")
-              Future.successful(Seq.empty) // on renvoie une liste vide pour ne pas faire planter la suite
+              logger.error(
+                s"[$attempt/$maxRetries] Failed to fetch Otoroshi API keys after $maxRetries attempts: ${Json
+                  .prettyPrint(other)}"
+              )
+              Future.successful(
+                Seq.empty
+              ) // on renvoie une liste vide pour ne pas faire planter la suite
             case other =>
-              logger.error(s"Failed to fetch Otoroshi API keys after $maxRetries attempts: ${Json.prettyPrint(other)}")
-              Future.successful(Seq.empty) // on renvoie une liste vide pour ne pas faire planter la suite
+              logger.error(
+                s"Failed to fetch Otoroshi API keys after $maxRetries attempts: ${Json.prettyPrint(other)}"
+              )
+              Future.successful(
+                Seq.empty
+              ) // on renvoie une liste vide pour ne pas faire planter la suite
           }
         }
 
         loop(1)
       }
-
-
 
       for {
         _ <-

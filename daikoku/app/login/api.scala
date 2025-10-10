@@ -41,8 +41,8 @@ object AuthProvider {
     Seq(Local, Otoroshi, LDAP, OAuth2)
   def apply(name: String): Option[AuthProvider] =
     name.toLowerCase() match {
-      case "Local" => Local.some
-      case "local" => Local.some
+      case "Local"    => Local.some
+      case "local"    => Local.some
       case "Otoroshi" => Otoroshi.some
       case "otoroshi" => Otoroshi.some
       case "LDAP"     => LDAP.some
@@ -89,12 +89,12 @@ object TenantHelper {
           case None =>
             Errors.craftResponseResultF(
               "Tenant does not exists (1)",
-              Results.NotFound,
+              Results.NotFound
             )
           case Some(tenant) if !tenant.enabled =>
             Errors.craftResponseResultF(
               "Tenant does not exists (2)",
-              Results.NotFound,
+              Results.NotFound
             )
           case Some(tenant) => f(tenant)
         }
@@ -119,7 +119,7 @@ object TenantHelper {
               )
               Errors.craftResponseResultF(
                 s"Tenant does not exists (3)",
-                Results.NotFound,
+                Results.NotFound
               )
             case Some(tenant) if !tenant.enabled =>
               AppLogger.info(
@@ -127,7 +127,7 @@ object TenantHelper {
               )
               Errors.craftResponseResultF(
                 "Tenant does not exists (4)",
-                Results.NotFound,
+                Results.NotFound
               )
             case Some(tenant) => f(tenant)
           }
@@ -171,12 +171,12 @@ object TenantHelper {
             case None =>
               Errors.craftResponseResultF(
                 "Tenant does not exists (5)",
-                Results.NotFound,
+                Results.NotFound
               )
             case Some(tenant) if !tenant.enabled =>
               Errors.craftResponseResultF(
                 "Tenant does not exists (6)",
-                Results.NotFound,
+                Results.NotFound
               )
             case Some(tenant) => f(tenant)
           }
@@ -185,7 +185,7 @@ object TenantHelper {
               AppLogger.error(s"Failed to retrieve tenant : ${e.getMessage}", e)
               Errors.craftResponseResultF(
                 "Failed to retrieve tenant # Try to reload your page",
-                Results.NotFound,
+                Results.NotFound
               )
           }
     }

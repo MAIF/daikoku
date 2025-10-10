@@ -18,15 +18,31 @@ import play.api.mvc.Results.Ok
 import scala.concurrent.{ExecutionContext, Future}
 
 class AccountCreationService {
-  def finalizeAccountCreation(accountCreation: AccountCreation, tenant: Tenant)(implicit env: Env, ec: ExecutionContext) = {
+  def finalizeAccountCreation(
+      accountCreation: AccountCreation,
+      tenant: Tenant
+  )(implicit env: Env, ec: ExecutionContext) = {
     for {
-      _ <- EitherT.cond[Future][AppError, Unit](accountCreation.validUntil.isAfter(DateTime.now()), (), AppError.BadRequestError("not.valid.anymore"))
-      optUser <- EitherT.liftF(env.dataStore.userRepo.findOne(Json.obj("email" -> accountCreation.email)))
-      _ <- EitherT.cond[Future][AppError, Unit](optUser.forall(u => u.invitation.isEmpty || u.invitation.get.registered), (),
-        AppError.EntityConflict("This account is already enabled."))
-      userId = optUser
-        .map(_.id)
-        .getOrElse(UserId(IdGenerator.token(32)))
+      _ <- EitherT.cond[Future][AppError, Unit](
+        accountCreation.validUntil.isAfter(DateTime.now()),
+        (),
+        AppError.BadRequestError("not.valid.anymore")
+      )
+      optUser <- EitherT.liftF(
+        env.dataStore.userRepo
+          .findOne(Json.obj("email" -> accountCreation.email))
+      )
+      _ <- EitherT.cond[Future][AppError, Unit](
+        optUser.forall(u =>
+          u.invitation.isEmpty || u.invitation.get.registered
+        ),
+        (),
+        AppError.EntityConflict("This account is already enabled.")
+      )
+      userId =
+        optUser
+          .map(_.id)
+          .getOrElse(UserId(IdGenerator.token(32)))
       team = Team(
         id = TeamId(IdGenerator.token(32)),
         tenant = tenant.id,
@@ -38,12 +54,14 @@ class AccountCreationService {
         contact = accountCreation.email
       )
 
-      formKeysToMetadata = tenant.accountCreationProcess.collectFirst { case s: ValidationStep.Form => s }
-        .flatMap(_.formKeysToMetadata)
+      formKeysToMetadata =
+        tenant.accountCreationProcess
+          .collectFirst { case s: ValidationStep.Form => s }
+          .flatMap(_.formKeysToMetadata)
 
       metadataFromMotivation: Option[JsObject] = for {
         motiv <- accountCreation.value.some
-        keys  <- formKeysToMetadata
+        keys <- formKeysToMetadata
       } yield {
         val filtered = motiv.fields.collect {
           case (k, v) if keys.contains(k) => (k, v)
@@ -62,29 +80,34 @@ class AccountCreationService {
         password = Some(accountCreation.password),
         personalToken = Some(IdGenerator.token(32)),
         defaultLanguage = None,
-        metadata = metadataFromMotivation.getOrElse(Json.obj()).as[Map[String, String]]
+        metadata =
+          metadataFromMotivation.getOrElse(Json.obj()).as[Map[String, String]]
       )
 
-      _user = optUser
-        .map { u =>
-          user.copy(invitation =
-            u.invitation.map(_.copy(registered = true))
-          )
-        }
-        .getOrElse(user)
+      _user =
+        optUser
+          .map { u =>
+            user.copy(invitation = u.invitation.map(_.copy(registered = true)))
+          }
+          .getOrElse(user)
 
-      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.teamRepo
+      _ <- EitherT.liftF[Future, AppError, Boolean](
+        env.dataStore.teamRepo
           .forTenant(tenant.id)
-          .save(team))
-      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.userRepo.save(_user))
-      _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.accountCreationRepo
-          .deleteByIdLogically(accountCreation.id.value))
+          .save(team)
+      )
+      _ <- EitherT.liftF[Future, AppError, Boolean](
+        env.dataStore.userRepo.save(_user)
+      )
+      _ <- EitherT.liftF[Future, AppError, Boolean](
+        env.dataStore.accountCreationRepo
+          .deleteByIdLogically(accountCreation.id.value)
+      )
 
     } yield Ok(Json.obj("message" -> "user.validated.success"))
-    }
+  }
 
-  def runAccountCreationProcess(demandId: DemandId, tenant: Tenant)(
-      implicit
+  def runAccountCreationProcess(demandId: DemandId, tenant: Tenant)(implicit
       env: Env,
       ec: ExecutionContext,
       translator: Translator,
@@ -133,9 +156,10 @@ class AccountCreationService {
         accountCreation.steps.find(!_.state.isClosed)
       )
 
-      result <- maybeStep.fold(finalizeAccountCreation(accountCreation, tenant))(
-        processStep(_, accountCreation)
-      )
+      result <-
+        maybeStep.fold(finalizeAccountCreation(accountCreation, tenant))(
+          processStep(_, accountCreation)
+        )
     } yield result
   }
 
@@ -170,7 +194,8 @@ class AccountCreationService {
     val pathDecline =
       s"/api/account/_decline?token=$cipheredValidationToken"
 
-    val mailType = if ( s.title.contains("confirm")) "confirmation" else "validation"
+    val mailType =
+      if (s.title.contains("confirm")) "confirmation" else "validation"
     val mailData = Map(
       "tenant" -> JsString(tenant.name),
       "urlAccept" -> JsString(
@@ -187,10 +212,18 @@ class AccountCreationService {
     )
     for {
       title <- EitherT.liftF(
-        translator.translate(s"mail.account.creation.mail.$mailType.title", tenant, mailData)
+        translator.translate(
+          s"mail.account.creation.mail.$mailType.title",
+          tenant,
+          mailData
+        )
       )
       body <- EitherT.liftF(
-        translator.translate( s"mail.account.creation.mail.$mailType.body", tenant, mailData)
+        translator.translate(
+          s"mail.account.creation.mail.$mailType.body",
+          tenant,
+          mailData
+        )
       )
 
       _ <- EitherT.liftF(
@@ -285,7 +318,9 @@ class AccountCreationService {
         AppError.BadRequestError("accept not in response call")
       )
       result <-
-        if (accept) validateStep(_step, demand, (response \ "metadata").asOpt[JsObject]).map(_ => Ok(Json.obj("done" -> true)))
+        if (accept)
+          validateStep(_step, demand, (response \ "metadata").asOpt[JsObject])
+            .map(_ => Ok(Json.obj("done" -> true)))
         else declineAccountCreation()
     } yield result
   }
@@ -370,7 +405,8 @@ class AccountCreationService {
           )
       )
       _ <- EitherT.liftF(Future.sequence(admins.map(admin => {
-        implicit val language: String = admin.defaultLanguage.getOrElse(tenantLanguage)
+        implicit val language: String =
+          admin.defaultLanguage.getOrElse(tenantLanguage)
         val mailData = Map(
           "tenant" -> JsString(tenant.name),
           "userName" -> JsString(accountCreation.name),
@@ -383,8 +419,16 @@ class AccountCreationService {
           "tenant_data" -> tenant.asJson
         )
         (for {
-          title <- translator.translate("mail.account.creation.mail.validation.title", tenant, mailData)
-          body <- translator.translate("mail.account.creation.mail.validation.title", tenant, mailData)
+          title <- translator.translate(
+            "mail.account.creation.mail.validation.title",
+            tenant,
+            mailData
+          )
+          body <- translator.translate(
+            "mail.account.creation.mail.validation.title",
+            tenant,
+            mailData
+          )
         } yield {
           tenant.mailer.send(title, Seq(admin.email), body, tenant)
         }).flatten
@@ -428,16 +472,16 @@ class AccountCreationService {
   }
 
   def rejectStep(
-                    step: SubscriptionDemandStep,
-                    accountCreation: AccountCreation,
-                    tenant: Tenant,
-                    message: Option[String]
-                  )(implicit
-                    env: Env,
-                    ec: ExecutionContext,
-                    translator: Translator,
-                    messagesApi: MessagesApi
-                  ): EitherT[Future, AppError, Unit] = {
+      step: SubscriptionDemandStep,
+      accountCreation: AccountCreation,
+      tenant: Tenant,
+      message: Option[String]
+  )(implicit
+      env: Env,
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi
+  ): EitherT[Future, AppError, Unit] = {
     //FIXME: trace with a metadata (or audit log) who reject the demand
     implicit val language: String = tenant.defaultLanguage.getOrElse("en")
 
@@ -452,7 +496,7 @@ class AccountCreationService {
     for {
       _ <- step.check()
       updatedDemand = accountCreation.copy(
-        state =  SubscriptionDemandState.Refused,
+        state = SubscriptionDemandState.Refused,
         steps = accountCreation.steps.map(s =>
           if (s.id == step.id)
             s.copy(state = SubscriptionDemandState.Refused)
@@ -465,10 +509,18 @@ class AccountCreationService {
       )
 
       title <- EitherT.liftF(
-        translator.translate("mail.account.creation.mail.rejected.title", tenant, mailData)
+        translator.translate(
+          "mail.account.creation.mail.rejected.title",
+          tenant,
+          mailData
+        )
       )
       body <- EitherT.liftF(
-        translator.translate("mail.account.creation.mail.rejected.body", tenant, mailData)
+        translator.translate(
+          "mail.account.creation.mail.rejected.body",
+          tenant,
+          mailData
+        )
       )
 
       _ <- EitherT.liftF(
@@ -542,15 +594,15 @@ class AccountCreationService {
   }
 
   def acceptAccountCreationAttempt(
-                                    accountCreation: DemandId,
-                                    subscriptionDemandStepId: SubscriptionDemandStepId,
-                                  )(implicit
-                                    ctx: DaikokuActionContext[JsValue],
-                                    env: Env,
-                                    ec: ExecutionContext,
-                                    translator: Translator,
-                                    messagesApi: MessagesApi
-                                  ): Future[Either[AppError, Unit]] = {
+      accountCreation: DemandId,
+      subscriptionDemandStepId: SubscriptionDemandStepId
+  )(implicit
+      ctx: DaikokuActionContext[JsValue],
+      env: Env,
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi
+  ): Future[Either[AppError, Unit]] = {
     import cats.data._
     import cats.implicits._
 
@@ -574,16 +626,16 @@ class AccountCreationService {
   }
 
   def declineAccountCreationAttempt(
-                                     accountCreation: DemandId,
-                                     subscriptionDemandStepId: SubscriptionDemandStepId,
-                                     tenant: Tenant,
-                                     message: Option[String]
-                                  )(implicit
-                                    env: Env,
-                                    ec: ExecutionContext,
-                                    translator: Translator,
-                                    messagesApi: MessagesApi
-                                  ): Future[Either[AppError, Unit]] = {
+      accountCreation: DemandId,
+      subscriptionDemandStepId: SubscriptionDemandStepId,
+      tenant: Tenant,
+      message: Option[String]
+  )(implicit
+      env: Env,
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi
+  ): Future[Either[AppError, Unit]] = {
     import cats.data._
     import cats.implicits._
 

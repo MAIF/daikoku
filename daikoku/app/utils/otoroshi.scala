@@ -295,7 +295,9 @@ class OtoroshiClient(env: Env) {
       otoroshiSettings: OtoroshiSettings
   ): EitherT[Future, AppError, Unit] = {
     for {
-      resp <- EitherT.liftF(client(s"/apis/apim.otoroshi.io/v1/apikeys/$clientId").delete())
+      resp <- EitherT.liftF(
+        client(s"/apis/apim.otoroshi.io/v1/apikeys/$clientId").delete()
+      )
       _ <- EitherT.cond[Future][AppError, Unit](
         resp.status == 200,
         (),

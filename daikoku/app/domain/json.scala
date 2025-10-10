@@ -621,16 +621,27 @@ object json {
             "type" -> "teamAdmin",
             "id" -> id,
             "team" -> team.asJson,
-            "title" -> title,
+            "title" -> title
           )
-        case ValidationStep.Form(id, title, schema, formatter, formKeysToMetadata, info) =>
+        case ValidationStep.Form(
+              id,
+              title,
+              schema,
+              formatter,
+              formKeysToMetadata,
+              info
+            ) =>
           Json.obj(
             "type" -> "form",
             "id" -> id,
             "title" -> title,
             "schema" -> schema.getOrElse(JsNull).as[JsValue],
-            "formatter" -> formatter.map(JsString).getOrElse(JsNull).as[JsValue],
-            "formKeysToMetadata" -> formKeysToMetadata.map(keys => JsArray(keys.map(JsString)))
+            "formatter" -> formatter
+              .map(JsString)
+              .getOrElse(JsNull)
+              .as[JsValue],
+            "formKeysToMetadata" -> formKeysToMetadata
+              .map(keys => JsArray(keys.map(JsString)))
               .getOrElse(JsNull)
               .as[JsValue],
             "info" -> info
@@ -1672,7 +1683,8 @@ object json {
               .asOpt(SeqOtoroshiSettingsFormat)
               .map(_.toSet)
               .getOrElse(Set.empty),
-            mailerSettings = (json \ "mailerSettings").asOpt(MailerSettingsFormat),
+            mailerSettings =
+              (json \ "mailerSettings").asOpt(MailerSettingsFormat),
             bucketSettings =
               (json \ "bucketSettings").asOpt[JsObject].flatMap { settings =>
                 S3Configuration.format.reads(settings).asOpt
@@ -1730,7 +1742,9 @@ object json {
               .getOrElse(Set.empty),
             clientNamePattern = (json \ "clientNamePattern")
               .asOpt[String],
-            accountCreationProcess = (json \ "accountCreationProcess").asOpt(SeqValidationStepFormat).getOrElse(Seq.empty)
+            accountCreationProcess = (json \ "accountCreationProcess")
+              .asOpt(SeqValidationStepFormat)
+              .getOrElse(Seq.empty)
           )
         )
       } recover {
@@ -1815,16 +1829,16 @@ object json {
   }
 
   val MailerSettingsFormat = new Format[MailerSettings] {
-      override def reads(settings: JsValue): JsResult[MailerSettings] =
-          (settings \ "type").as[String] match {
-            case "mailgun" => MailgunSettingsFormat.reads(settings)
-            case "mailjet" => MailjetSettingsFormat.reads(settings)
-            case "sendgrid" =>
-              SendGridSettingsFormat.reads(settings)
-            case "smtpClient" =>
-              SimpleSMTPClientSettingsFormat.reads(settings)
-            case "console" => ConsoleSettingsFormat.reads(settings)
-          }
+    override def reads(settings: JsValue): JsResult[MailerSettings] =
+      (settings \ "type").as[String] match {
+        case "mailgun" => MailgunSettingsFormat.reads(settings)
+        case "mailjet" => MailjetSettingsFormat.reads(settings)
+        case "sendgrid" =>
+          SendGridSettingsFormat.reads(settings)
+        case "smtpClient" =>
+          SimpleSMTPClientSettingsFormat.reads(settings)
+        case "console" => ConsoleSettingsFormat.reads(settings)
+      }
     override def writes(o: MailerSettings): JsValue = o.asJson
   }
 
@@ -2753,8 +2767,9 @@ object json {
     new Format[NotificationAction] {
       override def reads(json: JsValue) =
         (json \ "type").as[String] match {
-          case "ApiAccess"       => ApiAccessFormat.reads(json)
-          case "AccountCreationAttempt" => accountCreationAttemptFormat.reads(json)
+          case "ApiAccess" => ApiAccessFormat.reads(json)
+          case "AccountCreationAttempt" =>
+            accountCreationAttemptFormat.reads(json)
           case "ApiSubscription" => ApiSubscriptionDemandFormat.reads(json)
           case "ApiSubscriptionReject" =>
             ApiSubscriptionRejectFormat.reads(json)

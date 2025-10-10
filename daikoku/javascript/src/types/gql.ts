@@ -146,22 +146,22 @@ export interface ISubscriptionDemandGQL {
 }
 
 export interface IAccountCreationGQL {
-  id: string,
-  deleted: boolean,
-  randomId: string,
-  email: string,
-  name: string,
-  avatar: string,
-  password: string,
-  creationDate: number,
-  validUntil: number,
+  id: string;
+  deleted: boolean;
+  randomId: string;
+  email: string;
+  name: string;
+  avatar: string;
+  password: string;
+  creationDate: number;
+  validUntil: number;
   steps: Array<{
     id: string;
     state: ISubscriptionDemandState;
     step: IValidationStep;
-  }>,
-  state: ISubscriptionDemandState,
-  value: object,
-  fromTenant: ITenant,
-  metadata: object
+  }>;
+  state: ISubscriptionDemandState;
+  value: object;
+  fromTenant: ITenant;
+  metadata: object;
 }

@@ -245,8 +245,8 @@ case class PostgresTenantCapableEmailVerificationRepo(
   override def repo(): PostgresRepo[EmailVerification, DatastoreId] = _repo()
 }
 case class PostgresTenantCapableSubscriptionDemandRepo(
-                                                        _repo: () => PostgresRepo[SubscriptionDemand, DemandId],
-                                                        _tenantRepo: TenantId => PostgresTenantAwareRepo[
+    _repo: () => PostgresRepo[SubscriptionDemand, DemandId],
+    _tenantRepo: TenantId => PostgresTenantAwareRepo[
       SubscriptionDemand,
       DemandId
     ]

@@ -875,18 +875,20 @@ class ApiControllerSpec()
 
     "create usage plan with only otoroshiTarget entities for which access is authorized" in {
       setupEnvBlocking(
-        tenants = Seq(tenant.copy(
-          otoroshiSettings = Set(
-            OtoroshiSettings(
-              id = containerizedOtoroshi,
-              url =
-                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-              host = "otoroshi-api.oto.tools",
-              clientSecret = otoroshiAdminApiKey.clientSecret,
-              clientId = otoroshiAdminApiKey.clientId
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
             )
           )
-        )),
+        ),
         users = Seq(userAdmin),
         apis = Seq(defaultApi.api.copy(possibleUsagePlans = Seq.empty)),
         teams = Seq(
@@ -975,12 +977,16 @@ class ApiControllerSpec()
           s"/api/teams/${teamConsumerId.value}/tenant/otoroshis/${containerizedOtoroshi.value}/routes"
       )(tenant, session)
 
-
       respGroupsForConsumer.status mustBe 200
-      respGroupsForConsumer.json.as[JsArray].value.length mustBe 3 //dev, default, admin
+      respGroupsForConsumer.json
+        .as[JsArray]
+        .value
+        .length mustBe 3 //dev, default, admin
       respRoutesForConsumer.status mustBe 200
-      respRoutesForConsumer.json.as[JsArray].value.length mustBe 4 //parent, child, other, admin
-
+      respRoutesForConsumer.json
+        .as[JsArray]
+        .value
+        .length mustBe 4 //parent, child, other, admin
 
       val respUnauthRoute = httpJsonCallBlocking(
         path =
@@ -1481,18 +1487,20 @@ class ApiControllerSpec()
         integrationToken = "test"
       )
       setupEnvBlocking(
-        tenants = Seq(tenant.copy(
-          otoroshiSettings = Set(
-            OtoroshiSettings(
-              id = containerizedOtoroshi,
-              url =
-                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-              host = "otoroshi-api.oto.tools",
-              clientSecret = otoroshiAdminApiKey.clientSecret,
-              clientId = otoroshiAdminApiKey.clientId
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
             )
           )
-        )),
+        ),
         users = Seq(userAdmin),
         teams = Seq(
           teamOwner,
@@ -1611,7 +1619,6 @@ class ApiControllerSpec()
       )
 
       val session = loginWithBlocking(userAdmin, tenant)
-
 
       val resp = httpJsonCallBlocking(
         path =
@@ -4149,14 +4156,20 @@ class ApiControllerSpec()
           )
         ),
         allowMultipleKeys = Some(false),
-        subscriptionProcess = Seq(ValidationStep.Form(id = IdGenerator.token, title = "form"), process),
+        subscriptionProcess = Seq(
+          ValidationStep.Form(id = IdGenerator.token, title = "form"),
+          process
+        ),
         integrationProcess = IntegrationProcess.ApiKey,
         autoRotation = Some(false)
       )
       val plan2 = plan.copy(
         id = UsagePlanId(IdGenerator.token),
         customName = "plan 2",
-        subscriptionProcess = Seq(ValidationStep.Form(id = IdGenerator.token, title = "form"), processV2)
+        subscriptionProcess = Seq(
+          ValidationStep.Form(id = IdGenerator.token, title = "form"),
+          processV2
+        )
       )
       val defaultApiV2 =
         defaultApi.api.copy(
@@ -4241,10 +4254,15 @@ class ApiControllerSpec()
 
       demandsForAllversion.count(d =>
         d.steps.exists {
-            case SubscriptionDemandStep(_, _, step: ValidationStep.TeamAdmin, _) =>
-              step.team === teamOwnerId
-            case _ => false
-          }
+          case SubscriptionDemandStep(
+                _,
+                _,
+                step: ValidationStep.TeamAdmin,
+                _
+              ) =>
+            step.team === teamOwnerId
+          case _ => false
+        }
       ) mustBe 2
 
       //3
@@ -4336,7 +4354,12 @@ class ApiControllerSpec()
       demandsForAllversion2.length mustBe 2
       demandsForAllversion2.count(d =>
         d.steps.exists {
-          case SubscriptionDemandStep(_, _, step: ValidationStep.TeamAdmin, _) =>
+          case SubscriptionDemandStep(
+                _,
+                _,
+                step: ValidationStep.TeamAdmin,
+                _
+              ) =>
             step.team === teamConsumerId
           case _ => false
         }
@@ -4509,18 +4532,20 @@ class ApiControllerSpec()
         defaultUsagePlan = UsagePlanId("parent.dev").some
       )
       setupEnvBlocking(
-        tenants = Seq(tenant.copy(
-          otoroshiSettings = Set(
-            OtoroshiSettings(
-              id = containerizedOtoroshi,
-              url =
-                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-              host = "otoroshi-api.oto.tools",
-              clientSecret = otoroshiAdminApiKey.clientSecret,
-              clientId = otoroshiAdminApiKey.clientId
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
             )
           )
-        )),
+        ),
         users = Seq(userApiEditor),
         teams = Seq(
           teamOwner,
@@ -5952,8 +5977,7 @@ class ApiControllerSpec()
               otoroshiSettings = containerizedOtoroshi,
               authorizedEntities = Some(
                 AuthorizedEntities(
-                  groups =
-                    Set(OtoroshiServiceGroupId(serviceGroupAdmin))
+                  groups = Set(OtoroshiServiceGroupId(serviceGroupAdmin))
                 )
               )
             )
@@ -5961,18 +5985,20 @@ class ApiControllerSpec()
         )
 
       setupEnvBlocking(
-        tenants = Seq(tenant.copy(
-          otoroshiSettings = Set(
-            OtoroshiSettings(
-              id = containerizedOtoroshi,
-              url =
-                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-              host = "otoroshi-api.oto.tools",
-              clientSecret = otoroshiAdminApiKey.clientSecret,
-              clientId = otoroshiAdminApiKey.clientId
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
             )
           )
-        )),
+        ),
         users = Seq(daikokuAdmin),
         teams = Seq(defaultAdminTeam),
         usagePlans = Seq(adminApiPlan),
@@ -6748,7 +6774,6 @@ class ApiControllerSpec()
         )
       )
 
-
       val resp = httpJsonCallBlocking(
         path =
           s"/api/apis/${defaultApi.api.id.value}/plan/4/team/${teamConsumerId.value}/${subId.value}/_extends",
@@ -7050,18 +7075,20 @@ class ApiControllerSpec()
       )
 
       setupEnvBlocking(
-        tenants = Seq(tenant.copy(
-          otoroshiSettings = Set(
-            OtoroshiSettings(
-              id = containerizedOtoroshi,
-              url =
-                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-              host = "otoroshi-api.oto.tools",
-              clientSecret = otoroshiAdminApiKey.clientSecret,
-              clientId = otoroshiAdminApiKey.clientId
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
             )
           )
-        )),
+        ),
         users = Seq(user),
         teams = Seq(teamConsumer, teamOwner),
         usagePlans = Seq(parentPlan, childPlan),
@@ -7094,7 +7121,6 @@ class ApiControllerSpec()
       assert(
         subscriptions.get.head.apiKey.clientSecret == parentSub.apiKey.clientSecret
       )
-
 
       // check that child subscription apikey has been created
       val resp3 = httpJsonCallBlocking(
@@ -8289,7 +8315,8 @@ class ApiControllerSpec()
         .as[Boolean] mustBe true
 
       val respVerifOtoParent = httpJsonCallBlocking(
-        path = s"/apis/apim.otoroshi.io/v1/apikeys/${parentSub.apiKey.clientId}",
+        path =
+          s"/apis/apim.otoroshi.io/v1/apikeys/${parentSub.apiKey.clientId}",
         baseUrl = "http://otoroshi-api.oto.tools",
         headers = Map(
           "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,

@@ -16,9 +16,21 @@ import play.api.libs.json._
 import java.net.{InetAddress, Socket}
 import java.security.cert.X509Certificate
 import javax.naming.ldap.{Control, InitialLdapContext}
-import javax.net.ssl.{SSLContext, SSLSocket, SSLSocketFactory, TrustManager, X509TrustManager}
+import javax.net.ssl.{
+  SSLContext,
+  SSLSocket,
+  SSLSocketFactory,
+  TrustManager,
+  X509TrustManager
+}
 import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future, Promise, TimeoutException}
+import scala.concurrent.{
+  Await,
+  ExecutionContext,
+  Future,
+  Promise,
+  TimeoutException
+}
 import scala.jdk.CollectionConverters.EnumerationHasAsScala
 import scala.util.{Failure, Success, Try}
 
@@ -76,7 +88,6 @@ object LdapConfig {
           emailField = (json \ "emailField").as[String],
           pictureField = (json \ "pictureField").asOpt[String],
           useSsl = (json \ "useSsl").asOpt[Boolean]
-
         )
       )
     } recover {
@@ -582,7 +593,7 @@ object LdapSupport {
 
         val result = firstSuccess.flatMap {
           case Some(Right(_)) => Future.successful(Right(()))
-          case _              =>
+          case _ =>
             Future
               .sequence(futures)
               .map(

@@ -183,20 +183,20 @@ case class PasswordReset(
 }
 
 case class AccountCreation(
-                            id: DemandId,
-                            deleted: Boolean = false,
-                            randomId: String,
-                            email: String,
-                            name: String,
-                            avatar: String,
-                            password: String,
-                            creationDate: DateTime,
-                            validUntil: DateTime,
-                            steps: Seq[SubscriptionDemandStep],
-                            state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
-                            value: JsObject,
-                            fromTenant: TenantId,
-                            metadata: Map[String, String] = Map.empty
+    id: DemandId,
+    deleted: Boolean = false,
+    randomId: String,
+    email: String,
+    name: String,
+    avatar: String,
+    password: String,
+    creationDate: DateTime,
+    validUntil: DateTime,
+    steps: Seq[SubscriptionDemandStep],
+    state: SubscriptionDemandState = SubscriptionDemandState.Waiting,
+    value: JsObject,
+    fromTenant: TenantId,
+    metadata: Map[String, String] = Map.empty
 ) extends CanJson[AccountCreation] {
   override def asJson: JsValue = json.AccountCreationFormat.writes(this)
 }

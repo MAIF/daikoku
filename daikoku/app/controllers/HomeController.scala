@@ -410,13 +410,13 @@ class HomeController(
             case _ =>
               Errors.craftResponseResultF(
                 "Page not found !",
-                Results.NotFound,
+                Results.NotFound
               )
           }
       case _ =>
         Errors.craftResponseResultF(
           "Page not found !",
-          Results.NotFound,
+          Results.NotFound
         )
     }
   }

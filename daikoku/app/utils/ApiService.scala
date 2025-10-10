@@ -222,17 +222,27 @@ class ApiService(
     ): Future[Either[AppError, ApiSubscription]] = {
       import cats.implicits._
 
-      val value: EitherT[Future, AppError, (Option[ApiSubscription], Option[OtoroshiApiKey])] = parentSubscriptionId match {
+      val value: EitherT[
+        Future,
+        AppError,
+        (Option[ApiSubscription], Option[OtoroshiApiKey])
+      ] = parentSubscriptionId match {
         case None =>
-          val error:
-            EitherT[Future, AppError, (Option[ApiSubscription], Option[OtoroshiApiKey])]
-          = EitherT.pure[Future, AppError]((None, None))
+          val error: EitherT[
+            Future,
+            AppError,
+            (Option[ApiSubscription], Option[OtoroshiApiKey])
+          ] = EitherT.pure[Future, AppError]((None, None))
           error
-        case Some(id) => for {
-          sub <- EitherT.fromOptionF[Future, AppError, ApiSubscription](env.dataStore.apiSubscriptionRepo
-            .forTenant(tenant.id)
-            .findById(id.value), AppError.SubscriptionNotFound)
-        } yield (Some(sub), Some(sub.apiKey))
+        case Some(id) =>
+          for {
+            sub <- EitherT.fromOptionF[Future, AppError, ApiSubscription](
+              env.dataStore.apiSubscriptionRepo
+                .forTenant(tenant.id)
+                .findById(id.value),
+              AppError.SubscriptionNotFound
+            )
+          } yield (Some(sub), Some(sub.apiKey))
 
       }
       value.flatMap {
@@ -1664,7 +1674,12 @@ class ApiService(
         env.dataStore.userRepo.findByIdNotDeleted(demand.from),
         AppError.UserNotFound()
       )
-      formStep <- EitherT.fromOption[Future][AppError, ValidationStep.Form](plan.subscriptionProcess.collectFirst{ case s: ValidationStep.Form => s}, AppError.EntityNotFound("form step"))
+      formStep <- EitherT.fromOption[Future][AppError, ValidationStep.Form](
+        plan.subscriptionProcess.collectFirst {
+          case s: ValidationStep.Form => s
+        },
+        AppError.EntityNotFound("form step")
+      )
       motivationAsString =
         motivationPattern
           .findAllMatchIn(formStep.formatter.getOrElse("[[motivation]]"))
@@ -1943,10 +1958,10 @@ class ApiService(
   }
 
   def runSubscriptionProcess(
-                              demandId: DemandId,
-                              tenant: Tenant,
-                              from: Option[String] = None,
-                              maybeSessionId: Option[String] = None
+      demandId: DemandId,
+      tenant: Tenant,
+      from: Option[String] = None,
+      maybeSessionId: Option[String] = None
   )(implicit
       language: String,
       currentUser: User
@@ -2568,12 +2583,13 @@ class ApiService(
           case steps =>
             val demanId = DemandId(IdGenerator.token(32))
 
-            val formKeysToMetadata = steps.collectFirst { case s: ValidationStep.Form => s }
+            val formKeysToMetadata = steps
+              .collectFirst { case s: ValidationStep.Form => s }
               .flatMap(_.formKeysToMetadata)
 
             val metadataFromMotivation: Option[JsObject] = for {
               motiv <- motivation
-              keys  <- formKeysToMetadata
+              keys <- formKeysToMetadata
             } yield {
               val filtered = motiv.fields.collect {
                 case (k, v) if keys.contains(k) => (k, v)
@@ -2592,10 +2608,12 @@ class ApiService(
                       api = api.id,
                       plan = plan.id,
                       state = SubscriptionDemandState.Waiting,
-                      steps = steps.map(step => SubscriptionDemandStep(
+                      steps = steps.map(step =>
+                        SubscriptionDemandStep(
                           id = SubscriptionDemandStepId(IdGenerator.token),
                           state = step match {
-                            case _: ValidationStep.Form => SubscriptionDemandState.Accepted
+                            case _: ValidationStep.Form =>
+                              SubscriptionDemandState.Accepted
                             case _ => SubscriptionDemandState.Waiting
                           },
                           step = step
@@ -2605,7 +2623,8 @@ class ApiService(
                       from = user.id,
                       motivation = motivation,
                       parentSubscriptionId = apiKeyId,
-                      customMetadata = JsonOperationsHelper.mergeOptJson(customMetadata, metadataFromMotivation),
+                      customMetadata = JsonOperationsHelper
+                        .mergeOptJson(customMetadata, metadataFromMotivation),
                       customMaxPerSecond = customMaxPerSecond,
                       customMaxPerDay = customMaxPerDay,
                       customMaxPerMonth = customMaxPerMonth,
@@ -2621,11 +2640,11 @@ class ApiService(
   }
 
   def declineSubscriptionDemand(
-                                 tenant: Tenant,
-                                 demandId: DemandId,
-                                 stepId: SubscriptionDemandStepId,
-                                 sender: NotificationSender,
-                                 maybeMessage: Option[String] = None
+      tenant: Tenant,
+      demandId: DemandId,
+      stepId: SubscriptionDemandStepId,
+      sender: NotificationSender,
+      maybeMessage: Option[String] = None
   ): EitherT[Future, AppError, Result] = {
 
     for {

@@ -751,7 +751,9 @@ class OtoroshiVerifierJob(
             )
           )
           .map(
-            _.filterNot(sub => adminApis.flatMap(_.possibleUsagePlans).contains(sub.plan))
+            _.filterNot(sub =>
+              adminApis.flatMap(_.possibleUsagePlans).contains(sub.plan)
+            )
           )
       )
     } yield subscriptions

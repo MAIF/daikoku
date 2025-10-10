@@ -130,7 +130,8 @@ object AppError {
       case InternalServerError(message) =>
         play.api.mvc.Results.InternalServerError(toJson(error))
       case BadRequestError(message) => BadRequest(toJson(error))
-      case AuthenticationError(message) => play.api.mvc.Results.Unauthorized(toJson(error))
+      case AuthenticationError(message) =>
+        play.api.mvc.Results.Unauthorized(toJson(error))
     }
 
   def getErrorMessage(error: AppError) =

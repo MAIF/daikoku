@@ -161,38 +161,42 @@ export interface ISwagger {
   specificationType: SpecificationType;
 }
 
-export type IValidationStep = {
-  type: 'email';
-  id: string;
-  emails: Array<string>;
-  message: string;
-  title: string;
-} | {
-  type: 'httpRequest';
-  id: string;
-  title: string;
-  url: string;
-  headers: object;
-} | {
-  type: 'form';
-  id: string;
-  schema: Schema;
-  formatter: string;
-  title: string;
-  formKeysToMetadata?: Array<string>
-  info?: string
-} | {
-  type: 'payment';
-  id: string;
-  thirdPartyPaymentSettingsId: string;
-  title?: string;
-} | {
-  type: 'teamAdmin';
-  id: string;
-  title?: string;
-  team: string;
-
-}
+export type IValidationStep =
+  | {
+      type: 'email';
+      id: string;
+      emails: Array<string>;
+      message: string;
+      title: string;
+    }
+  | {
+      type: 'httpRequest';
+      id: string;
+      title: string;
+      url: string;
+      headers: object;
+    }
+  | {
+      type: 'form';
+      id: string;
+      schema: Schema;
+      formatter: string;
+      title: string;
+      formKeysToMetadata?: Array<string>;
+      info?: string;
+    }
+  | {
+      type: 'payment';
+      id: string;
+      thirdPartyPaymentSettingsId: string;
+      title?: string;
+    }
+  | {
+      type: 'teamAdmin';
+      id: string;
+      title?: string;
+      team: string;
+    };
 
 export interface IBaseUsagePlan {
   _id: string;
@@ -393,8 +397,9 @@ export function isError(obj: any): obj is ResponseError {
   return (<ResponseError>obj).error !== undefined;
 }
 
-export function isConstraint(obj: any): obj is constraints.Constraint { //@ts-ignore
-  return (<constraints.Constraint> obj).type === undefined;
+export function isConstraint(obj: any): obj is constraints.Constraint {
+  //@ts-ignore
+  return (<constraints.Constraint>obj).type === undefined;
 }
 
 export function isPromise<T>(obj: any): obj is Promise<T> {
@@ -408,7 +413,7 @@ export interface ISafeSubscription extends IBaseSubscription, ISubscriptionCusto
 export interface ISubscription extends IBaseSubscription {
   apiKey: IApiKey;
   integrationToken: string;
-  bearerToken?: string
+  bearerToken?: string;
 }
 
 export interface ISubscriptionCustomization {

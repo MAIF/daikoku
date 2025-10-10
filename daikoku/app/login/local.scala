@@ -49,7 +49,7 @@ object LocalLoginConfig {
     } get
 }
 
-case class LocalLoginConfig(sessionMaxAge: Int = 86400){
+case class LocalLoginConfig(sessionMaxAge: Int = 86400) {
   def asJson =
     Json.obj(
       "sessionMaxAge" -> this.sessionMaxAge
@@ -58,7 +58,7 @@ case class LocalLoginConfig(sessionMaxAge: Int = 86400){
 
 object LocalLoginSupport {
   def bindUser(username: String, password: String, tenant: Tenant, _env: Env)(
-    implicit ec: ExecutionContext
+      implicit ec: ExecutionContext
   ): Future[Option[User]] = {
     _env.dataStore.userRepo
       .findOne(
@@ -69,17 +69,17 @@ object LocalLoginSupport {
       )
       .map {
         case Some(user)
-          if user.password.isDefined && BCrypt.checkpw(
-            password,
-            user.password.get
-          ) =>
+            if user.password.isDefined && BCrypt.checkpw(
+              password,
+              user.password.get
+            ) =>
           Some(user)
         case _ => None
       }
   }
 
-  def checkConnection()(
-    implicit ec: ExecutionContext
+  def checkConnection()(implicit
+      ec: ExecutionContext
   ): EitherT[Future, AppError, Unit] = {
     EitherT.pure[Future, AppError](())
   }

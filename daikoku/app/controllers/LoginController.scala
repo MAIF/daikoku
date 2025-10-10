@@ -5,7 +5,12 @@ import cats.implicits.catsSyntaxOptionId
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator
 import com.google.common.base.Charsets
 import controllers.{AppError, Assets}
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithoutUser, DaikokuTenantAction, DaikokuTenantActionContext}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithoutUser,
+  DaikokuTenantAction,
+  DaikokuTenantActionContext
+}
 import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, AuthorizationLevel}
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.UberPublicUserAccess
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -16,7 +21,13 @@ import fr.maif.otoroshi.daikoku.login.AuthProvider._
 import fr.maif.otoroshi.daikoku.login._
 import fr.maif.otoroshi.daikoku.utils.Cypher.decrypt
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
-import fr.maif.otoroshi.daikoku.utils.{AccountCreationService, Cypher, Errors, IdGenerator, Translator}
+import fr.maif.otoroshi.daikoku.utils.{
+  AccountCreationService,
+  Cypher,
+  Errors,
+  IdGenerator,
+  Translator
+}
 import org.apache.commons.codec.binary.Base32
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -68,13 +79,13 @@ class LoginController(
         case None =>
           Errors.craftResponseResultF(
             "Bad authentication provider",
-            Results.BadRequest,
+            Results.BadRequest
           )
         case Some(p)
             if ctx.tenant.authProvider != p && p != AuthProvider.Local =>
           Errors.craftResponseResultF(
             "Bad authentication provider",
-            Results.BadRequest,
+            Results.BadRequest
           )
         case Some(p) =>
           p match {
@@ -220,7 +231,7 @@ class LoginController(
         after(3.seconds)(
           Errors.craftResponseResultF(
             "Bad authentication provider",
-            Results.BadRequest,
+            Results.BadRequest
           )
         )
 
@@ -228,7 +239,7 @@ class LoginController(
         after(3.seconds)(
           Errors.craftResponseResultF(
             "Bad authentication provider",
-            Results.BadRequest,
+            Results.BadRequest
           )
         )
       case Some(p) if p == AuthProvider.OAuth2 =>
@@ -249,7 +260,7 @@ class LoginController(
             after(3.seconds)(
               Errors.craftResponseResultF(
                 "Invalid OAuth Config",
-                Results.BadRequest,
+                Results.BadRequest
               )
             )
         }
@@ -258,7 +269,7 @@ class LoginController(
           case None =>
             Errors.craftResponseResultF(
               "No credentials found",
-              Results.BadRequest,
+              Results.BadRequest
             )
           case Some(form) =>
             (
@@ -330,7 +341,7 @@ class LoginController(
                     after(3.seconds)(
                       Errors.craftResponseResultF(
                         "No matching provider found",
-                        Results.BadRequest,
+                        Results.BadRequest
                       )
                     )
                 }
@@ -338,7 +349,7 @@ class LoginController(
                 after(3.seconds)(
                   Errors.craftResponseResultF(
                     "No credentials found",
-                    Results.BadRequest,
+                    Results.BadRequest
                   )
                 )
             }
@@ -522,7 +533,10 @@ class LoginController(
             )
           )
         )
-        result <- accountCreationService.runAccountCreationProcess(accountCreationId, ctx.tenant)
+        result <- accountCreationService.runAccountCreationProcess(
+          accountCreationId,
+          ctx.tenant
+        )
       } yield result)
         .leftMap(_.render())
         .merge
@@ -530,7 +544,6 @@ class LoginController(
 
   def validateAccountCreationAttempt() = {
     DaikokuActionMaybeWithoutUser.async { ctx =>
-
       (for {
         encryptedToken <- EitherT.fromOption[Future](
           ctx.request.getQueryString("token"),
@@ -550,7 +563,9 @@ class LoginController(
           validator,
           ctx.tenant
         )
-        result <- EitherT.pure[Future, AppError](Redirect(env.getDaikokuUrl(ctx.tenant, "/response")))
+        result <- EitherT.pure[Future, AppError](
+          Redirect(env.getDaikokuUrl(ctx.tenant, "/response"))
+        )
       } yield result)
         .leftMap(error =>
           Errors.craftResponseResult(
@@ -578,8 +593,18 @@ class LoginController(
             .findOneNotDeleted(Json.obj("token" -> token)),
           AppError.EntityNotFound("token")
         )
-        _ <- accountCreationService.declineAccountCreationWithStepValidator(validator, ctx.tenant)
-        result <- EitherT.pure[Future, AppError](Redirect(env.getDaikokuUrl(ctx.tenant, "/response?message=home.message.subscription.refusal.successfull")))
+        _ <- accountCreationService.declineAccountCreationWithStepValidator(
+          validator,
+          ctx.tenant
+        )
+        result <- EitherT.pure[Future, AppError](
+          Redirect(
+            env.getDaikokuUrl(
+              ctx.tenant,
+              "/response?message=home.message.subscription.refusal.successfull"
+            )
+          )
+        )
       } yield result)
         .leftMap(error =>
           Errors.craftResponseResult(
@@ -590,14 +615,13 @@ class LoginController(
         .merge
     }
 
-
   def createUserValidation() =
     DaikokuTenantAction.async { ctx =>
       ctx.request.getQueryString("id") match {
         case None =>
           Errors.craftResponseResultF(
             "The user creation has failed.",
-            Results.BadRequest,
+            Results.BadRequest
           )
         case Some(id) =>
           env.dataStore.accountCreationRepo
@@ -619,7 +643,7 @@ class LoginController(
                         if user.invitation.isEmpty || user.invitation.get.registered =>
                       Errors.craftResponseResultF(
                         "This account is already enabled.",
-                        Results.BadRequest,
+                        Results.BadRequest
                       )
                     case optUser =>
                       val userId = optUser
@@ -680,7 +704,7 @@ class LoginController(
               case _ =>
                 Errors.craftResponseResultF(
                   "Your link is invalid",
-                  Results.BadRequest,
+                  Results.BadRequest
                 )
             }
       }
@@ -851,8 +875,11 @@ class LoginController(
               BadRequest(Json.obj("error" -> "bad auth. module. config"))
             )
           case Right(config) =>
-            LdapSupport.checkConnection(config)
-              .leftMap(err => Ok(Json.obj("works" -> false, "error" -> err.getErrorMessage())))
+            LdapSupport
+              .checkConnection(config)
+              .leftMap(err =>
+                Ok(Json.obj("works" -> false, "error" -> err.getErrorMessage()))
+              )
               .map(_ => Ok(Json.obj("works" -> true)))
               .merge
         }
@@ -861,16 +888,19 @@ class LoginController(
 
   def checkOauthConnection() =
     DaikokuAction.async(parse.json) { ctx =>
-        OAuth2Config.fromJson(ctx.request.body) match {
-          case Left(_) =>
-            FastFuture.successful(
-              BadRequest(Json.obj("error" -> "bad auth. module. config"))
+      OAuth2Config.fromJson(ctx.request.body) match {
+        case Left(_) =>
+          FastFuture.successful(
+            BadRequest(Json.obj("error" -> "bad auth. module. config"))
+          )
+        case Right(config) =>
+          OAuth2Support
+            .checkConnection(config)
+            .leftMap(err =>
+              Ok(Json.obj("works" -> false, "error" -> err.getErrorMessage()))
             )
-          case Right(config) =>
-            OAuth2Support.checkConnection(config)
-              .leftMap(err => Ok(Json.obj("works" -> false, "error" -> err.getErrorMessage())))
-              .map(_ => Ok(Json.obj("works" -> true)))
-              .merge
+            .map(_ => Ok(Json.obj("works" -> true)))
+            .merge
       }
     }
 
@@ -879,15 +909,15 @@ class LoginController(
       val clientId = (ctx.request.body \ "clientId").asOpt[String]
       val clientSecret = (ctx.request.body \ "clientSecret").asOpt[String]
 
-
       (ctx.request.body \ "url").asOpt[String] match {
-          case None =>
-              BadRequest(Json.obj("error" -> "please provide a url")).future
-          case Some(url) =>
-            OAuth2Support.getConfiguration(url, clientId, clientSecret, ctx.tenant)
-              .leftMap(_.render())
-              .map(config => Ok(config.asJson))
-              .merge
+        case None =>
+          BadRequest(Json.obj("error" -> "please provide a url")).future
+        case Some(url) =>
+          OAuth2Support
+            .getConfiguration(url, clientId, clientSecret, ctx.tenant)
+            .leftMap(_.render())
+            .map(config => Ok(config.asJson))
+            .merge
       }
     }
 
