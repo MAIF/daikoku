@@ -285,9 +285,6 @@ object LdapSupport {
     if (urls.isEmpty)
       Left("All servers down")
     else {
-      AppLogger.warn(
-        s"[ldapConfig] :: try to connect $username with ldap"
-      )
       Try {
         val url = urls.head
         Await.result(

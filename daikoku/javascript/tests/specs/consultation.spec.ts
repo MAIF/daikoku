@@ -1,7 +1,7 @@
 import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 import { JIM, MICHAEL } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiPapier, commandeDevPlan, exposedPort, HOME, loginAs, logistique, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, subCommandeDevLogistique, subCommandeDevVendeurs, subCommandeProdLogistique, teamJim, vendeurs } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiDivision, apiPapier, commandeDevPlan, exposedPort, HOME, loginAs, logistique, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, subCommandeDevLogistique, subCommandeDevVendeurs, subCommandeProdLogistique, teamJim, vendeurs } from './utils';
 import { NotifProps, postNewNotif } from './notifications';
 
 
@@ -350,12 +350,12 @@ await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeVisible
 test('Voir ses notifications', async ({ page }) => {
 
   const notifs: Array<NotifProps> = [
-    { type: "ApiAccess", sender: JIM, api: apiCommande, team: vendeurs},
-    { type: "ApiAccess", sender: JIM, api: apiCommande, team: logistique},
-    { type: "ApiAccess", sender: JIM, api: apiCommande, team: teamJim},
-    { type: "ApiAccess", sender: JIM, api: apiPapier, team: vendeurs},
-    { type: "ApiAccess", sender: JIM, api: apiPapier, team: logistique},
-    { type: "ApiAccess", sender: JIM, api: apiPapier, team: teamJim},
+    { type: "ApiAccess", sender: JIM, api: apiCommande, fromTeam: vendeurs, team: apiDivision},
+    { type: "ApiAccess", sender: JIM, api: apiCommande, fromTeam: logistique, team: apiDivision},
+    { type: "ApiAccess", sender: JIM, api: apiCommande, fromTeam: teamJim, team: apiDivision},
+    { type: "ApiAccess", sender: JIM, api: apiPapier, fromTeam: vendeurs, team: apiDivision},
+    { type: "ApiAccess", sender: JIM, api: apiPapier, fromTeam: logistique, team: apiDivision},
+    { type: "ApiAccess", sender: JIM, api: apiPapier, fromTeam: teamJim, team: apiDivision},
     { type: "TransferApiOwnership", sender: MICHAEL, api: apiPapier, team: vendeurs},
     { type: "TransferApiOwnership", sender: MICHAEL, api: apiCommande, team: vendeurs},
     { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 1", team: vendeurs},
