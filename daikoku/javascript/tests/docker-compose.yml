@@ -84,7 +84,7 @@ services:
      - openldap
 
   otoroshi:
-    image: maif/otoroshi:16.22.0
+    image: maif/otoroshi:latest
     networks:
       - basicsetup
     environment:

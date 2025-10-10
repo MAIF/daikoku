@@ -31,7 +31,7 @@ object LdapConfig {
       _fmt.reads(value).get
     } catch {
       case e: Throwable =>
-        logger.error(s"Try to deserialize ${Json.prettyPrint(value)}")
+        logger.error(s"Try to deserialize ${Json.prettyPrint(value)}", e)
         throw e
     }
 
@@ -75,7 +75,7 @@ object LdapConfig {
             (json \ "nameFields").asOpt[Seq[String]].getOrElse(Seq("cn")),
           emailField = (json \ "emailField").as[String],
           pictureField = (json \ "pictureField").asOpt[String],
-          useSsl = (json \ "useSsl").as[Boolean]
+          useSsl = (json \ "useSsl").asOpt[Boolean]
 
         )
       )
@@ -98,7 +98,7 @@ case class LdapConfig(
     nameFields: Seq[String] = Seq("cn"),
     emailField: String = "mail",
     pictureField: Option[String] = None,
-    useSsl: Boolean = false
+    useSsl: Option[Boolean] = None
 ) {
   def asJson: JsObject =
     Json.obj(
@@ -135,6 +135,9 @@ case class LdapConfig(
         .getOrElse(JsNull)
         .as[JsValue],
       "useSsl" -> this.useSsl
+        .map(JsBoolean.apply)
+        .getOrElse(JsNull)
+        .as[JsValue]
     )
 }
 
@@ -148,7 +151,7 @@ object LdapSupport {
       principal: String,
       password: String,
       url: String,
-      useSsl: Boolean
+      useSsl: Option[Boolean]
   ): util.Hashtable[String, AnyRef] = {
     val env = new util.Hashtable[String, AnyRef]
     env.put(Context.SECURITY_AUTHENTICATION, "simple")
@@ -157,7 +160,7 @@ object LdapSupport {
     env.put(Context.INITIAL_CONTEXT_FACTORY, "com.sun.jndi.ldap.LdapCtxFactory")
     env.put(Context.PROVIDER_URL, url)
 
-    if (useSsl || url.startsWith("ldaps://")) {
+    if (useSsl.getOrElse(false) || url.startsWith("ldaps://")) {
       env.put(Context.SECURITY_PROTOCOL, "ssl")
     }
 
@@ -168,7 +171,7 @@ object LdapSupport {
       principal: String,
       password: String,
       url: String,
-      useSsl: Boolean
+      useSsl: Option[Boolean]
   ) = {
     new InitialLdapContext(
       getLdapContext(principal, password, url, useSsl),
@@ -180,7 +183,7 @@ object LdapSupport {
       principal: String,
       password: String,
       url: String,
-      useSsl: Boolean
+      useSsl: Option[Boolean]
   ) =
     new InitialDirContext(getLdapContext(principal, password, url, useSsl))
 
