@@ -772,3 +772,21 @@ We'd like to thank all the contributors who worked on this release!
 - Duplicate doesn't work [#854](https://github.com/MAIF/daikoku/issues/854)
 - Init. from Otoroshi is broken to import apikeys [#494](https://github.com/MAIF/daikoku/issues/494)
 
+## [v18.4.0] - 2025-10-10
+
+## :star: New Features
+
+- Pull Otoroshi bearer token when retrieving an API key [#875](https://github.com/MAIF/daikoku/issues/875)
+- test connection for Authentication settings [#874](https://github.com/MAIF/daikoku/issues/874)
+- Test connection for mailer settings [#873](https://github.com/MAIF/daikoku/issues/873)
+- Check buttons on Mail and LDAP configuration [#868](https://github.com/MAIF/daikoku/issues/868)
+- Add an admin step for account creation [#855](https://github.com/MAIF/daikoku/issues/855)
+- Extract form from admin step in its own step [#763](https://github.com/MAIF/daikoku/issues/763)
+
+## :beetle: Bug Fixes
+
+- Bad css initalization [#880](https://github.com/MAIF/daikoku/issues/880)
+- No redirection to OAuth provider in private tenant mode [#877](https://github.com/MAIF/daikoku/issues/877)
+- CMS API can create false positive during otoroshi sync job [#871](https://github.com/MAIF/daikoku/issues/871)
+- 🔧 PostgreSQL Error: could not determine data type of parameter  with Daikoku v18.0.0 [#853](https://github.com/MAIF/daikoku/issues/853)
+
