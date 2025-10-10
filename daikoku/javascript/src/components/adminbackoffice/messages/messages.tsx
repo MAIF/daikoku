@@ -198,7 +198,7 @@ export const AdminMessages = () => {
           return { chat, user, messages, unreadCount, maxDate };
         }), ['unreadCount', 'maxDate', 'user.name'], ['desc', 'desc', 'asc'])
           .map(({ chat, user, messages, unreadCount, maxDate }, idx) => {
-            const lastMessageDateDisplayed = differenceInDays(new Date, maxDate) > 1 ? format(maxDate, 'D MMM.') : formatDistanceToNow(maxDate, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language)});
+            const lastMessageDateDisplayed = differenceInDays(new Date, maxDate) > 1 ? format(maxDate, 'd MMM', { locale: getLanguageFns(language) }) : formatDistanceToNow(maxDate, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language)});
             return (<div key={idx} className={classNames('p-3 cursor-pointer d-flex flex-row messages-sender level2-link__with-bg', {
               'level2-link__active-bg': selectedChat === chat,
             })} onClick={() => setSelectedChat(chat)}>
@@ -246,7 +246,7 @@ export const AdminMessages = () => {
                   <span className="sender">{sender}</span>
                   <span className="message">{m.message}</span>
                   <span className="info">
-                    <span className="date">{formatMessageDate(m.date, language)}</span>
+                    <span className="date">{formatMessageDate(m.date, language, translate)}</span>
                   </span>
                 </div>);
               })}

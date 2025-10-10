@@ -195,18 +195,16 @@ export function formatDate(date: any, language: string, formatAsString: string) 
 
 
 
-export const formatMessageDate = (date: number, language: string): string => {
+export const formatMessageDate = (date: number, language: string, translate: (params: string | TranslateParams) => string): string => {
   const messageDate = new Date(date)
   const now = new Date();
   const diffToNow = differenceInDays(messageDate, now);
   if (diffToNow === 0) {
     const minDiff = differenceInMinutes(messageDate, now);
     return formatDistance(messageDate, now, { includeSeconds: true, addSuffix: true, locale: getLanguageFns(language) })
-  } else if (diffToNow <= 7) {
-    return format(messageDate, 'ddd kk:mm');
   } else if (messageDate.getFullYear() === now.getFullYear()) {
-    return format(messageDate, 'DD MMMM kk:mm');
+    return format(messageDate, translate("date.format.message.info"),{ locale: getLanguageFns(language) });
   } else {
-    return format(messageDate, 'DD MMMM y kk:mm');
+    return format(messageDate, translate("date.format.message.info.year"), { locale: getLanguageFns(language) });
   }
 };

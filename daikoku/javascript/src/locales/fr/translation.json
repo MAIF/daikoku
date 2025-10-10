@@ -5,6 +5,8 @@
   "date.format.short": "dd/MM/yyyy",
   "date.format.short.millis": "dd/MM/yyyy HH:mm:ss.SSS",
   "date.format.short.seconds": "dd/MM/yyyy HH:mm:ss",
+  "date.format.message.info": "dd MMM HH:mm",
+  "date.format.message.info.year": "dd MMM yyyy HH:mm",
   "your teams": "Vos équipes",
   "find team": "Trouver une équipe",
   "My profile": "Mon profil",
