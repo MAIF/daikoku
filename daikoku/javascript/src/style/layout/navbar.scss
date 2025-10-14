@@ -185,6 +185,11 @@ a.navbar-brand,
 
       .block__entries {
         .block__entry__link {
+          &.focused {
+            background-color: rebeccapurple;
+            color: white;
+          }
+
           cursor: pointer;
           font-size: 14px;
           color: variables.$companion_link-color;
@@ -394,9 +399,12 @@ a.navbar-brand,
   }
 }
 
-.navbar_top .brand {
-  height: 39px;
-  width: 39px;
+.navbar-top .brand {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: clip;
+
+  font-weight: bold;
 
   img {
     width: 100%;
@@ -409,4 +417,15 @@ button.nav_item {
   border: none;
   // all: unset;
   cursor: pointer;
+}
+
+
+
+// top bar
+
+.navbar-top {
+  width: 100%;
+  height: 50px;
+
+  background-color: tomato;
 }

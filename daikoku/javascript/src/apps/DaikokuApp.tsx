@@ -3,7 +3,7 @@ import { Navigate, Outlet } from 'react-router';
 import { BrowserRouter, Route, BrowserRouter as Router, Routes, createBrowserRouter, RouterProvider, ScrollRestoration, useSearchParams } from 'react-router-dom';
 
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
-import { Footer, LoginPage, SideBar } from '../components/utils';
+import { Footer, LoginPage, SideBar, TopBar } from '../components/utils';
 import { ModalProvider, NavProvider } from '../contexts';
 
 import {
@@ -161,6 +161,7 @@ export const DaikokuApp = () => {
       <MessagesProvider>
         <NavProvider>
           <ModalProvider>
+            <TopBar />
             <div className="d-flex flex-row">
               <SideBar />
               <RightPanel />

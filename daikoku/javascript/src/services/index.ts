@@ -1,3 +1,4 @@
+import { SearchResult } from '../components/utils/sidebar/panels/SearchPanel';
 import {
   I2FAQrCode,
   IAsset,
@@ -593,7 +594,7 @@ export const updateAnonymousState = (id: string, value: boolean, currentDate?: n
     body: JSON.stringify({ id, value, currentDate }),
   });
 
-export const search = (search: any) =>
+export const search = (search: string): Promise<SearchResult> =>
   customFetch('/api/_search', {
     method: 'POST',
     body: JSON.stringify({ search }),
