@@ -2098,7 +2098,6 @@ class ApiControllerSpec()
         path =
           s"/api/teams/${teamConsumer.id.value}/subscriptions/${childSub.id.value}/_transfer"
       )(tenant, session)
-      logger.debug(Json.stringify(respLink.json))
       respLink.status mustBe 409
     }
 
