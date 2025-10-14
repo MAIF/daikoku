@@ -38,7 +38,7 @@
       "blacklist": []
     },
     "throttlingQuota": 2147483647,
-    "perIpThrottlingQuota": 2147483647,
+    "perIpThrottlingQuota": 10000000,
     "analyticsWebhooks": [],
     "alertsWebhooks": [],
     "elasticWritesConfigs": [],
