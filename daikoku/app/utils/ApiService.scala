@@ -299,7 +299,8 @@ class ApiService(
             adminCustomName = adminCustomName,
             parent = parentSubscriptionId,
             thirdPartySubscriptionInformations =
-              thirdPartySubscriptionInformations
+              thirdPartySubscriptionInformations,
+            bearerToken = None
           )
 
           val otoroshiApiKeyActionResult
@@ -353,11 +354,11 @@ class ApiService(
             }
 
           for {
-            _ <- otoroshiApiKeyActionResult
+            r <- otoroshiApiKeyActionResult
             _ <- EitherT.liftF[Future, AppError, Boolean](
               env.dataStore.apiSubscriptionRepo
                 .forTenant(tenant.id)
-                .save(apiSubscription)
+                .save(apiSubscription.copy(bearerToken = r.bearer))
             )
           } yield apiSubscription
       }.value
