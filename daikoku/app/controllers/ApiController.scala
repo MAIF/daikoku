@@ -2267,7 +2267,8 @@ class ApiController(
                         clientId = createdApiKey.clientId,
                         clientSecret = createdApiKey.clientSecret,
                         clientName = createdApiKey.clientName
-                      )
+                      ),
+                      bearerToken = createdApiKey.bearer
                     )
                   )
               )
