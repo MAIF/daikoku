@@ -1682,5 +1682,9 @@
     "tenant.settings.mailer.test.connection.success.label": "Test coonection succeeded",
     "tenant.settings.mailer.test.connection.failed.label": "Test connection failed",
     "tenant.settings.authProvider.oauth.fetch.configuration.button.label": "Get configuration",
-    "tenant.settings.authProvider.oauth.configuration.url.label": "URL of the OIDC config"
+    "tenant.settings.authProvider.oauth.configuration.url.label": "URL of the OIDC config",
+    "topbar.link.dashboard.label": "Dashboard",
+    "topbar.search.placeholder": "Type %s to search",
+    "topbar.theme.chooser.to.light.title": "Switch to light mode",
+    "topbar.theme.chooser.to.dark.title": "Switch to dark mode"
 }

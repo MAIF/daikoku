@@ -1687,5 +1687,9 @@
   "account.creation.form.name.label": "Nom",
   "account.creation.form.email.label": "Courriel",
   "account.creation.form.password.label": "Mot de passe",
-  "account.creation.form.confirm.password.label": "Confirmation du mot de passe"
+  "account.creation.form.confirm.password.label": "Confirmation du mot de passe",
+  "topbar.link.dashboard.label": "Tableau de bord",
+  "topbar.search.placeholder": "Taper %s pour rechercher",
+  "topbar.theme.chooser.to.light.title": "Passer en mode clair",
+  "topbar.theme.chooser.to.dark.title": "Passer en mode sombre"
 }

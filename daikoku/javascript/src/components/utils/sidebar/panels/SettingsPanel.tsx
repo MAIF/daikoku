@@ -12,11 +12,30 @@ import { DaikokuMode } from '../../../../types';
 
 export const DarkModeActivator = (props: { className: string }) => {
   const { theme, toggleTheme } = useContext(GlobalContext);
+  const { translate } = useContext(I18nContext);
+
+  const label = theme === 'DARK'
+    ? translate('topbar.theme.chooser.to.light.title')
+    : translate('topbar.theme.chooser.to.dark.title');
 
   return (
-    <div className={classNames("block__entry__link cursor-pointer", props.className)} onClick={() => toggleTheme()}>
-      {theme === 'DARK' ? <Sun /> : <Moon />}
-    </div>
+    <button
+      type="button"
+      className={classNames(
+        "block__entry__link cursor-pointer",
+        props.className
+      )}
+      style={{ background: 'none', border: 'none' }}
+      onClick={() => toggleTheme()}
+      aria-label={label}
+      title={label}
+    >
+      {theme === 'DARK' ? (
+        <Sun aria-hidden="true" focusable="false" />
+      ) : (
+        <Moon aria-hidden="true" focusable="false" />
+      )}
+    </button>
   );
 };
 

@@ -101,7 +101,8 @@ a.navbar-brand,
 ///////////////////// new navbar
 
 .navbar-container {
-  height: 100vh;
+  height: calc(100vh - 50px);
+  padding-top: 50px;
   // background-color: $navbar-bg-color;
   // position: 'relative';
   // color: $navbar-text-color;
@@ -186,7 +187,7 @@ a.navbar-brand,
       .block__entries {
         .block__entry__link {
           &.focused {
-            background-color: rebeccapurple;
+            background-color: variables.$companion_text-hover-bg-color;
             color: white;
           }
 
@@ -223,11 +224,10 @@ a.navbar-brand,
   z-index: 10;
   background-color: variables.$companion_bg-color;
   filter: brightness(105%);
-  height: 100vh;
+  height: calc(100vh - 50px);
   position: relative;
   min-width: 20px;
   width: 20px;
-  height: 100vh;
   transition: width .2s ease-in-out;
   box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
 
@@ -427,5 +427,41 @@ button.nav_item {
   width: 100%;
   height: 50px;
 
-  background-color: tomato;
+  background-color: variables.$sidebar-bg-color;
+
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10000;
+}
+
+.search-button {
+  width: 100%;
+  padding: 0.375rem 0.75rem;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+
+
+  appearance: none;
+
+  display: flex;
+  justify-content: space-between;
+
+  border: var(--bs-border-width) solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+
+  $placeholder-color: color-mix(in srgb, variables.$level1_text-color 95%, #fff);
+
+  .fake-placeholder {
+    color: $placeholder-color;
+  }
+
+  kbd {
+    background-color: transparent;
+    border: 1px solid $placeholder-color;
+    color: $placeholder-color;
+  }
 }

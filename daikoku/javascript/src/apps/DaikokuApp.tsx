@@ -166,6 +166,7 @@ export const DaikokuApp = () => {
               <SideBar />
               <RightPanel />
               <div className="wrapper flex-grow-1 container-fluid d-flex flex-column">
+                <div className='my-2'>mon / fil / d'ariane</div>
                 <Routes>
                   <Route
                     path='/error'

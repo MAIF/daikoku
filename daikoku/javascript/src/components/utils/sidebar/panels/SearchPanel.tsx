@@ -1,13 +1,13 @@
 import debounce from 'lodash/debounce';
 import { useContext, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import classNames from 'classnames';
 import { useQuery } from '@tanstack/react-query';
 import SearchIcon from 'react-feather/dist/icons/search';
 
 import { I18nContext } from '../../../../contexts/i18n-context';
 import * as Services from '../../../../services';
-import { isError } from '../../../../types';
+import { isError, ITeamSimple } from '../../../../types';
 import { Spinner } from '../../Spinner';
 import { ModalContext } from '../../../../contexts';
 
@@ -28,6 +28,9 @@ export const Search = () => {
   const [focusedOption, setFocusedOption] = useState<number>(0)
 
   const { translate } = useContext(I18nContext);
+  const { close } = useContext(ModalContext);
+
+  const navigate = useNavigate();
 
   const myTeamsRequest = useQuery({ queryKey: ['myTeams'], queryFn: () => Services.myTeams() })
 
@@ -37,15 +40,35 @@ export const Search = () => {
 
   const search = (inputValue: string) => {
     return Services.search(inputValue)
-      .then(setResults);
+      .then(r => {
+        setResults(r)
+        setFocusedOption(0)
+        setFocusedResult(0)
+      });
   };
 
-  const handleSelect = () => {
-    console.debug({ focusedOption })
+  const handleSelect = (teams: ITeamSimple[]) => {
+    if (results) {
+      const selectedOption = results[focusedResult].options[focusedOption]
+
+      close()
+      if (selectedOption) {
+        switch (selectedOption.type) {
+          case "api":
+            const team = teams.find((t) => t._id === selectedOption.team);
+            navigate(`/${team ? team._humanReadableId : selectedOption.team}/${selectedOption.value}/${selectedOption.version}/description`)
+            break;
+          case "team":
+            navigate(`/${selectedOption.value}/settings/dashboard`)
+            break;
+        }
+      }
+    }
   }
 
   const handleChangeSelected = (direction?: "up" | "down") => {
-    if (!results) return;
+    if (!results)
+      return;
 
     let rIndex = focusedResult;
     let oIndex = focusedOption;
@@ -55,22 +78,18 @@ export const Search = () => {
     const totalOptions = currentGroup.options.length;
 
     if (direction === "down") {
-      // Aller vers l'option suivante
       if (oIndex < totalOptions - 1) {
         oIndex++;
       } else {
-        // Aller au groupe suivant si possible
         if (rIndex < totalGroups - 1) {
           rIndex++;
           oIndex = 0;
         }
       }
     } else if (direction === "up") {
-      // Aller vers l'option précédente
       if (oIndex > 0) {
         oIndex--;
       } else {
-        // Remonter au groupe précédent si possible
         if (rIndex > 0) {
           rIndex--;
           oIndex = results[rIndex].options.length - 1;
@@ -82,19 +101,7 @@ export const Search = () => {
     setFocusedOption(oIndex);
   }
 
-  const handleKeyDown = (e) => {
-    if (
-      e.key === "ArrowDown"
-    ) {
-      handleChangeSelected("down");
-    } else if (
-      e.key === "ArrowUp"
-    ) {
-      handleChangeSelected("up");
-    } else if (e.key === "Enter") {
-      handleSelect();
-    }
-  }
+
 
 
 
@@ -104,15 +111,32 @@ export const Search = () => {
     return <Spinner />
   } else if (myTeamsRequest.data && !isError(myTeamsRequest.data)) {
     const teams = myTeamsRequest.data;
+
+    const handleKeyDown = (e) => {
+      if (
+        e.key === "ArrowDown"
+      ) {
+        handleChangeSelected("down");
+      } else if (
+        e.key === "ArrowUp"
+      ) {
+        handleChangeSelected("up");
+      } else if (e.key === "Enter") {
+        handleSelect(teams);
+      }
+    }
+
+
     return (
-      <div className="col-8 d-flex flex-column panel">
+      <div className="d-flex flex-column panel">
         <input
           placeholder={translate('search.placeholder')}
           className="form-control"
           onChange={(e) => debouncedSearch(e.target.value)}
           onKeyDown={handleKeyDown}
+          autoFocus={true}
         />
-        <div className="blocks col-12">
+        <div className="blocks col-12 mt-3">
           {results?.map((r, resultIdx) => {
             return (<div key={resultIdx} className="mb-3 block">
               <div className="mb-1 block__category">{r.label}</div>
@@ -123,7 +147,8 @@ export const Search = () => {
                       return (
                         <Link to={`/${option.value}/settings/dashboard`}
                           className={classNames("block__entry__link", { focused: resultIdx === focusedResult && optIndex === focusedOption })}
-                          key={option.value}>
+                          key={option.value}
+                          onClick={close}>
                           {option.label}
                         </Link>
                       );
@@ -132,7 +157,8 @@ export const Search = () => {
                       return (
                         <Link to={`/${team ? team._humanReadableId : option.team}/${option.value}/${option.version}/description`}
                           className={classNames("block__entry__link", { focused: resultIdx === focusedResult && optIndex === focusedOption })}
-                          key={`${option.value}-${option.version}`}>
+                          key={`${option.value}-${option.version}`}
+                          onClick={close}>
                           {`${option.label} - ${option.version}`}
                         </Link>
                       );
@@ -155,38 +181,40 @@ export const Search = () => {
 
 export const SearchPanel = () => {
 
-  const { openCustomModal } = useContext(ModalContext)
+  const { openCustomModal, close } = useContext(ModalContext)
   const { translate } = useContext(I18nContext)
 
-  const isMac = useMemo(
-    () =>
-      navigator.userAgent.includes("Mac"),
-    []
-  );
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key.toLocaleLowerCase() === 'escape') {
+      e.preventDefault()
+      close()
+    } else if (e.target === document.body && e.key.toLowerCase() === '/') {
+      e.preventDefault()
+      openModal()
+    }
+  }
 
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+
+  }, [])
 
   const openModal = () => {
     openCustomModal({
-      title: "Rechercher",
       content: <Search />
     })
   }
 
   return (
-    <div className='col-4'>
-      <button type='button' className='search-button d-flex' onClick={(e) => openModal()}>
-        <SearchIcon />
-        Search
-        <div className="shortcut-hint flex items-center gap-1 text-sm text-gray-500">
-          <kbd className="rounded bg-gray-800 text-white px-1.5 py-0.5 font-mono text-xs">
-            {isMac ? "⌘" : "Ctrl"}
-          </kbd>
-          <kbd className="rounded bg-gray-800 text-white px-1.5 py-0.5 font-mono text-xs">
-            K
-          </kbd>
+    <div className='col-3'>
+      <button type='button' className='search-button' onClick={(e) => openModal()}>
+        <div className='d-flex flex-row align-items-center gap-2'>
+          <SearchIcon className="fake-placeholder" />
+          <div className='fake-placeholder px-3' dangerouslySetInnerHTML={{__html: translate({ key: 'topbar.search.placeholder', replacements: ['<kbd className="mx-1">/</kbd>']})}} />
         </div>
       </button>
-      
+
     </div>
   )
 } 

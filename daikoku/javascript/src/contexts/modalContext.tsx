@@ -37,7 +37,6 @@ import {
   TestingApiKeyModalProps,
   TModalContext
 } from "./modals/types";
-import { ISearchModalProps, SearchModal } from "./modals/SearchModal";
 
 
 const init: TModalContext = {
@@ -58,7 +57,6 @@ const init: TModalContext = {
   openApiSelectModal: () => { },
   openApiKeySelectModal: () => { },
   openCustomModal: () => { },
-  openSearchModal: () => { },
   close: () => { },
   openRightPanel: () => { },
   closeRightPanel: () => { },
@@ -129,7 +127,6 @@ export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
   const openApiSelectModal = (props: IApiSelectModalProps) => open(<ApiSelectModal {...props} close={close} />)
   const openApiKeySelectModal = (props: IApiKeySelectModalProps) => open(<ApiKeySelectModal {...props} close={close} />)
   const openCustomModal = (props: IModalProps) => open(<CustomModal {...props} close={close} />)
-  const openSearchModal = (props: ISearchModalProps) => open(<SearchModal {...props} close={close} />)
 
 
   return (
@@ -151,7 +148,6 @@ export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
       openApiSelectModal,
       openApiKeySelectModal,
       openCustomModal,
-      openSearchModal,
       close,
       closeRightPanel,
       openRightPanel,

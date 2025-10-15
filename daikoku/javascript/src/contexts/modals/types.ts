@@ -25,7 +25,6 @@ import { IApiSelectModalProps, IModalProps } from './ApiSelectModal';
 import { CustomSubscriptionData } from './SubscriptionMetadataModal';
 import { ICustomModalProps } from './CustomModal';
 import { JSX, ReactNode } from 'react';
-import { ISearchModalProps } from './SearchModal';
 
 export interface IBaseModalProps {
   close: () => void;
@@ -54,7 +53,6 @@ export type TModalContext = {
   openApiKeySelectModal: (p: IApiKeySelectModalProps) => void;
   openApiSelectModal: (p: IApiSelectModalProps) => void;
   openCustomModal: (p: ICustomModalProps) => void;
-  openSearchModal: (p: ISearchModalProps) => void;
   close: () => void;
   openRightPanel: (p: IRightPanelProps) => void;
   closeRightPanel: () => void;

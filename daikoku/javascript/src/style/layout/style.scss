@@ -218,7 +218,9 @@ img:hover+.changePicture, .avatar-without-img:hover+.changePicture,
 
 .wrapper:not(.information-container) {
   height: 100vh;
-  overflow: auto;
+  overflow: visible;
+
+  margin-top: 50px;
 }
 
 .companion-link {

@@ -133,29 +133,28 @@ export const TopBar = () => {
   return (
     <div className="navbar-top d-flex flex-row align-items-center px-4">
       <div className="navbar_left d-flex flex-row align-items-center gap-3">
+
         <Link
           to={tenant.homePageVisible ? '/' : '/apis'}
           title={translate("Daikoku.home")}
           aria-label={translate("Daikoku.home")}
-          className="brand"
+          className="brand notification-link notification-link-color"
         >
           {tenant.name}
         </Link>
 
-        <div className="nav_item cursor-pointer">
-          <Link
-            to="/apis"
-            title={translate("API.list")}
-            aria-label={translate("API.list")}
-            className="notification-link notification-link-color"
-          >
-            {translate('Tableau de bord')} {/* FIXME: trabnslation */}
-          </Link>
-        </div>
+        <Link
+          to="/apis"
+          title={translate("API.list")}
+          aria-label={translate("API.list")}
+          className="notification-link notification-link-color"
+        >
+          {translate('topbar.link.dashboard.label')}
+        </Link>
 
       </div>
       <div className="navbar_middle d-flex justify-content-center flex-grow-1">
-        <SearchPanel />
+        {!connectedUser.isGuest && <SearchPanel />}
       </div>
       <div className="navbar_right d-flex align-items-center gap-2">
         {isAdmin && (
