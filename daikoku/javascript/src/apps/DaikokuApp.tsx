@@ -49,6 +49,8 @@ import { AnonymousReporting } from "../components/adminbackoffice/anonymousrepor
 import { RightPanel } from '../components/utils/sidebar/RightPanel';
 import { Signup } from '../components/frontend/account/signup';
 import { ITenant, ITenantFull } from '../types';
+import { Breadcrumb } from '../components/utils/sidebar/Breadcrumb';
+import { NewHome } from '../components/frontend/team/NewHome';
 
 const RouteWithFooterLayout = () => (
   <>
@@ -166,7 +168,7 @@ export const DaikokuApp = () => {
               <SideBar />
               <RightPanel />
               <div className="wrapper flex-grow-1 container-fluid d-flex flex-column">
-                <div className='my-2'>mon / fil / d'ariane</div>
+                {/* <Breadcrumb /> */}
                 <Routes>
                   <Route
                     path='/error'
@@ -228,7 +230,8 @@ export const DaikokuApp = () => {
                   />
                   <Route element={<RouteWithFooterLayout />}>
                     <Route path="/apis" element={<FrontOfficeRoute title={`${tenant.title} - ${translate('Apis')}`}>
-                      <MyHome />
+                      {/* <MyHome /> */}
+                      <NewHome />
                     </FrontOfficeRoute>} />
                     <Route path="/notifications*" element={<RouteWithTitle title={`${tenant.title} - ${translate('Notifications')}`}>
                       <NotificationList />

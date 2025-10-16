@@ -5,8 +5,105 @@
   //display: flex;
   position: relative;
   background-color: variables.$level2_bg-color;
-  color:variables.$level2_text-color;
+  color: variables.$level2_text-color;
+
   .organisation__avatar {
     width: 150px;
+  }
+}
+
+$tile_background_color: tomato;
+$tile_text_color: #000;
+
+.dashboard-tile {
+  background: color-mix(in srgb, $tile_background_color 20%, #fff);
+  border: 1px solid $tile_background_color;
+  border-radius: 5px;
+  min-width: 20%;
+  color: $tile_text_color;
+
+
+  .tile__header {
+    padding: 16px;
+    box-sizing: initial;
+    border-bottom: 1px solid $tile_background_color;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+
+    button {
+      background: none;
+      border: none;
+      color: $tile_background_color;
+      width: 30px;
+      height: 30px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      &:hover {
+        background-color: $tile_background_color;
+        color: #fff;
+      }
+    }
+
+
+    .title {
+      display: flex;
+      align-items: center;
+      margin-bottom: 5px;
+
+      .icon {
+        background-color: $tile_background_color;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        color: #fff;
+      }
+
+      h3 {
+        margin: 0;
+        font-size: 16px;
+      }
+    }
+
+    .description {
+      font-size: 12px;
+      color: color-mix(in srgb, $tile_text_color 50%, #fff);
+    }
+
+
+  }
+
+  .tile_data {
+    padding: 16px;
+
+    .data {
+      .data__label {
+        font-size: 14px;
+      }
+
+      .data__value {
+        font-size: 30px;
+        color: #000;
+      }
+    }
+  }
+}
+
+.api_list_container {
+  background: color-mix(in srgb, $tile_background_color 20%, #fff);
+  border: 1px solid $tile_background_color;
+  border-radius: 5px;
+
+  padding: 20px;
+
+  color: #000;
+
+  .api_list__title {
+    font-size: 20px;
   }
 }

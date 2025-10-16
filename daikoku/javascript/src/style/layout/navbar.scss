@@ -347,8 +347,7 @@ a.navbar-brand,
     align-items: center;
     justify-content: center;
     border-radius: 50%;
-    background-color: variables.$companion_bg-color;
-    color: #000;
+    background-color: variables.$sidebar-bg-color;
     border: 1px solid rgba($color: #000000, $alpha: 0.1);
     color: variables.$sidebar-text-color;
 
@@ -463,5 +462,20 @@ button.nav_item {
     background-color: transparent;
     border: 1px solid $placeholder-color;
     color: $placeholder-color;
+  }
+}
+
+//breadcrumb
+
+.breadcrumb {
+  list-style: none;
+  display: flex;
+
+  li {
+    &:not(:last-child)::after {
+        content: '/';
+        margin: 0 0.5rem;
+        color: #999;
+      }
   }
 }
