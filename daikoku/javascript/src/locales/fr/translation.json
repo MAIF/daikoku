@@ -1691,5 +1691,22 @@
   "topbar.link.dashboard.label": "Tableau de bord",
   "topbar.search.placeholder": "Taper %s pour rechercher",
   "topbar.theme.chooser.to.light.title": "Passer en mode clair",
-  "topbar.theme.chooser.to.dark.title": "Passer en mode sombre"
+  "topbar.theme.chooser.to.dark.title": "Passer en mode sombre",
+  "dashboard.page.title": "Tableau de bord",
+  "dashboard.apis.tile.title": "Mes APIs",
+  "dashboard.apis.tile.description": "Synthèse des publications et consommations",
+  "dashboard.apis.tile.published.label": "Publiées",
+  "dashboard.apis.tile.consumed.label": "Consommée",
+  "dashboard.apikeys.tile.title": "Mes clé d'API",
+  "dashboard.apikeys.tile.description": "État des clés générées pour ce tenant",
+  "dashboard.apikeys.tile.active.label": "Active",
+  "dashboard.apikeys.tile.expire.label": "Proche expiration",
+  "dashboard.demands.tile.title": "Demandes en cours",
+  "dashboard.demands.tile.description": "Souscriptions en attente",
+  "dashboard.demands.tile.waiting.label": "En attente",
+  "dashboard.apis.table.header.label.api": "API",
+  "dashboard.apis.table.header.label.tags": "Tags",
+  "dashboard.apis.table.header.label.team": "Équipe",
+  "dashboard.apis.table.header.label.status": "Statut",
+  "dashboard.apis.table.header.label.actions": "Action"
 }
