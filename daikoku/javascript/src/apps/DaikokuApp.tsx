@@ -49,7 +49,7 @@ import { AnonymousReporting } from "../components/adminbackoffice/anonymousrepor
 import { RightPanel } from '../components/utils/sidebar/RightPanel';
 import { Signup } from '../components/frontend/account/signup';
 import { ITenant, ITenantFull } from '../types';
-import { NewHome } from '../components/frontend/dashboard/NewHome'
+import { Dashboard } from '../components/frontend/dashboard/NewHome'
 
 const RouteWithFooterLayout = () => (
   <>
@@ -229,7 +229,7 @@ export const DaikokuApp = () => {
                   />
                   <Route element={<RouteWithFooterLayout />}>
                     <Route path="/apis" element={<FrontOfficeRoute title={`${tenant.title} - ${translate('dashboard.page.title')}`}>
-                      <NewHome />
+                      <Dashboard />
                     </FrontOfficeRoute>} />
                     <Route path="/notifications*" element={<RouteWithTitle title={`${tenant.title} - ${translate('Notifications')}`}>
                       <NotificationList />

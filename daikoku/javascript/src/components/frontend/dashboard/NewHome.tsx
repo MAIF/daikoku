@@ -1,3 +1,4 @@
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { ColumnFiltersState, PaginationState } from "@tanstack/react-table"
 import { useContext, useMemo, useState } from "react"
 import Key from 'react-feather/dist/icons/key'
@@ -8,6 +9,7 @@ import { useSearchParams } from "react-router-dom"
 
 import { I18nContext } from "../../../contexts"
 import { GlobalContext } from "../../../contexts/globalContext"
+import * as Services from '../../../services'
 import { IApiWithAuthorization, TOption, TOptions } from "../../../types"
 import { ApiList } from "./ApiList"
 import { Tile } from "./Tile"
@@ -18,9 +20,23 @@ type NewHomeProps = {
   apiGroupId?: string
 }
 
+export type TDashboardData = {
+  apis: {
+    published: number
+    consumed: number
+  },
+  subscriptions: {
+    active: number
+    expire: number
+  },
+  demands: {
+    waiting: number
+  }
+}
+
 
 //--- MARK: NewHome
-export const NewHome = (props: NewHomeProps) => {
+export const Dashboard = (props: NewHomeProps) => {
 
   const pageSize = 25;
   const [selectAll, setSelectAll] = useState(false);
@@ -54,41 +70,57 @@ export const NewHome = (props: NewHomeProps) => {
   }, [searchParams]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialFilters)
 
-  const { tenant, customGraphQLClient, connectedUser } = useContext(GlobalContext)
+  const { tenant, customGraphQLClient, connectedUser, isTenantAdmin } = useContext(GlobalContext)
   const { translate } = useContext(I18nContext)
 
-
+  const queryClient = useQueryClient();
+  const dashboardQuery = useQuery({
+    queryKey: [`${connectedUser._id}-dashboard`],
+    queryFn: () => Services.myDashboard()
+  })
 
   return (
     <main className='flex-grow-1 d-flex flex-column gap-3' role="main">
       <section className="">
         <div className="d-flex flex-row justify-content-between align-items-center">
           <div className="d-flex flex-column justify-content-center">
-            <h1 className="jumbotron-heading">
+            <h1 className="jumbotron-heading mt-3">
               {tenant.title ?? tenant.name}
             </h1>
             <p>{tenant.description}</p>
           </div>
-          <button className="btn btn-outline-info"><Sliders /> Reglage du tenant</button>
+          {isTenantAdmin && <button className="btn btn-outline-info"><Sliders className="me-2" />{translate('dashboard.page.tenant.setting.button.label')}</button>}
         </div>
       </section>
-      <div className="col-12 d-flex flex-row gap-5">
+      <div className="d-flex flex-row gap-5">
         <Tile
+          width={40}
           title={translate('dashboard.apis.tile.title')}
           icon={<Search />}
           description={translate('dashboard.apis.tile.description')}
-          data={[{ label: translate('dashboard.apis.tile.published.label'), value: 18 }, { label: translate('dashboard.apis.tile.consumed.label'), value: 18 }]} />
+          query={dashboardQuery}
+          reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
+          data={(data) => [
+            { label: translate('dashboard.apis.tile.published.label'), value: data.apis.published },
+            { label: translate('dashboard.apis.tile.consumed.label'), value: data.apis.consumed }]} />
         <Tile
+          width={40}
           title={translate('dashboard.apikeys.tile.title')}
           icon={<Key />}
           description={translate('dashboard.apikeys.tile.description')}
-          data={[{ label: translate('dashboard.apikeys.tile.active.label'), value: 18 }, { label: translate('dashboard.apikeys.tile.expire.label'), value: 18 }]} />
+          query={dashboardQuery}
+          reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
+          data={(data) => [
+            { label: translate('dashboard.apikeys.tile.active.label'), value: data.subscriptions.active },
+            { label: translate('dashboard.apikeys.tile.expire.label'), value: data.subscriptions.expire }]} />
         <Tile
-          small
+          width={20}
           title={translate('dashboard.demands.tile.title')}
           icon={<Search />}
           description={translate('dashboard.demands.tile.description')}
-          data={[{ label: translate('dashboard.demands.tile.waiting.label'), value: 18 }]}
+          query={dashboardQuery}
+          reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
+          data={(data) => [{ label: translate('dashboard.demands.tile.waiting.label'), value: data.demands.waiting }]}
           action={() => console.debug("test")} />
       </div>
       <ApiList />

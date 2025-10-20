@@ -1,3 +1,4 @@
+import { TDashboardData } from '../components/frontend/dashboard/NewHome';
 import { SearchResult } from '../components/utils/sidebar/panels/SearchPanel';
 import {
   I2FAQrCode,
@@ -115,6 +116,9 @@ export const myUnreadNotificationsCount = (): Promise<{ count: number }> =>
       () => ({ count: 0 })
     )
     .catch(() => ({ count: 0 }));
+
+export const myDashboard = (): PromiseWithError<TDashboardData> =>
+  customFetch('/api/me/dashboard');
 
 export const acceptNotificationOfTeam = (
   notificationId: string,
