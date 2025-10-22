@@ -348,6 +348,9 @@ object CommonServices {
       val tenant = ctx.tenant
       val user = ctx.user
 
+
+      AppLogger.warn(s"limit $limit offset $offset")
+
       val teams =
         getFiltervalue[List[String]](filter, "team")
           .getOrElse(List.empty)
@@ -420,6 +423,7 @@ object CommonServices {
               )), AppError.InternalServerError("SQl request for visible apis failed")
         )
       } yield {
+        //FIXME:
         val defaultApis = (apis \ "apis")
           .asOpt(json.SeqApiFormat)
           .getOrElse(Seq.empty)
@@ -458,7 +462,7 @@ object CommonServices {
             null,
             ctx.user.starredApis.map(_.value).toArray
           ),
-          offset * limit,
+          offset,
           limit
         )
 
@@ -510,7 +514,7 @@ object CommonServices {
               )
             )
       } yield {
-        val sortedApis: Seq[ApiWithAuthorizations] = uniqueApisWithVersion
+        val sortedApis: Seq[ApiWithAuthorizations] = uniqueApisWithVersion //FIXME: sort by starred in sql request
           .sortWith { (a, b) =>
             (
               user.starredApis.contains(a.id),

@@ -206,10 +206,7 @@ export const TopBar = () => {
             </Link>
           </button>
         )}
-        <button className="nav_item"
-          aria-label={translate("sidebar.dark.mode.button.aria.label")}>
-          <DarkModeActivator className="notification-link notification-link-color" />
-        </button>
+        <DarkModeActivator className="nav-item notification-link notification-link-color" />
 
         <div className="nav_item dropdown" style={{ color: '#fff' }}>
           <button className="btn" type="button" data-bs-toggle="dropdown" aria-expanded="false">

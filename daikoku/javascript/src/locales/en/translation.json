@@ -1205,9 +1205,6 @@
     "select.team.placeholder": "Select a team",
     "otoroshi.missing.entities": "Missing Otoroshi entities",
     "otoroshi.missing.target": "Missing Otoroshi target",
-    "apiList.tag.search": "By tag",
-    "apiList.category.search": "By category",
-    "apiList.team.search": "By team",
     "team.email.verification.send": "Mail sent to %s for verify this email address.",
     "team.email.alreadyVerified": "This mail is already verified",
     "team.email.notVerified": "Send a mail",
@@ -1692,5 +1689,15 @@
     "dashboard.apis.table.header.label.tags": "Tags",
     "dashboard.apis.table.header.label.team": "Team",
     "dashboard.apis.table.header.label.status": "Status",
-    "dashboard.apis.table.header.label.actions": "Actions"
+    "dashboard.apis.table.header.label.actions": "Actions",
+    "dashboard.filters.tag.label": {
+        "s": "Tag",
+        "p": "Tags"
+    },
+    "dashboard.filters.all.tags.label": "All tags",
+    "dashboard.filters.team.label": {
+        "s": "Team",
+        "p": "Teams"
+    },
+    "dashboard.filters.all.team.label": "All teams"
 }

@@ -1223,7 +1223,7 @@ export const NotificationList = () => {
     } else {
       const filterOrder = ['team', 'api', 'type', 'actionType']
       return (
-        <div className='mt-2 d-flex flex-wrap flex-row gap-2'>
+        <div className='my-2 d-flex flex-wrap flex-row gap-2'>
           {columnFilters
             .sort((a, b) => filterOrder.indexOf(a.id) - filterOrder.indexOf(b.id))
             .flatMap(f => {
