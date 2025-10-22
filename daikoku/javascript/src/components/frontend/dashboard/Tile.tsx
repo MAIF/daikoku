@@ -5,7 +5,7 @@ import ArrowRight from 'react-feather/dist/icons/arrow-right'
 import { I18nContext } from "../../../contexts"
 import { isError, ResponseError } from "../../../types"
 import { Spinner } from "../../utils/Spinner"
-import { TDashboardData } from "./NewHome"
+import { TDashboardData } from "./Dashboard"
 
 
 type TileProps = {
@@ -20,7 +20,6 @@ type TileProps = {
 }
 
 export const Tile = (props: TileProps) => {
-
   const { translate } = useContext(I18nContext)
 
   return (

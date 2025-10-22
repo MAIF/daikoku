@@ -61,6 +61,8 @@ $card-text-color: #{"var(--card_text-color, #FFF)"};
 $card-link-color: #{"var(--card_link-color, #97b0c7)"};
 $card-link-hover-color:  #{"var(--card_link-hover-color, #a9cbea)"};
 
+$topbar-height: 50px;
+
 :export {
   successColor: $success-color;
 }

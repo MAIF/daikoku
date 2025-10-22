@@ -1,20 +1,17 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { ColumnFiltersState, PaginationState } from "@tanstack/react-table"
-import { useContext, useMemo, useState } from "react"
+import { useContext } from "react"
 import Key from 'react-feather/dist/icons/key'
 import Search from 'react-feather/dist/icons/search'
 import Sliders from 'react-feather/dist/icons/sliders'
-import { useSearchParams } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 
 
 import { I18nContext } from "../../../contexts"
 import { GlobalContext } from "../../../contexts/globalContext"
 import * as Services from '../../../services'
-import { IApiWithAuthorization, TOption, TOptions } from "../../../types"
 import { ApiList } from "./ApiList"
 import { Tile } from "./Tile"
 
-//--- MARK: Types
 type NewHomeProps = {
   teamId?: string
   apiGroupId?: string
@@ -34,46 +31,13 @@ export type TDashboardData = {
   }
 }
 
-
-//--- MARK: NewHome
 export const Dashboard = (props: NewHomeProps) => {
-
-  const pageSize = 25;
-  const [selectAll, setSelectAll] = useState(false);
-  const [limit, setLimit] = useState(pageSize);
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize,
-  })
-
-  const [searched, setSearched] = useState("");
-  const [inputVal, setInputVal] = useState("")
-  const [page, setPage] = useState(0);
-  const [offset, setOffset] = useState(0);
-  const [apisWithAuth, setApisWithAuth] = useState<IApiWithAuthorization[]>()
-
-  const [producers, setProducers] = useState<Array<TOption>>([]);
-  const [selectedProducer, setSelectedProducer] = useState<TOption | undefined>();
-  const [selectedTag, setSelectedTag] = useState<TOption | undefined>(undefined);
-  const [selectedCategory, setSelectedCategory] = useState<TOption | undefined>(undefined);
-
-  const [researchTag, setResearchTag] = useState("");
-  const [tags, setTags] = useState<TOptions>([]);
-
-  const apiNbDisplayed = 10;
-
-  const defaultColumnFilters = [{ "id": "unreadOnly", "value": true }];
-  const [searchParams] = useSearchParams();
-  const initialFilters = useMemo(() => {
-    const f = searchParams.get('filter');
-    return f ? JSON.parse(decodeURIComponent(f)) : defaultColumnFilters;
-  }, [searchParams]);
-  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialFilters)
-
-  const { tenant, customGraphQLClient, connectedUser, isTenantAdmin } = useContext(GlobalContext)
+  const { tenant, connectedUser, isTenantAdmin } = useContext(GlobalContext)
   const { translate } = useContext(I18nContext)
 
-  const queryClient = useQueryClient();
+  const navigate = useNavigate()
+
+  const queryClient = useQueryClient()
   const dashboardQuery = useQuery({
     queryKey: [`${connectedUser._id}-dashboard`],
     queryFn: () => Services.myDashboard()
@@ -89,7 +53,10 @@ export const Dashboard = (props: NewHomeProps) => {
             </h1>
             <p>{tenant.description}</p>
           </div>
-          {isTenantAdmin && <button className="btn btn-outline-info"><Sliders className="me-2" />{translate('dashboard.page.tenant.setting.button.label')}</button>}
+          {isTenantAdmin && <button onClick={() => navigate('/settings/settings/general')}
+            className="btn btn-outline-info">
+            <Sliders className="me-2" />{translate('dashboard.page.tenant.setting.button.label')}
+          </button>}
         </div>
       </section>
       <div className="d-flex flex-row gap-5">

@@ -1961,7 +1961,8 @@ object SchemaDefinition {
           resolve = _.value.producers
         )
       ),
-      ReplaceField("total", Field("total", LongType, resolve = _.value.total))
+      ReplaceField("total", Field("total", LongType, resolve = _.value.total)),
+      ReplaceField("totalFiltered", Field("totalFiltered", LongType, resolve = _.value.totalFiltered)),
     )
 
     lazy val AccessibleResourceType: ObjectType[
@@ -4098,25 +4099,18 @@ object SchemaDefinition {
 
     def getVisibleApis(
         ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
-        teamId: Option[String] = None,
-        research: String,
-        selectedTeam: Option[String] = None,
-        selectedTag: Option[String] = None,
-        selectedCat: Option[String] = None,
+        filterTable: JsArray,
+        sortingTable: JsArray,
         limit: Int,
         offset: Int,
         groupOpt: Option[String] = None
     ) = {
       CommonServices
         .getVisibleApis(
-          teamId,
-          research,
-          selectedTeam,
-          selectedTag,
-          selectedCat,
+          filterTable,
+          sortingTable,
           limit,
-          offset,
-          groupOpt
+          offset
         )(ctx.ctx._2, env, e)
         .map {
           case Right(value) => value
@@ -4142,18 +4136,14 @@ object SchemaDefinition {
           "visibleApis",
           ApiWithCountType,
           arguments =
-            TEAM_ID :: RESEARCH :: SELECTED_TEAM :: SELECTED_TAG :: SELECTED_CAT :: LIMIT :: OFFSET :: GROUP_ID :: Nil,
+            TEAM_ID :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             getVisibleApis(
               ctx,
-              ctx.arg(TEAM_ID),
-              ctx.arg(RESEARCH),
-              ctx.arg(SELECTED_TEAM),
-              ctx.arg(SELECTED_TAG),
-              ctx.arg(SELECTED_CAT),
+              ctx.arg(FILTER_TABLE),
+              ctx.arg(SORTING_TABLE),
               ctx.arg(LIMIT),
-              ctx.arg(OFFSET),
-              ctx.arg(GROUP_ID)
+              ctx.arg(OFFSET)
             )
           }
         )

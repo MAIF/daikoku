@@ -1,4 +1,4 @@
-import { TDashboardData } from '../components/frontend/dashboard/NewHome';
+import { TDashboardData } from '../components/frontend/dashboard/Dashboard';
 import { SearchResult } from '../components/utils/sidebar/panels/SearchPanel';
 import {
   I2FAQrCode,
@@ -1438,8 +1438,8 @@ export const graphql = {
       }
     `,
   myVisibleApis: `
-    query AllVisibleApis ($teamId: String, $research: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $limit: Int, $offset: Int, $groupId: String) {
-      visibleApis (teamId: $teamId, research: $research, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, limit: $limit, offset: $offset, groupId: $groupId) {
+    query AllVisibleApis ($filterTable: JsArray, $sortingTable: JsArray, $limit: Int, $offset: Int) {
+      visibleApis (filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset) {
         apis {
           api {
             name

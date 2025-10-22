@@ -217,7 +217,7 @@ img:hover+.changePicture, .avatar-without-img:hover+.changePicture,
 }
 
 .wrapper:not(.information-container) {
-  height: 100vh;
+  height: calc(100vh - variables.$topbar-height);
   overflow: visible;
 
   margin-top: 50px;

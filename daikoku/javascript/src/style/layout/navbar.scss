@@ -101,8 +101,8 @@ a.navbar-brand,
 ///////////////////// new navbar
 
 .navbar-container {
-  height: calc(100vh - 50px);
-  padding-top: 50px;
+  height: calc(100vh - variables.$topbar-height);
+  padding-top: variables.$topbar-height;
   // background-color: $navbar-bg-color;
   // position: 'relative';
   // color: $navbar-text-color;
@@ -224,7 +224,7 @@ a.navbar-brand,
   z-index: 10;
   background-color: variables.$companion_bg-color;
   filter: brightness(105%);
-  height: calc(100vh - 50px);
+  height: calc(100vh - variables.$topbar-height);
   position: relative;
   min-width: 20px;
   width: 20px;
@@ -424,7 +424,7 @@ button.nav_item {
 
 .navbar-top {
   width: 100%;
-  height: 50px;
+  height: variables.$topbar-height;
 
   background-color: variables.$sidebar-bg-color;
 

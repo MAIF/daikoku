@@ -1,20 +1,22 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
+import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, PaginationState, useReactTable } from "@tanstack/react-table"
+import debounce from "lodash/debounce"
 import { useContext, useMemo, useState } from "react"
 import Plus from 'react-feather/dist/icons/plus'
-
-import debounce from "lodash/debounce"
-import { useSearchParams } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import Select, { MultiValue, SingleValue } from "react-select"
+import { toast } from "sonner"
 
-
-import { I18nContext } from "../../../contexts"
+import { I18nContext, ModalContext } from "../../../contexts"
 import { GlobalContext } from "../../../contexts/globalContext"
 import * as Services from '../../../services'
 import { IApiAuthoWithCount, IApiWithAuthorization, TOption, TOptions } from "../../../types"
+import { isError } from "../../../types/api"
 import { FeedbackButton } from "../../utils/FeedbackButton"
 import { Spinner } from "../../utils/Spinner"
 import { arrayStringToTOps } from "../../utils/function"
+import { api as API, CanIDoAction, manage } from "../../utils/permissions"
+import { ApiFormRightPanel } from "../../utils/sidebar/panels/AddPanel"
 import StarsButton from "../api/StarsButton"
 
 //--- MARK: Types
@@ -30,7 +32,7 @@ type ApiListProps = {
 
 export const ApiList = (props: ApiListProps) => {
 
-  const pageSize = 25;
+  const pageSize = 2;
   const [selectAll, setSelectAll] = useState(false);
   const [limit, setLimit] = useState(pageSize);
   const [pagination, setPagination] = useState<PaginationState>({
@@ -52,8 +54,6 @@ export const ApiList = (props: ApiListProps) => {
   const [researchTag, setResearchTag] = useState("");
   const [tags, setTags] = useState<TOptions>([]);
 
-  const apiNbDisplayed = 10;
-
   const defaultColumnFilters = [{ "id": "unreadOnly", "value": true }];
   const [searchParams] = useSearchParams();
   const initialFilters = useMemo(() => {
@@ -62,76 +62,76 @@ export const ApiList = (props: ApiListProps) => {
   }, [searchParams]);
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>(initialFilters)
 
-  const { tenant, customGraphQLClient, connectedUser } = useContext(GlobalContext)
+  const navigate = useNavigate();
+
+  const { tenant, customGraphQLClient, connectedUser, apiCreationPermitted } = useContext(GlobalContext)
   const { translate } = useContext(I18nContext)
+  const { openRightPanel, openTeamSelectorModal } = useContext(ModalContext)
 
   // --- MARK: Queries
-    const myTeamsRequest = useQuery({ queryKey: ['myTeams'], queryFn: () => Services.myTeams() })
-    const dataTags = useQuery({
-      queryKey: ["dataTags",
-        researchTag,
-        props.apiGroupId,
-        selectedTag?.value,
-        selectedCategory?.value,
-        selectedProducer?.value,
-        searched
-      ],
-      queryFn: ({ queryKey }) => customGraphQLClient.request<{ allTags: Array<string> }>(
-        Services.graphql.getAllTags,
+  const queryClient = useQueryClient()
+  const myTeamsRequest = useQuery({ queryKey: ['myTeams'], queryFn: () => Services.myTeams() })
+  const dataTags = useQuery({
+    queryKey: ["dataTags",
+      researchTag,
+      props.apiGroupId,
+      selectedTag?.value,
+      selectedCategory?.value,
+      selectedProducer?.value,
+      searched
+    ],
+    queryFn: ({ queryKey }) => customGraphQLClient.request<{ allTags: Array<string> }>(
+      Services.graphql.getAllTags,
+      {
+        research: queryKey[6],
+        groupId: queryKey[2],
+        selectedTag: queryKey[3],
+        selectedCategory: queryKey[4],
+        selectedTeam: queryKey[5],
+        filter: queryKey[1],
+        limit: 5
+      }
+    ).then(({ allTags }) => {
+      setTags(arrayStringToTOps(allTags))
+      return arrayStringToTOps(allTags)
+    })
+  })
+  const dataRequest = useInfiniteQuery({
+    queryKey: ["data",
+      props.teamId,
+      searched,
+      selectedTag?.value,
+      selectedCategory?.value,
+      pageSize,
+      offset,
+      props.apiGroupId,
+      selectedProducer?.value,
+      connectedUser._id,
+      location.pathname],
+    queryFn: ({ queryKey }) => {
+      return customGraphQLClient.request<{ visibleApis: IApiAuthoWithCount }>(
+        Services.graphql.myVisibleApis,
         {
-          research: queryKey[6],
-          groupId: queryKey[2],
-          selectedTag: queryKey[3],
-          selectedCategory: queryKey[4],
-          selectedTeam: queryKey[5],
-          filter: queryKey[1],
-          limit: 5
-        }
-      ).then(({ allTags }) => {
-        setTags(arrayStringToTOps(allTags))
-        return arrayStringToTOps(allTags)
-      })
-    })
-    const dataRequest = useInfiniteQuery({
-      queryKey: ["data",
-        props.teamId,
-        searched,
-        selectedTag?.value,
-        selectedCategory?.value,
-        apiNbDisplayed,
-        offset,
-        props.apiGroupId,
-        selectedProducer?.value,
-        connectedUser._id,
-        location.pathname],
-      queryFn: ({ queryKey }) => {
-        return customGraphQLClient.request<{ visibleApis: IApiAuthoWithCount }>(
-          Services.graphql.myVisibleApis,
-          {
-            teamId: queryKey[1],
-            research: queryKey[2],
-            selectedTag: queryKey[3],
-            selectedCategory: queryKey[4],
-            limit: queryKey[5],
-            offset: queryKey[6],
-            groupId: queryKey[7],
-            selectedTeam: queryKey[8]
-          }).then(({ visibleApis }) => {
-            setApisWithAuth(visibleApis.apis)
-            setProducers(visibleApis.producers.map(p => ({ label: p.name, value: p._id })))
-            return visibleApis
-          }
-          )
-      },
-      initialPageParam: 0,
-      getNextPageParam: (lastPage, pages) => {
-        const totalFilteredCount = lastPage.total; //FIXME: c'est pas le bon param (better with totalFiltered like notification page)
-        const nextOffset = pages.length * pageSize;
-  
-        return nextOffset < totalFilteredCount ? nextOffset : undefined;
-      },
-      gcTime: 0
-    })
+          filterTable: JSON.stringify([]),
+          sortingTable: JSON.stringify([]),
+          limit: queryKey[5],
+          offset: queryKey[6],
+        })
+        .then(({ visibleApis }) => {
+          setApisWithAuth(visibleApis.apis)
+          setProducers(visibleApis.producers.map(p => ({ label: p.name, value: p._id })))
+          return visibleApis
+        })
+    },
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, pages) => {
+      const totalFilteredCount = lastPage.total; //FIXME: c'est pas le bon param (better with totalFiltered like notification page)
+      const nextOffset = pages.length * pageSize;
+
+      return nextOffset < totalFilteredCount ? nextOffset : undefined;
+    },
+    gcTime: 0
+  })
 
   // --- MARK: Table
   const columnHelper = createColumnHelper<IApiWithAuthorization>();
@@ -277,26 +277,69 @@ export const ApiList = (props: ApiListProps) => {
   })
 
   //--- MARK: functions
-  
-    const handleSelectChange = (data: MultiValue<Option>, id: string) => {
-      const filters = columnFilters.filter(f => f.id !== id)
-  
-      setColumnFilters([...filters, { id, value: data.map(d => d.value) }])
+
+  const handleSelectChange = (data: MultiValue<Option>, id: string) => {
+    const filters = columnFilters.filter(f => f.id !== id)
+
+    setColumnFilters([...filters, { id, value: data.map(d => d.value) }])
+  }
+
+  const handleChange = (e) => {
+    setPage(0)
+    setOffset(0)
+    setSearched(e.target.value);
+  };
+
+  const debouncedResults = useMemo(() => {
+    return debounce(handleChange, 500);
+  }, []);
+
+  const createApi = (teamId?: string) => {
+    if (apiCreationPermitted && !myTeamsRequest.isLoading && myTeamsRequest.data && !isError(myTeamsRequest.data)) {
+      if (!teamId) {
+        return openTeamSelectorModal({
+          allTeamSelector: false,
+          title: translate('api.creation.title.modal'),
+          description: translate('api.creation.description.modal'),
+          teams: myTeamsRequest.data
+            .filter((t) => t.type !== 'Admin')
+            .filter((t) => !tenant.creationSecurity || t.apisCreationPermission)
+            .filter((t) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
+          action: (teams) => createApi(teams[0]),
+          actionLabel: translate('Create')
+        });
+      } else {
+        const team = myTeamsRequest.data.find((t) => teamId === t._id);
+
+        if (!team) {
+          toast.warning('toast.no.team.found')
+        } else {
+          return openRightPanel({
+            title: translate('api.creation.right.panel.title'),
+            content: <ApiFormRightPanel team={team} apigroup={false} handleSubmit={(api) => Services.createTeamApi(team._id, api)
+              .then((maybeApi) => {
+                queryClient.invalidateQueries({ queryKey: ["data"] })
+                return maybeApi
+              })
+              .then((maybeApi) => {
+                toast.success(translate({ key: "api.created.successful.toast", replacements: [api.name] }))
+                return maybeApi
+              })
+              .then((maybeApi) => {
+                if (!isError(maybeApi)) {
+                  navigate(`${team._humanReadableId}/${maybeApi._humanReadableId}/${maybeApi.currentVersion}/description`)
+                }
+              })
+            } />
+          })
+        }
+      }
     }
-  
-    const handleChange = (e) => {
-      setPage(0)
-      setOffset(0)
-      setSearched(e.target.value);
-    };
-  
-    const debouncedResults = useMemo(() => {
-      return debounce(handleChange, 500);
-    }, []);
+  };
 
 
 
-//--- MARK: Rendering
+  //--- MARK: Rendering
   return (
     <div className="col-12 api_list_container">
       <div className='d-flex flex-row align-items-center justify-content-between'>
@@ -305,7 +348,7 @@ export const ApiList = (props: ApiListProps) => {
             Liste des APIs
           </h2>
         </div>
-        <button type="button" className='btn btn-outline-info'><Plus /> créer un API</button>
+        <button type="button" className='btn btn-outline-info' onClick={() => createApi()}><Plus /> créer un API</button>
       </div>
       <div className="filter-container mt-3 d-flex justify-content-between">
         <div className="d-flex align-items-center gap-2 flex-grow-1">

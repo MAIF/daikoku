@@ -200,13 +200,12 @@ case class CmsPage(
           options.hash.getOrDefault("visibility", "All").asInstanceOf[String]
         Await.result(
           CommonServices.getVisibleApis(
-            research = "",
             limit = Int.MaxValue,
             offset = 0
           )(ctxUserContext, env, ec),
           10.seconds
         ) match {
-          case Right(ApiWithCount(apis, producers, _)) =>
+          case Right(ApiWithCount(apis, producers, _, _)) =>
             apis
               .filter(api =>
                 if (visibility == "All") true
@@ -305,13 +304,13 @@ case class CmsPage(
       (_: CmsPage, _: Options) =>
         Await.result(
           CommonServices
-            .getVisibleApis(research = "", limit = Int.MaxValue, offset = 0)(
+            .getVisibleApis(limit = Int.MaxValue, offset = 0)(
               maybeWithoutUserToUserContextConverter(ctx),
               env,
               ec
             )
             .map {
-              case Right(ApiWithCount(apis, producers, _)) =>
+              case Right(ApiWithCount(apis, _, _, _)) =>
                 JsArray(apis.map(_.api.asJson))
               case Left(error) => toJson(error)
             },

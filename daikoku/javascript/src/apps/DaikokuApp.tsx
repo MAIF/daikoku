@@ -49,7 +49,7 @@ import { AnonymousReporting } from "../components/adminbackoffice/anonymousrepor
 import { RightPanel } from '../components/utils/sidebar/RightPanel';
 import { Signup } from '../components/frontend/account/signup';
 import { ITenant, ITenantFull } from '../types';
-import { Dashboard } from '../components/frontend/dashboard/NewHome'
+import { Dashboard } from '../components/frontend/dashboard/Dashboard'
 
 const RouteWithFooterLayout = () => (
   <>

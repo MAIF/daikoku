@@ -756,7 +756,8 @@ case class ApiWithAuthorizations(
 case class ApiWithCount(
     apis: Seq[ApiWithAuthorizations],
     producers: Seq[Team],
-    total: Long
+    total: Long,
+    totalFiltered: Long
 )
 case class NotificationWithCount(
     notifications: Seq[Notification],

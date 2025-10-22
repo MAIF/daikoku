@@ -333,14 +333,10 @@ object CommonServices {
        |""".stripMargin
 
   def getVisibleApis(
-      teamId: Option[String] = None,
-      research: String,
-      selectedTeam: Option[String] = None,
-      selectedTag: Option[String] = None,
-      selectedCat: Option[String] = None,
+      filter: JsArray = Json.arr(),
+      sort: JsArray = Json.arr(),
       limit: Int,
       offset: Int,
-      groupOpt: Option[String] = None
   )(implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
@@ -351,6 +347,87 @@ object CommonServices {
     )(ctx) {
       val tenant = ctx.tenant
       val user = ctx.user
+
+      val teams =
+        getFiltervalue[List[String]](filter, "team")
+          .getOrElse(List.empty)
+          .toArray
+      val tags =
+        getFiltervalue[List[String]](filter, "tag")
+          .getOrElse(List.empty)
+          .toArray
+      val research =
+        getFiltervalue[String](filter, "research")
+          .getOrElse("")
+
+      val CTE =
+        s"""
+           |WITH my_teams as (SELECT *
+           |                  FROM teams
+           |                  WHERE _deleted IS FALSE AND content -> 'users' @> '[{"userId": "${ctx.user.id.value}"}]'),
+           |   filtered_apis as (select a.content,
+           |                              count(1) over () as total_filtered
+           |                       from apis a
+           |                       WHERE (
+           |                                 content ->> '_tenant' = $$1 AND
+           |                                 (content ->> 'state' = 'published' OR
+           |                                  $$2 OR
+           |                                  content ->> 'team' = ANY (select content ->> '_id' from my_teams)) AND
+           |                                 (case
+           |                                      WHEN $$3 THEN content ->> 'visibility' = 'Public'
+           |                                      WHEN $$2 THEN TRUE
+           |                                      ELSE (content ->> 'visibility' IN ('Public',
+           |                                                                         'PublicWithAuthorizations') OR
+           |                                            (content ->> 'team' = ANY (select content ->> '_id' from my_teams)) OR
+           |                                            (content -> 'authorizedTeams' ?|
+           |                                             (SELECT array_agg(content ->> 'id') FROM my_teams)))
+           |                                     END) AND
+           |                                 (content ->> 'name' ~* COALESCE(NULLIF($$4, ''), '.*')) AND
+           |                                 CASE
+           |                                     WHEN array_length($$5::text[], 1) IS NULL THEN true
+           |                                     ELSE a.content ->> 'team' = ANY ($$5::text[])
+           |                                 END AND
+           |                                 CASE
+           |                                     WHEN array_length($$6::text[], 1) IS NULL THEN true
+           |                                     ELSE a.content -> 'tags' ?| ARRAY[$$6::text[]]
+           |                                 END AND
+           |                                 (content ->> 'isDefault')::boolean
+           |                                 ))
+           |                  """
+
+
+      for {
+        apis <- EitherT.fromOptionF(
+          env.dataStore.asInstanceOf[PostgresDataStore]
+            .queryOneRaw(
+              s"""
+                |$CTE
+                |
+                |SELECT json_build_object(
+                |  'apis', json_agg(to_jsonb(filtered_apis.content)),
+                |  'total_filtered', COALESCE(max(total_filtered), 0)
+                |) AS result
+                |FROM filtered_apis;
+                |""".stripMargin,
+              "result",
+              Seq(
+                ctx.tenant.id.value,
+                java.lang.Boolean.valueOf(ctx.user.isDaikokuAdmin),
+                java.lang.Boolean.valueOf(ctx.user.isGuest),
+                research,
+                teams,
+                tags
+              )), AppError.InternalServerError("SQl request for visible apis failed")
+        )
+      } yield {
+        val defaultApis = (apis \ "apis")
+          .asOpt(json.SeqApiFormat)
+          .getOrElse(Seq.empty)
+
+
+
+      }
+
       for {
         myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)
         apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
@@ -375,10 +452,10 @@ object CommonServices {
             myTeams.map(_.id.value).toArray,
             java.lang.Boolean.valueOf(user.isGuest),
             research,
-            selectedTeam.orNull,
-            selectedTag.orNull,
-            selectedCat.orNull,
-            groupOpt.orNull,
+            null,
+            null,
+            null,
+            null,
             ctx.user.starredApis.map(_.value).toArray
           ),
           offset * limit,
@@ -400,10 +477,10 @@ object CommonServices {
                 myTeams.map(_.id.value).toArray,
                 java.lang.Boolean.valueOf(user.isGuest),
                 research,
-                selectedTeam.orNull,
-                selectedTag.orNull,
-                selectedCat.orNull,
-                groupOpt.orNull,
+                null,
+                null,
+                null,
+                null,
                 null
               )
             )
@@ -480,7 +557,7 @@ object CommonServices {
                 case _ => ApiWithAuthorizations(api = api, plans = apiPlans)
               })
           }
-        ApiWithCount(sortedApis, producerTeams, paginateApis._2)
+        ApiWithCount(sortedApis, producerTeams, paginateApis._2, paginateApis._2)
       }
     }
   }
