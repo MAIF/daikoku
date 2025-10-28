@@ -3,9 +3,16 @@ package fr.maif.otoroshi.daikoku.tests
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiSubscriptionAccept, TeamInvitation}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiSubscriptionAccept,
+  TeamInvitation
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
+  Administrator,
+  ApiEditor,
+  TeamUser
+}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.LoggerImplicits.BetterLogger
@@ -1079,8 +1086,11 @@ class TeamControllerSpec()
                 TeamAuthorizedEntities(
                   containerizedOtoroshi,
                   AuthorizedEntities(
-                    routes = Set(OtoroshiRouteId(parentRouteId), OtoroshiRouteId(childRouteId)),
-                    groups = Set(OtoroshiServiceGroupId(serviceGroupDev)),
+                    routes = Set(
+                      OtoroshiRouteId(parentRouteId),
+                      OtoroshiRouteId(childRouteId)
+                    ),
+                    groups = Set(OtoroshiServiceGroupId(serviceGroupDev))
                   )
                 )
               )
@@ -1092,14 +1102,16 @@ class TeamControllerSpec()
       val session = loginWithBlocking(userAdmin, tenant)
 
       val respRouteOk = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${api.id.value}/${api.currentVersion.value}/plan",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${api.id.value}/${api.currentVersion.value}/plan",
         method = "POST",
         body = planOk.asJson.some
       )(tenant, session)
       respRouteOk.status mustBe 201
 
       val respGroupOk = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${api.id.value}/${api.currentVersion.value}/plan",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${api.id.value}/${api.currentVersion.value}/plan",
         method = "POST",
         body = planOk
           .copy(
@@ -1113,22 +1125,24 @@ class TeamControllerSpec()
                   )
                 )
               )
-            ),
+            )
           )
-          .asJson.some
+          .asJson
+          .some
       )(tenant, session)
       respGroupOk.status mustBe 201
 
       val respKO = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${api.id.value}/${api.currentVersion.value}/plan",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${api.id.value}/${api.currentVersion.value}/plan",
         method = "POST",
         body = planKo.asJson.some
       )(tenant, session)
       respKO.status mustBe 401
 
-
       val respGroupKo = httpJsonCallBlocking(
-        path = s"/api/teams/${teamOwnerId.value}/apis/${api.id.value}/${api.currentVersion.value}/plan",
+        path =
+          s"/api/teams/${teamOwnerId.value}/apis/${api.id.value}/${api.currentVersion.value}/plan",
         method = "POST",
         body = planOk
           .copy(
@@ -1142,9 +1156,10 @@ class TeamControllerSpec()
                   )
                 )
               )
-            ),
+            )
           )
-          .asJson.some
+          .asJson
+          .some
       )(tenant, session)
       respGroupKo.status mustBe 401
     }

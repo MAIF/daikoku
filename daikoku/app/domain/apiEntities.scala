@@ -3,7 +3,14 @@ package fr.maif.otoroshi.daikoku.domain
 import cats.data.EitherT
 import cats.syntax.option._
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.domain.json.{CurrencyFormat, SeqIssueIdFormat, SeqPostIdFormat, SeqTeamIdFormat, SetApiTagFormat, TestingConfigFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  CurrencyFormat,
+  SeqIssueIdFormat,
+  SeqPostIdFormat,
+  SeqTeamIdFormat,
+  SetApiTagFormat,
+  TestingConfigFormat
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
@@ -344,21 +351,36 @@ case class UsagePlan(
             for {
               _ <- EitherT.cond[Future][AppError, Unit](
                 otoroshiTarget.authorizedEntities
-                  .exists(_.groups.subsetOf(authorizedEntities.authorizedEntities.groups)),
+                  .exists(
+                    _.groups
+                      .subsetOf(authorizedEntities.authorizedEntities.groups)
+                  ),
                 (),
-                AppError.Unauthorized("at least one of the group provided is unauthorized")
+                AppError.Unauthorized(
+                  "at least one of the group provided is unauthorized"
+                )
               )
               _ <- EitherT.cond[Future][AppError, Unit](
                 otoroshiTarget.authorizedEntities
-                  .exists(_.services.subsetOf(authorizedEntities.authorizedEntities.services)),
+                  .exists(
+                    _.services
+                      .subsetOf(authorizedEntities.authorizedEntities.services)
+                  ),
                 (),
-                AppError.Unauthorized("at least one of the service provided is unauthorized")
+                AppError.Unauthorized(
+                  "at least one of the service provided is unauthorized"
+                )
               )
               _ <- EitherT.cond[Future][AppError, Unit](
                 otoroshiTarget.authorizedEntities
-                  .exists(_.routes.subsetOf(authorizedEntities.authorizedEntities.routes)),
+                  .exists(
+                    _.routes
+                      .subsetOf(authorizedEntities.authorizedEntities.routes)
+                  ),
                 (),
-                AppError.Unauthorized("at least one of the route provided is unauthorized")
+                AppError.Unauthorized(
+                  "at least one of the route provided is unauthorized"
+                )
               )
             } yield ()
           case None => EitherT.leftT[Future, Unit](AppError.Unauthorized)
