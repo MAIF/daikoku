@@ -1,29 +1,50 @@
 package fr.maif.otoroshi.daikoku.tests
 
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiSubscriptionAccept,
-  TeamInvitation
-}
+import cats.implicits.catsSyntaxOptionId
+import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
+import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiSubscriptionAccept, TeamInvitation}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
-  Administrator,
-  ApiEditor,
-  TeamUser
-}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
+import fr.maif.otoroshi.daikoku.utils.LoggerImplicits.BetterLogger
 import org.joda.time.DateTime
+import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
+import org.testcontainers.containers.BindMode
 import play.api.libs.json._
 
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
 import scala.util.Random
 
 class TeamControllerSpec()
     extends PlaySpec
-//    with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
-    with IntegrationPatience {
+    with IntegrationPatience
+    with BeforeAndAfter
+    with ForAllTestContainer {
+
+  val pwd = System.getProperty("user.dir");
+
+  override val container = GenericContainer(
+    "maif/otoroshi",
+    exposedPorts = Seq(8080),
+    fileSystemBind = Seq(
+      FileSystemBind(
+        s"$pwd/test/daikoku/otoroshi.json",
+        "/home/user/otoroshi.json",
+        BindMode.READ_ONLY
+      )
+    ),
+    env = Map("APP_IMPORT_FROM" -> "/home/user/otoroshi.json")
+  )
+
+  before {
+    Await.result(cleanOtoroshiServer(container.mappedPort(8080)), 5.seconds)
+  }
 
   "a daikoku admin" can {
     "create, update or delete a team" in {
@@ -976,6 +997,156 @@ class TeamControllerSpec()
         body = Some(myTeam.get.copy(name = "test").asJson)
       )(tenant, session)
       respUpdate.status mustBe 403
+    }
+  }
+
+  "a team" must {
+    "use only authorized otoroshi entities" in {
+      val planOk = UsagePlan(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        customName = "free without quotas",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val planKo = UsagePlan(
+        id = UsagePlanId("parent.ko"),
+        tenant = tenant.id,
+        customName = "free without quotas",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(otherRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+
+      val api = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq().empty,
+        defaultUsagePlan = None
+      )
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(userAdmin),
+        apis = Seq(api),
+        usagePlans = Seq.empty,
+        teams = Seq(
+          teamConsumer,
+          teamOwner.copy(
+            authorizedOtoroshiEntities = Some(
+              Seq(
+                TeamAuthorizedEntities(
+                  containerizedOtoroshi,
+                  AuthorizedEntities(
+                    routes = Set(OtoroshiRouteId(parentRouteId), OtoroshiRouteId(childRouteId)),
+                    groups = Set(OtoroshiServiceGroupId(serviceGroupDev)),
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+
+      val session = loginWithBlocking(userAdmin, tenant)
+
+      val respRouteOk = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/apis/${api.id.value}/${api.currentVersion.value}/plan",
+        method = "POST",
+        body = planOk.asJson.some
+      )(tenant, session)
+      respRouteOk.status mustBe 201
+
+      val respGroupOk = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/apis/${api.id.value}/${api.currentVersion.value}/plan",
+        method = "POST",
+        body = planOk
+          .copy(
+            id = UsagePlanId("plan.group.ok"),
+            otoroshiTarget = Some(
+              OtoroshiTarget(
+                containerizedOtoroshi,
+                Some(
+                  AuthorizedEntities(
+                    groups = Set(OtoroshiServiceGroupId(serviceGroupDev))
+                  )
+                )
+              )
+            ),
+          )
+          .asJson.some
+      )(tenant, session)
+      respGroupOk.status mustBe 201
+
+      val respKO = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/apis/${api.id.value}/${api.currentVersion.value}/plan",
+        method = "POST",
+        body = planKo.asJson.some
+      )(tenant, session)
+      respKO.status mustBe 401
+
+
+      val respGroupKo = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/apis/${api.id.value}/${api.currentVersion.value}/plan",
+        method = "POST",
+        body = planOk
+          .copy(
+            id = UsagePlanId("plan.group.ok"),
+            otoroshiTarget = Some(
+              OtoroshiTarget(
+                containerizedOtoroshi,
+                Some(
+                  AuthorizedEntities(
+                    groups = Set(OtoroshiServiceGroupId(serviceGroupDefault))
+                  )
+                )
+              )
+            ),
+          )
+          .asJson.some
+      )(tenant, session)
+      respGroupKo.status mustBe 401
     }
   }
 }
