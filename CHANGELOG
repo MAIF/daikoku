@@ -797,3 +797,9 @@ We'd like to thank all the contributors who worked on this release!
 - Bearer token seems to not be retrieve after apikey creation [#885](https://github.com/MAIF/daikoku/issues/885)
 - bug with date format in messages page [#884](https://github.com/MAIF/daikoku/issues/884)
 
+## [v18.4.2] - 2025-10-28
+
+## :beetle: Bug Fixes
+
+- teams otoroshi authorizedEntites doesn't work [#893](https://github.com/MAIF/daikoku/issues/893)
+
