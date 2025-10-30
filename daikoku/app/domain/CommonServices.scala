@@ -396,6 +396,7 @@ object CommonServices {
            |                                 END AND
            |                                 (content ->> 'isDefault')::boolean
            |                                 ))
+           |                       LIMIT $$7 OFFSET $$8
            |                  """
 
 
@@ -415,21 +416,60 @@ object CommonServices {
               "result",
               Seq(
                 ctx.tenant.id.value,
-                java.lang.Boolean.valueOf(ctx.user.isDaikokuAdmin),
+                ctx.user.id.value,
                 java.lang.Boolean.valueOf(ctx.user.isGuest),
                 research,
                 teams,
-                tags
+                tags,
+                java.lang.Integer.valueOf(limit),
+                java.lang.Integer.valueOf(offset)
               )), AppError.InternalServerError("SQl request for visible apis failed")
         )
       } yield {
-        //FIXME:
-        val defaultApis = (apis \ "apis")
+        val filteredApis = (apis \ "apis")
           .asOpt(json.SeqApiFormat)
           .getOrElse(Seq.empty)
 
+        val sortedApis: Seq[ApiWithAuthorizations] = filteredApis
+          .foldLeft(Seq.empty[ApiWithAuthorizations]) {
+            case (acc, api) =>
+              val apiPlans = plans
+                .filter(p => api.possibleUsagePlans.contains(p.id))
+                .filter(p =>
+                  p.visibility == UsagePlanVisibility.Public || myTeams
+                    .exists(_.id == api.team)
+                )
+              val authorizations = myTeams
+                //                .filter(t => t.`type` != TeamType.Admin)
+                .foldLeft(Seq.empty[AuthorizationApi]) {
+                  case (acc, team) =>
+                    acc :+ AuthorizationApi(
+                      team = team.id.value,
+                      authorized = api.authorizedTeams
+                        .contains(team.id) || api.team == team.id,
+                      pending = myCurrentRequests
+                        .exists(notif =>
+                          notif.action
+                            .asInstanceOf[ApiAccess]
+                            .team == team.id && notif.action
+                            .asInstanceOf[ApiAccess]
+                            .api == api.id
+                        )
+                    )
+                }
+              acc :+ (api.visibility.name match {
+                case "PublicWithAuthorizations" | "Private" | "AdminOnly" =>
+                  ApiWithAuthorizations(
+                    api = api,
+                    plans = apiPlans,
+                    authorizations = authorizations
+                  )
+                case _ => ApiWithAuthorizations(api = api, plans = apiPlans)
+              })
+          }
 
 
+//        ApiWithCount(sortedApis.map(), producerTeams, paginateApis._2, paginateApis._2)
       }
 
       for {
