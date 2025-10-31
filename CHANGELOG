@@ -803,3 +803,14 @@ We'd like to thank all the contributors who worked on this release!
 
 - teams otoroshi authorizedEntites doesn't work [#893](https://github.com/MAIF/daikoku/issues/893)
 
+## [v18.4.3] - 2025-10-31
+
+## :star: New Features
+
+- new way to reset color-theme without use CLI [#896](https://github.com/MAIF/daikoku/issues/896)
+
+## :beetle: Bug Fixes
+
+- teams page can crash id team han no avatar [#897](https://github.com/MAIF/daikoku/issues/897)
+- error during evolutions [#895](https://github.com/MAIF/daikoku/issues/895)
+
