@@ -1682,5 +1682,9 @@
     "tenant.settings.mailer.test.connection.success.label": "Test coonection succeeded",
     "tenant.settings.mailer.test.connection.failed.label": "Test connection failed",
     "tenant.settings.authProvider.oauth.fetch.configuration.button.label": "Get configuration",
-    "tenant.settings.authProvider.oauth.configuration.url.label": "URL of the OIDC config"
+    "tenant.settings.authProvider.oauth.configuration.url.label": "URL of the OIDC config",
+    "tenant.edition.color-theme.reset.button.label": "Reset theme",
+    "tenant.edition.color-theme.reset.confirm.title": "Confirm reset",
+    "tenant.edition.color-theme.reset.confirm.message": "Are you sure you want to reset the color theme to the default? This will permanently remove the current theme.",
+    "tenant.edition.color-theme.reset.successful.message": "The color theme has been successfully reset."
 }

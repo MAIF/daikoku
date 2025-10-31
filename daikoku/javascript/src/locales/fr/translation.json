@@ -1687,5 +1687,9 @@
   "account.creation.form.name.label": "Nom",
   "account.creation.form.email.label": "Courriel",
   "account.creation.form.password.label": "Mot de passe",
-  "account.creation.form.confirm.password.label": "Confirmation du mot de passe"
+  "account.creation.form.confirm.password.label": "Confirmation du mot de passe",
+  "tenant.edition.color-theme.reset.button.label": "Réinitialiser le thème",
+  "tenant.edition.color-theme.reset.confirm.title": "Confirmer la réinitialisation",
+  "tenant.edition.color-theme.reset.confirm.message": "Voulez-vous vraiment réinitialiser le thème de couleur à celui par défaut ? Cette action supprimera définitivement le thème actuel.",
+  "tenant.edition.color-theme.reset.successful.message": "Le thème de couleur a été réinitialisé avec succès."
 }

@@ -477,6 +477,11 @@ export const saveTenant = (tenant: ITenantFull) =>
     body: JSON.stringify(tenant),
   });
 
+export const resetColorTheme = (tenant: ITenant): PromiseWithError<ResponseDone> =>
+  customFetch(`/api/tenants/${tenant._id}/color-theme/_reset`, {
+    method: 'PUT'
+  });
+
 export const deleteTenant = (id: string) =>
   customFetch(`/api/tenants/${id}`, {
     method: 'DELETE',
