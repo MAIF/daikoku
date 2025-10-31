@@ -80,7 +80,7 @@ The client side can be customized with some CSS code or JS code, with overwritin
 Daikoku can be customized just by passing a new CSS color theme.
 
 :::warning
-Since **v18.4.2** the file to customize your tenant must be sync with the **CLI**. Daikoku do not provide anymore UI to update your css, color theme or js. 
+Since **v18.4.3** the file to customize your tenant must be sync with the **CLI**. Daikoku do not provide anymore UI to update your css, color theme or js. 
 
 You can find all the information to use the CLI [here](../../04-cli/041-informations/index.mdx)
 :::
