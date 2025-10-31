@@ -1317,8 +1317,6 @@ object evolution_1830 extends EvolutionScript {
             oldJs
           )
 
-          logger.debug(s"[evolution 18.3.0] :: raw_tenant => ${Json.prettyPrint(rawTenant)}")
-
           val _tenant = json.TenantFormat.reads(
             rawTenant.as[JsObject]
               ++ Json.obj(
@@ -1335,13 +1333,6 @@ object evolution_1830 extends EvolutionScript {
                   .asJson
               )
           )
-
-          _tenant match {
-            case JsSuccess(value, path) =>
-              logger.debug(s"tenant is OK")
-            case JsError(errors) => ???
-              logger.debug(s"tenant is KO $errors")
-          }
 
           val tenant = Try {
             _tenant
@@ -1400,7 +1391,6 @@ object evolution_1840_a extends EvolutionScript {
         .streamAllRaw()(ec)
         .runWith(Sink.fold(0)((count, _) => count + 1))(mat)
 
-      count.map(c => logger.warn(s"il y a $c usage plan en bdd"))(ec)
 
       dataStore.usagePlanRepo
         .forAllTenant()
