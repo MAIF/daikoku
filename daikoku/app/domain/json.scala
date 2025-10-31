@@ -1751,9 +1751,6 @@ object json {
         case e: Throwable =>
           AppLogger.warn(e.getMessage)
           JsError(e.getMessage)
-        case e =>
-          AppLogger.warn(e.getMessage)
-          JsError(e.getMessage)
       } get
 
     override def writes(o: Tenant): JsValue =

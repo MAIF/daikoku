@@ -1,5 +1,6 @@
 package storage.drivers.postgres
 
+import io.vertx.core.AsyncResult
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import io.vertx.sqlclient.{Pool, Row, RowSet}
 import play.api.libs.json.{JsArray, JsObject, Json}
@@ -94,61 +95,63 @@ class ReactivePg(pool: Pool, configuration: Configuration)(implicit
     .getOrElse(false)
 
   private def queryRaw[A](
-      query: String,
-      params: Seq[Any] = Seq.empty,
-      debug: Boolean = true
-  )(f: Seq[Row] => A): Future[A] = {
+                           query: String,
+                           params: Seq[Any] = Seq.empty,
+                           debug: Boolean = true
+                         )(f: Seq[Row] => A): Future[A] = {
     if (debug || debugQueries)
       logger.debug(s"""query: "$query", params: "${params.mkString(", ")}"""")
 
     val isRead = query.toLowerCase().trim.startsWith("select")
     (if (isRead) {
-       pool
-         .withConnection(c =>
-           c.preparedQuery(query)
-             .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
-         )
-         .scala
-     } else {
-       pool
-         .withConnection(c =>
-           c.preparedQuery(query)
-             .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
-         )
-         .scala
-     })
+      pool
+        .withConnection(c =>
+          c.preparedQuery(query)
+            .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
+        )
+        .scala
+    } else {
+      pool
+        .withConnection(c =>
+          c.preparedQuery(query)
+            .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
+        )
+        .scala
+    })
       .flatMap { _rows =>
         Try {
           val rows = _rows.asScala.toSeq
           f(rows)
         } match {
           case Success(value) => FastFuture.successful(value)
-          case Failure(e)     => FastFuture.failed(e)
+          case Failure(e) => FastFuture.failed(e)
         }
       }
       .andThen {
         case Failure(e) =>
           logger.error(
-            s"""Failed to apply query: "$query" with params: "${params
-              .mkString(", ")}""""
+            s"""Failed to apply query: "$query" with params: "${
+              params
+                .mkString(", ")
+            }""""
           )
           logger.error(s"$e")
       }
   }
 
   def querySeq[A](
-      query: String,
-      params: Seq[AnyRef] = Seq.empty,
-      debug: Boolean = true
-  )(f: Row => Option[A]): Future[Seq[A]] = {
+                   query: String,
+                   params: Seq[AnyRef] = Seq.empty,
+                   debug: Boolean = true
+                 )(f: Row => Option[A]): Future[Seq[A]] = {
     queryRaw[Seq[A]](query, params, debug)(rows => rows.flatMap(f))
   }
 
   def queryOne[A](
-      query: String,
-      params: Seq[AnyRef] = Seq.empty,
-      debug: Boolean = true
-  )(f: Row => Option[A]): Future[Option[A]] = {
+                   query: String,
+                   params: Seq[AnyRef] = Seq.empty,
+                   debug: Boolean = true
+                 )(f: Row => Option[A]): Future[Option[A]] = {
     queryRaw[Option[A]](query, params, debug)(rows =>
       rows.headOption.flatMap(row => f(row))
     )
@@ -164,4 +167,26 @@ class ReactivePg(pool: Pool, configuration: Configuration)(implicit
           .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
       )
       .scala
+
+  def execute(sql: String, params: Seq[AnyRef] = Seq.empty): Future[Long] = {
+    val promise = Promise[Long]()
+
+    pool
+      .withConnection(c =>
+        c.preparedQuery(sql)
+          .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
+      )
+      .onComplete { ar =>
+        if (ar.succeeded()) {
+          promise.success(ar.result().rowCount().toLong)
+        } else {
+          logger.warn(ar.cause().getLocalizedMessage)
+          promise.success(0L)
+        }
+      }
+
+    promise.future
+  }
+
+
 }

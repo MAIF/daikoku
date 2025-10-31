@@ -5,17 +5,7 @@ import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.Tenant.getCustomizationCmsPage
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Admin
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiDocumentationPageFormat,
-  ApiFormat,
-  ApiSubscriptionFormat,
-  SeqApiDocumentationDetailPageFormat,
-  TeamFormat,
-  TeamIdFormat,
-  TenantFormat,
-  TenantIdFormat,
-  UserFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, TenantIdFormat, UserFormat}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.apache.pekko.{Done, NotUsed}
@@ -27,6 +17,7 @@ import play.api.Logger
 import play.api.libs.json._
 import services.CmsPage
 import storage.DataStore
+import storage.drivers.postgres.PostgresDataStore
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success, Try}
@@ -66,7 +57,7 @@ object evolution_102 extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
-      AppLogger.info("Begin evolution 1.0.2")
+      logger.info("Begin evolution 1.0.2")
       dataStore.apiRepo
         .forAllTenant()
         .streamAllRaw()(ec)
@@ -129,7 +120,7 @@ object evolution_150 extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
-      AppLogger.info(
+      logger.info(
         s"Begin evolution $version - Set isDefault at true on all api"
       )
 
@@ -144,7 +135,7 @@ object evolution_150 extends EvolutionScript {
                 .save(api.copy(isDefault = true))(ec)
             case JsError(errors) =>
               FastFuture.successful(
-                AppLogger.error(s"Evolution $version : $errors")
+                logger.error(s"Evolution $version : $errors")
               )
           }
         }
@@ -169,7 +160,7 @@ object evolution_151 extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
-      AppLogger.info(
+      logger.info(
         s"Begin evolution $version - Convert unlogged home to CMS format"
       )
 
@@ -218,7 +209,7 @@ object evolution_151 extends EvolutionScript {
               }
             case JsError(errors) =>
               FastFuture.successful(
-                AppLogger.error(s"Evolution $version : $errors")
+                logger.error(s"Evolution $version : $errors")
               )
           }
         }
@@ -244,7 +235,7 @@ object evolution_155 extends EvolutionScript {
         _: OtoroshiClient
     ) => {
 
-      AppLogger.info(
+      logger.info(
         s"Begin evolution $version - Rewrite all _humanReadableId - sorry for the inconvenience caused"
       )
 
@@ -257,7 +248,7 @@ object evolution_155 extends EvolutionScript {
                 .save(v)(ec)
             case JsError(errors) =>
               FastFuture.successful(
-                AppLogger.error(s"Evolution $version : $errors")
+                logger.error(s"Evolution $version : $errors")
               )
           }
         }
@@ -270,7 +261,7 @@ object evolution_155 extends EvolutionScript {
                 .save(v)(ec)
             case JsError(errors) =>
               FastFuture.successful(
-                AppLogger.error(s"Evolution $version : $errors")
+                logger.error(s"Evolution $version : $errors")
               )
           }
         }
@@ -285,7 +276,7 @@ object evolution_155 extends EvolutionScript {
                 .save(v)(ec)
             case JsError(errors) =>
               FastFuture.successful(
-                AppLogger.error(s"Evolution $version : $errors")
+                logger.error(s"Evolution $version : $errors")
               )
           }
         }
@@ -300,7 +291,7 @@ object evolution_155 extends EvolutionScript {
                 .save(v)(ec)
             case JsError(errors) =>
               FastFuture.successful(
-                AppLogger.error(s"Evolution $version : $errors")
+                logger.error(s"Evolution $version : $errors")
               )
           }
         }
@@ -339,7 +330,7 @@ object evolution_157 extends EvolutionScript {
         ec: ExecutionContext,
         otoroshiClient: OtoroshiClient
     ) => {
-      AppLogger.info(
+      logger.info(
         s"Begin evolution $version - sync all subscriptions metadata with associated plan metadata"
       )
 
@@ -351,7 +342,7 @@ object evolution_157 extends EvolutionScript {
         .mapAsync(10) { value =>
           ApiSubscriptionFormat.reads(value) match {
             case JsSuccess(sub, _) =>
-              AppLogger.info(
+              logger.info(
                 s"begin sync of ${sub.id} with api ${sub.api.asJson}"
               )
 
@@ -410,7 +401,7 @@ object evolution_157 extends EvolutionScript {
                             )
                           )
                           .merge
-                      _ = AppLogger.info(
+                      _ = logger.info(
                         s"${sub.id} :: api ${(api \ "_id").as[String]} with metadata ${metadata}"
                       )
                       _ <- OptionT.liftF(
@@ -420,13 +411,13 @@ object evolution_157 extends EvolutionScript {
                       )
                     } yield ()).value
                   case _ =>
-                    AppLogger.info(s"[${sub.id}] :: no possible usage plans")
+                    logger.info(s"[${sub.id}] :: no possible usage plans")
                     FastFuture.successful(())
                 }
 
             case JsError(errors) =>
               FastFuture.successful(
-                AppLogger.error(s"Evolution $version : $errors")
+                logger.error(s"Evolution $version : $errors")
               )
           }
         }
@@ -453,7 +444,7 @@ object evolution_157_b extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
-      AppLogger.info(
+      logger.info(
         s"Begin evolution $version - rewrite api documentation & doc.humanReadableId"
       )
 
@@ -519,7 +510,7 @@ object evolution_157_b extends EvolutionScript {
                 .save(v)(ec)
             case JsError(errors) =>
               FastFuture.successful(
-                AppLogger.error(s"Evolution $version : $errors")
+                logger.error(s"Evolution $version : $errors")
               )
           }
         }
@@ -547,7 +538,7 @@ object evolution_157_c extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
-      AppLogger.info(
+      logger.info(
         s"Begin evolution $version - remove all team.subscriptions"
       )
 
@@ -589,7 +580,7 @@ object evolution_1612_a extends EvolutionScript {
         _: OtoroshiClient
     ) =>
       {
-        AppLogger.info(s"Begin evolution $version - set is default to true")
+        logger.info(s"Begin evolution $version - set is default to true")
 
         implicit val execContext: ExecutionContext = ec
 
@@ -648,7 +639,7 @@ object evolution_1612_b extends EvolutionScript {
         _: OtoroshiClient
     ) =>
       {
-        AppLogger.info(
+        logger.info(
           s"Begin evolution $version - flag all team as unverified"
         )
 
@@ -708,7 +699,7 @@ object evolution_1612_c extends EvolutionScript {
         _: OtoroshiClient
     ) =>
       {
-        AppLogger.info(
+        logger.info(
           s"Begin evolution $version - add routes in authorized entities"
         )
 
@@ -773,7 +764,7 @@ object evolution_1613 extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
-      AppLogger.info(
+      logger.info(
         s"Begin evolution $version - Update Apis to add property state & update all subscription process"
       )
 
@@ -851,7 +842,7 @@ object evolution_1613_b extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
-      AppLogger.info(
+      logger.info(
         s"Begin evolution $version - Update SubscriptionDemands notifications to real subscriptions demand"
       )
 
@@ -966,7 +957,7 @@ object evolution_1630 extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
-      AppLogger.info(
+      logger.info(
         s"Begin evolution $version - extract all usage plan to new table usage_plans"
       )
 
@@ -977,11 +968,11 @@ object evolution_1630 extends EvolutionScript {
         .forAllTenant()
         .streamAllRaw()
         .mapAsync(5)(api => {
-          AppLogger.debug(
+          logger.debug(
             s"### Begin evolution $version for ${(api \ "name").as[String]}"
           )
           val oldPlans = (api \ "possibleUsagePlans").as[JsArray].value
-          AppLogger.debug(s"$oldPlans")
+          logger.debug(s"$oldPlans")
 
           val updatedOldPlans = oldPlans
             .map(plan =>
@@ -1001,7 +992,7 @@ object evolution_1630 extends EvolutionScript {
             .as[JsObject] + ("possibleUsagePlans" -> json.SeqUsagePlanIdFormat
             .writes(plans.map(_.id)))
 
-          AppLogger.debug(Json.stringify(updatedRawApi))
+          logger.debug(Json.stringify(updatedRawApi))
           json.ApiFormat.reads(updatedRawApi) match {
             case JsSuccess(updatedApi, _) =>
               for {
@@ -1014,12 +1005,26 @@ object evolution_1630 extends EvolutionScript {
                   val oldId = (p \ "_oldId").as[String]
                   val apiId = (api \ "_id").as[String]
 
-                  dataStore.apiSubscriptionRepo
-                    .forAllTenant()
-                    .updateManyByQuery(
-                      Json.obj("plan" -> oldId, "api" -> apiId),
-                      Json.obj("$set" -> Json.obj("plan" -> _id))
-                    )
+                  for {
+                    s <- dataStore.apiSubscriptionRepo
+                      .forAllTenant()
+                      .updateManyByQuery(
+                        Json.obj("plan" -> oldId, "api" -> apiId),
+                        Json.obj("$set" -> Json.obj("plan" -> _id))
+                      )
+                    n <- dataStore
+                      .notificationRepo.forAllTenant()
+                      .execute(
+                        query =
+                          s"""
+                            |UPDATE notifications
+                            |     SET content = jsonb_set(content, '{action,plan}', to_jsonb($$1::text))
+                            |     WHERE content->'action'->>'plan' = $$2
+                            |""".stripMargin,
+                        params = Seq(_id, oldId),
+                      )
+
+                  } yield logger.debug(s"$s apiSubscription and $n notification updated for plan ${_id}")
                 }))
                 _ <-
                   dataStore.apiRepo
@@ -1028,7 +1033,7 @@ object evolution_1630 extends EvolutionScript {
               } yield FastFuture.successful(true)
             case JsError(errors) =>
               FastFuture.successful(
-                AppLogger.error(
+                logger.error(
                   s"error during evolution $version - wrong api format ${Json
                     .stringify(updatedRawApi)} -- $errors"
                 )
@@ -1056,7 +1061,7 @@ object evolution_1634 extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
-      AppLogger.info(
+      logger.info(
         s"Begin evolution $version - update all consumptions to set state"
       )
 
@@ -1113,7 +1118,7 @@ object evolution_1750 extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
-      AppLogger.info(
+      logger.info(
         s"Begin evolution $version - create cms api"
       )
 
@@ -1172,60 +1177,54 @@ object evolution_1820 extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
-      AppLogger.info(
+      logger.info(
         s"Begin evolution $version - update plan.customName since it is mandatory value"
       )
 
       implicit val executionContext: ExecutionContext = ec
 
       def getOldTypeOfPlan(rawPlan: JsValue): (String, JsValue, JsValue) = {
-        (rawPlan \ "type").asOpt[String] match {
-          case Some("FreeWithoutQuotas") =>
+        logger.debug(s"[evolution $version] :: get type for ${Json.stringify(rawPlan)}")
+
+        (rawPlan \ "customName").asOpt[String] match {
+          case Some(name) =>
             (
-              (rawPlan \ "customName")
-                .asOpt[String]
-                .getOrElse("Free without quotas"),
+              name,
+              (rawPlan \ "currency").asOpt[JsValue].getOrElse(JsNull).as[JsValue],
+              (rawPlan \ "billingDuration").asOpt[JsValue].getOrElse(JsNull).as[JsValue]
+            )
+          case None if (rawPlan \ "maxPerMonth").asOpt[Long].isEmpty =>
+            (
+              "Free without quotas",
               JsNull,
               JsNull
             )
-          case Some("FreeWithQuotas") =>
+          case None if (rawPlan \ "costPerMonth").asOpt[Long].isEmpty && (rawPlan \ "maxPerMonth").asOpt[Long].nonEmpty =>
             (
-              (rawPlan \ "customName")
-                .asOpt[String]
-                .getOrElse("Free with quotas"),
+              "Free with quotas",
               JsNull,
               JsNull
             )
-          case Some("QuotasWithLimits") =>
+          case None if (rawPlan \ "maxPerMonth").asOpt[Long].nonEmpty && (rawPlan \ "costPerRequest").asOpt[Long].isEmpty =>
             (
-              (rawPlan \ "customName")
-                .asOpt[String]
-                .getOrElse("Quotas with limits"),
+              "Quotas with limits",
               (rawPlan \ "currency").as[JsValue],
               (rawPlan \ "billingDuration").as[JsValue]
             )
-          case Some("QuotasWithoutLimits") =>
+          case None if (rawPlan \ "maxPerMonth").asOpt[Long].nonEmpty && (rawPlan \ "costPerRequest").asOpt[Long].nonEmpty =>
             (
-              (rawPlan \ "customName")
-                .asOpt[String]
-                .getOrElse("Quotas without limits"),
+              "Quotas without limits",
               (rawPlan \ "currency").as[JsValue],
               (rawPlan \ "billingDuration").as[JsValue]
             )
-          case Some("PayPerUse") =>
+          case None if (rawPlan \ "maxPerMonth").asOpt[Long].nonEmpty  =>
             (
-              (rawPlan \ "customName").asOpt[String].getOrElse("Pay per use"),
+              "Pay per use",
               (rawPlan \ "currency").as[JsValue],
               (rawPlan \ "billingDuration").as[JsValue]
-            )
-          case Some("Admin") =>
-            (
-              (rawPlan \ "customName").asOpt[String].getOrElse("Admin"),
-              JsNull,
-              JsNull
             )
           case _ =>
-            AppLogger.error(
+            logger.error(
               s"[evolution $version] :: no type found :: ${Json.prettyPrint(rawPlan)}"
             )
             (
@@ -1253,7 +1252,7 @@ object evolution_1820 extends EvolutionScript {
             ) match {
             case JsSuccess(plan, _) => plan
             case JsError(errors) =>
-              AppLogger.error(
+              logger.error(
                 s"[evolution $version] :: failed to parse plan: $errors\nRaw JSON: $patchedJson"
               )
               throw new RuntimeException(s"Failed to parse plan: $errors")
@@ -1265,9 +1264,9 @@ object evolution_1820 extends EvolutionScript {
         .runWith(Sink.ignore)(mat)
         .andThen {
           case Success(_) =>
-            AppLogger.debug(s"[evolution $version] :: completed successfully")
+            logger.debug(s"[evolution $version] :: completed successfully")
           case Failure(e) =>
-            AppLogger.error(s"[evolution $version] :: failed with error", e)
+            logger.error(s"[evolution $version] :: failed with error", e)
         }(ec)
     }
 }
@@ -1289,7 +1288,7 @@ object evolution_1830 extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
-      AppLogger.info(
+      logger.info(
         s"Begin evolution $version - update tenants to use cms pages"
       )
 
@@ -1318,6 +1317,8 @@ object evolution_1830 extends EvolutionScript {
             oldJs
           )
 
+          logger.debug(s"[evolution 18.3.0] :: raw_tenant => ${Json.prettyPrint(rawTenant)}")
+
           val _tenant = json.TenantFormat.reads(
             rawTenant.as[JsObject]
               ++ Json.obj(
@@ -1335,18 +1336,25 @@ object evolution_1830 extends EvolutionScript {
               )
           )
 
+          _tenant match {
+            case JsSuccess(value, path) =>
+              logger.debug(s"tenant is OK")
+            case JsError(errors) => ???
+              logger.debug(s"tenant is KO $errors")
+          }
+
           val tenant = Try {
             _tenant
           } recover {
             case e =>
-              AppLogger.error(e.getMessage, e)
+              logger.error(e.getMessage, e)
               JsError(e.getMessage)
           } get
 
           (tenant.get, cssPage, colorThemePage, jsPage)
         })
         .mapAsync(1)(tuple => {
-          AppLogger.debug(
+          logger.debug(
             s"[evolution $version] :: save ${tuple._2.id.value} - ${tuple._2.id.value} - ${tuple._2.id.value}"
           )
           for {
@@ -1359,9 +1367,9 @@ object evolution_1830 extends EvolutionScript {
         .runWith(Sink.ignore)(mat)
         .andThen {
           case Success(_) =>
-            AppLogger.debug(s"[evolution $version] :: completed successfully")
+            logger.debug(s"[evolution $version] :: completed successfully")
           case Failure(e) =>
-            AppLogger.error(s"[evolution $version] :: failed with error", e)
+            logger.error(s"[evolution $version] :: failed with error", e)
         }(ec)
     }
 }
@@ -1383,7 +1391,7 @@ object evolution_1840_a extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
-      AppLogger.info(
+      logger.info(
         s"Begin evolution $version - Extract form step from admin step"
       )
 
@@ -1469,7 +1477,7 @@ object evolution_1840_b extends EvolutionScript {
         ec: ExecutionContext,
         _: OtoroshiClient
     ) => {
-      AppLogger.info(
+      logger.info(
         s"Begin evolution $version - create account creation steps"
       )
 
@@ -1599,7 +1607,7 @@ object evolution_1840_c extends EvolutionScript {
         ec: ExecutionContext,
         otoroshiClient: OtoroshiClient
     ) => {
-      AppLogger.info(
+      logger.info(
         s"Begin evolution $version - get bearer token for all existing key"
       )
 
