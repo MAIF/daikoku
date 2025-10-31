@@ -1653,7 +1653,9 @@ abstract class PostgresRepo[Of, Id <: ValueType](
     } yield (values, count)
   }
 
-  override def execute(sql: String, params: Seq[AnyRef])(implicit ec: ExecutionContext): Future[Long] = {
+  override def execute(sql: String, params: Seq[AnyRef])(implicit
+      ec: ExecutionContext
+  ): Future[Long] = {
     logger.debug(s"$tableName.execute($sql)")
     logger.debug(s"[PARAMS] :: ${params.mkString(" - ")}")
 
@@ -1846,13 +1848,14 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     }
   }
 
-  override def execute(sql: String, params: Seq[AnyRef])(implicit ex: ExecutionContext): Future[Long] = {
+  override def execute(sql: String, params: Seq[AnyRef])(implicit
+      ex: ExecutionContext
+  ): Future[Long] = {
     logger.debug(s"$tableName.execute($sql)")
     logger.debug(s"[PARAMS] :: ${params.mkString(" - ")}")
 
     reactivePg.execute(sql, params)
   }
-
 
   override def queryPaginated(
       query: String,

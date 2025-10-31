@@ -479,7 +479,7 @@ export const saveTenant = (tenant: ITenantFull) =>
 
 export const resetColorTheme = (tenant: ITenant): PromiseWithError<ResponseDone> =>
   customFetch(`/api/tenants/${tenant._id}/color-theme/_reset`, {
-    method: 'PUT'
+    method: 'PUT',
   });
 
 export const deleteTenant = (id: string) =>

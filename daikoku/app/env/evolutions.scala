@@ -5,7 +5,17 @@ import cats.implicits.catsSyntaxOptionId
 import fr.maif.otoroshi.daikoku.domain.Tenant.getCustomizationCmsPage
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Admin
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiDocumentationPageFormat, ApiFormat, ApiSubscriptionFormat, SeqApiDocumentationDetailPageFormat, TeamFormat, TeamIdFormat, TenantFormat, TenantIdFormat, UserFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiDocumentationPageFormat,
+  ApiFormat,
+  ApiSubscriptionFormat,
+  SeqApiDocumentationDetailPageFormat,
+  TeamFormat,
+  TeamIdFormat,
+  TenantFormat,
+  TenantIdFormat,
+  UserFormat
+}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, OtoroshiClient}
 import org.apache.pekko.{Done, NotUsed}
@@ -1006,25 +1016,28 @@ object evolution_1630 extends EvolutionScript {
                   val apiId = (api \ "_id").as[String]
 
                   for {
-                    s <- dataStore.apiSubscriptionRepo
-                      .forAllTenant()
-                      .updateManyByQuery(
-                        Json.obj("plan" -> oldId, "api" -> apiId),
-                        Json.obj("$set" -> Json.obj("plan" -> _id))
-                      )
-                    n <- dataStore
-                      .notificationRepo.forAllTenant()
-                      .execute(
-                        query =
-                          s"""
+                    s <-
+                      dataStore.apiSubscriptionRepo
+                        .forAllTenant()
+                        .updateManyByQuery(
+                          Json.obj("plan" -> oldId, "api" -> apiId),
+                          Json.obj("$set" -> Json.obj("plan" -> _id))
+                        )
+                    n <-
+                      dataStore.notificationRepo
+                        .forAllTenant()
+                        .execute(
+                          query = s"""
                             |UPDATE notifications
                             |     SET content = jsonb_set(content, '{action,plan}', to_jsonb($$1::text))
                             |     WHERE content->'action'->>'plan' = $$2
                             |""".stripMargin,
-                        params = Seq(_id, oldId),
-                      )
+                          params = Seq(_id, oldId)
+                        )
 
-                  } yield logger.debug(s"$s apiSubscription and $n notification updated for plan ${_id}")
+                  } yield logger.debug(
+                    s"$s apiSubscription and $n notification updated for plan ${_id}"
+                  )
                 }))
                 _ <-
                   dataStore.apiRepo
@@ -1184,14 +1197,22 @@ object evolution_1820 extends EvolutionScript {
       implicit val executionContext: ExecutionContext = ec
 
       def getOldTypeOfPlan(rawPlan: JsValue): (String, JsValue, JsValue) = {
-        logger.debug(s"[evolution $version] :: get type for ${Json.stringify(rawPlan)}")
+        logger.debug(
+          s"[evolution $version] :: get type for ${Json.stringify(rawPlan)}"
+        )
 
         (rawPlan \ "customName").asOpt[String] match {
           case Some(name) =>
             (
               name,
-              (rawPlan \ "currency").asOpt[JsValue].getOrElse(JsNull).as[JsValue],
-              (rawPlan \ "billingDuration").asOpt[JsValue].getOrElse(JsNull).as[JsValue]
+              (rawPlan \ "currency")
+                .asOpt[JsValue]
+                .getOrElse(JsNull)
+                .as[JsValue],
+              (rawPlan \ "billingDuration")
+                .asOpt[JsValue]
+                .getOrElse(JsNull)
+                .as[JsValue]
             )
           case None if (rawPlan \ "maxPerMonth").asOpt[Long].isEmpty =>
             (
@@ -1199,25 +1220,36 @@ object evolution_1820 extends EvolutionScript {
               JsNull,
               JsNull
             )
-          case None if (rawPlan \ "costPerMonth").asOpt[Long].isEmpty && (rawPlan \ "maxPerMonth").asOpt[Long].nonEmpty =>
+          case None
+              if (rawPlan \ "costPerMonth")
+                .asOpt[Long]
+                .isEmpty && (rawPlan \ "maxPerMonth").asOpt[Long].nonEmpty =>
             (
               "Free with quotas",
               JsNull,
               JsNull
             )
-          case None if (rawPlan \ "maxPerMonth").asOpt[Long].nonEmpty && (rawPlan \ "costPerRequest").asOpt[Long].isEmpty =>
+          case None
+              if (rawPlan \ "maxPerMonth")
+                .asOpt[Long]
+                .nonEmpty && (rawPlan \ "costPerRequest").asOpt[Long].isEmpty =>
             (
               "Quotas with limits",
               (rawPlan \ "currency").as[JsValue],
               (rawPlan \ "billingDuration").as[JsValue]
             )
-          case None if (rawPlan \ "maxPerMonth").asOpt[Long].nonEmpty && (rawPlan \ "costPerRequest").asOpt[Long].nonEmpty =>
+          case None
+              if (rawPlan \ "maxPerMonth")
+                .asOpt[Long]
+                .nonEmpty && (rawPlan \ "costPerRequest")
+                .asOpt[Long]
+                .nonEmpty =>
             (
               "Quotas without limits",
               (rawPlan \ "currency").as[JsValue],
               (rawPlan \ "billingDuration").as[JsValue]
             )
-          case None if (rawPlan \ "maxPerMonth").asOpt[Long].nonEmpty  =>
+          case None if (rawPlan \ "maxPerMonth").asOpt[Long].nonEmpty =>
             (
               "Pay per use",
               (rawPlan \ "currency").as[JsValue],
@@ -1390,7 +1422,6 @@ object evolution_1840_a extends EvolutionScript {
         .forAllTenant()
         .streamAllRaw()(ec)
         .runWith(Sink.fold(0)((count, _) => count + 1))(mat)
-
 
       dataStore.usagePlanRepo
         .forAllTenant()

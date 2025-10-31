@@ -5,7 +5,10 @@ import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import com.nimbusds.jose.jwk.KeyType
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -780,20 +783,24 @@ class TenantController(
     }
 
   private def readFile(path: String): EitherT[Future, AppError, String] = {
-      env.environment.resourceAsStream(path) match {
-        case Some(stream) =>
-          try {
-            val content = Source.fromInputStream(stream).mkString
-            stream.close()
-            EitherT.pure[Future, AppError](content)
-          } catch {
-            case e: Throwable =>
-              AppLogger.error(e.getLocalizedMessage, e)
-              EitherT.leftT[Future, String](AppError.InternalServerError(e.getLocalizedMessage))
-          }
-        case None =>
-          EitherT.leftT[Future, String](AppError.BadRequestError(s"File not found at $path"))
-      }
+    env.environment.resourceAsStream(path) match {
+      case Some(stream) =>
+        try {
+          val content = Source.fromInputStream(stream).mkString
+          stream.close()
+          EitherT.pure[Future, AppError](content)
+        } catch {
+          case e: Throwable =>
+            AppLogger.error(e.getLocalizedMessage, e)
+            EitherT.leftT[Future, String](
+              AppError.InternalServerError(e.getLocalizedMessage)
+            )
+        }
+      case None =>
+        EitherT.leftT[Future, String](
+          AppError.BadRequestError(s"File not found at $path")
+        )
+    }
   }
 
   def resetColorTheme(tenantId: String) =
@@ -803,18 +810,19 @@ class TenantController(
           s"@{user.name} has reset color-theme"
         )
       )(tenantId, ctx) { (_, _) =>
-
-
-
         (for {
           themeBody <- readFile("public/themes/default.css")
           oldCmsPage <- EitherT.fromOptionF[Future, AppError, CmsPage](
-            env.dataStore.cmsRepo.forTenant(ctx.tenant)
+            env.dataStore.cmsRepo
+              .forTenant(ctx.tenant)
               .findById(s"${ctx.tenant.id.value}-color-theme"),
             AppError.EntityNotFound("color-theme cms page")
           )
-          _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.cmsRepo.forTenant(ctx.tenant)
-            .save(oldCmsPage.copy(body = themeBody)))
+          _ <- EitherT.liftF[Future, AppError, Boolean](
+            env.dataStore.cmsRepo
+              .forTenant(ctx.tenant)
+              .save(oldCmsPage.copy(body = themeBody))
+          )
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())
           .merge

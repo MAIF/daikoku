@@ -408,8 +408,8 @@ trait Repo[Of, Id <: ValueType] {
 
   def execute(
       query: String,
-      params: Seq[AnyRef] = Seq.empty,
-    )(implicit ec: ExecutionContext): Future[Long]
+      params: Seq[AnyRef] = Seq.empty
+  )(implicit ec: ExecutionContext): Future[Long]
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

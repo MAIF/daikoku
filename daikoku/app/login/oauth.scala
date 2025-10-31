@@ -192,7 +192,9 @@ object OAuth2Support {
             }
             future1
               .flatMap { resp =>
-                logger.debug(s"Oauth connection response received : ${Json.stringify(resp.json)}")
+                logger.debug(
+                  s"Oauth connection response received : ${Json.stringify(resp.json)}"
+                )
                 val accessToken =
                   (resp.json \ authConfig.accessTokenField).as[String]
                 if (
