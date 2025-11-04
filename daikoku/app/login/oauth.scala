@@ -68,11 +68,11 @@ object OAuth2Config {
     Try {
       Right(
         OAuth2Config(
-          pkceConfig = (json \ "pkceConfig").asOpt[PKCEConfig](pkceConfigFmt.reads),
+          pkceConfig =
+            (json \ "pkceConfig").asOpt[PKCEConfig](pkceConfigFmt.reads),
           sessionMaxAge = (json \ "sessionMaxAge").asOpt[Int].getOrElse(86400),
           clientId = (json \ "clientId").asOpt[String].getOrElse("client"),
-          clientSecret =
-            (json \ "clientSecret").asOpt[String],
+          clientSecret = (json \ "clientSecret").asOpt[String],
           authorizeUrl = (json \ "authorizeUrl")
             .asOpt[String]
             .orElse((json \ "authorize_url").asOpt[String])
@@ -127,11 +127,9 @@ object OAuth2Config {
   }
 }
 
-
-
-case class PKCEConfig (
-  enabled: Boolean = false,
-  algorithm: String = "SHA-256"
+case class PKCEConfig(
+    enabled: Boolean = false,
+    algorithm: String = "SHA-256"
 )
 
 case class OAuth2Config(
@@ -185,22 +183,31 @@ object OAuth2Support {
   import fr.maif.otoroshi.daikoku.utils.future._
   lazy val logger = Logger("oauth2-config")
 
-  def generatePKCECodes(codeChallengeMethod: Option[String] = Some("SHA-256")) = {
-    val code         = new Array[Byte](120)
+  def generatePKCECodes(
+      codeChallengeMethod: Option[String] = Some("SHA-256")
+  ) = {
+    val code = new Array[Byte](120)
     val secureRandom = new SecureRandom()
     secureRandom.nextBytes(code)
 
-    val codeVerifier = new String(Base64.getUrlEncoder.withoutPadding().encodeToString(code)).slice(0, 120)
+    val codeVerifier = new String(
+      Base64.getUrlEncoder.withoutPadding().encodeToString(code)
+    ).slice(0, 120)
 
-    val bytes  = codeVerifier.getBytes("US-ASCII")
-    val md     = MessageDigest.getInstance("SHA-256")
+    val bytes = codeVerifier.getBytes("US-ASCII")
+    val md = MessageDigest.getInstance("SHA-256")
     md.update(bytes, 0, bytes.length)
     val digest = md.digest
 
     codeChallengeMethod match {
       case Some("SHA-256") =>
-        (codeVerifier, org.apache.commons.codec.binary.Base64.encodeBase64URLSafeString(digest), "S256")
-      case _            => (codeVerifier, codeVerifier, "plain")
+        (
+          codeVerifier,
+          org.apache.commons.codec.binary.Base64
+            .encodeBase64URLSafeString(digest),
+          "S256"
+        )
+      case _ => (codeVerifier, codeVerifier, "plain")
     }
   }
 
@@ -220,7 +227,8 @@ object OAuth2Support {
           case Some(code) =>
             val builder = _env.wsClient.url(authConfig.tokenUrl)
             val verifier = request.session.get("code_verifier").getOrElse("")
-            val clientSecret = authConfig.clientSecret.map(_.trim).filterNot(_.isEmpty)
+            val clientSecret =
+              authConfig.clientSecret.map(_.trim).filterNot(_.isEmpty)
             AppLogger.error(clientSecret.getOrElse("no secret"))
 
             val mapPayload = (Map(
@@ -229,11 +237,19 @@ object OAuth2Support {
               "client_id" -> authConfig.clientId,
               "redirect_uri" -> authConfig.callbackUrl,
               "scope" -> authConfig.scope
-            ) ++ authConfig.pkceConfig.collect { case e if e.enabled => Map("code_verifier" -> verifier) }.getOrElse(Map.empty)
-              ++ clientSecret.map(s => Map("client_secret" -> s)).getOrElse(Map.empty))
+            ) ++ authConfig.pkceConfig
+              .collect {
+                case e if e.enabled => Map("code_verifier" -> verifier)
+              }
+              .getOrElse(Map.empty)
+              ++ clientSecret
+                .map(s => Map("client_secret" -> s))
+                .getOrElse(Map.empty))
 
             val eventualResponseToken = if (authConfig.useJson) {
-              val jsonPayload = JsObject(mapPayload.view.mapValues(JsString.apply).toMap)
+              val jsonPayload = JsObject(
+                mapPayload.view.mapValues(JsString.apply).toMap
+              )
               builder.post(
                 jsonPayload
               )
@@ -449,7 +465,12 @@ object OAuth2Support {
     }
 
     for {
-      test <- EitherT.liftF(env.wsClient.url("https://localhost:8443").withRequestTimeout(10.seconds).get())
+      test <- EitherT.liftF(
+        env.wsClient
+          .url("https://localhost:8443")
+          .withRequestTimeout(10.seconds)
+          .get()
+      )
       getConfig <- EitherT.liftF[Future, AppError, WSResponse](
         env.wsClient.url(url).withRequestTimeout(10.seconds).get()
       )
@@ -494,7 +515,9 @@ object OAuth2Support {
               "client_id" -> authConfig.clientId,
               "scope" -> authConfig.scope,
               "redirect_uri" -> authConfig.callbackUrl
-            ) ++ authConfig.clientSecret.map(s => Map("client_secret" -> s)).getOrElse(Map.empty)
+            ) ++ authConfig.clientSecret
+              .map(s => Map("client_secret" -> s))
+              .getOrElse(Map.empty)
           )
       )
       _ <- EitherT.cond[Future][AppError, Unit](
