@@ -167,6 +167,23 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
       label: translate('Session max. age (s)'),
       defaultValue: 86400
     },
+    pkceConfig: {
+      type: type.object,
+      format: format.form,
+      label: translate('tenant.settings.authProvider.oauth.configuration.pkceConfig.label'),
+      schema: {
+        enabled: {
+          type: type.bool,
+          label: translate('tenant.settings.authProvider.oauth.configuration.pkceConfig.enabled.label')
+        },
+        algorithm: {
+          type: type.string,
+          format: format.select,
+          options: ["SHA-256", "plain"],
+          label: translate('tenant.settings.authProvider.oauth.configuration.pkceConfig.algorithm.label')
+        },
+      }
+    },
     useJson: {
       type: type.bool,
       label: translate('Use JSON payloads'),
@@ -192,9 +209,7 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
     clientSecret: {
       type: type.string,
       label: translate('Client secret'),
-      constraints: [
-        constraints.required(translate("constraints.required.value"))
-      ]
+      help: translate('tenant.settings.authProvider.oauth.configuration.clientSecret.help')
     },
     authorizeUrl: {
       type: type.string,
