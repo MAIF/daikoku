@@ -6,54 +6,54 @@ mail.contact.sender=<div>Voici les données que vous nous avez fait parvenir dan
 </br>[body]</br>\
 <small>Cet e-mail vous est émis automatiquement, merci de ne pas répondre.</small></br>\
 <small>Votre demande a bien été prise en compte. Elle sera traitée dans les meilleurs délais.</small>
-mail.contact.contact=<div>Quelqu''un vous a envoyé une demande de contact:</div>\
+mail.contact.contact=<div>Quelqu'un vous a envoyé une demande de contact:</div>\
 <div>Nom : <strong>[user]</strong></div>\
 <div>Courriel de contact : [email]</div>\
 <div>Objet: <strong>[subject]<strong></div>\
 </br>[body]
 unknown.plan=Plan inconnu
-mail.apikey.rotation.title=Votre clé d''api a été modifiée
-mail.apikey.rotation.body=Le secret de votre clé d''api pour l'api [apiName] et le plan [planName] a été modifié suite à sa rotation automatique.\
-  Si vous ne travaillez pas avec un système d''intégration automatique des secrets, pensez à le modifier.
-mail.apikey.refresh.title=Votre clé d''api a été modifiée
-mail.apikey.refresh.body=Le secret de votre clé d''api pour l''api [apiName] et le plan [planName] a été modifié suite à une demande de régénération.\
+mail.apikey.rotation.title=Votre clé d'api a été modifiée
+mail.apikey.rotation.body=Le secret de votre clé d'api pour l'api [apiName] et le plan [planName] a été modifié suite à sa rotation automatique.\
   Si vous ne travaillez pas avec un système d'intégration automatique des secrets, pensez à le modifier.
-mail.apikey.demand.title=Demande de clé d''API
-mail.apikey.demand.body= Une demande de souscription à l''API [apiName] a été soumise par [user] de l''équipe [team].\
+mail.apikey.refresh.title=Votre clé d'api a été modifiée
+mail.apikey.refresh.body=Le secret de votre clé d'api pour l'api [apiName] et le plan [planName] a été modifié suite à une demande de régénération.\
+  Si vous ne travaillez pas avec un système d'intégration automatique des secrets, pensez à le modifier.
+mail.apikey.demand.title=Demande de clé d'API
+mail.apikey.demand.body= Une demande de souscription à l'API [apiName] a été soumise par [user] de l'équipe [team].\
   </br>\
   Vous pouvez vous connecter et accéder à vos notifications pour <a href="[link]" target="_blank">accepter ou rejeter cette demande</a>
-mail.api.access.title=Demande d''accès à une API
-mail.api.access.body=[user] veut accéder a votre API [apiName] pour l''équipe [teamName]. \
-  Vous recevez ce message car vous êtes administrateur de l''équipe propriétaire.\
+mail.api.access.title=Demande d'accès à une API
+mail.api.access.body=[user] veut accéder a votre API [apiName] pour l'équipe [teamName]. \
+  Vous recevez ce message car vous êtes administrateur de l'équipe propriétaire.\
   </br>\
   vous pouvez vous connecter et accéder à vos notifications pour <a href="[link]" target="_blank">accepter ou rejeter cette demande</a>\
    Vous recevez ce message car vous êtes administrateur de cette équipe. \
   </br>\
   <a href="[link]">Accepter/rejeter la demande</a>
-mail.team.invitation.title=Quelqu''un vous invite à rejoindre son équipe
-mail.team.invitation.body=[user], en tant qu''administrateur de l''équipe [teamName], veut que vous rejoigniez son équipe. \
+mail.team.invitation.title=Quelqu'un vous invite à rejoindre son équipe
+mail.team.invitation.body=[user], en tant qu'administrateur de l'équipe [teamName], veut que vous rejoigniez son équipe. \
   </br>\
   Vous pouvez vous connecter et accéder à vos notifications pour <a href="[link]" target="_blank">accepter ou rejeter cette demande</a>
 unrecognized.api= API inconnue
 unrecognized.team= Équipe inconnue
-unrecognized.user=Utilisateur innconnu
+unrecognized.user=Utilisateur inconnu
 mail.rejection.title=Votre demande a été rejetée.
 mail.acceptation.title=Votre demande a été acceptée.
-mail.api.access.rejection.body=Votre demande d''accès à l''API [apiName] a été rejetée.
-mail.api.access.acceptation.body=La demande d''accès à l''API [apiName] par [user] a été acceptée.
-mail.api.subscription.rejection.body= Nous regrettons de vous informer que votre demande de souscription à l''API [apiName], par l''utilisateur [user], pour l''équipe [team] a été refusée en raison de: <br /> \
+mail.api.access.rejection.body=Votre demande d'accès à l'API [apiName] a été rejetée.
+mail.api.access.acceptation.body=La demande d'accès à l'API [apiName] par [user] a été acceptée.
+mail.api.subscription.rejection.body= Nous regrettons de vous informer que votre demande de souscription à l'API [apiName], par l'utilisateur [user], pour l'équipe [team] a été refusée en raison de: <br /> \
  [message].
-mail.api.subscription.acceptation.body=Nous avons le plaisir de vous informer que votre demande de souscription à l''API [apiName] pour l'équipe [team] a été acceptée. <br />\
+mail.api.subscription.acceptation.body=Nous avons le plaisir de vous informer que votre demande de souscription à l'API [apiName] pour l'équipe [team] a été acceptée. <br />\
     Vous pouvez dès maintenant vous connecter pour retrouver votre clé d'API <a href="[link] target="_blank">ici</href>.
 mail.user.invitation.rejection.body=Votre invitation à [user] dans votre équipe [teamName] a été rejetée.
 mail.user.invitation.acceptation.body=[user] a accepté de rejoindre votre équipe [teamName].
-mail.api.transfer.ownership.rejection.body=Votre demande de trasfert de priopriété de l''API [apiName] à l''équipe [teamName] a été rejetée.
-mail.api.transfer.ownership.acceptation.body=Votre demande de transfert de priopriété de l''API [apiName] à l''équipe [teamName] a été acceptée.
+mail.api.transfer.ownership.rejection.body=Votre demande de transfert de propriété de l'API [apiName] à l'équipe [teamName] a été rejetée.
+mail.api.transfer.ownership.acceptation.body=Votre demande de transfert de propriété de l'API [apiName] à l'équipe [teamName] a été acceptée.
 mail.new.message.title=Nouveau message de [user].
 mail.new.issue.title=Nouveau problème relevé.
-mail.new.issue.body=Un Nouveau problème a été relevé sur l''API [apiName]. Cliquez sur le lien pour voir le nouveau problème.
+mail.new.issue.body=Un Nouveau problème a été relevé sur l'API [apiName]. Cliquez sur le lien pour voir le nouveau problème.
 mail.create.post.title=Nouveau post publié.
-mail.create.post.body=Un nouveau post a été créé sur l''API [apiName]. Cliquez sur le lien pour voir le post.
+mail.create.post.body=Un nouveau post a été créé sur l'API [apiName]. Cliquez sur le lien pour voir le post.
 mail.new.message.body=Bonjour,\
   <br/>\
   vous avez un nouveau message,\
@@ -67,7 +67,7 @@ mail.new.message.body=Bonjour,\
 mail.new.user.title=Validation de votre compte sur le tenant [tenant]
 mail.new.user.body=Merci d'avoir créer un compte sur [tenant], vous y êtes presque. \
  <br/>\
-Cliquez sur le lien suivant pour finaliser la crétation de votre compte.\
+Cliquez sur le lien suivant pour finaliser la création de votre compte.\
 <br/>\
 <a href="[link]">Confirmer</a>\
 <br/>\
@@ -92,37 +92,37 @@ mail.checkout.body = Votre demande de souscription pour l'api [api.name] et le p
 Vous pouvez effectuer maintenant le reglement.\
 Vous pouvez finaliser votre demande : <a href="[link]">Reglement</a>
 mail.api.subscription.transfer.rejection.body = Votre demande de transfert de le souscription [subscription] a été rejetée.
-mail.user.invitation.title = Rejoindre l''équipe [teamName]
+mail.user.invitation.title = Rejoindre l'équipe [teamName]
 mail.user.invitation.body=[sender] vous propose de rejoindre son équipe [teamName] \
 </br>\
 Veuillez cliquer sur le lien suivant pour rejoindre cette équipe. \
 </br>\
-<a href="[link]">Cliquez pour rejoindre l''équipe/a>
+<a href="[link]">Cliquez pour rejoindre l'équipe/a>
 mail.reset.password.title = Réinitialiser votre mots de passe de compte [tenant]
 mail.reset.password.body = <p>Vous avez demandé la réinitialisation de votre mots de passe pour votre compte [tenant].</p>\
 <p>Si cette demande provient de vous, veuillez cliquer sur le lien suivant pour finaliser le processus de réinitialisation du mot de passe</p>\
 <a href="[link]" target="_blank">Réinitialiser</a>\
 <p>Sinon, ignorez simplement cet e-mail</p>\
-<p>L''équipe [tenant]</p>
+<p>L'équipe [tenant]</p>
 
 mail.account.creation.mail.confirmation.title = Confirmez votre adresse e-mail pour activer votre compte [tenant]
 mail.account.creation.mail.confirmation.body = Bonjour [userName], </br>\
 Merci de vous être inscrit sur [tenant]. </br>\
 Avant de commencer, veuillez confirmer votre adresse e-mail en cliquant sur le lien ci-dessous : </br>\
 <a href="[urlAccept]" target="_blank">👉 [Confirmer mon adresse e-mail]</a>\
-Si vous n''avez pas créé de compte sur [tenant], vous pouvez ignorer ce message.
+Si vous n'avez pas créé de compte sur [tenant], vous pouvez ignorer ce message.
 
 mail.account.creation.mail.validation.title = Nouvelle inscription à valider sur [tenant]
 mail.account.creation.mail.validation.body = Bonjour, </br>\
-Un nouvel utilisateur vient de s''inscrire sur [Nom de l''application].</br>\
+Un nouvel utilisateur vient de s'inscrire sur [Nom de l''application].</br>\
 Informations du compte :</br>\
 Nom : [userName]</br>\
 Email : [userEmail]</br>\
 Vous pouvez <a href="[urlAccept]" target="_blank">accepter</a>\ ou <a href="[urlDecline]" target="_blank">refuser</a>\ la création de ce compte.
 
-mail.account.creation.mail.rejected.title = Votre inscription sur [tenant] n''a pas été validée
+mail.account.creation.mail.rejected.title = Votre inscription sur [tenant] n'a pas été validée
 mail.account.creation.mail.rejected.body = Bonjour [userName], </br>\
 Nous vous remercions pour votre inscription sur [tenant]. </br>\
-Après vérification, nous sommes au regret de vous informer que votre demande de création de compte n''a pas été validée. </br>\
+Après vérification, nous sommes au regret de vous informer que votre demande de création de compte n'a pas été validée. </br>\
 Voici la raison: [message] </br>\
-Si vous pensez qu''il s''agit d''une erreur ou souhaitez obtenir plus d''informations, vous pouvez contacter notre équipe de support. </br>\
+Si vous pensez qu'il s'agit d'une erreur ou souhaitez obtenir plus d'informations, vous pouvez contacter notre équipe de support. </br>\
