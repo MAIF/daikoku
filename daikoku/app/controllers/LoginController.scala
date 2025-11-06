@@ -588,9 +588,9 @@ class LoginController(
           case (true, _) => "account-creation-validation-email-waiting"
           case _ => "account-creation-accept"
         }
-        Redirect(env.getDaikokuUrl(ctx.tenant, s"/response?message=$messageId"))
+        Redirect(env.getDaikokuUrl(ctx.tenant, s"/informations?message=$messageId"))
       })
-        .leftMap(_.render())
+        .leftMap(error => Redirect(env.getDaikokuUrl(ctx.tenant, s"/informations?error=${error.getErrorMessage()}")))
         .merge
     }
   }
@@ -618,13 +618,12 @@ class LoginController(
         result <- EitherT.pure[Future, AppError](
           Redirect(
             env.getDaikokuUrl(
-              ctx.tenant, "/response?message=account-creation-decline")))
+              ctx.tenant, "/informations?message=account-creation-decline")))
       } yield result)
         .leftMap(error =>
-          Errors.craftResponseResult(
-            message = error.getErrorMessage(),
-            status = Results.Ok
-          )
+          Redirect(
+            env.getDaikokuUrl(
+              ctx.tenant, s"/informations?error=${error.getErrorMessage()}"))
         )
         .merge
     }

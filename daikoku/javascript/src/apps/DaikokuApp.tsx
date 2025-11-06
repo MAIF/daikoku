@@ -37,7 +37,7 @@ import {
   UserEdit,
   UserList,
 } from '../components/adminbackoffice';
-import { Error, Response } from '../components/utils';
+import { Error, Informations } from '../components/utils';
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
 import { FastMode } from "../components/frontend/fastMode/FastMode";
 import { GlobalContext } from '../contexts/globalContext';
@@ -131,9 +131,9 @@ export const DaikokuApp = () => {
                 }
               />
               <Route
-                path='/response'
+                path='/informations'
                 element={
-                  <Response />
+                  <Informations />
                 }
               />
               <Route
@@ -164,9 +164,9 @@ export const DaikokuApp = () => {
                     }
                   />
                   <Route
-                    path='/response'
+                    path='/informations'
                     element={
-                      <Response />
+                      <Informations/>
                     }
                   />
                   <Route

@@ -1363,8 +1363,8 @@ class ApiController(
           maybeSessionId
         )
       } yield
-        Redirect(env.getDaikokuUrl(ctx.tenant, "/response?message=home.message.pageResponse.subscription.successfull")))
-        .leftMap(_.render())
+        Redirect(env.getDaikokuUrl(ctx.tenant, "/informations?message=subscription-accept")))
+        .leftMap(error => Redirect(env.getDaikokuUrl(ctx.tenant, s"/informations?error=${error.getErrorMessage()}")))
         .merge
     }
 
@@ -1375,7 +1375,6 @@ class ApiController(
           s"Subscription process has been refused by @{validator.name}"
         )
       )(ctx) {
-        implicit val c = ctx
         (for {
           encryptedToken <- EitherT.fromOption[Future](
             ctx.request.getQueryString("token"),
@@ -1408,8 +1407,6 @@ class ApiController(
           s"Subscription process has been refused by @{validator.name}"
         )
       )(ctx) {
-        implicit val c = ctx
-        //todo: get validator name
         (for {
           encryptedToken <- EitherT.fromOption[Future](
             ctx.request.getQueryString("token"),
@@ -1425,10 +1422,8 @@ class ApiController(
             AppError.EntityNotFound("token")
           )
           _ <- declineProcessWithStepValidator(validator, ctx.tenant)
-        } yield
-          Redirect(env.getDaikokuUrl(ctx.tenant, "/response?message=home.message.pageResponse.subscription.decline"))
-        )
-          .leftMap(_.render())
+        } yield Redirect(env.getDaikokuUrl(ctx.tenant, "/informations?message=subscription-decline")))
+          .leftMap(error => Redirect(env.getDaikokuUrl(ctx.tenant, s"/informations?error=${error.getErrorMessage()}")))
           .merge
       }
     }

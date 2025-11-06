@@ -777,7 +777,7 @@ class TeamController(
           val invitedUser = createInvitedUser(team.name, notificationId.value)
           val link = env.getDaikokuUrl(
             ctx.tenant,
-            s"/response?invitation-token=${invitedUser.invitation.get.token}"
+            s"/informations?invitation-token=${invitedUser.invitation.get.token}"
           )
 
           val notification = Notification(

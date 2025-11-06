@@ -1,41 +1,32 @@
-import { useContext, useEffect, useState } from 'react';
+import {useContext, useEffect, useState} from 'react';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 
-import { I18nContext } from '../../contexts';
+import {I18nContext, ModalContext} from '../../contexts';
 import * as Services from '../../services';
-import { isError } from '../../types';
-import { GlobalContext } from '../globalContext';
-import { IBaseModalProps } from './types';
-import { toast } from 'sonner';
+import {isError} from '../../types';
+import {GlobalContext} from '../globalContext';
+import {IBaseModalProps} from './types';
 
 export const JoinTeamInvitationModal = (props: IBaseModalProps) => {
-  const [error, setError] = useState<string>();
   const [team, setTeam] = useState<string>();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const { translate, Translation } = useContext(I18nContext);
-  const { tenant } = useContext(GlobalContext);
+  const {translate, Translation} = useContext(I18nContext);
+  const {tenant} = useContext(GlobalContext);
+  const {close} = useContext(ModalContext);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (!params.get('invitation-token')) setError(translate('team_member.missing_token'));
-    else {
-      Services.validateInvitationToken(params.get('invitation-token'))
-        .then((res) => {
-          if (isError(res)) {
-            setError(res.error);
-          } else {
-            setTeam(res.team);
-          }
-        });
-    }
+    Services.validateInvitationToken(searchParams.get('invitation-token'))
+      .then((res) => {
+        if (isError(res)) {
+          close();
+          setSearchParams({error: res.error})
+        } else {
+          setTeam(res.team)
+        }
+      });
   }, []);
-
-  function goToHome() {
-    props.close();
-    navigate('/apis');
-  }
 
   const signup = () => {
     props.close();
@@ -51,12 +42,12 @@ export const JoinTeamInvitationModal = (props: IBaseModalProps) => {
     Services.declineMyTeamInvitation(params.get('token') as string)
       .then(r => {
         if (isError(r)) {
-          toast.error(r.error)
+          close()
+          setSearchParams({error: r.error})
         } else {
-        setSearchParams({message : 'team-invitation-decline'})
+          setSearchParams({message: 'team-invitation-decline'})
         }
       })
-
   }
 
   return (
@@ -67,31 +58,20 @@ export const JoinTeamInvitationModal = (props: IBaseModalProps) => {
         </h5>
       </div>
       <div className="modal-body">
-        {!error && <Translation i18nkey="team_member.invitation" replacements={[team]} />}
-        {error && (
-          <div className="alert alert-danger" role="alert">
-            {translate(error)}
-          </div>
-        )}
-
+        <Translation i18nkey="team_member.invitation" replacements={[team]} />
       </div>
       <div className="modal-footer">
-        {!error && <>
-          <button type="button" className="btn btn-outline-danger" onClick={() => decline()}>
-            {translate('team_member.refuse_invitation')}
-          </button>
-          {tenant.loginProvider === 'Local' && <button type="button" className="btn btn-outline-success" onClick={() => signup()}>
-            {translate('team_member.accept_invitation')}
-          </button>}
-          {tenant.loginProvider !== 'Local' && <a className="btn btn-outline-success" href={`/auth/${tenant.loginProvider}/login`}>
-            {translate('team_member.accept_invitation')}
-          </a>}
-        </>}
-        {error && (
-          <button type="button" className="btn btn-outline-success" onClick={() => goToHome()}>
-            {translate('Ok')}
-          </button>
-        )}
+        <button type="button" className="btn btn-outline-danger" onClick={() => decline()}>
+          {translate('team_member.refuse_invitation')}
+        </button>
+        {tenant.loginProvider === 'Local' &&
+            <button type="button" className="btn btn-outline-success" onClick={() => signup()}>
+              {translate('team_member.accept_invitation')}
+            </button>}
+        {tenant.loginProvider !== 'Local' &&
+            <a className="btn btn-outline-success" href={`/auth/${tenant.loginProvider}/login`}>
+              {translate('team_member.accept_invitation')}
+            </a>}
       </div>
     </div>
   );
