@@ -1363,19 +1363,9 @@ class ApiController(
           maybeSessionId
         )
       } yield
-        if (ctx.user.isEmpty) {
-          Redirect(env.getDaikokuUrl(ctx.tenant, "/response")).future
-        } else {
-          Redirect(env.getDaikokuUrl(ctx.tenant, "/?message=home.message.subscription.validation.successfull")).future
-        })
-        .leftMap(error =>
-          Errors.craftResponseResultF(
-            message = error.getErrorMessage(),
-            status = Results.Ok
-          )
-        )
+        Redirect(env.getDaikokuUrl(ctx.tenant, "/response?message=home.message.pageResponse.subscription.successfull")))
+        .leftMap(_.render())
         .merge
-        .flatten
     }
 
   def abortProcess() =
@@ -1436,15 +1426,10 @@ class ApiController(
           )
           _ <- declineProcessWithStepValidator(validator, ctx.tenant)
         } yield
-          Redirect(env.getDaikokuUrl(ctx.tenant, "/response?message=home.message.subscription.refusal.successfull")).future
-        ).leftMap(error =>
-            Errors.craftResponseResultF(
-              message = error.getErrorMessage(),
-              status = Results.Ok
-            )
-          )
+          Redirect(env.getDaikokuUrl(ctx.tenant, "/response?message=home.message.pageResponse.subscription.decline"))
+        )
+          .leftMap(_.render())
           .merge
-          .flatten
       }
     }
 

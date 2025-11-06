@@ -9,7 +9,6 @@ import { ModalProvider, NavProvider } from '../contexts';
 import {
   ApiHome,
   FrontOffice,
-  JoinTeam,
   MaybeHomePage,
   MyHome,
   TeamHome,
@@ -138,14 +137,6 @@ export const DaikokuApp = () => {
                 }
               />
               <Route
-                path="/join"
-                element={
-                  <FrontOfficeRoute title={`${tenant.title} - ${translate('Join team')}`}>
-                    <JoinTeam />
-                  </FrontOfficeRoute>
-                }
-              />
-              <Route
                 path='*'
                 element={<ToLogin tenant={tenant} />}
               />
@@ -235,14 +226,6 @@ export const DaikokuApp = () => {
                       <MyProfile />
                     </RouteWithTitle>} />
                     <Route path="/:teamId/settings*" element={<TeamBackOffice />} />
-                    <Route
-                      path="/join"
-                      element={
-                        <FrontOfficeRoute title={`${tenant.title} - ${translate('Join team')}`}>
-                          <JoinTeam />
-                        </FrontOfficeRoute>
-                      }
-                    />
                     <Route
                       path="/:teamId/:apiId/:versionId/:tab/*"
                       element={
@@ -455,7 +438,6 @@ export const DaikokuApp = () => {
               </div>
             </div>
           </ModalProvider>
-
         </NavProvider>
       </MessagesProvider>
     </BrowserRouter>

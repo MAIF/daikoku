@@ -127,7 +127,7 @@ export const MyHome = () => {
 
 }
 
-const Description = (props: any) => {
+export const Description = (props: any) => {
   const { Translation } = useContext(I18nContext);
 
   if (!props.description) {

@@ -551,34 +551,46 @@ class LoginController(
   def validateAccountCreationAttempt() = {
     DaikokuActionMaybeWithoutUser.async { ctx =>
       (for {
-        encryptedToken <- EitherT.fromOption[Future](
+        encryptedToken <- EitherT.fromOption[Future][AppError, String](
           ctx.request.getQueryString("token"),
           AppError.EntityNotFound("token from query")
         )
         token <- EitherT.pure[Future, AppError](
           decrypt(env.config.cypherSecret, encryptedToken, ctx.tenant)
         )
-        validator <- EitherT.fromOptionF(
+        validator <- EitherT.fromOptionF[Future, AppError, StepValidator](
           env.dataStore.stepValidatorRepo
             .forTenant(ctx.tenant)
             .findOneNotDeleted(Json.obj("token" -> token)),
           AppError.EntityNotFound("token")
         )
-
         _ <- accountCreationService.validateAccountCreationWithStepValidator(
           validator,
           ctx.tenant
         )
-        result <- EitherT.pure[Future, AppError](
-          Redirect(env.getDaikokuUrl(ctx.tenant, "/response"))
+        accountCreation <- EitherT.fromOptionF[Future, AppError, AccountCreation](
+          env.dataStore.accountCreationRepo
+            .findByIdNotDeleted(validator.subscriptionDemand),
+          AppError.EntityNotFound("Account creation")
         )
-      } yield result)
-        .leftMap(error =>
-          Errors.craftResponseResult(
-            message = error.getErrorMessage(),
-            status = Results.Ok
-          )
+        step <- EitherT.fromOption[Future][AppError, SubscriptionDemandStep](
+          accountCreation.steps.find(_.id == validator.step),
+          AppError.EntityNotFound("Account creation step")
         )
+      } yield {
+        val isEmailConfirm = step.step match {
+          case ValidationStep.Email(_, _, _, title) if title.toLowerCase().contains("confirmation") => true
+          case _ => false
+        }
+
+        val messageId = (isEmailConfirm, accountCreation.state) match {
+          case (true, SubscriptionDemandState.Accepted) => "account-creation-validation-email"
+          case (true, _) => "account-creation-validation-email-waiting"
+          case _ => "account-creation-accept"
+        }
+        Redirect(env.getDaikokuUrl(ctx.tenant, s"/response?message=$messageId"))
+      })
+        .leftMap(_.render())
         .merge
     }
   }
@@ -606,11 +618,7 @@ class LoginController(
         result <- EitherT.pure[Future, AppError](
           Redirect(
             env.getDaikokuUrl(
-              ctx.tenant,
-              "/response?message=home.message.subscription.refusal.successfull"
-            )
-          )
-        )
+              ctx.tenant, "/response?message=account-creation-decline")))
       } yield result)
         .leftMap(error =>
           Errors.craftResponseResult(

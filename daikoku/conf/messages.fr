@@ -97,7 +97,7 @@ mail.user.invitation.body=[sender] vous propose de rejoindre son équipe [teamNa
 </br>\
 Veuillez cliquer sur le lien suivant pour rejoindre cette équipe. \
 </br>\
-<a href="[link]">Cliquez pour rejoindre l''équipe/a>
+<a href="[link]">Cliquez pour rejoindre l''équipe</a>
 mail.reset.password.title = Réinitialiser votre mots de passe de compte [tenant]
 mail.reset.password.body = <p>Vous avez demandé la réinitialisation de votre mots de passe pour votre compte [tenant].</p>\
 <p>Si cette demande provient de vous, veuillez cliquer sur le lien suivant pour finaliser le processus de réinitialisation du mot de passe</p>\

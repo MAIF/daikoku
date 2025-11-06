@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {useNavigate, useSearchParams} from 'react-router-dom';
 
 import { I18nContext } from '../../contexts';
 import * as Services from '../../services';
@@ -12,15 +12,16 @@ export const JoinTeamInvitationModal = (props: IBaseModalProps) => {
   const [error, setError] = useState<string>();
   const [team, setTeam] = useState<string>();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { translate, Translation } = useContext(I18nContext);
   const { tenant } = useContext(GlobalContext);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    if (!params.get('token')) setError(translate('team_member.missing_token'));
+    if (!params.get('invitation-token')) setError(translate('team_member.missing_token'));
     else {
-      Services.validateInvitationToken(params.get('token'))
+      Services.validateInvitationToken(params.get('invitation-token'))
         .then((res) => {
           if (isError(res)) {
             setError(res.error);
@@ -30,7 +31,6 @@ export const JoinTeamInvitationModal = (props: IBaseModalProps) => {
         });
     }
   }, []);
-
 
   function goToHome() {
     props.close();
@@ -53,8 +53,7 @@ export const JoinTeamInvitationModal = (props: IBaseModalProps) => {
         if (isError(r)) {
           toast.error(r.error)
         } else {
-          toast.success(translate('team_member.invitation.decline.successful'));
-          goToHome();
+        setSearchParams({message : 'team-invitation-decline'})
         }
       })
 

@@ -1695,5 +1695,19 @@
   "tenant.edition.color-theme.reset.button.label": "Réinitialiser le thème",
   "tenant.edition.color-theme.reset.confirm.title": "Confirmer la réinitialisation",
   "tenant.edition.color-theme.reset.confirm.message": "Voulez-vous vraiment réinitialiser le thème de couleur à celui par défaut ? Cette action supprimera définitivement le thème actuel.",
-  "tenant.edition.color-theme.reset.successful.message": "Le thème de couleur a été réinitialisé avec succès."
+  "tenant.edition.color-theme.reset.successful.message": "Le thème de couleur a été réinitialisé avec succès.",
+  "response.page.subscription-decline.title":"Refus souscription",
+  "response.page.subscription-decline.description": "la souscription a bien été refusée",
+  "response.page.subscription-accept.title":"Souscription effectuée",
+  "response.page.subscription-accept.description": "la souscription a bien été effectuée",
+  "response.page.team-invitation-decline.title":"Refus invitation",
+  "response.page.team-invitation-decline.description": "L'invitation a bien été refusée",
+  "response.page.account-creation-accept.title":"Compte validé",
+  "response.page.account-creation-accept.description": "Le compte à bien été validé",
+  "response.page.account-creation-validation-email.title":"Email validé",
+  "response.page.account-creation-validation-email.description": "Votre email a bien été validé, votre compte est créé",
+  "response.page.account-creation-validation-email-waiting.title":"Email validé",
+  "response.page.account-creation-validation-email-waiting.description": "Votre email a bien été validé, votre compte reste en cours de création Il sera disponible sous peu",
+  "response.page.account-creation-decline.title":"Refus de creation de compte",
+  "response.page.account-creation-decline.description": "La création de votre compte à bien été annulée"
 }
