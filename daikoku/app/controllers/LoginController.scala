@@ -483,7 +483,7 @@ class LoginController(
       val name = (body \ "name").as[String]
       val avatar = (body \ "avatar").asOpt[String].getOrElse(User.DEFAULT_IMAGE)
       val password = (body \ "password").as[String]
-      val confirmPawword = (body \ "confirmPassword").as[String]
+      val confirmPassword = (body \ "confirmPassword").as[String]
 
       //verifier le resultat du formulaire
       //verifier que le user n'existe pas deja
@@ -495,9 +495,10 @@ class LoginController(
         )
         //todo: tester la presence desessentiel ??
         _ <- EitherT.cond[Future](
-          maybeUser.forall(u =>
-            u.invitation.nonEmpty && u.invitation.exists(!_.registered)
-          ),
+          maybeUser.forall(_.invitation match {
+            case Some(invit) if !invit.registered => true
+            case _ => false
+          }),
           (),
           AppError.EntityConflict("Email address already exists")
         )
@@ -508,7 +509,7 @@ class LoginController(
             name,
             email,
             password,
-            confirmPawword
+            confirmPassword
           )
         )
         _ <- EitherT.liftF(

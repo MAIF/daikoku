@@ -1,6 +1,6 @@
 import { expect, Locator, test } from '@playwright/test';
-import { ANDY, DWIGHT, JIM, MICHAEL, PAM } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiPapier, commandeDevPlan, EMAIL_UI, exposedPort, loginAs, logistique, logout, subCommandeDevVendeurs, teamJim, tenant, vendeurs } from './utils';
+import { ANDY, DWIGHT, JIM, MICHAEL, PAM, ROBERT } from './users';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiPapier, commandeDevPlan, EMAIL_UI, exposedPort, loginAs, loginLocalAs, logistique, logout, subCommandeDevVendeurs, teamJim, tenant, vendeurs } from './utils';
 import { NotifProps, postNewNotif } from './notifications';
 
 
@@ -429,4 +429,331 @@ test('Se créer un compte avec un process de souscription local', async ({ page 
   await page.getByRole('heading', {name: 'Vos équipes'}).waitFor({ state: 'visible' });
   await page.getByRole('img', { name: 'user menu' }).click();
   await expect(page.locator('#app')).toContainText(PAM.email);
+})
+
+
+test('[Local] - Ajouter une personne n\'ayant pas de compte Daikoku à une équipe', async ({ page }) => {
+  // update auth to local and setup account creation workflow
+  await fetch(`http://localhost:${exposedPort}/admin-api/tenants/${tenant}`, {
+    method: 'PATCH',
+    headers: {
+      "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify([
+      {
+        "op": "replace",
+        "path": "/accountCreationProcess",
+        "value": [
+          {
+            "id": "09SAW0n8fKWl7BQB17iGw8IlYRjupWcp",
+            "type": "form",
+            "title": "form",
+            "schema": {
+              "name": {
+                "type": "string",
+                "label": "Name",
+                "constraints": [
+                  {
+                    "type": "required",
+                    "message": "Your name is required"
+                  }
+                ]
+              },
+              "email": {
+                "type": "string",
+                "label": "Email",
+                "constraints": [
+                  {
+                    "type": "required",
+                    "message": "Your email is required"
+                  },
+                  {
+                    "type": "email",
+                    "message": "Your email needs to be an email"
+                  }
+                ]
+              },
+              "password": {
+                "type": "string",
+                "label": "Password",
+                "format": "password",
+                "name": "signup_password",
+                "constraints": [
+                  {
+                    "type": "required",
+                    "message": "Your password is required"
+                  },
+                  {
+                    "type": "matches",
+                    "regexp": "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[#$^+=!*()@%&]).{8,1000}$",
+                    "message": "Votre mot de passe doit avoir 8 lettres min. et contenir au moins une lettre capitale, un nombre et un caractère spécial (#$^+=!*()@%&)."
+                  }
+                ]
+              },
+              "confirmPassword": {
+                "type": "string",
+                "label": "Confirm password",
+                "format": "password",
+                "name": "signup_confrim_password",
+                "constraints": [
+                  {
+                    "type": "required",
+                    "message": "a confirm password is required"
+                  },
+                  {
+                    "type": "oneOf",
+                    "message": "confirm password and password must be equal",
+                    "arrayOfValues": [
+                      {
+                        "ref": "password"
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            "formatter": ""
+          },
+          {
+            "id": "pd9mRGdDlhLSjFTEQSPPsxWKnrQEl6To",
+            "type": "email",
+            "title": "confirmation email",
+            "emails": [
+              "${form.email}"
+            ],
+            "message": "confirm"
+          }
+        ]
+      },
+      {
+        "op": "replace",
+        "path": "/authProviderSettings/authProvider",
+        "value": "Local"
+      },
+      {
+        "op": "replace",
+        "path": "/authProvider",
+        "value": "Local"
+      }
+    ])
+  })
+
+  await fetch(`http://localhost:${exposedPort}/admin-api/users/${MICHAEL.id}`, {
+    method: 'PATCH',
+    headers: {
+      "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify([
+      {
+        "op": "replace",
+        "path": "/password",
+        "value": "$2a$10$/Vpj1lFN0AcCfbutd7FJwO0j1vU4X0fR6t.4vvWBqSEqtoUFFxfDG"
+      },
+      {
+        "op": "replace",
+        "path": "/origins/0",
+        "value": "LOCAL"
+      }
+    ])
+  })
+
+  //create new account
+  await page.goto(ACCUEIL);
+  await loginLocalAs(MICHAEL, page);
+
+  await page.locator('span').filter({ hasText: 'API Division' }).click();
+  await page.getByText('Membres').click();
+  await page.getByRole('button', { name: 'Inviter un collaborateur' }).click();
+  await page.getByRole('textbox', { name: 'Email' }).fill(ROBERT.email);
+  await page.getByRole('button', { name: 'Envoyer l\'invitation' }).click();
+  await expect(page.getByText('En attente (1)')).toBeVisible();
+  await page.getByRole('img', { name: 'user menu' }).click();
+  await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await page.goto('http://localhost:1080/');
+  await expect(page.locator('div').filter({ hasText: /^robert\.california@dundermifflin\.com$/ })).toBeVisible();
+  await page.getByText('Rejoindre l\'équipe API Division', { exact: true }).click();
+  await page.getByRole('link', { name: 'Cliquez pour rejoindre l\'é' }).click();
+  await expect(page.getByRole('heading', { name: 'team invitation' })).toBeVisible();
+  await page.getByRole('button', { name: 'Accepter' }).click();
+  await expect(page.getByRole('heading', { name: 'Inscription à Dunder Mifflin' })).toBeVisible();
+  
+  await page.getByRole('textbox', { name: 'Nom' }).fill(ROBERT.name);
+  await page.getByRole('textbox', { name: 'Email' }).fill(ROBERT.email);
+  await page.getByRole('textbox', { name: 'Mot de passe', exact: true }).fill(ROBERT.password!);
+  await page.getByRole('textbox', { name: 'Confirmation de mot de passe' }).fill(ROBERT.password!);
+  await page.getByRole('button', { name: 'Création d\'un compte' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Confirmation de votre compte' })).toBeVisible();
+
+  await page.goto('http://localhost:1080/');
+  await page.getByText('Confirmez votre adresse e-mail pour activer votre compte Dunder Mifflin', { exact: true }).click();
+
+  const page2Promise = page.waitForEvent('popup');
+  await page.getByRole('link', { name: '👉 [Confirmer mon adresse e-' }).click();
+  const page2 = await page2Promise;
+
+  await expect(page2.getByRole('heading', { name: 'Adresse email confirmée' })).toBeVisible();
+  
+  await loginLocalAs(ROBERT, page2);
+
+  await page2.getByRole('link', { name: 'Accès aux notifications' }).click();
+  await expect(page2.getByText('Vous avez été invité•e à')).toBeVisible();
+  await page2.getByRole('button', { name: 'Accepter' }).click();
+  await page2.getByRole('link', { name: 'Liste des APIs' }).click();
+  await expect(page2.locator('span').filter({ hasText: 'API Division' })).toBeVisible();
+})
+
+test('[Local] - Valider la creation d\'un compte avec un process de souscription local', async ({ page }) => {
+  // update auth to local and setup account creation workflow
+  await fetch(`http://localhost:${exposedPort}/admin-api/tenants/${tenant}`, {
+    method: 'PATCH',
+    headers: {
+      "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify([
+      {
+        "op": "replace",
+        "path": "/accountCreationProcess",
+        "value": [
+          {
+            "id": "09SAW0n8fKWl7BQB17iGw8IlYRjupWcp",
+            "type": "form",
+            "title": "form",
+            "schema": {
+              "name": {
+                "type": "string",
+                "label": "Name",
+                "constraints": [
+                  {
+                    "type": "required",
+                    "message": "Your name is required"
+                  }
+                ]
+              },
+              "email": {
+                "type": "string",
+                "label": "Email",
+                "constraints": [
+                  {
+                    "type": "required",
+                    "message": "Your email is required"
+                  },
+                  {
+                    "type": "email",
+                    "message": "Your email needs to be an email"
+                  }
+                ]
+              },
+              "password": {
+                "type": "string",
+                "label": "Password",
+                "format": "password",
+                "name": "signup_password",
+                "constraints": [
+                  {
+                    "type": "required",
+                    "message": "Your password is required"
+                  },
+                  {
+                    "type": "matches",
+                    "regexp": "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[#$^+=!*()@%&]).{8,1000}$",
+                    "message": "Votre mot de passe doit avoir 8 lettres min. et contenir au moins une lettre capitale, un nombre et un caractère spécial (#$^+=!*()@%&)."
+                  }
+                ]
+              },
+              "confirmPassword": {
+                "type": "string",
+                "label": "Confirm password",
+                "format": "password",
+                "name": "signup_confrim_password",
+                "constraints": [
+                  {
+                    "type": "required",
+                    "message": "a confirm password is required"
+                  },
+                  {
+                    "type": "oneOf",
+                    "message": "confirm password and password must be equal",
+                    "arrayOfValues": [
+                      {
+                        "ref": "password"
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            "formatter": ""
+          },
+          {
+            "id": "pd9mRGdDlhLSjFTEQSPPsxWKnrQEl6To",
+            "type": "email",
+            "title": "account creation validation",
+            "emails": [
+              "confirmation@foo.bar"
+            ],
+            "message": "confirm ?"
+          }
+        ]
+      },
+      {
+        "op": "replace",
+        "path": "/authProviderSettings/authProvider",
+        "value": "Local"
+      },
+      {
+        "op": "replace",
+        "path": "/authProvider",
+        "value": "Local"
+      }
+    ])
+  })
+
+  await fetch(`http://localhost:${exposedPort}/admin-api/users/${MICHAEL.id}`, {
+    method: 'PATCH',
+    headers: {
+      "Authorization": `Basic ${btoa(adminApikeyId + ":" + adminApikeySecret)}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify([
+      {
+        "op": "replace",
+        "path": "/password",
+        "value": "$2a$10$/Vpj1lFN0AcCfbutd7FJwO0j1vU4X0fR6t.4vvWBqSEqtoUFFxfDG"
+      },
+      {
+        "op": "replace",
+        "path": "/origins/0",
+        "value": "LOCAL"
+      }
+    ])
+  })
+
+  //create new account
+  await page.goto(`http://localhost:${exposedPort}/signup`);
+
+  await expect(page.getByRole('heading', { name: 'Inscription à Dunder Mifflin' })).toBeVisible();
+  await page.getByRole('textbox', { name: 'Nom' }).fill(ROBERT.name);
+  await page.getByRole('textbox', { name: 'Email' }).fill(ROBERT.email);
+  await page.getByRole('textbox', { name: 'Mot de passe', exact: true }).fill(ROBERT.password!);
+  await page.getByRole('textbox', { name: 'Confirmation de mot de passe' }).fill(ROBERT.password!);
+  await page.getByRole('button', { name: 'Création d\'un compte' }).click();
+
+  await expect(page.getByRole('heading', { name: 'Confirmation de votre compte' })).toBeVisible();
+
+  await page.goto('http://localhost:1080/');
+
+  await page.getByText('Nouvelle inscription à valider sur Dunder Mifflin', { exact: true }).click();
+
+  const page2Promise = page.waitForEvent('popup');
+  await page.getByRole('link', { name: 'accepter' }).click();
+  const page2 = await page2Promise;
+
+  await expect(page2.getByRole('heading', { name: 'Création de compte approuvée' })).toBeVisible();
+
+  await loginLocalAs(ROBERT, page2)
+  await expect(page2.getByRole('listitem', {name: 'API papier'})).toBeVisible();
 })

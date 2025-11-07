@@ -23,6 +23,8 @@ export const Informations = () => {
     }
   }, [invitationToken]);
 
+  console.debug({messageId, error, invitationToken})
+
   return (
     <main className='flex-grow-1' role="main">
       <section className="organisation__header col-12 mb-4 p-3">
@@ -42,7 +44,7 @@ export const Informations = () => {
           </div>
         </div>
       </section>
-      {!!messageId || error && <div className="section mx-auto mt-3 p-3 pt-4" style={{ maxWidth: '448px' }}>
+      {(!!messageId || error) && <div className="section mx-auto mt-3 p-3 pt-4" style={{ maxWidth: '448px' }}>
         <div className="d-flex flex-column align-items-center justify-content-center gap-3">
           <i className={classNames("fas", {
             "fa-circle-check color-success": !!messageId,
@@ -51,14 +53,14 @@ export const Informations = () => {
           {
             !!messageId && (
               <>
-                <h2>{translate(`response.page.${messageId ?? 'unknown'}.title`)}</h2>
-                <p>{translate(`response.page.${messageId ?? 'unknown'}.description`)}</p>
+                <h2>{translate(`informations.page.${messageId ?? 'unknown'}.title`)}</h2>
+                <p>{translate(`informations.page.${messageId ?? 'unknown'}.description`)}</p>
               </>
             )}
           {
             !!error && (
               <>
-                <h2>{translate(`response.page.error.title`)}</h2>
+                <h2>{translate(`informations.page.error.title`)}</h2>
                 <p>{error}</p>
               </>
             )}

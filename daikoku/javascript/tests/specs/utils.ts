@@ -65,6 +65,16 @@ export const loginAs = async (user: IUser, page: Page) => {
   await page.getByLabel('API papier').waitFor({ state: 'visible' });
 }
 
+export const loginLocalAs = async (user: IUser, page: Page) => {
+  await page.getByRole('img', { name: 'user menu' }).click();
+  const input = page.locator('input[name="username"]');
+  await input.fill(user.email);
+  // await page.locator('input[name="username"]').fill(user.email);
+  await page.locator('input[name="password"]').fill(user.password ?? 'password');
+  await page.getByRole('button', { name: 'Se connecter' }).click();
+  await page.getByLabel('API papier').waitFor({ state: 'visible' });
+}
+
 export const logout = async (page: Page) => {
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
