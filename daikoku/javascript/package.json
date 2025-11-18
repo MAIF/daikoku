@@ -68,7 +68,7 @@
   },
   "devDependencies": {
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
-    "@playwright/test": "^1.54.1",
+    "@playwright/test": "^1.56.1",
     "@types/jquery": "^3.5.32",
     "@types/js-md5": "^0.8.0",
     "@types/node": "^24.1.0",
