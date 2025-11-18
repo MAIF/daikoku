@@ -74,7 +74,7 @@ export const GeneralForm = (props: { tenant?: ITenantFull, updateTenant: UseMuta
                   "api.name",
                   "api.currentVersion",
                   "plan.id",
-                  "plan.customName",
+                  "plan.name",
                   "team.id",
                   "team.humanReadableId",
                   "team.name",
