@@ -430,6 +430,13 @@ object CommonServices {
           .asOpt(json.SeqApiFormat)
           .getOrElse(Seq.empty)
 
+        val plans = (apis \ "apis")
+          .asOpt(json.SeqUsagePlanFormat)
+          .getOrElse(Seq.empty)
+        val myTeams = (apis \ "myTeams")
+          .asOpt(json.SeqTeamFormat)
+          .getOrElse(Seq.empty)
+
         val sortedApis: Seq[ApiWithAuthorizations] = filteredApis
           .foldLeft(Seq.empty[ApiWithAuthorizations]) {
             case (acc, api) =>
@@ -447,14 +454,15 @@ object CommonServices {
                       team = team.id.value,
                       authorized = api.authorizedTeams
                         .contains(team.id) || api.team == team.id,
-                      pending = myCurrentRequests
-                        .exists(notif =>
-                          notif.action
-                            .asInstanceOf[ApiAccess]
-                            .team == team.id && notif.action
-                            .asInstanceOf[ApiAccess]
-                            .api == api.id
-                        )
+                      pending = false
+//                      pending = myCurrentRequests
+//                        .exists(notif =>
+//                          notif.action
+//                            .asInstanceOf[ApiAccess]
+//                            .team == team.id && notif.action
+//                            .asInstanceOf[ApiAccess]
+//                            .api == api.id
+//                        )
                     )
                 }
               acc :+ (api.visibility.name match {
