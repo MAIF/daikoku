@@ -4646,6 +4646,87 @@ object json {
       )
   }
 
+  val AuthorizationApiFormat = new Format[AuthorizationApi] {
+    override def reads(json: JsValue): JsResult[AuthorizationApi] =
+      Try {
+        AuthorizationApi(
+          team = (json \ "team").as[String],
+          authorized = (json \ "authorized").as[Boolean],
+          pending = (json \ "pending").as[Boolean],
+        )
+      } match {
+        case Failure(e) =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+        case Success(value) => JsSuccess(value)
+      }
+
+    override def writes(o: AuthorizationApi): JsValue =
+      Json.obj(
+        "team" -> o.team,
+        "authorized" -> o.authorized,
+        "pending" -> o.pending
+      )
+  }
+
+  val ApiWithAuthorizationsFormat = new Format[ApiWithAuthorizations] {
+    override def reads(json: JsValue): JsResult[ApiWithAuthorizations] =
+      Try {
+        ApiWithAuthorizations(
+          api = (json \ "api").as(ApiFormat),
+          plans = (json \ "plans").as(SeqUsagePlanFormat),
+          authorizations = (json \ "authorizations").as(SeqAuthorizationApiFormat)
+        )
+      } match {
+        case Failure(e) =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+        case Success(value) => JsSuccess(value)
+      }
+
+    override def writes(o: ApiWithAuthorizations): JsValue =
+      Json.obj(
+        "api" -> o.api.asJson,
+        "plans" -> SeqUsagePlanFormat.writes(o.plans),
+        "authorizations" -> SeqAuthorizationApiFormat.writes(o.authorizations)
+      )
+  }
+
+  val ApiWithCountFormat = new Format[ApiWithCount] {
+    override def reads(json: JsValue): JsResult[ApiWithCount] =
+      Try {
+        ApiWithCount(
+          apis = (json \ "apis").as(SeqApiWithAuthorizationsFormat),
+          producers = (json \ "producers").as(SeqTeamFormat),
+          total = (json \ "total").as[Long],
+          totalFiltered = (json \ "totalFiltered").as[Long]
+        )
+      } match {
+        case Failure(e) =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+        case Success(value) => JsSuccess(value)
+      }
+
+    override def writes(o: ApiWithCount): JsValue =
+      Json.obj(
+        "apis" -> SeqApiWithAuthorizationsFormat.writes(o.apis),
+        "producers" -> SeqTeamFormat.writes(o.producers),
+        "total" -> o.total,
+        "totalFiltered" -> o.totalFiltered
+      )
+  }
+
+  val SeqAuthorizationApiFormat = Format(
+    Reads.seq(AuthorizationApiFormat),
+    Writes.seq(AuthorizationApiFormat),
+  )
+
+  val SeqApiWithAuthorizationsFormat = Format(
+    Reads.seq(ApiWithAuthorizationsFormat),
+    Writes.seq(ApiWithAuthorizationsFormat)
+  )
+
   val SetOtoroshiServicesIdFormat =
     Format(
       Reads.set(OtoroshiServiceIdFormat),

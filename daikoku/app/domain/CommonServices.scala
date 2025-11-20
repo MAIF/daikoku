@@ -345,29 +345,31 @@ object CommonServices {
     _UberPublicUserAccess(
       AuditTrailEvent(s"@{user.name} has accessed the list of visible apis")
     )(ctx) {
-      val tenant = ctx.tenant
-      val user = ctx.user
-
-
-      AppLogger.warn(s"limit $limit offset $offset")
 
       val teams =
-        getFiltervalue[List[String]](filter, "team")
-          .getOrElse(List.empty)
-          .toArray
+        getFiltervalue[List[String]](filter, "team").map(_.toArray)
       val tags =
-        getFiltervalue[List[String]](filter, "tag")
-          .getOrElse(List.empty)
-          .toArray
+        getFiltervalue[List[String]](filter, "tag").map(_.toArray)
       val research =
         getFiltervalue[String](filter, "research")
-          .getOrElse("")
 
+
+/*
+* $1 : userID
+* $2: tenant
+* $3: research
+* $4: teams
+* $5: tags
+* $6: limit
+* $7: offset
+* */
+//TODO: Get plans to request
+//TODO: Get keys and status
       val query =
-        """
+        s"""
           |WITH me as (select content
           |            from users
-          |            where _id = :userId),
+          |            where _id = $$1),
           |     my_teams as (SELECT *
           |                  FROM teams
           |                  WHERE teams._deleted IS FALSE
@@ -378,7 +380,7 @@ object CommonServices {
           |                   FROM apis a
           |                            LEFT JOIN me on true
           |                   WHERE (
-          |                             a.content ->> '_tenant' = :tenant AND
+          |                             a.content ->> '_tenant' = $$2 AND
           |                             (a.content ->> 'state' = 'published' OR
           |                              coalesce((me.content -> 'isDaikokuAdmin')::bool, false) OR
           |                              a.content ->> 'team' = ANY (select t.content ->> '_id' from my_teams t)) AND
@@ -402,14 +404,14 @@ object CommonServices {
           |                      FROM base_apis a
           |                               LEFT JOIN me on true
           |                      WHERE (
-          |                                (a.content ->> 'name' ~* COALESCE(NULLIF(:research, ''), '.*')) AND
+          |                                (a.content ->> 'name' ~* COALESCE(NULLIF($$3, ''), '.*')) AND
           |                                CASE
-          |                                    WHEN array_length(:teams::text[], 1) IS NULL THEN true
-          |                                    ELSE a.content ->> 'team' = ANY (:teams::text[])
+          |                                    WHEN array_length($$4::text[], 1) IS NULL THEN true
+          |                                    ELSE a.content ->> 'team' = ANY ($$4::text[])
           |                                    END AND
           |                                CASE
-          |                                    WHEN array_length(:tags::text[], 1) IS NULL THEN true
-          |                                    ELSE a.content -> 'tags' ?| :tags::text[]
+          |                                    WHEN array_length($$5::text[], 1) IS NULL THEN true
+          |                                    ELSE a.content -> 'tags' ?| $$5::text[]
           |                                    END
           |                                )),
           |     filtered_apis as (select *
@@ -417,7 +419,7 @@ object CommonServices {
           |                       ORDER BY is_starred DESC,
           |                                is_my_team DESC,
           |                                content ->> 'name'
-          |                       limit :limit offset :offset),
+          |                       limit $$6 offset $$7),
           |     all_producer_teams as (SELECT DISTINCT t.content
           |                            FROM visible_apis va
           |                                     JOIN teams t ON t.content ->> '_id' = va.content ->> 'team'
@@ -481,6 +483,7 @@ object CommonServices {
           |                (SELECT jsonb_agg(
           |                                jsonb_build_object(
           |                                        'api', api_content,
+          |                                        'plans', '[]'::jsonb,
           |                                        'authorizations', authorizations
           |                                )
           |                        )
@@ -498,139 +501,31 @@ object CommonServices {
           |       ) as result;
           |""".stripMargin
 
+
       for {
-        myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)
-        apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
-        myCurrentRequests <-
-          if (user.isGuest) FastFuture.successful(Seq.empty)
-          else
-            env.dataStore.notificationRepo
-              .forTenant(tenant.id)
-              .findNotDeleted(
-                Json.obj(
-                  "action.type" -> "ApiAccess",
-                  "action.team" -> Json
-                    .obj("$in" -> JsArray(myTeams.map(_.id.asJson))),
-                  "status.status" -> "Pending"
-                )
-              )
-
-        paginateApis <- apiRepo.queryPaginated(
-          allVisibleApisSqlQuery(ctx.tenant),
-          Seq(
-            java.lang.Boolean.valueOf(user.isDaikokuAdmin),
-            myTeams.map(_.id.value).toArray,
-            java.lang.Boolean.valueOf(user.isGuest),
-            research,
-            null,
-            null,
-            null,
-            null,
-            ctx.user.starredApis.map(_.value).toArray
-          ),
-          offset,
-          limit
-        )
-
-        producerTeams <-
-          env.dataStore.teamRepo
-            .forTenant(ctx.tenant)
-            .query(
-              s"""
-               |with visible_apis as (${allVisibleApisSqlQuery(ctx.tenant)})
-               |
-               |SELECT DISTINCT(teams.content) FROM visible_apis
-               |LEFT JOIN teams on teams._id = visible_apis.content ->> 'team'
-               |""".stripMargin,
-              Seq(
-                java.lang.Boolean.valueOf(user.isDaikokuAdmin),
-                myTeams.map(_.id.value).toArray,
-                java.lang.Boolean.valueOf(user.isGuest),
-                research,
-                null,
-                null,
-                null,
-                null,
-                null
-              )
+        result <- env.dataStore
+          .asInstanceOf[PostgresDataStore]
+          .queryOneRaw(
+            query,
+            "result",
+            Seq(
+              ctx.user.id.value,
+              ctx.tenant.id.value,
+              research.orNull,
+              teams.orNull,
+              tags.orNull,
+              java.lang.Integer.valueOf(limit),
+              java.lang.Integer.valueOf(offset)
             )
-
-        uniqueApisWithVersion <- apiRepo.findNotDeleted(
-          Json.obj(
-            "_humanReadableId" -> Json.obj(
-              "$in" -> JsArray(
-                paginateApis._1.map(a => JsString(a.humanReadableId))
-              )
-            )
-          ),
-          sort = Some(Json.obj("name" -> 1))
-        )
-        plans <-
-          env.dataStore.usagePlanRepo
-            .forTenant(ctx.tenant)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json.obj(
-                  "$in" -> JsArray(
-                    uniqueApisWithVersion
-                      .flatMap(_.possibleUsagePlans)
-                      .map(_.asJson)
-                  )
-                )
-              )
-            )
+          )
       } yield {
-        val sortedApis: Seq[ApiWithAuthorizations] = uniqueApisWithVersion //FIXME: sort by starred in sql request
-          .sortWith { (a, b) =>
-            (
-              user.starredApis.contains(a.id),
-              user.starredApis.contains(b.id)
-            ) match {
-              case (true, false) => true
-              case (false, true) => false
-              case _             => a.name.compareToIgnoreCase(b.name) < 0
-            }
-          }
-          .foldLeft(Seq.empty[ApiWithAuthorizations]) {
-            case (acc, api) =>
-              val apiPlans = plans
-                .filter(p => api.possibleUsagePlans.contains(p.id))
-                .filter(p =>
-                  p.visibility == UsagePlanVisibility.Public || myTeams
-                    .exists(_.id == api.team)
-                )
-              val authorizations = myTeams
-              //                .filter(t => t.`type` != TeamType.Admin)
-                .foldLeft(Seq.empty[AuthorizationApi]) {
-                  case (acc, team) =>
-                    acc :+ AuthorizationApi(
-                      team = team.id.value,
-                      authorized = api.authorizedTeams
-                        .contains(team.id) || api.team == team.id,
-                      pending = myCurrentRequests
-                        .exists(notif =>
-                          notif.action
-                            .asInstanceOf[ApiAccess]
-                            .team == team.id && notif.action
-                            .asInstanceOf[ApiAccess]
-                            .api == api.id
-                        )
-                    )
-                }
-              acc :+ (api.visibility.name match {
-                case "PublicWithAuthorizations" | "Private" | "AdminOnly" =>
-                  ApiWithAuthorizations(
-                    api = api,
-                    plans = apiPlans,
-                    authorizations = authorizations
-                  )
-                case _ => ApiWithAuthorizations(api = api, plans = apiPlans)
-              })
-          }
-        ApiWithCount(sortedApis, producerTeams, paginateApis._2, paginateApis._2)
+        result
+          .map(_.as(json.ApiWithCountFormat))
+          .getOrElse(ApiWithCount())
       }
     }
   }
+
   def getAllTags(
       research: String,
       selectedTeam: Option[String] = None,

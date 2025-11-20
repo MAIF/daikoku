@@ -1,6 +1,5 @@
 package services
 
-import cats.implicits.catsSyntaxOptionId
 import com.github.jknack.handlebars.{Context, Handlebars, Options}
 import controllers.AppError
 import controllers.AppError.toJson
@@ -15,39 +14,14 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
   _TeamMemberOnly,
   _UberPublicUserAccess
 }
-import fr.maif.otoroshi.daikoku.domain.{
-  Api,
-  ApiDocumentationPage,
-  ApiWithCount,
-  CanJson,
-  CmsPageId,
-  CommonServices,
-  Team,
-  TeamType,
-  Tenant,
-  TenantId,
-  User,
-  UserId,
-  UserSession,
-  json
-}
+import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
-import play.api.libs.json.{
-  JsArray,
-  JsBoolean,
-  JsNull,
-  JsNumber,
-  JsObject,
-  JsString,
-  JsValue,
-  Json
-}
-import play.api.mvc.{AnyContent, Request}
+import play.api.libs.json._
+import play.api.mvc.Request
 import storage.TenantCapableRepo
 
 import java.util.concurrent.Executors
