@@ -941,6 +941,8 @@
   "api_swagger.guest_user": "Le Try it est uniquement disponible pour les utilisateurs connectés.",
   "smtp_client.host": "Le serveur SMTP",
   "smtp_client.port": "Le port du serveur SMTP",
+  "smtp_client.username": "Nom d'utilisateur",
+  "smtp_client.password": "Mot de passe",
   "send_grid.api_key": "API Key",
   "send_grid.from_email": "Email de l'expéditeur",
   "audittrail.export.label": "Exporter la piste d'audit",

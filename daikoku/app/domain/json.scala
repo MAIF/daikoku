@@ -991,7 +991,9 @@ object json {
       )
   }
   val SimpleSMTPClientSettingsFormat = new Format[SimpleSMTPSettings] {
-    override def reads(json: JsValue): JsResult[SimpleSMTPSettings] =
+    override def reads(json: JsValue): JsResult[SimpleSMTPSettings] = {
+      AppLogger.warn(s"${(json \ "username").asOpt[String]
+        .map(_.trim).filterNot(_.isEmpty)}")
       Try {
         JsSuccess(
           SimpleSMTPSettings(
@@ -1001,7 +1003,11 @@ object json {
               .getOrElse((json \ "port").as[Int].toString),
             fromTitle = (json \ "fromTitle").as[String],
             fromEmail = (json \ "fromEmail").as[String],
-            template = (json \ "template").asOpt[String]
+            template = (json \ "template").asOpt[String],
+            username = (json \ "username").asOpt[String]
+              .map(_.trim).filterNot(_.isEmpty),
+            password = (json \ "password").asOpt[String]
+              .map(_.trim).filterNot(_.isEmpty),
           )
         )
       } recover {
@@ -1009,6 +1015,7 @@ object json {
           AppLogger.error(e.getMessage)
           JsError(e.getMessage)
       } get
+    }
 
     override def writes(o: SimpleSMTPSettings): JsValue =
       Json.obj(
@@ -1018,6 +1025,14 @@ object json {
         "fromTitle" -> o.fromTitle,
         "fromEmail" -> o.fromEmail,
         "template" -> o.template
+          .map(JsString.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "username" -> o.username
+          .map(JsString.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "password" -> o.password
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue]

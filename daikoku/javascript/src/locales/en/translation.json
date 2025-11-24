@@ -941,6 +941,8 @@
     "api_swagger.guest_user": "Try it is only available for registered users.",
     "smtp_client.host": "The SMTP server to connect to",
     "smtp_client.port": "The SMTP server port to connect to",
+    "smtp_client.username": "Username",
+    "smtp_client.password": "Password",
     "send_grid.api_key": "API key",
     "send_grid.from_email": "Sender email",
     "audittrail.export.label": "Export audit trail",

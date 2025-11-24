@@ -80,13 +80,12 @@ interface IThirdPartyPaymentStripe extends IThirdPartyPaymentSettings {
   secretKey: string;
 }
 
-enum MailerType {
-  console = 'console',
-  mailgun = 'mailgun',
-  mailjet = 'mailjet',
-  sendgrid = 'sendgrid',
-  smtpClient = 'smtpClient',
-}
+export type MailerType  =
+  'console' |
+  'mailgun' |
+  'mailjet' |
+  'sendgrid' |
+  'smtpClient'
 
 export interface IMailerSettings {
   type: MailerType;
@@ -94,12 +93,12 @@ export interface IMailerSettings {
 }
 
 interface IMailerConsole extends IMailerSettings {
-  type: MailerType.console;
+  type: 'console';
   fromTitle: string;
   fromEmail: string;
 }
 interface IMailerMailgun extends IMailerSettings {
-  type: MailerType.mailgun;
+  type: 'mailgun';
   domain: string;
   eu: boolean;
   key: string;
@@ -107,19 +106,19 @@ interface IMailerMailgun extends IMailerSettings {
   fromEmail: string;
 }
 interface IMailerMailjet extends IMailerSettings {
-  type: MailerType.mailjet;
+  type: 'mailjet';
   apiKeyPublic: string;
   apiKeyPrivate: string;
   fromTitle: string;
   fromEmail: string;
 }
 interface IMailerSendgrid extends IMailerSettings {
-  type: MailerType.sendgrid;
+  type: 'sendgrid';
   apikey: string;
   fromEmail: string;
 }
 interface IMailerSmtpClient extends IMailerSettings {
-  type: MailerType.smtpClient;
+  type: 'smtpClient';
   host: string;
   port: string;
   fromTitle: string;
