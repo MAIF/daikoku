@@ -435,7 +435,11 @@ class LoginController(
                     )
                     .replace(
                       "${clientId}",
-                      URLEncoder.encode((ctx.tenant.authProviderSettings \ "clientId").as[String], "UTF-8")
+                      URLEncoder.encode(
+                        (ctx.tenant.authProviderSettings \ "clientId")
+                          .as[String],
+                        "UTF-8"
+                      )
                     )
               }
             ).removingFromSession("sessionId")(ctx.request)

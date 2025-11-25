@@ -80,12 +80,7 @@ interface IThirdPartyPaymentStripe extends IThirdPartyPaymentSettings {
   secretKey: string;
 }
 
-export type MailerType  =
-  'console' |
-  'mailgun' |
-  'mailjet' |
-  'sendgrid' |
-  'smtpClient'
+export type MailerType = 'console' | 'mailgun' | 'mailjet' | 'sendgrid' | 'smtpClient';
 
 export interface IMailerSettings {
   type: MailerType;

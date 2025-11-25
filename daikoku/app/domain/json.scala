@@ -1002,10 +1002,14 @@ object json {
             fromTitle = (json \ "fromTitle").as[String],
             fromEmail = (json \ "fromEmail").as[String],
             template = (json \ "template").asOpt[String],
-            username = (json \ "username").asOpt[String]
-              .map(_.trim).filterNot(_.isEmpty),
-            password = (json \ "password").asOpt[String]
-              .map(_.trim).filterNot(_.isEmpty),
+            username = (json \ "username")
+              .asOpt[String]
+              .map(_.trim)
+              .filterNot(_.isEmpty),
+            password = (json \ "password")
+              .asOpt[String]
+              .map(_.trim)
+              .filterNot(_.isEmpty)
           )
         )
       } recover {

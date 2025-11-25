@@ -892,7 +892,7 @@ case class CmsPage(
           renderString(
             ctx,
             parentId,
-            if(v == null) "" else v.toString,
+            if (v == null) "" else v.toString,
             fields,
             jsonToCombine = jsonToCombine,
             req = req

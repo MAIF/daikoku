@@ -814,12 +814,14 @@ class ApiService(
           .forTenant(tenant.id)
           .deleteById(subscription.id)
       )
-      shouldDeleteApiKey = subscription.parent.isEmpty &&
-        !(plan.visibility == Admin && plan.otoroshiTarget.isEmpty)
+      shouldDeleteApiKey =
+        subscription.parent.isEmpty &&
+          !(plan.visibility == Admin && plan.otoroshiTarget.isEmpty)
 
       _ <- (shouldDeleteApiKey, maybeOtoroshiSettings) match {
         case (true, Some(otoorshiSettings)) =>
-          otoroshiClient.deleteApiKey(subscription.apiKey.clientId)(otoorshiSettings)
+          otoroshiClient
+            .deleteApiKey(subscription.apiKey.clientId)(otoorshiSettings)
         case _ =>
           EitherT.pure[Future, AppError](Json.obj())
       }

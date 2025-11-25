@@ -7,7 +7,12 @@ import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.Tenant.getCustomizationCmsPage
 import fr.maif.otoroshi.daikoku.domain.json.TenantIdFormat
-import fr.maif.otoroshi.daikoku.domain.{DatastoreId, ReportsInfo, TeamApiKeyVisibility, Tenant}
+import fr.maif.otoroshi.daikoku.domain.{
+  DatastoreId,
+  ReportsInfo,
+  TeamApiKeyVisibility,
+  Tenant
+}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._
@@ -543,7 +548,8 @@ class DaikokuEnv(
                   defaultLanguage = None
                 )
 
-                val cssPage = getCustomizationCmsPage(tenant.id, "style", "text/css", "")
+                val cssPage =
+                  getCustomizationCmsPage(tenant.id, "style", "text/css", "")
                 val jsPage = getCustomizationCmsPage(
                   tenant.id,
                   "script",
@@ -588,7 +594,8 @@ class DaikokuEnv(
                   _ <- dataStore.userRepo.save(user)
                   publicFolderPath = environment.getFile("public").getPath
                   cssFilePath = s"$publicFolderPath/themes/default.css"
-                  cssFileContent = scala.io.Source.fromFile(cssFilePath).mkString
+                  cssFileContent =
+                    scala.io.Source.fromFile(cssFilePath).mkString
                   _ <-
                     dataStore.cmsRepo
                       .forTenant(tenant.id)
@@ -600,12 +607,14 @@ class DaikokuEnv(
                           body = cssFileContent
                         )
                       )
-                  _ <- dataStore.cmsRepo
-                    .forTenant(tenant.id)
-                    .save(cssPage)
-                  _ <- dataStore.cmsRepo
-                    .forTenant(tenant.id)
-                    .save(jsPage)
+                  _ <-
+                    dataStore.cmsRepo
+                      .forTenant(tenant.id)
+                      .save(cssPage)
+                  _ <-
+                    dataStore.cmsRepo
+                      .forTenant(tenant.id)
+                      .save(jsPage)
                 } yield {
                   AppLogger.warn("")
                   AppLogger.warn(

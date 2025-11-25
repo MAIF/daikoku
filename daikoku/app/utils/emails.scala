@@ -283,12 +283,17 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
         val properties = new Properties()
         properties.put("mail.smtp.host", settings.host)
         properties.put("mail.smtp.port", Integer.valueOf(settings.port))
-        properties.put("mail.smtp.auth", java.lang.Boolean.valueOf(settings.username.isDefined))
+        properties.put(
+          "mail.smtp.auth",
+          java.lang.Boolean.valueOf(settings.username.isDefined)
+        )
 
         val authenticator = (settings.username, settings.password) match {
-          case (Some(username), Some(password)) => new Authenticator() {
-            override def getPasswordAuthentication = new PasswordAuthentication(username,password)
-          }
+          case (Some(username), Some(password)) =>
+            new Authenticator() {
+              override def getPasswordAuthentication =
+                new PasswordAuthentication(username, password)
+            }
           case _ => null
         }
 
@@ -343,12 +348,17 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
     val properties = new Properties()
     properties.put("mail.smtp.host", settings.host)
     properties.put("mail.smtp.port", Integer.valueOf(settings.port))
-    properties.put("mail.smtp.auth", java.lang.Boolean.valueOf(settings.username.isDefined).toString)
+    properties.put(
+      "mail.smtp.auth",
+      java.lang.Boolean.valueOf(settings.username.isDefined).toString
+    )
 
     val authenticator = (settings.username, settings.password) match {
-      case (Some(username), Some(password)) => new Authenticator() {
-        override def getPasswordAuthentication = new PasswordAuthentication(username,password)
-      }
+      case (Some(username), Some(password)) =>
+        new Authenticator() {
+          override def getPasswordAuthentication =
+            new PasswordAuthentication(username, password)
+        }
       case _ => null
     }
 
