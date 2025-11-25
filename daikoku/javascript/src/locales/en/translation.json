@@ -324,6 +324,7 @@
     "Userinfo URL": "Userinfo URL",
     "Login URL": "Login URL",
     "Logout URL": "Logout URL",
+    "oauth2.form.logout.url.help": "${redirect} and ${clientId} will be replaced by the expected values",
     "Callback URL": "Callback URL",
     "Access token field name": "Access token field name",
     "Algo.": "Algo.",

@@ -208,6 +208,7 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
     },
     clientSecret: {
       type: type.string,
+      format: format.password,
       label: translate('Client secret'),
       help: translate('tenant.settings.authProvider.oauth.configuration.clientSecret.help')
     },
@@ -234,16 +235,15 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
     },
     loginUrl: {
       type: type.string,
-      props: {
-        label: translate('Login URL'),
+      label: translate('Login URL'),
         constraints: [
           constraints.required(translate("constraints.required.value"))
         ]
-      },
     },
     logoutUrl: {
       type: type.string,
       label: translate('Logout URL'),
+      help: translate("oauth2.form.logout.url.help"),
       constraints: [
         constraints.required(translate("constraints.required.value"))
       ]
