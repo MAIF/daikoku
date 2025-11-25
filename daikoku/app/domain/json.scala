@@ -992,8 +992,6 @@ object json {
   }
   val SimpleSMTPClientSettingsFormat = new Format[SimpleSMTPSettings] {
     override def reads(json: JsValue): JsResult[SimpleSMTPSettings] = {
-      AppLogger.warn(s"${(json \ "username").asOpt[String]
-        .map(_.trim).filterNot(_.isEmpty)}")
       Try {
         JsSuccess(
           SimpleSMTPSettings(

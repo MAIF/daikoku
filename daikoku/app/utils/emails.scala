@@ -355,15 +355,16 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
     val session = Session.getInstance(properties, authenticator)
 
     Try {
-      session
-        .getTransport("smtp")
-        .connect(settings.host, settings.port.toInt, null, null)
-      true.future
-    } recover {
-      case e =>
+      val transport = session.getTransport("smtp")
+      transport.connect(settings.host, settings.port.toInt, null, null)
+      transport.close() // Important : fermer la connexion après le test
+    } match {
+      case Failure(e) =>
         logger.error("Error while testing smtp email", e)
         false.future
-    } get
+      case Success(_) =>
+        true.future
+    }
   }
 
 }
