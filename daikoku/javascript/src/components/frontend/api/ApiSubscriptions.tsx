@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import Select from 'react-select';
 
 import { I18nContext } from '../../../contexts';
@@ -26,6 +26,13 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
     queryFn: () => Services.getTeamSubscriptions(props.api._id, selectedTeam!._id, props.api.currentVersion),
     enabled: !!selectedTeam
   })
+
+  useEffect(() => {
+    if (!props.subscribingTeams.some(t => selectedTeam && t._id === selectedTeam._id)) (
+      setSelectedTeam(props.subscribingTeams[0])
+    )
+  }, [props.subscribingTeams])
+  
 
   return (
     <div>
