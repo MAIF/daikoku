@@ -2,10 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { useContext, useState } from 'react';
 import Select from 'react-select';
 
-import { useNavigate } from 'react-router-dom';
 import { I18nContext } from '../../../contexts';
 import * as Services from '../../../services';
-import { IApi, isError, ISubscriptionExtended, ITeamSimple } from '../../../types';
+import { IApi, isError, ITeamSimple } from '../../../types';
 import { ApiKeysListForApi } from '../../backoffice/apikeys/TeamApiKeysForApi';
 import { Spinner } from '../../utils/Spinner';
 
@@ -18,9 +17,9 @@ type ApiSubscriptions = {
 
 export const ApiSubscriptions = (props: ApiSubscriptions) => {
 
-  const { translate, Translation } = useContext(I18nContext);
+  const { translate } = useContext(I18nContext);
 
-  const [selectedTeam, setSelectedTeam] = useState<ITeamSimple>(props.subscribingTeams[0])
+  const [selectedTeam, setSelectedTeam] = useState<ITeamSimple | null>(props.subscribingTeams[0])
 
   const subscriptionsQuery = useQuery({
     queryKey: ["subscriptions", selectedTeam?._id],
@@ -35,7 +34,7 @@ export const ApiSubscriptions = (props: ApiSubscriptions) => {
         placeholder={translate('api.subscriptions.team.select.placeholder')}
         options={props.subscribingTeams.map(value => ({ label: value.name, value: value }))}
         onChange={t => setSelectedTeam(t?.value!)}
-        value={{ label: selectedTeam.name, value: selectedTeam }}
+        value={{ label: selectedTeam?.name, value: selectedTeam }}
         styles={{
           valueContainer: (baseStyles) => ({
             ...baseStyles,
