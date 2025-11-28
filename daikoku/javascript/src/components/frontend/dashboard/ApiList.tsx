@@ -3,7 +3,7 @@ import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, ge
 import debounce from "lodash/debounce"
 import { ChangeEvent, useContext, useMemo, useState } from "react"
 import Plus from 'react-feather/dist/icons/plus'
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import Select, { components, MultiValue, OptionProps, SingleValue, ValueContainerProps } from "react-select"
 import { toast } from "sonner"
 
@@ -62,7 +62,7 @@ const GenericValueContainer = (
 
 export const ApiList = (props: ApiListProps) => {
 
-  const pageSize = 2;
+  const pageSize = 10;
   const [selectAll, setSelectAll] = useState(false);
   const [limit, setLimit] = useState(pageSize);
   const [pagination, setPagination] = useState<PaginationState>({
@@ -143,7 +143,7 @@ export const ApiList = (props: ApiListProps) => {
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, pages) => {
-      const totalFilteredCount = lastPage.totalFilterd;
+      const totalFilteredCount = lastPage.totalFiltered;
       const nextOffset = pages.length * pageSize;
 
       return nextOffset < totalFilteredCount ? nextOffset : undefined;
@@ -180,9 +180,9 @@ export const ApiList = (props: ApiListProps) => {
       cell: (info) => {
         const api = info.row.original.api;
 
-        return <a href='#' onClick={() => handleSelectChange([{ label: api.name, value: api._id }], 'api')}>
+        return <Link to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`}>
           {api.name}
-        </a>
+        </Link>
       }
     }),
     columnHelper.accessor('api.tags', {
@@ -249,18 +249,33 @@ export const ApiList = (props: ApiListProps) => {
         const starred = connectedUser.starredApis.includes(api._id)
 
         return (
-          <div className='notification__actions'>
+          <div className='notification__actions d-flex flex-row gap-1 justify-content-end'>
             <StarsButton
               starred={starred}
-              toggleStar={() => console.debug("star", api.name)}
+              classnames="notification-link-color"
+              toggleStar={() => Services.toggleStar(api._id)}
             />
             <button
-              className="favorite-btn"
-              style={{ background: 'none', border: 'none' }} //todo: aria-label
-              onClick={() => console.debug('open actions')}
-            >
-              <i className="fas fa-ellipsis-vertical" />
+              type="button"
+              data-bs-toggle="dropdown"
+              aria-expanded="false"
+              className="cursor-pointer notification-link-color"
+              style={{border: 'none', background: 'none'}}
+              id="dropdownMenuButton" >
+              <i
+                className="fas fa-ellipsis-vertical cursor-pointer"
+                style={{ fontSize: '20px' }}
+
+              />
             </button>
+            <div className="dropdown-menu" aria-labelledby="dropdownMenuButton" style={{ zIndex: 1 }}>
+              <span
+                className="dropdown-item cursor-pointer"
+                onClick={() => console.debug('test')}
+              >
+                {translate("un menu qui fait quelque chose")}
+              </span>
+            </div>
           </div>
         )
       },
@@ -543,7 +558,7 @@ export const ApiList = (props: ApiListProps) => {
             </button>
           </div>
 
-          <div className="">{dataRequest.data?.pages[0].total} APIs</div>
+          <div className="">{dataRequest.data?.pages[0].totalFiltered} APIs</div>
 
         </div>
         {displayFilters()}

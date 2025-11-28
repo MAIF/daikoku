@@ -97,7 +97,7 @@ export type IApiAuthoWithCount = {
   tags: Array<string>;
   categories: Array<string>;
   total: number;
-  totalFilterd: number;
+  totalFiltered: number;
 }
 
 export interface ITesting {
