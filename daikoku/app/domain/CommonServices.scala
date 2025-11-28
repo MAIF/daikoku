@@ -457,6 +457,10 @@ object CommonServices {
           |     apis_with_authorizations as (select apis._id,
           |                                         apis.content as api_content,
           |                                         apis.total_filtered,
+          |                                         coalesce(
+          |                                               jsonb_agg(usage_plans.content) FILTER (WHERE usage_plans.content IS NOT NULL),
+          |                                               '[]'::jsonb
+          |                                         ) as plans,
           |                                         CASE
           |                                             WHEN lower(apis.content ->> 'visibility') = 'public' THEN '[]'::jsonb
           |                                             ELSE coalesce(
@@ -472,6 +476,7 @@ object CommonServices {
           |                                             END      as authorizations
           |                                  from filtered_apis apis
           |                                           left join authorizations_by_api aba on aba.api_id = apis._id
+          |                                           left join usage_plans on apis.content -> 'possibleUsagePlans' ? usage_plans._id::text
           |                                  group by apis._id, apis.content, apis.total_filtered, apis.is_starred, apis.is_my_team
           |                                  order by apis.is_starred DESC,
           |                                           apis.is_my_team DESC,
@@ -483,7 +488,7 @@ object CommonServices {
           |                (SELECT jsonb_agg(
           |                                jsonb_build_object(
           |                                        'api', api_content,
-          |                                        'plans', '[]'::jsonb,
+          |                                        'plans', coalesce(plans, '[]'::jsonb),
           |                                        'authorizations', authorizations
           |                                )
           |                        )
