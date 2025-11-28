@@ -363,7 +363,6 @@ object CommonServices {
 * $6: limit
 * $7: offset
 * */
-//TODO: Get plans to request
 //TODO: Get keys and status
       val query =
         s"""

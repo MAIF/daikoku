@@ -753,16 +753,18 @@ case class ApiWithAuthorizations(
     plans: Seq[UsagePlan],
     authorizations: Seq[AuthorizationApi] = Seq.empty
 ) extends CanJson[ApiWithAuthorizations] {
-  override def asJson: JsValue = ???
+  override def asJson: JsValue = json.ApiWithAuthorizationsFormat.writes(this)
 }
 
 case class ApiWithCount(
     apis: Seq[ApiWithAuthorizations] = Seq.empty,
     producers: Seq[Team] = Seq.empty,
+    tags: Set[String] = Set.empty,
+    categories: Set[String] = Set.empty,
     total: Long = 0,
     totalFiltered: Long = 0
 ) extends CanJson[ApiWithCount] {
-  override def asJson: JsValue = ???
+  override def asJson: JsValue = json.ApiWithCountFormat.writes(this)
 }
 
 

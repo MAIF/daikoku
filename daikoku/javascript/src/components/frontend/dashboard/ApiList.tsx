@@ -99,28 +99,28 @@ export const ApiList = (props: ApiListProps) => {
   // --- MARK: Queries
   const queryClient = useQueryClient()
   const myTeamsRequest = useQuery({ queryKey: ['myTeams'], queryFn: () => Services.myTeams() })
-  const dataTags = useQuery({
-    queryKey: ["dataTags",
-      researchTag,
-      props.apiGroupId,
-      searched
-    ],
-    queryFn: ({ queryKey }) => customGraphQLClient.request<{ allTags: Array<string> }>(
-      Services.graphql.getAllTags,
-      {
-        research: queryKey[6],
-        groupId: queryKey[2],
-        selectedTag: queryKey[3],
-        selectedCategory: queryKey[4],
-        selectedTeam: queryKey[5],
-        filter: queryKey[1],
-        limit: 5
-      }
-    ).then(({ allTags }) => {
-      setTags(arrayStringToTOps(allTags))
-      return arrayStringToTOps(allTags)
-    })
-  })
+  // const dataTags = useQuery({
+  //   queryKey: ["dataTags",
+  //     researchTag,
+  //     props.apiGroupId,
+  //     searched
+  //   ],
+  //   queryFn: ({ queryKey }) => customGraphQLClient.request<{ allTags: Array<string> }>(
+  //     Services.graphql.getAllTags,
+  //     {
+  //       research: queryKey[6],
+  //       groupId: queryKey[2],
+  //       selectedTag: queryKey[3],
+  //       selectedCategory: queryKey[4],
+  //       selectedTeam: queryKey[5],
+  //       filter: queryKey[1],
+  //       limit: 5
+  //     }
+  //   ).then(({ allTags }) => {
+  //     setTags(arrayStringToTOps(allTags))
+  //     return arrayStringToTOps(allTags)
+  //   })
+  // })
   const dataRequest = useInfiniteQuery({
     queryKey: ["data",
       limit,
@@ -143,7 +143,7 @@ export const ApiList = (props: ApiListProps) => {
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, pages) => {
-      const totalFilteredCount = lastPage.total; //FIXME: c'est pas le bon param (better with totalFiltered like notification page)
+      const totalFilteredCount = lastPage.totalFilterd;
       const nextOffset = pages.length * pageSize;
 
       return nextOffset < totalFilteredCount ? nextOffset : undefined;
@@ -390,7 +390,6 @@ export const ApiList = (props: ApiListProps) => {
       .map(t => ({ label: t[labelKey], value: t[idKey] }));
   }
 
-  const mockedTags = ["cms", "Administration"]
   const getSelectStringValue = (id: string, data: Array<string>): Array<{ label: string, value: string }> => {
     const filter = columnFilters.find(f => f.id === id);
 
@@ -449,7 +448,7 @@ export const ApiList = (props: ApiListProps) => {
                 case f.id === 'tag':
                   return ((f.value as Array<string>)
                     .map(value => {
-                      const tag = mockedTags.find(t => t === value);
+                      const tag = (dataRequest.data?.pages[0].tags ?? []).find(t => t === value);
                       return (
                         <button className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
                           {tag}
@@ -465,7 +464,7 @@ export const ApiList = (props: ApiListProps) => {
   }
 
 
-
+  console.debug(dataRequest.data?.pages[0])
   //--- MARK: Rendering
   if (myTeamsRequest.isLoading) {
     return <Spinner />
@@ -515,8 +514,8 @@ export const ApiList = (props: ApiListProps) => {
             <Select
               isMulti //@ts-ignore
               components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
-              options={(mockedTags.map(t => ({ label: t, value: t })))}
-              isLoading={myTeamsRequest.isLoading || myTeamsRequest.isPending} //FIXME: with tag request
+              options={arrayStringToTOps(dataRequest.data?.pages[0].tags ?? [])}
+              isLoading={dataRequest.isLoading}
               closeMenuOnSelect={true}
               labelKey={"dashboard.filters.tag.label"}
               labelKeyAll={"dashboard.filters.all.tags.label"}
@@ -525,7 +524,7 @@ export const ApiList = (props: ApiListProps) => {
               className="tag__selector filter__select reactSelect col-2"
               styles={menuStyle}
               onChange={data => handleSelectChange(data, 'tag')}
-              value={getSelectStringValue('tag', mockedTags)} />
+              value={getSelectStringValue('tag', dataRequest.data?.pages[0].tags ?? [])} />
 
 
             <button

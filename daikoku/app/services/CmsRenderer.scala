@@ -179,7 +179,7 @@ case class CmsPage(
           )(ctxUserContext, env, ec),
           10.seconds
         ) match {
-          case Right(ApiWithCount(apis, producers, _, _)) =>
+          case Right(ApiWithCount(apis, _, _, _, _, _)) =>
             apis
               .filter(api =>
                 if (visibility == "All") true
@@ -284,7 +284,7 @@ case class CmsPage(
               ec
             )
             .map {
-              case Right(ApiWithCount(apis, _, _, _)) =>
+              case Right(ApiWithCount(apis, _, _, _, _, _)) =>
                 JsArray(apis.map(_.api.asJson))
               case Left(error) => toJson(error)
             },

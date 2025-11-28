@@ -1507,7 +1507,10 @@ export const graphql = {
           _id
           name
         }
+        tags
+        categories
         total
+        totalFiltered
       }
     }`,
   getAllTags: `

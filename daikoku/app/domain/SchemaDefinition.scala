@@ -1961,6 +1961,8 @@ object SchemaDefinition {
           resolve = _.value.producers
         )
       ),
+      ReplaceField("tags", Field("tags", ListType(StringType), resolve = _.value.tags)),
+      ReplaceField("categories", Field("categories", ListType(StringType), resolve = _.value.categories)),
       ReplaceField("total", Field("total", LongType, resolve = _.value.total)),
       ReplaceField("totalFiltered", Field("totalFiltered", LongType, resolve = _.value.totalFiltered)),
     )

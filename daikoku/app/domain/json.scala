@@ -4698,6 +4698,14 @@ object json {
         ApiWithCount(
           apis = (json \ "apis").as(SeqApiWithAuthorizationsFormat),
           producers = (json \ "producers").as(SeqTeamFormat),
+          tags = (json \ "tags")
+            .asOpt[Seq[String]]
+            .map(_.toSet)
+            .getOrElse(Set.empty),
+          categories = (json \ "categories")
+            .asOpt[Seq[String]]
+            .map(_.toSet)
+            .getOrElse(Set.empty),
           total = (json \ "total").as[Long],
           totalFiltered = (json \ "totalFiltered").as[Long]
         )
@@ -4712,6 +4720,8 @@ object json {
       Json.obj(
         "apis" -> SeqApiWithAuthorizationsFormat.writes(o.apis),
         "producers" -> SeqTeamFormat.writes(o.producers),
+        "tags" -> JsArray(o.tags.map(JsString.apply).toSeq),
+        "categories" -> JsArray(o.categories.map(JsString.apply).toSeq),
         "total" -> o.total,
         "totalFiltered" -> o.totalFiltered
       )

@@ -100,108 +100,108 @@ export const ApiList = (props: TApiList) => {
   })
 
 
-  const dataTags = useQuery({
-    queryKey: ["dataTags", 
-      researchTag,
-      props.apiGroupId, 
-      selectedTag?.value,
-      selectedCategory?.value,
-      selectedProducer?.value,
-      searched
-    ],
-    queryFn: ({ queryKey }) => customGraphQLClient.request<{ allTags: Array<string> }>(
-      Services.graphql.getAllTags,
-      { 
-        research: queryKey[6], 
-        groupId: queryKey[2],
-        selectedTag: queryKey[3],
-        selectedCategory: queryKey[4], 
-        selectedTeam: queryKey[5], 
-        filter: queryKey[1],
-        limit: 5 }
-    ).then(({ allTags }) => {
-      setTags(arrayStringToTOps(allTags))
-      return arrayStringToTOps(allTags)
-    })
-  })
+  // const dataTags = useQuery({
+  //   queryKey: ["dataTags", 
+  //     researchTag,
+  //     props.apiGroupId, 
+  //     selectedTag?.value,
+  //     selectedCategory?.value,
+  //     selectedProducer?.value,
+  //     searched
+  //   ],
+  //   queryFn: ({ queryKey }) => customGraphQLClient.request<{ allTags: Array<string> }>(
+  //     Services.graphql.getAllTags,
+  //     { 
+  //       research: queryKey[6], 
+  //       groupId: queryKey[2],
+  //       selectedTag: queryKey[3],
+  //       selectedCategory: queryKey[4], 
+  //       selectedTeam: queryKey[5], 
+  //       filter: queryKey[1],
+  //       limit: 5 }
+  //   ).then(({ allTags }) => {
+  //     setTags(arrayStringToTOps(allTags))
+  //     return arrayStringToTOps(allTags)
+  //   })
+  // })
 
-  const bestTags = useQuery({
-    queryKey: ["bestTags", 
-      researchTag,
-      props.apiGroupId,
-      selectedTag?.value,
-      selectedCategory?.value,
-      selectedProducer?.value,
-      searched
-    ],
-    queryFn: ({ queryKey }) => {
-      return customGraphQLClient.request<{ allTags: Array<string> }>(
-        Services.graphql.getAllTags,
-        {
-          research: queryKey[6],
-          groupId: queryKey[2],
-          selectedTag: queryKey[3],
-          selectedCategory: queryKey[4],
-          selectedTeam: queryKey[5],
-          filter: queryKey[1],
-          limit: 5 }
-      ).then(({ allTags }) => {
-        return arrayStringToTOps(allTags)
-      })
-    }
-  })
+  // const bestTags = useQuery({
+  //   queryKey: ["bestTags", 
+  //     researchTag,
+  //     props.apiGroupId,
+  //     selectedTag?.value,
+  //     selectedCategory?.value,
+  //     selectedProducer?.value,
+  //     searched
+  //   ],
+  //   queryFn: ({ queryKey }) => {
+  //     return customGraphQLClient.request<{ allTags: Array<string> }>(
+  //       Services.graphql.getAllTags,
+  //       {
+  //         research: queryKey[6],
+  //         groupId: queryKey[2],
+  //         selectedTag: queryKey[3],
+  //         selectedCategory: queryKey[4],
+  //         selectedTeam: queryKey[5],
+  //         filter: queryKey[1],
+  //         limit: 5 }
+  //     ).then(({ allTags }) => {
+  //       return arrayStringToTOps(allTags)
+  //     })
+  //   }
+  // })
 
-  const dataCategories = useQuery({
-    queryKey: ["dataCategories", 
-      researchCat, 
-      props.apiGroupId,
-      selectedTag?.value,
-      selectedCategory?.value,
-      selectedProducer?.value,
-      searched
-    ],
-    queryFn: ({ queryKey }) => {
-      return customGraphQLClient.request<{ allCategories: Array<string> }>(
-        Services.graphql.getAllCategories,
-        {
-          research: queryKey[6],
-          groupId: queryKey[2],
-          selectedTag: queryKey[3],
-          selectedCategory: queryKey[4], 
-          selectedTeam: queryKey[5],
-          filter: queryKey[1], 
-          limit: 5 }
-      ).then(({ allCategories }) => {
-        setCategories(arrayStringToTOps(allCategories))
-        return arrayStringToTOps(allCategories)
-      })
-    }
-  })
-  const bestCategories = useQuery({
-    queryKey: ["bestCategories", 
-      researchTag,
-      props.apiGroupId,
-      selectedTag?.value,
-      selectedCategory?.value,
-      selectedProducer?.value,
-      searched
-    ],
-    queryFn: ({ queryKey }) => {
-      return customGraphQLClient.request<{ allCategories: Array<string> }>(
-        Services.graphql.getAllCategories,
-        { 
-          research: queryKey[6],
-          groupId: queryKey[2],
-          selectedTag: queryKey[3],
-          selectedCategory: queryKey[4], 
-          selectedTeam: queryKey[5],
-          filter: queryKey[1],
-          limit: 5 }
-      ).then(({ allCategories }) => {
-        return arrayStringToTOps(allCategories)
-      })
-    }
-  })
+  // const dataCategories = useQuery({
+  //   queryKey: ["dataCategories", 
+  //     researchCat, 
+  //     props.apiGroupId,
+  //     selectedTag?.value,
+  //     selectedCategory?.value,
+  //     selectedProducer?.value,
+  //     searched
+  //   ],
+  //   queryFn: ({ queryKey }) => {
+  //     return customGraphQLClient.request<{ allCategories: Array<string> }>(
+  //       Services.graphql.getAllCategories,
+  //       {
+  //         research: queryKey[6],
+  //         groupId: queryKey[2],
+  //         selectedTag: queryKey[3],
+  //         selectedCategory: queryKey[4], 
+  //         selectedTeam: queryKey[5],
+  //         filter: queryKey[1], 
+  //         limit: 5 }
+  //     ).then(({ allCategories }) => {
+  //       setCategories(arrayStringToTOps(allCategories))
+  //       return arrayStringToTOps(allCategories)
+  //     })
+  //   }
+  // })
+  // const bestCategories = useQuery({
+  //   queryKey: ["bestCategories", 
+  //     researchTag,
+  //     props.apiGroupId,
+  //     selectedTag?.value,
+  //     selectedCategory?.value,
+  //     selectedProducer?.value,
+  //     searched
+  //   ],
+  //   queryFn: ({ queryKey }) => {
+  //     return customGraphQLClient.request<{ allCategories: Array<string> }>(
+  //       Services.graphql.getAllCategories,
+  //       { 
+  //         research: queryKey[6],
+  //         groupId: queryKey[2],
+  //         selectedTag: queryKey[3],
+  //         selectedCategory: queryKey[4], 
+  //         selectedTeam: queryKey[5],
+  //         filter: queryKey[1],
+  //         limit: 5 }
+  //     ).then(({ allCategories }) => {
+  //       return arrayStringToTOps(allCategories)
+  //     })
+  //   }
+  // })
   const askForApiAccess = (apiWithAuth: IApiWithAuthorization, teams: string[]) =>
     Services.askForApiAccess(teams, apiWithAuth.api._id)
       .then(() => {
@@ -315,7 +315,7 @@ export const ApiList = (props: TApiList) => {
           placeholder={translate('apiList.tag.search')}
           aria-label={translate('apiList.tag.search')}
           isClearable={true}
-          options={dataTags.data ? [...dataTags.data] : []}
+          options={arrayStringToTOps(dataRequest.data?.tags ?? [])}
           onChange={(e: SingleValue<TOption>) => {
             setSelectedTag(e || undefined);
             setPage(0)
@@ -332,7 +332,7 @@ export const ApiList = (props: TApiList) => {
           placeholder={translate('apiList.category.search')}
           aria-label={translate('apiList.category.search')}
           isClearable={true}
-          options={dataCategories.data ? [...dataCategories.data] : []}
+          options={arrayStringToTOps(dataRequest.data?.categories ?? [])}
           onChange={(e: SingleValue<TOption>) => {
 
             setSelectedCategory(e || undefined);
@@ -402,7 +402,7 @@ export const ApiList = (props: TApiList) => {
             </>
           }
         </div>
-        {!props.groupView && (
+        {/* {!props.groupView && (
           <div className="d-flex col-12 col-sm-3 text-muted flex-column px-3 mt-2 mt-sm-0">
             {!props.teamId && !connectedUser.isGuest && (
               <YourTeams teams={props.myTeams || []} redirectToTeam={redirectToTeam} />
@@ -428,7 +428,7 @@ export const ApiList = (props: TApiList) => {
               />
             )}
           </div>
-        )}
+        )} */}
       </div>
     </section>
   );

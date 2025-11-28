@@ -91,10 +91,13 @@ export interface IApiExtended extends IApi {
   authorizations: Array<{ team: string; authorized: boolean; pending: boolean }>;
 }
 
-export interface IApiAuthoWithCount {
+export type IApiAuthoWithCount = {
   apis: Array<IApiWithAuthorization>;
   producers: Array<ITeamSimple>;
+  tags: Array<string>;
+  categories: Array<string>;
   total: number;
+  totalFilterd: number;
 }
 
 export interface ITesting {
