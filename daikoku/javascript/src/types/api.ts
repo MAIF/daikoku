@@ -93,9 +93,9 @@ export interface IApiExtended extends IApi {
 
 export type IApiAuthoWithCount = {
   apis: Array<IApiWithAuthorization>;
-  producers: Array<ITeamSimple>;
-  tags: Array<string>;
-  categories: Array<string>;
+  producers: Array<{team: ITeamSimple, total: number}>;
+  tags: Array<{value: string, total: number}>;
+  categories: Array<{value: string, total: number}>;
   total: number;
   totalFiltered: number;
 }

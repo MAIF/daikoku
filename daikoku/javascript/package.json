@@ -64,7 +64,8 @@
     "sonner": "^2.0.6",
     "swagger-ui-dist": "5.27.0",
     "util": "^0.12.5",
-    "xstate": "^5.20.1"
+    "xstate": "^5.20.1",
+    "yaml": "^2.8.2"
   },
   "devDependencies": {
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",

@@ -6,6 +6,7 @@ import Plus from 'react-feather/dist/icons/plus'
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import Select, { components, MultiValue, OptionProps, SingleValue, ValueContainerProps } from "react-select"
 import { toast } from "sonner"
+import classNames from "classnames"
 
 import { I18nContext, ModalContext } from "../../../contexts"
 import { GlobalContext } from "../../../contexts/globalContext"
@@ -14,11 +15,11 @@ import { IApiAuthoWithCount, IApiWithAuthorization, ITeamSimple, TOption, TOptio
 import { isError } from "../../../types/api"
 import { FeedbackButton } from "../../utils/FeedbackButton"
 import { Spinner } from "../../utils/Spinner"
+import { Option } from "../../utils"
 import { arrayStringToTOps } from "../../utils/function"
 import { api as API, CanIDoAction, manage } from "../../utils/permissions"
 import { ApiFormRightPanel } from "../../utils/sidebar/panels/AddPanel"
 import StarsButton from "../api/StarsButton"
-import classNames from "classnames"
 
 //--- MARK: Types
 type Option = {
@@ -80,7 +81,7 @@ export const ApiList = (props: ApiListProps) => {
   const [selectedCategory, setSelectedCategory] = useState<TOption | undefined>(undefined);
 
   const [researchTag, setResearchTag] = useState("");
-  const [tags, setTags] = useState<TOptions>([]);
+  const [tags, setTags] = useState<Array<string>>([]);
 
   const defaultColumnFilters = [];
   const [searchParams] = useSearchParams();
@@ -137,7 +138,8 @@ export const ApiList = (props: ApiListProps) => {
         })
         .then(({ visibleApis }) => {
           setApisWithAuth(visibleApis.apis)
-          setProducers(visibleApis.producers.map(p => ({ label: p.name, value: p._id })))
+          setProducers(visibleApis.producers.map(p => ({ label: p.team.name, value: p.team._id })))
+          setTags(visibleApis.tags.map(p => p.value))
           return visibleApis
         })
     },
@@ -371,14 +373,16 @@ export const ApiList = (props: ApiListProps) => {
     }
   };
 
-  const getTotalForTeam = (team: string) => {
-    // FIXME: get real total by team
-    // const total = totalByTeams?.find(total => total.team === team)?.total;
-    const total = Math.abs(Math.random() * 10)
-    if (!total) {
-      return undefined;
-    }
-    return total
+  const getTotalForTeam = (teamId: string) => {
+    return Option(dataRequest.data?.pages[0].producers.find(t => t.team._id === teamId))
+      .map(team => team.total)
+      .getOrNull()
+  }
+
+  const getTotalForTags = (tag: string) => {
+    return Option(dataRequest.data?.pages[0].tags.find(t => t.value === tag))
+      .map(tag => tag.total)
+      .getOrNull()
   }
 
 
@@ -462,10 +466,9 @@ export const ApiList = (props: ApiListProps) => {
                     }))
                 case f.id === 'tag':
                   return ((f.value as Array<string>)
-                    .map(value => {
-                      const tag = (dataRequest.data?.pages[0].tags ?? []).find(t => t === value);
+                    .map(tag => {
                       return (
-                        <button className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, value)}>
+                        <button className='selected-filter d-flex gap-2 align-items-center' onClick={() => clearFilter(f.id, tag)}>
                           {tag}
                           <i className='fas fa-xmark' />
                         </button>
@@ -479,7 +482,6 @@ export const ApiList = (props: ApiListProps) => {
   }
 
 
-  console.debug(dataRequest.data?.pages[0])
   //--- MARK: Rendering
   if (myTeamsRequest.isLoading) {
     return <Spinner />
@@ -519,27 +521,27 @@ export const ApiList = (props: ApiListProps) => {
               closeMenuOnSelect={true}
               labelKey={"dashboard.filters.team.label"}
               labelKeyAll={"dashboard.filters.all.team.label"}
-              getCount={getTotalForTeam} //FIXME: with beter request
+              getCount={getTotalForTeam}
               classNamePrefix="daikoku-select"
               className="team__selector filter__select reactSelect col-2"
               styles={menuStyle}
               onChange={data => handleSelectChange(data, 'team')}
-              value={getSelectValue('team', myTeamsRequest.data ?? [], 'name', '_id')} />
+              value={getSelectValue('team', producers, 'name', '_id')} />
 
             <Select
               isMulti //@ts-ignore
               components={{ ValueContainer: GenericValueContainer, Option: CustomOption }}
-              options={arrayStringToTOps(dataRequest.data?.pages[0].tags ?? [])}
+              options={arrayStringToTOps(tags)}
               isLoading={dataRequest.isLoading}
               closeMenuOnSelect={true}
               labelKey={"dashboard.filters.tag.label"}
               labelKeyAll={"dashboard.filters.all.tags.label"}
-              getCount={getTotalForTeam}//FIXME: with tag request
+              getCount={getTotalForTags}
               classNamePrefix="daikoku-select"
               className="tag__selector filter__select reactSelect col-2"
               styles={menuStyle}
               onChange={data => handleSelectChange(data, 'tag')}
-              value={getSelectStringValue('tag', dataRequest.data?.pages[0].tags ?? [])} />
+              value={getSelectStringValue('tag', tags)} />
 
 
             <button
