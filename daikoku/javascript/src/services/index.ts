@@ -1504,11 +1504,20 @@ export const graphql = {
           }
         }
         producers {
-          _id
-          name
+          team {
+            _id
+            name
+          }
+          total
         }
-        tags
-        categories
+        tags {
+          value
+          total
+        }
+        categories {
+          value
+          total
+        }
         total
         totalFiltered
       }

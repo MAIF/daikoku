@@ -756,11 +756,23 @@ case class ApiWithAuthorizations(
   override def asJson: JsValue = json.ApiWithAuthorizationsFormat.writes(this)
 }
 
+case class TeamCount(
+    team: Team,
+    total: Int) extends CanJson[TeamCount] {
+  override def asJson: JsValue = json.TeamCountFormat.writes(this)
+}
+
+case class ValueCount(
+    value: String,
+    total: Int) extends CanJson[TeamCount] {
+  override def asJson: JsValue = json.ValueCountFormat.writes(this)
+}
+
 case class ApiWithCount(
     apis: Seq[ApiWithAuthorizations] = Seq.empty,
-    producers: Seq[Team] = Seq.empty,
-    tags: Set[String] = Set.empty,
-    categories: Set[String] = Set.empty,
+    producers: Seq[TeamCount] = Seq.empty,
+    tags: Seq[ValueCount] = Seq.empty,
+    categories: Seq[ValueCount] = Seq.empty,
     total: Long = 0,
     totalFiltered: Long = 0
 ) extends CanJson[ApiWithCount] {

@@ -419,16 +419,21 @@ object CommonServices {
           |                                is_my_team DESC,
           |                                content ->> 'name'
           |                       limit $$6 offset $$7),
-          |     all_producer_teams as (SELECT DISTINCT t.content
+          |     all_producer_teams as (SELECT DISTINCT t.content, count(1) as total
           |                            FROM visible_apis va
           |                                     JOIN teams t ON t.content ->> '_id' = va.content ->> 'team'
-          |                            WHERE t._deleted IS FALSE),
-          |     all_tags as (SELECT DISTINCT tag
+          |                            WHERE t._deleted IS FALSE
+          |                            GROUP BY t.content ),
+          |     all_tags as (SELECT DISTINCT tag, count(DISTINCT base_apis._id) as total
           |                  FROM visible_apis va,
-          |                       jsonb_array_elements_text(va.content -> 'tags') as tag),
-          |     all_categoris as (SELECT DISTINCT category
+          |                       jsonb_array_elements_text(va.content -> 'tags') as tag
+          |                           left outer join base_apis on base_apis.content -> 'tags' ? tag
+          |                  group by tag),
+          |     all_categories as (SELECT DISTINCT category, count(DISTINCT base_apis._id) as total
           |                       FROM visible_apis va,
-          |                            jsonb_array_elements_text(va.content -> 'categories') as category),
+          |                            jsonb_array_elements_text(va.content -> 'categories') as category
+          |                                left outer join base_apis on base_apis.content -> 'categories' ? category
+          |                       group by category),
           |     authorizations_by_api as (select apis._id                as api_id,
           |                                      teams.content ->> '_id' as team_id,
           |                                      (
@@ -493,12 +498,13 @@ object CommonServices {
           |                        )
           |                 FROM apis_with_authorizations),
           |                '[]'::jsonb),
-          |               'producers', coalesce((SELECT jsonb_agg(producers.content) FROM all_producer_teams producers), '[]'::jsonb),
+          |               'producers',
+          |                coalesce((SELECT jsonb_agg(jsonb_build_object('team', producers.content, 'total', total)) FROM all_producer_teams producers), '[]'::jsonb),
           |               'tags', coalesce(
-          |                       (SELECT jsonb_agg(tag ORDER BY lower(tag)) FROM all_tags),
+          |                       (SELECT jsonb_agg(jsonb_build_object('value', tag, 'total', total) ORDER BY lower(tag)) FROM all_tags),
           |                       '[]'::jsonb),
           |               'categories', coalesce(
-          |                       (SELECT jsonb_agg(category ORDER BY lower(category)) FROM all_categoris),
+          |                       (SELECT jsonb_agg(jsonb_build_object('value', category, 'total', total) ORDER BY lower(category)) FROM all_categories),
           |                       '[]'::jsonb),
           |               'total', (SELECT total_count FROM total_apis),
           |               'totalFiltered', coalesce((SELECT max(total_filtered) FROM apis_with_authorizations), 0)

@@ -62,7 +62,7 @@ const GenericValueContainer = (
 
 export const ApiList = (props: ApiListProps) => {
 
-  const pageSize = 10;
+  const pageSize = 3;
   const [selectAll, setSelectAll] = useState(false);
   const [limit, setLimit] = useState(pageSize);
   const [pagination, setPagination] = useState<PaginationState>({

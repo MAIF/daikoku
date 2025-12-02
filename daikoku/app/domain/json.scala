@@ -4692,20 +4692,52 @@ object json {
       )
   }
 
+  val TeamCountFormat = new Format[TeamCount] {
+    override def reads(json: JsValue): JsResult[TeamCount] = Try {
+      TeamCount(
+        team = (json \ "team").as(TeamFormat),
+        total = (json \ "total").as[Int]
+      )
+    } match {
+      case Failure(e) =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+      case Success(value) => JsSuccess(value)
+    }
+
+    override def writes(o: TeamCount): JsValue = Json.obj(
+      "team" -> o.team.asJson,
+      "total" -> o.total
+    )
+  }
+
+  val ValueCountFormat = new Format[ValueCount] {
+    override def reads(json: JsValue): JsResult[ValueCount] = Try {
+      ValueCount(
+        value = (json \ "value").as[String],
+        total = (json \ "total").as[Int]
+      )
+    } match {
+      case Failure(e) =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+      case Success(value) => JsSuccess(value)
+    }
+
+    override def writes(o: ValueCount): JsValue = Json.obj(
+      "value" -> o.value,
+      "total" -> o.total
+    )
+  }
+
   val ApiWithCountFormat = new Format[ApiWithCount] {
     override def reads(json: JsValue): JsResult[ApiWithCount] =
       Try {
         ApiWithCount(
           apis = (json \ "apis").as(SeqApiWithAuthorizationsFormat),
-          producers = (json \ "producers").as(SeqTeamFormat),
-          tags = (json \ "tags")
-            .asOpt[Seq[String]]
-            .map(_.toSet)
-            .getOrElse(Set.empty),
-          categories = (json \ "categories")
-            .asOpt[Seq[String]]
-            .map(_.toSet)
-            .getOrElse(Set.empty),
+          producers = (json \ "producers").as(SeqTeamCountFormat),
+          tags = (json \ "tags").as(SeqValueCountFormat),
+          categories = (json \ "categories").as(SeqValueCountFormat),
           total = (json \ "total").as[Long],
           totalFiltered = (json \ "totalFiltered").as[Long]
         )
@@ -4719,14 +4751,22 @@ object json {
     override def writes(o: ApiWithCount): JsValue =
       Json.obj(
         "apis" -> SeqApiWithAuthorizationsFormat.writes(o.apis),
-        "producers" -> SeqTeamFormat.writes(o.producers),
-        "tags" -> JsArray(o.tags.map(JsString.apply).toSeq),
-        "categories" -> JsArray(o.categories.map(JsString.apply).toSeq),
+        "producers" -> SeqTeamCountFormat.writes(o.producers),
+        "tags" -> SeqValueCountFormat.writes(o.tags),
+        "categories" -> SeqValueCountFormat.writes(o.categories),
         "total" -> o.total,
         "totalFiltered" -> o.totalFiltered
       )
   }
 
+  val SeqTeamCountFormat = Format(
+    Reads.seq(TeamCountFormat),
+    Writes.seq(TeamCountFormat),
+  )
+  val SeqValueCountFormat = Format(
+    Reads.seq(ValueCountFormat),
+    Writes.seq(ValueCountFormat),
+  )
   val SeqAuthorizationApiFormat = Format(
     Reads.seq(AuthorizationApiFormat),
     Writes.seq(AuthorizationApiFormat),
