@@ -110,14 +110,11 @@ class MessageActor(implicit
             .filter(_.id == message.chat)
             .filter(u => !connected.exists(s => s.userId == u.id))
             .map(_.email)
-      baseLink = env.config.exposedPort match {
-        case 80    => s"http://${tenant.domain}/"
-        case 443   => s"https://${tenant.domain}/"
-        case value => s"http://${tenant.domain}:$value/"
-      }
-      link =
-        if (message.sender == message.chat) s"$baseLink/settings/messages"
-        else baseLink
+      path =
+        if (message.sender == message.chat) "/settings/messages"
+        else "/"
+
+      link = env.getDaikokuUrl(tenant, path)
 
       title <- translator.translate(
         "mail.new.message.title",
@@ -133,7 +130,8 @@ class MessageActor(implicit
           "body" -> JsString(message.message),
           "user_data" -> sender.get.asSimpleJson,
           "message_data" -> message.asJson,
-          "tenant_data" -> tenant.asJson
+          "tenant_data" -> tenant.asJson,
+          "link" -> JsString(link)
         )
       )
       _ <- Future.sequence(

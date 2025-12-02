@@ -157,17 +157,9 @@ class TenantController(
                 }
                 fu.map { _ =>
                   val path = ctx.request.getQueryString("path").getOrElse("")
+                  val url = env.getDaikokuUrl(tenant, path)
 
-                  {
-                    env.config.exposedPort match {
-                      case 80  => Redirect(s"http://${tenant.domain}/$path")
-                      case 443 => Redirect(s"https://${tenant.domain}/$path")
-                      case _ =>
-                        Redirect(
-                          s"http://${tenant.domain}:${env.config.exposedPort}/$path"
-                        )
-                    }
-                  }
+                  Redirect(url)
                 }
               }
           case None =>
