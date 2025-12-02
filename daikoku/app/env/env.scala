@@ -718,10 +718,12 @@ class DaikokuEnv(
   def getDaikokuUrl(tenant: Tenant, path: String): String = {
     (config.sslEnabled, config.exposedPort) match {
       case (Some(true), 443) => s"https://${tenant.domain}$path"
-      case (Some(true), exposedPort) => s"https://${tenant.domain}:$exposedPort$path"
+      case (Some(true), exposedPort) =>
+        s"https://${tenant.domain}:$exposedPort$path"
       case (Some(false), 80) => s"http://${tenant.domain}$path"
-      case (Some(false), exposedPort) => s"http://${tenant.domain}:$exposedPort$path"
-      case (_, 80) => s"http://${tenant.domain}$path"
+      case (Some(false), exposedPort) =>
+        s"http://${tenant.domain}:$exposedPort$path"
+      case (_, 80)  => s"http://${tenant.domain}$path"
       case (_, 443) => s"https://${tenant.domain}$path"
       case (_, exposedPort) if exposedPort == config.securePort =>
         s"https://${tenant.domain}:$exposedPort$path"
