@@ -832,3 +832,9 @@ We'd like to thank all the contributors who worked on this release!
 - can't remove CMS apikey [#906](https://github.com/MAIF/daikoku/issues/906)
 - error with logout url for oauth2 provider [#905](https://github.com/MAIF/daikoku/issues/905)
 
+## [v18.4.6] - 2025-12-02
+
+## :beetle: Bug Fixes
+
+- HTTPS error with graphql endpoint when daikoku is exposed on https [#926](https://github.com/MAIF/daikoku/issues/926)
+
