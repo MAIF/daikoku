@@ -193,10 +193,16 @@ export const ApiList = (props: ApiListProps) => {
       meta: { className: "api-cell" },
       cell: (info) => {
         const api = info.row.original.api;
+        const authorizations = info.row.original.authorizations;
 
-        return <Link to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`}>
-          {api.name}
-        </Link>
+        if (api.visibility === 'Public' || authorizations.some((a) => a.authorized)) {
+          return <Link to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`}>
+            {api.name}
+          </Link>
+        } else {
+          return <p>{api.name}</p>
+        }
+
       }
     }),
     columnHelper.accessor('api.tags', {
@@ -617,11 +623,10 @@ export const ApiList = (props: ApiListProps) => {
               }}>{translate('API souscrite seulement')}
             </button>
 
-            {/* TODO: display button only of filter active */}
-            <button className='btn btn-outline-secondary' onClick={() => setColumnFilters(defaultColumnFilters)}>
+            {!!columnFilters.length && <button className='btn btn-outline-secondary' onClick={() => setColumnFilters(defaultColumnFilters)}>
               <i className='fas fa-rotate me-2' />
               {translate('notifications.page.filters.clear.label')}
-            </button>
+            </button>}
           </div>
 
           <div className="">{dataRequest.data?.pages[0].totalFiltered} APIs</div>

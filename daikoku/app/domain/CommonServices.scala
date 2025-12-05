@@ -355,6 +355,7 @@ object CommonServices {
       val subscribeOnly =
         getFiltervalue[Boolean](filter, "subscribedOnly")
 
+AppLogger.warn(ctx.user.id.value)
 
       /*
 * $1 : userID
@@ -373,12 +374,14 @@ object CommonServices {
           |WITH me as (select content
           |            from users
           |            where _id = $$1),
-          |     my_teams as (SELECT *
+          |     my_teams as (SELECT teams.*
           |                  FROM teams
+          |                           LEFT JOIN me on true
           |                  WHERE teams._deleted IS FALSE
-          |                    AND teams.content -> 'users' @>
+          |                    AND ((me.content ->> 'isDaikokuAdmin')::bool is true
+          |                    OR teams.content -> 'users' @>
           |                        (SELECT jsonb_build_array(jsonb_build_object('userId', me.content ->> '_id'))
-          |                         FROM me)),
+          |                         FROM me))),
           |     base_apis as (select a.*
           |                   FROM apis a
           |                            LEFT JOIN me on true
@@ -455,11 +458,13 @@ object CommonServices {
           |    filtered_demands as ( SELECT apis._id as api, jsonb_agg(d.content) as demands
           |                       FROM subscription_demands d
           |                       INNER JOIN filtered_apis apis ON d.content ->> 'api' = apis._id
-          |                       WHERE d.content ->> 'state' = 'inProgress'
+          |                       WHERE d.content ->> 'state' = 'inProgress' AND
+          |                            d.content ->> 'team' = ANY (SELECT t.content ->> '_id' FROM my_teams t)
           |                       GROUP BY apis._id),
           |    filtered_subscriptions as ( SELECT apis._id as api, jsonb_agg(sub.content) as subscriptions
           |                       FROM api_subscriptions sub
           |                       INNER JOIN filtered_apis apis ON apis._id = sub.content ->> 'api'
+          |                       WHERE sub.content ->> 'team' = ANY (SELECT t.content ->> '_id' FROM my_teams t)
           |                       GROUP BY apis._id),
           |    authorizations_by_api as (select apis._id                as api_id,
           |                                      teams.content ->> '_id' as team_id,
