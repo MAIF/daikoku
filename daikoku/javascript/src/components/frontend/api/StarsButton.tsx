@@ -22,9 +22,9 @@ const StarsButton = ({ toggleStar, starred, classnames }: StarButtonProps) => {
         aria-label={translate(star ? "api.home.remove.api.to.favorite" : "api.home.add.api.to.favorite")}
         onClick={() => toggleStar().then(() => setStar(!star))}
       >
-        <i className={classNames("fas", {
-          'fa-thumbtack-slash': star,
-          'fa-thumbtack': !star,
+        <i className={classNames('fa-star', {
+          'fas': star,
+          'far': !star,
         })} />
       </button>
     )

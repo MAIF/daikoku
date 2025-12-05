@@ -1699,5 +1699,18 @@
         "s": "Team",
         "p": "Teams"
     },
-    "dashboard.filters.all.team.label": "All teams"
+    "dashboard.filters.all.team.label": "All teams",
+    "dashboard.api.list.actives.subscription.tag.label": {
+        "s": "%s active key",
+        "p": "%s clés active keys"
+    },
+    "dashboard.api.list.expires.subscription.tag.label": {
+        "s": "%s will expire soon",
+        "p": "%s will expire soon"
+    },
+    "dashboard.api.list.pending.subscription.tag.label": {
+        "s": "%s pending request",
+        "p": "%s pending requests"
+    },
+    "dashboard.create.api.button.label": "Create new API"
 }

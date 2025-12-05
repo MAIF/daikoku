@@ -1387,7 +1387,7 @@
   "subscription.for": "Souscription à",
   "subscription.created.at": "créée le %s",
   "subscription.extra.resources.label": "Ressources accessibles supplémentaires",
-  "subscription.valid.until": "valid until %s",
+  "subscription.valid.until": "valide jusqu'au %s",
   "subscription.nota.part.1": "Consultez la documentation",
   "subscription.nota.part.2": "ou explorez",
   "subscription.nota.link.api": "pour utiliser l'API",
@@ -1718,5 +1718,18 @@
     "s": "Équipe",
     "p": "Équipes"
   },
-  "dashboard.filters.all.team.label": "Toutes les équipes"
+  "dashboard.filters.all.team.label": "Toutes les équipes",
+  "dashboard.api.list.actives.subscription.tag.label": {
+    "s": "%s clé active",
+    "p": "%s clés actives"
+  },
+  "dashboard.api.list.expires.subscription.tag.label": {
+    "s": "%s expire bientôt",
+    "p": "%s expirent bientôt"
+  },
+  "dashboard.api.list.pending.subscription.tag.label": {
+    "s": "%s demande en attente",
+    "p": "%s demandes en attente"
+  },
+  "dashboard.create.api.button.label": "Créer une API"
 }

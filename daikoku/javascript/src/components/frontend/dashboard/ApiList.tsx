@@ -234,18 +234,23 @@ export const ApiList = (props: ApiListProps) => {
       id: 'Status',
       meta: { className: "status-cell" },
       cell: (info) => {
+        const api = info.row.original.api
         const activeCount = info.row.original.subscriptions.length
-        const staleCount = info.row.original.subscriptionDemands.length
+        const pendingCount = info.row.original.subscriptionDemands.length
         const expireCount = info.row.original.subscriptions
           .filter(s => s.validUntil)
           .filter(s => isBefore(new Date(s.validUntil!), addMonths(new Date(), 1))).length
 
-        console.debug(info.row.original.subscriptions)
-
         return <div className="d-flex gap-1">
-          {!!activeCount && <span className="badge badge-custom-success">{activeCount} clés actives</span>}
-          {!!expireCount && <span className="badge badge-custom-danger">{expireCount} expire bientôt</span>}
-          {!!staleCount && <span className="badge badge-custom-warning">{staleCount} demande en attente</span>}
+          {!!activeCount && <span className="badge badge-custom-success" onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+            {translate({ key: 'dashboard.api.list.actives.subscription.tag.label', replacements: [activeCount.toString()], plural: activeCount > 1 })}
+          </span>}
+          {!!expireCount && <span className="badge badge-custom-danger" onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+            {translate({ key: 'dashboard.api.list.expires.subscription.tag.label', replacements: [expireCount.toString()], plural: expireCount > 1 })}
+          </span>}
+          {!!pendingCount && <span className="badge badge-custom-warning">
+            {translate({ key: 'dashboard.api.list.pending.subscription.tag.label', replacements: [pendingCount.toString()], plural: pendingCount > 1 })}
+          </span>}
         </div>
 
       }
@@ -309,7 +314,7 @@ export const ApiList = (props: ApiListProps) => {
               classnames="notification-link-color"
               toggleStar={() => Services.toggleStar(api._id)}
             />
-            <button
+            {/* <button
               type="button"
               data-bs-toggle="dropdown"
               aria-expanded="false"
@@ -321,15 +326,15 @@ export const ApiList = (props: ApiListProps) => {
                 style={{ fontSize: '20px' }}
 
               />
-            </button>
-            <div className="dropdown-menu" aria-labelledby="dropdownMenuButton" style={{ zIndex: 1 }}>
+            </button> */}
+            {/* <div className="dropdown-menu" aria-labelledby="dropdownMenuButton" style={{ zIndex: 1 }}>
               <span
                 className="dropdown-item cursor-pointer"
                 onClick={() => console.debug('test')}
               >
                 {translate("un menu qui fait quelque chose")}
               </span>
-            </div>
+            </div> */}
           </div>
         )
       },
@@ -415,7 +420,7 @@ export const ApiList = (props: ApiListProps) => {
               })
               .then((maybeApi) => {
                 if (!isError(maybeApi)) {
-                  navigate(`${team._humanReadableId}/${maybeApi._humanReadableId}/${maybeApi.currentVersion}/description`)
+                  navigate(`/${team._humanReadableId}/${maybeApi._humanReadableId}/${maybeApi.currentVersion}/description`)
                 }
               })
             } />
@@ -540,6 +545,8 @@ export const ApiList = (props: ApiListProps) => {
   } else if (myTeamsRequest.data && !isError(myTeamsRequest.data)) {
 
     const subscribedOnly = !!columnFilters.find(f => f.id === 'subscribedOnly')?.value
+    const canCreateApi = !tenant.creationSecurity || myTeamsRequest.data.some(t => t.apisCreationPermission)
+
     return (
       <div className="col-12 api_list_container">
         <div className='d-flex flex-row align-items-center justify-content-between'>
@@ -548,7 +555,12 @@ export const ApiList = (props: ApiListProps) => {
               Liste des APIs
             </h2>
           </div>
-          <button type="button" className='btn btn-outline-info' onClick={() => createApi()}><Plus /> créer un API</button>
+          {canCreateApi && (
+            <button type="button" className='btn btn-outline-info d-flex align-items-center gap-2' onClick={() => createApi()}>
+              <Plus />
+              <p className="m-0">{translate('dashboard.create.api.button.label')}</p>
+            </button>
+          )}
         </div>
         <div className="filter-container mt-3 d-flex justify-content-between">
           <div className="d-flex align-items-center gap-2 flex-grow-1">
