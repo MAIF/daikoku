@@ -434,7 +434,16 @@ object CommonServices {
           |                            jsonb_array_elements_text(va.content -> 'categories') as category
           |                                left outer join base_apis on base_apis.content -> 'categories' ? category
           |                       group by category),
-          |     authorizations_by_api as (select apis._id                as api_id,
+          |    filtered_demands as ( SELECT apis._id as api, jsonb_agg(d.content) as demands
+          |                       FROM subscription_demands d
+          |                       INNER JOIN filtered_apis apis ON d.content ->> 'api' = apis._id
+          |                       WHERE d.content ->> 'state' = 'inProgress'
+          |                       GROUP BY apis._id),
+          |    filtered_subscriptions as ( SELECT apis._id as api, jsonb_agg(sub.content) as subscriptions
+          |                       FROM api_subscriptions sub
+          |                       INNER JOIN filtered_apis apis ON apis._id = sub.content ->> 'api'
+          |                       GROUP BY apis._id),
+          |    authorizations_by_api as (select apis._id                as api_id,
           |                                      teams.content ->> '_id' as team_id,
           |                                      (
           |                                          (apis.content -> 'authorizedTeams' @>
@@ -477,11 +486,15 @@ object CommonServices {
           |                                                                      ) FILTER (WHERE aba.team_id IS NOT NULL),
           |                                                             '[]'::jsonb
           |                                                  )
-          |                                             END      as authorizations
+          |                                             END      as authorizations,
+          |                                      coalesce(fd.demands, '[]'::jsonb) as demands,
+          |                                      coalesce(fs.subscriptions, '[]'::jsonb) as subscriptions
           |                                  from filtered_apis apis
           |                                           left join authorizations_by_api aba on aba.api_id = apis._id
           |                                           left join usage_plans on apis.content -> 'possibleUsagePlans' ? usage_plans._id::text
-          |                                  group by apis._id, apis.content, apis.total_filtered, apis.is_starred, apis.is_my_team
+          |                                           left join filtered_subscriptions fs on fs.api = apis._id
+          |                                           left join filtered_demands fd on fd.api = apis._id
+          |                                  group by apis._id, apis.content, apis.total_filtered, apis.is_starred, apis.is_my_team, fd.demands, fs.subscriptions
           |                                  order by apis.is_starred DESC,
           |                                           apis.is_my_team DESC,
           |                                           apis.content ->> 'name')
@@ -493,7 +506,9 @@ object CommonServices {
           |                                jsonb_build_object(
           |                                        'api', api_content,
           |                                        'plans', coalesce(plans, '[]'::jsonb),
-          |                                        'authorizations', authorizations
+          |                                        'authorizations', authorizations,
+          |                                        'subscriptionDemands', demands,
+          |                                        'subscriptions', subscriptions
           |                                )
           |                        )
           |                 FROM apis_with_authorizations),

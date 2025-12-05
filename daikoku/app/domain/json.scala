@@ -4675,7 +4675,9 @@ object json {
         ApiWithAuthorizations(
           api = (json \ "api").as(ApiFormat),
           plans = (json \ "plans").as(SeqUsagePlanFormat),
-          authorizations = (json \ "authorizations").as(SeqAuthorizationApiFormat)
+          authorizations = (json \ "authorizations").as(SeqAuthorizationApiFormat),
+          subscriptionDemands = (json \ "subscriptionDemands").as(SeqSubscriptionDemandFormat),
+          subscriptions = (json \ "subscriptions").as(SeqApiSubscriptionFormat),
         )
       } match {
         case Failure(e) =>
@@ -4688,7 +4690,9 @@ object json {
       Json.obj(
         "api" -> o.api.asJson,
         "plans" -> SeqUsagePlanFormat.writes(o.plans),
-        "authorizations" -> SeqAuthorizationApiFormat.writes(o.authorizations)
+        "authorizations" -> SeqAuthorizationApiFormat.writes(o.authorizations),
+        "subscriptionDemands" -> SeqSubscriptionDemandFormat.writes(o.subscriptionDemands),
+        "subscriptions" -> SeqApiSubscriptionFormat.writes(o.subscriptions),
       )
   }
 
@@ -4807,6 +4811,11 @@ object json {
     Format(
       Reads.seq(SubscriptionDemandStepFormat),
       Writes.seq(SubscriptionDemandStepFormat)
+    )
+  val SeqSubscriptionDemandFormat =
+    Format(
+      Reads.seq(SubscriptionDemandFormat),
+      Writes.seq(SubscriptionDemandFormat)
     )
   val SeqTeamAuthorizedEntitiesFormat =
     Format(

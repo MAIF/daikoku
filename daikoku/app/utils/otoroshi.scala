@@ -413,13 +413,6 @@ class OtoroshiClient(env: Env) {
       otoroshiSettings: OtoroshiSettings,
       tenant: Tenant
   ): EitherT[Future, JsArray, JsArray] = {
-    AppLogger.warn(
-      Json.stringify(
-        JsArray(
-          subscriptions.map(_.apiKey.clientId).map(JsString)
-        )
-      )
-    )
     otoroshiSettings.elasticConfig match {
       case Some(config) =>
         new ElasticReadsAnalytics(config, env)

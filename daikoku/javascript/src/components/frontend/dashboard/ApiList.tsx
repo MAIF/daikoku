@@ -1,24 +1,26 @@
 import { useInfiniteQuery, useQuery, useQueryClient } from "@tanstack/react-query"
 import { ColumnFiltersState, createColumnHelper, flexRender, getCoreRowModel, getSortedRowModel, PaginationState, useReactTable } from "@tanstack/react-table"
+import classNames from "classnames"
+import { addMonths, isBefore } from 'date-fns'
 import debounce from "lodash/debounce"
 import { ChangeEvent, useContext, useMemo, useState } from "react"
 import Plus from 'react-feather/dist/icons/plus'
+import Unlock from 'react-feather/dist/icons/unlock'
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
-import Select, { components, MultiValue, OptionProps, SingleValue, ValueContainerProps } from "react-select"
+import Select, { components, MultiValue, OptionProps, ValueContainerProps } from "react-select"
 import { toast } from "sonner"
-import classNames from "classnames"
 
 import { I18nContext, ModalContext } from "../../../contexts"
 import { GlobalContext } from "../../../contexts/globalContext"
 import * as Services from '../../../services'
-import { IApiAuthoWithCount, IApiWithAuthorization, ITeamSimple, TOption, TOptions } from "../../../types"
+import { IApiAuthoWithCount, IApiWithAuthorization, ITeamSimple, TOption } from "../../../types"
 import { isError } from "../../../types/api"
+import { ActionWithTeamSelector, Option } from "../../utils"
 import { FeedbackButton } from "../../utils/FeedbackButton"
-import { Spinner } from "../../utils/Spinner"
-import { Option } from "../../utils"
 import { arrayStringToTOps } from "../../utils/function"
 import { api as API, CanIDoAction, manage } from "../../utils/permissions"
 import { ApiFormRightPanel } from "../../utils/sidebar/panels/AddPanel"
+import { Spinner } from "../../utils/Spinner"
 import StarsButton from "../api/StarsButton"
 
 //--- MARK: Types
@@ -122,6 +124,16 @@ export const ApiList = (props: ApiListProps) => {
   //     return arrayStringToTOps(allTags)
   //   })
   // })
+
+  const askForApiAccess = (apiWithAuth: IApiWithAuthorization, teams: string[]) =>
+    Services.askForApiAccess(teams, apiWithAuth.api._id)
+      .then(() => {
+        toast.info(translate({ key: 'ask.api.access.info', replacements: [apiWithAuth.api.name] }));
+        if (dataRequest.data) {
+          queryClient.invalidateQueries({ queryKey: ['data'] })
+        }
+      });
+
   const dataRequest = useInfiniteQuery({
     queryKey: ["data",
       limit,
@@ -222,22 +234,19 @@ export const ApiList = (props: ApiListProps) => {
       id: 'Status',
       meta: { className: "status-cell" },
       cell: (info) => {
-        const test = Math.round(Math.random() * 10)
+        const activeCount = info.row.original.subscriptions.length
+        const staleCount = info.row.original.subscriptionDemands.length
+        const expireCount = info.row.original.subscriptions
+          .filter(s => s.validUntil)
+          .filter(s => isBefore(new Date(s.validUntil!), addMonths(new Date(), 1))).length
 
-        if (test < 3) {
-          return <div className="d-flex gap-1">
-            <span className="badge badge-custom-success">2 clés actives</span>
-            <span className="badge badge-custom-danger">1 expire bientôt</span>
-          </div>
-        } else if (test < 7) {
-          return <div className="d-flex gap-1">
-            <span className="badge badge-custom-success">2 clés actives</span>
-          </div>
-        } else {
-          return <div className="d-flex gap-1">
-            <span className="badge badge-custom-warning">1 demande en attente</span>
-          </div>
-        }
+        console.debug(info.row.original.subscriptions)
+
+        return <div className="d-flex gap-1">
+          {!!activeCount && <span className="badge badge-custom-success">{activeCount} clés actives</span>}
+          {!!expireCount && <span className="badge badge-custom-danger">{expireCount} expire bientôt</span>}
+          {!!staleCount && <span className="badge badge-custom-warning">{staleCount} demande en attente</span>}
+        </div>
 
       }
     }),
@@ -247,11 +256,54 @@ export const ApiList = (props: ApiListProps) => {
       meta: { className: "action-cell" },
       cell: (info) => {
         const api = info.row.original.api;
+        const myTeams = !isError(myTeamsRequest.data) && myTeamsRequest.data ? myTeamsRequest.data : []
 
         const starred = connectedUser.starredApis.includes(api._id)
+        const authorizations = info.row.original.authorizations
+        const allTeamsAreAuthorized =
+          api.visibility === 'Public' || (authorizations.length === myTeams.length && authorizations.every((a) => a.authorized));
+        const isPending =
+          authorizations.length === myTeams.length && authorizations.every((a) => a.pending && !a.authorized);
+
+
+        const accessButton = () => {
+          if (
+            !allTeamsAreAuthorized &&
+            !['Private', 'AdminOnly'].includes(api.visibility)
+          ) {
+            return (
+              <ActionWithTeamSelector
+                title={translate("api.access.modal.title")}
+                description={translate({ key: 'api.access.request', replacements: [api.name] })}
+                pendingTeams={authorizations.filter((auth: any) => auth.pending).map((auth: any) => auth.team)}
+                acceptedTeams={authorizations
+                  .filter((auth) => auth.authorized)
+                  .map((auth) => auth.team)}
+                teams={myTeams?.filter((t) => t.type !== 'Admin')}
+                action={(teams) => askForApiAccess(info.row.original, teams)}
+                actionLabel={translate("Ask access to API")}
+                allTeamSelector={true}
+              >
+                {isPending ? (
+
+
+                  <button className="btn btn-sm btn-outline-info">
+                    {translate('Pending request')}
+                  </button>
+                ) : (
+                  <button className="btn btn-sm btn-outline-info">
+                    <i className="far fa-comment-dots me-2" />{translate('Access')}
+                  </button>
+                )}
+              </ActionWithTeamSelector>
+            );
+          }
+          return null;
+        };
 
         return (
           <div className='notification__actions d-flex flex-row gap-1 justify-content-end'>
+            {accessButton()}
             <StarsButton
               starred={starred}
               classnames="notification-link-color"
@@ -262,7 +314,7 @@ export const ApiList = (props: ApiListProps) => {
               data-bs-toggle="dropdown"
               aria-expanded="false"
               className="cursor-pointer notification-link-color"
-              style={{border: 'none', background: 'none'}}
+              style={{ border: 'none', background: 'none' }}
               id="dropdownMenuButton" >
               <i
                 className="fas fa-ellipsis-vertical cursor-pointer"

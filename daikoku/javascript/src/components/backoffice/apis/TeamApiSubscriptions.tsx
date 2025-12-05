@@ -51,7 +51,7 @@ export interface IApiSubscriptionGql extends ISubscriptionCustomization {
     type: string;
   };
   createdAt: string;
-  validUntil: number;
+  validUntil?: number;
   api: IApiGQL;
   customName: string;
   enabled: boolean;

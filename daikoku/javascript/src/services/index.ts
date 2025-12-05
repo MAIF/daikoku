@@ -1502,6 +1502,33 @@ export const graphql = {
             authorized
             pending
           }
+          subscriptionDemands {
+            _id
+            team {
+              _id
+              _humanReadableId
+              name
+            }
+            api {
+              _id
+              _humanReadableId
+              name
+            }
+          }
+          subscriptions {
+            _id
+            validUntil
+            team {
+              _id
+              _humanReadableId
+              name
+            }
+            api {
+              _id
+              _humanReadableId
+              name
+            }
+          }
         }
         producers {
           team {

@@ -1948,6 +1948,22 @@ object SchemaDefinition {
           ListType(AuthorizationApiType),
           resolve = _.value.authorizations
         )
+      ),
+      ReplaceField(
+        "subscriptions",
+        Field(
+          "subscriptions",
+          ListType(ApiSubscriptionType),
+          resolve = _.value.subscriptions
+        )
+      ),
+      ReplaceField(
+        "subscriptionDemands",
+        Field(
+          "subscriptionDemands",
+          ListType(SubscriptionDemandType),
+          resolve = _.value.subscriptionDemands
+        )
       )
     )
     lazy val ApiWithCountType = deriveObjectType[
