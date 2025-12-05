@@ -4131,14 +4131,15 @@ object SchemaDefinition {
         ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
         filterTable: JsArray,
         sortingTable: JsArray,
+        groupOpt: Option[String],
         limit: Int,
         offset: Int,
-        groupOpt: Option[String] = None
     ) = {
       CommonServices
         .getVisibleApis(
           filterTable,
           sortingTable,
+          groupOpt,
           limit,
           offset
         )(ctx.ctx._2, env, e)
@@ -4166,14 +4167,15 @@ object SchemaDefinition {
           "visibleApis",
           ApiWithCountType,
           arguments =
-            TEAM_ID :: FILTER_TABLE :: SORTING_TABLE :: LIMIT :: OFFSET :: Nil,
+            FILTER_TABLE :: SORTING_TABLE :: GROUP_ID :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             getVisibleApis(
-              ctx,
-              ctx.arg(FILTER_TABLE),
-              ctx.arg(SORTING_TABLE),
-              ctx.arg(LIMIT),
-              ctx.arg(OFFSET)
+              ctx = ctx,
+              filterTable = ctx.arg(FILTER_TABLE),
+              sortingTable = ctx.arg(SORTING_TABLE),
+              groupOpt = ctx.arg(GROUP_ID),
+              limit = ctx.arg(LIMIT),
+              offset = ctx.arg(OFFSET)
             )
           }
         )

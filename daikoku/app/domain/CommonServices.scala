@@ -335,6 +335,7 @@ object CommonServices {
   def getVisibleApis(
       filter: JsArray = Json.arr(),
       sort: JsArray = Json.arr(),
+      apiGroupId: Option[String] = None,
       limit: Int,
       offset: Int,
   )(implicit
@@ -345,23 +346,26 @@ object CommonServices {
     _UberPublicUserAccess(
       AuditTrailEvent(s"@{user.name} has accessed the list of visible apis")
     )(ctx) {
-
       val teams =
         getFiltervalue[List[String]](filter, "team").map(_.toArray)
       val tags =
         getFiltervalue[List[String]](filter, "tag").map(_.toArray)
       val research =
         getFiltervalue[String](filter, "research")
+      val subscribeOnly =
+        getFiltervalue[Boolean](filter, "subscribedOnly")
 
 
-/*
+      /*
 * $1 : userID
 * $2: tenant
 * $3: research
 * $4: teams
 * $5: tags
-* $6: limit
-* $7: offset
+* $6: subscribedOnly
+* $7: limit
+* $8: offset
+* $$9: apiGroupId
 * */
 //TODO: Get keys and status
       val query =
@@ -391,7 +395,15 @@ object CommonServices {
           |                                        (a.content -> 'authorizedTeams' ?|
           |                                         (SELECT array_agg(t.content ->> '_id') FROM my_teams t)))
           |                                 END) AND
-          |                             (a.content ->> 'isDefault')::boolean = true
+          |                             (a.content ->> 'isDefault')::boolean = true AND
+          |                                CASE
+          |                                    WHEN $$9::text IS NULL THEN true
+          |                                    ELSE a._id = ANY (
+          |                                        SELECT jsonb_array_elements_text(g.content -> 'apis')
+          |                                        FROM apis g
+          |                                        WHERE g._id = $$9::text
+          |                                    )
+          |                                    END
           |                             )),
           |     total_apis as (select count(1) as total_count
           |                    FROM base_apis),
@@ -411,14 +423,20 @@ object CommonServices {
           |                                CASE
           |                                    WHEN array_length($$5::text[], 1) IS NULL THEN true
           |                                    ELSE a.content -> 'tags' ?| $$5::text[]
-          |                                    END
+          |                                    END AND (
+          |                                NOT $$6
+          |                                    OR EXISTS (SELECT 1
+          |                                               FROM api_subscriptions s
+          |                                               WHERE s.content ->> 'api' = a._id
+          |                                                 AND s.content ->> 'team' = ANY (SELECT t.content ->> '_id' FROM my_teams t))
+          |                                )
           |                                )),
           |     filtered_apis as (select *
           |                       from visible_apis
           |                       ORDER BY is_starred DESC,
           |                                is_my_team DESC,
           |                                content ->> 'name'
-          |                       limit $$6 offset $$7),
+          |                       limit $$7 offset $$8),
           |     all_producer_teams as (SELECT DISTINCT t.content, count(1) as total
           |                            FROM visible_apis va
           |                                     JOIN teams t ON t.content ->> '_id' = va.content ->> 'team'
@@ -539,8 +557,10 @@ object CommonServices {
               research.orNull,
               teams.orNull,
               tags.orNull,
+              java.lang.Boolean.valueOf(subscribeOnly.getOrElse(false)),
               java.lang.Integer.valueOf(limit),
-              java.lang.Integer.valueOf(offset)
+              java.lang.Integer.valueOf(offset),
+              apiGroupId.orNull
             )
           )
       } yield {
