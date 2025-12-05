@@ -355,8 +355,6 @@ object CommonServices {
       val subscribeOnly =
         getFiltervalue[Boolean](filter, "subscribedOnly")
 
-AppLogger.warn(ctx.user.id.value)
-
       /*
 * $1 : userID
 * $2: tenant

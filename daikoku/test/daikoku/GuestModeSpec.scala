@@ -9,6 +9,9 @@ import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsArray, JsObject, Json}
 
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
+
 class GuestModeSpec()
     extends PlaySpec
     with DaikokuSpecHelper
@@ -92,6 +95,7 @@ class GuestModeSpec()
     }
 
     "get visible apis" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
       val publicTenant = tenant.copy(isPrivate = false)
       val publicApi = defaultApi.api.copy(id = ApiId("public"))
       val privateApi = defaultApi.api.copy(
