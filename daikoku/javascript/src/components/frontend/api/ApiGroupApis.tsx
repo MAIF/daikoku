@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 
 import * as Services from '../../../services';
 import { IApi, IApiWithAuthorization, ITeamFullGql, ITeamSimple } from '../../../types';
-import { ApiList } from '../team';
 import { NavContext } from '../../../contexts/navUtils';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { teamGQLToLegitTeam } from '../../utils/graphqlUtils';
@@ -36,12 +35,13 @@ export const ApiGroupApis = ({
   };
 
   return (
-    <ApiList
-      myTeams={myTeams}
-      teamVisible={true}
-      redirectToApiPage={redirectToApiPage}
-      groupView={true}
-      apiGroupId={apiGroup._id}
-    />
+    <div>TODO</div>
+    // <ApiList
+    //   myTeams={myTeams}
+    //   teamVisible={true}
+    //   redirectToApiPage={redirectToApiPage}
+    //   groupView={true}
+    //   apiGroupId={apiGroup._id}
+    // />
   );
 };

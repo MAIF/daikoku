@@ -1,6 +1,6 @@
 import { PropsWithChildren, useContext, useEffect } from 'react';
 import { Navigate, Outlet } from 'react-router';
-import { BrowserRouter, Route, BrowserRouter as Router, Routes, createBrowserRouter, RouterProvider, ScrollRestoration, useSearchParams } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useSearchParams } from 'react-router-dom';
 
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
 import { Footer, LoginPage, SideBar, TopBar } from '../components/utils';
@@ -8,12 +8,10 @@ import { ModalProvider, NavProvider } from '../contexts';
 
 import {
   ApiHome,
+  AtomicDesign,
   FrontOffice,
   JoinTeam,
   MaybeHomePage,
-  MyHome,
-  TeamHome,
-  AtomicDesign,
   SubscriptionRetrieve
 } from '../components/frontend';
 
@@ -38,18 +36,18 @@ import {
   UserEdit,
   UserList,
 } from '../components/adminbackoffice';
-import { Error, Response } from '../components/utils';
+import { AnonymousReporting } from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
+import { Signup } from '../components/frontend/account/signup';
+import { Dashboard } from '../components/frontend/dashboard/Dashboard';
 import { FastMode } from "../components/frontend/fastMode/FastMode";
+import { Error, Response } from '../components/utils';
+import { RightPanel } from '../components/utils/sidebar/RightPanel';
 import { GlobalContext } from '../contexts/globalContext';
 import { I18nContext } from '../contexts/i18n-context';
 import { MessagesEvents } from '../services/messages';
+import { ITenant } from '../types';
 import { ResetPassword, ResetPasswordEnd, TwoFactorAuthentication } from './DaikokuHomeApp';
-import { AnonymousReporting } from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
-import { RightPanel } from '../components/utils/sidebar/RightPanel';
-import { Signup } from '../components/frontend/account/signup';
-import { ITenant, ITenantFull } from '../types';
-import { Dashboard } from '../components/frontend/dashboard/Dashboard'
 
 const RouteWithFooterLayout = () => (
   <>
@@ -251,15 +249,6 @@ export const DaikokuApp = () => {
                       element={
                         <FrontOfficeRoute>
                           <ApiHome />
-                        </FrontOfficeRoute>
-                      }
-                    />
-
-                    <Route
-                      path="/:teamId"
-                      element={
-                        <FrontOfficeRoute>
-                          <TeamHome />
                         </FrontOfficeRoute>
                       }
                     />
