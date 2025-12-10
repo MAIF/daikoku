@@ -384,6 +384,7 @@ object CommonServices {
           |                   FROM apis a
           |                            LEFT JOIN me on true
           |                   WHERE (
+          |                             a._deleted IS false AND
           |                             a.content ->> '_tenant' = $$2 AND
           |                             (a.content ->> 'state' = 'published' OR
           |                              coalesce((me.content -> 'isDaikokuAdmin')::bool, false) OR
@@ -437,7 +438,7 @@ object CommonServices {
           |                       ORDER BY is_starred DESC,
           |                                is_my_team DESC,
           |                                content ->> 'name'
-          |                       limit $$7 offset $$8),
+          |                       limit CASE WHEN $$7 = -1 THEN null ELSE $$7 END offset $$8),
           |     all_producer_teams as (SELECT DISTINCT t.content, count(1) as total
           |                            FROM visible_apis va
           |                                     JOIN teams t ON t.content ->> '_id' = va.content ->> 'team'

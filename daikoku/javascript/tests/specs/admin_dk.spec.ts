@@ -32,10 +32,11 @@ test.beforeEach(async () => {
 test('[ASOAPI-10396] - Se connecter en étant membre du groupe AD Managers (maif ==> M_GRG_Gateway_API_Interne)', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page)
-  await expect(page.locator('h3').filter({ hasText: 'admin-api-tenant-default' })).toBeVisible();
-  await expect(page.locator('h3').filter({ hasText: 'cms-api-tenant-default' })).toBeVisible();
-  await expect(page.locator('.top__container', { hasText: 'Vos équipes' })
-    .locator('span', { hasText: 'dunder-mifflin-admin-team' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'admin-api-tenant-default' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'cms-api-tenant-default' })).toBeVisible();
+  await page.getByRole('button', { name: 'Taper / pour rechercher' }).click();
+  await page.getByRole('textbox', { name: 'Rechercher une API, équipe,' }).fill('dunder');
+  await expect(page.locator('#portal-root').getByRole('link', { name: 'dunder-mifflin-admin-team' })).toBeVisible();
 });
 
 test('[ASOAPI-10506] - Supprimer définitivement un utilisateur ', async ({ page }) => {

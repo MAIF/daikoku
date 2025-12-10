@@ -1,6 +1,6 @@
 import { expect, Locator, test } from '@playwright/test';
 import { ANDY, DWIGHT, JIM, MICHAEL, PAM } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiPapier, commandeDevPlan, EMAIL_UI, exposedPort, loginAs, logistique, logout, subCommandeDevVendeurs, teamJim, tenant, vendeurs } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiPapier, commandeDevPlan, EMAIL_UI, exposedPort, findAndGoToTeam, loginAs, logistique, logout, subCommandeDevVendeurs, teamJim, tenant, vendeurs } from './utils';
 import { NotifProps, postNewNotif } from './notifications';
 
 
@@ -19,17 +19,15 @@ test.beforeEach(async () => {
 test("[ASOAPI-10364] - Consulter les membres d'une équipe en tant que membre de l'équipe", async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(DWIGHT, page);
-  await expect(page.getByText('Vendeurs')).toBeVisible();
-  await page.getByText('Vendeurs').click();
+  await findAndGoToTeam('Vendeurs', page);
   await page.getByText('Membres').click();
   await expect(page.getByRole('main')).toContainText(JIM.name);
   await expect(page.getByRole('main')).toContainText(DWIGHT.name);
 });
 test("[ASOAPI-10361] - Consulter les membres d'une équipe en tant qu'administrateur de l'équipe", async ({ page }) => {
   await page.goto(ACCUEIL);
-  await loginAs(JIM, page)
-  await expect(page.getByText('Vendeurs')).toBeVisible();
-  await page.getByText('Vendeurs').click();
+  await loginAs(JIM, page);
+  await findAndGoToTeam('Vendeurs', page);
   await page.getByText('Membres').click();
   await expect(page.getByRole('main')).toContainText(JIM.name);
   await expect(page.getByRole('main')).toContainText(DWIGHT.name)
@@ -38,12 +36,11 @@ test("[ASOAPI-10361] - Consulter les membres d'une équipe en tant qu'administra
 test("[ASOAPI-10360] - Ajouter une personne n'ayant pas de compte Daikoku à une équipe", async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(JIM, page)
-  await expect(page.getByText('Vendeurs')).toBeVisible();
-  await page.getByText('Vendeurs').click();
+  await findAndGoToTeam('Vendeurs', page);
   await page.getByText('Membres').click();
   await page.getByRole('button', { name: 'Inviter un collaborateur' }).click();
   await page.getByPlaceholder('Email').fill(PAM.email);
-  await page.getByRole('button', { name: 'Rechercher' }).click(); //todo: warning "Rechercher" is a bad label maybe change in the newer version
+  await page.getByRole('button', { name: 'Rechercher', exact: true }).click(); //todo: warning "Rechercher" is a bad label maybe change in the newer version
   await page.getByText('En attente (1)').click();
   await expect(page.getByRole('main')).toContainText(PAM.name);
   await logout(page);
@@ -61,18 +58,19 @@ test("[ASOAPI-10360] - Ajouter une personne n'ayant pas de compte Daikoku à une
   await page.getByRole('listitem').filter({ hasText: 'Invitation dans une équipe' })
     .getByRole('button', { name: 'Accepter' }).click();
   await page.getByRole('link', { name: 'Liste des APIs' }).click();
-  await expect(page.getByText('Vendeurs')).toBeVisible();
+  await page.getByRole('button', { name: 'Taper / pour rechercher' }).click();
+  await page.getByRole('textbox', { name: 'Rechercher une API, équipe,' }).fill('vendeurs');
+  await expect(page.getByRole('link', { name: 'Vendeurs' })).toBeVisible();
 });
 
 test("[ASOAPI-10363] - Ajouter une personne n'ayant pas de compte Daikoku à une équipe", async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(JIM, page)
-  await expect(page.getByText('Vendeurs')).toBeVisible();
-  await page.getByText('Vendeurs').click();
+  await findAndGoToTeam('Vendeurs', page);
   await page.getByText('Membres').click();
   await page.getByRole('button', { name: 'Inviter un collaborateur' }).click();
   await page.getByPlaceholder('Email').fill(ANDY.email);
-  await page.getByRole('button', { name: 'Rechercher' }).click(); //todo: warning "Rechercher" is a bad label maybe change in the newer version
+  await page.getByRole('button', { name: 'Rechercher', exact: true }).click(); //todo: warning "Rechercher" is a bad label maybe change in the newer version
   await page.getByText('En attente (1)').click();
   await expect(page.getByRole('main')).toContainText(ANDY.name);
   await logout(page);
@@ -90,18 +88,18 @@ test("[ASOAPI-10363] - Ajouter une personne n'ayant pas de compte Daikoku à une
   await page.getByRole('listitem').filter({ hasText: 'Invitation dans une équipe' })
     .getByRole('button', { name: 'Accepter' }).click();
   await page.getByRole('link', { name: 'Liste des APIs' }).click();
-  await expect(page.getByText('Vendeurs')).toBeVisible();
+  await page.getByRole('button', { name: 'Taper / pour rechercher' }).click();
+  await expect(page.getByRole('link', { name: 'Vendeurs' })).toBeVisible();
 });
 
 test("[ASOAPI-10362] - Ajouter une personne ayant un compte Daikoku à une équipe", async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(JIM, page)
-  await expect(page.getByText('Vendeurs')).toBeVisible();
-  await page.getByText('Logistique').click();
+  await findAndGoToTeam('Logistique', page);
   await page.getByText('Membres').click();
   await page.getByRole('button', { name: 'Inviter un collaborateur' }).click();
   await page.getByPlaceholder('Email').fill(DWIGHT.email);
-  await page.getByRole('button', { name: 'Rechercher' }).click(); //todo: warning "Rechercher" is a bad label maybe change in the newer version
+  await page.getByRole('button', { name: 'Rechercher', exact: true }).click(); //todo: warning "Rechercher" is a bad label maybe change in the newer version
   await page.getByText('En attente (1)').click();
   await expect(page.getByRole('main')).toContainText(DWIGHT.name);
   await logout(page);
@@ -119,7 +117,8 @@ test("[ASOAPI-10362] - Ajouter une personne ayant un compte Daikoku à une équi
   await page.getByRole('listitem').filter({ hasText: 'Invitation dans une équipe' })
     .getByRole('button', { name: 'Accepter' }).click();
   await page.getByRole('link', { name: 'Liste des APIs' }).click();
-  await expect(page.getByText('Logistique')).toBeVisible();
+  await await page.getByRole('button', { name: 'Taper / pour rechercher' }).click();
+  await expect(page.getByRole('link', { name: 'Logistique' })).toBeVisible();
 });
 
 test("[ASOAPI-10365/10367] - Modifier les droits d'un utilisateur", async ({ page }) => {
@@ -129,8 +128,7 @@ test("[ASOAPI-10365/10367] - Modifier les droits d'un utilisateur", async ({ pag
 
   await page.goto(ACCUEIL);
   await loginAs(JIM, page);
-  await expect(page.getByText('Vendeurs')).toBeVisible();
-  await page.getByText('Vendeurs').click();
+  await findAndGoToTeam('Vendeurs', page);
   await page.getByText('Membres').click();
   await expect(page.getByRole('main')).toContainText(DWIGHT.name);
 
@@ -175,8 +173,7 @@ test("[ASOAPI-10366] - Supprimer un membre d'une équipe", async ({ page }) => {
 
   await page.goto(ACCUEIL);
   await loginAs(JIM, page);
-  await expect(page.getByText('Vendeurs')).toBeVisible();
-  await page.getByText('Vendeurs').click();
+  await findAndGoToTeam('Vendeurs', page);
   await page.getByText('Membres').click();
   await expect(page.getByRole('main')).toContainText(DWIGHT.name);
 
@@ -388,13 +385,11 @@ test('Se créer un compte avec un process de souscription local', async ({ page 
       }
     ])
   })
-  
+
   //patch micheal scott as local user
 
   //create new account
   await page.goto(ACCUEIL);
-  await page.getByRole('img', { name: 'user menu' }).click();
-  
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Créer un compte' }).click();
   await page.getByRole('textbox', { name: 'Nom' }).fill(PAM.name);
@@ -426,7 +421,7 @@ test('Se créer un compte avec un process de souscription local', async ({ page 
   await page.getByRole('textbox', { name: 'Mot de passe' }).fill('Passw0rd!');
   await page.getByRole('button', { name: 'Se connecter' }).click();
 
-  await page.getByRole('heading', {name: 'Vos équipes'}).waitFor({ state: 'visible' });
+  // await page.getByRole('heading', {name: 'Vos équipes'}).waitFor({ state: 'visible' });
   await page.getByRole('img', { name: 'user menu' }).click();
   await expect(page.locator('#app')).toContainText(PAM.email);
 })

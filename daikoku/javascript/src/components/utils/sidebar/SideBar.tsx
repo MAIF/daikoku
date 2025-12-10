@@ -134,15 +134,26 @@ export const TopBar = () => {
     <div className="navbar-top d-flex flex-row align-items-center px-4">
       <div className="navbar_left d-flex flex-row align-items-center gap-3">
 
-        <Link
-          to={tenant.homePageVisible ? '/' : '/apis'}
-          title={translate("Daikoku.home")}
-          aria-label={translate("Daikoku.home")}
-          className="brand notification-link notification-link-color"
-        >
-          {tenant.name}
-        </Link>
-
+        {tenant.homePageVisible && (
+          <a
+            href='/'
+            title={translate("Daikoku.home")}
+            aria-label={translate("Daikoku.home")}
+            className="brand notification-link notification-link-color"
+          >
+            {tenant.name}
+          </a>
+        )}
+        {!tenant.homePageVisible && (
+          <Link
+            to='/apis'
+            title={translate("Daikoku.home")}
+            aria-label={translate("Daikoku.home")}
+            className="brand notification-link notification-link-color"
+          >
+            {tenant.name}
+          </Link>
+        )}
         <Link
           to="/apis"
           title={translate("API.list")}

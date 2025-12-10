@@ -65,7 +65,7 @@ const GenericValueContainer = (
 
 export const ApiList = (props: ApiListProps) => {
 
-  const pageSize = 3;
+  const pageSize = 15;
   const [selectAll, setSelectAll] = useState(false);
   const [limit, setLimit] = useState(pageSize);
   const [pagination, setPagination] = useState<PaginationState>({
@@ -194,6 +194,7 @@ export const ApiList = (props: ApiListProps) => {
       cell: (info) => {
         const api = info.row.original.api;
         const authorizations = info.row.original.authorizations;
+        const isApiGroup = !!info.row.original.api.apis?.length
 
         if (api.visibility === 'Public' || authorizations.some((a) => a.authorized)) {
           return <Link to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`}>
@@ -202,7 +203,6 @@ export const ApiList = (props: ApiListProps) => {
         } else {
           return <p>{api.name}</p>
         }
-
       }
     }),
     columnHelper.accessor('api.tags', {

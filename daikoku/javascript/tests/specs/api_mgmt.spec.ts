@@ -30,8 +30,8 @@ test.beforeEach(async () => {
 test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(JIM, page);
-  await page.getByRole('button', { name: 'Ouvrir le menu de création' }).click();
-  await page.locator('span').filter({ hasText: 'API' }).first().click();
+
+  await page.getByRole('button', { name: 'Créer une API' }).click();
   await page.locator('#portal-root').getByText('Vendeurs').click();
   await page.getByRole('button', { name: 'Mode expert' }).click();
   await page.getByRole('button', { name: 'Créée' }).click();
@@ -46,13 +46,12 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.locator('h1')).toContainText('API Betterave');
   await page.getByLabel('Accueil Daikoku').click();
-  await expect(page.getByRole('listitem', { name: 'API Betterave' })).toBeAttached();
-  // await expect(page.getByRole('heading', { name: 'API Betterave' })).toBeAttached();
+  await expect(page.getByRole('link', { name: 'API Betterave' })).toBeAttached();
   await logout(page);
-  await expect(page.getByRole('listitem', { name: 'API Betterave' })).toBeHidden();
+  await expect(page.getByRole('link', { name: 'API Betterave' })).toBeHidden();
 
   await loginAs(JIM, page);
-  await page.getByRole('listitem', { name: 'API Betterave' }).getByRole('heading').click();
+  await page.getByRole('link', { name: 'API Betterave' }).click();
   await page.getByRole('button', { name: 'Configurer' }).click();
   await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', {name: 'Configurer'}).click();
   await page.getByRole('button', { name: 'Publiée' }).click();
@@ -67,11 +66,11 @@ await page.getByRole('button', { name: 'Enregistrer' }).click();
 await expect(page.getByRole('listitem', { name: 'dev' })).toBeVisible();
 
   await page.getByLabel('Accueil Daikoku').click();
-  await expect(page.getByRole('listitem', { name: 'API Betterave' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'API Betterave' })).toBeVisible();
   await logout(page);
-  await expect(page.getByRole('listitem', { name: 'API Betterave' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'API Betterave' })).toBeVisible();
   await loginAs(JIM, page);
-  await page.getByRole('listitem', { name: 'API Betterave' }).getByRole('heading').click();
+  await page.getByRole('link', { name: 'API Betterave' }).click();
   //todo: wait for better API lifecycle to test deprected
   // await page.getByRole('button', { name: 'Dépréciée' }).click();
   // await page.getByRole('button', { name: 'Enregistrer' }).click();
@@ -84,15 +83,15 @@ await expect(page.getByRole('listitem', { name: 'dev' })).toBeVisible();
   await page.getByRole('button', { name: 'Bloquée' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await page.getByLabel('Liste des APIs').click();
-  await expect(page.getByRole('listitem', { name: 'API Betterave' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'API Betterave' })).toBeVisible();
   await logout(page);
-  await expect(page.getByRole('listitem', { name: 'API Betterave' })).toBeHidden();
+  await expect(page.getByRole('link', { name: 'API Betterave' })).toBeHidden();
 });
 
 test('[ASOAPI-10597] [ASOAPI-10599] - créer/supprimer une version d\'une API', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
-  await page.getByRole('listitem', { name: 'API papier' }).getByRole('heading').click();
+  await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByRole('button', { name: 'Configurer' }).click();
   await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Créer une nouvelle version' }).click();
   await page.getByPlaceholder('Numéro de version').fill('2.0.0');
@@ -107,9 +106,9 @@ test('[ASOAPI-10597] [ASOAPI-10599] - créer/supprimer une version d\'une API', 
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await page.waitForResponse(r => r.request().url().includes('/apis/api-papier/2.0.0') && r.status() === 200)
   await page.getByLabel('Accueil Daikoku').click();
-  await expect(page.getByRole('listitem', { name: 'API papier' }).locator('.lead'))
-    .toHaveText('Le catalogue de Papier de Dunder Mifflin dans sa deuxieme version')
-  await page.getByRole('heading', { name: 'API papier' }).click();
+  // await expect(page.getByRole('listitem', { name: 'API papier' }).locator('.lead'))
+  //   .toHaveText('Le catalogue de Papier de Dunder Mifflin dans sa deuxieme version')
+  await page.getByRole('link', { name: 'API papier' }).click();
   await expect(page.url()).toContain('api-papier/2.0.0');
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0);
 
@@ -123,8 +122,8 @@ test('[ASOAPI-10597] [ASOAPI-10599] - créer/supprimer une version d\'une API', 
   await page.getByRole('button', { name: 'Confirmation' }).click();
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0);
 
-  await expect(page.getByRole('listitem', { name: 'API papier' })).toBeVisible();
-  await page.getByRole('listitem', { name: 'API papier' }).getByRole('heading').click()
+  await expect(page.getByRole('link', { name: 'API papier' })).toBeVisible();
+  await page.getByRole('link', { name: 'API papier' }).click()
   await expect(page.url()).toContain('1.0.0');
 });
 
@@ -163,7 +162,7 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
 
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
-  await page.getByRole('listitem', { name: 'API papier' }).getByRole('heading').click();
+  await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByRole('button', { name: "Configurer" }).click();
   await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Supprimer' }).click();
   await page.getByLabel('Saisissez API papier pour').click();
@@ -171,9 +170,9 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
   await page.getByRole('button', { name: 'Confirmation' }).click();
   await expect(page.getByRole('listitem', { name: 'API papier' })).toBeHidden();
 
-  await page.getByPlaceholder('Trouver une équipe').click();
-  await page.getByPlaceholder('Trouver une équipe').fill('vendeur');
-  await page.getByText('Vendeurs').click();
+  await page.getByRole('button', { name: 'Taper / pour rechercher' }).click();
+  await page.getByRole('textbox', { name: 'Rechercher une API, équipe,' }).fill('vendeurs');
+  await page.getByRole('link', {name: 'Vendeurs'}).click();
   await page.getByText('Clés d\'API').click();
   await expect(page.getByRole('row', { name: 'API papier' })).toBeHidden();
 
@@ -188,6 +187,7 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
   await expect(MaybeVendeurApiKey.status).toBe(200);
   const vendeurApiKey = await MaybeVendeurApiKey.json()
   await expect(vendeurApiKey.enabled).toBe(true)
+  console.debug(vendeurApiKey.authorizedEntities.length, vendeurApiKey.authorizedEntities)
   await expect(vendeurApiKey.authorizedEntities.length).toBe(1)
   await expect(vendeurApiKey.authorizedEntities).toEqual(
     expect.not.arrayContaining([otoroshiDevPaperRouteId])
@@ -214,15 +214,14 @@ test('[ASOAPI-10692] - désactiver une API', async ({ page }) => {
 test('sécuriser la création d\'API à l\'aide de la securité de tenant associé', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
-  await page.getByRole('button', { name: 'Ouvrir le menu de création' }).click();
-  await page.locator('span').filter({ hasText: 'API' }).first().click();
+  await page.getByRole('button', { name: 'Créer une API' }).click();
   await page.getByRole('dialog').getByRole('listitem', { name: 'Vendeurs'}).click();
   await page.getByRole('button', { name: 'Publiée' }).click();
   await page.getByRole('textbox', { name: 'Nom' }).fill('Vente de papier API');
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await expect(page.locator('h1')).toContainText('Vente de papier API');
   await page.getByLabel('Accueil Daikoku').click();
-  await expect(page.getByRole('listitem', { name: 'Vente de papier API' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Vente de papier API' })).toBeVisible();
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Dunder Mifflin' }).click();
   await page.getByText('Sécurité').click();
@@ -237,8 +236,7 @@ test('sécuriser la création d\'API à l\'aide de la securité de tenant associ
     .getByRole('checkbox').check();
   await page.getByRole('button', { name: 'Mettre à jour' }).click();
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
-  await page.getByRole('button', { name: 'Ouvrir le menu de création' }).click();
-  await page.locator('span').filter({ hasText: 'API' }).first().click();
+  await page.getByRole('button', { name: 'Créer une API' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByRole('dialog').getByRole('listitem')).toHaveCount(1);
   await expect(page.getByRole('dialog').getByRole('listitem', {name: 'API Division'})).toBeVisible();
@@ -248,8 +246,6 @@ test('sécuriser la création d\'API à l\'aide de la securité de tenant associ
   await logout(page);
 
   await loginAs(JIM, page);
-  await page.getByRole('button', { name: 'Ouvrir le menu de création' }).click();
-  await page.locator('span').filter({ hasText: 'API' }).first().click();
-  await expect(page.getByRole('dialog')).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Créer une API' })).toBeHidden();
 });
 

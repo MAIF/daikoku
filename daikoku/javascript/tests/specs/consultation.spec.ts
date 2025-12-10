@@ -32,15 +32,14 @@ test('[ASOAPI-10169] - anonyme - Consulter l\'offre API', async ({ page }) => {
   await page.goto(ACCUEIL);
   await expect(page.locator('h3').filter({ hasText: 'admin-api-tenant-default' })).not.toBeVisible();
   await expect(page.locator('h3').filter({ hasText: 'cms-api-tenant-default' })).not.toBeVisible();
-  await expect(page.locator('h3').filter({ hasText: 'API papier' })).toBeVisible();
-  await expect(page.locator('.top__container', { hasText: 'Vos équipes' })).not.toBeVisible();
+  await expect(page.getByRole('listitem').filter({ hasText: 'API papier' })).toBeVisible();
 
   await page.getByPlaceholder('Rechercher une API...').fill('papier');
   await expect(page.getByLabel('API papier')).toBeVisible();
   await page.getByPlaceholder('Rechercher une API...').fill('paper');
   await expect(page.getByLabel('API papier')).toBeHidden();
   await expect(page.getByRole('main')).toContainText('0');
-  await page.getByText('supprimer les filtres').click();
+  await page.getByText('Réinitialiser les filtres').click();
   await expect(page.getByLabel('API papier')).toBeVisible();
 });
 
@@ -56,18 +55,18 @@ test('[ASOAPI-10151] - Consulter l\'offre API', async ({ page }) => {
   await page.getByPlaceholder('Rechercher une API...').fill('paper');
   await expect(page.getByRole('main')).toContainText('0');
   await expect(page.getByLabel('API papier')).toBeHidden();
-  await page.getByText('supprimer les filtres').click();
+  await page.getByText('Réinitialiser les filtres').click();
   await expect(page.getByLabel('API papier')).toBeVisible();
 });
 
 test('Utiliser les liens de redirection vers la page d\'accueil', async ({ page }) => {
   await page.goto(HOME);
   await expect(page).toHaveURL(ACCUEIL)
-  await page.getByRole('heading', { name: 'API papier' }).click();
+  await page.getByRole('link', { name: 'API papier' }).click();
   await expect(page).not.toHaveURL(ACCUEIL)
   await page.getByRole('link', { name: 'Accueil Daikoku' }).click();
   await expect(page).toHaveURL(ACCUEIL)
-  await page.getByRole('heading', { name: 'API papier' }).click();
+  await page.getByRole('link', { name: 'API papier' }).click();
   await expect(page).not.toHaveURL(ACCUEIL)
   await page.getByRole('link', { name: 'Liste des APIs' }).click();
   await expect(page).toHaveURL(ACCUEIL)
@@ -135,7 +134,7 @@ test('Utiliser les liens de redirection vers la page d\'accueil', async ({ page 
   await expect(page).toHaveURL(HOME)
   await page.getByRole('link', { name: 'voir les apis' }).click();
   await expect(page).toHaveURL(ACCUEIL)
-  await page.getByRole('heading', { name: 'API papier' }).click();
+  await page.getByRole('link', { name: 'API papier' }).click();
   await expect(page).not.toHaveURL(HOME)
   await page.getByRole('link', { name: 'Liste des APIs' }).click();
   await expect(page).toHaveURL(ACCUEIL)
@@ -145,7 +144,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   //vertifier quoi est dispo pour un user normal
   //user guest
   await page.goto(HOME);
-  await page.getByRole('heading', { name: 'API papier' }).click();
+  await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByRole('navigation').getByText('Description').click();
   await expect(page.getByText('Une API pour avoir du papier')).toBeVisible();
   await page.getByRole('navigation').getByText('Environnements').click();
@@ -164,7 +163,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
 
   //user simple user
   await loginAs(JIM, page)
-  await page.getByRole('heading', { name: 'API papier' }).click();
+  await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByRole('navigation').getByText('Description').click();
   await expect(page.getByText('Une API pour avoir du papier')).toBeVisible();
   await page.getByRole('navigation').getByText('Environnements').click();
@@ -183,7 +182,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
 
   //user admin
   await loginAs(MICHAEL, page)
-  await page.getByRole('heading', { name: 'API papier' }).click();
+  await page.getByRole('link', { name: 'API papier' }).click();
   await page.getByRole('navigation').getByText('Description').click();
   await expect(page.getByText('Une API pour avoir du papier')).toBeVisible();
   await page.getByRole('navigation').getByText('Environnements').click();
@@ -307,7 +306,7 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
 
 //user guest
 await page.goto(HOME);
-await page.getByRole('heading', { name: 'API papier' }).click();
+await page.getByRole('link', { name: 'API papier' }).click();
 await expect(page.getByRole('navigation').getByText('Description')).toBeVisible();
 await expect(page.getByRole('navigation').getByText('Environnements')).toBeVisible();
 await expect(page.getByRole('navigation').getByText('Documentation')).toBeHidden();
@@ -321,7 +320,7 @@ await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeHidden(
 
 //user simple user
 await loginAs(JIM, page)
-await page.getByRole('heading', { name: 'API papier' }).click();
+await page.getByRole('link', { name: 'API papier' }).click();
 await expect(page.getByRole('navigation').getByText('Description')).toBeVisible();
 await expect(page.getByRole('navigation').getByText('Environnements')).toBeVisible();
 await expect(page.getByRole('navigation').getByText('Documentation')).toBeVisible();
@@ -335,7 +334,7 @@ await logout(page)
 
 //user admin
 await loginAs(MICHAEL, page)
-await page.getByRole('heading', { name: 'API papier' }).click();
+await page.getByRole('link', { name: 'API papier' }).click();
 await expect(page.getByRole('navigation').getByText('Description')).toBeVisible();
 await expect(page.getByRole('navigation').getByText('Environnements')).toBeVisible();
 await expect(page.getByRole('navigation').getByText('Documentation')).toBeVisible();
