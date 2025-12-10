@@ -6,6 +6,7 @@ import { IApi, IApiWithAuthorization, ITeamFullGql, ITeamSimple } from '../../..
 import { NavContext } from '../../../contexts/navUtils';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { teamGQLToLegitTeam } from '../../utils/graphqlUtils';
+import { ApiList } from '../dashboard/ApiList';
 
 type ApiGroupApisProps = {
   apiGroup: IApi
@@ -35,13 +36,8 @@ export const ApiGroupApis = ({
   };
 
   return (
-    <div>TODO</div>
-    // <ApiList
-    //   myTeams={myTeams}
-    //   teamVisible={true}
-    //   redirectToApiPage={redirectToApiPage}
-    //   groupView={true}
-    //   apiGroupId={apiGroup._id}
-    // />
+    <ApiList
+      apiGroupId={apiGroup._id}
+    />
   );
 };

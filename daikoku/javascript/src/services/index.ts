@@ -1438,8 +1438,8 @@ export const graphql = {
       }
     `,
   myVisibleApis: `
-    query AllVisibleApis ($filterTable: JsArray, $sortingTable: JsArray, $limit: Int, $offset: Int) {
-      visibleApis (filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset) {
+    query AllVisibleApis ($filterTable: JsArray, $sortingTable: JsArray, $limit: Int, $offset: Int, $groupId: String) {
+      visibleApis (filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset, groupId: $groupId) {
         apis {
           api {
             name

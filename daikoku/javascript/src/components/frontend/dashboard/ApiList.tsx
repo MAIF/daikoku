@@ -31,7 +31,6 @@ type Option = {
 
 type ApiListProps = {
   apiGroupId?: string
-  teamId?: string
 }
 type ExtraProps = {
   labelKey: string;
@@ -145,6 +144,7 @@ export const ApiList = (props: ApiListProps) => {
         {
           filterTable: JSON.stringify(columnFilters),
           sortingTable: JSON.stringify([]),
+          groupId: props.apiGroupId,
           limit,
           offset: pageParam,
         })
@@ -551,7 +551,7 @@ export const ApiList = (props: ApiListProps) => {
   } else if (myTeamsRequest.data && !isError(myTeamsRequest.data)) {
 
     const subscribedOnly = !!columnFilters.find(f => f.id === 'subscribedOnly')?.value
-    const canCreateApi = !tenant.creationSecurity || myTeamsRequest.data.some(t => t.apisCreationPermission)
+    const canCreateApi = !props.apiGroupId && ( !tenant.creationSecurity || myTeamsRequest.data.some(t => t.apisCreationPermission))
 
     return (
       <div className="col-12 api_list_container">
