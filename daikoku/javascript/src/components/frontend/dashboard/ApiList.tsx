@@ -194,14 +194,15 @@ export const ApiList = (props: ApiListProps) => {
       cell: (info) => {
         const api = info.row.original.api;
         const authorizations = info.row.original.authorizations;
-        const isApiGroup = !!info.row.original.api.apis?.length
+        const isApiGroup = !!info.row.original.api.apis?.length;
+        const path = isApiGroup ? 'apis' : 'description';
 
         if (api.visibility === 'Public' || authorizations.some((a) => a.authorized)) {
-          return <Link to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/description`}>
+          return <Link id={`api-${api._humanReadableId}`} to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/${path}`}>
             {api.name}
           </Link>
         } else {
-          return <p>{api.name}</p>
+          return <p id={`api-${api._humanReadableId}`}>{api.name}</p>
         }
       }
     }),
@@ -247,7 +248,7 @@ export const ApiList = (props: ApiListProps) => {
           .filter(s => s.validUntil)
           .filter(s => isBefore(new Date(s.validUntil!), addMonths(new Date(), 1))).length
 
-        return <div className="d-flex gap-1">
+        return <div className="d-flex gap-1 status">
           {!!activeCount && <span className="badge badge-custom-success" onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
             {translate({ key: 'dashboard.api.list.actives.subscription.tag.label', replacements: [activeCount.toString()], plural: activeCount > 1 })}
           </span>}
@@ -551,7 +552,7 @@ export const ApiList = (props: ApiListProps) => {
   } else if (myTeamsRequest.data && !isError(myTeamsRequest.data)) {
 
     const subscribedOnly = !!columnFilters.find(f => f.id === 'subscribedOnly')?.value
-    const canCreateApi = !props.apiGroupId && ( !tenant.creationSecurity || myTeamsRequest.data.some(t => t.apisCreationPermission))
+    const canCreateApi = !connectedUser.isGuest && !props.apiGroupId && (!tenant.creationSecurity || myTeamsRequest.data.some(t => t.apisCreationPermission))
 
     return (
       <div className="col-12 api_list_container">
@@ -666,11 +667,11 @@ export const ApiList = (props: ApiListProps) => {
                   {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span>{translate('dashboard.apis.table.header.label.status')}</span>}
                   {(!table.getIsSomeRowsSelected() && !table.getIsAllRowsSelected()) && <span className="text-end">{translate('dashboard.apis.table.header.label.actions')}</span>}
                 </div>
-                <ul className='table-rows'>
+                <ul className='table-rows' role="list">
                   {table.getRowModel().rows.map((row, idx) => {
                     return (
-                      <li key={`${row.id}-${idx}`} tabIndex={-1}>
-                        <article className='table-row' aria-label={row.original.api.name}>
+                      <li key={`${row.id}-${idx}`} tabIndex={-1} role="listitem" aria-labelledby={`api-${row.original.api._humanReadableId}`}>
+                        <article className='table-row' aria-labelledby={`api-${row.original.api._humanReadableId}`}>
                           {row.getVisibleCells().map((cell, idx) => {
                             return (
                               <div key={`${cell.id}-${idx}`} className={cell.column.columnDef.meta?.className}>

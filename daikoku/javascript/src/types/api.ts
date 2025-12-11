@@ -10,6 +10,7 @@ export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked' | 'del
 export interface IWithDocumentation {
   _id: string;
   documentation?: IDocumentation;
+  tenant: string
 }
 export interface IWithSwagger {
   _id: string;
@@ -28,7 +29,7 @@ export interface IBaseApi extends IWithSwagger, IWithTesting, IWithDocumentation
   _humanReadableId: string;
   _tenant: string;
   _deleted: boolean;
-  lastUpdate: string;
+  lastUpdate: number;
   name: string;
   smallDescription: string;
   descriptionCmsPage?: string;
@@ -42,7 +43,7 @@ export interface IBaseApi extends IWithSwagger, IWithTesting, IWithDocumentation
   categories: Array<string>;
   visibility: 'Public' | 'Private' | 'PublicWithAuthorisation' | 'AdminOnly';
   possibleUsagePlans: Array<string>;
-  defaultUsagePlan: string;
+  defaultUsagePlan?: string;
   authorizedTeams: Array<string>;
   posts: Array<string>;
   issues: Array<string>;
@@ -144,7 +145,7 @@ export interface IDocumentation {
   _id: string;
   _tenant: string;
   pages: IDocumentationPages;
-  lastModificationAt: string;
+  lastModificationAt: number;
 }
 
 export interface IImportingDocumentation {

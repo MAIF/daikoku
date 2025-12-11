@@ -162,6 +162,14 @@ export const TopBar = () => {
         >
           {translate('topbar.link.dashboard.label')}
         </Link>
+        {!connectedUser.isGuest && <Link
+          to="/"
+          title={translate("topbar.link.my.teams.label")}
+          aria-label={translate("topbar.link.my.teams.label")}
+          className="notification-link notification-link-color"
+        >
+          {translate('topbar.link.my.teams.label')}
+        </Link>}
 
       </div>
       <div className="navbar_middle d-flex justify-content-center flex-grow-1">

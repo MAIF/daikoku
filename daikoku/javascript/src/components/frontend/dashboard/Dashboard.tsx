@@ -11,6 +11,8 @@ import { GlobalContext } from "../../../contexts/globalContext"
 import * as Services from '../../../services'
 import { ApiList } from "./ApiList"
 import { Tile } from "./Tile"
+import { Spinner } from "../../utils"
+import { isError } from "../../../types"
 
 type NewHomeProps = {
   teamId?: string
@@ -59,7 +61,7 @@ export const Dashboard = (props: NewHomeProps) => {
           </button>}
         </div>
       </section>
-      <div className="d-flex flex-row gap-5">
+      {!connectedUser.isGuest && <div className="d-flex flex-row gap-5">
         <Tile
           width={40}
           title={translate('dashboard.apis.tile.title')}
@@ -89,7 +91,7 @@ export const Dashboard = (props: NewHomeProps) => {
           reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
           data={(data) => [{ label: translate('dashboard.demands.tile.waiting.label'), value: data.demands.waiting }]}
           action={() => console.debug("test")} />
-      </div>
+      </div>}
       <ApiList />
     </main>
   )
