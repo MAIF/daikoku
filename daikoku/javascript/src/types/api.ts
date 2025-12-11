@@ -10,7 +10,6 @@ export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked' | 'del
 export interface IWithDocumentation {
   _id: string;
   documentation?: IDocumentation;
-  tenant: string
 }
 export interface IWithSwagger {
   _id: string;
