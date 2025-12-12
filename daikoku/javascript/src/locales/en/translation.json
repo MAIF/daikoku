@@ -1690,7 +1690,7 @@
     "tenant.edition.color-theme.reset.button.label": "Reset theme",
     "tenant.edition.color-theme.reset.confirm.title": "Confirm reset",
     "tenant.edition.color-theme.reset.confirm.message": "Are you sure you want to reset the color theme to the default? This will permanently remove the current theme.",
-    "tenant.edition.color-theme.reset.successful.message": "The color theme has been successfully reset."
+    "tenant.edition.color-theme.reset.successful.message": "The color theme has been successfully reset.",
     "topbar.link.dashboard.label": "Dashboard",
     "topbar.link.my.teams.label": "My teams",
     "topbar.search.placeholder": "Type %s to search",

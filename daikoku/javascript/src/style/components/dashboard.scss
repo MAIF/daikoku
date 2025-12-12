@@ -13,7 +13,7 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
   color: variables.$level2_text-color;
 
   .select-all-row {
-    background-color: $level1-darken-color;
+    background-color: color-mix(in srgb, variables.$level3_bg-color 90%, #000);
     padding: 1rem 1rem !important;
     font-size: 1rem !important;
     height: 3rem;
@@ -41,7 +41,7 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     gap: 1rem;
     padding: .875rem 1rem;
     align-items: center;
-    border-bottom: 1px solid variables.$level1_bg-color;
+    border-bottom: 1px solid color-mix(in srgb, variables.$level3_bg-color 90%, #000);
     font-size: 0.875rem;
 
 
@@ -146,8 +146,8 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     }
   }
 
-  .table-row:last-of-type {
-    border: none;
-  }
+  // .table-row:last-of-type {
+  //   border: none;
+  // }
 
 }

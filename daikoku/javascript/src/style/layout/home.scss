@@ -12,12 +12,13 @@
   }
 }
 
-$tile_background_color: rebeccapurple;
-$tile_text_color: #000;
+$tile_background_color: variables.$level2_bg-color;
+$tile_text_color: variables.$level2_text-color;
+$tile_border_color: color-mix(in srgb, $tile_background_color 70%, #000);
 
 .dashboard-tile {
-  background: color-mix(in srgb, $tile_background_color 20%, #fff);
-  border: 1px solid $tile_background_color;
+  background: $tile_background_color;
+  border: 1px solid $tile_border_color;
   border-radius: 5px;
   min-width: 20%;
   color: $tile_text_color;
@@ -26,7 +27,7 @@ $tile_text_color: #000;
   .tile__header {
     padding: 16px;
     box-sizing: initial;
-    border-bottom: 1px solid $tile_background_color;
+    border-bottom: 1px solid $tile_border_color;
     padding-bottom: 15px;
     margin-bottom: 15px;
 
@@ -61,7 +62,7 @@ $tile_text_color: #000;
         justify-content: center;
         width: 30px;
         height: 30px;
-        color: #fff;
+        color: $tile_border_color;
       }
 
       h3 {
@@ -95,8 +96,8 @@ $tile_text_color: #000;
 }
 
 .api_list_container {
-  background: color-mix(in srgb, $tile_background_color 20%, #fff);
-  border: 1px solid $tile_background_color;
+  background: $tile_background_color;
+  border: 1px solid $tile_border_color;
   border-radius: 5px;
 
   padding: 20px;
