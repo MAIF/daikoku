@@ -453,7 +453,7 @@ class AccountCreationService {
             mailData
           )
           body <- translator.translate(
-            "mail.account.creation.mail.validation.title",
+            "mail.account.creation.mail.validation.body",
             tenant,
             mailData
           )

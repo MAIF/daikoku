@@ -790,3 +790,51 @@ We'd like to thank all the contributors who worked on this release!
 - CMS API can create false positive during otoroshi sync job [#871](https://github.com/MAIF/daikoku/issues/871)
 - 🔧 PostgreSQL Error: could not determine data type of parameter  with Daikoku v18.0.0 [#853](https://github.com/MAIF/daikoku/issues/853)
 
+## [v18.4.1] - 2025-10-14
+
+## :beetle: Bug Fixes
+
+- Bearer token seems to not be retrieve after apikey creation [#885](https://github.com/MAIF/daikoku/issues/885)
+- bug with date format in messages page [#884](https://github.com/MAIF/daikoku/issues/884)
+
+## [v18.4.2] - 2025-10-28
+
+## :beetle: Bug Fixes
+
+- teams otoroshi authorizedEntites doesn't work [#893](https://github.com/MAIF/daikoku/issues/893)
+
+## [v18.4.3] - 2025-10-31
+
+## :star: New Features
+
+- new way to reset color-theme without use CLI [#896](https://github.com/MAIF/daikoku/issues/896)
+
+## :beetle: Bug Fixes
+
+- teams page can crash id team han no avatar [#897](https://github.com/MAIF/daikoku/issues/897)
+- error during evolutions [#895](https://github.com/MAIF/daikoku/issues/895)
+
+## [v18.4.4] - 2025-11-04
+
+## :beetle: Bug Fixes
+
+- Auhtentication via oauth2 doesn't use pkce flow [#898](https://github.com/MAIF/daikoku/issues/898)
+
+## [v18.4.5] - 2025-11-25
+
+## :star: New Features
+
+- Add SMTP authentication with username and password [#914](https://github.com/MAIF/daikoku/issues/914)
+
+## :beetle: Bug Fixes
+
+- Missing description selector in API view [#917](https://github.com/MAIF/daikoku/issues/917)
+- can't remove CMS apikey [#906](https://github.com/MAIF/daikoku/issues/906)
+- error with logout url for oauth2 provider [#905](https://github.com/MAIF/daikoku/issues/905)
+
+## [v18.4.6] - 2025-12-02
+
+## :beetle: Bug Fixes
+
+- HTTPS error with graphql endpoint when daikoku is exposed on https [#926](https://github.com/MAIF/daikoku/issues/926)
+

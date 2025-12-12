@@ -2404,7 +2404,7 @@ class ApiController(
       )
       _ <- env.dataStore.notificationRepo.forTenant(tenant).save(notif)
       delete <- apiService
-          .deleteApiKey(tenant, subscription, plan, team)
+          .deleteApiKey(tenant, subscription, plan)
           .flatMap(delete => {
             if (plan.visibility == Private) {
               env.dataStore.usagePlanRepo

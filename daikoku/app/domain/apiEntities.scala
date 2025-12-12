@@ -12,6 +12,7 @@ import fr.maif.otoroshi.daikoku.domain.json.{
   TestingConfigFormat
 }
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils.{IdGenerator, ReplaceAllWith}
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -349,37 +350,37 @@ case class UsagePlan(
           case Some(authorizedEntities) =>
             for {
               _ <- EitherT.cond[Future][AppError, Unit](
-                authorizedEntities.authorizedEntities.groups
-                  .diff(
-                    otoroshiTarget.authorizedEntities
-                      .map(_.groups)
-                      .getOrElse(Set.empty)
-                  )
-                  .isEmpty,
+                otoroshiTarget.authorizedEntities
+                  .exists(
+                    _.groups
+                      .subsetOf(authorizedEntities.authorizedEntities.groups)
+                  ),
                 (),
-                AppError.Unauthorized
+                AppError.Unauthorized(
+                  "at least one of the group provided is unauthorized"
+                )
               )
               _ <- EitherT.cond[Future][AppError, Unit](
-                authorizedEntities.authorizedEntities.services
-                  .diff(
-                    otoroshiTarget.authorizedEntities
-                      .map(_.services)
-                      .getOrElse(Set.empty)
-                  )
-                  .isEmpty,
+                otoroshiTarget.authorizedEntities
+                  .exists(
+                    _.services
+                      .subsetOf(authorizedEntities.authorizedEntities.services)
+                  ),
                 (),
-                AppError.Unauthorized
+                AppError.Unauthorized(
+                  "at least one of the service provided is unauthorized"
+                )
               )
               _ <- EitherT.cond[Future][AppError, Unit](
-                authorizedEntities.authorizedEntities.routes
-                  .diff(
-                    otoroshiTarget.authorizedEntities
-                      .map(_.routes)
-                      .getOrElse(Set.empty)
-                  )
-                  .isEmpty,
+                otoroshiTarget.authorizedEntities
+                  .exists(
+                    _.routes
+                      .subsetOf(authorizedEntities.authorizedEntities.routes)
+                  ),
                 (),
-                AppError.Unauthorized
+                AppError.Unauthorized(
+                  "at least one of the route provided is unauthorized"
+                )
               )
             } yield ()
           case None => EitherT.leftT[Future, Unit](AppError.Unauthorized)

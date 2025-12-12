@@ -7,10 +7,12 @@ import { toast } from 'sonner';
 import { I18nContext, ModalContext } from '../../../contexts';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { IApi, ITeamSimple } from '../../../types';
+import { IApi, ICmsPageGQL, ITeamSimple } from '../../../types';
 import { api as API, Can, manage } from '../../utils';
 
 import 'highlight.js/styles/monokai.css';
+import { GlobalContext } from '../../../contexts/globalContext';
+import { CmsViewer } from '../CmsViewer';
 
 (window as any).hljs = hljs;
 
@@ -27,6 +29,11 @@ export const ApiDescription = ({
   const queryClient = useQueryClient();
   const { openRightPanel, closeRightPanel } = useContext(ModalContext);
   const { translate } = useContext(I18nContext);
+  const { customGraphQLClient } = useContext(GlobalContext);
+
+  const getCmsPages = (): Promise<Array<ICmsPageGQL>> =>
+      customGraphQLClient.request<{ pages: Array<ICmsPageGQL> }>(Services.graphql.cmsPages)
+        .then(res => res.pages)
 
 
   useEffect(() => {
@@ -37,10 +44,12 @@ export const ApiDescription = ({
 
   return (
     <div className="d-flex col flex-column p-3 section" style={{ position: 'relative' }}>
-      <div
+
+      {api.descriptionCmsPage && <CmsViewer pageId={api.descriptionCmsPage} fields={{ api }} />}
+      {!api.descriptionCmsPage && <div
         className="api-description"
         dangerouslySetInnerHTML={{ __html: converter.makeHtml(api.description) }}
-      />
+      />}
       {api.visibility !== 'AdminOnly' && <Can I={manage} a={API} team={ownerTeam}>
         <button
           className="btn btn-sm btn-outline-primary px-3"
@@ -55,6 +64,18 @@ export const ApiDescription = ({
                     type: type.string,
                     format: format.markdown,
                     label: translate('Description'),
+                  },
+                  descriptionCmsPage: {
+                    type: type.string,
+                    format: format.select,
+                    label: translate('api.form.cms.description.label'),
+                    help: translate('api.form.cms.description.help'),
+                    props: { isClearable: true },
+                    optionsFrom: getCmsPages,
+                    transformer: page => ({
+                      label: `${page.name} - ${page.path}`,
+                      value: page.id
+                    }),
                   },
                 }}
                 onSubmit={(data) => {

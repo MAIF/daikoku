@@ -1,5 +1,6 @@
 package storage.drivers.postgres
 
+import io.vertx.core.AsyncResult
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import io.vertx.sqlclient.{Pool, Row, RowSet}
 import play.api.libs.json.{JsArray, JsObject, Json}
@@ -164,4 +165,25 @@ class ReactivePg(pool: Pool, configuration: Configuration)(implicit
           .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
       )
       .scala
+
+  def execute(sql: String, params: Seq[AnyRef] = Seq.empty): Future[Long] = {
+    val promise = Promise[Long]()
+
+    pool
+      .withConnection(c =>
+        c.preparedQuery(sql)
+          .execute(io.vertx.sqlclient.Tuple.from(params.toArray))
+      )
+      .onComplete { ar =>
+        if (ar.succeeded()) {
+          promise.success(ar.result().rowCount().toLong)
+        } else {
+          logger.warn(ar.cause().getLocalizedMessage)
+          promise.success(0L)
+        }
+      }
+
+    promise.future
+  }
+
 }

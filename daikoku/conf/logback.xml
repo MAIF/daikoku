@@ -46,6 +46,7 @@
   <logger name="com.avaje.ebeaninternal.server.lib.BackgroundThread" level="OFF"/>
   <logger name="com.gargoylesoftware.htmlunit.javascript" level="OFF"/>
   <logger name="audit-console" level="INFO"/>
+  <logger name="evolution" level="INFO"/>
 
   <root level="INFO">
     <appender-ref ref="ASYNCSTDOUT"/>

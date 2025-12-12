@@ -405,6 +405,11 @@ trait Repo[Of, Id <: ValueType] {
       offset: Int,
       limit: Int
   )(implicit ec: ExecutionContext): Future[(Seq[Of], Long)]
+
+  def execute(
+      query: String,
+      params: Seq[AnyRef] = Seq.empty
+  )(implicit ec: ExecutionContext): Future[Long]
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

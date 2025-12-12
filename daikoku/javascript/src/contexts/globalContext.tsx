@@ -18,7 +18,7 @@ import {
 } from '../types';
 
 type TGlobalContext = IStateContext & {
-  reloadContext: () => void;
+  reloadContext: () => Promise<void>;
   toggleExpertMode: () => void;
   toggleTheme: () => void;
   reloadUnreadNotificationsCount: () => void;

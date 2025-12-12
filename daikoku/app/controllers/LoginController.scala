@@ -101,13 +101,30 @@ class LoginController(
               val responseType = "code"
               val scope = authConfig.scope // "openid profile email name"
               val redirectUri = authConfig.callbackUrl
-              val loginUrl =
-                s"${authConfig.loginUrl}?scope=$scope&client_id=$clientId&response_type=$responseType&redirect_uri=$redirectUri"
+              val (codeVerifier, codeChallenge, codeChallengeMethod) =
+                OAuth2Support.generatePKCECodes(
+                  authConfig.pkceConfig.map(_.algorithm)
+                )
+              val (loginUrl, sessionParams) =
+                if (authConfig.pkceConfig.exists(_.enabled)) {
+                  (
+                    s"${authConfig.loginUrl}?scope=$scope&client_id=$clientId&response_type=$responseType&redirect_uri=$redirectUri&code_challenge=$codeChallenge&code_challenge_method=$codeChallengeMethod",
+                    Seq("code_verifier" -> codeVerifier)
+                  )
+                } else {
+                  (
+                    s"${authConfig.loginUrl}?scope=$scope&client_id=$clientId&response_type=$responseType&redirect_uri=$redirectUri",
+                    Seq.empty[(String, String)]
+                  )
+                }
+
               FastFuture.successful(
                 Redirect(
                   loginUrl
                 ).addingToSession(
-                  s"redirect" -> redirect.getOrElse("/")
+                  sessionParams ++ Map(
+                    "redirect" -> redirect.getOrElse("/")
+                  ): _*
                 )
               )
             case _ if env.config.isDev =>
@@ -415,6 +432,14 @@ class LoginController(
                     .replace(
                       "${redirect}",
                       URLEncoder.encode(redirect, "UTF-8")
+                    )
+                    .replace(
+                      "${clientId}",
+                      URLEncoder.encode(
+                        (ctx.tenant.authProviderSettings \ "clientId")
+                          .as[String],
+                        "UTF-8"
+                      )
                     )
               }
             ).removingFromSession("sessionId")(ctx.request)

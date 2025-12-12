@@ -24,9 +24,11 @@ import org.joda.time.DateTime
 import play.api.i18n._
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents, Result, Results}
+import services.CmsPage
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
+import scala.io.Source
 import scala.util.Try
 
 class TenantController(
@@ -155,17 +157,9 @@ class TenantController(
                 }
                 fu.map { _ =>
                   val path = ctx.request.getQueryString("path").getOrElse("")
+                  val url = env.getDaikokuUrl(tenant, path)
 
-                  {
-                    env.config.exposedPort match {
-                      case 80  => Redirect(s"http://${tenant.domain}/$path")
-                      case 443 => Redirect(s"https://${tenant.domain}/$path")
-                      case _ =>
-                        Redirect(
-                          s"http://${tenant.domain}:${env.config.exposedPort}/$path"
-                        )
-                    }
-                  }
+                  Redirect(url)
                 }
               }
           case None =>
@@ -777,6 +771,53 @@ class TenantController(
               }
             })
         }
+      }
+    }
+
+  private def readFile(path: String): EitherT[Future, AppError, String] = {
+    env.environment.resourceAsStream(path) match {
+      case Some(stream) =>
+        try {
+          val content = Source.fromInputStream(stream).mkString
+          stream.close()
+          EitherT.pure[Future, AppError](content)
+        } catch {
+          case e: Throwable =>
+            AppLogger.error(e.getLocalizedMessage, e)
+            EitherT.leftT[Future, String](
+              AppError.InternalServerError(e.getLocalizedMessage)
+            )
+        }
+      case None =>
+        EitherT.leftT[Future, String](
+          AppError.BadRequestError(s"File not found at $path")
+        )
+    }
+  }
+
+  def resetColorTheme(tenantId: String) =
+    DaikokuAction.async { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has reset color-theme"
+        )
+      )(tenantId, ctx) { (_, _) =>
+        (for {
+          themeBody <- readFile("public/themes/default.css")
+          oldCmsPage <- EitherT.fromOptionF[Future, AppError, CmsPage](
+            env.dataStore.cmsRepo
+              .forTenant(ctx.tenant)
+              .findById(s"${ctx.tenant.id.value}-color-theme"),
+            AppError.EntityNotFound("color-theme cms page")
+          )
+          _ <- EitherT.liftF[Future, AppError, Boolean](
+            env.dataStore.cmsRepo
+              .forTenant(ctx.tenant)
+              .save(oldCmsPage.copy(body = themeBody))
+          )
+        } yield Ok(Json.obj("done" -> true)))
+          .leftMap(_.render())
+          .merge
       }
     }
 }

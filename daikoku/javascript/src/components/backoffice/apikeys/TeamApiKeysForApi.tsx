@@ -263,12 +263,13 @@ export const ApiKeysListForApi = (props: ApiKeysListForApiProps) => {
 
   const deleteApiKey = (subscription: ISubscriptionWithChildren, details: IApiSubscriptionDetails) => {
     const afterDeletionFunction = () => {
-      queryClient.invalidateQueries({
-        queryKey: ["data", "subscriptions"],
-      });
-      toast.success(
-        translate("apikeys.delete.success.message")
-      );
+      const keyToInvalidate = ["data", "subscriptions", "mySubscription"]
+      return queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey.some((v) => typeof v === 'string' && keyToInvalidate.includes(v)),
+      }) 
+        .then(() => toast.success(
+          translate("apikeys.delete.success.message")
+        ));
     }
     if (subscription.children.length) {
       openFormModal({

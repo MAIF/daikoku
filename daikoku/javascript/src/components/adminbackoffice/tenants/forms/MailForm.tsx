@@ -5,12 +5,12 @@ import { useContext, useState } from 'react';
 import { toast } from "sonner";
 import { I18nContext } from '../../../../contexts';
 import { testMailConnection } from "../../../../services";
-import { IMailerSettings, isError, ITenantFull } from '../../../../types';
+import { IMailerSettings, isError, ITenantFull, MailerType } from '../../../../types';
 import { FeedbackButton } from '../../../utils/FeedbackButton';
 
 export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
   const { translate } = useContext(I18nContext)
-  const [mailerType, setMailerType] = useState(props.tenant?.mailerSettings.type || "console")
+  const [mailerType, setMailerType] = useState<MailerType>(props.tenant?.mailerSettings.type || "console")
 
   const basicMailSchema = {
     fromTitle: {
@@ -46,7 +46,7 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
     }
   }
 
-  const getSchema = (mailerType) => {
+  const getSchema = (mailerType: MailerType) => {
     if (mailerType === 'smtpClient')
       return {
         host: {
@@ -56,6 +56,15 @@ export const MailForm = (props: { tenant?: ITenantFull, updateTenant: UseMutatio
         port: {
           type: type.number,
           label: translate('smtp_client.port'),
+        },
+        username: {
+          type: type.string,
+          label: translate('smtp_client.username'),
+        },
+        password: {
+          type: type.string,
+          format: format.password,
+          label: translate('smtp_client.password'),
         },
         ...basicMailSchema,
       };

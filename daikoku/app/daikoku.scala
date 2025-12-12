@@ -3,6 +3,7 @@ package fr.maif.otoroshi.daikoku
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.apache.pekko.stream.Materializer
 import com.softwaremill.macwire._
+import com.typesafe.sslconfig.ssl.SSLConfigParser
 import controllers.{Assets, AssetsComponents}
 import fr.maif.otoroshi.daikoku.actions.{
   CmsApiAction,
@@ -18,12 +19,12 @@ import fr.maif.otoroshi.daikoku.services.{AssetsService, TranslationsService}
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 import fr.maif.otoroshi.daikoku.utils.admin._
 import fr.maif.otoroshi.daikoku.utils.{
+  AccountCreationService,
   ApiService,
   DeletionService,
   Errors,
   OtoroshiClient,
-  Translator,
-  AccountCreationService
+  Translator
 }
 import io.vertx.core.Vertx
 import io.vertx.core.buffer.Buffer
@@ -42,7 +43,13 @@ import play.api.ApplicationLoader.Context
 import play.api._
 import play.api.http.{DefaultHttpFilters, HttpErrorHandler}
 import play.api.i18n.{I18nSupport, Langs}
-import play.api.libs.ws.ahc.AhcWSComponents
+import play.api.libs.ws.WSClient
+import play.api.libs.ws.ahc.{
+  AhcConfigBuilder,
+  AhcWSClient,
+  AhcWSClientConfigFactory,
+  AhcWSComponents
+}
 import play.api.mvc._
 import play.api.routing.Router
 import router.Routes

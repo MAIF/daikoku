@@ -277,6 +277,7 @@ GET     /api/tenants/:tenantId/admins                   fr.maif.otoroshi.daikoku
 GET     /api/tenants/:tenantId/addable-admins           fr.maif.otoroshi.daikoku.ctrls.TenantController.addableAdmins(tenantId)
 POST    /api/tenants/:tenantId/admins                   fr.maif.otoroshi.daikoku.ctrls.TenantController.addAdminsToTenant(tenantId)
 DELETE  /api/tenants/:tenantId/admins/:adminId          fr.maif.otoroshi.daikoku.ctrls.TenantController.removeAdminFromTenant(tenantId, adminId)
+PUT     /api/tenants/:tenantId/color-theme/_reset       fr.maif.otoroshi.daikoku.ctrls.TenantController.resetColorTheme(tenantId)
 
 GET     /api/translations/_all                          fr.maif.otoroshi.daikoku.ctrls.TranslationController.getAllTranslations()
 GET     /api/translations/_mail                         fr.maif.otoroshi.daikoku.ctrls.TranslationController.getMailTranslations(domain: Option[String] ?= None)

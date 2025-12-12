@@ -5,7 +5,7 @@ import { BeautifulTitle } from './BeautifulTitle';
 import { IUser, IUserSimple } from '../../types';
 
 type Props = {
-  avatar: string;
+  avatar?: string;
   name: string;
   infos?: string | React.ReactElement;
   actions: {
@@ -104,8 +104,8 @@ export const AvatarWithAction = (props: Props) => {
       <div className="container">
         <div className="overlay" />
         <div className="avatar__container">
-          {props.avatar.includes('anonymous') && <div className="avatar-with-action__avatar avatar-without-img" >{getInitials(props.name)}</div>}
-          {!props.avatar.includes('anonymous') && <img src={props.avatar} alt="avatar" className="avatar-with-action__avatar" />}
+          {props.avatar?.includes('anonymous') || !props.avatar && <div className="avatar-with-action__avatar avatar-without-img" >{getInitials(props.name)}</div>}
+          {!props.avatar?.includes('anonymous') && !!props.avatar && <img src={props.avatar} alt="avatar" className="avatar-with-action__avatar" />}
         </div>
         <div className="avatar-with-action__infos" id={id}>{props.infos}</div>
         {!secondaryActions.length && props.actions.map((action, idx) => getAction(action, idx))}

@@ -8,6 +8,7 @@ import controllers.AppError._
 import fr.maif.otoroshi.daikoku.actions.ApiActionContext
 import fr.maif.otoroshi.daikoku.ctrls.PaymentClient
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
+import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Admin
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.SeqApiFormat
 import fr.maif.otoroshi.daikoku.env.Env
@@ -800,41 +801,34 @@ class ApiService(
   def deleteApiKey(
       tenant: Tenant,
       subscription: ApiSubscription,
-      plan: UsagePlan,
-      team: Team
+      plan: UsagePlan
   ): Future[Either[AppError, JsObject]] = {
-    def deleteKey()(implicit
-        otoroshiSettings: OtoroshiSettings
-    ): EitherT[Future, AppError, JsObject] = {
-      import cats.implicits._
-
-      for {
-        _ <- EitherT.liftF(
-          env.dataStore.apiSubscriptionRepo
-            .forTenant(tenant.id)
-            .deleteById(subscription.id)
-        )
-        _ <-
-          if (subscription.parent.isDefined)
-            EitherT.pure[Future, AppError](Json.obj())
-          else otoroshiClient.deleteApiKey(subscription.apiKey.clientId)
-      } yield {
-        Json.obj(
-          "archive" -> "done",
-          "subscriptionId" -> subscription.id.asJson
-        )
-      }
-    }
-
     (for {
-      otoroshiSettings <- EitherT.fromOption[Future](
+      maybeOtoroshiSettings <- EitherT.pure[Future, AppError](
         plan.otoroshiTarget
           .map(_.otoroshiSettings)
-          .flatMap(id => tenant.otoroshiSettings.find(_.id == id)),
-        AppError.OtoroshiSettingsNotFound
+          .flatMap(id => tenant.otoroshiSettings.find(_.id == id))
       )
-      json <- deleteKey()(otoroshiSettings)
-    } yield json).value
+      _ <- EitherT.liftF(
+        env.dataStore.apiSubscriptionRepo
+          .forTenant(tenant.id)
+          .deleteById(subscription.id)
+      )
+      shouldDeleteApiKey =
+        subscription.parent.isEmpty &&
+          !(plan.visibility == Admin && plan.otoroshiTarget.isEmpty)
+
+      _ <- (shouldDeleteApiKey, maybeOtoroshiSettings) match {
+        case (true, Some(otoorshiSettings)) =>
+          otoroshiClient
+            .deleteApiKey(subscription.apiKey.clientId)(otoorshiSettings)
+        case _ =>
+          EitherT.pure[Future, AppError](Json.obj())
+      }
+    } yield Json.obj(
+      "archive" -> "done",
+      "subscriptionId" -> subscription.id.asJson
+    )).value
   }
 
   def computeOtoroshiApiKey(
@@ -1506,7 +1500,7 @@ class ApiService(
                           .deleteByIdLogically(subscription.id)
                     } yield ()
                 }
-              case _ => deleteApiKey(tenant, subscription, plan, subscriberTeam)
+              case _ => deleteApiKey(tenant, subscription, plan)
             }
           }
 

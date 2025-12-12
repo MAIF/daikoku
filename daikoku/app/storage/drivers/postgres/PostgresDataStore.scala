@@ -1653,6 +1653,15 @@ abstract class PostgresRepo[Of, Id <: ValueType](
     } yield (values, count)
   }
 
+  override def execute(sql: String, params: Seq[AnyRef])(implicit
+      ec: ExecutionContext
+  ): Future[Long] = {
+    logger.debug(s"$tableName.execute($sql)")
+    logger.debug(s"[PARAMS] :: ${params.mkString(" - ")}")
+
+    reactivePg.execute(sql, params)
+  }
+
   override def findRaw(
       query: JsObject,
       sort: Option[JsObject] = None,
@@ -1837,6 +1846,15 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
     reactivePg.queryOne(query, params) {
       rowToJson(_, format)
     }
+  }
+
+  override def execute(sql: String, params: Seq[AnyRef])(implicit
+      ex: ExecutionContext
+  ): Future[Long] = {
+    logger.debug(s"$tableName.execute($sql)")
+    logger.debug(s"[PARAMS] :: ${params.mkString(" - ")}")
+
+    reactivePg.execute(sql, params)
   }
 
   override def queryPaginated(

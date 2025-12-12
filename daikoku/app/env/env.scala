@@ -5,6 +5,8 @@ import com.auth0.jwt.algorithms.Algorithm
 import com.auth0.jwt.{JWT, JWTVerifier}
 import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
+import fr.maif.otoroshi.daikoku.domain.Tenant.getCustomizationCmsPage
+import fr.maif.otoroshi.daikoku.domain.json.TenantIdFormat
 import fr.maif.otoroshi.daikoku.domain.{
   DatastoreId,
   ReportsInfo,
@@ -178,7 +180,15 @@ class Config(val underlying: Configuration) {
   lazy val port: Int = underlying
     .getOptional[Int]("play.server.http.port")
     .orElse(underlying.getOptional[Int]("http.port"))
-    .getOrElse(9000)
+    .getOrElse(8080)
+
+  lazy val securePort: Int = underlying
+    .getOptional[Int]("play.server.https.port")
+    .orElse(underlying.getOptional[Int]("https.port"))
+    .getOrElse(443)
+
+  lazy val sslEnabled: Option[Boolean] = underlying
+    .getOptional[Boolean]("daikoku.ssl.enabled")
 
   lazy val exposedPort: Int = underlying
     .getOptional[Int]("daikoku.exposedOn")
@@ -545,6 +555,16 @@ class DaikokuEnv(
                   personalToken = Some(IdGenerator.token(32)),
                   defaultLanguage = None
                 )
+
+                val cssPage =
+                  getCustomizationCmsPage(tenant.id, "style", "text/css", "")
+                val jsPage = getCustomizationCmsPage(
+                  tenant.id,
+                  "script",
+                  "text/javascript",
+                  ""
+                )
+
                 for {
                   _ <- Future.sequence(
                     evolutions.list.map(e =>
@@ -595,6 +615,14 @@ class DaikokuEnv(
                           body = cssFileContent
                         )
                       )
+                  _ <-
+                    dataStore.cmsRepo
+                      .forTenant(tenant.id)
+                      .save(cssPage)
+                  _ <-
+                    dataStore.cmsRepo
+                      .forTenant(tenant.id)
+                      .save(jsPage)
                 } yield {
                   AppLogger.warn("")
                   AppLogger.warn(
@@ -687,10 +715,20 @@ class DaikokuEnv(
       case _ => Seq.empty
     }
 
-  def getDaikokuUrl(tenant: Tenant, path: String): String =
-    config.exposedPort match {
-      case 80  => s"http://${tenant.domain}$path"
-      case 443 => s"https://${tenant.domain}$path"
-      case _   => s"http://${tenant.domain}:${config.exposedPort}$path"
+  def getDaikokuUrl(tenant: Tenant, path: String): String = {
+    (config.sslEnabled, config.exposedPort) match {
+      case (Some(true), 443) => s"https://${tenant.domain}$path"
+      case (Some(true), exposedPort) =>
+        s"https://${tenant.domain}:$exposedPort$path"
+      case (Some(false), 80) => s"http://${tenant.domain}$path"
+      case (Some(false), exposedPort) =>
+        s"http://${tenant.domain}:$exposedPort$path"
+      case (_, 80)  => s"http://${tenant.domain}$path"
+      case (_, 443) => s"https://${tenant.domain}$path"
+      case (_, exposedPort) if exposedPort == config.securePort =>
+        s"https://${tenant.domain}:$exposedPort$path"
+      case (_, exposedPort) => s"http://${tenant.domain}:$exposedPort$path"
     }
+
+  }
 }

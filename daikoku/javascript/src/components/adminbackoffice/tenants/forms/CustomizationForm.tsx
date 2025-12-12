@@ -1,13 +1,15 @@
 import { Flow, Form, FormRef, Schema, SchemaEntry, format, type } from '@maif/react-forms';
 import { UseMutationResult, useQuery } from '@tanstack/react-query';
 import { useContext, useEffect, useRef } from 'react';
-
 import Select from 'react-select';
+
 import { ModalContext } from '../../../../contexts';
 import { GlobalContext } from '../../../../contexts/globalContext';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import { AssetChooserByModal, MimeTypeFilter } from '../../../../contexts/modals/AssetsChooserModal';
-import { ICmsPageGQL, ITenantFull } from '../../../../types';
+import { ICmsPageGQL, isError, ITenantFull } from '../../../../types';
+import * as Services from '../../../../services';
+import { toast } from 'sonner';
 
 type CmsPagesSelectorProps = {
   rawValues: any
@@ -15,7 +17,7 @@ type CmsPagesSelectorProps = {
   value: string
 }
 const CmsPageSelector = ({ rawValues, onChange, value }: CmsPagesSelectorProps) => {
-  const { customGraphQLClient } = useContext(GlobalContext);
+  const { customGraphQLClient, reloadContext } = useContext(GlobalContext);
   const cmsPagesQuery = `
       query CmsPages {
         pages {
@@ -56,8 +58,8 @@ const CmsPageSelector = ({ rawValues, onChange, value }: CmsPagesSelectorProps) 
 export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
 
   const { translate } = useContext(I18nContext);
-  const { alert } = useContext(ModalContext);
-  const { customGraphQLClient } = useContext(GlobalContext);
+  const { alert, confirm } = useContext(ModalContext);
+  const { customGraphQLClient, reloadContext } = useContext(GlobalContext);
 
   const formRef = useRef<FormRef>(undefined)
 
@@ -97,7 +99,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
 
   const queryCMSPages = useQuery({
     queryKey: ['CMS pages'],
-    queryFn: () => customGraphQLClient.request<{ pages: ICmsPageGQL[]}>(
+    queryFn: () => customGraphQLClient.request<{ pages: ICmsPageGQL[] }>(
       `query CmsPages {
         pages {
           id
@@ -228,7 +230,28 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
       value={tenant?.style}
       options={{
         actions: {
-          submit: { label: translate('Save') }
+          submit: { label: translate('Save') },
+          cancel: {
+            display: !!tenant,
+            label: translate('tenant.edition.color-theme.reset.button.label'),
+            action: () => confirm({
+              title: translate('tenant.edition.color-theme.reset.confirm.title'),
+              message: translate('tenant.edition.color-theme.reset.confirm.message')
+            })
+              .then(res => {
+                if (res) {
+                  Services.resetColorTheme(tenant!)
+                    .then(r => {
+                      if (isError(r)) {
+                        toast.error(r.error)
+                      } else {
+                        reloadContext().then(() => toast.success(translate('tenant.edition.color-theme.reset.successful.message')))
+                      }
+                    })
+
+                }
+              })
+          }
         }
       }}
     />

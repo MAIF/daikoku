@@ -18,6 +18,8 @@ import play.api.libs.ws.DefaultBodyWritables.writeableOf_urlEncodedSimpleForm
 import play.api.libs.ws.WSResponse
 import play.api.mvc.RequestHeader
 
+import java.security.{MessageDigest, SecureRandom}
+import java.util.Base64
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Success, Try}
@@ -37,14 +39,40 @@ object OAuth2Config {
     override def writes(o: OAuth2Config) = o.asJson
   }
 
+  val pkceConfigFmt = new Format[PKCEConfig] {
+
+    override def reads(json: JsValue): JsResult[PKCEConfig] = {
+      Try {
+        JsSuccess(
+          PKCEConfig(
+            enabled = (json \ "enabled").as[Boolean],
+            algorithm = (json \ "algorithm").as[String]
+          )
+        )
+      } recover {
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
+    }
+
+    override def writes(o: PKCEConfig): JsValue = {
+      Json.obj(
+        "enabled" -> o.enabled,
+        "algorithm" -> o.algorithm
+      )
+    }
+  }
+
   def fromJson(json: JsValue): Either[AppError, OAuth2Config] = {
     Try {
       Right(
         OAuth2Config(
+          pkceConfig =
+            (json \ "pkceConfig").asOpt[PKCEConfig](pkceConfigFmt.reads),
           sessionMaxAge = (json \ "sessionMaxAge").asOpt[Int].getOrElse(86400),
           clientId = (json \ "clientId").asOpt[String].getOrElse("client"),
-          clientSecret =
-            (json \ "clientSecret").asOpt[String].getOrElse("secret"),
+          clientSecret = (json \ "clientSecret").asOpt[String],
           authorizeUrl = (json \ "authorizeUrl")
             .asOpt[String]
             .orElse((json \ "authorize_url").asOpt[String])
@@ -99,10 +127,15 @@ object OAuth2Config {
   }
 }
 
+case class PKCEConfig(
+    enabled: Boolean = false,
+    algorithm: String = "SHA-256"
+)
+
 case class OAuth2Config(
     sessionMaxAge: Int = 86400,
     clientId: String = "client",
-    clientSecret: String = "secret",
+    clientSecret: Option[String] = None,
     tokenUrl: String = "http://<oauth-domain>/oauth/token",
     authorizeUrl: String = "http://localhost:8082/oauth/authorize",
     userInfoUrl: String = "http://<oauth-domain>/userinfo",
@@ -118,7 +151,8 @@ case class OAuth2Config(
     emailField: String = "email",
     pictureField: String = "picture",
     callbackUrl: String = "http://daikoku.foo.bar:8080/auth/oauth2/callback",
-    daikokuAdmins: Seq[String] = Seq.empty[String]
+    daikokuAdmins: Seq[String] = Seq.empty[String],
+    pkceConfig: Option[PKCEConfig] = None
 ) {
   def asJson =
     Json.obj(
@@ -147,6 +181,35 @@ case class OAuth2Config(
 object OAuth2Support {
 
   import fr.maif.otoroshi.daikoku.utils.future._
+  lazy val logger = Logger("oauth2-config")
+
+  def generatePKCECodes(
+      codeChallengeMethod: Option[String] = Some("SHA-256")
+  ) = {
+    val code = new Array[Byte](120)
+    val secureRandom = new SecureRandom()
+    secureRandom.nextBytes(code)
+
+    val codeVerifier = new String(
+      Base64.getUrlEncoder.withoutPadding().encodeToString(code)
+    ).slice(0, 120)
+
+    val bytes = codeVerifier.getBytes("US-ASCII")
+    val md = MessageDigest.getInstance("SHA-256")
+    md.update(bytes, 0, bytes.length)
+    val digest = md.digest
+
+    codeChallengeMethod match {
+      case Some("SHA-256") =>
+        (
+          codeVerifier,
+          org.apache.commons.codec.binary.Base64
+            .encodeBase64URLSafeString(digest),
+          "S256"
+        )
+      case _ => (codeVerifier, codeVerifier, "plain")
+    }
+  }
 
   def bindUser(
       request: RequestHeader,
@@ -156,10 +219,6 @@ object OAuth2Support {
   )(implicit
       ec: ExecutionContext
   ): Future[Either[String, User]] = {
-    val clientId = authConfig.clientId
-    val clientSecret = authConfig.clientSecret
-    val redirectUri = authConfig.callbackUrl
-
     request.getQueryString("error") match {
       case Some(_) => Left("No code :(").asFuture
       case None =>
@@ -167,30 +226,44 @@ object OAuth2Support {
           case None => Left("No code :(").asFuture
           case Some(code) =>
             val builder = _env.wsClient.url(authConfig.tokenUrl)
-            val future1 = if (authConfig.useJson) {
+            val verifier = request.session.get("code_verifier").getOrElse("")
+            val clientSecret =
+              authConfig.clientSecret.map(_.trim).filterNot(_.isEmpty)
+            AppLogger.error(clientSecret.getOrElse("no secret"))
+
+            val mapPayload = (Map(
+              "code" -> code,
+              "grant_type" -> "authorization_code",
+              "client_id" -> authConfig.clientId,
+              "redirect_uri" -> authConfig.callbackUrl,
+              "scope" -> authConfig.scope
+            ) ++ authConfig.pkceConfig
+              .collect {
+                case e if e.enabled => Map("code_verifier" -> verifier)
+              }
+              .getOrElse(Map.empty)
+              ++ clientSecret
+                .map(s => Map("client_secret" -> s))
+                .getOrElse(Map.empty))
+
+            val eventualResponseToken = if (authConfig.useJson) {
+              val jsonPayload = JsObject(
+                mapPayload.view.mapValues(JsString.apply).toMap
+              )
               builder.post(
-                Json.obj(
-                  "code" -> code,
-                  "grant_type" -> "authorization_code",
-                  "client_id" -> clientId,
-                  "client_secret" -> clientSecret,
-                  "redirect_uri" -> redirectUri,
-                  "scope" -> authConfig.scope
-                )
+                jsonPayload
               )
             } else {
               builder.post(
-                Map(
-                  "grant_type" -> "authorization_code",
-                  "client_id" -> clientId,
-                  "client_secret" -> clientSecret,
-                  "redirect_uri" -> redirectUri,
-                  "scope" -> authConfig.scope
-                )
+                mapPayload
               )(writeableOf_urlEncodedSimpleForm)
             }
-            future1
+
+            eventualResponseToken
               .flatMap { resp =>
+                logger.debug(
+                  s"Oauth connection response received : ${Json.stringify(resp.json)}"
+                )
                 val accessToken =
                   (resp.json \ authConfig.accessTokenField).as[String]
                 if (
@@ -371,7 +444,7 @@ object OAuth2Support {
       config
         .copy(
           clientId = clientId.getOrElse(config.clientId),
-          clientSecret = clientSecret.getOrElse(config.clientSecret),
+          clientSecret = clientSecret,
           tokenUrl = tokenUrl,
           authorizeUrl = authorizeUrl,
           userInfoUrl = userInfoUrl,
@@ -434,10 +507,11 @@ object OAuth2Support {
               "code" -> "fifou",
               "grant_type" -> "authorization_code",
               "client_id" -> authConfig.clientId,
-              "client_secret" -> authConfig.clientSecret,
               "scope" -> authConfig.scope,
               "redirect_uri" -> authConfig.callbackUrl
-            )
+            ) ++ authConfig.clientSecret
+              .map(s => Map("client_secret" -> s))
+              .getOrElse(Map.empty)
           )
       )
       _ <- EitherT.cond[Future][AppError, Unit](
