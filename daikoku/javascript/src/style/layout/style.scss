@@ -335,3 +335,7 @@ img:hover+.changePicture, .avatar-without-img:hover+.changePicture,
   width: calc(50%);
   z-index: 20;
 }
+
+.MuiPopper-root {
+  z-index: 10003 !important;
+}

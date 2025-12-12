@@ -24,7 +24,8 @@ import {
   BeautifulTitle,
   Can,
   formatDate,
-  manage
+  manage,
+  Spinner
 } from "../../utils";
 import { GlobalContext } from "../../../contexts/globalContext";
 
@@ -401,8 +402,7 @@ export const TeamApiSubscriptions = ({
             })
           }
         >
-          {" "}
-          {translate("Filter")}{" "}
+          {translate("Filter")}
         </button>
         {!!filters && (
           <div
@@ -446,7 +446,15 @@ export const TeamApiSubscriptions = ({
             ))}
           </thead>
           <tbody>
-            {table.getRowModel().rows.map(row => {
+            {subscriptionsQuery.isLoading && (
+              <tr>
+                <td colSpan={1000}>
+                  <Spinner />
+                </td>
+              </tr>
+            )
+            }
+            {!subscriptionsQuery.isLoading && table.getRowModel().rows.map(row => {
               return (
                 <tr key={row.id}>
                   {row.getVisibleCells().map(cell => {
