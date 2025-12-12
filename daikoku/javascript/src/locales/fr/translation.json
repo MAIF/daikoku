@@ -1703,7 +1703,7 @@
   "dashboard.apikeys.tile.active.label": "Active",
   "dashboard.apikeys.tile.expire.label": "Proche expiration",
   "dashboard.demands.tile.title": "Demandes à valider",
-  "dashboard.demands.tile.description": "Souscriptions en attente",
+  "dashboard.demands.tile.description": "Souscriptions en attente de validation",
   "dashboard.demands.tile.waiting.label": "En attente",
   "dashboard.apis.table.header.label.api": "API",
   "dashboard.apis.table.header.label.tags": "Tags",

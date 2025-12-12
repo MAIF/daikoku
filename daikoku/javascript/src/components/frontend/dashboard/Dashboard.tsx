@@ -90,7 +90,7 @@ export const Dashboard = (props: NewHomeProps) => {
           query={dashboardQuery}
           reset={() => queryClient.invalidateQueries({ queryKey: [`${connectedUser._id}-dashboard`] })}
           data={(data) => [{ label: translate('dashboard.demands.tile.waiting.label'), value: data.demands.waiting }]}
-          action={() => console.debug("test")} />
+          action={() => navigate('/notifications?filter=[{"id":"unreadOnly","value":true},{"id":"type","value":["ApiSubscription"]}]')} />
       </div>}
       <ApiList />
     </main>

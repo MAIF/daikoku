@@ -69,7 +69,7 @@ export const loginAs = async (user: IUser, page: Page) => {
 export const logout = async (page: Page) => {
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
-  await page.getByLabel('API papier').waitFor({ state: 'visible' });
+  await page.getByRole('link', { name: 'API papier' }).waitFor({ state: 'visible' });
 }
 
 export const findAndGoToTeam = async (team: string, page: Page) => {

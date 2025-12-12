@@ -1,7 +1,7 @@
 import test, { expect, Locator } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 import { DWIGHT, IUser, JIM, MICHAEL, PAM } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiDivision, apiPapier, dwightPaperSubscriptionId, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, apiCommande, apiDivision, apiPapier, dwightPaperSubscriptionId, exposedPort, loginAs, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
 import { IApi } from '../../src/types';
 import { generateApi, saveApi } from './apis';
 import { nanoid } from 'nanoid';
@@ -66,6 +66,19 @@ test('User non producer can access to the dashboard', async ({ page }) => {
 });
 
 test('User producer can access to the dashboard', async ({ page }) => {
+  await page.goto(ACCUEIL);
+  await loginAs(JIM, page)
+
+  await page.getByRole('link', { name: 'API papier' }).click();
+  await page.getByText('Environnements').click();
+  await page.getByRole('button', { name: 'Demander une clé d\'API' }).click();
+  await page.getByText('Vendeurs').click();
+  await page.getByRole('button', { name: 'Souscrire avec une nouvelle' }).click();
+  await page.getByRole('textbox', { name: 'motivation' }).fill('I want it !!!');
+  await page.getByRole('button', { name: 'Envoyer' }).click();
+  await expect(page.getByText('La demande de clé d\'API au')).toBeVisible();
+  await logout(page)
+
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page)
 

@@ -5382,8 +5382,8 @@ class ApiController(
           .find(Json.obj("_id" -> Json.obj("$in" -> JsArray(subscriptions.map(_.api.asJson).distinct))))
         publishedApi <- env.dataStore.apiRepo.forTenant(ctx.tenant)
           .find(Json.obj("team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))))
-        waitingDemands <- env.dataStore.subscriptionDemandRepo.forTenant(ctx.tenant)
-          .find(Json.obj("team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))))
+        demandToTreat <- env.dataStore.notificationRepo.forTenant(ctx.tenant)
+          .find(Json.obj("action.type" -> "ApiSubscription", "status.status" -> "Pending", "team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))))
       } yield Ok(Json.obj(
         "apis" -> Json.obj(
           "published" -> publishedApi.size,
@@ -5394,7 +5394,7 @@ class ApiController(
           "expire" -> subscriptions.count(_.validUntil.exists(d => Days.daysBetween(DateTime.now(), d).getDays < 7)),
         ),
         "demands" -> Json.obj(
-          "waiting" -> waitingDemands.size
+          "waiting" -> demandToTreat.size
         ),
       ))
     }

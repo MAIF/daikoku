@@ -1697,7 +1697,7 @@
     "dashboard.apikeys.tile.active.label": "Active",
     "dashboard.apikeys.tile.expire.label": "Expiring soon",
     "dashboard.demands.tile.title": "Requests to validate",
-    "dashboard.demands.tile.description": "Pending subscriptions",
+    "dashboard.demands.tile.description": "Subscriptions pending validation",
     "dashboard.demands.tile.waiting.label": "Pending",
     "dashboard.tile.error.button.label": "Reload data",
     "dashboard.apis.table.header.label.api": "API",
