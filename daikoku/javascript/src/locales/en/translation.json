@@ -1727,5 +1727,7 @@
         "s": "%s pending request",
         "p": "%s pending requests"
     },
-    "dashboard.create.api.button.label": "Create new API"
+    "dashboard.create.api.button.label": "Create new API",
+    "search.team.placeholder": "Search a team",
+    "dashboard.create.team.button.label": "Create a team"
 }

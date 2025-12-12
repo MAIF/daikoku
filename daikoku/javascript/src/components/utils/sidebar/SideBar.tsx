@@ -18,6 +18,7 @@ import { MorePanel } from './panels/MorePanel';
 import { getInitials, userHasAvatar } from '../..';
 import { absolutePath } from 'swagger-ui-dist';
 import { ModalContext } from '../../../contexts';
+import { TeamPanel } from './panels/TeamPanel';
 
 
 export const state = {
@@ -162,14 +163,7 @@ export const TopBar = () => {
         >
           {translate('topbar.link.dashboard.label')}
         </Link>
-        {!connectedUser.isGuest && <Link
-          to="/"
-          title={translate("topbar.link.my.teams.label")}
-          aria-label={translate("topbar.link.my.teams.label")}
-          className="notification-link notification-link-color"
-        >
-          {translate('topbar.link.my.teams.label')}
-        </Link>}
+        <TeamPanel />
 
       </div>
       <div className="navbar_middle d-flex justify-content-center flex-grow-1">

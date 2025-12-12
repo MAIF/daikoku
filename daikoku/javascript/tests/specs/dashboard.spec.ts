@@ -222,8 +222,21 @@ test('apilist display apigroups & apigroups display apilist', async ({ page }) =
 
 test('create new team', async ({ page }) => {
   await page.goto(ACCUEIL);
-  await loginAs(MICHAEL, page)
+  await loginAs(JIM, page)
 
-  //todo: tester
+  
+  await page.getByRole('button', { name: 'Mes équipes' }).click();
+  await expect(page.getByRole('heading', { name: 'Mes équipes' })).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('link')).toHaveCount(3);
+  await page.getByRole('button', { name: 'Créer une équipe' }).click();
+  await page.getByRole('textbox', { name: 'Nom' }).fill('Athlead');
+  await page.getByRole('textbox', { name: 'Description' }).fill('Athlead\'s team');
+  await page.getByRole('textbox', { name: 'Contact de l\'équipe' }).fill('contact@athlead.com');
+  await page.getByRole('button', { name: 'Créer', exact: true }).click();
+  await expect(page.getByText('Team Athlead created')).toBeVisible();
+  await page.getByRole('button', { name: 'Mes équipes' }).click();
+  await expect(page.getByRole('dialog')).toContainText('Athlead');
+  await page.getByRole('link', { name: 'Athlead' }).click();
+  await expect(page.getByRole('heading', { name: 'Athlead' })).toBeVisible();
 
 });

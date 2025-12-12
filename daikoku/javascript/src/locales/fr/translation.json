@@ -1732,5 +1732,7 @@
     "s": "%s demande en attente",
     "p": "%s demandes en attente"
   },
-  "dashboard.create.api.button.label": "Créer une API"
+  "dashboard.create.api.button.label": "Créer une API",
+  "search.team.placeholder": "Rechercher une équipe",
+  "dashboard.create.team.button.label": "Créer une équipe"
 }

@@ -10,6 +10,7 @@ import * as Services from '../../../../services';
 import { isError, ITeamSimple } from '../../../../types';
 import { Spinner } from '../../Spinner';
 import { ModalContext } from '../../../../contexts';
+import { GlobalContext } from '../../../../contexts/globalContext';
 
 export type SearchOption =
   | { value: string, label: string, type: 'team' }
@@ -211,10 +212,10 @@ export const SearchPanel = () => {
       <button type='button' className='search-button' onClick={(e) => openModal()}>
         <div className='d-flex flex-row align-items-center gap-2'>
           <SearchIcon className="fake-placeholder" />
-          <div className='fake-placeholder px-3' dangerouslySetInnerHTML={{__html: translate({ key: 'topbar.search.placeholder', replacements: ['<kbd className="mx-1">/</kbd>']})}} />
+          <div className='fake-placeholder px-3' dangerouslySetInnerHTML={{ __html: translate({ key: 'topbar.search.placeholder', replacements: ['<kbd className="mx-1">/</kbd>'] }) }} />
         </div>
       </button>
 
     </div>
   )
-} 
+}
