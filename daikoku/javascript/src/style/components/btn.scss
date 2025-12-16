@@ -17,22 +17,22 @@ button {
   }
 
   &-primary {
-    color: variables.$btn-text-color !important;
-    border-color: variables.$btn-border-color !important;
-    background-color: variables.$btn-bg-color !important;
+    color: variables.$primary-color !important;
+    border-color: variables.$primary-color !important;
+    background-color: #fff !important;
 
     // , :not(.btn-check) + .btn:active
     &.active,
     &:active {
-      color: variables.$btn-bg-color !important;
-      background-color: variables.$btn-border-color !important;
-      border-color: variables.$btn-border-color !important;
+      color: #fff !important;
+      background-color: variables.$primary-color !important;
+      border-color: variables.$primary-color !important;
     }
 
     &:hover {
-      color: variables.$btn-bg-color !important;
-      background-color: variables.$btn-border-color !important;
-      border-color: variables.$btn-border-color !important;
+      color: #fff !important;
+      background-color: variables.$primary-color !important;
+      border-color: variables.$primary-color !important;
 
     }
   }

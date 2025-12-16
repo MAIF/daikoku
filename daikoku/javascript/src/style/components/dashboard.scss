@@ -8,12 +8,13 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
   flex-direction: column;
   border-radius: 5px;
   overflow: hidden;
+  border: 1px solid color-mix(in srgb, variables.$level1_bg-color 90%, #000);
 
   background-color: variables.$level2_bg-color;
   color: variables.$level2_text-color;
 
   .select-all-row {
-    background-color: color-mix(in srgb, variables.$level3_bg-color 90%, #000);
+    background-color: variables.$level3_bg-color;
     padding: 1rem 1rem !important;
     font-size: 1rem !important;
     height: 3rem;
@@ -27,12 +28,16 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
   .table-rows {
     display: flex;
     flex-direction: column;
-    background-color: variables.$level3_bg-color;
+    background-color: variables.$level1_bg-color;
     color: variables.$level3_text-color;
     padding: 0;
     margin: 0;
 
     list-style: none;
+  }
+
+  li:last-of-type .table-row{
+    border: none;
   }
 
   .table-row {
@@ -41,11 +46,11 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     gap: 1rem;
     padding: .875rem 1rem;
     align-items: center;
-    border-bottom: 1px solid color-mix(in srgb, variables.$level3_bg-color 90%, #000);
     font-size: 0.875rem;
+    border-bottom: 1px solid color-mix(in srgb, variables.$level3_bg-color 90%, #000);
 
 
-    &:hover {
+    &:not(.select-all-row):hover {
       background-color: color-mix(in srgb, variables.$level3_bg-color 90%, #000);
     }
 
@@ -143,6 +148,14 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
 
     div.action-cell {
       text-align: end;
+
+      .favorite-btn {
+        color: variables.$primary-color;
+
+        &:hover {
+          color: variables.$level1_link-hover-color;
+        }
+      }
     }
   }
 

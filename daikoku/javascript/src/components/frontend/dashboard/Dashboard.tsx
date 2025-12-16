@@ -56,7 +56,7 @@ export const Dashboard = (props: NewHomeProps) => {
             <p>{tenant.description}</p>
           </div>
           {isTenantAdmin && <button onClick={() => navigate('/settings/settings/general')}
-            className="btn btn-outline-info">
+            className="btn btn-outline-primary">
             <Sliders className="me-2" />{translate('dashboard.page.tenant.setting.button.label')}
           </button>}
         </div>

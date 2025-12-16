@@ -36,7 +36,7 @@ export const Tile = (props: TileProps) => {
             {props.description}
           </div>
         </div>
-        {!!props.action && (<button type="button" onClick={() => props.action!()}><ArrowRight /></button>)}
+        {!!props.action && (<button type="button" className="dashboard-tile-action" onClick={() => props.action!()}><ArrowRight /></button>)}
       </div>
       {props.query.isLoading && <Spinner />}
       {!props.query.isLoading && props.query.data && (
