@@ -61,7 +61,7 @@ export const Dashboard = (props: NewHomeProps) => {
           </button>}
         </div>
       </section>
-      {!connectedUser.isGuest && <div className="d-flex flex-row gap-5">
+      {!connectedUser.isGuest && <div className="d-flex flex-row gap-3">
         <Tile
           width={40}
           title={translate('dashboard.apis.tile.title')}

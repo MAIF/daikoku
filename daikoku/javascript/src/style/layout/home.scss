@@ -14,7 +14,7 @@
 
 $tile_background_color: variables.$level2_bg-color;
 $tile_text_color: variables.$level2_text-color;
-$tile_border_color: color-mix(in srgb, $tile_background_color 70%, #000);
+$tile_border_color: color-mix(in srgb, $tile_background_color 80%, #000);
 
 .dashboard-tile {
   background: $tile_background_color;
@@ -80,7 +80,7 @@ $tile_border_color: color-mix(in srgb, $tile_background_color 70%, #000);
   }
 
   .tile_data {
-    padding: 16px;
+    padding: 5px 16px;
 
     .data {
       .data__label {
@@ -89,6 +89,7 @@ $tile_border_color: color-mix(in srgb, $tile_background_color 70%, #000);
 
       .data__value {
         font-size: 30px;
+        font-weight: 700;
         color: $tile_text_color;
       }
     }

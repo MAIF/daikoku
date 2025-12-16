@@ -217,7 +217,7 @@ export const ApiList = (props: ApiListProps) => {
             {tags.map((tag, idx) => {
               return (
                 <span key={`${tag}-${idx}`} onClick={() => handleSelectChange([{ label: tag, value: tag }], 'tag')}
-                  className={`badge badge-custom-custom`}>
+                  className={`badge badge-custom-primary`}>
                   {tag}
                 </span>
               )
@@ -563,7 +563,7 @@ export const ApiList = (props: ApiListProps) => {
             </h2>
           </div>
           {canCreateApi && (
-            <button type="button" className='btn btn-outline-info d-flex align-items-center gap-2' onClick={() => createApi()}>
+            <button type="button" className='btn btn-outline-primary d-flex align-items-center gap-2' onClick={() => createApi()}>
               <Plus />
               <p className="m-0">{translate('dashboard.create.api.button.label')}</p>
             </button>
