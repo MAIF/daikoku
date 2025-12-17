@@ -63,7 +63,7 @@ export const loginAs = async (user: IUser, page: Page) => {
   // await page.locator('input[name="username"]').fill(user.email);
   await page.locator('input[name="password"]').fill('password');
   await page.getByRole('button', { name: 'Se connecter' }).click();
-  await page.getByRole('link', {name: 'API papier'}).waitFor({ state: 'visible' });
+  await page.getByRole('link', { name: 'API papier' }).waitFor({ state: 'visible' });
 }
 
 export const loginLocalAs = async (user: IUser, page: Page) => {
@@ -73,7 +73,7 @@ export const loginLocalAs = async (user: IUser, page: Page) => {
   // await page.locator('input[name="username"]').fill(user.email);
   await page.locator('input[name="password"]').fill(user.password ?? 'password');
   await page.getByRole('button', { name: 'Se connecter' }).click();
-  await page.getByLabel('API papier').waitFor({ state: 'visible' });
+  await page.getByRole('link', { name: 'API papier' }).waitFor({ state: 'visible' });
 }
 
 export const logout = async (page: Page) => {
@@ -85,5 +85,5 @@ export const logout = async (page: Page) => {
 export const findAndGoToTeam = async (team: string, page: Page) => {
   await page.getByRole('button', { name: 'Taper / pour rechercher' }).click();
   await page.getByRole('textbox', { name: 'Rechercher une API, équipe,' }).fill(team);
-  await page.getByRole('link', {name : team}).click();
+  await page.locator('#portal-root').getByRole('link', { name: team }).click();
 }

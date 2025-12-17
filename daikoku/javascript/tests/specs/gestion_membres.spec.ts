@@ -404,7 +404,7 @@ test('Se créer un compte avec un process de souscription local', async ({ page 
   const page2Promise = page.waitForEvent('popup');
   await page.getByRole('link', { name: '👉 [Confirmer mon adresse e-mail' }).click();
   const page2 = await page2Promise;
-  await expect(page2.getByText('Merci pour votre réponse')).toBeVisible();
+  await expect(page2.getByText('Adresse email confirmée')).toBeVisible();
   await page.goto(ACCUEIL);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('textbox', { name: 'Courriel' }).fill(MICHAEL.email);
@@ -558,7 +558,7 @@ test('[Local] - Ajouter une personne n\'ayant pas de compte Daikoku à une équi
   await page.goto(ACCUEIL);
   await loginLocalAs(MICHAEL, page);
 
-  await page.locator('span').filter({ hasText: 'API Division' }).click();
+  await findAndGoToTeam('API Division', page);
   await page.getByText('Membres').click();
   await page.getByRole('button', { name: 'Inviter un collaborateur' }).click();
   await page.getByRole('textbox', { name: 'Email' }).fill(ROBERT.email);
@@ -597,7 +597,8 @@ test('[Local] - Ajouter une personne n\'ayant pas de compte Daikoku à une équi
   await expect(page2.getByText('Vous avez été invité•e à')).toBeVisible();
   await page2.getByRole('button', { name: 'Accepter' }).click();
   await page2.getByRole('link', { name: 'Liste des APIs' }).click();
-  await expect(page2.locator('span').filter({ hasText: 'API Division' })).toBeVisible();
+  await findAndGoToTeam('API Division', page2);
+  await page2.getByRole('heading', { name: 'API Division' }).click();
 })
 
 test('[Local] - Valider la creation d\'un compte avec un process de souscription local', async ({ page }) => {
