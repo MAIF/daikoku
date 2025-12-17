@@ -35,12 +35,12 @@ test('[ASOAPI-10169] - anonyme - Consulter l\'offre API', async ({ page }) => {
   await expect(page.getByRole('listitem').filter({ hasText: 'API papier' })).toBeVisible();
 
   await page.getByPlaceholder('Rechercher une API...').fill('papier');
-  await expect(page.getByLabel('API papier')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'API papier' })).toBeVisible();
   await page.getByPlaceholder('Rechercher une API...').fill('paper');
-  await expect(page.getByLabel('API papier')).toBeHidden();
+  await expect(page.getByRole('link', { name: 'API papier' })).toBeHidden();
   await expect(page.getByRole('main')).toContainText('0');
   await page.getByText('Réinitialiser les filtres').click();
-  await expect(page.getByLabel('API papier')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'API papier' })).toBeVisible();
 });
 
 test('[ASOAPI-10151] - Consulter l\'offre API', async ({ page }) => {
@@ -48,15 +48,15 @@ test('[ASOAPI-10151] - Consulter l\'offre API', async ({ page }) => {
   await loginAs(JIM, page);
   await expect(page.getByLabel('admin-api-tenant-default')).not.toBeVisible();
   await expect(page.getByLabel('cms-api-tenant-default')).not.toBeVisible();
-  await expect(page.getByLabel('API papier')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'API papier' })).toBeVisible();
 
   await page.getByPlaceholder('Rechercher une API...').fill('papier');
-  await expect(page.getByLabel('API papier')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'API papier' })).toBeVisible();
   await page.getByPlaceholder('Rechercher une API...').fill('paper');
   await expect(page.getByRole('main')).toContainText('0');
-  await expect(page.getByLabel('API papier')).toBeHidden();
+  await expect(page.getByRole('link', { name: 'API papier' })).toBeHidden();
   await page.getByText('Réinitialiser les filtres').click();
-  await expect(page.getByLabel('API papier')).toBeVisible();
+  await expect(page.getByRole('link', { name: 'API papier' })).toBeVisible();
 });
 
 test('Utiliser les liens de redirection vers la page d\'accueil', async ({ page }) => {
@@ -302,81 +302,81 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
           }
         ])
       }))
-  ); 
+  );
 
-//user guest
-await page.goto(HOME);
-await page.getByRole('link', { name: 'API papier' }).click();
-await expect(page.getByRole('navigation').getByText('Description')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Environnements')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Documentation')).toBeHidden();
-await expect(page.getByRole('navigation').getByText('Spécification')).toBeHidden();
-await expect(page.getByRole('navigation').getByText('Test')).toBeHidden();
-await expect(page.getByRole('navigation').getByText('Actualités')).toBeHidden();
-await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
-await expect(page.getByRole('navigation').getByText('Consommation')).toBeHidden();
-await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeHidden();
+  //user guest
+  await page.goto(HOME);
+  await page.getByRole('link', { name: 'API papier' }).click();
+  await expect(page.getByRole('navigation').getByText('Description')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Environnements')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Documentation')).toBeHidden();
+  await expect(page.getByRole('navigation').getByText('Spécification')).toBeHidden();
+  await expect(page.getByRole('navigation').getByText('Test')).toBeHidden();
+  await expect(page.getByRole('navigation').getByText('Actualités')).toBeHidden();
+  await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
+  await expect(page.getByRole('navigation').getByText('Consommation')).toBeHidden();
+  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeHidden();
 
-//user simple user
-await loginAs(JIM, page)
-await page.getByRole('link', { name: 'API papier' }).click();
-await expect(page.getByRole('navigation').getByText('Description')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Environnements')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Documentation')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Spécification')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Test')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Actualités')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
-await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeVisible();
-await logout(page)
+  //user simple user
+  await loginAs(JIM, page)
+  await page.getByRole('link', { name: 'API papier' }).click();
+  await expect(page.getByRole('navigation').getByText('Description')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Environnements')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Documentation')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Spécification')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Test')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Actualités')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
+  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeVisible();
+  await logout(page)
 
-//user admin
-await loginAs(MICHAEL, page)
-await page.getByRole('link', { name: 'API papier' }).click();
-await expect(page.getByRole('navigation').getByText('Description')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Environnements')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Documentation')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Spécification')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Test')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Actualités')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeVisible();
-await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeVisible();
+  //user admin
+  await loginAs(MICHAEL, page)
+  await page.getByRole('link', { name: 'API papier' }).click();
+  await expect(page.getByRole('navigation').getByText('Description')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Environnements')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Documentation')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Spécification')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Test')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Actualités')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Questions')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeVisible();
+  await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeVisible();
 })
 
 test('Voir ses notifications', async ({ page }) => {
 
   const notifs: Array<NotifProps> = [
-    { type: "ApiAccess", sender: JIM, api: apiCommande, fromTeam: vendeurs, team: apiDivision},
-    { type: "ApiAccess", sender: JIM, api: apiCommande, fromTeam: logistique, team: apiDivision},
-    { type: "ApiAccess", sender: JIM, api: apiCommande, fromTeam: teamJim, team: apiDivision},
-    { type: "ApiAccess", sender: JIM, api: apiPapier, fromTeam: vendeurs, team: apiDivision},
-    { type: "ApiAccess", sender: JIM, api: apiPapier, fromTeam: logistique, team: apiDivision},
-    { type: "ApiAccess", sender: JIM, api: apiPapier, fromTeam: teamJim, team: apiDivision},
-    { type: "TransferApiOwnership", sender: MICHAEL, api: apiPapier, team: vendeurs},
-    { type: "TransferApiOwnership", sender: MICHAEL, api: apiCommande, team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 1", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 2", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 3", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 4", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 5", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 6", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 7", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 8", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 9", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 10", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 11", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 12", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 13", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 14", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 15", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 16", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 17", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 18", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 19", team: vendeurs},
-    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 20", team: vendeurs},
+    { type: "ApiAccess", sender: JIM, api: apiCommande, fromTeam: vendeurs, team: apiDivision },
+    { type: "ApiAccess", sender: JIM, api: apiCommande, fromTeam: logistique, team: apiDivision },
+    { type: "ApiAccess", sender: JIM, api: apiCommande, fromTeam: teamJim, team: apiDivision },
+    { type: "ApiAccess", sender: JIM, api: apiPapier, fromTeam: vendeurs, team: apiDivision },
+    { type: "ApiAccess", sender: JIM, api: apiPapier, fromTeam: logistique, team: apiDivision },
+    { type: "ApiAccess", sender: JIM, api: apiPapier, fromTeam: teamJim, team: apiDivision },
+    { type: "TransferApiOwnership", sender: MICHAEL, api: apiPapier, team: vendeurs },
+    { type: "TransferApiOwnership", sender: MICHAEL, api: apiCommande, team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 1", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 2", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 3", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 4", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 5", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 6", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 7", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 8", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 9", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 10", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 11", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 12", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 13", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 14", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 15", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 16", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 17", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 18", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 19", team: vendeurs },
+    { type: "ApiKeyDeletionInformation", sender: MICHAEL, api: 'API Commande', clientId: "apikey 20", team: vendeurs },
     { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: vendeurs, subscription: subCommandeDevVendeurs },
     { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: vendeurs, subscription: subCommandeDevVendeurs },
     { type: "ApiKeyRefresh", sender: MICHAEL, api: 'API Commande', plan: 'dev', team: vendeurs, subscription: subCommandeDevVendeurs },
@@ -417,9 +417,9 @@ test('Voir ses notifications', async ({ page }) => {
 
   await page.goto(ACCUEIL);
   await loginAs(JIM, page)
-  
+
   await Promise.all(notifs.map(n => postNewNotif(n)))
-  
+
 
   await page.getByRole('link', { name: 'Accès aux notifications' }).click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('58');
@@ -447,7 +447,7 @@ test('Voir ses notifications', async ({ page }) => {
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('2');
   await expect(page.locator('article')).toHaveCount(2)
   await page.getByRole('button', { name: 'Réinitialiser les filtres' }).click();
-  
+
   await page.reload();
 
   await page.getByRole('checkbox', { name: 'tout sélectionner' }).check();
