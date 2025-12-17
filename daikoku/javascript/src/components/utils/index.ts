@@ -14,4 +14,4 @@ export * from './entities';
 export * from './function';
 export * from './sidebar';
 export * from './Error';
-export * from './Response';
+export * from './Informations';

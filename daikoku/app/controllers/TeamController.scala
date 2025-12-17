@@ -739,7 +739,7 @@ class TeamController(
   ): Future[Result] = {
     import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 
-    def createInvitedUser(team: String, notificationId: String) =
+    def createInvitedUser(team: String, notificationId: String) = {
       User(
         id = UserId(IdGenerator.token(32)),
         tenants = Set(ctx.tenant.id),
@@ -761,6 +761,7 @@ class TeamController(
           )
         )
       )
+    }
 
     env.dataStore.userRepo
       .findOne(Json.obj("email" -> email))
@@ -776,7 +777,7 @@ class TeamController(
           val invitedUser = createInvitedUser(team.name, notificationId.value)
           val link = env.getDaikokuUrl(
             ctx.tenant,
-            s"/join?token=${invitedUser.invitation.get.token}"
+            s"/informations?invitation-token=${invitedUser.invitation.get.token}"
           )
 
           val notification = Notification(

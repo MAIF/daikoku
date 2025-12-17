@@ -4,6 +4,7 @@ import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
+import fr.maif.otoroshi.daikoku.domain.SubscriptionDemandState.Accepted
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
@@ -37,9 +38,10 @@ class AccountCreationService {
           .findOne(Json.obj("email" -> accountCreation.email))
       )
       _ <- EitherT.cond[Future][AppError, Unit](
-        optUser.forall(u =>
-          u.invitation.isEmpty || u.invitation.get.registered
-        ),
+        optUser.forall(_.invitation match {
+          case Some(invit) if !invit.registered => true
+          case _ => false
+        }),
         (),
         AppError.EntityConflict("This account is already enabled.")
       )
@@ -129,7 +131,7 @@ class AccountCreationService {
       )
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.accountCreationRepo
-          .deleteByIdLogically(accountCreation.id.value)
+          .save(accountCreation.copy(state = Accepted))
       )
 
     } yield Ok(Json.obj("message" -> "user.validated.success"))

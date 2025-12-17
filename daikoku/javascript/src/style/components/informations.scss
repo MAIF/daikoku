@@ -1,0 +1,23 @@
+@use "../variables";
+
+.information-cartridge {
+  width: 600px;
+  padding: 20px;
+
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, variables.$level1_bg-color 90%, #000);
+
+
+
+  background-color: variables.$level2_bg-color;
+
+  .information-title {
+    font-size: 20px;
+    color: variables.$level2_text-color;
+  }
+
+  .information-description {
+    font-size: 14px;
+    color: variables.$level2_text-color;
+  }
+}

@@ -1,16 +1,15 @@
-import debounce from 'lodash/debounce';
-import { useContext, useEffect, useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import classNames from 'classnames';
 import { useQuery } from '@tanstack/react-query';
+import classNames from 'classnames';
+import debounce from 'lodash/debounce';
+import { useContext, useEffect, useState } from 'react';
 import SearchIcon from 'react-feather/dist/icons/search';
+import { Link, useNavigate } from 'react-router-dom';
 
+import { ModalContext } from '../../../../contexts';
 import { I18nContext } from '../../../../contexts/i18n-context';
 import * as Services from '../../../../services';
 import { isError, ITeamSimple } from '../../../../types';
 import { Spinner } from '../../Spinner';
-import { ModalContext } from '../../../../contexts';
-import { GlobalContext } from '../../../../contexts/globalContext';
 
 export type SearchOption =
   | { value: string, label: string, type: 'team' }

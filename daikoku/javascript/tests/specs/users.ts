@@ -1,7 +1,8 @@
-export interface IUser {
+export type IUser = {
   email: string
   name: string
-  id?: string
+  id?: string,
+  password?: string
 }
 export const JIM: IUser = {
   email: "jim.halpert@dundermifflin.com",
@@ -28,5 +29,11 @@ export const MICHAEL: IUser = {
 export const ANDY: IUser = {
   email: "andy.bernard@dundermifflin.com",
   name: "Andy Bernard"
+};
+
+export const ROBERT: IUser = {
+  email: "robert.california@dundermifflin.com",
+  name: "Robert California",
+  password: 'Pa$$w0rd'
 };
 

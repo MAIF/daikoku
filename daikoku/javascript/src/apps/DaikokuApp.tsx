@@ -10,7 +10,6 @@ import {
   ApiHome,
   AtomicDesign,
   FrontOffice,
-  JoinTeam,
   MaybeHomePage,
   SubscriptionRetrieve
 } from '../components/frontend';
@@ -41,7 +40,7 @@ import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets
 import { Signup } from '../components/frontend/account/signup';
 import { Dashboard } from '../components/frontend/dashboard/Dashboard';
 import { FastMode } from "../components/frontend/fastMode/FastMode";
-import { Error, Response } from '../components/utils';
+import { Error, Informations } from '../components/utils';
 import { RightPanel } from '../components/utils/sidebar/RightPanel';
 import { GlobalContext } from '../contexts/globalContext';
 import { I18nContext } from '../contexts/i18n-context';
@@ -131,17 +130,9 @@ export const DaikokuApp = () => {
                 }
               />
               <Route
-                path='/response'
+                path='/informations'
                 element={
-                  <Response />
-                }
-              />
-              <Route
-                path="/join"
-                element={
-                  <FrontOfficeRoute title={`${tenant.title} - ${translate('Join team')}`}>
-                    <JoinTeam />
-                  </FrontOfficeRoute>
+                  <Informations />
                 }
               />
               <Route
@@ -174,9 +165,9 @@ export const DaikokuApp = () => {
                     }
                   />
                   <Route
-                    path='/response'
+                    path='/informations'
                     element={
-                      <Response />
+                      <Informations/>
                     }
                   />
                   <Route
@@ -236,14 +227,6 @@ export const DaikokuApp = () => {
                       <MyProfile />
                     </RouteWithTitle>} />
                     <Route path="/:teamId/settings*" element={<TeamBackOffice />} />
-                    <Route
-                      path="/join"
-                      element={
-                        <FrontOfficeRoute title={`${tenant.title} - ${translate('Join team')}`}>
-                          <JoinTeam />
-                        </FrontOfficeRoute>
-                      }
-                    />
                     <Route
                       path="/:teamId/:apiId/:versionId/:tab/*"
                       element={
@@ -447,7 +430,6 @@ export const DaikokuApp = () => {
               </div>
             </div>
           </ModalProvider>
-
         </NavProvider>
       </MessagesProvider>
     </BrowserRouter>

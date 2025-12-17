@@ -1363,19 +1363,9 @@ class ApiController(
           maybeSessionId
         )
       } yield
-        if (ctx.user.isEmpty) {
-          Redirect(env.getDaikokuUrl(ctx.tenant, "/response")).future
-        } else {
-          Redirect(env.getDaikokuUrl(ctx.tenant, "/?message=home.message.subscription.validation.successfull")).future
-        })
-        .leftMap(error =>
-          Errors.craftResponseResultF(
-            message = error.getErrorMessage(),
-            status = Results.Ok
-          )
-        )
+        Redirect(env.getDaikokuUrl(ctx.tenant, "/informations?message=subscription-accept")))
+        .leftMap(error => Redirect(env.getDaikokuUrl(ctx.tenant, s"/informations?error=${error.getErrorMessage()}")))
         .merge
-        .flatten
     }
 
   def abortProcess() =
@@ -1385,7 +1375,6 @@ class ApiController(
           s"Subscription process has been refused by @{validator.name}"
         )
       )(ctx) {
-        implicit val c = ctx
         (for {
           encryptedToken <- EitherT.fromOption[Future](
             ctx.request.getQueryString("token"),
@@ -1418,8 +1407,6 @@ class ApiController(
           s"Subscription process has been refused by @{validator.name}"
         )
       )(ctx) {
-        implicit val c = ctx
-        //todo: get validator name
         (for {
           encryptedToken <- EitherT.fromOption[Future](
             ctx.request.getQueryString("token"),
@@ -1435,16 +1422,9 @@ class ApiController(
             AppError.EntityNotFound("token")
           )
           _ <- declineProcessWithStepValidator(validator, ctx.tenant)
-        } yield
-          Redirect(env.getDaikokuUrl(ctx.tenant, "/response?message=home.message.subscription.refusal.successfull")).future
-        ).leftMap(error =>
-            Errors.craftResponseResultF(
-              message = error.getErrorMessage(),
-              status = Results.Ok
-            )
-          )
+        } yield Redirect(env.getDaikokuUrl(ctx.tenant, "/informations?message=subscription-decline")))
+          .leftMap(error => Redirect(env.getDaikokuUrl(ctx.tenant, s"/informations?error=${error.getErrorMessage()}")))
           .merge
-          .flatten
       }
     }
 

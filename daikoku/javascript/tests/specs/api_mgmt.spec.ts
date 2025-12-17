@@ -53,17 +53,17 @@ test('[ASOAPI-10597] - créer une API', async ({ page }) => {
   await loginAs(JIM, page);
   await page.getByRole('link', { name: 'API Betterave' }).click();
   await page.getByRole('button', { name: 'Configurer' }).click();
-  await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', {name: 'Configurer'}).click();
+  await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Configurer' }).click();
   await page.getByRole('button', { name: 'Publiée' }).click();
   await page.getByRole('button', { name: 'Enregistrer' }).click();
 
-await page.getByText('Environnements').click();
-await page.getByRole('list', { name: 'Liste des environnements' }).locator('div').click();
-await page.locator('div').filter({ hasText: /^new usage plan$/ }).nth(2).click();
-await page.getByText('dev', { exact: true }).click();
-await page.getByRole('textbox', { name: 'Description' }).fill('environnement de developpement');
-await page.getByRole('button', { name: 'Enregistrer' }).click();
-await expect(page.getByRole('listitem', { name: 'dev' })).toBeVisible();
+  await page.getByText('Environnements').click();
+  await page.getByRole('list', { name: 'Liste des environnements' }).locator('div').click();
+  await page.locator('div').filter({ hasText: /^new usage plan$/ }).nth(2).click();
+  await page.getByText('dev', { exact: true }).click();
+  await page.getByRole('textbox', { name: 'Description' }).fill('environnement de developpement');
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByRole('listitem', { name: 'dev' })).toBeVisible();
 
   await page.getByLabel('Accueil Daikoku').click();
   await expect(page.getByRole('link', { name: 'API Betterave' })).toBeVisible();
@@ -99,9 +99,9 @@ test('[ASOAPI-10597] [ASOAPI-10599] - créer/supprimer une version d\'une API', 
   await expect(page).toHaveURL(`http://localhost:${exposedPort}/pP61PigzFffXTu4TX3BmvAB6iUIHY9oj/api-papier/2.0.0/description`)
 
   await expect(page.locator('[data-sonner-toast]')).toHaveCount(0);
-  
-  await page.getByRole('button', { name: "Configurer" }).click({force: true});
-  await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Configurer' }).click({force: true});
+
+  await page.getByRole('button', { name: "Configurer" }).click({ force: true });
+  await page.getByRole('menu', { name: 'Configurer' }).getByRole('menuitem', { name: 'Configurer' }).click({ force: true });
   await page.getByLabel('Desc. courte').fill('Le catalogue de Papier de Dunder Mifflin dans sa deuxieme version');
   await page.getByRole('button', { name: 'Enregistrer' }).click();
   await page.waitForResponse(r => r.request().url().includes('/apis/api-papier/2.0.0') && r.status() === 200)
@@ -172,9 +172,10 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
 
   await page.getByRole('button', { name: 'Taper / pour rechercher' }).click();
   await page.getByRole('textbox', { name: 'Rechercher une API, équipe,' }).fill('vendeurs');
-  await page.getByRole('link', {name: 'Vendeurs'}).click();
+  await page.getByRole('link', { name: 'Vendeurs' }).click();
   await page.getByText('Clés d\'API').click();
-  await expect(page.getByRole('row', { name: 'API papier' })).toBeHidden();
+  await expect(page.getByRole('link', { name: 'API papier' })).toBeHidden();
+  await page.waitForTimeout(1000);
 
   //verifier dans oto que les clé sont plus dispo
   const MaybeVendeurApiKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${vendeursPapierExtendedDevApiKeyId}`, {
@@ -187,7 +188,6 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
   await expect(MaybeVendeurApiKey.status).toBe(200);
   const vendeurApiKey = await MaybeVendeurApiKey.json()
   await expect(vendeurApiKey.enabled).toBe(true)
-  console.debug(vendeurApiKey.authorizedEntities.length, vendeurApiKey.authorizedEntities)
   await expect(vendeurApiKey.authorizedEntities.length).toBe(1)
   await expect(vendeurApiKey.authorizedEntities).toEqual(
     expect.not.arrayContaining([otoroshiDevPaperRouteId])
@@ -215,7 +215,7 @@ test('sécuriser la création d\'API à l\'aide de la securité de tenant associ
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page);
   await page.getByRole('button', { name: 'Créer une API' }).click();
-  await page.getByRole('dialog').getByRole('listitem', { name: 'Vendeurs'}).click();
+  await page.getByRole('dialog').getByRole('listitem', { name: 'Vendeurs' }).click();
   await page.getByRole('button', { name: 'Publiée' }).click();
   await page.getByRole('textbox', { name: 'Nom' }).fill('Vente de papier API');
   await page.getByRole('button', { name: 'Enregistrer' }).click();
@@ -239,8 +239,8 @@ test('sécuriser la création d\'API à l\'aide de la securité de tenant associ
   await page.getByRole('button', { name: 'Créer une API' }).click();
   await expect(page.getByRole('dialog')).toBeVisible();
   await expect(page.getByRole('dialog').getByRole('listitem')).toHaveCount(1);
-  await expect(page.getByRole('dialog').getByRole('listitem', {name: 'API Division'})).toBeVisible();
-  await expect(page.getByRole('dialog').getByRole('listitem', {name: 'Vendeurs'})).toBeHidden();
+  await expect(page.getByRole('dialog').getByRole('listitem', { name: 'API Division' })).toBeVisible();
+  await expect(page.getByRole('dialog').getByRole('listitem', { name: 'Vendeurs' })).toBeHidden();
 
   await page.getByRole('dialog').locator('.modal-footer').getByRole('button', { name: 'Fermer' }).first().click();
   await logout(page);
@@ -249,3 +249,41 @@ test('sécuriser la création d\'API à l\'aide de la securité de tenant associ
   await expect(page.getByRole('button', { name: 'Créer une API' })).toBeHidden();
 });
 
+test('[ASOAPI-10597] - créer un groupe d\'API', async ({ page }) => {
+  const apiGroupName = 'Dunder mifflin suite';
+
+  await page.goto(ACCUEIL);
+  await loginAs(MICHAEL, page);
+
+
+  await page.getByRole('button', { name: 'Plus d\'options de création' }).click();
+  await page.getByRole('link', { name: 'groupe d\'APIs' }).click();
+
+  await page.locator('#portal-root').getByText('API division').click();
+  await page.getByRole('button', { name: 'Mode expert' }).click();
+  await page.getByRole('button', { name: 'Publiée' }).click();
+  await page.getByPlaceholder('New Api').fill(apiGroupName);
+  await page.getByLabel('Desc. courte').fill("Un groupe, Un parcours, une suite ❤️");
+
+
+  await page.locator('.react-form-select__indicator').first().click();
+  await page.getByText('API papier - 1.0.0', { exact: true }).click();
+
+  await page.locator('.react-form-select__indicator.react-form-select__dropdown-indicator').first().click();
+  await page.getByText('API Commande - 1.0.0', { exact: true }).click();
+
+
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await expect(page.getByRole('heading', { name: apiGroupName }).first()).toBeVisible();
+  await page.getByLabel('Accueil Daikoku').click();
+  await page.getByRole('link', { name: apiGroupName }).click();
+
+
+  await page.getByText('APIs', {exact: true}).click();
+  await expect(page.getByRole('heading', { name: 'Liste des APIs' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'API papier' })).toBeVisible();
+  await page.getByRole('link', { name: 'API papier' }).click();
+  await expect(page.locator('h1')).toBeVisible();
+
+
+});
