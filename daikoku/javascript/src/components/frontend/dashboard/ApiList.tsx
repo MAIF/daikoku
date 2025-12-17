@@ -5,7 +5,7 @@ import { addMonths, isBefore } from 'date-fns'
 import debounce from "lodash/debounce"
 import { ChangeEvent, useContext, useMemo, useState } from "react"
 import Plus from 'react-feather/dist/icons/plus'
-import Unlock from 'react-feather/dist/icons/unlock'
+import MoreVertical from 'react-feather/dist/icons/more-vertical'
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import Select, { components, MultiValue, OptionProps, ValueContainerProps } from "react-select"
 import { toast } from "sonner"
@@ -394,7 +394,7 @@ export const ApiList = (props: ApiListProps) => {
     }, 500);
   }, []);
 
-  const createApi = (teamId?: string) => {
+  const createApi = ({ teamId, isApiGroup = false }: { teamId?: string, isApiGroup?: boolean }) => {
     if (apiCreationPermitted && !myTeamsRequest.isLoading && myTeamsRequest.data && !isError(myTeamsRequest.data)) {
       if (!teamId) {
         return openTeamSelectorModal({
@@ -405,7 +405,7 @@ export const ApiList = (props: ApiListProps) => {
             .filter((t) => t.type !== 'Admin')
             .filter((t) => !tenant.creationSecurity || t.apisCreationPermission)
             .filter((t) => CanIDoAction(connectedUser, manage, API, t, apiCreationPermitted)),
-          action: (teams) => createApi(teams[0]),
+          action: (teams) => createApi({ teamId: teams[0], isApiGroup }),
           actionLabel: translate('Create')
         });
       } else {
@@ -415,8 +415,8 @@ export const ApiList = (props: ApiListProps) => {
           toast.warning('toast.no.team.found')
         } else {
           return openRightPanel({
-            title: translate('api.creation.right.panel.title'),
-            content: <ApiFormRightPanel team={team} apigroup={false} handleSubmit={(api) => Services.createTeamApi(team._id, api)
+            title: isApiGroup ? translate('apigroup.creation.right.panel.title') : translate('api.creation.right.panel.title'),
+            content: <ApiFormRightPanel team={team} apigroup={isApiGroup} handleSubmit={(api) => Services.createTeamApi(team._id, api)
               .then((maybeApi) => {
                 queryClient.invalidateQueries({ queryKey: ["data"] })
                 return maybeApi
@@ -563,10 +563,33 @@ export const ApiList = (props: ApiListProps) => {
             </h2>
           </div>
           {canCreateApi && (
-            <button type="button" className='btn btn-outline-primary d-flex align-items-center gap-2' onClick={() => createApi()}>
-              <Plus />
-              <p className="m-0">{translate('dashboard.create.api.button.label')}</p>
-            </button>
+            <div className="d-flex gap-1">
+              <button type="button" className='btn btn-outline-primary d-flex align-items-center gap-2' onClick={() => createApi({})}>
+                <Plus />
+                <p className="m-0">{translate('dashboard.create.api.button.label')}</p>
+              </button>
+
+              <div className="nav_item dropdown" style={{ color: '#fff' }}>
+                <button type="button" className='btn btn-outline-primary btn-icon d-flex align-items-center gap-2'
+                  data-bs-toggle="dropdown" aria-expanded="false">
+                  <MoreVertical />
+                </button>
+                <div className="dropdown-menu">
+                  <div className="ms-3 mt-2 col-8 d-flex flex-column panel">
+                    <div className="blocks">
+                      <div className="mb-3 block">
+                        <div className="ms-2 block__entries block__border d-flex flex-column">
+                          <Link to={'#'} onClick={() => createApi({isApiGroup: true})} className="block__entry__link">
+                            {translate('dashboard.create.apigroup.button.label')}
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
           )}
         </div>
         <div className="filter-container mt-3 d-flex justify-content-between">

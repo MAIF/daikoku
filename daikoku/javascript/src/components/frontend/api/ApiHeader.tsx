@@ -7,11 +7,10 @@ import Select from 'react-select';
 import { toast } from 'sonner';
 
 import { I18nContext, ModalContext } from '../../../contexts';
-import { GlobalContext } from '../../../contexts/globalContext';
 import * as Services from '../../../services';
 import { converter } from '../../../services/showdown';
-import { IApi, ICmsPageGQL, ITeamSimple, isError } from '../../../types';
-import { api as API, Can, CanIDoAction, manage } from '../../utils';
+import { IApi, ITeamSimple, isError } from '../../../types';
+import { api as API, Can, manage } from '../../utils';
 import { deleteApi } from '../../utils/apiUtils';
 import { ApiFormRightPanel } from '../../utils/sidebar/panels/AddPanel';
 import { reservedCharacters } from '../../utils/tenantUtils';

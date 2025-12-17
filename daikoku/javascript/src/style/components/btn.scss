@@ -174,8 +174,6 @@ button {
   width: 40px;
   height: 40px;
 
-  .multi-btn-center {}
-
   .multi-button {
     transition: all 0.2s ease-in-out;
     position: absolute;
@@ -283,6 +281,10 @@ button {
 .fake-documentation-page-dnd {
   margin: 0 20px;
   padding: 20px;
+}
+
+.btn-icon {
+  padding: 0.375rem;
 }
 
 .shake {

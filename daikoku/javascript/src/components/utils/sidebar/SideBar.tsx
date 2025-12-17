@@ -1,23 +1,16 @@
 import classNames from 'classnames';
-import { JSX, PropsWithChildren, ReactNode, useContext, useEffect, useState } from 'react';
+import { JSX, useContext, useEffect, useState } from 'react';
 import ArrowLeft from 'react-feather/dist/icons/arrow-left';
 import Bell from 'react-feather/dist/icons/bell';
-import RectangleList from 'react-feather/dist/icons/list';
 import MessageSquare from 'react-feather/dist/icons/message-square';
-import More from 'react-feather/dist/icons/more-vertical';
-import Plus from 'react-feather/dist/icons/plus';
-import Search from 'react-feather/dist/icons/search';
 import { Link, useLocation } from 'react-router-dom';
 
+import { getInitials, userHasAvatar } from '../..';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { I18nContext } from '../../../contexts/i18n-context';
 import { MessagesContext } from '../../backoffice';
 import { Companion } from './companions';
-import { AddPanel, DarkModeActivator, GuestPanel, MessagePanel, SearchPanel, SettingsPanel } from './panels';
-import { MorePanel } from './panels/MorePanel';
-import { getInitials, userHasAvatar } from '../..';
-import { absolutePath } from 'swagger-ui-dist';
-import { ModalContext } from '../../../contexts';
+import { DarkModeActivator, GuestPanel, MessagePanel, SearchPanel, SettingsPanel } from './panels';
 import { TeamPanel } from './panels/TeamPanel';
 
 
