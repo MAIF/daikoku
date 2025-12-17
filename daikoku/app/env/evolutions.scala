@@ -877,7 +877,7 @@ object evolution_1613_b extends EvolutionScript {
           val date = (value \ "date").as(json.DateTimeFormat)
           val apiId = (action \ "api").as(json.ApiIdFormat)
           val planId = (action \ "plan").as(json.UsagePlanIdFormat)
-          val teamId = (action \ "team").as(json.TeamIdFormat)
+          val teamId = (value \ "team").as(json.TeamIdFormat)
           val parentSubscriptionId = (action \ "parentSubscriptionId").asOpt(
             json.ApiSubscriptionIdFormat
           )
@@ -982,7 +982,6 @@ object evolution_1630 extends EvolutionScript {
             s"### Begin evolution $version for ${(api \ "name").as[String]}"
           )
           val oldPlans = (api \ "possibleUsagePlans").as[JsArray].value
-          logger.debug(s"$oldPlans")
 
           val updatedOldPlans = oldPlans
             .map(plan =>
@@ -1002,7 +1001,6 @@ object evolution_1630 extends EvolutionScript {
             .as[JsObject] + ("possibleUsagePlans" -> json.SeqUsagePlanIdFormat
             .writes(plans.map(_.id)))
 
-          logger.debug(Json.stringify(updatedRawApi))
           json.ApiFormat.reads(updatedRawApi) match {
             case JsSuccess(updatedApi, _) =>
               for {
@@ -1034,9 +1032,20 @@ object evolution_1630 extends EvolutionScript {
                             |""".stripMargin,
                           params = Seq(_id, oldId)
                         )
+                    s <-
+                      dataStore.subscriptionDemandRepo
+                        .forAllTenant()
+                        .execute(
+                          query = s"""
+                            |UPDATE subscription_demands
+                            |     SET content = jsonb_set(content, '{plan}', to_jsonb($$1::text))
+                            |     WHERE content->>'plan' = $$2
+                            |""".stripMargin,
+                          params = Seq(_id, oldId)
+                        )
 
                   } yield logger.debug(
-                    s"$s apiSubscription and $n notification updated for plan ${_id}"
+                    s"$s apiSubscription and $n notification & $s subscriptionDemand updated for plan ${_id}"
                   )
                 }))
                 _ <-
