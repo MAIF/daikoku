@@ -24,7 +24,7 @@ export const Tile = (props: TileProps) => {
 
   return (
     <div className={"dashboard-tile"} style={{ width: `${props.width}%` }}>
-      <div className="tile__header d-flex flex-row align-items-center">
+      {!props.action && <div className="tile__header d-flex flex-row align-items-center">
         <div className="flex-grow-1">
           <div className="title d-flex flex-row justify-content-start gap-3">
             <div className="icon">
@@ -36,8 +36,21 @@ export const Tile = (props: TileProps) => {
             {props.description}
           </div>
         </div>
-        {!!props.action && (<button type="button" className="dashboard-tile-action" onClick={() => props.action!()}><ArrowRight /></button>)}
-      </div>
+      </div>}
+      {!!props.action && <button className="tile__header tile__header-action d-flex flex-row align-items-center" onClick={() => props.action!()}>
+        <div className="flex-grow-1">
+          <div className="title d-flex flex-row justify-content-start gap-3">
+            <div className="icon">
+              {props.icon}
+            </div>
+            <h3>{props.title}</h3>
+          </div>
+          <div className="description">
+            {props.description}
+          </div>
+        </div>
+        <i className="dashboard-tile-action"><ArrowRight /></i>
+      </button>}
       {props.query.isLoading && <Spinner />}
       {!props.query.isLoading && props.query.data && (
         <div className="tile_data d-flex flex-row">

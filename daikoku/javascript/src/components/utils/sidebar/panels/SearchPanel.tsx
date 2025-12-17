@@ -208,7 +208,7 @@ export const SearchPanel = () => {
   }
 
   return (
-    <div className='col-3'>
+    <div>
       <button type='button' className='search-button' onClick={(e) => openModal()}>
         <div className='d-flex flex-row align-items-center gap-2'>
           <SearchIcon className="fake-placeholder" />
