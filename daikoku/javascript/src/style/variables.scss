@@ -1,7 +1,12 @@
-$level1_text-color: #{"var(--body_text-color, #f1f3f6)"}; //body
-$level1_bg-color: #{"var(--body_bg-color, #8a8a8a)"}; //body
-$level1_link-color: #{"var(--body_link-color, #4c4c4d)"};
-$level1_link-hover-color: #{"var(--body_link-hover-color, orange)"};
+$body_bg-color: #{"var(--body_bg-color, #fff)"}; //body
+$body_text-color: #{"var(--body_text-color, #626262)"}; //body
+$body_link-color: #{"var(--body_link-color, #626262)"};
+$body_link-hover-color: #{"var(--body_link-hover-color, orange)"};
+
+$level1_text-color: #{"var(--level1_text-color, #f1f3f6)"}; //body
+$level1_bg-color: #{"var(--level1_bg-color, #8a8a8a)"}; //body
+$level1_link-color: #{"var(--level1_link-color, #4c4c4d)"};
+$level1_link-hover-color: #{"var(--level1_link-hover-color, orange)"};
 
 $level2_bg-color: #{"var(--level2_bg-color, #e5e7ea)"}; //body
 $level2_text-color: #{"var(--level2_text-color, #4c4c4d)"}; //body
@@ -53,6 +58,7 @@ $warning-color: #{"var(--warning-color, #ffc107)"}; //status
 $danger-color: #{"var(--danger-color, #dc3545)"}; //status
 $neutral-color: #{"var(--neutral-color, #4e5760)"}; //status
 
+$primary-color: #{"var(--primary-color, #29438D)"};
 
 $card-header-bg-color : #{"var(--card_header-bg-color, #404040)"};
 $card-header-text-color : #{"var(--card_header-text-color, #fff)"};
@@ -60,6 +66,8 @@ $card-bg-color:  #{"var(--card_bg-color, #282828)"};
 $card-text-color: #{"var(--card_text-color, #FFF)"};
 $card-link-color: #{"var(--card_link-color, #97b0c7)"};
 $card-link-hover-color:  #{"var(--card_link-hover-color, #a9cbea)"};
+
+$topbar-height: 50px;
 
 :export {
   successColor: $success-color;

@@ -1,8 +1,8 @@
 :root {
-  --body_bg-color: pink;
-  --body_text-color: green;
-  --body_link-color:red;
-  --body_link-hover-color:yellow;
+  --level1_bg-color: pink;
+  --level1_text-color: green;
+  --level1_link-color:red;
+  --level1_link-hover-color:yellow;
   
   --level2_bg-color: orange;
   --level2_text-color: blue;
@@ -54,5 +54,6 @@
   --info-color: #17a2b8;
   --success-color: #65B741;
   --warning-color: #ffc107;
-  --danger-color: #dc3545;  
+  --danger-color: #dc3545;
+  --primary-color: rebeccaPurple;  
 }

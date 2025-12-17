@@ -130,4 +130,7 @@ Thank you for signing up on [tenant]. </br>\
 After review, we regret to inform you that your account creation request has not been approved. </br>\
 Here is the reason: [message] </br>\
 If you believe this is a mistake or would like more information, please contact our support team. </br>
-
+mail.account.creation.mail.accepted.title = Your registration on [tenant] has been approved
+mail.account.creation.mail.accepted.body = Hello [userName], </br>\
+Thank you for signing up on [tenant]. </br>\
+After review, we are pleased to inform you that your account creation request has been approved. </br>\

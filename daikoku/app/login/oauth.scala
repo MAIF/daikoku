@@ -465,12 +465,6 @@ object OAuth2Support {
     }
 
     for {
-      test <- EitherT.liftF(
-        env.wsClient
-          .url("https://localhost:8443")
-          .withRequestTimeout(10.seconds)
-          .get()
-      )
       getConfig <- EitherT.liftF[Future, AppError, WSResponse](
         env.wsClient.url(url).withRequestTimeout(10.seconds).get()
       )

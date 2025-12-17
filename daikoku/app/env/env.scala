@@ -7,7 +7,12 @@ import fr.maif.otoroshi.daikoku.audit.AuditActorSupervizer
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.Tenant.getCustomizationCmsPage
 import fr.maif.otoroshi.daikoku.domain.json.TenantIdFormat
-import fr.maif.otoroshi.daikoku.domain.{DatastoreId, ReportsInfo, TeamApiKeyVisibility, Tenant}
+import fr.maif.otoroshi.daikoku.domain.{
+  DatastoreId,
+  ReportsInfo,
+  TeamApiKeyVisibility,
+  Tenant
+}
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.LoginFilter
 import fr.maif.otoroshi.daikoku.utils._
@@ -175,7 +180,15 @@ class Config(val underlying: Configuration) {
   lazy val port: Int = underlying
     .getOptional[Int]("play.server.http.port")
     .orElse(underlying.getOptional[Int]("http.port"))
-    .getOrElse(9000)
+    .getOrElse(8080)
+
+  lazy val securePort: Int = underlying
+    .getOptional[Int]("play.server.https.port")
+    .orElse(underlying.getOptional[Int]("https.port"))
+    .getOrElse(443)
+
+  lazy val sslEnabled: Option[Boolean] = underlying
+    .getOptional[Boolean]("daikoku.ssl.enabled")
 
   lazy val exposedPort: Int = underlying
     .getOptional[Int]("daikoku.exposedOn")
@@ -543,7 +556,8 @@ class DaikokuEnv(
                   defaultLanguage = None
                 )
 
-                val cssPage = getCustomizationCmsPage(tenant.id, "style", "text/css", "")
+                val cssPage =
+                  getCustomizationCmsPage(tenant.id, "style", "text/css", "")
                 val jsPage = getCustomizationCmsPage(
                   tenant.id,
                   "script",
@@ -588,7 +602,8 @@ class DaikokuEnv(
                   _ <- dataStore.userRepo.save(user)
                   publicFolderPath = environment.getFile("public").getPath
                   cssFilePath = s"$publicFolderPath/themes/default.css"
-                  cssFileContent = scala.io.Source.fromFile(cssFilePath).mkString
+                  cssFileContent =
+                    scala.io.Source.fromFile(cssFilePath).mkString
                   _ <-
                     dataStore.cmsRepo
                       .forTenant(tenant.id)
@@ -600,12 +615,14 @@ class DaikokuEnv(
                           body = cssFileContent
                         )
                       )
-                  _ <- dataStore.cmsRepo
-                    .forTenant(tenant.id)
-                    .save(cssPage)
-                  _ <- dataStore.cmsRepo
-                    .forTenant(tenant.id)
-                    .save(jsPage)
+                  _ <-
+                    dataStore.cmsRepo
+                      .forTenant(tenant.id)
+                      .save(cssPage)
+                  _ <-
+                    dataStore.cmsRepo
+                      .forTenant(tenant.id)
+                      .save(jsPage)
                 } yield {
                   AppLogger.warn("")
                   AppLogger.warn(
@@ -698,10 +715,20 @@ class DaikokuEnv(
       case _ => Seq.empty
     }
 
-  def getDaikokuUrl(tenant: Tenant, path: String): String =
-    config.exposedPort match {
-      case 80  => s"http://${tenant.domain}$path"
-      case 443 => s"https://${tenant.domain}$path"
-      case _   => s"http://${tenant.domain}:${config.exposedPort}$path"
+  def getDaikokuUrl(tenant: Tenant, path: String): String = {
+    (config.sslEnabled, config.exposedPort) match {
+      case (Some(true), 443) => s"https://${tenant.domain}$path"
+      case (Some(true), exposedPort) =>
+        s"https://${tenant.domain}:$exposedPort$path"
+      case (Some(false), 80) => s"http://${tenant.domain}$path"
+      case (Some(false), exposedPort) =>
+        s"http://${tenant.domain}:$exposedPort$path"
+      case (_, 80)  => s"http://${tenant.domain}$path"
+      case (_, 443) => s"https://${tenant.domain}$path"
+      case (_, exposedPort) if exposedPort == config.securePort =>
+        s"https://${tenant.domain}:$exposedPort$path"
+      case (_, exposedPort) => s"http://${tenant.domain}:$exposedPort$path"
     }
+
+  }
 }

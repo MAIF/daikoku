@@ -1,3 +1,5 @@
+import { TDashboardData } from '../components/frontend/dashboard/Dashboard';
+import { SearchResult } from '../components/utils/sidebar/panels/SearchPanel';
 import {
   I2FAQrCode,
   IAsset,
@@ -114,6 +116,9 @@ export const myUnreadNotificationsCount = (): Promise<{ count: number }> =>
       () => ({ count: 0 })
     )
     .catch(() => ({ count: 0 }));
+
+export const myDashboard = (): PromiseWithError<TDashboardData> =>
+  customFetch('/api/me/dashboard');
 
 export const acceptNotificationOfTeam = (
   notificationId: string,
@@ -598,7 +603,7 @@ export const updateAnonymousState = (id: string, value: boolean, currentDate?: n
     body: JSON.stringify({ id, value, currentDate }),
   });
 
-export const search = (search: any) =>
+export const search = (search: string): Promise<SearchResult> =>
   customFetch('/api/_search', {
     method: 'POST',
     body: JSON.stringify({ search }),
@@ -1438,8 +1443,8 @@ export const graphql = {
       }
     `,
   myVisibleApis: `
-    query AllVisibleApis ($teamId: String, $research: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $limit: Int, $offset: Int, $groupId: String) {
-      visibleApis (teamId: $teamId, research: $research, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, limit: $limit, offset: $offset, groupId: $groupId) {
+    query AllVisibleApis ($filterTable: JsArray, $sortingTable: JsArray, $limit: Int, $offset: Int, $groupId: String) {
+      visibleApis (filterTable: $filterTable, sortingTable: $sortingTable, limit: $limit, offset: $offset, groupId: $groupId) {
         apis {
           api {
             name
@@ -1502,12 +1507,51 @@ export const graphql = {
             authorized
             pending
           }
+          subscriptionDemands {
+            _id
+            team {
+              _id
+              _humanReadableId
+              name
+            }
+            api {
+              _id
+              _humanReadableId
+              name
+            }
+          }
+          subscriptions {
+            _id
+            validUntil
+            team {
+              _id
+              _humanReadableId
+              name
+            }
+            api {
+              _id
+              _humanReadableId
+              name
+            }
+          }
         }
         producers {
-          _id
-          name
+          team {
+            _id
+            name
+          }
+          total
+        }
+        tags {
+          value
+          total
+        }
+        categories {
+          value
+          total
         }
         total
+        totalFiltered
       }
     }`,
   getAllTags: `

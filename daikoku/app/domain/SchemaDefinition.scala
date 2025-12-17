@@ -6,16 +6,9 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  _TeamMemberOnly,
-  _TenantAdminAccessTenant
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiSubscriptionDemandFormat,
-  TenantIdFormat,
-  UserIdFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiSubscriptionDemandFormat, TeamCountFormat, TeamTypeFormat, TenantIdFormat, UserIdFormat, ValueCountFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{OtoroshiClient, S3Configuration}
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -28,11 +21,7 @@ import sangria.schema.{Context, _}
 import sangria.validation.ValueCoercionViolation
 import services.CmsPage
 import storage._
-import storage.graphql.{
-  GraphQLImplicits,
-  RequiresDaikokuAdmin,
-  RequiresTenantAdmin
-}
+import storage.graphql.{GraphQLImplicits, RequiresDaikokuAdmin, RequiresTenantAdmin}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -866,6 +855,29 @@ object SchemaDefinition {
         )
       )
     )
+
+    lazy val TeamCountType
+    : ObjectType[(DataStore, DaikokuActionContext[JsValue]), TeamCount] =
+      ObjectType[(DataStore, DaikokuActionContext[JsValue]), TeamCount](
+        "TeamCount",
+        "a representation of team and total of owned API",
+        () =>
+          fields[(DataStore, DaikokuActionContext[JsValue]), TeamCount](
+            Field("team", TeamObjectType, resolve = _.value.team),
+            Field("total", IntType, resolve = _.value.total)
+          )
+      )
+    lazy val ValueCountType
+    : ObjectType[(DataStore, DaikokuActionContext[JsValue]), ValueCount] =
+      ObjectType[(DataStore, DaikokuActionContext[JsValue]), ValueCount](
+        "ValueCount",
+        "a representation of string value and total of iteration",
+        () =>
+          fields[(DataStore, DaikokuActionContext[JsValue]), ValueCount](
+            Field("value", StringType, resolve = _.value.value),
+            Field("total", IntType, resolve = _.value.total)
+          )
+      )
 
     lazy val TeamObjectType
         : ObjectType[(DataStore, DaikokuActionContext[JsValue]), Team] =
@@ -1936,6 +1948,22 @@ object SchemaDefinition {
           ListType(AuthorizationApiType),
           resolve = _.value.authorizations
         )
+      ),
+      ReplaceField(
+        "subscriptions",
+        Field(
+          "subscriptions",
+          ListType(ApiSubscriptionType),
+          resolve = _.value.subscriptions
+        )
+      ),
+      ReplaceField(
+        "subscriptionDemands",
+        Field(
+          "subscriptionDemands",
+          ListType(SubscriptionDemandType),
+          resolve = _.value.subscriptionDemands
+        )
       )
     )
     lazy val ApiWithCountType = deriveObjectType[
@@ -1957,11 +1985,14 @@ object SchemaDefinition {
         "producers",
         Field(
           "producers",
-          ListType(TeamObjectType),
+          ListType(TeamCountType),
           resolve = _.value.producers
         )
       ),
-      ReplaceField("total", Field("total", LongType, resolve = _.value.total))
+      ReplaceField("tags", Field("tags", ListType(ValueCountType), resolve = _.value.tags)),
+      ReplaceField("categories", Field("categories", ListType(ValueCountType), resolve = _.value.categories)),
+      ReplaceField("total", Field("total", LongType, resolve = _.value.total)),
+      ReplaceField("totalFiltered", Field("totalFiltered", LongType, resolve = _.value.totalFiltered)),
     )
 
     lazy val AccessibleResourceType: ObjectType[
@@ -4098,25 +4129,19 @@ object SchemaDefinition {
 
     def getVisibleApis(
         ctx: Context[(DataStore, DaikokuActionContext[JsValue]), Unit],
-        teamId: Option[String] = None,
-        research: String,
-        selectedTeam: Option[String] = None,
-        selectedTag: Option[String] = None,
-        selectedCat: Option[String] = None,
+        filterTable: JsArray,
+        sortingTable: JsArray,
+        groupOpt: Option[String],
         limit: Int,
         offset: Int,
-        groupOpt: Option[String] = None
     ) = {
       CommonServices
         .getVisibleApis(
-          teamId,
-          research,
-          selectedTeam,
-          selectedTag,
-          selectedCat,
+          filterTable,
+          sortingTable,
+          groupOpt,
           limit,
-          offset,
-          groupOpt
+          offset
         )(ctx.ctx._2, env, e)
         .map {
           case Right(value) => value
@@ -4142,18 +4167,15 @@ object SchemaDefinition {
           "visibleApis",
           ApiWithCountType,
           arguments =
-            TEAM_ID :: RESEARCH :: SELECTED_TEAM :: SELECTED_TAG :: SELECTED_CAT :: LIMIT :: OFFSET :: GROUP_ID :: Nil,
+            FILTER_TABLE :: SORTING_TABLE :: GROUP_ID :: LIMIT :: OFFSET :: Nil,
           resolve = ctx => {
             getVisibleApis(
-              ctx,
-              ctx.arg(TEAM_ID),
-              ctx.arg(RESEARCH),
-              ctx.arg(SELECTED_TEAM),
-              ctx.arg(SELECTED_TAG),
-              ctx.arg(SELECTED_CAT),
-              ctx.arg(LIMIT),
-              ctx.arg(OFFSET),
-              ctx.arg(GROUP_ID)
+              ctx = ctx,
+              filterTable = ctx.arg(FILTER_TABLE),
+              sortingTable = ctx.arg(SORTING_TABLE),
+              groupOpt = ctx.arg(GROUP_ID),
+              limit = ctx.arg(LIMIT),
+              offset = ctx.arg(OFFSET)
             )
           }
         )

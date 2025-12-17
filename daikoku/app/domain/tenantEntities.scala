@@ -596,13 +596,14 @@ case class MailjetSettings(
     new MailjetSender(env.wsClient, this)
   }
 }
-
 case class SimpleSMTPSettings(
     host: String,
     port: String = "25",
     fromTitle: String,
     fromEmail: String,
-    template: Option[String]
+    template: Option[String],
+    username: Option[String],
+    password: Option[String]
 ) extends MailerSettings
     with CanJson[SimpleSMTPSettings] {
   def mailerType: String = "smtpClient"

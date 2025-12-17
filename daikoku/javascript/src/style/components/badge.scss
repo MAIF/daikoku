@@ -6,6 +6,7 @@
   background-color: $bg;
   // color: color-mix(in srgb, $bg 50%, #000);
   color: $text;
+  border: 1px solid $text;
   position: relative;
   z-index: 0;
   cursor: pointer;
@@ -14,6 +15,7 @@
 
 $badge-colors: (
   custom: (bg: variables.$badge-tags-bg-color, text: variables.$badge-tags-text-color),
+  primary: (bg: color-mix(in srgb, variables.$primary-color 20%, #fff), text: variables.$primary-color),
   info: (bg: variables.$info-color, text: color-mix(in srgb, variables.$info-color 20%, #000)),
   success: (bg: variables.$success-color, text: color-mix(in srgb, variables.$success-color 10%, #000)),
   warning: (bg: variables.$warning-color, text: color-mix(in srgb, variables.$warning-color 20%, #000)),

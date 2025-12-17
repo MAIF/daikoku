@@ -8,7 +8,6 @@ import fr.maif.otoroshi.daikoku.domain.SubscriptionDemandState.Accepted
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.Cypher.encrypt
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
@@ -22,7 +21,12 @@ class AccountCreationService {
   def finalizeAccountCreation(
       accountCreation: AccountCreation,
       tenant: Tenant
-  )(implicit env: Env, ec: ExecutionContext) = {
+  )(implicit
+    env: Env,
+    ec: ExecutionContext,
+    translator: Translator,
+    messagesApi: MessagesApi) = {
+    implicit val language: String = tenant.defaultLanguage.getOrElse("en")
     for {
       _ <- EitherT.cond[Future][AppError, Unit](
         accountCreation.validUntil.isAfter(DateTime.now()),
@@ -100,6 +104,30 @@ class AccountCreationService {
       )
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.userRepo.save(_user)
+      )
+      mailData = Map(
+        "tenant" -> JsString(tenant.name),
+        "userName" -> JsString(accountCreation.name),
+        "userEmail" -> JsString(accountCreation.email),
+        "account_creation_data" -> accountCreation.asJson,
+        "tenant_data" -> tenant.asJson
+      )
+      title <- EitherT.liftF(
+        translator.translate(
+          "mail.account.creation.mail.accepted.title",
+          tenant,
+          mailData
+        )
+      )
+      body <- EitherT.liftF(
+        translator.translate(
+          "mail.account.creation.mail.accepted.body",
+          tenant,
+          mailData
+        )
+      )
+      _ <- EitherT.liftF(
+        tenant.mailer.send(title, Seq(accountCreation.email), body, tenant)
       )
       _ <- EitherT.liftF[Future, AppError, Boolean](
         env.dataStore.accountCreationRepo
@@ -427,7 +455,7 @@ class AccountCreationService {
             mailData
           )
           body <- translator.translate(
-            "mail.account.creation.mail.validation.title",
+            "mail.account.creation.mail.validation.body",
             tenant,
             mailData
           )
@@ -618,9 +646,7 @@ class AccountCreationService {
         demand.steps.find(_.id == subscriptionDemandStepId),
         AppError.EntityNotFound("Validation Step")
       )
-      log = AppLogger.warn(s"valid step -- ${step.id}")
       _ <- validateStep(step, demand)
-      log = AppLogger.warn("run account creation process")
       _ <- runAccountCreationProcess(demand.id, ctx.tenant)
     } yield ()
 

@@ -1,5 +1,5 @@
 
-import { JSX } from 'react';
+import { JSX, PropsWithChildren, ReactNode } from 'react';
 import { IModalProps } from './ApiSelectModal';
 import { IBaseModalProps } from './types';
 
@@ -26,9 +26,11 @@ import { IBaseModalProps } from './types';
  * </>
  * 
  */
-export interface ICustomModalProps extends IModalProps {
+export interface ICustomModalProps {
   actions?: (close) => JSX.Element,
-  noClose?: boolean
+  noClose?: boolean,
+  content: ReactNode,
+  title?: string
 }
 export const CustomModal = ({
   title,
@@ -40,11 +42,12 @@ export const CustomModal = ({
 
   return (
     <div className="modal-content">
-      <div className="modal-header">
+      {title && <div className="modal-header">
         <h5 className="modal-title" id="modal-title">{title}</h5>
         <button type="button" className="btn-close" aria-label="Close" onClick={() => close()} />
-      </div>
+      </div>}
       <div className="modal-body">
+        {/* {!title && <button type="button" className="btn-close absolute" aria-label="Close" onClick={() => close()} />} */}
         {content}
       </div>
       {actions && (

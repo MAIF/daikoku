@@ -217,8 +217,10 @@ img:hover+.changePicture, .avatar-without-img:hover+.changePicture,
 }
 
 .wrapper:not(.information-container) {
-  height: 100vh;
-  overflow: auto;
+  height: calc(100vh - variables.$topbar-height);
+  overflow: visible;
+
+  margin-top: 50px;
 }
 
 .companion-link {
@@ -332,4 +334,8 @@ img:hover+.changePicture, .avatar-without-img:hover+.changePicture,
   border-radius: 24px;
   width: calc(50%);
   z-index: 20;
+}
+
+.MuiPopper-root {
+  z-index: 10003 !important;
 }

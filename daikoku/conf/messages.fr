@@ -126,3 +126,8 @@ Nous vous remercions pour votre inscription sur [tenant]. </br>\
 Après vérification, nous sommes au regret de vous informer que votre demande de création de compte n''a pas été validée. </br>\
 Voici la raison: [message] </br>\
 Si vous pensez qu''il s''agit d''une erreur ou souhaitez obtenir plus d''informations, vous pouvez contacter notre équipe de support. </br>\
+
+mail.account.creation.mail.accepted.title = Votre inscription sur [tenant] a été approuvée
+mail.account.creation.mail.accepted.body = Bonjour [userName], </br>\
+Merci de vous être inscrit sur [tenant]. </br>\
+Après examen, nous sommes heureux de vous informer que votre demande de création de compte a été approuvée. </br>\

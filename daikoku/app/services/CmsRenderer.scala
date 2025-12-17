@@ -1,6 +1,5 @@
 package services
 
-import cats.implicits.catsSyntaxOptionId
 import com.github.jknack.handlebars.{Context, Handlebars, Options}
 import controllers.AppError
 import controllers.AppError.toJson
@@ -15,39 +14,14 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
   _TeamMemberOnly,
   _UberPublicUserAccess
 }
-import fr.maif.otoroshi.daikoku.domain.{
-  Api,
-  ApiDocumentationPage,
-  ApiWithCount,
-  CanJson,
-  CmsPageId,
-  CommonServices,
-  Team,
-  TeamType,
-  Tenant,
-  TenantId,
-  User,
-  UserId,
-  UserSession,
-  json
-}
+import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.DateTime
 import play.api.i18n.MessagesApi
-import play.api.libs.json.{
-  JsArray,
-  JsBoolean,
-  JsNull,
-  JsNumber,
-  JsObject,
-  JsString,
-  JsValue,
-  Json
-}
-import play.api.mvc.{AnyContent, Request}
+import play.api.libs.json._
+import play.api.mvc.Request
 import storage.TenantCapableRepo
 
 import java.util.concurrent.Executors
@@ -200,13 +174,12 @@ case class CmsPage(
           options.hash.getOrDefault("visibility", "All").asInstanceOf[String]
         Await.result(
           CommonServices.getVisibleApis(
-            research = "",
             limit = Int.MaxValue,
             offset = 0
           )(ctxUserContext, env, ec),
           10.seconds
         ) match {
-          case Right(ApiWithCount(apis, producers, _)) =>
+          case Right(ApiWithCount(apis, _, _, _, _, _)) =>
             apis
               .filter(api =>
                 if (visibility == "All") true
@@ -305,13 +278,13 @@ case class CmsPage(
       (_: CmsPage, _: Options) =>
         Await.result(
           CommonServices
-            .getVisibleApis(research = "", limit = Int.MaxValue, offset = 0)(
+            .getVisibleApis(limit = Int.MaxValue, offset = 0)(
               maybeWithoutUserToUserContextConverter(ctx),
               env,
               ec
             )
             .map {
-              case Right(ApiWithCount(apis, producers, _)) =>
+              case Right(ApiWithCount(apis, _, _, _, _, _)) =>
                 JsArray(apis.map(_.api.asJson))
               case Left(error) => toJson(error)
             },
@@ -892,7 +865,7 @@ case class CmsPage(
           renderString(
             ctx,
             parentId,
-            if(v == null) "" else v.toString,
+            if (v == null) "" else v.toString,
             fields,
             jsonToCombine = jsonToCombine,
             req = req

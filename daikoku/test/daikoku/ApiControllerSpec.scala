@@ -5252,6 +5252,7 @@ class ApiControllerSpec()
       //use containerized otoroshi
       //crate api & a subscription (in otoroshi)
       //old free without quotas
+      Await.result(waitForDaikokuSetup(), 5.second)
       val parentPlan = UsagePlan(
         id = UsagePlanId("parent.dev"),
         tenant = tenant.id,
@@ -5340,14 +5341,14 @@ class ApiControllerSpec()
           body = Some(
             Json.obj(
               "variables" -> Json.obj(
-                "teamId" -> teamOwnerId.value,
+                "filterTable" -> Json.stringify(Json.arr(Json.obj("id" -> "team", "value" -> Json.arr(teamOwnerId.value)))),
                 "limit" -> 5,
                 "offset" -> 0
               ),
               "query" ->
                 s"""
-                   |query AllVisibleApis ($$teamId: String, $$limit: Int, $$offset: Int) {
-                   |      visibleApis (teamId: $$teamId, limit: $$limit, offset: $$offset) {
+                   |query AllVisibleApis ($$filterTable: JsArray, $$limit: Int, $$offset: Int) {
+                   |      visibleApis (filterTable: $$filterTable, limit: $$limit, offset: $$offset) {
                    |        apis {
                    |          api {
                    |            _id
@@ -5355,6 +5356,7 @@ class ApiControllerSpec()
                    |          }
                    |        }
                    |        total
+                   |        totalFiltered
                    |    }
                    |}
                    |""".stripMargin

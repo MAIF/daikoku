@@ -64,51 +64,56 @@
   font-weight: bold;
 }
 
+$level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
+
 .notification-table {
   display: flex;
   flex-direction: column;
   border-radius: 5px;
   overflow: hidden;
+  border: 1px solid color-mix(in srgb, variables.$level3_bg-color 90%, #000);
 
   background-color: variables.$level2_bg-color;
   color: variables.$level2_text-color;
 
 
-}
+  .table-header {
+    padding: 2rem 1rem 1rem 1rem;
 
-.table-header {
-  padding: 2rem 1rem 1rem 1rem;
+    .table-title {
+      font-weight: bold;
+      margin: 0;
+    }
 
-  .table-title {
-    font-weight: bold;
+    .table-description {
+      font-weight: lighter;
+    }
+  }
+
+  .select-all-row {
+    background-color: variables.$level2_bg-color;
+    padding: 1rem 1rem !important;
+    font-size: 1rem !important;
+    height: 4rem;
+    // border: none !important;
+
+    // input.form-check-input {
+    //   margin-left: .7rem!important;
+    // }
+  }
+
+  .table-rows {
+    display: flex;
+    flex-direction: column;
+    background-color: variables.$level1_bg-color;
+    color: variables.$level1_text-color;
+    padding: 0;
     margin: 0;
+
+    li:last-of-type .table-row {
+        border: none;
+      }
   }
-
-  .table-description {
-    font-weight: lighter;
-  }
-}
-
-$level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
-
-.select-all-row {
-  background-color: $level1-darken-color;
-  padding: 1rem 1rem !important;
-  font-size: 1rem !important;
-  height: 4rem;
-
-  // input.form-check-input {
-  //   margin-left: .7rem!important;
-  // }
-}
-
-.table-rows {
-  display: flex;
-  flex-direction: column;
-  background-color: variables.$level3_bg-color;
-  color: variables.$level3_text-color;
-  padding: 0;
-  margin: 0;
 
   .table-row {
     display: grid;
@@ -116,7 +121,7 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     gap: 1rem;
     padding: .875rem 1rem;
     align-items: center;
-    border-bottom: 1px solid variables.$level1_bg-color;
+    border-bottom: 1px solid color-mix(in srgb, variables.$level3_bg-color 90%, #000);
     font-size: 0.875rem;
 
     &:hover {
@@ -220,10 +225,13 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     }
   }
 
-  .table-row:last-of-type {
-    border: none;
-  }
+  // .table-row:last-of-type {
+  //   border: none;
+  // }
+
 }
+
+
 
 .action-container {
   display: grid;
@@ -244,7 +252,7 @@ $level1-darken-color: color-mix(in srgb, variables.$level2_bg-color 95%, #000);
     font-weight: bold;
   }
 
-  & +.notification-subscription-demand-summary {
+  &+.notification-subscription-demand-summary {
     margin-top: 2rem;
   }
 }

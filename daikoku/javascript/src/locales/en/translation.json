@@ -324,6 +324,7 @@
     "Userinfo URL": "Userinfo URL",
     "Login URL": "Login URL",
     "Logout URL": "Logout URL",
+    "oauth2.form.logout.url.help": "${redirect} and ${clientId} will be replaced by the expected values",
     "Callback URL": "Callback URL",
     "Access token field name": "Access token field name",
     "Algo.": "Algo.",
@@ -941,6 +942,8 @@
     "api_swagger.guest_user": "Try it is only available for registered users.",
     "smtp_client.host": "The SMTP server to connect to",
     "smtp_client.port": "The SMTP server port to connect to",
+    "smtp_client.username": "Username",
+    "smtp_client.password": "Password",
     "send_grid.api_key": "API key",
     "send_grid.from_email": "Sender email",
     "audittrail.export.label": "Export audit trail",
@@ -1205,9 +1208,6 @@
     "select.team.placeholder": "Select a team",
     "otoroshi.missing.entities": "Missing Otoroshi entities",
     "otoroshi.missing.target": "Missing Otoroshi target",
-    "apiList.tag.search": "By tag",
-    "apiList.category.search": "By category",
-    "apiList.team.search": "By team",
     "team.email.verification.send": "Mail sent to %s for verify this email address.",
     "team.email.alreadyVerified": "This mail is already verified",
     "team.email.notVerified": "Send a mail",
@@ -1705,5 +1705,55 @@
     "informations.page.account-creation-validation-email.description": "Your email address has been successfully verified. Your account is now active.",
     "informations.page.account-creation-validation-email-waiting.title": "Email address confirmed",
     "informations.page.account-creation-validation-email-waiting.description": "Your email address has been successfully verified. Your account is being finalized and will be available soon.",
-    "informations.page.error.title": "An error occurred"
+    "informations.page.error.title": "An error occurred",
+    "topbar.link.dashboard.label": "Dashboard",
+    "topbar.link.my.teams.label": "My teams",
+    "topbar.search.placeholder": "Type %s to search",
+    "topbar.theme.chooser.to.light.title": "Switch to light mode",
+    "topbar.theme.chooser.to.dark.title": "Switch to dark mode",
+    "dashboard.page.title": "Dashboard",
+    "dashboard.tile.error": "Sorry, an error has occurred",
+    "dashboard.page.tenant.setting.button.label": "Tenant settings",
+    "dashboard.apis.tile.title": "My APIs",
+    "dashboard.apis.tile.description": "Summary of publications and consumptions",
+    "dashboard.apis.tile.published.label": "Published",
+    "dashboard.apis.tile.consumed.label": "Consumed",
+    "dashboard.apikeys.tile.title": "My API keys",
+    "dashboard.apikeys.tile.description": "Status of the keys generated for this tenant",
+    "dashboard.apikeys.tile.active.label": "Active",
+    "dashboard.apikeys.tile.expire.label": "Expiring soon",
+    "dashboard.demands.tile.title": "Requests to validate",
+    "dashboard.demands.tile.description": "Subscriptions pending validation",
+    "dashboard.demands.tile.waiting.label": "Pending",
+    "dashboard.tile.error.button.label": "Reload data",
+    "dashboard.apis.table.header.label.api": "API",
+    "dashboard.apis.table.header.label.tags": "Tags",
+    "dashboard.apis.table.header.label.team": "Team",
+    "dashboard.apis.table.header.label.status": "Status",
+    "dashboard.apis.table.header.label.actions": "Actions",
+    "dashboard.filters.tag.label": {
+        "s": "Tag",
+        "p": "Tags"
+    },
+    "dashboard.filters.all.tags.label": "All tags",
+    "dashboard.filters.team.label": {
+        "s": "Team",
+        "p": "Teams"
+    },
+    "dashboard.filters.all.team.label": "All teams",
+    "dashboard.api.list.actives.subscription.tag.label": {
+        "s": "%s active key",
+        "p": "%s clés active keys"
+    },
+    "dashboard.api.list.expires.subscription.tag.label": {
+        "s": "%s will expire soon",
+        "p": "%s will expire soon"
+    },
+    "dashboard.api.list.pending.subscription.tag.label": {
+        "s": "%s pending request",
+        "p": "%s pending requests"
+    },
+    "dashboard.create.api.button.label": "Create new API",
+    "search.team.placeholder": "Search a team",
+    "dashboard.create.team.button.label": "Create a team"
 }

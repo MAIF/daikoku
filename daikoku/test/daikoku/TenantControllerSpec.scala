@@ -441,6 +441,7 @@ class TenantControllerSpec()
 
     }
     "remove an admin from a tenant" in {
+      Await.result(waitForDaikokuSetup(), 5.minutes)
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(daikokuAdmin, tenantAdmin, user),

@@ -64,11 +64,12 @@
     "sonner": "^2.0.6",
     "swagger-ui-dist": "5.27.0",
     "util": "^0.12.5",
-    "xstate": "^5.20.1"
+    "xstate": "^5.20.1",
+    "yaml": "^2.8.2"
   },
   "devDependencies": {
     "@esbuild-plugins/node-globals-polyfill": "^0.2.3",
-    "@playwright/test": "^1.54.1",
+    "@playwright/test": "^1.56.1",
     "@types/jquery": "^3.5.32",
     "@types/js-md5": "^0.8.0",
     "@types/node": "^24.1.0",
@@ -86,7 +87,7 @@
     "rollup-plugin-visualizer": "^6.0.3",
     "sass": "^1.89.2",
     "typescript": "^5.8.3",
-    "vite": "7.0.6",
+    "vite": "7.1.11",
     "vite-plugin-simple-html": "^1.0.1"
   }
 }

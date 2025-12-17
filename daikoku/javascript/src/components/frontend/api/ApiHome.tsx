@@ -42,6 +42,7 @@ export const ApiHome = ({
   const { translate, Translation } = useContext(I18nContext);
 
   const queryClient = useQueryClient();
+  //todo: ???
   const apiQuery = useQuery({
     queryKey: ["api", params.apiId, params.versionId],
     queryFn: () => Services.getVisibleApi(params.apiId, params.versionId)
@@ -226,7 +227,7 @@ export const ApiHome = ({
       <main role="main" className='flex-grow-1'>
         <ApiHeader api={api} ownerTeam={ownerTeam} tab={params.tab} />
         <div className="album p-4" style={{ position: 'relative' }}>
-          {params.tab === 'description' && (api.descriptionCmsPage ? <CmsViewer pageId={api.descriptionCmsPage} fields={{ api }} /> : <ApiDescription api={api} ownerTeam={ownerTeam} />)}
+          {params.tab === 'description' && <ApiDescription api={api} ownerTeam={ownerTeam} />}
           {params.tab === 'apis' && (<ApiGroupApis apiGroup={api} ownerTeam={ownerTeam} />)}
           {params.tab === 'pricing' && (<ApiPricing api={api} myTeams={myTeams} ownerTeam={ownerTeam}
             subscriptions={subscriptions} askForApikeys={askForApikeys} inProgressDemands={pendingSubscriptions} />)}
