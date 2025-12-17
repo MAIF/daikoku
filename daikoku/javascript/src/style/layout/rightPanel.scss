@@ -1,10 +1,11 @@
 @use "../variables";
 
 .right-panel-container {
-  position: absolute;
+  position: fixed;
   height: calc(100vh - variables.$topbar-height);
   width: 0;
   overflow: hidden;
+  z-index: 1000;
 
   &.opened {
     width: 100vw;
@@ -17,9 +18,10 @@
 
 .right-panel {
   position: relative;
-  overflow: scroll;
+  display: flex;
+  flex-direction: column;
   width: 100%;
-  height: 100vh;
+  height: 100%;
   z-index: 1000;
   top: 0;
   right: 0;
@@ -46,13 +48,12 @@
 .right-panel-background {
   position: relative;
   width: 0;
-  height: 100vh;
+  height: 100%;
   z-index: 1000;
   top: 0;
   left: 0;
   background-color: #000;
   opacity: 0.3;
-  width: 0;
 
   transition: width .2s ease-in-out;
 

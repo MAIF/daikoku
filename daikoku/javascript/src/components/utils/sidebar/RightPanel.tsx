@@ -17,6 +17,7 @@ export const RightPanel = () => {
       return false;
     }
   };
+
   useEffect(() => {
     window.addEventListener('keydown', closeOnEsc, true);
 
@@ -24,6 +25,18 @@ export const RightPanel = () => {
       window.removeEventListener('keydown', closeOnEsc, true);
     };
   }, [closeRightPanel]);
+
+  useEffect(() => {
+    if (rightPanelContent) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [rightPanelContent]);
 
   return (
     <div className={classNames("right-panel-container", { opened: rightPanelContent })}>
@@ -46,13 +59,13 @@ export const RightPanel = () => {
               closed: !rightPanelContent,
             })}
           >
-            <div className="m-2 p-2 ">
+            <div className="m-2 p-2">
               <div className="cursor-pointer right-panel__back d-flex align-items-center justify-content-center companion-link">
                 <X className="" onClick={closeRightPanel} />
               </div>
               {rightPanelContent?.title}
             </div>
-            <div className="m-2 p-2">
+            <div className="m-2 p-2 flex-grow-1 overflow-y-auto">
               {rightPanelContent?.content}
             </div>
           </div>

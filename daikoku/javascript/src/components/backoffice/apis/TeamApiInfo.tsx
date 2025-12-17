@@ -216,7 +216,7 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
   const flow = (expert: boolean, apigroup: boolean) => [
     {
       label: translate('Basic.informations'),
-      flow: apigroup ? ['state', 'name', 'smallDescription', 'image', 'apis'] : ['state', 'name', 'smallDescription', 'image', 'apis'].filter((entry) =>
+      flow: apigroup ? ['state', 'name', 'smallDescription', 'image', 'apis'] : ['state', 'name', 'smallDescription', 'image'].filter((entry) =>
         simpleOrExpertMode(entry, expert)
       ),
       collapsed: false,

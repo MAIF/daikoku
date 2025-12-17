@@ -1711,6 +1711,7 @@
   "informations.page.account-creation-validation-email-waiting.title":"Adresse email confirmée",
   "informations.page.account-creation-validation-email-waiting.description": "Votre adresse email a bien été validée. Votre compte est en cours de finalisation et sera disponible sous peu.",
   "informations.page.error.title": "Une erreur est survenue",
+  "informations.page.go.back.button.label": "Revenir au catalogue d'APIs",
   "topbar.link.dashboard.label": "Tableau de bord",
   "topbar.link.my.teams.label": "Mes équipes",
   "topbar.search.placeholder": "Taper %s pour rechercher",

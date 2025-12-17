@@ -1706,6 +1706,7 @@
     "informations.page.account-creation-validation-email-waiting.title": "Email address confirmed",
     "informations.page.account-creation-validation-email-waiting.description": "Your email address has been successfully verified. Your account is being finalized and will be available soon.",
     "informations.page.error.title": "An error occurred",
+    "informations.page.go.back.button.label": "Return to API list",
     "topbar.link.dashboard.label": "Dashboard",
     "topbar.link.my.teams.label": "My teams",
     "topbar.search.placeholder": "Type %s to search",
