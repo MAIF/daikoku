@@ -1,8 +1,8 @@
 # Managing APIs
 
 ## Create a new API
-To create a new API, you can click on the `+ API` button in the catalog page or the `Create new API` button in the Team's APIs page in your back office's team.
-After clicking on the button localized in the catalog page, you need to choose a team which is the owner.
+To create a new API, you can click on the `+ Create an API` button in the dahboard page.
+After clicking, you need to choose a team which is the owner.
 
 ### API information
 An API needs a name to be created.
