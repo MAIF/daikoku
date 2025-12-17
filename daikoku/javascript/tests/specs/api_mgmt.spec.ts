@@ -174,7 +174,8 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Rechercher une API, équipe,' }).fill('vendeurs');
   await page.getByRole('link', {name: 'Vendeurs'}).click();
   await page.getByText('Clés d\'API').click();
-  await expect(page.getByRole('row', { name: 'API papier' })).toBeHidden();
+  await expect(page.getByRole('link', { name: 'API papier' })).toBeHidden();
+  await page.waitForTimeout(1000);
 
   //verifier dans oto que les clé sont plus dispo
   const MaybeVendeurApiKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${vendeursPapierExtendedDevApiKeyId}`, {
@@ -187,7 +188,6 @@ test('[ASOAPI-10599] - supprimer une API', async ({ page }) => {
   await expect(MaybeVendeurApiKey.status).toBe(200);
   const vendeurApiKey = await MaybeVendeurApiKey.json()
   await expect(vendeurApiKey.enabled).toBe(true)
-  console.debug(vendeurApiKey.authorizedEntities.length, vendeurApiKey.authorizedEntities)
   await expect(vendeurApiKey.authorizedEntities.length).toBe(1)
   await expect(vendeurApiKey.authorizedEntities).toEqual(
     expect.not.arrayContaining([otoroshiDevPaperRouteId])
