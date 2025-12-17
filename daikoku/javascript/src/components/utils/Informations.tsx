@@ -1,10 +1,11 @@
 import classNames from "classnames";
 import { useContext, useEffect } from 'react';
+import CheckCircle from 'react-feather/dist/icons/check-circle';
+import XOctagon from 'react-feather/dist/icons/x-octagon';
 
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { I18nContext, ModalContext } from '../../contexts';
 import { GlobalContext } from "../../contexts/globalContext";
-import { Description } from "../frontend";
 
 export const Informations = () => {
   const { translate } = useContext(I18nContext);
@@ -12,6 +13,7 @@ export const Informations = () => {
   const { openJoinTeamModal } = useContext(ModalContext);
 
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
   const messageId = searchParams.get('message');
   const error = searchParams.get('error');
@@ -23,47 +25,42 @@ export const Informations = () => {
     }
   }, [invitationToken]);
 
-  console.debug({messageId, error, invitationToken})
 
   return (
     <main className='flex-grow-1' role="main">
-      <section className="organisation__header col-12 mb-4 p-3">
-        <div className="row text-center">
-          <div className="col-sm-4">
-            <img
-              className="organisation__avatar"
-              src={tenant.logo ? tenant.logo : '/assets/images/daikoku.svg'}
-              alt="avatar"
-            />
-          </div>
-          <div className="col-sm-7 d-flex flex-column justify-content-center">
-            <h1 className="jumbotron-heading">
-              {tenant.title ? tenant.title : translate('Your APIs center')}
+      <section className="">
+        <div className="d-flex flex-row justify-content-between align-items-center">
+          <div className="d-flex flex-column justify-content-center">
+            <h1 className="jumbotron-heading mt-3">
+              {tenant.title ?? tenant.name}
             </h1>
-            <Description description={tenant.description} />
+            <p>{tenant.description}</p>
           </div>
         </div>
       </section>
-      {(!!messageId || error) && <div className="section mx-auto mt-3 p-3 pt-4" style={{ maxWidth: '448px' }}>
+      {(!!messageId || error) && <div className="mx-auto information-cartridge">
         <div className="d-flex flex-column align-items-center justify-content-center gap-3">
-          <i className={classNames("fas", {
-            "fa-circle-check color-success": !!messageId,
-            "fa-circle-xmark color-danger": !!error
-          })} style={{ fontSize: '3rem' }}></i>
+          {!!messageId && !error && <CheckCircle size='4.5rem' className="color-success"/>}
+          {!!error && <XOctagon size='4.5rem' className="color-danger" />}
           {
             !!messageId && (
               <>
-                <h2>{translate(`informations.page.${messageId ?? 'unknown'}.title`)}</h2>
-                <p>{translate(`informations.page.${messageId ?? 'unknown'}.description`)}</p>
+                <h2 className="information-title">{translate(`informations.page.${messageId ?? 'unknown'}.title`)}</h2>
+                <p className="information-description">{translate(`informations.page.${messageId ?? 'unknown'}.description`)}</p>
               </>
             )}
           {
             !!error && (
               <>
-                <h2>{translate(`informations.page.error.title`)}</h2>
-                <p>{error}</p>
+                <h2 className="information-title">{translate(`informations.page.error.title`)}</h2>
+                <p className="information-description">{error}</p>
               </>
             )}
+        </div>
+        <div className="inforamtion-footer d-flex justify-content-end mt-5">
+            <div className="btn btn-sm btn-outline-secondary"onClick={() => navigate("/apis")}>
+              Revenir au catalogue d'API
+            </div>
         </div>
       </div>
       }
