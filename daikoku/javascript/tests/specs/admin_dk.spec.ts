@@ -1,7 +1,7 @@
 import test, { expect, Locator } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 import { DWIGHT, IUser, JIM, MICHAEL } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, dwhightPaperApiKeyId, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, dwightPaperApiKeyId, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
 
 
 test.beforeEach(async () => {
@@ -32,10 +32,11 @@ test.beforeEach(async () => {
 test('[ASOAPI-10396] - Se connecter en étant membre du groupe AD Managers (maif ==> M_GRG_Gateway_API_Interne)', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page)
-  await expect(page.locator('h3').filter({ hasText: 'admin-api-tenant-default' })).toBeVisible();
-  await expect(page.locator('h3').filter({ hasText: 'cms-api-tenant-default' })).toBeVisible();
-  await expect(page.locator('.top__container', { hasText: 'Vos équipes' })
-    .locator('span', { hasText: 'dunder-mifflin-admin-team' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'admin-api-tenant-default' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'cms-api-tenant-default' })).toBeVisible();
+  await page.getByRole('button', { name: 'Taper / pour rechercher' }).click();
+  await page.getByRole('textbox', { name: 'Rechercher une API, équipe,' }).fill('dunder');
+  await expect(page.locator('#portal-root').getByRole('link', { name: 'dunder-mifflin-admin-team' })).toBeVisible();
 });
 
 test('[ASOAPI-10506] - Supprimer définitivement un utilisateur ', async ({ page }) => {
@@ -74,7 +75,7 @@ test('[ASOAPI-10506] - Supprimer définitivement un utilisateur (cas particulier
     return page.locator(".avatar-with-action__infos", { hasText: DWIGHT.name })
   }
 
-  const beginningKey = await fetch(`http://otoroshi-api.oto.tools:8080/apis/apim.otoroshi.io/v1/apikeys/${dwhightPaperApiKeyId}`, {
+  const beginningKey = await fetch(`http://otoroshi-api.oto.tools:8080/apis/apim.otoroshi.io/v1/apikeys/${dwightPaperApiKeyId}`, {
     method: 'GET',
     headers: {
       "Otoroshi-Client-Id": otoroshiAdminApikeyId,
@@ -105,7 +106,7 @@ test('[ASOAPI-10506] - Supprimer définitivement un utilisateur (cas particulier
   await page.waitForResponse(response => response.url().includes('/api/admin/users/1AJMQB27BOOSQJC9xeUEwgDJNC5xuUq4') && response.status() === 200)
   await expect(getDwightAvatar()).not.toBeVisible();
 
-  const maybeKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${dwhightPaperApiKeyId}`, {
+  const maybeKey = await fetch(`http://otoroshi-api.oto.tools:8080/api/apikeys/${dwightPaperApiKeyId}`, {
     method: 'GET',
     headers: {
       "Otoroshi-Client-Id": otoroshiAdminApikeyId,

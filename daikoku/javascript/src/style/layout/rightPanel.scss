@@ -2,14 +2,16 @@
 
 .right-panel-container {
   position: absolute;
-  height: 100vh;
+  height: calc(100vh - variables.$topbar-height);
   width: 0;
   overflow: hidden;
-  
+
   &.opened {
     width: 100vw;
-    top: 0; bottom: 0;
-    left: 0; right: 0;
+    top: variables.$topbar-height;
+    bottom: 0;
+    left: 0;
+    right: 0;
   }
 }
 

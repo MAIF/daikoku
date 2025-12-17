@@ -1,7 +1,7 @@
 import test, { expect, Locator } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 import { DWIGHT, IUser, JIM, MICHAEL } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, dwhightPaperApiKeyId, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret } from './utils';
 
 
 test.beforeEach(async () => {

@@ -1,27 +1,30 @@
 import classNames from "classnames";
 import { GlobalContext } from "../../../contexts/globalContext";
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { I18nContext } from "../../../contexts";
 
 type StarButtonProps = {
-  toggleStar: () => void
+  toggleStar: () => Promise<any>
   starred: boolean
+  classnames?: string
 }
-const StarsButton = ({ toggleStar, starred }: StarButtonProps) => {
+const StarsButton = ({ toggleStar, starred, classnames }: StarButtonProps) => {
   const { connectedUser } = useContext(GlobalContext)
   const { translate } = useContext(I18nContext)
+
+  const [star, setStar] = useState(starred)
 
   if (connectedUser && !connectedUser.isGuest) {
     return (
       <button
-        className="favorite-btn"
+        className={`favorite-btn ${classnames ?? ''}`}
         style={{background: 'none', border: 'none'}}
-        aria-label={translate(starred ? "api.home.remove.api.to.favorite" : "api.home.add.api.to.favorite")}
-        onClick={toggleStar}
+        aria-label={translate(star ? "api.home.remove.api.to.favorite" : "api.home.add.api.to.favorite")}
+        onClick={() => toggleStar().then(() => setStar(!star))}
       >
-        <i className={classNames("fas", {
-          'fa-thumbtack-slash': starred,
-          'fa-thumbtack': !starred,
+        <i className={classNames('fa-star', {
+          'fas': star,
+          'far': !star,
         })} />
       </button>
     )

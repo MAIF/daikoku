@@ -11,7 +11,7 @@ import { I18nContext, ModalContext, TranslateParams } from '../../../contexts';
 import { GlobalContext } from '../../../contexts/globalContext';
 import { CustomSubscriptionData } from '../../../contexts/modals/SubscriptionMetadataModal';
 import * as Services from '../../../services';
-import { DaikokuMode, Display, IAccountCreationGQL, IApi, IApiGQL, IApiPost, IIssuesTag, isError, Issue, ISubscription, ISubscriptionDemand, ISubscriptionDemandGQL, ITeamFullGql, ITeamSimple, ITenant, ITesting, IUsagePlan, IUser, IValidationStep } from '../../../types';
+import { IAccountCreationGQL, IApiGQL, IApiPost, isError, Issue, ISubscription, ISubscriptionDemandGQL, ITeamFullGql, ITeamSimple, ITenant, IUsagePlan, IUser, IValidationStep } from '../../../types';
 import { getLanguageFns, Spinner } from '../../utils';
 import { FeedbackButton } from '../../utils/FeedbackButton';
 import { SimpleApiKeyCard } from '../apikeys/TeamApiKeysForApi';
@@ -243,8 +243,8 @@ const GenericValueContainer = (
 };
 
 const VISIBLE_APIS = `
-    query AllVisibleApis ($teamId: String, $research: String, $selectedTeam: String, $selectedTag: String, $selectedCategory: String, $limit: Int, $offset: Int, $groupId: String) {
-      visibleApis (teamId: $teamId, research: $research, selectedTeam: $selectedTeam, selectedTag: $selectedTag, selectedCategory: $selectedCategory, limit: $limit, offset: $offset, groupId: $groupId) {
+    query AllVisibleApis ($limit: Int, $offset: Int) {
+      visibleApis (limit: $limit, offset: $offset) {
         apis {
           api {
             name
@@ -1223,7 +1223,7 @@ export const NotificationList = () => {
     } else {
       const filterOrder = ['team', 'api', 'type', 'actionType']
       return (
-        <div className='mt-2 d-flex flex-wrap flex-row gap-2'>
+        <div className='my-2 d-flex flex-wrap flex-row gap-2'>
           {columnFilters
             .sort((a, b) => filterOrder.indexOf(a.id) - filterOrder.indexOf(b.id))
             .flatMap(f => {

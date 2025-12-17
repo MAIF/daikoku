@@ -333,14 +333,11 @@ object CommonServices {
        |""".stripMargin
 
   def getVisibleApis(
-      teamId: Option[String] = None,
-      research: String,
-      selectedTeam: Option[String] = None,
-      selectedTag: Option[String] = None,
-      selectedCat: Option[String] = None,
+      filter: JsArray = Json.arr(),
+      sort: JsArray = Json.arr(),
+      apiGroupId: Option[String] = None,
       limit: Int,
       offset: Int,
-      groupOpt: Option[String] = None
   )(implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
@@ -349,141 +346,235 @@ object CommonServices {
     _UberPublicUserAccess(
       AuditTrailEvent(s"@{user.name} has accessed the list of visible apis")
     )(ctx) {
-      val tenant = ctx.tenant
-      val user = ctx.user
+      val teams =
+        getFiltervalue[List[String]](filter, "team").map(_.toArray)
+      val tags =
+        getFiltervalue[List[String]](filter, "tag").map(_.toArray)
+      val research =
+        getFiltervalue[String](filter, "research")
+      val subscribeOnly =
+        getFiltervalue[Boolean](filter, "subscribedOnly")
+
+      /*
+* $1 : userID
+* $2: tenant
+* $3: research
+* $4: teams
+* $5: tags
+* $6: subscribedOnly
+* $7: limit
+* $8: offset
+* $$9: apiGroupId
+* */
+//TODO: Get keys and status
+      val query =
+        s"""
+          |WITH me as (select content
+          |            from users
+          |            where _id = $$1),
+          |     my_teams as (SELECT teams.*
+          |                  FROM teams
+          |                           LEFT JOIN me on true
+          |                  WHERE teams._deleted IS FALSE
+          |                    AND ((me.content ->> 'isDaikokuAdmin')::bool is true
+          |                    OR teams.content -> 'users' @>
+          |                        (SELECT jsonb_build_array(jsonb_build_object('userId', me.content ->> '_id'))
+          |                         FROM me))),
+          |     base_apis as (select a.*
+          |                   FROM apis a
+          |                            LEFT JOIN me on true
+          |                   WHERE (
+          |                             a._deleted IS false AND
+          |                             a.content ->> '_tenant' = $$2 AND
+          |                             (a.content ->> 'state' = 'published' OR
+          |                              coalesce((me.content -> 'isDaikokuAdmin')::bool, false) OR
+          |                              a.content ->> 'team' = ANY (select t.content ->> '_id' from my_teams t)) AND
+          |                             (case
+          |                                  WHEN me.content is null THEN a.content ->> 'visibility' = 'Public'
+          |                                  WHEN coalesce((me.content ->> 'isDaikokuAdmin')::bool, false) THEN TRUE
+          |                                  ELSE (a.content ->> 'visibility' IN ('Public', 'PublicWithAuthorizations') OR
+          |                                        (a.content ->> 'team' = ANY (select t.content ->> '_id' from my_teams t)) OR
+          |                                        (a.content -> 'authorizedTeams' ?|
+          |                                         (SELECT array_agg(t.content ->> '_id') FROM my_teams t)))
+          |                                 END) AND
+          |                             (a.content ->> 'isDefault')::boolean = true AND
+          |                                CASE
+          |                                    WHEN $$9::text IS NULL THEN true
+          |                                    ELSE a._id = ANY (
+          |                                        SELECT jsonb_array_elements_text(g.content -> 'apis')
+          |                                        FROM apis g
+          |                                        WHERE g._id = $$9::text
+          |                                    )
+          |                                    END
+          |                             )),
+          |     total_apis as (select count(1) as total_count
+          |                    FROM base_apis),
+          |     visible_apis as (select a._id,
+          |                             a.content,
+          |                             count(1) over ()                                                          as total_filtered,
+          |                             (me.content -> 'starredApis' @> jsonb_build_array(a._id))                 as is_starred,
+          |                             (a.content ->> 'team' = ANY (select t.content ->> '_id' from my_teams t)) as is_my_team
+          |                      FROM base_apis a
+          |                               LEFT JOIN me on true
+          |                      WHERE (
+          |                                (a.content ->> 'name' ~* COALESCE(NULLIF($$3, ''), '.*')) AND
+          |                                CASE
+          |                                    WHEN array_length($$4::text[], 1) IS NULL THEN true
+          |                                    ELSE a.content ->> 'team' = ANY ($$4::text[])
+          |                                    END AND
+          |                                CASE
+          |                                    WHEN array_length($$5::text[], 1) IS NULL THEN true
+          |                                    ELSE a.content -> 'tags' ?| $$5::text[]
+          |                                    END AND (
+          |                                NOT $$6
+          |                                    OR EXISTS (SELECT 1
+          |                                               FROM api_subscriptions s
+          |                                               WHERE s.content ->> 'api' = a._id
+          |                                                 AND s.content ->> 'team' = ANY (SELECT t.content ->> '_id' FROM my_teams t))
+          |                                )
+          |                                )),
+          |     filtered_apis as (select *
+          |                       from visible_apis
+          |                       ORDER BY is_starred DESC,
+          |                                is_my_team DESC,
+          |                                content ->> 'name'
+          |                       limit CASE WHEN $$7 = -1 THEN null ELSE $$7 END offset $$8),
+          |     all_producer_teams as (SELECT DISTINCT t.content, count(1) as total
+          |                            FROM visible_apis va
+          |                                     JOIN teams t ON t.content ->> '_id' = va.content ->> 'team'
+          |                            WHERE t._deleted IS FALSE
+          |                            GROUP BY t.content ),
+          |     all_tags as (SELECT DISTINCT tag, count(DISTINCT base_apis._id) as total
+          |                  FROM visible_apis va,
+          |                       jsonb_array_elements_text(va.content -> 'tags') as tag
+          |                           left outer join base_apis on base_apis.content -> 'tags' ? tag
+          |                  group by tag),
+          |     all_categories as (SELECT DISTINCT category, count(DISTINCT base_apis._id) as total
+          |                       FROM visible_apis va,
+          |                            jsonb_array_elements_text(va.content -> 'categories') as category
+          |                                left outer join base_apis on base_apis.content -> 'categories' ? category
+          |                       group by category),
+          |    filtered_demands as ( SELECT apis._id as api, jsonb_agg(d.content) as demands
+          |                       FROM subscription_demands d
+          |                       INNER JOIN filtered_apis apis ON d.content ->> 'api' = apis._id
+          |                       WHERE d.content ->> 'state' = 'inProgress' AND
+          |                            d.content ->> 'team' = ANY (SELECT t.content ->> '_id' FROM my_teams t)
+          |                       GROUP BY apis._id),
+          |    filtered_subscriptions as ( SELECT apis._id as api, jsonb_agg(sub.content) as subscriptions
+          |                       FROM api_subscriptions sub
+          |                       INNER JOIN filtered_apis apis ON apis._id = sub.content ->> 'api'
+          |                       WHERE sub.content ->> 'team' = ANY (SELECT t.content ->> '_id' FROM my_teams t)
+          |                       GROUP BY apis._id),
+          |    authorizations_by_api as (select apis._id                as api_id,
+          |                                      teams.content ->> '_id' as team_id,
+          |                                      (
+          |                                          (apis.content -> 'authorizedTeams' @>
+          |                                           jsonb_build_array(teams.content ->> '_id'))
+          |                                              OR (apis.content ->> 'team' = teams.content ->> '_id')
+          |                                          )                   as authorized,
+          |                                      coalesce(
+          |                                              (select n.content -> 'status' ->> 'status' = 'Pending'
+          |                                               from notifications n
+          |                                               where n.content -> 'action' ->> 'api' = apis._id
+          |                                                 and n.content -> 'action' ->> 'team' = teams.content ->> '_id'
+          |                                                 and n.content -> 'action' ->> 'type' = 'ApiAccess'), false
+          |                                      )                       as pending
+          |                               from filtered_apis apis
+          |                                        cross join my_teams teams
+          |                               where (apis.content -> 'authorizedTeams' @> jsonb_build_array(teams.content ->> '_id'))
+          |                                  OR (apis.content ->> 'team' = teams.content ->> '_id')
+          |                                  OR exists (select 1
+          |                                             from notifications n
+          |                                             where n.content -> 'action' ->> 'api' = apis._id
+          |                                               and n.content -> 'action' ->> 'team' = teams.content ->> '_id'
+          |                                               and n.content -> 'action' ->> 'type' = 'ApiAccess'
+          |                                               and n.content -> 'status' ->> 'status' = 'Pending')),
+          |     apis_with_authorizations as (select apis._id,
+          |                                         apis.content as api_content,
+          |                                         apis.total_filtered,
+          |                                         coalesce(
+          |                                               jsonb_agg(usage_plans.content) FILTER (WHERE usage_plans.content IS NOT NULL),
+          |                                               '[]'::jsonb
+          |                                         ) as plans,
+          |                                         CASE
+          |                                             WHEN lower(apis.content ->> 'visibility') = 'public' THEN '[]'::jsonb
+          |                                             ELSE coalesce(
+          |                                                             jsonb_agg(
+          |                                                             jsonb_build_object(
+          |                                                                     'team', aba.team_id,
+          |                                                                     'authorized', aba.authorized,
+          |                                                                     'pending', aba.pending
+          |                                                             )
+          |                                                                      ) FILTER (WHERE aba.team_id IS NOT NULL),
+          |                                                             '[]'::jsonb
+          |                                                  )
+          |                                             END      as authorizations,
+          |                                      coalesce(fd.demands, '[]'::jsonb) as demands,
+          |                                      coalesce(fs.subscriptions, '[]'::jsonb) as subscriptions
+          |                                  from filtered_apis apis
+          |                                           left join authorizations_by_api aba on aba.api_id = apis._id
+          |                                           left join usage_plans on apis.content -> 'possibleUsagePlans' ? usage_plans._id::text
+          |                                           left join filtered_subscriptions fs on fs.api = apis._id
+          |                                           left join filtered_demands fd on fd.api = apis._id
+          |                                  group by apis._id, apis.content, apis.total_filtered, apis.is_starred, apis.is_my_team, fd.demands, fs.subscriptions
+          |                                  order by apis.is_starred DESC,
+          |                                           apis.is_my_team DESC,
+          |                                           apis.content ->> 'name')
+          |
+          |
+          |SELECT jsonb_build_object(
+          |               'apis', coalesce(
+          |                (SELECT jsonb_agg(
+          |                                jsonb_build_object(
+          |                                        'api', api_content,
+          |                                        'plans', coalesce(plans, '[]'::jsonb),
+          |                                        'authorizations', authorizations,
+          |                                        'subscriptionDemands', demands,
+          |                                        'subscriptions', subscriptions
+          |                                )
+          |                        )
+          |                 FROM apis_with_authorizations),
+          |                '[]'::jsonb),
+          |               'producers',
+          |                coalesce((SELECT jsonb_agg(jsonb_build_object('team', producers.content, 'total', total)) FROM all_producer_teams producers), '[]'::jsonb),
+          |               'tags', coalesce(
+          |                       (SELECT jsonb_agg(jsonb_build_object('value', tag, 'total', total) ORDER BY lower(tag)) FROM all_tags),
+          |                       '[]'::jsonb),
+          |               'categories', coalesce(
+          |                       (SELECT jsonb_agg(jsonb_build_object('value', category, 'total', total) ORDER BY lower(category)) FROM all_categories),
+          |                       '[]'::jsonb),
+          |               'total', (SELECT total_count FROM total_apis),
+          |               'totalFiltered', coalesce((SELECT max(total_filtered) FROM apis_with_authorizations), 0)
+          |       ) as result;
+          |""".stripMargin
+
+
       for {
-        myTeams <- env.dataStore.teamRepo.myTeams(tenant, user)
-        apiRepo <- env.dataStore.apiRepo.forTenantF(tenant.id)
-        myCurrentRequests <-
-          if (user.isGuest) FastFuture.successful(Seq.empty)
-          else
-            env.dataStore.notificationRepo
-              .forTenant(tenant.id)
-              .findNotDeleted(
-                Json.obj(
-                  "action.type" -> "ApiAccess",
-                  "action.team" -> Json
-                    .obj("$in" -> JsArray(myTeams.map(_.id.asJson))),
-                  "status.status" -> "Pending"
-                )
-              )
-
-        paginateApis <- apiRepo.queryPaginated(
-          allVisibleApisSqlQuery(ctx.tenant),
-          Seq(
-            java.lang.Boolean.valueOf(user.isDaikokuAdmin),
-            myTeams.map(_.id.value).toArray,
-            java.lang.Boolean.valueOf(user.isGuest),
-            research,
-            selectedTeam.orNull,
-            selectedTag.orNull,
-            selectedCat.orNull,
-            groupOpt.orNull,
-            ctx.user.starredApis.map(_.value).toArray
-          ),
-          offset * limit,
-          limit
-        )
-
-        producerTeams <-
-          env.dataStore.teamRepo
-            .forTenant(ctx.tenant)
-            .query(
-              s"""
-               |with visible_apis as (${allVisibleApisSqlQuery(ctx.tenant)})
-               |
-               |SELECT DISTINCT(teams.content) FROM visible_apis
-               |LEFT JOIN teams on teams._id = visible_apis.content ->> 'team'
-               |""".stripMargin,
-              Seq(
-                java.lang.Boolean.valueOf(user.isDaikokuAdmin),
-                myTeams.map(_.id.value).toArray,
-                java.lang.Boolean.valueOf(user.isGuest),
-                research,
-                selectedTeam.orNull,
-                selectedTag.orNull,
-                selectedCat.orNull,
-                groupOpt.orNull,
-                null
-              )
+        result <- env.dataStore
+          .asInstanceOf[PostgresDataStore]
+          .queryOneRaw(
+            query,
+            "result",
+            Seq(
+              ctx.user.id.value,
+              ctx.tenant.id.value,
+              research.orNull,
+              teams.orNull,
+              tags.orNull,
+              java.lang.Boolean.valueOf(subscribeOnly.getOrElse(false)),
+              java.lang.Integer.valueOf(limit),
+              java.lang.Integer.valueOf(offset),
+              apiGroupId.orNull
             )
-
-        uniqueApisWithVersion <- apiRepo.findNotDeleted(
-          Json.obj(
-            "_humanReadableId" -> Json.obj(
-              "$in" -> JsArray(
-                paginateApis._1.map(a => JsString(a.humanReadableId))
-              )
-            )
-          ),
-          sort = Some(Json.obj("name" -> 1))
-        )
-        plans <-
-          env.dataStore.usagePlanRepo
-            .forTenant(ctx.tenant)
-            .findNotDeleted(
-              Json.obj(
-                "_id" -> Json.obj(
-                  "$in" -> JsArray(
-                    uniqueApisWithVersion
-                      .flatMap(_.possibleUsagePlans)
-                      .map(_.asJson)
-                  )
-                )
-              )
-            )
+          )
       } yield {
-        val sortedApis: Seq[ApiWithAuthorizations] = uniqueApisWithVersion
-          .sortWith { (a, b) =>
-            (
-              user.starredApis.contains(a.id),
-              user.starredApis.contains(b.id)
-            ) match {
-              case (true, false) => true
-              case (false, true) => false
-              case _             => a.name.compareToIgnoreCase(b.name) < 0
-            }
-          }
-          .foldLeft(Seq.empty[ApiWithAuthorizations]) {
-            case (acc, api) =>
-              val apiPlans = plans
-                .filter(p => api.possibleUsagePlans.contains(p.id))
-                .filter(p =>
-                  p.visibility == UsagePlanVisibility.Public || myTeams
-                    .exists(_.id == api.team)
-                )
-              val authorizations = myTeams
-              //                .filter(t => t.`type` != TeamType.Admin)
-                .foldLeft(Seq.empty[AuthorizationApi]) {
-                  case (acc, team) =>
-                    acc :+ AuthorizationApi(
-                      team = team.id.value,
-                      authorized = api.authorizedTeams
-                        .contains(team.id) || api.team == team.id,
-                      pending = myCurrentRequests
-                        .exists(notif =>
-                          notif.action
-                            .asInstanceOf[ApiAccess]
-                            .team == team.id && notif.action
-                            .asInstanceOf[ApiAccess]
-                            .api == api.id
-                        )
-                    )
-                }
-              acc :+ (api.visibility.name match {
-                case "PublicWithAuthorizations" | "Private" | "AdminOnly" =>
-                  ApiWithAuthorizations(
-                    api = api,
-                    plans = apiPlans,
-                    authorizations = authorizations
-                  )
-                case _ => ApiWithAuthorizations(api = api, plans = apiPlans)
-              })
-          }
-        ApiWithCount(sortedApis, producerTeams, paginateApis._2)
+        result
+          .map(_.as(json.ApiWithCountFormat))
+          .getOrElse(ApiWithCount())
       }
     }
   }
+
   def getAllTags(
       research: String,
       selectedTeam: Option[String] = None,

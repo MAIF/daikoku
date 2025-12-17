@@ -2,7 +2,8 @@ import { constraints, Schema } from '@maif/react-forms';
 import { IFastTeam, ITeamSimple, IUserSimple } from './team';
 import { ThirdPartyPaymentType } from './tenant';
 import { INotification } from './types';
-import { IApiGQL, ITeamFullGql } from './gql';
+import { IApiGQL, ISubscriptionDemandGQL, ITeamFullGql } from './gql';
+import { IApiSubscriptionGql } from '../components';
 
 export type ApiState = 'created' | 'published' | 'deprecated' | 'blocked' | 'deleted';
 
@@ -27,7 +28,7 @@ export interface IBaseApi extends IWithSwagger, IWithTesting, IWithDocumentation
   _humanReadableId: string;
   _tenant: string;
   _deleted: boolean;
-  lastUpdate: string;
+  lastUpdate: number;
   name: string;
   smallDescription: string;
   descriptionCmsPage?: string;
@@ -41,7 +42,7 @@ export interface IBaseApi extends IWithSwagger, IWithTesting, IWithDocumentation
   categories: Array<string>;
   visibility: 'Public' | 'Private' | 'PublicWithAuthorisation' | 'AdminOnly';
   possibleUsagePlans: Array<string>;
-  defaultUsagePlan: string;
+  defaultUsagePlan?: string;
   authorizedTeams: Array<string>;
   posts: Array<string>;
   issues: Array<string>;
@@ -75,13 +76,16 @@ export interface IApi extends IBaseApi, IWithSwagger {
   }>;
 }*/
 
-export interface IApiWithAuthorization {
+export type IApiWithAuthorization = {
   api: IApiWithTeam;
   authorizations: Array<{
     team: string;
     authorized: boolean;
     pending: boolean;
   }>;
+  plans: Array<IUsagePlan>;
+  subscriptionDemands: Array<ISubscriptionDemandGQL>;
+  subscriptions: Array<IApiSubscriptionGql>;
 }
 
 export interface IApiExtended extends IApi {
@@ -91,10 +95,13 @@ export interface IApiExtended extends IApi {
   authorizations: Array<{ team: string; authorized: boolean; pending: boolean }>;
 }
 
-export interface IApiAuthoWithCount {
+export type IApiAuthoWithCount = {
   apis: Array<IApiWithAuthorization>;
-  producers: Array<ITeamSimple>;
+  producers: Array<{team: ITeamSimple, total: number}>;
+  tags: Array<{value: string, total: number}>;
+  categories: Array<{value: string, total: number}>;
   total: number;
+  totalFiltered: number;
 }
 
 export interface ITesting {
@@ -137,7 +144,7 @@ export interface IDocumentation {
   _id: string;
   _tenant: string;
   pages: IDocumentationPages;
-  lastModificationAt: string;
+  lastModificationAt: number;
 }
 
 export interface IImportingDocumentation {

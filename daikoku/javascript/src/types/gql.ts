@@ -50,7 +50,7 @@ export interface IApiGQL {
   _id: string;
   _humanReadableId: string;
   _deleted: boolean;
-  lastUpdate: string;
+  lastUpdate: number;
   state: ApiState;
   currentVersion: string;
   isDefault: boolean;

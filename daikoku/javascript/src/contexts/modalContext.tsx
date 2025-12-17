@@ -10,7 +10,7 @@ import { ApiSelectModal, IApiSelectModalProps, IModalProps } from "./modals/ApiS
 import { AssetSelectorModal } from "./modals/AssetsChooserModal";
 import { Confirm } from "./modals/Confirm";
 import { ContactModal } from "./modals/ContactModal";
-import { CustomModal } from "./modals/CustomModal";
+import { CustomModal, ICustomModalProps } from "./modals/CustomModal";
 import { FormModal } from "./modals/FormModal";
 import { JoinTeamInvitationModal } from "./modals/JoinTeamInvitationModal";
 import { LoginOrRegisterModal } from "./modals/LoginOrRegisterModal";
@@ -126,7 +126,7 @@ export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
   const openAssetSelectorModal = (props: IAssetSelectorModalProps) => open(<AssetSelectorModal {...props} close={close} />)
   const openApiSelectModal = (props: IApiSelectModalProps) => open(<ApiSelectModal {...props} close={close} />)
   const openApiKeySelectModal = (props: IApiKeySelectModalProps) => open(<ApiKeySelectModal {...props} close={close} />)
-  const openCustomModal = (props: IModalProps) => open(<CustomModal {...props} close={close} />)
+  const openCustomModal = (props: ICustomModalProps) => open(<CustomModal {...props} close={close} />)
 
 
   return (
@@ -151,7 +151,7 @@ export const ModalProvider = ({ children }: { children: React.ReactNode }) => {
       close,
       closeRightPanel,
       openRightPanel,
-      rightPanelContent
+      rightPanelContent,
     }}>
       <Modal modal={modal} modalContent={modalContent} />
       {children}

@@ -32,7 +32,7 @@ import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
 import fr.maif.otoroshi.daikoku.utils._
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import jobs.{ApiKeyStatsJob, OtoroshiVerifierJob}
-import org.joda.time.DateTime
+import org.joda.time.{DateTime, Days}
 import play.api.Logger
 import play.api.http.HttpEntity
 import play.api.i18n.I18nSupport
@@ -5368,5 +5368,35 @@ class ApiController(
       case None => EitherT.pure[Future, JsArray](Json.arr())
     }
     value1.merge
+  }
+
+  def myDashboard() = DaikokuActionMaybeWithGuest.async { ctx =>
+    PublicUserAccess(
+      AuditTrailEvent("@{user.name} has accessed his team list")
+    )(ctx) {
+      for {
+        myTeams <- env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user)
+        subscriptions <- env.dataStore.apiSubscriptionRepo.forTenant(ctx.tenant)
+          .find(Json.obj("team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))))
+        consumedApi <- env.dataStore.apiRepo.forTenant(ctx.tenant)
+          .find(Json.obj("_id" -> Json.obj("$in" -> JsArray(subscriptions.map(_.api.asJson).distinct))))
+        publishedApi <- env.dataStore.apiRepo.forTenant(ctx.tenant)
+          .find(Json.obj("team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))))
+        demandToTreat <- env.dataStore.notificationRepo.forTenant(ctx.tenant)
+          .find(Json.obj("action.type" -> "ApiSubscription", "status.status" -> "Pending", "team" -> Json.obj("$in" -> JsArray(myTeams.map(_.id.asJson)))))
+      } yield Ok(Json.obj(
+        "apis" -> Json.obj(
+          "published" -> publishedApi.size,
+          "consumed" -> consumedApi.size,
+        ),
+        "subscriptions" -> Json.obj(
+          "active" -> subscriptions.size,
+          "expire" -> subscriptions.count(_.validUntil.exists(d => Days.daysBetween(DateTime.now(), d).getDays < 7)),
+        ),
+        "demands" -> Json.obj(
+          "waiting" -> demandToTreat.size
+        ),
+      ))
+    }
   }
 }

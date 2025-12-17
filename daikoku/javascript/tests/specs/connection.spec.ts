@@ -29,16 +29,20 @@ test.beforeEach(async () => {
 test('[ASOAPI-10358] - Se connecter pour la première fois', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(PAM, page)
-  await expect(page.getByText(PAM.name)).toBeVisible();
+  // await expect(page.getByText(PAM.name)).toBeVisible();
   await page.getByRole('img', { name: 'user menu' }).click();
   await expect(page.locator('#app')).toContainText(PAM.email);
+  await page.getByRole('button', { name: 'Taper / pour rechercher' }).click();
+  await expect(page.getByRole('link', { name: PAM.name })).toBeVisible();
 });
 test('[ASOAPI-10359] - Se connecter pour la première fois en tant qu\'administrateur d\'équipe', async ({ page }) => {
   await page.goto(ACCUEIL);
   await loginAs(JIM, page)
-  await expect(page.getByText(JIM.name)).toBeVisible();
-  await expect(page.getByText('Vendeurs')).toBeVisible();
-  await expect(page.getByText('Logistique')).toBeVisible();
+  await page.getByRole('button', { name: 'Taper / pour rechercher' }).click();
+  await expect(page.getByRole('link', { name: JIM.name })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Vendeurs' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Logistique' })).toBeVisible();
+  await page.getByRole('textbox', { name: 'Rechercher une API, équipe,' }).press('Escape');
   await page.getByRole('img', { name: 'user menu' }).click();
   await expect(page.locator('#app')).toContainText(JIM.email);
 });

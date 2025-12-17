@@ -752,13 +752,37 @@ case class AuthorizedEntities(
 case class ApiWithAuthorizations(
     api: Api,
     plans: Seq[UsagePlan],
-    authorizations: Seq[AuthorizationApi] = Seq.empty
-)
+    authorizations: Seq[AuthorizationApi] = Seq.empty,
+    subscriptionDemands: Seq[SubscriptionDemand] = Seq.empty,
+    subscriptions: Seq[ApiSubscription] = Seq.empty
+) extends CanJson[ApiWithAuthorizations] {
+  override def asJson: JsValue = json.ApiWithAuthorizationsFormat.writes(this)
+}
+
+case class TeamCount(
+    team: Team,
+    total: Int) extends CanJson[TeamCount] {
+  override def asJson: JsValue = json.TeamCountFormat.writes(this)
+}
+
+case class ValueCount(
+    value: String,
+    total: Int) extends CanJson[TeamCount] {
+  override def asJson: JsValue = json.ValueCountFormat.writes(this)
+}
+
 case class ApiWithCount(
-    apis: Seq[ApiWithAuthorizations],
-    producers: Seq[Team],
-    total: Long
-)
+    apis: Seq[ApiWithAuthorizations] = Seq.empty,
+    producers: Seq[TeamCount] = Seq.empty,
+    tags: Seq[ValueCount] = Seq.empty,
+    categories: Seq[ValueCount] = Seq.empty,
+    total: Long = 0,
+    totalFiltered: Long = 0
+) extends CanJson[ApiWithCount] {
+  override def asJson: JsValue = json.ApiWithCountFormat.writes(this)
+}
+
+
 case class NotificationWithCount(
     notifications: Seq[Notification],
     total: Long,

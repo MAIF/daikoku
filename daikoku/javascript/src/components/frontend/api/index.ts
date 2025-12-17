@@ -3,7 +3,6 @@ export * from './ApiPricing';
 export * from './ApiDocumentation';
 export * from './ApiTest';
 export * from './ApiRedoc';
-export * from './ApiCard';
 export * from './ApiPost';
 export * from './issues/ApiIssue';
 export * from './ApiGroupApis';

@@ -1,19 +1,17 @@
 import { PropsWithChildren, useContext, useEffect } from 'react';
 import { Navigate, Outlet } from 'react-router';
-import { BrowserRouter, Route, BrowserRouter as Router, Routes, createBrowserRouter, RouterProvider, ScrollRestoration, useSearchParams } from 'react-router-dom';
+import { BrowserRouter, Route, Routes, useSearchParams } from 'react-router-dom';
 
 import { TeamBackOffice } from '../components/backoffice/TeamBackOffice';
-import { Footer, LoginPage, SideBar } from '../components/utils';
+import { Footer, LoginPage, SideBar, TopBar } from '../components/utils';
 import { ModalProvider, NavProvider } from '../contexts';
 
 import {
   ApiHome,
+  AtomicDesign,
   FrontOffice,
   JoinTeam,
   MaybeHomePage,
-  MyHome,
-  TeamHome,
-  AtomicDesign,
   SubscriptionRetrieve
 } from '../components/frontend';
 
@@ -38,17 +36,18 @@ import {
   UserEdit,
   UserList,
 } from '../components/adminbackoffice';
-import { Error, Response } from '../components/utils';
+import { AnonymousReporting } from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
 import { TenantAssets } from '../components/adminbackoffice/tenants/TenantAssets';
+import { Signup } from '../components/frontend/account/signup';
+import { Dashboard } from '../components/frontend/dashboard/Dashboard';
 import { FastMode } from "../components/frontend/fastMode/FastMode";
+import { Error, Response } from '../components/utils';
+import { RightPanel } from '../components/utils/sidebar/RightPanel';
 import { GlobalContext } from '../contexts/globalContext';
 import { I18nContext } from '../contexts/i18n-context';
 import { MessagesEvents } from '../services/messages';
+import { ITenant } from '../types';
 import { ResetPassword, ResetPasswordEnd, TwoFactorAuthentication } from './DaikokuHomeApp';
-import { AnonymousReporting } from "../components/adminbackoffice/anonymousreporting/AnonymousReporting";
-import { RightPanel } from '../components/utils/sidebar/RightPanel';
-import { Signup } from '../components/frontend/account/signup';
-import { ITenant, ITenantFull } from '../types';
 
 const RouteWithFooterLayout = () => (
   <>
@@ -161,10 +160,12 @@ export const DaikokuApp = () => {
       <MessagesProvider>
         <NavProvider>
           <ModalProvider>
+            <TopBar />
             <div className="d-flex flex-row">
               <SideBar />
               <RightPanel />
               <div className="wrapper flex-grow-1 container-fluid d-flex flex-column">
+                {/* <Breadcrumb /> */}
                 <Routes>
                   <Route
                     path='/error'
@@ -225,8 +226,8 @@ export const DaikokuApp = () => {
                     }
                   />
                   <Route element={<RouteWithFooterLayout />}>
-                    <Route path="/apis" element={<FrontOfficeRoute title={`${tenant.title} - ${translate('Apis')}`}>
-                      <MyHome />
+                    <Route path="/apis" element={<FrontOfficeRoute title={`${tenant.title} - ${translate('dashboard.page.title')}`}>
+                      <Dashboard />
                     </FrontOfficeRoute>} />
                     <Route path="/notifications*" element={<RouteWithTitle title={`${tenant.title} - ${translate('Notifications')}`}>
                       <NotificationList />
@@ -248,15 +249,6 @@ export const DaikokuApp = () => {
                       element={
                         <FrontOfficeRoute>
                           <ApiHome />
-                        </FrontOfficeRoute>
-                      }
-                    />
-
-                    <Route
-                      path="/:teamId"
-                      element={
-                        <FrontOfficeRoute>
-                          <TeamHome />
                         </FrontOfficeRoute>
                       }
                     />

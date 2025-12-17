@@ -9,6 +9,9 @@ import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json.{JsArray, JsObject, Json}
 
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
+
 class GuestModeSpec()
     extends PlaySpec
     with DaikokuSpecHelper
@@ -92,6 +95,7 @@ class GuestModeSpec()
     }
 
     "get visible apis" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
       val publicTenant = tenant.copy(isPrivate = false)
       val publicApi = defaultApi.api.copy(id = ApiId("public"))
       val privateApi = defaultApi.api.copy(
@@ -141,6 +145,7 @@ class GuestModeSpec()
 
     }
     "get visible apis of team" in {
+      Await.result(waitForDaikokuSetup(), 5.second)
       val publicTenant = tenant.copy(isPrivate = false)
       val publicApi = defaultApi.api.copy(id = ApiId("public"))
       val privateApi = defaultApi.api.copy(
@@ -162,10 +167,12 @@ class GuestModeSpec()
         body = Some(
           Json.obj(
             "variables" -> Json
-              .obj("teamId" -> teamOwnerId.value, "limit" -> 5, "offset" -> 0),
+              .obj(
+                "filterTable" -> Json.stringify(Json.arr(Json.obj("id" -> "team", "value" -> Json.arr(teamOwnerId.value)))),
+                "limit" -> 5, "offset" -> 0),
             "query" -> s"""
-            |query AllVisibleApis ($$teamId: String, $$limit: Int, $$offset: Int) {
-            |      visibleApis (teamId: $$teamId, limit: $$limit, offset: $$offset) {
+            |query AllVisibleApis ($$filterTable: JsArray, , $$limit: Int, $$offset: Int) {
+            |      visibleApis (filterTable: $$filterTable, , limit: $$limit, offset: $$offset) {
             |        apis {
             |          api {
             |            _id
@@ -177,6 +184,7 @@ class GuestModeSpec()
           )
         )
       )(publicTenant)
+      logger.info(Json.stringify(resp.json))
       resp.status mustBe 200
       val apis =
         (resp.json \ "data" \ "visibleApis" \ "apis")

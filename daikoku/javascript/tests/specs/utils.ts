@@ -13,7 +13,8 @@ export const logistiqueCommandeProdApiKeySecret = 'YwbzNgYSup3eCdxBIRa9HqM22tGoH
 export const vendeursPapierExtendedDevApiKeyId = 'BdGLTEAxmFsTg7NnlumBPzyX75Vre3al'
 export const vendeursPapierExtendedDevApiKeySecret = 'jmEX0x62DRmqAwL92YdF5VugN6iV3FOQuPq7idgwXTELpcQgaIBSU4sBxebapLQW'
 
-export const dwhightPaperApiKeyId = "6kI1ngU9hEaF4m6aUYTgS5JWIP2mhtGq"
+export const dwightPaperSubscriptionId = 'vk6QRoGrc8JyRiZfgcifwjzNES9l9ygQ'
+export const dwightPaperApiKeyId = "6kI1ngU9hEaF4m6aUYTgS5JWIP2mhtGq"
 export const dwightPaperApiKeySecret = "7X5BWD7ruYDLG9ho8stB1y8gdM9rWaZw6rLSaYnypP778apwDw09Yp8FBKy0z6Ke"
 
 export const otoroshiDevPaperRouteId = "route_route_dcb7d20c1-ea44-480c-9dd5-5a4d32760b3a"
@@ -49,8 +50,8 @@ export const demandCommandeProdForLogistique = 'X3DtdDY0Z20BdptJjtzGuxCRhrEnNWdr
 export const subPapierDevDwight = 'vk6QRoGrc8JyRiZfgcifwjzNES9l9ygQ';
 export const subCommandeDevLogistique = '22T3RsirZpz5afBi4MsC8U71gtc12MxK';
 export const subCommandeProdLogistique = 'iXaRzJPRKsP0XTYUCRmYeltG3sifYdfF';
-export const subPapierdevVedeurs = '4EGnOUDSp7eaC8J2d26TfO95rwUxfz9H';
 export const subCommandeDevVendeurs = 'mRVlHMttmN0JMytFGkd4uVm4UWzI3Qwq';
+export const subPapierdevVedeurs = '4EGnOUDSp7eaC8J2d26TfO95rwUxfz9H';
 // -------------------------------------------
 
 export const loginAs = async (user: IUser, page: Page) => {
@@ -62,11 +63,17 @@ export const loginAs = async (user: IUser, page: Page) => {
   // await page.locator('input[name="username"]').fill(user.email);
   await page.locator('input[name="password"]').fill('password');
   await page.getByRole('button', { name: 'Se connecter' }).click();
-  await page.getByLabel('API papier').waitFor({ state: 'visible' });
+  await page.getByRole('link', {name: 'API papier'}).waitFor({ state: 'visible' });
 }
 
 export const logout = async (page: Page) => {
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
-  await page.getByLabel('API papier').waitFor({ state: 'visible' });
+  await page.getByRole('link', { name: 'API papier' }).waitFor({ state: 'visible' });
+}
+
+export const findAndGoToTeam = async (team: string, page: Page) => {
+  await page.getByRole('button', { name: 'Taper / pour rechercher' }).click();
+  await page.getByRole('textbox', { name: 'Rechercher une API, équipe,' }).fill(team);
+  await page.getByRole('link', {name : team}).click();
 }

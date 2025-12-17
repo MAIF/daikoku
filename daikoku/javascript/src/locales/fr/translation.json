@@ -1207,9 +1207,6 @@
   "select.team.placeholder": "Sélectionner une équipe",
   "otoroshi.missing.entities": "Entités Otoroshi manquantes",
   "otoroshi.missing.target": "Cible Otoroshi manquante",
-  "apiList.tag.search": "Par tag",
-  "apiList.category.search": "Par catégorie",
-  "apiList.team.search": "Par équipe",
   "team.email.verification.send": "Mail envoyé à %s pour vérifier cette adresse email.",
   "team.email.alreadyVerified": "Cet email est déjà vérifié",
   "team.email.notVerified": "Envoyer un mail",
@@ -1393,7 +1390,7 @@
   "subscription.for": "Souscription à",
   "subscription.created.at": "créée le %s",
   "subscription.extra.resources.label": "Ressources accessibles supplémentaires",
-  "subscription.valid.until": "valid until %s",
+  "subscription.valid.until": "valide jusqu'au %s",
   "subscription.nota.part.1": "Consultez la documentation",
   "subscription.nota.part.2": "ou explorez",
   "subscription.nota.link.api": "pour utiliser l'API",
@@ -1698,5 +1695,55 @@
   "tenant.edition.color-theme.reset.button.label": "Réinitialiser le thème",
   "tenant.edition.color-theme.reset.confirm.title": "Confirmer la réinitialisation",
   "tenant.edition.color-theme.reset.confirm.message": "Voulez-vous vraiment réinitialiser le thème de couleur à celui par défaut ? Cette action supprimera définitivement le thème actuel.",
-  "tenant.edition.color-theme.reset.successful.message": "Le thème de couleur a été réinitialisé avec succès."
+  "tenant.edition.color-theme.reset.successful.message": "Le thème de couleur a été réinitialisé avec succès.",
+  "topbar.link.dashboard.label": "Tableau de bord",
+  "topbar.link.my.teams.label": "Mes équipes",
+  "topbar.search.placeholder": "Taper %s pour rechercher",
+  "topbar.theme.chooser.to.light.title": "Passer en mode clair",
+  "topbar.theme.chooser.to.dark.title": "Passer en mode sombre",
+  "dashboard.page.title": "Tableau de bord",
+  "dashboard.tile.error": "Désolé, une erreur est survenue",
+  "dashboard.tile.error.button.label": "Récupérer les données",
+  "dashboard.page.tenant.setting.button.label": "Réglage du tenant",
+  "dashboard.apis.tile.title": "Mes APIs",
+  "dashboard.apis.tile.description": "Synthèse des publications et consommations",
+  "dashboard.apis.tile.published.label": "Publiées",
+  "dashboard.apis.tile.consumed.label": "Consommée",
+  "dashboard.apikeys.tile.title": "Mes clé d'API",
+  "dashboard.apikeys.tile.description": "État des clés générées pour ce tenant",
+  "dashboard.apikeys.tile.active.label": "Active",
+  "dashboard.apikeys.tile.expire.label": "Proche expiration",
+  "dashboard.demands.tile.title": "Demandes à valider",
+  "dashboard.demands.tile.description": "Souscriptions en attente de validation",
+  "dashboard.demands.tile.waiting.label": "En attente",
+  "dashboard.apis.table.header.label.api": "API",
+  "dashboard.apis.table.header.label.tags": "Tags",
+  "dashboard.apis.table.header.label.team": "Équipe",
+  "dashboard.apis.table.header.label.status": "Statut",
+  "dashboard.apis.table.header.label.actions": "Action",
+  "dashboard.filters.tag.label": {
+    "s": "Tag",
+    "p": "Tags"
+  },
+  "dashboard.filters.all.tags.label": "Tous les tags",
+  "dashboard.filters.team.label": {
+    "s": "Équipe",
+    "p": "Équipes"
+  },
+  "dashboard.filters.all.team.label": "Toutes les équipes",
+  "dashboard.api.list.actives.subscription.tag.label": {
+    "s": "%s clé active",
+    "p": "%s clés actives"
+  },
+  "dashboard.api.list.expires.subscription.tag.label": {
+    "s": "%s expire bientôt",
+    "p": "%s expirent bientôt"
+  },
+  "dashboard.api.list.pending.subscription.tag.label": {
+    "s": "%s demande en attente",
+    "p": "%s demandes en attente"
+  },
+  "dashboard.create.api.button.label": "Créer une API",
+  "search.team.placeholder": "Rechercher une équipe",
+  "dashboard.create.team.button.label": "Créer une équipe"
 }

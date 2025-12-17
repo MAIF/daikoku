@@ -4660,6 +4660,141 @@ object json {
       )
   }
 
+  val AuthorizationApiFormat = new Format[AuthorizationApi] {
+    override def reads(json: JsValue): JsResult[AuthorizationApi] =
+      Try {
+        AuthorizationApi(
+          team = (json \ "team").as[String],
+          authorized = (json \ "authorized").as[Boolean],
+          pending = (json \ "pending").as[Boolean],
+        )
+      } match {
+        case Failure(e) =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+        case Success(value) => JsSuccess(value)
+      }
+
+    override def writes(o: AuthorizationApi): JsValue =
+      Json.obj(
+        "team" -> o.team,
+        "authorized" -> o.authorized,
+        "pending" -> o.pending
+      )
+  }
+
+  val ApiWithAuthorizationsFormat = new Format[ApiWithAuthorizations] {
+    override def reads(json: JsValue): JsResult[ApiWithAuthorizations] =
+      Try {
+        ApiWithAuthorizations(
+          api = (json \ "api").as(ApiFormat),
+          plans = (json \ "plans").as(SeqUsagePlanFormat),
+          authorizations = (json \ "authorizations").as(SeqAuthorizationApiFormat),
+          subscriptionDemands = (json \ "subscriptionDemands").as(SeqSubscriptionDemandFormat),
+          subscriptions = (json \ "subscriptions").as(SeqApiSubscriptionFormat),
+        )
+      } match {
+        case Failure(e) =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+        case Success(value) => JsSuccess(value)
+      }
+
+    override def writes(o: ApiWithAuthorizations): JsValue =
+      Json.obj(
+        "api" -> o.api.asJson,
+        "plans" -> SeqUsagePlanFormat.writes(o.plans),
+        "authorizations" -> SeqAuthorizationApiFormat.writes(o.authorizations),
+        "subscriptionDemands" -> SeqSubscriptionDemandFormat.writes(o.subscriptionDemands),
+        "subscriptions" -> SeqApiSubscriptionFormat.writes(o.subscriptions),
+      )
+  }
+
+  val TeamCountFormat = new Format[TeamCount] {
+    override def reads(json: JsValue): JsResult[TeamCount] = Try {
+      TeamCount(
+        team = (json \ "team").as(TeamFormat),
+        total = (json \ "total").as[Int]
+      )
+    } match {
+      case Failure(e) =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+      case Success(value) => JsSuccess(value)
+    }
+
+    override def writes(o: TeamCount): JsValue = Json.obj(
+      "team" -> o.team.asJson,
+      "total" -> o.total
+    )
+  }
+
+  val ValueCountFormat = new Format[ValueCount] {
+    override def reads(json: JsValue): JsResult[ValueCount] = Try {
+      ValueCount(
+        value = (json \ "value").as[String],
+        total = (json \ "total").as[Int]
+      )
+    } match {
+      case Failure(e) =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+      case Success(value) => JsSuccess(value)
+    }
+
+    override def writes(o: ValueCount): JsValue = Json.obj(
+      "value" -> o.value,
+      "total" -> o.total
+    )
+  }
+
+  val ApiWithCountFormat = new Format[ApiWithCount] {
+    override def reads(json: JsValue): JsResult[ApiWithCount] =
+      Try {
+        ApiWithCount(
+          apis = (json \ "apis").as(SeqApiWithAuthorizationsFormat),
+          producers = (json \ "producers").as(SeqTeamCountFormat),
+          tags = (json \ "tags").as(SeqValueCountFormat),
+          categories = (json \ "categories").as(SeqValueCountFormat),
+          total = (json \ "total").as[Long],
+          totalFiltered = (json \ "totalFiltered").as[Long]
+        )
+      } match {
+        case Failure(e) =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+        case Success(value) => JsSuccess(value)
+      }
+
+    override def writes(o: ApiWithCount): JsValue =
+      Json.obj(
+        "apis" -> SeqApiWithAuthorizationsFormat.writes(o.apis),
+        "producers" -> SeqTeamCountFormat.writes(o.producers),
+        "tags" -> SeqValueCountFormat.writes(o.tags),
+        "categories" -> SeqValueCountFormat.writes(o.categories),
+        "total" -> o.total,
+        "totalFiltered" -> o.totalFiltered
+      )
+  }
+
+  val SeqTeamCountFormat = Format(
+    Reads.seq(TeamCountFormat),
+    Writes.seq(TeamCountFormat),
+  )
+  val SeqValueCountFormat = Format(
+    Reads.seq(ValueCountFormat),
+    Writes.seq(ValueCountFormat),
+  )
+  val SeqAuthorizationApiFormat = Format(
+    Reads.seq(AuthorizationApiFormat),
+    Writes.seq(AuthorizationApiFormat),
+  )
+
+  val SeqApiWithAuthorizationsFormat = Format(
+    Reads.seq(ApiWithAuthorizationsFormat),
+    Writes.seq(ApiWithAuthorizationsFormat)
+  )
+
   val SetOtoroshiServicesIdFormat =
     Format(
       Reads.set(OtoroshiServiceIdFormat),
@@ -4690,6 +4825,11 @@ object json {
     Format(
       Reads.seq(SubscriptionDemandStepFormat),
       Writes.seq(SubscriptionDemandStepFormat)
+    )
+  val SeqSubscriptionDemandFormat =
+    Format(
+      Reads.seq(SubscriptionDemandFormat),
+      Writes.seq(SubscriptionDemandFormat)
     )
   val SeqTeamAuthorizedEntitiesFormat =
     Format(
