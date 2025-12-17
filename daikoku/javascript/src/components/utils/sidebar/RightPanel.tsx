@@ -23,7 +23,7 @@ export const RightPanel = () => {
     return () => {
       window.removeEventListener('keydown', closeOnEsc, true);
     };
-  }, []);
+  }, [closeRightPanel]);
 
   return (
     <div className={classNames("right-panel-container", { opened: rightPanelContent })}>

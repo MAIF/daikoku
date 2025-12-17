@@ -1759,6 +1759,7 @@
     "p": "%s demandes en attente"
   },
   "dashboard.create.api.button.label": "Créer une API",
+  "dashboard.more.creation.option.button.label": "Plus d'options de création",
   "dashboard.create.apigroup.button.label": "Créer un groupe d'APIs",
   "search.team.placeholder": "Rechercher une équipe",
   "dashboard.create.team.button.label": "Créer une équipe"
