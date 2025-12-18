@@ -337,7 +337,7 @@ object CommonServices {
       sort: JsArray = Json.arr(),
       apiGroupId: Option[String] = None,
       limit: Int,
-      offset: Int,
+      offset: Int
   )(implicit
       ctx: DaikokuActionContext[JsValue],
       env: Env,
@@ -356,16 +356,16 @@ object CommonServices {
         getFiltervalue[Boolean](filter, "subscribedOnly")
 
       /*
-* $1 : userID
-* $2: tenant
-* $3: research
-* $4: teams
-* $5: tags
-* $6: subscribedOnly
-* $7: limit
-* $8: offset
-* $$9: apiGroupId
-* */
+       * $1 : userID
+       * $2: tenant
+       * $3: research
+       * $4: teams
+       * $5: tags
+       * $6: subscribedOnly
+       * $7: limit
+       * $8: offset
+       * $$9: apiGroupId
+       * */
 //TODO: Get keys and status
       val query =
         s"""
@@ -548,25 +548,25 @@ object CommonServices {
           |       ) as result;
           |""".stripMargin
 
-
       for {
-        result <- env.dataStore
-          .asInstanceOf[PostgresDataStore]
-          .queryOneRaw(
-            query,
-            "result",
-            Seq(
-              ctx.user.id.value,
-              ctx.tenant.id.value,
-              research.orNull,
-              teams.orNull,
-              tags.orNull,
-              java.lang.Boolean.valueOf(subscribeOnly.getOrElse(false)),
-              java.lang.Integer.valueOf(limit),
-              java.lang.Integer.valueOf(offset),
-              apiGroupId.orNull
+        result <-
+          env.dataStore
+            .asInstanceOf[PostgresDataStore]
+            .queryOneRaw(
+              query,
+              "result",
+              Seq(
+                ctx.user.id.value,
+                ctx.tenant.id.value,
+                research.orNull,
+                teams.orNull,
+                tags.orNull,
+                java.lang.Boolean.valueOf(subscribeOnly.getOrElse(false)),
+                java.lang.Integer.valueOf(limit),
+                java.lang.Integer.valueOf(offset),
+                apiGroupId.orNull
+              )
             )
-          )
       } yield {
         result
           .map(_.as(json.ApiWithCountFormat))

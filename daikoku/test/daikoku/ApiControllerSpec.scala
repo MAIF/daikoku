@@ -5341,7 +5341,14 @@ class ApiControllerSpec()
           body = Some(
             Json.obj(
               "variables" -> Json.obj(
-                "filterTable" -> Json.stringify(Json.arr(Json.obj("id" -> "team", "value" -> Json.arr(teamOwnerId.value)))),
+                "filterTable" -> Json.stringify(
+                  Json.arr(
+                    Json.obj(
+                      "id" -> "team",
+                      "value" -> Json.arr(teamOwnerId.value)
+                    )
+                  )
+                ),
                 "limit" -> 5,
                 "offset" -> 0
               ),

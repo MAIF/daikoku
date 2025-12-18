@@ -400,7 +400,7 @@ class GraphQLControllerSpec()
       val graphQlTenantAdminTeam = defaultAdminTeam.copy(
         id = TeamId("graphql-test-tenant-admin-team"),
         tenant = _tenant.id,
-        name = "graphql-test-tenant-admin-team",
+        name = "graphql-test-tenant-admin-team"
       )
       setupEnvBlocking(
         tenants = Seq(_tenant),
@@ -600,7 +600,15 @@ class GraphQLControllerSpec()
         body = Json
           .obj(
             "variables" -> Json
-              .obj("limit" -> 20, "offset" -> 0, "filterTable" -> Json.stringify(Json.arr(Json.obj("id" -> "tag", "value" -> Json.arr("test_tag"))))),
+              .obj(
+                "limit" -> 20,
+                "offset" -> 0,
+                "filterTable" -> Json.stringify(
+                  Json.arr(
+                    Json.obj("id" -> "tag", "value" -> Json.arr("test_tag"))
+                  )
+                )
+              ),
             "query" -> baseGraphQLQuery
           )
           .some
@@ -638,7 +646,12 @@ class GraphQLControllerSpec()
             "variables" -> Json.obj(
               "limit" -> 20,
               "offset" -> 0,
-              "filterTable" -> Json.stringify(Json.arr(Json.obj("id" -> "team", "value" -> Json.arr(teamOwnerId.value))))
+              "filterTable" -> Json.stringify(
+                Json.arr(
+                  Json
+                    .obj("id" -> "team", "value" -> Json.arr(teamOwnerId.value))
+                )
+              )
             ),
             "query" -> baseGraphQLQuery
           )
@@ -658,7 +671,10 @@ class GraphQLControllerSpec()
               .obj(
                 "limit" -> 20,
                 "offset" -> 0,
-                "filterTable" -> Json.stringify(Json.arr(Json.obj("id" -> "research", "value" -> "api - 9")))),
+                "filterTable" -> Json.stringify(
+                  Json.arr(Json.obj("id" -> "research", "value" -> "api - 9"))
+                )
+              ),
             "query" -> baseGraphQLQuery
           )
           .some

@@ -117,8 +117,7 @@ export const myUnreadNotificationsCount = (): Promise<{ count: number }> =>
     )
     .catch(() => ({ count: 0 }));
 
-export const myDashboard = (): PromiseWithError<TDashboardData> =>
-  customFetch('/api/me/dashboard');
+export const myDashboard = (): PromiseWithError<TDashboardData> => customFetch('/api/me/dashboard');
 
 export const acceptNotificationOfTeam = (
   notificationId: string,

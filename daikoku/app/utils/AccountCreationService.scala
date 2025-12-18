@@ -22,10 +22,11 @@ class AccountCreationService {
       accountCreation: AccountCreation,
       tenant: Tenant
   )(implicit
-    env: Env,
-    ec: ExecutionContext,
-    translator: Translator,
-    messagesApi: MessagesApi) = {
+      env: Env,
+      ec: ExecutionContext,
+      translator: Translator,
+      messagesApi: MessagesApi
+  ) = {
     implicit val language: String = tenant.defaultLanguage.getOrElse("en")
     for {
       _ <- EitherT.cond[Future][AppError, Unit](
@@ -40,7 +41,7 @@ class AccountCreationService {
       _ <- EitherT.cond[Future][AppError, Unit](
         optUser.forall(_.invitation match {
           case Some(invit) if !invit.registered => true
-          case _ => false
+          case _                                => false
         }),
         (),
         AppError.EntityConflict("This account is already enabled.")

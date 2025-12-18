@@ -168,8 +168,17 @@ class GuestModeSpec()
           Json.obj(
             "variables" -> Json
               .obj(
-                "filterTable" -> Json.stringify(Json.arr(Json.obj("id" -> "team", "value" -> Json.arr(teamOwnerId.value)))),
-                "limit" -> 5, "offset" -> 0),
+                "filterTable" -> Json.stringify(
+                  Json.arr(
+                    Json.obj(
+                      "id" -> "team",
+                      "value" -> Json.arr(teamOwnerId.value)
+                    )
+                  )
+                ),
+                "limit" -> 5,
+                "offset" -> 0
+              ),
             "query" -> s"""
             |query AllVisibleApis ($$filterTable: JsArray, , $$limit: Int, $$offset: Int) {
             |      visibleApis (filterTable: $$filterTable, , limit: $$limit, offset: $$offset) {

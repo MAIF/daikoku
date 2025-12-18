@@ -4666,7 +4666,7 @@ object json {
         AuthorizationApi(
           team = (json \ "team").as[String],
           authorized = (json \ "authorized").as[Boolean],
-          pending = (json \ "pending").as[Boolean],
+          pending = (json \ "pending").as[Boolean]
         )
       } match {
         case Failure(e) =>
@@ -4689,9 +4689,11 @@ object json {
         ApiWithAuthorizations(
           api = (json \ "api").as(ApiFormat),
           plans = (json \ "plans").as(SeqUsagePlanFormat),
-          authorizations = (json \ "authorizations").as(SeqAuthorizationApiFormat),
-          subscriptionDemands = (json \ "subscriptionDemands").as(SeqSubscriptionDemandFormat),
-          subscriptions = (json \ "subscriptions").as(SeqApiSubscriptionFormat),
+          authorizations =
+            (json \ "authorizations").as(SeqAuthorizationApiFormat),
+          subscriptionDemands =
+            (json \ "subscriptionDemands").as(SeqSubscriptionDemandFormat),
+          subscriptions = (json \ "subscriptions").as(SeqApiSubscriptionFormat)
         )
       } match {
         case Failure(e) =>
@@ -4705,47 +4707,53 @@ object json {
         "api" -> o.api.asJson,
         "plans" -> SeqUsagePlanFormat.writes(o.plans),
         "authorizations" -> SeqAuthorizationApiFormat.writes(o.authorizations),
-        "subscriptionDemands" -> SeqSubscriptionDemandFormat.writes(o.subscriptionDemands),
-        "subscriptions" -> SeqApiSubscriptionFormat.writes(o.subscriptions),
+        "subscriptionDemands" -> SeqSubscriptionDemandFormat.writes(
+          o.subscriptionDemands
+        ),
+        "subscriptions" -> SeqApiSubscriptionFormat.writes(o.subscriptions)
       )
   }
 
   val TeamCountFormat = new Format[TeamCount] {
-    override def reads(json: JsValue): JsResult[TeamCount] = Try {
-      TeamCount(
-        team = (json \ "team").as(TeamFormat),
-        total = (json \ "total").as[Int]
-      )
-    } match {
-      case Failure(e) =>
-        AppLogger.error(e.getMessage, e)
-        JsError(e.getMessage)
-      case Success(value) => JsSuccess(value)
-    }
+    override def reads(json: JsValue): JsResult[TeamCount] =
+      Try {
+        TeamCount(
+          team = (json \ "team").as(TeamFormat),
+          total = (json \ "total").as[Int]
+        )
+      } match {
+        case Failure(e) =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+        case Success(value) => JsSuccess(value)
+      }
 
-    override def writes(o: TeamCount): JsValue = Json.obj(
-      "team" -> o.team.asJson,
-      "total" -> o.total
-    )
+    override def writes(o: TeamCount): JsValue =
+      Json.obj(
+        "team" -> o.team.asJson,
+        "total" -> o.total
+      )
   }
 
   val ValueCountFormat = new Format[ValueCount] {
-    override def reads(json: JsValue): JsResult[ValueCount] = Try {
-      ValueCount(
-        value = (json \ "value").as[String],
-        total = (json \ "total").as[Int]
-      )
-    } match {
-      case Failure(e) =>
-        AppLogger.error(e.getMessage, e)
-        JsError(e.getMessage)
-      case Success(value) => JsSuccess(value)
-    }
+    override def reads(json: JsValue): JsResult[ValueCount] =
+      Try {
+        ValueCount(
+          value = (json \ "value").as[String],
+          total = (json \ "total").as[Int]
+        )
+      } match {
+        case Failure(e) =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+        case Success(value) => JsSuccess(value)
+      }
 
-    override def writes(o: ValueCount): JsValue = Json.obj(
-      "value" -> o.value,
-      "total" -> o.total
-    )
+    override def writes(o: ValueCount): JsValue =
+      Json.obj(
+        "value" -> o.value,
+        "total" -> o.total
+      )
   }
 
   val ApiWithCountFormat = new Format[ApiWithCount] {
@@ -4779,15 +4787,15 @@ object json {
 
   val SeqTeamCountFormat = Format(
     Reads.seq(TeamCountFormat),
-    Writes.seq(TeamCountFormat),
+    Writes.seq(TeamCountFormat)
   )
   val SeqValueCountFormat = Format(
     Reads.seq(ValueCountFormat),
-    Writes.seq(ValueCountFormat),
+    Writes.seq(ValueCountFormat)
   )
   val SeqAuthorizationApiFormat = Format(
     Reads.seq(AuthorizationApiFormat),
-    Writes.seq(AuthorizationApiFormat),
+    Writes.seq(AuthorizationApiFormat)
   )
 
   val SeqApiWithAuthorizationsFormat = Format(

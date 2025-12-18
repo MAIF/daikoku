@@ -759,15 +759,11 @@ case class ApiWithAuthorizations(
   override def asJson: JsValue = json.ApiWithAuthorizationsFormat.writes(this)
 }
 
-case class TeamCount(
-    team: Team,
-    total: Int) extends CanJson[TeamCount] {
+case class TeamCount(team: Team, total: Int) extends CanJson[TeamCount] {
   override def asJson: JsValue = json.TeamCountFormat.writes(this)
 }
 
-case class ValueCount(
-    value: String,
-    total: Int) extends CanJson[TeamCount] {
+case class ValueCount(value: String, total: Int) extends CanJson[TeamCount] {
   override def asJson: JsValue = json.ValueCountFormat.writes(this)
 }
 
@@ -781,7 +777,6 @@ case class ApiWithCount(
 ) extends CanJson[ApiWithCount] {
   override def asJson: JsValue = json.ApiWithCountFormat.writes(this)
 }
-
 
 case class NotificationWithCount(
     notifications: Seq[Notification],

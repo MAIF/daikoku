@@ -516,7 +516,7 @@ class LoginController(
         _ <- EitherT.cond[Future](
           maybeUser.forall(_.invitation match {
             case Some(invit) if !invit.registered => true
-            case _ => false
+            case _                                => false
           }),
           (),
           AppError.EntityConflict("Email address already exists")
@@ -588,29 +588,41 @@ class LoginController(
           validator,
           ctx.tenant
         )
-        accountCreation <- EitherT.fromOptionF[Future, AppError, AccountCreation](
-          env.dataStore.accountCreationRepo
-            .findByIdNotDeleted(validator.subscriptionDemand),
-          AppError.EntityNotFound("Account creation")
-        )
+        accountCreation <-
+          EitherT.fromOptionF[Future, AppError, AccountCreation](
+            env.dataStore.accountCreationRepo
+              .findByIdNotDeleted(validator.subscriptionDemand),
+            AppError.EntityNotFound("Account creation")
+          )
         step <- EitherT.fromOption[Future][AppError, SubscriptionDemandStep](
           accountCreation.steps.find(_.id == validator.step),
           AppError.EntityNotFound("Account creation step")
         )
       } yield {
         val isEmailConfirm = step.step match {
-          case ValidationStep.Email(_, _, _, title) if title.toLowerCase().contains("confirmation") => true
+          case ValidationStep.Email(_, _, _, title)
+              if title.toLowerCase().contains("confirmation") =>
+            true
           case _ => false
         }
 
         val messageId = (isEmailConfirm, accountCreation.state) match {
-          case (true, SubscriptionDemandState.Accepted) => "account-creation-validation-email"
+          case (true, SubscriptionDemandState.Accepted) =>
+            "account-creation-validation-email"
           case (true, _) => "account-creation-validation-email-waiting"
-          case _ => "account-creation-accept"
+          case _         => "account-creation-accept"
         }
-        Redirect(env.getDaikokuUrl(ctx.tenant, s"/informations?message=$messageId"))
-      })
-        .leftMap(error => Redirect(env.getDaikokuUrl(ctx.tenant, s"/informations?error=${error.getErrorMessage()}")))
+        Redirect(
+          env.getDaikokuUrl(ctx.tenant, s"/informations?message=$messageId")
+        )
+      }).leftMap(error =>
+          Redirect(
+            env.getDaikokuUrl(
+              ctx.tenant,
+              s"/informations?error=${error.getErrorMessage()}"
+            )
+          )
+        )
         .merge
     }
   }
@@ -638,12 +650,19 @@ class LoginController(
         result <- EitherT.pure[Future, AppError](
           Redirect(
             env.getDaikokuUrl(
-              ctx.tenant, "/informations?message=account-creation-decline")))
+              ctx.tenant,
+              "/informations?message=account-creation-decline"
+            )
+          )
+        )
       } yield result)
         .leftMap(error =>
           Redirect(
             env.getDaikokuUrl(
-              ctx.tenant, s"/informations?error=${error.getErrorMessage()}"))
+              ctx.tenant,
+              s"/informations?error=${error.getErrorMessage()}"
+            )
+          )
         )
         .merge
     }

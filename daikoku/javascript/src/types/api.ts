@@ -86,7 +86,7 @@ export type IApiWithAuthorization = {
   plans: Array<IUsagePlan>;
   subscriptionDemands: Array<ISubscriptionDemandGQL>;
   subscriptions: Array<IApiSubscriptionGql>;
-}
+};
 
 export interface IApiExtended extends IApi {
   pendingRequests: INotification;
@@ -97,12 +97,12 @@ export interface IApiExtended extends IApi {
 
 export type IApiAuthoWithCount = {
   apis: Array<IApiWithAuthorization>;
-  producers: Array<{team: ITeamSimple, total: number}>;
-  tags: Array<{value: string, total: number}>;
-  categories: Array<{value: string, total: number}>;
+  producers: Array<{ team: ITeamSimple; total: number }>;
+  tags: Array<{ value: string; total: number }>;
+  categories: Array<{ value: string; total: number }>;
   total: number;
   totalFiltered: number;
-}
+};
 
 export interface ITesting {
   enabled: boolean;

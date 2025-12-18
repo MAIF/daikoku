@@ -6,9 +6,19 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
+  _TeamMemberOnly,
+  _TenantAdminAccessTenant
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiSubscriptionDemandFormat, TeamCountFormat, TeamTypeFormat, TenantIdFormat, UserIdFormat, ValueCountFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  ApiSubscriptionDemandFormat,
+  TeamCountFormat,
+  TeamTypeFormat,
+  TenantIdFormat,
+  UserIdFormat,
+  ValueCountFormat
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.utils.{OtoroshiClient, S3Configuration}
 import org.apache.pekko.http.scaladsl.util.FastFuture
@@ -21,7 +31,11 @@ import sangria.schema.{Context, _}
 import sangria.validation.ValueCoercionViolation
 import services.CmsPage
 import storage._
-import storage.graphql.{GraphQLImplicits, RequiresDaikokuAdmin, RequiresTenantAdmin}
+import storage.graphql.{
+  GraphQLImplicits,
+  RequiresDaikokuAdmin,
+  RequiresTenantAdmin
+}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -857,7 +871,7 @@ object SchemaDefinition {
     )
 
     lazy val TeamCountType
-    : ObjectType[(DataStore, DaikokuActionContext[JsValue]), TeamCount] =
+        : ObjectType[(DataStore, DaikokuActionContext[JsValue]), TeamCount] =
       ObjectType[(DataStore, DaikokuActionContext[JsValue]), TeamCount](
         "TeamCount",
         "a representation of team and total of owned API",
@@ -868,7 +882,7 @@ object SchemaDefinition {
           )
       )
     lazy val ValueCountType
-    : ObjectType[(DataStore, DaikokuActionContext[JsValue]), ValueCount] =
+        : ObjectType[(DataStore, DaikokuActionContext[JsValue]), ValueCount] =
       ObjectType[(DataStore, DaikokuActionContext[JsValue]), ValueCount](
         "ValueCount",
         "a representation of string value and total of iteration",
@@ -1989,10 +2003,23 @@ object SchemaDefinition {
           resolve = _.value.producers
         )
       ),
-      ReplaceField("tags", Field("tags", ListType(ValueCountType), resolve = _.value.tags)),
-      ReplaceField("categories", Field("categories", ListType(ValueCountType), resolve = _.value.categories)),
+      ReplaceField(
+        "tags",
+        Field("tags", ListType(ValueCountType), resolve = _.value.tags)
+      ),
+      ReplaceField(
+        "categories",
+        Field(
+          "categories",
+          ListType(ValueCountType),
+          resolve = _.value.categories
+        )
+      ),
       ReplaceField("total", Field("total", LongType, resolve = _.value.total)),
-      ReplaceField("totalFiltered", Field("totalFiltered", LongType, resolve = _.value.totalFiltered)),
+      ReplaceField(
+        "totalFiltered",
+        Field("totalFiltered", LongType, resolve = _.value.totalFiltered)
+      )
     )
 
     lazy val AccessibleResourceType: ObjectType[
@@ -4133,7 +4160,7 @@ object SchemaDefinition {
         sortingTable: JsArray,
         groupOpt: Option[String],
         limit: Int,
-        offset: Int,
+        offset: Int
     ) = {
       CommonServices
         .getVisibleApis(
