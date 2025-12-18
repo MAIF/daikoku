@@ -838,3 +838,14 @@ We'd like to thank all the contributors who worked on this release!
 
 - HTTPS error with graphql endpoint when daikoku is exposed on https [#926](https://github.com/MAIF/daikoku/issues/926)
 
+## [v18.5.0] - 2025-12-18
+
+## :star: New Features
+
+- New home page [#883](https://github.com/MAIF/daikoku/issues/883)
+
+## :beetle: Bug Fixes
+
+- Custom mail template mail-new-user not working [#927](https://github.com/MAIF/daikoku/issues/927)
+- team invitation for unexisting user are broken [#902](https://github.com/MAIF/daikoku/issues/902)
+
