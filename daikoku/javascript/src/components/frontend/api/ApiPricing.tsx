@@ -1572,6 +1572,10 @@ export const ApiPricing = (props: ApiPricingProps) => {
         { label: translate('Private'), value: 'Private' },
       ],
     },
+    metadata: {
+      type: type.object,
+      label: translate('Metadata'),
+    },
     authorizedTeams: {
       type: type.string,
       format: format.select,
@@ -1649,6 +1653,7 @@ export const ApiPricing = (props: ApiPricingProps) => {
     'customDescription',
     'visibility',
     'authorizedTeams',
+    'metadata',
     {
       label: 'Security',
       collapsed: true,

@@ -18,7 +18,6 @@ export const TeamApis = () => {
 
   const { translate } = useContext(I18nContext);
   const { openFormModal } = useContext(ModalContext);
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (currentTeam && !isError(currentTeam))

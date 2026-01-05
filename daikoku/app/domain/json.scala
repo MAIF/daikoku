@@ -822,7 +822,10 @@ object json {
             swagger = (json \ "swagger").asOpt(SwaggerAccessFormat),
             testing = (json \ "testing").asOpt(TestingFormat),
             documentation =
-              (json \ "documentation").asOpt(ApiDocumentationFormat)
+              (json \ "documentation").asOpt(ApiDocumentationFormat),
+            metadata = (json \ "metadata")
+              .asOpt[Map[String, String]]
+              .getOrElse(Map.empty)
           )
         )
       } recover {
@@ -904,7 +907,10 @@ object json {
         "swagger" -> o.swagger
           .map(SwaggerAccessFormat.writes)
           .getOrElse(JsNull)
-          .as[JsValue]
+          .as[JsValue],
+        "metadata" -> JsObject(
+          o.metadata.view.mapValues(JsString.apply).toSeq
+        ),
       )
   }
   val ConsoleSettingsFormat = new Format[ConsoleMailerSettings] {
@@ -2166,7 +2172,10 @@ object json {
             parent = (json \ "parent").asOpt(ApiIdFormat),
             isDefault = (json \ "isDefault").asOpt[Boolean].getOrElse(false),
             apis = (json \ "apis").asOpt(SetApiIdFormat),
-            state = (json \ "state").as(ApiStateFormat)
+            state = (json \ "state").as(ApiStateFormat),
+            metadata = (json \ "metadata")
+              .asOpt[Map[String, String]]
+              .getOrElse(Map.empty)
           )
         )
       } recover {
@@ -2227,7 +2236,10 @@ object json {
           .map(SetApiIdFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "state" -> ApiStateFormat.writes(o.state)
+        "state" -> ApiStateFormat.writes(o.state),
+        "metadata" -> JsObject(
+          o.metadata.view.mapValues(JsString.apply).toSeq
+        ),
       )
   }
 

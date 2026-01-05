@@ -267,7 +267,8 @@ case class UsagePlan(
     subscriptionProcess: Seq[ValidationStep] = Seq.empty,
     visibility: UsagePlanVisibility = UsagePlanVisibility.Public,
     authorizedTeams: Seq[TeamId] = Seq.empty,
-    formKeysToMetadata: Option[Seq[String]] = None
+    formKeysToMetadata: Option[Seq[String]] = None,
+    metadata: Map[String, String] = Map.empty
 ) extends CanJson[UsagePlan] {
   def costFor(requests: Long): BigDecimal =
     (costPerMonth, costPerRequest) match {
@@ -657,7 +658,8 @@ case class Api(
     stars: Int = 0,
     parent: Option[ApiId] = None,
     apis: Option[Set[ApiId]] = None,
-    state: ApiState = ApiState.Created
+    state: ApiState = ApiState.Created,
+    metadata: Map[String, String] = Map.empty,
 ) extends CanJson[User] {
   def humanReadableId = name.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiFormat.writes(this)
@@ -705,7 +707,10 @@ case class Api(
       "tags" -> JsArray(tags.map(JsString.apply).toSeq),
       "categories" -> JsArray(categories.map(JsString.apply).toSeq),
       "visibility" -> visibility.name,
-      "stars" -> stars
+      "stars" -> stars,
+      "metadata" -> JsObject(
+        metadata.view.mapValues(JsString.apply).toSeq
+      )
     )
   }
   def asPublicWithAuthorizationsJson(): JsValue =

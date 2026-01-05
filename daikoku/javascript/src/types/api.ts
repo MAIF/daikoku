@@ -52,6 +52,7 @@ export interface IBaseApi extends IWithSwagger, IWithTesting, IWithDocumentation
   isDefault: boolean;
   apis: Array<string>;
   state: ApiState;
+  metadata: object
 }
 
 export interface IIssuesTag {

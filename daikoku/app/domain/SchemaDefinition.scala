@@ -1117,6 +1117,11 @@ object SchemaDefinition {
             "aggregationApiKeysSecurity",
             OptionType(BooleanType),
             resolve = _.value.aggregationApiKeysSecurity
+          ),
+          Field(
+            "metadata",
+            MapType,
+            resolve = _.value.metadata
           )
         )
     )
@@ -1930,7 +1935,8 @@ object SchemaDefinition {
                 }
               }
             ),
-            Field("state", StringType, resolve = _.value.state.name)
+            Field("state", StringType, resolve = _.value.state.name),
+            Field("metadata", MapType, resolve = _.value.metadata)
           )
       )
 

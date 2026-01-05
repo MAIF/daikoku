@@ -190,6 +190,10 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
         value: t._id
       }),
     },
+    metadata: {
+      type: type.object,
+      label: translate('Metadata'),
+    },
   };
 
   const apiGroupSchemaAddon = {
@@ -216,7 +220,7 @@ export const teamApiInfoForm = (translate: (params: (string | TranslateParams)) 
   const flow = (expert: boolean, apigroup: boolean) => [
     {
       label: translate('Basic.informations'),
-      flow: apigroup ? ['state', 'name', 'smallDescription', 'image', 'apis'] : ['state', 'name', 'smallDescription', 'image'].filter((entry) =>
+      flow: apigroup ? ['state', 'name', 'smallDescription', 'image', 'apis', 'metadata'] : ['state', 'name', 'smallDescription', 'image', 'metadata'].filter((entry) =>
         simpleOrExpertMode(entry, expert)
       ),
       collapsed: false,
