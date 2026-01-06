@@ -215,7 +215,7 @@ test('apilist display apigroups & apigroups display apilist', async ({ page }) =
     stars: 0,
     visibility: 'Public',
     state: 'published',
-    apis: [apiCommande, apiPapier]
+    apis: [apiCommande, apiPapier],
   }
   await saveApi(apiGroup)
 
