@@ -12,7 +12,7 @@ export interface ITeamSimple {
   type: TeamType;
   name: string;
   description: string;
-  avatar: string;
+  avatar?: string;
   contact: string;
   users: Array<TeamUser>;
   apiKeyVisibility: TeamPermission;

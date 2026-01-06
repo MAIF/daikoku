@@ -78,6 +78,7 @@
   "Re-type the password": "Confirmez votre mot de passe",
   "Change my password": "Modifier mon mot de passe",
   "Reload personal token": "Recharger mon jeton perso.",
+  "Set no avatar": "Définir aucun avatar",
   "Set avatar from Gravatar": "Définir l'avatar depuis Gravatar",
   "Set avatar from auth. provider": "Définir l'avatar depuis le fournisseur d'accès",
   "Change your picture": "Modifier mon avatar",

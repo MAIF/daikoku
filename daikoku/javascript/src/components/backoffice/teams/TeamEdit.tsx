@@ -8,7 +8,7 @@ import { I18nContext, ModalContext, TranslateParams, useTeamBackOffice } from '.
 import { AssetChooserByModal, MimeTypeFilter } from '../../../contexts/modals/AssetsChooserModal';
 import * as Services from '../../../services';
 import { isError, ITeamSimple } from '../../../types';
-import { Spinner } from '../../utils';
+import { getInitials, Spinner } from '../../utils';
 
 
 type AvatarProps = {
@@ -33,10 +33,16 @@ const Avatar = ({
     onChange(url);
   };
 
+  const setNoLink = () => onChange("")
+
 
   return (
     <div className="d-flex flex-row align-items-center">
-      <div className="float-right mb-4 position-relative">
+      {!rawValues?.avatar && <div className='mx-3 mb-4'>
+        <div
+          className="logo-anonymous user-logo avatar-without-img on-modal" >{getInitials(rawValues.name)}</div>
+      </div>}
+      {!!rawValues?.avatar && <div className="float-right mb-4 position-relative">
         <img
           src={`${rawValues?.avatar}${rawValues?.avatar?.startsWith('http') ? '' : `?${Date.now()}`
             }`}
@@ -48,9 +54,13 @@ const Avatar = ({
           alt="avatar"
           className="mx-3"
         />
-      </div>
+      </div>}
       <div className="d-flex flex-column flex-grow-1">
         <div className='d-flex justify-content-end'>
+          <button type="button" className="btn btn-outline-info me-1" onClick={setNoLink} disabled={!rawValues.contact}>
+            <i className="fas fa-user-circle me-1" />
+            <Translation i18nkey="Set no avatar">Set no avatar</Translation>
+          </button>
           <button type="button" className="btn btn-outline-info me-1" onClick={setGravatarLink} disabled={!rawValues.contact}>
             <i className="fas fa-user-circle me-1" />
             <Translation i18nkey="Set avatar from Gravatar">Set avatar from Gravatar</Translation>
