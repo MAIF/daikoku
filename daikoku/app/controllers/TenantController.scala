@@ -222,7 +222,7 @@ class TenantController(
               `type` = TeamType.Admin,
               name = s"${tenant.humanReadableId}-admin-team",
               description = s"The admin team for the default tenant",
-              avatar = tenant.style.map(_.logo),
+              avatar = tenant.style.flatMap(_.logo),
               users = Set.empty,
               authorizedOtoroshiEntities = None,
               contact = tenant.contact,
@@ -420,7 +420,7 @@ class TenantController(
                     adminTeam.copy(
                       name = s"${updatedTenant.humanReadableId}-admin-team",
                       contact = updatedTenant.contact,
-                      avatar = updatedTenant.style.map(_.logo)
+                      avatar = updatedTenant.style.flatMap(_.logo)
                     )
                   )
               )

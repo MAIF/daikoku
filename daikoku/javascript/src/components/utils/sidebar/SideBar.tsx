@@ -1,5 +1,5 @@
 import classNames from 'classnames';
-import { JSX, useContext, useEffect, useState } from 'react';
+import { JSX, useContext, useEffect, useMemo, useState } from 'react';
 import ArrowLeft from 'react-feather/dist/icons/arrow-left';
 import Bell from 'react-feather/dist/icons/bell';
 import MessageSquare from 'react-feather/dist/icons/message-square';
@@ -91,7 +91,7 @@ export const TopBar = () => {
 
   const location = useLocation();
 
-  const { tenant, connectedUser, impersonator, isTenantAdmin, unreadNotificationsCount } = useContext(GlobalContext);
+  const { tenant, connectedUser, impersonator, isTenantAdmin, unreadNotificationsCount, theme } = useContext(GlobalContext);
   const { totalUnread } = useContext(MessagesContext);
   const { translate } = useContext(I18nContext);
 
@@ -114,6 +114,13 @@ export const TopBar = () => {
     };
   }, []);
 
+  const themedMinLogo = useMemo(() => {
+      if (theme === 'DARK' && tenant.logoMinDark) {
+        return tenant.logoMinDark
+      }
+      return tenant.logoMin
+    }, [theme, tenant.logoMin, tenant.logoMinDark])
+
   const impersonatorStyle = impersonator
     ? { border: '3px solid red', boxShadow: '0px 0px 5px 2px red' }
     : {};
@@ -127,7 +134,6 @@ export const TopBar = () => {
   return (
     <div className="navbar-top d-flex flex-row align-items-center px-4">
       <div className="navbar_left d-flex flex-row align-items-center gap-3">
-
         {tenant.homePageVisible && (
           <a
             href='/'
@@ -135,6 +141,7 @@ export const TopBar = () => {
             aria-label={translate("Daikoku.home")}
             className="brand notification-link notification-link-color"
           >
+            {themedMinLogo && <img style={{ maxHeight: '40px' }} src={themedMinLogo} alt="logo" />}
             {tenant.name}
           </a>
         )}
@@ -143,8 +150,9 @@ export const TopBar = () => {
             to='/apis'
             title={translate("Daikoku.home")}
             aria-label={translate("Daikoku.home")}
-            className="brand notification-link notification-link-color"
+            className="brand notification-link notification-link-color d-flex gap-3"
           >
+            {themedMinLogo && <img style={{ maxHeight: '40px', width: 'auto' }} src={themedMinLogo} alt="logo" />}
             {tenant.name}
           </Link>
         )}

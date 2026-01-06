@@ -217,7 +217,10 @@ case class DaikokuStyle(
     homeCmsPage: Option[String] = None,
     notFoundCmsPage: Option[String] = None,
     authenticatedCmsPage: Option[String] = None,
-    logo: String = "/assets/images/daikoku.svg",
+    logo: Option[String] = None,
+    logoMin: Option[String] = None,
+    logoDark: Option[String] = None,
+    logoMinDark: Option[String] = None,
     footer: Option[String] = None
 ) extends CanJson[DaikokuStyle] {
   override def asJson: JsValue = {
@@ -473,7 +476,10 @@ case class Tenant(
         .map(f => JsString(f))
         .getOrElse(JsNull)
         .as[JsValue],
-      "logo" -> style.map(a => JsString(a.logo)).getOrElse(JsNull).as[JsValue],
+      "logo" -> style.flatMap(a => a.logo).filter(_.trim.nonEmpty).map(JsString).getOrElse(JsNull).as[JsValue],
+      "logoMin" -> style.flatMap(a => a.logoMin).filter(_.trim.nonEmpty).map(JsString).getOrElse(JsNull).as[JsValue],
+      "logoDark" -> style.flatMap(a => a.logoDark).filter(_.trim.nonEmpty).map(JsString).getOrElse(JsNull).as[JsValue],
+      "logoMinDark" -> style.flatMap(a => a.logoMinDark).filter(_.trim.nonEmpty).map(JsString).getOrElse(JsNull).as[JsValue],
       "mode" -> env.config.mode.name,
       "authProvider" -> authProvider.name,
       "defaultLanguage" -> defaultLanguage

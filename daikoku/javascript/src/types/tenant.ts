@@ -166,6 +166,9 @@ export interface ITenant {
   unloggedHome?: string;
   footer?: string;
   logo?: string;
+  logoMin?: string;
+  logoDark?: string;
+  logoMinDark?: string;
   defaultLanguage?: Language;
   creationSecurity: boolean;
   subscriptionSecurity: boolean;

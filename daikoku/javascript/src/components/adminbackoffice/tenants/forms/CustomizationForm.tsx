@@ -180,6 +180,9 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
 
     },
     logo: urlWithAssetButton(translate('Logo'), translate({ key: 'set.from.assets', replacements: [translate('set.logo')] }), MimeTypeFilter.image),
+    logoMin: urlWithAssetButton(translate('Logo min'), translate({ key: 'set.from.assets', replacements: [translate('set.logo')] }), MimeTypeFilter.image),
+    logoDark: urlWithAssetButton(translate('Logo dark'), translate({ key: 'set.from.assets', replacements: [translate('set.logo')] }), MimeTypeFilter.image),
+    logoMinDark: urlWithAssetButton(translate('Logo min dark'), translate({ key: 'set.from.assets', replacements: [translate('set.logo')] }), MimeTypeFilter.image),
     cssUrl: urlWithAssetButton(translate('CSS URL'), translate({ key: 'set.from.assets', replacements: [translate('set.css')] }), MimeTypeFilter.css),
     jsUrl: urlWithAssetButton(translate('Js URL'), translate({ key: 'set.from.assets', replacements: [translate('set.js')] }), MimeTypeFilter.javascript),
     faviconUrl: urlWithAssetButton(translate('Favicon URL'), translate({ key: 'set.from.assets', replacements: [translate('set.favicon')] }), MimeTypeFilter.image),
@@ -205,7 +208,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
   const flow: Flow = [
     {
       label: translate('General'),
-      flow: ['title', 'description', 'logo', 'cssUrl', 'jsUrl', 'faviconUrl', 'fontFamilyUrl'],
+      flow: ['title', 'description', 'logo', 'logoMin', 'logoDark', 'logoMinDark', 'cssUrl', 'jsUrl', 'faviconUrl', 'fontFamilyUrl'],
       collapsed: false
     },
     {

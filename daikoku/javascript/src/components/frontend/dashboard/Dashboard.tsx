@@ -1,5 +1,5 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query"
-import { useContext } from "react"
+import { useContext, useMemo } from "react"
 import Key from 'react-feather/dist/icons/key'
 import Search from 'react-feather/dist/icons/search'
 import Sliders from 'react-feather/dist/icons/sliders'
@@ -34,7 +34,7 @@ export type TDashboardData = {
 }
 
 export const Dashboard = (props: NewHomeProps) => {
-  const { tenant, connectedUser, isTenantAdmin } = useContext(GlobalContext)
+  const { tenant, connectedUser, isTenantAdmin, theme } = useContext(GlobalContext)
   const { translate } = useContext(I18nContext)
 
   const navigate = useNavigate()
@@ -45,15 +45,25 @@ export const Dashboard = (props: NewHomeProps) => {
     queryFn: () => Services.myDashboard()
   })
 
+  const themedLogo = useMemo(() => {
+    if (theme === 'DARK' && tenant.logoDark) {
+      return tenant.logoDark
+    }
+    return tenant.logo
+  }, [theme, tenant.logo, tenant.logoDark])
+
   return (
     <main className='flex-grow-1 d-flex flex-column gap-3' role="main">
       <section className="">
         <div className="d-flex flex-row justify-content-between align-items-center">
-          <div className="d-flex flex-column justify-content-center">
-            <h1 className="jumbotron-heading mt-3">
-              {tenant.title ?? tenant.name}
-            </h1>
-            <p>{tenant.description}</p>
+          <div className="d-flex flex-row align-items-center gap-5">
+            {themedLogo && <img style={{ maxWidth: '25%' }} src={themedLogo} alt="logo" />}
+            <div className="d-flex flex-column justify-content-center">
+              <h1 className="jumbotron-heading mt-3">
+                {tenant.title ?? tenant.name}
+              </h1>
+              <p>{tenant.description}</p>
+            </div>
           </div>
           {isTenantAdmin && <button onClick={() => navigate('/settings/settings/general')}
             className="btn btn-outline-primary">

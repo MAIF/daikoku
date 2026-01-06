@@ -1639,8 +1639,13 @@ object json {
             authenticatedCmsPage =
               (json \ "authenticatedCmsPage").asOpt[String],
             logo = (json \ "logo")
-              .asOpt[String]
-              .getOrElse("/assets/images/daikoku.svg"),
+              .asOpt[String],
+            logoDark = (json \ "logoDark")
+              .asOpt[String],
+            logoMin = (json \ "logoMin")
+              .asOpt[String],
+            logoMinDark = (json \ "logoMinDark")
+              .asOpt[String],
             footer = (json \ "footer")
               .asOpt[String]
           )
@@ -1682,7 +1687,26 @@ object json {
           .getOrElse(JsNull)
           .as[JsValue],
         "homePageVisible" -> o.homePageVisible,
-        "logo" -> o.logo,
+        "logo" -> o.logo
+          .filter(_.trim.nonEmpty)
+          .map(JsString.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "logoMin" -> o.logoMin
+          .filter(_.trim.nonEmpty)
+          .map(JsString.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "logoDark" -> o.logoDark
+          .filter(_.trim.nonEmpty)
+          .map(JsString.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
+        "logoMinDark" -> o.logoMinDark
+          .filter(_.trim.nonEmpty)
+          .map(JsString.apply)
+          .getOrElse(JsNull)
+          .as[JsValue],
         "footer" -> o.footer
           .map(JsString.apply)
           .getOrElse(JsNull)
