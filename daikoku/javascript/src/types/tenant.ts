@@ -1,4 +1,4 @@
-import { IValidationStep } from './api';
+import { IAuthorizedEntities, IValidationStep } from './api';
 import { ITeamSimple, IUser, IUserSimple } from './team';
 import { Language } from './types';
 
@@ -195,6 +195,10 @@ export interface ITenant {
   thirdPartyPaymentSettings: Array<IThirdPartyPaymentSettings>;
   accountCreationProcess: Array<IValidationStep>;
   isPrivate: boolean;
+  defaultAuthorizedOtoroshiEntities?: Array<{
+      otoroshiSettingsId: string;
+      authorizedEntities: IAuthorizedEntities;
+    }>
 }
 
 export interface ITenantFull extends ITenant {

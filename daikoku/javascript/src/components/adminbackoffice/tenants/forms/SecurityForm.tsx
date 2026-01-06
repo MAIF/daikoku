@@ -1,20 +1,22 @@
-import { useContext } from 'react';
-import { constraints, Form, Schema, type, format } from '@maif/react-forms';
+import { constraints, Form, format, Schema, type } from '@maif/react-forms';
 import { UseMutationResult, useQuery } from '@tanstack/react-query';
-
-import { I18nContext } from '../../../../contexts';
-import { Display, ITeamFullGql, ITenant, ITenantFull, IValidationStep } from '../../../../types';
-import { ModalContext } from '../../../../contexts';
-import { SubscriptionProcessEditor } from '../../../backoffice/apis/SubscriptionProcessEditor';
-import { GlobalContext } from '../../../../contexts/globalContext';
 import { nanoid } from 'nanoid';
+import { useContext } from 'react';
+
+import { I18nContext, ModalContext } from '../../../../contexts';
+import { GlobalContext } from '../../../../contexts/globalContext';
+import * as Services from '../../../../services';
+import { Display, IOtoroshiSettings, isError, ISimpleOtoroshiSettings, ITeamFullGql, ITenant, ITenantFull, IValidationStep } from '../../../../types';
+import { SubscriptionProcessEditor } from '../../../backoffice/apis/SubscriptionProcessEditor';
+import { Spinner } from '../../../utils';
+import { OtoroshiEntitiesSelector } from '../../teams/TeamList';
 
 export const SecurityForm = (props: {
   tenant: ITenantFull;
   updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown>;
 }) => {
   const { translate } = useContext(I18nContext);
-  const { alert, openRightPanel } = useContext(ModalContext);
+  const { alert, openRightPanel, openFormModal } = useContext(ModalContext);
   const { customGraphQLClient, tenant } = useContext(GlobalContext);
 
   const teamQuery = useQuery({
@@ -37,6 +39,11 @@ export const SecurityForm = (props: {
         })
     },
     select: data => data.teamsPagination.teams[0]
+  })
+
+  const otoroshiQuery = useQuery({
+    queryKey: ["all-otoroshis"],
+    queryFn: () => Services.allSimpleOtoroshis(tenant._id)
   })
 
   const schema: Schema = {
@@ -102,9 +109,9 @@ export const SecurityForm = (props: {
               "type": "required",
               "message": "Your email is required"
             }, {
-                "type": "email",
-                "message": "Your email needs to be an email"
-              }]
+              "type": "email",
+              "message": "Your email needs to be an email"
+            }]
           },
           password: {
             type: type.string,
@@ -141,7 +148,7 @@ export const SecurityForm = (props: {
           },
         },
         formatter: ''
-      },{
+      }, {
         id: nanoid(32),
         type: 'email',
         title: 'confirmation email',
@@ -206,22 +213,81 @@ export const SecurityForm = (props: {
     })
   }
 
-  return (
-    <div>
-      <Form
-        schema={schema}
-        onSubmit={(updatedTenant) =>
-          props.updateTenant.mutateAsync(updatedTenant)
+  const openModal = (otoroshis: ISimpleOtoroshiSettings[]) => {
+    openFormModal({
+      title: translate('tenant.security.configure.default.auth.otoroshi.entities.button.label'),
+      schema: {
+        authorizedOtoroshiEntities: {
+          type: type.object,
+          array: true,
+          label: translate('Authorized entities'),
+          format: format.form,
+          schema: {
+            otoroshiSettingsId: {
+              type: type.string,
+              format: format.select,
+              label: translate('Otoroshi instance'),
+              options: otoroshis,
+              transformer: (s: IOtoroshiSettings) => ({
+                label: s.url,
+                value: s._id
+              }),
+              constraints: [
+                constraints.required(translate('constraints.required.value'))
+              ]
+            },
+            authorizedEntities: {
+              type: type.object,
+              visible: (props) => {
+                return !!props.rawValues.authorizedOtoroshiEntities[props.informations?.parent?.index || 0].value.otoroshiSettingsId
+              },
+              deps: ['authorizedOtoroshiEntities.otoroshiSettingsId'],
+              render: (props) => OtoroshiEntitiesSelector({ ...props, translate, targetKey: "authorizedOtoroshiEntities", teamId: teamQuery.data?._id! }),
+              label: translate('Authorized entities'),
+              placeholder: translate('Authorized.entities.placeholder'),
+              help: translate('authorized.entities.help'),
+              defaultValue: { routes: [], services: [], groups: [] }
+            },
+          }
         }
-        value={props.tenant}
-        options={{
-          actions: {
-            submit: { label: translate('Save') },
-          },
-        }}
-      />
-      {tenant.authProvider === 'Local' && <button className='btn btn-outline-success' onClick={() => editProcess()}>{translate("tenant.security.account.creation.process.button.label")}</button>}
-    </div>
-  );
+      },
+      onSubmit: (data) => props.updateTenant.mutateAsync({ ...props.tenant, defaultAuthorizedOtoroshiEntities: data.authorizedOtoroshiEntities }),
+      value: { authorizedOtoroshiEntities: props.tenant.defaultAuthorizedOtoroshiEntities },
+      actionLabel: translate('Save')
+    })
+  }
+
+  if (otoroshiQuery.isLoading) {
+    return <Spinner />
+  } else if (!!otoroshiQuery.data && !isError(otoroshiQuery.data)) {
+    const otoroshis = otoroshiQuery.data;
+    return (
+      <div className='d-flex flex-column gap-2'>
+        <Form
+          schema={schema}
+          onSubmit={(updatedTenant) =>
+            props.updateTenant.mutateAsync(updatedTenant)
+          }
+          value={props.tenant}
+          options={{
+            actions: {
+              submit: { label: translate('Save') },
+            },
+          }}
+        />
+        <div>
+          {tenant.authProvider === 'Local' && <button className='btn btn-outline-success' onClick={() => editProcess()}>{translate("tenant.security.account.creation.process.button.label")}</button>}
+        </div>
+        <div>
+          <button onClick={() => openModal(otoroshis)} className='btn btn-outline-success'>{translate('tenant.security.configure.default.auth.otoroshi.entities.button.label')}</button>
+        </div>
+      </div>
+    );
+  } else {
+    return (
+      <div>An error occured during otoroshi list fetching</div>
+    )
+  }
+
 
 };

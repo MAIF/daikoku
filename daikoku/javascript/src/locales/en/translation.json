@@ -1678,6 +1678,7 @@
     "tenant.security.account.creation.process.doc.default.workflow.admin": "form → confirmation mail → admin validation",
     "tenant.security.account.creation.process.doc.close.aria": "Close documentation",
     "tenant.security.account.creation.process.doc.open.aria": "Show la documentation",
+    "tenant.security.configure.default.auth.otoroshi.entities.button.label": "Configure default authorized ototoshi entities",
     "tenant.settings.mailer.mailgun.test.recipient.email.label": "Recipient email (for test only)",
     "tenant.settings.mailer.test.connection.button.label": "Test connection",
     "tenant.settings.mailer.test.connection.success.label": "Test coonection succeeded",

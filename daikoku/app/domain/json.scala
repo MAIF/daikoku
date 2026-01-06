@@ -1791,7 +1791,9 @@ object json {
               .asOpt[String],
             accountCreationProcess = (json \ "accountCreationProcess")
               .asOpt(SeqValidationStepFormat)
-              .getOrElse(Seq.empty)
+              .getOrElse(Seq.empty),
+            defaultAuthorizedOtoroshiEntities = (json \ "defaultAuthorizedOtoroshiEntities")
+            .asOpt(SeqTeamAuthorizedEntitiesFormat)
           )
         )
       } recover {
@@ -1799,6 +1801,7 @@ object json {
           AppLogger.warn(e.getMessage)
           JsError(e.getMessage)
       } get
+    }
 
     override def writes(o: Tenant): JsValue =
       Json.obj(
@@ -1867,8 +1870,11 @@ object json {
         "environments" -> JsArray(o.environments.map(JsString.apply).toSeq),
         "clientNamePattern" -> o.clientNamePattern,
         "accountCreationProcess" -> SeqValidationStepFormat.writes(
-          o.accountCreationProcess
-        )
+          o.accountCreationProcess),
+        "defaultAuthorizedOtoroshiEntities" -> o.defaultAuthorizedOtoroshiEntities
+          .map(SeqTeamAuthorizedEntitiesFormat.writes)
+          .getOrElse(JsNull)
+          .as[JsValue]
       )
   }
 

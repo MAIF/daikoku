@@ -5,15 +5,12 @@ import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import com.nimbusds.jose.jwk.KeyType
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.TenantFormat
+import fr.maif.otoroshi.daikoku.domain.json.{SeqTeamAuthorizedEntitiesFormat, TenantFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.OAuth2Config

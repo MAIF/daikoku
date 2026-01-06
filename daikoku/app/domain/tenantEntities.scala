@@ -443,7 +443,8 @@ case class Tenant(
     display: TenantDisplay = TenantDisplay.Default,
     environments: Set[String] = Set.empty,
     clientNamePattern: Option[String] = None,
-    accountCreationProcess: Seq[ValidationStep] = Seq.empty
+    accountCreationProcess: Seq[ValidationStep] = Seq.empty,
+    defaultAuthorizedOtoroshiEntities: Option[Seq[TeamAuthorizedEntities]] = None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)

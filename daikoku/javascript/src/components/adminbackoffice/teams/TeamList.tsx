@@ -337,11 +337,12 @@ export const TeamList = () => {
   </Can>);
 };
 
-const OtoroshiEntitiesSelector = ({
+export const OtoroshiEntitiesSelector = ({
   rawValues,
   informations,
   onChange,
-  translate
+  translate,
+  teamId
 }: any) => {
   const [loading, setLoading] = useState<boolean>(true);
   const [groups, setGroups] = useState<Array<any>>([]);
@@ -358,15 +359,15 @@ const OtoroshiEntitiesSelector = ({
     if (otoroshiTarget && otoroshiTarget.otoroshiSettingsId) {
       Promise.all([
         Services.getOtoroshiGroupsAsTeamAdmin(
-          rawValues._id,
+          teamId ?? rawValues._id,
           otoroshiTarget.otoroshiSettingsId
         ),
         Services.getOtoroshiServicesAsTeamAdmin(
-          rawValues._id,
+          teamId ?? rawValues._id,
           otoroshiTarget.otoroshiSettingsId
         ),
         Services.getOtoroshiRoutesAsTeamAdmin(
-          rawValues._id,
+          teamId ?? rawValues._id,
           otoroshiTarget.otoroshiSettingsId
         )
       ])

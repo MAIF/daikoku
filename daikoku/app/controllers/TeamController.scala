@@ -6,11 +6,7 @@ import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionContext,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain._
@@ -19,6 +15,7 @@ import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.{LdapConfig, LdapSupport}
 import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
+import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.{DeletionService, IdGenerator, Translator}
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
@@ -388,6 +385,13 @@ class TeamController(
           "@{user.name} has updated team @{team.name} - @{team.id}"
         )
       )(teamId, ctx) { team =>
+        def personalTeamIsOk(_team: Team): Boolean = {
+          team.name == _team.name &&
+            team.description == _team.description &&
+            team.contact == _team.contact &&
+            team.apiKeyVisibility == _team.apiKeyVisibility
+        }
+
         json.TeamFormat.reads(ctx.request.body) match {
           case JsSuccess(_, _) if team.`type` == TeamType.Admin =>
             AppError.ForbiddenAction.renderF()
@@ -396,14 +400,12 @@ class TeamController(
               .forTenant(ctx.tenant.id)
               .findByIdNotDeleted(teamId)
               .flatMap {
-                case Some(team) if team.`type` == TeamType.Personal =>
-                  FastFuture.successful(
-                    Forbidden(
-                      Json.obj(
-                        "error" -> "You're not authorized to update this team"
-                      )
+                case Some(t) if t.`type` == TeamType.Personal && !personalTeamIsOk(t) =>
+                  Forbidden(
+                    Json.obj(
+                      "error" -> "You're not authorized to update this team"
                     )
-                  )
+                  ).future
                 case Some(team) =>
                   ctx.setCtxValue("team.id", team.id)
                   ctx.setCtxValue("team.name", team.name)
