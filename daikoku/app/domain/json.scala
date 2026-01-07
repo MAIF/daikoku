@@ -1801,7 +1801,6 @@ object json {
           AppLogger.warn(e.getMessage)
           JsError(e.getMessage)
       } get
-    }
 
     override def writes(o: Tenant): JsValue =
       Json.obj(
