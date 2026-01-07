@@ -10,13 +10,14 @@ import { Display, IOtoroshiSettings, isError, ISimpleOtoroshiSettings, ITeamFull
 import { SubscriptionProcessEditor } from '../../../backoffice/apis/SubscriptionProcessEditor';
 import { Spinner } from '../../../utils';
 import { OtoroshiEntitiesSelector } from '../../teams/TeamList';
+import { toast } from 'sonner';
 
 export const SecurityForm = (props: {
   tenant: ITenantFull;
   updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown>;
 }) => {
   const { translate } = useContext(I18nContext);
-  const { alert, openRightPanel, openFormModal } = useContext(ModalContext);
+  const { alert, openRightPanel, openFormModal, openCustomModal } = useContext(ModalContext);
   const { customGraphQLClient, tenant } = useContext(GlobalContext);
 
   const teamQuery = useQuery({
@@ -251,7 +252,38 @@ export const SecurityForm = (props: {
           }
         }
       },
-      onSubmit: (data) => props.updateTenant.mutateAsync({ ...props.tenant, defaultAuthorizedOtoroshiEntities: data.authorizedOtoroshiEntities }),
+      onSubmit: (data) => props.updateTenant.mutateAsync({ ...props.tenant, defaultAuthorizedOtoroshiEntities: data.authorizedOtoroshiEntities })
+        .then(_ => openFormModal({
+          title: translate("tenant.security.dispatch.default.auth.entities.modal.title"),
+          schema: {
+            choice: {
+              type: type.string,
+              format: format.buttonsSelect,
+              label: translate("tenant.security.dispatch.default.auth.entities.choice.label"),
+              options: [
+                {
+                  label: translate("tenant.security.dispatch.default.auth.entities.choice.nothing"),
+                  value: "nothing"
+                },
+                {
+                  label: translate("tenant.security.dispatch.default.auth.entities.choice.replace"),
+                  value: "replace"
+                },
+                {
+                  label: translate("tenant.security.dispatch.default.auth.entities.choice.merge"),
+                  value: "merge"
+                },
+              ]
+            }
+          },
+          onSubmit: (data) => {
+            if (data.choice !== "nothing") {
+              Services.dispatchDefaultAuthEntities(tenant, data.choice)
+                .then(() => toast.success(translate('tenant.security.dispatch.default.auth.entities.successful')))
+            }
+          },
+          actionLabel: translate('Ok')
+        })),
       value: { authorizedOtoroshiEntities: props.tenant.defaultAuthorizedOtoroshiEntities },
       actionLabel: translate('Save')
     })

@@ -17,7 +17,7 @@ import fr.maif.otoroshi.daikoku.login.OAuth2Config
 import fr.maif.otoroshi.daikoku.utils._
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.jwt.JWKSAlgoSettings
-import org.joda.time.DateTime
+import org.apache.pekko.stream.scaladsl.{Keep, Sink, Source}
 import play.api.i18n._
 import play.api.libs.json._
 import play.api.mvc.{AbstractController, ControllerComponents, Result, Results}
@@ -25,12 +25,10 @@ import services.CmsPage
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
-import scala.io.Source
 import scala.util.Try
 
 class TenantController(
     DaikokuAction: DaikokuAction,
-    DaikokuActionMaybeWithGuest: DaikokuActionMaybeWithGuest,
     apiService: ApiService,
     env: Env,
     cc: ControllerComponents,
@@ -775,7 +773,7 @@ class TenantController(
     env.environment.resourceAsStream(path) match {
       case Some(stream) =>
         try {
-          val content = Source.fromInputStream(stream).mkString
+          val content = scala.io.Source.fromInputStream(stream).mkString
           stream.close()
           EitherT.pure[Future, AppError](content)
         } catch {
@@ -815,6 +813,69 @@ class TenantController(
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())
           .merge
+      }
+    }
+
+  sealed trait DispatchMode
+  object DispatchMode {
+    case object Replace extends DispatchMode
+    case object Merge extends DispatchMode
+
+    def fromString(value: String): Option[DispatchMode] =
+      value.toLowerCase match {
+        case "replace" => Some(Replace)
+        case "merge"   => Some(Merge)
+        case _         => None
+      }
+  }
+
+  def dipatchDefaultAuthorizedEntities(tenantId: String) =
+    DaikokuAction.async(parse.json) { ctx =>
+      TenantAdminOnly(
+        AuditTrailEvent(
+          s"@{user.name} has dispatch default authorized otoroshi entities with mode @{mode}"
+        )
+      )(tenantId, ctx) { (tenant, _) =>
+
+        val mode = (ctx.request.body \ "mode").asOpt[String]
+          .flatMap(DispatchMode.fromString)
+          .getOrElse(DispatchMode.Merge)
+
+        val defaultEntitites = tenant.defaultAuthorizedOtoroshiEntities
+
+        def mergeAuhtorizedEntities(a: Option[Seq[TeamAuthorizedEntities]], b: Option[Seq[TeamAuthorizedEntities]]): Option[Seq[TeamAuthorizedEntities]] = {
+          (a, b) match {
+            case (None, None) => None
+            case (None, second) => second
+            case (first, None) => first
+            case (Some(first), Some(second)) => (first ++ second)
+              .groupBy(_.otoroshiSettingsId)
+              .map { case (id, entities) =>
+                TeamAuthorizedEntities(id, entities.map(_.authorizedEntities).reduce(_ ++ _))
+              }
+              .toSeq.some
+          }
+
+        }
+
+
+        for {
+          teams <- env.dataStore.teamRepo.forTenant(tenant).findAllNotDeleted()
+          _ <- Source(teams)
+            .mapAsync(5)(team => {
+              val updatedTeam = mode match {
+                case DispatchMode.Replace => team.copy(authorizedOtoroshiEntities = defaultEntitites)
+                case DispatchMode.Merge => team.copy(
+                  authorizedOtoroshiEntities = mergeAuhtorizedEntities(team.authorizedOtoroshiEntities, defaultEntitites)
+                )
+              }
+              env.dataStore.teamRepo.forTenant(tenant).save(updatedTeam)
+            })
+            .toMat(Sink.ignore)(Keep.right)
+            .run()(env.defaultMaterializer)
+        } yield NoContent
+
+
       }
     }
 }

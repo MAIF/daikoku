@@ -1,12 +1,18 @@
 package fr.maif.otoroshi.daikoku.tests
 
+import cats.implicits.catsSyntaxOptionId
+import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
+import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
+import org.testcontainers.containers.BindMode
 import play.api.libs.json._
 
 import scala.concurrent.Await
@@ -16,7 +22,27 @@ class TenantControllerSpec()
     extends PlaySpec
 //    with OneServerPerSuiteWithMyComponents
     with DaikokuSpecHelper
-    with IntegrationPatience {
+    with IntegrationPatience
+    with BeforeAndAfter
+    with ForAllTestContainer {
+
+  val pwd = System.getProperty("user.dir");
+  override val container = GenericContainer(
+    "maif/otoroshi",
+    exposedPorts = Seq(8080),
+    fileSystemBind = Seq(
+      FileSystemBind(
+        s"$pwd/test/daikoku/otoroshi.json",
+        "/home/user/otoroshi.json",
+        BindMode.READ_ONLY
+      )
+    ),
+    env = Map("APP_IMPORT_FROM" -> "/home/user/otoroshi.json")
+  )
+
+  before {
+    Await.result(cleanOtoroshiServer(container.mappedPort(8080)), 5.seconds)
+  }
 
   "create a tenant" must {
     "create an admin team and an admin api" in {
@@ -1500,6 +1526,233 @@ class TenantControllerSpec()
 
       resp.status mustBe 200
       resp.body mustBe s"${defaultApi.plans.map(_.id.value).mkString("\n")}"
+    }
+
+    "setup defaut authorized otoroshi entities for future created teams" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(
+          otoroshiSettings = Set(
+            OtoroshiSettings(
+              id = containerizedOtoroshi,
+              url =
+                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+              host = "otoroshi-api.oto.tools",
+              clientSecret = otoroshiAdminApiKey.clientSecret,
+              clientId = otoroshiAdminApiKey.clientId
+            )
+          )
+        )),
+        users = Seq(tenantAdmin, user),
+        teams = Seq(defaultAdminTeam)
+      )
+
+      val adminSession = loginWithBlocking(tenantAdmin, tenant)
+      val newDefaultAuthEntities = Seq(
+        TeamAuthorizedEntities(
+          otoroshiSettingsId = containerizedOtoroshi,
+          authorizedEntities = AuthorizedEntities(
+            groups = Set(OtoroshiServiceGroupId(serviceGroupDev))
+          )
+        )
+      ).some
+      val updateTenantResp = httpJsonCallBlocking(
+        path = s"/api/tenants/${tenant.id.value}",
+        method = "PUT",
+        body = tenant.copy(defaultAuthorizedOtoroshiEntities = newDefaultAuthEntities).asJson.some)(tenant, adminSession)
+
+      updateTenantResp.status mustBe 200
+
+      val userSession = loginWithBlocking(user, tenant)
+      val newTeam = Team(
+        id = TeamId("new-team"),
+        tenant = tenant.id,
+        `type` = TeamType.Organization,
+        name = "foo team",
+        description = "description",
+        contact = "contact@foo.bar",
+        avatar = None,
+        users = Set(UserWithPermission(userId = user.id, teamPermission = Administrator)),
+        verified = true
+      )
+      val createNewTeamResp = httpJsonCallBlocking(
+        path = "/api/teams",
+        method = "POST",
+        body = newTeam.asJson.some
+      )(tenant, userSession)
+      createNewTeamResp.status mustBe 201
+
+      val controlTeamResp = httpJsonCallBlocking(
+        path = s"/api/teams/${newTeam.id.value}"
+      )(tenant, userSession)
+      controlTeamResp.status mustBe 200
+      val controlTeam = Json.parse(controlTeamResp.body).as(json.TeamFormat)
+
+      controlTeam.authorizedOtoroshiEntities.isDefined mustBe true
+      controlTeam.authorizedOtoroshiEntities mustBe newDefaultAuthEntities
+    }
+
+    "setup defaut authorized otoroshi entities and merge it" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(
+          otoroshiSettings = Set(
+            OtoroshiSettings(
+              id = containerizedOtoroshi,
+              url =
+                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+              host = "otoroshi-api.oto.tools",
+              clientSecret = otoroshiAdminApiKey.clientSecret,
+              clientId = otoroshiAdminApiKey.clientId
+            )
+          )
+        )),
+        users = Seq(tenantAdmin, user),
+        teams = Seq(defaultAdminTeam,
+          teamConsumer,
+          teamOwner.copy(authorizedOtoroshiEntities = Seq(
+            TeamAuthorizedEntities(
+              otoroshiSettingsId = containerizedOtoroshi,
+              authorizedEntities = AuthorizedEntities(
+                groups = Set(OtoroshiServiceGroupId(serviceGroupDefault))
+              )
+            ),TeamAuthorizedEntities(
+              otoroshiSettingsId = OtoroshiSettingsId("default"),
+              authorizedEntities = AuthorizedEntities(
+                groups = Set(OtoroshiServiceGroupId("foo")),
+                routes = Set(OtoroshiRouteId("bar"))
+              )
+            )).some))
+      )
+
+      val adminSession = loginWithBlocking(tenantAdmin, tenant)
+      val updateTenantResp = httpJsonCallBlocking(
+        path = s"/api/tenants/${tenant.id.value}",
+        method = "PUT",
+        body = tenant.copy(defaultAuthorizedOtoroshiEntities = Seq(
+          TeamAuthorizedEntities(
+            otoroshiSettingsId = containerizedOtoroshi,
+            authorizedEntities = AuthorizedEntities(
+              groups = Set(OtoroshiServiceGroupId(serviceGroupDev))
+            )
+          )
+        ).some).asJson.some)(tenant, adminSession)
+      updateTenantResp.status mustBe 200
+      val dispatchResp = httpJsonCallBlocking(
+        path = s"/api/tenants/${tenant.id.value}/_dispatch-default-authorized-entities",
+        method = "POST",
+        body = Json.obj("mode" -> "merge").some
+      )(tenant, adminSession)
+      dispatchResp.status mustBe 204
+
+
+      val controlConsumerTeamResp = httpJsonCallBlocking(s"/api/teams/${teamConsumerId.value}")(tenant, adminSession)
+      val controlConsumerTeam = Json.parse(controlConsumerTeamResp.body).as(json.TeamFormat)
+      controlConsumerTeam.authorizedOtoroshiEntities.isDefined mustBe true
+      controlConsumerTeam.authorizedOtoroshiEntities.map(_.length).getOrElse(0) mustBe 1
+      val consumerContainerizedAuthorizedEntities = controlConsumerTeam.authorizedOtoroshiEntities.flatMap(_.find(o => o.otoroshiSettingsId == containerizedOtoroshi))
+      consumerContainerizedAuthorizedEntities.map(_.authorizedEntities.groups.size).getOrElse(0) mustBe 1
+      consumerContainerizedAuthorizedEntities.map(_.authorizedEntities.routes.size).getOrElse(0) mustBe 0
+      consumerContainerizedAuthorizedEntities.map(_.authorizedEntities.services.size).getOrElse(0) mustBe 0
+
+      val controlOwnerTeamResp = httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}")(tenant, adminSession)
+
+      val controlOwnerTeam = Json.parse(controlOwnerTeamResp.body).as(json.TeamFormat)
+      controlOwnerTeam.authorizedOtoroshiEntities.isDefined mustBe true
+      controlOwnerTeam.authorizedOtoroshiEntities.map(_.length).getOrElse(0) mustBe 2
+
+      val ownerContainerizedAuthorizedEntities = controlOwnerTeam.authorizedOtoroshiEntities.flatMap(_.find(o => o.otoroshiSettingsId == containerizedOtoroshi))
+
+      ownerContainerizedAuthorizedEntities.map(_.authorizedEntities.groups.size).getOrElse(0) mustBe 2
+      ownerContainerizedAuthorizedEntities.map(_.authorizedEntities.routes.size).getOrElse(0) mustBe 0
+      ownerContainerizedAuthorizedEntities.map(_.authorizedEntities.services.size).getOrElse(0) mustBe 0
+      val ownerLocalAuthorizedEntities = controlOwnerTeam.authorizedOtoroshiEntities.flatMap(_.find(o => o.otoroshiSettingsId == OtoroshiSettingsId("default")))
+      ownerLocalAuthorizedEntities.map(_.authorizedEntities.groups.size).getOrElse(0) mustBe 1
+      ownerLocalAuthorizedEntities.map(_.authorizedEntities.routes.size).getOrElse(0) mustBe 1
+      ownerLocalAuthorizedEntities.map(_.authorizedEntities.services.size).getOrElse(0) mustBe 0
+
+
+
+    }
+
+    "setup defaut authorized otoroshi entities and replace it" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(
+          otoroshiSettings = Set(
+            OtoroshiSettings(
+              id = containerizedOtoroshi,
+              url =
+                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+              host = "otoroshi-api.oto.tools",
+              clientSecret = otoroshiAdminApiKey.clientSecret,
+              clientId = otoroshiAdminApiKey.clientId
+            )
+          )
+        )),
+        users = Seq(tenantAdmin, user),
+        teams = Seq(defaultAdminTeam,
+          teamConsumer,
+          teamOwner.copy(authorizedOtoroshiEntities = Seq(
+            TeamAuthorizedEntities(
+              otoroshiSettingsId = containerizedOtoroshi,
+              authorizedEntities = AuthorizedEntities(
+                groups = Set(OtoroshiServiceGroupId(serviceGroupDefault))
+              )
+            ),TeamAuthorizedEntities(
+              otoroshiSettingsId = OtoroshiSettingsId("default"),
+              authorizedEntities = AuthorizedEntities(
+                groups = Set(OtoroshiServiceGroupId("foo")),
+                routes = Set(OtoroshiRouteId("bar"))
+              )
+            )).some))
+      )
+
+      val adminSession = loginWithBlocking(tenantAdmin, tenant)
+      val updateTenantResp = httpJsonCallBlocking(
+        path = s"/api/tenants/${tenant.id.value}",
+        method = "PUT",
+        body = tenant.copy(defaultAuthorizedOtoroshiEntities = Seq(
+          TeamAuthorizedEntities(
+            otoroshiSettingsId = containerizedOtoroshi,
+            authorizedEntities = AuthorizedEntities(
+              groups = Set(OtoroshiServiceGroupId(serviceGroupDev))
+            )
+          )
+        ).some).asJson.some)(tenant, adminSession)
+      updateTenantResp.status mustBe 200
+      val dispatchResp = httpJsonCallBlocking(
+        path = s"/api/tenants/${tenant.id.value}/_dispatch-default-authorized-entities",
+        method = "POST",
+        body = Json.obj("mode" -> "replace").some
+      )(tenant, adminSession)
+      dispatchResp.status mustBe 204
+
+
+
+      val controlConsumerTeamResp = httpJsonCallBlocking(s"/api/teams/${teamConsumerId.value}")(tenant, adminSession)
+      val controlConsumerTeam = Json.parse(controlConsumerTeamResp.body).as(json.TeamFormat)
+      controlConsumerTeam.authorizedOtoroshiEntities.isDefined mustBe true
+      controlConsumerTeam.authorizedOtoroshiEntities.map(_.length).getOrElse(0) mustBe 1
+      val consumerContainerizedAuthorizedEntities = controlConsumerTeam.authorizedOtoroshiEntities.flatMap(_.find(o => o.otoroshiSettingsId == containerizedOtoroshi))
+      consumerContainerizedAuthorizedEntities.map(_.authorizedEntities.groups.size).getOrElse(0) mustBe 1
+      consumerContainerizedAuthorizedEntities.map(_.authorizedEntities.routes.size).getOrElse(0) mustBe 0
+      consumerContainerizedAuthorizedEntities.map(_.authorizedEntities.services.size).getOrElse(0) mustBe 0
+
+      val controlOwnerTeamResp = httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}")(tenant, adminSession)
+
+      val controlOwnerTeam = Json.parse(controlOwnerTeamResp.body).as(json.TeamFormat)
+      controlOwnerTeam.authorizedOtoroshiEntities.isDefined mustBe true
+      controlOwnerTeam.authorizedOtoroshiEntities.map(_.length).getOrElse(0) mustBe 1
+
+      val ownerContainerizedAuthorizedEntities = controlOwnerTeam.authorizedOtoroshiEntities.flatMap(_.find(o => o.otoroshiSettingsId == containerizedOtoroshi))
+      ownerContainerizedAuthorizedEntities.map(_.authorizedEntities.groups.size).getOrElse(0) mustBe 1
+      ownerContainerizedAuthorizedEntities.map(_.authorizedEntities.routes.size).getOrElse(0) mustBe 0
+      ownerContainerizedAuthorizedEntities.map(_.authorizedEntities.services.size).getOrElse(0) mustBe 0
+      val ownerLocalAuthorizedEntities = controlOwnerTeam.authorizedOtoroshiEntities.flatMap(_.find(o => o.otoroshiSettingsId == OtoroshiSettingsId("default")))
+      ownerLocalAuthorizedEntities.map(_.authorizedEntities.groups.size).getOrElse(0) mustBe 0
+      ownerLocalAuthorizedEntities.map(_.authorizedEntities.routes.size).getOrElse(0) mustBe 0
+      ownerLocalAuthorizedEntities.map(_.authorizedEntities.services.size).getOrElse(0) mustBe 0
+
+
+
     }
   }
   "a simple user" can {

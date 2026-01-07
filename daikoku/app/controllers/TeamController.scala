@@ -137,8 +137,9 @@ class TeamController(
             ctx.setCtxValue("team.id", team.id)
             ctx.setCtxValue("team.name", team.name)
 
-            val teamToSave = team.copy(users =
-              Set(UserWithPermission(ctx.user.id, TeamPermission.Administrator))
+            val teamToSave = team.copy(
+              users = Set(UserWithPermission(ctx.user.id, TeamPermission.Administrator)),
+              authorizedOtoroshiEntities = ctx.tenant.defaultAuthorizedOtoroshiEntities
             )
 
             implicit val language: String = ctx.user.defaultLanguage

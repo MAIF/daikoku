@@ -744,6 +744,12 @@ case class AuthorizedEntities(
     groups: Set[OtoroshiServiceGroupId] = Set.empty,
     routes: Set[OtoroshiRouteId] = Set.empty
 ) extends CanJson[AuthorizedEntities] {
+  def ++(other: AuthorizedEntities): AuthorizedEntities = AuthorizedEntities(
+    services = this.services ++ other.services,
+    groups = this.groups ++ other.groups,
+    routes = this.routes ++ other.routes
+  )
+
   def asJson: JsValue = json.AuthorizedEntitiesFormat.writes(this)
   def asOtoroshiJson: JsValue =
     json.AuthorizedEntitiesOtoroshiFormat.writes(this)

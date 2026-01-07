@@ -59,7 +59,13 @@ type PromiseWithError<T> = Promise<ResponseError | T>;
 const customFetch = <T>(
   url: string,
   { headers = HEADERS, method = 'GET', body, ...props }: any = {}
-) => fetch(url, { headers, method, body, ...props }).then((r) => r.json());
+) => fetch(url, { headers, method, body, ...props })
+  .then((r) => {
+    if (r.status === 204 || r.headers.get('content-length') === '0') {
+      return null;
+    }
+    return r.json();
+  });
 
 export const me = (): PromiseWithError<IUser> => customFetch('/api/me');
 export const myOwnTeam = () => customFetch('/api/me/teams/own');
@@ -484,6 +490,13 @@ export const saveTenant = (tenant: ITenantFull) =>
 export const resetColorTheme = (tenant: ITenant): PromiseWithError<ResponseDone> =>
   customFetch(`/api/tenants/${tenant._id}/color-theme/_reset`, {
     method: 'PUT',
+  });
+
+export const dispatchDefaultAuthEntities = (tenant: ITenant, mode: 'replace' | 'merge'): Promise<void> =>
+  customFetch(`/api/tenants/${tenant._id}/_dispatch-default-authorized-entities`, {
+    method: 'POST',
+    headers: HEADERS,
+    body: JSON.stringify({ mode })
   });
 
 export const deleteTenant = (id: string) =>

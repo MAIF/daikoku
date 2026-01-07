@@ -275,6 +275,11 @@ object SchemaDefinition {
               "display",
               OptionType(StringType),
               resolve = _.value.display.name
+            ),
+            Field(
+              "defaultAuthorizedOtoroshiEntities",
+              OptionType(ListType(TeamAuthorizedEntitiesType)),
+              resolve = _.value.defaultAuthorizedOtoroshiEntities
             )
           )
       )
