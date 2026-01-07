@@ -17,7 +17,7 @@ export const SecurityForm = (props: {
   updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown>;
 }) => {
   const { translate } = useContext(I18nContext);
-  const { alert, openRightPanel, openFormModal, openCustomModal } = useContext(ModalContext);
+  const { alert, openRightPanel, openFormModal } = useContext(ModalContext);
   const { customGraphQLClient, tenant } = useContext(GlobalContext);
 
   const teamQuery = useQuery({
@@ -214,6 +214,37 @@ export const SecurityForm = (props: {
     })
   }
 
+  const openModalForDispatchingAction = () => openFormModal({
+    title: translate("tenant.security.dispatch.default.auth.entities.modal.title"),
+    schema: {
+      choice: {
+        type: type.string,
+        format: format.buttonsSelect,
+        label: translate("tenant.security.dispatch.default.auth.entities.choice.label"),
+        options: [
+          {
+            label: translate("tenant.security.dispatch.default.auth.entities.choice.nothing"),
+            value: "nothing"
+          },
+          {
+            label: translate("tenant.security.dispatch.default.auth.entities.choice.replace"),
+            value: "replace"
+          },
+          {
+            label: translate("tenant.security.dispatch.default.auth.entities.choice.merge"),
+            value: "merge"
+          },
+        ]
+      }
+    },
+    onSubmit: (data) => {
+      if (data.choice !== "nothing") {
+        Services.dispatchDefaultAuthEntities(tenant, data.choice)
+          .then(() => toast.success(translate('tenant.security.dispatch.default.auth.entities.successful')))
+      }
+    },
+    actionLabel: translate('Ok')
+  })
   const openModal = (otoroshis: ISimpleOtoroshiSettings[]) => {
     openFormModal({
       title: translate('tenant.security.configure.default.auth.otoroshi.entities.button.label'),
@@ -253,38 +284,14 @@ export const SecurityForm = (props: {
         }
       },
       onSubmit: (data) => props.updateTenant.mutateAsync({ ...props.tenant, defaultAuthorizedOtoroshiEntities: data.authorizedOtoroshiEntities })
-        .then(_ => openFormModal({
-          title: translate("tenant.security.dispatch.default.auth.entities.modal.title"),
-          schema: {
-            choice: {
-              type: type.string,
-              format: format.buttonsSelect,
-              label: translate("tenant.security.dispatch.default.auth.entities.choice.label"),
-              options: [
-                {
-                  label: translate("tenant.security.dispatch.default.auth.entities.choice.nothing"),
-                  value: "nothing"
-                },
-                {
-                  label: translate("tenant.security.dispatch.default.auth.entities.choice.replace"),
-                  value: "replace"
-                },
-                {
-                  label: translate("tenant.security.dispatch.default.auth.entities.choice.merge"),
-                  value: "merge"
-                },
-              ]
-            }
-          },
-          onSubmit: (data) => {
-            if (data.choice !== "nothing") {
-              Services.dispatchDefaultAuthEntities(tenant, data.choice)
-                .then(() => toast.success(translate('tenant.security.dispatch.default.auth.entities.successful')))
-            }
-          },
-          actionLabel: translate('Ok')
-        })),
+        .then(() => openModalForDispatchingAction()),
       value: { authorizedOtoroshiEntities: props.tenant.defaultAuthorizedOtoroshiEntities },
+      moreAction: <button
+        className='btn btn-outline-danger'
+        onClick={() => props.updateTenant.mutateAsync({ ...props.tenant, defaultAuthorizedOtoroshiEntities: undefined })
+          .then(() => openModalForDispatchingAction())}>
+        {translate('tenant.security.clear.default.auth.otoroshi.entities.button.label')}
+      </button>,
       actionLabel: translate('Save')
     })
   }

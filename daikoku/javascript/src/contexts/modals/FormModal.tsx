@@ -14,7 +14,8 @@ export const FormModal = <T extends TBaseObject>({
   actionLabel,
   close,
   noClose,
-  description
+  description,
+  moreAction
 }: IFormModalProps<T> & IBaseModalProps) => {
   const ref = useRef<FormRef>(undefined);
 
@@ -52,6 +53,7 @@ export const FormModal = <T extends TBaseObject>({
         <button type="button" className="btn btn-outline-danger" onClick={() => close()}>
           {translate('Cancel')}
         </button>
+        {!!moreAction && moreAction}
         <button type="button" className="btn btn-outline-success" onClick={() => ref.current?.handleSubmit()}>
           {actionLabel}
         </button>

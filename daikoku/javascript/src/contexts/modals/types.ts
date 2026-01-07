@@ -104,6 +104,7 @@ export interface IFormModalProps<T> {
   actionLabel: string;
   noClose?: boolean;
   description?: ReactNode;
+  moreAction?: ReactNode;
 }
 
 export type TestingApiKeyModalProps<T extends IWithTesting> = {
