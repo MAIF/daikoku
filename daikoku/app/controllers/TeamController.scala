@@ -386,12 +386,13 @@ class TeamController(
           "@{user.name} has updated team @{team.name} - @{team.id}"
         )
       )(teamId, ctx) { team =>
-        def personalTeamIsOk(_team: Team): Boolean = {
-          team.name == _team.name &&
-            team.description == _team.description &&
-            team.contact == _team.contact &&
-            team.apiKeyVisibility == _team.apiKeyVisibility
+        def personalTeamIsKO(_team: Team): Boolean = {
+            team.name != _team.name ||
+            team.description != _team.description ||
+            team.contact != _team.contact ||
+            team.apiKeyVisibility != _team.apiKeyVisibility
         }
+
 
         json.TeamFormat.reads(ctx.request.body) match {
           case JsSuccess(_, _) if team.`type` == TeamType.Admin =>
@@ -401,7 +402,7 @@ class TeamController(
               .forTenant(ctx.tenant.id)
               .findByIdNotDeleted(teamId)
               .flatMap {
-                case Some(t) if t.`type` == TeamType.Personal && !personalTeamIsOk(t) =>
+                case Some(t) if t.`type` == TeamType.Personal && personalTeamIsKO(newTeam) =>
                   Forbidden(
                     Json.obj(
                       "error" -> "You're not authorized to update this team"
