@@ -6,20 +6,11 @@ import controllers.AppError
 import fr.maif.otoroshi.daikoku.actions.DaikokuActionContext
 import fr.maif.otoroshi.daikoku.audit._
 import fr.maif.otoroshi.daikoku.audit.config._
-import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
-  _TeamMemberOnly,
-  _TenantAdminAccessTenant
-}
+import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{_TeamMemberOnly, _TenantAdminAccessTenant, _UberPublicUserAccess}
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiSubscriptionDemandFormat,
-  TeamCountFormat,
-  TeamTypeFormat,
-  TenantIdFormat,
-  UserIdFormat,
-  ValueCountFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiSubscriptionDemandFormat, TeamCountFormat, TeamTypeFormat, TenantIdFormat, UserIdFormat, ValueCountFormat}
 import fr.maif.otoroshi.daikoku.env.Env
+import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.{OtoroshiClient, S3Configuration}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.{DateTime, DateTimeZone}
@@ -31,11 +22,7 @@ import sangria.schema.{Context, _}
 import sangria.validation.ValueCoercionViolation
 import services.CmsPage
 import storage._
-import storage.graphql.{
-  GraphQLImplicits,
-  RequiresDaikokuAdmin,
-  RequiresTenantAdmin
-}
+import storage.graphql.{GraphQLImplicits, RequiresDaikokuAdmin, RequiresTenantAdmin}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -3930,6 +3917,11 @@ object SchemaDefinition {
       OptionInputType(ListInputType(StringType)),
       description = "The ids of apis to filter request (optional)"
     )
+    val NAME = Argument(
+      "name",
+      StringType,
+      description = "A filter about name of value",
+    )
     def teamQueryFields()
         : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
@@ -4333,6 +4325,34 @@ object SchemaDefinition {
         )
       )
 
+    def cmsSinglePageFields()
+    : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+      List(
+        Field(
+          "page",
+          OptionType(CmsPageType),
+          arguments = DELETED :: NAME :: Nil,
+          resolve = ctx => {
+            _UberPublicUserAccess(
+              AuditTrailEvent(s"@{user.name} has accessed the list of cms page")
+            )(ctx.ctx._2) {
+              ctx.ctx._1.cmsRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findOne(
+                  Json.obj(
+                    "_deleted" -> ctx.arg(DELETED),
+                    "name" -> ctx.arg(NAME)
+                  )
+                )
+            }.map {
+              case Right(Some(page)) if page.authenticated && ctx.ctx._2.user.isGuest => throw NotAuthorizedError("please log in.")
+              case Right(value) => value
+              case Left(r)      => throw NotAuthorizedError(r.toString)
+            }
+          }
+        )
+      )
+
     def subscriptionDemandsForTeamAdmin()
         : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
@@ -4620,6 +4640,7 @@ object SchemaDefinition {
           allTeamsQuery() ++
           getSubscriptionDetailsFields() ++
           getAuditTrailQueryFields() ++
+          cmsSinglePageFields() ++
           cmsPageFields():_*)
       )),
       DeferredResolver.fetchers(teamsFetcher, usersFetcher, apisFetcher)

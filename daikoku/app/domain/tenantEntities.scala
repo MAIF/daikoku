@@ -221,7 +221,6 @@ case class DaikokuStyle(
     logoMin: Option[String] = None,
     logoDark: Option[String] = None,
     logoMinDark: Option[String] = None,
-    footer: Option[String] = None
 ) extends CanJson[DaikokuStyle] {
   override def asJson: JsValue = {
     json.DaikokuStyleFormat.writes(this)
@@ -470,11 +469,6 @@ case class Tenant(
       "contact" -> contact,
       "unloggedHome" -> style
         .map(a => JsString(a.unloggedHome))
-        .getOrElse(JsNull)
-        .as[JsValue],
-      "footer" -> style
-        .flatMap(_.footer)
-        .map(f => JsString(f))
         .getOrElse(JsNull)
         .as[JsValue],
       "logo" -> style.flatMap(a => a.logo).filter(_.trim.nonEmpty).map(JsString).getOrElse(JsNull).as[JsValue],

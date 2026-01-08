@@ -10,51 +10,6 @@ import { AssetChooserByModal, MimeTypeFilter } from '../../../../contexts/modals
 import { ICmsPageGQL, isError, ITenantFull } from '../../../../types';
 import * as Services from '../../../../services';
 import { toast } from 'sonner';
-
-type CmsPagesSelectorProps = {
-  rawValues: any
-  onChange: (item: any) => void,
-  value: string
-}
-const CmsPageSelector = ({ rawValues, onChange, value }: CmsPagesSelectorProps) => {
-  const { customGraphQLClient, reloadContext } = useContext(GlobalContext);
-  const cmsPagesQuery = `
-      query CmsPages {
-        pages {
-          id
-          name
-          path
-          contentType
-          lastPublishedDate
-          metadata
-        }
-      }
-    `
-
-  const queryPages = useQuery({
-    queryKey: ['cmsPageSelector', 'pages'],
-    queryFn: () => customGraphQLClient.request<{ pages: Array<ICmsPageGQL> }>(
-      cmsPagesQuery
-    )
-  })
-
-  return (
-    <div>
-      <Select
-        id={`input-label`}
-        name={`search-label`}
-        isLoading={queryPages.isLoading}
-        options={queryPages.data?.pages.map(p => ({ label: `${p.path} - ${p.name}`, value: p.id }))}
-        value={queryPages.data?.pages.map(p => ({ label: `${p.path} - ${p.name}`, value: p.id })).find(p => p.value === value)}//@ts-ignore
-        onChange={({ value }) => onChange(value)}
-        classNamePrefix="reactSelect"
-        className="reactSelect"
-      />
-    </div>
-  )
-}
-
-
 export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFull, updateTenant: UseMutationResult<any, unknown, ITenantFull, unknown> }) => {
 
   const { translate } = useContext(I18nContext);
@@ -187,11 +142,6 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
     jsUrl: urlWithAssetButton(translate('Js URL'), translate({ key: 'set.from.assets', replacements: [translate('set.js')] }), MimeTypeFilter.javascript),
     faviconUrl: urlWithAssetButton(translate('Favicon URL'), translate({ key: 'set.from.assets', replacements: [translate('set.favicon')] }), MimeTypeFilter.image),
     fontFamilyUrl: urlWithAssetButton(translate('Font family'), translate({ key: 'set.from.assets', replacements: [translate('set.font.family')] }), MimeTypeFilter.font),
-    footer: {
-      type: type.string,
-      format: format.markdown,
-      label: translate('Footer'),
-    },
     defaultMessage: {
       type: type.string,
       format: format.text,
@@ -218,7 +168,7 @@ export const CustomizationForm = ({ tenant, updateTenant }: { tenant?: ITenantFu
     },
     {
       label: translate('Pages'),
-      flow: ['homePageVisible', 'homeCmsPage', 'notFoundCmsPage', 'authenticatedCmsPage', 'footer'],
+      flow: ['homePageVisible', 'homeCmsPage', 'notFoundCmsPage', 'authenticatedCmsPage'],
       collapsed: true
     }
   ]

@@ -3,10 +3,11 @@ import { getCmsPage } from "../../services";
 
 type CmsViewerProps = {
     pageId: string
-    fields?: any
+    fields?: any,
+    className: string
 }
 
-export function CmsViewer({ pageId, fields }: CmsViewerProps) {
+export function CmsViewer({ pageId, fields, className }: CmsViewerProps) {
 
     const [cmsPage, setCmsPage] = useState<string>()
 
@@ -18,7 +19,7 @@ export function CmsViewer({ pageId, fields }: CmsViewerProps) {
     }, [pageId, fields])
 
     if (cmsPage)
-        return <div className="flex-grow-1" dangerouslySetInnerHTML={{ __html: cmsPage, }} />
+        return <div className={className ?? `flex-grow-1`} dangerouslySetInnerHTML={{ __html: cmsPage, }} />
 
     return null
 }   

@@ -1687,6 +1687,66 @@ object evolution_1840_c extends EvolutionScript {
     }
 }
 
+object evolution_1860 extends EvolutionScript {
+  override def version: String = "1.6.0"
+
+  override def script: (
+    Option[DatastoreId],
+      DataStore,
+      Materializer,
+      ExecutionContext,
+      OtoroshiClient
+    ) => Future[Done] =
+    (
+      _: Option[DatastoreId],
+      dataStore: DataStore,
+      mat: Materializer,
+      ec: ExecutionContext,
+      _: OtoroshiClient
+    ) => {
+      logger.info(
+        s"Begin evolution $version - Convert footer to CMS format"
+      )
+
+      dataStore.tenantRepo
+        .streamAllRaw()(ec)
+        .mapAsync(10) { value =>
+          (value \ "style" \ "footer").asOpt[String] match {
+            case Some(footer) =>
+              val tenant = (value \ "_id").as(json.TenantIdFormat)
+              dataStore.cmsRepo
+                .forTenant(tenant)
+                .findOneNotDeleted(Json.obj("name" -> "footer.html"))(ec)
+                .map {
+                  case Some(_) => FastFuture.successful(())
+                  case None =>
+                    dataStore.cmsRepo
+                      .forTenant(tenant)
+                      .save(
+                        CmsPage(
+                          id = CmsPageId("-footer"),
+                          tenant = tenant,
+                          visible = true,
+                          authenticated = false,
+                          name = "footer.html",
+                          forwardRef = None,
+                          tags = List(),
+                          metadata = Map(),
+                          contentType = "text/html",
+                          body = s"$footer",
+                          path = Some("/footer"),
+                          lastPublishedDate = Some(DateTime.now())
+                        )
+                      )(ec)
+                }(ec)
+            case None => FastFuture.successful(())
+          }
+        }
+        .runWith(Sink.ignore)(mat)
+    }
+}
+
+
 object evolutions {
   val list: List[EvolutionScript] =
     List(
@@ -1709,7 +1769,8 @@ object evolutions {
       evolution_1830,
       evolution_1840_a,
       evolution_1840_b,
-      evolution_1840_c
+      evolution_1840_c,
+      evolution_1860
     )
   def run(
       dataStore: DataStore,

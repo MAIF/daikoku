@@ -1,23 +1,41 @@
+import { useQuery } from '@tanstack/react-query';
 import classNames from 'classnames';
-import { converter } from '../../services/showdown';
-import { IState, ITenant } from '../../types';
-import { GlobalContext } from '../../contexts/globalContext';
 import { useContext } from 'react';
+import { Spinner } from './Spinner';
+
+import { GlobalContext } from '../../contexts/globalContext';
+import { converter } from '../../services/showdown';
+import { ICmsPageGQL, isError } from '../../types';
+import { CmsViewer } from '../frontend/CmsViewer';
 
 export const Footer = (props: { isBackOffice: boolean }) => {
 
-  const { tenant } = useContext(GlobalContext)
+  const { tenant, customGraphQLClient } = useContext(GlobalContext)
 
-  if (!tenant.footer) {
+  const getFooter = `
+    query CmsPage($name: String!) {
+      page(name: $name) {
+        id
+        name
+        path
+      }
+    }
+  `;
+  const pageRequest = useQuery({
+    queryKey: ["footer-cms-page"],
+    queryFn: () => customGraphQLClient.request<{ page: ICmsPageGQL }>(getFooter, { name: 'footer.html' }),
+  })
+  
+
+  if (pageRequest.isLoading) {
+    return <Spinner />
+  } else if (pageRequest.data?.page && !isError(pageRequest.data)) {
+    return (
+      <CmsViewer className='footer row mt-2' pageId={pageRequest.data.page.id} />
+    )
+
+  } else if (!isError(pageRequest)) {
     return null;
   }
 
-  return (
-    <footer
-      className={classNames('footer row mt-2', {
-        'back-office-footer': props.isBackOffice,
-      })}
-      dangerouslySetInnerHTML={{ __html: converter.makeHtml(tenant.footer) }}
-    />
-  );
 };

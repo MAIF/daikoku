@@ -1645,8 +1645,6 @@ object json {
             logoMin = (json \ "logoMin")
               .asOpt[String],
             logoMinDark = (json \ "logoMinDark")
-              .asOpt[String],
-            footer = (json \ "footer")
               .asOpt[String]
           )
         )
@@ -1704,10 +1702,6 @@ object json {
           .as[JsValue],
         "logoMinDark" -> o.logoMinDark
           .filter(_.trim.nonEmpty)
-          .map(JsString.apply)
-          .getOrElse(JsNull)
-          .as[JsValue],
-        "footer" -> o.footer
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue]
