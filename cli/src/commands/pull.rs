@@ -1,5 +1,7 @@
 use std::{fs, io::Write, path::PathBuf, str::FromStr};
 
+use paris::Logger;
+
 use crate::{
     helpers::{
         bytes_to_struct, bytes_to_vec_of_struct, daikoku_cms_api_get,
@@ -67,55 +69,20 @@ async fn mails_synchronization(project: &cms::Project) -> DaikokuResult<()> {
 
     let sources_path = PathBuf::from(project.path.clone()).join("src");
 
-    let environment = get_default_environment()?;
-
-    let apikey = read_apikey_from_secrets(true)?;
-
-    let existing_pages = bytes_to_vec_of_struct::<CmsPage>(
-        raw_daikoku_cms_api_get("/pages", &environment.server, &apikey)
+    let root_mail_user_translations = bytes_to_struct::<IntlTranslationBody>(
+        daikoku_cms_api_get("/translations/_mail?domain=tenant.mail.template")
             .await?
             .response,
     )?;
 
-    let existing_emails_pages = existing_pages
-        .iter()
-        .filter(|v| v._id.contains("mails"))
-        .collect::<Vec<&CmsPage>>();
+    let mail_user_template = bytes_to_struct::<IntlTranslationBody>(
+        daikoku_cms_api_get("/translations/_mail?domain=mail")
+            .await?
+            .response,
+    )?;
 
-    if existing_emails_pages.is_empty() {
-        let root_mail_user_translations = bytes_to_struct::<IntlTranslationBody>(
-            daikoku_cms_api_get("/translations/_mail?domain=tenant.mail.template")
-                .await?
-                .response,
-        )?;
-
-        let mail_user_template = bytes_to_struct::<IntlTranslationBody>(
-            daikoku_cms_api_get("/translations/_mail?domain=mail")
-                .await?
-                .response,
-        )?;
-
-        create_mail_folder(root_mail_user_translations, sources_path.clone(), true)?;
-        create_mail_folder(mail_user_template, sources_path.clone(), false)?;
-    } else {
-        existing_emails_pages.iter().for_each(|item| {
-            let file_path = sources_path
-                .clone()
-                .join(item.path.clone().unwrap().replacen("/", "", 1))
-                .join("page.html");
-
-            let file = std::fs::OpenOptions::new()
-                .write(true)
-                .truncate(true)
-                .open(file_path);
-
-            if let Ok(mut email) = file {
-                let _ = email.write_all(item.content.clone().replace("''", "'").as_bytes());
-
-                let _ = email.flush();
-            }
-        });
-    }
+    create_mail_folder(root_mail_user_translations, sources_path.clone(), true)?;
+    create_mail_folder(mail_user_template, sources_path.clone(), false)?;
 
     logger::success(format!("<green>Pulling</> done"));
 

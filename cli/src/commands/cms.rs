@@ -615,7 +615,7 @@ pub(crate) fn create_mail_folder(
     is_root_mail: bool,
 ) -> DaikokuResult<()> {
     intl_translation.translations.iter().for_each(|item| {
-        let file_path = project_path
+        let mail_folder = project_path
             .clone()
             .join(get_mail_page_path(&item._id.clone().replace(".", "-"), is_root_mail).unwrap());
 
@@ -623,19 +623,25 @@ pub(crate) fn create_mail_folder(
 
         config.set(&"default", "id", Some(item._id.clone()));
 
-        let _ = config.write(file_path.clone().join(".daikoku_data"));
+        let _ = config.write(mail_folder.clone().join(".daikoku_data"));
 
         item.translations.iter().for_each(|translation| {
-            let _ = create_path_and_file(
-                file_path
-                    .clone()
-                    .join(translation.language.clone())
-                    .join("page.html"),
-                translation.value.clone().replace("''", "'"),
-                translation._id.clone(),
-                HashMap::new(),
-                SourceExtension::HTML,
-            );
+            let file_path = mail_folder
+                        .clone()
+                        .join(translation.language.clone());
+
+            if !file_path.exists() {
+                let _ = create_path_and_file(
+                    mail_folder
+                        .clone()
+                        .join(translation.language.clone())
+                        .join("page.html"),
+                    translation.value.clone().replace("''", "'"),
+                    translation._id.clone(),
+                    HashMap::new(),
+                    SourceExtension::HTML,
+                );
+            }
         })
     });
 
