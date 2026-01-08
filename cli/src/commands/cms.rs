@@ -631,7 +631,7 @@ pub(crate) fn create_mail_folder(
                     .clone()
                     .join(translation.language.clone())
                     .join("page.html"),
-                translation.value.clone(),
+                translation.value.clone().replace("''", "'"),
                 translation._id.clone(),
                 HashMap::new(),
                 SourceExtension::HTML,

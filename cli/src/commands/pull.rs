@@ -110,7 +110,7 @@ async fn mails_synchronization(project: &cms::Project) -> DaikokuResult<()> {
                 .open(file_path);
 
             if let Ok(mut email) = file {
-                let _ = email.write_all(item.content.clone().as_bytes());
+                let _ = email.write_all(item.content.clone().replace("''", "'").as_bytes());
 
                 let _ = email.flush();
             }
