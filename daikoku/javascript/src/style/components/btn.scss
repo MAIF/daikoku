@@ -149,6 +149,20 @@ button {
   }
 }
 
+.btn-outline-ghost,
+.btn-outline-ghost:focus {
+  background-color: transparent;
+  color: variables.$primary-color;
+  border-color: transparent;
+
+  &:hover,
+  &.active {
+    color: #fff;
+    background-color: variables.$primary-color;
+    border-color: variables.$primary-color;
+  }
+}
+
 .btn-outline-info:not(:disabled):not(.disabled):active,
 .btn-outline-info:not(:disabled):not(.disabled).active,
 .show>.btn-outline-info.dropdown-toggle {
