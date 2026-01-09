@@ -1057,6 +1057,8 @@ export const login = (
 
   const url = redirect ? updateQueryStringParameter(action, 'redirect', redirect) : action;
 
+  console.debug({ url, action, redirect })
+
   return fetch(url, {
     method: 'POST',
     headers: {
@@ -1314,6 +1316,23 @@ export const removeCmsPage = (id: any) =>
   });
 
 export const graphql = {
+  getCmsPageByName: `
+    query CmsPage($name: String!) {
+      page(name: $name) {
+        id
+        name
+        path
+        body
+        exact
+        visible
+        authenticated
+        metadata
+        contentType
+        tags
+        lastPublishedDate
+      }
+    }
+  `,
   myTeams: `
     query MyTeams {
       myTeams {

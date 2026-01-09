@@ -56,7 +56,6 @@ export const Signup = () => {
 
   const navigate = useNavigate();
 
-  const defaultAvatar = `https://www.gravatar.com/avatar/${md5('foo@foo.bar')}?size=128&d=robohash`;
   const [user, setUser] = useState<IUserSimple>();
   const [state, setState] = useState<'creation' | 'error' | 'done'>('creation');
   const [error, setError] = useState<string>();

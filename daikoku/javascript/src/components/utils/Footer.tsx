@@ -1,29 +1,19 @@
 import { useQuery } from '@tanstack/react-query';
-import classNames from 'classnames';
 import { useContext } from 'react';
 import { Spinner } from './Spinner';
 
 import { GlobalContext } from '../../contexts/globalContext';
-import { converter } from '../../services/showdown';
 import { ICmsPageGQL, isError } from '../../types';
 import { CmsViewer } from '../frontend/CmsViewer';
+import * as Services from '../../services';
 
-export const Footer = (props: { isBackOffice: boolean }) => {
+export const Footer = () => {
 
-  const { tenant, customGraphQLClient } = useContext(GlobalContext)
+  const { customGraphQLClient } = useContext(GlobalContext)
 
-  const getFooter = `
-    query CmsPage($name: String!) {
-      page(name: $name) {
-        id
-        name
-        path
-      }
-    }
-  `;
   const pageRequest = useQuery({
     queryKey: ["footer-cms-page"],
-    queryFn: () => customGraphQLClient.request<{ page: ICmsPageGQL }>(getFooter, { name: 'footer.html' }),
+    queryFn: () => customGraphQLClient.request<{ page: ICmsPageGQL }>(Services.graphql.getCmsPageByName, { name: 'footer.html' }),
   })
   
 
@@ -33,8 +23,7 @@ export const Footer = (props: { isBackOffice: boolean }) => {
     return (
       <CmsViewer className='footer row mt-2' pageId={pageRequest.data.page.id} />
     )
-
-  } else if (!isError(pageRequest)) {
+  } else {
     return null;
   }
 

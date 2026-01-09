@@ -51,7 +51,7 @@ import { ResetPassword, ResetPasswordEnd, TwoFactorAuthentication } from './Daik
 const RouteWithFooterLayout = () => (
   <>
     <Outlet />
-    <Footer isBackOffice={false} />
+    <Footer/>
   </>
 );
 
