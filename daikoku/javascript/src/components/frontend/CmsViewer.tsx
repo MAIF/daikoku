@@ -4,7 +4,7 @@ import { getCmsPage } from "../../services";
 type CmsViewerProps = {
     pageId: string
     fields?: any,
-    className: string
+    className?: string
 }
 
 export function CmsViewer({ pageId, fields, className }: CmsViewerProps) {
