@@ -321,27 +321,6 @@ export const ApiList = (props: ApiListProps) => {
               classnames="notification-link-color"
               toggleStar={() => Services.toggleStar(api._id)}
             />
-            {/* <button
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-              className="cursor-pointer notification-link-color"
-              style={{ border: 'none', background: 'none' }}
-              id="dropdownMenuButton" >
-              <i
-                className="fas fa-ellipsis-vertical cursor-pointer"
-                style={{ fontSize: '20px' }}
-
-              />
-            </button> */}
-            {/* <div className="dropdown-menu" aria-labelledby="dropdownMenuButton" style={{ zIndex: 1 }}>
-              <span
-                className="dropdown-item cursor-pointer"
-                onClick={() => console.debug('test')}
-              >
-                {translate("un menu qui fait quelque chose")}
-              </span>
-            </div> */}
           </div>
         )
       },

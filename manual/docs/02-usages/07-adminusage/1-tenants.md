@@ -75,6 +75,7 @@ If you're using metadata (e.g. `${user.metadata.department}`), make sure the key
 
 Tenants could be customized in Daikoku.
 Logo, title, description can be changed.
+> It is possible to manage 4 types of logos: a full logo for the dashboard and a minimal logo for the top bar, both in light or dark theme.
 
 The client side can be customized with some CSS code or JS code, with overwriting CSS variables or with a CSS/JS file.
 Daikoku can be customized just by passing a new CSS color theme.
@@ -91,7 +92,7 @@ To go further, it is possible to create new pages with the embedded [CMS](../08-
 
 #### Footer
 ****
-A footer can be drawn by Daikoku an all frontend page. Just fill the code input with HTML code
+Daikoku allows you to display a footer on any frontend page. Since version `18.6.0`, footer management is handled via the command-line interface (CLI). If you created a footer using the user interface, a migration has been performed to integrate it into a CMS page. Otherwise, you just need to create a CMS page named `footer.html`.
 
 #### Unlogged home description
 The unlogged home description is the first content shown to the user for private tenant, before the login page.
@@ -156,6 +157,8 @@ It's possible to hide the API Reference tab (for all APIs) to unlogged user. Thi
 It's possible to hide the teams page (/teams) to prevent everyone for knowing all the teams in the organization. This is a feature primary intended for public tenants.
 
 An account creation process can be setup, by describing a workflow using th esame validation steps than [api subscription](../09-producerusage/1-apis.md#plans)
+
+Default authorized otoroshi entities can be configured. All future teams will be created with this value by default. This value can be propagated (by replacing or merging) to all created teams.
 
 ### Display mode
 

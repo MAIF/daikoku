@@ -12,6 +12,8 @@ An image can be provided for the "card view" of the API list page.
 To go further in the customization of Daikoku, the header of frontend page of all APIs can be customized by HTML
 > To keep the title and the description, use the title and description surrended by a double brace in your template. You can add a button with the `btn-edit` classname to add a direct link to the API backoffice for your team members.
 
+You can also setup metadata, usable on subscription customization by using expression language like ```${api.metadata.<key>}```
+
 ### Versions and tags
 Versioning your API is supported. You can update the current version of your API.
 :::warning
@@ -34,7 +36,83 @@ The teams that have access to the API, in the case of visibility are private.
 API description. Basically, it can be written in MarkDown, but you can also use HTML.
 The description can be set as a team asset.
 
-### Plans
+### OpenAPI definition
+The OpenAPI definition can be provided as an URL or just some content pasted on the UI.
+An additional configuration allow to 
+
+### Testing
+
+You can enable the testing for your API.
+
+> API testing is powered by the OpenAPI definition you provide.
+
+Before anything else, you must provide a Test server URL.
+This URL will be used as the base endpoint for all API calls made through the Swagger UI. Without it, testing cannot be activated.
+
+There are two ways to authenticate your test calls:
+
+Using otoroshi:
+Generate a dedicated testing API key in Otoroshi by clicking the `Generate a dedicated testing key in Otoroshi` button. You will be prompted to select an Otoroshi instance and the route (or service group) associated with your test environment.
+
+:::note
+If you're using this method, ensure that the "apikey mandatory tags" module is enabled on the selected route in Otoroshi, and that the expected tag (displayed in the configuration modal) is correctly set.
+:::
+
+Using Basic Auth or simple apikey:
+Alternatively, you can provide a username and password that will be used in each test request.
+
+#### Configure your openAPI
+
+Your openAPI has to be configured to accept apikey from Basic authentication header or from the `Otoroshi-Client-Id` and `Otoroshi-Client-Secret` headers.
+
+If you have changed the Otoroshi headers to pass the apikey don't forget to apply the changes on your openAPI.
+
+```json
+...
+paths:
+  /api/_verify:
+    get:
+      summary: Verification using query params
+      operationId: getVerify
+      ...
+      security:
+      - basicAuth: []
+      - otoClientId: []
+        otoClientSecret: []
+components:
+  schemas:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    otoClientId:
+      type: apiKey
+      name: Otoroshi-Client-Id
+      in: header
+    otoClientSecret:
+      type: apiKey
+      name: Otoroshi-Client-Secret
+      in: header
+```
+
+
+
+:::warning
+Make sure this service descriptor is the right one for testing and not your production system !
+:::
+
+### Documentation
+The documentation tabs allow you to create paginated documentation. Like description, every page can be written with MarkDown or set from an asset.
+
+## Manage subscription
+
+On the team APIs screen in your team back office, it's possible to manage every APIs its subscriptions by clicking on the `key` button.
+You can activate/deactivate API keys or update metadata.
+
+## API consumptions
+On the team APIs screen in your team's back office, it's possible to see every APIs consumptions by clicking on the `stats` button. Global stats by default but visible by API key or usage plan.
+
+# Managing Plans
 An API needs a plan to be subscribed.
 Plan needs a name, possibly a description and an [Otoroshi instance](../08-tenantusage/1-otoroshi.md).
 
@@ -47,7 +125,7 @@ Since version `18.5.0` plans no longer have predefined types.
 :::
 
 Plans in Daikoku are fully configurable. 
-Each plan can define **quotas** (e.g., number of allowed requests per windows/sec, day or month) and **pricing** settings (e.g., fixed monthly costs, per-request pricing). 
+Each plan can define **quotas** (e.g., number of allowed requests per windows/sec, day or month) and **pricing** settings (e.g., fixed monthly costs, per-request pricing).
 
 By combining these options, you can create plans tailored to different use cases, whether free, quota-based, or pay-per-use, without being constrained by predefined categories.
 
@@ -153,80 +231,8 @@ Depending on the chosen plan type, certain custom properties may be accessible.
 
 :::note
 As Otoroshi does, it's possible to add metadata to API keys. __Automatic metadata__ will be calculated and added after subscription validation. __Asked metadata__ will switch the plan subscription mode to manual then, on subscription acceptation, a team admin will have to add the metadata manually. 
+
+Metadata can use an expression language to retrieve dynamic values ​​from related entities, such as `api`, `usage plan`, `team`, and `user`.
+
+> Example: To retrieve a value about the subscribing team, such as its name, you can write the following expression: ```${team.name}```
 :::
-
-### OpenAPI definition
-The OpenAPI definition can be provided as an URL or just some content pasted on the UI.
-An additional configuration allow to 
-
-### Testing
-
-You can enable the testing for your API.
-
-> API testing is powered by the OpenAPI definition you provide.
-
-Before anything else, you must provide a Test server URL.
-This URL will be used as the base endpoint for all API calls made through the Swagger UI. Without it, testing cannot be activated.
-
-There are two ways to authenticate your test calls:
-
-Using otoroshi:
-Generate a dedicated testing API key in Otoroshi by clicking the `Generate a dedicated testing key in Otoroshi` button. You will be prompted to select an Otoroshi instance and the route (or service group) associated with your test environment.
-
-:::note
-If you're using this method, ensure that the "apikey mandatory tags" module is enabled on the selected route in Otoroshi, and that the expected tag (displayed in the configuration modal) is correctly set.
-:::
-
-Using Basic Auth or simple apikey:
-Alternatively, you can provide a username and password that will be used in each test request.
-
-#### Configure your openAPI
-
-Your openAPI has to be configured to accept apikey from Basic authentication header or from the `Otoroshi-Client-Id` and `Otoroshi-Client-Secret` headers.
-
-If you have changed the Otoroshi headers to pass the apikey don't forget to apply the changes on your openAPI.
-
-```json
-...
-paths:
-  /api/_verify:
-    get:
-      summary: Verification using query params
-      operationId: getVerify
-      ...
-      security:
-      - basicAuth: []
-      - otoClientId: []
-        otoClientSecret: []
-components:
-  schemas:
-  securitySchemes:
-    basicAuth:
-      type: http
-      scheme: basic
-    otoClientId:
-      type: apiKey
-      name: Otoroshi-Client-Id
-      in: header
-    otoClientSecret:
-      type: apiKey
-      name: Otoroshi-Client-Secret
-      in: header
-```
-
-
-
-:::warning
-Make sure this service descriptor is the right one for testing and not your production system !
-:::
-
-### Documentation
-The documentation tabs allow you to create paginated documentation. Like description, every page can be written with MarkDown or set from an asset.
-
-## Manage subscription
-
-On the team APIs screen in your team back office, it's possible to manage every APIs its subscriptions by clicking on the `key` button.
-You can activate/deactivate API keys or update metadata.
-
-## API consumptions
-On the team APIs screen in your team's back office, it's possible to see every APIs consumptions by clicking on the `stats` button. Global stats by default but visible by API key or usage plan.
