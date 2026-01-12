@@ -849,3 +849,16 @@ We'd like to thank all the contributors who worked on this release!
 - Custom mail template mail-new-user not working [#927](https://github.com/MAIF/daikoku/issues/927)
 - team invitation for unexisting user are broken [#902](https://github.com/MAIF/daikoku/issues/902)
 
+## [v18.6.0] - 2026-01-12
+
+## :star: New Features
+
+- Add footer managed by CMS [#922](https://github.com/MAIF/daikoku/issues/922)
+- Reset all teams authorized entities [#907](https://github.com/MAIF/daikoku/issues/907)
+
+## :beetle: Bug Fixes
+
+- CLI cannot retrieve new mail with cms pull mails [#928](https://github.com/MAIF/daikoku/issues/928)
+- Double quotes exported by CLI in emails translations [#908](https://github.com/MAIF/daikoku/issues/908)
+- Team avatar is optional but team list page crashes if team doesn't have it [#887](https://github.com/MAIF/daikoku/issues/887)
+
