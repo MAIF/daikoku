@@ -70,7 +70,7 @@ export interface IApiGQL {
   apis: Array<IApi>;
   authorizedTeams: Array<{ _id: string; name: string }>;
   stars: number;
-  metadata?: object
+  metadata?: object;
 }
 
 export interface IApiSubscriptionDetails {

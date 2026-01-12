@@ -910,7 +910,7 @@ object json {
           .as[JsValue],
         "metadata" -> JsObject(
           o.metadata.view.mapValues(JsString.apply).toSeq
-        ),
+        )
       )
   }
   val ConsoleSettingsFormat = new Format[ConsoleMailerSettings] {
@@ -1786,8 +1786,9 @@ object json {
             accountCreationProcess = (json \ "accountCreationProcess")
               .asOpt(SeqValidationStepFormat)
               .getOrElse(Seq.empty),
-            defaultAuthorizedOtoroshiEntities = (json \ "defaultAuthorizedOtoroshiEntities")
-            .asOpt(SeqTeamAuthorizedEntitiesFormat)
+            defaultAuthorizedOtoroshiEntities =
+              (json \ "defaultAuthorizedOtoroshiEntities")
+                .asOpt(SeqTeamAuthorizedEntitiesFormat)
           )
         )
       } recover {
@@ -1863,7 +1864,8 @@ object json {
         "environments" -> JsArray(o.environments.map(JsString.apply).toSeq),
         "clientNamePattern" -> o.clientNamePattern,
         "accountCreationProcess" -> SeqValidationStepFormat.writes(
-          o.accountCreationProcess),
+          o.accountCreationProcess
+        ),
         "defaultAuthorizedOtoroshiEntities" -> o.defaultAuthorizedOtoroshiEntities
           .map(SeqTeamAuthorizedEntitiesFormat.writes)
           .getOrElse(JsNull)
@@ -2262,7 +2264,7 @@ object json {
         "state" -> ApiStateFormat.writes(o.state),
         "metadata" -> JsObject(
           o.metadata.view.mapValues(JsString.apply).toSeq
-        ),
+        )
       )
   }
 

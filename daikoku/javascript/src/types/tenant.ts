@@ -196,9 +196,9 @@ export interface ITenant {
   accountCreationProcess: Array<IValidationStep>;
   isPrivate: boolean;
   defaultAuthorizedOtoroshiEntities?: Array<{
-      otoroshiSettingsId: string;
-      authorizedEntities: IAuthorizedEntities;
-    }>
+    otoroshiSettingsId: string;
+    authorizedEntities: IAuthorizedEntities;
+  }>;
 }
 
 export interface ITenantFull extends ITenant {

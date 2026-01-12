@@ -220,7 +220,7 @@ case class DaikokuStyle(
     logo: Option[String] = None,
     logoMin: Option[String] = None,
     logoDark: Option[String] = None,
-    logoMinDark: Option[String] = None,
+    logoMinDark: Option[String] = None
 ) extends CanJson[DaikokuStyle] {
   override def asJson: JsValue = {
     json.DaikokuStyleFormat.writes(this)
@@ -443,7 +443,8 @@ case class Tenant(
     environments: Set[String] = Set.empty,
     clientNamePattern: Option[String] = None,
     accountCreationProcess: Seq[ValidationStep] = Seq.empty,
-    defaultAuthorizedOtoroshiEntities: Option[Seq[TeamAuthorizedEntities]] = None
+    defaultAuthorizedOtoroshiEntities: Option[Seq[TeamAuthorizedEntities]] =
+      None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -471,10 +472,30 @@ case class Tenant(
         .map(a => JsString(a.unloggedHome))
         .getOrElse(JsNull)
         .as[JsValue],
-      "logo" -> style.flatMap(a => a.logo).filter(_.trim.nonEmpty).map(JsString).getOrElse(JsNull).as[JsValue],
-      "logoMin" -> style.flatMap(a => a.logoMin).filter(_.trim.nonEmpty).map(JsString).getOrElse(JsNull).as[JsValue],
-      "logoDark" -> style.flatMap(a => a.logoDark).filter(_.trim.nonEmpty).map(JsString).getOrElse(JsNull).as[JsValue],
-      "logoMinDark" -> style.flatMap(a => a.logoMinDark).filter(_.trim.nonEmpty).map(JsString).getOrElse(JsNull).as[JsValue],
+      "logo" -> style
+        .flatMap(a => a.logo)
+        .filter(_.trim.nonEmpty)
+        .map(JsString)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "logoMin" -> style
+        .flatMap(a => a.logoMin)
+        .filter(_.trim.nonEmpty)
+        .map(JsString)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "logoDark" -> style
+        .flatMap(a => a.logoDark)
+        .filter(_.trim.nonEmpty)
+        .map(JsString)
+        .getOrElse(JsNull)
+        .as[JsValue],
+      "logoMinDark" -> style
+        .flatMap(a => a.logoMinDark)
+        .filter(_.trim.nonEmpty)
+        .map(JsString)
+        .getOrElse(JsNull)
+        .as[JsValue],
       "mode" -> env.config.mode.name,
       "authProvider" -> authProvider.name,
       "defaultLanguage" -> defaultLanguage

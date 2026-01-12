@@ -6,7 +6,11 @@ import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionContext, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionContext,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain._
@@ -138,8 +142,11 @@ class TeamController(
             ctx.setCtxValue("team.name", team.name)
 
             val teamToSave = team.copy(
-              users = Set(UserWithPermission(ctx.user.id, TeamPermission.Administrator)),
-              authorizedOtoroshiEntities = ctx.tenant.defaultAuthorizedOtoroshiEntities
+              users = Set(
+                UserWithPermission(ctx.user.id, TeamPermission.Administrator)
+              ),
+              authorizedOtoroshiEntities =
+                ctx.tenant.defaultAuthorizedOtoroshiEntities
             )
 
             implicit val language: String = ctx.user.defaultLanguage
@@ -387,12 +394,11 @@ class TeamController(
         )
       )(teamId, ctx) { team =>
         def personalTeamIsKO(_team: Team): Boolean = {
-            team.name != _team.name ||
-            team.description != _team.description ||
-            team.contact != _team.contact ||
-            team.apiKeyVisibility != _team.apiKeyVisibility
+          team.name != _team.name ||
+          team.description != _team.description ||
+          team.contact != _team.contact ||
+          team.apiKeyVisibility != _team.apiKeyVisibility
         }
-
 
         json.TeamFormat.reads(ctx.request.body) match {
           case JsSuccess(_, _) if team.`type` == TeamType.Admin =>
@@ -402,7 +408,10 @@ class TeamController(
               .forTenant(ctx.tenant.id)
               .findByIdNotDeleted(teamId)
               .flatMap {
-                case Some(t) if t.`type` == TeamType.Personal && personalTeamIsKO(newTeam) =>
+                case Some(t)
+                    if t.`type` == TeamType.Personal && personalTeamIsKO(
+                      newTeam
+                    ) =>
                   Forbidden(
                     Json.obj(
                       "error" -> "You're not authorized to update this team"

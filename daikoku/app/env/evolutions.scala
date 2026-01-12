@@ -1691,18 +1691,18 @@ object evolution_1860 extends EvolutionScript {
   override def version: String = "1.6.0"
 
   override def script: (
-    Option[DatastoreId],
+      Option[DatastoreId],
       DataStore,
       Materializer,
       ExecutionContext,
       OtoroshiClient
-    ) => Future[Done] =
+  ) => Future[Done] =
     (
-      _: Option[DatastoreId],
-      dataStore: DataStore,
-      mat: Materializer,
-      ec: ExecutionContext,
-      _: OtoroshiClient
+        _: Option[DatastoreId],
+        dataStore: DataStore,
+        mat: Materializer,
+        ec: ExecutionContext,
+        _: OtoroshiClient
     ) => {
       logger.info(
         s"Begin evolution $version - Convert footer to CMS format"
@@ -1745,7 +1745,6 @@ object evolution_1860 extends EvolutionScript {
         .runWith(Sink.ignore)(mat)
     }
 }
-
 
 object evolutions {
   val list: List[EvolutionScript] =

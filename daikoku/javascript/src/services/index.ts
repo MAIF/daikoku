@@ -59,8 +59,8 @@ type PromiseWithError<T> = Promise<ResponseError | T>;
 const customFetch = <T>(
   url: string,
   { headers = HEADERS, method = 'GET', body, ...props }: any = {}
-) => fetch(url, { headers, method, body, ...props })
-  .then((r) => {
+) =>
+  fetch(url, { headers, method, body, ...props }).then((r) => {
     if (r.status === 204 || r.headers.get('content-length') === '0') {
       return null;
     }
@@ -492,11 +492,14 @@ export const resetColorTheme = (tenant: ITenant): PromiseWithError<ResponseDone>
     method: 'PUT',
   });
 
-export const dispatchDefaultAuthEntities = (tenant: ITenant, mode: 'replace' | 'merge'): Promise<void> =>
+export const dispatchDefaultAuthEntities = (
+  tenant: ITenant,
+  mode: 'replace' | 'merge'
+): Promise<void> =>
   customFetch(`/api/tenants/${tenant._id}/_dispatch-default-authorized-entities`, {
     method: 'POST',
     headers: HEADERS,
-    body: JSON.stringify({ mode })
+    body: JSON.stringify({ mode }),
   });
 
 export const deleteTenant = (id: string) =>
@@ -1057,7 +1060,7 @@ export const login = (
 
   const url = redirect ? updateQueryStringParameter(action, 'redirect', redirect) : action;
 
-  console.debug({ url, action, redirect })
+  console.debug({ url, action, redirect });
 
   return fetch(url, {
     method: 'POST',

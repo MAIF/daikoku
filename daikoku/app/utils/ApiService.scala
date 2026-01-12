@@ -115,14 +115,10 @@ class ApiService(
       "createdAtMillis" -> createdAtMillis
     ) ++ team.metadata.map(t =>
       ("team.metadata." + t._1, t._2)
-    ) ++ user.metadata.map(t =>
-      ("user.metadata." + t._1, t._2)
-    ) ++ api.metadata.map(t =>
-      ("api.metadata." + t._1, t._2)
-    ) ++ plan.metadata.map(t =>
+    ) ++ user.metadata.map(t => ("user.metadata." + t._1, t._2)) ++ api.metadata
+      .map(t => ("api.metadata." + t._1, t._2)) ++ plan.metadata.map(t =>
       ("plan.metadata." + t._1, t._2)
     )
-
 
     val otoroshiApiKey = maybeOtoroshiApiKey.getOrElse(
       OtoroshiApiKey(

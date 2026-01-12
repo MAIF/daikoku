@@ -5,12 +5,18 @@ import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import com.nimbusds.jose.jwk.KeyType
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{SeqTeamAuthorizedEntitiesFormat, TenantFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  SeqTeamAuthorizedEntitiesFormat,
+  TenantFormat
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.OAuth2Config
@@ -836,45 +842,57 @@ class TenantController(
           s"@{user.name} has dispatch default authorized otoroshi entities with mode @{mode}"
         )
       )(tenantId, ctx) { (tenant, _) =>
-
-        val mode = (ctx.request.body \ "mode").asOpt[String]
+        val mode = (ctx.request.body \ "mode")
+          .asOpt[String]
           .flatMap(DispatchMode.fromString)
           .getOrElse(DispatchMode.Merge)
 
         val defaultEntitites = tenant.defaultAuthorizedOtoroshiEntities
 
-        def mergeAuhtorizedEntities(a: Option[Seq[TeamAuthorizedEntities]], b: Option[Seq[TeamAuthorizedEntities]]): Option[Seq[TeamAuthorizedEntities]] = {
+        def mergeAuhtorizedEntities(
+            a: Option[Seq[TeamAuthorizedEntities]],
+            b: Option[Seq[TeamAuthorizedEntities]]
+        ): Option[Seq[TeamAuthorizedEntities]] = {
           (a, b) match {
-            case (None, None) => None
+            case (None, None)   => None
             case (None, second) => second
-            case (first, None) => first
-            case (Some(first), Some(second)) => (first ++ second)
-              .groupBy(_.otoroshiSettingsId)
-              .map { case (id, entities) =>
-                TeamAuthorizedEntities(id, entities.map(_.authorizedEntities).reduce(_ ++ _))
-              }
-              .toSeq.some
+            case (first, None)  => first
+            case (Some(first), Some(second)) =>
+              (first ++ second)
+                .groupBy(_.otoroshiSettingsId)
+                .map {
+                  case (id, entities) =>
+                    TeamAuthorizedEntities(
+                      id,
+                      entities.map(_.authorizedEntities).reduce(_ ++ _)
+                    )
+                }
+                .toSeq
+                .some
           }
 
         }
-
 
         for {
           teams <- env.dataStore.teamRepo.forTenant(tenant).findAllNotDeleted()
           _ <- Source(teams)
             .mapAsync(5)(team => {
               val updatedTeam = mode match {
-                case DispatchMode.Replace => team.copy(authorizedOtoroshiEntities = defaultEntitites)
-                case DispatchMode.Merge => team.copy(
-                  authorizedOtoroshiEntities = mergeAuhtorizedEntities(team.authorizedOtoroshiEntities, defaultEntitites)
-                )
+                case DispatchMode.Replace =>
+                  team.copy(authorizedOtoroshiEntities = defaultEntitites)
+                case DispatchMode.Merge =>
+                  team.copy(
+                    authorizedOtoroshiEntities = mergeAuhtorizedEntities(
+                      team.authorizedOtoroshiEntities,
+                      defaultEntitites
+                    )
+                  )
               }
               env.dataStore.teamRepo.forTenant(tenant).save(updatedTeam)
             })
             .toMat(Sink.ignore)(Keep.right)
             .run()(env.defaultMaterializer)
         } yield NoContent
-
 
       }
     }

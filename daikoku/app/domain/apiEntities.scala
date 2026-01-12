@@ -659,7 +659,7 @@ case class Api(
     parent: Option[ApiId] = None,
     apis: Option[Set[ApiId]] = None,
     state: ApiState = ApiState.Created,
-    metadata: Map[String, String] = Map.empty,
+    metadata: Map[String, String] = Map.empty
 ) extends CanJson[User] {
   def humanReadableId = name.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiFormat.writes(this)
@@ -744,11 +744,12 @@ case class AuthorizedEntities(
     groups: Set[OtoroshiServiceGroupId] = Set.empty,
     routes: Set[OtoroshiRouteId] = Set.empty
 ) extends CanJson[AuthorizedEntities] {
-  def ++(other: AuthorizedEntities): AuthorizedEntities = AuthorizedEntities(
-    services = this.services ++ other.services,
-    groups = this.groups ++ other.groups,
-    routes = this.routes ++ other.routes
-  )
+  def ++(other: AuthorizedEntities): AuthorizedEntities =
+    AuthorizedEntities(
+      services = this.services ++ other.services,
+      groups = this.groups ++ other.groups,
+      routes = this.routes ++ other.routes
+    )
 
   def asJson: JsValue = json.AuthorizedEntitiesFormat.writes(this)
   def asOtoroshiJson: JsValue =
