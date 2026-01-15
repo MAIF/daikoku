@@ -1427,7 +1427,7 @@ export const NotificationList = () => {
                   feedbackTimeout={100}
                   disabled={notificationListQuery.isFetchingNextPage}
                 >
-                  {translate('notifications.page.table.more.button.label')}
+                  {translate('dashboard.api.table.more.button.label')}
                 </FeedbackButton>
               )}
             </div>

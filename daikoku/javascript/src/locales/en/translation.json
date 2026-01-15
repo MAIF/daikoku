@@ -1767,5 +1767,6 @@
     "dashboard.more.creation.option.button.label": "More creation options",
     "dashboard.create.apigroup.button.label": "Create new API Group",
     "search.team.placeholder": "Search a team",
-    "dashboard.create.team.button.label": "Create a team"
+    "dashboard.create.team.button.label": "Create a team",
+    "dashboard.api.table.more.button.label": "Show more APIs"
 }
