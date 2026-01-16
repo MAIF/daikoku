@@ -1728,6 +1728,14 @@ export const graphql = {
             name
           }
           action {
+            ... on ApiDepreciationWarning {
+              __typename
+              api {
+                _id
+                name
+                currentVersion   
+              }
+            }
             ... on ApiAccess {
               __typename
               api {
