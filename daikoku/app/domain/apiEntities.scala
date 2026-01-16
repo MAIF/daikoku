@@ -607,20 +607,29 @@ case class Testing(
 
 sealed trait ApiState {
   def name: String
+
+  def checkPreviousState(previousState: ApiState): Boolean
 }
 
 object ApiState {
   case object Created extends ApiState {
     override def name: String = "created"
+    override def checkPreviousState(previousState: ApiState): Boolean = previousState == Created
   }
   case object Published extends ApiState {
     override def name: String = "published"
+    override def checkPreviousState(previousState: ApiState): Boolean = previousState == Created || previousState == Published
+
   }
   case object Blocked extends ApiState {
     override def name: String = "blocked"
+    override def checkPreviousState(previousState: ApiState): Boolean = previousState != Created
+
   }
   case object Deprecated extends ApiState {
     override def name: String = "deprecated"
+    override def checkPreviousState(previousState: ApiState): Boolean = previousState == Published || previousState == Deprecated
+
   }
 
   def publishedJsonFilter: JsObject =

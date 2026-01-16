@@ -17,15 +17,14 @@ import fr.maif.otoroshi.daikoku.actions.{
 }
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand
-}
+import fr.maif.otoroshi.daikoku.domain.ApiState.Published
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand}
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.Private
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
+import fr.maif.otoroshi.daikoku.services.{ApiLifeCycleService, MailService}
 import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits.EnhancedRequestHeader
 import fr.maif.otoroshi.daikoku.utils.StringImplicits.BetterString
@@ -56,13 +55,14 @@ class ApiController(
     otoroshiSynchronisator: OtoroshiVerifierJob,
     translator: Translator,
     paymentClient: PaymentClient,
-    deletionService: DeletionService
+    mailService: MailService,
+    apiLifeCycleService: ApiLifeCycleService
 ) extends AbstractController(cc)
     with I18nSupport {
 
   implicit val ec: ExecutionContext = env.defaultExecutionContext
-  implicit val ev: Env = env
-  implicit val tr: Translator = translator
+  implicit val ev: Env              = env
+  implicit val tr: Translator       = translator
 
   val logger: Logger = Logger("ApiController")
 
@@ -91,7 +91,7 @@ class ApiController(
 
         def fetchSwagger(api: Api): EitherT[Future, AppError, Result] = {
           api.swagger match {
-            case Some(SwaggerAccess(_, Some(content), _, _, _)) =>
+            case Some(SwaggerAccess(_, Some(content), _, _, _))      =>
               val contentType =
                 if (content.startsWith("{")) "application/json"
                 else "application/yaml"
@@ -117,13 +117,12 @@ class ApiController(
                       )
                     )
                   }
-              }.recover {
-                case _: Exception =>
-                  FastFuture.successful(
-                    Left(AppError.EntityNotFound("Swagger"))
-                  )
+              }.recover { case _: Exception =>
+                FastFuture.successful(
+                  Left(AppError.EntityNotFound("Swagger"))
+                )
               }.get)
-            case _ =>
+            case _                                                   =>
               EitherT.leftT[Future, Result](
                 AppError.EntityNotFound("Swagger access")
               )
@@ -131,33 +130,33 @@ class ApiController(
         }
 
         (for {
-          _ <- EitherT.cond[Future][AppError, Unit](
-            !(ctx.tenant.apiReferenceHideForGuest
-              .getOrElse(true) && ctx.user.isGuest),
-            (),
-            AppError.ForbiddenAction
-          )
-          team <- EitherT.fromOptionF[Future, AppError, Team](
-            env.dataStore.teamRepo
-              .forTenant(ctx.tenant.id)
-              .findByIdOrHrIdNotDeleted(teamId),
-            AppError.TeamNotFound
-          )
-          api <- EitherT.fromOptionF[Future, AppError, Api](
-            env.dataStore.apiRepo
-              .forTenant(ctx.tenant)
-              .findOneNotDeleted(
-                Json.obj(
-                  "$or" -> Json.arr(
-                    Json.obj("_id" -> apiId),
-                    Json.obj("_humanReadableId" -> apiId)
-                  ),
-                  "currentVersion" -> version,
-                  "team" -> team.id.asJson
-                )
-              ),
-            AppError.ApiNotFound
-          )
+          _       <- EitherT.cond[Future][AppError, Unit](
+                       !(ctx.tenant.apiReferenceHideForGuest
+                         .getOrElse(true) && ctx.user.isGuest),
+                       (),
+                       AppError.ForbiddenAction
+                     )
+          team    <- EitherT.fromOptionF[Future, AppError, Team](
+                       env.dataStore.teamRepo
+                         .forTenant(ctx.tenant.id)
+                         .findByIdOrHrIdNotDeleted(teamId),
+                       AppError.TeamNotFound
+                     )
+          api     <- EitherT.fromOptionF[Future, AppError, Api](
+                       env.dataStore.apiRepo
+                         .forTenant(ctx.tenant)
+                         .findOneNotDeleted(
+                           Json.obj(
+                             "$or"            -> Json.arr(
+                               Json.obj("_id"              -> apiId),
+                               Json.obj("_humanReadableId" -> apiId)
+                             ),
+                             "currentVersion" -> version,
+                             "team"           -> team.id.asJson
+                           )
+                         ),
+                       AppError.ApiNotFound
+                     )
           myTeams <-
             EitherT.liftF(env.dataStore.teamRepo.myTeams(ctx.tenant, ctx.user))
           // format: off
@@ -3182,6 +3181,7 @@ class ApiController(
           s"@{user.name} has updated an api on @{team.name} - @{team.id} (@{api.name} - @{api.id})"
         )
       )(teamId, ctx) { team =>
+        implicit val c = ctx
         (for {
           oldApi <- EitherT.fromOptionF[Future, AppError, Api](env.dataStore.apiRepo
             .findByVersion(ctx.tenant, apiId, version), AppError.ApiNotFound)
@@ -3198,6 +3198,7 @@ class ApiController(
             ctx.tenant.id
           ))
           _ <- EitherT.cond[Future][AppError, Unit](!anotherApiHasSameName, (), AppError.NameAlreadyExists)
+          _ <- EitherT.cond[Future][AppError, Unit](newApi.state.checkPreviousState(oldApi.state), (), AppError.EntityConflict("api state"))
           anotherApiHasSameVersion <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
             .forTenant(ctx.tenant.id)
             .exists(
@@ -3212,6 +3213,7 @@ class ApiController(
           _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
               .save(newApi))
+          _ <- apiLifeCycleService.handleApiLifeCycle(oldApi, newApi)
           _ <- EitherT.liftF[Future, AppError, Unit](otoroshiSynchronisator.verify(Json.obj("api" -> newApi.id.value)))
           _ <- EitherT.liftF[Future, AppError, Seq[Boolean]](updateTagsOfIssues(ctx.tenant.id, newApi))
           _ <- EitherT.liftF[Future, AppError, Long](updateAllHumanReadableId(ctx, newApi, oldApi))

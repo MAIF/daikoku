@@ -322,6 +322,9 @@ object NotificationAction {
       plan: UsagePlanId,
       step: SubscriptionDemandStepId
   ) extends NotificationAction
+
+  case class ApiDepreciationWarning(api: ApiId)
+    extends NotificationAction
 }
 
 sealed trait NotificationType {

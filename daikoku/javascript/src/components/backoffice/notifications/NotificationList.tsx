@@ -181,6 +181,10 @@ type NotificationActionGQL =
     __typename: 'AccountCreationAttempt';
     demand?: IAccountCreationGQL;
     motivation: string;
+  }
+  | {
+    __typename: 'ApiDepreciationWarning';
+    api: IApiGQL;
   };
 
 type NotificationGQL = {
@@ -315,31 +319,32 @@ export const NotificationList = () => {
   })
 
   const notificationTypes = [
+    { type: "AccountCreation" },
     { type: "ApiAccess" },
-    { type: "ApiSubscription" },
-    { type: "ApiSubscriptionReject" },
-    { type: "ApiSubscriptionAccept" },
-    { type: "OtoroshiSyncSubscriptionError" },
-    { type: "OtoroshiSyncApiError" },
+    { type: "ApiDepreciationWarning" },
     { type: "ApiKeyDeletionInformation" },
     { type: "ApiKeyDeletionInformationV2" },
-    { type: "ApiKeyRotationInProgress" },
-    { type: "ApiKeyRotationInProgressV2" },
-    { type: "ApiKeyRotationEnded" },
-    { type: "ApiKeyRotationEndedV2" },
-    { type: "TeamInvitation" },
     { type: "ApiKeyRefresh" },
     { type: "ApiKeyRefreshV2" },
-    { type: "NewPostPublished" },
-    { type: "NewPostPublishedV2" },
-    { type: "NewIssueOpen" },
-    { type: "NewIssueOpenV2" },
-    { type: "NewCommentOnIssue" },
-    { type: "NewCommentOnIssueV2" },
-    { type: "TransferApiOwnership" },
+    { type: "ApiKeyRotationEnded" },
+    { type: "ApiKeyRotationEndedV2" },
+    { type: "ApiKeyRotationInProgress" },
+    { type: "ApiKeyRotationInProgressV2" },
+    { type: "ApiSubscription" },
+    { type: "ApiSubscriptionAccept" },
+    { type: "ApiSubscriptionReject" },
     { type: "ApiSubscriptionTransferSuccess" },
     { type: "CheckoutForSubscription" },
-    { type: "AccountCreation" },
+    { type: "NewCommentOnIssue" },
+    { type: "NewCommentOnIssueV2" },
+    { type: "NewIssueOpen" },
+    { type: "NewIssueOpenV2" },
+    { type: "NewPostPublished" },
+    { type: "NewPostPublishedV2" },
+    { type: "OtoroshiSyncApiError" },
+    { type: "OtoroshiSyncSubscriptionError" },
+    { type: "TeamInvitation" },
+    { type: "TransferApiOwnership" },
   ];
 
   const notificationActionTypes = [
@@ -659,6 +664,8 @@ export const NotificationList = () => {
     switch (notification.action.__typename) {
       case 'CheckoutForSubscription':
         return translate("notif.CheckoutForSubscription");
+      case 'ApiDepreciationWarning':
+        return translate({key: "notif.ApiDepreciationWarning", replacements: [notification.action.api.name] });
       case 'ApiAccess':
         return translate({ key: 'notif.api.access', replacements: [notification.action.api.name] })
       case 'TransferApiOwnership':
@@ -977,6 +984,7 @@ export const NotificationList = () => {
       case "NewCommentOnIssueV2":
       case "TransferApiOwnership":
       case "CheckoutForSubscription":
+      case "ApiDepreciationWarning":
         const _api = notification.action.api
         return ({ _id: _api._id, name: _api.name, currentVersion: _api.currentVersion })
       case "ApiKeyDeletionInformation":

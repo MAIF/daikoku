@@ -2852,8 +2852,8 @@ object json {
           case "TransferApiOwnership" => TransferApiOwnershipFormat.reads(json)
           case "ApiSubscriptionTransferSuccess" =>
             ApiSubscriptionTransferSuccessFormat.reads(json)
-          case "CheckoutForSubscription" =>
-            CheckoutForSubscriptionFormat.reads(json)
+          case "CheckoutForSubscription" => CheckoutForSubscriptionFormat.reads(json)
+          case "ApiDepreciationWarning" => ApiDepreciationWarningFormat.reads(json)
           case str => JsError(s"Bad notification value: $str")
         }
 
@@ -2960,6 +2960,10 @@ object json {
             CheckoutForSubscriptionFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "CheckoutForSubscription"
             )
+          case p: ApiDepreciationWarning =>
+            ApiDepreciationWarningFormat.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "ApiDepreciationWarning"
+            )
         }
     }
 
@@ -3050,6 +3054,26 @@ object json {
         "api" -> o.api.asJson,
         "plan" -> o.plan.asJson,
         "step" -> o.step.asJson
+      )
+  }
+
+  val ApiDepreciationWarningFormat = new Format[ApiDepreciationWarning] {
+    override def reads(json: JsValue): JsResult[ApiDepreciationWarning] =
+      Try {
+        JsSuccess(
+          ApiDepreciationWarning(
+            api = (json \ "api").as(ApiIdFormat),
+          )
+        )
+      } recover {
+        case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiDepreciationWarning): JsValue =
+      Json.obj(
+        "api" -> o.api.asJson,
       )
   }
 
