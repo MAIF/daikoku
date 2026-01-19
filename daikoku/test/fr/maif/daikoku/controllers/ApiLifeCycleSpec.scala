@@ -1,30 +1,20 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import cats.implicits.catsSyntaxOptionId
-import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
-import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
-import controllers.AppError
-import controllers.AppError.SubscriptionAggregationDisabled
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand, TransferApiOwnership}
-import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
-import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, SeqApiSubscriptionFormat}
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import fr.maif.otoroshi.daikoku.utils.LoggerImplicits.BetterLogger
 import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
+import org.scalatest.BeforeAndAfter
 import org.scalatestplus.play.PlaySpec
-import org.testcontainers.containers.BindMode
-import play.api.http.Status
 import play.api.libs.json._
+import play.api.libs.ws.WSResponse
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.util.Random
-import fr.maif.otoroshi.daikoku.utils.LoggerImplicits.BetterLogger
 
 class ApiLifeCycleSpec()
     extends PlaySpec
@@ -56,7 +46,107 @@ class ApiLifeCycleSpec()
   "API life cycle" must {
 
     "be smart" in {
-      //todo: created > published > deprecated > blocked
+      Await.result(waitForDaikokuSetup(), 5.second)
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, userApiEditor, user),
+        teams = Seq(
+          defaultAdminTeam,
+          teamOwner,
+          teamConsumer.copy(users =
+            Set(
+              UserWithPermission(userTeamAdminId, Administrator),
+              UserWithPermission(userTeamUserId, Administrator)
+            )
+          )
+        ),
+        apis = Seq(defaultApi.api.copy(state = ApiState.Created)),
+        usagePlans = defaultApi.plans,
+        subscriptions = Seq(
+          ApiSubscription(
+            id = ApiSubscriptionId(IdGenerator.token(12)),
+            tenant = tenant.id,
+            apiKey = OtoroshiApiKey("name", "id", "secret"),
+            plan = defaultApi.plans.head.id,
+            createdAt = DateTime.now(),
+            team = teamConsumerId,
+            api = defaultApi.api.id,
+            by = userTeamAdminId,
+            customName = None,
+            rotation = None,
+            integrationToken = "token"
+          ),
+          ApiSubscription(
+            id = ApiSubscriptionId(IdGenerator.token(12)),
+            tenant = tenant.id,
+            apiKey = OtoroshiApiKey("name", "id", "secret"),
+            plan = defaultApi.plans.reverse.head.id,
+            createdAt = DateTime.now(),
+            team = teamOwner.id,
+            api = defaultApi.api.id,
+            by = userTeamAdminId,
+            customName = None,
+            rotation = None,
+            integrationToken = "token"
+          )
+        )
+      )
+      val adminSession = loginWithBlocking(userAdmin, tenant)
+
+      logger.info("*********** LifeCycle API Allowed changes ***********")
+      logger.info("created ->> published ->> deprecated ->> blocked")
+      logger.info("created ->> published ---------------->> blocked")
+      logger.info("created <<- published <<- deprecated <<- blocked")
+      logger.info("created <<- published <<---------------- blocked")
+
+      logger.info("*********** LifeCycle API Forbidden changes ***********")
+      logger.info("created -------X------->> deprecated")
+      logger.info("created ----------------X------------->> blocked")
+      logger.info("created <<-----X--------- deprecated")
+      logger.info("created <<-----X--------- deprecated")
+      logger.info("created <<--------------X--------------- blocked")
+      changingAPIState(adminSession, ApiState.Blocked, 409)
+      logger.info("from created => deprecated")
+      changingAPIState(adminSession, ApiState.Deprecated, 409)
+      logger.info("from created => published")
+      changingAPIState(adminSession, ApiState.Published, 200)
+      logger.info("from published => published")
+      changingAPIState(adminSession, ApiState.Published, 200)
+      logger.info("from published => created")
+      changingAPIState(adminSession, ApiState.Deprecated, 200)
+      logger.info("from published => blocked")
+      changingAPIState(adminSession, ApiState.Blocked, 200)
+      logger.info("from published => deprecated")
+      changingAPIState(adminSession, ApiState.Deprecated, 200)
+      logger.info("from deprecated => deprecated")
+      changingAPIState(adminSession, ApiState.Deprecated, 200)
+      logger.info("from deprecated => created")
+      changingAPIState(adminSession, ApiState.Created, 409)
+      logger.info("from deprecated => published")
+      changingAPIState(adminSession, ApiState.Deprecated, 200)
+      logger.info("from deprecated => blocked")
+      changingAPIState(adminSession, ApiState.Blocked, 200)
+      logger.info("from blocked => blocked")
+      changingAPIState(adminSession, ApiState.Blocked, 200)
+      logger.info("from blocked => created")
+      changingAPIState(adminSession, ApiState.Created, 409)
+      logger.info("from blocked => deprecated")
+      changingAPIState(adminSession, ApiState.Deprecated, 200)
+    }
+
+    def changingAPIState(session: UserSession, state: ApiState, statusResponse: Int) = {
+      {
+        logger.info("API lifecycle ")
+        val resp = httpJsonCallBlocking(
+          path =
+            s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}",
+          method = "PUT",
+          body = Some(defaultApi.api.copy(state = state).asJson)
+        )(tenant, session)
+        logger.json(resp.json, true)
+        resp.status mustBe statusResponse
+        if (statusResponse == 200) (resp.json \ "state").as(json.ApiStateFormat) mustBe state
+      }
     }
 
     "notify customer when API is deprecated" in {
@@ -107,7 +197,7 @@ class ApiLifeCycleSpec()
       )
 
       val adminSession = loginWithBlocking(userAdmin, tenant)
-      val userSession = loginWithBlocking(user, tenant)
+      val userSession  = loginWithBlocking(user, tenant)
 
       val resp = httpJsonCallBlocking(
         path =
@@ -139,15 +229,15 @@ class ApiLifeCycleSpec()
         "query"     -> baseGraphQLQuery
       )
 
-      val adminNotifResp = httpJsonCallBlocking(
+      val adminNotifResp     = httpJsonCallBlocking(
         path = s"/api/search",
         method = "POST",
         body = graphQlRequestNotifications.some
       )(tenant, adminSession)
       adminNotifResp.status mustBe 200
       (adminNotifResp.json \ "data" \ "myNotifications" \ "total").as[Int] mustBe 2
-      val adminNotifs = (adminNotifResp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray].value
-      val ownerAdminNotif = adminNotifs.find(json => (json \ "team" \ "_id").as[String] == teamOwnerId.value)
+      val adminNotifs        = (adminNotifResp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray].value
+      val ownerAdminNotif    = adminNotifs.find(json => (json \ "team" \ "_id").as[String] == teamOwnerId.value)
       val consumerAdminNotif = adminNotifs.find(json => (json \ "team" \ "_id").as[String] == teamConsumerId.value)
 
       ownerAdminNotif.isDefined mustBe true
@@ -164,8 +254,8 @@ class ApiLifeCycleSpec()
       userNotifResp.status mustBe 200
       (userNotifResp.json \ "data" \ "myNotifications" \ "total").as[Int] mustBe 1
 
-      val userNotifs = (userNotifResp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray].value
-      val ownerUserNotif = userNotifs.find(json => (json \ "team" \ "_id").as[String] == teamOwnerId.value)
+      val userNotifs        = (userNotifResp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray].value
+      val ownerUserNotif    = userNotifs.find(json => (json \ "team" \ "_id").as[String] == teamOwnerId.value)
       val consumerUserNotif = userNotifs.find(json => (json \ "team" \ "_id").as[String] == teamConsumerId.value)
 
       ownerUserNotif.isDefined mustBe false

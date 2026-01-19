@@ -12,8 +12,7 @@ import fr.maif.otoroshi.daikoku.domain.{
   NotificationId,
   NotificationType,
   Team,
-  TeamId,
-  Tenant
+  TeamId
 }
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
@@ -34,11 +33,9 @@ class ApiLifeCycleService(mailService: MailService) {
   ): EitherT[Future, AppError, Unit] = {
     (oldApi.state, newApi.state) match {
       case (ApiState.Published, ApiState.Deprecated) => notifyDepreciation(newApi)
-
-      case (ApiState.Published, ApiState.Blocked)  => ???
-      case (ApiState.Deprecated, ApiState.Blocked) => ???
-
-      case _ => EitherT.pure[Future, AppError](())
+      case (ApiState.Published, ApiState.Blocked)    => EitherT.pure[Future, AppError](()) //Todo: HandleCase
+      case (ApiState.Deprecated, ApiState.Blocked)   => EitherT.pure[Future, AppError](()) //Todo: HandleCase
+      case _                                         => EitherT.pure[Future, AppError](())
     }
   }
 
