@@ -1110,10 +1110,10 @@ object CommonServices {
       )
     )(ctx) {
       val CTE = s"""
-               |WITH my_teams as (SELECT *
-               |                  FROM teams
-               |                  WHERE _deleted IS FALSE AND content -> 'users' @> '[{"userId": "${ctx.user.id.value}"}]')
-               |                  """
+                   |WITH my_teams as (SELECT *
+                   |                  FROM teams
+                   |                  WHERE _deleted IS FALSE AND content -> 'users' @> '[{"userId": "${ctx.user.id.value}", "teamPermission": "Administrator"}]')
+                   |                  """
 
       val actionTypes =
         getFiltervalue[List[String]](filter, "actionType")
