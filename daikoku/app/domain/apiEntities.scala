@@ -23,7 +23,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 object OtoroshiTarget {
   val expressionReplacer = ReplaceAllWith("\\$\\{([^}]*)\\}")
-  val logger = play.api.Logger("OtoroshiTarget")
+  val logger             = play.api.Logger("OtoroshiTarget")
 
   def processValue(value: String, context: Map[String, String]): String = {
     value match {
@@ -32,15 +32,14 @@ object OtoroshiTarget {
           OtoroshiTarget.expressionReplacer.replaceOn(value) { expression =>
             context.getOrElse(expression, "--")
           }
-        } recover {
-          case e =>
-            OtoroshiTarget.logger.error(
-              s"Error while parsing expression, returning raw value: $value",
-              e
-            )
-            value
+        } recover { case e =>
+          OtoroshiTarget.logger.error(
+            s"Error while parsing expression, returning raw value: $value",
+            e
+          )
+          value
         } get
-      case _ => value
+      case _                     => value
     }
   }
 }
@@ -81,16 +80,16 @@ trait BillingTimeUnit extends CanJson[BillingTimeUnit] {
 }
 
 object BillingTimeUnit {
-  case object Hour extends BillingTimeUnit {
+  case object Hour  extends BillingTimeUnit {
     def name: String = "Hour"
   }
-  case object Day extends BillingTimeUnit {
+  case object Day   extends BillingTimeUnit {
     def name: String = "Day"
   }
   case object Month extends BillingTimeUnit {
     def name: String = "Month"
   }
-  case object Year extends BillingTimeUnit {
+  case object Year  extends BillingTimeUnit {
     def name: String = "Year"
   }
   val values: Seq[BillingTimeUnit] =
@@ -109,13 +108,12 @@ object BillingTimeUnit {
     }
 }
 
-case class BillingDuration(value: Long, unit: BillingTimeUnit)
-    extends CanJson[BillingDuration] {
+case class BillingDuration(value: Long, unit: BillingTimeUnit) extends CanJson[BillingDuration] {
   def asJson: JsValue = json.BillingDurationFormat.writes(this)
-  def toDays: Long =
+  def toDays: Long    =
     unit match {
-      case BillingTimeUnit.Day  => value
-      case BillingTimeUnit.Hour => 1L
+      case BillingTimeUnit.Day   => value
+      case BillingTimeUnit.Hour  => 1L
       case BillingTimeUnit.Month =>
         Days
           .daysBetween(
@@ -124,8 +122,8 @@ case class BillingDuration(value: Long, unit: BillingTimeUnit)
           )
           .getDays
           .longValue
-      case BillingTimeUnit.Year => 235L
-      case _                    => 0L
+      case BillingTimeUnit.Year  => 235L
+      case _                     => 0L
     }
 }
 
@@ -134,16 +132,16 @@ sealed trait ApiVisibility {
 }
 
 object ApiVisibility {
-  case object Public extends ApiVisibility {
+  case object Public                   extends ApiVisibility {
     def name: String = "Public"
   }
   case object PublicWithAuthorizations extends ApiVisibility {
     def name: String = "PublicWithAuthorizations"
   }
-  case object Private extends ApiVisibility {
+  case object Private                  extends ApiVisibility {
     def name: String = "Private"
   }
-  case object AdminOnly extends ApiVisibility {
+  case object AdminOnly                extends ApiVisibility {
     def name: String = "AdminOnly"
   }
   val values: Seq[ApiVisibility] =
@@ -175,7 +173,7 @@ object UsagePlanVisibility {
     def name: String = "Admin"
   }
 
-  val values: Seq[UsagePlanVisibility] =
+  val values: Seq[UsagePlanVisibility]                 =
     Seq(Public, Private)
   def apply(name: String): Option[UsagePlanVisibility] =
     name match {
@@ -194,7 +192,7 @@ object IntegrationProcess {
   case object Automatic extends IntegrationProcess {
     def name: String = "Automatic"
   }
-  case object ApiKey extends IntegrationProcess {
+  case object ApiKey    extends IntegrationProcess {
     def name: String = "ApiKey"
   }
   val values: Seq[IntegrationProcess] = Seq(Automatic, ApiKey)
@@ -274,14 +272,14 @@ case class UsagePlan(
     (costPerMonth, costPerRequest) match {
       case (Some(_costPerMonth), Some(_costPerRequest)) =>
         _costPerMonth + (requests * _costPerRequest)
-      case (_, _) => 0
+      case (_, _)                                       => 0
     }
 
-  def addAutorizedTeam(teamId: TeamId): UsagePlan =
+  def addAutorizedTeam(teamId: TeamId): UsagePlan        =
     this.copy(authorizedTeams = authorizedTeams :+ teamId)
-  def removeAuthorizedTeam(teamId: TeamId): UsagePlan =
+  def removeAuthorizedTeam(teamId: TeamId): UsagePlan    =
     this.copy(authorizedTeams = authorizedTeams.filter(up => up != teamId))
-  def removeAllAuthorizedTeams(): UsagePlan =
+  def removeAllAuthorizedTeams(): UsagePlan              =
     this.copy(authorizedTeams = Seq.empty)
   def addAutorizedTeams(teamIds: Seq[TeamId]): UsagePlan =
     this.copy(authorizedTeams = teamIds)
@@ -302,7 +300,7 @@ case class UsagePlan(
       case Some(value) =>
         val (front, back) = this.subscriptionProcess.splitAt(value)
         this.copy(subscriptionProcess = front ++ List(step) ++ back)
-      case None =>
+      case None        =>
         this.copy(subscriptionProcess = this.subscriptionProcess :+ step)
     }
   }
@@ -314,9 +312,7 @@ case class UsagePlan(
   def addDocumentationPages(
       pages: Seq[ApiDocumentationDetailPage]
   ): UsagePlan =
-    this.copy(documentation =
-      documentation.map(d => d.copy(pages = d.pages ++ pages))
-    )
+    this.copy(documentation = documentation.map(d => d.copy(pages = d.pages ++ pages)))
 
   def checkCustomName(
       tenant: Tenant,
@@ -335,7 +331,7 @@ case class UsagePlan(
           (),
           AppError.EntityConflict("Plan custom name")
         )
-      case _ => EitherT.pure[Future, AppError](())
+      case _                              => EitherT.pure[Future, AppError](())
     }
   }
 
@@ -351,42 +347,42 @@ case class UsagePlan(
           case Some(authorizedEntities) =>
             for {
               _ <- EitherT.cond[Future][AppError, Unit](
-                otoroshiTarget.authorizedEntities
-                  .exists(
-                    _.groups
-                      .subsetOf(authorizedEntities.authorizedEntities.groups)
-                  ),
-                (),
-                AppError.Unauthorized(
-                  "at least one of the group provided is unauthorized"
-                )
-              )
+                     otoroshiTarget.authorizedEntities
+                       .exists(
+                         _.groups
+                           .subsetOf(authorizedEntities.authorizedEntities.groups)
+                       ),
+                     (),
+                     AppError.Unauthorized(
+                       "at least one of the group provided is unauthorized"
+                     )
+                   )
               _ <- EitherT.cond[Future][AppError, Unit](
-                otoroshiTarget.authorizedEntities
-                  .exists(
-                    _.services
-                      .subsetOf(authorizedEntities.authorizedEntities.services)
-                  ),
-                (),
-                AppError.Unauthorized(
-                  "at least one of the service provided is unauthorized"
-                )
-              )
+                     otoroshiTarget.authorizedEntities
+                       .exists(
+                         _.services
+                           .subsetOf(authorizedEntities.authorizedEntities.services)
+                       ),
+                     (),
+                     AppError.Unauthorized(
+                       "at least one of the service provided is unauthorized"
+                     )
+                   )
               _ <- EitherT.cond[Future][AppError, Unit](
-                otoroshiTarget.authorizedEntities
-                  .exists(
-                    _.routes
-                      .subsetOf(authorizedEntities.authorizedEntities.routes)
-                  ),
-                (),
-                AppError.Unauthorized(
-                  "at least one of the route provided is unauthorized"
-                )
-              )
+                     otoroshiTarget.authorizedEntities
+                       .exists(
+                         _.routes
+                           .subsetOf(authorizedEntities.authorizedEntities.routes)
+                       ),
+                     (),
+                     AppError.Unauthorized(
+                       "at least one of the route provided is unauthorized"
+                     )
+                   )
             } yield ()
-          case None => EitherT.leftT[Future, Unit](AppError.Unauthorized)
+          case None                     => EitherT.leftT[Future, Unit](AppError.Unauthorized)
         }
-      case _ => EitherT.pure[Future, AppError](())
+      case _                                                                 => EitherT.pure[Future, AppError](())
     }
   }
 
@@ -412,7 +408,7 @@ sealed trait SpecificationType {
 }
 
 object SpecificationType {
-  case object OpenApi extends SpecificationType {
+  case object OpenApi  extends SpecificationType {
     def name: String = "openapi"
   }
   case object AsyncApi extends SpecificationType {
@@ -432,7 +428,7 @@ case class SwaggerAccess(
       env: Env
   ): Future[JsValue] = {
     (content, url) match {
-      case (Some(c), _) => FastFuture.successful(Json.parse(c))
+      case (Some(c), _)       => FastFuture.successful(Json.parse(c))
       case (None, Some(_url)) =>
         val finalUrl =
           if (_url.startsWith("/")) s"http://127.0.0.1:${env.config.port}$url"
@@ -444,7 +440,7 @@ case class SwaggerAccess(
           .map { resp =>
             Json.parse(resp.body)
           }
-      case (_, _) => FastFuture.successful(Json.obj())
+      case (_, _)             => FastFuture.successful(Json.obj())
     }
   }
 }
@@ -461,7 +457,7 @@ case class ApiDocumentation(
     tenant: TenantId,
     pages: Seq[ApiDocumentationDetailPage],
     lastModificationAt: DateTime
-) extends CanJson[ApiDocumentation] {
+) extends CanJson[ApiDocumentation]           {
   override def asJson: JsValue = json.ApiDocumentationFormat.writes(this)
 
   private def flatDocIds(
@@ -476,25 +472,23 @@ case class ApiDocumentation(
       .forTenant(tenant.id)
       .findWithProjection(
         Json.obj(
-          "_deleted" -> false,
-          "_id" -> Json.obj("$in" -> JsArray(docIds().map(JsString.apply)))
+          "_deleted"           -> false,
+          "_id"                -> Json.obj("$in" -> JsArray(docIds().map(JsString.apply)))
         ),
         Json.obj(
-          "_id" -> true,
-          "_humanReadableId" -> true,
-          "title" -> true,
-          "level" -> true,
+          "_id"                -> true,
+          "_humanReadableId"   -> true,
+          "title"              -> true,
+          "level"              -> true,
           "lastModificationAt" -> true,
-          "content" -> true,
-          "contentType" -> true
+          "content"            -> true,
+          "contentType"        -> true
         )
       )
       .map { list =>
         // TODO: fetch remote content
         pages
-          .map(page =>
-            list.find(o => (o \ "_id").as[String] == page.id.toString)
-          )
+          .map(page => list.find(o => (o \ "_id").as[String] == page.id.toString))
           .collect { case Some(e) => e }
       }
   }
@@ -515,9 +509,9 @@ case class ApiDocumentationPage(
     remoteContentHeaders: Map[String, String] = Map.empty[String, String]
 ) extends CanJson[ApiDocumentationPage] {
   //def humanReadableId = s"$index-$level-${title.urlPathSegmentSanitized}"
-  def humanReadableId = id.toString
+  def humanReadableId          = id.toString
   override def asJson: JsValue = json.ApiDocumentationPageFormat.writes(this)
-  def asWebUiJson: JsValue =
+  def asWebUiJson: JsValue     =
     json.ApiDocumentationPageFormat.writes(this).as[JsObject]
 }
 
@@ -529,7 +523,7 @@ case class ApiPost(
     lastModificationAt: DateTime,
     content: String
 ) extends CanJson[ApiPost] {
-  def humanReadableId: String = title.urlPathSegmentSanitized
+  def humanReadableId: String  = title.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiPostFormat.writes(this)
 }
 
@@ -557,7 +551,7 @@ case class ApiIssue(
     lastModificationAt: DateTime,
     apiVersion: Option[String] = None
 ) extends CanJson[ApiIssue] {
-  def humanReadableId: String = seqId.toString
+  def humanReadableId: String  = seqId.toString
   override def asJson: JsValue = json.ApiIssueFormat.writes(this)
 }
 
@@ -569,7 +563,7 @@ object TestingAuth {
   case object ApiKey extends TestingAuth {
     def name: String = "ApiKey"
   }
-  case object Basic extends TestingAuth {
+  case object Basic  extends TestingAuth {
     def name: String = "Basic"
   }
 }
@@ -612,23 +606,24 @@ sealed trait ApiState {
 }
 
 object ApiState {
-  case object Created extends ApiState {
-    override def name: String = "created"
-    override def checkPreviousState(previousState: ApiState): Boolean = previousState == Created
+  case object Created    extends ApiState {
+    override def name: String                                         = "created"
+    override def checkPreviousState(previousState: ApiState): Boolean =
+      previousState == Created || previousState == Published
   }
-  case object Published extends ApiState {
-    override def name: String = "published"
-    override def checkPreviousState(previousState: ApiState): Boolean = previousState == Created || previousState == Published
+  case object Published  extends ApiState {
+    override def name: String                                         = "published"
+    override def checkPreviousState(previousState: ApiState): Boolean = previousState != Blocked
 
   }
-  case object Blocked extends ApiState {
-    override def name: String = "blocked"
+  case object Blocked    extends ApiState {
+    override def name: String                                         = "blocked"
     override def checkPreviousState(previousState: ApiState): Boolean = previousState != Created
 
   }
   case object Deprecated extends ApiState {
-    override def name: String = "deprecated"
-    override def checkPreviousState(previousState: ApiState): Boolean = previousState == Published || previousState == Deprecated
+    override def name: String                                         = "deprecated"
+    override def checkPreviousState(previousState: ApiState): Boolean = previousState != Created
 
   }
 
@@ -670,7 +665,7 @@ case class Api(
     state: ApiState = ApiState.Created,
     metadata: Map[String, String] = Map.empty
 ) extends CanJson[User] {
-  def humanReadableId = name.urlPathSegmentSanitized
+  def humanReadableId          = name.urlPathSegmentSanitized
   override def asJson: JsValue = json.ApiFormat.writes(this)
   def asGuestJson(hideOpenApiForGuest: Boolean): JsValue = {
     val baseJson =
@@ -679,68 +674,68 @@ case class Api(
 
   }
 
-  def asSimpleJson: JsValue =
+  def asSimpleJson: JsValue                     =
     Json.obj(
-      "_id" -> id.asJson,
-      "_humanReadableId" -> name.urlPathSegmentSanitized,
-      "_tenant" -> tenant.asJson,
-      "team" -> team.value,
-      "name" -> name,
-      "smallDescription" -> smallDescription,
-      "header" -> header.map(JsString).getOrElse(JsNull).as[JsValue],
-      "image" -> image.map(JsString).getOrElse(JsNull).as[JsValue],
-      "description" -> description,
-      "currentVersion" -> currentVersion.asJson,
-      "supportedVersions" -> JsArray(supportedVersions.map(_.asJson).toSeq),
-      "tags" -> JsArray(tags.map(JsString.apply).toSeq),
-      "categories" -> JsArray(categories.map(JsString.apply).toSeq),
-      "visibility" -> visibility.name,
+      "_id"                -> id.asJson,
+      "_humanReadableId"   -> name.urlPathSegmentSanitized,
+      "_tenant"            -> tenant.asJson,
+      "team"               -> team.value,
+      "name"               -> name,
+      "smallDescription"   -> smallDescription,
+      "header"             -> header.map(JsString).getOrElse(JsNull).as[JsValue],
+      "image"              -> image.map(JsString).getOrElse(JsNull).as[JsValue],
+      "description"        -> description,
+      "currentVersion"     -> currentVersion.asJson,
+      "supportedVersions"  -> JsArray(supportedVersions.map(_.asJson).toSeq),
+      "tags"               -> JsArray(tags.map(JsString.apply).toSeq),
+      "categories"         -> JsArray(categories.map(JsString.apply).toSeq),
+      "visibility"         -> visibility.name,
       "possibleUsagePlans" -> JsArray(possibleUsagePlans.map(_.asJson).toSeq),
-      "posts" -> SeqPostIdFormat.writes(posts),
-      "issues" -> SeqIssueIdFormat.writes(issues),
-      "issuesTags" -> SetApiTagFormat.writes(issuesTags),
-      "stars" -> stars,
-      "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue],
-      "isDefault" -> isDefault,
-      "state" -> json.ApiStateFormat.writes(state)
+      "posts"              -> SeqPostIdFormat.writes(posts),
+      "issues"             -> SeqIssueIdFormat.writes(issues),
+      "issuesTags"         -> SetApiTagFormat.writes(issuesTags),
+      "stars"              -> stars,
+      "parent"             -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue],
+      "isDefault"          -> isDefault,
+      "state"              -> json.ApiStateFormat.writes(state)
     )
   def asIntegrationJson(teams: Seq[Team]): JsValue = {
     val t = teams.find(_.id == team).get.name.urlPathSegmentSanitized
     Json.obj(
-      "id" -> s"${t}/${name.urlPathSegmentSanitized}",
-      "team" -> t,
-      "name" -> name,
-      "smallDescription" -> smallDescription,
-      "currentVersion" -> currentVersion.asJson,
+      "id"                -> s"${t}/${name.urlPathSegmentSanitized}",
+      "team"              -> t,
+      "name"              -> name,
+      "smallDescription"  -> smallDescription,
+      "currentVersion"    -> currentVersion.asJson,
       "supportedVersions" -> JsArray(supportedVersions.map(_.asJson).toSeq),
-      "tags" -> JsArray(tags.map(JsString.apply).toSeq),
-      "categories" -> JsArray(categories.map(JsString.apply).toSeq),
-      "visibility" -> visibility.name,
-      "stars" -> stars,
-      "metadata" -> JsObject(
+      "tags"              -> JsArray(tags.map(JsString.apply).toSeq),
+      "categories"        -> JsArray(categories.map(JsString.apply).toSeq),
+      "visibility"        -> visibility.name,
+      "stars"             -> stars,
+      "metadata"          -> JsObject(
         metadata.view.mapValues(JsString.apply).toSeq
       )
     )
   }
   def asPublicWithAuthorizationsJson(): JsValue =
     Json.obj(
-      "_id" -> id.value,
+      "_id"              -> id.value,
       "_humanReadableId" -> name.urlPathSegmentSanitized,
-      "tenant" -> tenant.asJson,
-      "team" -> team.value,
-      "name" -> name,
+      "tenant"           -> tenant.asJson,
+      "team"             -> team.value,
+      "name"             -> name,
       "smallDescription" -> smallDescription,
-      "description" -> description,
-      "currentVersion" -> currentVersion.asJson,
-      "isDefault" -> isDefault,
-      "state" -> json.ApiStateFormat.writes(state),
-      "tags" -> JsArray(tags.map(JsString.apply).toSeq),
-      "categories" -> JsArray(categories.map(JsString.apply).toSeq),
-      "authorizedTeams" -> SeqTeamIdFormat.writes(authorizedTeams),
-      "stars" -> stars,
-      "parent" -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
+      "description"      -> description,
+      "currentVersion"   -> currentVersion.asJson,
+      "isDefault"        -> isDefault,
+      "state"            -> json.ApiStateFormat.writes(state),
+      "tags"             -> JsArray(tags.map(JsString.apply).toSeq),
+      "categories"       -> JsArray(categories.map(JsString.apply).toSeq),
+      "authorizedTeams"  -> SeqTeamIdFormat.writes(authorizedTeams),
+      "stars"            -> stars,
+      "parent"           -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
     )
-  def isPublished: Boolean =
+  def isPublished: Boolean                      =
     state match {
       case ApiState.Published  => true
       case ApiState.Deprecated => true
@@ -760,14 +755,14 @@ case class AuthorizedEntities(
       routes = this.routes ++ other.routes
     )
 
-  def asJson: JsValue = json.AuthorizedEntitiesFormat.writes(this)
-  def asOtoroshiJson: JsValue =
+  def asJson: JsValue                                          = json.AuthorizedEntitiesFormat.writes(this)
+  def asOtoroshiJson: JsValue                                  =
     json.AuthorizedEntitiesOtoroshiFormat.writes(this)
-  def isEmpty: Boolean = services.isEmpty && groups.isEmpty && routes.isEmpty
+  def isEmpty: Boolean                                         = services.isEmpty && groups.isEmpty && routes.isEmpty
   def equalsAuthorizedEntities(a: AuthorizedEntities): Boolean =
-    services.forall(s => a.services.contains(s)) && groups.forall(g =>
-      a.groups.contains(g)
-    ) && routes.forall(g => a.routes.contains(g))
+    services.forall(s => a.services.contains(s)) && groups.forall(g => a.groups.contains(g)) && routes.forall(g =>
+      a.routes.contains(g)
+    )
 }
 
 case class ApiWithAuthorizations(
@@ -844,8 +839,8 @@ object ValidationStep {
       schema: Option[JsObject] = Json
         .obj(
           "motivation" -> Json.obj(
-            "type" -> "string",
-            "format" -> "textarea",
+            "type"        -> "string",
+            "format"      -> "textarea",
             "constraints" -> Json.arr(Json.obj("type" -> "required"))
           )
         )
@@ -854,7 +849,7 @@ object ValidationStep {
       formKeysToMetadata: Option[Seq[String]] = None,
       info: Option[String] = None
   ) extends ValidationStep {
-    override def name: String = "form"
+    override def name: String         = "form"
     override def isAutomatic: Boolean = false
   }
 
@@ -864,7 +859,7 @@ object ValidationStep {
       message: Option[String],
       title: String
   ) extends ValidationStep {
-    def name: String = "email"
+    def name: String                  = "email"
     override def isAutomatic: Boolean = true
   }
 
@@ -873,7 +868,7 @@ object ValidationStep {
       team: TeamId,
       title: String = "Administrator"
   ) extends ValidationStep {
-    def name: String = "teamAdmin"
+    def name: String                  = "teamAdmin"
     override def isAutomatic: Boolean = false
   }
 
@@ -882,7 +877,7 @@ object ValidationStep {
       thirdPartyPaymentSettingsId: ThirdPartyPaymentSettingsId,
       title: String = "Payment"
   ) extends ValidationStep {
-    def name: String = "payment"
+    def name: String                  = "payment"
     override def isAutomatic: Boolean = false
   }
 
@@ -892,7 +887,7 @@ object ValidationStep {
       url: String,
       headers: Map[String, String] = Map.empty[String, String]
   ) extends ValidationStep {
-    def name: String = "httpRequest"
+    def name: String                  = "httpRequest"
     override def isAutomatic: Boolean = true
   }
 }
@@ -910,7 +905,7 @@ object ApiTemplate {
       integrationProcess = IntegrationProcess.ApiKey,
       visibility = UsagePlanVisibility.Admin
     )
-    val api = Api(
+    val api  = Api(
       id = ApiId(IdGenerator.token),
       tenant = tenant.id,
       team = team.id,
