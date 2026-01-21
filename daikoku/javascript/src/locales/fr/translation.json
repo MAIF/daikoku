@@ -1758,6 +1758,7 @@
     "p": "Équipes"
   },
   "dashboard.filters.all.team.label": "Toutes les équipes",
+  "dashboard.api.list.deprecated.subscription.tag.label": "Api dépréciée",
   "dashboard.api.list.actives.subscription.tag.label": {
     "s": "%s clé active",
     "p": "%s clés actives"

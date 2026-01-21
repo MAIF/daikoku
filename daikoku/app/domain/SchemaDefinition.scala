@@ -3069,6 +3069,30 @@ object SchemaDefinition {
       )
     )
 
+    lazy val ApiBlockedWarningType = new PossibleObject(
+      ObjectType(
+        "ApiBlockedWarning",
+        "A notification triggered when an API is deprecated",
+        interfaces[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiBlockedWarning
+        ](NotificationActionType),
+        fields[
+          (DataStore, DaikokuActionContext[JsValue]),
+          ApiBlockedWarning
+        ](
+          Field(
+            "api",
+            OptionType(ApiType),
+            resolve = ctx =>
+              ctx.ctx._1.apiRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.api)
+          )
+        )
+      )
+    )
+
     lazy val AccountCreationType        = deriveObjectType[
       (DataStore, DaikokuActionContext[JsValue]),
       AccountCreation

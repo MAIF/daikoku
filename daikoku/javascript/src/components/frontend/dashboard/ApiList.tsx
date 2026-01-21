@@ -65,23 +65,16 @@ const GenericValueContainer = (
 export const ApiList = (props: ApiListProps) => {
 
   const pageSize = 15;
-  const [selectAll, setSelectAll] = useState(false);
   const [limit, setLimit] = useState(pageSize);
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize,
   })
 
-  const [searched, setSearched] = useState("");
   const [inputVal, setInputVal] = useState("")
   const [apisWithAuth, setApisWithAuth] = useState<IApiWithAuthorization[]>()
 
   const [producers, setProducers] = useState<Array<TOption>>([]);
-  const [selectedProducer, setSelectedProducer] = useState<TOption | undefined>();
-  const [selectedTag, setSelectedTag] = useState<TOption | undefined>(undefined);
-  const [selectedCategory, setSelectedCategory] = useState<TOption | undefined>(undefined);
-
-  const [researchTag, setResearchTag] = useState("");
   const [tags, setTags] = useState<Array<string>>([]);
 
   const defaultColumnFilters = [];
@@ -196,13 +189,13 @@ export const ApiList = (props: ApiListProps) => {
         const authorizations = info.row.original.authorizations;
         const isApiGroup = !!info.row.original.api.apis?.length;
         const path = isApiGroup ? 'apis' : 'description';
-
+        let apiName = api.state === "deprecated" ? <p className="line-through">{api.name}</p> : <p>{api.name}</p>
         if (api.visibility === 'Public' || authorizations.some((a) => a.authorized)) {
           return <Link id={`api-${api._humanReadableId}`} to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/${path}`}>
-            {api.name}
+            {apiName}
           </Link>
         } else {
-          return <p id={`api-${api._humanReadableId}`}>{api.name}</p>
+          return <p id={`api-${api._humanReadableId}`}>{apiName}</p>
         }
       }
     }),
@@ -244,19 +237,40 @@ export const ApiList = (props: ApiListProps) => {
         const api = info.row.original.api
         const activeCount = info.row.original.subscriptions.length
         const pendingCount = info.row.original.subscriptionDemands.length
+        const state = info.row.original.api.state
         const expireCount = info.row.original.subscriptions
           .filter(s => s.validUntil)
           .filter(s => isBefore(new Date(s.validUntil!), addMonths(new Date(), 1))).length
-
         return <div className="d-flex gap-1 status">
-          {!!activeCount && <span className="badge badge-custom-success" onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-            {translate({ key: 'dashboard.api.list.actives.subscription.tag.label', replacements: [activeCount.toString()], plural: activeCount > 1 })}
+          {state === "deprecated" && <span className="badge badge-custom-warning" onClick={() =>
+              navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+            {translate({
+              key: 'dashboard.api.list.deprecated.subscription.tag.label',
+              replacements: [activeCount.toString()]}
+            )}
           </span>}
-          {!!expireCount && <span className="badge badge-custom-danger" onClick={() => navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
-            {translate({ key: 'dashboard.api.list.expires.subscription.tag.label', replacements: [expireCount.toString()], plural: expireCount > 1 })}
+          {!!activeCount && <span className="badge badge-custom-success" onClick={() =>
+              navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+            {translate({
+              key: 'dashboard.api.list.actives.subscription.tag.label',
+              replacements: [activeCount.toString()],
+              plural: activeCount > 1 }
+            )}
+          </span>}
+          {!!expireCount && <span className="badge badge-custom-danger" onClick={() =>
+              navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+            {translate({
+              key: 'dashboard.api.list.expires.subscription.tag.label',
+              replacements: [expireCount.toString()],
+              plural: expireCount > 1 }
+            )}
           </span>}
           {!!pendingCount && <span className="badge badge-custom-warning">
-            {translate({ key: 'dashboard.api.list.pending.subscription.tag.label', replacements: [pendingCount.toString()], plural: pendingCount > 1 })}
+            {translate({
+              key: 'dashboard.api.list.pending.subscription.tag.label',
+              replacements: [pendingCount.toString()],
+              plural: pendingCount > 1 }
+            )}
           </span>}
         </div>
 

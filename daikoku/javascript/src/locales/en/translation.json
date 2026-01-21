@@ -1753,6 +1753,7 @@
         "p": "Teams"
     },
     "dashboard.filters.all.team.label": "All teams",
+    "dashboard.api.list.deprecated.subscription.tag.label": "Api deprecated",
     "dashboard.api.list.actives.subscription.tag.label": {
         "s": "%s active key",
         "p": "%s clés active keys"

@@ -185,6 +185,10 @@ type NotificationActionGQL =
   | {
     __typename: 'ApiDepreciationWarning';
     api: IApiGQL;
+  }
+  | {
+    __typename: 'ApiBlockedWarning';
+    api: IApiGQL;
   };
 
 type NotificationGQL = {
