@@ -39,6 +39,18 @@ class ApiLifeCycleService(mailService: MailService) {
     }
   }
 
+  def BlockApi(newApi: Api): Unit = {
+    // notifyBlocked()
+  }
+
+  def BlockSoucription(newApi: Api): Unit = {
+    // notifyBlocked()
+  }
+
+  def notifyBlocked(newApi: Api): Unit = {
+
+  }
+
   def notifyDepreciation(newApi: Api)(implicit
       translator: Translator,
       ec: ExecutionContext,
@@ -65,8 +77,7 @@ class ApiLifeCycleService(mailService: MailService) {
             .forTenant(ctx.tenant.id)
             .findNotDeleted(Json.obj("_id" -> Json.obj("$in" -> JsArray(subscriptionsTeamsIds.map(_.asJson)))))
         )
-      log                                = AppLogger.info(s"${subscriptionTeams.length} equipes trouvées")
-      notif                             <- EitherT.liftF[Future, AppError, Seq[Boolean]](Future.sequence(subscriptionTeams.map(subscriptionTeam => {
+      _                             <- EitherT.liftF[Future, AppError, Seq[Boolean]](Future.sequence(subscriptionTeams.map(subscriptionTeam => {
                                              val notification = Notification(
                                                id = NotificationId(IdGenerator.token(32)),
                                                tenant = ctx.tenant.id,
