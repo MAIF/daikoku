@@ -374,6 +374,7 @@ class UserControllerSpec()
     }
 
   }
+
   lazy val authProviderSettings = LdapConfig(
     serverUrls = Seq(
       s"ldap://localhost:${container.mappedPort(10389)}"

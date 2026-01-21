@@ -1005,6 +1005,12 @@ class TeamControllerSpec()
       )(tenant, session)
       respUpdate.status mustBe 403
     }
+    "have to get subscription" in {
+      //todo: test it
+    }
+    "be authorized to delete his own subscription (by user)" in {
+      //todo: test it
+    }
   }
 
   "a team" must {

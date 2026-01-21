@@ -672,11 +672,6 @@ object authorizations {
     )(teamId: String, ctx: DaikokuActionContext[T])(
         f: Team => Future[Either[AppError, B]]
     )(implicit ec: ExecutionContext, env: Env): Future[Either[AppError, B]] = {
-      def apiCreationPermitted(team: Team) =
-        ctx.tenant.creationSecurity.forall {
-          case true => team.apisCreationPermission.getOrElse(false)
-          case _    => true
-        }
 
       env.dataStore.teamRepo
         .forTenant(ctx.tenant.id)
@@ -696,18 +691,6 @@ object authorizations {
                   AuthorizationLevel.AuthorizedDaikokuAdmin
                 )
             }
-          case Some(team) if !apiCreationPermitted(team) =>
-            ctx.setCtxValue("team.id", team.id.value)
-            ctx.setCtxValue("team.name", team.name)
-            audit.logTenantAuditEvent(
-              ctx.tenant,
-              ctx.user,
-              ctx.session,
-              ctx.request,
-              ctx.ctx,
-              AuthorizationLevel.NotAuthorized
-            )
-            FastFuture.successful(Left(ForbiddenAction))
           case Some(team)
               if ctx.user.tenants.contains(ctx.tenant.id) &&
                 team.users.exists(u =>
@@ -778,12 +761,6 @@ object authorizations {
         f: Team => Future[Result]
     )(implicit ec: ExecutionContext, env: Env): Future[Result] = {
 
-      def apiCreationPermitted(team: Team) =
-        ctx.tenant.creationSecurity.forall {
-          case true => team.apisCreationPermission.getOrElse(false)
-          case _    => true
-        }
-
       env.dataStore.teamRepo
         .forTenant(ctx.tenant.id)
         .findByIdOrHrId(teamId)
@@ -802,20 +779,6 @@ object authorizations {
                   AuthorizationLevel.AuthorizedDaikokuAdmin
                 )
             }
-          case Some(team) if !apiCreationPermitted(team) =>
-            ctx.setCtxValue("team.id", team.id.value)
-            ctx.setCtxValue("team.name", team.name)
-            audit.logTenantAuditEvent(
-              ctx.tenant,
-              ctx.user,
-              ctx.session,
-              ctx.request,
-              ctx.ctx,
-              AuthorizationLevel.NotAuthorized
-            )
-            FastFuture.successful(
-              Results.Forbidden(Json.obj("error" -> "You're not authorized"))
-            )
           case Some(team)
               if ctx.user.tenants.contains(ctx.tenant.id) &&
                 team.users.exists(u =>
