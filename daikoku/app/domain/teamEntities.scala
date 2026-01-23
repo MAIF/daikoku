@@ -303,7 +303,7 @@ object NotificationAction {
 
   case class ApiDepreciationWarning(api: ApiId) extends NotificationAction
 
-  case class ApiBlockedWarning(api: ApiId) extends NotificationAction
+  case class ApiBlockingWarning(api: ApiId) extends NotificationAction
 }
 
 sealed trait NotificationType {

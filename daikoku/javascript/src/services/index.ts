@@ -1320,8 +1320,8 @@ export const removeCmsPage = (id: any) =>
 
 export const graphql = {
   getCmsPageByName: `
-    query CmsPage($name: String!) {
-      page(name: $name) {
+    query CmsPage($name: String, $path: String) {
+      page(name: $name, path: $path) {
         id
         name
         path

@@ -2781,7 +2781,7 @@ object json {
             ApiSubscriptionTransferSuccessFormat.reads(json)
           case "CheckoutForSubscription"        => CheckoutForSubscriptionFormat.reads(json)
           case "ApiDepreciationWarning"         => ApiDepreciationWarningFormat.reads(json)
-          case "ApiBlockedWarning"              => ApiBlockedWarningFormat.reads(json)
+          case "ApiBlockingWarning"             => ApiBlockingWarningFormat.reads(json)
           case str                              => JsError(s"Bad notification value: $str")
         }
 
@@ -2892,9 +2892,9 @@ object json {
             ApiDepreciationWarningFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiDepreciationWarning"
             )
-          case p: ApiBlockedWarning              =>
-            ApiBlockedWarningFormat.writes(p).as[JsObject] ++ Json.obj(
-              "type" -> "ApiBlockedWarning"
+          case p: ApiBlockingWarning             =>
+            ApiBlockingWarningFormat.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "ApiBlockingWarning"
             )
         }
     }
@@ -3007,11 +3007,11 @@ object json {
       )
   }
 
-  val ApiBlockedWarningFormat = new Format[ApiBlockedWarning] {
-    override def reads(json: JsValue): JsResult[ApiBlockedWarning] =
+  val ApiBlockingWarningFormat = new Format[ApiBlockingWarning] {
+    override def reads(json: JsValue): JsResult[ApiBlockingWarning] =
       Try {
         JsSuccess(
-          ApiBlockedWarning(
+          ApiBlockingWarning(
             api = (json \ "api").as(ApiIdFormat)
           )
         )
@@ -3020,7 +3020,7 @@ object json {
         JsError(e.getMessage)
       } get
 
-    override def writes(o: ApiBlockedWarning): JsValue =
+    override def writes(o: ApiBlockingWarning): JsValue =
       Json.obj(
         "api" -> o.api.asJson
       )

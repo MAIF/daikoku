@@ -249,6 +249,13 @@ export const ApiList = (props: ApiListProps) => {
               replacements: [activeCount.toString()]}
             )}
           </span>}
+          {state === "blocked" && <span className="badge badge-custom-warning" onClick={() =>
+              navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
+            {translate({
+              key: 'dashboard.api.list.blocked.subscription.tag.label',
+              replacements: [activeCount.toString()]}
+            )}
+          </span>}
           {!!activeCount && <span className="badge badge-custom-success" onClick={() =>
               navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
             {translate({

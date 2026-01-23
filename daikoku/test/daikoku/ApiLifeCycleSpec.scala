@@ -149,7 +149,82 @@ class ApiLifeCycleSpec()
       }
     }
 
-    "notify customer when API is deprecated" in {
+    def testNotificationLifeCycle(apiState: ApiState, notificationType: String) = {
+      logger.info(s"passing api default state to ${apiState.name}")
+
+      val adminSession                = loginWithBlocking(userAdmin, tenant)
+      val userSession                 = loginWithBlocking(user, tenant)
+      changingAPIState(session = adminSession, state = apiState, statusResponse = 200)
+      val baseGraphQLQuery            =
+        s"""
+           |query getMyNotifications ($$limit : Int, $$offset: Int, $$filterTable: JsArray) {
+           |      myNotifications (limit: $$limit, offset: $$offset, filterTable: $$filterTable) {
+           |        notifications {
+           |          team {
+           |            _id
+           |          }
+           |          action {
+           |            __typename
+           |          }
+           |        }
+           |        total,
+           |        totalFiltered,
+           |       }
+           |}
+           |""".stripMargin
+      val graphQlRequestNotifications = Json.obj(
+        "variables" -> Json.obj(
+          "limit"       -> 20,
+          "offset"      -> 0,
+          "filterTable" -> Json.stringify(
+            Json.arr(
+              Json.obj(
+                "id"    -> "type",
+                "value" -> Json.arr(notificationType)
+              )
+            )
+          )
+        ),
+        "query"     -> baseGraphQLQuery
+      )
+
+      val adminNotifResp     = httpJsonCallBlocking(
+        path = s"/api/search",
+        method = "POST",
+        body = graphQlRequestNotifications.some
+      )(tenant, adminSession)
+      adminNotifResp.status mustBe 200
+      (adminNotifResp.json \ "data" \ "myNotifications" \ "totalFiltered").as[Int] mustBe 2
+      val adminNotifs        = (adminNotifResp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray].value
+      val ownerAdminNotif    = adminNotifs.find(json => (json \ "team" \ "_id").as[String] == teamOwnerId.value)
+      val consumerAdminNotif = adminNotifs.find(json => (json \ "team" \ "_id").as[String] == teamConsumerId.value)
+
+      ownerAdminNotif.isDefined mustBe true
+      (ownerAdminNotif.get \ "action" \ "__typename").as[String] mustBe notificationType
+
+      consumerAdminNotif.isDefined mustBe true
+      (consumerAdminNotif.get \ "action" \ "__typename").as[String] mustBe notificationType
+
+      val userNotifResp = httpJsonCallBlocking(
+        path = s"/api/search",
+        method = "POST",
+        body = graphQlRequestNotifications.some
+      )(tenant, userSession)
+      userNotifResp.status mustBe 200
+      (userNotifResp.json \ "data" \ "myNotifications" \ "totalFiltered").as[Int] mustBe 1
+
+      val userNotifs        = (userNotifResp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray].value
+      val ownerUserNotif    = userNotifs.find(json => (json \ "team" \ "_id").as[String] == teamOwnerId.value)
+      val consumerUserNotif = userNotifs.find(json => (json \ "team" \ "_id").as[String] == teamConsumerId.value)
+
+      ownerUserNotif.isDefined mustBe false
+      consumerUserNotif.isDefined mustBe true
+      (consumerUserNotif.get \ "action" \ "__typename").as[String] mustBe notificationType
+
+    }
+
+    "notify customer when API lifeCycle change needs to" in {
+
       Await.result(waitForDaikokuSetup(), 5.second)
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -195,76 +270,14 @@ class ApiLifeCycleSpec()
           )
         )
       )
+      testNotificationLifeCycle(ApiState.Deprecated, "ApiDepreciationWarning")
+      testNotificationLifeCycle(ApiState.Blocked, "ApiBlockingWarning")
+      
 
-      val adminSession = loginWithBlocking(userAdmin, tenant)
-      val userSession  = loginWithBlocking(user, tenant)
+      // vérifier l'etat des souscriptions
+      // vérifier si les apiKey oto sont disabled
 
-      val resp = httpJsonCallBlocking(
-        path =
-          s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}",
-        method = "PUT",
-        body = Some(defaultApi.api.copy(state = ApiState.Deprecated).asJson)
-      )(tenant, adminSession)
-      resp.status mustBe 200
 
-      val baseGraphQLQuery            =
-        s"""
-           |query getMyNotifications ($$limit : Int, $$offset: Int, $$filterTable: JsArray) {
-           |      myNotifications (limit: $$limit, offset: $$offset, filterTable: $$filterTable) {
-           |        notifications {
-           |          team {
-           |            _id
-           |          }
-           |          action {
-           |            __typename
-           |          }
-           |        }
-           |        total,
-           |        totalFiltered,
-           |       }
-           |}
-           |""".stripMargin
-      val graphQlRequestNotifications = Json.obj(
-        "variables" -> Json.obj("limit" -> 20, "offset" -> 0),
-        "query"     -> baseGraphQLQuery
-      )
-
-      val adminNotifResp     = httpJsonCallBlocking(
-        path = s"/api/search",
-        method = "POST",
-        body = graphQlRequestNotifications.some
-      )(tenant, adminSession)
-      adminNotifResp.status mustBe 200
-      (adminNotifResp.json \ "data" \ "myNotifications" \ "total").as[Int] mustBe 2
-      val adminNotifs        = (adminNotifResp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray].value
-      val ownerAdminNotif    = adminNotifs.find(json => (json \ "team" \ "_id").as[String] == teamOwnerId.value)
-      val consumerAdminNotif = adminNotifs.find(json => (json \ "team" \ "_id").as[String] == teamConsumerId.value)
-
-      ownerAdminNotif.isDefined mustBe true
-      (ownerAdminNotif.get \ "action" \ "__typename").as[String] mustBe "ApiDepreciationWarning"
-
-      consumerAdminNotif.isDefined mustBe true
-      (consumerAdminNotif.get \ "action" \ "__typename").as[String] mustBe "ApiDepreciationWarning"
-
-      val userNotifResp = httpJsonCallBlocking(
-        path = s"/api/search",
-        method = "POST",
-        body = graphQlRequestNotifications.some
-      )(tenant, userSession)
-      userNotifResp.status mustBe 200
-      (userNotifResp.json \ "data" \ "myNotifications" \ "total").as[Int] mustBe 1
-
-      val userNotifs        = (userNotifResp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray].value
-      val ownerUserNotif    = userNotifs.find(json => (json \ "team" \ "_id").as[String] == teamOwnerId.value)
-      val consumerUserNotif = userNotifs.find(json => (json \ "team" \ "_id").as[String] == teamConsumerId.value)
-
-      ownerUserNotif.isDefined mustBe false
-
-      consumerUserNotif.isDefined mustBe true
-      (consumerUserNotif.get \ "action" \ "__typename").as[String] mustBe "ApiDepreciationWarning"
-
-      //
-      //      resp.status mustBe 403
       //todo: check notification (2 users, 3 teams, 1 teams with 2 admins, 1 teams with just users)
       //todo : check mail (test container)
     }

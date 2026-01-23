@@ -151,6 +151,8 @@
   "Request in progress": "Demande en cours",
   "api not linked": "Cette API n'est pas encore liée à un service Otoroshi.",
   "Subscribe": "Souscrire",
+  "team.api.state.information.title": "Etat en cours de l'Api %s",
+  "team.api.state.information.message": "L'Api %s à laquelle vous souscrivez est en état %s, êtes vous certain de vouloir souscrire ?",
   "team.selection.title": "Sélectionner une équipe",
   "team.selection.desc.get": "Vous allez obtenir une clé d'API. Pour quelle équipe la voulez-vous ?",
   "team.selection.desc.request": "Vous allez demander une clé d'API. Pour quelle équipe voulez-vous effectuer cette demande ?",
@@ -1759,6 +1761,7 @@
   },
   "dashboard.filters.all.team.label": "Toutes les équipes",
   "dashboard.api.list.deprecated.subscription.tag.label": "Api dépréciée",
+  "dashboard.api.list.blocked.subscription.tag.label": "Api bloquée",
   "dashboard.api.list.actives.subscription.tag.label": {
     "s": "%s clé active",
     "p": "%s clés actives"
