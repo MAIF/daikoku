@@ -84,5 +84,6 @@ pub(crate) fn apply_credentials_mask(credential: &String, show_full_credentials:
 pub(crate) fn new_custom_ini_file() -> Ini {
     let mut defaults: IniDefault = Default::default();
     defaults.comment_symbols = vec![];
+    defaults.case_sensitive = true;
     Ini::new_from_defaults(defaults)
 }
