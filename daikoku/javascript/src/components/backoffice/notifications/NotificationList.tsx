@@ -148,7 +148,7 @@ type NotificationActionGQL =
     api: IApiGQL;
   }
   | {
-    __typename: 'ApiBlockedWarning';
+    __typename: 'ApiBlockingWarning';
     api: IApiGQL;
   };
 

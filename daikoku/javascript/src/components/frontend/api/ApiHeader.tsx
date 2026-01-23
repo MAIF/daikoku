@@ -87,19 +87,37 @@ export const ApiHeader = ({
     },
   };
 
+  let apiStateInformation = () => {
+    switch (api.state) {
+      case 'deprecated' :
+        return {
+          "title": "text-decoration-line-through",
+          "badge": <span className="badge badge-custom-warning">{translate('api.deprecated')}</span>
+        }
+      case 'blocked' :
+        return {
+          "title": "text-decoration-line-through",
+          "badge": <span className="badge badge-custom-warning">{translate('api.blocked')}</span>
+        }
+      default:
+        return {"title": "", "badge": <></>}
+    }
+  }
+
   return (
     <section className="api__header col-12 mb-4 p-3 d-flex flex-row" style={{ position: 'relative' }}>
       {!!api.customHeaderCmsPage && <CmsViewer pageId={api.customHeaderCmsPage} fields={{ api }} />}
       {!api.customHeaderCmsPage && <div className="container-fluid">
         {!api.header && (
           <>
-            <h1 className="jumbotron-heading" style={{ position: 'relative' }}>
-              {api.name}
-              <div
-                style={{ position: 'absolute', right: 0, bottom: 0 }}
-                className="d-flex align-items-center">
+            <div className="d-flex flex-row align-items-center gap-3">
+              <h1 className={`jumbotron-heading ${apiStateInformation().title}`} style={{position: 'relative'}}>
+                {api.name}
+              </h1>
+              <div>
+                {apiStateInformation().badge}
               </div>
-            </h1>
+            </div>
             <p className="lead">{api.smallDescription}</p>
           </>
         )}

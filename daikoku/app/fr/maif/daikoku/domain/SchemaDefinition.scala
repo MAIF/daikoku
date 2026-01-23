@@ -2935,17 +2935,17 @@ object SchemaDefinition {
       )
     )
 
-    lazy val ApiBlockedWarningType = new PossibleObject(
+    lazy val ApiBlockingWarningType = new PossibleObject(
       ObjectType(
-        "ApiBlockedWarning",
+        "ApiBlockingWarning",
         "A notification triggered when an API is deprecated",
         interfaces[
           (DataStore, DaikokuActionContext[JsValue]),
-          ApiBlockedWarning
+          ApiBlockingWarning
         ](NotificationActionType),
         fields[
           (DataStore, DaikokuActionContext[JsValue]),
-          ApiBlockedWarning
+          ApiBlockingWarning
         ](
           Field(
             "api",
@@ -3157,7 +3157,8 @@ object SchemaDefinition {
             CheckoutForSubscriptionType,
             ApiSubscriptionTransferSuccessType,
             AccountCreationAttemptType,
-            ApiDepreciationWarningType
+            ApiDepreciationWarningType,
+            ApiBlockingWarningType
           )
         )
       )
