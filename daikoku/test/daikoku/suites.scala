@@ -618,16 +618,18 @@ object utils {
         headers: Map[String, String] = Map.empty,
         body: Option[JsValue] = None,
         baseUrl: String = "http://127.0.0.1",
-        port: Int = port
+        port: Int = port,
+        hostHeader: String = tenant.domain
     )(implicit tenant: Tenant): WSResponse =
-      httpJsonCallWithoutSession(
+      Await.result(httpJsonCallWithoutSession(
         path,
         method,
         headers,
         body,
         baseUrl,
-        port
-      )(tenant).futureValue
+        port,
+        hostHeader
+      )(tenant), 5.seconds)
 
     def httpJsonCallWithoutSession(
         path: String,
@@ -635,11 +637,12 @@ object utils {
         headers: Map[String, String] = Map.empty,
         body: Option[JsValue] = None,
         baseUrl: String = "http://127.0.0.1",
-        port: Int = port
+        port: Int = port,
+        hostHeader: String = tenant.domain
     )(implicit tenant: Tenant): Future[WSResponse] = {
       val builder = daikokuComponents.env.wsClient
         .url(s"$baseUrl:$port$path")
-        .withHttpHeaders((headers ++ Map("Host" -> tenant.domain)).toSeq: _*)
+        .withHttpHeaders((headers ++ Map("Host" -> hostHeader)).toSeq: _*)
         .withFollowRedirects(false)
         .withRequestTimeout(10.seconds)
         .withMethod(method)

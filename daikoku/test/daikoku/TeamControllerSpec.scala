@@ -1005,11 +1005,102 @@ class TeamControllerSpec()
       )(tenant, session)
       respUpdate.status mustBe 403
     }
-    "have to get subscription" in {
-      //todo: test it
-    }
-    "be authorized to delete his own subscription (by user)" in {
-      //todo: test it
+    "be able to subscribe to an API and delete it" in {
+      val plan = UsagePlan(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        customName = "free without quotas",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val api = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
+        defaultUsagePlan = UsagePlanId("parent.dev").some
+      )
+
+      Await.result(waitForDaikokuSetup(), 5.second)
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(
+          subscriptionSecurity = false.some,
+          otoroshiSettings = Set(
+            OtoroshiSettings(
+              id = containerizedOtoroshi,
+              url =
+                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+              host = "otoroshi-api.oto.tools",
+              clientSecret = otoroshiAdminApiKey.clientSecret,
+              clientId = otoroshiAdminApiKey.clientId
+            )
+          )
+        )),
+        users = Seq(user),
+        usagePlans = Seq(plan, adminApiPlan),
+        apis = Seq(api, adminApi)
+      )
+
+      val session = loginWithBlocking(user, tenant)
+      val resp = httpJsonCallBlocking(s"/api/me/teams/own")(tenant, session)
+      resp.status mustBe 200
+      val myTeam: JsResult[Team] = json.TeamFormat.reads(resp.json)
+      myTeam.isSuccess mustBe true
+
+      val respSub = httpJsonCallBlocking(
+        path =
+          s"/api/apis/${api.id.value}/plan/${plan.id.value}/team/${myTeam.get.id.value}/_subscribe",
+        method = "POST",
+        body = Json.obj().some
+      )(tenant, session)
+      respSub.status mustBe 200
+
+      val personalSub = (respSub.json \ "subscription").as(json.ApiSubscriptionFormat)
+
+      //get key in oto and test secret
+      val respOtoApikey = httpJsonCallWithoutSessionBlocking(
+        path = s"/apis/apim.otoroshi.io/v1/apikeys/${personalSub.apiKey.clientId}",
+        headers = Map("Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret),
+        baseUrl = "http://otoroshi-api.oto.tools",
+        port = container.mappedPort(8080),
+        hostHeader = "otoroshi-api.oto.tools"
+      )(tenant)
+      respOtoApikey.status mustBe 200
+
+      val otoApiKey = respOtoApikey.json.as(json.ActualOtoroshiApiKeyFormat)
+      otoApiKey.clientSecret mustBe personalSub.apiKey.clientSecret
+
+      val respDelete = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${myTeam.get.id.value}/subscriptions/${personalSub.id.value}",
+        method = "DELETE",
+      )(tenant, session)
+      respDelete.status mustBe 200
+
+      val respOtoApikey2 = httpJsonCallWithoutSessionBlocking(
+        path = s"/apis/apim.otoroshi.io/v1/apikeys/${personalSub.apiKey.clientId}",
+        headers = Map("Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret),
+        baseUrl = "http://otoroshi-api.oto.tools",
+        port = container.mappedPort(8080),
+        hostHeader = "otoroshi-api.oto.tools"
+      )(tenant)
+      respOtoApikey2.status mustBe 404
     }
   }
 
