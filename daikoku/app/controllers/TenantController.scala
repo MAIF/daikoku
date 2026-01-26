@@ -5,18 +5,13 @@ import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import com.nimbusds.jose.jwk.KeyType
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{
-  DaikokuAction,
-  DaikokuActionMaybeWithGuest
-}
+import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
+import fr.maif.otoroshi.daikoku.domain.Tenant.getCustomizationCmsPage
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  SeqTeamAuthorizedEntitiesFormat,
-  TenantFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{SeqTeamAuthorizedEntitiesFormat, TenantFormat}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.OAuth2Config
@@ -805,16 +800,22 @@ class TenantController(
       )(tenantId, ctx) { (_, _) =>
         (for {
           themeBody <- readFile("public/themes/default.css")
-          oldCmsPage <- EitherT.fromOptionF[Future, AppError, CmsPage](
+          oldCmsPage <- EitherT.right[AppError](
             env.dataStore.cmsRepo
               .forTenant(ctx.tenant)
-              .findById(s"${ctx.tenant.id.value}-color-theme"),
-            AppError.EntityNotFound("color-theme cms page")
+              .findById(s"${ctx.tenant.id.value}-color-theme")
           )
           _ <- EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.cmsRepo
               .forTenant(ctx.tenant)
-              .save(oldCmsPage.copy(body = themeBody))
+              .save(oldCmsPage
+                .map(_.copy(body = themeBody))
+                .getOrElse(getCustomizationCmsPage(
+                  TenantId(tenantId),
+                  "color-theme",
+                  "text/css",
+                  themeBody
+                )))
           )
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())
