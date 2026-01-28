@@ -183,7 +183,7 @@ export interface ITenant {
   tenantMode: TenanMode;
   display: Display;
   environments: Array<string>;
-  loginProvider: string;
+  loginProvider: 'Otoroshi' | 'Local' | 'OAuth2' | 'LDAP';
   colorTheme?: string;
   css?: string;
   cssUrl?: string;

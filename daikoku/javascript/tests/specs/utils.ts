@@ -55,7 +55,7 @@ export const subCommandeDevVendeurs = 'mRVlHMttmN0JMytFGkd4uVm4UWzI3Qwq';
 export const subPapierdevVedeurs = '4EGnOUDSp7eaC8J2d26TfO95rwUxfz9H';
 // -------------------------------------------
 
-export const loginAs = async (user: IUser, page: Page) => {
+export const loginAs = async (user: IUser, page: Page, basicUsage: boolean = true) => {
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Se connecter' }).click();
   const input = page.locator('input[name="username"]');
@@ -64,7 +64,9 @@ export const loginAs = async (user: IUser, page: Page) => {
   // await page.locator('input[name="username"]').fill(user.email);
   await page.locator('input[name="password"]').fill('password');
   await page.getByRole('button', { name: 'Se connecter' }).click();
-  await page.getByRole('link', { name: 'API papier' }).waitFor({ state: 'visible' });
+  if (basicUsage) {
+    await page.getByRole('link', { name: 'API papier' }).waitFor({ state: 'visible' });
+  }
 }
 
 export const loginLocalAs = async (user: IUser, page: Page) => {

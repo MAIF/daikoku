@@ -1,11 +1,10 @@
-import React, { useContext, useRef, useState } from 'react';
-import { Form, type, constraints, format } from '@maif/react-forms';
+import { constraints, Form, format, type } from '@maif/react-forms';
+import { useContext, useRef, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 
-import * as Services from '../../../../services';
-import { I18nContext } from '../../../../contexts/i18n-context';
-import { NavContext } from '../../../../contexts';
 import { GlobalContext } from '../../../../contexts/globalContext';
-import { Link } from 'react-router-dom';
+import { I18nContext } from '../../../../contexts/i18n-context';
+import * as Services from '../../../../services';
 
 export const GuestPanel = () => {
   const { translate, Translation } = useContext(I18nContext);
@@ -15,6 +14,8 @@ export const GuestPanel = () => {
 
   const [loginError, setLoginError] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const location = useLocation()
 
   const schema = {
     username: {
@@ -104,14 +105,8 @@ export const GuestPanel = () => {
           )}
           {tenant.loginProvider !== 'Local' && (
             <div className="ms-2 block__entries d-flex flex-column">
-              <a href={`/auth/${tenant.loginProvider}/login`} className="block__entry__link">
+              <a href={`/auth/${tenant.loginProvider}/login?redirect=${location.pathname}`} className="block__entry__link">
                 {translate('Login')}
-              </a>
-              <a
-                href={`${tenant.loginProvider === 'Local' ? '/signup' : `/auth/${tenant.loginProvider}/login`}`}
-                className="block__entry__link"
-              >
-                {translate('Register')}
               </a>
             </div>
           )}
