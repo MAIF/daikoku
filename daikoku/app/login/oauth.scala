@@ -3,6 +3,8 @@ package fr.maif.otoroshi.daikoku.login
 import cats.data.EitherT
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import com.auth0.jwt.JWT
+import com.auth0.jwt.algorithms.Algorithm
+import com.auth0.jwt.interfaces.DecodedJWT
 import controllers.AppError
 import controllers.AppError.AuthenticationError
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
@@ -12,6 +14,7 @@ import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import fr.maif.otoroshi.daikoku.utils.jwt.{AlgoSettings, InputMode}
 import org.apache.commons.codec.binary.{Base64 => ApacheBase64}
+import org.apache.pekko.serialization.jackson.Compression.Algoritm
 import play.api.Logger
 import play.api.libs.json._
 import play.api.libs.ws.DefaultBodyWritables.writeableOf_urlEncodedSimpleForm
@@ -152,7 +155,10 @@ case class OAuth2Config(
     pictureField: String = "picture",
     callbackUrl: String = "http://daikoku.foo.bar:8080/auth/oauth2/callback",
     daikokuAdmins: Seq[String] = Seq.empty[String],
-    pkceConfig: Option[PKCEConfig] = None
+    pkceConfig: Option[PKCEConfig] = None,
+    roleClaim: Option[String] = None,
+    adminRole: Option[String] = None,
+    userRole: Option[String] = None,
 ) {
   def asJson =
     Json.obj(
@@ -174,7 +180,9 @@ case class OAuth2Config(
       "emailField" -> this.emailField,
       "pictureField" -> this.pictureField,
       "callbackUrl" -> this.callbackUrl,
-      "daikokuAdmins" -> this.daikokuAdmins
+      "daikokuAdmins" -> this.daikokuAdmins,
+      "roleClaim" -> this.roleClaim.map(JsString).getOrElse(JsNull).as[JsValue],
+      "adminRole" -> this.adminRole.map(JsString).getOrElse(JsNull).as[JsValue],
     )
 }
 
@@ -218,196 +226,201 @@ object OAuth2Support {
       _env: Env
   )(implicit
       ec: ExecutionContext
-  ): Future[Either[String, User]] = {
-    request.getQueryString("error") match {
-      case Some(_) => Left("No code :(").asFuture
-      case None =>
-        request.getQueryString("code") match {
-          case None => Left("No code :(").asFuture
-          case Some(code) =>
-            val builder = _env.wsClient.url(authConfig.tokenUrl)
-            val verifier = request.session.get("code_verifier").getOrElse("")
-            val clientSecret =
-              authConfig.clientSecret.map(_.trim).filterNot(_.isEmpty)
-            AppLogger.error(clientSecret.getOrElse("no secret"))
+  ): EitherT[Future, AppError, User] = {
 
-            val mapPayload = (Map(
-              "code" -> code,
-              "grant_type" -> "authorization_code",
-              "client_id" -> authConfig.clientId,
-              "redirect_uri" -> authConfig.callbackUrl,
-              "scope" -> authConfig.scope
-            ) ++ authConfig.pkceConfig
-              .collect {
-                case e if e.enabled => Map("code_verifier" -> verifier)
-              }
-              .getOrElse(Map.empty)
-              ++ clientSecret
-                .map(s => Map("client_secret" -> s))
-                .getOrElse(Map.empty))
+    def verifyAndGetUser(accessToken: String): EitherT[Future, AppError, JsValue] = {
+      val algoSettings = authConfig.jwtVerifier.get
+      val tokenHeader =
+        Try(
+          Json.parse(
+            ApacheBase64.decodeBase64(accessToken.split("\\.")(0))
+          )
+        ).getOrElse(Json.obj())
+      val tokenBody =
+        Try(
+          Json.parse(
+            ApacheBase64.decodeBase64(accessToken.split("\\.")(1))
+          )
+        ).getOrElse(Json.obj())
+      val kid = (tokenHeader \ "kid").asOpt[String]
+      val alg =
+        (tokenHeader \ "alg").asOpt[String].getOrElse("RS256")
+      val settings = algoSettings
+        .asAlgorithm(InputMode(alg, kid))(_env)
 
-            val eventualResponseToken = if (authConfig.useJson) {
-              val jsonPayload = JsObject(
-                mapPayload.view.mapValues(JsString.apply).toMap
-              )
-              builder.post(
-                jsonPayload
-              )
-            } else {
-              builder.post(
-                mapPayload
-              )(writeableOf_urlEncodedSimpleForm)
-            }
-
-            eventualResponseToken
-              .flatMap { resp =>
-                logger.debug(
-                  s"Oauth connection response received : ${Json.stringify(resp.json)}"
-                )
-                val accessToken =
-                  (resp.json \ authConfig.accessTokenField).as[String]
-                if (
-                  authConfig.readProfileFromToken && authConfig.jwtVerifier.isDefined
-                ) {
-                  val algoSettings = authConfig.jwtVerifier.get
-                  val tokenHeader =
-                    Try(
-                      Json.parse(
-                        ApacheBase64.decodeBase64(accessToken.split("\\.")(0))
-                      )
-                    ).getOrElse(Json.obj())
-                  val tokenBody =
-                    Try(
-                      Json.parse(
-                        ApacheBase64.decodeBase64(accessToken.split("\\.")(1))
-                      )
-                    ).getOrElse(Json.obj())
-                  val kid = (tokenHeader \ "kid").asOpt[String]
-                  val alg =
-                    (tokenHeader \ "alg").asOpt[String].getOrElse("RS256")
-                  algoSettings
-                    .asAlgorithmF(InputMode(alg, kid))(_env, ec)
-                    .flatMap {
-                      case Some(algo) => {
-                        Try(
-                          JWT
-                            .require(algo)
-                            .acceptLeeway(10000)
-                            .build()
-                            .verify(accessToken)
-                        ).map { _ =>
-                          FastFuture.successful(tokenBody)
-                        } recoverWith {
-                          case e => Success(FastFuture.failed(e))
-                        } get
-                      }
-                      case None =>
-                        FastFuture.failed(new RuntimeException("Bad algorithm"))
-                    }
-                } else {
-                  val builder2 = _env.wsClient.url(authConfig.userInfoUrl)
-                  val future2 = if (authConfig.useJson) {
-                    builder2.post(
-                      Json.obj(
-                        "access_token" -> accessToken
-                      )
-                    )
-                  } else {
-                    builder2.post(
-                      Map(
-                        "access_token" -> accessToken
-                      )
-                    )(writeableOf_urlEncodedSimpleForm)
-                  }
-                  future2.map(_.json)
-                }
-              }
-              .flatMap { userFromOauth =>
-                val name = (userFromOauth \ authConfig.nameField)
-                  .asOpt[String]
-                  .getOrElse("No Name")
-                val email = (userFromOauth \ authConfig.emailField)
-                  .asOpt[String]
-                  .getOrElse("no.name@foo.bar")
-                val picture =
-                  (userFromOauth \ authConfig.pictureField).asOpt[String]
-                val maybeDaikokuAdmin =
-                  (userFromOauth \ "daikokuAdmin")
-                    .asOpt[String]
-                    .flatMap(_.toBooleanOption)
-                    .orElse((userFromOauth \ "daikokuAdmin").asOpt[Boolean])
-
-                val isDaikokuAdmin = maybeDaikokuAdmin.getOrElse(
-                  authConfig.daikokuAdmins.contains(email)
-                )
-
-                _env.dataStore.userRepo
-                  .findOne(Json.obj("_deleted" -> false, "email" -> email))
-                  .flatMap {
-                    case None =>
-                      val userId = UserId(IdGenerator.token(32))
-                      val team = Team(
-                        id = TeamId(IdGenerator.token(32)),
-                        tenant = tenant.id,
-                        `type` = TeamType.Personal,
-                        name = s"$name",
-                        description = s"The personal team of $name",
-                        users = Set(UserWithPermission(userId, Administrator)),
-                        authorizedOtoroshiEntities = None,
-                        contact = email
-                      )
-                      val user = User(
-                        id = userId,
-                        tenants = Set(tenant.id),
-                        origins = Set(AuthProvider.OAuth2),
-                        name = name,
-                        email = email,
-                        picture = picture.getOrElse(User.DEFAULT_IMAGE),
-                        pictureFromProvider = picture.isDefined,
-                        isDaikokuAdmin = isDaikokuAdmin,
-                        lastTenant = Some(tenant.id),
-                        personalToken = Some(IdGenerator.token(32)),
-                        defaultLanguage = None
-                      )
-                      for {
-                        _ <-
-                          _env.dataStore.teamRepo
-                            .forTenant(tenant.id)
-                            .save(team)
-                        _ <- _env.dataStore.userRepo.save(user)
-                      } yield {
-                        Right(user)
-                      }
-                    case Some(u) =>
-                      val updatedUser = u.copy(
-                        name = name,
-                        email = email,
-                        tenants = u.tenants + tenant.id,
-                        origins = u.origins + AuthProvider.OAuth2,
-                        picture = if (
-                          picture.isDefined && u.pictureFromProvider
-                        )
-                          picture.get
-                        else
-                          u.picture == User.DEFAULT_IMAGE match {
-                            case true
-                                if picture.isDefined && u.pictureFromProvider =>
-                              picture.get
-                            case true if picture.isEmpty => User.DEFAULT_IMAGE
-                            case _                       => u.picture
-                          },
-                        isDaikokuAdmin =
-                          if (u.isDaikokuAdmin) true else isDaikokuAdmin
-                      )
-                      for {
-                        _ <- _env.dataStore.userRepo.save(updatedUser)
-                      } yield {
-                        Right(updatedUser)
-                      }
-                  }
-              }
-        }
+      EitherT.fromOption[Future][AppError, Algorithm](settings, AppError.BadRequestError("Bad algorithm"))
+        .map(algo => JWT
+          .require(algo)
+          .acceptLeeway(10000)
+          .build()
+          .verify(accessToken))
+        .map(_ => tokenBody)
     }
+
+    def getUser(accessToken: String) = {
+      val builder2 = _env.wsClient.url(authConfig.userInfoUrl)
+
+      val future2 = if (authConfig.useJson) {
+        builder2.post(
+          Json.obj(
+            "access_token" -> accessToken
+          )
+        )
+      } else {
+        builder2.post(
+          Map(
+            "access_token" -> accessToken
+          )
+        )(writeableOf_urlEncodedSimpleForm)
+      }
+
+      EitherT.right[AppError](future2)
+        .map(_.json)
+    }
+
+    def createUser(name: String, email: String, picture: Option[String], isDaikokuAdmin: Boolean): EitherT[Future, AppError, User] = {
+      val userId = UserId(IdGenerator.token(32))
+      val team = Team(
+        id = TeamId(IdGenerator.token(32)),
+        tenant = tenant.id,
+        `type` = TeamType.Personal,
+        name = s"$name",
+        description = s"The personal team of $name",
+        users = Set(UserWithPermission(userId, Administrator)),
+        authorizedOtoroshiEntities = None,
+        contact = email
+      )
+      val user = User(
+        id = userId,
+        tenants = Set(tenant.id),
+        origins = Set(AuthProvider.OAuth2),
+        name = name,
+        email = email,
+        picture = picture.getOrElse(User.DEFAULT_IMAGE),
+        pictureFromProvider = picture.isDefined,
+        isDaikokuAdmin = isDaikokuAdmin,
+        lastTenant = Some(tenant.id),
+        personalToken = Some(IdGenerator.token(32)),
+        defaultLanguage = None
+      )
+      for {
+        _ <- EitherT.right[AppError](_env.dataStore.teamRepo
+            .forTenant(tenant.id)
+            .save(team))
+        _ <- EitherT.right[AppError](_env.dataStore.userRepo.save(user))
+      } yield {
+        user
+      }
+  }
+
+    def updateUser(u: User, name: String, email: String, picture: Option[String], isDaikokuAdmin: Boolean): EitherT[Future, AppError, User] = {
+      val updatedUser = u.copy(
+        name = name,
+        email = email,
+        tenants = u.tenants + tenant.id,
+        origins = u.origins + AuthProvider.OAuth2,
+        picture = if (
+          picture.isDefined && u.pictureFromProvider
+        )
+          picture.get
+        else
+          u.picture == User.DEFAULT_IMAGE match {
+            case true
+              if picture.isDefined && u.pictureFromProvider =>
+              picture.get
+            case true if picture.isEmpty => User.DEFAULT_IMAGE
+            case _ => u.picture
+          },
+        isDaikokuAdmin = isDaikokuAdmin
+      )
+
+      EitherT.right[AppError](_env.dataStore.userRepo.save(updatedUser))
+        .map(_ => updatedUser)
+    }
+
+    def processUserFromOAuth(userFromOauth: JsValue): EitherT[Future, AppError, User] = {
+      for {
+        name <- EitherT.fromOption[Future]((userFromOauth \ authConfig.nameField)
+          .asOpt[String], AppError.EntityNotFound("No name found"))
+        email <- EitherT.fromOption[Future]((userFromOauth \ authConfig.emailField)
+          .asOpt[String], AppError.EntityNotFound("No email found"))
+        picture <- EitherT.pure[Future, AppError]((userFromOauth \ authConfig.pictureField).asOpt[String])
+        isDaikokuAdmin = authConfig.roleClaim match {
+          case Some(claim) if claim != "daikokuAdmin" => (userFromOauth \ claim).asOpt[JsValue] match {
+            case Some(JsString(role)) => authConfig.adminRole.forall(_ == role)
+            case Some(JsArray(roles)) => authConfig.adminRole.forall(r => roles.map(_.as[String]).contains(r))
+            case None => authConfig.daikokuAdmins.contains(email)
+          }
+          case _ => (userFromOauth \ "daikokuAdmin")
+            .asOpt[String]
+            .flatMap(_.toBooleanOption)
+            .orElse((userFromOauth \ "daikokuAdmin").asOpt[Boolean])
+            .getOrElse(false)
+        }
+        isUser = authConfig.roleClaim match {
+          case Some(claim) => (userFromOauth \ claim).asOpt[JsValue] match {
+            case Some(JsString(role)) => authConfig.userRole.forall(_ == role)
+            case Some(JsArray(roles)) => authConfig.userRole.forall(r => roles.map(_.as[String]).contains(r))
+            case None => false
+          }
+          case _ => true
+        }
+
+        _ <- EitherT.cond[Future](isDaikokuAdmin || isUser, (), AppError.Unauthorized)
+
+        existingUser <- EitherT.right[AppError](_env.dataStore.userRepo
+          .findOne(Json.obj("_deleted" -> false, "email" -> email)))
+
+        connectedUser <- existingUser match {
+          case Some(user) => updateUser(user, name, email, picture, isDaikokuAdmin)
+          case None => createUser(name, email, picture, isDaikokuAdmin)
+        }
+      } yield connectedUser
+    }
+
+    for {
+      _ <- EitherT.cond[Future](request.getQueryString("error").isEmpty, (), AppError.BadRequestError("No code"))
+      code <- EitherT.fromOption[Future](request.getQueryString("code"), AppError.BadRequestError("No code"))
+
+      builder = _env.wsClient.url(authConfig.tokenUrl)
+      verifier = request.session.get("code_verifier").getOrElse("")
+      clientSecret = authConfig.clientSecret.map(_.trim).filterNot(_.isEmpty)
+      mapPayload = (Map(
+        "code" -> code,
+        "grant_type" -> "authorization_code",
+        "client_id" -> authConfig.clientId,
+        "redirect_uri" -> authConfig.callbackUrl,
+        "scope" -> authConfig.scope
+      ) ++ authConfig.pkceConfig
+        .collect {
+          case e if e.enabled => Map("code_verifier" -> verifier)
+        }
+        .getOrElse(Map.empty)
+        ++ clientSecret
+        .map(s => Map("client_secret" -> s))
+        .getOrElse(Map.empty))
+
+      response <- EitherT.right[AppError](if (authConfig.useJson) {
+        val jsonPayload = JsObject(
+          mapPayload.view.mapValues(JsString.apply).toMap
+        )
+        builder.post(
+          jsonPayload
+        )
+      } else {
+        builder.post(
+          mapPayload
+        )(writeableOf_urlEncodedSimpleForm)
+      })
+      accessToken = (response.json \ authConfig.accessTokenField).as[String]
+      userJson <- if(authConfig.readProfileFromToken && authConfig.jwtVerifier.isDefined)
+        verifyAndGetUser(accessToken)
+      else
+        getUser(accessToken)
+
+      user <- processUserFromOAuth(userJson)
+    } yield user
+
   }
 
   def getConfiguration(

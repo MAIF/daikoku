@@ -14,7 +14,8 @@ import fr.maif.otoroshi.daikoku.domain.{
   Tenant
 }
 import fr.maif.otoroshi.daikoku.logger.AppLogger
-import fr.maif.otoroshi.daikoku.login.LoginFilter
+import fr.maif.otoroshi.daikoku.login.AuthProvider.Local
+import fr.maif.otoroshi.daikoku.login.{AuthProvider, LoginFilter, OAuth2Config}
 import fr.maif.otoroshi.daikoku.utils._
 import io.vertx.pgclient.PgPool
 import org.apache.pekko.Done
@@ -95,7 +96,17 @@ case class DataConfig(
     headers: Map[String, String] = Map.empty[String, String]
 )
 
-case class InitConfig(host: String, admin: AdminConfig, data: DataConfig)
+case class AuthProviderConfig(
+    defaultprovider: AuthProvider,
+    oauth2config: Option[OAuth2Config]
+)
+
+case class InitConfig(
+    host: String,
+    admin: AdminConfig,
+    data: DataConfig,
+    authProviderConfig: AuthProviderConfig
+)
 
 object InitConfig {
   def apply(configuration: Configuration): InitConfig = {
@@ -120,6 +131,74 @@ object InitConfig {
         headers = configuration
           .getOptional[Map[String, String]]("daikoku.init.data.headers")
           .getOrElse(Map.empty[String, String])
+      ),
+      authProviderConfig = AuthProviderConfig(
+        defaultprovider = configuration.getOptional[String](
+          "daikoku.init.authProvider.default"
+        ) match {
+          case Some(value) => AuthProvider.apply(value).getOrElse(Local)
+          case None        => Local
+        },
+        oauth2config = configuration.getOptional[String](
+          "daikoku.init.authProvider.default"
+        ) match {
+          case Some(e) if e.toLowerCase == "oauth2" =>
+            OAuth2Config(
+              clientId = configuration.get[String](
+                "daikoku.init.authProvider.oauth2.client-secret"
+              ),
+              clientSecret = configuration.getOptional[String](
+                "daikoku.init.authProvider.oauth2.client-secret"
+              ),
+              tokenUrl = configuration.get[String](
+                "daikoku.init.authProvider.oauth2.token-url"
+              ),
+              authorizeUrl = configuration.get[String](
+                "daikoku.init.authProvider.oauth2.authorized-url"
+              ),
+              userInfoUrl = configuration.get[String](
+                "daikoku.init.authProvider.oauth2.user-info-url"
+              ),
+              loginUrl = configuration.get[String](
+                "daikoku.init.authProvider.oauth2.login-url"
+              ),
+              logoutUrl = configuration.get[String](
+                "daikoku.init.authProvider.oauth2.login-url"
+              ),
+              scope = configuration
+                .getOptional[String]("daikoku.init.authProvider.oauth2.scope")
+                .getOrElse("openid profile email name"),
+              jwtVerifier = None,
+              nameField = configuration
+                .getOptional[String](
+                  "daikoku.init.authProvider.oauth2.name-field"
+                )
+                .getOrElse("name"),
+              emailField = configuration
+                .getOptional[String](
+                  "daikoku.init.authProvider.oauth2.email-field"
+                )
+                .getOrElse("email"),
+              pictureField = configuration
+                .getOptional[String](
+                  "daikoku.init.authProvider.oauth2.picture-field"
+                )
+                .getOrElse("picture"),
+              callbackUrl = configuration.get[String](
+                "daikoku.init.authProvider.oauth2.callback-url"
+              ),
+              roleClaim = configuration.getOptional[String](
+                "daikoku.init.authProvider.oauth2.role-claim"
+              ),
+              adminRole = configuration.getOptional[String](
+                "daikoku.init.authProvider.oauth2.admin-role"
+              ),
+              userRole = configuration.getOptional[String](
+                "daikoku.init.authProvider.oauth2.user-role"
+              )
+            ).some
+          case _ => None
+        }
       )
     )
   }
@@ -486,8 +565,6 @@ class DaikokuEnv(
                 val userId = UserId(IdGenerator.token(32))
                 val adminApiDefaultTenantId =
                   ApiId(s"admin-api-tenant-${Tenant.Default.value}")
-                val cmsApiDefaultTenantId =
-                  ApiId(s"cms-api-tenant-${Tenant.Default.value}")
                 val defaultAdminTeam = Team(
                   id = TeamId(IdGenerator.token),
                   tenant = Tenant.Default,
@@ -516,10 +593,11 @@ class DaikokuEnv(
                   ),
                   contact = "contact@foo.bar",
                   mailerSettings = Some(ConsoleMailerSettings()),
-                  authProvider = AuthProvider.Local,
-                  authProviderSettings = Json.obj(
-                    "sessionMaxAge" -> 86400
-                  ),
+                  authProvider = config.init.authProviderConfig.defaultprovider,
+                  authProviderSettings =
+                    config.init.authProviderConfig.oauth2config
+                      .map(_.asJson)
+                      .getOrElse(Json.obj("sessionMaxAge" -> 86400)),
                   bucketSettings = None,
                   otoroshiSettings = Set(),
                   adminApi = adminApiDefaultTenantId
@@ -543,7 +621,7 @@ class DaikokuEnv(
                 val user = User(
                   id = userId,
                   tenants = Set(tenant.id),
-                  origins = Set(AuthProvider.Otoroshi),
+                  origins = Set(AuthProvider.Local) ++ Set(config.init.authProviderConfig.defaultprovider),
                   name = config.init.admin.name,
                   email = config.init.admin.email,
                   picture = config.init.admin.email.gravatar,
@@ -674,11 +752,10 @@ class DaikokuEnv(
       .toMat(Sink.ignore)(Keep.right)
       .run()(materializer)
       .map(_ => {
-        dataStore.reportsInfoRepo.count().map {
-          case 0 =>
-            dataStore.reportsInfoRepo.save(
-              ReportsInfo(id = DatastoreId(IdGenerator.uuid), activated = false)
-            )
+        dataStore.reportsInfoRepo.count().map { case 0 =>
+          dataStore.reportsInfoRepo.save(
+            ReportsInfo(id = DatastoreId(IdGenerator.uuid), activated = false)
+          )
         }
       })
   }

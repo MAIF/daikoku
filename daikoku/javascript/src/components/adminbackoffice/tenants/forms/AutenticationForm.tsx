@@ -283,6 +283,21 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
         constraints.required(translate("constraints.required.value"))
       ]
     },
+    roleClaim: {
+      type: type.string,
+      label: translate('oauth2.form.logout.url.help'), //TODO: translate
+      help: translate('oauth2.form.logout.url.help'), //TODO: translate
+    },
+    adminRole: {
+      type: type.string,
+      label: translate('oauth2.form.logout.url.help'), //TODO: translate
+      help: translate('oauth2.form.logout.url.help'), //TODO: translate
+    },
+    userRole: {
+      type: type.string,
+      label: translate('oauth2.form.logout.url.help'), //TODO: translate
+      help: translate('oauth2.form.logout.url.help'), //TODO: translate
+    },
     daikokuAdmins: {
       type: type.string,
       array: true,

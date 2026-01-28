@@ -176,6 +176,38 @@ class LoginController(
     }
   }
 
+  def bindUserV2(
+      sessionMaxAge: Int,
+      tenant: Tenant,
+      request: RequestHeader,
+      f: => EitherT[Future, AppError, User]
+  ): Future[Result] = {
+
+    f.flatMap { user =>
+      user.twoFactorAuthentication match {
+        case Some(auth) if auth.enabled =>
+          val keyGenerator = KeyGenerator.getInstance("HmacSHA1")
+          keyGenerator.init(160)
+          val token =
+            new Base32().encodeAsString(keyGenerator.generateKey.getEncoded)
+
+          EitherT(
+            env.dataStore.userRepo
+              .save(user.copy(twoFactorAuthentication = Some(auth.copy(token = token))))
+              .map {
+                case true  => Right(Redirect(s"/2fa?token=$token"))
+                case false => Left(AppError.InternalServerError("Failed to save user"))
+              }
+          )
+        case _ =>
+          EitherT.liftF(createSession(sessionMaxAge, user, request, tenant))
+      }
+    }.foldF(
+      error => after(3.seconds)(error.renderF()),
+      identity
+    )
+  }
+
   private def createSession(
       sessionMaxAge: Int,
       user: User,
@@ -265,13 +297,12 @@ class LoginController(
 
         maybeOAuth2Config match {
           case Right(authConfig) =>
-            bindUser(
+            bindUserV2(
               authConfig.sessionMaxAge,
               ctx.tenant,
               ctx.request,
               OAuth2Support
                 .bindUser(ctx.request, authConfig, ctx.tenant, env)
-                .map(_.toOption)
             )
           case Left(e) =>
             after(3.seconds)(

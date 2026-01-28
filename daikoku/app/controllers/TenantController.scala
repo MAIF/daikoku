@@ -227,7 +227,14 @@ class TenantController(
             val (adminApi, adminApiPlan) =
               ApiTemplate.adminApi(adminTeam, tenant)
 
-            val tenantForCreation = tenant.copy(adminApi = adminApi.id)
+            val tenantForCreation = tenant.copy(
+              adminApi = adminApi.id,
+              authProvider = env.config.init.authProviderConfig.defaultprovider,
+              authProviderSettings =
+                env.config.init.authProviderConfig.oauth2config
+                  .map(_.asJson)
+                  .getOrElse(Json.obj("sessionMaxAge" -> 86400)),
+            )
 
             val (cmsApi, cmsPlan) = ApiTemplate.cmsApi(adminTeam, tenant)
 
