@@ -21,13 +21,9 @@ export const state = {
 
 export const SideBar = () => {
   const [panelState, setPanelState] = useState(state.closed);
-  const [panelContent, setPanelContent] = useState<JSX.Element>();
+  const [panelContent, _] = useState<JSX.Element>();
 
   const location = useLocation();
-
-  const { tenant, connectedUser, impersonator, isTenantAdmin, unreadNotificationsCount } = useContext(GlobalContext);
-  const { totalUnread } = useContext(MessagesContext);
-  const { translate } = useContext(I18nContext);
 
   useEffect(() => {
     setPanelState(state.closed);
@@ -40,6 +36,7 @@ export const SideBar = () => {
       return false;
     }
   };
+
   useEffect(() => {
     window.addEventListener('keydown', closeOnEsc, true);
 
@@ -47,12 +44,6 @@ export const SideBar = () => {
       window.removeEventListener('keydown', closeOnEsc, true);
     };
   }, []);
-
-  const impersonatorStyle = impersonator
-    ? { border: '3px solid red', boxShadow: '0px 0px 5px 2px red' }
-    : {};
-
-  const isAdmin = connectedUser.isDaikokuAdmin || isTenantAdmin;
 
   if (location.pathname === '/') {
     return null;
@@ -115,11 +106,11 @@ export const TopBar = () => {
   }, []);
 
   const themedMinLogo = useMemo(() => {
-      if (theme === 'DARK' && tenant.logoMinDark) {
-        return tenant.logoMinDark
-      }
-      return tenant.logoMin
-    }, [theme, tenant.logoMin, tenant.logoMinDark])
+    if (theme === 'DARK' && tenant.logoMinDark) {
+      return tenant.logoMinDark
+    }
+    return tenant.logoMin
+  }, [theme, tenant.logoMin, tenant.logoMinDark])
 
   const impersonatorStyle = impersonator
     ? { border: '3px solid red', boxShadow: '0px 0px 5px 2px red' }

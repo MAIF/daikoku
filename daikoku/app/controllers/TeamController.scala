@@ -152,6 +152,17 @@ class TeamController(
             implicit val language: String = ctx.user.defaultLanguage
               .getOrElse(ctx.tenant.defaultLanguage.getOrElse("en"))
             val res: EitherT[Future, AppError, Result] = for {
+              adminTeam <- EitherT.fromOptionF(
+                env.dataStore.teamRepo
+                  .forTenant(ctx.tenant)
+                .findOneNotDeleted(
+                  Json.obj("type" -> TeamType.Admin.name)
+                ),
+                AppError.EntityNotFound("admin team")
+              )
+              _ <- EitherT.cond[Future][AppError, Unit](
+                !ctx.tenant.teamCreationSecurity.getOrElse(false) || adminTeam.users.exists(_.userId == ctx.user.id) || ctx.user.isDaikokuAdmin,
+                (), AppError.ForbiddenAction)
               _ <- EitherT.fromOptionF(
                 env.dataStore.teamRepo
                   .forTenant(ctx.tenant)

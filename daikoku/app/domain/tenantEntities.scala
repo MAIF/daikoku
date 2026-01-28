@@ -431,6 +431,7 @@ case class Tenant(
     adminApi: ApiId,
     adminSubscriptions: Seq[ApiSubscriptionId] = Seq.empty,
     creationSecurity: Option[Boolean] = None,
+    teamCreationSecurity: Option[Boolean] = None,
     subscriptionSecurity: Option[Boolean] = None,
     apiReferenceHideForGuest: Option[Boolean] = Some(true),
     defaultMessage: Option[String] = None,
@@ -443,8 +444,7 @@ case class Tenant(
     environments: Set[String] = Set.empty,
     clientNamePattern: Option[String] = None,
     accountCreationProcess: Seq[ValidationStep] = Seq.empty,
-    defaultAuthorizedOtoroshiEntities: Option[Seq[TeamAuthorizedEntities]] =
-      None
+    defaultAuthorizedOtoroshiEntities: Option[Seq[TeamAuthorizedEntities]] = None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)
@@ -562,7 +562,11 @@ case class Tenant(
       "accountCreationProcess" -> SeqValidationStepFormat.writes(
         accountCreationProcess
       ),
-      "isPrivate" -> isPrivate
+      "isPrivate" -> isPrivate,
+      "teamCreationSecurity" -> teamCreationSecurity
+        .map(JsBoolean)
+        .getOrElse(JsBoolean(false))
+        .as[JsValue]
     )
   }
   def favicon(): String = {

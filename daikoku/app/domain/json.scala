@@ -1788,7 +1788,8 @@ object json {
               .getOrElse(Seq.empty),
             defaultAuthorizedOtoroshiEntities =
               (json \ "defaultAuthorizedOtoroshiEntities")
-                .asOpt(SeqTeamAuthorizedEntitiesFormat)
+                .asOpt(SeqTeamAuthorizedEntitiesFormat),
+            teamCreationSecurity = (json \ "teamCreationSecurity").asOpt[Boolean]
           )
         )
       } recover {
@@ -1869,6 +1870,10 @@ object json {
         "defaultAuthorizedOtoroshiEntities" -> o.defaultAuthorizedOtoroshiEntities
           .map(SeqTeamAuthorizedEntitiesFormat.writes)
           .getOrElse(JsNull)
+          .as[JsValue],
+        "teamCreationSecurity" -> o.teamCreationSecurity
+          .map(JsBoolean)
+          .getOrElse(JsBoolean(false))
           .as[JsValue]
       )
   }

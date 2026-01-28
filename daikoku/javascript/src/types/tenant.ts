@@ -199,6 +199,7 @@ export interface ITenant {
     otoroshiSettingsId: string;
     authorizedEntities: IAuthorizedEntities;
   }>;
+  teamCreationSecurity?: boolean;
 }
 
 export interface ITenantFull extends ITenant {

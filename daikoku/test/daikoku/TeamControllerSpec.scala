@@ -112,6 +112,21 @@ class TeamControllerSpec()
       respDeleteNotFound.status mustBe 404
     }
 
+    "create team even if teamCreationSecurity is active" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(teamCreationSecurity = true.some)),
+        users = Seq(daikokuAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(daikokuAdmin, tenant)
+      val respCreation = httpJsonCallBlocking(
+        path = "/api/teams",
+        method = "POST",
+        body = Some(teamOwner.asJson)
+      )(tenant, session)
+      respCreation.status mustBe 201
+    }
+
     "not add/remove member from a personal team" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -261,6 +276,23 @@ class TeamControllerSpec()
 
       val result2 = (resp2.json \ "data" \ "teamsPagination" \ "total").as[Int]
       result2 mustBe 4
+    }
+  }
+
+  "a tenant admin" can {
+    "create team even if teamCreationSecurity is active" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(teamCreationSecurity = true.some)),
+        users = Seq(daikokuAdmin, tenantAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val respCreation = httpJsonCallBlocking(
+        path = "/api/teams",
+        method = "POST",
+        body = Some(teamOwner.asJson)
+      )(tenant, session)
+      respCreation.status mustBe 201
     }
   }
 
@@ -615,6 +647,36 @@ class TeamControllerSpec()
 
   "a user or api editor" can {
     val randomUser = Random.shuffle(Seq(user, userApiEditor)).head
+
+    "not create team even if teamCreationSecurity is active" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(teamCreationSecurity = true.some)),
+        users = Seq(daikokuAdmin, randomUser),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(randomUser, tenant)
+      val respCreation = httpJsonCallBlocking(
+        path = "/api/teams",
+        method = "POST",
+        body = Some(teamOwner.asJson)
+      )(tenant, session)
+      respCreation.status mustBe 403
+    }
+
+    "create team if teamCreationSecurity is inactive" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(teamCreationSecurity = false.some)),
+        users = Seq(daikokuAdmin, randomUser),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(randomUser, tenant)
+      val respCreation = httpJsonCallBlocking(
+        path = "/api/teams",
+        method = "POST",
+        body = Some(teamOwner.asJson)
+      )(tenant, session)
+      respCreation.status mustBe 201
+    }
 
     "not have full access to a team" in {
       setupEnvBlocking(

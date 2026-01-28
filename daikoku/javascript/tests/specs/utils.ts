@@ -33,6 +33,7 @@ export const tenant = 'default';
 export const apiPapier = "qVJzX6DLRkHIEWHqPHgrM4gqMVyGXeDj"
 export const apiCommande = "G12uGyXcKMr7cWsTidiIOmzUvrxvlkrJ"
 
+export const tenantAdminTeam = "0k7D3RIkcDwsZJQ36ml6A6qjC1PdeiY4U0pBRQDX3uyBsdkYJYdDaBc0E1YnKQFC"
 export const apiDivision = "pP61PigzFffXTu4TX3BmvAB6iUIHY9oj"
 export const vendeurs = "c9NB4pklW4QxJ3mLcxQAwqu4RvquHYv4"
 export const logistique = "jGVkVifJgKFdOq4PeoMU2XKWzEjejUfI"
