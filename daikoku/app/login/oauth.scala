@@ -349,7 +349,7 @@ object OAuth2Support {
           case Some(claim) if claim != "daikokuAdmin" => (userFromOauth \ claim).asOpt[JsValue] match {
             case Some(JsString(role)) => authConfig.adminRole.forall(_ == role)
             case Some(JsArray(roles)) => authConfig.adminRole.forall(r => roles.map(_.as[String]).contains(r))
-            case None => authConfig.daikokuAdmins.contains(email)
+            case _ => authConfig.daikokuAdmins.contains(email)
           }
           case _ => (userFromOauth \ "daikokuAdmin")
             .asOpt[String]
@@ -361,7 +361,7 @@ object OAuth2Support {
           case Some(claim) => (userFromOauth \ claim).asOpt[JsValue] match {
             case Some(JsString(role)) => authConfig.userRole.forall(_ == role)
             case Some(JsArray(roles)) => authConfig.userRole.forall(r => roles.map(_.as[String]).contains(r))
-            case None => false
+            case _ => false
           }
           case _ => true
         }

@@ -183,7 +183,7 @@ class LoginController(
       f: => EitherT[Future, AppError, User]
   ): Future[Result] = {
 
-    f.flatMap { user =>
+    val value: EitherT[Future, AppError, Result] = f.flatMap { user =>
       user.twoFactorAuthentication match {
         case Some(auth) if auth.enabled =>
           val keyGenerator = KeyGenerator.getInstance("HmacSHA1")
@@ -195,16 +195,18 @@ class LoginController(
             env.dataStore.userRepo
               .save(user.copy(twoFactorAuthentication = Some(auth.copy(token = token))))
               .map {
-                case true  => Right(Redirect(s"/2fa?token=$token"))
+                case true => Right(Redirect(s"/2fa?token=$token"))
                 case false => Left(AppError.InternalServerError("Failed to save user"))
               }
           )
         case _ =>
           EitherT.liftF(createSession(sessionMaxAge, user, request, tenant))
       }
-    }.foldF(
+    }
+
+    value.foldF(
       error => after(3.seconds)(error.renderF()),
-      identity
+      r => r.future
     )
   }
 
