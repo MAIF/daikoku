@@ -2938,7 +2938,7 @@ object SchemaDefinition {
     lazy val ApiBlockingWarningType = new PossibleObject(
       ObjectType(
         "ApiBlockingWarning",
-        "A notification triggered when an API is deprecated",
+        "A notification triggered when an API is blocked",
         interfaces[
           (DataStore, DaikokuActionContext[JsValue]),
           ApiBlockingWarning
@@ -2954,6 +2954,14 @@ object SchemaDefinition {
               ctx.ctx._1.apiRepo
                 .forTenant(ctx.ctx._2.tenant)
                 .findByIdNotDeleted(ctx.value.api)
+          ),
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve = ctx =>
+              ctx.ctx._1.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.subscription)
           )
         )
       )

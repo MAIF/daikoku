@@ -319,6 +319,7 @@ export const NotificationList = () => {
   const notificationTypes = [
     { type: "AccountCreation" },
     { type: "ApiAccess" },
+    { type: "ApiBlockingWarning" },
     { type: "ApiDepreciationWarning" },
     { type: "ApiKeyDeletionInformation" },
     { type: "ApiKeyDeletionInformationV2" },
@@ -664,6 +665,8 @@ export const NotificationList = () => {
         return translate("notif.CheckoutForSubscription");
       case 'ApiDepreciationWarning':
         return translate({key: "notif.ApiDepreciationWarning", replacements: [notification.action.api.name] });
+      case 'ApiBlockingWarning':
+        return translate({key: "notif.ApiBlockingWarning", replacements: [notification.action.api.name] });
       case 'ApiAccess':
         return translate({ key: 'notif.api.access', replacements: [notification.action.api.name] })
       case 'TransferApiOwnership':
@@ -983,6 +986,7 @@ export const NotificationList = () => {
       case "TransferApiOwnership":
       case "CheckoutForSubscription":
       case "ApiDepreciationWarning":
+      case "ApiBlockingWarning":
         const _api = notification.action.api
         return ({ _id: _api._id, name: _api.name, currentVersion: _api.currentVersion })
       case "ApiKeyDeletionInformation":

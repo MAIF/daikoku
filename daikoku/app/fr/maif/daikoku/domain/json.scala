@@ -3051,7 +3051,8 @@ object json {
       Try {
         JsSuccess(
           ApiBlockingWarning(
-            api = (json \ "api").as(ApiIdFormat)
+            api = (json \ "api").as(ApiIdFormat),
+            subscription = (json \ "sub").as(ApiSubscriptionIdFormat)
           )
         )
       } recover { case e =>
@@ -3061,7 +3062,8 @@ object json {
 
     override def writes(o: ApiBlockingWarning): JsValue =
       Json.obj(
-        "api" -> o.api.asJson
+        "api" -> o.api.asJson,
+        "sub" -> o.subscription.asJson
       )
   }
 

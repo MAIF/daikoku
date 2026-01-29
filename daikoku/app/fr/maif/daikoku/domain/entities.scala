@@ -10,96 +10,69 @@ trait CanJson[A] {
 sealed trait ValueType {
   def value: String
 }
-case class OtoroshiServiceId(value: String)
-    extends ValueType
-    with CanJson[OtoroshiServiceId] {
+case class OtoroshiServiceId(value: String)  extends ValueType with CanJson[OtoroshiServiceId]  {
   def asJson: JsValue = JsString(value)
 }
-case class OtoroshiRouteId(value: String)
-    extends ValueType
-    with CanJson[OtoroshiRouteId] {
+case class OtoroshiRouteId(value: String)    extends ValueType with CanJson[OtoroshiRouteId]    {
   def asJson: JsValue = JsString(value)
 }
-case class OtoroshiSettingsId(value: String)
-    extends ValueType
-    with CanJson[OtoroshiSettingsId] {
+case class OtoroshiSettingsId(value: String) extends ValueType with CanJson[OtoroshiSettingsId] {
   def asJson: JsValue = JsString(value)
 }
-case class UsagePlanId(value: String)
-    extends ValueType
-    with CanJson[UsagePlanId] {
+case class UsagePlanId(value: String)        extends ValueType with CanJson[UsagePlanId]        {
   def asJson: JsValue = JsString(value)
 }
-case class UserId(value: String) extends ValueType with CanJson[UserId] {
+case class UserId(value: String)             extends ValueType with CanJson[UserId]             {
   def asJson: JsValue = JsString(value)
 }
-case class TeamId(value: String) extends ValueType with CanJson[TeamId] {
+case class TeamId(value: String)             extends ValueType with CanJson[TeamId]             {
   def asJson: JsValue = JsString(value)
 }
-case class ApiId(value: String) extends ValueType with CanJson[ApiId] {
+case class ApiId(value: String)              extends ValueType with CanJson[ApiId]              {
   def asJson: JsValue = JsString(value)
 }
-case class ApiSubscriptionId(value: String)
-    extends ValueType
-    with CanJson[ApiSubscriptionId] {
-  def asJson: JsValue = JsString(value)
-}
-case class ApiDocumentationId(value: String)
-    extends ValueType
-    with CanJson[ApiDocumentationId] {
-  def asJson: JsValue = JsString(value)
-}
-case class ApiDocumentationPageId(value: String)
-    extends ValueType
-    with CanJson[ApiDocumentationPageId] {
-  def asJson: JsValue = JsString(value)
-}
-case class Version(value: String) extends ValueType with CanJson[Version] {
-  def asJson: JsValue = JsString(value)
-}
-case class TenantId(value: String) extends ValueType with CanJson[TenantId] {
+case class ApiSubscriptionId(value: String)  extends ValueType with CanJson[ApiSubscriptionId]  {
   def asJson: JsValue = JsString(value)
 }
 
-case class OtoroshiGroup(value: String)
-    extends ValueType
-    with CanJson[OtoroshiGroup] {
+case class ApiDocumentationId(value: String)     extends ValueType with CanJson[ApiDocumentationId]     {
   def asJson: JsValue = JsString(value)
 }
-case class OtoroshiServiceGroupId(value: String)
-    extends ValueType
-    with CanJson[OtoroshiServiceGroupId] {
+case class ApiDocumentationPageId(value: String) extends ValueType with CanJson[ApiDocumentationPageId] {
   def asJson: JsValue = JsString(value)
 }
-case class NotificationId(value: String)
-    extends ValueType
-    with CanJson[NotificationId] {
+case class Version(value: String)                extends ValueType with CanJson[Version]                {
   def asJson: JsValue = JsString(value)
 }
-case class UserSessionId(value: String)
-    extends ValueType
-    with CanJson[UserSessionId] {
+case class TenantId(value: String)               extends ValueType with CanJson[TenantId]               {
   def asJson: JsValue = JsString(value)
 }
-case class DatastoreId(value: String)
-    extends ValueType
-    with CanJson[DatastoreId] {
+
+case class OtoroshiGroup(value: String)          extends ValueType with CanJson[OtoroshiGroup]          {
   def asJson: JsValue = JsString(value)
 }
-case class ChatId(value: String) extends ValueType with CanJson[ChatId] {
+case class OtoroshiServiceGroupId(value: String) extends ValueType with CanJson[OtoroshiServiceGroupId] {
   def asJson: JsValue = JsString(value)
 }
-case class ApiPostId(value: String) extends ValueType with CanJson[ApiPostId] {
+case class NotificationId(value: String)         extends ValueType with CanJson[NotificationId]         {
   def asJson: JsValue = JsString(value)
 }
-case class ApiIssueId(value: String)
-    extends ValueType
-    with CanJson[ApiIssueId] {
+case class UserSessionId(value: String)          extends ValueType with CanJson[UserSessionId]          {
   def asJson: JsValue = JsString(value)
 }
-case class ApiIssueTagId(value: String)
-    extends ValueType
-    with CanJson[ApiIssueTagId] {
+case class DatastoreId(value: String)            extends ValueType with CanJson[DatastoreId]            {
+  def asJson: JsValue = JsString(value)
+}
+case class ChatId(value: String)                 extends ValueType with CanJson[ChatId]                 {
+  def asJson: JsValue = JsString(value)
+}
+case class ApiPostId(value: String)              extends ValueType with CanJson[ApiPostId]              {
+  def asJson: JsValue = JsString(value)
+}
+case class ApiIssueId(value: String)             extends ValueType with CanJson[ApiIssueId]             {
+  def asJson: JsValue = JsString(value)
+}
+case class ApiIssueTagId(value: String)          extends ValueType with CanJson[ApiIssueTagId]          {
   def asJson: JsValue = JsString(value)
 }
 
@@ -111,9 +84,7 @@ case class AssetId(value: String) extends ValueType with CanJson[AssetId] {
   def asJson: JsValue = JsString(value)
 }
 
-case class ThirdPartyPaymentSettingsId(value: String)
-    extends ValueType
-    with CanJson[CmsPageId] {
+case class ThirdPartyPaymentSettingsId(value: String) extends ValueType with CanJson[CmsPageId] {
   def asJson: JsValue = JsString(value)
 }
 
@@ -121,9 +92,7 @@ case class DemandId(value: String) extends ValueType with CanJson[DemandId] {
   def asJson: JsValue = JsString(value)
 }
 
-case class SubscriptionDemandStepId(value: String)
-    extends ValueType
-    with CanJson[SubscriptionDemandStepId] {
+case class SubscriptionDemandStepId(value: String) extends ValueType with CanJson[SubscriptionDemandStepId] {
   def asJson: JsValue = JsString(value)
 }
 
