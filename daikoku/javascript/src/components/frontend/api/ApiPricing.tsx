@@ -1266,7 +1266,8 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           {customDescription && <span>{customDescription}</span>}
         </p>
         <div className="d-flex justify-content-between align-items-center flex-wrap usage-plan__card__subscription">
-          {!connectedUser.isGuest && (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api)) && props.api.visibility !== 'AdminOnly' && (
+          {!connectedUser.isGuest && (!otoroshiTargetIsDefined || !otoroshiEntitiesIsDefined || !isPublish(props.api))
+            && props.api.visibility !== 'AdminOnly' && props.api.state !== 'blocked' && (
             <button
               type="button"
               className="usage-plan__card__action-button inactive"
@@ -1277,7 +1278,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
           {((otoroshiTargetIsDefined && otoroshiEntitiesIsDefined) ||
             props.api.visibility === 'AdminOnly') &&
             (!isAccepted || props.api.visibility === 'AdminOnly') &&
-            isPublish(props.api) && (
+            (isPublish(props.api) && props.api.state !== 'blocked') && (
               <Can
                 I={access}
                 a={apikey}
@@ -1303,7 +1304,7 @@ const ApiPricingCard = (props: ApiPricingCardProps) => {
                   )}
               </Can>
             )}
-          {connectedUser.isGuest && (
+          {connectedUser.isGuest && props.api.state !== 'blocked' && (
             <button
               type="button"
               className="usage-plan__card__action-button"

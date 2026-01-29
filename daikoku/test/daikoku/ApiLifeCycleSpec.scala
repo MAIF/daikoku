@@ -1,6 +1,8 @@
 package fr.maif.otoroshi.daikoku.tests
 
 import cats.implicits.catsSyntaxOptionId
+import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
+import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
@@ -10,6 +12,7 @@ import org.joda.time.DateTime
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatest.BeforeAndAfter
 import org.scalatestplus.play.PlaySpec
+import org.testcontainers.containers.BindMode
 import play.api.libs.json._
 import play.api.libs.ws.WSResponse
 
@@ -21,27 +24,26 @@ class ApiLifeCycleSpec()
     with DaikokuSpecHelper
     with IntegrationPatience
     with BeforeAndAfter
-//    with ForAllTestContainer
-    {
+    with ForAllTestContainer {
 
-//  val pwd = System.getProperty("user.dir");
-//
-//  override val container = GenericContainer(
-//    "maif/otoroshi",
-//    exposedPorts = Seq(8080),
-//    fileSystemBind = Seq(
-//      FileSystemBind(
-//        s"$pwd/test/daikoku/otoroshi.json",
-//        "/home/user/otoroshi.json",
-//        BindMode.READ_ONLY
-//      )
-//    ),
-//    env = Map("APP_IMPORT_FROM" -> "/home/user/otoroshi.json")
-//  )
+  val pwd = System.getProperty("user.dir");
 
-//  before {
-//    Await.result(cleanOtoroshiServer(container.mappedPort(8080)), 5.seconds)
-//  }
+  override val container = GenericContainer(
+    "maif/otoroshi",
+    exposedPorts = Seq(8080),
+    fileSystemBind = Seq(
+      FileSystemBind(
+        s"$pwd/test/daikoku/otoroshi.json",
+        "/home/user/otoroshi.json",
+        BindMode.READ_ONLY
+      )
+    ),
+    env = Map("APP_IMPORT_FROM" -> "/home/user/otoroshi.json")
+  )
+
+  before {
+    Await.result(cleanOtoroshiServer(container.mappedPort(8080)), 5.seconds)
+  }
 
   "API life cycle" must {
 
@@ -136,14 +138,12 @@ class ApiLifeCycleSpec()
 
     def changingAPIState(session: UserSession, state: ApiState, statusResponse: Int) = {
       {
-        logger.info("API lifecycle ")
         val resp = httpJsonCallBlocking(
           path =
             s"/api/teams/${teamOwnerId.value}/apis/${defaultApi.api.id.value}/${defaultApi.api.currentVersion.value}",
           method = "PUT",
           body = Some(defaultApi.api.copy(state = state).asJson)
         )(tenant, session)
-        logger.json(resp.json, true)
         resp.status mustBe statusResponse
         if (statusResponse == 200) (resp.json \ "state").as(json.ApiStateFormat) mustBe state
       }
@@ -226,8 +226,63 @@ class ApiLifeCycleSpec()
     "notify customer when API lifeCycle change needs to" in {
 
       Await.result(waitForDaikokuSetup(), 5.second)
+
+      val planDev = UsagePlan(
+        id = UsagePlanId("dev"),
+        tenant = tenant.id,
+        customName = "dev",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false)
+      )
+
+      val planProd = UsagePlan(
+        id = UsagePlanId("prod"),
+        tenant = tenant.id,
+        customName = "prod",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(childRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false)
+      )
+
       setupEnvBlocking(
-        tenants = Seq(tenant),
+        tenants = Seq(
+          tenant.copy(
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url = s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
         users = Seq(userAdmin, userApiEditor, user),
         teams = Seq(
           defaultAdminTeam,
@@ -239,14 +294,14 @@ class ApiLifeCycleSpec()
             )
           )
         ),
-        apis = Seq(defaultApi.api),
-        usagePlans = defaultApi.plans,
+        apis = Seq(defaultApi.api.copy(possibleUsagePlans = Seq(planProd.id, planDev.id))),
+        usagePlans = Seq(planProd, planDev),
         subscriptions = Seq(
           ApiSubscription(
             id = ApiSubscriptionId(IdGenerator.token(12)),
             tenant = tenant.id,
-            apiKey = OtoroshiApiKey("name", "id", "secret"),
-            plan = defaultApi.plans.head.id,
+            apiKey = parentApiKey,
+            plan = planProd.id,
             createdAt = DateTime.now(),
             team = teamConsumerId,
             api = defaultApi.api.id,
@@ -258,10 +313,23 @@ class ApiLifeCycleSpec()
           ApiSubscription(
             id = ApiSubscriptionId(IdGenerator.token(12)),
             tenant = tenant.id,
-            apiKey = OtoroshiApiKey("name", "id", "secret"),
-            plan = defaultApi.plans.reverse.head.id,
+            apiKey = parentApiKeyWith2childs,
+            plan = planDev.id,
             createdAt = DateTime.now(),
             team = teamOwner.id,
+            api = defaultApi.api.id,
+            by = userTeamAdminId,
+            customName = None,
+            rotation = None,
+            integrationToken = "token"
+          ),
+          ApiSubscription(
+            id = ApiSubscriptionId(IdGenerator.token(12)),
+            tenant = tenant.id,
+            apiKey = parentApiKey,
+            plan = planDev.id,
+            createdAt = DateTime.now(),
+            team = teamConsumerId,
             api = defaultApi.api.id,
             by = userTeamAdminId,
             customName = None,
@@ -272,12 +340,10 @@ class ApiLifeCycleSpec()
       )
       testNotificationLifeCycle(ApiState.Deprecated, "ApiDepreciationWarning")
       testNotificationLifeCycle(ApiState.Blocked, "ApiBlockingWarning")
-      
 
       // vérifier l'etat des souscriptions
+      // -> appeler une api daikoku pour recuperer les souscription d'une api et tester leur etat
       // vérifier si les apiKey oto sont disabled
-
-
       //todo: check notification (2 users, 3 teams, 1 teams with 2 admins, 1 teams with just users)
       //todo : check mail (test container)
     }

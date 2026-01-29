@@ -1743,6 +1743,13 @@ export const graphql = {
       }
     }
     `,
+    getApiSubscriptionsTotal: `
+    query getApiSubscriptionsTotal ($apiId: String!, $teamId: String!, $version: String!, $filterTable: JsArray, $sortingTable: JsArray, $limit: Int!, $offset: Int!) {
+      apiApiSubscriptions (id: $apiId, teamId: $teamId, version: $version, filterTable: $filterTable, sortingTable: $sortingTable,  limit: $limit, offset: $offset) {
+        total
+      }
+    }
+    `,
   getMyNotifications: `
     query getMyNotifications ($limit : Int, $offset: Int, $filterTable: JsArray) {
       myNotifications (limit: $limit, offset: $offset, filterTable: $filterTable) {
@@ -1766,6 +1773,20 @@ export const graphql = {
                 _id
                 name
                 currentVersion   
+              }
+            }
+            ... on ApiBlockingWarning {
+              __typename
+              api {
+                _id
+                name
+                currentVersion   
+              }
+              subscription {
+                customName
+                apiKey {
+                  clientId
+                }
               }
             }
             ... on ApiAccess {

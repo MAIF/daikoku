@@ -735,7 +735,7 @@ case class Api(
       "stars"            -> stars,
       "parent"           -> parent.map(_.asJson).getOrElse(JsNull).as[JsValue]
     )
-  def isPublished: Boolean                      =
+  def isSubscribable: Boolean                   =
     state match {
       case ApiState.Published  => true
       case ApiState.Deprecated => true

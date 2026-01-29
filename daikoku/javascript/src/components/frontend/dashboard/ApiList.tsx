@@ -189,7 +189,7 @@ export const ApiList = (props: ApiListProps) => {
         const authorizations = info.row.original.authorizations;
         const isApiGroup = !!info.row.original.api.apis?.length;
         const path = isApiGroup ? 'apis' : 'description';
-        let apiName = api.state === "deprecated" ? <p className="line-through">{api.name}</p> : <p>{api.name}</p>
+        let apiName = ['deprecated','blocked'].includes(api.state) ? <p className="line-through">{api.name}</p> : <p>{api.name}</p>
         if (api.visibility === 'Public' || authorizations.some((a) => a.authorized)) {
           return <Link id={`api-${api._humanReadableId}`} to={`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/${path}`}>
             {apiName}
@@ -249,7 +249,7 @@ export const ApiList = (props: ApiListProps) => {
               replacements: [activeCount.toString()]}
             )}
           </span>}
-          {state === "blocked" && <span className="badge badge-custom-warning" onClick={() =>
+          {state === "blocked" && <span className="badge badge-custom-danger" onClick={() =>
               navigate(`/${api.team._humanReadableId}/${api._humanReadableId}/${api.currentVersion}/apikeys`)}>
             {translate({
               key: 'dashboard.api.list.blocked.subscription.tag.label',
@@ -416,20 +416,21 @@ export const ApiList = (props: ApiListProps) => {
         } else {
           return openRightPanel({
             title: isApiGroup ? translate('apigroup.creation.right.panel.title') : translate('api.creation.right.panel.title'),
-            content: <ApiFormRightPanel team={team} apigroup={isApiGroup} handleSubmit={(api) => Services.createTeamApi(team._id, api)
-              .then((maybeApi) => {
-                queryClient.invalidateQueries({ queryKey: ["data"] })
-                return maybeApi
-              })
-              .then((maybeApi) => {
-                toast.success(translate({ key: "api.created.successful.toast", replacements: [api.name] }))
-                return maybeApi
-              })
-              .then((maybeApi) => {
-                if (!isError(maybeApi)) {
-                  navigate(`/${team._humanReadableId}/${maybeApi._humanReadableId}/${maybeApi.currentVersion}/description`)
-                }
-              })
+            content: <ApiFormRightPanel team={team} apigroup={isApiGroup} handleSubmit={(api) =>
+              Services.createTeamApi(team._id, api)
+                  .then((maybeApi) => {
+                    queryClient.invalidateQueries({queryKey: ["data"]})
+                    return maybeApi
+                  })
+                  .then((maybeApi) => {
+                    toast.success(translate({key: "api.created.successful.toast", replacements: [api.name]}))
+                    return maybeApi
+                  })
+                  .then((maybeApi) => {
+                    if (!isError(maybeApi)) {
+                      navigate(`/${team._humanReadableId}/${maybeApi._humanReadableId}/${maybeApi.currentVersion}/description`)
+                    }
+                  })
             } />
           })
         }

@@ -2367,11 +2367,11 @@ class ApiService(
       customMaxPerMonth: Option[Long],
       customReadOnly: Option[Boolean],
       adminCustomName: Option[String]
-  )(implicit language: String, currentUser: User) = {
+  )(implicit language: String, currentUser: User): Future[Result] = {
     import cats.implicits._
 
     def controlApiAndPlan(api: Api): EitherT[Future, AppError, Unit] = {
-      if (!api.isPublished) {
+      if (!api.isSubscribable) {
         EitherT.leftT[Future, Unit](AppError.ApiNotPublished)
       } else if (
         api.visibility == ApiVisibility.AdminOnly && !currentUser.isDaikokuAdmin
