@@ -494,7 +494,7 @@ class ApiController(
       if (
         (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
           .intersect(myTeams.map(_.id))
-          .nonEmpty) && (api.isPublished || myTeams.exists(_.id == api.team))
+          .nonEmpty) && (api.isSubscribable || myTeams.exists(_.id == api.team))
       ) {
         if (ctx.user.isDaikokuAdmin) {
           EitherT.pure[Future, AppError](UserLevel.Admin)
@@ -600,7 +600,7 @@ class ApiController(
           if (
             (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
               .intersect(myTeams.map(_.id))
-              .nonEmpty) && (api.isPublished || myTeams.exists(
+              .nonEmpty) && (api.isSubscribable || myTeams.exists(
               _.id == api.team
             ))
           ) {
@@ -656,7 +656,7 @@ class ApiController(
           if (
             (api.visibility == ApiVisibility.Public || ctx.user.isDaikokuAdmin || (api.authorizedTeams :+ api.team)
               .intersect(myTeams.map(_.id))
-              .nonEmpty) && (api.isPublished || myTeams.exists(
+              .nonEmpty) && (api.isSubscribable || myTeams.exists(
               _.id == api.team
             ))
           ) {
@@ -1130,6 +1130,7 @@ class ApiController(
               customName = Some(data.apiKey.clientName),
               rotation = None,
               integrationToken = IdGenerator.token(64)
+
             )
           )
 

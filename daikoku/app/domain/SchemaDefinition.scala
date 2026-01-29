@@ -12,16 +12,8 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async.{
   _UberPublicUserAccess
 }
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiSubscriptionDemandFormat,
-  TeamCountFormat,
-  TeamTypeFormat,
-  TenantIdFormat,
-  UserIdFormat,
-  ValueCountFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{TenantIdFormat, UserIdFormat}
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.{OtoroshiClient, S3Configuration}
 import org.apache.pekko.http.scaladsl.util.FastFuture
 import org.joda.time.{DateTime, DateTimeZone}
@@ -33,7 +25,7 @@ import sangria.schema.{Context, _}
 import sangria.validation.ValueCoercionViolation
 import services.CmsPage
 import storage._
-import storage.graphql.{GraphQLImplicits, RequiresDaikokuAdmin, RequiresTenantAdmin}
+import storage.graphql.{GraphQLImplicits, RequiresTenantAdmin}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -3072,7 +3064,7 @@ object SchemaDefinition {
     lazy val ApiBlockingWarningType = new PossibleObject(
       ObjectType(
         "ApiBlockingWarning",
-        "A notification triggered when an API is deprecated",
+        "A notification triggered when an API is blocked",
         interfaces[
           (DataStore, DaikokuActionContext[JsValue]),
           ApiBlockingWarning
@@ -3088,6 +3080,14 @@ object SchemaDefinition {
               ctx.ctx._1.apiRepo
                 .forTenant(ctx.ctx._2.tenant)
                 .findByIdNotDeleted(ctx.value.api)
+          ),
+          Field(
+            "subscription",
+            OptionType(ApiSubscriptionType),
+            resolve = ctx =>
+              ctx.ctx._1.apiSubscriptionRepo
+                .forTenant(ctx.ctx._2.tenant)
+                .findByIdNotDeleted(ctx.value.subscription)
           )
         )
       )

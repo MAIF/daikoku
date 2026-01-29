@@ -57,10 +57,8 @@ object utils {
 //    }
 //  }
 
-  trait DaikokuSpecHelper
-      extends TestSuiteMixin
-      with OneServerPerSuiteWithComponents
-      with ScalaFutures { suite: TestSuite =>
+  trait DaikokuSpecHelper extends TestSuiteMixin with OneServerPerSuiteWithComponents with ScalaFutures {
+    suite: TestSuite =>
 
     lazy val daikokuComponents = {
       val components =
@@ -108,8 +106,8 @@ object utils {
 
     implicit val ec: ExecutionContext =
       daikokuComponents.env.defaultExecutionContext
-    implicit val as: ActorSystem = daikokuComponents.env.defaultActorSystem
-    implicit val mat: Materializer = daikokuComponents.env.defaultMaterializer
+    implicit val as: ActorSystem      = daikokuComponents.env.defaultActorSystem
+    implicit val mat: Materializer    = daikokuComponents.env.defaultMaterializer
 
     val logger: Logger = Logger.apply("daikoku-spec-helper")
 
@@ -268,157 +266,157 @@ object utils {
     ): Future[Unit] = {
       for {
 //        _ <- waitForDaikokuSetup()
-        _ <- flush()
-        _ <- daikokuComponents.env.dataStore.userSessionRepo.deleteAll()
+        _  <- flush()
+        _  <- daikokuComponents.env.dataStore.userSessionRepo.deleteAll()
         log = logger.info("[DaikokuSpecHelper] :: insert tenant beginning")
-        _ <- Source(tenants.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.tenantRepo
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
+        _  <- Source(tenants.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.tenantRepo
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
         log = logger.info("[DaikokuSpecHelper] :: insert tenant finished")
-        _ <- Source(users.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.userRepo
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(teams.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.teamRepo
-              .forAllTenant()
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(usagePlans.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.usagePlanRepo
-              .forAllTenant()
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(apis.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.apiRepo
-              .forAllTenant()
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(subscriptions.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.apiSubscriptionRepo
-              .forAllTenant()
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(notifications.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.notificationRepo
-              .forAllTenant()
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(consumptions.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.consumptionRepo
-              .forAllTenant()
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(sessions.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.userSessionRepo
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(resets.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.passwordResetRepo
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(creations.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.accountCreationRepo
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(messages.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.messageRepo
-              .forAllTenant()
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(issues.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.apiIssueRepo
-              .forAllTenant()
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(posts.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.apiPostRepo
-              .forAllTenant()
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(cmsPages.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.cmsRepo
-              .forAllTenant()
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(pages.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.apiDocumentationPageRepo
-              .forAllTenant()
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(operations.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.operationRepo
-              .forAllTenant()
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(subscriptionDemands.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.subscriptionDemandRepo
-              .forAllTenant()
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
-        _ <- Source(translations.toList)
-          .mapAsync(1)(i =>
-            daikokuComponents.env.dataStore.translationRepo
-              .forAllTenant()
-              .save(i)(daikokuComponents.env.defaultExecutionContext)
-          )
-          .toMat(Sink.ignore)(Keep.right)
-          .run()
+        _  <- Source(users.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.userRepo
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(teams.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.teamRepo
+                    .forAllTenant()
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(usagePlans.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.usagePlanRepo
+                    .forAllTenant()
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(apis.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.apiRepo
+                    .forAllTenant()
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(subscriptions.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.apiSubscriptionRepo
+                    .forAllTenant()
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(notifications.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.notificationRepo
+                    .forAllTenant()
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(consumptions.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.consumptionRepo
+                    .forAllTenant()
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(sessions.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.userSessionRepo
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(resets.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.passwordResetRepo
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(creations.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.accountCreationRepo
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(messages.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.messageRepo
+                    .forAllTenant()
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(issues.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.apiIssueRepo
+                    .forAllTenant()
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(posts.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.apiPostRepo
+                    .forAllTenant()
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(cmsPages.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.cmsRepo
+                    .forAllTenant()
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(pages.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.apiDocumentationPageRepo
+                    .forAllTenant()
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(operations.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.operationRepo
+                    .forAllTenant()
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(subscriptionDemands.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.subscriptionDemandRepo
+                    .forAllTenant()
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
+        _  <- Source(translations.toList)
+                .mapAsync(1)(i =>
+                  daikokuComponents.env.dataStore.translationRepo
+                    .forAllTenant()
+                    .save(i)(daikokuComponents.env.defaultExecutionContext)
+                )
+                .toMat(Sink.ignore)(Keep.right)
+                .run()
       } yield ()
     }
 
@@ -490,14 +488,14 @@ object utils {
           )
         )
         .flatMap {
-          case None =>
+          case None       =>
             FastFuture.failed(new RuntimeException("User not found !!!"))
           case Some(user) =>
             daikokuComponents.env.dataStore.teamRepo
               .forTenant(on)
               .findOne(Json.obj())
               .map {
-                case None =>
+                case None       =>
                   Team(
                     id = TeamId(IdGenerator.token(32)),
                     tenant = on.id,
@@ -572,10 +570,10 @@ object utils {
         baseUrl: String = "http://127.0.0.1",
         port: Int = port
     )(implicit tenant: Tenant, session: UserSession): Future[WSResponse] = {
-      val path = _path match {
+      val path    = _path match {
         case str if str.contains("?") =>
           str + "&sessionId=" + session.sessionId.value
-        case str => str + "?sessionId=" + session.sessionId.value
+        case str                      => str + "?sessionId=" + session.sessionId.value
       }
       val builder = daikokuComponents.env.wsClient
         .url(s"$baseUrl:$port$path")
@@ -593,13 +591,13 @@ object utils {
               Algorithm.HMAC256(daikokuComponents.env.config.secret),
               Json.obj("alg" -> "HS256"),
               Json.obj(
-                "data" -> Json.obj(
+                "data"       -> Json.obj(
                   "sessionId" -> session.sessionId.value
                 ),
-                "exp" -> ((System
+                "exp"        -> ((System
                   .currentTimeMillis() - 10000) + (5 * 60 * 1000)) / 1000,
-                "nbf" -> (System.currentTimeMillis() - 10000) / 1000,
-                "iat" -> (System.currentTimeMillis() - 10000) / 1000
+                "nbf"        -> (System.currentTimeMillis() - 10000) / 1000,
+                "iat"        -> (System.currentTimeMillis() - 10000) / 1000
               )
             ),
             domain = Some("localhost"),
@@ -618,7 +616,8 @@ object utils {
         headers: Map[String, String] = Map.empty,
         body: Option[JsValue] = None,
         baseUrl: String = "http://127.0.0.1",
-        port: Int = port
+        port: Int = port,
+        hostHeader: String = tenant.domain
     )(implicit tenant: Tenant): WSResponse =
       httpJsonCallWithoutSession(
         path,
@@ -626,7 +625,8 @@ object utils {
         headers,
         body,
         baseUrl,
-        port
+        port,
+        hostHeader
       )(tenant).futureValue
 
     def httpJsonCallWithoutSession(
@@ -635,11 +635,12 @@ object utils {
         headers: Map[String, String] = Map.empty,
         body: Option[JsValue] = None,
         baseUrl: String = "http://127.0.0.1",
-        port: Int = port
+        port: Int = port,
+        hostHeader: String = tenant.domain
     )(implicit tenant: Tenant): Future[WSResponse] = {
       val builder = daikokuComponents.env.wsClient
         .url(s"$baseUrl:$port$path")
-        .withHttpHeaders((headers ++ Map("Host" -> tenant.domain)).toSeq: _*)
+        .withHttpHeaders((headers ++ Map("Host" -> hostHeader)).toSeq: _*)
         .withFollowRedirects(false)
         .withRequestTimeout(10.seconds)
         .withMethod(method)
@@ -651,15 +652,15 @@ object utils {
         headerJson: JsObject,
         payloadJson: JsObject
     ): String = {
-      val header: String = org.apache.commons.codec.binary.Base64
+      val header: String              = org.apache.commons.codec.binary.Base64
         .encodeBase64URLSafeString(Json.toBytes(headerJson))
-      val payload: String = org.apache.commons.codec.binary.Base64
+      val payload: String             = org.apache.commons.codec.binary.Base64
         .encodeBase64URLSafeString(Json.toBytes(payloadJson))
       val signatureBytes: Array[Byte] = algorithm.sign(
         header.getBytes(StandardCharsets.UTF_8),
         payload.getBytes(StandardCharsets.UTF_8)
       )
-      val signature: String = org.apache.commons.codec.binary.Base64
+      val signature: String           = org.apache.commons.codec.binary.Base64
         .encodeBase64URLSafeString(signatureBytes)
       String.format("%s.%s.%s", header, payload, signature)
     }
@@ -672,7 +673,7 @@ object utils {
       val r = f
       logger.info("Flushing Db ...")
       flush().onComplete {
-        case Success(_) => r
+        case Success(_)         => r
         case Failure(exception) =>
           logger.error("Error during flushing db", exception)
       }
@@ -691,9 +692,7 @@ object utils {
     def openPage(
         path: String
     )(implicit tenant: Tenant, session: UserSession): Future[Document] =
-      actionOnPage(path, Seq("--dump-dom"))(tenant, session).map(str =>
-        Scoup.parseHTML(str)
-      )
+      actionOnPage(path, Seq("--dump-dom"))(tenant, session).map(str => Scoup.parseHTML(str))
 
     def screenshotPageBlocking(
         path: String
@@ -722,9 +721,9 @@ object utils {
         tenant: Tenant,
         session: UserSession
     ): Future[String] = {
-      val url =
+      val url     =
         s"http://${tenant.domain}:$port$path?sessionId=${session.sessionId.value}"
-      val execs = Seq(
+      val execs   = Seq(
         "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
         "google-chrome-stable",
         "google-chrome",
@@ -740,7 +739,7 @@ object utils {
       val promise = Promise[String]()
       execs.find { exec =>
         var stdout = Seq.empty[String]
-        val log = ProcessLogger { str =>
+        val log    = ProcessLogger { str =>
           stdout = stdout :+ str
         }
         try {
@@ -764,135 +763,218 @@ object utils {
         }
       } match {
         case Some(_) => ()
-        case None =>
+        case None    =>
           promise.tryFailure(new RuntimeException("Failed to launch Chrome"))
       }
       promise.future
     }
 
-    val parentRouteId = "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
-    val childRouteId = "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"
-    val otherRouteId = "route_d74ea8b27-b8be-4177-82d9-c50722416c51"
+    val parentRouteId   = "route_d74ea8b27-b8be-4177-82d9-c50722416c50"
+    val childRouteId    = "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"
+    val otherRouteId    = "route_d74ea8b27-b8be-4177-82d9-c50722416c51"
     val serviceGroupDev =
       "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5" //parent, child, other routes
     val serviceGroupDefault = "default" //other routes
-    val serviceGroupAdmin = "admin-api-group"
-    val parent2ApkAsJson = Json.obj(
-      "_loc" -> Json.obj(
+    val serviceGroupAdmin   = "admin-api-group"
+    val parent2ApkAsJson    = Json.obj(
+      "_loc"                    -> Json.obj(
         "tenant" -> "default",
-        "teams" -> Json.arr("default")
+        "teams"  -> Json.arr("default")
       ),
-      "clientId" -> "fu283imnfv8jdt4e",
-      "clientSecret" -> "yaodpdfu283imnfv8jdt4eivaow6ipvh6ta9dwvd3tor9vf9wovxs6i5a2v7ep6m",
-      "clientName" -> "daikoku_test_parent_key_2_childs",
-      "description" -> "",
-      "authorizedGroup" -> JsNull,
-      "authorizedEntities" -> Json.arr(
+      "clientId"                -> "fu283imnfv8jdt4e",
+      "clientSecret"            -> "yaodpdfu283imnfv8jdt4eivaow6ipvh6ta9dwvd3tor9vf9wovxs6i5a2v7ep6m",
+      "clientName"              -> "daikoku_test_parent_key_2_childs",
+      "description"             -> "",
+      "authorizedGroup"         -> JsNull,
+      "authorizedEntities"      -> Json.arr(
         s"route_$parentRouteId",
         s"route_$childRouteId",
         s"route_$otherRouteId"
       ),
-      "authorizations" -> Json.arr(
+      "authorizations"          -> Json.arr(
         Json.obj(
           "kind" -> "route",
-          "id" -> parentRouteId
+          "id"   -> parentRouteId
         ),
         Json.obj(
           "kind" -> "route",
-          "id" -> childRouteId
+          "id"   -> childRouteId
         ),
         Json.obj(
           "kind" -> "route",
-          "id" -> otherRouteId
+          "id"   -> otherRouteId
         )
       ),
-      "enabled" -> true,
-      "readOnly" -> false,
-      "allowClientIdOnly" -> false,
-      "throttlingQuota" -> 10000000,
-      "dailyQuota" -> 10000000,
-      "monthlyQuota" -> 10000000,
+      "enabled"                 -> true,
+      "readOnly"                -> false,
+      "allowClientIdOnly"       -> false,
+      "throttlingQuota"         -> 10000000,
+      "dailyQuota"              -> 10000000,
+      "monthlyQuota"            -> 10000000,
       "constrainedServicesOnly" -> false,
-      "restrictions" -> Json.obj(
-        "enabled" -> false,
+      "restrictions"            -> Json.obj(
+        "enabled"   -> false,
         "allowLast" -> true,
-        "allowed" -> Json.arr(),
+        "allowed"   -> Json.arr(),
         "forbidden" -> Json.arr(),
-        "notFound" -> Json.arr()
+        "notFound"  -> Json.arr()
       ),
-      "rotation" -> Json.obj(
-        "enabled" -> false,
+      "rotation"                -> Json.obj(
+        "enabled"       -> false,
         "rotationEvery" -> 744,
-        "gracePeriod" -> 168,
-        "nextSecret" -> JsNull
+        "gracePeriod"   -> 168,
+        "nextSecret"    -> JsNull
       ),
-      "validUntil" -> JsNull,
-      "tags" -> Json.arr(),
-      "metadata" -> Json.obj(
+      "validUntil"              -> JsNull,
+      "tags"                    -> Json.arr(),
+      "metadata"                -> Json.obj(
         "daikoku__metadata" -> "| foo",
-        "foo" -> "bar"
+        "foo"               -> "bar"
       )
     )
-    val parentApkAsJson = Json.obj(
-      "_loc" -> Json.obj(
+    val parentApkAsJson     = Json.obj(
+      "_loc"                    -> Json.obj(
         "tenant" -> "default",
-        "teams" -> Json.arr("default")
+        "teams"  -> Json.arr("default")
       ),
-      "clientId" -> "5w24yl2ly3dlnn92",
-      "clientSecret" -> "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db",
-      "clientName" -> "daikoku_test_parent_key",
-      "description" -> "",
-      "authorizedGroup" -> JsNull,
-      "authorizedEntities" -> Json.arr(
+      "clientId"                -> "5w24yl2ly3dlnn92",
+      "clientSecret"            -> "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db",
+      "clientName"              -> "daikoku_test_parent_key",
+      "description"             -> "",
+      "authorizedGroup"         -> JsNull,
+      "authorizedEntities"      -> Json.arr(
         s"route_$parentRouteId",
         s"route_$childRouteId"
       ),
-      "authorizations" -> Json.arr(
+      "authorizations"          -> Json.arr(
         Json.obj(
           "kind" -> "route",
-          "id" -> parentRouteId
+          "id"   -> parentRouteId
         ),
         Json.obj(
           "kind" -> "route",
-          "id" -> childRouteId
+          "id"   -> childRouteId
         )
       ),
-      "enabled" -> true,
-      "readOnly" -> false,
-      "allowClientIdOnly" -> false,
-      "throttlingQuota" -> 10000000,
-      "dailyQuota" -> 10000000,
-      "monthlyQuota" -> 10000000,
+      "enabled"                 -> true,
+      "readOnly"                -> false,
+      "allowClientIdOnly"       -> false,
+      "throttlingQuota"         -> 10000000,
+      "dailyQuota"              -> 10000000,
+      "monthlyQuota"            -> 10000000,
       "constrainedServicesOnly" -> false,
-      "restrictions" -> Json.obj(
-        "enabled" -> false,
+      "restrictions"            -> Json.obj(
+        "enabled"   -> false,
         "allowLast" -> true,
-        "allowed" -> Json.arr(),
+        "allowed"   -> Json.arr(),
         "forbidden" -> Json.arr(),
-        "notFound" -> Json.arr()
+        "notFound"  -> Json.arr()
       ),
-      "rotation" -> Json.obj(
-        "enabled" -> false,
+      "rotation"                -> Json.obj(
+        "enabled"       -> false,
         "rotationEvery" -> 744,
-        "gracePeriod" -> 168,
-        "nextSecret" -> JsNull
+        "gracePeriod"   -> 168,
+        "nextSecret"    -> JsNull
       ),
-      "validUntil" -> JsNull,
-      "tags" -> Json.arr(),
-      "metadata" -> Json.obj()
+      "validUntil"              -> JsNull,
+      "tags"                    -> Json.arr(),
+      "metadata"                -> Json.obj()
     )
+    // Route => parentRoute
+    val otoroshiApiKey1     = OtoroshiApiKey(
+      clientName = "daikoku_test_subscription_1",
+      clientId = "5w24yl2ly3dlnn93",
+      clientSecret = "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db"
+    );
 
+    val otoroshiApiKey2 = OtoroshiApiKey(
+      clientName = "daikoku_test_subscription_2",
+      clientId = "5w24yl2ly3dlnn94",
+      clientSecret = "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db"
+    );
+
+    val otoroshiApiKey3 = OtoroshiApiKey(
+      clientName = "daikoku_test_subscription_3",
+      clientId = "5w24yl2ly3dlnn95",
+      clientSecret = "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db"
+    );
+
+    val otoroshiApiKey1AsJson: JsObject = setOtoroshiApiKeyJson(otoroshiApiKey1);
+    val otoroshiApiKey2AsJson: JsObject = setOtoroshiApiKeyJson(otoroshiApiKey2);
+    val otoroshiApiKey3AsJson: JsObject = setOtoroshiApiKeyJson(otoroshiApiKey3);
+
+    def setOtoroshiApiKeyJson(otoroshiApiKey: OtoroshiApiKey): JsObject = {
+      Json.obj(
+        "_loc"                    -> Json.obj(
+          "tenant" -> "default",
+          "teams"  -> Json.arr("default")
+        ),
+        "clientId"                -> otoroshiApiKey.clientId,
+        "clientSecret"            -> otoroshiApiKey.clientSecret,
+        "clientName"              -> otoroshiApiKey.clientName,
+        "description"             -> "",
+        "authorizedGroup"         -> JsNull,
+        "authorizedEntities"      -> Json.arr(
+          s"route_$parentRouteId",
+          s"route_$childRouteId",
+          s"route_$otherRouteId"
+        ),
+        "authorizations"          -> Json.arr(
+          Json.obj(
+            "kind" -> "route",
+            "id"   -> parentRouteId
+          ),
+          Json.obj(
+            "kind" -> "route",
+            "id"   -> childRouteId
+          ),
+          Json.obj(
+            "kind" -> "route",
+            "id"   -> otherRouteId
+          )
+        ),
+        "enabled"                 -> true,
+        "readOnly"                -> false,
+        "allowClientIdOnly"       -> false,
+        "throttlingQuota"         -> 10000000,
+        "dailyQuota"              -> 10000000,
+        "monthlyQuota"            -> 10000000,
+        "constrainedServicesOnly" -> false,
+        "restrictions"            -> Json.obj(
+          "enabled"   -> false,
+          "allowLast" -> true,
+          "allowed"   -> Json.arr(),
+          "forbidden" -> Json.arr(),
+          "notFound"  -> Json.arr()
+        ),
+        "rotation"                -> Json.obj(
+          "enabled"       -> false,
+          "rotationEvery" -> 744,
+          "gracePeriod"   -> 168,
+          "nextSecret"    -> JsNull
+        ),
+        "validUntil"              -> JsNull,
+        "tags"                    -> Json.arr(),
+        "metadata"                -> Json.obj(
+          "daikoku__metadata" -> "| foo",
+          "foo"               -> "bar"
+        )
+      )
+    }
+
+    val otoroshiApkForTest =
+      Seq(parentApkAsJson, parent2ApkAsJson, otoroshiApiKey1AsJson, otoroshiApiKey2AsJson, otoroshiApiKey3AsJson)
     def cleanOtoroshiServer(
         otoroshiPort: Int,
-        apks: Seq[JsValue] = Seq(parentApkAsJson, parent2ApkAsJson)
+        apks: Seq[JsValue] = otoroshiApkForTest
     ) = {
       val apikeys = daikokuComponents.env.wsClient
         .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
         .withHttpHeaders(
           Map(
-            "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+            "Otoroshi-Client-Id"     -> otoroshiAdminApiKey.clientId,
             "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
-            "Host" -> "otoroshi-api.oto.tools"
+            "Host"                   -> "otoroshi-api.oto.tools"
           ).toSeq: _*
         )
         .withFollowRedirects(false)
@@ -909,9 +991,9 @@ object utils {
           daikokuComponents.env.wsClient
             .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
             .withHttpHeaders(
-              "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+              "Otoroshi-Client-Id"     -> otoroshiAdminApiKey.clientId,
               "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
-              "Host" -> "otoroshi-api.oto.tools"
+              "Host"                   -> "otoroshi-api.oto.tools"
             )
             .withFollowRedirects(false)
             .withRequestTimeout(10.seconds)
@@ -921,15 +1003,14 @@ object utils {
 
         def loop(attempt: Int): Future[Seq[JsValue]] = {
           fetchOnce().flatMap {
-            case keys: JsArray =>
+            case keys: JsArray                                                      =>
               Future.successful(keys.value.toSeq)
-            case obj: JsObject
-                if (obj \ "error").isDefined && attempt < maxRetries =>
+            case obj: JsObject if (obj \ "error").isDefined && attempt < maxRetries =>
               logger.warn(
                 s"[$attempt/$maxRetries] Failed to fetch Otoroshi API keys: ${(obj \ "error").as[String]}"
               )
               after(delay * attempt)(loop(attempt + 1))
-            case other if attempt < maxRetries =>
+            case other if attempt < maxRetries                                      =>
               logger.error(
                 s"[$attempt/$maxRetries] Failed to fetch Otoroshi API keys after $maxRetries attempts: ${Json
                   .prettyPrint(other)}"
@@ -937,7 +1018,7 @@ object utils {
               Future.successful(
                 Seq.empty
               ) // on renvoie une liste vide pour ne pas faire planter la suite
-            case other =>
+            case other                                                              =>
               logger.error(
                 s"Failed to fetch Otoroshi API keys after $maxRetries attempts: ${Json.prettyPrint(other)}"
               )
@@ -966,9 +1047,9 @@ object utils {
                   )
                   .withHttpHeaders(
                     Map(
-                      "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+                      "Otoroshi-Client-Id"     -> otoroshiAdminApiKey.clientId,
                       "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
-                      "Host" -> "otoroshi-api.oto.tools"
+                      "Host"                   -> "otoroshi-api.oto.tools"
                     ).toSeq: _*
                   )
                   .withFollowRedirects(false)
@@ -980,76 +1061,74 @@ object utils {
             })
             .runWith(Sink.ignore)
         _ <- Future.sequence(
-          apks.map(apk =>
-            daikokuComponents.env.wsClient
-              .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
-              .withHttpHeaders(
-                Map(
-                  "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
-                  "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
-                  "Host" -> "otoroshi-api.oto.tools"
-                ).toSeq: _*
-              )
-              .withFollowRedirects(false)
-              .withRequestTimeout(10.seconds)
-              .withMethod("POST")
-              .withBody(apk)
-              .execute()
-              .map(_ => true)
-          )
-        )
+               apks.map(apk =>
+                 daikokuComponents.env.wsClient
+                   .url(s"http://otoroshi-api.oto.tools:$otoroshiPort/api/apikeys")
+                   .withHttpHeaders(
+                     Map(
+                       "Otoroshi-Client-Id"     -> otoroshiAdminApiKey.clientId,
+                       "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret,
+                       "Host"                   -> "otoroshi-api.oto.tools"
+                     ).toSeq: _*
+                   )
+                   .withFollowRedirects(false)
+                   .withRequestTimeout(10.seconds)
+                   .withMethod("POST")
+                   .withBody(apk)
+                   .execute()
+                   .map(_ => true)
+               )
+             )
       } yield true
 
     }
 
     def otoroshiPathApiKeyQuotas(clientId: String) =
       s"/api/apikeys/$clientId/quotas"
-    val otoroshiPathStats = s"/api/stats"
-    val otoroshiPathGroup = s"/api/groups/?[\\w-]*"
-    val otoroshiPathServices = s"/api/services/?[\\w-]*"
-    val otoroshiPathRoutes = s"/api/routes/?[\\w-]*"
+    val otoroshiPathStats                          = s"/api/stats"
+    val otoroshiPathGroup                          = s"/api/groups/?[\\w-]*"
+    val otoroshiPathServices                       = s"/api/services/?[\\w-]*"
+    val otoroshiPathRoutes                         = s"/api/routes/?[\\w-]*"
     def otoroshiDeleteApikeyPath(clientId: String) = s"/api/apikeys/$clientId"
     def otoroshiUpdateApikeyPath(clientId: String) = s"/api/apikeys/$clientId"
-    def otoroshiGetApikeyPath(clientId: String) = s"/api/apikeys/$clientId"
+    def otoroshiGetApikeyPath(clientId: String)    = s"/api/apikeys/$clientId"
 
-    lazy val wireMockUrl = s"http://$stubHost:$stubPort"
-    val stubPort = 11112
-    val stubHost = "localhost"
+    lazy val wireMockUrl              = s"http://$stubHost:$stubPort"
+    val stubPort                      = 11112
+    val stubHost                      = "localhost"
     lazy val containerizedOtoroshiUrl = "http://ototoshi.oto.tools:8080"
 
-    val otoroshiAdminApiKey = OtoroshiApiKey(
+    val otoroshiAdminApiKey     = OtoroshiApiKey(
       clientName = "Otoroshi Backoffice ApiKey",
       clientId = "admin-api-apikey-id",
       clientSecret = "admin-api-apikey-secret"
     )
-    val parentApiKey = OtoroshiApiKey(
+    val parentApiKey            = OtoroshiApiKey(
       clientName = "daikoku_test_parent_key",
       clientId = "5w24yl2ly3dlnn92",
-      clientSecret =
-        "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db"
+      clientSecret = "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db"
     )
     //apikey with child_route & other_route (with parent) as authorized entities & {"foo": "bar"} as metadata
     val parentApiKeyWith2childs = OtoroshiApiKey(
       clientName = "daikoku_test_parent_key_2_childs",
       clientId = "fu283imnfv8jdt4e",
-      clientSecret =
-        "yaodpdfu283imnfv8jdt4eivaow6ipvh6ta9dwvd3tor9vf9wovxs6i5a2v7ep6m"
+      clientSecret = "yaodpdfu283imnfv8jdt4eivaow6ipvh6ta9dwvd3tor9vf9wovxs6i5a2v7ep6m"
     )
 
-    val teamOwnerId = TeamId("team-owner")
+    val teamOwnerId    = TeamId("team-owner")
     val teamConsumerId = TeamId("team-consumer")
-    val teamAdminId = TeamId("team-admin")
+    val teamAdminId    = TeamId("team-admin")
 
-    val daikokuAdminId = UserId("daikoku-admin")
-    val tenantAdminId = UserId("tenant-admin")
+    val daikokuAdminId  = UserId("daikoku-admin")
+    val tenantAdminId   = UserId("tenant-admin")
     val userTeamAdminId = UserId("team-admin")
     val userApiEditorId = UserId("team-api-editor")
-    val userTeamUserId = UserId("team-user")
+    val userTeamUserId  = UserId("team-user")
 
-    val wiremockedOtoroshi = OtoroshiSettingsId("wiremock")
+    val wiremockedOtoroshi    = OtoroshiSettingsId("wiremock")
     val containerizedOtoroshi = OtoroshiSettingsId("test-container")
 
-    val teamOwner = Team(
+    val teamOwner            = Team(
       id = teamOwnerId,
       tenant = Tenant.Default,
       `type` = TeamType.Organization,
@@ -1062,7 +1141,7 @@ object utils {
       ),
       contact = "owner@foo.test"
     )
-    val teamConsumer = Team(
+    val teamConsumer         = Team(
       id = teamConsumerId,
       tenant = Tenant.Default,
       `type` = TeamType.Organization,
@@ -1075,7 +1154,7 @@ object utils {
       ),
       contact = "consumer@foo.test"
     )
-    val daikokuAdmin = User(
+    val daikokuAdmin         = User(
       id = daikokuAdminId,
       tenants = Set(Tenant.Default),
       origins = Set(AuthProvider.Local),
@@ -1087,7 +1166,7 @@ object utils {
       isDaikokuAdmin = true,
       defaultLanguage = None
     )
-    val tenantAdmin = User(
+    val tenantAdmin          = User(
       id = tenantAdminId,
       tenants = Set(Tenant.Default),
       origins = Set(AuthProvider.Local),
@@ -1099,7 +1178,7 @@ object utils {
       isDaikokuAdmin = false,
       defaultLanguage = None
     )
-    val userAdmin = User(
+    val userAdmin            = User(
       id = userTeamAdminId,
       tenants = Set(Tenant.Default),
       origins = Set(AuthProvider.Local),
@@ -1110,7 +1189,7 @@ object utils {
       password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
       defaultLanguage = None
     )
-    val userApiEditor = User(
+    val userApiEditor        = User(
       id = userApiEditorId,
       tenants = Set(Tenant.Default),
       origins = Set(AuthProvider.Local),
@@ -1121,7 +1200,7 @@ object utils {
       password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
       defaultLanguage = None
     )
-    val user = User(
+    val user                 = User(
       id = userTeamUserId,
       tenants = Set(Tenant.Default),
       origins = Set(AuthProvider.Local),
@@ -1132,7 +1211,7 @@ object utils {
       password = Some(BCrypt.hashpw("password", BCrypt.gensalt())),
       defaultLanguage = None
     )
-    val defaultAdminTeam = Team(
+    val defaultAdminTeam     = Team(
       id = TeamId(IdGenerator.token),
       tenant = Tenant.Default,
       `type` = TeamType.Admin,
@@ -1143,7 +1222,7 @@ object utils {
       authorizedOtoroshiEntities = None,
       contact = "admin@daikoku.io"
     )
-    val tenant2AdminTeam = Team(
+    val tenant2AdminTeam     = Team(
       id = TeamId(IdGenerator.token),
       tenant = TenantId("tenant2"),
       `type` = TeamType.Admin,
@@ -1154,7 +1233,7 @@ object utils {
       authorizedOtoroshiEntities = None,
       contact = "admin@daikoku.io"
     )
-    val adminApiPlan = UsagePlan(
+    val adminApiPlan         = UsagePlan(
       id = UsagePlanId("admin"),
       tenant = Tenant.Default,
       customName = "admin",
@@ -1162,7 +1241,7 @@ object utils {
       otoroshiTarget = None,
       visibility = UsagePlanVisibility.Admin
     )
-    val cmsApiPlan = UsagePlan(
+    val cmsApiPlan           = UsagePlan(
       id = UsagePlanId("admin"),
       tenant = Tenant.Default,
       customName = "cms",
@@ -1170,7 +1249,7 @@ object utils {
       otoroshiTarget = None,
       visibility = UsagePlanVisibility.Admin
     )
-    val adminApi = Api(
+    val adminApi             = Api(
       id = ApiId(s"admin-api-tenant-${Tenant.Default.value}"),
       tenant = Tenant.Default,
       team = defaultAdminTeam.id,
@@ -1194,7 +1273,7 @@ object utils {
       visibility = ApiVisibility.AdminOnly,
       authorizedTeams = Seq(defaultAdminTeam.id)
     )
-    val cmsApi = Api(
+    val cmsApi               = Api(
       id = ApiId(s"cms-api-tenant-${Tenant.Default.value}"),
       tenant = Tenant.Default,
       team = defaultAdminTeam.id,
@@ -1236,7 +1315,7 @@ object utils {
       integrationToken = IdGenerator.token(64)
     )
 
-    val adminApi2plan = UsagePlan(
+    val adminApi2plan               = UsagePlan(
       id = UsagePlanId("admin"),
       tenant = TenantId("tenant2"),
       customName = "admin",
@@ -1244,7 +1323,7 @@ object utils {
       otoroshiTarget = None,
       visibility = UsagePlanVisibility.Admin
     )
-    val adminApi2 = Api(
+    val adminApi2                   = Api(
       id = ApiId(s"admin-api-tenant-tenant-II"),
       tenant = TenantId("tenant2"),
       team = tenant2AdminTeam.id,
@@ -1267,7 +1346,7 @@ object utils {
       defaultUsagePlan = UsagePlanId("1").some,
       authorizedTeams = Seq(tenant2AdminTeam.id)
     )
-    val tenant = Tenant(
+    val tenant                      = Tenant(
       id = Tenant.Default,
       name = "Test Corp.",
       domain = "localhost",
@@ -1305,7 +1384,7 @@ object utils {
       tenantMode = TenantMode.Default.some
     )
     private val tenant2Id: TenantId = TenantId("tenant2")
-    val tenant2 = Tenant(
+    val tenant2                     = Tenant(
       id = tenant2Id,
       name = "Test Corp. II",
       domain = "localhost.tenant2",
@@ -1338,7 +1417,7 @@ object utils {
       contact = "contactII@test-corp.foo.bar"
     )
 
-    val envModeDev = "dev"
+    val envModeDev  = "dev"
     val envModeProd = "prod"
 
     val tenantEnvMode = tenant.copy(
@@ -1490,8 +1569,7 @@ object utils {
         name = s"Api - V$version",
         smallDescription = "A small API to play with Daikoku exposition",
         tags = Set("api", "rest", "scala", "play"),
-        description =
-          """# My Awesome API
+        description = """# My Awesome API
             |
             |Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus.
             |
