@@ -126,61 +126,6 @@ class NotificationControllerSpec()
       Writes.seq(ApiSubscriptionSafeFormat)
     )
 
-  val baseGraphQLQuery =
-    s"""
-       |query getMyNotifications ($$limit : Int, $$offset: Int, $$filterTable: JsArray) {
-       |      myNotifications (limit: $$limit, offset: $$offset, filterTable: $$filterTable) {
-       |        notifications {
-       |          _id
-       |          team {
-       |            _id
-       |          }
-       |          action {
-       |            __typename
-       |          }
-       |          status {
-       |            ... on NotificationStatusAccepted {
-       |            __typename
-       |              date
-       |              status
-       |            }
-       |            ... on NotificationStatusRejected {
-       |            __typename
-       |              date
-       |              status
-       |            }
-       |            ... on NotificationStatusPending {
-       |            __typename
-       |              status
-       |            }
-       |
-       |          }
-       |        }
-       |        total,
-       |        totalFiltered,
-       |       }
-       |}
-       |""".stripMargin
-
-  def graphQLNotificationCallBlocking(
-      extraFilters: JsObject = Json.obj()
-  )(implicit tenant: Tenant, session: UserSession) = {
-    val variables = Json.obj("limit" -> 20, "offset" -> 0) ++ extraFilters
-
-    httpJsonCallBlocking(
-      path = "/api/search",
-      method = "POST",
-      body = Json
-        .obj(
-          "variables" -> variables,
-          "query" -> baseGraphQLQuery
-        )
-        .some
-    )
-  }
-
-  //FIXME: use graphql query to get notification, previous apis does not exist anymore
-
   "a team admin" can {
     "read the count of untreated notifications of his team" in {
       setupEnvBlocking(
@@ -191,7 +136,7 @@ class NotificationControllerSpec()
         notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val resp = graphQLNotificationCallBlocking(
+      val resp = getOwnNotificationsCallBlocking(
         Json.obj(
           "filterTable" -> Json.stringify(
             Json.arr(
@@ -214,7 +159,7 @@ class NotificationControllerSpec()
         notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val resp = graphQLNotificationCallBlocking(extraFilters =
+      val resp = getOwnNotificationsCallBlocking(extraFilters =
         Json.obj(
           "filterTable" -> Json.stringify(
             Json.arr(
@@ -237,7 +182,7 @@ class NotificationControllerSpec()
         notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val resp = graphQLNotificationCallBlocking(
+      val resp = getOwnNotificationsCallBlocking(
         Json.obj(
           "filterTable" -> Json.stringify(
             Json.arr(
@@ -284,7 +229,7 @@ class NotificationControllerSpec()
         notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val resp = graphQLNotificationCallBlocking()(tenant, session)
+      val resp = getOwnNotificationsCallBlocking()(tenant, session)
       resp.status mustBe 200
       (resp.json \ "data" \ "myNotifications" \ "total").as[Long] mustBe 2
     }
@@ -297,7 +242,7 @@ class NotificationControllerSpec()
         notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val resp = graphQLNotificationCallBlocking(
+      val resp = getOwnNotificationsCallBlocking(
         Json.obj(
           "filterTable" -> Json.stringify(
             Json.arr(
@@ -375,7 +320,7 @@ class NotificationControllerSpec()
       countNotification.status mustBe 200
       (countNotification.json \ "count").as[Long] mustBe 1
 
-      val resp = graphQLNotificationCallBlocking(
+      val resp = getOwnNotificationsCallBlocking(
         Json.obj(
           "filterTable" -> Json.stringify(
             Json.arr(
@@ -446,7 +391,7 @@ class NotificationControllerSpec()
       countNotification.status mustBe 200
       (countNotification.json \ "count").as[Long] mustBe 1
 
-      val resp = graphQLNotificationCallBlocking(
+      val resp = getOwnNotificationsCallBlocking(
         Json.obj(
           "filterTable" -> Json.stringify(
             Json.arr(
@@ -1093,7 +1038,7 @@ class NotificationControllerSpec()
 
       resp.status mustBe 201
 
-      val respNotifs = graphQLNotificationCallBlocking(
+      val respNotifs = getOwnNotificationsCallBlocking(
         Json.obj(
           "filterTable" -> Json.stringify(
             Json.arr(
@@ -1253,7 +1198,7 @@ class NotificationControllerSpec()
 //        "NewIssueOpenV2"
 //      )
 
-      val adminCheckNotification = graphQLNotificationCallBlocking(
+      val adminCheckNotification = getOwnNotificationsCallBlocking(
         Json.obj(
           "filterTable" -> Json.stringify(
             Json.arr(
@@ -1308,7 +1253,7 @@ class NotificationControllerSpec()
 //        .maxBy(_.date)
 //        .action
 //        .getClass mustBe classOf[NewCommentOnIssueV2]
-      val userCheckNotif = graphQLNotificationCallBlocking(
+      val userCheckNotif = getOwnNotificationsCallBlocking(
         Json.obj(
           "filterTable" -> Json.stringify(
             Json.arr(
@@ -1368,7 +1313,7 @@ class NotificationControllerSpec()
 //      )
 //      userCheckNotif2.status mustBe 200
 //      (userCheckNotif2.json \ "count").as[Long] mustBe 3
-      val userCheckNotif2 = graphQLNotificationCallBlocking(
+      val userCheckNotif2 = getOwnNotificationsCallBlocking(
         Json.obj(
           "filterTable" -> Json.stringify(
             Json.arr(
@@ -1489,7 +1434,7 @@ class NotificationControllerSpec()
         notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session = loginWithBlocking(user, tenant)
-      val resp = graphQLNotificationCallBlocking(
+      val resp = getOwnNotificationsCallBlocking(
         Json.obj(
           "filterTable" -> Json.stringify(
             Json.arr(
@@ -1512,7 +1457,7 @@ class NotificationControllerSpec()
         notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session = loginWithBlocking(user, tenant)
-      val resp = graphQLNotificationCallBlocking(
+      val resp = getOwnNotificationsCallBlocking(
         Json.obj(
           "filterTable" -> Json.stringify(
             Json.arr(
@@ -1556,7 +1501,7 @@ class NotificationControllerSpec()
       //TODO: save a dedicated notification
 
       val session = loginWithBlocking(user, tenant)
-      val resp = graphQLNotificationCallBlocking()(tenant, session)
+      val resp = getOwnNotificationsCallBlocking()(tenant, session)
       val notifications =
         (resp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray]
       notifications.value.length mustBe 0
@@ -1571,7 +1516,7 @@ class NotificationControllerSpec()
         notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session = loginWithBlocking(user, tenant)
-      val resp = graphQLNotificationCallBlocking()(tenant, session)
+      val resp = getOwnNotificationsCallBlocking()(tenant, session)
       val notifications =
         (resp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray]
       notifications.value.length mustBe 0
@@ -1751,7 +1696,7 @@ class NotificationControllerSpec()
       resp.status mustBe 200
 
       val sessionUser = loginWithBlocking(user, tenant)
-      val respNotifs = graphQLNotificationCallBlocking()(tenant, sessionUser)
+      val respNotifs = getOwnNotificationsCallBlocking()(tenant, sessionUser)
       val notifications =
         (respNotifs.json \ "data" \ "myNotifications" \ "notifications")
           .as[JsArray]
@@ -1833,7 +1778,7 @@ class NotificationControllerSpec()
 
       val sessionUser = loginWithBlocking(user, tenant)
 
-      val respNotifs = graphQLNotificationCallBlocking()(tenant, sessionUser)
+      val respNotifs = getOwnNotificationsCallBlocking()(tenant, sessionUser)
       val notifications =
         (respNotifs.json \ "data" \ "myNotifications" \ "notifications")
           .as[JsArray]

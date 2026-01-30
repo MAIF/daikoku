@@ -1557,5 +1557,65 @@ object utils {
 
     val defaultApi: ApiWithPlans =
       generateApi("default", tenant.id, teamOwnerId, Seq.empty)
+
+    val baseMyNotificationGraphQLQuery =
+      s"""
+         |query getMyNotifications ($$limit : Int, $$offset: Int, $$filterTable: JsArray) {
+         |      myNotifications (limit: $$limit, offset: $$offset, filterTable: $$filterTable) {
+         |        notifications {
+         |          _id
+         |          team {
+         |            _id
+         |          }
+         |          action {
+         |            __typename
+         |
+         |            ... on TeamInvitation {
+         |            __typename
+         |              team {
+         |                _id
+         |              }
+         |            }
+         |          }
+         |          status {
+         |            ... on NotificationStatusAccepted {
+         |            __typename
+         |              date
+         |              status
+         |            }
+         |            ... on NotificationStatusRejected {
+         |            __typename
+         |              date
+         |              status
+         |            }
+         |            ... on NotificationStatusPending {
+         |            __typename
+         |              status
+         |            }
+         |
+         |          }
+         |        }
+         |        total,
+         |        totalFiltered,
+         |       }
+         |}
+         |""".stripMargin
+
+    def getOwnNotificationsCallBlocking(
+                                         extraFilters: JsObject = Json.obj()
+                                       )(implicit tenant: Tenant, session: UserSession) = {
+      val variables = Json.obj("limit" -> 20, "offset" -> 0) ++ extraFilters
+
+      httpJsonCallBlocking(
+        path = "/api/search",
+        method = "POST",
+        body = Json
+          .obj(
+            "variables" -> variables,
+            "query" -> baseMyNotificationGraphQLQuery
+          )
+          .some
+      )
+    }
   }
 }
