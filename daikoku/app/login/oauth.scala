@@ -363,8 +363,6 @@ object OAuth2Support {
             .getOrElse(false)
         }
 
-        log = AppLogger.warn(s"isDaikokuAdmin: $isDaikokuAdmin ## roleClaim: ${authConfig.roleClaim}")
-        log2 = AppLogger.warn(s"claim :: ${Json.prettyPrint(userFromOauth)}")
 
 
         isUser = authConfig.roleClaim match {
