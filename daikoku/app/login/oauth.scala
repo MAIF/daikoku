@@ -95,7 +95,7 @@ object OAuth2Config {
           logoutUrl = (json \ "logoutUrl")
             .asOpt[String]
             .orElse((json \ "logout_url").asOpt[String])
-            .getOrElse("http://localhost:8082/logout"),
+            .filter(_.trim.nonEmpty),
           accessTokenField =
             (json \ "accessTokenField").asOpt[String].getOrElse("access_token"),
           nameField = (json \ "nameField").asOpt[String].getOrElse("name"),
@@ -116,7 +116,13 @@ object OAuth2Config {
             .getOrElse("http://daikoku.foo.bar:8080/auth/OAuth/callback"),
           daikokuAdmins = (json \ "daikokuAdmins")
             .asOpt[Seq[String]]
-            .getOrElse(Seq.empty[String])
+            .getOrElse(Seq.empty[String]),
+          roleClaim = (json \ "roleClaim")
+            .asOpt[String],
+          adminRole = (json \ "adminRole")
+            .asOpt[String],
+          userRole = (json \ "userRole")
+            .asOpt[String],
         )
       )
     } recover {
@@ -143,8 +149,7 @@ case class OAuth2Config(
     authorizeUrl: String = "http://localhost:8082/oauth/authorize",
     userInfoUrl: String = "http://<oauth-domain>/userinfo",
     loginUrl: String = "https://<oauth-domain>/authorize",
-    logoutUrl: String =
-      "http://daikoku.foo.bar:8080/v2/logout?returnTo=${redirect}",
+    logoutUrl: Option[String] = None,
     scope: String = "openid profile email name",
     useJson: Boolean = false,
     readProfileFromToken: Boolean = false,
@@ -170,7 +175,7 @@ case class OAuth2Config(
       "tokenUrl" -> this.tokenUrl,
       "userInfoUrl" -> this.userInfoUrl,
       "loginUrl" -> this.loginUrl,
-      "logoutUrl" -> this.logoutUrl,
+      "logoutUrl" -> this.logoutUrl.map(JsString).getOrElse(JsNull).as[JsValue],
       "scope" -> this.scope,
       "useJson" -> this.useJson,
       "readProfileFromToken" -> this.readProfileFromToken,
@@ -226,8 +231,7 @@ object OAuth2Support {
       _env: Env
   )(implicit
       ec: ExecutionContext
-  ): EitherT[Future, AppError, User] = {
-
+  ): EitherT[Future, AppError, (User, Option[String])] = {
     def verifyAndGetUser(accessToken: String): EitherT[Future, AppError, JsValue] = {
       val algoSettings = authConfig.jwtVerifier.get
       val tokenHeader =
@@ -346,27 +350,33 @@ object OAuth2Support {
           .asOpt[String], AppError.EntityNotFound("No email found"))
         picture <- EitherT.pure[Future, AppError]((userFromOauth \ authConfig.pictureField).asOpt[String])
         isDaikokuAdmin = authConfig.roleClaim match {
-          case Some(claim) if claim != "daikokuAdmin" => (userFromOauth \ claim).asOpt[JsValue] match {
-            case Some(JsString(role)) => authConfig.adminRole.forall(_ == role)
-            case Some(JsArray(roles)) => authConfig.adminRole.forall(r => roles.map(_.as[String]).contains(r))
-            case _ => authConfig.daikokuAdmins.contains(email)
-          }
+          case Some(claim) if claim != "daikokuAdmin" =>
+            (userFromOauth \ claim).asOpt[JsValue] match {
+              case Some(JsString(role)) => authConfig.adminRole.forall(_ == role)
+              case Some(JsArray(roles)) => authConfig.adminRole.forall(r => roles.map(_.as[String]).contains(r))
+              case _ => authConfig.daikokuAdmins.contains(email)
+            }
           case _ => (userFromOauth \ "daikokuAdmin")
             .asOpt[String]
             .flatMap(_.toBooleanOption)
             .orElse((userFromOauth \ "daikokuAdmin").asOpt[Boolean])
             .getOrElse(false)
         }
+
+        log = AppLogger.warn(s"isDaikokuAdmin: $isDaikokuAdmin ## roleClaim: ${authConfig.roleClaim}")
+        log2 = AppLogger.warn(s"claim :: ${Json.prettyPrint(userFromOauth)}")
+
+
         isUser = authConfig.roleClaim match {
           case Some(claim) => (userFromOauth \ claim).asOpt[JsValue] match {
             case Some(JsString(role)) => authConfig.userRole.forall(_ == role)
             case Some(JsArray(roles)) => authConfig.userRole.forall(r => roles.map(_.as[String]).contains(r))
-            case _ => false
+            case _ => authConfig.userRole.isEmpty
           }
           case _ => true
         }
 
-        _ <- EitherT.cond[Future](isDaikokuAdmin || isUser, (), AppError.Unauthorized)
+        _ <- EitherT.cond[Future](isDaikokuAdmin || isUser, (), AppError.UserNotAllowed(email))
 
         existingUser <- EitherT.right[AppError](_env.dataStore.userRepo
           .findOne(Json.obj("_deleted" -> false, "email" -> email)))
@@ -413,13 +423,14 @@ object OAuth2Support {
         )(writeableOf_urlEncodedSimpleForm)
       })
       accessToken = (response.json \ authConfig.accessTokenField).as[String]
+      idToken = (response.json \ "id_token").asOpt[String]
       userJson <- if(authConfig.readProfileFromToken && authConfig.jwtVerifier.isDefined)
         verifyAndGetUser(accessToken)
       else
         getUser(accessToken)
 
       user <- processUserFromOAuth(userJson)
-    } yield user
+    } yield (user, idToken)
 
   }
 
@@ -449,7 +460,13 @@ object OAuth2Support {
       val logoutUrl = (body \ "end_session_endpoint")
         .asOpt[String]
         .orElse((body \ "ping_end_session_endpoint").asOpt[String])
-        .getOrElse((issuer + "/logout").replace("//logout", "/logout"))
+        .map { rawLogoutUrl =>
+          if (rawLogoutUrl.contains("${redirect}") || rawLogoutUrl.contains("${clientId}")) rawLogoutUrl
+          else {
+            val sep = if (rawLogoutUrl.contains("?")) "&" else "?"
+            s"$rawLogoutUrl${sep}id_token_hint=$${idTokenHint}&post_logout_redirect_uri=$${redirect}&client_id=$${clientId}"
+          }
+        }
       val scope = (body \ "scopes_supported")
         .asOpt[Seq[String]]
         .map(_.mkString(" "))

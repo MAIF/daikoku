@@ -103,7 +103,7 @@ hr {
 }
 
 .user-logo {
-  background-color: white;
+  background-color: variables.$sidebar-text-color !important;
 }
 
 .fa-xxs {

@@ -1,0 +1,225 @@
+version: '3'
+services:
+
+  oidc-server-mock:
+    image: ghcr.io/xdev-software/oidc-server-mock:1.0.4
+    networks:
+      - basicsetup
+    ports:
+      - '9001:8080'
+    healthcheck:
+      test: curl --fail http://localhost:8080 || exit 1
+      interval: 2s
+      timeout: 10s
+      retries: 100
+    environment:
+      IDENTITY_RESOURCES_INLINE: |
+        [ { "Name": "role", "ClaimTypes": ["role"] } ]
+      ASPNETCORE_ENVIRONMENT: Development
+      SERVER_OPTIONS_INLINE: |
+        {
+          "AccessTokenJwtType": "JWT",
+          "Discovery": {
+            "ShowKeySet": true
+          },
+          "Authentication": {
+            "CookieSameSiteMode": "Lax",
+            "CheckSessionCookieSameSiteMode": "Lax"
+          }
+        }
+      LOGIN_OPTIONS_INLINE: |
+        {
+          "AllowRememberLogin": false
+        }
+      LOGOUT_OPTIONS_INLINE: |
+        {
+          "AutomaticRedirectAfterSignOut": true
+        }
+      USERS_CONFIGURATION_INLINE: |
+        [
+          {
+            "SubjectId":"1",
+            "Username":"michael.scott@dundermifflin.com",
+            "Password":"password",
+            "Claims": [
+              {
+                "Type": "name",
+                "Value": "Michael Scott",
+                "ValueType": "string"
+              },
+              {
+                "Type": "role",
+                "Value": "admin",
+                "ValueType": "string"
+              },
+              {
+                "Type": "email",
+                "Value": "michael.scott@dundermifflin.com",
+                "ValueType": "string"
+              }
+            ]
+          },
+          {
+            "SubjectId":"2",
+            "Username":"jim.halpert@dundermifflin.com",
+            "Password":"password",
+            "Claims": [
+              {
+                "Type": "name",
+                "Value": "Jim Halpert",
+                "ValueType": "string"
+              },
+              {
+                "Type": "email",
+                "Value": "jim.halpert@dundermifflin.com",
+                "ValueType": "string"
+              },
+              {
+                "Type": "role",
+                "Value": "user",
+                "ValueType": "string"
+              },
+              {
+                "Type": "role",
+                "Value": "manager",
+                "ValueType": "string"
+              },
+              {
+                "Type": "role",
+                "Value": "saler",
+                "ValueType": "string"
+              }
+            ]
+          },
+          {
+            "SubjectId":"3",
+            "Username":"pam.beesly@dundermifflin.com",
+            "Password":"password",
+            "Claims": [
+              {
+                "Type": "name",
+                "Value": "Pam Beesly",
+                "ValueType": "string"
+              },
+              {
+                "Type": "email",
+                "Value": "pam.beesly@dundermifflin.com",
+                "ValueType": "string"
+              }
+            ]
+          }
+        ]
+      CLIENTS_CONFIGURATION_INLINE: |
+        [
+          {
+            "ClientId": "foo",
+            "ClientSecrets": ["bar"],
+            "Description": "Client for authorization_code flow",
+            "AllowedGrantTypes": ["authorization_code"],
+            "RequirePkce": false,
+            "AllowOfflineAccess": true,
+            "AllowAccessTokensViaBrowser": true,
+            "RedirectUris": ["http://localhost:13200/auth/oauth2/callback"],
+            "AllowedScopes": ["openid", "profile", "email", "role", "offline_access"],
+            "IdentityTokenLifetime": 3600,
+            "AccessTokenLifetime": 3600,
+            "AlwaysIncludeUserClaimsInIdToken": true,
+            "PostLogoutRedirectUris": ["http://localhost:13200/"]
+          }
+        ]
+      ASPNET_SERVICES_OPTIONS_INLINE: |
+        {
+          "ForwardedHeadersOptions": {
+            "ForwardedHeaders" : "All"
+          }
+        }
+
+  faker:
+    image: mockserver/mockserver:latest
+    networks:
+      - basicsetup
+    volumes:
+      - ./config/mocks/initializer.json:/config/initializer.json
+    expose:
+      - 1081
+    ports:
+      - 1081:1080
+    environment:
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /config/initializer.json
+
+  postgres:
+    image: postgres:latest
+    networks:
+      - basicsetup
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+    volumes:
+      - ./config/postgres/create_database.sql:/docker-entrypoint-initdb.d/create_database.sql
+    ports:
+      - 5442:5432
+
+  smtp:
+    image: reachfive/fake-smtp-server:latest
+    networks:
+      - basicsetup
+    ports:
+      - 1080:1080
+      - 1025:1025
+
+  daikoku:
+    image: maif/daikoku:latest
+    networks:
+      - basicsetup
+    environment:
+      - DAIKOKU_INIT_ADMIN_PASSWORD=password
+      - DAIKOKU_OTOROSHI_SYNC_CRON=false
+      - DAIKOKU_TENANT_PROVIDER=Hostname
+      - DAIKOKU_POSTGRES_DATABASE=daikoku_demo_komainu
+      - DAIKOKU_POSTGRES_HOST=postgres
+      - DAIKOKU_EXPOSED_ON=13200
+      - DAIKOKU_INIT_DATA_FROM=/usr/app/daikoku/imports/daikoku_state_openid.ndjson
+      - DAIKOKU_MODE=test
+    ports:
+      - 13200:8080
+    volumes:
+      - ./config/daikoku:/usr/app/daikoku/imports
+    depends_on:
+      - postgres
+      - smtp
+      - oidc-server-mock
+
+  redis:
+    image: redis:7.2
+    networks:
+      - basicsetup
+    expose:
+      - 6379
+    ports:
+      - 6379:6379
+
+  otoroshi:
+    image: maif/otoroshi:latest
+    networks:
+      - basicsetup
+    environment:
+      - OTOROSHI_STORAGE=redis
+      - OTOROSHI_REDIS_HOST=redis
+      - OTOROSHI_EXPOSED_PORTS_HTTP=8080
+      - OTOROSHI_INITIAL_ADMIN_LOGIN=admin@otoroshi.io
+      - OTOROSHI_INITIAL_ADMIN_PASSWORD=password
+      - OTOROSHI_IMPORT_FROM=/usr/app/otoroshi/imports/otoroshi-state.json
+      - OTOROSHI_DOMAIN=oto.tools
+    volumes:
+      - "./config/otoroshi:/usr/app/otoroshi/imports"
+    ports:
+      - 8080:8080
+    depends_on:
+      - redis
+      - faker
+
+networks:
+  basicsetup:
+    driver: bridge
+    ipam:
+      driver: default

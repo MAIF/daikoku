@@ -162,8 +162,8 @@ object InitConfig {
               loginUrl = configuration.get[String](
                 "daikoku.init.authProvider.oauth2.login-url"
               ),
-              logoutUrl = configuration.get[String](
-                "daikoku.init.authProvider.oauth2.login-url"
+              logoutUrl = configuration.getOptional[String](
+                "daikoku.init.authProvider.oauth2.logout-url"
               ),
               scope = configuration
                 .getOptional[String]("daikoku.init.authProvider.oauth2.scope")

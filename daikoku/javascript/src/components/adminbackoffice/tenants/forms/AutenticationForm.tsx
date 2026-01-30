@@ -244,9 +244,9 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
       type: type.string,
       label: translate('Logout URL'),
       help: translate("oauth2.form.logout.url.help"),
-      constraints: [
-        constraints.required(translate("constraints.required.value"))
-      ]
+      // constraints: [
+      //   constraints.required(translate("constraints.required.value"))
+      // ]
     },
     callbackUrl: {
       type: type.string,
@@ -285,18 +285,18 @@ export const AuthenticationForm = (props: { tenant: ITenantFull, updateTenant: U
     },
     roleClaim: {
       type: type.string,
-      label: translate('oauth2.form.logout.url.help'), //TODO: translate
-      help: translate('oauth2.form.logout.url.help'), //TODO: translate
+      label: translate('oauth2.form.role.claim.label'), 
+      help: translate('oauth2.form.role.claim.help'),
     },
     adminRole: {
       type: type.string,
-      label: translate('oauth2.form.logout.url.help'), //TODO: translate
-      help: translate('oauth2.form.logout.url.help'), //TODO: translate
+      label: translate('oauth2.form.admin.role.label'),
+      help: translate('oauth2.form.admin.role.help'),
     },
     userRole: {
       type: type.string,
-      label: translate('oauth2.form.logout.url.help'), //TODO: translate
-      help: translate('oauth2.form.logout.url.help'), //TODO: translate
+      label: translate('oauth2.form.user.role.label'),
+      help: translate('oauth2.form.user.role.help'),
     },
     daikokuAdmins: {
       type: type.string,

@@ -125,7 +125,8 @@ case class UserSession(
     impersonatorSessionId: Option[UserSessionId],
     created: DateTime,
     ttl: FiniteDuration,
-    expires: DateTime
+    expires: DateTime,
+    providerSessionId: Option[String] = None
 ) extends CanJson[UserSession] {
   override def asJson: JsValue = json.UserSessionFormat.writes(this)
   def invalidate()(implicit ec: ExecutionContext, env: Env): Future[Unit] = {

@@ -210,11 +210,51 @@ class LoginController(
     )
   }
 
+  private def bindUserOAuth2(
+      sessionMaxAge: Int,
+      tenant: Tenant,
+      request: RequestHeader,
+      f: => EitherT[Future, AppError, (User, Option[String])]
+  ): Future[Result] = {
+
+    val value: EitherT[Future, AppError, Result] = f.flatMap { case (user, idToken) =>
+      user.twoFactorAuthentication match {
+        case Some(auth) if auth.enabled =>
+          val keyGenerator = KeyGenerator.getInstance("HmacSHA1")
+          keyGenerator.init(160)
+          val token =
+            new Base32().encodeAsString(keyGenerator.generateKey.getEncoded)
+
+          EitherT(
+            env.dataStore.userRepo
+              .save(user.copy(twoFactorAuthentication = Some(auth.copy(token = token))))
+              .map {
+                case true => Right(Redirect(s"/2fa?token=$token"))
+                case false => Left(AppError.InternalServerError("Failed to save user"))
+              }
+          )
+        case _ =>
+          EitherT.liftF(createSession(sessionMaxAge, user, request, tenant, idToken))
+      }
+    }
+
+    value.foldF(
+      {
+        case AppError.UserNotAllowed(email) =>
+          val errorMsg = URLEncoder.encode(s"User $email is not allowed to access this application", "UTF-8")
+          FastFuture.successful(Redirect(s"/informations?error=$errorMsg"))
+        case error => after(3.seconds)(error.renderF())
+      },
+      r => r.future
+    )
+  }
+
   private def createSession(
       sessionMaxAge: Int,
       user: User,
       request: RequestHeader,
-      tenant: Tenant
+      tenant: Tenant,
+      idToken: Option[String] = None
   ) = {
     env.dataStore.userSessionRepo
       .findOne(Json.obj("userEmail" -> user.email))
@@ -266,8 +306,11 @@ class LoginController(
             case _: Throwable =>
           }
 
+          val baseSession = Map("sessionId" -> session.sessionId.value) ++
+            idToken.map(t => "id_token" -> t)
+
           Redirect(redirectUri)
-            .withSession("sessionId" -> session.sessionId.value)
+            .withSession(baseSession.toSeq: _*)
             .removingFromSession("redirect")(request)
         }
       }
@@ -299,7 +342,7 @@ class LoginController(
 
         maybeOAuth2Config match {
           case Right(authConfig) =>
-            bindUserV2(
+            bindUserOAuth2(
               authConfig.sessionMaxAge,
               ctx.tenant,
               ctx.request,
@@ -456,15 +499,22 @@ class LoginController(
               ctx.ctx,
               AuthorizationLevel.AuthorizedSelf
             )
-            Redirect(
-              OAuth2Config
-                .fromJson(ctx.tenant.authProviderSettings) match {
-                case Left(_) => redirect
-                case Right(config: OAuth2Config) =>
-                  config.logoutUrl
+            val idToken = ctx.request.session.get("id_token").getOrElse("")
+            val rootRedirect = env.getDaikokuUrl(ctx.tenant, "/")
+            val logoutTarget = OAuth2Config
+              .fromJson(ctx.tenant.authProviderSettings) match {
+              case Left(_) => redirect
+              case Right(config: OAuth2Config) => config.logoutUrl match {
+                case None => redirect
+                case Some(url) =>
+                  url
+                    .replace(
+                      "${idTokenHint}",
+                      URLEncoder.encode(idToken, "UTF-8")
+                    )
                     .replace(
                       "${redirect}",
-                      URLEncoder.encode(redirect, "UTF-8")
+                      URLEncoder.encode(rootRedirect, "UTF-8")
                     )
                     .replace(
                       "${clientId}",
@@ -475,7 +525,9 @@ class LoginController(
                       )
                     )
               }
-            ).removingFromSession("sessionId")(ctx.request)
+            }
+            Redirect(logoutTarget)
+              .removingFromSession("sessionId", "id_token")(ctx.request)
           }
         case _ =>
           val session = ctx.request.attrs(IdentityAttrs.SessionKey)

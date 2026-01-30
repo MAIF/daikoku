@@ -35,18 +35,19 @@ jobs:
           npm run build
         env:
           NODE_OPTIONS: --max_old_space_size=4096
-      - name: initialize backend build
+      - name: Build backend and Docker image
         run: |
           cd daikoku
           sbt -Dsbt.color=always -Dsbt.supershell=false ';clean;compile;dist'
           sbt 'docker:publishLocal'
 
-      - name: Docker Compose Action
+      # ---- LDAP tests ----
+      - name: Start LDAP environment
         uses: hoverkraft-tech/compose-action@v2.2.0
         with:
           compose-file: "./daikoku/javascript/tests/docker-compose.yml"
 
-      - name: Wait for API to be ready
+      - name: Wait for API to be ready (LDAP)
         run: |
           echo "Waiting for API to be up..."
           until curl --silent --fail http://localhost:13200/health; do
@@ -55,13 +56,52 @@ jobs:
           done
           echo "API is ready!"
 
-      - name: Run Playwright tests
+      - name: Install Playwright
         run: |
-          pwd
           cd ./daikoku/javascript/tests
           npm ci
           npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests (LDAP)
+        run: |
+          cd ./daikoku/javascript/tests
           npx playwright test --project chromium
+        env:
+          CI: true
+          EXPOSED_PORT: 13200
+
+      - name: Stop LDAP environment
+        run: |
+          docker compose -f ./daikoku/javascript/tests/docker-compose.yml down -v
+
+      # ---- OIDC tests ----
+      - name: Start OIDC environment
+        uses: hoverkraft-tech/compose-action@v2.2.0
+        with:
+          compose-file: "./daikoku/javascript/tests/docker-compose-openid.yml"
+
+      - name: Wait for OIDC server to be ready
+        run: |
+          echo "Waiting for OIDC server to be up..."
+          until curl --silent --fail http://localhost:9001/.well-known/openid-configuration; do
+            printf '.'
+            sleep 2
+          done
+          echo "OIDC server is ready!"
+
+      - name: Wait for API to be ready (OIDC)
+        run: |
+          echo "Waiting for API to be up..."
+          until curl --silent --fail http://localhost:13200/health; do
+            printf '.'
+            sleep 2
+          done
+          echo "API is ready!"
+
+      - name: Run Playwright tests (OIDC)
+        run: |
+          cd ./daikoku/javascript/tests
+          npx playwright test --config playwright.oidc.config.js --project chromium
         env:
           CI: true
           EXPOSED_PORT: 13200
