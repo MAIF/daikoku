@@ -79,7 +79,6 @@ test('User producer can access to the dashboard', async ({ page }) => {
   await expect(page.getByText('La demande de clé d\'API au')).toBeVisible();
   await logout(page)
 
-  await page.goto(ACCUEIL);
   await loginAs(MICHAEL, page)
 
   await expect(page.getByRole('button', { name: 'Créer une API' })).toBeVisible();
@@ -246,7 +245,7 @@ test('create new team', async ({ page }) => {
   await page.getByRole('textbox', { name: 'Description' }).fill('Athlead\'s team');
   await page.getByRole('textbox', { name: 'Contact de l\'équipe' }).fill('contact@athlead.com');
   await page.getByRole('button', { name: 'Créer', exact: true }).click();
-  await expect(page.getByText('Team Athlead created')).toBeVisible();
+  await expect(page.getByText("L'équipe Athlead a été créée avec succès")).toBeVisible();
   await page.getByRole('button', { name: 'Mes équipes' }).click();
   await expect(page.getByRole('dialog')).toContainText('Athlead');
   await page.getByRole('link', { name: 'Athlead' }).click();
