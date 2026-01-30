@@ -88,16 +88,7 @@ jobs:
             sleep 2
           done
           echo "OIDC server is ready!"
-
-      - name: Wait for API to be ready (OIDC)
-        run: |
-          echo "Waiting for API to be up..."
-          until curl --silent --fail http://localhost:13200/health; do
-            printf '.'
-            sleep 2
-          done
-          echo "API is ready!"
-
+          
       - name: Run Playwright tests (OIDC)
         run: |
           cd ./daikoku/javascript/tests
