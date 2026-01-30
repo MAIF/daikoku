@@ -1,7 +1,7 @@
 import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
 import { JIM, MICHAEL } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, EMAIL_UI, exposedPort, findAndGoToTeam, HOME, loginAs, logistiqueCommandeProdApiKeyId, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeursPapierExtendedDevApiKeyId } from './utils';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, EMAIL_UI, exposedPort, findAndGoToTeam, HOME, loginAs, logistiqueCommandeProdApiKeyId, logout, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, otoroshiDevCommandRouteId, otoroshiDevPaperRouteId, vendeursPapierExtendedDevApiKeyId } from './utils';
 
 test.beforeEach(async () => {
   await Promise.all([
@@ -203,8 +203,7 @@ test('[ASOAPI-10161] - Demander une extension d\apikey - process manuel', async 
   await page.getByText('API Commande/prod').click();
   await page.getByLabel('motivation').fill('please');
   await page.getByRole('button', { name: 'Envoyer' }).click();
-  await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await logout(page)
 
   await loginAs(MICHAEL, page);
   await page.getByLabel('Accès aux notifications').click();
@@ -320,8 +319,7 @@ test('[ASOAPI-10164] - Demander une extension d\apikey - process manuel - refus'
   await page.getByText('API Commande/prod').click();
   await page.getByLabel('motivation').fill('please');
   await page.getByRole('button', { name: 'Envoyer' }).click();
-  await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await logout(page);
 
   await loginAs(MICHAEL, page);
   await page.getByLabel('Accès aux notifications').click();
@@ -332,8 +330,7 @@ test('[ASOAPI-10164] - Demander une extension d\apikey - process manuel - refus'
   await page.locator('#message').fill('désolé');
   await page.getByRole('dialog').getByRole('button', { name: 'Envoyer' }).click();
   await expect(page.getByLabel('Notifications', { exact: true })).toContainText('0');
-  await page.getByRole('img', { name: 'user menu' }).click();
-  await page.getByRole('link', { name: 'Déconnexion' }).click();
+  await logout(page);
 
   await loginAs(JIM, page);
   await page.goto(EMAIL_UI);

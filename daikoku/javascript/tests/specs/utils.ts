@@ -80,6 +80,7 @@ export const loginLocalAs = async (user: IUser, page: Page) => {
 }
 
 export const logout = async (page: Page) => {
+  await page.goto(ACCUEIL);
   await page.getByRole('img', { name: 'user menu' }).click();
   await page.getByRole('link', { name: 'Déconnexion' }).click();
   await page.getByRole('link', { name: 'API papier' }).waitFor({ state: 'visible' });

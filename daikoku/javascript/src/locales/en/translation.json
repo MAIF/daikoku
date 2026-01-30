@@ -1768,5 +1768,11 @@
     "dashboard.create.apigroup.button.label": "Create new API Group",
     "search.team.placeholder": "Search a team",
     "dashboard.create.team.button.label": "Create a team",
-    "dashboard.api.table.more.button.label": "Show more APIs"
+    "dashboard.api.table.more.button.label": "Show more APIs",
+    "oauth2.form.role.claim.label": "Role claim name",
+    "oauth2.form.role.claim.help": "Name of the OpenID claim containing the user's roles.",
+    "oauth2.form.admin.role.label": "Admin role",
+    "oauth2.form.admin.role.help": "Role value that grants Daikoku administrator access.",
+    "oauth2.form.user.role.label": "User role (optional)",
+    "oauth2.form.user.role.help": "Role value that grants standard user access. If set, users without admin or user role will not be able to log in."
 }

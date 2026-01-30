@@ -3714,7 +3714,9 @@ object json {
             ttl = (json \ "ttl")
               .asOpt[Long]
               .map(v => FiniteDuration(v, TimeUnit.MILLISECONDS))
-              .getOrElse(FiniteDuration(0, TimeUnit.MILLISECONDS))
+              .getOrElse(FiniteDuration(0, TimeUnit.MILLISECONDS)),
+            providerSessionId = (json \ "providerSessionId")
+              .asOpt[String]
           )
         )
       } recover {
@@ -3747,7 +3749,11 @@ object json {
           .as[JsValue],
         "created" -> DateTimeFormat.writes(o.created),
         "expires" -> DateTimeFormat.writes(o.expires),
-        "ttl" -> o.ttl.toMillis
+        "ttl" -> o.ttl.toMillis,
+        "providerSession" -> o.providerSessionId
+          .map(JsString(_))
+          .getOrElse(JsNull)
+          .as[JsValue]
       )
   }
 

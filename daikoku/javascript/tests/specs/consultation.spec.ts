@@ -161,6 +161,8 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
   await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeHidden();
 
+  await page.goto(HOME)
+
   //user simple user
   await loginAs(JIM, page)
   await page.getByRole('link', { name: 'API papier' }).click();
@@ -305,7 +307,6 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   );
 
   //user guest
-  await page.goto(HOME);
   await page.getByRole('link', { name: 'API papier' }).click();
   await expect(page.getByRole('navigation').getByText('Description')).toBeVisible();
   await expect(page.getByRole('navigation').getByText('Environnements')).toBeVisible();
@@ -317,6 +318,8 @@ test('Utiliser le page d\'affichage d\'une API ', async ({ page }) => {
   await expect(page.getByRole('navigation').getByText('Souscriptions')).toBeHidden();
   await expect(page.getByRole('navigation').getByText('Consommation')).toBeHidden();
   await expect(page.getByRole('navigation').getByText('Clés d\'API')).toBeHidden();
+  await page.goto(HOME)
+
 
   //user simple user
   await loginAs(JIM, page)

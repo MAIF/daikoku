@@ -5,19 +5,12 @@ import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import controllers.AppError
 import controllers.AppError.SubscriptionAggregationDisabled
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiAccess,
-  ApiSubscriptionDemand,
-  TransferApiOwnership
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiAccess, ApiSubscriptionDemand, TransferApiOwnership}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.UsagePlanVisibility.{Private, Public}
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{
-  ApiFormat,
-  SeqApiSubscriptionFormat
-}
+import fr.maif.otoroshi.daikoku.domain.json.{ApiFormat, SeqApiSubscriptionFormat}
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
 import org.joda.time.DateTime
@@ -26,7 +19,7 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterEach}
 import org.scalatestplus.play.PlaySpec
 import org.testcontainers.containers.BindMode
 import play.api.http.Status
-import play.api.libs.json._
+import play.api.libs.json.{Json, _}
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -4053,18 +4046,26 @@ class ApiControllerSpec()
       (transfer.json \ "notify").as[Boolean] mustBe true
 
       //accept transfer (2 notification available, transfer & demand)
-      val resp = httpJsonCallBlocking(s"/api/me/notifications")(tenant, session)
+      val resp = getOwnNotificationsCallBlocking(Json.obj("filterTable" -> Json.stringify(
+        Json.arr(
+          Json.obj("id" -> "type", "value" -> Json.arr("TransferApiOwnership"))
+        )
+      )))(tenant, session)
       resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 2
-      val eventualNotifications = json.SeqNotificationFormat.reads(
-        (resp.json \ "notifications").as[JsArray]
-      )
-      eventualNotifications.isSuccess mustBe true
-      val notification: Notification = eventualNotifications.get
-        .filter(_.action.isInstanceOf[TransferApiOwnership])
+      (resp.json \ "data" \ "myNotifications" \ "totalFiltered")
+        .as[Long] mustBe 1
+
+      val notifications =
+        (resp.json \ "data" \ "myNotifications" \ "notifications")
+          .as[JsArray]
+
+      val notification = notifications
         .head
+
+      (notification \ "action" \ "__typename").as[String] mustBe "TransferApiOwnership"
+
       val acceptNotif = httpJsonCallBlocking(
-        path = s"/api/notifications/${notification.id.value}/accept",
+        path = s"/api/notifications/${(notification \ "_id").as[String]}/accept",
         method = "PUT",
         body = Some(Json.obj())
       )(tenant, session)
@@ -4274,20 +4275,26 @@ class ApiControllerSpec()
       transfer.status mustBe 200
       (transfer.json \ "notify").as[Boolean] mustBe true
 
-      val resp = httpJsonCallBlocking(s"/api/me/notifications")(tenant, session)
+      val resp = getOwnNotificationsCallBlocking(Json.obj("filterTable" -> Json.stringify(
+        Json.arr(
+          Json.obj("id" -> "type", "value" -> Json.arr("TransferApiOwnership"))
+        )
+      )))(tenant, session)
       resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 3
+      (resp.json \ "data" \ "myNotifications" \ "totalFiltered")
+        .as[Long] mustBe 1
 
-      val eventualNotifications = json.SeqNotificationFormat.reads(
-        (resp.json \ "notifications").as[JsArray]
-      )
-      eventualNotifications.isSuccess mustBe true
-      val transferNotification: Notification = eventualNotifications.get
-        .filter(_.action.isInstanceOf[TransferApiOwnership])
+      val notifications =
+        (resp.json \ "data" \ "myNotifications" \ "notifications")
+          .as[JsArray]
+
+      val notification = notifications
         .head
 
+      (notification \ "action" \ "__typename").as[String] mustBe "TransferApiOwnership"
+
       val acceptNotif = httpJsonCallBlocking(
-        path = s"/api/notifications/${transferNotification.id.value}/accept",
+        path = s"/api/notifications/${(notification \ "_id").as[String]}/accept",
         method = "PUT",
         body = Some(Json.obj())
       )(tenant, session)
@@ -6077,15 +6084,18 @@ class ApiControllerSpec()
       resp.status mustBe 200
 
       //get notifications for teamOwner and accept it
-      val respNotif =
-        httpJsonCallBlocking(s"/api/me/notifications")(tenant, adminSession)
+      val respNotif = getOwnNotificationsCallBlocking(Json.obj())(tenant, adminSession)
       respNotif.status mustBe 200
-      (respNotif.json \ "count").as[Long] mustBe 1
-      val eventualNotifications = json.SeqNotificationFormat.reads(
-        (respNotif.json \ "notifications").as[JsArray]
-      )
-      eventualNotifications.isSuccess mustBe true
-      val notifId = eventualNotifications.get.head.id
+      (respNotif.json \ "data" \ "myNotifications" \ "totalFiltered")
+        .as[Long] mustBe 1
+      //      val eventualNotifications = json.SeqNotificationFormat.reads(
+      //        (respNotif.json \ "notifications").as[JsArray]
+      //      )
+      //      eventualNotifications.isSuccess mustBe true
+      val notifications =
+        (respNotif.json \ "data" \ "myNotifications" \ "notifications")
+          .as[JsArray]
+      val notifId = (notifications.value.head \ "_id").as(json.NotificationIdFormat)
 
       val respAccept = httpJsonCallBlocking(
         path = s"/api/notifications/${notifId.value}/accept",
