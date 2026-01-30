@@ -170,10 +170,10 @@ test('apilist infinite pagination', async ({ page }) => {
 
   await page.getByText('29 APIs').click();
   await expect(page.getByRole('article')).toHaveCount(15);
-  await page.getByRole('button', { name: 'Afficher plus de notifications' }).click();
+  await page.getByRole('button', {name: 'afficher plus d\'APIs' }).click();
   await expect(page.getByRole('article')).toHaveCount(29);
   await expect(page.getByRole('article', { name: 'cms-api-tenant-default' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Afficher plus de notifications' })).toBeHidden();
+  await expect(page.getByRole('button', {name: 'afficher plus d\'APIs' })).toBeHidden();
   await page.getByRole('button', { name: 'API souscrite seulement' }).click();
   await expect(page.getByRole('article')).toHaveCount(3);
   await expect(page.getByText('3 APIs')).toBeVisible();
