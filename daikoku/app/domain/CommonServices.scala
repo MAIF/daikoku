@@ -350,6 +350,8 @@ object CommonServices {
         getFiltervalue[List[String]](filter, "team").map(_.toArray)
       val tags =
         getFiltervalue[List[String]](filter, "tag").map(_.toArray)
+      val categories =
+        getFiltervalue[List[String]](filter, "category").map(_.toArray)
       val research =
         getFiltervalue[String](filter, "research")
       val subscribeOnly =
@@ -365,6 +367,7 @@ object CommonServices {
        * $7: limit
        * $8: offset
        * $$9: apiGroupId
+       * $$10: categories
        * */
 //TODO: Get keys and status
       val query =
@@ -425,6 +428,10 @@ object CommonServices {
           |                                CASE
           |                                    WHEN array_length($$5::text[], 1) IS NULL THEN true
           |                                    ELSE a.content -> 'tags' ?| $$5::text[]
+          |                                    END AND
+          |                                CASE
+          |                                    WHEN array_length($$10::text[], 1) IS NULL THEN true
+          |                                    ELSE a.content -> 'categories' ?| $$10::text[]
           |                                    END AND (
           |                                NOT $$6
           |                                    OR EXISTS (SELECT 1
@@ -564,7 +571,8 @@ object CommonServices {
                 java.lang.Boolean.valueOf(subscribeOnly.getOrElse(false)),
                 java.lang.Integer.valueOf(limit),
                 java.lang.Integer.valueOf(offset),
-                apiGroupId.orNull
+                apiGroupId.orNull,
+                categories.orNull
               )
             )
       } yield {
