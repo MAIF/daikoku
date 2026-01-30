@@ -3934,8 +3934,13 @@ object SchemaDefinition {
     )
     val NAME = Argument(
       "name",
-      StringType,
+      OptionInputType(StringType),
       description = "A filter about name of value"
+    )
+    val PATH = Argument(
+      "path",
+      OptionInputType(StringType),
+      description = "A cms filter about path of page"
     )
     def teamQueryFields()
         : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
@@ -4346,19 +4351,23 @@ object SchemaDefinition {
         Field(
           "page",
           OptionType(CmsPageType),
-          arguments = DELETED :: NAME :: Nil,
+          arguments = DELETED :: NAME :: PATH :: Nil,
           resolve = ctx => {
             _UberPublicUserAccess(
               AuditTrailEvent(s"@{user.name} has accessed the list of cms page")
             )(ctx.ctx._2) {
-              ctx.ctx._1.cmsRepo
-                .forTenant(ctx.ctx._2.tenant)
-                .findOne(
-                  Json.obj(
-                    "_deleted" -> ctx.arg(DELETED),
-                    "name" -> ctx.arg(NAME)
-                  )
-                )
+              (ctx.arg(NAME), ctx.arg(PATH)) match {
+                case (None, None)           => FastFuture.successful(None)
+                case (maybeName, maybePath) =>
+                  ctx.ctx._1.cmsRepo
+                    .forTenant(ctx.ctx._2.tenant)
+                    .findOne(
+                      Json.obj(
+                        "_deleted" -> ctx.arg(DELETED)
+                      ) ++ maybeName.map(name => Json.obj("name" -> name)).getOrElse(Json.obj())
+                        ++ maybePath.map(path => Json.obj("path" -> path)).getOrElse(Json.obj())
+                    )
+              }
             }.map {
               case Right(Some(page))
                   if page.authenticated && ctx.ctx._2.user.isGuest =>

@@ -93,6 +93,8 @@ To go further, it is possible to create new pages with the embedded [CMS](../08-
 #### Footer
 ****
 Daikoku allows you to display a footer on any frontend page. Since version `18.6.0`, footer management is handled via the command-line interface (CLI). If you created a footer using the user interface, a migration has been performed to integrate it into a CMS page. Otherwise, you just need to create a CMS page named `footer.html`.
+Even better, you can have a footer version for each language.
+Simply create a footer folder in the customization directory, then create subfolders for each language (fr, en) and add a page.html file with the code to each.
 
 #### Unlogged home description
 The unlogged home description is the first content shown to the user for private tenant, before the login page.
