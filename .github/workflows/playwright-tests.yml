@@ -1,0 +1,89 @@
+name: Playwright Tests
+
+on:
+  # Triggered after build-docker pushes a new image
+  workflow_run:
+    workflows: ["Build Docker Image"]
+    types: [completed]
+
+  # Triggered directly when only tests or this workflow change
+  push:
+    paths:
+      - 'daikoku/javascript/tests/**'
+      - '.github/workflows/playwright-tests.yml'
+
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: maif/daikoku
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    # Skip if triggered by a failed build
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        suite:
+          - name: ldap
+            compose-file: ./daikoku/javascript/tests/docker-compose.yml
+            playwright-config: playwright.config.js
+            health-url: http://localhost:13200/health
+          - name: oidc
+            compose-file: ./daikoku/javascript/tests/docker-compose-openid.yml
+            playwright-config: playwright.oidc.config.js
+            health-url: http://localhost:13200/health
+    name: test-${{ matrix.suite.name }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Pull Daikoku image
+        run: |
+          docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest maif/daikoku:latest
+
+      - name: Start environment
+        uses: hoverkraft-tech/compose-action@v2.2.0
+        with:
+          compose-file: ${{ matrix.suite.compose-file }}
+
+      - name: Wait for API to be ready
+        run: |
+          echo "Waiting for services to be up..."
+          until curl --silent --fail ${{ matrix.suite.health-url }}; do
+            printf '.'
+            sleep 2
+          done
+          echo "Services are ready!"
+
+      - name: Install Playwright
+        run: |
+          cd ./daikoku/javascript/tests
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Run Playwright tests (${{ matrix.suite.name }})
+        run: |
+          cd ./daikoku/javascript/tests
+          npx playwright test --config ${{ matrix.suite.playwright-config }} --project chromium
+        env:
+          CI: true
+          EXPOSED_PORT: 13200
