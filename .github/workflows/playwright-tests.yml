@@ -11,6 +11,8 @@ on:
     paths:
       - 'daikoku/javascript/tests/**'
       - '.github/workflows/playwright-tests.yml'
+      - 'daikoku/javascript/tests/docker-compose.yml'
+      - 'daikoku/javascript/tests/docker-compose-openid.yml'
 
   workflow_dispatch:
 

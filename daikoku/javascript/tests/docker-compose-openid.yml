@@ -178,7 +178,7 @@ services:
       - DAIKOKU_POSTGRES_DATABASE=daikoku_demo_komainu
       - DAIKOKU_POSTGRES_HOST=postgres
       - DAIKOKU_EXPOSED_ON=13200
-      - DAIKOKU_INIT_DATA_FROM=/usr/app/daikoku/imports/daikoku_state_openid.ndjson
+      - DAIKOKU_INIT_DATA_FROM=/usr/app/daikoku/imports/daikoku_state_oidc.ndjson
       - DAIKOKU_MODE=test
     ports:
       - 13200:8080
