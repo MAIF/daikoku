@@ -72,7 +72,7 @@ jobs:
             printf '.'
             sleep 2
           done
-          echo "Services are ready!"
+          echo "daikoku are ready!"
 
       - name: Install Playwright
         run: |
