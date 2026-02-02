@@ -10,6 +10,7 @@ on:
       - 'daikoku/javascript/src/**'
       - 'daikoku/javascript/package.json'
       - 'daikoku/javascript/package-lock.json'
+      - '.github/workflows/build-docker.yml'
   workflow_dispatch:
 
 env:
