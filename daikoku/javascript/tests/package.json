@@ -10,6 +10,7 @@
   "description": "",
   "devDependencies": {
     "@playwright/test": "^1.56.1",
-    "nanoid": "^5.1.5"
+    "nanoid": "^5.1.5",
+    "date-fns": "^4.1.0"
   }
 }

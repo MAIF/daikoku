@@ -1,7 +1,7 @@
-import test, { expect, Locator } from '@playwright/test';
+import test, { expect } from '@playwright/test';
 import otoroshi_data from '../config/otoroshi/otoroshi-state.json';
-import { DWIGHT, IUser, JIM, MICHAEL } from './users';
-import { ACCUEIL, adminApikeyId, adminApikeySecret, dwightPaperApiKeyId, exposedPort, findAndGoToTeam, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, tenantAdminTeam, tenant } from './utils';
+import { DWIGHT, JIM, MICHAEL } from './users';
+import { ACCUEIL, adminApikeyId, adminApikeySecret, exposedPort, loginAs, otoroshiAdminApikeyId, otoroshiAdminApikeySecret, tenant, tenantAdminTeam } from './utils';
 
 
 test.beforeEach(async () => {
