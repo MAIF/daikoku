@@ -68,9 +68,8 @@ object JsonOperationsHelper {
   def filterJson(obj: JsValue, fields: Seq[String]): JsObject = {
     val out = fields.map(input => getValueAtPath(input, obj))
 
-    out.foldLeft(Json.obj()) {
-      case (acc, curr) =>
-        insertAtPath(acc, curr._1.split("\\.").toIndexedSeq, curr._2)
+    out.foldLeft(Json.obj()) { case (acc, curr) =>
+      insertAtPath(acc, curr._1.split("\\.").toIndexedSeq, curr._2)
     }
   }
 

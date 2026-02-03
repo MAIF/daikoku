@@ -133,7 +133,7 @@ class ApiService(
       "client.name" -> otoroshiApiKey.clientName
     )
 
-    //FIXME: if custom.metadata are not string:string it's broken
+    // FIXME: if custom.metadata are not string:string it's broken
     val processedMetadata = plan.otoroshiTarget
       .map(_.processedMetadata(ctx))
       .getOrElse(Map.empty[String, String]) ++ customMetadata
@@ -531,8 +531,8 @@ class ApiService(
           val newTagsFromDk =
             planTags.map(OtoroshiTarget.processValue(_, ctx))
 
-          //todo: unnecessary ??
-          //val newTags: Set[String] = apk.tags.diff(tagsFromDk) ++ newTagsFromDk
+          // todo: unnecessary ??
+          // val newTags: Set[String] = apk.tags.diff(tagsFromDk) ++ newTagsFromDk
 
           // ********************
           // process new metadata
@@ -681,9 +681,10 @@ class ApiService(
   ): Future[Either[AppError, JsObject]] = {
     import cats.implicits._
 
-    val maybeTarget = plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
+    val maybeTarget =
+      plan.otoroshiTarget.map(_.otoroshiSettings).flatMap { id =>
       tenant.otoroshiSettings.find(_.id == id)
-    }
+      }
 
     val r = for {
       otoSettings        <- EitherT.fromOption[Future][AppError, OtoroshiSettings](
@@ -805,7 +806,7 @@ class ApiService(
                             env.dataStore.tenantRepo.findByIdNotDeleted(subscription.tenant),
                             AppError.TenantNotFound
                           )
-      //get tenant team admin
+      // get tenant team admin
       tenantAdminTeam  <- EitherT.fromOptionF[Future, AppError, Team](
                             env.dataStore.teamRepo
                               .forTenant(tenant)
@@ -815,7 +816,7 @@ class ApiService(
                             )
                           )
 
-      //GET parent API
+      // GET parent API
       parentApi        <- EitherT.fromOptionF[Future, AppError, Api](
                             env.dataStore.apiRepo
                               .forAllTenant()
@@ -828,7 +829,7 @@ class ApiService(
                             AppError.ApiNotFound
                           )
 
-      //Get parent plan
+      // Get parent plan
       plan             <- EitherT.fromOptionF[Future, AppError, UsagePlan](
                             env.dataStore.usagePlanRepo
                               .forTenant(tenant)
@@ -836,13 +837,13 @@ class ApiService(
                             AppError.PlanNotFound
                           )
 
-      //get ototoshi target from parent plan
+      // get ototoshi target from parent plan
       otoroshiTarget   <- EitherT.fromOption[Future](
                             plan.otoroshiTarget,
                             AppError.EntityNotFound(s"Otoroshi target for plan ${plan.id.value}")
                           )
 
-      //get otoroshi settings from parent plan
+      // get otoroshi settings from parent plan
       otoroshiSettings <- EitherT.fromOption[Future](
                             tenant.otoroshiSettings
                               .find(_.id == otoroshiTarget.otoroshiSettings),
@@ -988,7 +989,7 @@ class ApiService(
       case None                                              => Future.successful(Left(OtoroshiSettingsNotFound))
       case Some(otoSettings)                                 =>
         implicit val otoroshiSettings: OtoroshiSettings = otoSettings
-        //implicit val language: String = tenant.defaultLanguage.getOrElse("en")
+        // implicit val language: String = tenant.defaultLanguage.getOrElse("en")
 
         val newClientSecret     = IdGenerator.token(64)
         val updatedSubscription = subscription.copy(apiKey = subscription.apiKey.copy(clientSecret = newClientSecret))
@@ -1193,13 +1194,14 @@ class ApiService(
   }
 
   /**
-   * remove a subcription from an aggregation, compute newly aggregation, save it in otoroshi and return new computed otoroshi apikey
+    remove a subcription from an aggregation, compute newly aggregation, save
+    * it in otoroshi and return new computed otoroshi apikey
    *
-   * @param subscription the subscription to extract
-   * @param tenant       the tenant
-   * @param user         the user responsible for the extraction
-   * @param o            the oto settings
-   * @return extracted otoroshi apikey (unsaved)
+   * @param subscription* the subscription to extract
+   * @param tenant    *   the tenant
+   * @param user      *   the user responsible for the extraction
+   * @param o         *   the oto settings
+   * @return* extracted otoroshi apikey (unsaved)
    */
   def extractSubscriptionFromAggregation(
       subscription: ApiSubscription,
@@ -1209,7 +1211,7 @@ class ApiService(
       o: OtoroshiSettings
   ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
     (for {
-      //get parent ApiSubscription
+      // get parent ApiSubscription
       parentSubscriptionId <-
         EitherT.fromOption[Future][AppError, ApiSubscriptionId](
           subscription.parent,
@@ -1223,12 +1225,12 @@ class ApiService(
           MissingParentSubscription
         )
 
-      //get otoroshi aggregate apiKey
+      // get otoroshi aggregate apiKey
       oldApiKey            <- EitherT[Future, AppError, ActualOtoroshiApiKey](
                                 otoroshiClient.getApikey(parentSubscription.apiKey.clientId)
                               )
 
-      //get all child subscriptions except subscription to extract
+      // get all child subscriptions except subscription to extract
       childsSubscription   <-
         EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
           env.dataStore.apiSubscriptionRepo
@@ -1241,7 +1243,7 @@ class ApiService(
             )
         )
 
-      //get team
+      // get team
       team                 <- EitherT.fromOptionF[Future, AppError, Team](
                                 env.dataStore.teamRepo
                                   .forTenant(tenant.id)
@@ -1249,7 +1251,7 @@ class ApiService(
                                 TeamNotFound
                               )
 
-      //create new OtoroshiApiKey from parent sub
+      // create new OtoroshiApiKey from parent sub
       parentApi            <- EitherT.fromOptionF[Future, AppError, Api](
                                 env.dataStore.apiRepo
                                   .forTenant(tenant)
@@ -1293,13 +1295,13 @@ class ApiService(
                            )
                          }))
 
-      //get api of subscription to extract
+      // get api of subscription to extract
       api             <- EitherT.fromOptionF[Future, AppError, Api](
                            env.dataStore.apiRepo.forTenant(tenant).findById(subscription.api),
                            ApiNotFound
                          )
 
-      //get plan of subscription to extract
+      // get plan of subscription to extract
       plan            <- EitherT.fromOptionF[Future, AppError, UsagePlan](
                            env.dataStore.usagePlanRepo
                              .forTenant(tenant)
@@ -1307,7 +1309,7 @@ class ApiService(
                            PlanNotFound
                          )
 
-      //compute new OtoroshiApiKey for subscription to extract
+      // compute new OtoroshiApiKey for subscription to extract
       apikey           = createOtoroshiApiKey(
                            user = user,
                            api = api,
@@ -1318,7 +1320,7 @@ class ApiService(
                            customMetadata = subscription.customMetadata
                          )
 
-      //compute new aggregation, copy from old OtoroshiApiKey to keep informations like quotas
+      // compute new aggregation, copy from old OtoroshiApiKey to keep informations like quotas
       computedMetadata =
         newParentKey.metadata ++
           childsKeys.foldLeft(Map.empty[String, String])((acc, curr) => acc ++ curr.metadata)
@@ -1364,10 +1366,10 @@ class ApiService(
                         )
                       )
 
-      //save new aggregate in otoroshi
+      // save new aggregate in otoroshi
       _            <- EitherT(otoroshiClient.updateApiKey(newAggApiKey))
 
-      //return extracted OtoroshiApiKey
+      // return extracted OtoroshiApiKey
     } yield apikey).value
   }
 
@@ -1412,19 +1414,19 @@ class ApiService(
                     .forTenant(tenant.id)
                     .deleteByIdLogically(subscription.id)
                 )
-            //no need to delete key (aggregate is saved and return new key, just we don't save it)
-            //just delete subsscription
+            // no need to delete key (aggregate is saved and return new key, just we don't save it)
+            // just delete subsscription
             case None if childs.nonEmpty =>
               childs match {
                 case newParent :: newChilds =>
                   for {
-                    //save new parent by removing link with old parent
+                    // save new parent by removing link with old parent
                     _ <-
                       env.dataStore.apiSubscriptionRepo
                         .forTenant(tenant)
                         .save(newParent.copy(parent = None))
 
-                    //save other sub from aggregation with link to new parent
+                    // save other sub from aggregation with link to new parent
                     _ <-
                       env.dataStore.apiSubscriptionRepo
                         .forTenant(tenant)
@@ -2059,7 +2061,7 @@ class ApiService(
 
     value
       .flatMap {
-        //generate notification to checkout
+        // generate notification to checkout
         case (Some(step), demand)
             if step.step.name == "payment" && demand.steps.size > 1 && step.state.name == "waiting" =>
           for {
@@ -2272,7 +2274,7 @@ class ApiService(
                                      tenant,
                                      s"/${team.humanReadableId}/settings/apikeys/${api.humanReadableId}/${api.currentVersion.value}"
                                    )
-                                 ), //todo => better url
+                                 ), // todo => better url
                                  "team"               -> JsString(team.name),
                                  "producer_team_data" -> ownerTeam.asJson,
                                  "consumer_team_data" -> team.asJson,

@@ -8,8 +8,15 @@ import fr.maif.otoroshi.daikoku.actions.{
   CmsApiAction,
   DaikokuActionMaybeWithoutUser
 }
+import fr.maif.otoroshi.daikoku.domain.Tenant.getCustomizationCmsPage
 import fr.maif.otoroshi.daikoku.domain.json.{CmsFileFormat, CmsPageFormat}
-import fr.maif.otoroshi.daikoku.domain.{CmsPageId, Tenant, TenantMode, User}
+import fr.maif.otoroshi.daikoku.domain.{
+  CmsPageId,
+  Tenant,
+  TenantId,
+  TenantMode,
+  User
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider.{OAuth2, Otoroshi}
@@ -179,12 +186,11 @@ class CmsApiController(
   def health() =
     CmsApiAction.async { ctx =>
       ctx.request.headers.get("Otoroshi-Health-Check-Logic-Test") match {
-        //todo: better health check
+        // todo: better health check
         case Some(value) =>
           Ok.withHeaders(
-              "Otoroshi-Health-Check-Logic-Test-Result" -> (value.toLong + 42L).toString
-            )
-            .future
+            "Otoroshi-Health-Check-Logic-Test-Result" -> (value.toLong + 42L).toString
+          ).future
         case None =>
           Ok(
             Json.obj(
@@ -206,6 +212,26 @@ class CmsApiController(
         }
     }
 
+  private def readFile(path: String): EitherT[Future, AppError, String] = {
+    env.environment.resourceAsStream(path) match {
+      case Some(stream) =>
+        try {
+          val content = scala.io.Source.fromInputStream(stream).mkString
+          stream.close()
+          EitherT.pure[Future, AppError](content)
+        } catch {
+          case e: Throwable =>
+            AppLogger.error(e.getLocalizedMessage, e)
+            EitherT.leftT[Future, String](
+              AppError.InternalServerError(e.getLocalizedMessage)
+            )
+        }
+      case None =>
+        EitherT.leftT[Future, String](
+          AppError.BadRequestError(s"File not found at $path")
+        )
+    }
+  }
   def tenantCustomization() =
     CmsApiAction.async { ctx =>
       (for {
@@ -213,23 +239,51 @@ class CmsApiController(
           ctx.tenant.style,
           AppError.EntityNotFound("Tenant customization")
         )
-        cssPage <- EitherT.fromOptionF(
+        cssPage <- EitherT.right[AppError](
           env.dataStore.cmsRepo
             .forTenant(ctx.tenant)
-            .findById(tenantStyle.cssCmsPage),
-          AppError.EntityNotFound("css cms page")
+            .findById(tenantStyle.cssCmsPage)
+            .map(
+              _.getOrElse(
+                getCustomizationCmsPage(
+                  ctx.tenant.id,
+                  "style",
+                  "text/css",
+                  ""
+                )
+              )
+            )
         )
-        colorThemePage <- EitherT.fromOptionF(
+        themeBody <- readFile("public/themes/default.css")
+        colorThemePage <- EitherT.right[AppError](
           env.dataStore.cmsRepo
             .forTenant(ctx.tenant)
-            .findById(tenantStyle.colorThemeCmsPage),
-          AppError.EntityNotFound("color theme cms page")
+            .findById(tenantStyle.colorThemeCmsPage)
+            .map(
+              _.getOrElse(
+                getCustomizationCmsPage(
+                  ctx.tenant.id,
+                  "color-theme",
+                  "text/css",
+                  themeBody
+                )
+              )
+            )
         )
-        jsPage <- EitherT.fromOptionF(
+        jsPage <- EitherT.right[AppError](
           env.dataStore.cmsRepo
             .forTenant(ctx.tenant)
-            .findById(tenantStyle.jsCmsPage),
-          AppError.EntityNotFound("js cms page")
+            .findById(tenantStyle.jsCmsPage)
+            .map(
+              _.getOrElse(
+                getCustomizationCmsPage(
+                  ctx.tenant.id,
+                  "script",
+                  "text/javascript",
+                  ""
+                )
+              )
+            )
         )
       } yield Ok(
         Json.arr(
@@ -237,7 +291,12 @@ class CmsApiController(
           colorThemePage.asJson,
           jsPage.asJson
         )
-      )).leftMap(_.render()).merge
+      ))
+        .leftMap(error => {
+          AppLogger.error(error.getErrorMessage())
+          error.render()
+        })
+        .merge
     }
 
   def findAll(): Action[AnyContent] =

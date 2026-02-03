@@ -46,9 +46,9 @@ class QueueJob(
     Option(ref.get()).foreach(_.cancel())
   }
 
-  //*************************
-  //*** ELEMENTS DELETION ***
-  //*************************
+  // *************************
+  // *** ELEMENTS DELETION ***
+  // *************************
 
   private def deleteApiNotifications(api: Api): Future[Boolean] = {
     logger.debug("*** DeLEte api notifications AS OPERATION***")
@@ -277,7 +277,7 @@ class QueueJob(
           .findById(subscription.plan),
         AppError.PlanNotFound
       )
-      //todo: send notification & mail ?
+      // todo: send notification & mail ?
       _ <- EitherT.liftF(
         apiService.archiveApiKey(tenant, subscription, plan, enabled = false)
       )
@@ -303,7 +303,7 @@ class QueueJob(
         case Left(error) =>
           logger.error(
             s"[deletion job] :: [id ${o.id.value}] :: error during deletion of subscription ${o.itemId}: ${error
-              .getErrorMessage()}"
+                .getErrorMessage()}"
           )
           env.dataStore.operationRepo
             .forTenant(o.tenant)
@@ -373,9 +373,9 @@ class QueueJob(
       })
   }
 
-  //***************************
-  //*** THIRD PARTY PAYMENT ***
-  //***************************
+  // ***************************
+  // *** THIRD PARTY PAYMENT ***
+  // ***************************
 
   private def syncConsumption(o: Operation): Future[Unit] = {
     logger.debug("*** SYNC CONSUmPTION AS OPERATION***")
@@ -399,10 +399,9 @@ class QueueJob(
       )
       _ <- OptionT(
         Future
-          .sequence(settingsAndInfos.map {
-            case (settings, informations) =>
-              paymentClient
-                .syncWithThirdParty(consumption, settings, informations)
+          .sequence(settingsAndInfos.map { case (settings, informations) =>
+            paymentClient
+              .syncWithThirdParty(consumption, settings, informations)
           }.toList)
           .map(_.headOption)
       )
@@ -519,8 +518,8 @@ class QueueJob(
 //      }).map(_ => ())
 //  }
 
-  //***************************
-  //***************************
+  // ***************************
+  // ***************************
 
   private def awaitF(
       duration: FiniteDuration

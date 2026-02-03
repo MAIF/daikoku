@@ -619,15 +619,18 @@ object utils {
         port: Int = port,
         hostHeader: String = tenant.domain
     )(implicit tenant: Tenant): WSResponse =
-      httpJsonCallWithoutSession(
-        path,
-        method,
-        headers,
-        body,
-        baseUrl,
-        port,
-        hostHeader
-      )(tenant).futureValue
+      Await.result(
+        httpJsonCallWithoutSession(
+          path,
+          method,
+          headers,
+          body,
+          baseUrl,
+          port,
+          hostHeader
+        )(tenant),
+        5.seconds
+      )
 
     def httpJsonCallWithoutSession(
         path: String,
@@ -773,8 +776,8 @@ object utils {
     val childRouteId    = "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"
     val otherRouteId    = "route_d74ea8b27-b8be-4177-82d9-c50722416c51"
     val serviceGroupDev =
-      "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5" //parent, child, other routes
-    val serviceGroupDefault = "default" //other routes
+      "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5" // parent, child, other routes
+    val serviceGroupDefault = "default" // other routes
     val serviceGroupAdmin   = "admin-api-group"
     val parent2ApkAsJson    = Json.obj(
       "_loc"                    -> Json.obj(
@@ -1013,7 +1016,7 @@ object utils {
             case other if attempt < maxRetries                                      =>
               logger.error(
                 s"[$attempt/$maxRetries] Failed to fetch Otoroshi API keys after $maxRetries attempts: ${Json
-                  .prettyPrint(other)}"
+                    .prettyPrint(other)}"
               )
               Future.successful(
                 Seq.empty
@@ -1108,7 +1111,7 @@ object utils {
       clientId = "5w24yl2ly3dlnn92",
       clientSecret = "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db"
     )
-    //apikey with child_route & other_route (with parent) as authorized entities & {"foo": "bar"} as metadata
+    // apikey with child_route & other_route (with parent) as authorized entities & {"foo": "bar"} as metadata
     val parentApiKeyWith2childs = OtoroshiApiKey(
       clientName = "daikoku_test_parent_key_2_childs",
       clientId = "fu283imnfv8jdt4e",
@@ -1632,5 +1635,65 @@ object utils {
 
     val defaultApi: ApiWithPlans =
       generateApi("default", tenant.id, teamOwnerId, Seq.empty)
+
+    val baseMyNotificationGraphQLQuery =
+      s"""
+         |query getMyNotifications ($$limit : Int, $$offset: Int, $$filterTable: JsArray) {
+         |      myNotifications (limit: $$limit, offset: $$offset, filterTable: $$filterTable) {
+         |        notifications {
+         |          _id
+         |          team {
+         |            _id
+         |          }
+         |          action {
+         |            __typename
+         |
+         |            ... on TeamInvitation {
+         |            __typename
+         |              team {
+         |                _id
+         |              }
+         |            }
+         |          }
+         |          status {
+         |            ... on NotificationStatusAccepted {
+         |            __typename
+         |              date
+         |              status
+         |            }
+         |            ... on NotificationStatusRejected {
+         |            __typename
+         |              date
+         |              status
+         |            }
+         |            ... on NotificationStatusPending {
+         |            __typename
+         |              status
+         |            }
+         |
+         |          }
+         |        }
+         |        total,
+         |        totalFiltered,
+         |       }
+         |}
+         |""".stripMargin
+
+    def getOwnNotificationsCallBlocking(
+        extraFilters: JsObject = Json.obj()
+    )(implicit tenant: Tenant, session: UserSession) = {
+      val variables = Json.obj("limit" -> 20, "offset" -> 0) ++ extraFilters
+
+      httpJsonCallBlocking(
+        path = "/api/search",
+        method = "POST",
+        body = Json
+          .obj(
+            "variables" -> variables,
+            "query" -> baseMyNotificationGraphQLQuery
+          )
+          .some
+      )
+    }
   }
 }

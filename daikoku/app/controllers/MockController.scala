@@ -169,7 +169,7 @@ class MockController(
                     groups = Set(OtoroshiServiceGroupId("12345"))
                   )
                 )
-              ) //FIXME: [#119]
+              ) // FIXME: [#119]
             )
           else None
       ),
@@ -197,7 +197,7 @@ class MockController(
                     groups = Set(OtoroshiServiceGroupId("12345"))
                   )
                 )
-              ) //FIXME: [#119]
+              ) // FIXME: [#119]
             )
           else None
       ),
@@ -227,7 +227,7 @@ class MockController(
                     groups = Set(OtoroshiServiceGroupId("12345"))
                   )
                 )
-              ) //FIXME: [#119]
+              ) // FIXME: [#119]
             )
           else None
       ),
@@ -258,7 +258,7 @@ class MockController(
                     groups = Set(OtoroshiServiceGroupId("12345"))
                   )
                 )
-              ) //FIXME: [#119]
+              ) // FIXME: [#119]
             )
           else None
       ),
@@ -286,7 +286,7 @@ class MockController(
                     groups = Set(OtoroshiServiceGroupId("12345"))
                   )
                 )
-              ) //FIXME: [#119]
+              ) // FIXME: [#119]
             )
           else None
       )
@@ -373,8 +373,7 @@ class MockController(
       name = s"My Toy Api - V$version",
       smallDescription = "A small API to play with Daikoku exposition",
       tags = Set("api", "rest", "scala", "play"),
-      description =
-        """# My Awesome API
+      description = """# My Awesome API
           |
           |Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus.
           |
@@ -581,7 +580,7 @@ class MockController(
     Action(parse.json) { req =>
       json.ActualOtoroshiApiKeyFormat.reads(req.body).asOpt match {
         case Some(apiKey) => Ok(apiKey.asJson)
-        case None         => BadRequest(Json.obj("error" -> "wrong apikey format"))
+        case None => BadRequest(Json.obj("error" -> "wrong apikey format"))
       }
     }
 

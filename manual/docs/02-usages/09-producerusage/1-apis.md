@@ -121,7 +121,7 @@ It's possible to **allow multiple API keys** for a plan (by default, a team can 
 It's possible to **allow API keys aggregation**
 
 :::info
-Since version `18.6.0` plans no longer have predefined types.
+Since version `18.7.0` plans no longer have predefined types.
 :::
 
 Plans in Daikoku are fully configurable. 

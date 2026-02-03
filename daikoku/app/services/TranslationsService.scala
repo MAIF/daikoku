@@ -50,15 +50,14 @@ class TranslationsService {
           )
           .flatMap { v =>
             v._2
-              .map {
-                case (key, value) =>
-                  Translation(
-                    id = DatastoreId(IdGenerator.token(32)),
-                    tenant = ctx.tenant.id,
-                    language = v._1,
-                    key = key,
-                    value = value
-                  )
+              .map { case (key, value) =>
+                Translation(
+                  id = DatastoreId(IdGenerator.token(32)),
+                  tenant = ctx.tenant.id,
+                  language = v._1,
+                  key = key,
+                  value = value
+                )
               }
               .filter(t => languages.contains(t.language))
           }

@@ -17,7 +17,7 @@ import scala.util.{Failure, Success, Try}
 
 object HtmlSanitizer {
 
-  //First define your policy for allowed elements
+  // First define your policy for allowed elements
   private lazy val policy = new HtmlPolicyBuilder()
     .allowElements("p")
     .allowElements("a")
@@ -67,15 +67,15 @@ class ConsoleMailer(settings: ConsoleMailerSettings) extends Mailer {
       )
       .map { templateBody =>
         logger.info(s"Sent email: ${Json.prettyPrint(
-          Json.obj(
-            "from" -> s"Daikoku <daikoku@foo.bar>",
-            "to" -> Seq(to.mkString(", ")),
-            "subject" -> Seq(title),
-            "html" -> templateBody
-              .replace("{{email}}", body)
-              .replace("[email]", body)
-          )
-        )}")
+            Json.obj(
+              "from" -> s"Daikoku <daikoku@foo.bar>",
+              "to" -> Seq(to.mkString(", ")),
+              "subject" -> Seq(title),
+              "html" -> templateBody
+                .replace("{{email}}", body)
+                .replace("[email]", body)
+            )
+          )}")
         ()
       }
   }
@@ -156,10 +156,9 @@ class MailgunSender(wsClient: WSClient, settings: MailgunSettings)
       to = settings.testingEmail.map(email => Seq(email)).getOrElse(Seq.empty),
       sandbox = true
     ).map(res => res.status < 400)
-      .recover {
-        case e =>
-          logger.error("Error while testing mailgun email", e)
-          false
+      .recover { case e =>
+        logger.error("Error while testing mailgun email", e)
+        false
       }
   }
 }
@@ -245,14 +244,12 @@ class MailjetSender(wsClient: WSClient, settings: MailjetSettings)
       to = Seq("admin@daikoku.io"),
       sandbox = true
     ).map(res => {
-        logger.info(res.body)
-        res.status < 400
-      })
-      .recover {
-        case e =>
-          logger.error("Error while testing mailjet email", e)
-          false
-      }
+      logger.info(res.body)
+      res.status < 400
+    }).recover { case e =>
+      logger.error("Error while testing mailjet email", e)
+      false
+    }
   }
 }
 
@@ -300,40 +297,38 @@ class SimpleSMTPSender(settings: SimpleSMTPSettings) extends Mailer {
         Future
           .sequence(
             to.map(InternetAddress.parse)
-              .map {
-                address =>
-                  val session = Session.getInstance(properties, authenticator)
-                  val message: Message =
-                    new MimeMessage(
-                      session
-                    )
-                  message.setFrom(new InternetAddress(settings.fromEmail))
-                  message.setRecipients(
-                    Message.RecipientType.TO,
-                    address.asInstanceOf[Array[Address]]
+              .map { address =>
+                val session = Session.getInstance(properties, authenticator)
+                val message: Message =
+                  new MimeMessage(
+                    session
                   )
+                message.setFrom(new InternetAddress(settings.fromEmail))
+                message.setRecipients(
+                  Message.RecipientType.TO,
+                  address.asInstanceOf[Array[Address]]
+                )
 
-                  message.setSentDate(new Date())
-                  message.setSubject(title)
-                  message.setContent(
-                    templatedBody
-                      .replace("{{email}}", body)
-                      .replace("[email]", body),
-                    "text/html; charset=utf-8"
+                message.setSentDate(new Date())
+                message.setSubject(title)
+                message.setContent(
+                  templatedBody
+                    .replace("{{email}}", body)
+                    .replace("[email]", body),
+                  "text/html; charset=utf-8"
+                )
+
+                Try {
+                  Transport.send(message)
+                  logger.debug(
+                    s"Alert email sent to : ${address.mkString("Array(", ", ", ")")}"
                   )
+                  logger.debug(s"title: $title -- body: $body")
+                } recover { case e: Exception =>
+                  logger.error("Error while sending alert email", e)
+                } get
 
-                  Try {
-                    Transport.send(message)
-                    logger.debug(
-                      s"Alert email sent to : ${address.mkString("Array(", ", ", ")")}"
-                    )
-                    logger.debug(s"title: $title -- body: $body")
-                  } recover {
-                    case e: Exception =>
-                      logger.error("Error while sending alert email", e)
-                  } get
-
-                  FastFuture.successful(())
+                FastFuture.successful(())
               }
           )
           .flatMap { _ =>
@@ -454,11 +449,9 @@ class SendgridSender(ws: WSClient, settings: SendgridSettings) extends Mailer {
       Seq("admin@daikoku.io"),
       sandbox = true
     ).map(res => {
-        res.status < 400
-      })
-      .recover {
-        case e =>
-          logger.error("Error while testing sendgrid email", e)
-          false
-      }
+      res.status < 400
+    }).recover { case e =>
+      logger.error("Error while testing sendgrid email", e)
+      false
+    }
 }

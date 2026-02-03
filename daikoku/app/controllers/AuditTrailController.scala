@@ -38,7 +38,7 @@ class AuditTrailController(
       TenantAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has accessed audit trail from ${new DateTime(from)
-            .toString()} to ${new DateTime(to).toString()}"
+              .toString()} to ${new DateTime(to).toString()}"
         )
       )(ctx.tenant.id.value, ctx) { (tenant, _) =>
         env.dataStore.auditTrailRepo

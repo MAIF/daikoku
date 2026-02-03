@@ -99,22 +99,6 @@ export const getTeamVisibleApi = (
 export const myTeams = (): Promise<ResponseError | Array<ITeamSimple>> =>
   customFetch('/api/me/teams');
 
-export const teamAllNotifications = (teamId: any, page = 0) =>
-  customFetch(`/api/teams/${teamId}/notifications/all?page=${page}`);
-export const teamNotifications = (teamId: any) => customFetch(`/api/teams/${teamId}/notifications`);
-export const teamUnreadNotificationsCount = (teamId: any) =>
-  fetch(`/api/teams/${teamId}/notifications/unread-count`, { headers: HEADERS }).then(
-    (r) => (r.status === 200 ? r.json() : { count: 0 }),
-    () => ({ count: 0 })
-  );
-export const myAllNotifications = (page = 0, pageSize = 10) =>
-  customFetch(`/api/me/notifications/all?page=${page}&pageSize=${pageSize}`);
-export const myNotifications = (
-  page: number = 0,
-  pageSize: number = 10
-): Promise<{ notifications: Array<INotification>; count: number }> =>
-  customFetch(`/api/me/notifications?page=${page}&pageSize=${pageSize}`);
-
 export const myUnreadNotificationsCount = (): Promise<{ count: number }> =>
   fetch('/api/me/notifications/unread-count')
     .then(

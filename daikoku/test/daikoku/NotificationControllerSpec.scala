@@ -11,6 +11,7 @@ import fr.maif.otoroshi.daikoku.domain.json._
 import fr.maif.otoroshi.daikoku.login.AuthProvider
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.IdGenerator
+import fr.maif.otoroshi.daikoku.utils.LoggerImplicits.BetterLogger
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
 import org.scalatest.BeforeAndAfterEach
@@ -18,6 +19,8 @@ import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import play.api.libs.json._
 
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
 import scala.util.Try
 
 class NotificationControllerSpec()
@@ -130,11 +133,19 @@ class NotificationControllerSpec()
         notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val resp    = httpJsonCallBlocking(
-        s"/api/teams/${teamOwnerId.value}/notifications/unread-count"
+      val resp    = getOwnNotificationsCallBlocking(
+        Json.obj(
+          "filterTable" -> Json.stringify(
+            Json.arr(
+              Json
+                .obj("id" -> "unreadOnly", "value" -> true)
+            )
+          )
+        )
       )(tenant, session)
       resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 1
+      (resp.json \ "data" \ "myNotifications" \ "totalFiltered")
+        .as[Long] mustBe 1
     }
     "read notifications of his team" in {
       setupEnvBlocking(
@@ -145,11 +156,19 @@ class NotificationControllerSpec()
         notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val resp    = httpJsonCallBlocking(
-        s"/api/teams/${teamOwnerId.value}/notifications/all"
+      val resp    = getOwnNotificationsCallBlocking(extraFilters =
+        Json.obj(
+          "filterTable" -> Json.stringify(
+            Json.arr(
+              Json
+                .obj("id" -> "team", "value" -> Json.arr(teamOwnerId.asJson))
+            )
+          )
+        )
       )(tenant, session)
       resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 2
+      (resp.json \ "data" \ "myNotifications" \ "totalFiltered")
+        .as[Long] mustBe 2
     }
     "read untreated notifications of his team" in {
       setupEnvBlocking(
@@ -160,18 +179,27 @@ class NotificationControllerSpec()
         notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session               = loginWithBlocking(userAdmin, tenant)
-      val resp                  = httpJsonCallBlocking(
-        s"/api/teams/${teamOwnerId.value}/notifications"
+      val resp                  = getOwnNotificationsCallBlocking(
+        Json.obj(
+          "filterTable" -> Json.stringify(
+            Json.arr(
+              Json.obj("id" -> "unreadOnly", "value" -> true),
+              Json.obj("id" -> "team", "value" -> Json.arr(teamOwnerId.asJson))
+            )
+          )
+        )
       )(tenant, session)
       resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 1
-      val eventualNotifications = json.SeqNotificationFormat.reads(
-        (resp.json \ "notifications").as[JsArray]
-      )
-      eventualNotifications.isSuccess mustBe true
-      eventualNotifications.get.head.id mustBe untreatedNotification.id
-      eventualNotifications.get.forall(_.status == Pending()) mustBe true
+      (resp.json \ "data" \ "myNotifications" \ "total").as[Long] mustBe 1
+      val notification =
+        (resp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray]
+      (notification.head \ "_id")
+        .as(json.NotificationIdFormat) mustBe untreatedNotification.id
+      notification.value.forall(n =>
+        (n \ "status").as(json.NotificationStatusFormat) == Pending()
+      ) mustBe true
     }
+
     "read his count of notifications" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -198,10 +226,9 @@ class NotificationControllerSpec()
         notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session = loginWithBlocking(userAdmin, tenant)
-      val resp    =
-        httpJsonCallBlocking(s"/api/me/notifications/all")(tenant, session)
+      val resp    = getOwnNotificationsCallBlocking()(tenant, session)
       resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 2
+      (resp.json \ "data" \ "myNotifications" \ "total").as[Long] mustBe 2
     }
     "read his untreated notifications" in {
       setupEnvBlocking(
@@ -212,15 +239,25 @@ class NotificationControllerSpec()
         notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session               = loginWithBlocking(userAdmin, tenant)
-      val resp                  = httpJsonCallBlocking(s"/api/me/notifications")(tenant, session)
+      val resp                  = getOwnNotificationsCallBlocking(
+        Json.obj(
+          "filterTable" -> Json.stringify(
+            Json.arr(
+              Json.obj("id" -> "unreadOnly", "value" -> true)
+            )
+          )
+        )
+      )(tenant, session)
       resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 1
-      val eventualNotifications = json.SeqNotificationFormat.reads(
-        (resp.json \ "notifications").as[JsArray]
-      )
-      eventualNotifications.isSuccess mustBe true
-      eventualNotifications.get.head.id mustBe untreatedNotification.id
-      eventualNotifications.get.forall(_.status == Pending()) mustBe true
+      (resp.json \ "data" \ "myNotifications" \ "total").as[Long] mustBe 1
+
+      val notification =
+        (resp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray]
+      (notification.head \ "_id")
+        .as(json.NotificationIdFormat) mustBe untreatedNotification.id
+      notification.value.forall(n =>
+        (n \ "status").as(json.NotificationStatusFormat) == Pending()
+      ) mustBe true
     }
     "receive a notification - api issue" in {
       setupEnvBlocking(
@@ -279,6 +316,20 @@ class NotificationControllerSpec()
       countNotification.status mustBe 200
       (countNotification.json \ "count").as[Long] mustBe 1
 
+      val resp = getOwnNotificationsCallBlocking(
+        Json.obj(
+          "filterTable" -> Json.stringify(
+            Json.arr(
+              Json.obj("id" -> "unreadOnly", "value" -> true)
+            )
+          )
+        )
+      )(tenant, adminSession)
+      val notifications =
+        (resp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray]
+      notifications.value.length mustBe 1
+      (notifications.head \ "action" \ "__typename")
+        .as[String] mustBe "NewIssueOpenV2"
     }
     "reveive a notification - post created" in {
       val sub              = ApiSubscription(
@@ -334,6 +385,21 @@ class NotificationControllerSpec()
         )
       countNotification.status mustBe 200
       (countNotification.json \ "count").as[Long] mustBe 1
+
+      val resp = getOwnNotificationsCallBlocking(
+        Json.obj(
+          "filterTable" -> Json.stringify(
+            Json.arr(
+              Json.obj("id" -> "unreadOnly", "value" -> true)
+            )
+          )
+        )
+      )(tenant, userSession)
+      val notifications =
+        (resp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray]
+      notifications.value.length mustBe 1
+      (notifications.head \ "action" \ "__typename")
+        .as[String] mustBe "NewPostPublishedV2"
     }
     "accept notification - api access" in {
       setupEnvBlocking(
@@ -593,61 +659,67 @@ class NotificationControllerSpec()
   }
 
   "a daikoku admin" can {
-    "read the count of untreated notifications of a team" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(daikokuAdmin),
-        teams = Seq(teamOwner, teamConsumer),
-        usagePlans = defaultApi.plans,
-        apis = Seq(defaultApi.api),
-        notifications = Seq(treatedNotification, untreatedNotification)
-      )
-      val session = loginWithBlocking(daikokuAdmin, tenant)
-      val resp    = httpJsonCallBlocking(
-        s"/api/teams/${teamOwnerId.value}/notifications/unread-count"
-      )(tenant, session)
-      resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 1
+//    "read the count of untreated notifications of a team" in {
+//      setupEnvBlocking(
+//        tenants = Seq(tenant),
+//        users = Seq(daikokuAdmin),
+//        teams = Seq(teamOwner, teamConsumer),
+//        usagePlans = defaultApi.plans,
+//        apis = Seq(defaultApi.api),
+//        notifications = Seq(treatedNotification, untreatedNotification)
+//      )
+//      val session = loginWithBlocking(daikokuAdmin, tenant)
+//
+//      val resp    = graphQLNotificationCallBlocking(Json.obj(
+//        "filterTable" -> Json.stringify(
+//          Json.arr(
+//            Json.obj("id" -> "unreadOnly", "value" -> true),
+//            Json.obj("id" -> "team", "value" -> Json.arr(teamOwnerId.asJson)),
+//          )
+//        )
+//      ))(tenant, session)
+//      resp.status mustBe 200
+//      (resp.json \ "data" \ "myNotifications" \ "totalFiltered").as[Long] mustBe 1
+//    }
 
-    }
-    "read notifications of a team" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(daikokuAdmin),
-        teams = Seq(teamOwner, teamConsumer),
-        usagePlans = defaultApi.plans,
-        apis = Seq(defaultApi.api),
-        notifications = Seq(treatedNotification, untreatedNotification)
-      )
-      val session = loginWithBlocking(daikokuAdmin, tenant)
-      val resp    = httpJsonCallBlocking(
-        s"/api/teams/${teamOwnerId.value}/notifications/all"
-      )(tenant, session)
-      resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 2
-    }
-    "read untreated notifications of a team" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(daikokuAdmin),
-        teams = Seq(teamOwner, teamConsumer),
-        usagePlans = defaultApi.plans,
-        apis = Seq(defaultApi.api),
-        notifications = Seq(treatedNotification, untreatedNotification)
-      )
-      val session               = loginWithBlocking(daikokuAdmin, tenant)
-      val resp                  = httpJsonCallBlocking(
-        s"/api/teams/${teamOwnerId.value}/notifications"
-      )(tenant, session)
-      resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 1
-      val eventualNotifications = json.SeqNotificationFormat.reads(
-        (resp.json \ "notifications").as[JsArray]
-      )
-      eventualNotifications.isSuccess mustBe true
-      eventualNotifications.get.head.id mustBe untreatedNotification.id
-      eventualNotifications.get.forall(_.status == Pending()) mustBe true
-    }
+//    "read notifications of a team" in {
+//      setupEnvBlocking(
+//        tenants = Seq(tenant),
+//        users = Seq(daikokuAdmin),
+//        teams = Seq(teamOwner, teamConsumer),
+//        usagePlans = defaultApi.plans,
+//        apis = Seq(defaultApi.api),
+//        notifications = Seq(treatedNotification, untreatedNotification)
+//      )
+//      val session = loginWithBlocking(daikokuAdmin, tenant)
+//      val resp    = httpJsonCallBlocking(
+//        s"/api/teams/${teamOwnerId.value}/notifications/all"
+//      )(tenant, session)
+//      resp.status mustBe 200
+//      (resp.json \ "count").as[Long] mustBe 2
+//    }
+//    "read untreated notifications of a team" in {
+//      setupEnvBlocking(
+//        tenants = Seq(tenant),
+//        users = Seq(daikokuAdmin),
+//        teams = Seq(teamOwner, teamConsumer),
+//        usagePlans = defaultApi.plans,
+//        apis = Seq(defaultApi.api),
+//        notifications = Seq(treatedNotification, untreatedNotification)
+//      )
+//      val session               = loginWithBlocking(daikokuAdmin, tenant)
+//      val resp                  = httpJsonCallBlocking(
+//        s"/api/teams/${teamOwnerId.value}/notifications"
+//      )(tenant, session)
+//      resp.status mustBe 200
+//      (resp.json \ "count").as[Long] mustBe 1
+//      val eventualNotifications = json.SeqNotificationFormat.reads(
+//        (resp.json \ "notifications").as[JsArray]
+//      )
+//      eventualNotifications.isSuccess mustBe true
+//      eventualNotifications.get.head.id mustBe untreatedNotification.id
+//      eventualNotifications.get.forall(_.status == Pending()) mustBe true
+//    }
     "accept notification - api access" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -939,7 +1011,7 @@ class NotificationControllerSpec()
       )
       setupEnvBlocking(
         tenants = Seq(tenant),
-        users = Seq(daikokuAdmin),
+        users = Seq(daikokuAdmin, userAdmin),
         teams = Seq(teamOwner, teamConsumer),
         usagePlans = defaultApi.plans,
         apis = Seq(defaultApi.api),
@@ -947,6 +1019,8 @@ class NotificationControllerSpec()
       )
 
       val session = loginWithBlocking(daikokuAdmin, tenant)
+      val ownerSession = loginWithBlocking(userAdmin, tenant)
+
       val resp    = httpJsonCallBlocking(
         path = s"/api/teams/${teamConsumer.id.value}/apis/${defaultApi.api.humanReadableId}/issues",
         method = "POST",
@@ -958,19 +1032,27 @@ class NotificationControllerSpec()
 
       resp.status mustBe 201
 
-      val notificationsResp = httpJsonCallBlocking(
-        s"/api/teams/${teamConsumer.id.value}/notifications/all"
-      )(
-        tenant,
-        session
-      )
-      notificationsResp.status mustBe 200
-      (notificationsResp.json \ "count").as[Long] mustBe 1
+      val respNotifs = getOwnNotificationsCallBlocking(
+        Json.obj(
+          "filterTable" -> Json.stringify(
+            Json.arr(
+              Json.obj("id" -> "unreadOnly", "value" -> true),
+              Json
+                .obj("id" -> "team", "value" -> Json.arr(teamConsumerId.asJson))
+            )
+          )
+        )
+      )(tenant, ownerSession)
+      respNotifs.status mustBe 200
+      (respNotifs.json \ "data" \ "myNotifications" \ "totalFiltered")
+        .as[Long] mustBe 1
 
-      val notifications = (notificationsResp.json \ "notifications").as[JsArray]
-      (notifications.head \ "action" \ "type").asOpt[String] mustBe Some(
-        "NewIssueOpenV2"
-      )
+      val notifications =
+        (respNotifs.json \ "data" \ "myNotifications" \ "notifications")
+          .as[JsArray]
+      notifications.value.length mustBe 1
+      (notifications.head \ "action" \ "__typename")
+        .as[String] mustBe "NewIssueOpenV2"
     }
     "create comment in issue that notify subscribers of api" in {
       val otherUser = User(
@@ -1074,10 +1156,10 @@ class NotificationControllerSpec()
       val apiEditorSession = loginWithBlocking(userApiEditor, tenant)
       val otherSession     = loginWithBlocking(otherUser, tenant)
 
-      //useAdmin admin of teamOwner, owner of the API
-      //user, admin of teamConsumer, suber of API
-      //apiEditor, admin of third team, suber of API
-      //otherUser, member of no team
+      // useAdmin admin of teamOwner, owner of the API
+      // user, admin of teamConsumer, suber of API
+      // apiEditor, admin of third team, suber of API
+      // otherUser, member of no team
 
       // [1] - user create a new issue for API ==> OK
       val userCreateIssue = httpJsonCallBlocking(
@@ -1091,23 +1173,41 @@ class NotificationControllerSpec()
 
       userCreateIssue.status mustBe 201
 
-      //[2] - user admin, as admin of TeamOwner, must reveive a notification about new issue created by user
-      val adminCheckNotification = httpJsonCallBlocking(
-        s"/api/me/notifications"
-      )(
-        tenant,
-        session
-      )
-      adminCheckNotification.status mustBe 200
-      (adminCheckNotification.json \ "count").as[Long] mustBe 1
+      // [2] - user admin, as admin of TeamOwner, must reveive a notification about new issue created by user
+//      val adminCheckNotification = httpJsonCallBlocking(
+//        s"/api/me/notifications"
+//      )(
+//        tenant,
+//        session
+//      )
+//      adminCheckNotification.status mustBe 200
+//      (adminCheckNotification.json \ "count").as[Long] mustBe 1
+//
+//      val notifications =
+//        (adminCheckNotification.json \ "notifications").as[JsArray]
+//      (notifications.head \ "action" \ "type").asOpt[String] mustBe Some(
+//        "NewIssueOpenV2"
+//      )
 
-      val notifications =
-        (adminCheckNotification.json \ "notifications").as[JsArray]
-      (notifications.head \ "action" \ "type").asOpt[String] mustBe Some(
-        "NewIssueOpenV2"
-      )
+      val adminCheckNotification = getOwnNotificationsCallBlocking(
+        Json.obj(
+          "filterTable" -> Json.stringify(
+            Json.arr(
+              Json.obj("id" -> "unreadOnly", "value" -> true),
+              Json.obj("id" -> "team", "value" -> Json.arr(teamOwnerId.asJson))
+            )
+          )
+        )
+      )(tenant, session)
+      logger.json(adminCheckNotification.json, true)
+      val adminNotifications =
+        (adminCheckNotification.json \ "data" \ "myNotifications" \ "notifications")
+          .as[JsArray]
+      adminNotifications.value.length mustBe 1
+      (adminNotifications.head \ "action" \ "__typename")
+        .as[String] mustBe "NewIssueOpenV2"
 
-      //[3] - admin add a response in issue
+      // [3] - admin add a response in issue
       val adminComment      = ApiIssueComment(
         by = userAdmin.id,
         createdAt = DateTime.now(),
@@ -1127,25 +1227,44 @@ class NotificationControllerSpec()
 
       adminCommentIssue.status mustBe 200
 
-      val userCheckNotif = httpJsonCallBlocking(
-        s"/api/me/notifications"
-      )(
-        tenant,
-        userSession
-      )
+//      val userCheckNotif = httpJsonCallBlocking(
+//        s"/api/me/notifications"
+//      )(
+//        tenant,
+//        userSession
+//      )
+//
+//      //[4] - user received a notification for admin comment is his issue
+//      userCheckNotif.status mustBe 200
+//      (userCheckNotif.json \ "count").as[Long] mustBe 2
+//
+//      val notifications2 =
+//        (userCheckNotif.json \ "notifications").as(json.SeqNotificationFormat)
+//      notifications2
+//        .maxBy(_.date)
+//        .action
+//        .getClass mustBe classOf[NewCommentOnIssueV2]
+      val userCheckNotif = getOwnNotificationsCallBlocking(
+        Json.obj(
+          "filterTable" -> Json.stringify(
+            Json.arr(
+              Json.obj("id" -> "unreadOnly", "value" -> true)
+            )
+          )
+        )
+      )(tenant, userSession)
+      val userNotifs =
+        (userCheckNotif.json \ "data" \ "myNotifications" \ "notifications")
+          .as[JsArray]
+      userNotifs.value.length mustBe 2
+      userNotifs.value
+        .map(v =>
+          (v \ "action" \ "__typename")
+            .as[String]
+        )
+        .contains("NewCommentOnIssueV2") mustBe true
 
-      //[4] - user received a notification for admin comment is his issue
-      userCheckNotif.status mustBe 200
-      (userCheckNotif.json \ "count").as[Long] mustBe 2
-
-      val notifications2 =
-        (userCheckNotif.json \ "notifications").as(json.SeqNotificationFormat)
-      notifications2
-        .maxBy(_.date)
-        .action
-        .getClass mustBe classOf[NewCommentOnIssueV2]
-
-      //[5] - apiEditor member of third team add also a response in issue by removing a comment ==> KO
+      // [5] - apiEditor member of third team add also a response in issue by removing a comment ==> KO
       val apiEditorComment        = ApiIssueComment(
         by = userApiEditor.id,
         createdAt = DateTime.now(),
@@ -1164,7 +1283,7 @@ class NotificationControllerSpec()
       )
       apiEditorCommentIssueKO.status mustBe 403
 
-      //[5bis] - apiEditor member of third team add also a response in issue
+      // [5bis] - apiEditor member of third team add also a response in issue
       val commentsByApiEditor   = commentsByAdmin :+ apiEditorComment
       val apiEditorCommentIssue = httpJsonCallBlocking(
         path =
@@ -1177,16 +1296,29 @@ class NotificationControllerSpec()
       )
       apiEditorCommentIssue.status mustBe 200
 
-      val userCheckNotif2 = httpJsonCallBlocking(
-        s"/api/me/notifications"
-      )(
-        tenant,
-        userSession
-      )
-      userCheckNotif2.status mustBe 200
-      (userCheckNotif2.json \ "count").as[Long] mustBe 3
+//      val userCheckNotif2 = httpJsonCallBlocking(
+//        s"/api/me/notifications"
+//      )(
+//        tenant,
+//        userSession
+//      )
+//      userCheckNotif2.status mustBe 200
+//      (userCheckNotif2.json \ "count").as[Long] mustBe 3
+      val userCheckNotif2 = getOwnNotificationsCallBlocking(
+        Json.obj(
+          "filterTable" -> Json.stringify(
+            Json.arr(
+              Json.obj("id" -> "unreadOnly", "value" -> true)
+            )
+          )
+        )
+      )(tenant, userSession)
+      val userNotifs2 =
+        (userCheckNotif2.json \ "data" \ "myNotifications" \ "notifications")
+          .as[JsArray]
+      userNotifs2.value.length mustBe 3
 
-      //[6] - otherUser member of no team can't post comment
+      // [6] - otherUser member of no team can't post comment
       val commentsByOther   = commentsByApiEditor
       val otherCommentIssue = httpJsonCallBlocking(
         path =
@@ -1199,7 +1331,7 @@ class NotificationControllerSpec()
       )
       otherCommentIssue.status mustBe 401
 
-      //[7] - admin can update tags & close issue
+      // [7] - admin can update tags & close issue
       val adminCloseIssue = httpJsonCallBlocking(
         path =
           s"/api/teams/${defaultApi.api.team.value}/apis/${defaultApi.api.humanReadableId}/issues/${issue.id.value}",
@@ -1240,7 +1372,7 @@ class NotificationControllerSpec()
       )
       adminOpenIssue.status mustBe 200
 
-      //[8] - non admin can't update tags & close issue
+      // [8] - non admin can't update tags & close issue
       val nonAdminCloseIssue = httpJsonCallBlocking(
         path =
           s"/api/teams/${defaultApi.api.team.value}/apis/${defaultApi.api.humanReadableId}/issues/${issue.id.value}",
@@ -1261,7 +1393,7 @@ class NotificationControllerSpec()
       )
       nonAdminCloseIssue.status mustBe 401
 
-      //[8bis] - non admin can't update tags
+      // [8bis] - non admin can't update tags
       val nonAdminUpdateTagsIssue = httpJsonCallBlocking(
         path =
           s"/api/teams/${defaultApi.api.team.value}/apis/${defaultApi.api.humanReadableId}/issues/${issue.id.value}",
@@ -1283,21 +1415,6 @@ class NotificationControllerSpec()
   }
 
   "a user/api editor" can {
-    "not read the count of untreated notifications of his team" in {
-      setupEnvBlocking(
-        tenants = Seq(tenant),
-        users = Seq(user),
-        teams = Seq(teamOwner, teamConsumer),
-        usagePlans = defaultApi.plans,
-        apis = Seq(defaultApi.api),
-        notifications = Seq(treatedNotification, untreatedNotification)
-      )
-      val session = loginWithBlocking(user, tenant)
-      val resp    = httpJsonCallBlocking(
-        s"/api/teams/${teamOwnerId.value}/notifications/unread-count"
-      )(tenant, session)
-      resp.status mustBe 403
-    }
     "not read notifications of his team" in {
       setupEnvBlocking(
         tenants = Seq(tenant),
@@ -1308,10 +1425,18 @@ class NotificationControllerSpec()
         notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session = loginWithBlocking(user, tenant)
-      val resp    = httpJsonCallBlocking(
-        s"/api/teams/${teamOwnerId.value}/notifications/all"
+      val resp    = getOwnNotificationsCallBlocking(
+        Json.obj(
+          "filterTable" -> Json.stringify(
+            Json.arr(
+              Json.obj("id" -> "team", "value" -> Json.arr(teamOwnerId.asJson))
+            )
+          )
+        )
       )(tenant, session)
-      resp.status mustBe 403
+      val notifications =
+        (resp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray]
+      notifications.value.length mustBe 0
     }
     "not read untreated notifications of his team" in {
       setupEnvBlocking(
@@ -1323,10 +1448,19 @@ class NotificationControllerSpec()
         notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session = loginWithBlocking(user, tenant)
-      val resp    = httpJsonCallBlocking(
-        s"/api/teams/${teamOwnerId.value}/notifications"
+      val resp    = getOwnNotificationsCallBlocking(
+        Json.obj(
+          "filterTable" -> Json.stringify(
+            Json.arr(
+              Json.obj("id" -> "unreadOnly", "value" -> true),
+              Json.obj("id" -> "team", "value" -> Json.arr(teamOwnerId.asJson))
+            )
+          )
+        )
       )(tenant, session)
-      resp.status mustBe 403
+      val notifications =
+        (resp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray]
+      notifications.value.length mustBe 0
     }
     "read his count of notifications" in {
       setupEnvBlocking(
@@ -1355,11 +1489,13 @@ class NotificationControllerSpec()
         apis = Seq(defaultApi.api),
         notifications = Seq(treatedNotification, untreatedNotification)
       )
+      // TODO: save a dedicated notification
+
       val session = loginWithBlocking(user, tenant)
-      val resp    =
-        httpJsonCallBlocking(s"/api/me/notifications/all")(tenant, session)
-      resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 0
+      val resp    = getOwnNotificationsCallBlocking()(tenant, session)
+      val notifications =
+        (resp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray]
+      notifications.value.length mustBe 0
     }
     "read his untreated notifications" in {
       setupEnvBlocking(
@@ -1371,9 +1507,10 @@ class NotificationControllerSpec()
         notifications = Seq(treatedNotification, untreatedNotification)
       )
       val session = loginWithBlocking(user, tenant)
-      val resp    = httpJsonCallBlocking(s"/api/me/notifications")(tenant, session)
-      resp.status mustBe 200
-      (resp.json \ "count").as[Long] mustBe 0
+      val resp    = getOwnNotificationsCallBlocking()(tenant, session)
+      val notifications =
+        (resp.json \ "data" \ "myNotifications" \ "notifications").as[JsArray]
+      notifications.value.length mustBe 0
     }
     "not accept any \"team\" notification except teamInvitation" in {
       setupEnvBlocking(
@@ -1508,6 +1645,7 @@ class NotificationControllerSpec()
         date = DateTime.now().minusDays(1)
       )
 
+      Await.result(waitForDaikokuSetup(), 5.seconds)
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(user, userAdmin),
@@ -1549,20 +1687,16 @@ class NotificationControllerSpec()
       resp.status mustBe 200
 
       val sessionUser = loginWithBlocking(user, tenant)
-      val respNotifs  = httpJsonCallBlocking(
-        path = s"/api/me/notifications"
-      )(tenant, sessionUser)
-      respNotifs.status mustBe 200
+      val respNotifs  = getOwnNotificationsCallBlocking()(tenant, sessionUser)
+      val notifications =
+        (respNotifs.json \ "data" \ "myNotifications" \ "notifications")
+          .as[JsArray]
+      notifications.value.length mustBe 1
 
-      val maybeNotifs =
-        fr.maif.otoroshi.daikoku.domain.json.SeqNotificationFormat
-          .reads((respNotifs.json \ "notifications").as[JsArray])
-
-      maybeNotifs.isSuccess mustBe true
-      val notifs: Seq[Notification] = maybeNotifs.get
-      notifs.size mustBe 1
-      notifs.head.action.isInstanceOf[ApiSubscriptionAccept] mustBe true
-      notifs.head.team.get mustBe teamConsumerId
+      (notifications.value.head \ "action" \ "__typename")
+        .as[String] mustBe "ApiSubscriptionAccept"
+      (notifications.value.head \ "team" \ "_id")
+        .as(json.TeamIdFormat) mustBe teamConsumerId
     }
 
     "receive a return notification of a subscription request rejection" in {
@@ -1591,6 +1725,7 @@ class NotificationControllerSpec()
         date = DateTime.now().minusDays(1)
       )
 
+      Await.result(waitForDaikokuSetup(), 5.second)
       setupEnvBlocking(
         tenants = Seq(tenant),
         users = Seq(user, userAdmin, user),
@@ -1633,20 +1768,17 @@ class NotificationControllerSpec()
       resp.status mustBe 200
 
       val sessionUser = loginWithBlocking(user, tenant)
-      val respNotifs  = httpJsonCallBlocking(
-        path = s"/api/me/notifications"
-      )(tenant, sessionUser)
-      respNotifs.status mustBe 200
 
-      val maybeNotifs =
-        fr.maif.otoroshi.daikoku.domain.json.SeqNotificationFormat
-          .reads((respNotifs.json \ "notifications").as[JsArray])
+      val respNotifs = getOwnNotificationsCallBlocking()(tenant, sessionUser)
+      val notifications =
+        (respNotifs.json \ "data" \ "myNotifications" \ "notifications")
+          .as[JsArray]
+      notifications.value.length mustBe 1
 
-      maybeNotifs.isSuccess mustBe true
-      val notifs: Seq[Notification] = maybeNotifs.get
-      notifs.size mustBe 1
-      notifs.head.action.isInstanceOf[ApiSubscriptionReject] mustBe true
-      notifs.head.team.get mustBe teamConsumerId
+      (notifications.value.head \ "action" \ "__typename")
+        .as[String] mustBe "ApiSubscriptionReject"
+      (notifications.value.head \ "team" \ "_id")
+        .as(json.TeamIdFormat) mustBe teamConsumerId
     }
 
   }

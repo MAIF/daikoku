@@ -57,7 +57,7 @@ class StateController(
           exportAuditTrail = ctx.request
             .getQueryString("export-audit-trail")
             .contains("true")
-        ) //(ctx.request.getQueryString("pretty").exists(_ == "true"))
+        ) // (ctx.request.getQueryString("pretty").exists(_ == "true"))
         val disposition =
           ("Content-Disposition" -> s"""attachment; filename="daikoku-export-${System.currentTimeMillis}.ndjson"""")
         val future =
@@ -300,7 +300,7 @@ class StateAdminApiController(
         exportAuditTrail = ctx.request
           .getQueryString("export-audit-trail")
           .contains("true")
-      ) //(ctx.request.getQueryString("pretty").exists(_ == "true"))
+      ) // (ctx.request.getQueryString("pretty").exists(_ == "true"))
       val disposition =
         ("Content-Disposition" -> s"""attachment; filename="daikoku-export-${System.currentTimeMillis}.ndjson"""")
       val future =
@@ -560,7 +560,7 @@ class ApiAdminApiController(
               .map {
                 case None =>
                   Right(())
-                //case Some(api) if entity.parent == api.parent => Right(())
+                // case Some(api) if entity.parent == api.parent => Right(())
                 case Some(api) if entity.parent.contains(api.id) =>
                   Right(())
                 case Some(_) =>
@@ -875,7 +875,7 @@ class CredentialsAdminApiController(
         .forAllTenant()
         .findOne(Json.obj("integrationToken" -> token))
         .map {
-          case None      => NotFound(Json.obj("error" -> "Subscription not found"))
+          case None => NotFound(Json.obj("error" -> "Subscription not found"))
           case Some(sub) => Ok(sub.apiKey.asJson)
         }
     }
@@ -1061,8 +1061,8 @@ class CmsPagesAdminApiController(
               })
           )
           .map(_ => NoContent)
-          .recover {
-            case e: Throwable => BadRequest(Json.obj("error" -> e.getMessage))
+          .recover { case e: Throwable =>
+            BadRequest(Json.obj("error" -> e.getMessage))
           }
       }).flatten
     }

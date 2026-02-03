@@ -439,6 +439,7 @@ export interface ISubscriptionExtended extends ISubscription {
   planType: string;
   planName: string;
   apiName: string;
+  apiVersion: string;
   _humanReadableId: string;
   apiLink: string;
   planLink: string;

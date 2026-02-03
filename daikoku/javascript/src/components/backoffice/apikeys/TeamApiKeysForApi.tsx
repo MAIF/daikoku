@@ -36,6 +36,7 @@ import {
   read
 } from '../../utils';
 import { apiGQLToLegitApi } from '../../utils/apiUtils';
+import { IApiSubscriptionGql } from '../apis';
 
 type ISubscriptionWithChildren = ISubscriptionExtended & {
   children: Array<ISubscriptionExtended>;
@@ -64,11 +65,6 @@ const DisplayLink = ({ value }: { value: string }) => {
     </div>
   )
 }
-
-///###########################
-///###########################
-///###########################
-///###########################
 
 export const TeamApiKeysForApi = () => {
   const { isLoading, currentTeam, error } = useTeamBackOffice();
@@ -126,11 +122,6 @@ export const TeamApiKeysForApi = () => {
   }
 
 }
-
-//  ####################################
-//  ####################################
-//  ####################################
-//  ####################################
 
 type ApiKeysListForApiProps = {
   team: ITeamSimple
@@ -774,7 +765,7 @@ export const ApiKeyCard = ({
               linkToChildren(apiGQLToLegitApi(detail.api, tenant), detail.api.team._humanReadableId) :
               `/${currentTeam?._humanReadableId}/settings/apikeys/${detail.api._humanReadableId}/${api!.currentVersion}`}
           >
-            {`${detail.api.name}/${detail.usagePlan.customName}`}
+            {`${detail.api.name}:${detail.api.currentVersion}/${detail.usagePlan.customName}`}
           </Link>
         );
       })
@@ -909,7 +900,7 @@ export const ApiKeyCard = ({
             </div>
             <div className='api-subscription__infos__creation'>{
               translate("subscription.for")}
-              <Link to={subscription.apiLink} className='ms-1 underline'>{subscription.apiName}</Link>/<Link to={subscription.planLink} className='me-1 underline'>{subscription.planName}</Link>
+              <Link to={subscription.apiLink} className='ms-1 underline'>{subscription.apiName}:{subscription.apiVersion}</Link>/<Link to={subscription.planLink} className='me-1 underline'>{subscription.planName}</Link>
               {translate({
                 key: 'subscription.created.at', replacements: [formatDate(subscription.createdAt, translate('date.locale'), translate('date.format.without.hours'))]
               })}

@@ -70,8 +70,8 @@ object AlgoSettings extends FromJson[AlgoSettings] {
         case "ESAlgoSettings"   => ESAlgoSettings.fromJson(json)
         case "JWKSAlgoSettings" => JWKSAlgoSettings.fromJson(json)
       }
-    } recover {
-      case e => Left(e)
+    } recover { case e =>
+      Left(e)
     } get
 
   private val cache = new TrieMap[String, String]()
@@ -92,8 +92,8 @@ object HSAlgoSettings extends FromJson[HSAlgoSettings] {
           (json \ "secret").as[String]
         )
       )
-    } recover {
-      case e => Left(e)
+    } recover { case e =>
+      Left(e)
     } get
 }
 case class HSAlgoSettings(size: Int, secret: String) extends AlgoSettings {
@@ -124,8 +124,8 @@ object RSAlgoSettings extends FromJson[RSAlgoSettings] {
           (json \ "privateKey").asOpt[String]
         )
       )
-    } recover {
-      case e => Left(e)
+    } recover { case e =>
+      Left(e)
     } get
 }
 case class RSAlgoSettings(
@@ -141,9 +141,9 @@ case class RSAlgoSettings(
         .replace("\n-----END PUBLIC KEY-----", "")
         .trim()
     )
-    //val keySpec    = new X509EncodedKeySpec(publicBytes)
-    //val keyFactory = KeyFactory.getInstance("RSA")
-    //keyFactory.generatePublic(keySpec).asInstanceOf[RSAPublicKey]
+    // val keySpec    = new X509EncodedKeySpec(publicBytes)
+    // val keyFactory = KeyFactory.getInstance("RSA")
+    // keyFactory.generatePublic(keySpec).asInstanceOf[RSAPublicKey]
     PemUtils.getPublicKey(publicBytes, "RSA").asInstanceOf[RSAPublicKey]
   }
 
@@ -222,8 +222,8 @@ object ESAlgoSettings extends FromJson[ESAlgoSettings] {
           (json \ "privateKey").asOpt[String]
         )
       )
-    } recover {
-      case e => Left(e)
+    } recover { case e =>
+      Left(e)
     } get
 }
 case class ESAlgoSettings(
@@ -239,9 +239,9 @@ case class ESAlgoSettings(
         .replace("\n-----END PUBLIC KEY-----", "")
         .trim()
     )
-    //val keySpec    = new X509EncodedKeySpec(publicBytes)
-    //val keyFactory = KeyFactory.getInstance("EC")
-    //keyFactory.generatePublic(keySpec).asInstanceOf[ECPublicKey]
+    // val keySpec    = new X509EncodedKeySpec(publicBytes)
+    // val keyFactory = KeyFactory.getInstance("EC")
+    // keyFactory.generatePublic(keySpec).asInstanceOf[ECPublicKey]
     PemUtils.getPublicKey(publicBytes, "EC").asInstanceOf[ECPublicKey]
   }
 
@@ -255,9 +255,9 @@ case class ESAlgoSettings(
           .replace("\n-----END PRIVATE KEY-----", "")
           .trim()
       )
-      //val keySpec    = new PKCS8EncodedKeySpec(privateBytes)
-      //val keyFactory = KeyFactory.getInstance("EC")
-      //keyFactory.generatePrivate(keySpec).asInstanceOf[ECPrivateKey]
+      // val keySpec    = new PKCS8EncodedKeySpec(privateBytes)
+      // val keyFactory = KeyFactory.getInstance("EC")
+      // keyFactory.generatePrivate(keySpec).asInstanceOf[ECPrivateKey]
       PemUtils.getPrivateKey(privateBytes, "EC").asInstanceOf[ECPrivateKey]
     }
   }
@@ -337,8 +337,8 @@ object JWKSAlgoSettings extends FromJson[JWKSAlgoSettings] {
             .getOrElse(KeyType.RSA)
         )
       )
-    } recover {
-      case e => Left(e)
+    } recover { case e =>
+      Left(e)
     } get
   }
 }
@@ -412,10 +412,9 @@ case class JWKSAlgoSettings(
                   case None => None
                 }
               }
-              .recover {
-                case e =>
-                  logger.error(s"Error while reading JWKS $url", e)
-                  None
+              .recover { case e =>
+                logger.error(s"Error while reading JWKS $url", e)
+                None
               }
           }
         }

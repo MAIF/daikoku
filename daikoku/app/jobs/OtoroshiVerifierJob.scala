@@ -311,8 +311,8 @@ class OtoroshiVerifierJob(
           val newTagsFromDk =
             planTags.map(OtoroshiTarget.processValue(_, ctx))
 
-          //todo: unnecessary ??
-          //val newTags: Set[String] = apk.tags.diff(tagsFromDk) ++ newTagsFromDk
+          // todo: unnecessary ??
+          // val newTags: Set[String] = apk.tags.diff(tagsFromDk) ++ newTagsFromDk
 
           // ********************
           // process new metadata
@@ -328,9 +328,8 @@ class OtoroshiVerifierJob(
                 .map(_.trim)
                 .map(key => key -> infos.apk.metadata.get(key).orNull)
             )
-            .getOrElse(planMeta.map {
-              case (a, b) =>
-                a -> OtoroshiTarget.processValue(b, ctx)
+            .getOrElse(planMeta.map { case (a, b) =>
+              a -> OtoroshiTarget.processValue(b, ctx)
             })
             .toMap
 
@@ -338,9 +337,10 @@ class OtoroshiVerifierJob(
             .flatMap(_.asOpt[Map[String, String]])
             .getOrElse(Map.empty[String, String])
 
-          val newMetaFromDk = (planMeta ++ customMetaFromSub).map {
-            case (a, b) => a -> OtoroshiTarget.processValue(b, ctx)
-          }
+          val newMetaFromDk =
+            (planMeta ++ customMetaFromSub).map { case (a, b) =>
+              a -> OtoroshiTarget.processValue(b, ctx)
+            }
           val newMeta = infos.apk.metadata
             .removedAll(metaFromDk.keys) ++ newMetaFromDk ++ Map(
             "daikoku__metadata" -> newMetaFromDk.keys
@@ -393,8 +393,7 @@ class OtoroshiVerifierJob(
               .orElse(
                 subscription.rotation.map(r =>
                   ApiKeyRotation(
-                    enabled =
-                      r.enabled || plan.autoRotation.exists(e => e),
+                    enabled = r.enabled || plan.autoRotation.exists(e => e),
                     rotationEvery = r.rotationEvery,
                     gracePeriod = r.gracePeriod
                   )
@@ -502,7 +501,7 @@ class OtoroshiVerifierJob(
                     "tags" -> Some(infos.computedApk.tags),
                     "metadata" -> (infos.computedApk.metadata.filterNot(i =>
                       i._1.startsWith("daikoku_")
-                    ) -- infos.parent.customMetadata //FIXME: je penses que ca n'enleve que les customMetadata de la parent
+                    ) -- infos.parent.customMetadata // FIXME: je penses que ca n'enleve que les customMetadata de la parent
                       .flatMap(_.asOpt[Map[String, String]])
                       .getOrElse(Map.empty[String, String])
                       .keys).view.mapValues(i => JsString(i)).toSeq
@@ -595,55 +594,52 @@ class OtoroshiVerifierJob(
             client
               .getServiceGroup(group.value)(otoroshi)
               .map(_ => ())
-              .andThen {
-                case Failure(_) =>
-                  AppLogger.error(
+              .andThen { case Failure(_) =>
+                AppLogger.error(
+                  s"Unable to fetch service group $group from otoroshi. Maybe it doesn't exists anymore"
+                )
+                sendErrorNotification(
+                  NotificationAction.OtoroshiSyncApiError(
+                    api,
                     s"Unable to fetch service group $group from otoroshi. Maybe it doesn't exists anymore"
-                  )
-                  sendErrorNotification(
-                    NotificationAction.OtoroshiSyncApiError(
-                      api,
-                      s"Unable to fetch service group $group from otoroshi. Maybe it doesn't exists anymore"
-                    ),
-                    api.team,
-                    api.tenant
-                  )
+                  ),
+                  api.team,
+                  api.tenant
+                )
               }
           ) ++
             entities.services.map(service =>
               client
                 .getServices()(otoroshi)
-                .andThen {
-                  case Failure(_) =>
-                    AppLogger.error(
+                .andThen { case Failure(_) =>
+                  AppLogger.error(
+                    s"Unable to fetch service $service from otoroshi. Maybe it doesn't exists anymore"
+                  )
+                  sendErrorNotification(
+                    NotificationAction.OtoroshiSyncApiError(
+                      api,
                       s"Unable to fetch service $service from otoroshi. Maybe it doesn't exists anymore"
-                    )
-                    sendErrorNotification(
-                      NotificationAction.OtoroshiSyncApiError(
-                        api,
-                        s"Unable to fetch service $service from otoroshi. Maybe it doesn't exists anymore"
-                      ),
-                      api.team,
-                      api.tenant
-                    )
+                    ),
+                    api.team,
+                    api.tenant
+                  )
                 }
             ) ++
             entities.routes.map(route =>
               client
                 .getRoutes()(otoroshi)
-                .andThen {
-                  case Failure(_) =>
-                    AppLogger.error(
+                .andThen { case Failure(_) =>
+                  AppLogger.error(
+                    s"Unable to fetch route $route from otoroshi. Maybe it doesn't exists anymore"
+                  )
+                  sendErrorNotification(
+                    NotificationAction.OtoroshiSyncApiError(
+                      api,
                       s"Unable to fetch route $route from otoroshi. Maybe it doesn't exists anymore"
-                    )
-                    sendErrorNotification(
-                      NotificationAction.OtoroshiSyncApiError(
-                        api,
-                        s"Unable to fetch route $route from otoroshi. Maybe it doesn't exists anymore"
-                      ),
-                      api.team,
-                      api.tenant
-                    )
+                    ),
+                    api.team,
+                    api.tenant
+                  )
                 }
             )
         )
@@ -660,29 +656,26 @@ class OtoroshiVerifierJob(
           .findByIdNotDeleted(api.tenant)
           .map(tenant => (tenant, api))
       )
-      .mapAsync(5) {
-        case (tenant, api) =>
-          env.dataStore.usagePlanRepo
-            .findByApi(api.tenant, api)
-            .map(plans => (tenant, api, plans))
+      .mapAsync(5) { case (tenant, api) =>
+        env.dataStore.usagePlanRepo
+          .findByApi(api.tenant, api)
+          .map(plans => (tenant, api, plans))
       }
-      .collect {
-        case (Some(tenant), api, plans) => (tenant, api, plans)
+      .collect { case (Some(tenant), api, plans) =>
+        (tenant, api, plans)
       }
-      .flatMapConcat {
-        case (tenant, api, plans) =>
-          Source(plans.map(plan => (tenant, api, plan)))
+      .flatMapConcat { case (tenant, api, plans) =>
+        Source(plans.map(plan => (tenant, api, plan)))
       }
-      .map {
-        case (tenant, api, plan) =>
-          (
-            tenant,
-            api,
-            plan,
-            tenant.otoroshiSettings.find(os =>
-              plan.otoroshiTarget.exists(ot => ot.otoroshiSettings == os.id)
-            )
+      .map { case (tenant, api, plan) =>
+        (
+          tenant,
+          api,
+          plan,
+          tenant.otoroshiSettings.find(os =>
+            plan.otoroshiTarget.exists(ot => ot.otoroshiSettings == os.id)
           )
+        )
       }
       .collect {
         case (tenant, api, plan, Some(settings))
@@ -691,27 +684,27 @@ class OtoroshiVerifierJob(
             ) =>
           (tenant, api, plan, settings)
       }
-      .mapAsync(par) {
-        case (_, api, plan, settings) =>
-          checkEntities(
-            plan.otoroshiTarget.get.authorizedEntities.get,
-            settings,
-            api
-          )
+      .mapAsync(par) { case (_, api, plan, settings) =>
+        checkEntities(
+          plan.otoroshiTarget.get.authorizedEntities.get,
+          settings,
+          api
+        )
       }
       .runWith(Sink.ignore)(env.defaultMaterializer)
   }
 
-  /**
-    * get subs base on query (by defaut all parent or unique keys)
-    * get really parent subs (in case of query as a pointer to childs)
-    * for each subs get aggregated key, get the oto key...process new key
-    * daikoku is the truth for everything except the oto key (clientName, clientId, clientSecret)
-    * tags and metadata unknown by DK are merged
-    * save the new key in oto and the new secret in DK
+  /** get subs base on query (by defaut all parent or unique keys) get really
+    * parent subs (in case of query as a pointer to childs) for each subs get
+    * aggregated key, get the oto key...process new key daikoku is the truth for
+    * everything except the oto key (clientName, clientId, clientSecret) tags
+    * and metadata unknown by DK are merged save the new key in oto and the new
+    * secret in DK
     *
-    * @param query to find some subscriptions and sync its
-    * @return just future of Unit
+    * @param query
+    *   to find some subscriptions and sync its
+    * @return
+    *   just future of Unit
     */
 
   private def synchronizeApikeys(
@@ -720,19 +713,19 @@ class OtoroshiVerifierJob(
     import cats.implicits._
 
     val r = for {
-      //Get all "base" subscriptions from provided query
+      // Get all "base" subscriptions from provided query
       allSubscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
         env.dataStore.apiSubscriptionRepo
           .forAllTenant()
           .findNotDeleted(query)
       )
-      //Get admin APIs
+      // Get admin APIs
       adminApis <- EitherT.liftF[Future, AppError, Seq[Api]](
         env.dataStore.apiRepo
           .forAllTenant()
           .find(Json.obj("visibility" -> ApiVisibility.AdminOnly.name))
       )
-      //Get all Parent subscriptions based on allSubscription filtering all adminAPI subs
+      // Get all Parent subscriptions based on allSubscription filtering all adminAPI subs
       subscriptions <- EitherT.liftF[Future, AppError, Seq[ApiSubscription]](
         env.dataStore.apiSubscriptionRepo
           .forAllTenant()
@@ -777,7 +770,7 @@ class OtoroshiVerifierJob(
                 .findNotDeleted(Json.obj("parent" -> subscription.id.asJson))
             )
 
-            //get tenant
+            // get tenant
             tenant <- EitherT.fromOptionF(
               env.dataStore.tenantRepo.findByIdNotDeleted(subscription.tenant),
               sendErrorNotification(
@@ -785,19 +778,19 @@ class OtoroshiVerifierJob(
                   subscription,
                   "Tenant does not exist anymore"
                 ),
-                subscription.team, //todo: to super admins ???
+                subscription.team, // todo: to super admins ???
                 subscription.tenant
               )
             )
-            //get tenant team admin
+            // get tenant team admin
             tenantAdminTeam <- EitherT.fromOptionF(
               env.dataStore.teamRepo
                 .forTenant(tenant)
                 .findOne(Json.obj("type" -> "Admin")),
-              () //todo: send mail or log error
+              () // todo: send mail or log error
             )
 
-            //GET parent API
+            // GET parent API
             parentApi <- EitherT.fromOptionF(
               env.dataStore.apiRepo
                 .forAllTenant()
@@ -817,7 +810,7 @@ class OtoroshiVerifierJob(
               )
             )
 
-            //Get parent plan
+            // Get parent plan
             plan <- EitherT.fromOptionF[Future, Unit, UsagePlan](
               env.dataStore.usagePlanRepo
                 .forTenant(tenant)
@@ -832,7 +825,7 @@ class OtoroshiVerifierJob(
               )
             )
 
-            //get ototoshi target from parent plan
+            // get ototoshi target from parent plan
             otoroshiTarget <- EitherT.fromOption[Future](
               plan.otoroshiTarget,
               sendErrorNotification(
@@ -845,7 +838,7 @@ class OtoroshiVerifierJob(
               )
             )
 
-            //get otoroshi settings from parent plan
+            // get otoroshi settings from parent plan
             otoroshiSettings <- EitherT.fromOption[Future](
               tenant.otoroshiSettings
                 .find(_.id == otoroshiTarget.otoroshiSettings),
@@ -871,7 +864,7 @@ class OtoroshiVerifierJob(
                 NotificationAction.OtoroshiSyncSubscriptionError(
                   subscription,
                   s"Unable to fetch apikey from otoroshi: ${Json
-                    .stringify(AppError.toJson(e))}"
+                      .stringify(AppError.toJson(e))}"
                 ),
                 parentApi.team,
                 parentApi.tenant,
@@ -902,9 +895,9 @@ class OtoroshiVerifierJob(
         either.value
       })
       .mapAsync(1) {
-        case Left(_) => FastFuture.successful(None) //do nothing
+        case Left(_) => FastFuture.successful(None) // do nothing
         case Right(informations) =>
-          computeAPIKey(informations).map(_.some) //Future[Option[apk]]
+          computeAPIKey(informations).map(_.some) // Future[Option[apk]]
       }
       .mapAsync(1) {
         case Some(computedInfos) => updateOtoroshiApk(computedInfos)
@@ -920,7 +913,7 @@ class OtoroshiVerifierJob(
         env.dataStore.apiSubscriptionRepo
           .forAllTenant()
           .findNotDeleted(query)
-      //Get just parent sub (childs will be processed after)
+      // Get just parent sub (childs will be processed after)
       subscriptions <-
         env.dataStore.apiSubscriptionRepo
           .forAllTenant()
@@ -1024,7 +1017,7 @@ class OtoroshiVerifierJob(
               NotificationAction.OtoroshiSyncSubscriptionError(
                 subscription,
                 s"Unable to fetch apikey from otoroshi: ${Json
-                  .stringify(AppError.toJson(e))}"
+                    .stringify(AppError.toJson(e))}"
               ),
               api.team,
               api.tenant,

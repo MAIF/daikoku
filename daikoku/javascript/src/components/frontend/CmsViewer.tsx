@@ -1,4 +1,4 @@
-import {ReactNode, useContext, useEffect, useState} from "react";
+import { ReactNode, useContext, useEffect, useState} from "react";
 import {useQuery} from "@tanstack/react-query";
 
 import { graphql, getCmsPage } from "../../services";

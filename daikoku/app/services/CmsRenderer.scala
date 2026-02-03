@@ -75,8 +75,8 @@ case class CmsFile(
       name = name,
       forwardRef = None,
       tags = List.empty,
-      metadata = metadata.map {
-        case (key, value) => (key, value.toString.replaceAll("\"", ""))
+      metadata = metadata.map { case (key, value) =>
+        (key, value.toString.replaceAll("\"", ""))
       },
       contentType = contentType(),
       body = content,
@@ -229,8 +229,7 @@ case class CmsPage(
                       parentId,
                       options.fn.text(),
                       fields = fields,
-                      jsonToCombine =
-                        jsonToCombine ++ Map("api" -> api.asJson),
+                      jsonToCombine = jsonToCombine ++ Map("api" -> api.asJson),
                       req = req
                     )
                   case Left(error) => AppError.render(error)
@@ -836,12 +835,11 @@ case class CmsPage(
       "notifications" -> "/notifications",
       "home" -> "/"
     )
-    links.map {
-      case (name, link) =>
-        handlebars.registerHelper(
-          s"daikoku-links-$name",
-          (_: Object, _: Options) => link
-        )
+    links.map { case (name, link) =>
+      handlebars.registerHelper(
+        s"daikoku-links-$name",
+        (_: Object, _: Options) => link
+      )
     }
   }
 
@@ -858,19 +856,18 @@ case class CmsPage(
       messagesApi: MessagesApi
   ): Map[String, Any] = {
     import scala.jdk.CollectionConverters._
-    fields ++ options.hash.asScala.map {
-      case (k, v) =>
-        (
-          k,
-          renderString(
-            ctx,
-            parentId,
-            if (v == null) "" else v.toString,
-            fields,
-            jsonToCombine = jsonToCombine,
-            req = req
-          )(env, ec, messagesApi)
-        )
+    fields ++ options.hash.asScala.map { case (k, v) =>
+      (
+        k,
+        renderString(
+          ctx,
+          parentId,
+          if (v == null) "" else v.toString,
+          fields,
+          jsonToCombine = jsonToCombine,
+          req = req
+        )(env, ec, messagesApi)
+      )
     }.toMap
   }
 
@@ -1114,19 +1111,18 @@ case class CmsPage(
       fields: Map[String, Any],
       jsonToCombine: Map[String, JsValue]
   )(implicit env: Env, messagesApi: MessagesApi): Context.Builder =
-    (fields ++ jsonToCombine.map {
-      case (key, value) =>
-        (
-          key,
-          value match {
-            case JsNull                   => null
-            case boolean: JsBoolean       => boolean
-            case JsNumber(value)          => value
-            case JsString(value)          => value
-            case JsArray(value)           => value
-            case o @ JsObject(underlying) => o
-          }
-        )
+    (fields ++ jsonToCombine.map { case (key, value) =>
+      (
+        key,
+        value match {
+          case JsNull                   => null
+          case boolean: JsBoolean       => boolean
+          case JsNumber(value)          => value
+          case JsString(value)          => value
+          case JsArray(value)           => value
+          case o @ JsObject(underlying) => o
+        }
+      )
     }).foldLeft(context) { (acc, item) =>
       if (item._1 == "email") {
         val content = Await.result(
@@ -1241,11 +1237,10 @@ case class CmsPage(
                   )
                   .map(a => {
                     a.copy(
-                        description = a.description.replaceAll("\n", "\\n"),
-                        smallDescription =
-                          a.smallDescription.replaceAll("\n", "\\n")
-                      )
-                      .asJson
+                      description = a.description.replaceAll("\n", "\\n"),
+                      smallDescription =
+                        a.smallDescription.replaceAll("\n", "\\n")
+                    ).asJson
                   })
               )
             )
@@ -1292,16 +1287,15 @@ case class CmsPage(
         val context = combineFieldsToContext(
           ctx,
           contextBuilder,
-          fields.map {
-            case (key, value) =>
-              (
-                key,
-                value match {
-                  case JsString(value) =>
-                    value // remove quotes framing string
-                  case value => value
-                }
-              )
+          fields.map { case (key, value) =>
+            (
+              key,
+              value match {
+                case JsString(value) =>
+                  value // remove quotes framing string
+                case value => value
+              }
+            )
           },
           jsonToCombine
         )
@@ -1601,7 +1595,9 @@ case class CmsPage(
     } catch {
       case t: Throwable =>
         t.printStackTrace()
-        FastFuture.successful((s"""
+        FastFuture.successful(
+          (
+            s"""
           <!DOCTYPE html>
           <html>
             <body>
@@ -1611,7 +1607,10 @@ case class CmsPage(
              <div>
            </body>
           </html>
-          """, "text/html"))
+          """,
+            "text/html"
+          )
+        )
     }
   }
 }

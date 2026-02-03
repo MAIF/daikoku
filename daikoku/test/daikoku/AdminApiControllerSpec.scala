@@ -29,8 +29,8 @@ class AdminApiControllerSpec
       adminApiSubscription: ApiSubscription
   ): Map[String, String] = {
     Map("Authorization" -> s"Basic ${Base64.getEncoder.encodeToString(
-      s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
-    )}")
+        s"${adminApiSubscription.apiKey.clientId}:${adminApiSubscription.apiKey.clientSecret}".getBytes()
+      )}")
   }
 
   s"Admin API" should {
@@ -1109,7 +1109,7 @@ class AdminApiControllerSpec
           teams = Seq(teamOwner),
           users = Seq(userAdmin)
         )
-        //PATCH an api is OK (child)
+        // PATCH an api is OK (child)
         val respChildPatch = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${childApiId.value}",
           method = "PATCH",
@@ -1127,7 +1127,7 @@ class AdminApiControllerSpec
 
         respChildPatch.status mustBe 204
 
-        //update (PUT) an api is OK (child)
+        // update (PUT) an api is OK (child)
         val respChildPut = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${childApiId.value}",
           method = "PUT",
@@ -1137,7 +1137,7 @@ class AdminApiControllerSpec
 
         respChildPut.status mustBe 204
 
-        //PATCH a parent is OK
+        // PATCH a parent is OK
         val respParentPatch = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
           method = "PATCH",
@@ -1154,7 +1154,7 @@ class AdminApiControllerSpec
         )(tenant)
         respParentPatch.status mustBe 204
 
-        //put parent is OK
+        // put parent is OK
         val respParentPut = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${defaultApi.api.id.value}",
           method = "PUT",
@@ -1163,7 +1163,7 @@ class AdminApiControllerSpec
         )(tenant)
         respParentPut.status mustBe 204
 
-        //PATCH an API with same name other api ==> KO
+        // PATCH an API with same name other api ==> KO
         val respOtherPatch = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${otherApiId.value}",
           method = "PATCH",
@@ -1181,7 +1181,7 @@ class AdminApiControllerSpec
 
         respOtherPatch.status mustBe 400
 
-        //PUT an API with same name other api ==> KO
+        // PUT an API with same name other api ==> KO
         val respOtherPut = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${otherApiId.value}",
           method = "PUT",
@@ -1191,7 +1191,7 @@ class AdminApiControllerSpec
 
         respOtherPut.status mustBe 400
 
-        //PATCH an API with random name
+        // PATCH an API with random name
         val respOtherOkPatch = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${otherApiId.value}",
           method = "PATCH",
@@ -1209,7 +1209,7 @@ class AdminApiControllerSpec
 
         respOtherOkPatch.status mustBe 204
 
-        //PATCH an API with random name
+        // PATCH an API with random name
         val respOtherOkPut = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis/${otherApiId.value}",
           method = "PUT",
@@ -1219,7 +1219,7 @@ class AdminApiControllerSpec
 
         respOtherOkPut.status mustBe 204
 
-        //create a new API with same name
+        // create a new API with same name
         val respCreateKo = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
@@ -1241,7 +1241,7 @@ class AdminApiControllerSpec
           .asJson
           .some
 
-        //create a new version fo API (with same name)
+        // create a new version fo API (with same name)
         val respCreateVersionOK = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
@@ -1251,7 +1251,7 @@ class AdminApiControllerSpec
 
         respCreateVersionOK.status mustBe 201
 
-        //create a new API with other name
+        // create a new API with other name
         val respCreateOk = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/apis",
           method = "POST",
@@ -1326,7 +1326,7 @@ class AdminApiControllerSpec
           subscriptions = Seq(adminApiSubscription)
         )
 
-        //tenant not found
+        // tenant not found
         val respTenant = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions",
           method = "POST",
@@ -1337,7 +1337,7 @@ class AdminApiControllerSpec
         respTenant.status mustBe 400
         getMsg(respTenant) mustBe "Tenant not found"
 
-        //plan not found
+        // plan not found
         val respPlan = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions",
           method = "POST",
@@ -1347,7 +1347,7 @@ class AdminApiControllerSpec
         respPlan.status mustBe 400
         getMsg(respPlan) mustBe "Plan not found"
 
-        //team not found
+        // team not found
         val respTeam = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions",
           method = "POST",
@@ -1357,7 +1357,7 @@ class AdminApiControllerSpec
         respTeam.status mustBe 400
         getMsg(respTeam) mustBe "Team not found"
 
-        //by not found
+        // by not found
         val respBy = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions",
           method = "POST",
@@ -1367,7 +1367,7 @@ class AdminApiControllerSpec
         respBy.status mustBe 400
         getMsg(respBy) mustBe "By not found"
 
-        //parent not found
+        // parent not found
         val respParent = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions",
           method = "POST",
@@ -1401,7 +1401,7 @@ class AdminApiControllerSpec
           usagePlans = defaultApi.plans,
           subscriptions = Seq(adminApiSubscription, sub)
         )
-        //tenant not found
+        // tenant not found
         val respTenant      = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PUT",
@@ -1412,7 +1412,7 @@ class AdminApiControllerSpec
         respTenant.status mustBe 400
         getMsg(respTenant) mustBe "Tenant not found"
 
-        //plan not found
+        // plan not found
         val respPlan = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PUT",
@@ -1422,7 +1422,7 @@ class AdminApiControllerSpec
         respPlan.status mustBe 400
         getMsg(respPlan) mustBe "Plan not found"
 
-        //team not found
+        // team not found
         val respTeam = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PUT",
@@ -1432,7 +1432,7 @@ class AdminApiControllerSpec
         respTeam.status mustBe 400
         getMsg(respTeam) mustBe "Team not found"
 
-        //by not found
+        // by not found
         val respBy = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PUT",
@@ -1442,7 +1442,7 @@ class AdminApiControllerSpec
         respBy.status mustBe 400
         getMsg(respBy) mustBe "By not found"
 
-        //parent not found
+        // parent not found
         val respParent = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PUT",
@@ -1494,7 +1494,7 @@ class AdminApiControllerSpec
           usagePlans = defaultApi.plans,
           subscriptions = Seq(adminApiSubscription, sub)
         )
-        //tenant not found
+        // tenant not found
         val respTenant      = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PATCH",
@@ -1513,7 +1513,7 @@ class AdminApiControllerSpec
         respTenant.status mustBe 400
         getMsg(respTenant) mustBe "Tenant not found"
 
-        //plan not found
+        // plan not found
         val respPlan = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PATCH",
@@ -1531,7 +1531,7 @@ class AdminApiControllerSpec
         respPlan.status mustBe 400
         getMsg(respPlan) mustBe "Plan not found"
 
-        //team not found
+        // team not found
         val respTeam = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PATCH",
@@ -1549,7 +1549,7 @@ class AdminApiControllerSpec
         respTeam.status mustBe 400
         getMsg(respTeam) mustBe "Team not found"
 
-        //by not found
+        // by not found
         val respBy = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PATCH",
@@ -1564,7 +1564,7 @@ class AdminApiControllerSpec
         respBy.status mustBe 400
         getMsg(respBy) mustBe "By not found"
 
-        //parent not found
+        // parent not found
         val respParent = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/subscriptions/${sub.id.value}",
           method = "PATCH",
@@ -2074,7 +2074,7 @@ class AdminApiControllerSpec
           subscriptions = Seq(adminApiSubscription)
         )
 
-        //tenant not found
+        // tenant not found
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/notifications",
           method = "POST",
@@ -2921,7 +2921,7 @@ class AdminApiControllerSpec
           subscriptions = Seq(adminApiSubscription)
         )
 
-        //tenant not found
+        // tenant not found
         val respTenant = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions",
           method = "POST",
@@ -2932,7 +2932,7 @@ class AdminApiControllerSpec
         respTenant.status mustBe 400
         getMsg(respTenant) mustBe "Tenant not found"
 
-        //api not found
+        // api not found
         val respApi = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions",
           method = "POST",
@@ -2943,7 +2943,7 @@ class AdminApiControllerSpec
         respApi.status mustBe 400
         getMsg(respApi) mustBe "Api not found"
 
-        //plan not found
+        // plan not found
         val respPlan = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions",
           method = "POST",
@@ -2954,7 +2954,7 @@ class AdminApiControllerSpec
         respPlan.status mustBe 400
         getMsg(respPlan) mustBe "Plan not found"
 
-        //wrong date
+        // wrong date
         val respDate = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions",
           method = "POST",
@@ -3026,7 +3026,7 @@ class AdminApiControllerSpec
           subscriptions = Seq(adminApiSubscription)
         )
 
-        //tenant not found
+        // tenant not found
         val respTenant = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
           method = "PUT",
@@ -3037,7 +3037,7 @@ class AdminApiControllerSpec
         respTenant.status mustBe 400
         getMsg(respTenant) mustBe "Tenant not found"
 
-        //api not found
+        // api not found
         val respApi = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
           method = "PUT",
@@ -3048,7 +3048,7 @@ class AdminApiControllerSpec
         respApi.status mustBe 400
         getMsg(respApi) mustBe "Api not found"
 
-        //plan not found
+        // plan not found
         val respPlan = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
           method = "PUT",
@@ -3059,7 +3059,7 @@ class AdminApiControllerSpec
         respPlan.status mustBe 400
         getMsg(respPlan) mustBe "Plan not found"
 
-        //wrong date
+        // wrong date
         val respDate = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
           method = "PUT",
@@ -3131,7 +3131,7 @@ class AdminApiControllerSpec
           subscriptions = Seq(adminApiSubscription)
         )
 
-        //tenant not found
+        // tenant not found
         val respTenant = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
           method = "PATCH",
@@ -3150,7 +3150,7 @@ class AdminApiControllerSpec
         respTenant.status mustBe 400
         getMsg(respTenant) mustBe "Tenant not found"
 
-        //api not found
+        // api not found
         val respApi = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
           method = "PATCH",
@@ -3169,7 +3169,7 @@ class AdminApiControllerSpec
         respApi.status mustBe 400
         getMsg(respApi) mustBe "Api not found"
 
-        //plan not found
+        // plan not found
         val respPlan = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
           method = "PATCH",
@@ -3188,7 +3188,7 @@ class AdminApiControllerSpec
         respPlan.status mustBe 400
         getMsg(respPlan) mustBe "Plan not found"
 
-        //wrong date
+        // wrong date
         val respDate = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/consumptions/${consumption.id.value}",
           method = "PATCH",
@@ -3575,7 +3575,7 @@ class AdminApiControllerSpec
     }
 
     "a call to audit event admin API" must {
-      //todo: nothing validated
+      // todo: nothing validated
     }
     "A call to Message admin API" must {
 // todo: message do not have deleted property...findNotDeleted does not work properly
@@ -3634,7 +3634,7 @@ class AdminApiControllerSpec
           messages = Seq()
         )
 
-        //tenant not found
+        // tenant not found
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages",
           method = "POST",
@@ -3645,7 +3645,7 @@ class AdminApiControllerSpec
         resp.status mustBe 400
         getMsg(resp) mustBe "Tenant not found"
 
-        //user not found
+        // user not found
         val respUser = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages",
           method = "POST",
@@ -3656,7 +3656,7 @@ class AdminApiControllerSpec
         respUser.status mustBe 400
         getMsg(respUser) mustBe "Sender (unknown) not found"
 
-        //participant not found
+        // participant not found
         val respParticipant = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages",
           method = "POST",
@@ -3670,7 +3670,7 @@ class AdminApiControllerSpec
         respParticipant.status mustBe 400
         getMsg(respParticipant) mustBe "Participant (unknown) not found"
 
-        //sender not in participant
+        // sender not in participant
         val respNotIn = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages",
           method = "POST",
@@ -3704,7 +3704,7 @@ class AdminApiControllerSpec
           messages = Seq(message)
         )
 
-        //tenant not found
+        // tenant not found
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "PUT",
@@ -3715,7 +3715,7 @@ class AdminApiControllerSpec
         resp.status mustBe 400
         getMsg(resp) mustBe "Tenant not found"
 
-        //user not found
+        // user not found
         val respUser = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "PUT",
@@ -3726,7 +3726,7 @@ class AdminApiControllerSpec
         respUser.status mustBe 400
         getMsg(respUser) mustBe "Sender (unknown) not found"
 
-        //tenant not found
+        // tenant not found
         val respParticipant = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "PUT",
@@ -3740,7 +3740,7 @@ class AdminApiControllerSpec
         respParticipant.status mustBe 400
         getMsg(respParticipant) mustBe "Participant (unknown) not found"
 
-        //sender not in participant
+        // sender not in participant
         val respNotIn = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "PUT",
@@ -3792,7 +3792,7 @@ class AdminApiControllerSpec
           messages = Seq(message)
         )
 
-        //tenant not found
+        // tenant not found
         val resp = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "PATCH",
@@ -3811,7 +3811,7 @@ class AdminApiControllerSpec
         resp.status mustBe 400
         getMsg(resp) mustBe "Tenant not found"
 
-        //user not found
+        // user not found
         val respUser = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "PATCH",
@@ -3830,7 +3830,7 @@ class AdminApiControllerSpec
         respUser.status mustBe 400
         getMsg(respUser) mustBe "Sender (unknown) not found"
 
-        //tenant not found
+        // tenant not found
         val respParticipant = httpJsonCallWithoutSessionBlocking(
           path = s"/admin-api/messages/${message.id.value}",
           method = "PATCH",
@@ -5046,7 +5046,7 @@ class AdminApiControllerSpec
     }
 
     "A call to translation admin API" must {
-      //todo: no deleted => no conflict
+      // todo: no deleted => no conflict
 
 //      "POST :: Conflict :: translation already exists" in {
 //        val translation = Translation(

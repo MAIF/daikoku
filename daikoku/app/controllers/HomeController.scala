@@ -131,7 +131,7 @@ class HomeController(
   def health() =
     DaikokuActionMaybeWithGuest { ctx =>
       ctx.request.headers.get("Otoroshi-Health-Check-Logic-Test") match {
-        //todo: better health check
+        // todo: better health check
         case Some(value) =>
           Ok.withHeaders(
             "Otoroshi-Health-Check-Logic-Test-Result" -> (value.toLong + 42L).toString
@@ -428,24 +428,23 @@ class HomeController(
       fields: Map[String, JsValue] = Map.empty[String, JsValue]
   ) = {
     r.render(
-        r.maybeWithoutUserToUserContext(
-          ctx.tenant,
-          ctx.request.asInstanceOf[Request[libs.json.JsValue]].some,
-          ctx.user,
-          ctx.session,
-          ctx.impersonator,
-          ctx.isTenantAdmin,
-          ctx.apiCreationPermitted,
-          ctx.ctx
-        ),
-        None,
-        req = req,
-        fields = fields,
-        jsonToCombine = fields
-      )
-      .map(res => {
-        Ok(res._1).as(res._2)
-      })
+      r.maybeWithoutUserToUserContext(
+        ctx.tenant,
+        ctx.request.asInstanceOf[Request[libs.json.JsValue]].some,
+        ctx.user,
+        ctx.session,
+        ctx.impersonator,
+        ctx.isTenantAdmin,
+        ctx.apiCreationPermitted,
+        ctx.ctx
+      ),
+      None,
+      req = req,
+      fields = fields,
+      jsonToCombine = fields
+    ).map(res => {
+      Ok(res._1).as(res._2)
+    })
   }
 
   private def cmsPageByIdWithoutAction[A](
@@ -510,7 +509,7 @@ class HomeController(
             .forTenant(tenant)
             .findById(id)
             .map {
-              case None       => NotFound(Json.obj("error" -> "cms page not found"))
+              case None => NotFound(Json.obj("error" -> "cms page not found"))
               case Some(page) => Ok(page.asJson)
             }
         }

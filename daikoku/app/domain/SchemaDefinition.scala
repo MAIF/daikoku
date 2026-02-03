@@ -3949,12 +3949,13 @@ object SchemaDefinition {
       OptionInputType(StringType),
       description = "A filter about name of value"
     )
-    val PATH                                                                             = Argument(
+    val PATH = Argument(
       "path",
       OptionInputType(StringType),
-      description = "A cms page filter about path of page"
+      description = "A cms filter about path of page"
     )
-    def teamQueryFields(): List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
+    def teamQueryFields()
+        : List[Field[(DataStore, DaikokuActionContext[JsValue]), Unit]] =
       List(
         Field(
           "myTeams",

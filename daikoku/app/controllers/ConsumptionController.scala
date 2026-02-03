@@ -303,7 +303,7 @@ class ConsumptionController(
                 .forTenant(ctx.tenant.id)
                 .find(
                   Json.obj(
-                    "api" -> apiId, //FIXME: get api from plan
+                    "api" -> apiId, // FIXME: get api from plan
                     "plan" -> planId,
                     "from" -> Json.obj("$gte" -> fromTimestamp),
                     "to" -> Json.obj("$lte" -> toTimestamp)

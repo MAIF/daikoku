@@ -2,12 +2,15 @@ import { useContext } from 'react';
 
 import { I18nContext } from '../../contexts';
 import { IBaseModalProps, ILoginOrRegisterModalProps } from './types';
+import { useLocation } from 'react-router-dom';
 
 
 export const LoginOrRegisterModal = (props: ILoginOrRegisterModalProps & IBaseModalProps) => {
   const loginProvider = props.tenant.authProvider;
 
   const { translate } = useContext(I18nContext);
+  const location = useLocation();
+
 
   return (
     <div className="modal-content mx-auto" style={{ maxWidth: '448px' }} aria-labelledby='modal-title' aria-describedby='modal-description'>
@@ -32,17 +35,17 @@ export const LoginOrRegisterModal = (props: ILoginOrRegisterModalProps & IBaseMo
         style={{ borderTop: '1px solid #dee2e6' }}
       >
         <a
-          href={`/auth/${loginProvider}/login`}
+          href={`/auth/${loginProvider}/login?redirect=${location.pathname}`}
           className="btn btn-outline-success mx-1 login-button"
         >
           {translate('Login')}
         </a>
-        <a
-          href={`${loginProvider === 'Local' ? '/signup' : `/auth/${loginProvider}/login`}`}
+        {loginProvider === 'Local' && <a
+          href={`/signup?redirect=${location.pathname}`}
           className="btn btn-outline-success register-button"
         >
           {translate('Register')}
-        </a>
+        </a>}
       </div>
     </div>
   );

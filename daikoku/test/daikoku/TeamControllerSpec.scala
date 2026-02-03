@@ -14,7 +14,7 @@ import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import org.testcontainers.containers.BindMode
-import play.api.libs.json._
+import play.api.libs.json.{Json, _}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
@@ -103,6 +103,21 @@ class TeamControllerSpec()
         method = "DELETE"
       )(tenant, session)
       respDeleteNotFound.status mustBe 404
+    }
+
+    "create team even if teamCreationSecurity is active" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(teamCreationSecurity = true.some)),
+        users = Seq(daikokuAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(daikokuAdmin, tenant)
+      val respCreation = httpJsonCallBlocking(
+        path = "/api/teams",
+        method = "POST",
+        body = Some(teamOwner.asJson)
+      )(tenant, session)
+      respCreation.status mustBe 201
     }
 
     "not add/remove member from a personal team" in {
@@ -257,6 +272,23 @@ class TeamControllerSpec()
     }
   }
 
+  "a tenant admin" can {
+    "create team even if teamCreationSecurity is active" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(teamCreationSecurity = true.some)),
+        users = Seq(daikokuAdmin, tenantAdmin),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val respCreation = httpJsonCallBlocking(
+        path = "/api/teams",
+        method = "POST",
+        body = Some(teamOwner.asJson)
+      )(tenant, session)
+      respCreation.status mustBe 201
+    }
+  }
+
   "a team administrator" can {
     "create or delete a team" in {
       setupEnvBlocking(
@@ -360,23 +392,33 @@ class TeamControllerSpec()
       respUpdate.status mustBe 200
       (respUpdate.json \ "done").as[Boolean] mustBe true
 
-      //todo: test invit is ok
       val userSession      = loginWithBlocking(user, tenant)
-      val respNotification =
-        httpJsonCallBlocking(path = s"/api/me/notifications")(
-          tenant,
-          userSession
+      val respNotification = getOwnNotificationsCallBlocking(
+        Json.obj(
+          "filterTable" -> Json.stringify(
+            Json.arr(
+              Json
+                .obj("id" -> "type", "value" -> Json.arr("TeamInvitation"))
+            )
+          )
         )
+      )(
+        tenant,
+        userSession
+      )
       respNotification.status mustBe 200
-
+      (respNotification.json \ "data" \ "myNotifications" \ "totalFiltered")
+        .as[Long] mustBe 1
       val notifications =
-        fr.maif.otoroshi.daikoku.domain.json.SeqNotificationFormat
-          .reads((respNotification.json \ "notifications").as[JsArray])
-      notifications.isSuccess mustBe true
-      notifications.get.size mustBe 1
-      notifications.get.head.action.isInstanceOf[TeamInvitation] mustBe true
-      val action        = notifications.get.head.action.asInstanceOf[TeamInvitation]
-      action.team mustBe teamOwnerId
+        (respNotification.json \ "data" \ "myNotifications" \ "notifications")
+          .as[JsArray]
+
+      val notification = notifications.head
+
+      (notification \ "action" \ "__typename")
+        .as[String] mustBe "TeamInvitation"
+      (notification \ "action" \ "team" \ "_id")
+        .as(json.TeamIdFormat) mustBe teamOwnerId
     }
 
     "remove members to his team" in {
@@ -605,6 +647,36 @@ class TeamControllerSpec()
 
   "a user or api editor" can {
     val randomUser = Random.shuffle(Seq(user, userApiEditor)).head
+
+    "not create team even if teamCreationSecurity is active" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(teamCreationSecurity = true.some)),
+        users = Seq(daikokuAdmin, randomUser),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(randomUser, tenant)
+      val respCreation = httpJsonCallBlocking(
+        path = "/api/teams",
+        method = "POST",
+        body = Some(teamOwner.asJson)
+      )(tenant, session)
+      respCreation.status mustBe 403
+    }
+
+    "create team if teamCreationSecurity is inactive" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(teamCreationSecurity = false.some)),
+        users = Seq(daikokuAdmin, randomUser),
+        teams = Seq(defaultAdminTeam)
+      )
+      val session = loginWithBlocking(randomUser, tenant)
+      val respCreation = httpJsonCallBlocking(
+        path = "/api/teams",
+        method = "POST",
+        body = Some(teamOwner.asJson)
+      )(tenant, session)
+      respCreation.status mustBe 201
+    }
 
     "not have full access to a team" in {
       setupEnvBlocking(
@@ -957,7 +1029,7 @@ class TeamControllerSpec()
       resp.status mustBe 200
       val myTeam: JsResult[Team] = json.TeamFormat.reads(resp.json)
       myTeam.isSuccess mustBe true
-      //not now because team is created by suite not by daikoku login
+      // not now because team is created by suite not by daikoku login
 
       val respUpdate = httpJsonCallBlocking(
         path = s"/api/admin/users/${user.id.value}",
@@ -993,6 +1065,112 @@ class TeamControllerSpec()
         body = Some(myTeam.get.copy(name = "test").asJson)
       )(tenant, session)
       respUpdate.status mustBe 403
+    }
+    "be able to subscribe to an API and delete it" in {
+      val plan = UsagePlan(
+        id = UsagePlanId("parent.dev"),
+        tenant = tenant.id,
+        customName = "free without quotas",
+        customDescription = None,
+        otoroshiTarget = Some(
+          OtoroshiTarget(
+            containerizedOtoroshi,
+            Some(
+              AuthorizedEntities(
+                routes = Set(OtoroshiRouteId(parentRouteId))
+              )
+            )
+          )
+        ),
+        allowMultipleKeys = Some(false),
+        subscriptionProcess = Seq.empty,
+        integrationProcess = IntegrationProcess.ApiKey,
+        autoRotation = Some(false),
+        aggregationApiKeysSecurity = Some(true)
+      )
+      val api = defaultApi.api.copy(
+        id = ApiId("parent-id"),
+        name = "parent API",
+        team = teamOwnerId,
+        possibleUsagePlans = Seq(UsagePlanId("parent.dev")),
+        defaultUsagePlan = UsagePlanId("parent.dev").some
+      )
+
+      Await.result(waitForDaikokuSetup(), 5.second)
+      setupEnvBlocking(
+        tenants = Seq(
+          tenant.copy(
+            subscriptionSecurity = false.some,
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
+            )
+          )
+        ),
+        users = Seq(user),
+        usagePlans = Seq(plan, adminApiPlan),
+        apis = Seq(api, adminApi)
+      )
+
+      val session = loginWithBlocking(user, tenant)
+      val resp = httpJsonCallBlocking(s"/api/me/teams/own")(tenant, session)
+      resp.status mustBe 200
+      val myTeam: JsResult[Team] = json.TeamFormat.reads(resp.json)
+      myTeam.isSuccess mustBe true
+
+      val respSub = httpJsonCallBlocking(
+        path =
+          s"/api/apis/${api.id.value}/plan/${plan.id.value}/team/${myTeam.get.id.value}/_subscribe",
+        method = "POST",
+        body = Json.obj().some
+      )(tenant, session)
+      respSub.status mustBe 200
+
+      val personalSub =
+        (respSub.json \ "subscription").as(json.ApiSubscriptionFormat)
+
+      // get key in oto and test secret
+      val respOtoApikey = httpJsonCallWithoutSessionBlocking(
+        path =
+          s"/apis/apim.otoroshi.io/v1/apikeys/${personalSub.apiKey.clientId}",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret
+        ),
+        baseUrl = "http://otoroshi-api.oto.tools",
+        port = container.mappedPort(8080),
+        hostHeader = "otoroshi-api.oto.tools"
+      )(tenant)
+      respOtoApikey.status mustBe 200
+
+      val otoApiKey = respOtoApikey.json.as(json.ActualOtoroshiApiKeyFormat)
+      otoApiKey.clientSecret mustBe personalSub.apiKey.clientSecret
+
+      val respDelete = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${myTeam.get.id.value}/subscriptions/${personalSub.id.value}",
+        method = "DELETE"
+      )(tenant, session)
+      respDelete.status mustBe 200
+
+      val respOtoApikey2 = httpJsonCallWithoutSessionBlocking(
+        path =
+          s"/apis/apim.otoroshi.io/v1/apikeys/${personalSub.apiKey.clientId}",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret
+        ),
+        baseUrl = "http://otoroshi-api.oto.tools",
+        port = container.mappedPort(8080),
+        hostHeader = "otoroshi-api.oto.tools"
+      )(tenant)
+      respOtoApikey2.status mustBe 404
     }
   }
 

@@ -1821,6 +1821,7 @@ class ApiController(
             .as[JsObject] ++
             Json.obj("planName" -> name) ++
             Json.obj("apiName" -> api.name) ++
+            Json.obj("apiVersion" -> api.currentVersion.value) ++
             Json.obj("_humanReadableId" -> api.humanReadableId) ++
             Json.obj("parentUp" -> false) ++
             Json.obj("apiLink" -> s"/${apiTeam.humanReadableId}/${api.humanReadableId}/${api.currentVersion.value}/description") ++

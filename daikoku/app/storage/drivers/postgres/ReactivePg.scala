@@ -127,13 +127,12 @@ class ReactivePg(pool: Pool, configuration: Configuration)(implicit
           case Failure(e)     => FastFuture.failed(e)
         }
       }
-      .andThen {
-        case Failure(e) =>
-          logger.error(
-            s"""Failed to apply query: "$query" with params: "${params
+      .andThen { case Failure(e) =>
+        logger.error(
+          s"""Failed to apply query: "$query" with params: "${params
               .mkString(", ")}""""
-          )
-          logger.error(s"$e")
+        )
+        logger.error(s"$e")
       }
   }
 

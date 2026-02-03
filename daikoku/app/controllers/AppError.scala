@@ -68,6 +68,7 @@ object AppError {
   case class InternalServerError(message: String)             extends AppError
   case class BadRequestError(message: String)                 extends AppError
   case class AuthenticationError(message: String)             extends AppError
+  case class UserNotAllowed(email: String) extends AppError
 
   def renderF(error: AppError): Future[mvc.Result] =
     FastFuture.successful(render(error))
@@ -132,12 +133,14 @@ object AppError {
       case BadRequestError(message)                   => BadRequest(toJson(error))
       case AuthenticationError(message)               =>
         play.api.mvc.Results.Unauthorized(toJson(error))
+      case UserNotAllowed(_) =>
+        play.api.mvc.Results.Unauthorized(toJson(error))
     }
 
   def getErrorMessage(error: AppError) =
     error match {
-      case OtoroshiError(e)                           => Json.stringify(e) //todo: ???
-      case ApiKeyRotationError(e)                     => Json.stringify(e) //todo: ???
+      case OtoroshiError(e)                           => Json.stringify(e) // todo: ???
+      case ApiKeyRotationError(e)                     => Json.stringify(e) // todo: ???
       case PaymentError(e)                            => e
       case ParsingPayloadError(msg)                   => s"Error while parsing payload: $msg"
       case BadRequestError(e)                         => e
@@ -198,6 +201,8 @@ object AppError {
       case UnexpectedError                            => "Oops, an unexpected error occured ¯\\_(ツ)_/¯"
       case InternalServerError(msg)                   => msg
       case AuthenticationError(msg)                   => msg
+      case UserNotAllowed(email) =>
+        s"User $email is not allowed to access this application"
       case _                                          => ""
     }
 
@@ -208,7 +213,7 @@ object AppError {
       case ParsingPayloadError(msg) =>
         Json.obj("error" -> "Error while parsing payload", "msg" -> msg)
       case InternalServerError(msg) => Json.obj("error" -> msg)
-      case _                        => Json.obj("error" -> error.getErrorMessage())
+      case _ => Json.obj("error" -> error.getErrorMessage())
     }
   }
 }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import Sun from 'react-feather/dist/icons/sun'
 import Moon from 'react-feather/dist/icons/moon'
 
@@ -46,6 +46,8 @@ export const SettingsPanel = ({ }) => {
   const { tenant, connectedUser, impersonator, isTenantAdmin, reloadContext } = useContext(GlobalContext);
   const { confirm } = useContext(ModalContext)
 
+  const location = useLocation();
+
   useEffect(() => {
     Services.getDaikokuVersion().then((res) => setVersion(res.version));
   }, []);
@@ -91,7 +93,7 @@ export const SettingsPanel = ({ }) => {
             <Link to="/me" className="block__entry__link">
               {translate('My profile')}
             </Link>
-            <a href="/logout" className="block__entry__link">
+            <a href={`/logout?redirect=${location.pathname}`} className="block__entry__link">
               {translate('Logout')}
             </a>
             {impersonator && (

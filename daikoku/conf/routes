@@ -83,8 +83,6 @@ POST    /api/me/invitation/_check                       fr.maif.otoroshi.daikoku
 DELETE  /api/me/invitation                              fr.maif.otoroshi.daikoku.ctrls.UsersController.removeInvitation(token: Option[String] ?= None)
 PUT     /api/me/password                                fr.maif.otoroshi.daikoku.ctrls.UsersController.updatePassword()
 
-GET     /api/me/notifications                           fr.maif.otoroshi.daikoku.ctrls.NotificationController.myUntreatedNotifications(page: Int ?= 0, pageSize: Int ?= 10)
-GET     /api/me/notifications/all                       fr.maif.otoroshi.daikoku.ctrls.NotificationController.myNotifications(page: Int ?= 0, pageSize: Int ?= 10)
 GET     /api/me/notifications/unread-count              fr.maif.otoroshi.daikoku.ctrls.NotificationController.myUnreadNotificationsCount()
 
 GET     /api/me/visible-apis/:humanReadableId/:version          fr.maif.otoroshi.daikoku.ctrls.ApiController.getVisibleApi(humanReadableId, version)
@@ -252,9 +250,6 @@ GET     /api/teams/:teamId/ldap/users/:email            fr.maif.otoroshi.daikoku
 POST    /api/teams/:teamId/users/_search                fr.maif.otoroshi.daikoku.ctrls.TeamController.findUserByAttributes(teamId)
 POST    /api/teams/:teamId/ldap/users                   fr.maif.otoroshi.daikoku.ctrls.TeamController.createLDAPUser(teamId)
 
-GET     /api/teams/:teamId/notifications/unread-count   fr.maif.otoroshi.daikoku.ctrls.NotificationController.unreadNotificationsCountOfTeam(teamId)
-GET     /api/teams/:teamId/notifications/all            fr.maif.otoroshi.daikoku.ctrls.NotificationController.notificationOfTeam(teamId, page: Int ?= 0, pageSize: Int ?= 10)
-GET     /api/teams/:teamId/notifications                fr.maif.otoroshi.daikoku.ctrls.NotificationController.untreatedNotificationOfTeam(teamId, page: Int ?= 0, pageSize: Int ?= 10)
 PUT     /api/notifications/:id/accept                   fr.maif.otoroshi.daikoku.ctrls.NotificationController.acceptNotification(id)
 PUT     /api/notifications/accept/bulk                  fr.maif.otoroshi.daikoku.ctrls.NotificationController.acceptNotifications()
 PUT     /api/notifications/:id/reject                   fr.maif.otoroshi.daikoku.ctrls.NotificationController.rejectNotification(id)

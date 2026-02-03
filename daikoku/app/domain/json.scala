@@ -307,7 +307,7 @@ object json {
         case Some("default")      => JsSuccess(TenantMode.Default)
         case Some("translation")  => JsSuccess(TenantMode.Translation)
         case None                 => JsSuccess(TenantMode.Default)
-        case Some(str)            => JsError(s"Bad value for tenant mode : $str")
+        case Some(str) => JsError(s"Bad value for tenant mode : $str")
       }
 
     override def writes(o: TenantMode): JsValue = JsString(o.name)
@@ -318,7 +318,7 @@ object json {
         case Some("environment") => JsSuccess(TenantDisplay.Environment)
         case Some("default")     => JsSuccess(TenantDisplay.Default)
         case None                => JsSuccess(TenantDisplay.Default)
-        case Some(str)           => JsError(s"Bad value for tenant display : $str")
+        case Some(str) => JsError(s"Bad value for tenant display : $str")
       }
 
     override def writes(o: TenantDisplay): JsValue = JsString(o.name)
@@ -565,7 +565,7 @@ object json {
         case "Private"                  => JsSuccess(Private)
         case "PublicWithAuthorizations" => JsSuccess(PublicWithAuthorizations)
         case "AdminOnly"                => JsSuccess(AdminOnly)
-        case str                        => JsError(s"Bad ApiVisibility value: $str")
+        case str => JsError(s"Bad ApiVisibility value: $str")
       }
 
     override def writes(o: ApiVisibility) = JsString(o.name)
@@ -1555,7 +1555,7 @@ object json {
           ApiDocumentation(
             id = (json \ "_id").as(ApiDocumentationIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
-            //api = (json \ "api").as(ApiIdFormat),
+            // api = (json \ "api").as(ApiIdFormat),
             pages = (json \ "pages")
               .asOpt(SeqApiDocumentationDetailPageFormat)
               .getOrElse(Seq.empty[ApiDocumentationDetailPage]),
@@ -1740,7 +1740,9 @@ object json {
               .asOpt(SeqValidationStepFormat)
               .getOrElse(Seq.empty),
             defaultAuthorizedOtoroshiEntities = (json \ "defaultAuthorizedOtoroshiEntities")
-              .asOpt(SeqTeamAuthorizedEntitiesFormat)
+              .asOpt(SeqTeamAuthorizedEntitiesFormat),
+            teamCreationSecurity =
+              (json \ "teamCreationSecurity").asOpt[Boolean]
           )
         )
       } recover { case e: Throwable =>
@@ -1820,6 +1822,10 @@ object json {
         "defaultAuthorizedOtoroshiEntities"     -> o.defaultAuthorizedOtoroshiEntities
           .map(SeqTeamAuthorizedEntitiesFormat.writes)
           .getOrElse(JsNull)
+          .as[JsValue],
+        "teamCreationSecurity" -> o.teamCreationSecurity
+          .map(JsBoolean)
+          .getOrElse(JsBoolean(false))
           .as[JsValue]
       )
   }
@@ -2174,7 +2180,7 @@ object json {
           .map(SwaggerAccessFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        //"serviceGroup" -> o.serviceGroup.map(_.asJson).getOrElse(JsNull).as[JsValue],
+        // "serviceGroup" -> o.serviceGroup.map(_.asJson).getOrElse(JsNull).as[JsValue],
         "tags"                -> JsArray(o.tags.map(JsString.apply).toSeq),
         "categories"          -> JsArray(o.categories.map(JsString.apply).toSeq),
         "visibility"          -> ApiVisibilityFormat.writes(o.visibility),
@@ -2571,7 +2577,7 @@ object json {
       } get
   }
 
-  //just because otoroshi do not use the actual entities format ;)
+  // just because otoroshi do not use the actual entities format ;)
   val AuthorizedEntitiesOtoroshiFormat: Format[AuthorizedEntities] =
     new Format[AuthorizedEntities] {
       override def writes(o: AuthorizedEntities): JsValue =
@@ -3673,7 +3679,9 @@ object json {
             ttl = (json \ "ttl")
               .asOpt[Long]
               .map(v => FiniteDuration(v, TimeUnit.MILLISECONDS))
-              .getOrElse(FiniteDuration(0, TimeUnit.MILLISECONDS))
+              .getOrElse(FiniteDuration(0, TimeUnit.MILLISECONDS)),
+            providerSessionId = (json \ "providerSessionId")
+              .asOpt[String]
           )
         )
       } recover { case e =>
@@ -3706,7 +3714,11 @@ object json {
           .as[JsValue],
         "created"               -> DateTimeFormat.writes(o.created),
         "expires"               -> DateTimeFormat.writes(o.expires),
-        "ttl"                   -> o.ttl.toMillis
+        "ttl"                   -> o.ttl.toMillis,
+        "providerSession" -> o.providerSessionId
+          .map(JsString(_))
+          .getOrElse(JsNull)
+          .as[JsValue]
       )
   }
 
@@ -3716,7 +3728,7 @@ object json {
         json.as[String] match {
           case "completed"  => JsSuccess(ApiKeyConsumptionState.Completed)
           case "inProgress" => JsSuccess(ApiKeyConsumptionState.InProgress)
-          case str          => JsError(s"Bad ApiKeyConsumptionState value: $str")
+          case str => JsError(s"Bad ApiKeyConsumptionState value: $str")
         }
 
       override def writes(o: ApiKeyConsumptionState): JsValue = JsString(o.name)
@@ -4530,7 +4542,7 @@ object json {
     override def reads(json: JsValue): JsResult[ItemType] =
       ItemType.apply(json.as[String]) match {
         case Some(action) => JsSuccess(action)
-        case None         => JsError(s"Bad ItemType value: ${Json.stringify(json)}")
+        case None => JsError(s"Bad ItemType value: ${Json.stringify(json)}")
       }
 
     override def writes(o: ItemType): JsValue = JsString(o.name)

@@ -152,13 +152,13 @@ class AccountCreationService {
       step.step match {
         case s: ValidationStep.TeamAdmin =>
           notifyTenantAdminteam(s, step, accountCreation, tenant)
-        //generate notification
+        // generate notification
         case s: ValidationStep.Email =>
           sendEmail(s, step, accountCreation, tenant)
-        //send email
+        // send email
         case s: ValidationStep.HttpRequest =>
           callHttpRequestStep(s, step, accountCreation, tenant)
-        //call http and check response
+        // call http and check response
         case s: ValidationStep.Form =>
           EitherT.leftT[Future, Result](
             AppError.BadRequestError(
@@ -392,7 +392,7 @@ class AccountCreationService {
         motivationPattern
           .findAllMatchIn(
             formStep.formatter.getOrElse("[[motivation]]")
-          ) //FIXME: get the real default formatter
+          ) // FIXME: get the real default formatter
           .foldLeft(formStep.formatter.getOrElse("[[motivation]]"))(
             (motivation, rgxMatch) => {
               val key = rgxMatch.group(1)
@@ -489,10 +489,14 @@ class AccountCreationService {
           else s
         ),
         metadata = demand.metadata ++ metadata
-          .map(_.fieldSet.map {
-            case (a, b: JsString) => a -> b.value
-            case (a, b)           => a -> Json.stringify(b)
-          }.toMap)
+          .map(
+            _.fieldSet
+              .map {
+                case (a, b: JsString) => a -> b.value
+                case (a, b)           => a -> Json.stringify(b)
+              }
+              .toMap
+          )
           .getOrElse(Map.empty)
       )
       _ <- EitherT.liftF(
@@ -513,7 +517,7 @@ class AccountCreationService {
       translator: Translator,
       messagesApi: MessagesApi
   ): EitherT[Future, AppError, Unit] = {
-    //FIXME: trace with a metadata (or audit log) who reject the demand
+    // FIXME: trace with a metadata (or audit log) who reject the demand
     implicit val language: String = tenant.defaultLanguage.getOrElse("en")
 
     val mailData = Map(
@@ -604,7 +608,7 @@ class AccountCreationService {
 
     implicit val language: String = tenant.defaultLanguage.getOrElse("en")
 
-    //TODO: maybe good to explain why by giving a message from user who decline
+    // TODO: maybe good to explain why by giving a message from user who decline
     for {
       demand <- EitherT.fromOptionF(
         env.dataStore.accountCreationRepo

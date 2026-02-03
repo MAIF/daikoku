@@ -13,7 +13,7 @@
     "dev": "vite",
     "build": "tsc && vite build && mkdir -p ../public/assets && rm -rf ../public/assets/* && rm -f ../public/index.html &&  cp -r ./dist/assets/* ../public/ && cp ./dist/index.html ../public/",
     "preview": "vite preview",
-    "test": "playwright test --workers 1 --trace on"
+    "test": "playwright test --config tests/playwright.config.js --workers 1 --trace on"
   },
   "dependencies": {
     "@asyncapi/react-component": "^2.6.3",

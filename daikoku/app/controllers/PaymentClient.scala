@@ -364,7 +364,7 @@ class PaymentClient(
       case _ =>
         EitherT.leftT[Future, PaymentSettings](
           AppError.PaymentError("Basic payment information is not setted up")
-        ) //todo: better error message
+        ) // todo: better error message
 
     }
 
@@ -456,7 +456,7 @@ class PaymentClient(
             .toLowerCase,
           "success_url" -> env.getDaikokuUrl(
             tenant,
-            s"/api/subscription/_validate?token=$cipheredValidationToken&session_id={CHECKOUT_SESSION_ID}" //todo: add callback
+            s"/api/subscription/_validate?token=$cipheredValidationToken&session_id={CHECKOUT_SESSION_ID}" // todo: add callback
           ),
           "cancel_url" -> env.getDaikokuUrl(
             tenant,
@@ -494,7 +494,7 @@ class PaymentClient(
               .flatMap(res => {
                 if (res.status == 200 || res.status == 201) {
                   val url = (res.json \ "url").as[String]
-                  //todo: handle real redirection to checkout page
+                  // todo: handle real redirection to checkout page
                   EitherT.pure[Future, AppError](url)
                 } else {
                   val r: EitherT[Future, AppError, CustomerId] =
@@ -856,8 +856,8 @@ class PaymentClient(
         "features[customer_update][allowed_updates][2]" -> "address",
         "features[customer_update][allowed_updates][3]" -> "phone",
         "features[customer_update][allowed_updates][4]" -> "tax_id",
-        "business_profile[privacy_policy_url]" -> "https://example.com/privacy", //todo
-        "business_profile[terms_of_service_url]" -> "https://example.com/privacy" //todo
+        "business_profile[privacy_policy_url]" -> "https://example.com/privacy", // todo
+        "business_profile[terms_of_service_url]" -> "https://example.com/privacy" // todo
       )
       conf <- EitherT.liftF(
         stripeClient("/v1/billing_portal/configurations")

@@ -181,7 +181,7 @@ object Tenant {
       contentType = contentType,
       body = body,
       path = s"/customization/$pageId.${if (contentType.contains("css")) "css"
-      else "js"}".some
+        else "js"}".some
     )
 
 }
@@ -195,12 +195,14 @@ object DaikokuStyle {
     )
 }
 
-/**
-  * Entity representing the UI style of the tenant
+/** Entity representing the UI style of the tenant
   *
-  * @param js Javascript code injected in each page
-  * @param css CSS code injected in each page
-  * @param colorTheme CSS code to customize colors of the current tenant
+  * @param js
+  *   Javascript code injected in each page
+  * @param css
+  *   CSS code injected in each page
+  * @param colorTheme
+  *   CSS code to customize colors of the current tenant
   */
 case class DaikokuStyle(
     jsCmsPage: String,
@@ -431,6 +433,7 @@ case class Tenant(
     adminApi: ApiId,
     adminSubscriptions: Seq[ApiSubscriptionId] = Seq.empty,
     creationSecurity: Option[Boolean] = None,
+    teamCreationSecurity: Option[Boolean] = None,
     subscriptionSecurity: Option[Boolean] = None,
     apiReferenceHideForGuest: Option[Boolean] = Some(true),
     defaultMessage: Option[String] = None,
@@ -562,7 +565,11 @@ case class Tenant(
       "accountCreationProcess" -> SeqValidationStepFormat.writes(
         accountCreationProcess
       ),
-      "isPrivate" -> isPrivate
+      "isPrivate" -> isPrivate,
+      "teamCreationSecurity" -> teamCreationSecurity
+        .map(JsBoolean)
+        .getOrElse(JsBoolean(false))
+        .as[JsValue]
     )
   }
   def favicon(): String = {

@@ -322,7 +322,7 @@ class AuditActor(implicit
             val date = new DateTime((jsonEvt \ "@timestamp").as[Long])
             val id = (jsonEvt \ "@id").as[String]
             s"""<h3 id="$id">$alert - ${date.toString()}</h3><pre>${Json
-              .prettyPrint(jsonEvt)}</pre><br/>"""
+                .prettyPrint(jsonEvt)}</pre><br/>"""
           }
           .mkString("\n")
 
@@ -435,8 +435,8 @@ class AuditActor(implicit
         val config = tenant.auditTrailConfig
         logger.debug("SEND_TO_ANALYTICS_HOOK: " + config.auditWebhooks)
         config.kafkaConfig.foreach { kafkaConfig =>
-          evts.foreach {
-            case evt => kafkaWrapperAudit.publish(evt.toJson)(env, kafkaConfig)
+          evts.foreach { case evt =>
+            kafkaWrapperAudit.publish(evt.toJson)(env, kafkaConfig)
           }
           if (config.kafkaConfig.isEmpty) {
             kafkaWrapperAudit.close()
@@ -628,8 +628,8 @@ class KafkaWrapperActor(env: Env, topicFunction: KafkaConfig => String)
       eventProducer = Some(
         new KafkaEventProducer(event.env, event.config, topicFunction)
       )
-      eventProducer.get.publish(event.event).andThen {
-        case Failure(e) => logger.error("Error while pushing event to kafka", e)
+      eventProducer.get.publish(event.event).andThen { case Failure(e) =>
+        logger.error("Error while pushing event to kafka", e)
       }
     }
     case event: KafkaWrapperEvent
@@ -639,13 +639,13 @@ class KafkaWrapperActor(env: Env, topicFunction: KafkaConfig => String)
       eventProducer = Some(
         new KafkaEventProducer(event.env, event.config, topicFunction)
       )
-      eventProducer.get.publish(event.event).andThen {
-        case Failure(e) => logger.error("Error while pushing event to kafka", e)
+      eventProducer.get.publish(event.event).andThen { case Failure(e) =>
+        logger.error("Error while pushing event to kafka", e)
       }
     }
     case event: KafkaWrapperEvent =>
-      eventProducer.get.publish(event.event).andThen {
-        case Failure(e) => logger.error("Error while pushing event to kafka", e)
+      eventProducer.get.publish(event.event).andThen { case Failure(e) =>
+        logger.error("Error while pushing event to kafka", e)
       }
     case KafkaWrapperEventClose() =>
       eventProducer.foreach(_.close())

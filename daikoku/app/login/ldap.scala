@@ -90,8 +90,8 @@ object LdapConfig {
           useSsl = (json \ "useSsl").asOpt[Boolean]
         )
       )
-    } recover {
-      case e => Left(e)
+    } recover { case e =>
+      Left(e)
     } get
 }
 
@@ -231,8 +231,8 @@ object LdapSupport {
           uids
         }
         .getOrElse(Seq.empty[String])
-    } recover {
-      case _ => Seq.empty[String]
+    } recover { case _ =>
+      Seq.empty[String]
     } get
   }
 
@@ -658,8 +658,8 @@ object LdapSupport {
 
                 ctx.close()
                 res.asScala.nonEmpty
-              } recover {
-                case e => false
+              } recover { case e =>
+                false
               } get
             }
             .map(_ => (true, "user found"))

@@ -55,7 +55,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
     Option(ref.get()).foreach(_.cancel())
   }
 
-  //job de synchro des donnée de la  veille
+  // job de synchro des donnée de la  veille
   def doJob(): Future[Done] = {
     syncAll()
   }
@@ -454,7 +454,7 @@ class ApiKeyStatsJob(otoroshiClient: OtoroshiClient, env: Env) {
       )
       .map(consumptions => {
         (plan.costPerMonth, plan.costPerRequest, plan.maxPerMonth) match {
-          //todo: consider trial period
+          // todo: consider trial period
           case (None, None, Some(_)) =>
             ApiKeyBilling(
               hits = hits + consumptions.map(_.hits).sum,

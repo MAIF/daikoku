@@ -176,11 +176,101 @@ class LoginController(
     }
   }
 
+  def bindUserV2(
+      sessionMaxAge: Int,
+      tenant: Tenant,
+      request: RequestHeader,
+      f: => EitherT[Future, AppError, User]
+  ): Future[Result] = {
+
+    val value: EitherT[Future, AppError, Result] = f.flatMap { user =>
+      user.twoFactorAuthentication match {
+        case Some(auth) if auth.enabled =>
+          val keyGenerator = KeyGenerator.getInstance("HmacSHA1")
+          keyGenerator.init(160)
+          val token =
+            new Base32().encodeAsString(keyGenerator.generateKey.getEncoded)
+
+          EitherT(
+            env.dataStore.userRepo
+              .save(
+                user.copy(twoFactorAuthentication =
+                  Some(auth.copy(token = token))
+                )
+              )
+              .map {
+                case true => Right(Redirect(s"/2fa?token=$token"))
+                case false =>
+                  Left(AppError.InternalServerError("Failed to save user"))
+              }
+          )
+        case _ =>
+          EitherT.liftF(createSession(sessionMaxAge, user, request, tenant))
+      }
+    }
+
+    value.foldF(
+      error => after(3.seconds)(error.renderF()),
+      r => r.future
+    )
+  }
+
+  private def bindUserOAuth2(
+      sessionMaxAge: Int,
+      tenant: Tenant,
+      request: RequestHeader,
+      f: => EitherT[Future, AppError, (User, Option[String])]
+  ): Future[Result] = {
+
+    val value: EitherT[Future, AppError, Result] = f.flatMap {
+      case (user, idToken) =>
+        user.twoFactorAuthentication match {
+          case Some(auth) if auth.enabled =>
+            val keyGenerator = KeyGenerator.getInstance("HmacSHA1")
+            keyGenerator.init(160)
+            val token =
+              new Base32().encodeAsString(keyGenerator.generateKey.getEncoded)
+
+            EitherT(
+              env.dataStore.userRepo
+                .save(
+                  user.copy(twoFactorAuthentication =
+                    Some(auth.copy(token = token))
+                  )
+                )
+                .map {
+                  case true => Right(Redirect(s"/2fa?token=$token"))
+                  case false =>
+                    Left(AppError.InternalServerError("Failed to save user"))
+                }
+            )
+          case _ =>
+            EitherT.liftF(
+              createSession(sessionMaxAge, user, request, tenant, idToken)
+            )
+        }
+    }
+
+    value.foldF(
+      {
+        case AppError.UserNotAllowed(email) =>
+          val errorMsg = URLEncoder.encode(
+            s"User $email is not allowed to access this application",
+            "UTF-8"
+          )
+          FastFuture.successful(Redirect(s"/informations?error=$errorMsg"))
+        case error => after(3.seconds)(error.renderF())
+      },
+      r => r.future
+    )
+  }
+
   private def createSession(
       sessionMaxAge: Int,
       user: User,
       request: RequestHeader,
-      tenant: Tenant
+      tenant: Tenant,
+      idToken: Option[String] = None
   ) = {
     env.dataStore.userSessionRepo
       .findOne(Json.obj("userEmail" -> user.email))
@@ -232,8 +322,11 @@ class LoginController(
             case _: Throwable =>
           }
 
+          val baseSession = Map("sessionId" -> session.sessionId.value) ++
+            idToken.map(t => "id_token" -> t)
+
           Redirect(redirectUri)
-            .withSession("sessionId" -> session.sessionId.value)
+            .withSession(baseSession.toSeq: _*)
             .removingFromSession("redirect")(request)
         }
       }
@@ -265,13 +358,12 @@ class LoginController(
 
         maybeOAuth2Config match {
           case Right(authConfig) =>
-            bindUser(
+            bindUserOAuth2(
               authConfig.sessionMaxAge,
               ctx.tenant,
               ctx.request,
               OAuth2Support
                 .bindUser(ctx.request, authConfig, ctx.tenant, env)
-                .map(_.toOption)
             )
           case Left(e) =>
             after(3.seconds)(
@@ -423,26 +515,37 @@ class LoginController(
               ctx.ctx,
               AuthorizationLevel.AuthorizedSelf
             )
-            Redirect(
-              OAuth2Config
-                .fromJson(ctx.tenant.authProviderSettings) match {
-                case Left(_) => redirect
-                case Right(config: OAuth2Config) =>
-                  config.logoutUrl
-                    .replace(
-                      "${redirect}",
-                      URLEncoder.encode(redirect, "UTF-8")
-                    )
-                    .replace(
-                      "${clientId}",
-                      URLEncoder.encode(
-                        (ctx.tenant.authProviderSettings \ "clientId")
-                          .as[String],
-                        "UTF-8"
+            val idToken = ctx.request.session.get("id_token").getOrElse("")
+            val rootRedirect = env.getDaikokuUrl(ctx.tenant, "/")
+            val logoutTarget = OAuth2Config
+              .fromJson(ctx.tenant.authProviderSettings) match {
+              case Left(_) => redirect
+              case Right(config: OAuth2Config) =>
+                config.logoutUrl match {
+                  case None => redirect
+                  case Some(url) =>
+                    url
+                      .replace(
+                        "${idTokenHint}",
+                        URLEncoder.encode(idToken, "UTF-8")
                       )
-                    )
-              }
-            ).removingFromSession("sessionId")(ctx.request)
+                      .replace(
+                        "${redirect}",
+                        URLEncoder.encode(rootRedirect, "UTF-8")
+                      )
+                      .replace(
+                        "${clientId}",
+                        URLEncoder.encode(
+                          (ctx.tenant.authProviderSettings \ "clientId")
+                            .as[String],
+                          "UTF-8"
+                        )
+                      )
+                }
+            }
+            AppLogger.debug(logoutTarget)
+            Redirect(logoutTarget)
+              .removingFromSession("sessionId", "id_token")(ctx.request)
           }
         case _ =>
           val session = ctx.request.attrs(IdentityAttrs.SessionKey)
@@ -504,15 +607,15 @@ class LoginController(
       val password = (body \ "password").as[String]
       val confirmPassword = (body \ "confirmPassword").as[String]
 
-      //verifier le resultat du formulaire
-      //verifier que le user n'existe pas deja
-      //passer a l'etape suivante
+      // verifier le resultat du formulaire
+      // verifier que le user n'existe pas deja
+      // passer a l'etape suivante
 
       (for {
         maybeUser <- EitherT.liftF(
           env.dataStore.userRepo.findOne(Json.obj("email" -> email))
         )
-        //todo: tester la presence desessentiel ??
+        // todo: tester la presence desessentiel ??
         _ <- EitherT.cond[Future](
           maybeUser.forall(_.invitation match {
             case Some(invit) if !invit.registered => true
@@ -616,14 +719,13 @@ class LoginController(
           env.getDaikokuUrl(ctx.tenant, s"/informations?message=$messageId")
         )
       }).leftMap(error =>
-          Redirect(
-            env.getDaikokuUrl(
-              ctx.tenant,
-              s"/informations?error=${error.getErrorMessage()}"
-            )
+        Redirect(
+          env.getDaikokuUrl(
+            ctx.tenant,
+            s"/informations?error=${error.getErrorMessage()}"
           )
         )
-        .merge
+      ).merge
     }
   }
 

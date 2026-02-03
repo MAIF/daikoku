@@ -676,7 +676,7 @@ export const ApiList = (props: ApiListProps) => {
                             table.getToggleAllPageRowsSelectedHandler()(e)
                           }}
                         />
-  
+
                       </label> */}
                   {/* {(table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) ? translate({ key: "notifications.page.table.selected.count.label", plural: (selectAll ? totalSelectable : table.getSelectedRowModel().rows.length) > 1, replacements: [selectAll ? `${totalSelectable}` : `${table.getSelectedRowModel().rows.length}`] }) : null} */}
                   {/* {(!!totalSelectable && (table.getIsSomeRowsSelected() || table.getIsAllRowsSelected()) || selectAll) && (
@@ -721,7 +721,7 @@ export const ApiList = (props: ApiListProps) => {
                     feedbackTimeout={300}
                     disabled={dataRequest.isFetchingNextPage}
                   >
-                    {translate('notifications.page.table.more.button.label')}
+                    {translate('dashboard.api.table.more.button.label')}
                   </FeedbackButton>
                 )}
               </div>

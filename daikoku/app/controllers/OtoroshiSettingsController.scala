@@ -246,11 +246,10 @@ class OtoroshiSettingsController(
                 .flatMap { _ =>
                   createOtoroshi()
                 }
-                .recover {
-                  case _ =>
-                    BadRequest(
-                      Json.obj("error" -> "Failed to join otoroshi instances")
-                    )
+                .recover { case _ =>
+                  BadRequest(
+                    Json.obj("error" -> "Failed to join otoroshi instances")
+                  )
                 }
         }
       }
@@ -289,8 +288,8 @@ class OtoroshiSettingsController(
                   case _ => Ok(groups)
                 }
               }
-              .recover {
-                case error => BadRequest(Json.obj("error" -> error.getMessage))
+              .recover { case error =>
+                BadRequest(Json.obj("error" -> error.getMessage))
               }
         }
       }
@@ -312,8 +311,8 @@ class OtoroshiSettingsController(
             otoroshiClient
               .getServiceGroups()(settings)
               .map(Ok(_))
-              .recover {
-                case error => BadRequest(Json.obj("error" -> error.getMessage))
+              .recover { case error =>
+                BadRequest(Json.obj("error" -> error.getMessage))
               }
         }
       }
@@ -354,8 +353,8 @@ class OtoroshiSettingsController(
                   case _ => Ok(services)
                 }
               }
-              .recover {
-                case error => BadRequest(Json.obj("error" -> error.getMessage))
+              .recover { case error =>
+                BadRequest(Json.obj("error" -> error.getMessage))
               }
         }
       }
@@ -396,8 +395,8 @@ class OtoroshiSettingsController(
                   case _ => Ok(routes)
                 }
               }
-              .recover {
-                case error => BadRequest(Json.obj("error" -> error.getMessage))
+              .recover { case error =>
+                BadRequest(Json.obj("error" -> error.getMessage))
               }
         }
       }
@@ -419,8 +418,8 @@ class OtoroshiSettingsController(
             otoroshiClient
               .getServices()(settings)
               .map(Ok(_))
-              .recover {
-                case error => BadRequest(Json.obj("error" -> error.getMessage))
+              .recover { case error =>
+                BadRequest(Json.obj("error" -> error.getMessage))
               }
         }
       }
@@ -442,8 +441,8 @@ class OtoroshiSettingsController(
             otoroshiClient
               .getRoutes()(settings)
               .map(Ok(_))
-              .recover {
-                case error => BadRequest(Json.obj("error" -> error.getMessage))
+              .recover { case error =>
+                BadRequest(Json.obj("error" -> error.getMessage))
               }
         }
       }
@@ -465,8 +464,8 @@ class OtoroshiSettingsController(
             otoroshiClient
               .getApiKeys()(settings)
               .map(Ok(_))
-              .recover {
-                case error => BadRequest(Json.obj("error" -> error.getMessage))
+              .recover { case error =>
+                BadRequest(Json.obj("error" -> error.getMessage))
               }
         }
       }
@@ -719,8 +718,8 @@ class OtoroshiSettingsController(
         case Some(Testing(_, _, auth, _, username, password, _))
             if auth.name == TestingAuth.Basic.name =>
           headers - "Authorization" + ("Authorization" -> s"Basic ${Base64
-            .encodeBase64String(s"${username.getOrElse("")}:${password
-              .getOrElse("")}".getBytes(Charsets.UTF_8))}")
+              .encodeBase64String(s"${username.getOrElse("")}:${password
+                  .getOrElse("")}".getBytes(Charsets.UTF_8))}")
         case _ => headers
       }
     }
@@ -768,9 +767,8 @@ class OtoroshiSettingsController(
               .as(ctype)
           }
           .map(Right(_))
-          .recover {
-            case e =>
-              Left(AppError.InternalServerError(e.getMessage))
+          .recover { case e =>
+            Left(AppError.InternalServerError(e.getMessage))
           }
       case None =>
         FastFuture.successful(Left(AppError.EntityNotFound("test server url")))
