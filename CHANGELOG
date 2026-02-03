@@ -862,3 +862,22 @@ We'd like to thank all the contributors who worked on this release!
 - Double quotes exported by CLI in emails translations [#908](https://github.com/MAIF/daikoku/issues/908)
 - Team avatar is optional but team list page crashes if team doesn't have it [#887](https://github.com/MAIF/daikoku/issues/887)
 
+## [v18.7.0] - 2026-02-03
+
+## :star: New Features
+
+- footer manage in cms must be localized [#958](https://github.com/MAIF/daikoku/issues/958)
+- OAuth2 admin claim config [#954](https://github.com/MAIF/daikoku/issues/954)
+- Add API version to the name of the API in APIKEY Item [#945](https://github.com/MAIF/daikoku/issues/945)
+- [ApiGroup] :: group visbility should overwrite own api visibility [#934](https://github.com/MAIF/daikoku/issues/934)
+
+## :beetle: Bug Fixes
+
+- [GraphQL] :: Filtering visibleApis by categories in broken [#957](https://github.com/MAIF/daikoku/issues/957)
+- CLI dosen't work with capital letters in directory name [#953](https://github.com/MAIF/daikoku/issues/953)
+- Resetting the color theme requires creating a CMS page if one does not already exist. [#949](https://github.com/MAIF/daikoku/issues/949)
+- CLI pull customization dosn't seems to work [#948](https://github.com/MAIF/daikoku/issues/948)
+- User non admin can read team notifications [#947](https://github.com/MAIF/daikoku/issues/947)
+- It is not possible to delete a key from your personal team [#946](https://github.com/MAIF/daikoku/issues/946)
+- Wrong content in dashboard button Afficher plus de notification [#942](https://github.com/MAIF/daikoku/issues/942)
+
