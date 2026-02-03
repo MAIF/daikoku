@@ -1773,5 +1773,11 @@
   "dashboard.create.apigroup.button.label": "Créer un groupe d'APIs",
   "search.team.placeholder": "Rechercher une équipe",
   "dashboard.create.team.button.label": "Créer une équipe",
-  "dashboard.api.table.more.button.label": "afficher plus d'APIs"
+  "dashboard.api.table.more.button.label": "afficher plus d'APIs",
+  "oauth2.form.role.claim.label": "Nom du claim des rôles",
+  "oauth2.form.role.claim.help": "Nom du claim OpenID contenant les rôles de l’utilisateur.",
+  "oauth2.form.admin.role.label": "Rôle administrateur",
+  "oauth2.form.admin.role.help": "Valeur du rôle OpenID donnant les droits administrateur dans Daikoku.",
+  "oauth2.form.user.role.label": "Rôle utilisateur (optionnel)",
+  "oauth2.form.user.role.help": "Valeur du rôle OpenID donnant un accès utilisateur standard. Si défini, les utilisateurs sans rôle admin ou utilisateur ne pourront pas se connecter."
 }

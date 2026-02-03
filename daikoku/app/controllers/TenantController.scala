@@ -227,7 +227,14 @@ class TenantController(
             val (adminApi, adminApiPlan) =
               ApiTemplate.adminApi(adminTeam, tenant)
 
-            val tenantForCreation = tenant.copy(adminApi = adminApi.id)
+            val tenantForCreation = tenant.copy(
+              adminApi = adminApi.id,
+              authProvider = env.config.init.authProviderConfig.defaultprovider,
+              authProviderSettings =
+                env.config.init.authProviderConfig.oauth2config
+                  .map(_.asJson)
+                  .getOrElse(Json.obj("sessionMaxAge" -> 86400)),
+            )
 
             val (cmsApi, cmsPlan) = ApiTemplate.cmsApi(adminTeam, tenant)
 
@@ -476,9 +483,13 @@ class TenantController(
                       .getOrElse(authorizeUrl)
                     val logoutUrl = (body \ "end_session_endpoint")
                       .asOpt[String]
-                      .getOrElse(
-                        (issuer + "/logout").replace("//logout", "/logout")
-                      )
+                      .map { rawLogoutUrl =>
+                        if (rawLogoutUrl.contains("${redirect}") || rawLogoutUrl.contains("${clientId}")) rawLogoutUrl
+                        else {
+                          val sep = if (rawLogoutUrl.contains("?")) "&" else "?"
+                          s"$rawLogoutUrl${sep}id_token_hint=$${idTokenHint}&post_logout_redirect_uri=$${redirect}&client_id=$${clientId}"
+                        }
+                      }
                     val jwksUri = (body \ "jwks_uri").asOpt[String]
                     Ok(
                       config

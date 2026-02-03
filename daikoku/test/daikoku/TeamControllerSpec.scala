@@ -3,16 +3,9 @@ package fr.maif.otoroshi.daikoku.tests
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
-  ApiSubscriptionAccept,
-  TeamInvitation
-}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiSubscriptionAccept, TeamInvitation}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
-  Administrator,
-  ApiEditor,
-  TeamUser
-}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.LoggerImplicits.BetterLogger
@@ -21,7 +14,7 @@ import org.scalatest.BeforeAndAfter
 import org.scalatest.concurrent.IntegrationPatience
 import org.scalatestplus.play.PlaySpec
 import org.testcontainers.containers.BindMode
-import play.api.libs.json._
+import play.api.libs.json.{Json, _}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
@@ -401,23 +394,30 @@ class TeamControllerSpec()
       respUpdate.status mustBe 200
       (respUpdate.json \ "done").as[Boolean] mustBe true
 
-      //todo: test invit is ok
       val userSession = loginWithBlocking(user, tenant)
-      val respNotification =
-        httpJsonCallBlocking(path = s"/api/me/notifications")(
-          tenant,
-          userSession
+      val respNotification = getOwnNotificationsCallBlocking(Json.obj(
+        "filterTable" -> Json.stringify(
+          Json.arr(
+            Json
+              .obj("id" -> "type", "value" -> Json.arr("TeamInvitation"))
+          )
         )
-      respNotification.status mustBe 200
+      ))(
+        tenant,
+        userSession
+      )
 
+      respNotification.status mustBe 200
+      (respNotification.json \ "data" \ "myNotifications" \ "totalFiltered")
+        .as[Long] mustBe 1
       val notifications =
-        fr.maif.otoroshi.daikoku.domain.json.SeqNotificationFormat
-          .reads((respNotification.json \ "notifications").as[JsArray])
-      notifications.isSuccess mustBe true
-      notifications.get.size mustBe 1
-      notifications.get.head.action.isInstanceOf[TeamInvitation] mustBe true
-      val action = notifications.get.head.action.asInstanceOf[TeamInvitation]
-      action.team mustBe teamOwnerId
+        (respNotification.json \ "data" \ "myNotifications" \ "notifications")
+          .as[JsArray]
+
+      val notification = notifications.head
+
+      (notification \ "action" \ "__typename").as[String] mustBe "TeamInvitation"
+      (notification \ "action" \ "team" \ "_id").as(json.TeamIdFormat) mustBe teamOwnerId
     }
 
     "remove members to his team" in {

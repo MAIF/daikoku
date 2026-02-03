@@ -699,7 +699,7 @@ export const ApiList = (props: ApiListProps) => {
                     feedbackTimeout={300}
                     disabled={dataRequest.isFetchingNextPage}
                   >
-                    {translate('notifications.page.table.more.button.label')}
+                    {translate('dashboard.api.table.more.button.label')}
                   </FeedbackButton>
                 )}
               </div>
