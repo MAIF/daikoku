@@ -526,6 +526,7 @@ class LoginController(
                     )
               }
             }
+            AppLogger.debug(logoutTarget)
             Redirect(logoutTarget)
               .removingFromSession("sessionId", "id_token")(ctx.request)
           }
