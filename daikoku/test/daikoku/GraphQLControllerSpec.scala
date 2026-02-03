@@ -476,7 +476,7 @@ class GraphQLControllerSpec()
       val teamConsumerAdminSession = loginWithBlocking(user, _tenant)
       val unauthorizedUserSession = loginWithBlocking(unauthorizedUser, _tenant)
 
-      //2 admin api + 10 public API + draft + private + pwa + versionedV3 + apigroup = 17
+      // 2 admin api + 10 public API + draft + private + pwa + versionedV3 + apigroup = 17
       val respDaikokuAdmin = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -486,7 +486,7 @@ class GraphQLControllerSpec()
       (respDaikokuAdmin.json \ "data" \ "visibleApis" \ "total")
         .as[Int] mustBe 17
 
-      //10 public API + draft + private + pwa + versionedV3 + apigroup = 15
+      // 10 public API + draft + private + pwa + versionedV3 + apigroup = 15
       val respOwnerAdmin = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -495,7 +495,7 @@ class GraphQLControllerSpec()
       respOwnerAdmin.status mustBe 200
       (respOwnerAdmin.json \ "data" \ "visibleApis" \ "total").as[Int] mustBe 15
 
-      //10 public API + private + pwa + versionedV3 + apigroup = 14
+      // 10 public API + private + pwa + versionedV3 + apigroup = 14
       val respConsumerAdmin = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -505,7 +505,7 @@ class GraphQLControllerSpec()
       (respConsumerAdmin.json \ "data" \ "visibleApis" \ "total")
         .as[Int] mustBe 14
 
-      //10 public API + pwa + versionedV3 + apigroup = 13
+      // 10 public API + pwa + versionedV3 + apigroup = 13
       val respUnauthorizedAdmin = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -515,7 +515,7 @@ class GraphQLControllerSpec()
       (respUnauthorizedAdmin.json \ "data" \ "visibleApis" \ "total")
         .as[Int] mustBe 13
 
-      //10 public API + versionedV3 + apigroup = 12
+      // 10 public API + versionedV3 + apigroup = 12
       val respGuest = httpJsonCallWithoutSessionBlocking(
         path = s"/api/search",
         "POST",
@@ -524,12 +524,12 @@ class GraphQLControllerSpec()
       respGuest.status mustBe 200
       (respGuest.json \ "data" \ "visibleApis" \ "total").as[Int] mustBe 12
 
-      //########################
-      //###### APIGROUP ########
-      //########################
+      // ########################
+      // ###### APIGROUP ########
+      // ########################
 
-      //check usage of graphql query for apigroup
-      //10 public API + draft + private + pwa + versionedV3 = 14
+      // check usage of graphql query for apigroup
+      // 10 public API + draft + private + pwa + versionedV3 = 14
       val respApiGroupDaikokuAdmin = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -540,8 +540,8 @@ class GraphQLControllerSpec()
       (respApiGroupDaikokuAdmin.json \ "data" \ "visibleApis" \ "total")
         .as[Int] mustBe 14
 
-      //check usage of graphql query for apigroup
-      //10 public API + draft + private + pwa + versionedV3 = 14
+      // check usage of graphql query for apigroup
+      // 10 public API + draft + private + pwa + versionedV3 = 14
       val respApiGroupOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -551,8 +551,8 @@ class GraphQLControllerSpec()
       (respApiGroupOwner.json \ "data" \ "visibleApis" \ "total")
         .as[Int] mustBe 14
 
-      //check usage of graphql query for apigroup
-      //10 public API + private + pwa + versionedV3 = 13
+      // check usage of graphql query for apigroup
+      // 10 public API + private + pwa + versionedV3 = 13
       val respApiGroupConsumer = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -562,8 +562,8 @@ class GraphQLControllerSpec()
       (respApiGroupConsumer.json \ "data" \ "visibleApis" \ "total")
         .as[Int] mustBe 13
 
-      //check usage of graphql query for apigroup
-      //10 public API + pwa + versionedV3 = 12
+      // check usage of graphql query for apigroup
+      // 10 public API + pwa + versionedV3 = 12
       val respApiGroupUnauthorized = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -573,8 +573,8 @@ class GraphQLControllerSpec()
       (respApiGroupUnauthorized.json \ "data" \ "visibleApis" \ "total")
         .as[Int] mustBe 12
 
-      //check usage of graphql query for apigroup
-      //10 public API + versionedV3 = 11
+      // check usage of graphql query for apigroup
+      // 10 public API + versionedV3 = 11
       val respApiGroupGuest = httpJsonCallWithoutSessionBlocking(
         path = s"/api/search",
         "POST",
@@ -584,16 +584,16 @@ class GraphQLControllerSpec()
       (respApiGroupGuest.json \ "data" \ "visibleApis" \ "total")
         .as[Int] mustBe 11
 
-      //########################
-      //###### FILTERS #########
-      //########################
+      // ########################
+      // ###### FILTERS #########
+      // ########################
 
-      //todo: tags
+      // todo: tags
       // cat
       // team
       // research
 
-      //filter by tags ==> 2 apis
+      // filter by tags ==> 2 apis
       val respOwnerAdminByTags = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -618,7 +618,7 @@ class GraphQLControllerSpec()
       (respOwnerAdminByTags.json \ "data" \ "visibleApis" \ "totalFiltered")
         .as[Int] mustBe 2
 
-      //filter by tags ==> 2 apis
+      // filter by tags ==> 2 apis
 //      val respOwnerAdminByCats = httpJsonCallBlocking(
 //        path = s"/api/search",
 //        "POST",
@@ -637,7 +637,7 @@ class GraphQLControllerSpec()
 //      (respOwnerAdminByCats.json \ "data" \ "visibleApis" \ "total")
 //        .as[Int] mustBe 2
 
-      //filter by team ==> 14 apis
+      // filter by team ==> 14 apis
       val respOwnerAdminByTeam = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -661,7 +661,7 @@ class GraphQLControllerSpec()
       (respOwnerAdminByTeam.json \ "data" \ "visibleApis" \ "totalFiltered")
         .as[Int] mustBe 15
 
-      //filter by team ==> 1 apis
+      // filter by team ==> 1 apis
       val respOwnerAdminByResearch = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1131,7 +1131,7 @@ class GraphQLControllerSpec()
       val teamConsumerAdminSession = loginWithBlocking(user, _tenant)
       val unauthorizedUserSession = loginWithBlocking(unauthorizedUser, _tenant)
 
-      //adminApi + cmsApi + simpleTag + draftTag + privateTag + pwaTag + V3Tag + groupTag = 8
+      // adminApi + cmsApi + simpleTag + draftTag + privateTag + pwaTag + V3Tag + groupTag = 8
       val respAllTagsDaikokuAdmin = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1147,7 +1147,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 8
 
-      //simpleTag + draftTag + privateTag + pwaTag + V3Tag + groupTag = 6
+      // simpleTag + draftTag + privateTag + pwaTag + V3Tag + groupTag = 6
       val respAllTagsTeamOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1163,7 +1163,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 6
 
-      //simpleTag + privateTag + pwaTag + V3Tag + groupTag = 5
+      // simpleTag + privateTag + pwaTag + V3Tag + groupTag = 5
       val respAllTagsTeamConsumer = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1179,7 +1179,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 5
 
-      //simpleTag + pwaTag + V3Tag + groupTag = 4
+      // simpleTag + pwaTag + V3Tag + groupTag = 4
       val respAllTagsUnauthorized = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1195,7 +1195,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 4
 
-      //simpleTag + V3Tag + groupTag = 3
+      // simpleTag + V3Tag + groupTag = 3
       val respAllTagsGuest = httpJsonCallWithoutSessionBlocking(
         path = s"/api/search",
         "POST",
@@ -1211,7 +1211,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 3
 
-      //simpleTag + draftTag + privateTag + pwaTag + V3Tag = 5
+      // simpleTag + draftTag + privateTag + pwaTag + V3Tag = 5
       val respAllTagsWithGroupDaikokuAdmin = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1227,7 +1227,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 5
 
-      //simpleTag + draftTag + privateTag + pwaTag + V3Tag = 5
+      // simpleTag + draftTag + privateTag + pwaTag + V3Tag = 5
       val respAllTagsWithGroupTeamOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1243,7 +1243,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 5
 
-      //simpleTag + privateTag + pwaTag + V3Tag = 4
+      // simpleTag + privateTag + pwaTag + V3Tag = 4
       val respAllTagsWithGroupTeamConsumer = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1259,7 +1259,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 4
 
-      //simpleTag + pwaTag + V3Tag = 3
+      // simpleTag + pwaTag + V3Tag = 3
       val respAllTagsWithgroupUnauthorized = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1275,7 +1275,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 3
 
-      //simpleTag + V3Tag = 2
+      // simpleTag + V3Tag = 2
       val respAllTagsWithGroupGuest = httpJsonCallWithoutSessionBlocking(
         path = s"/api/search",
         "POST",
@@ -1291,7 +1291,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 2
 
-      //simpleTag =
+      // simpleTag =
       val respAllTagsWithResearchGuest = httpJsonCallWithoutSessionBlocking(
         path = s"/api/search",
         "POST",
@@ -1310,7 +1310,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .contains("simple-tag") mustBe true
 
-      //test limit
+      // test limit
       val respAllTagsWithLimitTeamOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1330,7 +1330,7 @@ class GraphQLControllerSpec()
         .toSet
         .subsetOf(Set("draft-tag", "group-tag")) mustBe true
 
-      //test offset
+      // test offset
       val respAllTagsWithOffsetTeamOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1350,9 +1350,9 @@ class GraphQLControllerSpec()
         .toSet
         .subsetOf(Set("private-tag", "pwa-tag")) mustBe true
 
-      //################## categories
+      // ################## categories
 
-      //administration + simpleTag + draftTag + privateTag + pwaTag + V3Tag + groupTag = 7
+      // administration + simpleTag + draftTag + privateTag + pwaTag + V3Tag + groupTag = 7
       val respAllCatDaikokuAdmin = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1368,7 +1368,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 7
 
-      //simpleTag + draftTag + privateTag + pwaTag + V3Tag + groupTag = 6
+      // simpleTag + draftTag + privateTag + pwaTag + V3Tag + groupTag = 6
       val respAllCatTeamOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1384,7 +1384,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 6
 
-      //simpleTag + privateTag + pwaTag + V3Tag + groupTag = 5
+      // simpleTag + privateTag + pwaTag + V3Tag + groupTag = 5
       val respAllCatTeamConsumer = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1400,7 +1400,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 5
 
-      //simpleTag + pwaTag + V3Tag + groupTag = 4
+      // simpleTag + pwaTag + V3Tag + groupTag = 4
       val respAllCatUnauthorized = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1416,7 +1416,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 4
 
-      //simpleTag + V3Tag + groupTag = 3
+      // simpleTag + V3Tag + groupTag = 3
       val respAllCatGuest = httpJsonCallWithoutSessionBlocking(
         path = s"/api/search",
         "POST",
@@ -1432,7 +1432,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 3
 
-      //simpleTag + draftTag + privateTag + pwaTag + V3Tag = 5
+      // simpleTag + draftTag + privateTag + pwaTag + V3Tag = 5
       val respAllCatWithGroupDaikokuAdmin = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1449,7 +1449,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 5
 
-      //simpleTag + draftTag + privateTag + pwaTag + V3Tag = 5
+      // simpleTag + draftTag + privateTag + pwaTag + V3Tag = 5
       val respAllCatWithGroupTeamOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1465,7 +1465,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 5
 
-      //simpleTag + privateTag + pwaTag + V3Tag = 4
+      // simpleTag + privateTag + pwaTag + V3Tag = 4
       val respAllCatWithGroupTeamConsumer = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1481,7 +1481,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 4
 
-      //simpleTag + pwaTag + V3Tag = 3
+      // simpleTag + pwaTag + V3Tag = 3
       val respAllCatWithGroupUnauthorized = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1497,7 +1497,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 3
 
-      //simpleTag + V3Tag = 2
+      // simpleTag + V3Tag = 2
       val respAllCatWithGroupGuest = httpJsonCallWithoutSessionBlocking(
         path = s"/api/search",
         "POST",
@@ -1528,7 +1528,7 @@ class GraphQLControllerSpec()
         .as[Seq[String]]
         .length mustBe 1
 
-      //test limit
+      // test limit
       val respAllCategoriesWithLimitTeamOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",
@@ -1548,7 +1548,7 @@ class GraphQLControllerSpec()
         .toSet
         .subsetOf(Set("draft-category", "group-category")) mustBe true
 
-      //test offset
+      // test offset
       val respAllCategoriesWithOffsetTeamOwner = httpJsonCallBlocking(
         path = s"/api/search",
         "POST",

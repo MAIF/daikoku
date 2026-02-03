@@ -826,7 +826,7 @@ object evolution_1613 extends EvolutionScript {
               Json.obj({ "_id" -> (updatedApi \ "_id").as[String] }),
               updatedApi
             )
-        //FIXME can't get errors ?
+          // FIXME can't get errors ?
         }
 
       source
@@ -1057,7 +1057,7 @@ object evolution_1630 extends EvolutionScript {
               FastFuture.successful(
                 logger.error(
                   s"error during evolution $version - wrong api format ${Json
-                    .stringify(updatedRawApi)} -- $errors"
+                      .stringify(updatedRawApi)} -- $errors"
                 )
               )
           }
@@ -1377,10 +1377,9 @@ object evolution_1830 extends EvolutionScript {
 
           val tenant = Try {
             _tenant
-          } recover {
-            case e =>
-              logger.error(e.getMessage, e)
-              JsError(e.getMessage)
+          } recover { case e =>
+            logger.error(e.getMessage, e)
+            JsError(e.getMessage)
           } get
 
           (tenant.get, cssPage, colorThemePage, jsPage)
@@ -1440,7 +1439,7 @@ object evolution_1840_a extends EvolutionScript {
         .mapAsync(10) { plan =>
           logger.info(s"evolution for plan ${(plan \ "_id").as[String]}")
 
-          //recuperer le schema et le formatter
+          // recuperer le schema et le formatter
           (plan \ "subscriptionProcess")
             .as[JsArray]
             .value
@@ -1452,16 +1451,16 @@ object evolution_1840_a extends EvolutionScript {
               logger.info(
                 s"admin step found for plan ${(plan \ "_id").as[String]}"
               )
-              //creer le step form
+              // creer le step form
               val newFormStep = ValidationStep.Form(
                 id = IdGenerator.token(32),
                 title = "form",
                 schema = (oldAdminStep \ "schema").asOpt[JsObject],
                 formatter = (oldAdminStep \ "formatter").asOpt[String]
               )
-              //creer le nouveau step d'admin
+              // creer le nouveau step d'admin
               val newAdminStep = oldAdminStep.as(json.ValidationStepFormat)
-              //save le plan modifié
+              // save le plan modifié
               val subscriptionProcess = json.SeqValidationStepFormat.reads(
                 JsArray(
                   (plan \ "subscriptionProcess")

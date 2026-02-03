@@ -181,7 +181,7 @@ object Tenant {
       contentType = contentType,
       body = body,
       path = s"/customization/$pageId.${if (contentType.contains("css")) "css"
-      else "js"}".some
+        else "js"}".some
     )
 
 }
@@ -195,12 +195,14 @@ object DaikokuStyle {
     )
 }
 
-/**
-  * Entity representing the UI style of the tenant
+/** Entity representing the UI style of the tenant
   *
-  * @param js Javascript code injected in each page
-  * @param css CSS code injected in each page
-  * @param colorTheme CSS code to customize colors of the current tenant
+  * @param js
+  *   Javascript code injected in each page
+  * @param css
+  *   CSS code injected in each page
+  * @param colorTheme
+  *   CSS code to customize colors of the current tenant
   */
 case class DaikokuStyle(
     jsCmsPage: String,
@@ -444,7 +446,8 @@ case class Tenant(
     environments: Set[String] = Set.empty,
     clientNamePattern: Option[String] = None,
     accountCreationProcess: Seq[ValidationStep] = Seq.empty,
-    defaultAuthorizedOtoroshiEntities: Option[Seq[TeamAuthorizedEntities]] = None
+    defaultAuthorizedOtoroshiEntities: Option[Seq[TeamAuthorizedEntities]] =
+      None
 ) extends CanJson[Tenant] {
 
   override def asJson: JsValue = json.TenantFormat.writes(this)

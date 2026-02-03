@@ -202,13 +202,12 @@ class TeamAssetsController(
                             )
                         )
                         .map(_ => Ok(Json.obj("done" -> true, "id" -> assetId)))
-                    } recover {
-                    case e =>
-                      AppLogger.error(
-                        s"Error during update tenant asset: $filename",
-                        e
-                      )
-                      InternalServerError(Json.obj("error" -> ec.toString))
+                    } recover { case e =>
+                    AppLogger.error(
+                      s"Error during update tenant asset: $filename",
+                      e
+                    )
+                    InternalServerError(Json.obj("error" -> ec.toString))
                   }
               }
         }
@@ -451,8 +450,8 @@ class UserAssetsController(
               .map { _ =>
                 ctx.setCtxValue("assetId", assetId)
                 Ok(Json.obj("done" -> true, "id" -> assetId.value))
-              } recover {
-              case e => InternalServerError(Json.obj("error" -> ec.toString))
+              } recover { case e =>
+              InternalServerError(Json.obj("error" -> ec.toString))
             }
           case _ => AppError.BadRequestError("file type not allowed").renderF()
         }
@@ -530,8 +529,8 @@ class AssetsThumbnailController(
               .storeThumbnail(ctx.tenant.id, assetId, ctx.request.body)(cfg)
               .map { _ =>
                 Ok(Json.obj("done" -> true, "id" -> assetId.value))
-              } recover {
-              case _ => InternalServerError(Json.obj("error" -> ec.toString))
+              } recover { case _ =>
+              InternalServerError(Json.obj("error" -> ec.toString))
             }
         }
       }

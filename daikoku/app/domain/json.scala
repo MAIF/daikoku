@@ -41,8 +41,8 @@ object json {
           case Some(tu) => JsSuccess(tu)
           case None     => JsError("Bad time unit")
         }
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: BillingTimeUnit): JsValue = JsString(o.name)
@@ -57,8 +57,8 @@ object json {
             unit = (json \ "unit").as(BillingTimeUnitFormat)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: BillingDuration): JsValue =
@@ -74,8 +74,8 @@ object json {
         val long: Long =
           ((json \ "$long").asOpt[Long]).getOrElse(json.as[Long])
         JsSuccess(long)
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: Long): JsValue = JsNumber(o)
@@ -85,8 +85,8 @@ object json {
     override def reads(json: JsValue) =
       Try {
         JsSuccess(new DateTime(json.as[Long]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: DateTime) = JsNumber(o.getMillis)
@@ -110,8 +110,8 @@ object json {
               (json \ "elasticConfig").asOpt(ElasticAnalyticsConfig.format)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: OtoroshiSettings): JsValue =
@@ -146,8 +146,8 @@ object json {
             customReadOnly = (json \ "customReadOnly").asOpt[Boolean]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: TestingConfig): JsValue =
@@ -216,8 +216,8 @@ object json {
                 config = (json \ "config").asOpt(TestingConfigFormat)
               )
             )
-          } recover {
-            case e => JsError(e.getMessage)
+          } recover { case e =>
+            JsError(e.getMessage)
           } get
         case _ => JsError()
       }
@@ -252,8 +252,8 @@ object json {
     override def reads(json: JsValue): JsResult[UsagePlanId] =
       Try {
         JsSuccess(UsagePlanId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: UsagePlanId): JsValue = JsString(o.value)
@@ -262,8 +262,8 @@ object json {
     override def reads(json: JsValue): JsResult[UserId] =
       Try {
         JsSuccess(UserId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: UserId): JsValue = JsString(o.value)
@@ -272,8 +272,8 @@ object json {
     override def reads(json: JsValue): JsResult[DatastoreId] =
       Try {
         JsSuccess(DatastoreId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: DatastoreId): JsValue = JsString(o.value)
@@ -282,8 +282,8 @@ object json {
     override def reads(json: JsValue): JsResult[ChatId] =
       Try {
         JsSuccess(ChatId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ChatId): JsValue = JsString(o.value)
@@ -292,8 +292,8 @@ object json {
     override def reads(json: JsValue): JsResult[TeamId] =
       Try {
         JsSuccess(TeamId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: TeamId): JsValue = JsString(o.value)
@@ -302,8 +302,8 @@ object json {
     override def reads(json: JsValue): JsResult[ApiId] =
       Try {
         JsSuccess(ApiId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiId): JsValue = JsString(o.value)
@@ -317,7 +317,7 @@ object json {
         case Some("default")      => JsSuccess(TenantMode.Default)
         case Some("translation")  => JsSuccess(TenantMode.Translation)
         case None                 => JsSuccess(TenantMode.Default)
-        case Some(str)            => JsError(s"Bad value for tenant mode : $str")
+        case Some(str) => JsError(s"Bad value for tenant mode : $str")
       }
 
     override def writes(o: TenantMode): JsValue = JsString(o.name)
@@ -328,7 +328,7 @@ object json {
         case Some("environment") => JsSuccess(TenantDisplay.Environment)
         case Some("default")     => JsSuccess(TenantDisplay.Default)
         case None                => JsSuccess(TenantDisplay.Default)
-        case Some(str)           => JsError(s"Bad value for tenant display : $str")
+        case Some(str) => JsError(s"Bad value for tenant display : $str")
       }
 
     override def writes(o: TenantDisplay): JsValue = JsString(o.name)
@@ -337,8 +337,8 @@ object json {
     override def reads(json: JsValue): JsResult[ApiSubscriptionId] =
       Try {
         JsSuccess(ApiSubscriptionId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiSubscriptionId): JsValue = JsString(o.value)
@@ -347,8 +347,8 @@ object json {
     override def reads(json: JsValue): JsResult[ApiDocumentationId] =
       Try {
         JsSuccess(ApiDocumentationId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiDocumentationId): JsValue = JsString(o.value)
@@ -357,8 +357,8 @@ object json {
     override def reads(json: JsValue): JsResult[ApiDocumentationPageId] =
       Try {
         JsSuccess(ApiDocumentationPageId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiDocumentationPageId): JsValue = JsString(o.value)
@@ -367,8 +367,8 @@ object json {
     override def reads(json: JsValue): JsResult[ApiPostId] =
       Try {
         JsSuccess(ApiPostId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiPostId): JsValue = JsString(o.value)
@@ -377,8 +377,8 @@ object json {
     override def reads(json: JsValue): JsResult[ApiIssueId] =
       Try {
         JsSuccess(ApiIssueId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiIssueId): JsValue = JsString(o.value)
@@ -395,8 +395,8 @@ object json {
             color = (json \ "color").as[String]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiIssueTag) =
@@ -421,8 +421,8 @@ object json {
             content = (json \ "content").as[String]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiIssueComment) =
@@ -437,8 +437,8 @@ object json {
     override def reads(json: JsValue): JsResult[TenantId] =
       Try {
         JsSuccess(TenantId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: TenantId): JsValue = JsString(o.value)
@@ -447,8 +447,8 @@ object json {
     override def reads(json: JsValue): JsResult[ApiPostId] =
       Try {
         JsSuccess(ApiPostId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiPostId): JsValue = JsString(o.value)
@@ -457,8 +457,8 @@ object json {
     override def reads(json: JsValue): JsResult[ApiIssueId] =
       Try {
         JsSuccess(ApiIssueId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiIssueId): JsValue = JsString(o.value)
@@ -467,8 +467,8 @@ object json {
     override def reads(json: JsValue): JsResult[OtoroshiGroup] =
       Try {
         JsSuccess(OtoroshiGroup(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: OtoroshiGroup): JsValue = JsString(o.value)
@@ -477,8 +477,8 @@ object json {
     override def reads(json: JsValue): JsResult[OtoroshiServiceGroupId] =
       Try {
         JsSuccess(OtoroshiServiceGroupId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: OtoroshiServiceGroupId): JsValue = JsString(o.value)
@@ -487,8 +487,8 @@ object json {
     override def reads(json: JsValue): JsResult[OtoroshiServiceId] =
       Try {
         JsSuccess(OtoroshiServiceId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: OtoroshiServiceId): JsValue = JsString(o.value)
@@ -497,8 +497,8 @@ object json {
     override def reads(json: JsValue): JsResult[OtoroshiRouteId] =
       Try {
         JsSuccess(OtoroshiRouteId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: OtoroshiRouteId): JsValue = JsString(o.value)
@@ -507,8 +507,8 @@ object json {
     override def reads(json: JsValue): JsResult[Version] =
       Try {
         JsSuccess(Version(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: Version): JsValue = JsString(o.value)
@@ -517,10 +517,9 @@ object json {
     override def reads(json: JsValue): JsResult[OtoroshiSettingsId] =
       Try {
         JsSuccess(OtoroshiSettingsId(json.as[String]))
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: OtoroshiSettingsId): JsValue = JsString(o.value)
@@ -530,8 +529,8 @@ object json {
       override def reads(json: JsValue): JsResult[ThirdPartyPaymentSettingsId] =
         Try {
           JsSuccess(ThirdPartyPaymentSettingsId(json.as[String]))
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: ThirdPartyPaymentSettingsId): JsValue =
@@ -541,8 +540,8 @@ object json {
     override def reads(json: JsValue): JsResult[DemandId] =
       Try {
         JsSuccess(DemandId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: DemandId): JsValue = JsString(o.value)
@@ -551,8 +550,8 @@ object json {
     override def reads(json: JsValue): JsResult[SubscriptionDemandStepId] =
       Try {
         JsSuccess(SubscriptionDemandStepId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: SubscriptionDemandStepId): JsValue =
@@ -576,7 +575,7 @@ object json {
         case "Private"                  => JsSuccess(Private)
         case "PublicWithAuthorizations" => JsSuccess(PublicWithAuthorizations)
         case "AdminOnly"                => JsSuccess(AdminOnly)
-        case str                        => JsError(s"Bad ApiVisibility value: $str")
+        case str => JsError(s"Bad ApiVisibility value: $str")
       }
 
     override def writes(o: ApiVisibility) = JsString(o.name)
@@ -762,10 +761,9 @@ object json {
             currency = (json \ "currency").as(CurrencyFormat)
           )
         )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: BasePaymentInformation): JsValue =
@@ -828,11 +826,10 @@ object json {
               .getOrElse(Map.empty)
           )
         )
-      } recover {
-        case e =>
-          AppLogger.warn("Quotas with limits")
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.warn("Quotas with limits")
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: UsagePlan) =
@@ -921,8 +918,8 @@ object json {
             template = (json \ "template").asOpt[String]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ConsoleMailerSettings): JsValue =
@@ -948,8 +945,8 @@ object json {
             testingEmail = (json \ "testingEmail").asOpt[String]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: MailgunSettings): JsValue =
@@ -979,8 +976,8 @@ object json {
             template = (json \ "template").asOpt[String]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: MailjetSettings): JsValue =
@@ -1018,10 +1015,9 @@ object json {
               .filterNot(_.isEmpty)
           )
         )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error(e.getMessage)
+        JsError(e.getMessage)
       } get
     }
 
@@ -1057,10 +1053,9 @@ object json {
             template = (json \ "template").asOpt[String]
           )
         )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: SendgridSettings): JsValue =
@@ -1085,10 +1080,9 @@ object json {
             additionalPriceId = (json \ "additionalPriceId").asOpt[String]
           )
         )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: StripePriceIds): JsValue =
@@ -1130,11 +1124,10 @@ object json {
             priceIds = (json \ "priceIds").as(StripePriceIdsFormat)
           )
         )
-      } recover {
-        case e =>
-          AppLogger.warn("Stripe Settings")
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.warn("Stripe Settings")
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: PaymentSettings.Stripe): JsValue =
@@ -1155,8 +1148,8 @@ object json {
             clientSecret = (json \ "clientSecret").as[String]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: OtoroshiApiKey): JsValue =
@@ -1174,8 +1167,8 @@ object json {
             code = (json \ "code").as[String]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: Currency): JsValue =
@@ -1195,8 +1188,8 @@ object json {
               .getOrElse(Set.empty)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: CustomMetadata): JsValue =
@@ -1226,8 +1219,8 @@ object json {
             restrictions = (json \ "restrictions").as(ApiKeyRestrictionsFormat)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApikeyCustomization): JsValue =
@@ -1264,8 +1257,8 @@ object json {
               .map(
                 _.value
                   .map(p => ApiKeyRestrictionPathFormat.reads(p))
-                  .collect {
-                    case JsSuccess(rp, _) => rp
+                  .collect { case JsSuccess(rp, _) =>
+                    rp
                   }
                   .toSeq
               )
@@ -1275,8 +1268,8 @@ object json {
               .map(
                 _.value
                   .map(p => ApiKeyRestrictionPathFormat.reads(p))
-                  .collect {
-                    case JsSuccess(rp, _) => rp
+                  .collect { case JsSuccess(rp, _) =>
+                    rp
                   }
                   .toSeq
               )
@@ -1286,16 +1279,16 @@ object json {
               .map(
                 _.value
                   .map(p => ApiKeyRestrictionPathFormat.reads(p))
-                  .collect {
-                    case JsSuccess(rp, _) => rp
+                  .collect { case JsSuccess(rp, _) =>
+                    rp
                   }
                   .toSeq
               )
               .getOrElse(Seq.empty)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
   }
   val ApiKeyRestrictionPathFormat = new Format[ApiKeyRestrictionPath] {
@@ -1313,8 +1306,8 @@ object json {
             path = (json \ "path").as[String]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
   }
   val OtoroshiTargetFormat = new Format[OtoroshiTarget] {
@@ -1331,10 +1324,9 @@ object json {
               .getOrElse(ApikeyCustomization())
           )
         )
-      } recover {
-        case e =>
+      } recover { case e =>
 //          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+        JsError(e.getMessage)
       } get
     }
 
@@ -1359,8 +1351,8 @@ object json {
             service = (json \ "service").as(OtoroshiServiceIdFormat)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: OtoroshiService): JsValue =
@@ -1388,10 +1380,9 @@ object json {
                   .getOrElse(SpecificationType.OpenApi)
               )
             )
-          } recover {
-            case e =>
-              AppLogger.error(e.getMessage, e)
-              JsError(e.getMessage)
+          } recover { case e =>
+            AppLogger.error(e.getMessage, e)
+            JsError(e.getMessage)
           } get
         case _ => JsError()
       }
@@ -1430,10 +1421,9 @@ object json {
               .getOrElse(Map.empty[String, String])
           )
         )
-      } recover {
-        case e =>
-          AppLogger.warn(e.getMessage)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.warn(e.getMessage)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiDocumentationPage): JsValue =
@@ -1473,8 +1463,8 @@ object json {
             content = (json \ "content").asOpt[String].getOrElse("")
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiPost): JsValue =
@@ -1521,10 +1511,9 @@ object json {
             apiVersion = (json \ "apiVersion").asOpt[String]
           )
         )
-      } recover {
-        case e =>
-          AppLogger.warn(e.getMessage)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.warn(e.getMessage)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiIssue): JsValue =
@@ -1555,8 +1544,8 @@ object json {
     override def reads(json: JsValue): JsResult[ApiIssueTagId] =
       Try {
         JsSuccess(ApiIssueTagId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiIssueTagId): JsValue = JsString(o.value)
@@ -1574,8 +1563,8 @@ object json {
                 (json \ "children").as(SeqApiDocumentationDetailPageFormat)
             )
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: ApiDocumentationDetailPage): JsValue =
@@ -1594,7 +1583,7 @@ object json {
           ApiDocumentation(
             id = (json \ "_id").as(ApiDocumentationIdFormat),
             tenant = (json \ "_tenant").as(TenantIdFormat),
-            //api = (json \ "api").as(ApiIdFormat),
+            // api = (json \ "api").as(ApiIdFormat),
             pages = (json \ "pages")
               .asOpt(SeqApiDocumentationDetailPageFormat)
               .getOrElse(Seq.empty[ApiDocumentationDetailPage]),
@@ -1602,8 +1591,8 @@ object json {
               (json \ "lastModificationAt").as(DateTimeFormat)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiDocumentation): JsValue =
@@ -1648,10 +1637,9 @@ object json {
               .asOpt[String]
           )
         )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: DaikokuStyle): JsValue =
@@ -1789,13 +1777,13 @@ object json {
             defaultAuthorizedOtoroshiEntities =
               (json \ "defaultAuthorizedOtoroshiEntities")
                 .asOpt(SeqTeamAuthorizedEntitiesFormat),
-            teamCreationSecurity = (json \ "teamCreationSecurity").asOpt[Boolean]
+            teamCreationSecurity =
+              (json \ "teamCreationSecurity").asOpt[Boolean]
           )
         )
-      } recover {
-        case e: Throwable =>
-          AppLogger.warn(e.getMessage)
-          JsError(e.getMessage)
+      } recover { case e: Throwable =>
+        AppLogger.warn(e.getMessage)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: Tenant): JsValue =
@@ -1938,8 +1926,8 @@ object json {
               }
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: AuditTrailConfig): JsValue =
@@ -2012,8 +2000,8 @@ object json {
             invitation = (json \ "invitation").asOpt(UserInvitationFormat)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: User): JsValue =
@@ -2084,10 +2072,9 @@ object json {
             verified = (json \ "verified").as[Boolean]
           )
         )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
     }
 
@@ -2138,10 +2125,9 @@ object json {
                 (json \ "authorizedEntities").as(AuthorizedEntitiesFormat)
             )
           )
-        } recover {
-          case e =>
-            println("Team AuthorizedEntities format error")
-            JsError(e.getMessage)
+        } recover { case e =>
+          println("Team AuthorizedEntities format error")
+          JsError(e.getMessage)
         } get
       }
     }
@@ -2208,11 +2194,10 @@ object json {
               .getOrElse(Map.empty)
           )
         )
-      } recover {
-        case e =>
-          AppLogger.error("API format error")
-          AppLogger.error(e.toString, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error("API format error")
+        AppLogger.error(e.toString, e)
+        JsError(e.getMessage)
       } get
     }
 
@@ -2239,7 +2224,7 @@ object json {
           .map(SwaggerAccessFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        //"serviceGroup" -> o.serviceGroup.map(_.asJson).getOrElse(JsNull).as[JsValue],
+        // "serviceGroup" -> o.serviceGroup.map(_.asJson).getOrElse(JsNull).as[JsValue],
         "tags" -> JsArray(o.tags.map(JsString.apply).toSeq),
         "categories" -> JsArray(o.categories.map(JsString.apply).toSeq),
         "visibility" -> ApiVisibilityFormat.writes(o.visibility),
@@ -2285,8 +2270,8 @@ object json {
               nextSecret = (json \ "nextSecret").asOpt[String]
             )
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: ApiKeyRotation): JsValue =
@@ -2309,8 +2294,8 @@ object json {
             pendingRotation = (json \ "pendingRotation").as[Boolean]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiSubscriptionRotation): JsValue =
@@ -2368,11 +2353,10 @@ object json {
               }
           )
         )
-      } recover {
-        case e =>
-          AppLogger.error("ApiSubscriptionFormat error")
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error("ApiSubscriptionFormat error")
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiSubscription): JsValue =
@@ -2468,10 +2452,9 @@ object json {
               meteredElementId = (json \ "meteredElementId").asOpt[String]
             )
           )
-        } recover {
-          case e =>
-            AppLogger.error(e.getMessage, e)
-            JsError(e.getMessage)
+        } recover { case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
         } get
 
       override def writes(o: StripeSubscriptionInformations): JsValue =
@@ -2580,10 +2563,9 @@ object json {
             tags = (json \ "tags").asOpt[Set[String]]
           )
         )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
   }
 
@@ -2606,10 +2588,9 @@ object json {
             metadata = (json \ "metadata").as[JsObject]
           )
         )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
   }
 
@@ -2639,14 +2620,13 @@ object json {
             metadata = (json \ "metadata").as[JsObject]
           )
         )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
   }
 
-  //just because otoroshi do not use the actual entities format ;)
+  // just because otoroshi do not use the actual entities format ;)
   val AuthorizedEntitiesOtoroshiFormat: Format[AuthorizedEntities] =
     new Format[AuthorizedEntities] {
       override def writes(o: AuthorizedEntities): JsValue =
@@ -2691,8 +2671,8 @@ object json {
                 }
               }
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
     }
 
@@ -2714,10 +2694,9 @@ object json {
               routes = (json \ "routes").as(SetOtoroshiRoutesIdFormat)
             )
           )
-        } recover {
-          case e =>
-            AppLogger.error(e.getMessage, e)
-            JsError(e.getMessage)
+        } recover { case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
         } get
     }
 
@@ -2787,10 +2766,10 @@ object json {
             validUntil = (json \ "validUntil").asOpt[Long],
             bearer = (json \ "bearer").asOpt[String]
           )
-        } map {
-          case sd => JsSuccess(sd)
-        } recover {
-          case t => JsError(t.getMessage)
+        } map { case sd =>
+          JsSuccess(sd)
+        } recover { case t =>
+          JsError(t.getMessage)
         } get
     }
 
@@ -2799,10 +2778,9 @@ object json {
       override def reads(json: JsValue): JsResult[NotificationId] =
         Try {
           JsSuccess(NotificationId(json.as[String]))
-        } recover {
-          case e =>
-            AppLogger.error(e.getMessage, e)
-            JsError(e.getMessage)
+        } recover { case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
         } get
 
       override def writes(o: NotificationId): JsValue = JsString(o.value)
@@ -2812,8 +2790,8 @@ object json {
     override def reads(json: JsValue): JsResult[UserSessionId] =
       Try {
         JsSuccess(UserSessionId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: UserSessionId): JsValue = JsString(o.value)
@@ -2978,8 +2956,8 @@ object json {
             linkTo = (json \ "linkTo").asOpt[String].getOrElse("")
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: NewCommentOnIssue): JsValue =
@@ -2999,8 +2977,8 @@ object json {
             user = (json \ "user").as(UserIdFormat)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: NewCommentOnIssueV2): JsValue =
@@ -3020,8 +2998,8 @@ object json {
             team = (json \ "team").as(TeamIdFormat)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: TransferApiOwnership): JsValue =
@@ -3043,10 +3021,9 @@ object json {
             step = (json \ "step").as(SubscriptionDemandStepIdFormat)
           )
         )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: CheckoutForSubscription): JsValue =
@@ -3068,8 +3045,8 @@ object json {
             linkTo = (json \ "linkTo").asOpt[String].getOrElse("")
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: NewIssueOpen): JsValue =
@@ -3088,8 +3065,8 @@ object json {
             issue = (json \ "issue").as(IssueIdFormat)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: NewIssueOpenV2): JsValue =
@@ -3108,8 +3085,8 @@ object json {
             teamId = (json \ "teamId").as(TeamIdFormat).value
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: NewPostPublished): JsValue =
@@ -3127,8 +3104,8 @@ object json {
             post = (json \ "post").as(PostIdFormat)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: NewPostPublishedV2): JsValue =
@@ -3147,8 +3124,8 @@ object json {
             team = (json \ "team").as(TeamIdFormat)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiAccess): JsValue =
@@ -3172,10 +3149,9 @@ object json {
             motivation = (json \ "motivation").asOpt[String]
           )
         )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiSubscriptionDemand): JsValue =
@@ -3205,10 +3181,9 @@ object json {
             motivation = (json \ "motivation").as[String]
           )
         )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: AccountCreationAttempt): JsValue =
@@ -3230,8 +3205,8 @@ object json {
               subscription = (json \ "subscription").as(ApiSubscriptionIdFormat)
             )
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: ApiSubscriptionTransferSuccess): JsValue =
@@ -3250,8 +3225,8 @@ object json {
             message = (json \ "message").asOpt[String]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiSubscriptionReject): JsValue =
@@ -3276,8 +3251,8 @@ object json {
             team = (json \ "team").as(TeamIdFormat)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiSubscriptionAccept): JsValue =
@@ -3296,8 +3271,8 @@ object json {
             clientId = (json \ "clientId").as[String]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiKeyDeletionInformation): JsValue =
@@ -3317,8 +3292,8 @@ object json {
               subscription = (json \ "subscription").as(ApiSubscriptionIdFormat)
             )
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: ApiKeyDeletionInformationV2): JsValue =
@@ -3341,8 +3316,8 @@ object json {
               message = (json \ "message").as[String]
             )
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: OtoroshiSyncSubscriptionError): JsValue =
@@ -3361,8 +3336,8 @@ object json {
             message = (json \ "message").as[String]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: OtoroshiSyncApiError): JsValue =
@@ -3381,8 +3356,8 @@ object json {
             plan = (json \ "plan").as[String]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiKeyRotationInProgress): JsValue =
@@ -3404,8 +3379,8 @@ object json {
               plan = (json \ "plan").as(UsagePlanIdFormat)
             )
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: ApiKeyRotationInProgressV2): JsValue =
@@ -3426,8 +3401,8 @@ object json {
             plan = (json \ "plan").as[String]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiKeyRotationEnded): JsValue =
@@ -3448,8 +3423,8 @@ object json {
             plan = (json \ "plan").as(UsagePlanIdFormat)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiKeyRotationEndedV2): JsValue =
@@ -3468,9 +3443,8 @@ object json {
             user = (json \ "user").as(UserIdFormat)
           )
         )
-      } recover {
-        case e =>
-          JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: TeamInvitation): JsValue =
@@ -3489,9 +3463,8 @@ object json {
             plan = (json \ "plan").as[String]
           )
         )
-      } recover {
-        case e =>
-          JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiKeyRefresh): JsValue =
@@ -3512,9 +3485,8 @@ object json {
             message = (json \ "message").asOpt[String]
           )
         )
-      } recover {
-        case e =>
-          JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiKeyRefreshV2): JsValue =
@@ -3572,8 +3544,8 @@ object json {
           JsSuccess(
             Pending()
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: Pending): JsValue =
@@ -3591,8 +3563,8 @@ object json {
               date = (json \ "date").as(DateTimeFormat)
             )
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: Accepted): JsValue =
@@ -3611,8 +3583,8 @@ object json {
               date = (json \ "date").as(DateTimeFormat)
             )
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: Rejected): JsValue =
@@ -3633,10 +3605,9 @@ object json {
               id = (json \ "id").asOpt(UserIdFormat)
             )
           )
-        } recover {
-          case e =>
-            AppLogger.error(e.getMessage, e)
-            JsError(e.getMessage)
+        } recover { case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
         } get
 
       override def writes(o: NotificationSender): JsValue =
@@ -3665,10 +3636,9 @@ object json {
               .getOrElse(NotificationType.AcceptOrReject)
           )
         )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: Notification): JsValue =
@@ -3719,8 +3689,8 @@ object json {
               .asOpt[String]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
     }
 
@@ -3763,7 +3733,7 @@ object json {
         json.as[String] match {
           case "completed"  => JsSuccess(ApiKeyConsumptionState.Completed)
           case "inProgress" => JsSuccess(ApiKeyConsumptionState.InProgress)
-          case str          => JsError(s"Bad ApiKeyConsumptionState value: $str")
+          case str => JsError(s"Bad ApiKeyConsumptionState value: $str")
         }
 
       override def writes(o: ApiKeyConsumptionState): JsValue = JsString(o.name)
@@ -3793,11 +3763,10 @@ object json {
               state = (json \ "state").as(ApiKeyConsumptionStateFormat)
             )
           )
-        } recover {
-          case e =>
-            AppLogger.error("Error from ConsumptionFormat")
-            AppLogger.error(e.getMessage, e)
-            JsError(e.getMessage)
+        } recover { case e =>
+          AppLogger.error("Error from ConsumptionFormat")
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
         } get
 
       override def writes(o: ApiKeyConsumption): JsValue =
@@ -3836,8 +3805,8 @@ object json {
               avgOverhead = (json \ "avgOverhead").asOpt[Double]
             )
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: ApiKeyGlobalConsumptionInformations): JsValue =
@@ -3883,8 +3852,8 @@ object json {
               (json \ "remainingCallsPerMonth").as(LongFormat)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiKeyQuotas): JsValue =
@@ -3910,8 +3879,8 @@ object json {
             total = (json \ "total").as[BigDecimal]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiKeyBilling): JsValue =
@@ -3936,8 +3905,8 @@ object json {
             validUntil = (json \ "validUntil").as(DateTimeFormat)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: PasswordReset): JsValue =
@@ -3974,8 +3943,8 @@ object json {
               fromTenant = (json \ "fromTenant").as(TenantIdFormat)
             )
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: AccountCreation): JsValue =
@@ -4011,8 +3980,8 @@ object json {
               validUntil = (json \ "validUntil").as(DateTimeFormat)
             )
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: EmailVerification): JsValue =
@@ -4041,10 +4010,9 @@ object json {
               (json \ "lastModificationAt").asOpt(DateTimeFormat)
           )
         )
-      } recover {
-        case e =>
-          AppLogger.warn(e.getMessage)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.warn(e.getMessage)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: Translation): JsValue =
@@ -4074,10 +4042,9 @@ object json {
               content = (json \ "content").asOpt[String].getOrElse("")
             )
           )
-        } recover {
-          case e =>
-            AppLogger.warn(e.getMessage)
-            JsError(e.getMessage)
+        } recover { case e =>
+          AppLogger.warn(e.getMessage)
+          JsError(e.getMessage)
         } get
 
       override def writes(o: IntlTranslation): JsValue =
@@ -4111,8 +4078,8 @@ object json {
                 (json \ "teamPermission").as(TeamPermissionFormat)
             )
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: UserWithPermission): JsValue =
@@ -4141,9 +4108,8 @@ object json {
               closed = (json \ "closed").asOpt(DateTimeFormat)
             )
           )
-        } recover {
-          case e =>
-            JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: Message): JsValue =
@@ -4197,8 +4163,8 @@ object json {
             backupCodes = (json \ "backupCodes").as[String]
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: TwoFactorAuthentication): JsValue =
@@ -4225,8 +4191,8 @@ object json {
             registered = (json \ "registered").asOpt[Boolean].getOrElse(false)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: UserInvitation): JsValue =
@@ -4251,8 +4217,8 @@ object json {
               date = (json \ "date").as(DateTimeFormat)
             )
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: Evolution): JsValue =
@@ -4275,8 +4241,8 @@ object json {
               (json \ "date").asOpt[Long]
             )
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
 
       override def writes(o: ReportsInfo): JsValue =
@@ -4301,10 +4267,9 @@ object json {
             )
           )
         )
-      } recover {
-        case e =>
-          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
       } get
 
     override def writes(o: ApiSubscriptionDetail): JsValue =
@@ -4333,10 +4298,9 @@ object json {
               usagePlan = (json \ "usagePlan").as(UsagePlanFormat)
             )
           )
-        } recover {
-          case e =>
-            AppLogger.error(e.getMessage, e)
-            JsError(e.getMessage)
+        } recover { case e =>
+          AppLogger.error(e.getMessage, e)
+          JsError(e.getMessage)
         } get
 
       override def writes(o: ApiSubscriptionAccessibleResource): JsValue =
@@ -4434,8 +4398,8 @@ object json {
     override def reads(json: JsValue): JsResult[CmsPageId] =
       Try {
         JsSuccess(CmsPageId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: CmsPageId): JsValue = JsString(o.value)
@@ -4445,8 +4409,8 @@ object json {
     override def reads(json: JsValue): JsResult[AssetId] =
       Try {
         JsSuccess(AssetId(json.as[String]))
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: AssetId): JsValue = JsString(o.value)
@@ -4599,7 +4563,7 @@ object json {
     override def reads(json: JsValue): JsResult[ItemType] =
       ItemType.apply(json.as[String]) match {
         case Some(action) => JsSuccess(action)
-        case None         => JsError(s"Bad ItemType value: ${Json.stringify(json)}")
+        case None => JsError(s"Bad ItemType value: ${Json.stringify(json)}")
       }
 
     override def writes(o: ItemType): JsValue = JsString(o.name)

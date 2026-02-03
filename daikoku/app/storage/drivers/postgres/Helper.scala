@@ -97,8 +97,8 @@ object Helper {
       val entry = field._2.as[JsObject].fields.head
       (
         s"content = jsonb_set(content, array[${getParam(
-          params.size
-        )}], content->${getParam(params.size)} || ${getParam(params.size + 1)})",
+            params.size
+          )}], content->${getParam(params.size)} || ${getParam(params.size + 1)})",
         params ++ Seq(entry._1, entry._2)
       )
     } else if (field._1 == "$set") {
@@ -192,8 +192,8 @@ object Helper {
             case Some((key: String, _: JsValue)) if key == "$ne" =>
               (
                 s"(content->>${getParam(
-                  params.size
-                )} <> ${getParam(params.size + 1)})",
+                    params.size
+                  )} <> ${getParam(params.size + 1)})",
                 params ++ Seq(
                   _removeQuotes(field._1),
                   _removeQuotes(value.fields.head._2)
@@ -313,8 +313,8 @@ object Helper {
           logger.error(errors.toString())
           None
       }
-      .collect {
-        case Some(value) => value
+      .collect { case Some(value) =>
+        value
       }
   }
 

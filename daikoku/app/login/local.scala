@@ -44,8 +44,8 @@ object LocalLoginConfig {
           sessionMaxAge = (json \ "sessionMaxAge").asOpt[Int].getOrElse(86400)
         )
       )
-    } recover {
-      case e => Left(e)
+    } recover { case e =>
+      Left(e)
     } get
 }
 

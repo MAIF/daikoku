@@ -49,8 +49,8 @@ object OtoroshiUser {
               .getOrElse(Map.empty)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
 
     override def writes(o: OtoroshiUser): JsValue =
@@ -223,7 +223,7 @@ object OtoroshiIdentityFilter {
                                   .addAttr(
                                     IdentityAttrs.UserKey,
                                     defaultUser
-                                  ) //not tenant admin because new user
+                                  ) // not tenant admin because new user
                                   .addAttr(
                                     IdentityAttrs.ImpersonatorKey,
                                     impersonator

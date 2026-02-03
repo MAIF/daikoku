@@ -24,9 +24,8 @@ class DeletionService(
   implicit val ec: ExecutionContext = env.defaultExecutionContext
   implicit val ev: Env = env
 
-  /**
-    * Delete logically a team
-    * Add an operation in deletion queue to process complete deletion (delete user notifications & messages)
+  /** Delete logically a team Add an operation in deletion queue to process
+    * complete deletion (delete user notifications & messages)
     */
   private def deleteUser(
       user: User,
@@ -49,9 +48,8 @@ class DeletionService(
     } yield ()
   }
 
-  /**
-    * Delete logically a team
-    * Add an operation in deletion queue to process complete deletion (delete team notifications)
+  /** Delete logically a team Add an operation in deletion queue to process
+    * complete deletion (delete team notifications)
     */
   private def deleteTeam(
       team: Team,
@@ -130,7 +128,7 @@ class DeletionService(
         apiKeyStatsJob
           .syncForSubscription(subscription, tenant, completed = true)
       )
-      //todo: deaggregate key
+      // todo: deaggregate key
       _ <- deleteOtoroshiKey(subscription, plan, tenant)
       _ <- plan.paymentSettings match {
         case Some(settings) =>
@@ -164,10 +162,10 @@ class DeletionService(
     } yield ()
   }
 
-  /**
-    * delete logically all subscriptions
-    * add for each subscriptions an operation in queue to process a complete deletion of each Api
-    * (disable apikey in otoroshi, compute consumptions, close third-party subscription, delete notifications)
+  /** delete logically all subscriptions add for each subscriptions an operation
+    * in queue to process a complete deletion of each Api (disable apikey in
+    * otoroshi, compute consumptions, close third-party subscription, delete
+    * notifications)
     */
   private def deleteSubscriptions(
       subscriptions: Seq[ApiSubscription],
@@ -204,14 +202,13 @@ class DeletionService(
     )
   }
 
-  /**
-    * delete logically all apis
-    * add for each apis an operation in queue to process a complete deletion of each Api
-    * (delete doc, issues, posts & notifications)
+  /** delete logically all apis add for each apis an operation in queue to
+    * process a complete deletion of each Api (delete doc, issues, posts &
+    * notifications)
     *
-    * a sequence of Api to delete
-    * the tenant where delete those apis
-    * @return an EitherT of AppError or Unit (actually a RightT[Unit])
+    * a sequence of Api to delete the tenant where delete those apis
+    * @return
+    *   an EitherT of AppError or Unit (actually a RightT[Unit])
     */
   private def deleteApis(
       apis: Seq[Api],
@@ -239,37 +236,36 @@ class DeletionService(
           .findByApi(tenant.id, api)
           .map(plans => (api, plans))
       )
-      .flatMapConcat {
-        case (api, plans) => Source(plans.map(plan => (api, plan)))
+      .flatMapConcat { case (api, plans) =>
+        Source(plans.map(plan => (api, plan)))
       }
-      .mapAsync(5) {
-        case (api, plan) =>
-          for {
-            _ <- apiService.deleteApiPlansSubscriptions(
-              Seq(plan),
-              api,
-              tenant,
-              user
-            )
-            _ <- plan.paymentSettings match {
-              case Some(paymentSettings) =>
-                env.dataStore.operationRepo
-                  .forTenant(tenant)
-                  .save(
-                    Operation(
-                      DatastoreId(IdGenerator.token(24)),
-                      tenant = tenant.id,
-                      itemId = plan.id.value,
-                      itemType = ItemType.ThirdPartyProduct,
-                      action = OperationAction.Delete,
-                      payload = Json
-                        .obj("paymentSettings" -> paymentSettings.asJson)
-                        .some
-                    )
+      .mapAsync(5) { case (api, plan) =>
+        for {
+          _ <- apiService.deleteApiPlansSubscriptions(
+            Seq(plan),
+            api,
+            tenant,
+            user
+          )
+          _ <- plan.paymentSettings match {
+            case Some(paymentSettings) =>
+              env.dataStore.operationRepo
+                .forTenant(tenant)
+                .save(
+                  Operation(
+                    DatastoreId(IdGenerator.token(24)),
+                    tenant = tenant.id,
+                    itemId = plan.id.value,
+                    itemType = ItemType.ThirdPartyProduct,
+                    action = OperationAction.Delete,
+                    payload = Json
+                      .obj("paymentSettings" -> paymentSettings.asJson)
+                      .some
                   )
-              case None => FastFuture.successful(())
-            }
-          } yield ()
+                )
+            case None => FastFuture.successful(())
+          }
+        } yield ()
       }
       .runWith(Sink.ignore)(env.defaultMaterializer)
 
@@ -290,10 +286,9 @@ class DeletionService(
     EitherT.liftF(r)
   }
 
-  /**
-    * delete a personal user team in the provided tenant
-    * Flag a user as deleted if there is no other account in another tenant
-    * Add team (and him probably) to deletion queue to process complete deletion
+  /** delete a personal user team in the provided tenant Flag a user as deleted
+    * if there is no other account in another tenant Add team (and him probably)
+    * to deletion queue to process complete deletion
     */
   def deleteUserByQueue(
       userId: String,
@@ -340,9 +335,9 @@ class DeletionService(
     } yield ()
   }
 
-  /**
-    * Flag a user as deleted and delete his all teams in all possible tenants
-    * Add him and his personal teams to deletion queue to process complete deletion
+  /** Flag a user as deleted and delete his all teams in all possible tenants
+    * Add him and his personal teams to deletion queue to process complete
+    * deletion
     */
   def deleteCompleteUserByQueue(
       userId: String,
@@ -380,9 +375,9 @@ class DeletionService(
     } yield ()
   }
 
-  /**
-    * Flag a team as deleted and delete his subscriptions, apis and those apis subscriptions
-    * add team, subs and apis to deletion queue to process complete deletion
+  /** Flag a team as deleted and delete his subscriptions, apis and those apis
+    * subscriptions add team, subs and apis to deletion queue to process
+    * complete deletion
     */
   def deleteTeamByQueue(
       id: TeamId,
@@ -405,7 +400,7 @@ class DeletionService(
           .forTenant(tenant)
           .findNotDeleted(Json.obj("team" -> team.id.asJson))
       )
-      //just subscriptions to other apis than the team apis
+      // just subscriptions to other apis than the team apis
       teamSubscriptions <- EitherT.liftF(
         env.dataStore.apiSubscriptionRepo
           .forTenant(tenant)
@@ -426,9 +421,8 @@ class DeletionService(
     } yield ()
   }
 
-  /**
-    * Flag an api as deleted and delete his subscriptions
-    * add api & subs to deletion queue to process complete deletion
+  /** Flag an api as deleted and delete his subscriptions add api & subs to
+    * deletion queue to process complete deletion
     */
   def deleteApiByQueue(
       id: ApiId,

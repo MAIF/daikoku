@@ -3,10 +3,20 @@ package fr.maif.otoroshi.daikoku.ctrls
 import cats.data.EitherT
 import cats.implicits.toBifunctorOps
 import controllers.{AppError, Assets}
-import fr.maif.otoroshi.daikoku.actions.{ApiActionContext, CmsApiAction, DaikokuActionMaybeWithoutUser}
+import fr.maif.otoroshi.daikoku.actions.{
+  ApiActionContext,
+  CmsApiAction,
+  DaikokuActionMaybeWithoutUser
+}
 import fr.maif.otoroshi.daikoku.domain.Tenant.getCustomizationCmsPage
 import fr.maif.otoroshi.daikoku.domain.json.{CmsFileFormat, CmsPageFormat}
-import fr.maif.otoroshi.daikoku.domain.{CmsPageId, Tenant, TenantId, TenantMode, User}
+import fr.maif.otoroshi.daikoku.domain.{
+  CmsPageId,
+  Tenant,
+  TenantId,
+  TenantMode,
+  User
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.AuthProvider.{OAuth2, Otoroshi}
@@ -176,12 +186,11 @@ class CmsApiController(
   def health() =
     CmsApiAction.async { ctx =>
       ctx.request.headers.get("Otoroshi-Health-Check-Logic-Test") match {
-        //todo: better health check
+        // todo: better health check
         case Some(value) =>
           Ok.withHeaders(
-              "Otoroshi-Health-Check-Logic-Test-Result" -> (value.toLong + 42L).toString
-            )
-            .future
+            "Otoroshi-Health-Check-Logic-Test-Result" -> (value.toLong + 42L).toString
+          ).future
         case None =>
           Ok(
             Json.obj(
@@ -234,35 +243,47 @@ class CmsApiController(
           env.dataStore.cmsRepo
             .forTenant(ctx.tenant)
             .findById(tenantStyle.cssCmsPage)
-            .map(_.getOrElse(getCustomizationCmsPage(
-              ctx.tenant.id,
-              "style",
-              "text/css",
-              ""
-            )))
+            .map(
+              _.getOrElse(
+                getCustomizationCmsPage(
+                  ctx.tenant.id,
+                  "style",
+                  "text/css",
+                  ""
+                )
+              )
+            )
         )
         themeBody <- readFile("public/themes/default.css")
         colorThemePage <- EitherT.right[AppError](
           env.dataStore.cmsRepo
             .forTenant(ctx.tenant)
             .findById(tenantStyle.colorThemeCmsPage)
-            .map(_.getOrElse(getCustomizationCmsPage(
-              ctx.tenant.id,
-              "color-theme",
-              "text/css",
-              themeBody
-            )))
+            .map(
+              _.getOrElse(
+                getCustomizationCmsPage(
+                  ctx.tenant.id,
+                  "color-theme",
+                  "text/css",
+                  themeBody
+                )
+              )
+            )
         )
         jsPage <- EitherT.right[AppError](
           env.dataStore.cmsRepo
             .forTenant(ctx.tenant)
             .findById(tenantStyle.jsCmsPage)
-            .map(_.getOrElse(getCustomizationCmsPage(
-              ctx.tenant.id,
-              "script",
-              "text/javascript",
-              ""
-            )))
+            .map(
+              _.getOrElse(
+                getCustomizationCmsPage(
+                  ctx.tenant.id,
+                  "script",
+                  "text/javascript",
+                  ""
+                )
+              )
+            )
         )
       } yield Ok(
         Json.arr(
@@ -274,7 +295,8 @@ class CmsApiController(
         .leftMap(error => {
           AppLogger.error(error.getErrorMessage())
           error.render()
-        }).merge
+        })
+        .merge
     }
 
   def findAll(): Action[AnyContent] =

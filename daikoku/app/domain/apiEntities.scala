@@ -32,13 +32,12 @@ object OtoroshiTarget {
           OtoroshiTarget.expressionReplacer.replaceOn(value) { expression =>
             context.getOrElse(expression, "--")
           }
-        } recover {
-          case e =>
-            OtoroshiTarget.logger.error(
-              s"Error while parsing expression, returning raw value: $value",
-              e
-            )
-            value
+        } recover { case e =>
+          OtoroshiTarget.logger.error(
+            s"Error while parsing expression, returning raw value: $value",
+            e
+          )
+          value
         } get
       case _ => value
     }
@@ -326,7 +325,7 @@ case class UsagePlan(
     val existingNames = plans
       .filter(_.id != id)
       .collect(_.customName)
-    //FIXME: check conflict with extisting name in case of creation but
+    // FIXME: check conflict with extisting name in case of creation but
     (apiVisibility, tenant.display) match {
       case (_, TenantDisplay.Environment) =>
         EitherT.cond[Future](
@@ -514,7 +513,7 @@ case class ApiDocumentationPage(
     remoteContentUrl: Option[String] = None,
     remoteContentHeaders: Map[String, String] = Map.empty[String, String]
 ) extends CanJson[ApiDocumentationPage] {
-  //def humanReadableId = s"$index-$level-${title.urlPathSegmentSanitized}"
+  // def humanReadableId = s"$index-$level-${title.urlPathSegmentSanitized}"
   def humanReadableId = id.toString
   override def asJson: JsValue = json.ApiDocumentationPageFormat.writes(this)
   def asWebUiJson: JsValue =

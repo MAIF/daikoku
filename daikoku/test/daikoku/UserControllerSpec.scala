@@ -169,7 +169,7 @@ class UserControllerSpec()
           s"/api/admin/users/${userTeamUserId.value}/_impersonate"
         )(tenant, session)
       resp.status mustBe 303
-      //todo: test it
+      // todo: test it
     }
 
     "set admin status" in {

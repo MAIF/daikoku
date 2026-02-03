@@ -92,8 +92,8 @@ object S3Configuration {
             v4auth = (json \ "v4auth").asOpt[Boolean].getOrElse(true)
           )
         )
-      } recover {
-        case e => JsError(e.getMessage)
+      } recover { case e =>
+        JsError(e.getMessage)
       } get
     override def writes(o: S3Configuration): JsValue =
       Json.obj(
@@ -200,24 +200,22 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
   ): Future[Seq[S3ListItem]] = {
     val attrs = s3ClientSettingsAttrs
     S3.listBucket(
-        conf.bucket,
-        Some(s"/${tenant.value}/teams/${team.value}/assets")
-      )
-      .mapAsync(1) { content =>
-        val none: Option[ObjectMetadata] = None
-        S3.getObjectMetadata(conf.bucket, content.key)
-          .withAttributes(attrs)
-          .runFold(none)((_, opt) => opt)
-          .map {
-            case None =>
-              S3ListItem(
-                content,
-                ObjectMetadata(collection.immutable.Seq.empty[HttpHeader])
-              )
-            case Some(meta) => S3ListItem(content, meta)
-          }
-      }
-      .withAttributes(attrs)
+      conf.bucket,
+      Some(s"/${tenant.value}/teams/${team.value}/assets")
+    ).mapAsync(1) { content =>
+      val none: Option[ObjectMetadata] = None
+      S3.getObjectMetadata(conf.bucket, content.key)
+        .withAttributes(attrs)
+        .runFold(none)((_, opt) => opt)
+        .map {
+          case None =>
+            S3ListItem(
+              content,
+              ObjectMetadata(collection.immutable.Seq.empty[HttpHeader])
+            )
+          case Some(meta) => S3ListItem(content, meta)
+        }
+    }.withAttributes(attrs)
       .runFold(Seq.empty[S3ListItem])((seq, item) => seq :+ item)
   }
 
@@ -225,10 +223,9 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
       conf: S3Configuration
   ): Future[Done] = {
     S3.deleteObject(
-        conf.bucket,
-        s"/${tenant.value}/teams/${team.value}/assets/${asset.value}"
-      )
-      .withAttributes(s3ClientSettingsAttrs)
+      conf.bucket,
+      s"/${tenant.value}/teams/${team.value}/assets/${asset.value}"
+    ).withAttributes(s3ClientSettingsAttrs)
       .toMat(Sink.ignore)(Keep.right)
       .run()
   }
@@ -286,10 +283,9 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
       conf: S3Configuration
   ): Future[Option[ObjectMetadata]] = {
     S3.getObjectMetadata(
-        bucket = conf.bucket,
-        key = s"/${tenant.value}/tenant-assets/${asset.value}"
-      )
-      .withAttributes(s3ClientSettingsAttrs)
+      bucket = conf.bucket,
+      key = s"/${tenant.value}/tenant-assets/${asset.value}"
+    ).withAttributes(s3ClientSettingsAttrs)
       .runWith(Sink.head)
   }
 
@@ -297,10 +293,9 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
       implicit conf: S3Configuration
   ): Future[Option[ObjectMetadata]] = {
     S3.getObjectMetadata(
-        bucket = conf.bucket,
-        key = s"/${tenant.value}/teams/${team.value}/assets/${asset.value}"
-      )
-      .withAttributes(s3ClientSettingsAttrs)
+      bucket = conf.bucket,
+      key = s"/${tenant.value}/teams/${team.value}/assets/${asset.value}"
+    ).withAttributes(s3ClientSettingsAttrs)
       .runWith(Sink.head)
   }
 
@@ -331,10 +326,9 @@ class AssetsDataStore(actorSystem: ActorSystem)(implicit
       conf: S3Configuration
   ): Future[Done] = {
     S3.deleteObject(
-        conf.bucket,
-        s"/${tenant.value}/tenant-assets/${asset.value}"
-      )
-      .withAttributes(s3ClientSettingsAttrs)
+      conf.bucket,
+      s"/${tenant.value}/tenant-assets/${asset.value}"
+    ).withAttributes(s3ClientSettingsAttrs)
       .toMat(Sink.ignore)(Keep.right)
       .run()
   }

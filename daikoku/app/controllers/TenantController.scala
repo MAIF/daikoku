@@ -5,13 +5,19 @@ import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import com.nimbusds.jose.jwk.KeyType
 import controllers.AppError
-import fr.maif.otoroshi.daikoku.actions.{DaikokuAction, DaikokuActionMaybeWithGuest}
+import fr.maif.otoroshi.daikoku.actions.{
+  DaikokuAction,
+  DaikokuActionMaybeWithGuest
+}
 import fr.maif.otoroshi.daikoku.audit.AuditTrailEvent
 import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain.TeamPermission.Administrator
 import fr.maif.otoroshi.daikoku.domain.Tenant.getCustomizationCmsPage
 import fr.maif.otoroshi.daikoku.domain._
-import fr.maif.otoroshi.daikoku.domain.json.{SeqTeamAuthorizedEntitiesFormat, TenantFormat}
+import fr.maif.otoroshi.daikoku.domain.json.{
+  SeqTeamAuthorizedEntitiesFormat,
+  TenantFormat
+}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.OAuth2Config
@@ -180,10 +186,9 @@ class TenantController(
           .map(translations => {
             val translationAsJsObject = translations
               .groupBy(t => t.language)
-              .map {
-                case (k, v) =>
-                  Json
-                    .obj(k -> JsObject(v.map(t => t.key -> JsString(t.value))))
+              .map { case (k, v) =>
+                Json
+                  .obj(k -> JsObject(v.map(t => t.key -> JsString(t.value))))
               }
               .fold(Json.obj())(_ deepMerge _)
             val translation = Json.obj("translation" -> translationAsJsObject)
@@ -233,7 +238,7 @@ class TenantController(
               authProviderSettings =
                 env.config.init.authProviderConfig.oauth2config
                   .map(_.asJson)
-                  .getOrElse(Json.obj("sessionMaxAge" -> 86400)),
+                  .getOrElse(Json.obj("sessionMaxAge" -> 86400))
             )
 
             val (cmsApi, cmsPlan) = ApiTemplate.cmsApi(adminTeam, tenant)
@@ -435,10 +440,9 @@ class TenantController(
                 )
               )
             }).leftMap(e => {
-                AppLogger.error(s"[SAVE_TENANT] :: ${e.getErrorMessage()}")
-                e.render()
-              })
-              .merge
+              AppLogger.error(s"[SAVE_TENANT] :: ${e.getErrorMessage()}")
+              e.render()
+            }).merge
         }
       }
     }
@@ -484,7 +488,10 @@ class TenantController(
                     val logoutUrl = (body \ "end_session_endpoint")
                       .asOpt[String]
                       .map { rawLogoutUrl =>
-                        if (rawLogoutUrl.contains("${redirect}") || rawLogoutUrl.contains("${clientId}")) rawLogoutUrl
+                        if (
+                          rawLogoutUrl.contains("${redirect}") || rawLogoutUrl
+                            .contains("${clientId}")
+                        ) rawLogoutUrl
                         else {
                           val sep = if (rawLogoutUrl.contains("?")) "&" else "?"
                           s"$rawLogoutUrl${sep}id_token_hint=$${idTokenHint}&post_logout_redirect_uri=$${redirect}&client_id=$${clientId}"
@@ -819,14 +826,18 @@ class TenantController(
           _ <- EitherT.liftF[Future, AppError, Boolean](
             env.dataStore.cmsRepo
               .forTenant(ctx.tenant)
-              .save(oldCmsPage
-                .map(_.copy(body = themeBody))
-                .getOrElse(getCustomizationCmsPage(
-                  TenantId(tenantId),
-                  "color-theme",
-                  "text/css",
-                  themeBody
-                )))
+              .save(
+                oldCmsPage
+                  .map(_.copy(body = themeBody))
+                  .getOrElse(
+                    getCustomizationCmsPage(
+                      TenantId(tenantId),
+                      "color-theme",
+                      "text/css",
+                      themeBody
+                    )
+                  )
+              )
           )
         } yield Ok(Json.obj("done" -> true)))
           .leftMap(_.render())
@@ -872,12 +883,11 @@ class TenantController(
             case (Some(first), Some(second)) =>
               (first ++ second)
                 .groupBy(_.otoroshiSettingsId)
-                .map {
-                  case (id, entities) =>
-                    TeamAuthorizedEntities(
-                      id,
-                      entities.map(_.authorizedEntities).reduce(_ ++ _)
-                    )
+                .map { case (id, entities) =>
+                  TeamAuthorizedEntities(
+                    id,
+                    entities.map(_.authorizedEntities).reduce(_ ++ _)
+                  )
                 }
                 .toSeq
                 .some

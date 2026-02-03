@@ -52,10 +52,9 @@ object OAuth2Config {
             algorithm = (json \ "algorithm").as[String]
           )
         )
-      } recover {
-        case e =>
+      } recover { case e =>
 //          AppLogger.error(e.getMessage, e)
-          JsError(e.getMessage)
+        JsError(e.getMessage)
       } get
     }
 
@@ -122,16 +121,15 @@ object OAuth2Config {
           adminRole = (json \ "adminRole")
             .asOpt[String],
           userRole = (json \ "userRole")
-            .asOpt[String],
+            .asOpt[String]
         )
       )
-    } recover {
-      case e =>
-        AppLogger.error("wrong oauth2 configuration", e)
-        Left(
-          AppError
-            .AuthenticationError(s"wrong oauth2 configuration: ${e.getMessage}")
-        )
+    } recover { case e =>
+      AppLogger.error("wrong oauth2 configuration", e)
+      Left(
+        AppError
+          .AuthenticationError(s"wrong oauth2 configuration: ${e.getMessage}")
+      )
     } get
   }
 }
@@ -163,7 +161,7 @@ case class OAuth2Config(
     pkceConfig: Option[PKCEConfig] = None,
     roleClaim: Option[String] = None,
     adminRole: Option[String] = None,
-    userRole: Option[String] = None,
+    userRole: Option[String] = None
 ) {
   def asJson =
     Json.obj(
@@ -187,7 +185,7 @@ case class OAuth2Config(
       "callbackUrl" -> this.callbackUrl,
       "daikokuAdmins" -> this.daikokuAdmins,
       "roleClaim" -> this.roleClaim.map(JsString).getOrElse(JsNull).as[JsValue],
-      "adminRole" -> this.adminRole.map(JsString).getOrElse(JsNull).as[JsValue],
+      "adminRole" -> this.adminRole.map(JsString).getOrElse(JsNull).as[JsValue]
     )
 }
 
@@ -232,7 +230,9 @@ object OAuth2Support {
   )(implicit
       ec: ExecutionContext
   ): EitherT[Future, AppError, (User, Option[String])] = {
-    def verifyAndGetUser(accessToken: String): EitherT[Future, AppError, JsValue] = {
+    def verifyAndGetUser(
+        accessToken: String
+    ): EitherT[Future, AppError, JsValue] = {
       val algoSettings = authConfig.jwtVerifier.get
       val tokenHeader =
         Try(
@@ -252,12 +252,18 @@ object OAuth2Support {
       val settings = algoSettings
         .asAlgorithm(InputMode(alg, kid))(_env)
 
-      EitherT.fromOption[Future][AppError, Algorithm](settings, AppError.BadRequestError("Bad algorithm"))
-        .map(algo => JWT
-          .require(algo)
-          .acceptLeeway(10000)
-          .build()
-          .verify(accessToken))
+      EitherT
+        .fromOption[Future][AppError, Algorithm](
+          settings,
+          AppError.BadRequestError("Bad algorithm")
+        )
+        .map(algo =>
+          JWT
+            .require(algo)
+            .acceptLeeway(10000)
+            .build()
+            .verify(accessToken)
+        )
         .map(_ => tokenBody)
     }
 
@@ -278,11 +284,17 @@ object OAuth2Support {
         )(writeableOf_urlEncodedSimpleForm)
       }
 
-      EitherT.right[AppError](future2)
+      EitherT
+        .right[AppError](future2)
         .map(_.json)
     }
 
-    def createUser(name: String, email: String, picture: Option[String], isDaikokuAdmin: Boolean): EitherT[Future, AppError, User] = {
+    def createUser(
+        name: String,
+        email: String,
+        picture: Option[String],
+        isDaikokuAdmin: Boolean
+    ): EitherT[Future, AppError, User] = {
       val userId = UserId(IdGenerator.token(32))
       val team = Team(
         id = TeamId(IdGenerator.token(32)),
@@ -308,87 +320,125 @@ object OAuth2Support {
         defaultLanguage = None
       )
       for {
-        _ <- EitherT.right[AppError](_env.dataStore.teamRepo
+        _ <- EitherT.right[AppError](
+          _env.dataStore.teamRepo
             .forTenant(tenant.id)
-            .save(team))
+            .save(team)
+        )
         _ <- EitherT.right[AppError](_env.dataStore.userRepo.save(user))
       } yield {
         user
       }
-  }
+    }
 
-    def updateUser(u: User, name: String, email: String, picture: Option[String], isDaikokuAdmin: Boolean): EitherT[Future, AppError, User] = {
+    def updateUser(
+        u: User,
+        name: String,
+        email: String,
+        picture: Option[String],
+        isDaikokuAdmin: Boolean
+    ): EitherT[Future, AppError, User] = {
       val updatedUser = u.copy(
         name = name,
         email = email,
         tenants = u.tenants + tenant.id,
         origins = u.origins + AuthProvider.OAuth2,
-        picture = if (
-          picture.isDefined && u.pictureFromProvider
-        )
-          picture.get
-        else
-          u.picture == User.DEFAULT_IMAGE match {
-            case true
-              if picture.isDefined && u.pictureFromProvider =>
-              picture.get
-            case true if picture.isEmpty => User.DEFAULT_IMAGE
-            case _ => u.picture
-          },
+        picture =
+          if (picture.isDefined && u.pictureFromProvider)
+            picture.get
+          else
+            u.picture == User.DEFAULT_IMAGE match {
+              case true if picture.isDefined && u.pictureFromProvider =>
+                picture.get
+              case true if picture.isEmpty => User.DEFAULT_IMAGE
+              case _                       => u.picture
+            },
         isDaikokuAdmin = isDaikokuAdmin
       )
 
-      EitherT.right[AppError](_env.dataStore.userRepo.save(updatedUser))
+      EitherT
+        .right[AppError](_env.dataStore.userRepo.save(updatedUser))
         .map(_ => updatedUser)
     }
 
-    def processUserFromOAuth(userFromOauth: JsValue): EitherT[Future, AppError, User] = {
+    def processUserFromOAuth(
+        userFromOauth: JsValue
+    ): EitherT[Future, AppError, User] = {
       for {
-        name <- EitherT.fromOption[Future]((userFromOauth \ authConfig.nameField)
-          .asOpt[String], AppError.EntityNotFound("No name found"))
-        email <- EitherT.fromOption[Future]((userFromOauth \ authConfig.emailField)
-          .asOpt[String], AppError.EntityNotFound("No email found"))
-        picture <- EitherT.pure[Future, AppError]((userFromOauth \ authConfig.pictureField).asOpt[String])
+        name <- EitherT.fromOption[Future](
+          (userFromOauth \ authConfig.nameField)
+            .asOpt[String],
+          AppError.EntityNotFound("No name found")
+        )
+        email <- EitherT.fromOption[Future](
+          (userFromOauth \ authConfig.emailField)
+            .asOpt[String],
+          AppError.EntityNotFound("No email found")
+        )
+        picture <- EitherT.pure[Future, AppError](
+          (userFromOauth \ authConfig.pictureField).asOpt[String]
+        )
         isDaikokuAdmin = authConfig.roleClaim match {
           case Some(claim) if claim != "daikokuAdmin" =>
             (userFromOauth \ claim).asOpt[JsValue] match {
-              case Some(JsString(role)) => authConfig.adminRole.forall(_ == role)
-              case Some(JsArray(roles)) => authConfig.adminRole.forall(r => roles.map(_.as[String]).contains(r))
+              case Some(JsString(role)) =>
+                authConfig.adminRole.forall(_ == role)
+              case Some(JsArray(roles)) =>
+                authConfig.adminRole.forall(r =>
+                  roles.map(_.as[String]).contains(r)
+                )
               case _ => authConfig.daikokuAdmins.contains(email)
             }
-          case _ => (userFromOauth \ "daikokuAdmin")
-            .asOpt[String]
-            .flatMap(_.toBooleanOption)
-            .orElse((userFromOauth \ "daikokuAdmin").asOpt[Boolean])
-            .getOrElse(false)
+          case _ =>
+            (userFromOauth \ "daikokuAdmin")
+              .asOpt[String]
+              .flatMap(_.toBooleanOption)
+              .orElse((userFromOauth \ "daikokuAdmin").asOpt[Boolean])
+              .getOrElse(false)
         }
 
-
-
         isUser = authConfig.roleClaim match {
-          case Some(claim) => (userFromOauth \ claim).asOpt[JsValue] match {
-            case Some(JsString(role)) => authConfig.userRole.forall(_ == role)
-            case Some(JsArray(roles)) => authConfig.userRole.forall(r => roles.map(_.as[String]).contains(r))
-            case _ => authConfig.userRole.isEmpty
-          }
+          case Some(claim) =>
+            (userFromOauth \ claim).asOpt[JsValue] match {
+              case Some(JsString(role)) => authConfig.userRole.forall(_ == role)
+              case Some(JsArray(roles)) =>
+                authConfig.userRole.forall(r =>
+                  roles.map(_.as[String]).contains(r)
+                )
+              case _ => authConfig.userRole.isEmpty
+            }
           case _ => true
         }
 
-        _ <- EitherT.cond[Future](isDaikokuAdmin || isUser, (), AppError.UserNotAllowed(email))
+        _ <- EitherT.cond[Future](
+          isDaikokuAdmin || isUser,
+          (),
+          AppError.UserNotAllowed(email)
+        )
 
-        existingUser <- EitherT.right[AppError](_env.dataStore.userRepo
-          .findOne(Json.obj("_deleted" -> false, "email" -> email)))
+        existingUser <- EitherT.right[AppError](
+          _env.dataStore.userRepo
+            .findOne(Json.obj("_deleted" -> false, "email" -> email))
+        )
 
         connectedUser <- existingUser match {
-          case Some(user) => updateUser(user, name, email, picture, isDaikokuAdmin)
+          case Some(user) =>
+            updateUser(user, name, email, picture, isDaikokuAdmin)
           case None => createUser(name, email, picture, isDaikokuAdmin)
         }
       } yield connectedUser
     }
 
     for {
-      _ <- EitherT.cond[Future](request.getQueryString("error").isEmpty, (), AppError.BadRequestError("No code"))
-      code <- EitherT.fromOption[Future](request.getQueryString("code"), AppError.BadRequestError("No code"))
+      _ <- EitherT.cond[Future](
+        request.getQueryString("error").isEmpty,
+        (),
+        AppError.BadRequestError("No code")
+      )
+      code <- EitherT.fromOption[Future](
+        request.getQueryString("code"),
+        AppError.BadRequestError("No code")
+      )
 
       builder = _env.wsClient.url(authConfig.tokenUrl)
       verifier = request.session.get("code_verifier").getOrElse("")
@@ -405,8 +455,8 @@ object OAuth2Support {
         }
         .getOrElse(Map.empty)
         ++ clientSecret
-        .map(s => Map("client_secret" -> s))
-        .getOrElse(Map.empty))
+          .map(s => Map("client_secret" -> s))
+          .getOrElse(Map.empty))
 
       response <- EitherT.right[AppError](if (authConfig.useJson) {
         val jsonPayload = JsObject(
@@ -422,10 +472,11 @@ object OAuth2Support {
       })
       accessToken = (response.json \ authConfig.accessTokenField).as[String]
       idToken = (response.json \ "id_token").asOpt[String]
-      userJson <- if(authConfig.readProfileFromToken && authConfig.jwtVerifier.isDefined)
-        verifyAndGetUser(accessToken)
-      else
-        getUser(accessToken)
+      userJson <-
+        if (authConfig.readProfileFromToken && authConfig.jwtVerifier.isDefined)
+          verifyAndGetUser(accessToken)
+        else
+          getUser(accessToken)
 
       user <- processUserFromOAuth(userJson)
     } yield (user, idToken)
@@ -459,7 +510,10 @@ object OAuth2Support {
         .asOpt[String]
         .orElse((body \ "ping_end_session_endpoint").asOpt[String])
         .map { rawLogoutUrl =>
-          if (rawLogoutUrl.contains("${redirect}") || rawLogoutUrl.contains("${clientId}")) rawLogoutUrl
+          if (
+            rawLogoutUrl
+              .contains("${redirect}") || rawLogoutUrl.contains("${clientId}")
+          ) rawLogoutUrl
           else {
             val sep = if (rawLogoutUrl.contains("?")) "&" else "?"
             s"$rawLogoutUrl${sep}id_token_hint=$${idTokenHint}&post_logout_redirect_uri=$${redirect}&client_id=$${clientId}"
@@ -520,7 +574,7 @@ object OAuth2Support {
       )
       log = AppLogger.info(config.body)
 
-      //todo: tester les different endpoint...
+      // todo: tester les different endpoint...
 //      head <- EitherT.liftF[Future, AppError, WSResponse](_env.wsClient.url(s"${authConfig.authorizeUrl}?client_id=${authConfig.clientId}&redirect=${authConfig.callbackUrl}").head())
 //      log2 = AppLogger.info(head.statusText)
 

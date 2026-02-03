@@ -77,8 +77,8 @@ class NotificationControllerSpec()
               customReadOnly = (json \ "customReadOnly").asOpt[Boolean]
             )
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
       override def writes(o: ApiSubscription): JsValue =
         Json.obj(
@@ -1164,10 +1164,10 @@ class NotificationControllerSpec()
       val apiEditorSession = loginWithBlocking(userApiEditor, tenant)
       val otherSession = loginWithBlocking(otherUser, tenant)
 
-      //useAdmin admin of teamOwner, owner of the API
-      //user, admin of teamConsumer, suber of API
-      //apiEditor, admin of third team, suber of API
-      //otherUser, member of no team
+      // useAdmin admin of teamOwner, owner of the API
+      // user, admin of teamConsumer, suber of API
+      // apiEditor, admin of third team, suber of API
+      // otherUser, member of no team
 
       // [1] - user create a new issue for API ==> OK
       val userCreateIssue = httpJsonCallBlocking(
@@ -1182,7 +1182,7 @@ class NotificationControllerSpec()
 
       userCreateIssue.status mustBe 201
 
-      //[2] - user admin, as admin of TeamOwner, must reveive a notification about new issue created by user
+      // [2] - user admin, as admin of TeamOwner, must reveive a notification about new issue created by user
 //      val adminCheckNotification = httpJsonCallBlocking(
 //        s"/api/me/notifications"
 //      )(
@@ -1216,7 +1216,7 @@ class NotificationControllerSpec()
       (adminNotifications.head \ "action" \ "__typename")
         .as[String] mustBe "NewIssueOpenV2"
 
-      //[3] - admin add a response in issue
+      // [3] - admin add a response in issue
       val adminComment = ApiIssueComment(
         by = userAdmin.id,
         createdAt = DateTime.now(),
@@ -1273,7 +1273,7 @@ class NotificationControllerSpec()
         )
         .contains("NewCommentOnIssueV2") mustBe true
 
-      //[5] - apiEditor member of third team add also a response in issue by removing a comment ==> KO
+      // [5] - apiEditor member of third team add also a response in issue by removing a comment ==> KO
       val apiEditorComment = ApiIssueComment(
         by = userApiEditor.id,
         createdAt = DateTime.now(),
@@ -1292,7 +1292,7 @@ class NotificationControllerSpec()
       )
       apiEditorCommentIssueKO.status mustBe 403
 
-      //[5bis] - apiEditor member of third team add also a response in issue
+      // [5bis] - apiEditor member of third team add also a response in issue
       val commentsByApiEditor = commentsByAdmin :+ apiEditorComment
       val apiEditorCommentIssue = httpJsonCallBlocking(
         path =
@@ -1327,7 +1327,7 @@ class NotificationControllerSpec()
           .as[JsArray]
       userNotifs2.value.length mustBe 3
 
-      //[6] - otherUser member of no team can't post comment
+      // [6] - otherUser member of no team can't post comment
       val commentsByOther = commentsByApiEditor
       val otherCommentIssue = httpJsonCallBlocking(
         path =
@@ -1340,7 +1340,7 @@ class NotificationControllerSpec()
       )
       otherCommentIssue.status mustBe 401
 
-      //[7] - admin can update tags & close issue
+      // [7] - admin can update tags & close issue
       val adminCloseIssue = httpJsonCallBlocking(
         path =
           s"/api/teams/${defaultApi.api.team.value}/apis/${defaultApi.api.humanReadableId}/issues/${issue.id.value}",
@@ -1381,7 +1381,7 @@ class NotificationControllerSpec()
       )
       adminOpenIssue.status mustBe 200
 
-      //[8] - non admin can't update tags & close issue
+      // [8] - non admin can't update tags & close issue
       val nonAdminCloseIssue = httpJsonCallBlocking(
         path =
           s"/api/teams/${defaultApi.api.team.value}/apis/${defaultApi.api.humanReadableId}/issues/${issue.id.value}",
@@ -1402,7 +1402,7 @@ class NotificationControllerSpec()
       )
       nonAdminCloseIssue.status mustBe 401
 
-      //[8bis] - non admin can't update tags
+      // [8bis] - non admin can't update tags
       val nonAdminUpdateTagsIssue = httpJsonCallBlocking(
         path =
           s"/api/teams/${defaultApi.api.team.value}/apis/${defaultApi.api.humanReadableId}/issues/${issue.id.value}",
@@ -1498,7 +1498,7 @@ class NotificationControllerSpec()
         apis = Seq(defaultApi.api),
         notifications = Seq(treatedNotification, untreatedNotification)
       )
-      //TODO: save a dedicated notification
+      // TODO: save a dedicated notification
 
       val session = loginWithBlocking(user, tenant)
       val resp = getOwnNotificationsCallBlocking()(tenant, session)

@@ -621,7 +621,9 @@ class DaikokuEnv(
                 val user = User(
                   id = userId,
                   tenants = Set(tenant.id),
-                  origins = Set(AuthProvider.Local) ++ Set(config.init.authProviderConfig.defaultprovider),
+                  origins = Set(AuthProvider.Local) ++ Set(
+                    config.init.authProviderConfig.defaultprovider
+                  ),
                   name = config.init.admin.name,
                   email = config.init.admin.email,
                   picture = config.init.admin.email.gravatar,

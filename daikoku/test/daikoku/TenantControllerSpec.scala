@@ -246,7 +246,7 @@ class TenantControllerSpec()
         fr.maif.otoroshi.daikoku.domain.json.SeqTenantFormat.reads(resp.json)
       tenants.isSuccess mustBe true
       tenants.get.length mustBe 2
-      //test if adminApiId id present to test if tenant is full
+      // test if adminApiId id present to test if tenant is full
       tenants.get
         .find(t => t.id == tenant.id)
         .exists(t => t.adminApi == tenant.adminApi) mustBe true
@@ -1024,7 +1024,7 @@ class TenantControllerSpec()
       var otos = fr.maif.otoroshi.daikoku.domain.json.SeqOtoroshiSettingsFormat
         .reads(respGet.json)
       otos.isSuccess mustBe true
-      otos.get.size mustBe 2 //wiremock && fakotoroshi
+      otos.get.size mustBe 2 // wiremock && fakotoroshi
 
       val resp = httpJsonCallBlocking(
         path = s"/api/tenants/${tenant.id.value}/otoroshis?skipValidation=true",
@@ -1132,7 +1132,7 @@ class TenantControllerSpec()
       var otos = fr.maif.otoroshi.daikoku.domain.json.SeqOtoroshiSettingsFormat
         .reads(respGet.json)
       otos.isSuccess mustBe true
-      otos.get.size mustBe 3 //wiremock && fakotoroshi && test
+      otos.get.size mustBe 3 // wiremock && fakotoroshi && test
 
       val resp = httpJsonCallBlocking(
         path =
@@ -1148,7 +1148,7 @@ class TenantControllerSpec()
       otos = fr.maif.otoroshi.daikoku.domain.json.SeqOtoroshiSettingsFormat
         .reads(respGet.json)
       otos.isSuccess mustBe true
-      otos.get.size mustBe 2 //wiremock && fakotoroshi && test
+      otos.get.size mustBe 2 // wiremock && fakotoroshi && test
     }
 
     "read audi trail" in {

@@ -621,15 +621,18 @@ object utils {
         port: Int = port,
         hostHeader: String = tenant.domain
     )(implicit tenant: Tenant): WSResponse =
-      Await.result(httpJsonCallWithoutSession(
-        path,
-        method,
-        headers,
-        body,
-        baseUrl,
-        port,
-        hostHeader
-      )(tenant), 5.seconds)
+      Await.result(
+        httpJsonCallWithoutSession(
+          path,
+          method,
+          headers,
+          body,
+          baseUrl,
+          port,
+          hostHeader
+        )(tenant),
+        5.seconds
+      )
 
     def httpJsonCallWithoutSession(
         path: String,
@@ -777,8 +780,8 @@ object utils {
     val childRouteId = "route_8ce030cbd-6c07-43d4-9c61-4a330ae0975d"
     val otherRouteId = "route_d74ea8b27-b8be-4177-82d9-c50722416c51"
     val serviceGroupDev =
-      "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5" //parent, child, other routes
-    val serviceGroupDefault = "default" //other routes
+      "group_dev_574c57dd-ab79-48a1-a810-22ba214b25f5" // parent, child, other routes
+    val serviceGroupDefault = "default" // other routes
     val serviceGroupAdmin = "admin-api-group"
     val parent2ApkAsJson = Json.obj(
       "_loc" -> Json.obj(
@@ -935,7 +938,7 @@ object utils {
             case other if attempt < maxRetries =>
               logger.error(
                 s"[$attempt/$maxRetries] Failed to fetch Otoroshi API keys after $maxRetries attempts: ${Json
-                  .prettyPrint(other)}"
+                    .prettyPrint(other)}"
               )
               Future.successful(
                 Seq.empty
@@ -1031,7 +1034,7 @@ object utils {
       clientSecret =
         "8iwm9fhbns0rmybnyul5evq9l1o4dxza0rh7rt4flay69jolw3okbz1owfl6w2db"
     )
-    //apikey with child_route & other_route (with parent) as authorized entities & {"foo": "bar"} as metadata
+    // apikey with child_route & other_route (with parent) as authorized entities & {"foo": "bar"} as metadata
     val parentApiKeyWith2childs = OtoroshiApiKey(
       clientName = "daikoku_test_parent_key_2_childs",
       clientId = "fu283imnfv8jdt4e",
@@ -1493,8 +1496,7 @@ object utils {
         name = s"Api - V$version",
         smallDescription = "A small API to play with Daikoku exposition",
         tags = Set("api", "rest", "scala", "play"),
-        description =
-          """# My Awesome API
+        description = """# My Awesome API
             |
             |Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc tincidunt massa id eros porttitor, a aliquam tortor auctor. Duis id bibendum turpis. Donec in pellentesque justo. Nam nec diam dignissim, tincidunt libero in, vehicula erat. Donec bibendum posuere nunc vitae pharetra. Sed tincidunt non diam sit amet maximus. Vivamus vitae tellus mattis, bibendum quam hendrerit, euismod orci. Integer egestas id dolor vitae convallis. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; Sed eget tortor eu sapien malesuada malesuada. Donec ut mi ornare, imperdiet dui vel, suscipit arcu. Duis vitae felis lectus. Donec volutpat dictum magna, non venenatis dui rutrum eu. In neque purus, condimentum id euismod sit amet, dapibus at nulla. Mauris auctor quam eu lacus aliquam dapibus.
             |
@@ -1602,8 +1604,8 @@ object utils {
          |""".stripMargin
 
     def getOwnNotificationsCallBlocking(
-                                         extraFilters: JsObject = Json.obj()
-                                       )(implicit tenant: Tenant, session: UserSession) = {
+        extraFilters: JsObject = Json.obj()
+    )(implicit tenant: Tenant, session: UserSession) = {
       val variables = Json.obj("limit" -> 20, "offset" -> 0) ++ extraFilters
 
       httpJsonCallBlocking(

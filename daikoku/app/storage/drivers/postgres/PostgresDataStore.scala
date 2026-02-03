@@ -368,8 +368,8 @@ case class PostgresTenantCapableConsumptionRepo(
       )
       .flatMap(r =>
         r.map(res =>
-          res.collect {
-            case Some(value) => value
+          res.collect { case Some(value) =>
+            value
           }
         )
       )
@@ -806,10 +806,9 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
             _ <- createDatabase()
           } yield ()
       }
-      .recover {
-        case e: Exception =>
-          logger.error(e.getMessage)
-          FastFuture.successful(())
+      .recover { case e: Exception =>
+        logger.error(e.getMessage)
+        FastFuture.successful(())
       }
   }
 
@@ -915,8 +914,8 @@ class PostgresDataStore(configuration: Configuration, env: Env, pgPool: PgPool)
     logger.debug("importFromStream")
 
     Future
-      .sequence(TABLES.map {
-        case (key, _) => reactivePg.rawQuery(s"TRUNCATE $key")
+      .sequence(TABLES.map { case (key, _) =>
+        reactivePg.rawQuery(s"TRUNCATE $key")
       })
       .flatMap { _ =>
         source
@@ -1965,9 +1964,8 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
           )
 
           var out: String = s"SELECT * FROM $tableName WHERE $sql $limit"
-          params.zipWithIndex.reverse.foreach {
-            case (param, i) =>
-              out = out.replace("$" + (i + 1), s"'$param'")
+          params.zipWithIndex.reverse.foreach { case (param, i) =>
+            out = out.replace("$" + (i + 1), s"'$param'")
           }
 
           reactivePg.querySeq(out) {
@@ -1986,7 +1984,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
         if (query.values.isEmpty)
           reactivePg.querySeq(
             s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value} ORDER BY ${sortedKeys
-              .mkString(",")} ASC $limit",
+                .mkString(",")} ASC $limit",
             Seq.empty
           ) {
             _.optJsObject("content")
@@ -1997,7 +1995,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
           )
           reactivePg.querySeq(
             s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys
-              .mkString(",")} ASC $limit",
+                .mkString(",")} ASC $limit",
             params
           ) {
             _.optJsObject("content")
@@ -2031,9 +2029,8 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
           )
 
           var out: String = s"SELECT * FROM $tableName WHERE $sql $limit"
-          params.zipWithIndex.reverse.foreach {
-            case (param, i) =>
-              out = out.replace("$" + (i + 1), s"'$param'")
+          params.zipWithIndex.reverse.foreach { case (param, i) =>
+            out = out.replace("$" + (i + 1), s"'$param'")
           }
 
           reactivePg.querySeq(out) {
@@ -2052,7 +2049,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
         if (query.values.isEmpty)
           reactivePg.querySeq(
             s"SELECT * FROM $tableName WHERE content->>'_tenant' = '${tenant.value} ORDER BY ${sortedKeys
-              .mkString(",")} ASC $limit",
+                .mkString(",")} ASC $limit",
             Seq.empty
           ) { rowToJson(_, format) }
         else {
@@ -2061,7 +2058,7 @@ abstract class PostgresTenantAwareRepo[Of, Id <: ValueType](
           )
           reactivePg.querySeq(
             s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys
-              .mkString(",")} ASC $limit",
+                .mkString(",")} ASC $limit",
             params
           ) { rowToJson(_, format) }
         }
@@ -2255,10 +2252,11 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
       reactivePg
         .query(s"DELETE FROM $tableName")
         .map(_ => true)
-    else {
-      val (sql, params) = convertQuery(query)
-      reactivePg.query(s"DELETE FROM $tableName WHERE $sql", params)
-    }.map(_ => true)
+    else
+      {
+        val (sql, params) = convertQuery(query)
+        reactivePg.query(s"DELETE FROM $tableName WHERE $sql", params)
+      }.map(_ => true)
   }
 
   override def save(query: JsObject, value: JsObject)(implicit
@@ -2339,9 +2337,8 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
     }
 
     var out: String = s"UPDATE $tableName SET $sql1 $sql2 RETURNING _id"
-    params2.zipWithIndex.reverse.foreach {
-      case (param, i) =>
-        out = out.replace("$" + (i + 1), s"'$param'")
+    params2.zipWithIndex.reverse.foreach { case (param, i) =>
+      out = out.replace("$" + (i + 1), s"'$param'")
     }
 
     reactivePg
@@ -2493,7 +2490,7 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
         if (query.values.isEmpty)
           reactivePg.querySeq(
             s"SELECT * FROM $tableName ORDER BY ${sortedKeys
-              .mkString(",")} ${order.map(_.name).getOrElse(Asc.name)} LIMIT $$1 OFFSET $$2",
+                .mkString(",")} ${order.map(_.name).getOrElse(Asc.name)} LIMIT $$1 OFFSET $$2",
             Seq(Integer.valueOf(pageSize), Integer.valueOf(page * pageSize))
           ) { row =>
             rowToJson(row, format)
@@ -2502,9 +2499,9 @@ abstract class CommonRepo[Of, Id <: ValueType](env: Env, reactivePg: ReactivePg)
           val (sql, params) = convertQuery(query)
           reactivePg.querySeq(
             s"SELECT * FROM $tableName WHERE $sql ORDER BY ${sortedKeys
-              .mkString(",")} ${order.map(_.name).getOrElse(Asc.name)} ${if (pageSize > 0)
-              s"LIMIT ${Integer.valueOf(pageSize)}"
-            else ""} OFFSET ${Integer.valueOf(page * pageSize)}",
+                .mkString(",")} ${order.map(_.name).getOrElse(Asc.name)} ${if (pageSize > 0)
+                s"LIMIT ${Integer.valueOf(pageSize)}"
+              else ""} OFFSET ${Integer.valueOf(page * pageSize)}",
             params.map {
               case x: String => x.replace("\"", "")
               case x         => x

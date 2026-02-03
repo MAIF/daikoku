@@ -117,11 +117,10 @@ class ApiController(
                       )
                     )
                   }
-              }.recover {
-                case _: Exception =>
-                  FastFuture.successful(
-                    Left(AppError.EntityNotFound("Swagger"))
-                  )
+              }.recover { case _: Exception =>
+                FastFuture.successful(
+                  Left(AppError.EntityNotFound("Swagger"))
+                )
               }.get)
             case _ =>
               EitherT.leftT[Future, Result](

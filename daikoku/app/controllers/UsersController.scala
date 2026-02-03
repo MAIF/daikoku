@@ -324,9 +324,8 @@ class UsersController(
                         Redirect(
                           ctx.request.session.get("redirect").getOrElse("/")
                         ).removingFromSession("sessionId", "redirect")(
-                            ctx.request
-                          )
-                          .withSession(("sessionId", sessionId.value))
+                          ctx.request
+                        ).withSession(("sessionId", sessionId.value))
                     }
                 case None => FastFuture.successful(Redirect("/logout"))
               }
@@ -483,7 +482,7 @@ class UsersController(
 
   def checkTokenInvitation() =
     DaikokuActionMaybeWithoutUser.async(parse.json) { ctx =>
-      //todo: log audit trace
+      // todo: log audit trace
       val body = ctx.request.body
 
       (body \ "token").asOpt[String] match {

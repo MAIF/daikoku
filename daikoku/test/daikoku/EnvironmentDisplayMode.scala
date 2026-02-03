@@ -116,7 +116,7 @@ class EnvironmentDisplayMode()
         apis = Seq(api)
       )
 
-      //user is admin for tenant2
+      // user is admin for tenant2
       val session = loginWithBlocking(user, t)
 
       // can create plan with avalaible env

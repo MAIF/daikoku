@@ -95,38 +95,36 @@ object CommonServices {
           (publicApis ++ almostPublicApis ++ privateApis)
             .filter(api => api.isPublished || myTeams.exists(api.team == _.id))
             .sortWith((a, b) => a.name.compareToIgnoreCase(b.name) < 0)
-            .foldLeft(Seq.empty[ApiWithAuthorizations]) {
-              case (acc, api) =>
-                val apiPlans =
-                  plans.filter(p => api.possibleUsagePlans.contains(p.id))
+            .foldLeft(Seq.empty[ApiWithAuthorizations]) { case (acc, api) =>
+              val apiPlans =
+                plans.filter(p => api.possibleUsagePlans.contains(p.id))
 
-                val authorizations = myTeams
-                  .filter(t => t.`type` != TeamType.Admin)
-                  .foldLeft(Seq.empty[AuthorizationApi]) {
-                    case (acc, team) =>
-                      acc :+ AuthorizationApi(
-                        team = team.id.value,
-                        authorized = api.authorizedTeams
-                          .contains(team.id) || api.team == team.id,
-                        pending = myCurrentRequests.exists(notif =>
-                          notif.action
-                            .asInstanceOf[ApiAccess]
-                            .team == team.id && notif.action
-                            .asInstanceOf[ApiAccess]
-                            .api == api.id
-                        )
-                      )
-                  }
-
-                acc :+ (api.visibility.name match {
-                  case "PublicWithAuthorizations" | "Private" =>
-                    ApiWithAuthorizations(
-                      api = api,
-                      plans = apiPlans,
-                      authorizations = authorizations
+              val authorizations = myTeams
+                .filter(t => t.`type` != TeamType.Admin)
+                .foldLeft(Seq.empty[AuthorizationApi]) { case (acc, team) =>
+                  acc :+ AuthorizationApi(
+                    team = team.id.value,
+                    authorized = api.authorizedTeams
+                      .contains(team.id) || api.team == team.id,
+                    pending = myCurrentRequests.exists(notif =>
+                      notif.action
+                        .asInstanceOf[ApiAccess]
+                        .team == team.id && notif.action
+                        .asInstanceOf[ApiAccess]
+                        .api == api.id
                     )
-                  case _ => ApiWithAuthorizations(api = api, plans = apiPlans)
-                })
+                  )
+                }
+
+              acc :+ (api.visibility.name match {
+                case "PublicWithAuthorizations" | "Private" =>
+                  ApiWithAuthorizations(
+                    api = api,
+                    plans = apiPlans,
+                    authorizations = authorizations
+                  )
+                case _ => ApiWithAuthorizations(api = api, plans = apiPlans)
+              })
             }
 
         val apis: Seq[ApiWithAuthorizations] =
@@ -139,15 +137,14 @@ object CommonServices {
                      plans.filter(p => api.possibleUsagePlans.contains(p.id)),
                    authorizations = myTeams.foldLeft(
                      Seq.empty[AuthorizationApi]
-                   ) {
-                     case (acc, team) =>
-                       acc :+ AuthorizationApi(
-                         team = team.id.value,
-                         authorized =
-                           user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users
-                             .exists(u => u.userId == user.id),
-                         pending = false
-                       )
+                   ) { case (acc, team) =>
+                     acc :+ AuthorizationApi(
+                       team = team.id.value,
+                       authorized =
+                         user.isDaikokuAdmin && team.`type` == TeamType.Personal && team.users
+                           .exists(u => u.userId == user.id),
+                       pending = false
+                     )
                    }
                  )
              } ++ sortedApis
@@ -195,7 +192,7 @@ object CommonServices {
           ),
           "state" -> ApiState.publishedJsonFilter,
           "_deleted" -> false,
-          "parent" -> JsNull, //FIXME : could be a problem if parent is not published [#517]
+          "parent" -> JsNull, // FIXME : could be a problem if parent is not published [#517]
           "name" -> Json.obj("$regex" -> research)
         )
         uniqueApis <-

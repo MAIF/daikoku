@@ -714,7 +714,7 @@ class NotificationController(
     implicit val lang: String =
       tenant.defaultLanguage.getOrElse(
         "en"
-      ) //todo: get user defaultlanguage if possible
+      ) // todo: get user defaultlanguage if possible
     val r: EitherT[Future, AppError, Unit] = for {
       invitedUser <- EitherT.fromOptionF(
         env.dataStore.userRepo.findByIdNotDeleted(invitedUserId),

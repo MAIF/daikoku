@@ -108,22 +108,20 @@ class AssetsService {
                             "slug" -> slug
                           )
                         )
-                    } recover {
-                    case e =>
-                      AppLogger.error(
-                        s"Error during tenant asset storage: $filename",
-                        e
-                      )
-                      Json
-                        .obj("id" -> assetId.value, "error" -> ec.toString)
+                    } recover { case e =>
+                    AppLogger.error(
+                      s"Error during tenant asset storage: $filename",
+                      e
+                    )
+                    Json
+                      .obj("id" -> assetId.value, "error" -> ec.toString)
                   }
                 })
             )
           )
           .map(results => Ok(Json.arr(results)))
-          .recover {
-            case e: Throwable =>
-              BadRequest(Json.obj("error" -> e.getMessage))
+          .recover { case e: Throwable =>
+            BadRequest(Json.obj("error" -> e.getMessage))
           }
     }
   }
@@ -185,13 +183,12 @@ class AssetsService {
                 )
               )
 
-          } recover {
-          case e =>
-            AppLogger.error(
-              s"Error during tenant asset storage: ${filename}",
-              e
-            )
-            InternalServerError(Json.obj("error" -> ec.toString))
+          } recover { case e =>
+          AppLogger.error(
+            s"Error during tenant asset storage: ${filename}",
+            e
+          )
+          InternalServerError(Json.obj("error" -> ec.toString))
         }
     }
   }
@@ -265,14 +262,13 @@ class AssetsService {
                         )
                     )
                     .map(_ => Ok(Json.obj("done" -> true, "id" -> assetId)))
-                } recover {
-                case e =>
-                  AppLogger
-                    .error(
-                      s"Error during update tenant asset: $filename",
-                      e
-                    )
-                  InternalServerError(Json.obj("error" -> ec.toString))
+                } recover { case e =>
+                AppLogger
+                  .error(
+                    s"Error during update tenant asset: $filename",
+                    e
+                  )
+                InternalServerError(Json.obj("error" -> ec.toString))
               }
           }
     }

@@ -46,8 +46,8 @@ object ElasticAnalyticsConfig {
                 .getOrElse(Map.empty[String, String])
             )
           )
-        } recover {
-          case e => JsError(e.getMessage)
+        } recover { case e =>
+          JsError(e.getMessage)
         } get
     }
 }

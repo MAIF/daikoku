@@ -74,7 +74,7 @@ class MessageController(
           tenant = ctx.tenant.id,
           messageType = MessageType.Tenant(
             ctx.tenant.id
-          ), //todo: update it when user can send messages to team admins
+          ), // todo: update it when user can send messages to team admins
           sender = ctx.user.id,
           participants = participants,
           readBy = Set(ctx.user.id),
@@ -112,10 +112,10 @@ class MessageController(
             (messageActor ? GetMyAdminMessages(ctx.user, ctx.tenant, date))
               .mapTo[Seq[Message]]
           previousClosedDates <- (messageActor ? GetLastClosedChatDates(
-              Set(ctx.user.id.value),
-              ctx.tenant,
-              date
-            )).mapTo[Seq[JsObject]]
+            Set(ctx.user.id.value),
+            ctx.tenant,
+            date
+          )).mapTo[Seq[JsObject]]
         } yield {
           Ok(
             Json.obj(
@@ -219,14 +219,13 @@ class MessageController(
             OverflowStrategy.dropHead
           )
           .keepAlive(10.second, () => JsNull)
-          .watchTermination() {
-            case (actorRef, terminate) =>
-              val ref = env.defaultActorSystem.actorOf(
-                Props(new MessageStreamActor(actorRef, ctx.user.id)),
-                s"messageStreamActor-${randomUUID().toString}"
-              )
-              terminate.onComplete(_ => ref ! PoisonPill)
-              actorRef
+          .watchTermination() { case (actorRef, terminate) =>
+            val ref = env.defaultActorSystem.actorOf(
+              Props(new MessageStreamActor(actorRef, ctx.user.id)),
+              s"messageStreamActor-${randomUUID().toString}"
+            )
+            terminate.onComplete(_ => ref ! PoisonPill)
+            actorRef
           }
 
         FastFuture.successful(

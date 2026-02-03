@@ -4357,15 +4357,19 @@ object SchemaDefinition {
               AuditTrailEvent(s"@{user.name} has accessed the list of cms page")
             )(ctx.ctx._2) {
               (ctx.arg(NAME), ctx.arg(PATH)) match {
-                case (None, None)           => FastFuture.successful(None)
+                case (None, None) => FastFuture.successful(None)
                 case (maybeName, maybePath) =>
                   ctx.ctx._1.cmsRepo
                     .forTenant(ctx.ctx._2.tenant)
                     .findOne(
                       Json.obj(
                         "_deleted" -> ctx.arg(DELETED)
-                      ) ++ maybeName.map(name => Json.obj("name" -> name)).getOrElse(Json.obj())
-                        ++ maybePath.map(path => Json.obj("path" -> path)).getOrElse(Json.obj())
+                      ) ++ maybeName
+                        .map(name => Json.obj("name" -> name))
+                        .getOrElse(Json.obj())
+                        ++ maybePath
+                          .map(path => Json.obj("path" -> path))
+                          .getOrElse(Json.obj())
                     )
               }
             }.map {
@@ -4485,9 +4489,8 @@ object SchemaDefinition {
                   ctx.arg(OFFSET),
                   ctx.arg(LIMIT)
                 )
-                .map {
-                  case (demands, count) =>
-                    SubscriptionDemandWithCount(demands, count)
+                .map { case (demands, count) =>
+                  SubscriptionDemandWithCount(demands, count)
                 }
                 .map(Right(_))
             }.map {
@@ -4596,8 +4599,7 @@ object SchemaDefinition {
         Field(
           "apiSubscriptionDetails",
           ApiSubscriptionDetailType,
-          arguments =
-            SUBSCRIPTION_ID :: TEAM_ID_NOT_OPT :: Nil,
+          arguments = SUBSCRIPTION_ID :: TEAM_ID_NOT_OPT :: Nil,
           resolve = ctx => {
             getSubscriptionDetails(
               ctx,

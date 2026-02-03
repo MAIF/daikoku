@@ -3,9 +3,16 @@ package fr.maif.otoroshi.daikoku.tests
 import cats.implicits.catsSyntaxOptionId
 import com.dimafeng.testcontainers.GenericContainer.FileSystemBind
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
-import fr.maif.otoroshi.daikoku.domain.NotificationAction.{ApiSubscriptionAccept, TeamInvitation}
+import fr.maif.otoroshi.daikoku.domain.NotificationAction.{
+  ApiSubscriptionAccept,
+  TeamInvitation
+}
 import fr.maif.otoroshi.daikoku.domain.NotificationType.AcceptOrReject
-import fr.maif.otoroshi.daikoku.domain.TeamPermission.{Administrator, ApiEditor, TeamUser}
+import fr.maif.otoroshi.daikoku.domain.TeamPermission.{
+  Administrator,
+  ApiEditor,
+  TeamUser
+}
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.tests.utils.DaikokuSpecHelper
 import fr.maif.otoroshi.daikoku.utils.LoggerImplicits.BetterLogger
@@ -395,14 +402,16 @@ class TeamControllerSpec()
       (respUpdate.json \ "done").as[Boolean] mustBe true
 
       val userSession = loginWithBlocking(user, tenant)
-      val respNotification = getOwnNotificationsCallBlocking(Json.obj(
-        "filterTable" -> Json.stringify(
-          Json.arr(
-            Json
-              .obj("id" -> "type", "value" -> Json.arr("TeamInvitation"))
+      val respNotification = getOwnNotificationsCallBlocking(
+        Json.obj(
+          "filterTable" -> Json.stringify(
+            Json.arr(
+              Json
+                .obj("id" -> "type", "value" -> Json.arr("TeamInvitation"))
+            )
           )
         )
-      ))(
+      )(
         tenant,
         userSession
       )
@@ -416,8 +425,10 @@ class TeamControllerSpec()
 
       val notification = notifications.head
 
-      (notification \ "action" \ "__typename").as[String] mustBe "TeamInvitation"
-      (notification \ "action" \ "team" \ "_id").as(json.TeamIdFormat) mustBe teamOwnerId
+      (notification \ "action" \ "__typename")
+        .as[String] mustBe "TeamInvitation"
+      (notification \ "action" \ "team" \ "_id")
+        .as(json.TeamIdFormat) mustBe teamOwnerId
     }
 
     "remove members to his team" in {
@@ -1030,7 +1041,7 @@ class TeamControllerSpec()
       resp.status mustBe 200
       val myTeam: JsResult[Team] = json.TeamFormat.reads(resp.json)
       myTeam.isSuccess mustBe true
-      //not now because team is created by suite not by daikoku login
+      // not now because team is created by suite not by daikoku login
 
       val respUpdate = httpJsonCallBlocking(
         path = s"/api/admin/users/${user.id.value}",
@@ -1099,19 +1110,21 @@ class TeamControllerSpec()
 
       Await.result(waitForDaikokuSetup(), 5.second)
       setupEnvBlocking(
-        tenants = Seq(tenant.copy(
-          subscriptionSecurity = false.some,
-          otoroshiSettings = Set(
-            OtoroshiSettings(
-              id = containerizedOtoroshi,
-              url =
-                s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
-              host = "otoroshi-api.oto.tools",
-              clientSecret = otoroshiAdminApiKey.clientSecret,
-              clientId = otoroshiAdminApiKey.clientId
+        tenants = Seq(
+          tenant.copy(
+            subscriptionSecurity = false.some,
+            otoroshiSettings = Set(
+              OtoroshiSettings(
+                id = containerizedOtoroshi,
+                url =
+                  s"http://otoroshi.oto.tools:${container.mappedPort(8080)}",
+                host = "otoroshi-api.oto.tools",
+                clientSecret = otoroshiAdminApiKey.clientSecret,
+                clientId = otoroshiAdminApiKey.clientId
+              )
             )
           )
-        )),
+        ),
         users = Seq(user),
         usagePlans = Seq(plan, adminApiPlan),
         apis = Seq(api, adminApi)
@@ -1131,13 +1144,17 @@ class TeamControllerSpec()
       )(tenant, session)
       respSub.status mustBe 200
 
-      val personalSub = (respSub.json \ "subscription").as(json.ApiSubscriptionFormat)
+      val personalSub =
+        (respSub.json \ "subscription").as(json.ApiSubscriptionFormat)
 
-      //get key in oto and test secret
+      // get key in oto and test secret
       val respOtoApikey = httpJsonCallWithoutSessionBlocking(
-        path = s"/apis/apim.otoroshi.io/v1/apikeys/${personalSub.apiKey.clientId}",
-        headers = Map("Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
-          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret),
+        path =
+          s"/apis/apim.otoroshi.io/v1/apikeys/${personalSub.apiKey.clientId}",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret
+        ),
         baseUrl = "http://otoroshi-api.oto.tools",
         port = container.mappedPort(8080),
         hostHeader = "otoroshi-api.oto.tools"
@@ -1150,14 +1167,17 @@ class TeamControllerSpec()
       val respDelete = httpJsonCallBlocking(
         path =
           s"/api/teams/${myTeam.get.id.value}/subscriptions/${personalSub.id.value}",
-        method = "DELETE",
+        method = "DELETE"
       )(tenant, session)
       respDelete.status mustBe 200
 
       val respOtoApikey2 = httpJsonCallWithoutSessionBlocking(
-        path = s"/apis/apim.otoroshi.io/v1/apikeys/${personalSub.apiKey.clientId}",
-        headers = Map("Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
-          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret),
+        path =
+          s"/apis/apim.otoroshi.io/v1/apikeys/${personalSub.apiKey.clientId}",
+        headers = Map(
+          "Otoroshi-Client-Id" -> otoroshiAdminApiKey.clientId,
+          "Otoroshi-Client-Secret" -> otoroshiAdminApiKey.clientSecret
+        ),
         baseUrl = "http://otoroshi-api.oto.tools",
         port = container.mappedPort(8080),
         hostHeader = "otoroshi-api.oto.tools"
