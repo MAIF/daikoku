@@ -3215,7 +3215,7 @@ class ApiController(
           _ <- EitherT.liftF[Future, AppError, Boolean](env.dataStore.apiRepo
               .forTenant(ctx.tenant.id)
               .save(newApi))
-          _ <- apiLifeCycleService.handleApiLifeCycle(oldApi, newApi)
+          _ <- apiLifeCycleService.handleApiLifeCycle(oldApi, newApi, ctx.tenant, ctx.user)
           _ <- EitherT.liftF[Future, AppError, Unit](otoroshiSynchronisator.verify(Json.obj("api" -> newApi.id.value)))
           _ <- EitherT.liftF[Future, AppError, Seq[Boolean]](updateTagsOfIssues(ctx.tenant.id, newApi))
           _ <- EitherT.liftF[Future, AppError, Long](updateAllHumanReadableId(ctx, newApi, oldApi))

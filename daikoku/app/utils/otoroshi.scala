@@ -9,21 +9,18 @@ import controllers.AppError.OtoroshiError
 import fr.maif.otoroshi.daikoku.audit.{ElasticReadsAnalytics, ElasticWritesAnalytics}
 import fr.maif.otoroshi.daikoku.audit.config.ElasticAnalyticsConfig
 import fr.maif.otoroshi.daikoku.domain.json.ActualOtoroshiApiKeyFormat
-import fr.maif.otoroshi.daikoku.domain.{
-  json,
-  ActualOtoroshiApiKey,
-  ApiKeyQuotas,
-  ApiSubscription,
-  OtoroshiSettings,
-  Tenant
-}
+import fr.maif.otoroshi.daikoku.domain.{ActualOtoroshiApiKey, ApiKeyQuotas, ApiSubscription, OtoroshiSettings, Tenant, json}
 import fr.maif.otoroshi.daikoku.env.Env
 import fr.maif.otoroshi.daikoku.logger.AppLogger
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
+import org.apache.pekko.util.ByteString
+import play.api.Play.materializer
 import play.api.libs.json._
 import play.api.libs.ws.{WSAuthScheme, WSRequest}
 import play.api.mvc._
 
 import scala.concurrent.{ExecutionContext, Future}
+import scala.util.{Failure, Success}
 
 class OtoroshiExpositionFilter(
     stateHeaderName: String,
@@ -286,11 +283,11 @@ class OtoroshiClient(env: Env) {
       }
   }
 
-  def patchApiKey(key: ActualOtoroshiApiKey, patch: JsValue)(implicit
+  def patchApiKey(clientId: String, patch: JsValue)(implicit
       otoroshiSettings: OtoroshiSettings
   ): Future[Either[AppError, ActualOtoroshiApiKey]] = {
-    client(s"/apis/apim.otoroshi.io/v1/apikeys/${key.clientId}")
-      .put(key.asJson)
+    client(s"/apis/apim.otoroshi.io/v1/apikeys/$clientId")
+      .patch(patch)
       .map { resp =>
         if (resp.status == 200) {
           resp.json.validate(ActualOtoroshiApiKeyFormat) match {
@@ -312,6 +309,52 @@ class OtoroshiClient(env: Env) {
           )
       }
   }
+
+  //FIXME: update Unit to ActualOtoroshiApikey
+  def patchApiKeyBulk(clientIds: Seq[String], patch: JsValue)(implicit
+                                                              otoroshiSettings: OtoroshiSettings,
+                                                              mat: Materializer
+  ): Future[Either[AppError, Unit]] = {
+
+    val otoroshiApiKeys = clientIds
+      .map(id => Json.obj(
+        "id" -> id,
+        "patch" -> patch
+      ))
+      .map(Json.stringify)  // Convertir chaque objet JSON en String
+      .mkString("\n")
+
+    val clientInstance = client(s"/apis/apim.otoroshi.io/v1/apikeys/_bulk")
+      .withHttpHeaders(
+        "Content-Type" -> "application/x-ndjson"
+      )
+
+    Source.single(otoroshiApiKeys)  // Source.single car otoroshiApiKeys est déjà une String complète
+      .map(bulk => ByteString(bulk))
+      .mapAsync(1) { bulk =>  // 1 seule requête bulk
+        val req = bulk.utf8String
+        val post = clientInstance.post(req)
+
+        post.onComplete {
+          case Success(resp) =>
+            if (resp.status >= 400) {
+              AppLogger.error(
+                s"Error patching otoroshi apikeys: ${resp.status}, ${resp.body} --- apikeys: $otoroshiApiKeys"
+              )
+            }
+          case Failure(e) =>
+            AppLogger.error(s"Error patching otoroshi apikeys", e)
+        }
+        post
+      }
+      .runWith(Sink.head)  // Récupérer le résultat
+      .map(_ => Right(()))  // Retourner Either[AppError, Unit]
+      .recover {
+        case e: Exception =>
+          Left(AppError.OtoroshiError(Json.obj("message" -> s"Error patching apikeys: ${e.getMessage}")))
+      }
+  }
+
 
   def deleteApiKey(
       clientId: String
