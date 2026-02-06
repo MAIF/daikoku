@@ -1217,7 +1217,7 @@ class ApiService(
    * @param tenant    *   the tenant
    * @param user      *   the user responsible for the extraction
    * @param o         *   the oto settings
-   * @return* extracted otoroshi apikey (unsaved)
+   * @return extracted otoroshi apikey (unsaved)
    */
   def extractSubscriptionFromAggregation(
       subscription: ApiSubscription,
