@@ -15,7 +15,7 @@ import fr.maif.otoroshi.daikoku.actions.{
 import fr.maif.otoroshi.daikoku.ctrls._
 import fr.maif.otoroshi.daikoku.env._
 import fr.maif.otoroshi.daikoku.modules.DaikokuComponentsInstances
-import fr.maif.otoroshi.daikoku.services.{AssetsService, TranslationsService}
+import fr.maif.otoroshi.daikoku.services.{ApiLifeCycleService, AssetsService, MailService, TranslationsService}
 import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 import fr.maif.otoroshi.daikoku.utils.admin._
 import fr.maif.otoroshi.daikoku.utils.{
@@ -44,12 +44,7 @@ import play.api._
 import play.api.http.{DefaultHttpFilters, HttpErrorHandler}
 import play.api.i18n.{I18nSupport, Langs}
 import play.api.libs.ws.WSClient
-import play.api.libs.ws.ahc.{
-  AhcConfigBuilder,
-  AhcWSClient,
-  AhcWSClientConfigFactory,
-  AhcWSComponents
-}
+import play.api.libs.ws.ahc.{AhcConfigBuilder, AhcWSClient, AhcWSClientConfigFactory, AhcWSComponents}
 import play.api.mvc._
 import play.api.routing.Router
 import router.Routes
@@ -78,21 +73,23 @@ package object modules {
 
     implicit lazy val env: Env = wire[DaikokuEnv]
 
-    lazy val verifier = wire[OtoroshiVerifierJob]
-    lazy val deletor = wire[QueueJob]
-    lazy val statsJob = wire[ApiKeyStatsJob]
-    lazy val auditTrailPurgeJob = wire[AuditTrailPurgeJob]
-    lazy val anonReportingJob = wire[AnonymousReportingJob]
+    lazy val verifier             = wire[OtoroshiVerifierJob]
+    lazy val deletor              = wire[QueueJob]
+    lazy val statsJob             = wire[ApiKeyStatsJob]
+    lazy val auditTrailPurgeJob   = wire[AuditTrailPurgeJob]
+    lazy val anonReportingJob     = wire[AnonymousReportingJob]
     lazy val notificationPurgeJob = wire[NotificationsPurgeJob]
 
     lazy val otoroshiClient = wire[OtoroshiClient]
-    lazy val paymentClient = wire[PaymentClient]
+    lazy val paymentClient  = wire[PaymentClient]
 
-    lazy val apiService = wire[ApiService]
-    lazy val accountService = wire[AccountCreationService]
-    lazy val assetsService = wire[AssetsService]
+    lazy val apiService          = wire[ApiService]
+    lazy val mailService         = wire[MailService]
+    lazy val apiLifeCycleService = wire[ApiLifeCycleService]
+    lazy val accountService      = wire[AccountCreationService]
+    lazy val assetsService       = wire[AssetsService]
     lazy val translationsService = wire[TranslationsService]
-    lazy val deletionService = wire[DeletionService]
+    lazy val deletionService     = wire[DeletionService]
 
     lazy val translator = wire[Translator]
 
@@ -104,66 +101,66 @@ package object modules {
 
     override lazy val httpErrorHandler: HttpErrorHandler = wire[ErrorHandler]
 
-    val mesessagesApi = messagesApi
-    val daikokuAction = wire[DaikokuAction]
-    val daikokuTenantAction = wire[DaikokuTenantAction]
+    val mesessagesApi                     = messagesApi
+    val daikokuAction                     = wire[DaikokuAction]
+    val daikokuTenantAction               = wire[DaikokuTenantAction]
     val daikokuTenantActionMaybeWithGuest = wire[DaikokuActionMaybeWithGuest]
-    val daikokuActionMaybeWithoutUser = wire[DaikokuActionMaybeWithoutUser]
-    val daikokuApiAction = wire[DaikokuApiAction]
-    val cmsApiAction = wire[CmsApiAction]
-    val daikokuApiActionWithoutTenant = wire[DaikokuApiActionWithoutTenant]
+    val daikokuActionMaybeWithoutUser     = wire[DaikokuActionMaybeWithoutUser]
+    val daikokuApiAction                  = wire[DaikokuApiAction]
+    val cmsApiAction                      = wire[CmsApiAction]
+    val daikokuApiActionWithoutTenant     = wire[DaikokuApiActionWithoutTenant]
 
-    lazy val homeController = wire[HomeController]
-    lazy val mockController = wire[MockController]
-    lazy val apiController = wire[ApiController]
-    lazy val loginController = wire[LoginController]
-    lazy val teamController = wire[TeamController]
-    lazy val notificationController = wire[NotificationController]
-    lazy val tenantController = wire[TenantController]
-    lazy val otoSettingsController = wire[OtoroshiSettingsController]
-    lazy val usersController = wire[UsersController]
-    lazy val auditTrailController = wire[AuditTrailController]
-    lazy val entitiesController = wire[EntitiesController]
-    lazy val sessionController = wire[SessionController]
-    lazy val jobsController = wire[JobsController]
-    lazy val consumptionController = wire[ConsumptionController]
-    lazy val teamAssetsController = wire[TeamAssetsController]
-    lazy val tenantAssetsController = wire[TenantAssetsController]
-    lazy val userAssetsController = wire[UserAssetsController]
-    lazy val assetsThumbnailController = wire[AssetsThumbnailController]
-    lazy val stateController = wire[StateController]
-    lazy val stateAdminApiController = wire[StateAdminApiController]
-    lazy val tenantAdminApiController = wire[TenantAdminApiController]
-    lazy val userAdminApiController = wire[UserAdminApiController]
-    lazy val teamAdminApiController = wire[TeamAdminApiController]
-    lazy val apiAdminApiController = wire[ApiAdminApiController]
-    lazy val apiSubscriptionAdminApiController =
+    lazy val homeController                         = wire[HomeController]
+    lazy val mockController                         = wire[MockController]
+    lazy val apiController                          = wire[ApiController]
+    lazy val loginController                        = wire[LoginController]
+    lazy val teamController                         = wire[TeamController]
+    lazy val notificationController                 = wire[NotificationController]
+    lazy val tenantController                       = wire[TenantController]
+    lazy val otoSettingsController                  = wire[OtoroshiSettingsController]
+    lazy val usersController                        = wire[UsersController]
+    lazy val auditTrailController                   = wire[AuditTrailController]
+    lazy val entitiesController                     = wire[EntitiesController]
+    lazy val sessionController                      = wire[SessionController]
+    lazy val jobsController                         = wire[JobsController]
+    lazy val consumptionController                  = wire[ConsumptionController]
+    lazy val teamAssetsController                   = wire[TeamAssetsController]
+    lazy val tenantAssetsController                 = wire[TenantAssetsController]
+    lazy val userAssetsController                   = wire[UserAssetsController]
+    lazy val assetsThumbnailController              = wire[AssetsThumbnailController]
+    lazy val stateController                        = wire[StateController]
+    lazy val stateAdminApiController                = wire[StateAdminApiController]
+    lazy val tenantAdminApiController               = wire[TenantAdminApiController]
+    lazy val userAdminApiController                 = wire[UserAdminApiController]
+    lazy val teamAdminApiController                 = wire[TeamAdminApiController]
+    lazy val apiAdminApiController                  = wire[ApiAdminApiController]
+    lazy val apiSubscriptionAdminApiController      =
       wire[ApiSubscriptionAdminApiController]
     lazy val apiDocumentationPageAdminApiController =
       wire[ApiDocumentationPageAdminApiController]
-    lazy val notificationAdminApiController =
+    lazy val notificationAdminApiController         =
       wire[NotificationAdminApiController]
-    lazy val userSessionAdminApiController = wire[UserSessionAdminApiController]
-    lazy val apiKeyConsumptionAdminApiController =
+    lazy val userSessionAdminApiController          = wire[UserSessionAdminApiController]
+    lazy val apiKeyConsumptionAdminApiController    =
       wire[ApiKeyConsumptionAdminApiController]
-    lazy val auditEventAdminApiController = wire[AuditEventAdminApiController]
-    lazy val integrationApiController = wire[IntegrationApiController]
-    lazy val translationController = wire[TranslationController]
-    lazy val adminApiSwaggerController = wire[AdminApiSwaggerController]
-    lazy val credentialsAdminApiController = wire[CredentialsAdminApiController]
-    lazy val messageController = wire[MessageController]
-    lazy val messagesAdminApiController = wire[MessagesAdminApiController]
-    lazy val postsAdminApiController = wire[PostsAdminApiController]
-    lazy val issuesAdminApiController = wire[IssuesAdminApiController]
-    lazy val cmsPagesAdminApiController = wire[CmsPagesAdminApiController]
-    lazy val translationsAdminApiController =
+    lazy val auditEventAdminApiController           = wire[AuditEventAdminApiController]
+    lazy val integrationApiController               = wire[IntegrationApiController]
+    lazy val translationController                  = wire[TranslationController]
+    lazy val adminApiSwaggerController              = wire[AdminApiSwaggerController]
+    lazy val credentialsAdminApiController          = wire[CredentialsAdminApiController]
+    lazy val messageController                      = wire[MessageController]
+    lazy val messagesAdminApiController             = wire[MessagesAdminApiController]
+    lazy val postsAdminApiController                = wire[PostsAdminApiController]
+    lazy val issuesAdminApiController               = wire[IssuesAdminApiController]
+    lazy val cmsPagesAdminApiController             = wire[CmsPagesAdminApiController]
+    lazy val translationsAdminApiController         =
       wire[TranslationsAdminApiController]
-    lazy val usagePlansAdminApiController = wire[UsagePlansAdminApiController]
-    lazy val subscriptionDemandsAdminApiController =
+    lazy val usagePlansAdminApiController           = wire[UsagePlansAdminApiController]
+    lazy val subscriptionDemandsAdminApiController  =
       wire[SubscriptionDemandsAdminApiController]
-    lazy val graphQLController = wire[GraphQLController]
-    lazy val cmsApiController = wire[CmsApiController]
-    lazy val cmsApiSwaggerController = wire[CmsApiSwaggerController]
+    lazy val graphQLController                      = wire[GraphQLController]
+    lazy val cmsApiController                       = wire[CmsApiController]
+    lazy val cmsApiSwaggerController                = wire[CmsApiSwaggerController]
 
     override lazy val assets: Assets = wire[Assets]
     lazy val router: Router = {
@@ -188,13 +185,13 @@ package object modules {
           ).asJava
         )
 
-      val ssl = configuration
+      val ssl        = configuration
         .getOptional[Configuration]("daikoku.postgres.ssl")
         .getOrElse(Configuration.empty)
       val sslEnabled = ssl.getOptional[Boolean]("enabled").getOrElse(false)
 
       if (sslEnabled) {
-        val pemTrustOptions = new PemTrustOptions()
+        val pemTrustOptions   = new PemTrustOptions()
         val pemKeyCertOptions = new PemKeyCertOptions()
 
         options.setSslMode(
@@ -256,7 +253,7 @@ package object modules {
       }
       options
     }
-    lazy val pgPool = PgPool.pool(Vertx.vertx, options, poolOptions)
+    lazy val pgPool                           = PgPool.pool(Vertx.vertx, options, poolOptions)
 
 //    statsJob.start()
     deletor.start()
@@ -286,9 +283,9 @@ package object modules {
     lazy val logger = Logger("daikoku-error-handler")
 
     def onClientError(request: RequestHeader, statusCode: Int, mess: String) = {
-      val uuid =
+      val uuid         =
         java.util.UUID.nameUUIDFromBytes(new SecureRandom().generateSeed(16))
-      val message =
+      val message      =
         Option(mess).filterNot(_.trim.isEmpty).getOrElse("An error occured")
       val errorMessage =
         s"Client Error [$uuid]: $message on ${request.relativeUri} ($statusCode)"
@@ -325,28 +322,25 @@ package object modules {
     )(request: RequestHeader): Future[Result] = {
       nextFilter(request).map { result =>
         env.config.mode match {
-          case DaikokuMode.Prod
-              if request.relativeUri.startsWith("/team-assets/") =>
+          case DaikokuMode.Prod if request.relativeUri.startsWith("/team-assets/")   =>
             result.withHeaders(
               "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline'; img-src * data: blob:; font-src 'self' https://*",
-              "X-XSS-Protection" -> "1 ; mode=block",
-              "X-Content-Type-Options" -> "nosniff"
+              "X-XSS-Protection"        -> "1 ; mode=block",
+              "X-Content-Type-Options"  -> "nosniff"
             )
-          case DaikokuMode.Prod
-              if request.relativeUri.startsWith("/tenant-assets/") =>
+          case DaikokuMode.Prod if request.relativeUri.startsWith("/tenant-assets/") =>
             result.withHeaders(
               "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline'; img-src * data: blob:; font-src 'self' https://*",
-              "X-XSS-Protection" -> "1 ; mode=block",
-              "X-Content-Type-Options" -> "nosniff"
+              "X-XSS-Protection"        -> "1 ; mode=block",
+              "X-Content-Type-Options"  -> "nosniff"
             )
-          case DaikokuMode.Prod
-              if request.relativeUri.startsWith("/user-assets/") =>
+          case DaikokuMode.Prod if request.relativeUri.startsWith("/user-assets/")   =>
             result.withHeaders(
               "Content-Security-Policy" -> "default-src 'self' 'unsafe-inline'; img-src * data: blob:; font-src 'self' https://*",
-              "X-XSS-Protection" -> "1 ; mode=block",
-              "X-Content-Type-Options" -> "nosniff"
+              "X-XSS-Protection"        -> "1 ; mode=block",
+              "X-Content-Type-Options"  -> "nosniff"
             )
-          case _ => result
+          case _                                                                     => result
         }
       }
     }

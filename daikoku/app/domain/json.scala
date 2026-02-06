@@ -2,7 +2,7 @@ package fr.maif.otoroshi.daikoku.domain
 
 import cats.implicits.catsSyntaxOptionId
 import com.auth0.jwt.JWT
-import fr.maif.otoroshi.daikoku.audit.{AuditTrailEvent, KafkaConfig}
+import fr.maif.otoroshi.daikoku.audit.{KafkaConfig}
 import fr.maif.otoroshi.daikoku.audit.config.{ElasticAnalyticsConfig, Webhook}
 import fr.maif.otoroshi.daikoku.domain.ApiVisibility._
 import fr.maif.otoroshi.daikoku.domain.NotificationAction._
@@ -72,7 +72,7 @@ object json {
     override def reads(json: JsValue): JsResult[Long] =
       Try {
         val long: Long =
-          ((json \ "$long").asOpt[Long]).getOrElse(json.as[Long])
+          (json \ "$long").asOpt[Long].getOrElse(json.as[Long])
         JsSuccess(long)
       } recover { case e =>
         JsError(e.getMessage)
@@ -2350,7 +2350,8 @@ object json {
                         .some
                   }
                 case _: JsUndefined => None
-              }
+              },
+            state = (json \ "state").as(ApiSubscriptionStateFormat)
           )
         )
       } recover { case e =>
@@ -2417,7 +2418,8 @@ object json {
         "thirdPartySubscriptionInformations" -> o.thirdPartySubscriptionInformations
           .map(ThirdPartySubscriptionInformationsFormat.writes)
           .getOrElse(JsNull)
-          .as[JsValue]
+          .as[JsValue],
+        "state" -> ApiSubscriptionStateFormat.writes(o.state)
       )
   }
 
@@ -2478,6 +2480,16 @@ object json {
       }
 
     override def writes(o: SubscriptionDemandState) = JsString(o.name)
+  }
+
+  val ApiSubscriptionStateFormat = new Format[ApiSubscriptionState] {
+    override def reads(json: JsValue) =
+      json.as[String] match {
+        case "blocked" => JsSuccess(ApiSubscriptionState.Blocked)
+        case "active"  => JsSuccess(ApiSubscriptionState.Active)
+      }
+
+    override def writes(o: ApiSubscriptionState): JsValue = JsString(o.name)
   }
 
   val SubscriptionDemandFormat = new Format[SubscriptionDemand] {
@@ -2837,7 +2849,10 @@ object json {
             ApiSubscriptionTransferSuccessFormat.reads(json)
           case "CheckoutForSubscription" =>
             CheckoutForSubscriptionFormat.reads(json)
-          case str => JsError(s"Bad notification value: $str")
+          case "ApiDepreciationWarning" =>
+            ApiDepreciationWarningFormat.reads(json)
+          case "ApiBlockingWarning" => ApiBlockingWarningFormat.reads(json)
+          case str                  => JsError(s"Bad notification value: $str")
         }
 
       override def writes(o: NotificationAction) =
@@ -2943,6 +2958,14 @@ object json {
             CheckoutForSubscriptionFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "CheckoutForSubscription"
             )
+          case p: ApiDepreciationWarning =>
+            ApiDepreciationWarningFormat.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "ApiDepreciationWarning"
+            )
+          case p: ApiBlockingWarning =>
+            ApiBlockingWarningFormat.writes(p).as[JsObject] ++ Json.obj(
+              "type" -> "ApiBlockingWarning"
+            )
         }
     }
 
@@ -3032,6 +3055,46 @@ object json {
         "api" -> o.api.asJson,
         "plan" -> o.plan.asJson,
         "step" -> o.step.asJson
+      )
+  }
+
+  val ApiDepreciationWarningFormat = new Format[ApiDepreciationWarning] {
+    override def reads(json: JsValue): JsResult[ApiDepreciationWarning] =
+      Try {
+        JsSuccess(
+          ApiDepreciationWarning(
+            api = (json \ "api").as(ApiIdFormat)
+          )
+        )
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiDepreciationWarning): JsValue =
+      Json.obj(
+        "api" -> o.api.asJson
+      )
+  }
+
+  val ApiBlockingWarningFormat = new Format[ApiBlockingWarning] {
+    override def reads(json: JsValue): JsResult[ApiBlockingWarning] =
+      Try {
+        JsSuccess(
+          ApiBlockingWarning(
+            api = (json \ "api").as(ApiIdFormat),
+            subscription = (json \ "sub").as(ApiSubscriptionIdFormat)
+          )
+        )
+      } recover { case e =>
+        AppLogger.error(e.getMessage, e)
+        JsError(e.getMessage)
+      } get
+
+    override def writes(o: ApiBlockingWarning): JsValue =
+      Json.obj(
+        "api" -> o.api.asJson,
+        "sub" -> o.subscription.asJson
       )
   }
 

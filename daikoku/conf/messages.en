@@ -134,3 +134,9 @@ mail.account.creation.mail.accepted.title = Your registration on [tenant] has be
 mail.account.creation.mail.accepted.body = Hello [userName], </br>\
 Thank you for signing up on [tenant]. </br>\
 After review, we are pleased to inform you that your account creation request has been approved. </br>\
+
+
+mail.api.depreciation.warning.title = the API [apiName] has been deprecated
+mail.api.depreciation.warning.body = Hello [recipientName], </br>\
+As team administrator of [teamName], we inform you that the API [apiName]</br>\
+has been deprecated.

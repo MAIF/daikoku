@@ -44,7 +44,6 @@ export const ApiDescription = ({
 
   return (
     <div className="d-flex col flex-column p-3 section" style={{ position: 'relative' }}>
-
       {api.descriptionCmsPage && <CmsViewer pageId={api.descriptionCmsPage} fields={{ api }} />}
       {!api.descriptionCmsPage && <div
         className="api-description"
