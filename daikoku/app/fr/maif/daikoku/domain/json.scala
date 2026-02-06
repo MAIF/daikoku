@@ -59,7 +59,7 @@ object json {
     override def writes(o: BillingDuration): JsValue =
       Json.obj(
         "value" -> o.value,
-        "unit"  -> o.unit.asJson
+        "unit" -> o.unit.asJson
       )
   }
 
@@ -67,7 +67,7 @@ object json {
     override def reads(json: JsValue): JsResult[Long] =
       Try {
         val long: Long =
-          ((json \ "$long").asOpt[Long]).getOrElse(json.as[Long])
+          (json \ "$long").asOpt[Long].getOrElse(json.as[Long])
         JsSuccess(long)
       } recover { case e =>
         JsError(e.getMessage)
@@ -101,7 +101,8 @@ object json {
             clientSecret = (json \ "clientSecret")
               .asOpt[String]
               .getOrElse("admin-api-apikey-secret"),
-            elasticConfig = (json \ "elasticConfig").asOpt(using
+            elasticConfig =
+              (json \ "elasticConfig").asOpt(using
               ElasticAnalyticsConfig.format
             )
           )
@@ -112,11 +113,11 @@ object json {
 
     override def writes(o: OtoroshiSettings): JsValue =
       Json.obj(
-        "_id"           -> o.id.asJson,
-        "url"           -> o.url,
-        "host"          -> o.host,
-        "clientId"      -> o.clientId,
-        "clientSecret"  -> o.clientSecret,
+        "_id" -> o.id.asJson,
+        "url" -> o.url,
+        "host" -> o.host,
+        "clientId" -> o.clientId,
+        "clientSecret" -> o.clientSecret,
         "elasticConfig" -> o.elasticConfig
           .map(ElasticAnalyticsConfig.format.writes)
           .getOrElse(JsNull)
@@ -129,8 +130,10 @@ object json {
       Try {
         JsSuccess(
           TestingConfig(
-            otoroshiSettings = (json \ "otoroshiSettings").as(using OtoroshiSettingsIdFormat),
-            authorizedEntities = (json \ "authorizedEntities").as(using AuthorizedEntitiesFormat),
+            otoroshiSettings =
+              (json \ "otoroshiSettings").as(using OtoroshiSettingsIdFormat),
+            authorizedEntities =
+              (json \ "authorizedEntities").as(using AuthorizedEntitiesFormat),
             clientName = (json \ "clientName").as[String],
             tag = (json \ "tag").as[String],
             customMetadata = (json \ "customMetadata").asOpt[JsObject],
@@ -146,30 +149,30 @@ object json {
 
     override def writes(o: TestingConfig): JsValue =
       Json.obj(
-        "otoroshiSettings"   -> OtoroshiSettingsIdFormat.writes(
+        "otoroshiSettings" -> OtoroshiSettingsIdFormat.writes(
           o.otoroshiSettings
         ),
         "authorizedEntities" -> AuthorizedEntitiesFormat.writes(
           o.authorizedEntities
         ),
-        "clientName"         -> o.clientName,
-        "tag"                -> o.tag,
-        "customMetadata"     -> o.customMetadata
+        "clientName" -> o.clientName,
+        "tag" -> o.tag,
+        "customMetadata" -> o.customMetadata
           .getOrElse(JsNull)
           .as[JsValue],
         "customMaxPerSecond" -> o.customMaxPerSecond
           .map(JsNumber(_))
           .getOrElse(JsNull)
           .as[JsValue],
-        "customMaxPerDay"    -> o.customMaxPerDay
+        "customMaxPerDay" -> o.customMaxPerDay
           .map(JsNumber(_))
           .getOrElse(JsNull)
           .as[JsValue],
-        "customMaxPerMonth"  -> o.customMaxPerMonth
+        "customMaxPerMonth" -> o.customMaxPerMonth
           .map(JsNumber(_))
           .getOrElse(JsNull)
           .as[JsValue],
-        "customReadOnly"     -> o.customReadOnly
+        "customReadOnly" -> o.customReadOnly
           .map(JsBoolean.apply)
           .getOrElse(JsNull)
           .as[JsValue]
@@ -196,34 +199,37 @@ object json {
               Testing(
                 url = (json \ "url").asOpt[String],
                 enabled = (json \ "enabled").asOpt[Boolean].getOrElse(false),
-                auth = (json \ "auth").asOpt[String].filter(_.trim.nonEmpty) match {
-                  case Some("ApiKey") => TestingAuth.ApiKey
-                  case Some("Basic")  => TestingAuth.Basic
-                  case _              => TestingAuth.Basic
-                },
+                auth =
+                  (json \ "auth").asOpt[String].filter(_.trim.nonEmpty) match {
+                    case Some("ApiKey") => TestingAuth.ApiKey
+                    case Some("Basic")  => TestingAuth.Basic
+                    case _              => TestingAuth.Basic
+                  },
                 name = (json \ "name").asOpt[String].filter(_.trim.nonEmpty),
-                username = (json \ "username").asOpt[String].filter(_.trim.nonEmpty),
-                password = (json \ "password").asOpt[String].filter(_.trim.nonEmpty),
+                username =
+                  (json \ "username").asOpt[String].filter(_.trim.nonEmpty),
+                password =
+                  (json \ "password").asOpt[String].filter(_.trim.nonEmpty),
                 config = (json \ "config").asOpt(using TestingConfigFormat)
               )
             )
           } recover { case e =>
             JsError(e.getMessage)
           } get
-        case _           => JsError()
+        case _ => JsError()
       }
 
     }
 
     override def writes(o: Testing): JsValue =
       Json.obj(
-        "url"      -> o.url
+        "url" -> o.url
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "enabled"  -> o.enabled,
-        "auth"     -> o.auth.name,
-        "name"     -> o.name.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+        "enabled" -> o.enabled,
+        "auth" -> o.auth.name,
+        "name" -> o.name.map(JsString.apply).getOrElse(JsNull).as[JsValue],
         "username" -> o.username
           .map(JsString.apply)
           .getOrElse(JsNull)
@@ -232,7 +238,7 @@ object json {
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "config"   -> o.config
+        "config" -> o.config
           .map(TestingConfigFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue]
@@ -249,7 +255,7 @@ object json {
 
     override def writes(o: UsagePlanId): JsValue = JsString(o.value)
   }
-  val UserIdFormat      = new Format[UserId] {
+  val UserIdFormat = new Format[UserId] {
     override def reads(json: JsValue): JsResult[UserId] =
       Try {
         JsSuccess(UserId(json.as[String]))
@@ -269,7 +275,7 @@ object json {
 
     override def writes(o: DatastoreId): JsValue = JsString(o.value)
   }
-  val ChatIdFormat      = new Format[ChatId] {
+  val ChatIdFormat = new Format[ChatId] {
     override def reads(json: JsValue): JsResult[ChatId] =
       Try {
         JsSuccess(ChatId(json.as[String]))
@@ -279,7 +285,7 @@ object json {
 
     override def writes(o: ChatId): JsValue = JsString(o.value)
   }
-  val TeamIdFormat      = new Format[TeamId] {
+  val TeamIdFormat = new Format[TeamId] {
     override def reads(json: JsValue): JsResult[TeamId] =
       Try {
         JsSuccess(TeamId(json.as[String]))
@@ -289,7 +295,7 @@ object json {
 
     override def writes(o: TeamId): JsValue = JsString(o.value)
   }
-  val ApiIdFormat       = new Format[ApiId] {
+  val ApiIdFormat = new Format[ApiId] {
     override def reads(json: JsValue): JsResult[ApiId] =
       Try {
         JsSuccess(ApiId(json.as[String]))
@@ -300,7 +306,7 @@ object json {
     override def writes(o: ApiId): JsValue = JsString(o.value)
   }
 
-  val TenantModeFormat                  = new Format[TenantMode] {
+  val TenantModeFormat = new Format[TenantMode] {
     override def reads(json: JsValue): JsResult[TenantMode] =
       json.asOpt[String].map(_.toLowerCase) match {
         case Some("maintenance")  => JsSuccess(TenantMode.Maintenance)
@@ -313,7 +319,7 @@ object json {
 
     override def writes(o: TenantMode): JsValue = JsString(o.name)
   }
-  val TenantDisplayFormat               = new Format[TenantDisplay] {
+  val TenantDisplayFormat = new Format[TenantDisplay] {
     override def reads(json: JsValue): JsResult[TenantDisplay] =
       json.asOpt[String].map(_.toLowerCase) match {
         case Some("environment") => JsSuccess(TenantDisplay.Environment)
@@ -324,7 +330,7 @@ object json {
 
     override def writes(o: TenantDisplay): JsValue = JsString(o.name)
   }
-  val ApiSubscriptionIdFormat           = new Format[ApiSubscriptionId] {
+  val ApiSubscriptionIdFormat = new Format[ApiSubscriptionId] {
     override def reads(json: JsValue): JsResult[ApiSubscriptionId] =
       Try {
         JsSuccess(ApiSubscriptionId(json.as[String]))
@@ -334,7 +340,7 @@ object json {
 
     override def writes(o: ApiSubscriptionId): JsValue = JsString(o.value)
   }
-  val ApiDocumentationIdFormat          = new Format[ApiDocumentationId] {
+  val ApiDocumentationIdFormat = new Format[ApiDocumentationId] {
     override def reads(json: JsValue): JsResult[ApiDocumentationId] =
       Try {
         JsSuccess(ApiDocumentationId(json.as[String]))
@@ -344,7 +350,7 @@ object json {
 
     override def writes(o: ApiDocumentationId): JsValue = JsString(o.value)
   }
-  val ApiDocumentationPageIdFormat      = new Format[ApiDocumentationPageId] {
+  val ApiDocumentationPageIdFormat = new Format[ApiDocumentationPageId] {
     override def reads(json: JsValue): JsResult[ApiDocumentationPageId] =
       Try {
         JsSuccess(ApiDocumentationPageId(json.as[String]))
@@ -354,7 +360,7 @@ object json {
 
     override def writes(o: ApiDocumentationPageId): JsValue = JsString(o.value)
   }
-  val ApiPostIdFormat                   = new Format[ApiPostId] {
+  val ApiPostIdFormat = new Format[ApiPostId] {
     override def reads(json: JsValue): JsResult[ApiPostId] =
       Try {
         JsSuccess(ApiPostId(json.as[String]))
@@ -364,7 +370,7 @@ object json {
 
     override def writes(o: ApiPostId): JsValue = JsString(o.value)
   }
-  val ApiIssueIdFormat                  = new Format[ApiIssueId] {
+  val ApiIssueIdFormat = new Format[ApiIssueId] {
     override def reads(json: JsValue): JsResult[ApiIssueId] =
       Try {
         JsSuccess(ApiIssueId(json.as[String]))
@@ -374,7 +380,7 @@ object json {
 
     override def writes(o: ApiIssueId): JsValue = JsString(o.value)
   }
-  val ApiTagFormat                      = new Format[ApiIssueTag] {
+  val ApiTagFormat = new Format[ApiIssueTag] {
     override def reads(json: JsValue): JsResult[ApiIssueTag] =
       Try {
         JsSuccess(
@@ -392,12 +398,12 @@ object json {
 
     override def writes(o: ApiIssueTag): JsValue =
       Json.obj(
-        "id"    -> ApiIssueTagIdFormat.writes(o.id),
-        "name"  -> o.name,
+        "id" -> ApiIssueTagIdFormat.writes(o.id),
+        "name" -> o.name,
         "color" -> o.color
       )
   }
-  val ApiIssueCommentFormat             = new Format[ApiIssueComment] {
+  val ApiIssueCommentFormat = new Format[ApiIssueComment] {
     override def reads(json: JsValue): JsResult[ApiIssueComment] =
       Try {
         JsSuccess(
@@ -418,13 +424,13 @@ object json {
 
     override def writes(o: ApiIssueComment): JsValue =
       Json.obj(
-        "by"                 -> UserIdFormat.writes(o.by),
-        "createdAt"          -> DateTimeFormat.writes(o.createdAt),
+        "by" -> UserIdFormat.writes(o.by),
+        "createdAt" -> DateTimeFormat.writes(o.createdAt),
         "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt),
-        "content"            -> o.content
+        "content" -> o.content
       )
   }
-  val TenantIdFormat                    = new Format[TenantId] {
+  val TenantIdFormat = new Format[TenantId] {
     override def reads(json: JsValue): JsResult[TenantId] =
       Try {
         JsSuccess(TenantId(json.as[String]))
@@ -434,7 +440,7 @@ object json {
 
     override def writes(o: TenantId): JsValue = JsString(o.value)
   }
-  val PostIdFormat                      = new Format[ApiPostId] {
+  val PostIdFormat = new Format[ApiPostId] {
     override def reads(json: JsValue): JsResult[ApiPostId] =
       Try {
         JsSuccess(ApiPostId(json.as[String]))
@@ -444,7 +450,7 @@ object json {
 
     override def writes(o: ApiPostId): JsValue = JsString(o.value)
   }
-  val IssueIdFormat                     = new Format[ApiIssueId] {
+  val IssueIdFormat = new Format[ApiIssueId] {
     override def reads(json: JsValue): JsResult[ApiIssueId] =
       Try {
         JsSuccess(ApiIssueId(json.as[String]))
@@ -454,7 +460,7 @@ object json {
 
     override def writes(o: ApiIssueId): JsValue = JsString(o.value)
   }
-  val OtoroshiGroupFormat               = new Format[OtoroshiGroup] {
+  val OtoroshiGroupFormat = new Format[OtoroshiGroup] {
     override def reads(json: JsValue): JsResult[OtoroshiGroup] =
       Try {
         JsSuccess(OtoroshiGroup(json.as[String]))
@@ -464,7 +470,7 @@ object json {
 
     override def writes(o: OtoroshiGroup): JsValue = JsString(o.value)
   }
-  val OtoroshiServiceGroupIdFormat      = new Format[OtoroshiServiceGroupId] {
+  val OtoroshiServiceGroupIdFormat = new Format[OtoroshiServiceGroupId] {
     override def reads(json: JsValue): JsResult[OtoroshiServiceGroupId] =
       Try {
         JsSuccess(OtoroshiServiceGroupId(json.as[String]))
@@ -474,7 +480,7 @@ object json {
 
     override def writes(o: OtoroshiServiceGroupId): JsValue = JsString(o.value)
   }
-  val OtoroshiServiceIdFormat           = new Format[OtoroshiServiceId] {
+  val OtoroshiServiceIdFormat = new Format[OtoroshiServiceId] {
     override def reads(json: JsValue): JsResult[OtoroshiServiceId] =
       Try {
         JsSuccess(OtoroshiServiceId(json.as[String]))
@@ -484,7 +490,7 @@ object json {
 
     override def writes(o: OtoroshiServiceId): JsValue = JsString(o.value)
   }
-  val OtoroshiRouteIdFormat             = new Format[OtoroshiRouteId] {
+  val OtoroshiRouteIdFormat = new Format[OtoroshiRouteId] {
     override def reads(json: JsValue): JsResult[OtoroshiRouteId] =
       Try {
         JsSuccess(OtoroshiRouteId(json.as[String]))
@@ -494,7 +500,7 @@ object json {
 
     override def writes(o: OtoroshiRouteId): JsValue = JsString(o.value)
   }
-  val VersionFormat                     = new Format[Version] {
+  val VersionFormat = new Format[Version] {
     override def reads(json: JsValue): JsResult[Version] =
       Try {
         JsSuccess(Version(json.as[String]))
@@ -504,7 +510,7 @@ object json {
 
     override def writes(o: Version): JsValue = JsString(o.value)
   }
-  val OtoroshiSettingsIdFormat          = new Format[OtoroshiSettingsId] {
+  val OtoroshiSettingsIdFormat = new Format[OtoroshiSettingsId] {
     override def reads(json: JsValue): JsResult[OtoroshiSettingsId] =
       Try {
         JsSuccess(OtoroshiSettingsId(json.as[String]))
@@ -527,7 +533,7 @@ object json {
       override def writes(o: ThirdPartyPaymentSettingsId): JsValue =
         JsString(o.value)
     }
-  val SubscriptionDemandIdFormat        = new Format[DemandId] {
+  val SubscriptionDemandIdFormat = new Format[DemandId] {
     override def reads(json: JsValue): JsResult[DemandId] =
       Try {
         JsSuccess(DemandId(json.as[String]))
@@ -537,7 +543,7 @@ object json {
 
     override def writes(o: DemandId): JsValue = JsString(o.value)
   }
-  val SubscriptionDemandStepIdFormat    = new Format[SubscriptionDemandStepId] {
+  val SubscriptionDemandStepIdFormat = new Format[SubscriptionDemandStepId] {
     override def reads(json: JsValue): JsResult[SubscriptionDemandStepId] =
       Try {
         JsSuccess(SubscriptionDemandStepId(json.as[String]))
@@ -548,7 +554,7 @@ object json {
     override def writes(o: SubscriptionDemandStepId): JsValue =
       JsString(o.value)
   }
-  val TeamTypeFormat                    = new Format[TeamType] {
+  val TeamTypeFormat = new Format[TeamType] {
     override def reads(json: JsValue) =
       json.as[String] match {
         case "Personal"     => JsSuccess(Personal)
@@ -559,7 +565,7 @@ object json {
 
     override def writes(o: TeamType): JsValue = JsString(o.name)
   }
-  val ApiVisibilityFormat               = new Format[ApiVisibility] {
+  val ApiVisibilityFormat = new Format[ApiVisibility] {
     override def reads(json: JsValue) =
       json.as[String] match {
         case "Public"                   => JsSuccess(Public)
@@ -571,7 +577,7 @@ object json {
 
     override def writes(o: ApiVisibility): JsValue = JsString(o.name)
   }
-  val ApiStateFormat                    = new Format[ApiState] {
+  val ApiStateFormat = new Format[ApiState] {
     override def reads(json: JsValue) =
       json.as[String] match {
         case "created"    => JsSuccess(ApiState.Created)
@@ -583,7 +589,7 @@ object json {
 
     override def writes(o: ApiState): JsValue = JsString(o.name)
   }
-  val UsagePlanVisibilityFormat         = new Format[UsagePlanVisibility] {
+  val UsagePlanVisibilityFormat = new Format[UsagePlanVisibility] {
     override def reads(json: JsValue) =
       json.as[String] match {
         case "Public"  => JsSuccess(UsagePlanVisibility.Public)
@@ -598,22 +604,22 @@ object json {
   val ValidationStepFormat = new Format[ValidationStep] {
     override def writes(o: ValidationStep): JsValue =
       o match {
-        case ValidationStep.Email(id, emails, message, title)               =>
+        case ValidationStep.Email(id, emails, message, title) =>
           Json.obj(
-            "type"    -> "email",
-            "id"      -> id,
-            "emails"  -> emails,
-            "title"   -> title,
+            "type" -> "email",
+            "id" -> id,
+            "emails" -> emails,
+            "title" -> title,
             "message" -> message
               .map(JsString.apply)
               .getOrElse(JsNull)
               .as[JsValue]
           )
-        case ValidationStep.TeamAdmin(id, team, title)                      =>
+        case ValidationStep.TeamAdmin(id, team, title) =>
           Json.obj(
-            "type"  -> "teamAdmin",
-            "id"    -> id,
-            "team"  -> team.asJson,
+            "type" -> "teamAdmin",
+            "id" -> id,
+            "team" -> team.asJson,
             "title" -> title
           )
         case ValidationStep.Form(
@@ -625,11 +631,11 @@ object json {
               info
             ) =>
           Json.obj(
-            "type"               -> "form",
-            "id"                 -> id,
-            "title"              -> title,
-            "schema"             -> schema.getOrElse(JsNull).as[JsValue],
-            "formatter"          -> formatter
+            "type" -> "form",
+            "id" -> id,
+            "title" -> title,
+            "schema" -> schema.getOrElse(JsNull).as[JsValue],
+            "formatter" -> formatter
               .map(JsString.apply)
               .getOrElse(JsNull)
               .as[JsValue],
@@ -637,31 +643,31 @@ object json {
               .map(keys => JsArray(keys.map(JsString.apply)))
               .getOrElse(JsNull)
               .as[JsValue],
-            "info"               -> info
+            "info" -> info
               .map(JsString.apply)
               .getOrElse(JsNull)
               .as[JsValue]
           )
         case ValidationStep.Payment(id, thirdPartyPaymentSettingsId, title) =>
           Json.obj(
-            "type"                        -> "payment",
-            "id"                          -> id,
+            "type" -> "payment",
+            "id" -> id,
             "thirdPartyPaymentSettingsId" -> thirdPartyPaymentSettingsId.asJson,
-            "title"                       -> title
+            "title" -> title
           )
-        case ValidationStep.HttpRequest(id, title, url, headers)            =>
+        case ValidationStep.HttpRequest(id, title, url, headers) =>
           Json.obj(
-            "type"    -> "httpRequest",
-            "id"      -> id,
-            "title"   -> title,
-            "url"     -> url,
+            "type" -> "httpRequest",
+            "id" -> id,
+            "title" -> title,
+            "url" -> url,
             "headers" -> headers
           )
       }
 
     override def reads(json: JsValue): JsResult[ValidationStep] =
       (json \ "type").as[String] match {
-        case "email"       =>
+        case "email" =>
           JsSuccess(
             ValidationStep.Email(
               id = (json \ "id").as[String],
@@ -670,7 +676,7 @@ object json {
               title = (json \ "title").as[String]
             )
           )
-        case "teamAdmin"   =>
+        case "teamAdmin" =>
           JsSuccess(
             ValidationStep.TeamAdmin(
               id = (json \ "id").as[String],
@@ -678,7 +684,7 @@ object json {
               title = (json \ "title").as[String]
             )
           )
-        case "form"        =>
+        case "form" =>
           JsSuccess(
             ValidationStep.Form(
               id = (json \ "id").as[String],
@@ -689,8 +695,8 @@ object json {
                   Json
                     .obj(
                       "motivation" -> Json.obj(
-                        "type"        -> "string",
-                        "format"      -> "textarea",
+                        "type" -> "string",
+                        "format" -> "textarea",
                         "constraints" -> Json.arr(
                           Json
                             .obj("type" -> "required")
@@ -707,12 +713,13 @@ object json {
               info = (json \ "info").asOpt[String]
             )
           )
-        case "payment"     =>
+        case "payment" =>
           JsSuccess(
             ValidationStep.Payment(
               id = (json \ "id").as[String],
-              thirdPartyPaymentSettingsId = (json \ "thirdPartyPaymentSettingsId")
-                .as(using ThirdPartyPaymentSettingsIdFormat),
+              thirdPartyPaymentSettingsId =
+                (json \ "thirdPartyPaymentSettingsId")
+                  .as(using ThirdPartyPaymentSettingsIdFormat),
               title = (json \ "title").as[String]
             )
           )
@@ -727,7 +734,7 @@ object json {
                 .getOrElse(Map.empty[String, String])
             )
           )
-        case str           => JsError(s"Bad UsagePlanVisibility value: $str")
+        case str => JsError(s"Bad UsagePlanVisibility value: $str")
       }
   }
 
@@ -750,7 +757,8 @@ object json {
             costPerMonth = (json \ "costPerMonth").as[BigDecimal],
             trialPeriod =
               (json \ "trialPeriod").asOpt(using BillingDurationFormat),
-            billingDuration = (json \ "billingDuration").as(using BillingDurationFormat),
+            billingDuration =
+              (json \ "billingDuration").as(using BillingDurationFormat),
             currency = (json \ "currency").as(using CurrencyFormat)
           )
         )
@@ -761,17 +769,17 @@ object json {
 
     override def writes(o: BasePaymentInformation): JsValue =
       Json.obj(
-        "costPerMonth"    -> o.costPerMonth,
-        "trialPeriod"     -> o.trialPeriod
+        "costPerMonth" -> o.costPerMonth,
+        "trialPeriod" -> o.trialPeriod
           .map(_.asJson)
           .getOrElse(JsNull)
           .as[JsValue],
         "billingDuration" -> o.billingDuration.asJson,
-        "currency"        -> o.currency.asJson
+        "currency" -> o.currency.asJson
       )
   }
 
-  val UsagePlanFormat                = new Format[UsagePlan] {
+  val UsagePlanFormat = new Format[UsagePlan] {
     override def reads(json: JsValue): JsResult[UsagePlan] =
       Try {
         JsSuccess(
@@ -786,11 +794,13 @@ object json {
             costPerRequest = (json \ "costPerRequest").asOpt[BigDecimal],
             trialPeriod =
               (json \ "trialPeriod").asOpt(using BillingDurationFormat),
-            billingDuration = (json \ "billingDuration").asOpt(using BillingDurationFormat),
+            billingDuration =
+              (json \ "billingDuration").asOpt(using BillingDurationFormat),
             currency = (json \ "currency").asOpt(using CurrencyFormat),
             customName = (json \ "customName").as[String],
             customDescription = (json \ "customDescription").asOpt[String],
-            otoroshiTarget = (json \ "otoroshiTarget").asOpt(using OtoroshiTargetFormat),
+            otoroshiTarget =
+              (json \ "otoroshiTarget").asOpt(using OtoroshiTargetFormat),
             allowMultipleKeys = (json \ "allowMultipleKeys").asOpt[Boolean],
             visibility = (json \ "visibility")
               .asOpt(using UsagePlanVisibilityFormat)
@@ -800,15 +810,19 @@ object json {
               .getOrElse(Seq.empty),
             autoRotation = (json \ "autoRotation")
               .asOpt[Boolean],
-            subscriptionProcess = (json \ "subscriptionProcess").as(using SeqValidationStepFormat),
+            subscriptionProcess =
+              (json \ "subscriptionProcess").as(using SeqValidationStepFormat),
             integrationProcess = (json \ "integrationProcess")
               .asOpt(using IntegrationProcessFormat)
               .getOrElse(IntegrationProcess.ApiKey),
-            aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
-            paymentSettings = (json \ "paymentSettings").asOpt(using PaymentSettingsFormat),
+            aggregationApiKeysSecurity =
+              (json \ "aggregationApiKeysSecurity").asOpt[Boolean],
+            paymentSettings =
+              (json \ "paymentSettings").asOpt(using PaymentSettingsFormat),
             swagger = (json \ "swagger").asOpt(using SwaggerAccessFormat),
             testing = (json \ "testing").asOpt(using TestingFormat),
-            documentation = (json \ "documentation").asOpt(using ApiDocumentationFormat),
+            documentation =
+              (json \ "documentation").asOpt(using ApiDocumentationFormat),
             metadata = (json \ "metadata")
               .asOpt[Map[String, String]]
               .getOrElse(Map.empty)
@@ -822,83 +836,83 @@ object json {
 
     override def writes(o: UsagePlan): JsValue =
       Json.obj(
-        "_id"                        -> UsagePlanIdFormat.writes(o.id),
-        "_tenant"                    -> TenantIdFormat.writes(o.tenant),
-        "_deleted"                   -> o.deleted,
-        "maxPerSecond"               -> o.maxPerSecond,
-        "maxPerDay"                  -> o.maxPerDay,
-        "maxPerMonth"                -> o.maxPerMonth
+        "_id" -> UsagePlanIdFormat.writes(o.id),
+        "_tenant" -> TenantIdFormat.writes(o.tenant),
+        "_deleted" -> o.deleted,
+        "maxPerSecond" -> o.maxPerSecond,
+        "maxPerDay" -> o.maxPerDay,
+        "maxPerMonth" -> o.maxPerMonth
           .map(JsNumber(_))
           .getOrElse(JsNull)
           .as[JsValue],
-        "costPerMonth"               -> o.costPerMonth
+        "costPerMonth" -> o.costPerMonth
           .map(JsNumber(_))
           .getOrElse(JsNull)
           .as[JsValue],
-        "costPerRequest"             -> o.costPerRequest
+        "costPerRequest" -> o.costPerRequest
           .map(JsNumber(_))
           .getOrElse(JsNull)
           .as[JsValue],
-        "billingDuration"            -> o.billingDuration
+        "billingDuration" -> o.billingDuration
           .map(_.asJson)
           .getOrElse(JsNull)
           .as[JsValue],
-        "trialPeriod"                -> o.trialPeriod
+        "trialPeriod" -> o.trialPeriod
           .map(_.asJson)
           .getOrElse(JsNull)
           .as[JsValue],
-        "currency"                   -> o.currency.map(_.asJson).getOrElse(JsNull).as[JsValue],
-        "customName"                 -> o.customName,
-        "customDescription"          -> o.customDescription
+        "currency" -> o.currency.map(_.asJson).getOrElse(JsNull).as[JsValue],
+        "customName" -> o.customName,
+        "customDescription" -> o.customDescription
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "otoroshiTarget"             -> o.otoroshiTarget
+        "otoroshiTarget" -> o.otoroshiTarget
           .map(_.asJson)
           .getOrElse(JsNull)
           .as[JsValue],
-        "allowMultipleKeys"          -> o.allowMultipleKeys
+        "allowMultipleKeys" -> o.allowMultipleKeys
           .map(JsBoolean.apply)
           .getOrElse(JsBoolean(false))
           .as[JsValue],
-        "visibility"                 -> UsagePlanVisibilityFormat.writes(o.visibility),
-        "authorizedTeams"            -> SeqTeamIdFormat.writes(o.authorizedTeams),
-        "autoRotation"               -> o.autoRotation
+        "visibility" -> UsagePlanVisibilityFormat.writes(o.visibility),
+        "authorizedTeams" -> SeqTeamIdFormat.writes(o.authorizedTeams),
+        "autoRotation" -> o.autoRotation
           .map(JsBoolean.apply)
           .getOrElse(JsBoolean(false))
           .as[JsValue],
-        "subscriptionProcess"        -> SeqValidationStepFormat.writes(
+        "subscriptionProcess" -> SeqValidationStepFormat.writes(
           o.subscriptionProcess
         ),
-        "integrationProcess"         -> IntegrationProcessFormat.writes(
+        "integrationProcess" -> IntegrationProcessFormat.writes(
           o.integrationProcess
         ),
         "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
           .map(JsBoolean.apply)
           .getOrElse(JsBoolean(false))
           .as[JsValue],
-        "paymentSettings"            -> o.paymentSettings
+        "paymentSettings" -> o.paymentSettings
           .map(PaymentSettingsFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "testing"                    -> o.testing
+        "testing" -> o.testing
           .map(TestingFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "documentation"              -> o.documentation
+        "documentation" -> o.documentation
           .map(ApiDocumentationFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "swagger"                    -> o.swagger
+        "swagger" -> o.swagger
           .map(SwaggerAccessFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "metadata"                   -> JsObject(
+        "metadata" -> JsObject(
           o.metadata.view.mapValues(JsString.apply).toSeq
         )
       )
   }
-  val ConsoleSettingsFormat          = new Format[ConsoleMailerSettings] {
+  val ConsoleSettingsFormat = new Format[ConsoleMailerSettings] {
     override def reads(json: JsValue): JsResult[ConsoleMailerSettings] =
       Try {
         JsSuccess(
@@ -912,14 +926,14 @@ object json {
 
     override def writes(o: ConsoleMailerSettings): JsValue =
       Json.obj(
-        "type"     -> "console",
+        "type" -> "console",
         "template" -> o.template
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue]
       )
   }
-  val MailgunSettingsFormat          = new Format[MailgunSettings] {
+  val MailgunSettingsFormat = new Format[MailgunSettings] {
     override def reads(json: JsValue): JsResult[MailgunSettings] =
       Try {
         JsSuccess(
@@ -939,20 +953,20 @@ object json {
 
     override def writes(o: MailgunSettings): JsValue =
       Json.obj(
-        "type"         -> "mailgun",
-        "domain"       -> o.domain,
-        "eu"           -> o.eu,
-        "key"          -> o.key,
-        "fromTitle"    -> o.fromTitle,
-        "fromEmail"    -> o.fromEmail,
-        "template"     -> o.template
+        "type" -> "mailgun",
+        "domain" -> o.domain,
+        "eu" -> o.eu,
+        "key" -> o.key,
+        "fromTitle" -> o.fromTitle,
+        "fromEmail" -> o.fromEmail,
+        "template" -> o.template
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
         "testingEmail" -> o.testingEmail
       )
   }
-  val MailjetSettingsFormat          = new Format[MailjetSettings] {
+  val MailjetSettingsFormat = new Format[MailjetSettings] {
     override def reads(json: JsValue): JsResult[MailjetSettings] =
       Try {
         JsSuccess(
@@ -970,12 +984,12 @@ object json {
 
     override def writes(o: MailjetSettings): JsValue =
       Json.obj(
-        "type"          -> "mailjet",
-        "apiKeyPublic"  -> o.apiKeyPublic,
+        "type" -> "mailjet",
+        "apiKeyPublic" -> o.apiKeyPublic,
         "apiKeyPrivate" -> o.apiKeyPrivate,
-        "fromTitle"     -> o.fromTitle,
-        "fromEmail"     -> o.fromEmail,
-        "template"      -> o.template
+        "fromTitle" -> o.fromTitle,
+        "fromEmail" -> o.fromEmail,
+        "template" -> o.template
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue]
@@ -1011,26 +1025,26 @@ object json {
 
     override def writes(o: SimpleSMTPSettings): JsValue =
       Json.obj(
-        "type"      -> "smtpClient",
-        "host"      -> o.host,
-        "port"      -> o.port,
+        "type" -> "smtpClient",
+        "host" -> o.host,
+        "port" -> o.port,
         "fromTitle" -> o.fromTitle,
         "fromEmail" -> o.fromEmail,
-        "template"  -> o.template
+        "template" -> o.template
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "username"  -> o.username
+        "username" -> o.username
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "password"  -> o.password
+        "password" -> o.password
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue]
       )
   }
-  val SendGridSettingsFormat         = new Format[SendgridSettings] {
+  val SendGridSettingsFormat = new Format[SendgridSettings] {
     override def reads(json: JsValue): JsResult[SendgridSettings] =
       Try {
         JsSuccess(
@@ -1048,11 +1062,11 @@ object json {
 
     override def writes(o: SendgridSettings): JsValue =
       Json.obj(
-        "type"      -> "sendgrid",
-        "apikey"    -> o.apikey,
+        "type" -> "sendgrid",
+        "apikey" -> o.apikey,
         "fromTitle" -> o.fromTitle,
         "fromEmail" -> o.fromEmail,
-        "template"  -> o.template
+        "template" -> o.template
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue]
@@ -1075,7 +1089,7 @@ object json {
 
     override def writes(o: StripePriceIds): JsValue =
       Json.obj(
-        "basePriceId"       -> o.basePriceId,
+        "basePriceId" -> o.basePriceId,
         "additionalPriceId" -> o.additionalPriceId
           .map(JsString.apply)
           .getOrElse(JsNull)
@@ -1087,9 +1101,9 @@ object json {
     override def reads(json: JsValue): JsResult[PaymentSettings] =
       (json \ "type").asOpt[String] match {
         case Some("Stripe") => StripePaymentSettingsFormat.reads(json)
-        case Some(str)      =>
+        case Some(str) =>
           JsError(s"Bad notification payment settings value: $str")
-        case None           => JsError(s"No notification payment settings value")
+        case None => JsError(s"No notification payment settings value")
       }
 
     override def writes(o: PaymentSettings): JsValue =
@@ -1121,12 +1135,12 @@ object json {
     override def writes(o: PaymentSettings.Stripe): JsValue =
       Json.obj(
         "thirdPartyPaymentSettingsId" -> o.thirdPartyPaymentSettingsId.asJson,
-        "productId"                   -> o.productId,
-        "priceIds"                    -> StripePriceIdsFormat.writes(o.priceIds)
+        "productId" -> o.productId,
+        "priceIds" -> StripePriceIdsFormat.writes(o.priceIds)
       )
   }
 
-  val OtoroshiApiKeyFormat        = new Format[OtoroshiApiKey] {
+  val OtoroshiApiKeyFormat = new Format[OtoroshiApiKey] {
     override def reads(json: JsValue): JsResult[OtoroshiApiKey] =
       Try {
         JsSuccess(
@@ -1142,12 +1156,12 @@ object json {
 
     override def writes(o: OtoroshiApiKey): JsValue =
       Json.obj(
-        "clientName"   -> o.clientName,
-        "clientId"     -> o.clientId,
+        "clientName" -> o.clientName,
+        "clientId" -> o.clientId,
         "clientSecret" -> o.clientSecret
       )
   }
-  val CurrencyFormat              = new Format[Currency] {
+  val CurrencyFormat = new Format[Currency] {
     override def reads(json: JsValue): JsResult[Currency] =
       Try {
         JsSuccess(
@@ -1164,7 +1178,7 @@ object json {
         "code" -> o.code
       )
   }
-  val CustomMetadataFormat        = new Format[CustomMetadata] {
+  val CustomMetadataFormat = new Format[CustomMetadata] {
     override def reads(json: JsValue): JsResult[CustomMetadata] =
       Try {
         JsSuccess(
@@ -1182,22 +1196,24 @@ object json {
 
     override def writes(o: CustomMetadata): JsValue =
       Json.obj(
-        "key"            -> o.key,
+        "key" -> o.key,
         "possibleValues" -> JsArray(o.possibleValues.map(JsString.apply).toSeq)
       )
 
   }
-  val ApikeyCustomizationFormat   = new Format[ApikeyCustomization] {
+  val ApikeyCustomizationFormat = new Format[ApikeyCustomization] {
     override def reads(json: JsValue): JsResult[ApikeyCustomization] =
       Try {
         JsSuccess(
           ApikeyCustomization(
-            clientIdOnly = (json \ "clientIdOnly").asOpt[Boolean].getOrElse(false),
+            clientIdOnly =
+              (json \ "clientIdOnly").asOpt[Boolean].getOrElse(false),
             readOnly = (json \ "readOnly").asOpt[Boolean].getOrElse(false),
             constrainedServicesOnly = (json \ "constrainedServicesOnly")
               .asOpt[Boolean]
               .getOrElse(false),
-            metadata = (json \ "metadata").asOpt[JsObject].getOrElse(Json.obj()),
+            metadata =
+              (json \ "metadata").asOpt[JsObject].getOrElse(Json.obj()),
             customMetadata = (json \ "customMetadata")
               .asOpt(using SeqCustomMetadataFormat)
               .getOrElse(Seq.empty),
@@ -1212,25 +1228,25 @@ object json {
 
     override def writes(o: ApikeyCustomization): JsValue =
       Json.obj(
-        "clientIdOnly"            -> o.clientIdOnly,
+        "clientIdOnly" -> o.clientIdOnly,
         "constrainedServicesOnly" -> o.constrainedServicesOnly,
-        "readOnly"                -> o.readOnly,
-        "metadata"                -> o.metadata,
-        "customMetadata"          -> JsArray(
+        "readOnly" -> o.readOnly,
+        "metadata" -> o.metadata,
+        "customMetadata" -> JsArray(
           o.customMetadata.map(CustomMetadataFormat.writes)
         ),
-        "tags"                    -> o.tags,
-        "restrictions"            -> o.restrictions.asJson
+        "tags" -> o.tags,
+        "restrictions" -> o.restrictions.asJson
       )
   }
-  val ApiKeyRestrictionsFormat    = new Format[ApiKeyRestrictions] {
+  val ApiKeyRestrictionsFormat = new Format[ApiKeyRestrictions] {
     override def writes(o: ApiKeyRestrictions): JsValue =
       Json.obj(
-        "enabled"   -> o.enabled,
+        "enabled" -> o.enabled,
         "allowLast" -> o.allowLast,
-        "allowed"   -> JsArray(o.allowed.map(_.asJson)),
+        "allowed" -> JsArray(o.allowed.map(_.asJson)),
         "forbidden" -> JsArray(o.forbidden.map(_.asJson)),
-        "notFound"  -> JsArray(o.notFound.map(_.asJson))
+        "notFound" -> JsArray(o.notFound.map(_.asJson))
       )
 
     override def reads(json: JsValue): JsResult[ApiKeyRestrictions] =
@@ -1282,7 +1298,7 @@ object json {
     override def writes(o: ApiKeyRestrictionPath): JsValue =
       Json.obj(
         "method" -> o.method,
-        "path"   -> o.path
+        "path" -> o.path
       )
 
     override def reads(json: JsValue): JsResult[ApiKeyRestrictionPath] =
@@ -1297,13 +1313,15 @@ object json {
         JsError(e.getMessage)
       } get
   }
-  val OtoroshiTargetFormat        = new Format[OtoroshiTarget] {
+  val OtoroshiTargetFormat = new Format[OtoroshiTarget] {
     override def reads(json: JsValue): JsResult[OtoroshiTarget] = {
       Try {
         JsSuccess(
           OtoroshiTarget(
-            otoroshiSettings = (json \ "otoroshiSettings").as(using OtoroshiSettingsIdFormat),
-            authorizedEntities = (json \ "authorizedEntities").asOpt(using
+            otoroshiSettings =
+              (json \ "otoroshiSettings").as(using OtoroshiSettingsIdFormat),
+            authorizedEntities =
+              (json \ "authorizedEntities").asOpt(using
               AuthorizedEntitiesFormat
             ),
             apikeyCustomization = (json \ "apikeyCustomization")
@@ -1319,21 +1337,22 @@ object json {
 
     override def writes(o: OtoroshiTarget): JsValue =
       Json.obj(
-        "otoroshiSettings"    -> o.otoroshiSettings.asJson,
-        "authorizedEntities"  -> o.authorizedEntities
+        "otoroshiSettings" -> o.otoroshiSettings.asJson,
+        "authorizedEntities" -> o.authorizedEntities
           .map(_.asJson)
           .getOrElse(JsNull)
           .as[JsValue],
         "apikeyCustomization" -> o.apikeyCustomization.asJson
       )
   }
-  val OtoroshiServiceFormat       = new Format[OtoroshiService] {
+  val OtoroshiServiceFormat = new Format[OtoroshiService] {
     override def reads(json: JsValue): JsResult[OtoroshiService] =
       Try {
         JsSuccess(
           OtoroshiService(
             name = (json \ "name").as[String],
-            otoroshiSettings = (json \ "otoroshiSettings").as(using OtoroshiSettingsIdFormat),
+            otoroshiSettings =
+              (json \ "otoroshiSettings").as(using OtoroshiSettingsIdFormat),
             service = (json \ "service").as(using OtoroshiServiceIdFormat)
           )
         )
@@ -1343,12 +1362,12 @@ object json {
 
     override def writes(o: OtoroshiService): JsValue =
       Json.obj(
-        "name"             -> o.name,
+        "name" -> o.name,
         "otoroshiSettings" -> o.otoroshiSettings.asJson,
-        "service"          -> o.service.asJson
+        "service" -> o.service.asJson
       )
   }
-  val SwaggerAccessFormat         = new Format[SwaggerAccess] {
+  val SwaggerAccessFormat = new Format[SwaggerAccess] {
     override def reads(json: JsValue): JsResult[SwaggerAccess] = {
       json match {
         case JsObject(_) =>
@@ -1370,21 +1389,21 @@ object json {
             AppLogger.error(e.getMessage, e)
             JsError(e.getMessage)
           } get
-        case _           => JsError()
+        case _ => JsError()
       }
 
     }
 
     override def writes(o: SwaggerAccess): JsValue =
       Json.obj(
-        "url"               -> o.url,
-        "content"           -> o.content,
-        "headers"           -> o.headers,
-        "additionalConf"    -> o.additionalConf.getOrElse(JsNull).as[JsValue],
+        "url" -> o.url,
+        "content" -> o.content,
+        "headers" -> o.headers,
+        "additionalConf" -> o.additionalConf.getOrElse(JsNull).as[JsValue],
         "specificationType" -> o.specificationType.name
       )
   }
-  val ApiDocumentationPageFormat  = new Format[ApiDocumentationPage] {
+  val ApiDocumentationPageFormat = new Format[ApiDocumentationPage] {
     override def reads(json: JsValue): JsResult[ApiDocumentationPage] =
       Try {
         JsSuccess(
@@ -1393,11 +1412,14 @@ object json {
             tenant = (json \ "_tenant").as(using TenantIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             title = (json \ "title").as[String],
-            lastModificationAt = (json \ "lastModificationAt").as(using DateTimeFormat),
+            lastModificationAt =
+              (json \ "lastModificationAt").as(using DateTimeFormat),
             content = (json \ "content").asOpt[String].getOrElse(""),
             cmsPage = (json \ "cmsPage").asOpt[String],
-            remoteContentEnabled = (json \ "remoteContentEnabled").asOpt[Boolean].getOrElse(false),
-            contentType = (json \ "contentType").asOpt[String].getOrElse("text/markdown"),
+            remoteContentEnabled =
+              (json \ "remoteContentEnabled").asOpt[Boolean].getOrElse(false),
+            contentType =
+              (json \ "contentType").asOpt[String].getOrElse("text/markdown"),
             remoteContentUrl = (json \ "remoteContentUrl").asOpt[String],
             remoteContentHeaders = (json \ "remoteContentHeaders")
               .asOpt[Map[String, String]]
@@ -1411,17 +1433,17 @@ object json {
 
     override def writes(o: ApiDocumentationPage): JsValue =
       Json.obj(
-        "_id"                  -> ApiDocumentationPageIdFormat.writes(o.id),
-        "_humanReadableId"     -> ApiDocumentationPageIdFormat.writes(o.id),
-        "_tenant"              -> o.tenant.asJson,
-        "_deleted"             -> o.deleted,
-        "title"                -> o.title,
-        "lastModificationAt"   -> DateTimeFormat.writes(o.lastModificationAt),
-        "content"              -> o.content,
-        "cmsPage"              -> o.cmsPage,
+        "_id" -> ApiDocumentationPageIdFormat.writes(o.id),
+        "_humanReadableId" -> ApiDocumentationPageIdFormat.writes(o.id),
+        "_tenant" -> o.tenant.asJson,
+        "_deleted" -> o.deleted,
+        "title" -> o.title,
+        "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt),
+        "content" -> o.content,
+        "cmsPage" -> o.cmsPage,
         "remoteContentEnabled" -> o.remoteContentEnabled,
-        "contentType"          -> o.contentType,
-        "remoteContentUrl"     -> o.remoteContentUrl
+        "contentType" -> o.contentType,
+        "remoteContentUrl" -> o.remoteContentUrl
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
@@ -1430,7 +1452,7 @@ object json {
         )
       )
   }
-  val ApiPostFormat               = new Format[ApiPost] {
+  val ApiPostFormat = new Format[ApiPost] {
     override def reads(json: JsValue): JsResult[ApiPost] =
       Try {
         JsSuccess(
@@ -1441,7 +1463,8 @@ object json {
             tenant = (json \ "_tenant").as(using TenantIdFormat),
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             title = (json \ "title").as[String],
-            lastModificationAt = (json \ "lastModificationAt").as(using DateTimeFormat),
+            lastModificationAt =
+              (json \ "lastModificationAt").as(using DateTimeFormat),
             content = (json \ "content").asOpt[String].getOrElse("")
           )
         )
@@ -1451,16 +1474,16 @@ object json {
 
     override def writes(o: ApiPost): JsValue =
       Json.obj(
-        "_id"                -> ApiPostIdFormat.writes(o.id),
-        "_humanReadableId"   -> o.humanReadableId,
-        "_tenant"            -> o.tenant.asJson,
-        "_deleted"           -> o.deleted,
-        "title"              -> o.title,
+        "_id" -> ApiPostIdFormat.writes(o.id),
+        "_humanReadableId" -> o.humanReadableId,
+        "_tenant" -> o.tenant.asJson,
+        "_deleted" -> o.deleted,
+        "title" -> o.title,
         "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt),
-        "content"            -> o.content
+        "content" -> o.content
       )
   }
-  val ApiIssueFormat              = new Format[ApiIssue] {
+  val ApiIssueFormat = new Format[ApiIssue] {
     override def reads(json: JsValue): JsResult[ApiIssue] =
       Try {
         JsSuccess(
@@ -1502,29 +1525,29 @@ object json {
 
     override def writes(o: ApiIssue): JsValue =
       Json.obj(
-        "_id"                -> o.id.asJson,
-        "_humanReadableId"   -> o.humanReadableId,
-        "seqId"              -> o.seqId,
-        "_tenant"            -> o.tenant.asJson,
-        "_deleted"           -> o.deleted,
-        "title"              -> o.title,
+        "_id" -> o.id.asJson,
+        "_humanReadableId" -> o.humanReadableId,
+        "seqId" -> o.seqId,
+        "_tenant" -> o.tenant.asJson,
+        "_deleted" -> o.deleted,
+        "title" -> o.title,
         "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt),
-        "tags"               -> o.tags.map(ApiIssueTagIdFormat.writes),
-        "open"               -> o.open,
-        "createdAt"          -> DateTimeFormat.writes(o.createdAt),
-        "closedAt"           -> o.closedAt
+        "tags" -> o.tags.map(ApiIssueTagIdFormat.writes),
+        "open" -> o.open,
+        "createdAt" -> DateTimeFormat.writes(o.createdAt),
+        "closedAt" -> o.closedAt
           .map(DateTimeFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "by"                 -> o.by.asJson,
-        "comments"           -> o.comments.map(ApiIssueCommentFormat.writes),
-        "apiVersion"         -> o.apiVersion
+        "by" -> o.by.asJson,
+        "comments" -> o.comments.map(ApiIssueCommentFormat.writes),
+        "apiVersion" -> o.apiVersion
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue]
       )
   }
-  val ApiIssueTagIdFormat         = new Format[ApiIssueTagId] {
+  val ApiIssueTagIdFormat = new Format[ApiIssueTagId] {
     override def reads(json: JsValue): JsResult[ApiIssueTagId] =
       Try {
         JsSuccess(ApiIssueTagId(json.as[String]))
@@ -1543,7 +1566,8 @@ object json {
             ApiDocumentationDetailPage(
               id = (json \ "id").as(using ApiDocumentationPageIdFormat),
               title = (json \ "title").as[String],
-              children = (json \ "children").as(using
+              children =
+                (json \ "children").as(using
                 SeqApiDocumentationDetailPageFormat
               )
             )
@@ -1554,8 +1578,8 @@ object json {
 
       override def writes(o: ApiDocumentationDetailPage): JsValue =
         Json.obj(
-          "id"       -> o.id.asJson,
-          "title"    -> o.title,
+          "id" -> o.id.asJson,
+          "title" -> o.title,
           "children" -> SeqApiDocumentationDetailPageFormat.writes(o.children)
         )
 
@@ -1572,7 +1596,8 @@ object json {
             pages = (json \ "pages")
               .asOpt(using SeqApiDocumentationDetailPageFormat)
               .getOrElse(Seq.empty[ApiDocumentationDetailPage]),
-            lastModificationAt = (json \ "lastModificationAt").as(using DateTimeFormat)
+            lastModificationAt =
+              (json \ "lastModificationAt").as(using DateTimeFormat)
           )
         )
       } recover { case e =>
@@ -1581,13 +1606,13 @@ object json {
 
     override def writes(o: ApiDocumentation): JsValue =
       Json.obj(
-        "_id"                -> ApiDocumentationIdFormat.writes(o.id),
-        "_tenant"            -> o.tenant.asJson,
-        "pages"              -> SeqApiDocumentationDetailPageFormat.writes(o.pages),
+        "_id" -> ApiDocumentationIdFormat.writes(o.id),
+        "_tenant" -> o.tenant.asJson,
+        "pages" -> SeqApiDocumentationDetailPageFormat.writes(o.pages),
         "lastModificationAt" -> DateTimeFormat.writes(o.lastModificationAt)
       )
   }
-  val DaikokuStyleFormat     = new Format[DaikokuStyle] {
+  val DaikokuStyleFormat = new Format[DaikokuStyle] {
     override def reads(json: JsValue): JsResult[DaikokuStyle] =
       Try {
         JsSuccess(
@@ -1599,15 +1624,18 @@ object json {
             cssUrl = (json \ "cssUrl").asOpt[String],
             faviconUrl = (json \ "faviconUrl").asOpt[String],
             fontFamilyUrl = (json \ "fontFamilyUrl").asOpt[String],
-            title = (json \ "title").asOpt[String].getOrElse("New Organization"),
+            title =
+              (json \ "title").asOpt[String].getOrElse("New Organization"),
             description = (json \ "description")
               .asOpt[String]
               .getOrElse("A new organization to host very fine APIs"),
             unloggedHome = (json \ "unloggedHome").asOpt[String].getOrElse(""),
-            homePageVisible = (json \ "homePageVisible").asOpt[Boolean].getOrElse(false),
+            homePageVisible =
+              (json \ "homePageVisible").asOpt[Boolean].getOrElse(false),
             homeCmsPage = (json \ "homeCmsPage").asOpt[String],
             notFoundCmsPage = (json \ "notFoundCmsPage").asOpt[String],
-            authenticatedCmsPage = (json \ "authenticatedCmsPage").asOpt[String],
+            authenticatedCmsPage =
+              (json \ "authenticatedCmsPage").asOpt[String],
             logo = (json \ "logo")
               .asOpt[String],
             logoDark = (json \ "logoDark")
@@ -1625,27 +1653,27 @@ object json {
 
     override def writes(o: DaikokuStyle): JsValue =
       Json.obj(
-        "cssCmsPage"           -> o.cssCmsPage,
-        "colorThemeCmsPage"    -> o.colorThemeCmsPage,
-        "jsCmsPage"            -> o.jsCmsPage,
-        "jsUrl"                -> o.jsUrl.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-        "cssUrl"               -> o.cssUrl.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-        "faviconUrl"           -> o.faviconUrl
+        "cssCmsPage" -> o.cssCmsPage,
+        "colorThemeCmsPage" -> o.colorThemeCmsPage,
+        "jsCmsPage" -> o.jsCmsPage,
+        "jsUrl" -> o.jsUrl.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+        "cssUrl" -> o.cssUrl.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+        "faviconUrl" -> o.faviconUrl
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "fontFamilyUrl"        -> o.fontFamilyUrl
+        "fontFamilyUrl" -> o.fontFamilyUrl
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "title"                -> o.title,
-        "description"          -> o.description,
-        "unloggedHome"         -> o.unloggedHome,
-        "homeCmsPage"          -> o.homeCmsPage
+        "title" -> o.title,
+        "description" -> o.description,
+        "unloggedHome" -> o.unloggedHome,
+        "homeCmsPage" -> o.homeCmsPage
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "notFoundCmsPage"      -> o.notFoundCmsPage
+        "notFoundCmsPage" -> o.notFoundCmsPage
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
@@ -1653,30 +1681,30 @@ object json {
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "homePageVisible"      -> o.homePageVisible,
-        "logo"                 -> o.logo
+        "homePageVisible" -> o.homePageVisible,
+        "logo" -> o.logo
           .filter(_.trim.nonEmpty)
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "logoMin"              -> o.logoMin
+        "logoMin" -> o.logoMin
           .filter(_.trim.nonEmpty)
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "logoDark"             -> o.logoDark
+        "logoDark" -> o.logoDark
           .filter(_.trim.nonEmpty)
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "logoMinDark"          -> o.logoMinDark
+        "logoMinDark" -> o.logoMinDark
           .filter(_.trim.nonEmpty)
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue]
       )
   }
-  val TenantFormat           = new Format[Tenant] {
+  val TenantFormat = new Format[Tenant] {
     override def reads(json: JsValue): JsResult[Tenant] =
       Try {
         JsSuccess(
@@ -1693,10 +1721,12 @@ object json {
               .asOpt(using SeqOtoroshiSettingsFormat)
               .map(_.toSet)
               .getOrElse(Set.empty),
-            mailerSettings = (json \ "mailerSettings").asOpt(using MailerSettingsFormat),
-            bucketSettings = (json \ "bucketSettings").asOpt[JsObject].flatMap { settings =>
-              S3Configuration.format.reads(settings).asOpt
-            },
+            mailerSettings =
+              (json \ "mailerSettings").asOpt(using MailerSettingsFormat),
+            bucketSettings =
+              (json \ "bucketSettings").asOpt[JsObject].flatMap { settings =>
+                S3Configuration.format.reads(settings).asOpt
+              },
             authProvider = (json \ "authProvider")
               .asOpt[String]
               .flatMap(AuthProvider.apply)
@@ -1708,7 +1738,7 @@ object json {
               .asOpt[JsObject]
               .getOrElse(
                 Json.obj(
-                  "claimSecret"     -> Option(
+                  "claimSecret" -> Option(
                     System.getenv("DAIKOKU_OTOROSHI_CLAIM_SECRET")
                   ).orElse(Option(System.getenv("CLAIM_SHAREDKEY")))
                     .getOrElse("secret")
@@ -1735,8 +1765,9 @@ object json {
             tenantMode = (json \ "tenantMode").asOpt(using TenantModeFormat),
             aggregationApiKeysSecurity = (json \ "aggregationApiKeysSecurity")
               .asOpt[Boolean],
-            environmentAggregationApiKeysSecurity = (json \ "environmentAggregationApiKeysSecurity")
-              .asOpt[Boolean],
+            environmentAggregationApiKeysSecurity =
+              (json \ "environmentAggregationApiKeysSecurity")
+                .asOpt[Boolean],
             robotTxt = (json \ "robotTxt").asOpt[String],
             thirdPartyPaymentSettings = (json \ "thirdPartyPaymentSettings")
               .asOpt(using SeqThirdPartyPaymentSettingsFormat)
@@ -1752,8 +1783,9 @@ object json {
             accountCreationProcess = (json \ "accountCreationProcess")
               .asOpt(using SeqValidationStepFormat)
               .getOrElse(Seq.empty),
-            defaultAuthorizedOtoroshiEntities = (json \ "defaultAuthorizedOtoroshiEntities")
-              .asOpt(using SeqTeamAuthorizedEntitiesFormat),
+            defaultAuthorizedOtoroshiEntities =
+              (json \ "defaultAuthorizedOtoroshiEntities")
+                .asOpt(using SeqTeamAuthorizedEntitiesFormat),
             teamCreationSecurity =
               (json \ "teamCreationSecurity").asOpt[Boolean]
           )
@@ -1765,54 +1797,54 @@ object json {
 
     override def writes(o: Tenant): JsValue =
       Json.obj(
-        "_id"                                   -> TenantIdFormat.writes(o.id),
-        "_humanReadableId"                      -> o.name.urlPathSegmentSanitized,
-        "_deleted"                              -> o.deleted,
-        "name"                                  -> o.name,
-        "domain"                                -> o.domain,
-        "defaultLanguage"                       -> o.defaultLanguage
+        "_id" -> TenantIdFormat.writes(o.id),
+        "_humanReadableId" -> o.name.urlPathSegmentSanitized,
+        "_deleted" -> o.deleted,
+        "name" -> o.name,
+        "domain" -> o.domain,
+        "defaultLanguage" -> o.defaultLanguage
           .fold(JsNull.as[JsValue])(JsString.apply),
-        "enabled"                               -> o.enabled,
-        "contact"                               -> o.contact,
-        "style"                                 -> o.style.map(_.asJson).getOrElse(JsNull).as[JsValue],
-        "otoroshiSettings"                      -> JsArray(o.otoroshiSettings.map(_.asJson).toSeq),
-        "mailerSettings"                        -> o.mailerSettings
+        "enabled" -> o.enabled,
+        "contact" -> o.contact,
+        "style" -> o.style.map(_.asJson).getOrElse(JsNull).as[JsValue],
+        "otoroshiSettings" -> JsArray(o.otoroshiSettings.map(_.asJson).toSeq),
+        "mailerSettings" -> o.mailerSettings
           .map(_.asJson)
           .getOrElse(JsNull)
           .as[JsValue],
-        "bucketSettings"                        -> o.bucketSettings
+        "bucketSettings" -> o.bucketSettings
           .map(_.asJson)
           .getOrElse(JsNull)
           .as[JsValue],
-        "authProvider"                          -> o.authProvider.name,
-        "authProviderSettings"                  -> o.authProviderSettings,
-        "auditTrailConfig"                      -> o.auditTrailConfig.asJson,
-        "isPrivate"                             -> o.isPrivate,
-        "adminApi"                              -> o.adminApi.asJson,
-        "adminSubscriptions"                    -> JsArray(
+        "authProvider" -> o.authProvider.name,
+        "authProviderSettings" -> o.authProviderSettings,
+        "auditTrailConfig" -> o.auditTrailConfig.asJson,
+        "isPrivate" -> o.isPrivate,
+        "adminApi" -> o.adminApi.asJson,
+        "adminSubscriptions" -> JsArray(
           o.adminSubscriptions.map(ApiSubscriptionIdFormat.writes)
         ),
-        "creationSecurity"                      -> o.creationSecurity
+        "creationSecurity" -> o.creationSecurity
           .map(JsBoolean)
           .getOrElse(JsBoolean(false))
           .as[JsValue],
-        "subscriptionSecurity"                  -> o.subscriptionSecurity
+        "subscriptionSecurity" -> o.subscriptionSecurity
           .map(JsBoolean)
           .getOrElse(JsBoolean(true))
           .as[JsValue],
-        "apiReferenceHideForGuest"              -> o.apiReferenceHideForGuest
+        "apiReferenceHideForGuest" -> o.apiReferenceHideForGuest
           .map(JsBoolean)
           .getOrElse(JsBoolean(true))
           .as[JsValue],
-        "defaultMessage"                        -> o.defaultMessage
+        "defaultMessage" -> o.defaultMessage
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "tenantMode"                            -> o.tenantMode
+        "tenantMode" -> o.tenantMode
           .map(TenantModeFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "aggregationApiKeysSecurity"            -> o.aggregationApiKeysSecurity
+        "aggregationApiKeysSecurity" -> o.aggregationApiKeysSecurity
           .map(JsBoolean)
           .getOrElse(JsBoolean(false))
           .as[JsValue],
@@ -1820,19 +1852,19 @@ object json {
           .map(JsBoolean)
           .getOrElse(JsBoolean(false))
           .as[JsValue],
-        "robotTxt"                              -> o.robotTxt
+        "robotTxt" -> o.robotTxt
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "thirdPartyPaymentSettings"             -> SeqThirdPartyPaymentSettingsFormat
+        "thirdPartyPaymentSettings" -> SeqThirdPartyPaymentSettingsFormat
           .writes(o.thirdPartyPaymentSettings),
-        "display"                               -> TenantDisplayFormat.writes(o.display),
-        "environments"                          -> JsArray(o.environments.map(JsString.apply).toSeq),
-        "clientNamePattern"                     -> o.clientNamePattern,
-        "accountCreationProcess"                -> SeqValidationStepFormat.writes(
+        "display" -> TenantDisplayFormat.writes(o.display),
+        "environments" -> JsArray(o.environments.map(JsString.apply).toSeq),
+        "clientNamePattern" -> o.clientNamePattern,
+        "accountCreationProcess" -> SeqValidationStepFormat.writes(
           o.accountCreationProcess
         ),
-        "defaultAuthorizedOtoroshiEntities"     -> o.defaultAuthorizedOtoroshiEntities
+        "defaultAuthorizedOtoroshiEntities" -> o.defaultAuthorizedOtoroshiEntities
           .map(SeqTeamAuthorizedEntitiesFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
@@ -1846,15 +1878,15 @@ object json {
   val MailerSettingsFormat = new Format[MailerSettings] {
     override def reads(settings: JsValue): JsResult[MailerSettings] =
       (settings \ "type").as[String] match {
-        case "mailgun"    => MailgunSettingsFormat.reads(settings)
-        case "mailjet"    => MailjetSettingsFormat.reads(settings)
-        case "sendgrid"   =>
+        case "mailgun" => MailgunSettingsFormat.reads(settings)
+        case "mailjet" => MailjetSettingsFormat.reads(settings)
+        case "sendgrid" =>
           SendGridSettingsFormat.reads(settings)
         case "smtpClient" =>
           SimpleSMTPClientSettingsFormat.reads(settings)
-        case "console"    => ConsoleSettingsFormat.reads(settings)
+        case "console" => ConsoleSettingsFormat.reads(settings)
       }
-    override def writes(o: MailerSettings): JsValue                 = o.asJson
+    override def writes(o: MailerSettings): JsValue = o.asJson
   }
 
   val AuditTrailConfigFormat = new Format[AuditTrailConfig] {
@@ -1872,36 +1904,37 @@ object json {
             alertsEmails = (json \ "alertsEmails")
               .asOpt[Seq[String]]
               .getOrElse(Seq.empty[String]),
-            kafkaConfig = (json \ "kafkaConfig").asOpt[JsValue].flatMap { config =>
-              (
-                (config \ "servers").asOpt[Seq[String]].filter(_.nonEmpty),
-                (config \ "keyPass").asOpt[String],
-                (config \ "keystore").asOpt[String],
-                (config \ "truststore").asOpt[String],
-                (config \ "auditTopic").asOpt[String].filter(_.nonEmpty),
-                (config \ "hostValidation").asOpt[Boolean]
-              ) match {
-                case (
-                      Some(servers),
-                      keyPass,
-                      keystore,
-                      truststore,
-                      Some(auditTopic),
-                      hostValidation
-                    ) =>
-                  Some(
-                    KafkaConfig(
-                      servers,
-                      keyPass,
-                      keystore,
-                      truststore,
-                      auditTopic,
-                      hostValidation
+            kafkaConfig =
+              (json \ "kafkaConfig").asOpt[JsValue].flatMap { config =>
+                (
+                  (config \ "servers").asOpt[Seq[String]].filter(_.nonEmpty),
+                  (config \ "keyPass").asOpt[String],
+                  (config \ "keystore").asOpt[String],
+                  (config \ "truststore").asOpt[String],
+                  (config \ "auditTopic").asOpt[String].filter(_.nonEmpty),
+                  (config \ "hostValidation").asOpt[Boolean]
+                ) match {
+                  case (
+                        Some(servers),
+                        keyPass,
+                        keystore,
+                        truststore,
+                        Some(auditTopic),
+                        hostValidation
+                      ) =>
+                    Some(
+                      KafkaConfig(
+                        servers,
+                        keyPass,
+                        keystore,
+                        truststore,
+                        auditTopic,
+                        hostValidation
+                      )
                     )
-                  )
-                case e => None
+                  case e => None
+                }
               }
-            }
           )
         )
       } recover { case e =>
@@ -1911,16 +1944,16 @@ object json {
     override def writes(o: AuditTrailConfig): JsValue =
       Json.obj(
         "elasticConfigs" -> o.elasticConfigs.map(_.toJson),
-        "auditWebhooks"  -> JsArray(o.auditWebhooks.map(_.toJson)),
-        "alertsEmails"   -> JsArray(o.alertsEmails.map(JsString.apply)),
-        "kafkaConfig"    -> o.kafkaConfig.map(KafkaConfig.format.writes)
+        "auditWebhooks" -> JsArray(o.auditWebhooks.map(_.toJson)),
+        "alertsEmails" -> JsArray(o.alertsEmails.map(JsString.apply)),
+        "kafkaConfig" -> o.kafkaConfig.map(KafkaConfig.format.writes)
       )
   }
   object DaikokuHeader {
     def jsonHeader(tenantId: TenantId)(implicit env: Env): JsObject = {
       Json.obj(
         "daikokuHeader" -> Json.obj(
-          "name"  -> "Daikoku-Tenant",
+          "name" -> "Daikoku-Tenant",
           "value" -> JWT
             .create()
             .withClaim("value", tenantId.value)
@@ -1956,19 +1989,22 @@ object json {
             picture = (json \ "picture")
               .asOpt[String]
               .getOrElse((json \ "email").as[String].gravatar),
-            pictureFromProvider = (json \ "pictureFromProvider").asOpt[Boolean].getOrElse(true),
+            pictureFromProvider =
+              (json \ "pictureFromProvider").asOpt[Boolean].getOrElse(true),
             password = (json \ "password").asOpt[String],
             hardwareKeyRegistrations = (json \ "hardwareKeyRegistrations")
               .asOpt[Seq[JsObject]]
               .getOrElse(Seq.empty[JsObject]),
-            isDaikokuAdmin = (json \ "isDaikokuAdmin").asOpt[Boolean].getOrElse(false),
+            isDaikokuAdmin =
+              (json \ "isDaikokuAdmin").asOpt[Boolean].getOrElse(false),
             personalToken = (json \ "personalToken").asOpt[String],
             lastTenant = (json \ "lastTenant").asOpt(using TenantIdFormat),
             metadata = (json \ "metadata")
               .asOpt[Map[String, String]]
               .getOrElse(Map.empty),
             defaultLanguage = (json \ "defaultLanguage").asOpt[String],
-            starredApis = (json \ "starredApis")
+            starredApis =
+              (json \ "starredApis")
               .asOpt(using SetApiIdFormat)
               .getOrElse(Set.empty),
             twoFactorAuthentication = (json \ "twoFactorAuthentication").asOpt(
@@ -1983,36 +2019,36 @@ object json {
 
     override def writes(o: User): JsValue =
       Json.obj(
-        "_id"                      -> UserIdFormat.writes(o.id),
-        "_humanReadableId"         -> o.email.urlPathSegmentSanitized,
-        "_deleted"                 -> o.deleted,
-        "tenants"                  -> SeqTenantIdFormat.writes(o.tenants.toSeq),
-        "origins"                  -> JsArray(o.origins.toSeq.map(o => JsString(o.name))),
-        "name"                     -> o.name,
-        "email"                    -> o.email,
-        "picture"                  -> o.picture,
-        "pictureFromProvider"      -> o.pictureFromProvider,
-        "password"                 -> o.password,
-        "isDaikokuAdmin"           -> o.isDaikokuAdmin,
-        "personalToken"            -> o.personalToken
+        "_id" -> UserIdFormat.writes(o.id),
+        "_humanReadableId" -> o.email.urlPathSegmentSanitized,
+        "_deleted" -> o.deleted,
+        "tenants" -> SeqTenantIdFormat.writes(o.tenants.toSeq),
+        "origins" -> JsArray(o.origins.toSeq.map(o => JsString(o.name))),
+        "name" -> o.name,
+        "email" -> o.email,
+        "picture" -> o.picture,
+        "pictureFromProvider" -> o.pictureFromProvider,
+        "password" -> o.password,
+        "isDaikokuAdmin" -> o.isDaikokuAdmin,
+        "personalToken" -> o.personalToken
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
         "hardwareKeyRegistrations" -> JsArray(o.hardwareKeyRegistrations),
-        "lastTenant"               -> o.lastTenant
+        "lastTenant" -> o.lastTenant
           .map(_.asJson)
           .getOrElse(JsNull)
           .as[JsValue],
-        "metadata"                 -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq),
-        "defaultLanguage"          -> o.defaultLanguage
+        "metadata" -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq),
+        "defaultLanguage" -> o.defaultLanguage
           .fold(JsNull.as[JsValue])(JsString.apply),
-        "isGuest"                  -> o.isGuest,
-        "starredApis"              -> SetApiIdFormat.writes(o.starredApis),
-        "twoFactorAuthentication"  -> o.twoFactorAuthentication
+        "isGuest" -> o.isGuest,
+        "starredApis" -> SetApiIdFormat.writes(o.starredApis),
+        "twoFactorAuthentication" -> o.twoFactorAuthentication
           .map(TwoFactorAuthenticationFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "invitation"               -> o.invitation
+        "invitation" -> o.invitation
           .map(UserInvitationFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue]
@@ -2057,30 +2093,30 @@ object json {
 
     override def writes(o: Team): JsValue =
       Json.obj(
-        "_id"                        -> TeamIdFormat.writes(o.id),
-        "_humanReadableId"           -> o.name.urlPathSegmentSanitized,
-        "_tenant"                    -> o.tenant.asJson,
-        "_deleted"                   -> o.deleted,
-        "type"                       -> TeamTypeFormat.writes(o.`type`),
-        "name"                       -> o.name,
-        "description"                -> o.description,
-        "contact"                    -> o.contact,
-        "avatar"                     -> o.avatar.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-        "users"                      -> JsArray(o.users.map(UserWithPermissionFormat.writes).toSeq),
+        "_id" -> TeamIdFormat.writes(o.id),
+        "_humanReadableId" -> o.name.urlPathSegmentSanitized,
+        "_tenant" -> o.tenant.asJson,
+        "_deleted" -> o.deleted,
+        "type" -> TeamTypeFormat.writes(o.`type`),
+        "name" -> o.name,
+        "description" -> o.description,
+        "contact" -> o.contact,
+        "avatar" -> o.avatar.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+        "users" -> JsArray(o.users.map(UserWithPermissionFormat.writes).toSeq),
         "authorizedOtoroshiEntities" -> o.authorizedOtoroshiEntities
           .map(SeqTeamAuthorizedEntitiesFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "apiKeyVisibility"           -> o.apiKeyVisibility
+        "apiKeyVisibility" -> o.apiKeyVisibility
           .map(_.asJson)
           .getOrElse(JsNull)
           .as[JsValue],
-        "metadata"                   -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq),
-        "apisCreationPermission"     -> o.apisCreationPermission
+        "metadata" -> JsObject(o.metadata.view.mapValues(JsString.apply).toSeq),
+        "apisCreationPermission" -> o.apisCreationPermission
           .map(JsBoolean)
           .getOrElse(JsNull)
           .as[JsValue],
-        "verified"                   -> o.verified
+        "verified" -> o.verified
       )
   }
 
@@ -2096,10 +2132,12 @@ object json {
         Try {
           JsSuccess(
             TeamAuthorizedEntities(
-              otoroshiSettingsId = (json \ "otoroshiSettingsId").as(using
+              otoroshiSettingsId =
+                (json \ "otoroshiSettingsId").as(using
                 OtoroshiSettingsIdFormat
               ),
-              authorizedEntities = (json \ "authorizedEntities").as(using AuthorizedEntitiesFormat)
+              authorizedEntities =
+                (json \ "authorizedEntities").as(using AuthorizedEntitiesFormat)
             )
           )
         } recover { case e =>
@@ -2124,7 +2162,8 @@ object json {
               .asOpt(using DateTimeFormat)
               .getOrElse(DateTime.now()),
             description = (json \ "description").asOpt[String].getOrElse(""),
-            smallDescription = (json \ "smallDescription").asOpt[String].getOrElse(""),
+            smallDescription =
+              (json \ "smallDescription").asOpt[String].getOrElse(""),
             customHeaderCmsPage = (json \ "customHeaderCmsPage").asOpt[String],
             descriptionCmsPage = (json \ "descriptionCmsPage").asOpt[String],
             header = (json \ "header").asOpt[String],
@@ -2149,7 +2188,8 @@ object json {
             visibility = (json \ "visibility").as(using ApiVisibilityFormat),
             possibleUsagePlans = (json \ "possibleUsagePlans")
               .as(using SeqUsagePlanIdFormat),
-            defaultUsagePlan = (json \ "defaultUsagePlan").asOpt(using UsagePlanIdFormat),
+            defaultUsagePlan =
+              (json \ "defaultUsagePlan").asOpt(using UsagePlanIdFormat),
             authorizedTeams = (json \ "authorizedTeams")
               .asOpt(using SeqTeamIdFormat)
               .getOrElse(Seq.empty),
@@ -2181,57 +2221,57 @@ object json {
 
     override def writes(o: Api): JsValue =
       Json.obj(
-        "_id"                 -> ApiIdFormat.writes(o.id),
-        "_humanReadableId"    -> o.name.urlPathSegmentSanitized,
-        "_tenant"             -> o.tenant.asJson,
-        "team"                -> TeamIdFormat.writes(o.team),
-        "_deleted"            -> o.deleted,
-        "lastUpdate"          -> DateTimeFormat.writes(o.lastUpdate),
+        "_id" -> ApiIdFormat.writes(o.id),
+        "_humanReadableId" -> o.name.urlPathSegmentSanitized,
+        "_tenant" -> o.tenant.asJson,
+        "team" -> TeamIdFormat.writes(o.team),
+        "_deleted" -> o.deleted,
+        "lastUpdate" -> DateTimeFormat.writes(o.lastUpdate),
         "createdAt" -> DateTimeFormat.writes(o.createdAt),
-        "name"                -> o.name,
-        "smallDescription"    -> o.smallDescription,
+        "name" -> o.name,
+        "smallDescription" -> o.smallDescription,
         "customHeaderCmsPage" -> o.customHeaderCmsPage,
-        "descriptionCmsPage"  -> o.descriptionCmsPage,
-        "header"              -> o.header.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-        "image"               -> o.image.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-        "description"         -> o.description,
-        "currentVersion"      -> VersionFormat.writes(o.currentVersion),
-        "supportedVersions"   -> JsArray(o.supportedVersions.map(_.asJson).toSeq),
-        "testing"             -> o.testing.map(_.asJson).getOrElse(JsNull).as[JsValue],
-        "documentation"       -> o.documentation.asJson,
-        "swagger"             -> o.swagger
+        "descriptionCmsPage" -> o.descriptionCmsPage,
+        "header" -> o.header.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+        "image" -> o.image.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+        "description" -> o.description,
+        "currentVersion" -> VersionFormat.writes(o.currentVersion),
+        "supportedVersions" -> JsArray(o.supportedVersions.map(_.asJson).toSeq),
+        "testing" -> o.testing.map(_.asJson).getOrElse(JsNull).as[JsValue],
+        "documentation" -> o.documentation.asJson,
+        "swagger" -> o.swagger
           .map(SwaggerAccessFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
         // "serviceGroup" -> o.serviceGroup.map(_.asJson).getOrElse(JsNull).as[JsValue],
-        "tags"                -> JsArray(o.tags.map(JsString.apply).toSeq),
-        "categories"          -> JsArray(o.categories.map(JsString.apply).toSeq),
-        "visibility"          -> ApiVisibilityFormat.writes(o.visibility),
-        "possibleUsagePlans"  -> SeqUsagePlanIdFormat.writes(
+        "tags" -> JsArray(o.tags.map(JsString.apply).toSeq),
+        "categories" -> JsArray(o.categories.map(JsString.apply).toSeq),
+        "visibility" -> ApiVisibilityFormat.writes(o.visibility),
+        "possibleUsagePlans" -> SeqUsagePlanIdFormat.writes(
           o.possibleUsagePlans
         ),
-        "defaultUsagePlan"    -> o.defaultUsagePlan
+        "defaultUsagePlan" -> o.defaultUsagePlan
           .map(UsagePlanIdFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "authorizedTeams"     -> JsArray(
+        "authorizedTeams" -> JsArray(
           o.authorizedTeams.map(TeamIdFormat.writes)
         ),
-        "posts"               -> SeqPostIdFormat.writes(o.posts),
-        "issues"              -> SeqIssueIdFormat.writes(o.issues),
-        "issuesTags"          -> SetApiTagFormat.writes(o.issuesTags),
-        "stars"               -> o.stars,
-        "parent"              -> o.parent
+        "posts" -> SeqPostIdFormat.writes(o.posts),
+        "issues" -> SeqIssueIdFormat.writes(o.issues),
+        "issuesTags" -> SetApiTagFormat.writes(o.issuesTags),
+        "stars" -> o.stars,
+        "parent" -> o.parent
           .map(ApiIdFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "isDefault"           -> o.isDefault,
-        "apis"                -> o.apis
+        "isDefault" -> o.isDefault,
+        "apis" -> o.apis
           .map(SetApiIdFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "state"               -> ApiStateFormat.writes(o.state),
-        "metadata"            -> JsObject(
+        "state" -> ApiStateFormat.writes(o.state),
+        "metadata" -> JsObject(
           o.metadata.view.mapValues(JsString.apply).toSeq
         )
       )
@@ -2255,10 +2295,10 @@ object json {
 
       override def writes(o: ApiKeyRotation): JsValue =
         Json.obj(
-          "enabled"       -> o.enabled,
+          "enabled" -> o.enabled,
           "rotationEvery" -> o.rotationEvery,
-          "gracePeriod"   -> o.gracePeriod,
-          "nextSecret"    -> o.nextSecret
+          "gracePeriod" -> o.gracePeriod,
+          "nextSecret" -> o.nextSecret
         )
     }
 
@@ -2279,9 +2319,9 @@ object json {
 
     override def writes(o: ApiSubscriptionRotation): JsValue =
       Json.obj(
-        "enabled"         -> o.enabled,
-        "rotationEvery"   -> o.rotationEvery,
-        "gracePeriod"     -> o.gracePeriod,
+        "enabled" -> o.enabled,
+        "rotationEvery" -> o.rotationEvery,
+        "gracePeriod" -> o.gracePeriod,
         "pendingRotation" -> o.pendingRotation
       )
   }
@@ -2304,31 +2344,35 @@ object json {
             customName = (json \ "customName").asOpt[String],
             adminCustomName = (json \ "adminCustomName").asOpt[String],
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
-            rotation = (json \ "rotation").asOpt(using ApiSubscriptionyRotationFormat),
+            rotation =
+              (json \ "rotation").asOpt(using ApiSubscriptionyRotationFormat),
             integrationToken = (json \ "integrationToken").as[String],
             bearerToken = (json \ "bearerToken").asOpt[String],
             metadata = (json \ "metadata").asOpt[JsObject],
             customMetadata = (json \ "customMetadata").asOpt[JsObject],
             tags = (json \ "tags").asOpt[Set[String]],
-            customMaxPerSecond = (json \ "customMaxPerSecond").asOpt(using LongFormat),
+            customMaxPerSecond =
+              (json \ "customMaxPerSecond").asOpt(using LongFormat),
             customMaxPerDay =
               (json \ "customMaxPerDay").asOpt(using LongFormat),
             customMaxPerMonth =
               (json \ "customMaxPerMonth").asOpt(using LongFormat),
             customReadOnly = (json \ "customReadOnly").asOpt[Boolean],
             parent = (json \ "parent").asOpt(using ApiSubscriptionIdFormat),
-            thirdPartySubscriptionInformations = (json \ "thirdPartySubscriptionInformations") match {
-              case JsDefined(value) =>
-                value match {
-                  case JsNull => None
-                  case _      =>
-                    ThirdPartySubscriptionInformationsFormat
-                      .reads(value)
-                      .get
-                      .some
-                }
-              case _: JsUndefined   => None
-            }
+            thirdPartySubscriptionInformations =
+              (json \ "thirdPartySubscriptionInformations") match {
+                case JsDefined(value) =>
+                  value match {
+                    case JsNull => None
+                    case _ =>
+                      ThirdPartySubscriptionInformationsFormat
+                        .reads(value)
+                        .get
+                        .some
+                  }
+                case _: JsUndefined => None
+              },
+            state = (json \ "state").as(ApiSubscriptionStateFormat)
           )
         )
       } recover { case e =>
@@ -2339,63 +2383,64 @@ object json {
 
     override def writes(o: ApiSubscription): JsValue =
       Json.obj(
-        "_id"                                -> ApiSubscriptionIdFormat.writes(o.id),
-        "_tenant"                            -> o.tenant.asJson,
-        "_deleted"                           -> o.deleted,
-        "apiKey"                             -> OtoroshiApiKeyFormat.writes(o.apiKey),
-        "plan"                               -> UsagePlanIdFormat.writes(o.plan),
-        "team"                               -> TeamIdFormat.writes(o.team),
-        "api"                                -> ApiIdFormat.writes(o.api),
-        "createdAt"                          -> DateTimeFormat.writes(o.createdAt),
-        "validUntil"                         -> o.validUntil
+        "_id" -> ApiSubscriptionIdFormat.writes(o.id),
+        "_tenant" -> o.tenant.asJson,
+        "_deleted" -> o.deleted,
+        "apiKey" -> OtoroshiApiKeyFormat.writes(o.apiKey),
+        "plan" -> UsagePlanIdFormat.writes(o.plan),
+        "team" -> TeamIdFormat.writes(o.team),
+        "api" -> ApiIdFormat.writes(o.api),
+        "createdAt" -> DateTimeFormat.writes(o.createdAt),
+        "validUntil" -> o.validUntil
           .map(DateTimeFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "by"                                 -> UserIdFormat.writes(o.by),
-        "customName"                         -> o.customName
+        "by" -> UserIdFormat.writes(o.by),
+        "customName" -> o.customName
           .map(id => JsString(id))
           .getOrElse(JsNull)
           .as[JsValue],
-        "adminCustomName"                    -> o.adminCustomName
+        "adminCustomName" -> o.adminCustomName
           .map(id => JsString(id))
           .getOrElse(JsNull)
           .as[JsValue],
-        "enabled"                            -> o.enabled,
-        "rotation"                           -> o.rotation
+        "enabled" -> o.enabled,
+        "rotation" -> o.rotation
           .map(ApiSubscriptionyRotationFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "integrationToken"                   -> o.integrationToken,
-        "bearerToken"                        -> o.bearerToken,
-        "metadata"                           -> o.metadata,
-        "customMetadata"                     -> o.customMetadata,
-        "tags"                               -> JsArray(
+        "integrationToken" -> o.integrationToken,
+        "bearerToken" -> o.bearerToken,
+        "metadata" -> o.metadata,
+        "customMetadata" -> o.customMetadata,
+        "tags" -> JsArray(
           o.tags.getOrElse(Set.empty).toSeq.map(JsString.apply)
         ),
-        "customMaxPerSecond"                 -> o.customMaxPerSecond
+        "customMaxPerSecond" -> o.customMaxPerSecond
           .map(JsNumber(_))
           .getOrElse(JsNull)
           .as[JsValue],
-        "customMaxPerDay"                    -> o.customMaxPerDay
+        "customMaxPerDay" -> o.customMaxPerDay
           .map(JsNumber(_))
           .getOrElse(JsNull)
           .as[JsValue],
-        "customMaxPerMonth"                  -> o.customMaxPerMonth
+        "customMaxPerMonth" -> o.customMaxPerMonth
           .map(JsNumber(_))
           .getOrElse(JsNull)
           .as[JsValue],
-        "customReadOnly"                     -> o.customReadOnly
+        "customReadOnly" -> o.customReadOnly
           .map(JsBoolean.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "parent"                             -> o.parent
+        "parent" -> o.parent
           .map(ApiSubscriptionIdFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
         "thirdPartySubscriptionInformations" -> o.thirdPartySubscriptionInformations
           .map(ThirdPartySubscriptionInformationsFormat.writes)
           .getOrElse(JsNull)
-          .as[JsValue]
+          .as[JsValue],
+        "state" -> ApiSubscriptionStateFormat.writes(o.state)
       )
   }
 
@@ -2417,7 +2462,7 @@ object json {
               .as[JsObject] + ("type" -> JsString("stripe"))
         }
     }
-  val StripeSubscriptionInformationsFormat     =
+  val StripeSubscriptionInformationsFormat =
     new Format[StripeSubscriptionInformations] {
       override def reads(
           json: JsValue
@@ -2437,7 +2482,7 @@ object json {
 
       override def writes(o: StripeSubscriptionInformations): JsValue =
         Json.obj(
-          "subscriptionId"   -> o.subscriptionId,
+          "subscriptionId" -> o.subscriptionId,
           "primaryElementId" -> o.primaryElementId,
           "meteredElementId" -> o.meteredElementId
         )
@@ -2458,54 +2503,64 @@ object json {
     override def writes(o: SubscriptionDemandState): JsValue = JsString(o.name)
   }
 
+  val ApiSubscriptionStateFormat = new Format[ApiSubscriptionState] {
+    override def reads(json: JsValue) =
+      json.as[String] match {
+        case "blocked" => JsSuccess(ApiSubscriptionState.Blocked)
+        case "active"  => JsSuccess(ApiSubscriptionState.Active)
+      }
+
+    override def writes(o: ApiSubscriptionState): JsValue = JsString(o.name)
+  }
+
   val SubscriptionDemandFormat = new Format[SubscriptionDemand] {
     override def writes(o: SubscriptionDemand): JsValue =
       Json.obj(
-        "_id"                -> o.id.asJson,
-        "_tenant"            -> o.tenant.asJson,
-        "_deleted"           -> o.deleted,
-        "api"                -> o.api.asJson,
-        "plan"               -> o.plan.asJson,
-        "steps"              -> SeqSubscriptionDemanStepFormat.writes(o.steps),
-        "state"              -> o.state.name,
-        "team"               -> o.team.asJson,
-        "from"               -> o.from.asJson,
-        "date"               -> DateTimeFormat.writes(o.date),
-        "motivation"         -> o.motivation
+        "_id" -> o.id.asJson,
+        "_tenant" -> o.tenant.asJson,
+        "_deleted" -> o.deleted,
+        "api" -> o.api.asJson,
+        "plan" -> o.plan.asJson,
+        "steps" -> SeqSubscriptionDemanStepFormat.writes(o.steps),
+        "state" -> o.state.name,
+        "team" -> o.team.asJson,
+        "from" -> o.from.asJson,
+        "date" -> DateTimeFormat.writes(o.date),
+        "motivation" -> o.motivation
           .getOrElse(JsNull)
           .as[JsValue],
         "parentSubscription" -> o.parentSubscriptionId
           .map(_.asJson)
           .getOrElse(JsNull)
           .as[JsValue],
-        "customMetadata"     -> o.customMetadata
+        "customMetadata" -> o.customMetadata
           .getOrElse(JsNull)
           .as[JsValue],
         "customMaxPerSecond" -> o.customMaxPerSecond
           .map(JsNumber(_))
           .getOrElse(JsNull)
           .as[JsValue],
-        "customMaxPerDay"    -> o.customMaxPerDay
+        "customMaxPerDay" -> o.customMaxPerDay
           .map(JsNumber(_))
           .getOrElse(JsNull)
           .as[JsValue],
-        "customMaxPerMonth"  -> o.customMaxPerMonth
+        "customMaxPerMonth" -> o.customMaxPerMonth
           .map(JsNumber(_))
           .getOrElse(JsNull)
           .as[JsValue],
-        "customReadOnly"     -> o.customReadOnly
+        "customReadOnly" -> o.customReadOnly
           .map(JsBoolean.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "adminCustomName"    -> o.adminCustomName
+        "adminCustomName" -> o.adminCustomName
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "customName"         -> o.customName
+        "customName" -> o.customName
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "tags"               -> o.tags
+        "tags" -> o.tags
           .map(t => JsArray(t.toSeq.map(JsString.apply)))
           .getOrElse(JsNull)
           .as[JsValue]
@@ -2529,7 +2584,8 @@ object json {
               .asOpt[String]
               .map(m => Json.obj("motivation" -> m))
               .orElse((json \ "motivation").asOpt[JsObject]),
-            parentSubscriptionId = (json \ "parentSubscription").asOpt(using
+            parentSubscriptionId =
+              (json \ "parentSubscription").asOpt(using
               ApiSubscriptionIdFormat
             ),
             customMetadata = (json \ "customMetadata").asOpt[JsObject],
@@ -2551,9 +2607,9 @@ object json {
   val SubscriptionDemandStepFormat = new Format[SubscriptionDemandStep] {
     override def writes(o: SubscriptionDemandStep): JsValue =
       Json.obj(
-        "_id"      -> o.id.asJson,
-        "state"    -> o.state.name,
-        "step"     -> ValidationStepFormat.writes(o.step),
+        "_id" -> o.id.asJson,
+        "state" -> o.state.name,
+        "step" -> ValidationStepFormat.writes(o.step),
         "metadata" -> o.metadata
       )
 
@@ -2576,13 +2632,13 @@ object json {
   val StepValidatorFormat = new Format[StepValidator] {
     override def writes(o: StepValidator): JsValue =
       Json.obj(
-        "_id"                -> o.id.asJson,
-        "_tenant"            -> o.tenant.asJson,
-        "_deleted"           -> o.deleted,
-        "token"              -> o.token,
-        "step"               -> o.step.asJson,
+        "_id" -> o.id.asJson,
+        "_tenant" -> o.tenant.asJson,
+        "_deleted" -> o.deleted,
+        "token" -> o.token,
+        "step" -> o.step.asJson,
         "subscriptionDemand" -> o.subscriptionDemand.asJson,
-        "metadata"           -> o.metadata
+        "metadata" -> o.metadata
       )
 
     override def reads(json: JsValue): JsResult[StepValidator] =
@@ -2594,7 +2650,8 @@ object json {
             deleted = (json \ "_deleted").as[Boolean],
             token = (json \ "token").as[String],
             step = (json \ "step").as(using SubscriptionDemandStepIdFormat),
-            subscriptionDemand = (json \ "subscriptionDemand").as(using
+            subscriptionDemand =
+              (json \ "subscriptionDemand").as(using
               SubscriptionDemandIdFormat
             ),
             metadata = (json \ "metadata").as[JsObject]
@@ -2612,11 +2669,11 @@ object json {
       override def writes(o: AuthorizedEntities): JsValue =
         JsArray(
           o.groups.map(g => s"group_${g.value}").map(JsString.apply).toSeq ++
-          o.services
-            .map(g => s"service_${g.value}")
-            .map(JsString.apply)
-            .toSeq ++
-          o.routes.map(g => s"route_${g.value}").map(JsString.apply).toSeq
+            o.services
+              .map(g => s"service_${g.value}")
+              .map(JsString.apply)
+              .toSeq ++
+            o.routes.map(g => s"route_${g.value}").map(JsString.apply).toSeq
         )
 
       override def reads(json: JsValue): JsResult[AuthorizedEntities] =
@@ -2629,13 +2686,13 @@ object json {
               .foldLeft(AuthorizedEntities()) { (entities, value) =>
                 {
                   value match {
-                    case r"group_.*"   =>
+                    case r"group_.*" =>
                       entities.copy(
                         groups = entities.groups + OtoroshiServiceGroupId(
                           value.replaceFirst("group_", "")
                         )
                       )
-                    case r"route_.*"   =>
+                    case r"route_.*" =>
                       entities.copy(routes =
                         entities.routes + OtoroshiRouteId(
                           value.replaceFirst("route_", "")
@@ -2661,9 +2718,9 @@ object json {
     new Format[AuthorizedEntities] {
       override def writes(o: AuthorizedEntities): JsValue =
         Json.obj(
-          "groups"   -> SetOtoroshiServiceGroupsIdFormat.writes(o.groups),
+          "groups" -> SetOtoroshiServiceGroupsIdFormat.writes(o.groups),
           "services" -> SetOtoroshiServicesIdFormat.writes(o.services),
-          "routes"   -> SetOtoroshiRoutesIdFormat.writes(o.routes)
+          "routes" -> SetOtoroshiRoutesIdFormat.writes(o.routes)
         )
 
       override def reads(json: JsValue): JsResult[AuthorizedEntities] =
@@ -2687,30 +2744,30 @@ object json {
     new Format[ActualOtoroshiApiKey] {
       override def writes(apk: ActualOtoroshiApiKey): JsValue =
         Json.obj(
-          "clientId"                -> apk.clientId,
-          "clientSecret"            -> apk.clientSecret,
-          "clientName"              -> apk.clientName,
-          "authorizedEntities"      -> AuthorizedEntitiesOtoroshiFormat.writes(
+          "clientId" -> apk.clientId,
+          "clientSecret" -> apk.clientSecret,
+          "clientName" -> apk.clientName,
+          "authorizedEntities" -> AuthorizedEntitiesOtoroshiFormat.writes(
             apk.authorizedEntities
           ),
-          "enabled"                 -> apk.enabled,
-          "allowClientIdOnly"       -> apk.allowClientIdOnly,
+          "enabled" -> apk.enabled,
+          "allowClientIdOnly" -> apk.allowClientIdOnly,
           "constrainedServicesOnly" -> apk.constrainedServicesOnly,
-          "readOnly"                -> apk.readOnly,
-          "throttlingQuota"         -> apk.throttlingQuota,
-          "dailyQuota"              -> apk.dailyQuota,
-          "monthlyQuota"            -> apk.monthlyQuota,
-          "metadata"                -> JsObject(
+          "readOnly" -> apk.readOnly,
+          "throttlingQuota" -> apk.throttlingQuota,
+          "dailyQuota" -> apk.dailyQuota,
+          "monthlyQuota" -> apk.monthlyQuota,
+          "metadata" -> JsObject(
             apk.metadata.view.mapValues(JsString.apply).toSeq
           ),
-          "tags"                    -> JsArray(apk.tags.toSeq.map(JsString.apply)),
-          "restrictions"            -> apk.restrictions.asJson,
-          "rotation"                -> apk.rotation
+          "tags" -> JsArray(apk.tags.toSeq.map(JsString.apply)),
+          "restrictions" -> apk.restrictions.asJson,
+          "rotation" -> apk.rotation
             .map(ApiKeyRotationFormat.writes)
             .getOrElse(JsNull)
             .as[JsValue],
-          "validUntil"              -> apk.validUntil,
-          "bearer"                  -> apk.bearer
+          "validUntil" -> apk.validUntil,
+          "bearer" -> apk.bearer
         )
 
       override def reads(json: JsValue): JsResult[ActualOtoroshiApiKey] =
@@ -2723,7 +2780,8 @@ object json {
               AuthorizedEntitiesOtoroshiFormat
             ),
             enabled = (json \ "enabled").asOpt[Boolean].getOrElse(true),
-            allowClientIdOnly = (json \ "allowClientIdOnly").asOpt[Boolean].getOrElse(false),
+            allowClientIdOnly =
+              (json \ "allowClientIdOnly").asOpt[Boolean].getOrElse(false),
             readOnly = (json \ "readOnly").asOpt[Boolean].getOrElse(false),
             throttlingQuota = (json \ "throttlingQuota")
               .asOpt[Long]
@@ -2784,57 +2842,59 @@ object json {
     new Format[NotificationAction] {
       override def reads(json: JsValue) =
         (json \ "type").as[String] match {
-          case "ApiAccess"                      => ApiAccessFormat.reads(json)
-          case "AccountCreationAttempt"         =>
+          case "ApiAccess" => ApiAccessFormat.reads(json)
+          case "AccountCreationAttempt" =>
             accountCreationAttemptFormat.reads(json)
-          case "ApiSubscription"                => ApiSubscriptionDemandFormat.reads(json)
-          case "ApiSubscriptionReject"          =>
+          case "ApiSubscription" => ApiSubscriptionDemandFormat.reads(json)
+          case "ApiSubscriptionReject" =>
             ApiSubscriptionRejectFormat.reads(json)
-          case "ApiSubscriptionAccept"          =>
+          case "ApiSubscriptionAccept" =>
             ApiSubscriptionAcceptFormat.reads(json)
-          case "OtoroshiSyncSubscriptionError"  =>
+          case "OtoroshiSyncSubscriptionError" =>
             OtoroshiSyncSubscriptionErrorFormat.reads(json)
-          case "OtoroshiSyncApiError"           => OtoroshiSyncApiErrorFormat.reads(json)
-          case "ApiKeyDeletionInformation"      =>
+          case "OtoroshiSyncApiError" => OtoroshiSyncApiErrorFormat.reads(json)
+          case "ApiKeyDeletionInformation" =>
             ApiKeyDeletionInformationFormat.reads(json)
-          case "ApiKeyDeletionInformationV2"    =>
+          case "ApiKeyDeletionInformationV2" =>
             ApiKeyDeletionInformationV2Format.reads(json)
-          case "ApiKeyRotationInProgress"       =>
+          case "ApiKeyRotationInProgress" =>
             ApiKeyRotationInProgressFormat.reads(json)
-          case "ApiKeyRotationInProgressV2"     =>
+          case "ApiKeyRotationInProgressV2" =>
             ApiKeyRotationInProgressV2Format.reads(json)
-          case "ApiKeyRotationEnded"            => ApiKeyRotationEndedFormat.reads(json)
-          case "ApiKeyRotationEndedV2"          =>
+          case "ApiKeyRotationEnded" => ApiKeyRotationEndedFormat.reads(json)
+          case "ApiKeyRotationEndedV2" =>
             ApiKeyRotationEndedV2Format.reads(json)
-          case "TeamInvitation"                 => TeamInvitationFormat.reads(json)
-          case "ApiKeyRefresh"                  => ApiKeyRefreshFormat.reads(json)
-          case "ApiKeyRefreshV2"                => ApiKeyRefreshV2Format.reads(json)
-          case "NewPostPublished"               => NewPostPublishedFormat.reads(json)
-          case "NewPostPublishedV2"             => NewPostPublishedV2Format.reads(json)
-          case "NewIssueOpen"                   => NewIssueOpenFormat.reads(json)
-          case "NewIssueOpenV2"                 => NewIssueOpenV2Format.reads(json)
-          case "NewCommentOnIssue"              => NewCommentOnIssueFormat.reads(json)
-          case "NewCommentOnIssueV2"            => NewCommentOnIssueV2Format.reads(json)
-          case "TransferApiOwnership"           => TransferApiOwnershipFormat.reads(json)
+          case "TeamInvitation"       => TeamInvitationFormat.reads(json)
+          case "ApiKeyRefresh"        => ApiKeyRefreshFormat.reads(json)
+          case "ApiKeyRefreshV2"      => ApiKeyRefreshV2Format.reads(json)
+          case "NewPostPublished"     => NewPostPublishedFormat.reads(json)
+          case "NewPostPublishedV2"   => NewPostPublishedV2Format.reads(json)
+          case "NewIssueOpen"         => NewIssueOpenFormat.reads(json)
+          case "NewIssueOpenV2"       => NewIssueOpenV2Format.reads(json)
+          case "NewCommentOnIssue"    => NewCommentOnIssueFormat.reads(json)
+          case "NewCommentOnIssueV2"  => NewCommentOnIssueV2Format.reads(json)
+          case "TransferApiOwnership" => TransferApiOwnershipFormat.reads(json)
           case "ApiSubscriptionTransferSuccess" =>
             ApiSubscriptionTransferSuccessFormat.reads(json)
-          case "CheckoutForSubscription"        => CheckoutForSubscriptionFormat.reads(json)
-          case "ApiDepreciationWarning"         => ApiDepreciationWarningFormat.reads(json)
-          case "ApiBlockingWarning"             => ApiBlockingWarningFormat.reads(json)
-          case str                              => JsError(s"Bad notification value: $str")
+          case "CheckoutForSubscription" =>
+            CheckoutForSubscriptionFormat.reads(json)
+          case "ApiDepreciationWarning" =>
+            ApiDepreciationWarningFormat.reads(json)
+          case "ApiBlockingWarning" => ApiBlockingWarningFormat.reads(json)
+          case str                  => JsError(s"Bad notification value: $str")
         }
 
       override def writes(o: NotificationAction) =
         o match {
-          case p: ApiAccess                      =>
+          case p: ApiAccess =>
             ApiAccessFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiAccess"
             )
-          case p: ApiSubscriptionDemand          =>
+          case p: ApiSubscriptionDemand =>
             ApiSubscriptionDemandFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiSubscription"
             )
-          case p: AccountCreationAttempt         =>
+          case p: AccountCreationAttempt =>
             accountCreationAttemptFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "AccountCreationAttempt"
             )
@@ -2843,102 +2903,102 @@ object json {
               .obj(
                 "type" -> "ApiSubscriptionTransferSuccess"
               )
-          case p: ApiSubscriptionReject          =>
+          case p: ApiSubscriptionReject =>
             ApiSubscriptionRejectFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiSubscriptionReject"
             )
-          case p: ApiSubscriptionAccept          =>
+          case p: ApiSubscriptionAccept =>
             ApiSubscriptionAcceptFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiSubscriptionAccept"
             )
-          case p: OtoroshiSyncSubscriptionError  =>
+          case p: OtoroshiSyncSubscriptionError =>
             OtoroshiSyncSubscriptionErrorFormat.writes(p).as[JsObject] ++ Json
               .obj("type" -> "OtoroshiSyncSubscriptionError")
-          case p: OtoroshiSyncApiError           =>
+          case p: OtoroshiSyncApiError =>
             OtoroshiSyncApiErrorFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "OtoroshiSyncApiError"
             )
-          case p: ApiKeyDeletionInformation      =>
+          case p: ApiKeyDeletionInformation =>
             ApiKeyDeletionInformationFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiKeyDeletionInformation"
             )
-          case p: ApiKeyDeletionInformationV2    =>
+          case p: ApiKeyDeletionInformationV2 =>
             ApiKeyDeletionInformationV2Format.writes(p).as[JsObject] ++ Json
               .obj(
                 "type" -> "ApiKeyDeletionInformationV2"
               )
-          case p: ApiKeyRotationInProgress       =>
+          case p: ApiKeyRotationInProgress =>
             ApiKeyRotationInProgressFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiKeyRotationInProgress"
             )
-          case p: ApiKeyRotationInProgressV2     =>
+          case p: ApiKeyRotationInProgressV2 =>
             ApiKeyRotationInProgressV2Format.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiKeyRotationInProgressV2"
             )
-          case p: ApiKeyRotationEnded            =>
+          case p: ApiKeyRotationEnded =>
             ApiKeyRotationEndedFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiKeyRotationEnded"
             )
-          case p: ApiKeyRotationEndedV2          =>
+          case p: ApiKeyRotationEndedV2 =>
             ApiKeyRotationEndedV2Format.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiKeyRotationEndedV2"
             )
-          case p: TeamInvitation                 =>
+          case p: TeamInvitation =>
             TeamInvitationFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "TeamInvitation"
             )
-          case p: ApiKeyRefresh                  =>
+          case p: ApiKeyRefresh =>
             ApiKeyRefreshFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiKeyRefresh"
             )
-          case p: ApiKeyRefreshV2                =>
+          case p: ApiKeyRefreshV2 =>
             ApiKeyRefreshV2Format.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiKeyRefreshV2"
             )
-          case p: NewPostPublished               =>
+          case p: NewPostPublished =>
             NewPostPublishedFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "NewPostPublished"
             )
-          case p: NewPostPublishedV2             =>
+          case p: NewPostPublishedV2 =>
             NewPostPublishedV2Format.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "NewPostPublishedV2"
             )
-          case p: NewIssueOpen                   =>
+          case p: NewIssueOpen =>
             NewIssueOpenFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "NewIssueOpen"
             )
-          case p: NewIssueOpenV2                 =>
+          case p: NewIssueOpenV2 =>
             NewIssueOpenV2Format.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "NewIssueOpenV2"
             )
-          case p: NewCommentOnIssue              =>
+          case p: NewCommentOnIssue =>
             NewCommentOnIssueFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "NewCommentOnIssue"
             )
-          case p: NewCommentOnIssueV2            =>
+          case p: NewCommentOnIssueV2 =>
             NewCommentOnIssueV2Format.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "NewCommentOnIssueV2"
             )
-          case p: TransferApiOwnership           =>
+          case p: TransferApiOwnership =>
             TransferApiOwnershipFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "TransferApiOwnership"
             )
-          case p: CheckoutForSubscription        =>
+          case p: CheckoutForSubscription =>
             CheckoutForSubscriptionFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "CheckoutForSubscription"
             )
-          case p: ApiDepreciationWarning         =>
+          case p: ApiDepreciationWarning =>
             ApiDepreciationWarningFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiDepreciationWarning"
             )
-          case p: ApiBlockingWarning             =>
+          case p: ApiBlockingWarning =>
             ApiBlockingWarningFormat.writes(p).as[JsObject] ++ Json.obj(
               "type" -> "ApiBlockingWarning"
             )
         }
     }
 
-  val NewCommentOnIssueFormat   = new Format[NewCommentOnIssue] {
+  val NewCommentOnIssueFormat = new Format[NewCommentOnIssue] {
     override def reads(json: JsValue): JsResult[NewCommentOnIssue] =
       Try {
         JsSuccess(
@@ -2955,8 +3015,8 @@ object json {
     override def writes(o: NewCommentOnIssue): JsValue =
       Json.obj(
         "apiName" -> o.apiName,
-        "teamId"  -> o.teamId,
-        "linkTo"  -> o.linkTo
+        "teamId" -> o.teamId,
+        "linkTo" -> o.linkTo
       )
   }
   val NewCommentOnIssueV2Format = new Format[NewCommentOnIssueV2] {
@@ -2975,9 +3035,9 @@ object json {
 
     override def writes(o: NewCommentOnIssueV2): JsValue =
       Json.obj(
-        "api"   -> o.api.asJson,
+        "api" -> o.api.asJson,
         "issue" -> o.issue.asJson,
-        "user"  -> o.user.asJson
+        "user" -> o.user.asJson
       )
   }
 
@@ -2996,7 +3056,7 @@ object json {
 
     override def writes(o: TransferApiOwnership): JsValue =
       Json.obj(
-        "api"  -> o.api.value,
+        "api" -> o.api.value,
         "team" -> o.team.value
       )
 
@@ -3021,9 +3081,9 @@ object json {
     override def writes(o: CheckoutForSubscription): JsValue =
       Json.obj(
         "demand" -> o.demand.value,
-        "api"    -> o.api.asJson,
-        "plan"   -> o.plan.asJson,
-        "step"   -> o.step.asJson
+        "api" -> o.api.asJson,
+        "plan" -> o.plan.asJson,
+        "step" -> o.step.asJson
       )
   }
 
@@ -3067,7 +3127,7 @@ object json {
       )
   }
 
-  val NewIssueOpenFormat   = new Format[NewIssueOpen] {
+  val NewIssueOpenFormat = new Format[NewIssueOpen] {
     override def reads(json: JsValue): JsResult[NewIssueOpen] =
       Try {
         JsSuccess(
@@ -3084,8 +3144,8 @@ object json {
     override def writes(o: NewIssueOpen): JsValue =
       Json.obj(
         "apiName" -> o.apiName,
-        "teamId"  -> o.teamId,
-        "linkTo"  -> o.linkTo
+        "teamId" -> o.teamId,
+        "linkTo" -> o.linkTo
       )
   }
   val NewIssueOpenV2Format = new Format[NewIssueOpenV2] {
@@ -3103,12 +3163,12 @@ object json {
 
     override def writes(o: NewIssueOpenV2): JsValue =
       Json.obj(
-        "api"   -> o.api.asJson,
+        "api" -> o.api.asJson,
         "issue" -> o.issue.asJson
       )
   }
 
-  val NewPostPublishedFormat   = new Format[NewPostPublished] {
+  val NewPostPublishedFormat = new Format[NewPostPublished] {
     override def reads(json: JsValue): JsResult[NewPostPublished] =
       Try {
         JsSuccess(
@@ -3124,7 +3184,7 @@ object json {
     override def writes(o: NewPostPublished): JsValue =
       Json.obj(
         "apiName" -> o.apiName,
-        "teamId"  -> o.teamId
+        "teamId" -> o.teamId
       )
   }
   val NewPostPublishedV2Format = new Format[NewPostPublishedV2] {
@@ -3142,12 +3202,12 @@ object json {
 
     override def writes(o: NewPostPublishedV2): JsValue =
       Json.obj(
-        "api"  -> o.api.value,
+        "api" -> o.api.value,
         "post" -> o.post.value
       )
   }
 
-  val ApiAccessFormat                      = new Format[ApiAccess] {
+  val ApiAccessFormat = new Format[ApiAccess] {
     override def reads(json: JsValue): JsResult[ApiAccess] =
       Try {
         JsSuccess(
@@ -3162,11 +3222,11 @@ object json {
 
     override def writes(o: ApiAccess): JsValue =
       Json.obj(
-        "api"  -> ApiIdFormat.writes(o.api),
+        "api" -> ApiIdFormat.writes(o.api),
         "team" -> TeamIdFormat.writes(o.team)
       )
   }
-  val ApiSubscriptionDemandFormat          = new Format[ApiSubscriptionDemand] {
+  val ApiSubscriptionDemandFormat = new Format[ApiSubscriptionDemand] {
     override def reads(json: JsValue): JsResult[ApiSubscriptionDemand] =
       Try {
         JsSuccess(
@@ -3176,7 +3236,8 @@ object json {
             team = (json \ "team").as(using TeamIdFormat),
             demand = (json \ "demand").as(using SubscriptionDemandIdFormat),
             step = (json \ "step").as(using SubscriptionDemandStepIdFormat),
-            parentSubscriptionId = (json \ "parentSubscriptionId").asOpt(using
+            parentSubscriptionId =
+              (json \ "parentSubscriptionId").asOpt(using
               ApiSubscriptionIdFormat
             ),
             motivation = (json \ "motivation").asOpt[String]
@@ -3189,22 +3250,22 @@ object json {
 
     override def writes(o: ApiSubscriptionDemand): JsValue =
       Json.obj(
-        "api"                  -> ApiIdFormat.writes(o.api),
-        "plan"                 -> UsagePlanIdFormat.writes(o.plan),
-        "team"                 -> TeamIdFormat.writes(o.team),
-        "demand"               -> SubscriptionDemandIdFormat.writes(o.demand),
-        "step"                 -> SubscriptionDemandStepIdFormat.writes(o.step),
+        "api" -> ApiIdFormat.writes(o.api),
+        "plan" -> UsagePlanIdFormat.writes(o.plan),
+        "team" -> TeamIdFormat.writes(o.team),
+        "demand" -> SubscriptionDemandIdFormat.writes(o.demand),
+        "step" -> SubscriptionDemandStepIdFormat.writes(o.step),
         "parentSubscriptionId" -> o.parentSubscriptionId
           .map(ApiSubscriptionIdFormat.writes)
           .getOrElse(JsNull)
           .as[JsValue],
-        "motivation"           -> o.motivation
+        "motivation" -> o.motivation
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue]
       )
   }
-  val accountCreationAttemptFormat         = new Format[AccountCreationAttempt] {
+  val accountCreationAttemptFormat = new Format[AccountCreationAttempt] {
     override def reads(json: JsValue): JsResult[AccountCreationAttempt] =
       Try {
         JsSuccess(
@@ -3221,8 +3282,8 @@ object json {
 
     override def writes(o: AccountCreationAttempt): JsValue =
       Json.obj(
-        "demand"     -> o.demand.value,
-        "step"       -> o.step.value,
+        "demand" -> o.demand.value,
+        "step" -> o.step.value,
         "motivation" -> o.motivation
       )
   }
@@ -3248,7 +3309,7 @@ object json {
           "subscription" -> o.subscription.asJson
         )
     }
-  val ApiSubscriptionRejectFormat          = new Format[ApiSubscriptionReject] {
+  val ApiSubscriptionRejectFormat = new Format[ApiSubscriptionReject] {
     override def reads(json: JsValue): JsResult[ApiSubscriptionReject] =
       Try {
         JsSuccess(
@@ -3265,9 +3326,9 @@ object json {
 
     override def writes(o: ApiSubscriptionReject): JsValue =
       Json.obj(
-        "api"     -> ApiIdFormat.writes(o.api),
-        "plan"    -> UsagePlanIdFormat.writes(o.plan),
-        "team"    -> TeamIdFormat.writes(o.team),
+        "api" -> ApiIdFormat.writes(o.api),
+        "plan" -> UsagePlanIdFormat.writes(o.plan),
+        "team" -> TeamIdFormat.writes(o.team),
         "message" -> o.message
           .map(JsString.apply)
           .getOrElse(JsNull)
@@ -3275,7 +3336,7 @@ object json {
       )
   }
 
-  val ApiSubscriptionAcceptFormat       = new Format[ApiSubscriptionAccept] {
+  val ApiSubscriptionAcceptFormat = new Format[ApiSubscriptionAccept] {
     override def reads(json: JsValue): JsResult[ApiSubscriptionAccept] =
       Try {
         JsSuccess(
@@ -3291,12 +3352,12 @@ object json {
 
     override def writes(o: ApiSubscriptionAccept): JsValue =
       Json.obj(
-        "api"  -> ApiIdFormat.writes(o.api),
+        "api" -> ApiIdFormat.writes(o.api),
         "plan" -> UsagePlanIdFormat.writes(o.plan),
         "team" -> TeamIdFormat.writes(o.team)
       )
   }
-  val ApiKeyDeletionInformationFormat   = new Format[ApiKeyDeletionInformation] {
+  val ApiKeyDeletionInformationFormat = new Format[ApiKeyDeletionInformation] {
     override def reads(json: JsValue): JsResult[ApiKeyDeletionInformation] =
       Try {
         JsSuccess(
@@ -3311,7 +3372,7 @@ object json {
 
     override def writes(o: ApiKeyDeletionInformation): JsValue =
       Json.obj(
-        "api"      -> o.api,
+        "api" -> o.api,
         "clientId" -> o.clientId
       )
   }
@@ -3333,8 +3394,8 @@ object json {
 
       override def writes(o: ApiKeyDeletionInformationV2): JsValue =
         Json.obj(
-          "api"          -> o.api.value,
-          "clientId"     -> o.clientId,
+          "api" -> o.api.value,
+          "clientId" -> o.clientId,
           "subscription" -> o.subscription.value
         )
     }
@@ -3359,11 +3420,11 @@ object json {
       override def writes(o: OtoroshiSyncSubscriptionError): JsValue =
         Json.obj(
           "subscription" -> ApiSubscriptionFormat.writes(o.subscription),
-          "message"      -> o.message
+          "message" -> o.message
         )
     }
 
-  val OtoroshiSyncApiErrorFormat       = new Format[OtoroshiSyncApiError] {
+  val OtoroshiSyncApiErrorFormat = new Format[OtoroshiSyncApiError] {
     override def reads(json: JsValue): JsResult[OtoroshiSyncApiError] =
       Try {
         JsSuccess(
@@ -3378,11 +3439,11 @@ object json {
 
     override def writes(o: OtoroshiSyncApiError): JsValue =
       Json.obj(
-        "api"     -> ApiFormat.writes(o.api),
+        "api" -> ApiFormat.writes(o.api),
         "message" -> o.message
       )
   }
-  val ApiKeyRotationInProgressFormat   = new Format[ApiKeyRotationInProgress] {
+  val ApiKeyRotationInProgressFormat = new Format[ApiKeyRotationInProgress] {
     override def reads(json: JsValue): JsResult[ApiKeyRotationInProgress] =
       Try {
         JsSuccess(
@@ -3399,8 +3460,8 @@ object json {
     override def writes(o: ApiKeyRotationInProgress): JsValue =
       Json.obj(
         "clientId" -> o.clientId,
-        "api"      -> o.api,
-        "plan"     -> o.plan
+        "api" -> o.api,
+        "plan" -> o.plan
       )
   }
   val ApiKeyRotationInProgressV2Format =
@@ -3409,7 +3470,8 @@ object json {
         Try {
           JsSuccess(
             ApiKeyRotationInProgressV2(
-              subscription = (json \ "subscription").as(using ApiSubscriptionIdFormat),
+              subscription =
+                (json \ "subscription").as(using ApiSubscriptionIdFormat),
               api = (json \ "api").as(using ApiIdFormat),
               plan = (json \ "plan").as(using UsagePlanIdFormat)
             )
@@ -3421,8 +3483,8 @@ object json {
       override def writes(o: ApiKeyRotationInProgressV2): JsValue =
         Json.obj(
           "subscription" -> o.subscription.value,
-          "api"          -> o.api.value,
-          "plan"         -> o.plan.value
+          "api" -> o.api.value,
+          "plan" -> o.plan.value
         )
     }
 
@@ -3443,8 +3505,8 @@ object json {
     override def writes(o: ApiKeyRotationEnded): JsValue =
       Json.obj(
         "clientId" -> o.clientId,
-        "api"      -> o.api,
-        "plan"     -> o.plan
+        "api" -> o.api,
+        "plan" -> o.plan
       )
   }
 
@@ -3466,11 +3528,11 @@ object json {
     override def writes(o: ApiKeyRotationEndedV2): JsValue =
       Json.obj(
         "subscription" -> o.subscription.value,
-        "api"          -> o.api.value,
-        "plan"         -> o.plan.value
+        "api" -> o.api.value,
+        "plan" -> o.plan.value
       )
   }
-  val TeamInvitationFormat        = new Format[TeamInvitation] {
+  val TeamInvitationFormat = new Format[TeamInvitation] {
     override def reads(json: JsValue): JsResult[TeamInvitation] =
       Try {
         JsSuccess(
@@ -3489,7 +3551,7 @@ object json {
         "user" -> UserIdFormat.writes(o.user)
       )
   }
-  val ApiKeyRefreshFormat         = new Format[ApiKeyRefresh] {
+  val ApiKeyRefreshFormat = new Format[ApiKeyRefresh] {
     override def reads(json: JsValue): JsResult[ApiKeyRefresh] =
       Try {
         JsSuccess(
@@ -3506,11 +3568,11 @@ object json {
     override def writes(o: ApiKeyRefresh): JsValue =
       Json.obj(
         "subscription" -> o.subscription,
-        "api"          -> o.api,
-        "plan"         -> o.plan
+        "api" -> o.api,
+        "plan" -> o.plan
       )
   }
-  val ApiKeyRefreshV2Format       = new Format[ApiKeyRefreshV2] {
+  val ApiKeyRefreshV2Format = new Format[ApiKeyRefreshV2] {
     override def reads(json: JsValue): JsResult[ApiKeyRefreshV2] =
       Try {
         JsSuccess(
@@ -3529,9 +3591,9 @@ object json {
     override def writes(o: ApiKeyRefreshV2): JsValue =
       Json.obj(
         "subscription" -> o.subscription.value,
-        "api"          -> o.api.value,
-        "plan"         -> o.plan.value,
-        "message"      -> o.message
+        "api" -> o.api.value,
+        "plan" -> o.plan.value,
+        "message" -> o.message
       )
   }
 
@@ -3542,14 +3604,14 @@ object json {
           case "Pending"  => NotificationStatusPendingFormat.reads(json)
           case "Accepted" => NotificationStatusAcceptedFormat.reads(json)
           case "Rejected" => NotificationStatusRejectedFormat.reads(json)
-          case str        =>
+          case str =>
             AppLogger.error(s"Bad notification status value: $str")
             JsError(s"Bad notification status value: $str")
         }
 
       override def writes(o: NotificationStatus): JsValue =
         o match {
-          case status: Pending  =>
+          case status: Pending =>
             NotificationStatusPendingFormat.writes(status).as[JsObject]
           case status: Accepted =>
             NotificationStatusAcceptedFormat.writes(status).as[JsObject]
@@ -3606,7 +3668,7 @@ object json {
 
       override def writes(o: Accepted): JsValue =
         Json.obj(
-          "date"   -> DateTimeFormat.writes(o.date),
+          "date" -> DateTimeFormat.writes(o.date),
           "status" -> o.status
         )
     }
@@ -3626,7 +3688,7 @@ object json {
 
       override def writes(o: Rejected): JsValue =
         Json.obj(
-          "date"   -> DateTimeFormat.writes(o.date),
+          "date" -> DateTimeFormat.writes(o.date),
           "status" -> o.status
         )
     }
@@ -3649,12 +3711,12 @@ object json {
 
       override def writes(o: NotificationSender): JsValue =
         Json.obj(
-          "name"  -> o.name,
+          "name" -> o.name,
           "email" -> o.email,
-          "id"    -> o.id.map(_.asJson).getOrElse(JsNull).as[JsValue]
+          "id" -> o.id.map(_.asJson).getOrElse(JsNull).as[JsValue]
         )
     }
-  val NotificationFormat: Format[Notification]             = new Format[Notification] {
+  val NotificationFormat: Format[Notification] = new Format[Notification] {
     override def reads(json: JsValue): JsResult[Notification] =
       Try {
         JsSuccess(
@@ -3664,7 +3726,8 @@ object json {
             deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
             team = (json \ "team").asOpt(using TeamIdFormat),
             sender = (json \ "sender").as(using NotificationSenderFormat),
-            date = (json \ "date")
+            date =
+              (json \ "date")
               .asOpt(using DateTimeFormat)
               .getOrElse(DateTime.now()),
             status = (json \ "status").as(using NotificationStatusFormat),
@@ -3681,17 +3744,17 @@ object json {
 
     override def writes(o: Notification): JsValue =
       Json.obj(
-        "_id"              -> NotificationIdFormat.writes(o.id),
-        "_tenant"          -> TenantIdFormat.writes(o.tenant),
-        "_deleted"         -> o.deleted,
-        "team"             -> o.team
+        "_id" -> NotificationIdFormat.writes(o.id),
+        "_tenant" -> TenantIdFormat.writes(o.tenant),
+        "_deleted" -> o.deleted,
+        "team" -> o.team
           .map(id => JsString(id.value))
           .getOrElse(JsNull)
           .as[JsValue],
-        "sender"           -> NotificationSenderFormat.writes(o.sender),
-        "date"             -> DateTimeFormat.writes(o.date),
-        "action"           -> NotificationActionFormat.writes(o.action),
-        "status"           -> NotificationStatusFormat.writes(o.status),
+        "sender" -> NotificationSenderFormat.writes(o.sender),
+        "date" -> DateTimeFormat.writes(o.date),
+        "action" -> NotificationActionFormat.writes(o.action),
+        "status" -> NotificationStatusFormat.writes(o.status),
         "notificationType" -> NotificationTypeFormat.writes(o.notificationType)
       )
   }
@@ -3712,7 +3775,8 @@ object json {
               (json \ "impersonatorId").asOpt(using UserIdFormat),
             impersonatorName = (json \ "impersonatorName").asOpt[String],
             impersonatorEmail = (json \ "impersonatorEmail").asOpt[String],
-            impersonatorSessionId = (json \ "impersonatorSessionId").asOpt(using UserSessionIdFormat),
+            impersonatorSessionId =
+              (json \ "impersonatorSessionId").asOpt(using UserSessionIdFormat),
             created = (json \ "created")
               .asOpt(using DateTimeFormat)
               .getOrElse(DateTime.now()),
@@ -3734,20 +3798,20 @@ object json {
 
     override def writes(o: UserSession): JsValue =
       Json.obj(
-        "_id"                   -> o.id.asJson,
-        "sessionId"             -> UserSessionIdFormat.writes(o.sessionId),
-        "userId"                -> o.userId.asJson,
-        "userName"              -> o.userName,
-        "userEmail"             -> o.userEmail,
-        "impersonatorId"        -> o.impersonatorId
+        "_id" -> o.id.asJson,
+        "sessionId" -> UserSessionIdFormat.writes(o.sessionId),
+        "userId" -> o.userId.asJson,
+        "userName" -> o.userName,
+        "userEmail" -> o.userEmail,
+        "impersonatorId" -> o.impersonatorId
           .map(id => id.asJson)
           .getOrElse(JsNull)
           .as[JsValue],
-        "impersonatorName"      -> o.impersonatorName
+        "impersonatorName" -> o.impersonatorName
           .map(id => JsString(id))
           .getOrElse(JsNull)
           .as[JsValue],
-        "impersonatorEmail"     -> o.impersonatorEmail
+        "impersonatorEmail" -> o.impersonatorEmail
           .map(id => JsString(id))
           .getOrElse(JsNull)
           .as[JsValue],
@@ -3755,9 +3819,9 @@ object json {
           .map(id => JsString(id.value))
           .getOrElse(JsNull)
           .as[JsValue],
-        "created"               -> DateTimeFormat.writes(o.created),
-        "expires"               -> DateTimeFormat.writes(o.expires),
-        "ttl"                   -> o.ttl.toMillis,
+        "created" -> DateTimeFormat.writes(o.created),
+        "expires" -> DateTimeFormat.writes(o.expires),
+        "ttl" -> o.ttl.toMillis,
         "providerSession" -> o.providerSessionId
           .map(JsString(_))
           .getOrElse(JsNull)
@@ -3777,7 +3841,7 @@ object json {
       override def writes(o: ApiKeyConsumptionState): JsValue = JsString(o.name)
     }
 
-  val ConsumptionFormat: Format[ApiKeyConsumption]                                     =
+  val ConsumptionFormat: Format[ApiKeyConsumption] =
     new Format[ApiKeyConsumption] {
       override def reads(json: JsValue): JsResult[ApiKeyConsumption] =
         Try {
@@ -3809,25 +3873,26 @@ object json {
 
       override def writes(o: ApiKeyConsumption): JsValue =
         Json.obj(
-          "_id"                -> DatastoreIdFormat.writes(o.id),
-          "_deleted"           -> o.deleted,
-          "_tenant"            -> TenantIdFormat.writes(o.tenant),
-          "team"               -> TeamIdFormat.writes(o.team),
-          "api"                -> ApiIdFormat.writes(o.api),
-          "plan"               -> UsagePlanIdFormat.writes(o.plan),
-          "clientId"           -> o.clientId,
-          "hits"               -> o.hits,
+          "_id" -> DatastoreIdFormat.writes(o.id),
+          "_deleted" -> o.deleted,
+          "_tenant" -> TenantIdFormat.writes(o.tenant),
+          "team" -> TeamIdFormat.writes(o.team),
+          "api" -> ApiIdFormat.writes(o.api),
+          "plan" -> UsagePlanIdFormat.writes(o.plan),
+          "clientId" -> o.clientId,
+          "hits" -> o.hits,
           "globalInformations" -> GlobalConsumptionInformationsFormat.writes(
             o.globalInformations
           ),
-          "quotas"             -> ApiKeyQuotasFormat.writes(o.quotas),
-          "billing"            -> ApiKeyBillingFormat.writes(o.billing),
-          "from"               -> DateTimeFormat.writes(o.from),
-          "to"                 -> DateTimeFormat.writes(o.to),
-          "state"              -> ApiKeyConsumptionStateFormat.writes(o.state)
+          "quotas" -> ApiKeyQuotasFormat.writes(o.quotas),
+          "billing" -> ApiKeyBillingFormat.writes(o.billing),
+          "from" -> DateTimeFormat.writes(o.from),
+          "to" -> DateTimeFormat.writes(o.to),
+          "state" -> ApiKeyConsumptionStateFormat.writes(o.state)
         )
     }
-  val GlobalConsumptionInformationsFormat: Format[ApiKeyGlobalConsumptionInformations] =
+  val GlobalConsumptionInformationsFormat
+      : Format[ApiKeyGlobalConsumptionInformations] =
     new Format[ApiKeyGlobalConsumptionInformations] {
       override def reads(
           json: JsValue
@@ -3848,9 +3913,9 @@ object json {
 
       override def writes(o: ApiKeyGlobalConsumptionInformations): JsValue =
         Json.obj(
-          "hits"        -> o.hits,
-          "dataIn"      -> o.dataIn,
-          "dataOut"     -> o.dataOut,
+          "hits" -> o.hits,
+          "dataIn" -> o.dataIn,
+          "dataOut" -> o.dataOut,
           "avgDuration" -> o.avgDuration
             .map(JsNumber(_))
             .getOrElse(JsNull)
@@ -3876,13 +3941,18 @@ object json {
             remainingCallsPerSec = (json \ "remainingCallsPerWindow")
               .asOpt(using LongFormat)
               .getOrElse((json \ "remainingCallsPerSec").as(using LongFormat)),
-            authorizedCallsPerDay = (json \ "authorizedCallsPerDay").as(using LongFormat),
+            authorizedCallsPerDay =
+              (json \ "authorizedCallsPerDay").as(using LongFormat),
             currentCallsPerDay =
               (json \ "currentCallsPerDay").as(using LongFormat),
-            remainingCallsPerDay = (json \ "remainingCallsPerDay").as(using LongFormat),
-            authorizedCallsPerMonth = (json \ "authorizedCallsPerMonth").as(using LongFormat),
-            currentCallsPerMonth = (json \ "currentCallsPerMonth").as(using LongFormat),
-            remainingCallsPerMonth = (json \ "remainingCallsPerMonth").as(using LongFormat)
+            remainingCallsPerDay =
+              (json \ "remainingCallsPerDay").as(using LongFormat),
+            authorizedCallsPerMonth =
+              (json \ "authorizedCallsPerMonth").as(using LongFormat),
+            currentCallsPerMonth =
+              (json \ "currentCallsPerMonth").as(using LongFormat),
+            remainingCallsPerMonth =
+              (json \ "remainingCallsPerMonth").as(using LongFormat)
           )
         )
       } recover { case e =>
@@ -3891,15 +3961,15 @@ object json {
 
     override def writes(o: ApiKeyQuotas): JsValue =
       Json.obj(
-        "authorizedCallsPerSec"   -> o.authorizedCallsPerSec,
-        "currentCallsPerSec"      -> o.currentCallsPerSec,
-        "remainingCallsPerSec"    -> o.remainingCallsPerSec,
-        "authorizedCallsPerDay"   -> o.authorizedCallsPerDay,
-        "currentCallsPerDay"      -> o.currentCallsPerDay,
-        "remainingCallsPerDay"    -> o.remainingCallsPerDay,
+        "authorizedCallsPerSec" -> o.authorizedCallsPerSec,
+        "currentCallsPerSec" -> o.currentCallsPerSec,
+        "remainingCallsPerSec" -> o.remainingCallsPerSec,
+        "authorizedCallsPerDay" -> o.authorizedCallsPerDay,
+        "currentCallsPerDay" -> o.currentCallsPerDay,
+        "remainingCallsPerDay" -> o.remainingCallsPerDay,
         "authorizedCallsPerMonth" -> o.authorizedCallsPerMonth,
-        "currentCallsPerMonth"    -> o.currentCallsPerMonth,
-        "remainingCallsPerMonth"  -> o.remainingCallsPerMonth
+        "currentCallsPerMonth" -> o.currentCallsPerMonth,
+        "remainingCallsPerMonth" -> o.remainingCallsPerMonth
       )
   }
 
@@ -3918,7 +3988,7 @@ object json {
 
     override def writes(o: ApiKeyBilling): JsValue =
       Json.obj(
-        "hits"  -> o.hits,
+        "hits" -> o.hits,
         "total" -> o.total
       )
   }
@@ -3944,14 +4014,14 @@ object json {
 
     override def writes(o: PasswordReset): JsValue =
       Json.obj(
-        "_id"          -> o.id.value,
-        "_deleted"     -> o.deleted,
-        "randomId"     -> o.randomId,
-        "email"        -> o.email,
-        "password"     -> o.password,
-        "user"         -> o.user.asJson,
+        "_id" -> o.id.value,
+        "_deleted" -> o.deleted,
+        "randomId" -> o.randomId,
+        "email" -> o.email,
+        "password" -> o.password,
+        "user" -> o.user.asJson,
         "creationDate" -> DateTimeFormat.writes(o.creationDate),
-        "validUntil"   -> DateTimeFormat.writes(o.validUntil)
+        "validUntil" -> DateTimeFormat.writes(o.validUntil)
       )
   }
 
@@ -3982,19 +4052,19 @@ object json {
 
       override def writes(o: AccountCreation): JsValue =
         Json.obj(
-          "_id"          -> o.id.value,
-          "_deleted"     -> o.deleted,
-          "randomId"     -> o.randomId,
-          "email"        -> o.email,
-          "name"         -> o.name,
-          "avatar"       -> o.avatar,
-          "password"     -> o.password,
+          "_id" -> o.id.value,
+          "_deleted" -> o.deleted,
+          "randomId" -> o.randomId,
+          "email" -> o.email,
+          "name" -> o.name,
+          "avatar" -> o.avatar,
+          "password" -> o.password,
           "creationDate" -> DateTimeFormat.writes(o.creationDate),
-          "validUntil"   -> DateTimeFormat.writes(o.validUntil),
-          "steps"        -> SeqSubscriptionDemanStepFormat.writes(o.steps),
-          "state"        -> SubscriptionDemandStateFormat.writes(o.state),
-          "value"        -> o.value,
-          "fromTenant"   -> o.fromTenant.value
+          "validUntil" -> DateTimeFormat.writes(o.validUntil),
+          "steps" -> SeqSubscriptionDemanStepFormat.writes(o.steps),
+          "state" -> SubscriptionDemandStateFormat.writes(o.state),
+          "value" -> o.value,
+          "fromTenant" -> o.fromTenant.value
         )
     }
 
@@ -4019,13 +4089,13 @@ object json {
 
       override def writes(o: EmailVerification): JsValue =
         Json.obj(
-          "_id"          -> o.id.value,
-          "_deleted"     -> o.deleted,
-          "randomId"     -> o.randomId,
-          "_tenant"      -> o.tenant.value,
-          "teamId"       -> o.team.value,
+          "_id" -> o.id.value,
+          "_deleted" -> o.deleted,
+          "randomId" -> o.randomId,
+          "_tenant" -> o.tenant.value,
+          "teamId" -> o.team.value,
           "creationDate" -> DateTimeFormat.writes(o.creationDate),
-          "validUntil"   -> DateTimeFormat.writes(o.validUntil)
+          "validUntil" -> DateTimeFormat.writes(o.validUntil)
         )
     }
 
@@ -4039,7 +4109,8 @@ object json {
             language = (json \ "language").as[String],
             key = (json \ "key").as[String],
             value = (json \ "value").as[String],
-            lastModificationAt = (json \ "lastModificationAt").asOpt(using DateTimeFormat)
+            lastModificationAt =
+              (json \ "lastModificationAt").asOpt(using DateTimeFormat)
           )
         )
       } recover { case e =>
@@ -4049,11 +4120,11 @@ object json {
 
     override def writes(o: Translation): JsValue =
       Json.obj(
-        "_id"                -> o.id.value,
-        "_tenant"            -> TenantIdFormat.writes(o.tenant),
-        "language"           -> o.language,
-        "key"                -> o.key,
-        "value"              -> o.value,
+        "_id" -> o.id.value,
+        "_tenant" -> TenantIdFormat.writes(o.tenant),
+        "language" -> o.language,
+        "key" -> o.key,
+        "value" -> o.value,
         "lastModificationAt" -> o.lastModificationAt
           .map(DateTimeFormat.writes)
           .getOrElse(JsNull)
@@ -4081,9 +4152,9 @@ object json {
 
       override def writes(o: IntlTranslation): JsValue =
         Json.obj(
-          "_id"          -> o.id,
+          "_id" -> o.id,
           "translations" -> SeqTranslationFormat.writes(o.translations),
-          "content"      -> o.content
+          "content" -> o.content
         )
     }
 
@@ -4106,7 +4177,8 @@ object json {
           JsSuccess(
             UserWithPermission(
               userId = (json \ "userId").as(using UserIdFormat),
-              teamPermission = (json \ "teamPermission").as(using TeamPermissionFormat)
+              teamPermission =
+                (json \ "teamPermission").as(using TeamPermissionFormat)
             )
           )
         } recover { case e =>
@@ -4115,7 +4187,7 @@ object json {
 
       override def writes(o: UserWithPermission): JsValue =
         Json.obj(
-          "userId"         -> UserIdFormat.writes(o.userId),
+          "userId" -> UserIdFormat.writes(o.userId),
           "teamPermission" -> TeamPermissionFormat.writes(o.teamPermission)
         )
     }
@@ -4145,17 +4217,17 @@ object json {
 
       override def writes(o: Message): JsValue =
         Json.obj(
-          "_id"          -> o.id.value,
-          "_tenant"      -> o.tenant.value,
-          "messageType"  -> MessageTypeFormat.writes(o.messageType),
-          "chat"         -> o.chat.value,
-          "date"         -> DateTimeFormat.writes(o.date),
-          "sender"       -> UserIdFormat.writes(o.sender),
+          "_id" -> o.id.value,
+          "_tenant" -> o.tenant.value,
+          "messageType" -> MessageTypeFormat.writes(o.messageType),
+          "chat" -> o.chat.value,
+          "date" -> DateTimeFormat.writes(o.date),
+          "sender" -> UserIdFormat.writes(o.sender),
           "participants" -> SetUserIdFormat.writes(o.participants),
-          "readBy"       -> SetUserIdFormat.writes(o.readBy),
-          "message"      -> o.message,
-          "send"         -> o.send,
-          "closed"       -> o.closed
+          "readBy" -> SetUserIdFormat.writes(o.readBy),
+          "message" -> o.message,
+          "send" -> o.send,
+          "closed" -> o.closed
             .map(DateTimeFormat.writes)
             .getOrElse(JsNull)
             .as[JsValue]
@@ -4170,14 +4242,14 @@ object json {
             TenantIdFormat
               .reads((json \ "value").as[JsValue])
               .map(value => MessageType.Tenant(value))
-          case str      => JsError(s"Bad message type value: $str")
+          case str => JsError(s"Bad message type value: $str")
         }
 
       override def writes(o: MessageType): JsValue =
         o match {
           case t: MessageType.Tenant =>
             Json.obj(
-              "type"  -> "tenant",
+              "type" -> "tenant",
               "value" -> TenantIdFormat.writes(t.value)
             )
         }
@@ -4200,9 +4272,9 @@ object json {
 
     override def writes(o: TwoFactorAuthentication): JsValue =
       Json.obj(
-        "enabled"     -> o.enabled,
-        "secret"      -> o.secret,
-        "token"       -> o.token,
+        "enabled" -> o.enabled,
+        "secret" -> o.secret,
+        "token" -> o.token,
         "backupCodes" -> o.backupCodes
       )
   }
@@ -4217,7 +4289,8 @@ object json {
               .asOpt(using DateTimeFormat)
               .getOrElse(DateTime.now()),
             team = (json \ "team").asOpt[String].getOrElse("team"),
-            notificationId = (json \ "notificationId").asOpt[String].getOrElse(""),
+            notificationId =
+              (json \ "notificationId").asOpt[String].getOrElse(""),
             registered = (json \ "registered").asOpt[Boolean].getOrElse(false)
           )
         )
@@ -4227,11 +4300,11 @@ object json {
 
     override def writes(o: UserInvitation): JsValue =
       Json.obj(
-        "token"          -> o.token,
-        "createdAt"      -> DateTimeFormat.writes(o.createdAt),
-        "team"           -> o.team,
+        "token" -> o.token,
+        "createdAt" -> DateTimeFormat.writes(o.createdAt),
+        "team" -> o.team,
         "notificationId" -> o.notificationId,
-        "registered"     -> o.registered
+        "registered" -> o.registered
       )
   }
 
@@ -4253,10 +4326,10 @@ object json {
 
       override def writes(o: Evolution): JsValue =
         Json.obj(
-          "_id"     -> DatastoreIdFormat.writes(o.id),
+          "_id" -> DatastoreIdFormat.writes(o.id),
           "version" -> o.version,
           "applied" -> o.applied,
-          "date"    -> DateTimeFormat.writes(o.date)
+          "date" -> DateTimeFormat.writes(o.date)
         )
     }
 
@@ -4277,9 +4350,9 @@ object json {
 
       override def writes(o: ReportsInfo): JsValue =
         Json.obj(
-          "_id"       -> DatastoreIdFormat.writes(o.id),
+          "_id" -> DatastoreIdFormat.writes(o.id),
           "activated" -> o.activated,
-          "date"      -> o.date
+          "date" -> o.date
         )
     }
 
@@ -4347,8 +4420,10 @@ object json {
       Try {
         JsSuccess(
           ApiSubscriptionDetail(
-            apiSubscription = (json \ "apiSubscription").as(usingApiSubscriptionFormat),
-            parentSubscription = (json \ "parentSubscription").asOpt(using
+            apiSubscription =
+              (json \ "apiSubscription").as(usingApiSubscriptionFormat),
+            parentSubscription =
+              (json \ "parentSubscription").asOpt(using
                 ApiSubscriptionFormat
               ),
               accessibleResources = (json \ "accessibleResources").as(using
@@ -4363,8 +4438,8 @@ object json {
 
       override def writes(o: ApiSubscriptionDetail): JsValue =
         Json.obj(
-          "apiSubscription"     -> o.apiSubscription.asJson,
-          "parentSubscription"  -> o.parentSubscription
+          "apiSubscription" -> o.apiSubscription.asJson,
+          "parentSubscription" -> o.parentSubscription
             .map(_.asJson)
             .getOrElse(JsNull)
             .as[JsValue],
@@ -4381,7 +4456,8 @@ object json {
         Try {
           JsSuccess(
             ApiSubscriptionAccessibleResource(
-              apiSubscription = (json \ "apiSubscription").as(using ApiSubscriptionFormat),
+              apiSubscription =
+                (json \ "apiSubscription").as(using ApiSubscriptionFormat),
               api = (json \ "api").as(using ApiFormat),
               usagePlan = (json \ "usagePlan").as(using UsagePlanFormat)
             )
@@ -4394,8 +4470,8 @@ object json {
       override def writes(o: ApiSubscriptionAccessibleResource): JsValue =
         Json.obj(
           "apiSubscription" -> o.apiSubscription.asJson,
-          "api"             -> o.api.asJson,
-          "usagePlan"       -> o.usagePlan.asJson
+          "api" -> o.api.asJson,
+          "usagePlan" -> o.usagePlan.asJson
         )
     }
 
@@ -4404,34 +4480,34 @@ object json {
     Writes.seq(using ApiSubscriptionAccessibleResourceFormat)
   )
 
-  val SeqOtoroshiSettingsFormat       = Format(
+  val SeqOtoroshiSettingsFormat = Format(
     Reads.seq(using OtoroshiSettingsFormat),
     Writes.seq(using OtoroshiSettingsFormat)
   )
-  val SeqVersionFormat                =
+  val SeqVersionFormat =
     Format(Reads.seq(using VersionFormat), Writes.seq(using VersionFormat))
-  val SeqTeamIdFormat                 =
+  val SeqTeamIdFormat =
     Format(Reads.seq(using TeamIdFormat), Writes.seq(using TeamIdFormat))
-  val SeqPostIdFormat                 =
+  val SeqPostIdFormat =
     Format(Reads.seq(using PostIdFormat), Writes.seq(using PostIdFormat))
-  val SeqIssueIdFormat                =
+  val SeqIssueIdFormat =
     Format(Reads.seq(using IssueIdFormat), Writes.seq(using IssueIdFormat))
-  val SeqOtoroshiGroupFormat          =
+  val SeqOtoroshiGroupFormat =
     Format(
       Reads.seq(using OtoroshiGroupFormat),
       Writes.seq(using OtoroshiGroupFormat)
     )
-  val SeqTenantIdFormat               =
+  val SeqTenantIdFormat =
     Format(Reads.seq(using TenantIdFormat), Writes.seq(using TenantIdFormat))
-  val SeqTenantFormat                 =
+  val SeqTenantFormat =
     Format(Reads.seq(using TenantFormat), Writes.seq(using TenantFormat))
-  val SeqUserFormat                   =
+  val SeqUserFormat =
     Format(Reads.seq(using UserFormat), Writes.seq(using UserFormat))
-  val SeqUserIdFormat                 =
+  val SeqUserIdFormat =
     Format(Reads.seq(using UserIdFormat), Writes.seq(using UserIdFormat))
-  val SetUserIdFormat                 =
+  val SetUserIdFormat =
     Format(Reads.set(using UserIdFormat), Writes.set(using UserIdFormat))
-  val SeqApiSubscriptionIdFormat      = Format(
+  val SeqApiSubscriptionIdFormat = Format(
     Reads.seq(using ApiSubscriptionIdFormat),
     Writes.seq(using ApiSubscriptionIdFormat)
   )
@@ -4440,61 +4516,61 @@ object json {
       Reads.seq(using ApiDocumentationPageIdFormat),
       Writes.seq(using ApiDocumentationPageIdFormat)
     )
-  val SeqApiDocumentationFormat       = Format(
+  val SeqApiDocumentationFormat = Format(
     Reads.seq(using ApiDocumentationFormat),
     Writes.seq(using ApiDocumentationFormat)
   )
-  val SeqApiDocumentationPageFormat   =
+  val SeqApiDocumentationPageFormat =
     Format(
       Reads.seq(using ApiDocumentationPageFormat),
       Writes.seq(using ApiDocumentationPageFormat)
     )
-  val SeqUsagePlanFormat              =
+  val SeqUsagePlanFormat =
     Format(Reads.seq(using UsagePlanFormat), Writes.seq(using UsagePlanFormat))
-  val SeqUsagePlanIdFormat            =
+  val SeqUsagePlanIdFormat =
     Format(
       Reads.seq(using UsagePlanIdFormat),
       Writes.seq(using UsagePlanIdFormat)
     )
-  val SeqTeamFormat                   =
+  val SeqTeamFormat =
     Format(Reads.seq(using TeamFormat), Writes.seq(using TeamFormat))
-  val SeqApiFormat                    =
+  val SeqApiFormat =
     Format(Reads.seq(using ApiFormat), Writes.seq(using ApiFormat))
-  val SetApiIdFormat                  =
+  val SetApiIdFormat =
     Format(Reads.set(using ApiIdFormat), Writes.set(using ApiIdFormat))
-  val SetApiTagFormat                 =
+  val SetApiTagFormat =
     Format(Reads.set(using ApiTagFormat), Writes.set(using ApiTagFormat))
-  val SetUserWithPermissionFormat     =
+  val SetUserWithPermissionFormat =
     Format(
       Reads.set(using UserWithPermissionFormat),
       Writes.set(using UserWithPermissionFormat)
     )
-  val SeqNotificationFormat           =
+  val SeqNotificationFormat =
     Format(
       Reads.seq(using NotificationFormat),
       Writes.seq(using NotificationFormat)
     )
-  val SeqConsumptionFormat            =
+  val SeqConsumptionFormat =
     Format(
       Reads.seq(using ConsumptionFormat),
       Writes.seq(using ConsumptionFormat)
     )
-  val SeqApiSubscriptionFormat        =
+  val SeqApiSubscriptionFormat =
     Format(
       Reads.seq(using ApiSubscriptionFormat),
       Writes.seq(using ApiSubscriptionFormat)
     )
-  val SeqTranslationFormat            =
+  val SeqTranslationFormat =
     Format(
       Reads.seq(using TranslationFormat),
       Writes.seq(using TranslationFormat)
     )
-  val SeqCustomMetadataFormat         =
+  val SeqCustomMetadataFormat =
     Format(
       Reads.seq(using CustomMetadataFormat),
       Writes.seq(using CustomMetadataFormat)
     )
-  val SeqMessagesFormat               =
+  val SeqMessagesFormat =
     Format(Reads.seq(using MessageFormat), Writes.seq(using MessageFormat))
 
   val DefaultFormat = new Format[JsObject] {
@@ -4527,11 +4603,11 @@ object json {
   }
 
   val CmsFileFormat = new Format[CmsFile] {
-    override def writes(o: CmsFile): JsValue             =
+    override def writes(o: CmsFile): JsValue =
       Json.obj(
-        "name"         -> o.name,
-        "content"      -> o.content,
-        "metadata"     -> o.metadata,
+        "name" -> o.name,
+        "content" -> o.content,
+        "metadata" -> o.metadata,
         "daikoku_data" -> o.daikokuData
       )
     override def reads(json: JsValue): JsResult[CmsFile] =
@@ -4551,11 +4627,11 @@ object json {
   }
 
   val CmsRequestRenderingFormat = new Format[CmsRequestRendering] {
-    override def writes(o: CmsRequestRendering): JsValue             =
+    override def writes(o: CmsRequestRendering): JsValue =
       Json.obj(
-        "content"      -> o.content.map(CmsFileFormat.writes),
+        "content" -> o.content.map(CmsFileFormat.writes),
         "current_page" -> o.current_page,
-        "fields"       -> o.fields
+        "fields" -> o.fields
       )
     override def reads(json: JsValue): JsResult[CmsRequestRendering] =
       Try {
@@ -4571,10 +4647,10 @@ object json {
   }
 
   val AssetFormat = new Format[Asset] {
-    override def writes(o: Asset): JsValue             =
+    override def writes(o: Asset): JsValue =
       Json.obj(
-        "_id"     -> o.id.value,
-        "slug"    -> o.slug,
+        "_id" -> o.id.value,
+        "slug" -> o.slug,
         "_tenant" -> o.tenant.value
       )
     override def reads(json: JsValue): JsResult[Asset] =
@@ -4591,28 +4667,28 @@ object json {
   }
 
   val CmsPageFormat = new Format[CmsPage] {
-    override def writes(o: CmsPage): JsValue             =
+    override def writes(o: CmsPage): JsValue =
       Json.obj(
-        "_id"               -> o.id.value,
-        "_tenant"           -> o.tenant.value,
-        "_deleted"          -> o.deleted,
-        "visible"           -> o.visible,
-        "authenticated"     -> o.authenticated,
-        "name"              -> o.name,
-        "picture"           -> o.picture
+        "_id" -> o.id.value,
+        "_tenant" -> o.tenant.value,
+        "_deleted" -> o.deleted,
+        "visible" -> o.visible,
+        "authenticated" -> o.authenticated,
+        "name" -> o.name,
+        "picture" -> o.picture
           .map(JsString.apply)
           .getOrElse(JsNull)
           .as[JsValue],
-        "tags"              -> o.tags,
-        "metadata"          -> o.metadata,
-        "contentType"       -> o.contentType,
-        "forwardRef"        -> o.forwardRef
+        "tags" -> o.tags,
+        "metadata" -> o.metadata,
+        "contentType" -> o.contentType,
+        "forwardRef" -> o.forwardRef
           .map(v => v.asJson)
           .getOrElse(JsNull)
           .as[JsValue],
-        "body"              -> o.body,
-        "path"              -> o.path.map(JsString.apply).getOrElse(JsNull).as[JsValue],
-        "exact"             -> o.exact,
+        "body" -> o.body,
+        "path" -> o.path.map(JsString.apply).getOrElse(JsNull).as[JsValue],
+        "exact" -> o.exact,
         "lastPublishedDate" -> o.lastPublishedDate.map(DateTimeFormat.writes)
       )
     override def reads(json: JsValue): JsResult[CmsPage] =
@@ -4622,20 +4698,24 @@ object json {
           tenant = (json \ "_tenant").as(using TenantIdFormat),
           deleted = (json \ "_deleted").asOpt[Boolean].getOrElse(false),
           visible = (json \ "visible").asOpt[Boolean].getOrElse(false),
-          authenticated = (json \ "authenticated").asOpt[Boolean].getOrElse(false),
+          authenticated =
+            (json \ "authenticated").asOpt[Boolean].getOrElse(false),
           name = (json \ "name").as[String],
           picture = (json \ "picture").asOpt[String].filter(_.trim.nonEmpty),
           tags = (json \ "tags").asOpt[List[String]].getOrElse(List.empty),
-          metadata = (json \ "metadata").asOpt[Map[String, String]].getOrElse(Map.empty),
+          metadata =
+            (json \ "metadata").asOpt[Map[String, String]].getOrElse(Map.empty),
           body = (json \ "body").asOpt[String].getOrElse(""),
-          contentType = (json \ "contentType").asOpt[String].getOrElse("text/html"),
+          contentType =
+            (json \ "contentType").asOpt[String].getOrElse("text/html"),
           forwardRef = (json \ "forwardRef")
             .asOpt[String]
             .filter(_.trim.nonEmpty)
             .map(v => CmsPageId(v)),
           path = (json \ "path").asOpt[String],
           exact = (json \ "exact").asOpt[Boolean].getOrElse(false),
-          lastPublishedDate = (json \ "lastPublishedDate").asOpt(using DateTimeFormat)
+          lastPublishedDate =
+            (json \ "lastPublishedDate").asOpt(using DateTimeFormat)
         )
       } match {
         case Failure(exception) => JsError(exception.getMessage)
@@ -4647,7 +4727,7 @@ object json {
     override def reads(json: JsValue): JsResult[OperationAction] =
       OperationAction.apply(json.as[String]) match {
         case Some(action) => JsSuccess(action)
-        case None         =>
+        case None =>
           JsError(s"Bad OperationAction value: ${Json.stringify(json)}")
       }
 
@@ -4658,7 +4738,7 @@ object json {
     override def reads(json: JsValue): JsResult[OperationStatus] =
       OperationStatus.apply(json.as[String]) match {
         case Some(action) => JsSuccess(action)
-        case None         =>
+        case None =>
           JsError(s"Bad OperationStatus value: ${Json.stringify(json)}")
       }
 
@@ -4694,13 +4774,13 @@ object json {
 
     override def writes(o: Operation): JsValue =
       Json.obj(
-        "_id"      -> o.id.asJson,
-        "_tenant"  -> o.tenant.asJson,
-        "itemId"   -> o.itemId,
+        "_id" -> o.id.asJson,
+        "_tenant" -> o.tenant.asJson,
+        "itemId" -> o.itemId,
         "itemType" -> ItemTypeFormat.writes(o.itemType),
-        "action"   -> OperationActionFormat.writes(o.action),
-        "payload"  -> o.payload.getOrElse(JsNull).as[JsValue],
-        "status"   -> OperationStatusFormat.writes(o.status)
+        "action" -> OperationActionFormat.writes(o.action),
+        "payload" -> o.payload.getOrElse(JsNull).as[JsValue],
+        "status" -> OperationStatusFormat.writes(o.status)
       )
   }
 
@@ -4730,7 +4810,7 @@ object json {
           secretKey = (json \ "secretKey").as[String]
         )
       } match {
-        case Failure(e)     =>
+        case Failure(e) =>
           AppLogger.warn("Stripe Settings")
           AppLogger.error(e.getMessage, e)
           JsError(e.getMessage)
@@ -4739,8 +4819,8 @@ object json {
 
     override def writes(o: StripeSettings): JsValue =
       Json.obj(
-        "_id"       -> ThirdPartyPaymentSettingsIdFormat.writes(o.id),
-        "name"      -> o.name,
+        "_id" -> ThirdPartyPaymentSettingsIdFormat.writes(o.id),
+        "name" -> o.name,
         "publicKey" -> o.publicKey,
         "secretKey" -> o.secretKey
       )
@@ -4761,7 +4841,7 @@ object json {
           date = (json \ "date").as(using DateTimeFormat)
         )
       } match {
-        case Failure(e)     =>
+        case Failure(e) =>
           AppLogger.error(e.getMessage, e)
           JsError(e.getMessage)
         case Success(value) => JsSuccess(value)
@@ -4769,13 +4849,13 @@ object json {
 
     override def writes(o: ApiSubscriptionTransfer): JsValue =
       Json.obj(
-        "_id"          -> o.id.asJson,
-        "_tenant"      -> o.tenant.asJson,
-        "_deleted"     -> o.deleted,
-        "token"        -> o.token,
+        "_id" -> o.id.asJson,
+        "_tenant" -> o.tenant.asJson,
+        "_deleted" -> o.deleted,
+        "token" -> o.token,
         "subscription" -> o.subscription.asJson,
-        "by"           -> o.by.asJson,
-        "date"         -> DateTimeFormat.writes(o.date)
+        "by" -> o.by.asJson,
+        "date" -> DateTimeFormat.writes(o.date)
       )
   }
 
@@ -4788,7 +4868,7 @@ object json {
           pending = (json \ "pending").as[Boolean]
         )
       } match {
-        case Failure(e)     =>
+        case Failure(e) =>
           AppLogger.error(e.getMessage, e)
           JsError(e.getMessage)
         case Success(value) => JsSuccess(value)
@@ -4796,9 +4876,9 @@ object json {
 
     override def writes(o: AuthorizationApi): JsValue =
       Json.obj(
-        "team"       -> o.team,
+        "team" -> o.team,
         "authorized" -> o.authorized,
-        "pending"    -> o.pending
+        "pending" -> o.pending
       )
   }
 
@@ -4808,15 +4888,17 @@ object json {
         ApiWithAuthorizations(
           api = (json \ "api").as(using ApiFormat),
           plans = (json \ "plans").as(using SeqUsagePlanFormat),
-          authorizations = (json \ "authorizations").as(using SeqAuthorizationApiFormat),
-          subscriptionDemands = (json \ "subscriptionDemands").as(using
+          authorizations =
+            (json \ "authorizations").as(using SeqAuthorizationApiFormat),
+          subscriptionDemands =
+            (json \ "subscriptionDemands").as(using
             SeqSubscriptionDemandFormat
           ),
           subscriptionCount = (json \ "subscriptionCount").as[Int],
           expireCount = (json \ "expireCount").as[Int]
         )
       } match {
-        case Failure(e)     =>
+        case Failure(e) =>
           AppLogger.error(e.getMessage, e)
           JsError(e.getMessage)
         case Success(value) => JsSuccess(value)
@@ -4824,9 +4906,9 @@ object json {
 
     override def writes(o: ApiWithAuthorizations): JsValue =
       Json.obj(
-        "api"                 -> o.api.asJson,
-        "plans"               -> SeqUsagePlanFormat.writes(o.plans),
-        "authorizations"      -> SeqAuthorizationApiFormat.writes(o.authorizations),
+        "api" -> o.api.asJson,
+        "plans" -> SeqUsagePlanFormat.writes(o.plans),
+        "authorizations" -> SeqAuthorizationApiFormat.writes(o.authorizations),
         "subscriptionDemands" -> SeqSubscriptionDemandFormat.writes(
           o.subscriptionDemands
         ),
@@ -4843,7 +4925,7 @@ object json {
           total = (json \ "total").as[Int]
         )
       } match {
-        case Failure(e)     =>
+        case Failure(e) =>
           AppLogger.error(e.getMessage, e)
           JsError(e.getMessage)
         case Success(value) => JsSuccess(value)
@@ -4851,7 +4933,7 @@ object json {
 
     override def writes(o: TeamCount): JsValue =
       Json.obj(
-        "team"  -> o.team.asJson,
+        "team" -> o.team.asJson,
         "total" -> o.total
       )
   }
@@ -4864,7 +4946,7 @@ object json {
           total = (json \ "total").as[Int]
         )
       } match {
-        case Failure(e)     =>
+        case Failure(e) =>
           AppLogger.error(e.getMessage, e)
           JsError(e.getMessage)
         case Success(value) => JsSuccess(value)
@@ -4889,7 +4971,7 @@ object json {
           totalFiltered = (json \ "totalFiltered").as[Long]
         )
       } match {
-        case Failure(e)     =>
+        case Failure(e) =>
           AppLogger.error(e.getMessage, e)
           JsError(e.getMessage)
         case Success(value) => JsSuccess(value)
@@ -4897,20 +4979,20 @@ object json {
 
     override def writes(o: ApiWithCount): JsValue =
       Json.obj(
-        "apis"          -> SeqApiWithAuthorizationsFormat.writes(o.apis),
-        "producers"     -> SeqTeamCountFormat.writes(o.producers),
-        "tags"          -> SeqValueCountFormat.writes(o.tags),
-        "categories"    -> SeqValueCountFormat.writes(o.categories),
-        "total"         -> o.total,
+        "apis" -> SeqApiWithAuthorizationsFormat.writes(o.apis),
+        "producers" -> SeqTeamCountFormat.writes(o.producers),
+        "tags" -> SeqValueCountFormat.writes(o.tags),
+        "categories" -> SeqValueCountFormat.writes(o.categories),
+        "total" -> o.total,
         "totalFiltered" -> o.totalFiltered
       )
   }
 
-  val SeqTeamCountFormat        = Format(
+  val SeqTeamCountFormat = Format(
     Reads.seq(using TeamCountFormat),
     Writes.seq(using TeamCountFormat)
   )
-  val SeqValueCountFormat       = Format(
+  val SeqValueCountFormat = Format(
     Reads.seq(using ValueCountFormat),
     Writes.seq(using ValueCountFormat)
   )
@@ -4924,47 +5006,49 @@ object json {
     Writes.seq(using ApiWithAuthorizationsFormat)
   )
 
-  val SetOtoroshiServicesIdFormat                                                  =
+  val SetOtoroshiServicesIdFormat =
     Format(
       Reads.set(using OtoroshiServiceIdFormat),
       Writes.set(using OtoroshiServiceIdFormat)
     )
-  val SetOtoroshiRoutesIdFormat                                                    =
+  val SetOtoroshiRoutesIdFormat =
     Format(
       Reads.set(using OtoroshiRouteIdFormat),
       Writes.set(using OtoroshiRouteIdFormat)
     )
-  val SetOtoroshiServiceGroupsIdFormat                                             =
+  val SetOtoroshiServiceGroupsIdFormat =
     Format(
       Reads.set(using OtoroshiServiceGroupIdFormat),
       Writes.set(using OtoroshiServiceGroupIdFormat)
     )
-  val SeqApiDocumentationDetailPageFormat: Format[Seq[ApiDocumentationDetailPage]] =
+  val SeqApiDocumentationDetailPageFormat
+      : Format[Seq[ApiDocumentationDetailPage]] =
     Format(
       Reads.seq(using ApiDocumentationDetailPageFormat),
       Writes.seq(using ApiDocumentationDetailPageFormat)
     )
-  val SeqThirdPartyPaymentSettingsFormat: Format[Seq[ThirdPartyPaymentSettings]]   =
+  val SeqThirdPartyPaymentSettingsFormat
+      : Format[Seq[ThirdPartyPaymentSettings]] =
     Format(
       Reads.seq(using ThirdPartyPaymentSettingsFormat),
       Writes.seq(using ThirdPartyPaymentSettingsFormat)
     )
-  val SeqValidationStepFormat: Format[Seq[ValidationStep]]                         =
+  val SeqValidationStepFormat: Format[Seq[ValidationStep]] =
     Format(
       Reads.seq(using ValidationStepFormat),
       Writes.seq(using ValidationStepFormat)
     )
-  val SeqSubscriptionDemanStepFormat                                               =
+  val SeqSubscriptionDemanStepFormat =
     Format(
       Reads.seq(using SubscriptionDemandStepFormat),
       Writes.seq(using SubscriptionDemandStepFormat)
     )
-  val SeqSubscriptionDemandFormat                                                  =
+  val SeqSubscriptionDemandFormat =
     Format(
       Reads.seq(using SubscriptionDemandFormat),
       Writes.seq(using SubscriptionDemandFormat)
     )
-  val SeqTeamAuthorizedEntitiesFormat                                              =
+  val SeqTeamAuthorizedEntitiesFormat =
     Format(
       Reads.seq(using TeamAuthorizedEntitiesFormat),
       Writes.seq(using TeamAuthorizedEntitiesFormat)
