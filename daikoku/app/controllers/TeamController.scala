@@ -1,8 +1,5 @@
 package fr.maif.otoroshi.daikoku.ctrls
 
-import org.apache.pekko.http.scaladsl.util.FastFuture
-import org.apache.pekko.stream.Materializer
-import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import cats.data.EitherT
 import cats.implicits.catsSyntaxOptionId
 import controllers.AppError
@@ -16,14 +13,16 @@ import fr.maif.otoroshi.daikoku.ctrls.authorizations.async._
 import fr.maif.otoroshi.daikoku.domain._
 import fr.maif.otoroshi.daikoku.domain.json.TeamFormat
 import fr.maif.otoroshi.daikoku.env.Env
-import fr.maif.otoroshi.daikoku.logger.AppLogger
 import fr.maif.otoroshi.daikoku.login.{LdapConfig, LdapSupport}
 import fr.maif.otoroshi.daikoku.utils.Cypher.{decrypt, encrypt}
 import fr.maif.otoroshi.daikoku.utils.future.EnhancedObject
 import fr.maif.otoroshi.daikoku.utils.{DeletionService, IdGenerator, Translator}
+import org.apache.pekko.http.scaladsl.util.FastFuture
+import org.apache.pekko.stream.Materializer
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import org.joda.time.DateTime
 import org.mindrot.jbcrypt.BCrypt
-import play.api.i18n.{I18nSupport, Lang}
+import play.api.i18n.I18nSupport
 import play.api.libs.json._
 import play.api.mvc._
 
@@ -551,7 +550,7 @@ class TeamController(
 
   def pendingMembersOfTeam(teamId: String) =
     DaikokuAction.async { ctx =>
-      TeamMemberOnly(
+      TeamUserOrTenantAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has accessed list of addable members to team @{team.name} - @{team.id}"
         )
@@ -578,11 +577,9 @@ class TeamController(
             )
           )
         } yield {
-          Right(
-            Ok(
-              Json.obj(
-                "pendingUsers" -> JsArray(pendingUsers.map(_.asSimpleJson))
-              )
+          Ok(
+            Json.obj(
+              "pendingUsers" -> JsArray(pendingUsers.map(_.asSimpleJson))
             )
           )
         }
@@ -765,7 +762,6 @@ class TeamController(
       email: String,
       ctx: DaikokuActionContext[JsValue]
   ): Future[Result] = {
-    import fr.maif.otoroshi.daikoku.utils.RequestImplicits._
 
     def createInvitedUser(team: String, notificationId: String) = {
       User(
@@ -938,7 +934,7 @@ class TeamController(
 
   def memberOfTeam(teamId: String, id: String) =
     DaikokuAction.async { ctx =>
-      TeamMemberOnly(
+      TeamUserOrTenantAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has accessed one member ($id} of team @{team.name} - @{team.id}"
         )
@@ -946,17 +942,17 @@ class TeamController(
         // TODO: verify if the behavior is correct
         case team if team.includeUser(UserId(id)) =>
           env.dataStore.userRepo.findByIdNotDeleted(id).map {
-            case None       => Left(AppError.UserNotFound(None))
-            case Some(user) => Right(Ok(user.asSimpleJson))
+            case None       => AppError.UserNotFound(None).render()
+            case Some(user) => Ok(user.asSimpleJson)
           }
         case _ =>
-          FastFuture.successful(Left(AppError.UserNotFound()))
+          AppError.UserNotFound().renderF()
       }
     }
 
   def membersOfTeam(teamId: String) =
     DaikokuAction.async { ctx =>
-      TeamMemberOnly(
+      TeamUserOrTenantAdminOnly(
         AuditTrailEvent(
           s"@{user.name} has accessed the member list of team @{team.name} - @{team.id}"
         )
@@ -969,9 +965,7 @@ class TeamController(
                 .obj("$in" -> JsArray(team.users.map(_.userId.asJson).toSeq))
             )
           )
-          .map { users =>
-            Right(Ok(JsArray(users.map(_.asSimpleJson))))
-          }
+          .map(users => Ok(JsArray(users.map(_.asSimpleJson))))
       }
     }
 

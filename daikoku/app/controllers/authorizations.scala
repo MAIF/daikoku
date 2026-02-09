@@ -1134,6 +1134,100 @@ object authorizations {
 
       result.flatten
     }
+
+    def TeamUserOrTenantAdminOnly[T](
+        audit: AuditEvent
+    )(teamId: String, ctx: DaikokuActionContext[T])(
+        f: Team => Future[Result]
+    )(implicit ec: ExecutionContext, env: Env): Future[Result] = {
+
+      val result = for {
+        team <-
+          env.dataStore.teamRepo
+            .forTenant(ctx.tenant.id)
+            .findByIdOrHrId(teamId)
+        tenantAdminTeam <-
+          env.dataStore.teamRepo
+            .forTenant(ctx.tenant)
+            .findOneNotDeleted(Json.obj("type" -> "Admin"))
+      } yield {
+        (team, tenantAdminTeam) match {
+          case (Some(team), _) if ctx.user.isDaikokuAdmin =>
+            ctx.setCtxValue("team.id", team.id.value)
+            ctx.setCtxValue("team.name", team.name)
+            f(team).andThen { case _ =>
+              audit.logTenantAuditEvent(
+                ctx.tenant,
+                ctx.user,
+                ctx.session,
+                ctx.request,
+                ctx.ctx,
+                AuthorizationLevel.AuthorizedDaikokuAdmin
+              )
+            }
+          case (Some(team), Some(adminTeam))
+              if ctx.tenant.id == team.tenant && adminTeam.users.exists(u =>
+                u.userId == ctx.user.id && u.teamPermission == Administrator
+              ) =>
+            ctx.setCtxValue("team.id", team.id.value)
+            ctx.setCtxValue("team.name", team.name)
+            f(team).andThen { case _ =>
+              audit.logTenantAuditEvent(
+                ctx.tenant,
+                ctx.user,
+                ctx.session,
+                ctx.request,
+                ctx.ctx,
+                AuthorizationLevel.AuthorizedTenantAdmin
+              )
+            }
+
+          case (Some(team), _)
+            if ctx.user.tenants.contains(ctx.tenant.id) && team.includeUser(ctx.user.id) =>
+            ctx.setCtxValue("team.id", team.id.value)
+            ctx.setCtxValue("team.name", team.name)
+            f(team).andThen { case _ =>
+              audit.logTenantAuditEvent(
+                ctx.tenant,
+                ctx.user,
+                ctx.session,
+                ctx.request,
+                ctx.ctx,
+                AuthorizationLevel.AuthorizedTeamAdmin
+              )
+            }
+          case (Some(team), _)
+            if ctx.user.tenants.contains(ctx.tenant.id) && !team.includeUser(ctx.user.id) =>
+            ctx.setCtxValue("team.id", team.id.value)
+            ctx.setCtxValue("team.name", team.name)
+            audit.logTenantAuditEvent(
+              ctx.tenant,
+              ctx.user,
+              ctx.session,
+              ctx.request,
+              ctx.ctx,
+              AuthorizationLevel.NotAuthorized
+            )
+            FastFuture.successful(
+              Results.Forbidden(Json.obj("error" -> "You're not a member"))
+            )
+          case _ =>
+            audit.logTenantAuditEvent(
+              ctx.tenant,
+              ctx.user,
+              ctx.session,
+              ctx.request,
+              ctx.ctx,
+              AuthorizationLevel.NotAuthorized
+            )
+            FastFuture.successful(
+              Results.NotFound(Json.obj("error" -> "Team not found"))
+            )
+        }
+      }
+
+      result.flatten
+    }
   }
 
 }

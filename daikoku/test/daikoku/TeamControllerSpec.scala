@@ -294,6 +294,303 @@ class TeamControllerSpec()
       )(tenant, session)
       respCreation.status mustBe 201
     }
+
+    "list members of a team" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant.copy(teamCreationSecurity = true.some)),
+        users = Seq(daikokuAdmin, tenantAdmin, user, userAdmin, userApiEditor),
+        teams = Seq(defaultAdminTeam, teamOwner)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/members",
+      )(tenant, session)
+      resp.status mustBe 200
+      resp.json.as[JsArray].value.size mustBe 3
+    }
+
+    "update a team" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, tenantAdmin),
+        teams = Seq(teamOwner, defaultAdminTeam)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val respCreation = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}",
+        method = "PUT",
+        body = Some(teamOwner.copy(name = "bobby team").asJson)
+      )(tenant, session)
+      respCreation.status mustBe 200
+
+      val respGet =
+        httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}")(
+          tenant,
+          session
+        )
+      val updatedTeam =
+        fr.maif.otoroshi.daikoku.domain.json.TeamFormat.reads(respGet.json)
+      updatedTeam.isSuccess mustBe true
+      updatedTeam.get.name mustBe "bobby team"
+    }
+
+    "have full access to a team" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, tenantAdmin),
+        teams = Seq(teamOwner, defaultAdminTeam)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val respGet = httpJsonCallBlocking(
+        s"/api/teams/${teamOwnerId.value}/_full"
+      )(tenant, session)
+      respGet.status mustBe 200
+      respGet.json mustBe teamOwner.asJson.as[JsObject] ++ Json.obj(
+        "translation" -> Json.obj()
+      )
+    }
+
+    "invit members to a team" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user, tenantAdmin),
+        teams = Seq(
+          defaultAdminTeam,
+          teamOwner.copy(
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))
+          )
+        )
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      val respUpdate =
+        httpJsonCallBlocking(
+          path = s"/api/teams/${teamOwnerId.value}/members",
+          method = "POST",
+          body = Some(Json.obj("members" -> Json.arr(userTeamUserId.asJson)))
+        )(tenant, session)
+      respUpdate.status mustBe 200
+      (respUpdate.json \ "done").as[Boolean] mustBe true
+
+      val userSession = loginWithBlocking(user, tenant)
+      val respNotification = getOwnNotificationsCallBlocking(
+        Json.obj(
+          "filterTable" -> Json.stringify(
+            Json.arr(
+              Json
+                .obj("id" -> "type", "value" -> Json.arr("TeamInvitation"))
+            )
+          )
+        )
+      )(
+        tenant,
+        userSession
+      )
+
+      respNotification.status mustBe 200
+      (respNotification.json \ "data" \ "myNotifications" \ "totalFiltered")
+        .as[Long] mustBe 1
+      val notifications =
+        (respNotification.json \ "data" \ "myNotifications" \ "notifications")
+          .as[JsArray]
+
+      val notification = notifications.head
+
+      (notification \ "action" \ "__typename")
+        .as[String] mustBe "TeamInvitation"
+      (notification \ "action" \ "team" \ "_id")
+        .as(json.TeamIdFormat) mustBe teamOwnerId
+    }
+
+    "remove members to a team" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user, tenantAdmin),
+        teams = Seq(teamOwner, defaultAdminTeam)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      teamOwner.users.size mustBe 3
+
+      val resp = httpJsonCallBlocking(
+        path =
+          s"/api/teams/${teamOwnerId.value}/members/${userTeamUserId.value}",
+        method = "DELETE"
+      )(tenant, session)
+      resp.status mustBe 200
+      (resp.json \ "done").as[Boolean] mustBe true
+      val updatedTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat
+        .reads((resp.json \ "team").as[JsObject])
+      updatedTeam.isSuccess mustBe true
+      updatedTeam.get.users.size mustBe 2
+      updatedTeam.get.users.exists(u => u.userId == userTeamUserId) mustBe false
+    }
+
+    "update permission's member in a team" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user, tenantAdmin),
+        teams = Seq(teamOwner, defaultAdminTeam)
+      )
+      val session = loginWithBlocking(userAdmin, tenant)
+      val resp = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/members/_permission",
+        method = "POST",
+        body = Some(
+          Json.obj(
+            "members" -> Json.arr(user.id.value),
+            "permission" -> "Administrator"
+          )
+        )
+      )(tenant, session)
+      resp.status mustBe 200
+      (resp.json \ "done").as[Boolean] mustBe true
+      val updatedTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat
+        .reads((resp.json \ "team").as[JsObject])
+      updatedTeam.isSuccess mustBe true
+      val updatedUser =
+        updatedTeam.get.users.find(u => u.userId == userTeamUserId)
+      updatedUser.isDefined mustBe true
+      updatedUser.get.teamPermission mustBe Administrator
+    }
+
+    "see a member of a team" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user, tenantAdmin),
+        teams = Seq(
+          defaultAdminTeam,
+          teamOwner,
+          teamConsumer.copy(
+            users = Set(UserWithPermission(userTeamUserId, Administrator))
+          )
+        )
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val resp =
+        httpJsonCallBlocking(
+          s"/api/teams/${teamOwnerId.value}/members/${userTeamUserId.value}"
+        )(tenant, session)
+      resp.status mustBe 200
+      resp.json mustBe user.asSimpleJson
+    }
+
+    "list a team members" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user, userApiEditor, tenantAdmin),
+        teams = Seq(
+          defaultAdminTeam,
+          teamOwner,
+          teamConsumer.copy(
+            users = Set(UserWithPermission(userTeamUserId, Administrator))
+          )
+        )
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+      val resp =
+        httpJsonCallBlocking(s"/api/teams/${teamOwnerId.value}/members")(
+          tenant,
+          session
+        )
+      resp.status mustBe 200
+      val users =
+        fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat.reads(resp.json)
+      users.isSuccess mustBe true
+      users.get.length mustBe 3
+      users.get.map(_.id).toSet mustEqual Set(
+        userTeamAdminId,
+        userApiEditorId,
+        userTeamUserId
+      )
+    }
+
+    "update api key visibility" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user, userApiEditor, tenantAdmin),
+        teams = Seq(teamOwner, defaultAdminTeam)
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      teamOwner.apiKeyVisibility mustBe Some(TeamApiKeyVisibility.User)
+      val resp =
+        httpJsonCallBlocking(
+          path = s"/api/teams/${teamOwnerId.value}",
+          method = "PUT",
+          body = Some(
+            teamOwner
+              .copy(apiKeyVisibility = Some(TeamApiKeyVisibility.Administrator))
+              .asJson
+          )
+        )(tenant, session)
+      resp.status mustBe 200
+
+      val updatedTeam = fr.maif.otoroshi.daikoku.domain.json.TeamFormat
+        .reads(resp.json.as[JsObject])
+      updatedTeam.isSuccess mustBe true
+      updatedTeam.get.apiKeyVisibility mustBe Some(
+        TeamApiKeyVisibility.Administrator
+      )
+    }
+
+    "get addable and pending user for his team" in {
+      setupEnvBlocking(
+        tenants = Seq(tenant),
+        users = Seq(userAdmin, user, userApiEditor, tenantAdmin),
+        teams = Seq(
+          defaultAdminTeam,
+          teamOwner.copy(
+            users = Set(UserWithPermission(userTeamAdminId, Administrator))
+          )
+        )
+      )
+      val session = loginWithBlocking(tenantAdmin, tenant)
+
+      var respGet =
+        httpJsonCallBlocking(
+          path = s"/api/teams/${teamOwnerId.value}/pending-members"
+        )(tenant, session)
+      respGet.status mustBe 200
+      var pendingUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+        .reads((respGet.json \ "pendingUsers").as[JsArray])
+
+      pendingUsers.get.size mustBe 0
+
+      var respInvit =
+        httpJsonCallBlocking(
+          path = s"/api/teams/${teamOwnerId.value}/members",
+          method = "POST",
+          body = Some(Json.obj("members" -> Json.arr(userTeamUserId.asJson)))
+        )(tenant, session)
+      respInvit.status mustBe 200
+
+      respGet = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/pending-members"
+      )(tenant, session)
+      respGet.status mustBe 200
+      pendingUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+        .reads((respGet.json \ "pendingUsers").as[JsArray])
+      //
+      pendingUsers.get.size mustBe 1
+
+      respInvit = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/members",
+        method = "POST",
+        body = Some(Json.obj("members" -> Json.arr(userApiEditorId.asJson)))
+      )(tenant, session)
+      respInvit.status mustBe 200
+
+      respGet = httpJsonCallBlocking(
+        path = s"/api/teams/${teamOwnerId.value}/pending-members"
+      )(tenant, session)
+      respGet.status mustBe 200
+      pendingUsers = fr.maif.otoroshi.daikoku.domain.json.SeqUserFormat
+        .reads((respGet.json \ "pendingUsers").as[JsArray])
+
+      pendingUsers.get.size mustBe 2
+    }
   }
 
   "a team administrator" can {
