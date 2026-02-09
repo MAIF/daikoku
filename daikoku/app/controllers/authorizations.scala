@@ -1183,7 +1183,8 @@ object authorizations {
             }
 
           case (Some(team), _)
-            if ctx.user.tenants.contains(ctx.tenant.id) && team.includeUser(ctx.user.id) =>
+              if ctx.user.tenants
+                .contains(ctx.tenant.id) && team.includeUser(ctx.user.id) =>
             ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             f(team).andThen { case _ =>
@@ -1197,7 +1198,8 @@ object authorizations {
               )
             }
           case (Some(team), _)
-            if ctx.user.tenants.contains(ctx.tenant.id) && !team.includeUser(ctx.user.id) =>
+              if ctx.user.tenants
+                .contains(ctx.tenant.id) && !team.includeUser(ctx.user.id) =>
             ctx.setCtxValue("team.id", team.id.value)
             ctx.setCtxValue("team.name", team.name)
             audit.logTenantAuditEvent(
